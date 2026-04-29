@@ -1,0 +1,43 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html,
+  body {
+    background: #08090c;
+    color: #e8ebf2;
+    font-feature-settings: "cv02", "cv03", "cv04", "ss01";
+    -webkit-font-smoothing: antialiased;
+  }
+  body {
+    background-image:
+      radial-gradient(1000px circle at 50% -200px, rgba(124, 127, 255, 0.08), transparent 50%),
+      radial-gradient(700px circle at 85% 10%, rgba(99, 102, 241, 0.05), transparent 45%);
+    background-attachment: fixed;
+  }
+
+  /* Prettier focus ring */
+  :focus-visible {
+    outline: 2px solid rgba(124, 127, 255, 0.6);
+    outline-offset: 2px;
+    border-radius: 6px;
+  }
+
+  /* Scrollbar polish */
+  ::-webkit-scrollbar { width: 10px; height: 10px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb {
+    background: #20242f;
+    border: 2px solid transparent;
+    background-clip: padding-box;
+    border-radius: 10px;
+  }
+  ::-webkit-scrollbar-thumb:hover { background: #2a2f3c; background-clip: padding-box; }
+}
+
+/* Sandpack should fill available space */
+.sp-wrapper,
+.sp-layout {
+  height: 100% !important;
+}

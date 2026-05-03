@@ -21,7 +21,7 @@ import {
   Copy,
   Download,
 } from "lucide-react";
-import JSZip from "jszip";
+import { useFileSystem, FILE_TYPES, type TreeNode, parentDir } from "@/hooks/useFileSystem";
 import { toast } from "sonner";
 import {
   SiJavascript,
@@ -36,6 +36,7 @@ import {
   SiGit,
   SiMarkdown,
 } from "react-icons/si";
+import { useNpmSearch } from "@/hooks/useNpmSearch";
 
 type FileIconInfo = {
   Icon: React.ComponentType<{ size?: number; className?: string }>;
@@ -103,563 +104,142 @@ function FileNodeIcon({ name }: { name: string }) {
   );
 }
 
-type FileType = { ext: string; label: string; template: string };
-
-const FILE_TYPES: FileType[] = [
-  { ext: ".js", label: "JavaScript", template: "// New file\n" },
-  { ext: ".ts", label: "TypeScript", template: "// New file\n" },
-  {
-    ext: ".jsx",
-    label: "React JSX",
-    template:
-      "export default function Component() {\n  return <div>New component</div>;\n}\n",
-  },
-  {
-    ext: ".tsx",
-    label: "React TSX",
-    template:
-      "export default function Component() {\n  return <div>New component</div>;\n}\n",
-  },
-  { ext: ".css", label: "CSS", template: "" },
-  {
-    ext: ".html",
-    label: "HTML",
-    template:
-      '<!DOCTYPE html>\n<html>\n  <head>\n    <meta charset="utf-8" />\n  </head>\n  <body></body>\n</html>\n',
-  },
-  { ext: ".json", label: "JSON", template: "{\n}\n" },
-  { ext: ".md", label: "Markdown", template: "# New\n" },
-];
-
-type TreeNode = {
-  name: string;
-  path: string;
-  isFolder: boolean;
-  children?: TreeNode[];
+/** VS Code Material-Icon-Theme–style folder colors */
+const FOLDER_COLORS: Record<string, string> = {
+  src: "#4fc3f7",
+  app: "#ef5350",
+  pages: "#ef5350",
+  api: "#ef5350",
+  components: "#42a5f5",
+  component: "#42a5f5",
+  hooks: "#ab47bc",
+  hook: "#ab47bc",
+  lib: "#66bb6a",
+  libs: "#66bb6a",
+  utils: "#66bb6a",
+  util: "#66bb6a",
+  helpers: "#66bb6a",
+  helper: "#66bb6a",
+  public: "#8d6e63",
+  static: "#8d6e63",
+  assets: "#8d6e63",
+  images: "#8d6e63",
+  img: "#8d6e63",
+  styles: "#29b6f6",
+  style: "#29b6f6",
+  css: "#29b6f6",
+  config: "#78909c",
+  configs: "#78909c",
+  types: "#26c6da",
+  type: "#26c6da",
+  models: "#26c6da",
+  model: "#26c6da",
+  interfaces: "#26c6da",
+  store: "#ff7043",
+  stores: "#ff7043",
+  state: "#ff7043",
+  context: "#ff7043",
+  contexts: "#ff7043",
+  test: "#9ccc65",
+  tests: "#9ccc65",
+  __tests__: "#9ccc65",
+  spec: "#9ccc65",
+  node_modules: "#616161",
+  dist: "#78909c",
+  build: "#78909c",
+  out: "#78909c",
+  ".next": "#78909c",
+  ".git": "#f05032",
+  prisma: "#5a67d8",
+  middleware: "#ffb74d",
+  middlewares: "#ffb74d",
+  routes: "#ff8a65",
+  router: "#ff8a65",
+  services: "#26a69a",
+  service: "#26a69a",
+  layouts: "#ce93d8",
+  layout: "#ce93d8",
+  views: "#7986cb",
+  view: "#7986cb",
+  features: "#4db6ac",
+  modules: "#4db6ac",
+  providers: "#ba68c8",
+  provider: "#ba68c8",
 };
 
-function buildTree(filePaths: string[], emptyFolders: Set<string>): TreeNode[] {
-  const root: TreeNode = { name: "", path: "/", isFolder: true, children: [] };
-
-  function ensure(parts: string[], makeFolderAtEnd: boolean) {
-    let cur = root;
-    for (let i = 0; i < parts.length; i++) {
-      const name = parts[i];
-      const isLast = i === parts.length - 1;
-      const isFolder = !isLast || makeFolderAtEnd;
-      const subPath = "/" + parts.slice(0, i + 1).join("/");
-      if (!cur.children) cur.children = [];
-      let child = cur.children.find((c) => c.name === name);
-      if (!child) {
-        child = {
-          name,
-          path: subPath,
-          isFolder,
-          children: isFolder ? [] : undefined,
-        };
-        cur.children.push(child);
-      }
-      cur = child;
-    }
-  }
-
-  for (const p of filePaths) ensure(p.split("/").filter(Boolean), false);
-  for (const f of emptyFolders) ensure(f.split("/").filter(Boolean), true);
-
-  function sort(node: TreeNode) {
-    if (!node.children) return;
-    node.children.sort((a, b) => {
-      if (a.isFolder !== b.isFolder) return a.isFolder ? -1 : 1;
-      return a.name.localeCompare(b.name);
-    });
-    for (const c of node.children) sort(c);
-  }
-  sort(root);
-  return root.children ?? [];
+function folderColor(name: string): string {
+  return FOLDER_COLORS[name.toLowerCase()] ?? "#fbbf24";
 }
 
-function parentDir(path: string): string {
-  const idx = path.lastIndexOf("/");
-  if (idx <= 0) return "/";
-  return path.slice(0, idx);
+function FolderNodeIcon({ name, open }: { name: string; open: boolean }) {
+  const color = folderColor(name);
+  const FolderIcon = open ? FolderOpen : Folder;
+  return <FolderIcon className="w-3.5 h-3.5 shrink-0" style={{ color }} />;
 }
 
-function normalizePath(p: string): string {
-  return p.startsWith("/") ? p : "/" + p;
-}
 
-type ContextMenu = {
-  x: number;
-  y: number;
-  path: string;
-  isFolder: boolean;
-} | null;
-
-type PendingNew = {
-  parentPath: string;
-  kind: "file" | "folder";
-  ext?: string;
-} | null;
 
 type Props = { readOnly?: boolean };
 
 export default function FileExplorer({ readOnly = false }: Props) {
-  const { sandpack } = useSandpack();
-  const { files, activeFile } = sandpack;
-
-  const filePaths = useMemo(
-    () => Object.keys(files).map(normalizePath),
-    [files]
-  );
-
-  const [expanded, setExpanded] = useState<Set<string>>(() => new Set(["/"]));
-  const [emptyFolders, setEmptyFolders] = useState<Set<string>>(new Set());
-  const [contextMenu, setContextMenu] = useState<ContextMenu>(null);
-  const [showFileTypes, setShowFileTypes] = useState(false);
-  const [pendingNew, setPendingNew] = useState<PendingNew>(null);
-  const [newName, setNewName] = useState("");
-  const [draggingPath, setDraggingPath] = useState<string | null>(null);
-  const [dropTarget, setDropTarget] = useState<string | null>(null);
-  const [showDeps, setShowDeps] = useState(false);
-  const [newDepInput, setNewDepInput] = useState("");
-  const [renamingPath, setRenamingPath] = useState<string | null>(null);
-  const [renameValue, setRenameValue] = useState("");
-  const [npmSuggestions, setNpmSuggestions] = useState<
-    Array<{ name: string; version: string; description?: string }>
-  >([]);
-  const [npmActiveIdx, setNpmActiveIdx] = useState(0);
-
-  const tree = useMemo(
-    () => buildTree(filePaths, emptyFolders),
-    [filePaths, emptyFolders]
-  );
+  const {
+    expanded,
+    setExpanded,
+    emptyFolders,
+    setEmptyFolders,
+    contextMenu,
+    setContextMenu,
+    showFileTypes,
+    setShowFileTypes,
+    pendingNew,
+    setPendingNew,
+    newName,
+    setNewName,
+    draggingPath,
+    setDraggingPath,
+    dropTarget,
+    setDropTarget,
+    renamingPath,
+    setRenamingPath,
+    renameValue,
+    setRenameValue,
+    tree,
+    filePaths,
+    activeFile,
+    sandpack,
+    toggle,
+    startNew,
+    commitNew,
+    cancelNew,
+    deletePath,
+    movePath,
+    startRename,
+    commitRename,
+    cancelRename,
+    uploadFiles,
+    downloadZip,
+    duplicateFile
+  } = useFileSystem();
 
   const packageJsonPath = useMemo(
     () => filePaths.find((p) => p.endsWith("/package.json")) ?? "/package.json",
     [filePaths]
   );
 
-  const dependencies = useMemo<Record<string, string>>(() => {
-    const file = files[packageJsonPath];
-    if (!file) return {};
-    const code = typeof file === "string" ? file : (file as { code: string }).code;
-    try {
-      const parsed = JSON.parse(code);
-      return { ...(parsed.dependencies ?? {}) };
-    } catch {
-      return {};
-    }
-  }, [files, packageJsonPath]);
-
-  function writePackageJson(mutator: (pkg: Record<string, unknown>) => Record<string, unknown>) {
-    const file = files[packageJsonPath];
-    const code = file
-      ? typeof file === "string"
-        ? file
-        : (file as { code: string }).code
-      : "{}";
-    let parsed: Record<string, unknown>;
-    try {
-      parsed = JSON.parse(code);
-    } catch {
-      parsed = {};
-    }
-    const next = mutator(parsed);
-    sandpack.updateFile(packageJsonPath, JSON.stringify(next, null, 2) + "\n");
-  }
-
-  function parseDepInput(input: string): { name: string; version: string } | null {
-    const trimmed = input.trim();
-    if (!trimmed) return null;
-    const scoped = trimmed.startsWith("@");
-    const sep = scoped ? trimmed.indexOf("@", 1) : trimmed.indexOf("@");
-    if (sep === -1) return { name: trimmed, version: "latest" };
-    const name = trimmed.slice(0, sep);
-    const version = trimmed.slice(sep + 1).trim() || "latest";
-    return name ? { name, version } : null;
-  }
-
-  function addDep(name: string, version: string) {
-    const exists = Boolean(dependencies[name]);
-    writePackageJson((pkg) => ({
-      ...pkg,
-      dependencies: {
-        ...((pkg.dependencies as Record<string, string>) ?? {}),
-        [name]: version,
-      },
-    }));
-    toast.success(exists ? `Updated ${name}` : `Installing ${name}…`, {
-      description:
-        version === "latest" ? "Sandpack is rebundling" : `${name}@${version}`,
-      duration: 2500,
-    });
-  }
-
-  function addDependency() {
-    const parsed = parseDepInput(newDepInput);
-    if (!parsed) return;
-    addDep(parsed.name, parsed.version);
-    setNewDepInput("");
-  }
-
-  function removeDependency(name: string) {
-    writePackageJson((pkg) => {
-      const deps = { ...((pkg.dependencies as Record<string, string>) ?? {}) };
-      delete deps[name];
-      return { ...pkg, dependencies: deps };
-    });
-    toast(`Removed ${name}`, { duration: 2000 });
-  }
-
-  // npm autocomplete — debounced fetch from npms.io
-  useEffect(() => {
-    if (!showDeps) return;
-    const trimmed = newDepInput.trim();
-    // Strip @version part for the search query
-    const scoped = trimmed.startsWith("@");
-    const sep = scoped ? trimmed.indexOf("@", 1) : trimmed.indexOf("@");
-    const query = sep === -1 ? trimmed : trimmed.slice(0, sep);
-    if (query.length < 2) {
-      setNpmSuggestions([]);
-      return;
-    }
-    const ctrl = new AbortController();
-    const t = setTimeout(async () => {
-      try {
-        const res = await fetch(
-          `https://api.npms.io/v2/search/suggestions?q=${encodeURIComponent(query)}&size=6`,
-          { signal: ctrl.signal }
-        );
-        if (!res.ok) return;
-        const data = (await res.json()) as Array<{
-          package: { name: string; version: string; description?: string };
-        }>;
-        setNpmSuggestions(
-          data.map((d) => ({
-            name: d.package.name,
-            version: d.package.version,
-            description: d.package.description,
-          }))
-        );
-        setNpmActiveIdx(0);
-      } catch {
-        /* aborted or network error - ignore */
-      }
-    }, 220);
-    return () => {
-      clearTimeout(t);
-      ctrl.abort();
-    };
-  }, [newDepInput, showDeps]);
-
-  // Prune empty-folder placeholders that now contain files
-  useEffect(() => {
-    setEmptyFolders((prev) => {
-      let changed = false;
-      const next = new Set<string>();
-      for (const folder of prev) {
-        const prefix = folder + "/";
-        const hasFile = filePaths.some((p) => p.startsWith(prefix));
-        if (!hasFile) next.add(folder);
-        else changed = true;
-      }
-      return changed ? next : prev;
-    });
-  }, [filePaths]);
-
-  // Close context menu on outside interaction
-  useEffect(() => {
-    if (!contextMenu) return;
-    const close = () => {
-      setContextMenu(null);
-      setShowFileTypes(false);
-    };
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") close();
-    };
-    const t = setTimeout(() => window.addEventListener("mousedown", close), 0);
-    window.addEventListener("keydown", onKey);
-    return () => {
-      clearTimeout(t);
-      window.removeEventListener("mousedown", close);
-      window.removeEventListener("keydown", onKey);
-    };
-  }, [contextMenu]);
-
-  function toggle(path: string) {
-    setExpanded((prev) => {
-      const next = new Set(prev);
-      if (next.has(path)) next.delete(path);
-      else next.add(path);
-      return next;
-    });
-  }
-
-  function startNew(
-    parentPath: string,
-    kind: "file" | "folder",
-    ext?: string
-  ) {
-    setExpanded((prev) => new Set(prev).add(parentPath));
-    setPendingNew({ parentPath, kind, ext });
-    setNewName("");
-    setContextMenu(null);
-    setShowFileTypes(false);
-  }
-
-  function commitNew() {
-    const pending = pendingNew;
-    if (!pending) return;
-    const name = newName.trim();
-    setPendingNew(null);
-    setNewName("");
-    if (!name) return;
-    const parent = pending.parentPath === "/" ? "" : pending.parentPath;
-    if (pending.kind === "file") {
-      const finalName =
-        pending.ext && !/\.[^./]+$/.test(name) ? name + pending.ext : name;
-      const fullPath = `${parent}/${finalName}`;
-      if (files[fullPath]) return;
-      const tpl =
-        FILE_TYPES.find((t) => t.ext === pending.ext)?.template ?? "";
-      sandpack.addFile(fullPath, tpl);
-      sandpack.setActiveFile(fullPath);
-    } else {
-      const fullPath = `${parent}/${name}`;
-      setEmptyFolders((prev) => new Set(prev).add(fullPath));
-      setExpanded((prev) => new Set(prev).add(fullPath));
-    }
-  }
-
-  function cancelNew() {
-    setPendingNew(null);
-    setNewName("");
-  }
-
-  function deletePath(path: string, isFolder: boolean) {
-    if (isFolder) {
-      const prefix = path + "/";
-      for (const p of filePaths) {
-        if (p.startsWith(prefix)) sandpack.deleteFile(p);
-      }
-      setEmptyFolders((prev) => {
-        const next = new Set<string>();
-        for (const f of prev) {
-          if (f !== path && !f.startsWith(prefix)) next.add(f);
-        }
-        return next;
-      });
-    } else {
-      sandpack.deleteFile(path);
-    }
-    setContextMenu(null);
-  }
-
-  function movePath(fromPath: string, toFolderPath: string) {
-    if (fromPath === toFolderPath) return;
-    if (
-      toFolderPath === fromPath ||
-      toFolderPath.startsWith(fromPath + "/")
-    ) {
-      return;
-    }
-    const fromName = fromPath.split("/").filter(Boolean).pop()!;
-    const parent = toFolderPath === "/" ? "" : toFolderPath;
-    const newPath = `${parent}/${fromName}`;
-    if (newPath === fromPath) return;
-
-    if (files[fromPath]) {
-      if (files[newPath]) return;
-      const code = (files[fromPath] as { code: string }).code;
-      sandpack.deleteFile(fromPath);
-      sandpack.addFile(newPath, code);
-      if (activeFile === fromPath) sandpack.setActiveFile(newPath);
-      return;
-    }
-
-    const prefix = fromPath + "/";
-    const newPrefix = newPath + "/";
-    const movers = filePaths.filter((p) => p.startsWith(prefix));
-    for (const p of movers) {
-      if (files[newPrefix + p.slice(prefix.length)]) return;
-    }
-    const carry = movers.map(
-      (p) =>
-        [newPrefix + p.slice(prefix.length), (files[p] as { code: string }).code] as const
-    );
-    for (const p of movers) sandpack.deleteFile(p);
-    for (const [target, code] of carry) sandpack.addFile(target, code);
-    setEmptyFolders((prev) => {
-      const next = new Set<string>();
-      for (const f of prev) {
-        if (f === fromPath) next.add(newPath);
-        else if (f.startsWith(prefix))
-          next.add(newPrefix + f.slice(prefix.length));
-        else next.add(f);
-      }
-      return next;
-    });
-  }
-
-  function startRename(path: string) {
-    const name = path.split("/").filter(Boolean).pop() ?? "";
-    setRenamingPath(path);
-    setRenameValue(name);
-    setContextMenu(null);
-  }
-
-  function commitRename() {
-    const path = renamingPath;
-    const newName = renameValue.trim();
-    setRenamingPath(null);
-    setRenameValue("");
-    if (!path || !newName) return;
-    const oldName = path.split("/").filter(Boolean).pop() ?? "";
-    if (newName === oldName) return;
-    if (newName.includes("/")) return;
-    const parent = parentDir(path);
-    const parentPrefix = parent === "/" ? "" : parent;
-    const newPath = `${parentPrefix}/${newName}`;
-    if (files[newPath] || filePaths.includes(newPath)) return;
-
-    if (files[path]) {
-      const code = (files[path] as { code: string }).code;
-      sandpack.deleteFile(path);
-      sandpack.addFile(newPath, code);
-      if (activeFile === path) sandpack.setActiveFile(newPath);
-      return;
-    }
-
-    const prefix = path + "/";
-    const newPrefix = newPath + "/";
-    const movers = filePaths.filter((p) => p.startsWith(prefix));
-    for (const p of movers) {
-      if (files[newPrefix + p.slice(prefix.length)]) return;
-    }
-    const carry = movers.map(
-      (p) =>
-        [
-          newPrefix + p.slice(prefix.length),
-          (files[p] as { code: string }).code,
-        ] as const
-    );
-    for (const p of movers) sandpack.deleteFile(p);
-    for (const [target, code] of carry) sandpack.addFile(target, code);
-    setEmptyFolders((prev) => {
-      const next = new Set<string>();
-      for (const f of prev) {
-        if (f === path) next.add(newPath);
-        else if (f.startsWith(prefix))
-          next.add(newPrefix + f.slice(prefix.length));
-        else next.add(f);
-      }
-      return next;
-    });
-    setExpanded((prev) => {
-      const next = new Set<string>();
-      for (const e of prev) {
-        if (e === path) next.add(newPath);
-        else if (e.startsWith(prefix))
-          next.add(newPrefix + e.slice(prefix.length));
-        else next.add(e);
-      }
-      return next;
-    });
-  }
-
-  function cancelRename() {
-    setRenamingPath(null);
-    setRenameValue("");
-  }
-
-  async function uploadFiles(fileList: FileList | File[], destFolder: string) {
-    const folder = destFolder === "/" ? "" : destFolder;
-    const textExts = new Set([
-      "js", "mjs", "cjs", "ts", "jsx", "tsx", "vue", "svelte",
-      "html", "htm", "css", "scss", "sass", "less", "json",
-      "md", "mdx", "txt", "yml", "yaml", "xml", "svg",
-    ]);
-    const imageExts = new Set(["png", "jpg", "jpeg", "gif", "webp", "ico"]);
-    let firstAdded: string | null = null;
-
-    for (const f of Array.from(fileList)) {
-      const ext = f.name.toLowerCase().match(/\.([a-z0-9]+)$/)?.[1] ?? "";
-      let target = `${folder}/${f.name}`;
-      let i = 2;
-      while (files[target] || filePaths.includes(target)) {
-        const dot = f.name.lastIndexOf(".");
-        const base = dot > 0 ? f.name.slice(0, dot) : f.name;
-        const e = dot > 0 ? f.name.slice(dot) : "";
-        target = `${folder}/${base} (${i})${e}`;
-        i++;
-      }
-
-      if (textExts.has(ext) || f.type.startsWith("text/")) {
-        const code = await f.text();
-        sandpack.addFile(target, code);
-      } else if (imageExts.has(ext) || f.type.startsWith("image/")) {
-        const dataUrl = await new Promise<string>((resolve, reject) => {
-          const reader = new FileReader();
-          reader.onload = () => resolve(reader.result as string);
-          reader.onerror = () => reject(reader.error);
-          reader.readAsDataURL(f);
-        });
-        sandpack.addFile(target, dataUrl);
-      } else {
-        // Skip unknown binary types
-        continue;
-      }
-      if (!firstAdded) firstAdded = target;
-    }
-    if (firstAdded) sandpack.setActiveFile(firstAdded);
-  }
-
-  async function downloadZip() {
-    const zip = new JSZip();
-    for (const path of filePaths) {
-      const file = files[path];
-      const code =
-        typeof file === "string" ? file : (file as { code: string }).code;
-      const stripped = path.startsWith("/") ? path.slice(1) : path;
-      // Detect base64 data URLs from image uploads
-      const m = code.match(/^data:[^;]+;base64,(.+)$/);
-      if (m) {
-        zip.file(stripped, m[1], { base64: true });
-      } else {
-        zip.file(stripped, code);
-      }
-    }
-    const blob = await zip.generateAsync({ type: "blob" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = "codepad-snippet.zip";
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    URL.revokeObjectURL(url);
-  }
-
-  function duplicateFile(path: string) {
-    const file = files[path];
-    if (!file) return;
-    const code = (file as { code: string }).code;
-    const parent = parentDir(path);
-    const parentPrefix = parent === "/" ? "" : parent;
-    const name = path.split("/").filter(Boolean).pop() ?? "";
-    const dot = name.lastIndexOf(".");
-    const base = dot > 0 ? name.slice(0, dot) : name;
-    const ext = dot > 0 ? name.slice(dot) : "";
-    let candidate = `${parentPrefix}/${base} (copy)${ext}`;
-    let i = 2;
-    while (files[candidate] || filePaths.includes(candidate)) {
-      candidate = `${parentPrefix}/${base} (copy ${i})${ext}`;
-      i++;
-    }
-    sandpack.addFile(candidate, code);
-    sandpack.setActiveFile(candidate);
-    setContextMenu(null);
-  }
+  const {
+    dependencies,
+    showDeps,
+    setShowDeps,
+    newDepInput,
+    setNewDepInput,
+    npmSuggestions,
+    setNpmSuggestions,
+    npmActiveIdx,
+    setNpmActiveIdx,
+    addDependency,
+    addDep,
+    removeDependency,
+  } = useNpmSearch(packageJsonPath);
 
   function renderNode(node: TreeNode, depth: number): React.ReactNode {
     const isExpanded = expanded.has(node.path);
@@ -746,11 +326,7 @@ export default function FileExplorer({ readOnly = false }: Props) {
           <span className="w-3 shrink-0" />
         )}
         {node.isFolder ? (
-          isExpanded ? (
-            <FolderOpen className="w-3.5 h-3.5 shrink-0 text-amber-400/80" />
-          ) : (
-            <Folder className="w-3.5 h-3.5 shrink-0 text-amber-400/80" />
-          )
+          <FolderNodeIcon name={node.name} open={isExpanded} />
         ) : (
           <FileNodeIcon name={node.name} />
         )}
@@ -823,7 +399,7 @@ export default function FileExplorer({ readOnly = false }: Props) {
 
   return (
     <div
-      className="w-52 shrink-0 border-r border-border bg-surface text-xs overflow-y-auto select-none relative"
+      className="h-full w-full border-r border-border bg-surface text-xs overflow-y-auto select-none relative flex flex-col"
       onContextMenu={(e) => {
         if (readOnly) return;
         e.preventDefault();
@@ -1088,27 +664,29 @@ export default function FileExplorer({ readOnly = false }: Props) {
             </button>
             {showFileTypes && (
               <div
-                style={{ left: "100%", top: 0, marginLeft: 2 }}
-                className="absolute min-w-[180px] rounded-lg border border-border bg-panel shadow-soft py-1"
+                style={{ left: "100%", top: -4 }}
+                className="absolute pl-1 z-50"
               >
-                {FILE_TYPES.map((t) => (
-                  <button
-                    key={t.ext}
-                    onClick={() => {
-                      const parent = contextMenu.isFolder
-                        ? contextMenu.path
-                        : parentDir(contextMenu.path);
-                      startNew(parent, "file", t.ext);
-                    }}
-                    className="w-full text-left flex items-center justify-between gap-3 px-3 py-1.5 hover:bg-elevated text-subtle hover:text-fg"
-                  >
-                    <span className="flex items-center gap-2">
-                      <FileNodeIcon name={`x${t.ext}`} />
-                      {t.label}
-                    </span>
-                    <span className="text-muted">{t.ext}</span>
-                  </button>
-                ))}
+                <div className="min-w-[180px] rounded-lg border border-border bg-panel shadow-soft py-1">
+                  {FILE_TYPES.map((t) => (
+                    <button
+                      key={t.ext}
+                      onClick={() => {
+                        const parent = contextMenu.isFolder
+                          ? contextMenu.path
+                          : parentDir(contextMenu.path);
+                        startNew(parent, "file", t.ext);
+                      }}
+                      className="w-full text-left flex items-center justify-between gap-3 px-3 py-1.5 hover:bg-elevated text-subtle hover:text-fg"
+                    >
+                      <span className="flex items-center gap-2">
+                        <FileNodeIcon name={`x${t.ext}`} />
+                        {t.label}
+                      </span>
+                      <span className="text-muted">{t.ext}</span>
+                    </button>
+                  ))}
+                </div>
               </div>
             )}
           </div>

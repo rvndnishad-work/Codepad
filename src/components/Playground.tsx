@@ -19,8 +19,14 @@ import {
   useSandpack,
   type SandpackFiles,
 } from "@codesandbox/sandpack-react";
+import { snippetCompletion } from "@codemirror/autocomplete";
+import { javascriptLanguage } from "@codemirror/lang-javascript";
+import { customSnippets } from "@/lib/snippets";
 import FileExplorer from "./FileExplorer";
-import { atomDark } from "@codesandbox/sandpack-themes";
+import { ErrorBridge, ErrorOverlay, type ErrorData } from "./ErrorOverlay";
+import PromptSidebar from "./PromptSidebar";
+import { useResizable } from "@/hooks/useResizable";
+import { cobalt2 } from "@codesandbox/sandpack-themes";
 import { toast } from "sonner";
 import {
   GitFork,
@@ -43,10 +49,47 @@ import { templatesById } from "@/lib/templates";
 import { TemplateLogo } from "@/lib/icons";
 import MonacoEditor from "./MonacoEditor";
 import ShortcutsModal from "./ShortcutsModal";
+import PlaygroundToolbar from "./PlaygroundToolbar";
+import { FilesBridge } from "./bridges/FilesBridge";
+import { RunBridge } from "./bridges/RunBridge";
+import { ConsoleEntryBridge } from "./bridges/ConsoleEntryBridge";
+import { FormatBridge } from "./bridges/FormatBridge";
 
-type Visibility = "private" | "public";
+const nbpTheme = {
+  colors: {
+    surface1: "#050505",
+    surface2: "#0A0A0A",
+    surface3: "#111111",
+    clickable: "#8b949e",
+    base: "#e0e0e0",
+    disabled: "#4d4d4d",
+    hover: "#FFE600",
+    accent: "#FFE600",
+    error: "#ff4d4d",
+    errorSurface: "#1a0000",
+  },
+  syntax: {
+    plain: "#e0e0e0",
+    comment: { color: "#6b7280", fontStyle: "italic" },
+    keyword: "#D2A8FF",
+    tag: "#D2A8FF",
+    punctuation: "#e0e0e0",
+    definition: "#FFE600",
+    property: "#FFE600",
+    static: "#FF9B71",
+    string: "#A5D6FF",
+  },
+  font: {
+    body: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif',
+    mono: '"JetBrains Mono", monospace',
+    size: "14px",
+    lineHeight: "1.6",
+  },
+};
 
-type Snippet = {
+export type Visibility = "private" | "public";
+
+export type Snippet = {
   id: string;
   slug: string;
   title: string;
@@ -82,16 +125,32 @@ function SegBtn({
     <button
       onClick={onClick}
       title={title}
-      className={`inline-flex items-center gap-1.5 px-2.5 py-1 text-xs transition ${
-        active
+      className={`inline-flex items-center gap-1.5 px-2.5 py-1 text-xs transition ${active
           ? "bg-accent text-white"
           : "text-subtle hover:text-fg hover:bg-elevated"
-      }`}
+        }`}
     >
       {children}
     </button>
   );
 }
+
+const customSnippetExtension = javascriptLanguage.data.of({
+  autocomplete: (context: any) => {
+    const word = context.matchBefore(/\w*/);
+    if (!word || (word.from === word.to && !context.explicit)) return null; ``
+    return {
+      from: word.from,
+      options: customSnippets.map((s) =>
+        snippetCompletion(s.cm6InsertText || s.insertText, {
+          label: s.label,
+          info: s.documentation,
+          type: "keyword",
+        })
+      ),
+    };
+  },
+});
 
 export default function Playground({
   templateId,
@@ -112,8 +171,11 @@ export default function Playground({
   const [visibility, setVisibility] = useState<Visibility>(snippet?.visibility ?? "private");
   const [saving, setSaving] = useState(false);
   const [forking, setForking] = useState(false);
-  const [view, setView] = useState<"preview" | "console" | "both">("preview");
+  const [view, setView] = useState<"preview" | "console" | "both">(
+    tpl.mode === "console" ? "console" : "preview"
+  );
   const [editor, setEditor] = useState<"sandpack" | "monaco">("sandpack");
+  const [fontSize, setFontSize] = useState(14);
   const [snippetId, setSnippetId] = useState<string | null>(snippet?.id ?? null);
   const [currentSlug, setCurrentSlug] = useState<string | null>(snippet?.slug ?? null);
   const [dirty, setDirty] = useState(false);
@@ -123,16 +185,26 @@ export default function Playground({
   const [tags, setTags] = useState<string[]>(snippet?.tags ?? []);
   const [tagInput, setTagInput] = useState("");
   const [running, setRunning] = useState(false);
+  const [bundlerError, setBundlerError] = useState<ErrorData | null>(null);
+  const [mobileFilesOpen, setMobileFilesOpen] = useState(false);
+  const [promptOpen, setPromptOpen] = useState(false);
+  const [explorerCollapsed, setExplorerCollapsed] = useState(false);
+  const [autoRun, setAutoRun] = useState(true);
+  const explorerCollapsedRef = useRef(false);
 
+  const initialFilesRef = useRef<SandpackFiles>(initialFiles ?? tpl.files);
   const filesRef = useRef<SandpackFiles>(initialFiles ?? tpl.files);
   const runRef = useRef<(() => void) | null>(null);
   const formatRef = useRef<(() => Promise<void>) | null>(null);
-  const customSetup = useMemo(
-    () => (tpl.dependencies ? { dependencies: tpl.dependencies } : undefined),
-    [tpl]
-  );
+  const codeChangedRef = useRef(false);
+  const customSetup = useMemo(() => {
+    const setup: any = tpl.dependencies ? { dependencies: tpl.dependencies } : {};
+    return setup;
+  }, [tpl]);
   const editable = isOwner || !snippet;
   const isMobile = useIsMobile(768);
+  const { width: explorerW, onPointerDown: onExplorerDrag } = useResizable(200, 120, 400);
+  const { width: editorW, onPointerDown: onEditorDrag } = useResizable(500, 200, 1200);
 
   function handleRun() {
     setRunning(true);
@@ -199,7 +271,7 @@ export default function Playground({
       const res = await fetch(`/api/snippets/${snippet.id}/fork`, { method: "POST" });
       if (!res.ok) throw new Error((await res.text()) || `HTTP ${res.status}`);
       const data = await res.json();
-      toast.success("Fork created — opening…");
+      toast.success("Fork created â€” openingâ€¦");
       window.location.href = `/play/${data.slug}`;
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err);
@@ -277,6 +349,33 @@ export default function Playground({
     }
   }
 
+  // ── Persistence: Editor Settings ──
+  useEffect(() => {
+    const savedEditor = localStorage.getItem("codepad_editor");
+    if (savedEditor === "sandpack" || savedEditor === "monaco") setEditor(savedEditor);
+
+    const savedFontSize = localStorage.getItem("codepad_fontSize");
+    if (savedFontSize) {
+      const parsed = parseInt(savedFontSize, 10);
+      if (!isNaN(parsed) && parsed >= 10 && parsed <= 24) setFontSize(parsed);
+    }
+
+    const savedAutoRun = localStorage.getItem("codepad_autoRun");
+    if (savedAutoRun !== null) setAutoRun(savedAutoRun === "true");
+  }, []);
+
+  useEffect(() => {
+    localStorage.setItem("codepad_editor", editor);
+  }, [editor]);
+
+  useEffect(() => {
+    localStorage.setItem("codepad_fontSize", fontSize.toString());
+  }, [fontSize]);
+
+  useEffect(() => {
+    localStorage.setItem("codepad_autoRun", autoRun.toString());
+  }, [autoRun]);
+
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if ((e.ctrlKey || e.metaKey) && e.key === "s") {
@@ -291,9 +390,36 @@ export default function Playground({
         e.preventDefault();
         void formatRef.current?.();
       }
+      if ((e.ctrlKey || e.metaKey) && (e.key === "=" || e.key === "+" || e.code === "Equal" || e.code === "NumpadAdd")) {
+        e.preventDefault();
+        e.stopPropagation();
+        setFontSize((f) => Math.min(24, f + 1));
+      }
+      if ((e.ctrlKey || e.metaKey) && (e.key === "-" || e.code === "Minus" || e.code === "NumpadSubtract")) {
+        e.preventDefault();
+        e.stopPropagation();
+        setFontSize((f) => Math.max(10, f - 1));
+      }
     };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
+
+    const onWheel = (e: WheelEvent) => {
+      if (e.ctrlKey || e.metaKey) {
+        e.preventDefault();
+        e.stopPropagation();
+        if (e.deltaY < 0) {
+          setFontSize((f) => Math.min(24, f + 1));
+        } else {
+          setFontSize((f) => Math.max(10, f - 1));
+        }
+      }
+    };
+
+    window.addEventListener("keydown", onKey, { capture: true });
+    window.addEventListener("wheel", onWheel, { passive: false, capture: true });
+    return () => {
+      window.removeEventListener("keydown", onKey, { capture: true });
+      window.removeEventListener("wheel", onWheel, { capture: true });
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [title, snippetId, signedIn, editable, visibility]);
 
@@ -318,478 +444,281 @@ export default function Playground({
     return () => window.removeEventListener("beforeunload", onBeforeUnload);
   }, [dirty]);
 
-  return (
-    <div className="flex-1 flex flex-col">
-      {!embed && !previewOnly && (
-      /* Toolbar — single row on lg+, two rows on smaller screens */
-      <div className="border-b border-border bg-surface/70 backdrop-blur-xl">
-        {/* Row 1: identity + save (always visible) */}
-        <div className="h-14 px-3 sm:px-4 flex items-center gap-2 sm:gap-3">
-          <div className="w-8 h-8 rounded-lg grid place-items-center border border-border bg-panel shrink-0">
-            <TemplateLogo id={templateId} size={18} />
-          </div>
+  const dynamicStyles = useMemo(() => {
+    return `
+      .cm-editor { font-size: ${fontSize}px !important; } 
+      .cm-line { line-height: ${Math.round(fontSize * 1.5)}px !important; }
+      /* Hide Sandpack's built-in error overlay — our custom ErrorOverlay component handles errors */
+      .sp-overlay,
+      .sp-error-indicator,
+      iframe html .sp-overlay,
+      iframe html .sp-error-indicator {
+        display: none !important;
+      }
 
-          <div className="flex items-center gap-1.5 min-w-0 flex-1">
-            <div className="relative flex items-center group min-w-0">
-              <input
-                value={title}
-                onChange={(e) => {
-                  setTitle(e.target.value);
-                  setDirty(true);
-                }}
-                disabled={!editable}
-                className="bg-transparent outline-none font-medium text-sm w-full min-w-0 max-w-[140px] sm:max-w-[200px] md:max-w-[280px] disabled:opacity-60 pr-4"
-              />
-              {editable && (
-                <Pencil className="w-3 h-3 text-muted absolute right-0 pointer-events-none opacity-0 group-hover:opacity-100 transition" />
-              )}
-            </div>
-            <span className="text-[11px] text-muted hidden md:inline">·</span>
-            <span className="text-xs text-muted hidden md:inline shrink-0">{tpl.title}</span>
-            {editable && signedIn && (saving || dirty || lastSavedAt) && (
-              <span
-                className={`hidden md:inline text-[10px] shrink-0 ${
-                  saving
-                    ? "text-muted"
-                    : dirty
-                      ? "text-amber-400/80"
-                      : "text-emerald-400/80"
-                }`}
-                title={
-                  lastSavedAt
-                    ? `Last saved ${new Date(lastSavedAt).toLocaleTimeString()}`
-                    : undefined
-                }
-              >
-                {saving ? "Saving…" : dirty ? "Unsaved" : "Saved"}
-              </span>
-            )}
-            {!editable && (
-              <span className="hidden sm:inline-flex items-center gap-1 px-1.5 py-0.5 rounded border border-border bg-panel text-[10px] text-muted shrink-0">
-                <Lock className="w-3 h-3" />
-                <span className="hidden sm:inline">read-only</span>
-              </span>
-            )}
-          </div>
+      /* Nano Banana Pro Custom Styles */
+      .playground-container {
+        border-radius: 2.5rem;
+        overflow: hidden;
+        border: 1px solid rgba(255, 255, 255, 0.05);
+        background: rgba(10, 10, 10, 0.5);
+        backdrop-filter: blur(40px);
+        box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+      }
 
-          {/* Right section — visible on lg+, hidden below (moved to row 2) */}
-          <div className="hidden md:flex items-center gap-2">
-            <ShortcutsModal />
-            <ControlButtons
-              editor={editor} setEditor={setEditor}
-              view={view} setView={setView}
-              editable={editable} signedIn={signedIn} snippetId={snippetId}
-              visibility={visibility} setVisibility={(v) => { setVisibility(v); setDirty(true); }}
-              snippet={snippet} isOwner={isOwner}
-              saving={saving} forking={forking}
-              onSave={handleSave} onFork={handleFork} onShare={handleShare} onCopyEmbed={handleCopyEmbed} onPopout={handlePopout} onRun={handleRun} running={running}
-              compact={false}
-            />
-          </div>
+      .panel-rounded {
+        border-radius: 1.5rem;
+        margin: 4px;
+        overflow: hidden;
+        border: 1px solid rgba(255, 255, 255, 0.03);
+        background: #0A0A0A;
+        transition: border-color 0.3s ease, box-shadow 0.3s ease;
+      }
 
-          {/* Non-editable row-1 actions on mobile (fork) */}
-          {snippet && !isOwner && (
-            <button
-              onClick={handleFork}
-              disabled={forking}
-              className="md:hidden inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-border bg-panel hover:bg-elevated text-xs transition disabled:opacity-50 shrink-0"
-              title="Fork"
-            >
-              <GitFork className="w-3.5 h-3.5" />
-            </button>
-          )}
-        </div>
+      .panel-rounded:focus-within {
+        border-color: rgba(255, 230, 0, 0.2);
+        box-shadow: 0 0 20px rgba(255, 230, 0, 0.05);
+      }
 
-        {/* Row 1.5: tag editor — only when saved + editable */}
-        {editable && snippetId && (
-          <div className="hidden md:flex items-center gap-1.5 px-3 sm:px-4 pb-2 flex-wrap">
-            <Tag className="w-3 h-3 text-muted shrink-0" />
-            {tags.map((t) => (
-              <span
-                key={t}
-                className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded border border-border bg-panel text-[10px] text-subtle"
-              >
-                #{t}
-                <button
-                  onClick={() => {
-                    setTags((prev) => prev.filter((x) => x !== t));
-                    setDirty(true);
-                  }}
-                  title={`Remove tag ${t}`}
-                  className="hover:text-fg transition"
-                >
-                  <XIcon className="w-2.5 h-2.5" />
-                </button>
-              </span>
-            ))}
-            <input
-              value={tagInput}
-              onChange={(e) => setTagInput(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter" || e.key === ",") {
-                  e.preventDefault();
-                  const v = tagInput.trim().replace(/^#/, "");
-                  if (v && !tags.includes(v) && tags.length < 20) {
-                    setTags((prev) => [...prev, v]);
-                    setDirty(true);
-                  }
-                  setTagInput("");
-                } else if (e.key === "Backspace" && !tagInput && tags.length) {
-                  setTags((prev) => prev.slice(0, -1));
-                  setDirty(true);
-                }
-              }}
-              placeholder="add tag…"
-              className="bg-transparent text-[11px] outline-none placeholder:text-muted w-24"
-            />
-          </div>
-        )}
+      /* Scanline Effect */
+      .scanline::after {
+        content: "";
+        position: absolute;
+        top: 0; left: 0; bottom: 0; right: 0;
+        background: rgba(18, 16, 16, 0.1);
+        opacity: 0;
+        z-index: 2;
+        pointer-events: none;
+        animation: flicker 0.15s infinite;
+      }
 
-        {/* Row 2: controls — only on < lg */}
-        <div className="md:hidden px-3 pb-2 flex items-center gap-2 flex-wrap">
-          <ControlButtons
-            editor={editor} setEditor={setEditor}
-            view={view} setView={setView}
-            editable={editable} signedIn={signedIn} snippetId={snippetId}
-            visibility={visibility} setVisibility={(v) => { setVisibility(v); setDirty(true); }}
-            snippet={snippet} isOwner={isOwner}
-            saving={saving} forking={forking}
-            onSave={handleSave} onFork={handleFork} onShare={handleShare} onCopyEmbed={handleCopyEmbed} onPopout={handlePopout} onRun={handleRun} running={running}
-            compact
-          />
-        </div>
-      </div>
-      )}
+      @keyframes flicker {
+        0% { opacity: 0.27861; }
+        5% { opacity: 0.34769; }
+        10% { opacity: 0.23604; }
+        100% { opacity: 0.24313; }
+      }
 
-      {/* relative+absolute gives Sandpack a guaranteed definite height */}
-      <div className="relative flex-1 min-h-0">
-        <div className="absolute inset-0">
-          <SandpackProvider
-            theme={atomDark}
-            template={tpl.base}
-            files={filesRef.current}
-            customSetup={customSetup}
-            options={{ recompileMode: "delayed", recompileDelay: 150, autorun: true, autoReload: true, initMode: "immediate" }}
-          >
-            {previewOnly ? (
-              <div style={{ height: "100%", width: "100%" }}>
-                <SandpackPreview showNavigator showOpenInCodeSandbox={false} showRefreshButton={false} style={{ height: "100%", width: "100%" }} />
-              </div>
-            ) : isMobile ? (
-              /* Mobile: column stack — editor top 55%, output bottom 45% */
-              <div style={{ display: "flex", flexDirection: "column", height: "100%", background: "#1e1e1e" }}>
-                <div style={{ flex: "0 0 55%", minHeight: 0, overflow: "hidden" }}>
-                  {editor === "sandpack" ? (
-                    <SandpackCodeEditor
-                      showLineNumbers showTabs closableTabs wrapContent
-                      readOnly={!editable} style={{ height: "100%" }}
-                    />
-                  ) : (
-                    <MonacoEditor />
-                  )}
-                </div>
-                <div style={{ flex: "0 0 45%", minHeight: 0, borderTop: "2px solid #2a2f3c", display: "flex", flexDirection: "column", background: "#0d1016" }}>
-                  {/* Always mount both so the iframe (code runner) stays alive */}
-                  <div style={{
-                    display: view === "console" ? "none" : "flex",
-                    flex: view === "both" ? "0 0 60%" : 1,
-                    minHeight: 0, overflow: "hidden",
-                  }}>
-                    <SandpackPreview showNavigator showOpenInCodeSandbox={false} showRefreshButton={false} style={{ height: "100%", width: "100%" }} />
-                  </div>
-                  <div style={{
-                    display: view === "preview" ? "none" : "flex",
-                    flex: view === "both" ? "0 0 40%" : 1,
-                    minHeight: 0, overflow: "hidden",
-                    borderTop: view === "both" ? "1px solid #20242f" : undefined,
-                  }}>
-                    <SandpackConsole style={{ height: "100%", width: "100%" }} />
-                  </div>
-                </div>
-              </div>
-            ) : (
-              /* Desktop: side-by-side — file explorer + editor + preview/console */
-              <SandpackLayout style={{ height: "100%", border: 0, borderRadius: 0 }}>
-                <FileExplorer readOnly={!editable} />
-                {editor === "sandpack" ? (
-                  <SandpackCodeEditor
-                    showLineNumbers showTabs closableTabs wrapContent
-                    readOnly={!editable} style={{ height: "100%" }}
-                  />
-                ) : (
-                  <div style={{ flex: 1, minWidth: 0, height: "100%" }}>
-                    <MonacoEditor />
-                  </div>
-                )}
-                {/* Always mount both so the iframe (code runner) stays alive */}
-                <div style={{ flex: 1, minWidth: 0, height: "100%", display: "flex", flexDirection: "column" }}>
-                  <div style={{
-                    display: view === "console" ? "none" : "flex",
-                    flex: view === "both" ? "0 0 60%" : 1,
-                    minHeight: 0, overflow: "hidden",
-                  }}>
-                    <SandpackPreview showNavigator showOpenInCodeSandbox={false} showRefreshButton={false} style={{ height: "100%", width: "100%" }} />
-                  </div>
-                  <div style={{
-                    display: view === "preview" ? "none" : "flex",
-                    flex: view === "both" ? "0 0 40%" : 1,
-                    minHeight: 0, overflow: "hidden",
-                    borderTop: view === "both" ? "1px solid #20242f" : undefined,
-                  }}>
-                    <SandpackConsole style={{ height: "100%", width: "100%" }} />
-                  </div>
-                </div>
-              </SandpackLayout>
-            )}
-            <FilesBridge filesRef={filesRef} onChange={() => setDirty(true)} />
-            <RunBridge
-              runRef={runRef}
-              onStatusChange={(s) => {
-                if (s === "idle" || s === "done") setRunning(false);
-              }}
-            />
-            <FormatBridge formatRef={formatRef} />
-          </SandpackProvider>
-        </div>
-      </div>
-    </div>
-  );
-}
+      /* Custom Scrollbar */
+      ::-webkit-scrollbar { width: 6px; height: 6px; }
+      ::-webkit-scrollbar-track { background: transparent; }
+      ::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.1); border-radius: 10px; }
+      ::-webkit-scrollbar-thumb:hover { background: rgba(255, 230, 0, 0.3); }
 
-type ControlButtonsProps = {
-  editor: "sandpack" | "monaco";
-  setEditor: (v: "sandpack" | "monaco") => void;
-  view: "preview" | "console" | "both";
-  setView: (v: "preview" | "console" | "both") => void;
-  editable: boolean;
-  signedIn: boolean;
-  snippetId: string | null;
-  visibility: Visibility;
-  setVisibility: (v: Visibility) => void;
-  snippet: Snippet | null | undefined;
-  isOwner: boolean;
-  saving: boolean;
-  forking: boolean;
-  onSave: () => void;
-  onFork: () => void;
-  onShare: () => void;
-  onCopyEmbed: () => void;
-  onPopout: () => void;
-  onRun: () => void;
-  running: boolean;
-  compact: boolean;
-};
+      /* Floating Run Pulse */
+      @keyframes pulse-yellow {
+        0% { box-shadow: 0 0 0 0 rgba(255, 230, 0, 0.4); }
+        70% { box-shadow: 0 0 0 10px rgba(255, 230, 0, 0); }
+        100% { box-shadow: 0 0 0 0 rgba(255, 230, 0, 0); }
+      }
+      .run-pulse { animation: pulse-yellow 2s infinite; }
+    `;
+  }, [fontSize]);
 
-function ControlButtons({
-  editor, setEditor, view, setView,
-  editable, signedIn, snippetId, visibility, setVisibility,
-  snippet, isOwner, saving, forking,
-  onSave, onFork, onShare, onCopyEmbed, onPopout, onRun, running, compact,
-}: ControlButtonsProps) {
   return (
     <>
-      {/* Run button */}
-      <button
-        onClick={onRun}
-        disabled={running}
-        title="Run code (Ctrl/Cmd + Enter)"
-        className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-emerald-500/40 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 text-xs transition disabled:opacity-70"
-      >
-        {running ? (
-          <span className="w-3.5 h-3.5 inline-block rounded-full border-2 border-emerald-400/40 border-t-emerald-400 animate-spin" />
-        ) : (
-          <Play className="w-3.5 h-3.5 fill-emerald-400" />
-        )}
-        {!compact && <span>{running ? "Running…" : "Run"}</span>}
-      </button>
+      <style dangerouslySetInnerHTML={{ __html: dynamicStyles }} />
+      <div className="flex-1 flex flex-col bg-[#050505] p-2 sm:p-4">
+        <div className="flex-1 playground-container flex flex-col relative overflow-hidden">
+          {!embed && !previewOnly && (
+            <PlaygroundToolbar
+              templateId={templateId} tplTitle={tpl.title} title={title} setTitle={setTitle}
+              dirty={dirty} setDirty={setDirty} editable={editable} signedIn={signedIn}
+              saving={saving} lastSavedAt={lastSavedAt} editor={editor} setEditor={setEditor}
+              fontSize={fontSize} setFontSize={setFontSize} view={view} setView={setView}
+              snippetId={snippetId} visibility={visibility} setVisibility={setVisibility}
+              snippet={snippet} isOwner={isOwner} forking={forking}
+              handleSave={() => handleSave()} handleFork={handleFork} handleShare={handleShare}
+              handleCopyEmbed={handleCopyEmbed} handlePopout={handlePopout} handleRun={handleRun}
+              running={running} tags={tags} setTags={setTags} tagInput={tagInput} setTagInput={setTagInput}
+              onToggleFiles={() => setMobileFilesOpen((prev) => !prev)}
+              onTogglePrompt={() => setPromptOpen((prev) => !prev)}
+              autoRun={autoRun} setAutoRun={setAutoRun}
+              tplMode={tpl.mode}
+            />
+          )}
 
-      {/* Editor toggle */}
-      <div className="flex rounded-lg overflow-hidden border border-border bg-panel">
-        <SegBtn active={editor === "sandpack"} onClick={() => setEditor("sandpack")} title="CodeMirror (lightweight)">
-          {compact ? <Code2 className="w-3.5 h-3.5" /> : "Basic"}
-        </SegBtn>
-        <SegBtn active={editor === "monaco"} onClick={() => setEditor("monaco")} title="Monaco (VS Code engine)">
-          <Code2 className="w-3.5 h-3.5" />
-          {!compact && <span>Monaco</span>}
-        </SegBtn>
+          <div className="relative flex-1 min-h-0">
+            <div className="absolute inset-0">
+              <SandpackProvider
+                key={templateId}
+                theme={{
+                  ...cobalt2,
+                  font: {
+                    ...cobalt2.font,
+                    mono: "'JetBrains Mono', monospace",
+                    size: "14px",
+                  }
+                }}
+                template={tpl.base}
+                files={initialFilesRef.current}
+                customSetup={customSetup}
+                options={{ 
+                  recompileMode: autoRun ? "delayed" : undefined, 
+                  recompileDelay: 150, 
+                  autorun: autoRun, 
+                  autoReload: autoRun, 
+                  initMode: "immediate",
+                  showErrorOverlay: false,
+                  externalResources: [
+                    "data:text/css,.react-error-overlay { display: none !important; } #webpack-dev-server-client-overlay { display: none !important; } iframe html .sp-overlay { display: none !important; }"
+                  ]
+                }}
+              >
+                {isMobile && mobileFilesOpen && (
+                  <div className="fixed inset-0 z-[100] flex bg-black/60 backdrop-blur-sm">
+                    <div className="w-4/5 max-w-sm h-full bg-panel border-r border-border shadow-2xl flex flex-col">
+                      <div className="flex items-center justify-between px-4 py-3 border-b border-border bg-surface">
+                        <span className="font-medium text-sm text-fg">Files</span>
+                        <button onClick={() => setMobileFilesOpen(false)} className="p-1 hover:bg-elevated rounded text-muted hover:text-fg transition">
+                          <XIcon className="w-4 h-4" />
+                        </button>
+                      </div>
+                      <div className="flex-1 min-h-0 overflow-y-auto">
+                        <FileExplorer readOnly={!editable} />
+                      </div>
+                    </div>
+                    <div className="flex-1" onClick={() => setMobileFilesOpen(false)} />
+                  </div>
+                )}
+
+                <div className="flex h-full w-full overflow-hidden relative">
+                  <div className="flex-1 min-w-0 h-full">
+                    {previewOnly ? (
+                      <div className="h-full w-full relative panel-rounded scanline">
+                        <SandpackPreview showNavigator showOpenInCodeSandbox={false} showRefreshButton={false} style={{ height: "100%", width: "100%" }} />
+                        <ErrorOverlay error={bundlerError} onDismiss={() => { setBundlerError(null); runRef.current?.(); }} />
+                      </div>
+                    ) : isMobile ? (
+                      <div className="flex flex-col h-full bg-[#0A0A0A]">
+                        <div className="flex-[0_0_55%] min-h-0 overflow-hidden panel-rounded">
+                          {editor === "sandpack" ? (
+                            <SandpackCodeEditor
+                              extensions={[customSnippetExtension]}
+                              showLineNumbers showTabs closableTabs wrapContent
+                              readOnly={!editable} style={{ height: "100%" }}
+                            />
+                          ) : (
+                            <MonacoEditor fontSize={fontSize} />
+                          )}
+                        </div>
+                        <div className="flex-[0_0_45%] min-h-0 flex flex-col relative panel-rounded scanline">
+                          <div style={{
+                            display: view === "console" ? "none" : "flex",
+                            flex: view === "both" ? "0 0 60%" : 1,
+                            minHeight: 0, overflow: "hidden",
+                          }}>
+                            <SandpackPreview showNavigator showOpenInCodeSandbox={false} showRefreshButton={false} style={{ height: "100%", width: "100%" }} />
+                          </div>
+                          <div style={{
+                            display: view === "preview" ? "none" : "flex",
+                            flex: view === "both" ? "0 0 40%" : 1,
+                            minHeight: 0, overflow: "hidden",
+                            borderTop: view === "both" ? "1px solid rgba(255,255,255,0.05)" : undefined,
+                          }}>
+                            <SandpackConsole style={{ height: "100%", width: "100%" }} />
+                          </div>
+                          <ErrorOverlay error={bundlerError} onDismiss={() => { setBundlerError(null); runRef.current?.(); }} />
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="flex h-full w-full">
+                        {!explorerCollapsed && (
+                          <>
+                            <div style={{ width: explorerW, minWidth: 0 }} className="h-full shrink-0 panel-rounded">
+                              <div className="flex items-center justify-between px-4 py-2 border-b border-white/5 bg-white/[0.02]">
+                                <span className="text-[10px] font-black uppercase tracking-widest text-muted">Files</span>
+                                <button onClick={() => setExplorerCollapsed(true)} className="p-1 hover:bg-white/5 rounded transition text-muted hover:text-fg" title="Collapse">
+                                  <XIcon className="w-3 h-3" />
+                                </button>
+                              </div>
+                              <FileExplorer readOnly={!editable} />
+                            </div>
+                            <div className="shrink-0 h-full relative z-10 w-1 flex items-center justify-center cursor-col-resize group" onPointerDown={onExplorerDrag}>
+                               <div className="w-px h-full bg-white/5 group-hover:bg-[#FFE600]/40 transition-colors" />
+                            </div>
+                          </>
+                        )}
+                        {explorerCollapsed && (
+                          <div className="h-full shrink-0 w-10 flex flex-col items-center py-4 bg-black/40 border-r border-white/5">
+                             <button onClick={() => setExplorerCollapsed(false)} className="p-2 rounded-xl bg-white/5 hover:bg-white/10 text-muted transition" title="Expand Files">
+                                <PanelBottom className="w-4 h-4 rotate-90" />
+                             </button>
+                          </div>
+                        )}
+                        <div style={{ width: editorW, minWidth: 0 }} className="h-full shrink-0 panel-rounded">
+                          {editor === "sandpack" ? (
+                            <SandpackCodeEditor
+                              extensions={[customSnippetExtension]}
+                              showLineNumbers showTabs closableTabs wrapContent
+                              readOnly={!editable} style={{ height: "100%" }}
+                            />
+                          ) : (
+                            <div className="h-full w-full min-w-0">
+                              <MonacoEditor fontSize={fontSize} />
+                            </div>
+                          )}
+                        </div>
+                        <div className="shrink-0 h-full relative z-10 w-1 flex items-center justify-center cursor-col-resize group" onPointerDown={onEditorDrag}>
+                           <div className="w-px h-full bg-white/5 group-hover:bg-[#FFE600]/40 transition-colors" />
+                        </div>
+                        <div className="flex-1 min-w-0 h-full flex flex-col relative panel-rounded scanline">
+                          <div className="flex items-center justify-between px-4 py-2 border-b border-white/5 bg-white/[0.02] shrink-0">
+                             <div className="flex items-center gap-2">
+                               <div className="w-2 h-2 rounded-full bg-[#FFE600] animate-pulse" />
+                               <span className="text-[10px] font-black uppercase tracking-widest text-white/60">Output</span>
+                             </div>
+                             <div className="flex items-center gap-4">
+                                <div className="text-[10px] font-mono text-muted/40">127.0.0.1:3000</div>
+                             </div>
+                          </div>
+                          <div className="flex-1 flex flex-col min-h-0">
+                            <div style={{
+                              display: view === "console" ? "none" : "flex",
+                              flex: view === "both" ? "0 0 60%" : 1,
+                              minHeight: 0, overflow: "hidden",
+                            }}>
+                              <SandpackPreview showNavigator showOpenInCodeSandbox={false} showRefreshButton={false} style={{ height: "100%", width: "100%" }} />
+                            </div>
+                            <div style={{
+                              display: view === "preview" ? "none" : "flex",
+                              flex: view === "both" ? "0 0 40%" : 1,
+                              minHeight: 0, overflow: "hidden",
+                              flexDirection: "column",
+                              borderTop: view === "both" ? "1px solid rgba(255,255,255,0.1)" : undefined,
+                            }}>
+                              <div className="flex items-center justify-between px-4 py-1.5 bg-[#FFE600] shrink-0 shadow-[0_0_20px_rgba(255,230,0,0.1)]">
+                                <div className="flex items-center gap-2">
+                                  <Terminal className="w-3 h-3 text-black" />
+                                  <span className="text-[10px] font-black uppercase tracking-widest text-black">Console Output</span>
+                                </div>
+                                <div className="text-[9px] font-bold text-black/40 uppercase tracking-tighter">Real-time Runtime</div>
+                              </div>
+                              <div className="flex-1 min-h-0">
+                                <SandpackConsole style={{ height: "100%", width: "100%" }} />
+                              </div>
+                            </div>
+                          </div>
+                          <ErrorOverlay error={bundlerError} onDismiss={() => { setBundlerError(null); runRef.current?.(); }} />
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                  {promptOpen && <PromptSidebar onClose={() => setPromptOpen(false)} />}
+                </div>
+                <FilesBridge templateId={templateId} filesRef={filesRef} templateFiles={tpl.files} onChange={() => { setDirty(true); codeChangedRef.current = true; }} />
+                <ErrorBridge onError={setBundlerError} />
+                <RunBridge runRef={runRef} onStatusChange={(s) => { if (s === "idle" || s === "done") setRunning(false); }} />
+                <ConsoleEntryBridge active={tpl.mode === "console"} />
+                <FormatBridge formatRef={formatRef} />
+              </SandpackProvider>
+            </div>
+          </div>
+        </div>
       </div>
-
-      {/* View toggle */}
-      <div className="flex rounded-lg overflow-hidden border border-border bg-panel">
-        <SegBtn active={view === "preview"} onClick={() => setView("preview")} title="Preview only">
-          <Eye className="w-3.5 h-3.5" />
-          {!compact && <span>Preview</span>}
-        </SegBtn>
-        <SegBtn active={view === "both"} onClick={() => setView("both")} title="Preview + Console">
-          <PanelBottom className="w-3.5 h-3.5" />
-          {!compact && <span>Both</span>}
-        </SegBtn>
-        <SegBtn active={view === "console"} onClick={() => setView("console")} title="Console only">
-          <Terminal className="w-3.5 h-3.5" />
-          {!compact && <span>Console</span>}
-        </SegBtn>
-      </div>
-
-      {editable && snippetId && (
-        <select
-          value={visibility}
-          onChange={(e) => setVisibility(e.target.value as Visibility)}
-          className="bg-panel border border-border rounded-lg px-2 py-1.5 text-xs hover:border-border-strong"
-          title="Visibility"
-        >
-          <option value="private">Private</option>
-          <option value="public">Public</option>
-        </select>
-      )}
-
-      {snippetId && (
-        <>
-          <button
-            onClick={onShare}
-            title="Copy shareable link"
-            className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-border bg-panel hover:bg-elevated text-xs transition"
-          >
-            <Share2 className="w-3.5 h-3.5" />
-            {!compact && <span>Share</span>}
-          </button>
-          <button
-            onClick={onCopyEmbed}
-            title="Copy embed iframe code"
-            className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-border bg-panel hover:bg-elevated text-xs transition"
-          >
-            <Code className="w-3.5 h-3.5" />
-            {!compact && <span>Embed</span>}
-          </button>
-          <button
-            onClick={onPopout}
-            title="Open preview in a new tab"
-            className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-border bg-panel hover:bg-elevated text-xs transition"
-          >
-            <ExternalLink className="w-3.5 h-3.5" />
-            {!compact && <span>Pop out</span>}
-          </button>
-        </>
-      )}
-
-      {snippet && !isOwner && (
-        <button
-          onClick={onFork}
-          disabled={forking}
-          title="Fork snippet"
-          className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-border bg-panel hover:bg-elevated text-xs transition disabled:opacity-50"
-        >
-          <GitFork className="w-3.5 h-3.5" />
-          {!compact && <span>{forking ? "Forking…" : "Fork"}</span>}
-        </button>
-      )}
-
-      {/* Save: shown in row 2 on lg only on non-editable flows */}
-      {editable && compact && (
-        <button
-          onClick={onSave}
-          disabled={saving}
-          title={signedIn ? "Save (Ctrl/Cmd+S)" : "Sign in to save"}
-          className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-white text-xs shadow-soft disabled:opacity-50 transition ${
-            signedIn
-              ? "bg-accent hover:bg-accent-soft"
-              : "bg-panel border border-border text-subtle hover:text-fg hover:bg-elevated"
-          }`}
-        >
-          <Save className="w-3.5 h-3.5" />
-          <span className="sm:hidden">
-            {saving ? "Saving…" : signedIn ? "Save" : "Sign in"}
-          </span>
-        </button>
-      )}
-
-      {/* Full save button for lg+ (non-compact) */}
-      {editable && !compact && (
-        <button
-          onClick={onSave}
-          disabled={saving}
-          title={signedIn ? "Save (Ctrl/Cmd+S)" : "Sign in to save"}
-          className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs shadow-soft disabled:opacity-50 transition ${
-            signedIn
-              ? "bg-accent hover:bg-accent-soft text-white"
-              : "bg-panel border border-border text-subtle hover:text-fg hover:bg-elevated"
-          }`}
-        >
-          <Save className="w-3.5 h-3.5" />
-          {saving ? "Saving…" : signedIn ? "Save" : "Sign in to save"}
-        </button>
-      )}
     </>
   );
 }
 
-function FilesBridge({
-  filesRef,
-  onChange,
-}: {
-  filesRef: React.MutableRefObject<SandpackFiles>;
-  onChange?: () => void;
-}) {
-  const { sandpack } = useSandpack();
-  const initialized = useRef(false);
-  useEffect(() => {
-    const map: SandpackFiles = {};
-    for (const [path, file] of Object.entries(sandpack.files)) {
-      const code = typeof file === "string" ? file : (file as { code: string }).code;
-      map[path] = { code };
-    }
-    filesRef.current = map;
-    if (!initialized.current) {
-      initialized.current = true;
-      return;
-    }
-    onChange?.();
-  }, [sandpack.files, filesRef, onChange]);
-  return null;
-}
 
-function RunBridge({
-  runRef,
-  onStatusChange,
-}: {
-  runRef: React.MutableRefObject<(() => void) | null>;
-  onStatusChange?: (status: string) => void;
-}) {
-  const { dispatch, sandpack } = useSandpack();
-  useEffect(() => {
-    runRef.current = () => dispatch({ type: "refresh" });
-  }, [dispatch, runRef]);
-  useEffect(() => {
-    onStatusChange?.(sandpack.status);
-  }, [sandpack.status, onStatusChange]);
-  return null;
-}
 
-function FormatBridge({
-  formatRef,
-}: {
-  formatRef: React.MutableRefObject<(() => Promise<void>) | null>;
-}) {
-  const { sandpack } = useSandpack();
-  useEffect(() => {
-    formatRef.current = async () => {
-      const path = sandpack.activeFile;
-      if (!path) return;
-      const file = sandpack.files[path];
-      const code =
-        typeof file === "string" ? file : (file as { code: string }).code;
-      const { formatCode } = await import("@/lib/format");
-      const result = await formatCode(path, code);
-      if (!result.ok) {
-        toast.error("Format failed", { description: result.reason });
-        return;
-      }
-      if (result.code === code) {
-        toast("Already formatted");
-        return;
-      }
-      sandpack.updateFile(path, result.code);
-      toast.success("Formatted");
-    };
-  }, [sandpack]);
-  return null;
-}

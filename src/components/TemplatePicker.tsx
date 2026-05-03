@@ -183,9 +183,11 @@ const FEATURES = [
 export default function TemplatePicker({
   welcome,
   featured = [],
+  hideHero = false,
 }: {
   welcome?: Welcome;
   featured?: FeaturedSnippet[];
+  hideHero?: boolean;
 }) {
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState<string>("all");
@@ -220,216 +222,220 @@ export default function TemplatePicker({
 
   return (
     <div className="relative">
-      {/* ───────────── HERO ───────────── */}
-      <div className="relative overflow-hidden border-b border-border">
-        <div className="absolute inset-0 bg-hero-glow pointer-events-none" />
-        <div
-          className="absolute inset-0 bg-grid-pattern opacity-50"
-          style={{ backgroundSize: "24px 24px" }}
-        />
-        <div className="relative mx-auto max-w-6xl px-4 pt-20 pb-16 text-center">
-          {(() => {
-            const isReturning = Boolean(welcome && welcome.snippetCount > 0);
-            const isFresh = Boolean(welcome && welcome.snippetCount === 0);
-            const firstName = welcome?.name?.split(" ")[0] ?? "there";
-            return (
-              <>
-                {isReturning ? (
-                  <WelcomeCard w={welcome!} />
-                ) : (
-                  <div className="inline-flex items-center gap-2 rounded-full border border-border bg-panel/60 px-3 py-1 text-[11px] text-subtle mb-6">
-                    <Sparkles className="w-3.5 h-3.5 text-accent" />
-                    <span>Sandboxed iframe — code runs only in your browser</span>
-                  </div>
-                )}
-
-                <h1 className="text-5xl md:text-6xl font-semibold tracking-tight text-fg leading-[1.05]">
-                  {isReturning ? (
-                    "Pick up where you left off"
-                  ) : isFresh ? (
-                    <>
-                      Welcome to Codepad,
-                      <span className="block bg-clip-text text-transparent bg-gradient-to-r from-accent to-violet-400 mt-1">
-                        {firstName}.
-                      </span>
-                    </>
-                  ) : (
-                    <>
-                      Spin up a JavaScript playground
-                      <span className="block bg-clip-text text-transparent bg-gradient-to-r from-accent to-violet-400 mt-1">
-                        in three seconds.
-                      </span>
-                    </>
-                  )}
-                </h1>
-
-                <p className="mt-5 text-muted text-base md:text-lg max-w-2xl mx-auto leading-relaxed">
-                  {isReturning
-                    ? "Continue your last snippet, or spin up a new one from any template below."
-                    : isFresh
-                      ? "You're all set. Pick a template below to create your first snippet — or jump straight into React with one click."
-                      : "Pre-wired templates for React, Vue, Angular, Svelte, Solid, plus pure JS and TypeScript. Save it, share it, embed it — no install, no signup needed to try."}
-                </p>
-
-                {!isReturning && (
-                  <div className="mt-8 flex flex-col sm:flex-row gap-3 items-center justify-center">
-                    <Link
-                      href="/play?template=react"
-                      className="inline-flex items-center gap-2 px-5 py-3 rounded-xl bg-accent hover:bg-accent-soft text-white text-sm font-medium shadow-soft transition"
-                    >
-                      <Code2 className="w-4 h-4" />
-                      {isFresh ? "Create your first snippet" : "Start with React"}
-                      <ArrowRight className="w-4 h-4" />
-                    </Link>
-                    <a
-                      href="#templates"
-                      className="inline-flex items-center gap-2 px-5 py-3 rounded-xl border border-border bg-panel hover:bg-elevated text-fg text-sm font-medium transition"
-                    >
-                      Browse all templates
-                    </a>
-                  </div>
-                )}
-              </>
-            );
-          })()}
-
-          <div className="mt-6 flex flex-wrap items-center justify-center gap-x-5 gap-y-1 text-[11px] text-muted">
-            <span className="inline-flex items-center gap-1">
-              <span className="w-1 h-1 rounded-full bg-emerald-400/80" />
-              {stats.total} templates
-            </span>
-            <span className="inline-flex items-center gap-1">
-              <span className="w-1 h-1 rounded-full bg-accent" />
-              {stats.ts} with TypeScript
-            </span>
-            <span className="inline-flex items-center gap-1">
-              <span className="w-1 h-1 rounded-full bg-amber-400/80" />
-              Free forever
-            </span>
-          </div>
-        </div>
-      </div>
-
-      {/* ───────────── FEATURE TRIPLET ───────────── */}
-      <section className="mx-auto max-w-6xl px-4 py-12 grid grid-cols-1 sm:grid-cols-3 gap-3">
-        {FEATURES.map((f) => {
-          const Icon = f.icon;
-          return (
+      {!hideHero && (
+        <>
+          {/* ───────────── HERO ───────────── */}
+          <div className="relative overflow-hidden border-b border-border">
+            <div className="absolute inset-0 bg-hero-glow pointer-events-none" />
             <div
-              key={f.title}
-              className="rounded-xl border border-border bg-panel/40 p-5"
-            >
-              <div className="w-9 h-9 rounded-lg bg-accent-glow border border-accent/30 grid place-items-center mb-3">
-                <Icon className="w-4.5 h-4.5 text-accent" style={{ width: 18, height: 18 }} />
-              </div>
-              <div className="text-sm font-semibold text-fg mb-1">{f.title}</div>
-              <p className="text-xs text-muted leading-relaxed">{f.body}</p>
-            </div>
-          );
-        })}
-      </section>
-
-      {/* ───────────── LIVE DEMO ───────────── */}
-      <LandingDemo />
-
-      {/* ───────────── FEATURED TEMPLATES ───────────── */}
-      <section className="mx-auto max-w-6xl px-4 pb-10">
-        <div className="flex items-end justify-between mb-4">
-          <div>
-            <div className="text-[10px] font-semibold tracking-[0.14em] text-muted uppercase mb-1">
-              Most popular
-            </div>
-            <h2 className="text-xl font-semibold tracking-tight">
-              Quick starts
-            </h2>
-          </div>
-          <a
-            href="#templates"
-            className="text-xs text-muted hover:text-fg transition"
-          >
-            See all {stats.total} →
-          </a>
-        </div>
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-          {popularTemplates.map((t) => (
-            <FeaturedTile key={t.id} t={t} />
-          ))}
-        </div>
-      </section>
-
-      {/* ───────────── FEATURED FROM COMMUNITY ───────────── */}
-      {featured.length > 0 && (
-        <section className="mx-auto max-w-6xl px-4 pb-10">
-          <div className="flex items-end justify-between mb-4">
-            <div>
-              <div className="text-[10px] font-semibold tracking-[0.14em] text-muted uppercase mb-1">
-                From the community
-              </div>
-              <h2 className="text-xl font-semibold tracking-tight">
-                Featured public snippets
-              </h2>
-            </div>
-            <Link
-              href="/explore"
-              className="text-xs text-muted hover:text-fg transition"
-            >
-              Explore all →
-            </Link>
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-            {featured.slice(0, 6).map((s) => {
-              const tpl = templatesById[s.template];
-              return (
-                <Link
-                  key={s.id}
-                  href={`/play/${s.slug}`}
-                  className="group flex flex-col gap-2.5 rounded-xl border border-border bg-panel/70 hover:bg-elevated p-4 transition"
-                >
-                  <div className="flex items-center gap-3">
-                    <div className="w-9 h-9 rounded-lg border border-border bg-surface grid place-items-center shrink-0">
-                      <TemplateLogo id={s.template} size={18} />
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <div className="text-sm font-medium truncate">
-                        {s.title}
-                      </div>
-                      <div className="text-[11px] text-muted truncate">
-                        {tpl?.title ?? s.template}
-                      </div>
-                    </div>
-                    <ArrowUpRight className="w-4 h-4 text-muted group-hover:text-fg transition" />
-                  </div>
-                  {s.tags.length > 0 && (
-                    <div className="flex flex-wrap gap-1">
-                      {s.tags.slice(0, 4).map((t) => (
-                        <span
-                          key={t}
-                          className="inline-flex items-center px-1.5 py-0.5 rounded border border-border bg-surface text-[10px] text-subtle"
-                        >
-                          #{t}
-                        </span>
-                      ))}
-                    </div>
-                  )}
-                  <div className="flex items-center gap-2 text-[11px] text-muted pt-1">
-                    {s.author?.image ? (
-                      <Image
-                        src={s.author.image}
-                        alt={s.author.name ?? ""}
-                        width={16}
-                        height={16}
-                        className="rounded-full border border-border shrink-0"
-                      />
+              className="absolute inset-0 bg-grid-pattern opacity-50"
+              style={{ backgroundSize: "24px 24px" }}
+            />
+            <div className="relative mx-auto max-w-6xl px-4 pt-20 pb-16 text-center">
+              {(() => {
+                const isReturning = Boolean(welcome && welcome.snippetCount > 0);
+                const isFresh = Boolean(welcome && welcome.snippetCount === 0);
+                const firstName = welcome?.name?.split(" ")[0] ?? "there";
+                return (
+                  <>
+                    {isReturning ? (
+                      <WelcomeCard w={welcome!} />
                     ) : (
-                      <div className="w-4 h-4 rounded-full bg-surface border border-border shrink-0" />
+                      <div className="inline-flex items-center gap-2 rounded-full border border-border bg-panel/60 px-3 py-1 text-[11px] text-subtle mb-6">
+                        <Sparkles className="w-3.5 h-3.5 text-accent" />
+                        <span>Sandboxed iframe — code runs only in your browser</span>
+                      </div>
                     )}
-                    <span className="truncate">{s.author?.name ?? "anonymous"}</span>
+
+                    <h1 className="text-5xl md:text-6xl font-semibold tracking-tight text-fg leading-[1.05]">
+                      {isReturning ? (
+                        "Pick up where you left off"
+                      ) : isFresh ? (
+                        <>
+                          Welcome to Codepad,
+                          <span className="block bg-clip-text text-transparent bg-gradient-to-r from-accent to-violet-400 mt-1">
+                            {firstName}.
+                          </span>
+                        </>
+                      ) : (
+                        <>
+                          Spin up a JavaScript playground
+                          <span className="block bg-clip-text text-transparent bg-gradient-to-r from-accent to-violet-400 mt-1">
+                            in three seconds.
+                          </span>
+                        </>
+                      )}
+                    </h1>
+
+                    <p className="mt-5 text-muted text-base md:text-lg max-w-2xl mx-auto leading-relaxed">
+                      {isReturning
+                        ? "Continue your last snippet, or spin up a new one from any template below."
+                        : isFresh
+                          ? "You're all set. Pick a template below to create your first snippet — or jump straight into React with one click."
+                          : "Pre-wired templates for React, Vue, Angular, Svelte, Solid, plus pure JS and TypeScript. Save it, share it, embed it — no install, no signup needed to try."}
+                    </p>
+
+                    {!isReturning && (
+                      <div className="mt-8 flex flex-col sm:flex-row gap-3 items-center justify-center">
+                        <Link
+                          href="/play?template=react"
+                          className="inline-flex items-center gap-2 px-5 py-3 rounded-xl bg-accent hover:bg-accent-soft text-white text-sm font-medium shadow-soft transition"
+                        >
+                          <Code2 className="w-4 h-4" />
+                          {isFresh ? "Create your first snippet" : "Start with React"}
+                          <ArrowRight className="w-4 h-4" />
+                        </Link>
+                        <a
+                          href="#templates"
+                          className="inline-flex items-center gap-2 px-5 py-3 rounded-xl border border-border bg-panel hover:bg-elevated text-fg text-sm font-medium transition"
+                        >
+                          Browse all templates
+                        </a>
+                      </div>
+                    )}
+                  </>
+                );
+              })()}
+
+              <div className="mt-6 flex flex-wrap items-center justify-center gap-x-5 gap-y-1 text-[11px] text-muted">
+                <span className="inline-flex items-center gap-1">
+                  <span className="w-1 h-1 rounded-full bg-emerald-400/80" />
+                  {stats.total} templates
+                </span>
+                <span className="inline-flex items-center gap-1">
+                  <span className="w-1 h-1 rounded-full bg-accent" />
+                  {stats.ts} with TypeScript
+                </span>
+                <span className="inline-flex items-center gap-1">
+                  <span className="w-1 h-1 rounded-full bg-amber-400/80" />
+                  Free forever
+                </span>
+              </div>
+            </div>
+          </div>
+
+          {/* ───────────── FEATURE TRIPLET ───────────── */}
+          <section className="mx-auto max-w-6xl px-4 py-12 grid grid-cols-1 sm:grid-cols-3 gap-3">
+            {FEATURES.map((f) => {
+              const Icon = f.icon;
+              return (
+                <div
+                  key={f.title}
+                  className="rounded-xl border border-border bg-panel/40 p-5"
+                >
+                  <div className="w-9 h-9 rounded-lg bg-accent-glow border border-accent/30 grid place-items-center mb-3">
+                    <Icon className="w-4.5 h-4.5 text-accent" style={{ width: 18, height: 18 }} />
                   </div>
-                </Link>
+                  <div className="text-sm font-semibold text-fg mb-1">{f.title}</div>
+                  <p className="text-xs text-muted leading-relaxed">{f.body}</p>
+                </div>
               );
             })}
-          </div>
-        </section>
+          </section>
+
+          {/* ───────────── LIVE DEMO ───────────── */}
+          <LandingDemo />
+
+          {/* ───────────── FEATURED TEMPLATES ───────────── */}
+          <section className="mx-auto max-w-6xl px-4 pb-10">
+            <div className="flex items-end justify-between mb-4">
+              <div>
+                <div className="text-[10px] font-semibold tracking-[0.14em] text-muted uppercase mb-1">
+                  Most popular
+                </div>
+                <h2 className="text-xl font-semibold tracking-tight">
+                  Quick starts
+                </h2>
+              </div>
+              <a
+                href="#templates"
+                className="text-xs text-muted hover:text-fg transition"
+              >
+                See all {stats.total} →
+              </a>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              {popularTemplates.map((t) => (
+                <FeaturedTile key={t.id} t={t} />
+              ))}
+            </div>
+          </section>
+
+          {/* ───────────── FEATURED FROM COMMUNITY ───────────── */}
+          {featured.length > 0 && (
+            <section className="mx-auto max-w-6xl px-4 pb-10">
+              <div className="flex items-end justify-between mb-4">
+                <div>
+                  <div className="text-[10px] font-semibold tracking-[0.14em] text-muted uppercase mb-1">
+                    From the community
+                  </div>
+                  <h2 className="text-xl font-semibold tracking-tight">
+                    Featured public snippets
+                  </h2>
+                </div>
+                <Link
+                  href="/explore"
+                  className="text-xs text-muted hover:text-fg transition"
+                >
+                  Explore all →
+                </Link>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                {featured.slice(0, 6).map((s) => {
+                  const tpl = templatesById[s.template];
+                  return (
+                    <Link
+                      key={s.id}
+                      href={`/play/${s.slug}`}
+                      className="group flex flex-col gap-2.5 rounded-xl border border-border bg-panel/70 hover:bg-elevated p-4 transition"
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="w-9 h-9 rounded-lg border border-border bg-surface grid place-items-center shrink-0">
+                          <TemplateLogo id={s.template} size={18} />
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <div className="text-sm font-medium truncate">
+                            {s.title}
+                          </div>
+                          <div className="text-[11px] text-muted truncate">
+                            {tpl?.title ?? s.template}
+                          </div>
+                        </div>
+                        <ArrowUpRight className="w-4 h-4 text-muted group-hover:text-fg transition" />
+                      </div>
+                      {s.tags.length > 0 && (
+                        <div className="flex flex-wrap gap-1">
+                          {s.tags.slice(0, 4).map((t) => (
+                            <span
+                              key={t}
+                              className="inline-flex items-center px-1.5 py-0.5 rounded border border-border bg-surface text-[10px] text-subtle"
+                            >
+                              #{t}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+                      <div className="flex items-center gap-2 text-[11px] text-muted pt-1">
+                        {s.author?.image ? (
+                          <Image
+                            src={s.author.image}
+                            alt={s.author.name ?? ""}
+                            width={16}
+                            height={16}
+                            className="rounded-full border border-border shrink-0"
+                          />
+                        ) : (
+                          <div className="w-4 h-4 rounded-full bg-surface border border-border shrink-0" />
+                        )}
+                        <span className="truncate">{s.author?.name ?? "anonymous"}</span>
+                      </div>
+                    </Link>
+                  );
+                })}
+              </div>
+            </section>
+          )}
+        </>
       )}
 
       {/* ───────────── BROWSE ALL TEMPLATES ───────────── */}

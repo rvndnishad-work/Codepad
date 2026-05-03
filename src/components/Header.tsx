@@ -8,26 +8,31 @@ export default async function Header() {
   const user = session?.user;
 
   return (
-    <header className="border-b border-border bg-bg/75 backdrop-blur-xl sticky top-0 z-40">
-      <div className="mx-auto max-w-7xl px-4 h-14 flex items-center justify-between">
-        <Link href="/" className="flex items-center gap-2.5 group">
-          <LogoMark size={26} className="shrink-0" />
-          <span className="font-semibold tracking-tight text-fg">Codepad</span>
-          <span className="hidden sm:inline text-[10px] font-medium px-1.5 py-0.5 rounded border border-border text-muted">
-            beta
-          </span>
+    <header className="relative border-b border-white/[0.05] bg-black/60 backdrop-blur-3xl sticky top-0 z-[100]">
+      {/* Bottom Glow Separator */}
+      <div className="absolute bottom-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-[#FFE600]/20 to-transparent opacity-50" />
+      
+      <div className="mx-auto max-w-7xl px-4 h-16 flex items-center justify-between">
+        <Link href="/" className="flex items-center gap-3 group">
+          <div className="w-8 h-8 rounded-xl bg-[#FFE600] grid place-items-center shadow-[0_0_20px_rgba(255,230,0,0.3)] transition-transform group-hover:scale-110 group-hover:rotate-3">
+             <LogoMark size={20} className="text-black" />
+          </div>
+          <div className="flex flex-col leading-none">
+             <span className="font-black text-lg tracking-tighter text-white group-hover:text-[#FFE600] transition-colors">Codepad</span>
+             <span className="text-[9px] font-bold text-white/20 uppercase tracking-[0.3em]">Pro Sandbox</span>
+          </div>
         </Link>
 
-        <nav className="flex items-center gap-2 text-sm">
+        <nav className="flex items-center gap-1.5">
           <Link
             href="/"
-            className="hidden sm:inline px-3 py-1.5 rounded-md text-subtle hover:text-fg hover:bg-panel transition"
+            className="hidden sm:inline px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest text-white/40 hover:text-[#FFE600] hover:bg-white/5 transition-all"
           >
             Templates
           </Link>
           <Link
             href="/explore"
-            className="hidden sm:inline px-3 py-1.5 rounded-md text-subtle hover:text-fg hover:bg-panel transition"
+            className="hidden sm:inline px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest text-white/40 hover:text-[#FFE600] hover:bg-white/5 transition-all"
           >
             Explore
           </Link>
@@ -35,22 +40,22 @@ export default async function Header() {
             <>
               <Link
                 href="/dashboard"
-                className="px-3 py-1.5 rounded-md text-subtle hover:text-fg hover:bg-panel transition"
+                className="px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest text-white/40 hover:text-[#FFE600] hover:bg-white/5 transition-all"
               >
                 My snippets
               </Link>
-              <div className="flex items-center gap-2 pl-2 ml-1 border-l border-border">
+              <div className="flex items-center gap-3 pl-3 ml-2 border-l border-white/5">
                 {user.image ? (
                   <Image
                     src={user.image}
                     alt={user.name ?? ""}
-                    width={28}
-                    height={28}
-                    className="rounded-full border border-border"
+                    width={32}
+                    height={32}
+                    className="rounded-xl border border-[#FFE600]/20 shadow-[0_0_15px_rgba(255,230,0,0.1)]"
                   />
                 ) : (
-                  <div className="w-7 h-7 rounded-full bg-panel border border-border grid place-items-center text-xs">
-                    {(user.name ?? user.email ?? "U").slice(0, 1).toUpperCase()}
+                  <div className="w-8 h-8 rounded-xl bg-white/5 border border-white/10 grid place-items-center text-[10px] font-black text-white/60">
+                    {(user.name ?? user.email ?? "N").slice(0, 1).toUpperCase()}
                   </div>
                 )}
                 <form
@@ -59,7 +64,7 @@ export default async function Header() {
                     await signOut({ redirectTo: "/" });
                   }}
                 >
-                  <button className="text-xs text-muted hover:text-fg px-2 py-1">
+                  <button className="text-[10px] font-black uppercase tracking-widest text-white/20 hover:text-red-400 px-3 py-1.5 transition-colors">
                     Sign out
                   </button>
                 </form>
@@ -68,7 +73,7 @@ export default async function Header() {
           ) : (
             <Link
               href="/login"
-              className="px-3 py-1.5 rounded-md bg-accent hover:bg-accent-soft text-white text-sm shadow-soft transition"
+              className="px-5 py-2.5 rounded-xl bg-[#FFE600] text-black text-[10px] font-black uppercase tracking-widest shadow-[0_0_20px_rgba(255,230,0,0.2)] hover:scale-105 active:scale-95 transition-all"
             >
               Sign in
             </Link>

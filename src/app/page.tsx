@@ -1,12 +1,15 @@
-import TemplatePicker from "@/components/TemplatePicker";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import HomeHero from "./HomeHero";
+import HomeBento from "./HomeBento";
+import HomeExplore from "./HomeExplore";
+import TemplatePicker from "@/components/TemplatePicker";
 
 export default async function HomePage() {
   const session = await auth().catch(() => null);
   const userId = session?.user?.id;
 
-  let welcome: {
+  let welcomeData: {
     name: string | null;
     image: string | null;
     snippetCount: number;
@@ -22,7 +25,7 @@ export default async function HomePage() {
         select: { slug: true, title: true, template: true },
       }),
     ]);
-    welcome = {
+    welcomeData = {
       name: session.user?.name ?? null,
       image: session.user?.image ?? null,
       snippetCount: count,
@@ -30,44 +33,47 @@ export default async function HomePage() {
     };
   }
 
-  // Top public snippets — surfaced as "Featured from the community"
+  // Top public snippets
   const featuredRows = await prisma.snippet.findMany({
     where: { visibility: "public" },
-    orderBy: { updatedAt: "desc" },
+    orderBy: [{ viewCount: "desc" }, { updatedAt: "desc" }],
     take: 6,
-    select: {
-      id: true,
-      slug: true,
-      title: true,
-      template: true,
-      tags: true,
-      updatedAt: true,
-      user: { select: { name: true, image: true } },
-    },
+    include: { user: { select: { name: true, image: true } } },
   });
+
   const featured = featuredRows.map((s) => ({
     id: s.id,
     slug: s.slug,
     title: s.title,
     template: s.template,
     updatedAt: s.updatedAt.toISOString(),
-    tags: parseTags(s.tags),
-    author: s.user
-      ? { name: s.user.name, image: s.user.image }
-      : null,
+    author: s.user ? { name: s.user.name, image: s.user.image } : null,
   }));
 
-  return <TemplatePicker welcome={welcome} featured={featured} />;
-}
+  return (
+    <div className="bg-black min-h-screen">
+      <HomeHero 
+        sessionName={welcomeData?.name} 
+        snippetCount={welcomeData?.snippetCount ?? 0}
+        recentSnippet={welcomeData?.recent}
+      />
+      
+      <HomeBento />
+      
+      <HomeExplore featured={featured} />
 
-function parseTags(raw: string | null): string[] {
-  if (!raw) return [];
-  try {
-    const parsed = JSON.parse(raw);
-    return Array.isArray(parsed)
-      ? parsed.filter((t): t is string => typeof t === "string")
-      : [];
-  } catch {
-    return [];
-  }
+      <section id="templates" className="bg-[#0A0A0A] py-20 border-t border-white/[0.03]">
+        <div className="mx-auto max-w-6xl px-4">
+           <div className="mb-12 text-center">
+              <h2 className="text-3xl font-black text-white tracking-tight mb-4">The Full Library</h2>
+              <p className="text-muted max-w-lg mx-auto">
+                Explore all 16+ pre-wired templates. From core languages to complex ecosystem variants.
+              </p>
+           </div>
+           {/* TemplatePicker can still be used for the library/search functionality */}
+           <TemplatePicker welcome={welcomeData} featured={[]} hideHero />
+        </div>
+      </section>
+    </div>
+  );
 }

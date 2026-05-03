@@ -30,96 +30,31 @@ export function LogoMark({
       aria-hidden
       className={className}
     >
-      <defs>
-        <linearGradient
-          id={brand}
-          x1="0"
-          y1="0"
-          x2="32"
-          y2="32"
-          gradientUnits="userSpaceOnUse"
-        >
-          <stop offset="0%" stopColor="#8b8dff" />
-          <stop offset="55%" stopColor="#7c7fff" />
-          <stop offset="100%" stopColor="#5752e6" />
-        </linearGradient>
-        <linearGradient
-          id={cursor}
-          x1="0"
-          y1="0"
-          x2="0"
-          y2="32"
-          gradientUnits="userSpaceOnUse"
-        >
-          <stop offset="0%" stopColor="#a5f3fc" />
-          <stop offset="100%" stopColor="#22d3ee" />
-        </linearGradient>
-        <linearGradient
-          id={sheen}
-          x1="0"
-          y1="0"
-          x2="0"
-          y2="32"
-          gradientUnits="userSpaceOnUse"
-        >
-          <stop offset="0%" stopColor="#ffffff" stopOpacity="0.22" />
-          <stop offset="60%" stopColor="#ffffff" stopOpacity="0" />
-        </linearGradient>
-      </defs>
-
-      {/* Base */}
-      <rect width="32" height="32" rx="8" fill={`url(#${brand})`} />
-      {/* Top sheen */}
-      <rect width="32" height="32" rx="8" fill={`url(#${sheen})`} />
-      {/* Inner border */}
-      <rect
-        x="0.6"
-        y="0.6"
-        width="30.8"
-        height="30.8"
-        rx="7.4"
-        fill="none"
-        stroke="#ffffff"
-        strokeOpacity="0.18"
-      />
-
       {/* Code lines */}
       <rect
-        x="7"
-        y="8.5"
+        x="6"
+        y="9"
         width="14"
-        height="2.6"
-        rx="1.3"
-        fill="#ffffff"
-        fillOpacity="0.95"
+        height="3"
+        rx="1.5"
+        fill="currentColor"
       />
       <rect
-        x="7"
-        y="14"
+        x="6"
+        y="14.5"
         width="10"
-        height="2.6"
-        rx="1.3"
-        fill="#ffffff"
-        fillOpacity="0.7"
+        height="3"
+        rx="1.5"
+        fill="currentColor"
+        fillOpacity="0.6"
       />
       <rect
-        x="7"
-        y="19.5"
-        width="13"
-        height="2.6"
-        rx="1.3"
-        fill="#ffffff"
-        fillOpacity="0.95"
-      />
-
-      {/* Active caret */}
-      <rect
-        x="22"
-        y="18.5"
-        width="2.2"
-        height="4.6"
-        rx="1.1"
-        fill={`url(#${cursor})`}
+        x="6"
+        y="20"
+        width="16"
+        height="3"
+        rx="1.5"
+        fill="currentColor"
       />
     </svg>
   );
@@ -133,9 +68,14 @@ export function LogoWordmark({
   className?: string;
 }) {
   return (
-    <span className={`inline-flex items-center gap-2.5 ${className ?? ""}`}>
-      <LogoMark size={size} />
-      <span className="font-semibold tracking-tight text-fg">Codepad</span>
+    <span className={`inline-flex items-center gap-3 ${className ?? ""}`}>
+      <div className="w-8 h-8 rounded-xl bg-[#FFE600] grid place-items-center shadow-[0_0_20px_rgba(255,230,0,0.3)]">
+         <LogoMark size={20} className="text-black" />
+      </div>
+      <div className="flex flex-col leading-none">
+        <span className="font-black text-lg tracking-tighter text-white">Codepad</span>
+        <span className="text-[9px] font-bold text-white/20 uppercase tracking-[0.3em]">Pro Sandbox</span>
+      </div>
     </span>
   );
 }

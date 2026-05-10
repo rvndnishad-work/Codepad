@@ -14,7 +14,7 @@ export default function DashboardHero({ userName }: { userName: string | null })
   const firstName = userName?.split(" ")[0];
 
   return (
-    <div className="relative overflow-hidden rounded-3xl border border-border bg-[#0A0A0A] p-8 md:p-12 mb-8">
+    <div className="relative overflow-hidden rounded-3xl border border-border bg-surface p-8 md:p-12 mb-8">
       {/* Nano Banana Background Effects */}
       <div className="absolute top-[-10%] right-[-10%] w-[40%] h-[60%] bg-[#FFE600] opacity-[0.07] blur-[120px] pointer-events-none" />
       <div className="absolute bottom-[-10%] left-[-10%] w-[30%] h-[50%] bg-[#9DFF00] opacity-[0.05] blur-[100px] pointer-events-none" />
@@ -26,9 +26,9 @@ export default function DashboardHero({ userName }: { userName: string | null })
             <span>Powering your next big idea</span>
           </div>
           
-          <h1 className="text-4xl md:text-5xl font-bold tracking-tight text-white mb-4">
+          <h1 className="text-4xl md:text-5xl font-black tracking-tight text-fg mb-4">
             {firstName ? `Hey ${firstName},` : "Welcome back,"} <br />
-            <span className="text-[#FFE600]">Ready to build?</span>
+            <span className="text-accent">Ready to build?</span>
           </h1>
           
           <p className="text-muted text-lg mb-8 max-w-md leading-relaxed">
@@ -45,7 +45,7 @@ export default function DashboardHero({ userName }: { userName: string | null })
             </Link>
             <Link
               href="/explore"
-              className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-white/5 hover:bg-white/10 text-white border border-white/10 transition-all"
+              className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-panel hover:bg-elevated text-fg border border-border transition-all"
             >
               <Rocket className="w-5 h-5" />
               Explore Trends
@@ -61,15 +61,15 @@ export default function DashboardHero({ userName }: { userName: string | null })
             <Link
               key={t.id}
               href={`/play?template=${t.id}`}
-              className="group flex items-center justify-between p-3 rounded-2xl bg-white/[0.03] border border-white/5 hover:border-[#FFE600]/30 hover:bg-white/[0.06] transition-all"
+              className="group flex items-center justify-between p-3 rounded-2xl bg-panel/40 border border-border hover:border-accent/30 hover:bg-panel transition-all"
             >
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-black border border-white/10 grid place-items-center transition-transform group-hover:scale-110">
+                <div className="w-10 h-10 rounded-xl bg-surface border border-border grid place-items-center transition-transform group-hover:scale-110">
                   <TemplateLogo id={t.id} size={20} />
                 </div>
-                <span className="font-medium text-sm text-white/90">{t.label}</span>
+                <span className="font-medium text-sm text-fg/90">{t.label}</span>
               </div>
-              <Zap className="w-4 h-4 text-muted group-hover:text-[#FFE600] transition-colors" />
+              <Zap className="w-4 h-4 text-muted group-hover:text-accent transition-colors" />
             </Link>
           ))}
         </div>

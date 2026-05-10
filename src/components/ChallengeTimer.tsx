@@ -47,7 +47,7 @@ export default function ChallengeTimer() {
       <div className={`p-1.5 rounded-lg transition-all duration-200 ${
         isFinished ? "text-emerald-400" :
         isCritical && isRunning ? "text-red-400" :
-        isRunning ? "text-accent" : "text-white/25"
+        isRunning ? "text-accent" : "text-muted/50"
       }`}>
         {isFinished ? <Trophy className="w-3.5 h-3.5" /> : <Timer className="w-3.5 h-3.5" />}
       </div>
@@ -56,7 +56,7 @@ export default function ChallengeTimer() {
       {!isRunning && !isFinished && (
         <button 
           onClick={() => setTimeLeft(prev => Math.max(60, prev - 60))}
-          className="w-6 h-6 rounded-md flex items-center justify-center bg-white/[0.04] border border-white/[0.06] text-white/30 hover:text-fg hover:bg-white/[0.08] hover:border-white/[0.1] transition-all duration-150"
+          className="w-6 h-6 rounded-md flex items-center justify-center bg-surface border border-border text-muted hover:text-fg hover:bg-elevated hover:border-border-strong transition-all duration-150"
           title="Remove 1 minute"
         >
           <Minus className="w-3 h-3" />
@@ -72,7 +72,7 @@ export default function ChallengeTimer() {
         }`}>
           {minutes}:{seconds.toString().padStart(2, "0")}
         </span>
-        <span className="text-[8px] font-medium text-white/15 mt-0.5 tracking-wider">
+        <span className="text-[8px] font-medium text-muted/30 mt-0.5 tracking-wider">
           {isFinished ? "Done" : "Timer"}
         </span>
       </div>
@@ -81,7 +81,7 @@ export default function ChallengeTimer() {
       {!isRunning && !isFinished && (
         <button 
           onClick={() => setTimeLeft(prev => prev + 60)}
-          className="w-6 h-6 rounded-md flex items-center justify-center bg-white/[0.04] border border-white/[0.06] text-white/30 hover:text-fg hover:bg-white/[0.08] hover:border-white/[0.1] transition-all duration-150"
+          className="w-6 h-6 rounded-md flex items-center justify-center bg-surface border border-border text-muted hover:text-fg hover:bg-elevated hover:border-border-strong transition-all duration-150"
           title="Add 1 minute"
         >
           <Plus className="w-3 h-3" />
@@ -89,7 +89,7 @@ export default function ChallengeTimer() {
       )}
 
       {/* Separator */}
-      <div className="h-4 w-px bg-white/[0.06] mx-0.5" />
+      <div className="h-4 w-px bg-border mx-0.5" />
 
       {/* Play/Pause */}
       <button
@@ -97,27 +97,27 @@ export default function ChallengeTimer() {
         disabled={isFinished}
         className={`w-7 h-7 rounded-lg flex items-center justify-center transition-all duration-200 ${
           isRunning 
-            ? "text-white/40 hover:text-fg hover:bg-white/[0.06]" 
-            : "bg-accent text-black shadow-[0_2px_10px_rgba(255,230,0,0.12)]"
-        } disabled:opacity-20`}
+            ? "text-muted hover:text-fg hover:bg-elevated" 
+            : "text-accent bg-accent/10 hover:bg-accent/20"
+        }`}
       >
         {isRunning ? <Pause className="w-3.5 h-3.5" /> : <Play className="w-3.5 h-3.5 fill-current" />}
       </button>
 
       {/* Reset */}
-      <button
-        onClick={resetTimer}
-        className="w-7 h-7 rounded-lg flex items-center justify-center text-white/20 hover:text-fg hover:bg-white/[0.06] transition-all duration-200"
+      <button 
+        onClick={resetTimer} 
+        className="w-7 h-7 rounded-lg flex items-center justify-center text-muted/40 hover:text-fg hover:bg-elevated transition-all duration-200"
       >
         <RotateCcw className="w-3.5 h-3.5" />
       </button>
 
       {/* Finishing Alert */}
       {isFinished && (
-        <div className="absolute inset-0 bg-[#0A0A0A] rounded-lg flex items-center justify-center gap-2 px-3 animate-in fade-in zoom-in duration-300 border border-emerald-500/20">
+        <div className="absolute inset-0 bg-bg/80 backdrop-blur-[2px] flex items-center justify-center gap-2 px-3 animate-in fade-in zoom-in duration-300 border border-emerald-500/20 rounded-lg">
            <Trophy className="w-3.5 h-3.5 text-emerald-400" />
            <span className="text-[11px] font-medium text-fg">Time's up!</span>
-           <button onClick={resetTimer} className="ml-auto p-1 rounded-md hover:bg-white/[0.06] text-white/30 hover:text-fg transition-all">
+           <button onClick={resetTimer} className="ml-auto p-1 rounded-md hover:bg-elevated text-muted hover:text-fg transition-all">
              <RotateCcw className="w-3 h-3" />
            </button>
         </div>

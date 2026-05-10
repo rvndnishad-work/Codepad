@@ -1,0 +1,139 @@
+{
+  "nodes": [
+    {
+      "id": "readme",
+      "label": "Project Documentation",
+      "file_type": "document",
+      "source_file": "README.md"
+    },
+    {
+      "id": "icon",
+      "label": "Codepad Logo",
+      "file_type": "image",
+      "source_file": "src/app/icon.svg"
+    },
+    {
+      "id": "layout",
+      "label": "Root Layout",
+      "file_type": "code",
+      "source_file": "src/app/layout.tsx"
+    },
+    {
+      "id": "homepage",
+      "label": "Home Page",
+      "file_type": "code",
+      "source_file": "src/app/page.tsx"
+    },
+    {
+      "id": "auth_lib",
+      "label": "Authentication Library",
+      "file_type": "code",
+      "source_file": "src/lib/auth.ts"
+    },
+    {
+      "id": "prisma_lib",
+      "label": "Prisma Database Client",
+      "file_type": "code",
+      "source_file": "src/lib/prisma.ts"
+    },
+    {
+      "id": "sandpack_execution",
+      "label": "Sandpack Execution Engine",
+      "file_type": "rationale",
+      "source_file": "README.md"
+    },
+    {
+      "id": "monaco_editor",
+      "label": "Monaco Code Editor",
+      "file_type": "rationale",
+      "source_file": "README.md"
+    },
+    {
+      "id": "rate_limit",
+      "label": "Rate Limiting Utility",
+      "file_type": "code",
+      "source_file": "src/lib/rate-limit.ts"
+    },
+    {
+      "id": "api_register",
+      "label": "User Registration API",
+      "file_type": "code",
+      "source_file": "src/app/api/auth/register/route.ts"
+    }
+  ],
+  "edges": [
+    {
+      "source": "readme",
+      "target": "sandpack_execution",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0
+    },
+    {
+      "source": "readme",
+      "target": "monaco_editor",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0
+    },
+    {
+      "source": "homepage",
+      "target": "auth_lib",
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0
+    },
+    {
+      "source": "homepage",
+      "target": "prisma_lib",
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0
+    },
+    {
+      "source": "api_register",
+      "target": "prisma_lib",
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0
+    },
+    {
+      "source": "api_register",
+      "target": "rate_limit",
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0
+    },
+    {
+      "source": "sandpack_execution",
+      "target": "layout",
+      "relation": "rationale_for",
+      "confidence": "INFERRED",
+      "confidence_score": 0.85
+    },
+    {
+      "source": "monaco_editor",
+      "target": "homepage",
+      "relation": "rationale_for",
+      "confidence": "INFERRED",
+      "confidence_score": 0.85
+    }
+  ],
+  "hyperedges": [
+    {
+      "id": "core_tech_stack",
+      "label": "Core Technology Stack",
+      "nodes": [
+        "sandpack_execution",
+        "monaco_editor",
+        "auth_lib",
+        "prisma_lib"
+      ],
+      "relation": "participate_in",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0
+    }
+  ],
+  "input_tokens": 5000,
+  "output_tokens": 1000
+}

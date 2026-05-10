@@ -40,6 +40,8 @@ export default function ExploreList({
     if (!q) return true;
     return (
       s.title.toLowerCase().includes(q) ||
+      s.template.toLowerCase().includes(q) ||
+      (templatesById[s.template]?.title?.toLowerCase().includes(q) ?? false) ||
       s.tags.some((t) => t.toLowerCase().includes(q)) ||
       (s.author?.name?.toLowerCase().includes(q) ?? false)
     );
@@ -103,21 +105,21 @@ export default function ExploreList({
   return (
     <div className="relative min-h-screen">
       {/* Hero strip */}
-      <div className="relative overflow-hidden border-b border-white/[0.06]">
-        <div className="absolute inset-0 bg-gradient-to-b from-white/[0.02] to-transparent pointer-events-none" />
+      <div className="relative overflow-hidden border-b border-border">
+        <div className="absolute inset-0 bg-gradient-to-b from-accent/5 to-transparent pointer-events-none" />
         <div className="relative mx-auto max-w-5xl px-6 py-14">
           <div className="flex items-center gap-4 mb-4">
-            <div className="w-11 h-11 rounded-2xl bg-[#FFE600]/10 border border-[#FFE600]/20 grid place-items-center">
-              <Compass className="w-5 h-5 text-[#FFE600]" />
+            <div className="w-11 h-11 rounded-2xl bg-accent/10 border border-accent/20 grid place-items-center">
+              <Compass className="w-5 h-5 text-accent" />
             </div>
             <div>
-              <div className="text-[10px] font-bold tracking-[0.2em] text-white/40 uppercase mb-0.5">
+              <div className="text-xs font-black tracking-[0.2em] text-muted uppercase mb-0.5">
                 Community
               </div>
-              <h1 className="text-3xl font-bold tracking-tight text-white">Explore</h1>
+              <h1 className="text-3xl font-black tracking-tight text-fg">Explore</h1>
             </div>
           </div>
-          <p className="text-white/50 text-sm max-w-lg leading-relaxed">
+          <p className="text-muted text-sm max-w-lg leading-relaxed">
             Public snippets shared by Interviewpad users. Open one to read, fork it
             to your account, or grab the embed link.
           </p>
@@ -128,15 +130,15 @@ export default function ExploreList({
         {/* Search & Filters */}
         <div className="flex flex-wrap items-center gap-3 mb-6">
           <div className="relative flex-1 min-w-[220px] max-w-md">
-            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30" />
+            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-subtle" />
             <input
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder="Search by title, tag, or author…"
-              className="w-full pl-11 pr-4 py-3 rounded-xl bg-white/[0.03] border border-white/[0.06] focus:border-[#FFE600]/40 focus:bg-white/[0.04] text-sm text-white/90 outline-none placeholder:text-white/25 transition-all duration-200"
+              className="w-full pl-11 pr-4 py-3 rounded-xl bg-surface border border-border focus:border-accent/40 focus:bg-elevated text-sm text-fg outline-none placeholder:text-muted transition-all duration-200"
             />
           </div>
-          <span className="text-[11px] text-white/30 font-mono ml-auto tabular-nums">
+          <span className="text-xs text-muted font-mono ml-auto tabular-nums">
             {visible.length} {visible.length === 1 ? "snippet" : "snippets"}
           </span>
         </div>
@@ -148,8 +150,8 @@ export default function ExploreList({
               onClick={() => setFilter(f.key)}
               className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold border transition-all duration-200 ${
                 filter === f.key
-                  ? "bg-[#FFE600] text-black border-[#FFE600] shadow-[0_0_12px_rgba(255,230,0,0.25)]"
-                  : "bg-white/[0.03] border-white/[0.06] text-white/50 hover:text-white/80 hover:border-white/15 hover:bg-white/[0.05]"
+                  ? "bg-accent text-black border-accent shadow-[0_0_12px_rgba(var(--accent-rgb),0.25)]"
+                  : "bg-surface border-border text-muted hover:text-fg hover:border-border-strong hover:bg-elevated"
               }`}
             >
               {f.label}
@@ -159,11 +161,11 @@ export default function ExploreList({
 
         {/* Content */}
         {visible.length === 0 ? (
-          <div className="rounded-2xl border border-white/[0.06] bg-white/[0.02] p-16 text-center">
-            <div className="mx-auto w-14 h-14 rounded-2xl bg-[#FFE600]/10 border border-[#FFE600]/20 grid place-items-center mb-5">
-              <Compass className="w-6 h-6 text-[#FFE600]" />
+          <div className="rounded-2xl border border-border bg-surface p-16 text-center">
+            <div className="mx-auto w-14 h-14 rounded-2xl bg-accent/10 border border-accent/20 grid place-items-center mb-5">
+              <Compass className="w-6 h-6 text-accent" />
             </div>
-            <h2 className="font-semibold text-white text-lg">
+            <h2 className="font-black text-fg text-lg">
               {loading
                 ? "Loading snippets…"
                 : query.trim()
@@ -172,13 +174,13 @@ export default function ExploreList({
             </h2>
             {!loading && !query.trim() && (
               <>
-                <p className="text-white/40 text-sm mt-2 mb-6 max-w-sm mx-auto leading-relaxed">
+                <p className="text-muted text-sm mt-2 mb-6 max-w-sm mx-auto leading-relaxed">
                   Be the first to share a public snippet. Pick a template, build
                   something cool, then mark it public from the Share menu.
                 </p>
                 <Link
                   href="/"
-                  className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#FFE600] hover:bg-[#FFD700] text-black text-sm font-semibold shadow-[0_0_20px_rgba(255,230,0,0.2)] transition-all duration-200"
+                  className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-accent hover:bg-accent-soft text-black text-sm font-black shadow-[0_0_20px_rgba(var(--accent-rgb),0.2)] transition-all duration-200"
                 >
                   <Plus className="w-4 h-4" />
                   Browse templates
@@ -200,36 +202,43 @@ export default function ExploreList({
               {visible.map((s) => {
                 const tpl = templatesById[s.template];
                 const icon = templateIcon[s.template];
-                const accentColor = icon?.color ?? "#FFE600";
+                const accentColor = icon?.color ?? "var(--accent)";
 
                 return (
                   <li key={s.id}>
                     <Link
                       href={`/play/${s.slug}`}
-                      className="group relative flex items-center gap-5 w-full rounded-xl bg-[#0e0e10] border border-white/[0.07] hover:border-white/[0.14] p-4 sm:p-5 transition-all duration-200 hover:bg-[#111114] overflow-hidden"
+                      className="group relative flex items-center gap-5 w-full rounded-xl bg-surface border border-border hover:border-border-strong p-4 sm:p-5 transition-all duration-200 hover:bg-elevated overflow-hidden"
                     >
                       {/* Left accent bar */}
                       <div
                         className="absolute left-0 top-0 bottom-0 w-[3px] rounded-l-xl opacity-50 group-hover:opacity-100 transition-opacity duration-300"
-                        style={{ backgroundColor: accentColor }}
+                        style={{ backgroundColor: accentColor.startsWith("var") ? accentColor : accentColor }}
                       />
 
                       {/* Icon */}
                       <div
                         className="shrink-0 w-11 h-11 rounded-xl flex items-center justify-center transition-transform duration-300 group-hover:scale-105"
-                        style={{ backgroundColor: `${accentColor}14`, border: `1px solid ${accentColor}25` }}
+                        style={{ 
+                          backgroundColor: accentColor.startsWith("var") ? `rgba(var(--accent-rgb), 0.08)` : `${accentColor}14`, 
+                          border: `1px solid ${accentColor.startsWith("var") ? `rgba(var(--accent-rgb), 0.15)` : `${accentColor}25`}`,
+                          filter: "var(--accent-brightness, none)"
+                        }}
                       >
                         <TemplateLogo id={s.template} size={22} />
                       </div>
 
                       {/* Title + Template */}
                       <div className="min-w-0 flex-1">
-                        <h3 className="text-sm font-semibold text-white/90 group-hover:text-white truncate transition-colors">
+                        <h3 className="text-sm font-semibold text-fg/90 group-hover:text-fg truncate transition-colors">
                           {s.title}
                         </h3>
                         <p
-                          className="text-[10px] font-semibold uppercase tracking-[0.15em] mt-0.5"
-                          style={{ color: `${accentColor}90` }}
+                          className="text-[11px] font-bold uppercase tracking-[0.12em] mt-0.5 transition-colors"
+                          style={{ 
+                            color: accentColor.startsWith("var") ? accentColor : accentColor,
+                            filter: "var(--accent-brightness, none)"
+                          }}
                         >
                           {tpl?.title ?? s.template}
                         </p>
@@ -241,13 +250,13 @@ export default function ExploreList({
                           {s.tags.slice(0, 3).map((t) => (
                             <span
                               key={t}
-                              className="px-2 py-0.5 rounded bg-white/[0.04] border border-white/[0.06] text-[10px] text-white/40 font-mono group-hover:text-white/60 group-hover:border-white/[0.10] transition-colors"
+                              className="px-2 py-0.5 rounded bg-surface border border-border text-[10px] text-muted group-hover:text-fg/60 group-hover:border-border-strong transition-colors"
                             >
                               {t}
                             </span>
                           ))}
                           {s.tags.length > 3 && (
-                            <span className="px-1.5 py-0.5 rounded bg-white/[0.04] text-[10px] text-white/25 font-mono">
+                            <span className="px-1.5 py-0.5 rounded bg-surface text-[10px] text-muted/40 font-mono">
                               +{s.tags.length - 3}
                             </span>
                           )}
@@ -255,31 +264,31 @@ export default function ExploreList({
                       )}
 
                       {/* Author */}
-                      <div className="hidden sm:flex items-center gap-2 shrink-0 border-l border-white/[0.06] pl-4">
+                      <div className="hidden sm:flex items-center gap-2 shrink-0 border-l border-border pl-4">
                         {s.author?.image ? (
                           <Image
                             src={s.author.image}
                             alt={s.author.name ?? ""}
                             width={20}
                             height={20}
-                            className="rounded-full border border-white/10"
+                            className="rounded-full border border-border"
                           />
                         ) : (
-                          <div className="w-5 h-5 rounded-full bg-gradient-to-br from-white/15 to-white/5 border border-white/10" />
+                          <div className="w-5 h-5 rounded-full bg-surface border border-border" />
                         )}
-                        <span className="text-xs text-white/50 font-medium group-hover:text-white/70 transition-colors max-w-[100px] truncate">
+                        <span className="text-xs text-muted font-medium group-hover:text-fg/70 transition-colors max-w-[100px] truncate">
                           {s.author?.name ?? "Anonymous"}
                         </span>
                       </div>
 
                       {/* Timestamp */}
-                      <span className="text-[10px] text-white/25 font-mono tabular-nums shrink-0 hidden sm:block">
+                      <span className="text-xs text-muted/40 font-mono tabular-nums shrink-0 hidden sm:block">
                         {timeAgo(s.updatedAt)}
                       </span>
 
                       {/* Arrow */}
-                      <div className="w-7 h-7 rounded-lg bg-white/[0.03] flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-200 shrink-0">
-                        <ArrowUpRight className="w-3.5 h-3.5 text-white/50" />
+                      <div className="w-7 h-7 rounded-lg bg-surface/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-200 shrink-0">
+                        <ArrowUpRight className="w-3.5 h-3.5 text-muted" />
                       </div>
                     </Link>
                   </li>
@@ -292,7 +301,7 @@ export default function ExploreList({
                 <button
                   onClick={loadMore}
                   disabled={loading}
-                  className="px-6 py-2.5 rounded-xl border border-white/[0.08] bg-white/[0.03] hover:bg-white/[0.06] hover:border-white/[0.12] text-xs font-semibold text-white/60 disabled:opacity-40 transition-all duration-200"
+                  className="px-6 py-2.5 rounded-xl border border-border bg-surface/50 hover:bg-elevated hover:border-border-strong text-xs font-semibold text-muted disabled:opacity-40 transition-all duration-200"
                 >
                   {loading ? "Loading…" : "Load more"}
                 </button>

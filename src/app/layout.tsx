@@ -1,15 +1,17 @@
 import "./globals.css";
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
+import { Outfit } from "next/font/google";
 import { Toaster } from "sonner";
 import Header from "@/components/Header";
 import HeaderShell from "@/components/HeaderShell";
 import Footer from "@/components/Footer";
 import FooterShell from "@/components/FooterShell";
 
-const inter = Inter({
+import { ThemeProvider } from "@/components/ThemeProvider";
+
+const outfit = Outfit({
   subsets: ["latin"],
-  variable: "--font-inter",
+  variable: "--font-outfit",
   display: "swap",
 });
 
@@ -53,22 +55,24 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className={inter.variable}>
+    <html lang="en" className={outfit.variable} suppressHydrationWarning>
       <body className="min-h-screen font-sans flex flex-col">
-        <HeaderShell><Header /></HeaderShell>
-        <main className="flex-1 flex flex-col">{children}</main>
-        <FooterShell><Footer /></FooterShell>
-        <Toaster
-          theme="dark"
-          position="bottom-right"
-          toastOptions={{
-            style: {
-              background: "#12151d",
-              border: "1px solid #20242f",
-              color: "#e8ebf2",
-            },
-          }}
-        />
+        <ThemeProvider attribute="class" defaultTheme="dark" enableSystem={false}>
+          <HeaderShell><Header /></HeaderShell>
+          <main className="flex-1 flex flex-col">{children}</main>
+          <FooterShell><Footer /></FooterShell>
+          <Toaster
+            theme="dark"
+            position="bottom-right"
+            toastOptions={{
+              style: {
+                background: "var(--surface)",
+                border: "1px solid var(--border)",
+                color: "var(--fg)",
+              },
+            }}
+          />
+        </ThemeProvider>
       </body>
     </html>
   );

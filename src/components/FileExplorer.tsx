@@ -53,7 +53,7 @@ function fileIconFor(name: string): FileIconInfo {
   if (lower.startsWith("tsconfig"))
     return { Icon: SiTypescript, color: "#3178c6" };
   if (lower === "readme.md" || lower === "readme")
-    return { Icon: SiMarkdown, color: "#cbd5e1" };
+    return { Icon: SiMarkdown, color: "var(--muted)" };
   if (lower === ".env" || lower.startsWith(".env."))
     return { Icon: Settings, color: "#fbbf24" };
 
@@ -62,12 +62,12 @@ function fileIconFor(name: string): FileIconInfo {
     case "js":
     case "mjs":
     case "cjs":
-      return { Icon: SiJavascript, color: "#f7df1e" };
+      return { Icon: SiJavascript, color: "#f59e0b" };
     case "ts":
       return { Icon: SiTypescript, color: "#3178c6" };
     case "jsx":
     case "tsx":
-      return { Icon: SiReact, color: "#61dafb" };
+      return { Icon: SiReact, color: "#0891b2" };
     case "vue":
       return { Icon: SiVuedotjs, color: "#41b883" };
     case "svelte":
@@ -81,14 +81,14 @@ function fileIconFor(name: string): FileIconInfo {
     case "sass":
       return { Icon: SiSass, color: "#cc6699" };
     case "json":
-      return { Icon: FileJson, color: "#fbbf24" };
+      return { Icon: FileJson, color: "#d97706" };
     case "md":
     case "mdx":
-      return { Icon: SiMarkdown, color: "#cbd5e1" };
+      return { Icon: SiMarkdown, color: "var(--muted)" };
     case "lock":
-      return { Icon: Lock, color: "#94a3b8" };
+      return { Icon: Lock, color: "var(--muted)" };
     default:
-      return { Icon: FileIcon, color: "#7b8496" };
+      return { Icon: FileIcon, color: "var(--muted)" };
   }
 }
 
@@ -310,17 +310,17 @@ export default function FileExplorer({ readOnly = false, onCollapse }: Props) {
         style={{ paddingLeft: 6 + depth * 12 }}
         className={`group flex items-center gap-1.5 pr-2 py-1 cursor-pointer text-[13px] select-none transition ${
           isActive
-            ? "bg-accent/20 text-fg"
-            : "text-subtle hover:bg-elevated hover:text-fg"
+            ? "bg-accent/10 text-accent font-medium shadow-[inset_2px_0_0_0_currentColor]"
+            : "text-fg/70 hover:bg-elevated hover:text-fg"
         } ${
           isDropTarget ? "outline outline-1 outline-accent -outline-offset-1" : ""
         } ${isDragging ? "opacity-50" : ""}`}
       >
         {node.isFolder ? (
           isExpanded ? (
-            <ChevronDown className="w-3 h-3 shrink-0" />
+            <ChevronDown className={`w-3 h-3 shrink-0 transition-colors ${isActive ? "text-accent" : "text-muted"}`} />
           ) : (
-            <ChevronRight className="w-3 h-3 shrink-0" />
+            <ChevronRight className={`w-3 h-3 shrink-0 transition-colors ${isActive ? "text-accent" : "text-muted"}`} />
           )
         ) : (
           <span className="w-3 shrink-0" />
@@ -430,8 +430,8 @@ export default function FileExplorer({ readOnly = false, onCollapse }: Props) {
         setDropTarget(null);
       }}
     >
-      <div className="sticky top-0 z-10 flex items-center justify-between px-3 h-9 border-b border-white/[0.04] bg-transparent shrink-0">
-        <span className="text-[11px] font-medium text-white/30 tracking-wide">Files</span>
+      <div className="sticky top-0 z-10 flex items-center justify-between px-3 h-9 border-b border-border bg-transparent shrink-0">
+        <span className="text-[11px] font-medium text-muted tracking-wide">Files</span>
         <div className="flex items-center gap-0.5">
           {!readOnly && (
             <>
@@ -446,7 +446,7 @@ export default function FileExplorer({ readOnly = false, onCollapse }: Props) {
                   });
                 }}
                 title="New file"
-                className="p-1.5 hover:bg-white/[0.06] rounded transition text-white/20 hover:text-fg"
+                className="p-1.5 hover:bg-elevated rounded transition text-muted/50 hover:text-fg"
               >
                 <FilePlus className="w-3.5 h-3.5" />
               </button>
@@ -456,7 +456,7 @@ export default function FileExplorer({ readOnly = false, onCollapse }: Props) {
                   startNew("/", "folder");
                 }}
                 title="New folder"
-                className="p-1.5 hover:bg-white/[0.06] rounded transition text-white/20 hover:text-fg"
+                className="p-1.5 hover:bg-elevated rounded transition text-muted/50 hover:text-fg"
               >
                 <FolderPlus className="w-3.5 h-3.5" />
               </button>
@@ -467,7 +467,7 @@ export default function FileExplorer({ readOnly = false, onCollapse }: Props) {
                 }}
                 title="Dependencies"
                 className={`p-1.5 rounded transition ${
-                  showDeps ? "bg-white/[0.06] text-accent" : "text-white/20 hover:bg-white/[0.06] hover:text-fg"
+                  showDeps ? "bg-accent/20 text-accent" : "text-muted/50 hover:bg-elevated hover:text-fg"
                 }`}
               >
                 <Package className="w-3.5 h-3.5" />
@@ -480,18 +480,18 @@ export default function FileExplorer({ readOnly = false, onCollapse }: Props) {
               void downloadZip();
             }}
             title="Download ZIP"
-            className="p-1.5 hover:bg-white/[0.06] rounded transition text-white/20 hover:text-fg"
+            className="p-1.5 hover:bg-elevated rounded transition text-muted/50 hover:text-fg"
           >
             <Download className="w-3.5 h-3.5" />
           </button>
           
           {onCollapse && (
             <>
-              <div className="w-px h-4 bg-white/[0.06] mx-1" />
+              <div className="w-px h-4 bg-border mx-1" />
               <button
                 onClick={onCollapse}
                 title="Collapse sidebar"
-                className="p-1.5 hover:bg-white/[0.06] rounded transition text-white/20 hover:text-fg"
+                className="p-1.5 hover:bg-elevated rounded transition text-muted/50 hover:text-fg"
               >
                 <X className="w-3.5 h-3.5" />
               </button>

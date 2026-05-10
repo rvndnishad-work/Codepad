@@ -55,11 +55,14 @@ function Tile({ t }: { t: TemplateDef }) {
   return (
     <Link
       href={`/play?template=${t.id}`}
-      className="group relative rounded-xl border border-white/[0.10] hover:border-white/[0.16] bg-surface/60 hover:bg-elevated transition shadow-tile hover:shadow-tile-hover p-4 flex flex-col gap-3"
+      className="group relative rounded-xl border border-border hover:border-border-strong transition shadow-tile hover:shadow-tile-hover p-4 flex flex-col gap-3"
     >
       <div
-        className="w-11 h-11 rounded-lg grid place-items-center border border-white/[0.10]"
-        style={{ background: meta?.bg ?? "rgba(255,255,255,0.03)" }}
+        className="w-11 h-11 rounded-lg grid place-items-center border border-border"
+        style={{ 
+          background: meta?.bg ?? "rgba(var(--bg-rgb), 0.03)",
+          filter: "var(--accent-brightness, none)"
+        }}
       >
         {Icon ? (
           <Icon width={22} height={22} style={{ color: meta?.color }} />
@@ -78,7 +81,7 @@ function Tile({ t }: { t: TemplateDef }) {
           {chips.map((c) => (
             <span
               key={c}
-              className="inline-flex items-center px-1.5 py-0.5 rounded border border-border bg-panel text-[10px] text-subtle"
+              className="inline-flex items-center px-1.5 py-0.5 rounded border border-border bg-panel text-xs text-subtle"
             >
               {c}
             </span>
@@ -99,7 +102,7 @@ function FeaturedTile({ t }: { t: TemplateDef }) {
   return (
     <Link
       href={`/play?template=${t.id}`}
-      className="group relative rounded-2xl border border-white/[0.10] hover:border-white/[0.16] bg-panel/60 hover:bg-elevated p-5 flex flex-col gap-4 shadow-tile hover:shadow-tile-hover transition overflow-hidden"
+      className="group relative rounded-2xl border border-border hover:border-border-strong bg-panel/60 hover:bg-elevated p-5 flex flex-col gap-4 shadow-tile hover:shadow-tile-hover transition overflow-hidden"
     >
       <div
         aria-hidden
@@ -108,8 +111,11 @@ function FeaturedTile({ t }: { t: TemplateDef }) {
       />
       <div className="relative flex items-center justify-between">
         <div
-          className="w-14 h-14 rounded-xl grid place-items-center border border-white/[0.10]"
-          style={{ background: meta?.bg ?? "rgba(255,255,255,0.04)" }}
+          className="w-14 h-14 rounded-xl grid place-items-center border border-border"
+          style={{ 
+            background: meta?.bg ?? "rgba(255,255,255,0.04)",
+            filter: "var(--accent-brightness, none)"
+          }}
         >
           {Icon ? (
             <Icon width={30} height={30} style={{ color: meta?.color }} />
@@ -129,12 +135,12 @@ function FeaturedTile({ t }: { t: TemplateDef }) {
         {tileChips(t).map((c) => (
           <span
             key={c}
-            className="inline-flex items-center px-1.5 py-0.5 rounded border border-border bg-surface text-[10px] text-subtle"
+            className="inline-flex items-center px-1.5 py-0.5 rounded border border-border bg-surface text-xs text-subtle"
           >
             {c}
           </span>
         ))}
-        <span className="ml-auto text-[10px] text-accent font-medium">
+        <span className="ml-auto text-xs text-accent font-black">
           Start →
         </span>
       </div>
@@ -228,7 +234,7 @@ export default function TemplatePicker({
           <div className="relative overflow-hidden border-b border-border">
             <div className="absolute inset-0 bg-hero-glow pointer-events-none" />
             <div
-              className="absolute inset-0 bg-grid-pattern opacity-50"
+              className="absolute inset-0 bg-grid-pattern opacity-10"
               style={{ backgroundSize: "24px 24px" }}
             />
             <div className="relative mx-auto max-w-6xl px-4 pt-20 pb-16 text-center">
@@ -241,13 +247,13 @@ export default function TemplatePicker({
                     {isReturning ? (
                       <WelcomeCard w={welcome!} />
                     ) : (
-                      <div className="inline-flex items-center gap-2 rounded-full border border-border bg-panel/60 px-3 py-1 text-[11px] text-subtle mb-6">
+                      <div className="inline-flex items-center gap-2 rounded-full border border-border bg-panel/60 px-3 py-1.5 text-xs font-medium text-subtle mb-6">
                         <Sparkles className="w-3.5 h-3.5 text-accent" />
                         <span>Sandboxed iframe — code runs only in your browser</span>
                       </div>
                     )}
 
-                    <h1 className="text-5xl md:text-6xl font-semibold tracking-tight text-fg leading-[1.05]">
+                    <h1 className="text-4xl md:text-6xl font-black tracking-tight text-fg leading-[1.05]">
                       {isReturning ? (
                         "Pick up where you left off"
                       ) : isFresh ? (
@@ -297,7 +303,7 @@ export default function TemplatePicker({
                 );
               })()}
 
-              <div className="mt-6 flex flex-wrap items-center justify-center gap-x-5 gap-y-1 text-[11px] text-muted">
+              <div className="mt-6 flex flex-wrap items-center justify-center gap-x-5 gap-y-1 text-xs font-medium text-muted">
                 <span className="inline-flex items-center gap-1">
                   <span className="w-1 h-1 rounded-full bg-emerald-400/80" />
                   {stats.total} templates
@@ -321,13 +327,13 @@ export default function TemplatePicker({
               return (
                 <div
                   key={f.title}
-                  className="rounded-xl border border-white/[0.10] hover:border-white/[0.16] bg-panel/40 p-5 transition-colors"
+                  className="rounded-xl border border-border hover:border-border-strong bg-panel/40 p-5 transition-colors"
                 >
                   <div className="w-9 h-9 rounded-lg bg-accent-glow border border-accent/30 grid place-items-center mb-3">
                     <Icon className="w-4.5 h-4.5 text-accent" style={{ width: 18, height: 18 }} />
                   </div>
                   <div className="text-sm font-semibold text-fg mb-1">{f.title}</div>
-                  <p className="text-xs text-muted leading-relaxed">{f.body}</p>
+                  <p className="text-sm text-muted leading-relaxed">{f.body}</p>
                 </div>
               );
             })}
@@ -340,10 +346,10 @@ export default function TemplatePicker({
           <section className="mx-auto max-w-6xl px-4 pb-10">
             <div className="flex items-end justify-between mb-4">
               <div>
-                <div className="text-[10px] font-semibold tracking-[0.14em] text-muted uppercase mb-1">
+                <div className="text-xs font-black tracking-widest text-muted uppercase mb-1">
                   Most popular
                 </div>
-                <h2 className="text-xl font-semibold tracking-tight">
+                <h2 className="text-xl md:text-2xl font-black tracking-tight">
                   Quick starts
                 </h2>
               </div>
@@ -366,10 +372,10 @@ export default function TemplatePicker({
             <section className="mx-auto max-w-6xl px-4 pb-10">
               <div className="flex items-end justify-between mb-4">
                 <div>
-                  <div className="text-[10px] font-semibold tracking-[0.14em] text-muted uppercase mb-1">
+                  <div className="text-xs font-black tracking-widest text-muted uppercase mb-1">
                     From the community
                   </div>
-                  <h2 className="text-xl font-semibold tracking-tight">
+                  <h2 className="text-xl md:text-2xl font-black tracking-tight">
                     Featured public snippets
                   </h2>
                 </div>
@@ -383,21 +389,32 @@ export default function TemplatePicker({
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                 {featured.slice(0, 6).map((s) => {
                   const tpl = templatesById[s.template];
+                  const meta = templateIcon[s.template];
+                  const accentColor = meta?.color ?? "var(--accent)";
                   return (
                     <Link
                       key={s.id}
                       href={`/play/${s.slug}`}
-                      className="group flex flex-col gap-2.5 rounded-xl border border-white/[0.10] hover:border-white/[0.16] bg-panel/70 hover:bg-elevated p-4 transition"
+                      className="group flex flex-col gap-2.5 rounded-xl border border-border hover:border-border-strong bg-panel/70 hover:bg-elevated p-4 transition"
                     >
                       <div className="flex items-center gap-3">
-                        <div className="w-9 h-9 rounded-lg border border-white/[0.10] bg-surface grid place-items-center shrink-0">
+                        <div 
+                          className="w-9 h-9 rounded-lg border border-border bg-surface grid place-items-center shrink-0"
+                          style={{ filter: "var(--accent-brightness, none)" }}
+                        >
                           <TemplateLogo id={s.template} size={18} />
                         </div>
                         <div className="min-w-0 flex-1">
                           <div className="text-sm font-medium truncate">
                             {s.title}
                           </div>
-                          <div className="text-[11px] text-muted truncate">
+                          <div 
+                            className="text-[11px] font-bold uppercase tracking-wider transition-colors"
+                            style={{ 
+                              color: accentColor.startsWith("var") ? accentColor : accentColor,
+                              filter: "var(--accent-brightness, none)"
+                            }}
+                          >
                             {tpl?.title ?? s.template}
                           </div>
                         </div>
@@ -408,14 +425,14 @@ export default function TemplatePicker({
                           {s.tags.slice(0, 4).map((t) => (
                             <span
                               key={t}
-                              className="inline-flex items-center px-1.5 py-0.5 rounded border border-border bg-surface text-[10px] text-subtle"
+                              className="inline-flex items-center px-1.5 py-0.5 rounded border border-border bg-surface text-xs text-subtle"
                             >
                               #{t}
                             </span>
                           ))}
                         </div>
                       )}
-                      <div className="flex items-center gap-2 text-[11px] text-muted pt-1">
+                      <div className="flex items-center gap-2 text-xs text-muted pt-1">
                         {s.author?.image ? (
                           <Image
                             src={s.author.image}
@@ -443,11 +460,11 @@ export default function TemplatePicker({
         id="templates"
         className="mx-auto max-w-6xl px-4 py-10 scroll-mt-20"
       >
-        <div className="mb-5">
-          <div className="text-[10px] font-semibold tracking-[0.14em] text-muted uppercase mb-1">
+        <div className="mb-6">
+          <div className="text-xs font-black tracking-widest text-muted uppercase mb-1">
             Browse
           </div>
-          <h2 className="text-xl font-semibold tracking-tight">
+          <h2 className="text-xl md:text-2xl font-black tracking-tight">
             All templates
           </h2>
         </div>
@@ -495,7 +512,7 @@ export default function TemplatePicker({
             return (
               <section key={g.key} className="mb-10">
                 <div className="flex items-center gap-3 mb-4">
-                  <h3 className="text-[11px] font-semibold tracking-[0.14em] text-muted uppercase">
+                  <h3 className="text-xs font-black tracking-widest text-muted uppercase">
                     {g.label}
                   </h3>
                   <div className="flex-1 h-px bg-border" />
@@ -559,7 +576,7 @@ function WelcomeCard({ w }: { w: NonNullable<Welcome> }) {
           <div className="text-sm font-medium text-fg">
             Welcome back, {firstName}
           </div>
-          <div className="text-[11px] text-muted">
+          <div className="text-xs text-muted">
             {w.snippetCount === 0
               ? "No snippets saved yet."
               : `${w.snippetCount} ${w.snippetCount === 1 ? "snippet" : "snippets"} saved`}
@@ -577,20 +594,20 @@ function WelcomeCard({ w }: { w: NonNullable<Welcome> }) {
       {w.recent && (
         <Link
           href={`/play/${w.recent.slug}`}
-          className="group mt-3 flex items-center gap-3 rounded-lg border border-white/[0.10] hover:border-white/[0.16] bg-surface/70 hover:bg-elevated p-3 transition"
+          className="group mt-3 flex items-center gap-3 rounded-lg border border-border hover:border-border-strong bg-surface/70 hover:bg-elevated p-3 transition"
         >
-          <div className="w-8 h-8 rounded-lg border border-white/[0.10] bg-panel grid place-items-center shrink-0">
+          <div className="w-8 h-8 rounded-lg border border-border bg-panel grid place-items-center shrink-0">
             <TemplateLogo id={w.recent.template} size={16} />
           </div>
           <div className="min-w-0 flex-1">
-            <div className="text-[11px] uppercase tracking-wide text-muted">
+            <div className="text-xs font-black uppercase tracking-wide text-muted">
               Continue editing
             </div>
             <div className="text-sm font-medium truncate text-fg">
               {w.recent.title}
             </div>
           </div>
-          <span className="hidden sm:inline text-[11px] text-muted shrink-0">
+          <span className="hidden sm:inline text-xs text-muted shrink-0">
             {tpl?.title ?? w.recent.template}
           </span>
           <ArrowRight className="w-4 h-4 text-muted group-hover:text-fg transition shrink-0" />

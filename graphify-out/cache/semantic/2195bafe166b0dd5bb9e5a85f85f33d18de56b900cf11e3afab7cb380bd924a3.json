@@ -1,0 +1,1 @@
+{"nodes": [{"id": "readme", "label": "Project Documentation", "file_type": "document", "source_file": "README.md"}, {"id": "sandpack_execution", "label": "Sandpack Execution Engine", "file_type": "rationale", "source_file": "README.md"}, {"id": "monaco_editor", "label": "Monaco Code Editor", "file_type": "rationale", "source_file": "README.md"}], "edges": [], "hyperedges": []}

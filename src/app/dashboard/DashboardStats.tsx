@@ -23,7 +23,7 @@ export default function DashboardStats({ stats }: { stats: StatsProps }) {
             <Box className="w-4 h-4 text-accent" />
             Total Snippets
           </h3>
-          <div className="text-4xl font-bold tracking-tight text-white">{stats.total}</div>
+          <div className="text-4xl font-bold tracking-tight text-fg">{stats.total}</div>
         </div>
         <div className="mt-4 flex gap-4">
           <div className="flex items-center gap-1.5 text-xs text-subtle">
@@ -43,7 +43,7 @@ export default function DashboardStats({ stats }: { stats: StatsProps }) {
           <Eye className="w-5 h-5 text-blue-400" />
         </div>
         <div>
-          <div className="text-2xl font-bold text-white">{stats.totalViews}</div>
+          <div className="text-2xl font-bold text-fg">{stats.totalViews}</div>
           <div className="text-xs text-muted font-medium flex items-center gap-1">
             Total Views
             <TrendingUp className="w-3 h-3 text-green-400" />
@@ -57,7 +57,7 @@ export default function DashboardStats({ stats }: { stats: StatsProps }) {
           <Star className="w-5 h-5 text-amber-400" />
         </div>
         <div>
-          <div className="text-2xl font-bold text-white">{stats.pinnedCount}</div>
+          <div className="text-2xl font-bold text-fg">{stats.pinnedCount}</div>
           <div className="text-xs text-muted font-medium">Favorite Snippets</div>
         </div>
       </div>

@@ -51,7 +51,7 @@ export default async function HomePage() {
   }));
 
   return (
-    <div className="bg-black min-h-screen">
+    <div className="bg-bg min-h-screen">
       <HomeHero 
         sessionName={welcomeData?.name} 
         snippetCount={welcomeData?.snippetCount ?? 0}
@@ -62,10 +62,10 @@ export default async function HomePage() {
       
       <HomeExplore featured={featured} />
 
-      <section id="templates" className="bg-[#0A0A0A] py-20 border-t border-white/[0.03]">
+      <section id="templates" className="bg-surface py-20">
         <div className="mx-auto max-w-6xl px-4">
            <div className="mb-12 text-center">
-              <h2 className="text-3xl font-black text-white tracking-tight mb-4">The Full Library</h2>
+              <h2 className="text-3xl font-black text-fg tracking-tight mb-4">The Full Library</h2>
               <p className="text-muted max-w-lg mx-auto">
                 Explore all 16+ pre-wired templates. From core languages to complex ecosystem variants.
               </p>

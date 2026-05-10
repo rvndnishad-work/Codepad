@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
+import { useTheme } from "next-themes";
 
 function useIsMobile(breakpoint = 768) {
   const getSnap = () => (typeof window !== "undefined" ? window.innerWidth < breakpoint : false);
@@ -19,9 +20,12 @@ import {
   useSandpack,
   type SandpackFiles,
 } from "@codesandbox/sandpack-react";
-import { snippetCompletion } from "@codemirror/autocomplete";
-import { javascriptLanguage } from "@codemirror/lang-javascript";
+import { javascript, javascriptLanguage } from "@codemirror/lang-javascript";
+import { css } from "@codemirror/lang-css";
+import { html } from "@codemirror/lang-html";
+import { autocompletion, snippetCompletion } from "@codemirror/autocomplete";
 import { customSnippets } from "@/lib/snippets";
+import { colorPicker } from "@replit/codemirror-css-color-picker";
 import FileExplorer from "./FileExplorer";
 import { ErrorBridge, ErrorOverlay, type ErrorData } from "./ErrorOverlay";
 import PromptSidebar from "./PromptSidebar";
@@ -166,6 +170,37 @@ const customSnippetExtension = javascriptLanguage.data.of({
   },
 });
 
+function BasicEditor({ editable }: { editable: boolean }) {
+  const { sandpack } = useSandpack();
+  const activeFile = sandpack.activeFile;
+  const ext = activeFile.split('.').pop()?.toLowerCase() || "";
+
+  const extensions = useMemo(() => {
+    const base = [autocompletion({ fadeIcons: false }), colorPicker];
+    if (["js", "jsx", "ts", "tsx"].includes(ext)) {
+      base.push(javascript({ jsx: true, typescript: true }));
+      base.push(customSnippetExtension);
+    } else if (["css", "scss"].includes(ext)) {
+      base.push(css());
+    } else if (ext === "html") {
+      base.push(html());
+    }
+    return base;
+  }, [ext]);
+
+  return (
+    <SandpackCodeEditor
+      extensions={extensions}
+      showLineNumbers
+      showTabs
+      closableTabs
+      wrapContent
+      readOnly={!editable}
+      style={{ height: "100%" }}
+    />
+  );
+}
+
 export default function Playground({
   templateId,
   initialTitle,
@@ -176,6 +211,44 @@ export default function Playground({
   embed = false,
   previewOnly = false,
 }: Props) {
+  const { theme, resolvedTheme } = useTheme();
+  const isDark = resolvedTheme === "dark";
+
+  const sandpackTheme = useMemo(() => {
+    if (isDark) return cobalt2;
+    return {
+      colors: {
+        surface1: "#ffffff",
+        surface2: "#f8fafc",
+        surface3: "#f1f5f9",
+        clickable: "#64748b",
+        base: "#1f2937",
+        disabled: "#94a3b8",
+        hover: "#f87171",
+        accent: "#f87171",
+        error: "#ef4444",
+        errorSurface: "#fef2f2",
+      },
+      syntax: {
+        plain: "#1f2937",
+        comment: { color: "#94a3b8", fontStyle: "italic" },
+        keyword: "#be185d",
+        tag: "#be185d",
+        punctuation: "#64748b",
+        definition: "#0369a1",
+        property: "#92400e",
+        static: "#c2410c",
+        string: "#15803d",
+      },
+      font: {
+        body: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif',
+        mono: '"JetBrains Mono", monospace',
+        size: "14px",
+        lineHeight: "1.6",
+      },
+    };
+  }, [isDark]);
+
   const tpl = templatesById[templateId];
   if (!tpl) {
     return <div className="p-8">Unknown template: {templateId}</div>;
@@ -498,38 +571,61 @@ export default function Playground({
       /* Nano Banana Pro Custom Styles */
       .playground-container {
         overflow: hidden;
-        background: #0A0A0A;
+        background: var(--bg);
       }
 
       /* Seamless panels — no margins, no rounded corners, no visible borders */
       .ide-panel {
         overflow: hidden;
-        background: #0A0A0A;
+        background: var(--bg);
       }
 
       /* Thin divider between panels */
       .ide-divider {
-        background: rgba(255,255,255,0.04);
+        background: var(--border);
         transition: background 0.2s ease;
         flex-shrink: 0;
         position: relative;
         z-index: 10;
       }
       .ide-divider:hover {
-        background: rgba(255,230,0,0.20);
+        background: var(--accent);
+        opacity: 0.4;
       }
       /* Custom Scrollbar */
       ::-webkit-scrollbar { width: 5px; height: 5px; }
       ::-webkit-scrollbar-track { background: transparent; }
-      ::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.06); border-radius: 10px; }
-      ::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.12); }
+      ::-webkit-scrollbar-thumb { 
+        background: var(--muted);
+        opacity: 0.1;
+        border-radius: 10px; 
+      }
+      ::-webkit-scrollbar-thumb:hover { 
+        background: var(--muted);
+        opacity: 0.2;
+      }
+
+      /* Sandpack Internal Overrides */
+      .sp-layout {
+        background: transparent !important;
+        border: none !important;
+      }
+      .sp-stack {
+        background: transparent !important;
+      }
+      .sp-console {
+        background: transparent !important;
+      }
+      .sp-preview-container {
+        background: transparent !important;
+      }
     `;
   }, [fontSize]);
 
   return (
     <>
       <style dangerouslySetInnerHTML={{ __html: dynamicStyles }} />
-      <div className="flex-1 flex flex-col bg-[#0A0A0A]">
+      <div className="flex-1 flex flex-col bg-bg">
         <div className="flex-1 playground-container flex flex-col relative overflow-hidden">
           {!embed && !previewOnly && (
             <PlaygroundToolbar
@@ -553,11 +649,11 @@ export default function Playground({
           <div className="relative flex-1 min-h-0">
             <div className="absolute inset-0">
               <SandpackProvider
-                key={templateId}
+                key={`${templateId}-${isDark ? "dark" : "light"}`}
                 theme={{
-                  ...cobalt2,
+                  ...sandpackTheme,
                   font: {
-                    ...cobalt2.font,
+                    ...sandpackTheme.font,
                     mono: "'JetBrains Mono', monospace",
                     size: "14px",
                   }
@@ -566,7 +662,7 @@ export default function Playground({
                 files={initialFilesRef.current}
                 customSetup={customSetup}
                 options={{ 
-                  recompileMode: autoRun ? "delayed" : "none", 
+                  recompileMode: autoRun ? "delayed" : undefined, 
                   recompileDelay: 150, 
                   autorun: autoRun, 
                   autoReload: autoRun, 
@@ -575,7 +671,7 @@ export default function Playground({
                   externalResources: [
                     "data:text/css,.react-error-overlay,#webpack-dev-server-client-overlay,.sp-overlay{display:none!important}#ignore.css"
                   ]
-                }}
+                } as any}
               >
                 {isMobile && mobileFilesOpen && (
                   <div className="fixed inset-0 z-[100] flex bg-black/60 backdrop-blur-sm">
@@ -596,22 +692,18 @@ export default function Playground({
                         <ErrorOverlay error={bundlerError} onDismiss={() => { setBundlerError(null); runRef.current?.(); }} />
                       </div>
                     ) : isMobile ? (
-                      <div className="flex flex-col h-full bg-[#0A0A0A]">
+                      <div className="flex flex-col h-full bg-bg">
                         <div className="flex-[0_0_55%] min-h-0 overflow-hidden flex flex-col ide-panel">
                           <div className="flex-1 min-h-0">
                             {editor === "sandpack" ? (
-                              <SandpackCodeEditor
-                                extensions={[customSnippetExtension]}
-                                showLineNumbers showTabs closableTabs wrapContent
-                                readOnly={!editable} style={{ height: "100%" }}
-                              />
+                              <BasicEditor editable={editable} />
                             ) : (
                               <MonacoEditor fontSize={fontSize} readOnly={!editable} />
                             )}
                           </div>
                           <ReadOnlyToolbar editable={editable} />
                         </div>
-                        <div className="flex-[0_0_45%] min-h-0 flex flex-col relative ide-panel border-t border-white/[0.04]">
+                        <div className="flex-[0_0_45%] min-h-0 flex flex-col relative ide-panel border-t border-border">
                           <div style={{
                             display: view === "console" ? "none" : "flex",
                             flex: view === "both" ? "0 0 60%" : 1,
@@ -624,18 +716,18 @@ export default function Playground({
                             flex: view === "both" ? "0 0 40%" : 1,
                             minHeight: 0, overflow: "hidden",
                             flexDirection: "column",
-                            borderTop: view === "both" ? "1px solid rgba(255,255,255,0.05)" : undefined,
+                            borderTop: view === "both" ? "1px solid var(--border)" : undefined,
                           }}>
-                            <div className="flex items-center justify-between px-3 h-9 bg-white/[0.02] shrink-0 border-b border-white/[0.04]">
+                            <div className="flex items-center justify-between px-3 h-9 bg-surface shrink-0 border-b border-border">
                               <div className="flex items-center gap-2">
                                 <Terminal className="w-3 h-3 text-accent/60" />
-                                <span className="text-[11px] font-medium text-white/35 tracking-wide">Console</span>
+                                <span className="text-[11px] font-medium text-muted tracking-wide">Console</span>
                               </div>
-                              <div className="flex items-center gap-2">
-                                <button onClick={() => setConsoleKey(k => k + 1)} className="p-1 hover:bg-white/[0.06] rounded transition text-white/20 hover:text-fg" title="Clear Console">
+                              <div className="flex items-center gap-1.5">
+                                <button onClick={() => setConsoleKey(k => k + 1)} className="p-1 hover:bg-elevated rounded transition text-muted/50 hover:text-fg" title="Clear Console">
                                   <Ban className="w-3 h-3" />
                                 </button>
-                                <div className="text-[10px] font-normal text-white/15">Live</div>
+                                <div className="text-[10px] font-normal text-muted/30">Live</div>
                               </div>
                             </div>
                             <div className="flex-1 min-h-0">
@@ -658,8 +750,8 @@ export default function Playground({
                           </>
                         )}
                         {explorerCollapsed && (
-                          <div className="h-full shrink-0 w-10 flex flex-col items-center py-4 bg-[#080808] border-r border-white/[0.04]">
-                             <button onClick={() => setExplorerCollapsed(false)} className="p-2 rounded-xl bg-white/5 hover:bg-white/10 text-muted transition" title="Expand Files">
+                          <div className="h-full shrink-0 w-10 flex flex-col items-center py-4 bg-surface border-r border-border">
+                             <button onClick={() => setExplorerCollapsed(false)} className="p-2 rounded-xl bg-bg hover:bg-elevated text-muted transition" title="Expand Files">
                                 <PanelBottom className="w-4 h-4 rotate-90" />
                              </button>
                           </div>
@@ -667,11 +759,7 @@ export default function Playground({
                         <div style={{ width: editorW, minWidth: 0 }} className="h-full shrink-0 flex flex-col ide-panel">
                           <div className="flex-1 min-h-0">
                             {editor === "sandpack" ? (
-                              <SandpackCodeEditor
-                                extensions={[customSnippetExtension]}
-                                showLineNumbers showTabs closableTabs wrapContent
-                                readOnly={!editable} style={{ height: "100%" }}
-                              />
+                              <BasicEditor editable={editable} />
                             ) : (
                               <div className="h-full w-full min-w-0">
                                 <MonacoEditor fontSize={fontSize} readOnly={!editable} />
@@ -684,13 +772,13 @@ export default function Playground({
                            <div className="absolute inset-y-0 -left-2 -right-2" />
                         </div>
                         <div className="flex-1 min-w-0 h-full flex flex-col relative ide-panel">
-                          <div className="flex items-center justify-between px-3 h-9 border-b border-white/[0.04] shrink-0">
+                          <div className="flex items-center justify-between px-3 h-9 border-b border-border shrink-0">
                              <div className="flex items-center gap-2">
                                <div className="w-1.5 h-1.5 rounded-full bg-emerald-400/70" />
-                               <span className="text-[11px] font-medium text-white/35 tracking-wide">Output</span>
-                             </div>
-                             <div className="flex items-center gap-4">
-                                <div className="text-[10px] font-mono text-white/15">localhost:3000</div>
+                               <span className="text-[11px] font-medium text-muted tracking-wide">Output</span>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <div className="text-[10px] font-mono text-muted/30">localhost:3000</div>
                              </div>
                           </div>
                           <div className="flex-1 flex flex-col min-h-0">
@@ -702,25 +790,25 @@ export default function Playground({
                               <SandpackPreview showNavigator showOpenInCodeSandbox={false} showRefreshButton={false} style={{ height: "100%", width: "100%" }} />
                             </div>
                             <div style={{
-                              display: view === "preview" ? "none" : "flex",
-                              flex: view === "both" ? "0 0 40%" : 1,
-                              minHeight: 0, overflow: "hidden",
-                              flexDirection: "column",
-                              borderTop: view === "both" ? "1px solid rgba(255,255,255,0.04)" : undefined,
-                            }}>
-                              <div className="flex items-center justify-between px-3 h-9 bg-white/[0.02] shrink-0 border-b border-white/[0.04]">
-                                <div className="flex items-center gap-2">
-                                  <Terminal className="w-3 h-3 text-accent/60" />
-                                  <span className="text-[11px] font-medium text-white/35 tracking-wide">Console</span>
-                                </div>
-                                <div className="flex items-center gap-2">
-                                  <button onClick={() => setConsoleKey(k => k + 1)} className="p-1 hover:bg-white/[0.06] rounded transition text-white/20 hover:text-fg" title="Clear Console">
-                                    <Ban className="w-3 h-3" />
-                                  </button>
-                                  <div className="text-[10px] font-normal text-white/15">Live</div>
-                                </div>
-                              </div>
-                              <div className="flex-1 min-h-0">
+                               display: view === "preview" ? "none" : "flex",
+                               flex: view === "both" ? "0 0 40%" : 1,
+                               minHeight: 0, overflow: "hidden",
+                               flexDirection: "column",
+                               borderTop: view === "both" ? "1px solid var(--border)" : undefined,
+                             }}>
+                               <div className="flex items-center justify-between px-3 h-9 bg-surface shrink-0 border-b border-border">
+                                 <div className="flex items-center gap-2">
+                                   <Terminal className="w-3 h-3 text-accent/60" />
+                                   <span className="text-[11px] font-medium text-muted tracking-wide">Console</span>
+                                 </div>
+                                 <div className="flex items-center gap-1.5">
+                                   <button onClick={() => setConsoleKey(k => k + 1)} className="p-1 hover:bg-elevated rounded transition text-muted/50 hover:text-fg" title="Clear Console">
+                                     <Ban className="w-3 h-3" />
+                                   </button>
+                                   <div className="text-[10px] font-normal text-muted/30">Live</div>
+                                 </div>
+                               </div>
+                               <div className="flex-1 min-h-0">
                                 <SandpackConsole key={consoleKey} style={{ height: "100%", width: "100%" }} />
                               </div>
                             </div>

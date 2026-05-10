@@ -4,6 +4,7 @@ import { useCallback, useMemo, useState, useEffect, useRef } from "react";
 import dynamic from "next/dynamic";
 import { useActiveCode, useSandpack } from "@codesandbox/sandpack-react";
 import { X, FileCode2, Lock } from "lucide-react";
+import { useTheme } from "next-themes";
 import { setupTypeAcquisition } from "@typescript/ata";
 import typescript from "typescript";
 import type { Monaco } from "@monaco-editor/react";
@@ -19,6 +20,7 @@ const EXT_LANG: Record<string, string> = {
   json: "json",
   html: "html",
   css: "css",
+  scss: "scss",
   svelte: "html",
   vue: "html",
 };
@@ -31,6 +33,7 @@ const EXT_COLOR: Record<string, string> = {
   json: "#6D8086",
   html: "#E34F26",
   css: "#1572B6",
+  scss: "#CF649A",
   svelte: "#FF3E00",
   vue: "#42B883",
 };
@@ -49,6 +52,8 @@ export default function MonacoEditor({ fontSize, readOnly = false }: { fontSize:
   const { code, updateCode } = useActiveCode();
   const { sandpack } = useSandpack();
   const { activeFile, visibleFiles, setActiveFile } = sandpack;
+  const { theme, resolvedTheme } = useTheme();
+  const isDark = resolvedTheme === "dark";
 
   const language = useMemo(() => languageFor(activeFile), [activeFile]);
 
@@ -335,6 +340,50 @@ export default function MonacoEditor({ fontSize, readOnly = false }: { fontSize:
         "scrollbarSlider.activeBackground": "#FFE60030",
       }
     });
+
+    // Nano Banana Pro Light Theme Definition
+    monaco.editor.defineTheme("nbp-light", {
+      base: "vs",
+      inherit: true,
+      rules: [
+        { token: "keyword", foreground: "be185d" },
+        { token: "type", foreground: "be185d" },
+        { token: "struct", foreground: "be185d" },
+        { token: "interface", foreground: "be185d" },
+        { token: "class", foreground: "9333ea" },
+        { token: "string", foreground: "15803d" },
+        { token: "number", foreground: "c2410c" },
+        { token: "comment", foreground: "94a3b8" },
+        { token: "operator", foreground: "0369a1" },
+        { token: "delimiter", foreground: "334155" },
+        { token: "identifier.function", foreground: "f87171" },
+      ],
+      colors: {
+        "editor.background": "#ffffff",
+        "editor.foreground": "#1f2937",
+        "editorLineNumber.foreground": "#cbd5e1",
+        "editorLineNumber.activeForeground": "#f87171",
+        "editor.lineHighlightBackground": "#00000004",
+        "editor.lineHighlightBorder": "#00000006",
+        "editor.selectionBackground": "#f8717118",
+        "editorCursor.foreground": "#f87171",
+        "editorBracketMatch.background": "#f8717115",
+        "editorBracketMatch.border": "#f8717130",
+        "editorGutter.background": "#ffffff",
+        "editorWidget.background": "#ffffff",
+        "editorWidget.border": "#00000010",
+        "editorSuggestWidget.background": "#ffffff",
+        "editorSuggestWidget.border": "#00000008",
+        "editorSuggestWidget.selectedBackground": "#0000000A",
+        "editorSuggestWidget.highlightForeground": "#f87171",
+        "input.background": "#f8fafc",
+        "input.border": "#00000010",
+        "scrollbar.shadow": "#00000000",
+        "scrollbarSlider.background": "#00000008",
+        "scrollbarSlider.hoverBackground": "#00000015",
+        "scrollbarSlider.activeBackground": "#f8717130",
+      }
+    });
   }, []);
 
   const handleChange = useCallback(
@@ -345,23 +394,25 @@ export default function MonacoEditor({ fontSize, readOnly = false }: { fontSize:
   );
 
   return (
-    <div className="flex flex-col h-full bg-[#0A0A0A]">
+    <div className="flex flex-col h-full bg-bg">
       {/* Nano Banana Pro decoration CSS — applied via deltaDecorations engine */}
       <style dangerouslySetInnerHTML={{ __html: `
-        /* JSX/HTML tag names → light purple #D2A8FF */
-        .nbp-jsx-tag { color: #D2A8FF !important; }
-        /* JSX/HTML attribute names → soft blue italic #A5D6FF */
-        .nbp-jsx-attr { color: #A5D6FF !important; font-style: italic !important; }
-        /* Function declaration names → Nano Banana Yellow #FFE600 */
-        .nbp-func-name { color: #FFE600 !important; }
-        /* Method calls .methodName() → Nano Banana Yellow #FFE600 */
-        .nbp-method { color: #FFE600 !important; }
-        /* Property access .propertyName → Nano Banana Yellow #FFE600 */
-        .nbp-property { color: #FFE600 !important; }
-        /* Standalone function calls name() → Nano Banana Yellow #FFE600 */
-        .nbp-func-call { color: #FFE600 !important; }
-        /* Class names → pink #fb94ff */
-        .nbp-class-name { color: #FB94FF !important; }
+        /* Theme-aware decorations */
+        .nbp-jsx-tag { color: var(--accent) !important; font-weight: 500; }
+        .nbp-jsx-attr { color: #0ea5e9 !important; font-style: italic !important; }
+        .nbp-func-name { color: var(--accent) !important; font-weight: 600; }
+        .nbp-method { color: #0891b2 !important; }
+        .nbp-property { color: #0284c7 !important; }
+        .nbp-func-call { color: #0369a1 !important; }
+        .nbp-class-name { color: #9333ea !important; }
+
+        .dark .nbp-jsx-tag { color: #D2A8FF !important; font-weight: 400; }
+        .dark .nbp-jsx-attr { color: #A5D6FF !important; }
+        .dark .nbp-func-name { color: #FFE600 !important; }
+        .dark .nbp-method { color: #FFE600 !important; }
+        .dark .nbp-property { color: #FFE600 !important; }
+        .dark .nbp-func-call { color: #FFE600 !important; }
+        .dark .nbp-class-name { color: #FB94FF !important; }
 
         /* ── Monaco Tab Bar Pro ── */
         .monaco-tab-bar {
@@ -370,8 +421,8 @@ export default function MonacoEditor({ fontSize, readOnly = false }: { fontSize:
           gap: 0;
           min-height: 36px;
           padding: 0 8px;
-          border-bottom: 1px solid rgba(255,255,255,0.04);
-          background: #0A0A0A;
+          border-bottom: 1px solid var(--border);
+          background: var(--surface);
           overflow-x: auto;
           -ms-overflow-style: none;
           scrollbar-width: none;
@@ -386,7 +437,7 @@ export default function MonacoEditor({ fontSize, readOnly = false }: { fontSize:
           font-size: 12px;
           font-family: 'Inter', -apple-system, sans-serif;
           font-weight: 400;
-          color: rgba(255,255,255,0.35);
+          color: var(--muted);
           cursor: pointer;
           white-space: nowrap;
           position: relative;
@@ -395,13 +446,13 @@ export default function MonacoEditor({ fontSize, readOnly = false }: { fontSize:
           margin-bottom: -1px;
         }
         .monaco-tab:hover {
-          color: rgba(255,255,255,0.65);
-          background: rgba(255,255,255,0.02);
+          color: var(--fg);
+          background: var(--surface);
         }
         .monaco-tab.active {
-          color: rgba(255,255,255,0.9);
-          border-bottom-color: #FFE600;
-          background: rgba(255,255,255,0.02);
+          color: var(--fg);
+          border-bottom-color: var(--accent);
+          background: var(--surface);
         }
         .monaco-tab .tab-dot {
           width: 6px;
@@ -417,7 +468,7 @@ export default function MonacoEditor({ fontSize, readOnly = false }: { fontSize:
           height: 16px;
           border-radius: 4px;
           opacity: 0;
-          color: rgba(255,255,255,0.3);
+          color: var(--muted);
           transition: all 0.15s ease;
           flex-shrink: 0;
           margin-left: 2px;
@@ -427,8 +478,8 @@ export default function MonacoEditor({ fontSize, readOnly = false }: { fontSize:
           opacity: 1;
         }
         .monaco-tab .tab-close:hover {
-          background: rgba(255,255,255,0.08);
-          color: rgba(255,255,255,0.8);
+          background: var(--elevated);
+          color: var(--fg);
         }
       ` }} />
 
@@ -460,7 +511,7 @@ export default function MonacoEditor({ fontSize, readOnly = false }: { fontSize:
       <div className="flex-1 min-h-0">
         <Editor
           height="100%"
-          theme="nano-banana-pro"
+          theme={isDark ? "nano-banana-pro" : "nbp-light"}
           language={language}
           path={activeFile}
           value={code}
@@ -545,6 +596,7 @@ export default function MonacoEditor({ fontSize, readOnly = false }: { fontSize:
             renderWhitespace: "selection",
             linkedEditing: true,
             lineHeight: Math.floor(fontSize * 1.6),
+            colorDecorators: true,
           }}
         />
       </div>

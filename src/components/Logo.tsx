@@ -1,5 +1,5 @@
 /**
- * Codepad brand mark.
+ * Interviewpad brand mark.
  *
  * Concept: a miniature editor — three stylized "code lines" of varying widths
  * with a cyan caret at the active line, set inside a rounded square with a
@@ -7,7 +7,7 @@
  * without the generic `</>` cliche.
  *
  * Use `<LogoMark />` for a square icon (header, favicon, app icon).
- * Use `<LogoWordmark />` for icon + "Codepad" text (login page, footer hero).
+ * Use `<LogoWordmark />` for icon + "Interviewpad" text (login page, footer hero).
  */
 
 type SizeProps = { size?: number; className?: string; idSuffix?: string };
@@ -73,7 +73,7 @@ export function LogoWordmark({
          <LogoMark size={20} className="text-black" />
       </div>
       <div className="flex flex-col leading-none">
-        <span className="font-black text-lg tracking-tighter text-white">Codepad</span>
+        <span className="font-black text-lg tracking-tighter text-white">Interviewpad</span>
         <span className="text-[9px] font-bold text-white/20 uppercase tracking-[0.3em]">Pro Sandbox</span>
       </div>
     </span>

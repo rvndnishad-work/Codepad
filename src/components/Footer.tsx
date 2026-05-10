@@ -18,7 +18,7 @@ export default function Footer() {
                  <LogoMark size={20} className="text-black" />
               </div>
               <div className="flex flex-col leading-none">
-                 <span className="font-black text-lg tracking-tighter text-white">Codepad</span>
+                 <span className="font-black text-lg tracking-tighter text-white">Interviewpad</span>
                  <span className="text-[9px] font-bold text-[#FFE600] uppercase tracking-[0.3em]">Pro Sandbox</span>
               </div>
             </Link>
@@ -89,7 +89,7 @@ export default function Footer() {
 
         {/* Bottom Bar */}
         <div className="pt-8 border-t border-white/5 flex flex-col sm:flex-row items-center justify-between gap-4 text-[10px] font-bold text-white/20 uppercase tracking-[0.1em]">
-          <p>© {new Date().getFullYear()} CODEPAD PRO. ALL RIGHTS RESERVED.</p>
+          <p>© {new Date().getFullYear()} INTERVIEWPAD PRO. ALL RIGHTS RESERVED.</p>
           <div className="flex items-center gap-6">
              <Link href="/privacy" className="hover:text-white transition-colors">Privacy Policy</Link>
              <Link href="/terms" className="hover:text-white transition-colors">Terms of Service</Link>

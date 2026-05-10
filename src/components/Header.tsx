@@ -19,7 +19,7 @@ export default async function Header() {
           </div>
           <div className="flex flex-col leading-none">
              <span className="font-bold text-lg tracking-tight text-white group-hover:text-white/90 transition-colors">
-               Codepad<span className="text-white/30 font-normal">.app</span>
+               Interviewpad<span className="text-white/30 font-normal">.in</span>
              </span>
           </div>
         </Link>

@@ -35,14 +35,14 @@ export default function HomeExplore({ featured }: { featured: Snippet[] }) {
           <Link
             key={s.id}
             href={`/play/${s.slug}`}
-            className="group relative rounded-3xl border border-border bg-[#0A0A0A] p-6 hover:border-[#FFE600]/30 transition-all shadow-xl"
+            className="group relative rounded-3xl border border-white/[0.10] bg-[#0A0A0A] p-6 hover:border-white/[0.16] transition-all shadow-xl"
           >
             <div className="absolute top-0 right-0 p-4 opacity-[0.02] group-hover:opacity-[0.05] transition-opacity">
                <TemplateLogo id={s.template} size={80} />
             </div>
             
             <div className="flex items-center justify-between mb-6">
-               <div className="w-12 h-12 rounded-2xl bg-panel border border-border flex items-center justify-center group-hover:scale-110 transition-transform">
+               <div className="w-12 h-12 rounded-2xl bg-panel border border-white/[0.10] flex items-center justify-center group-hover:scale-110 transition-transform">
                   <TemplateLogo id={s.template} size={24} />
                </div>
                <div className="flex items-center gap-1 px-2 py-1 rounded-md bg-white/5 border border-white/5 text-[10px] font-bold text-muted uppercase">
@@ -55,7 +55,7 @@ export default function HomeExplore({ featured }: { featured: Snippet[] }) {
               {s.title}
             </h3>
 
-            <div className="flex items-center gap-3 mt-8 pt-4 border-t border-white/5">
+            <div className="flex items-center gap-3 mt-8 pt-4 border-t border-white/[0.06]">
                <div className="w-6 h-6 rounded-full bg-white/10 overflow-hidden ring-2 ring-black">
                   {s.author?.image ? (
                     <img src={s.author.image} alt="" className="w-full h-full object-cover" />

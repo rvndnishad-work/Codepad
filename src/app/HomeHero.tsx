@@ -34,7 +34,7 @@ export default function HomeHero({
         {/* Badge */}
         <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.02] px-4 py-1.5 text-[10px] font-semibold text-white/70 mb-8 tracking-widest uppercase backdrop-blur-md animate-in fade-in slide-in-from-bottom-4 duration-1000">
           <Sparkles className="w-3.5 h-3.5 text-[#FFE600]" />
-          <span>Codepad Pro Sandbox</span>
+          <span>Interviewpad Pro Sandbox</span>
         </div>
         
         {/* Main Headline */}
@@ -103,7 +103,7 @@ export default function HomeHero({
             </div>
             <div className="flex items-center gap-2 px-4 py-1.5 rounded-md bg-white/[0.03] border border-white/[0.04]">
               <Lock className="w-3 h-3 text-white/30" />
-              <span className="text-[10px] font-mono text-white/50">codepad.app / sandbox</span>
+              <span className="text-[10px] font-mono text-white/50">interviewpad.in / sandbox</span>
             </div>
             <div className="w-10" /> {/* Spacer for centering */}
           </div>

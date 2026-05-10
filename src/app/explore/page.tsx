@@ -2,8 +2,8 @@ import { prisma } from "@/lib/prisma";
 import ExploreList, { type ExploreItem } from "./ExploreList";
 
 export const metadata = {
-  title: "Explore — Codepad",
-  description: "Browse public snippets shared by the Codepad community.",
+  title: "Explore — Interviewpad",
+  description: "Browse public snippets shared by the Interviewpad community.",
 };
 
 const PAGE_SIZE = 20;

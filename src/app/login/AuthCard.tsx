@@ -74,7 +74,7 @@ export default function AuthCard({
     <div className="w-full max-w-sm rounded-2xl border border-border bg-panel/70 backdrop-blur p-7 shadow-soft">
       <LogoMark size={40} className="mb-4" />
       <h1 className="text-xl font-semibold tracking-tight">
-        {mode === "signin" ? "Sign in to Codepad" : "Create your account"}
+        {mode === "signin" ? "Sign in to Interviewpad" : "Create your account"}
       </h1>
       <p className="text-sm text-muted mt-1 mb-6">
         {mode === "signin"
@@ -189,7 +189,7 @@ export default function AuthCard({
       <div className="mt-5 text-center text-xs text-muted">
         {mode === "signin" ? (
           <>
-            New to Codepad?{" "}
+            New to Interviewpad?{" "}
             <button
               type="button"
               onClick={() => setMode("signup")}

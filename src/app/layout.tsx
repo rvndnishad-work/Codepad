@@ -13,7 +13,7 @@ const inter = Inter({
   display: "swap",
 });
 
-const SITE_NAME = "Codepad";
+const SITE_NAME = "Interviewpad";
 const SITE_DESCRIPTION =
   "Run and save JS, TS, React, Vue, Angular, Svelte, and Solid snippets. Isolated sandbox execution in your browser — no install needed.";
 
@@ -22,8 +22,8 @@ export const metadata: Metadata = {
     process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000"
   ),
   title: {
-    default: "Codepad — JavaScript Playground",
-    template: "%s — Codepad",
+    default: "Interviewpad — JavaScript Playground",
+    template: "%s — Interviewpad",
   },
   description: SITE_DESCRIPTION,
   applicationName: SITE_NAME,
@@ -39,13 +39,13 @@ export const metadata: Metadata = {
   openGraph: {
     type: "website",
     siteName: SITE_NAME,
-    title: "Codepad — JavaScript Playground",
+    title: "Interviewpad — JavaScript Playground",
     description: SITE_DESCRIPTION,
     locale: "en_US",
   },
   twitter: {
     card: "summary_large_image",
-    title: "Codepad — JavaScript Playground",
+    title: "Interviewpad — JavaScript Playground",
     description: SITE_DESCRIPTION,
   },
   robots: { index: true, follow: true },

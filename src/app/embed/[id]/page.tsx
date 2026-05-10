@@ -4,7 +4,7 @@ import { notFound } from "next/navigation";
 import type { SandpackFiles } from "@codesandbox/sandpack-react";
 
 export const metadata = {
-  title: "Codepad embed",
+  title: "Interviewpad embed",
 };
 
 export default async function EmbedPage({

@@ -1,4 +1,4 @@
-export const metadata = { title: "Privacy — Codepad" };
+export const metadata = { title: "Privacy — Interviewpad" };
 
 export default function PrivacyPage() {
   return (

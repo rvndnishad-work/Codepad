@@ -1,4 +1,4 @@
-export const metadata = { title: "Terms — Codepad" };
+export const metadata = { title: "Terms — Interviewpad" };
 
 export default function TermsPage() {
   return (
@@ -12,7 +12,7 @@ export default function TermsPage() {
         Use of the service
       </h2>
       <p>
-        Codepad is provided as-is for writing, running, and sharing
+        Interviewpad is provided as-is for writing, running, and sharing
         JavaScript code. By using the service, you agree not to use it for
         anything illegal, abusive, or that violates someone else&apos;s rights.
       </p>
@@ -27,7 +27,7 @@ export default function TermsPage() {
 
       <h2 className="text-base font-semibold text-fg mt-6 mb-2">Limitations</h2>
       <p>
-        While Codepad is in beta, snippet quotas, file size limits, and rate
+        While Interviewpad is in beta, snippet quotas, file size limits, and rate
         limits may change without notice. The service is provided without
         warranty of uptime, durability, or fitness for a particular purpose.
       </p>
@@ -35,7 +35,7 @@ export default function TermsPage() {
       <h2 className="text-base font-semibold text-fg mt-6 mb-2">Termination</h2>
       <p>
         We may suspend accounts that abuse the service. You may stop using
-        Codepad at any time and delete your snippets from the dashboard.
+        Interviewpad at any time and delete your snippets from the dashboard.
       </p>
     </article>
   );

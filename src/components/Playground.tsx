@@ -377,33 +377,33 @@ export default function Playground({
 
   // ── Persistence: Editor Settings ──
   useEffect(() => {
-    const savedEditor = localStorage.getItem("codepad_editor");
+    const savedEditor = localStorage.getItem("interviewpad_editor");
     if (savedEditor === "sandpack" || savedEditor === "monaco") setEditor(savedEditor);
 
-    const savedFontSize = localStorage.getItem("codepad_fontSize");
+    const savedFontSize = localStorage.getItem("interviewpad_fontSize");
     if (savedFontSize) {
       const parsed = parseInt(savedFontSize, 10);
       if (!isNaN(parsed) && parsed >= 10 && parsed <= 24) setFontSize(parsed);
     }
 
-    const savedAutoRun = localStorage.getItem("codepad_autoRun");
+    const savedAutoRun = localStorage.getItem("interviewpad_autoRun");
     if (savedAutoRun !== null) setAutoRun(savedAutoRun === "true");
   }, []);
 
   useEffect(() => {
-    localStorage.setItem("codepad_editor", editor);
+    localStorage.setItem("interviewpad_editor", editor);
   }, [editor]);
 
   useEffect(() => {
-    localStorage.setItem("codepad_fontSize", fontSize.toString());
+    localStorage.setItem("interviewpad_fontSize", fontSize.toString());
   }, [fontSize]);
 
   useEffect(() => {
-    localStorage.setItem("codepad_autoRun", autoRun.toString());
+    localStorage.setItem("interviewpad_autoRun", autoRun.toString());
   }, [autoRun]);
 
   useEffect(() => {
-    const savedUiScale = localStorage.getItem("codepad_uiScale");
+    const savedUiScale = localStorage.getItem("interviewpad_uiScale");
     if (savedUiScale) {
       const parsed = parseFloat(savedUiScale);
       if (!isNaN(parsed) && parsed >= 0.8 && parsed <= 2) setUiScale(parsed);
@@ -411,7 +411,7 @@ export default function Playground({
   }, []);
 
   useEffect(() => {
-    localStorage.setItem("codepad_uiScale", uiScale.toString());
+    localStorage.setItem("interviewpad_uiScale", uiScale.toString());
     document.documentElement.style.setProperty("--ui-scale", uiScale.toString());
   }, [uiScale]);
 

@@ -3,7 +3,7 @@ import { Compass, Home, ArrowRight } from "lucide-react";
 import { LogoMark } from "@/components/Logo";
 
 export const metadata = {
-  title: "Not found — Codepad",
+  title: "Not found — Interviewpad",
 };
 
 export default function NotFound() {

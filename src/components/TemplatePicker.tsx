@@ -55,10 +55,10 @@ function Tile({ t }: { t: TemplateDef }) {
   return (
     <Link
       href={`/play?template=${t.id}`}
-      className="group relative rounded-xl border border-border bg-surface/60 hover:bg-elevated transition shadow-tile hover:shadow-tile-hover p-4 flex flex-col gap-3"
+      className="group relative rounded-xl border border-white/[0.10] hover:border-white/[0.16] bg-surface/60 hover:bg-elevated transition shadow-tile hover:shadow-tile-hover p-4 flex flex-col gap-3"
     >
       <div
-        className="w-11 h-11 rounded-lg grid place-items-center border border-border"
+        className="w-11 h-11 rounded-lg grid place-items-center border border-white/[0.10]"
         style={{ background: meta?.bg ?? "rgba(255,255,255,0.03)" }}
       >
         {Icon ? (
@@ -99,7 +99,7 @@ function FeaturedTile({ t }: { t: TemplateDef }) {
   return (
     <Link
       href={`/play?template=${t.id}`}
-      className="group relative rounded-2xl border border-border bg-panel/60 hover:bg-elevated p-5 flex flex-col gap-4 shadow-tile hover:shadow-tile-hover transition overflow-hidden"
+      className="group relative rounded-2xl border border-white/[0.10] hover:border-white/[0.16] bg-panel/60 hover:bg-elevated p-5 flex flex-col gap-4 shadow-tile hover:shadow-tile-hover transition overflow-hidden"
     >
       <div
         aria-hidden
@@ -108,7 +108,7 @@ function FeaturedTile({ t }: { t: TemplateDef }) {
       />
       <div className="relative flex items-center justify-between">
         <div
-          className="w-14 h-14 rounded-xl grid place-items-center border border-border"
+          className="w-14 h-14 rounded-xl grid place-items-center border border-white/[0.10]"
           style={{ background: meta?.bg ?? "rgba(255,255,255,0.04)" }}
         >
           {Icon ? (
@@ -252,7 +252,7 @@ export default function TemplatePicker({
                         "Pick up where you left off"
                       ) : isFresh ? (
                         <>
-                          Welcome to Codepad,
+                          Welcome to Interviewpad,
                           <span className="block bg-clip-text text-transparent bg-gradient-to-r from-accent to-violet-400 mt-1">
                             {firstName}.
                           </span>
@@ -321,7 +321,7 @@ export default function TemplatePicker({
               return (
                 <div
                   key={f.title}
-                  className="rounded-xl border border-border bg-panel/40 p-5"
+                  className="rounded-xl border border-white/[0.10] hover:border-white/[0.16] bg-panel/40 p-5 transition-colors"
                 >
                   <div className="w-9 h-9 rounded-lg bg-accent-glow border border-accent/30 grid place-items-center mb-3">
                     <Icon className="w-4.5 h-4.5 text-accent" style={{ width: 18, height: 18 }} />
@@ -387,10 +387,10 @@ export default function TemplatePicker({
                     <Link
                       key={s.id}
                       href={`/play/${s.slug}`}
-                      className="group flex flex-col gap-2.5 rounded-xl border border-border bg-panel/70 hover:bg-elevated p-4 transition"
+                      className="group flex flex-col gap-2.5 rounded-xl border border-white/[0.10] hover:border-white/[0.16] bg-panel/70 hover:bg-elevated p-4 transition"
                     >
                       <div className="flex items-center gap-3">
-                        <div className="w-9 h-9 rounded-lg border border-border bg-surface grid place-items-center shrink-0">
+                        <div className="w-9 h-9 rounded-lg border border-white/[0.10] bg-surface grid place-items-center shrink-0">
                           <TemplateLogo id={s.template} size={18} />
                         </div>
                         <div className="min-w-0 flex-1">
@@ -577,9 +577,9 @@ function WelcomeCard({ w }: { w: NonNullable<Welcome> }) {
       {w.recent && (
         <Link
           href={`/play/${w.recent.slug}`}
-          className="group mt-3 flex items-center gap-3 rounded-lg border border-border bg-surface/70 hover:bg-elevated p-3 transition"
+          className="group mt-3 flex items-center gap-3 rounded-lg border border-white/[0.10] hover:border-white/[0.16] bg-surface/70 hover:bg-elevated p-3 transition"
         >
-          <div className="w-8 h-8 rounded-lg border border-border bg-panel grid place-items-center shrink-0">
+          <div className="w-8 h-8 rounded-lg border border-white/[0.10] bg-panel grid place-items-center shrink-0">
             <TemplateLogo id={w.recent.template} size={16} />
           </div>
           <div className="min-w-0 flex-1">

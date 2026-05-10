@@ -120,7 +120,7 @@ export default function MonacoEditor({ fontSize, readOnly = false }: { fontSize:
     if (!monacoInstance) return null;
 
     return setupTypeAcquisition({
-      projectName: "codepad",
+      projectName: "interviewpad",
       typescript: typescript,
       logger: console,
       delegate: {

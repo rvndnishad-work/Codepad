@@ -46,12 +46,16 @@ export function FilesBridge({
 
     filesRef.current = map;
 
-    if (needsUpdate) {
-      sandpack.updateFile(updatePayload);
+    if (needsUpdate || Object.keys(sandpack.files).length === 0) {
+      if (needsUpdate) sandpack.updateFile(updatePayload);
       // Force a hard refresh to clear the console and re-evaluate the module cache
       setTimeout(() => {
         const iframe = document.querySelector(".sp-iframe") as HTMLIFrameElement;
-        if (iframe) iframe.src = iframe.src;
+        if (iframe) {
+           const currentSrc = iframe.src;
+           iframe.src = "";
+           iframe.src = currentSrc;
+        }
       }, 50);
     }
 
@@ -59,8 +63,22 @@ export function FilesBridge({
       initialized.current = true;
       return;
     }
+    
+    // Nudge the bundler if we are in autoRun mode to ensure the code change is picked up
+    const isAutoRun = sandpack.status === "initial" || sandpack.status === "idle";
+    if (isAutoRun) {
+      // Small debounce to let Sandpack's internal state settle
+      const timer = setTimeout(() => {
+        const iframe = document.querySelector(".sp-iframe") as HTMLIFrameElement;
+        if (iframe && iframe.contentWindow) {
+          iframe.contentWindow.postMessage({ type: "refresh" }, "*");
+        }
+      }, 250);
+      return () => clearTimeout(timer);
+    }
+
     onChangeRef.current?.();
-  }, [sandpack.files, sandpack.activeFile, filesRef, templateFiles, templateId]);
+  }, [sandpack.files, sandpack.status, sandpack.activeFile, filesRef, templateFiles, templateId]);
 
   return null;
 }

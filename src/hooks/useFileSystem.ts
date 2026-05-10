@@ -216,7 +216,7 @@ export function useFileSystem() {
     if (isFolder) {
       const prefix = path + "/";
       for (const p of filePaths) {
-        if (p.startsWith(prefix)) sandpack.updateFile({ [p]: { code: "", hidden: true } });
+        if (p.startsWith(prefix)) sandpack.deleteFile(p);
       }
       setEmptyFolders((prev) => {
         const next = new Set<string>();
@@ -226,7 +226,7 @@ export function useFileSystem() {
         return next;
       });
     } else {
-      sandpack.updateFile({ [path]: { code: "", hidden: true } });
+      sandpack.deleteFile(path);
     }
     setContextMenu(null);
   }
@@ -247,7 +247,7 @@ export function useFileSystem() {
     if (files[fromPath]) {
       if (files[newPath]) return;
       const code = (files[fromPath] as { code: string }).code;
-      sandpack.updateFile({ [fromPath]: { code: "", hidden: true } });
+      sandpack.deleteFile(fromPath);
       sandpack.addFile(newPath, code);
       if (activeFile === fromPath) sandpack.setActiveFile(newPath);
       return;
@@ -263,7 +263,7 @@ export function useFileSystem() {
       (p) =>
         [newPrefix + p.slice(prefix.length), (files[p] as { code: string }).code] as const
     );
-    for (const p of movers) sandpack.updateFile({ [p]: { code: "", hidden: true } });
+    for (const p of movers) sandpack.deleteFile(p);
     for (const [target, code] of carry) sandpack.addFile(target, code);
     setEmptyFolders((prev) => {
       const next = new Set<string>();
@@ -300,7 +300,7 @@ export function useFileSystem() {
 
     if (files[path]) {
       const code = (files[path] as { code: string }).code;
-      sandpack.updateFile({ [path]: { code: "", hidden: true } });
+      sandpack.deleteFile(path);
       sandpack.addFile(newPath, code);
       if (activeFile === path) sandpack.setActiveFile(newPath);
       return;
@@ -319,7 +319,7 @@ export function useFileSystem() {
           (files[p] as { code: string }).code,
         ] as const
     );
-    for (const p of movers) sandpack.updateFile({ [p]: { code: "", hidden: true } });
+    for (const p of movers) sandpack.deleteFile(p);
     for (const [target, code] of carry) sandpack.addFile(target, code);
     setEmptyFolders((prev) => {
       const next = new Set<string>();

@@ -6,10 +6,7 @@ C:\Users\arvin\OneDrive\Desktop\claude\code\codepad\src\app\actions.ts
 C:\Users\arvin\OneDrive\Desktop\claude\code\codepad\src\app\HomeBento.tsx
 C:\Users\arvin\OneDrive\Desktop\claude\code\codepad\src\app\HomeExplore.tsx
 C:\Users\arvin\OneDrive\Desktop\claude\code\codepad\src\app\HomeHero.tsx
-C:\Users\arvin\OneDrive\Desktop\claude\code\codepad\src\app\layout.tsx
 C:\Users\arvin\OneDrive\Desktop\claude\code\codepad\src\app\not-found.tsx
-C:\Users\arvin\OneDrive\Desktop\claude\code\codepad\src\app\page.tsx
-C:\Users\arvin\OneDrive\Desktop\claude\code\codepad\src\app\api\auth\register\route.ts
 C:\Users\arvin\OneDrive\Desktop\claude\code\codepad\src\app\api\auth\[...nextauth]\route.ts
 C:\Users\arvin\OneDrive\Desktop\claude\code\codepad\src\app\api\explore\route.ts
 C:\Users\arvin\OneDrive\Desktop\claude\code\codepad\src\app\api\snippets\route.ts
@@ -57,13 +54,8 @@ C:\Users\arvin\OneDrive\Desktop\claude\code\codepad\src\components\bridges\RunBr
 C:\Users\arvin\OneDrive\Desktop\claude\code\codepad\src\hooks\useFileSystem.ts
 C:\Users\arvin\OneDrive\Desktop\claude\code\codepad\src\hooks\useNpmSearch.ts
 C:\Users\arvin\OneDrive\Desktop\claude\code\codepad\src\hooks\useResizable.ts
-C:\Users\arvin\OneDrive\Desktop\claude\code\codepad\src\lib\auth.ts
 C:\Users\arvin\OneDrive\Desktop\claude\code\codepad\src\lib\format.ts
 C:\Users\arvin\OneDrive\Desktop\claude\code\codepad\src\lib\icons.tsx
-C:\Users\arvin\OneDrive\Desktop\claude\code\codepad\src\lib\prisma.ts
-C:\Users\arvin\OneDrive\Desktop\claude\code\codepad\src\lib\rate-limit.ts
 C:\Users\arvin\OneDrive\Desktop\claude\code\codepad\src\lib\snippets.ts
 C:\Users\arvin\OneDrive\Desktop\claude\code\codepad\src\lib\templates.ts
 C:\Users\arvin\OneDrive\Desktop\claude\code\codepad\src\types\next-auth.d.ts
-C:\Users\arvin\OneDrive\Desktop\claude\code\codepad\README.md
-C:\Users\arvin\OneDrive\Desktop\claude\code\codepad\src\app\icon.svg

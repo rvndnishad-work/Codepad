@@ -29,13 +29,13 @@ export default function DashboardFeed({
   return (
     <div className="mb-12">
       <div className="flex items-center justify-between mb-6">
-        <div className="flex bg-white/[0.03] border border-white/5 p-1 rounded-xl">
+        <div className="flex bg-surface border border-border p-1 rounded-xl">
           <button
             onClick={() => setActiveTab("trending")}
             className={`flex items-center gap-2 px-4 py-1.5 rounded-lg text-sm font-medium transition-all ${
               activeTab === "trending"
-                ? "bg-[#FFE600] text-black shadow-lg"
-                : "text-muted hover:text-white"
+                ? "bg-accent text-bg shadow-lg"
+                : "text-muted hover:text-fg"
             }`}
           >
             <Flame className="w-4 h-4" />
@@ -45,8 +45,8 @@ export default function DashboardFeed({
             onClick={() => setActiveTab("following")}
             className={`flex items-center gap-2 px-4 py-1.5 rounded-lg text-sm font-medium transition-all ${
               activeTab === "following"
-                ? "bg-[#FFE600] text-black shadow-lg"
-                : "text-muted hover:text-white"
+                ? "bg-accent text-bg shadow-lg"
+                : "text-muted hover:text-fg"
             }`}
           >
             <Users className="w-4 h-4" />
@@ -54,7 +54,7 @@ export default function DashboardFeed({
           </button>
         </div>
         
-        <Link href="/explore" className="text-xs text-[#FFE600] hover:underline font-medium">
+        <Link href="/explore" className="text-xs text-accent hover:underline font-medium">
           View all explore
         </Link>
       </div>
@@ -71,7 +71,7 @@ export default function DashboardFeed({
             <Link
               key={item.id}
               href={`/play/${item.slug}`}
-              className="group rounded-2xl border border-border bg-panel p-4 hover:border-[#FFE600]/40 transition-all flex flex-col h-full"
+              className="group rounded-2xl border border-border bg-panel p-4 hover:border-accent/40 transition-all flex flex-col h-full"
             >
               <div className="flex items-start justify-between mb-4">
                 <div className="w-10 h-10 rounded-xl bg-surface border border-border grid place-items-center transition-transform group-hover:scale-110">
@@ -89,12 +89,12 @@ export default function DashboardFeed({
                 </div>
               </div>
 
-              <h4 className="text-white font-medium mb-1 group-hover:text-[#FFE600] transition-colors line-clamp-1">
+              <h4 className="text-fg font-medium mb-1 group-hover:text-accent transition-colors line-clamp-1">
                 {item.title}
               </h4>
               
-              <div className="flex items-center gap-2 mt-auto pt-4 border-t border-white/[0.03]">
-                <div className="w-5 h-5 rounded-full bg-white/10 overflow-hidden">
+              <div className="flex items-center gap-2 mt-auto pt-4 border-t border-border/30">
+                <div className="w-5 h-5 rounded-full bg-surface overflow-hidden">
                   {item.userImage ? (
                     <img src={item.userImage} alt="" className="w-full h-full object-cover" />
                   ) : (

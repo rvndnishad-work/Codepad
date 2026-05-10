@@ -24,8 +24,11 @@ export function RunBridge({
 
       // 3. Cache Buster: explicitly nudge the iframe if we are in a browser/preview mode
       const iframe = document.querySelector(".sp-iframe") as HTMLIFrameElement;
-      if (iframe && iframe.contentWindow) {
-        iframe.contentWindow.postMessage({ type: "refresh" }, "*");
+      if (iframe) {
+        // Re-setting src is the most reliable way to force a hard reload of the bundler's internal state
+        const currentSrc = iframe.src;
+        iframe.src = "";
+        iframe.src = currentSrc;
       }
 
       // 4. Force a status sync to give immediate feedback

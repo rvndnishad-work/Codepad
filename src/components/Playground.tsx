@@ -201,6 +201,18 @@ function BasicEditor({ editable }: { editable: boolean }) {
   );
 }
 
+function StatusDot() {
+  const { sandpack } = useSandpack();
+  const status = sandpack.status;
+  const error = sandpack.error;
+
+  let color = "bg-emerald-400/70";
+  if (status === "running" || status === "initial") color = "bg-amber-400/70 animate-pulse";
+  if (error) color = "bg-red-500/80";
+
+  return <div className={`w-1.5 h-1.5 rounded-full ${color} transition-colors duration-300`} />;
+}
+
 export default function Playground({
   templateId,
   initialTitle,
@@ -662,8 +674,6 @@ export default function Playground({
                 files={initialFilesRef.current}
                 customSetup={customSetup}
                 options={{ 
-                  recompileMode: autoRun ? "delayed" : undefined, 
-                  recompileDelay: 150, 
                   autorun: autoRun, 
                   autoReload: autoRun, 
                   initMode: "immediate",
@@ -774,7 +784,7 @@ export default function Playground({
                         <div className="flex-1 min-w-0 h-full flex flex-col relative ide-panel">
                           <div className="flex items-center justify-between px-3 h-9 border-b border-border shrink-0">
                              <div className="flex items-center gap-2">
-                               <div className="w-1.5 h-1.5 rounded-full bg-emerald-400/70" />
+                                <StatusDot />
                                <span className="text-[11px] font-medium text-muted tracking-wide">Output</span>
                               </div>
                               <div className="flex items-center gap-2">

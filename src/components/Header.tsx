@@ -34,7 +34,7 @@ export default async function Header() {
               <Link href="/explore" className="text-fg/50 hover:text-fg transition-colors">Explore</Link>
               {user && (
                 <>
-                  <Link href="/dashboard" className="text-fg/50 hover:text-fg transition-colors">My Snippets</Link>
+                  <Link href="/dashboard" className="text-fg/50 hover:text-fg transition-colors">Dashboard</Link>
                   <Link href="/profile" className="text-fg/50 hover:text-fg transition-colors">Profile</Link>
                 </>
               )}

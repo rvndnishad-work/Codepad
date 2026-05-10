@@ -16,12 +16,12 @@ export default function DashboardHero({ userName }: { userName: string | null })
   return (
     <div className="relative overflow-hidden rounded-3xl border border-border bg-surface p-8 md:p-12 mb-8">
       {/* Nano Banana Background Effects */}
-      <div className="absolute top-[-10%] right-[-10%] w-[40%] h-[60%] bg-[#FFE600] opacity-[0.07] blur-[120px] pointer-events-none" />
-      <div className="absolute bottom-[-10%] left-[-10%] w-[30%] h-[50%] bg-[#9DFF00] opacity-[0.05] blur-[100px] pointer-events-none" />
+      <div className="absolute top-[-10%] right-[-10%] w-[40%] h-[60%] bg-accent opacity-[0.07] blur-[120px] pointer-events-none" />
+      <div className="absolute bottom-[-10%] left-[-10%] w-[30%] h-[50%] bg-accent-soft opacity-[0.05] blur-[100px] pointer-events-none" />
       
       <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-8">
         <div className="max-w-xl">
-          <div className="inline-flex items-center gap-2 rounded-full border border-[#FFE600]/20 bg-[#FFE600]/5 px-3 py-1 text-[11px] font-medium text-[#FFE600] mb-6">
+          <div className="inline-flex items-center gap-2 rounded-full border border-accent/20 bg-accent-glow px-3 py-1 text-[11px] font-medium text-accent mb-6">
             <Sparkles className="w-3.5 h-3.5" />
             <span>Powering your next big idea</span>
           </div>
@@ -38,7 +38,7 @@ export default function DashboardHero({ userName }: { userName: string | null })
           <div className="flex flex-wrap gap-3">
             <Link
               href="/"
-              className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-[#FFE600] hover:bg-[#FFE600]/90 text-black font-semibold transition-all transform hover:scale-[1.02] active:scale-[0.98] shadow-[0_0_20px_rgba(255,230,0,0.3)]"
+              className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-accent text-bg font-semibold transition-all transform hover:scale-[1.02] active:scale-[0.98] shadow-soft"
             >
               <Plus className="w-5 h-5" />
               New Snippet

@@ -19,15 +19,15 @@ export default function DashboardSidebar() {
     <div className="space-y-6">
       {/* News Section */}
       <div className="rounded-3xl border border-border bg-panel p-6">
-        <h3 className="text-sm font-semibold text-white flex items-center gap-2 mb-4">
-          <Newspaper className="w-4 h-4 text-[#FFE600]" />
+        <h3 className="text-sm font-semibold text-fg flex items-center gap-2 mb-4">
+          <Newspaper className="w-4 h-4 text-accent" />
           Platform News
         </h3>
         <div className="space-y-4">
           {NEWS.map((item, i) => (
             <a key={i} href={item.href} className="group block">
-              <div className="text-[10px] text-[#FFE600] font-bold uppercase mb-0.5 tracking-wider">{item.date}</div>
-              <div className="text-sm text-subtle group-hover:text-white transition-colors flex items-center justify-between">
+              <div className="text-[10px] text-accent font-bold uppercase mb-0.5 tracking-wider">{item.date}</div>
+              <div className="text-sm text-subtle group-hover:text-fg transition-colors flex items-center justify-between">
                 {item.title}
                 <ExternalLink className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity" />
               </div>
@@ -38,8 +38,8 @@ export default function DashboardSidebar() {
 
       {/* Shortcuts Section */}
       <div className="rounded-3xl border border-border bg-panel p-6">
-        <h3 className="text-sm font-semibold text-white flex items-center gap-2 mb-4">
-          <Keyboard className="w-4 h-4 text-[#FFE600]" />
+        <h3 className="text-sm font-semibold text-fg flex items-center gap-2 mb-4">
+          <Keyboard className="w-4 h-4 text-accent" />
           Quick Shortcuts
         </h3>
         <div className="space-y-3">
@@ -48,7 +48,7 @@ export default function DashboardSidebar() {
               <span className="text-xs text-muted">{s.label}</span>
               <div className="flex gap-1">
                 {s.keys.map((k) => (
-                  <kbd key={k} className="px-1.5 py-0.5 rounded border border-white/10 bg-white/5 text-[9px] font-mono text-white/60">
+                  <kbd key={k} className="px-1.5 py-0.5 rounded border border-border bg-surface text-[9px] font-mono text-muted">
                     {k}
                   </kbd>
                 ))}
@@ -59,15 +59,15 @@ export default function DashboardSidebar() {
       </div>
 
       {/* Support Section */}
-      <div className="rounded-3xl border border-border bg-[#FFE600]/5 p-6 border-[#FFE600]/20">
-        <h3 className="text-sm font-semibold text-[#FFE600] flex items-center gap-2 mb-2">
+      <div className="rounded-3xl border border-border bg-accent-glow p-6 border-accent/20">
+        <h3 className="text-sm font-semibold text-accent flex items-center gap-2 mb-2">
           <MessageSquare className="w-4 h-4" />
           Need Help?
         </h3>
         <p className="text-xs text-subtle leading-relaxed mb-4">
           Join our Discord community or check the documentation for pro tips.
         </p>
-        <button className="w-full py-2 rounded-xl bg-white/5 hover:bg-white/10 text-white text-xs font-medium border border-white/10 transition-all">
+        <button className="w-full py-2 rounded-xl bg-surface hover:bg-elevated text-fg text-xs font-medium border border-border transition-all">
           Join Community
         </button>
       </div>

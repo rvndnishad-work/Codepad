@@ -28,8 +28,16 @@ export function RunBridge({
         iframe.contentWindow.postMessage({ type: "refresh" }, "*");
       }
 
-      // 4. Force a status sync
+      // 4. Force a status sync to give immediate feedback
       onStatusChange?.("running");
+      
+      // 5. If Sandpack is already idle and there are no changes, it might not emit a new status.
+      // We manually clear the running state after a short delay to prevent the button from getting stuck.
+      if (sandpack.status === "idle") {
+        setTimeout(() => {
+          onStatusChange?.("idle");
+        }, 300);
+      }
     };
   }, [dispatch, runRef, sandpack, onStatusChange]);
   

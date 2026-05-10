@@ -1,8 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Sparkles, Plus, Zap, Code2, Rocket, ArrowRight, Play, LayoutGrid } from "lucide-react";
-import { TemplateLogo } from "@/lib/icons";
+import { Sparkles, Plus, Play, LayoutGrid, Lock, ChevronRight, FileCode2, Terminal } from "lucide-react";
 
 export default function HomeHero({ 
   sessionName, 
@@ -13,75 +12,49 @@ export default function HomeHero({
   snippetCount: number;
   recentSnippet?: { slug: string; title: string; template: string } | null;
 }) {
-  const firstName = sessionName?.split(" ")[0];
-
   return (
-    <div className="relative overflow-hidden pt-24 pb-16 md:pt-32 md:pb-24 border-b border-white/[0.03]">
-      {/* Nano Banana Background Effects */}
-      <div className="absolute inset-0 pointer-events-none overflow-hidden">
-        {/* The Digital Floor (Grid) */}
-        <div className="absolute inset-0 [perspective:1000px] z-0">
-          <div className="absolute inset-0 bg-grid-pattern [transform:rotateX(60deg)] origin-top animate-grid-move opacity-40 h-[200%] w-full" />
-        </div>
+    <div className="relative overflow-hidden pt-24 pb-20 md:pt-32 md:pb-32 border-b border-white/[0.03]">
+      {/* ── Premium Background Setup ── */}
+      <div className="absolute inset-0 pointer-events-none flex items-center justify-center overflow-hidden">
+        {/* Solid dark base */}
+        <div className="absolute inset-0 bg-[#050505]" />
         
-        {/* Cinematic Gradient Overlays */}
-        <div className="absolute inset-0 bg-gradient-to-b from-[#08090c] via-transparent to-[#08090c] opacity-80" />
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[80%] h-[100%] bg-[#FFE600] opacity-[0.03] blur-[140px]" />
-        
-        {/* Floating Monitor Windows */}
-        <div className="absolute top-[15%] left-[5%] w-64 h-36 bg-black/60 backdrop-blur-xl border border-[#FFE600]/10 rounded-xl hidden xl:flex flex-col overflow-hidden animate-float shadow-2xl rotate-[-3deg]">
-           <div className="px-3 py-1.5 bg-white/[0.03] flex items-center gap-1.5 border-b border-white/5">
-              <div className="w-1.5 h-1.5 rounded-full bg-red-500/40" />
-              <div className="w-1.5 h-1.5 rounded-full bg-amber-500/40" />
-              <div className="w-1.5 h-1.5 rounded-full bg-green-500/40" />
-              <span className="text-[8px] font-black text-white/20 ml-auto uppercase tracking-widest">Compiler</span>
-           </div>
-           <div className="p-3 font-mono text-[9px] text-[#FFE600]/40 space-y-1">
-              <div className="flex gap-2"><span>$</span><span className="text-white/60">codepad deploy</span></div>
-              <div className="text-green-400/60">✔ Compilation successful</div>
-              <div className="text-white/30">Optimization complete (12ms)</div>
-              <div className="text-white/30">Ready on port 3000</div>
-           </div>
-        </div>
+        {/* Subtle non-moving structural grid fading out at the edges */}
+        <div 
+          className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.03)_1px,transparent_1px)] bg-[size:48px_48px]" 
+          style={{ maskImage: "radial-gradient(ellipse 70% 60% at 50% 0%, #000 30%, transparent 100%)", WebkitMaskImage: "radial-gradient(ellipse 70% 60% at 50% 0%, #000 30%, transparent 100%)" }}
+        />
 
-        <div className="absolute top-[45%] right-[5%] w-72 h-44 bg-black/60 backdrop-blur-xl border border-[#FFE600]/10 rounded-xl hidden xl:flex flex-col overflow-hidden animate-float [animation-delay:2s] shadow-2xl rotate-[2deg]">
-           <div className="px-3 py-1.5 bg-white/[0.03] flex items-center gap-1.5 border-b border-white/5">
-              <div className="w-1.5 h-1.5 rounded-full bg-blue-500/40" />
-              <span className="text-[8px] font-black text-white/20 ml-auto uppercase tracking-widest">Active Code</span>
-           </div>
-           <div className="p-3 font-mono text-[9px] text-white/40 space-y-1">
-              <div className="text-purple-400">export default function <span className="text-[#FFE600]">App</span>() {"{"}</div>
-              <div className="pl-4 text-purple-400">return (</div>
-              <div className="pl-8 text-blue-300">{"<div className=\"grid\">"}</div>
-              <div className="pl-12 text-white/20">{"<Editor />"}</div>
-              <div className="pl-8 text-blue-300">{"</div>"}</div>
-              <div className="pl-4 text-purple-400">);</div>
-              <div className="text-purple-400">{"}"}</div>
-           </div>
-        </div>
+        {/* Central glowing orb for depth */}
+        <div className="absolute top-[-20%] left-1/2 -translate-x-1/2 w-[600px] h-[500px] bg-[#FFE600]/15 blur-[120px] rounded-full mix-blend-screen" />
       </div>
       
-      <div className="relative z-10 mx-auto max-w-6xl px-4 text-center">
-        <div className="inline-flex items-center gap-2 rounded-full border border-[#FFE600]/20 bg-[#FFE600]/5 px-4 py-1.5 text-[11px] font-bold text-[#FFE600] mb-8 uppercase tracking-widest animate-in fade-in slide-in-from-bottom-2 duration-500">
-          <Sparkles className="w-3.5 h-3.5" />
-          <span>Next-Gen JavaScript Playground</span>
+      {/* ── Hero Content ── */}
+      <div className="relative z-10 mx-auto max-w-5xl px-4 text-center">
+        {/* Badge */}
+        <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.02] px-4 py-1.5 text-[10px] font-semibold text-white/70 mb-8 tracking-widest uppercase backdrop-blur-md animate-in fade-in slide-in-from-bottom-4 duration-1000">
+          <Sparkles className="w-3.5 h-3.5 text-[#FFE600]" />
+          <span>Codepad Pro Sandbox</span>
         </div>
         
-        <h1 className="text-5xl md:text-7xl font-black tracking-tight text-white mb-6 leading-[1.1] animate-in fade-in slide-in-from-bottom-4 duration-700 delay-100">
-          Code at the speed <br />
-          <span className="text-[#FFE600] drop-shadow-[0_0_15px_rgba(255,230,0,0.2)]">of thought.</span>
+        {/* Main Headline */}
+        <h1 className="text-5xl md:text-7xl font-black tracking-tighter text-white mb-6 leading-[1.05] animate-in fade-in slide-in-from-bottom-6 duration-1000 delay-150">
+          Code at the speed <br className="hidden md:block" />
+          <span className="text-transparent bg-clip-text bg-gradient-to-br from-[#FFE600] via-[#FFD700] to-[#FF9900]">of thought.</span>
         </h1>
         
-        <p className="text-muted text-lg md:text-xl mb-10 max-w-2xl mx-auto leading-relaxed animate-in fade-in slide-in-from-bottom-6 duration-700 delay-200">
+        {/* Subtitle */}
+        <p className="text-muted text-lg md:text-xl mb-10 max-w-2xl mx-auto leading-relaxed animate-in fade-in slide-in-from-bottom-8 duration-1000 delay-300 font-medium">
           The most powerful browser-based sandbox for JS, TS, and modern frameworks. 
-          Save, share, and embed snippets in seconds.
+          Zero setup. Infinite possibilities.
         </p>
         
-        <div className="flex flex-col sm:flex-row items-center justify-center gap-4 animate-in fade-in slide-in-from-bottom-8 duration-700 delay-300">
+        {/* Call to Actions */}
+        <div className="flex flex-col sm:flex-row items-center justify-center gap-4 animate-in fade-in slide-in-from-bottom-10 duration-1000 delay-500">
           {recentSnippet ? (
             <Link
               href={`/play/${recentSnippet.slug}`}
-              className="inline-flex items-center gap-2 px-8 py-4 rounded-2xl bg-[#FFE600] hover:bg-[#FFE600]/90 text-black font-bold transition-all transform hover:scale-[1.02] active:scale-[0.98] shadow-[0_0_30px_rgba(255,230,0,0.2)]"
+              className="inline-flex items-center gap-2 px-8 py-4 rounded-xl bg-[#FFE600] hover:bg-[#FFE600]/90 text-black font-bold transition-all transform hover:scale-[1.02] active:scale-[0.98] shadow-[0_0_40px_rgba(255,230,0,0.25)]"
             >
               <Play className="w-5 h-5 fill-current" />
               Continue: {recentSnippet.title}
@@ -89,7 +62,7 @@ export default function HomeHero({
           ) : (
             <Link
               href="/play?template=react"
-              className="inline-flex items-center gap-2 px-8 py-4 rounded-2xl bg-[#FFE600] hover:bg-[#FFE600]/90 text-black font-bold transition-all transform hover:scale-[1.02] active:scale-[0.98] shadow-[0_0_30px_rgba(255,230,0,0.2)]"
+              className="inline-flex items-center gap-2 px-8 py-4 rounded-xl bg-[#FFE600] hover:bg-[#FFE600]/90 text-black font-bold transition-all transform hover:scale-[1.02] active:scale-[0.98] shadow-[0_0_40px_rgba(255,230,0,0.25)]"
             >
               <Plus className="w-5 h-5" />
               Create First Snippet
@@ -98,7 +71,7 @@ export default function HomeHero({
           
           <Link
             href={sessionName ? "/dashboard" : "/login"}
-            className="inline-flex items-center gap-2 px-8 py-4 rounded-2xl bg-white/5 hover:bg-white/10 text-white border border-white/10 transition-all font-semibold"
+            className="inline-flex items-center gap-2 px-8 py-4 rounded-xl bg-white/[0.03] hover:bg-white/[0.08] text-white border border-white/10 transition-all font-semibold"
           >
             {sessionName ? (
               <>
@@ -107,28 +80,84 @@ export default function HomeHero({
               </>
             ) : (
               <>
-                <Rocket className="w-5 h-5" />
+                <ChevronRight className="w-5 h-5" />
                 Sign in to save
               </>
             )}
           </Link>
         </div>
+      </div>
 
-        {/* Platform stats */}
-        <div className="mt-12 flex flex-wrap items-center justify-center gap-8 text-xs font-bold uppercase tracking-widest text-muted/60 animate-in fade-in duration-1000 delay-500">
-          <div className="flex flex-col items-center gap-2">
-            <span className="text-white text-xl">16+</span>
-            <span>Templates</span>
+      {/* ── Abstract IDE Mockup ── */}
+      <div className="mx-auto max-w-4xl px-4 mt-20 relative z-10 animate-in fade-in slide-in-from-bottom-12 duration-1000 delay-700">
+        {/* Glow behind mockup */}
+        <div className="absolute inset-x-10 top-10 bottom-0 bg-[#FFE600]/5 blur-[80px] rounded-full pointer-events-none" />
+        
+        <div className="relative rounded-xl border border-white/[0.08] bg-[#0A0A0A] shadow-[0_20px_60px_-15px_rgba(0,0,0,0.8)] overflow-hidden">
+          {/* Window Controls / Header */}
+          <div className="flex items-center justify-between px-4 h-12 border-b border-white/[0.04] bg-white/[0.01]">
+            <div className="flex gap-2">
+              <div className="w-3 h-3 rounded-full bg-white/10" />
+              <div className="w-3 h-3 rounded-full bg-white/10" />
+              <div className="w-3 h-3 rounded-full bg-white/10" />
+            </div>
+            <div className="flex items-center gap-2 px-4 py-1.5 rounded-md bg-white/[0.03] border border-white/[0.04]">
+              <Lock className="w-3 h-3 text-white/30" />
+              <span className="text-[10px] font-mono text-white/50">codepad.app / sandbox</span>
+            </div>
+            <div className="w-10" /> {/* Spacer for centering */}
           </div>
-          <div className="w-px h-8 bg-white/5 hidden sm:block" />
-          <div className="flex flex-col items-center gap-2">
-            <span className="text-[#FFE600] text-xl">100%</span>
-            <span>Sandboxed</span>
-          </div>
-          <div className="w-px h-8 bg-white/5 hidden sm:block" />
-          <div className="flex flex-col items-center gap-2">
-            <span className="text-white text-xl">0s</span>
-            <span>Setup Time</span>
+          
+          {/* Editor Body */}
+          <div className="grid grid-cols-12 h-[320px] md:h-[400px]">
+            {/* Sidebar Fake */}
+            <div className="col-span-3 border-r border-white/[0.04] bg-[#050505] p-4 hidden md:block">
+              <div className="text-[10px] uppercase font-bold tracking-widest text-white/20 mb-4">Explorer</div>
+              <div className="space-y-2 font-mono text-xs text-white/60">
+                <div className="flex items-center gap-2 text-white/90 bg-white/[0.04] px-2 py-1 -ml-2 rounded">
+                  <FileCode2 className="w-3.5 h-3.5 text-blue-400" /> index.tsx
+                </div>
+                <div className="flex items-center gap-2 px-2 py-1 -ml-2">
+                  <FileCode2 className="w-3.5 h-3.5 text-yellow-400" /> styles.css
+                </div>
+                <div className="flex items-center gap-2 px-2 py-1 -ml-2">
+                  <FileCode2 className="w-3.5 h-3.5 text-white/40" /> package.json
+                </div>
+              </div>
+            </div>
+            
+            {/* Code Fake */}
+            <div className="col-span-12 md:col-span-9 bg-[#0A0A0A] p-6 font-mono text-[13px] md:text-sm leading-[1.7] overflow-hidden relative">
+              {/* Code lines */}
+              <div className="text-purple-400">import <span className="text-white/90">React</span>, {"{ useState }"} from <span className="text-green-400">'react'</span>;</div>
+              <br />
+              <div className="text-purple-400">export default function <span className="text-yellow-300">NanoBanana</span>() {"{"}</div>
+              <div className="pl-4 text-purple-400">const <span className="text-blue-300">[</span><span className="text-white/90">ready</span>, <span className="text-blue-300">setReady]</span> = <span className="text-yellow-300">useState</span>(<span className="text-[#FFE600]">true</span>);</div>
+              <br />
+              <div className="pl-4 text-purple-400">return (</div>
+              <div className="pl-8 text-blue-300">{"<div className=\"h-screen bg-black text-white\">"}</div>
+              <div className="pl-12 text-blue-300">{"<Header />"}</div>
+              <div className="pl-12 text-blue-300">{"<Workspace"}</div>
+              <div className="pl-16 text-blue-300">theme=<span className="text-green-400">"pro"</span></div>
+              <div className="pl-16 text-blue-300">turbo={<span className="text-purple-400">true</span>}</div>
+              <div className="pl-12 text-blue-300">{"/>"}</div>
+              <div className="pl-8 text-blue-300">{"</div>"}</div>
+              <div className="pl-4 text-purple-400">);</div>
+              <div className="text-purple-400">{"}"}</div>
+              
+              {/* Overlay Terminal */}
+              <div className="absolute bottom-0 left-0 right-0 h-32 bg-[#050505] border-t border-white/[0.04]">
+                <div className="flex items-center gap-2 px-4 h-8 border-b border-white/[0.02]">
+                  <Terminal className="w-3 h-3 text-white/40" />
+                  <span className="text-[10px] uppercase font-bold tracking-widest text-white/40">Terminal</span>
+                </div>
+                <div className="p-4 font-mono text-[11px] text-white/60 space-y-1">
+                  <div><span className="text-green-400">➜</span> <span className="text-blue-400">~</span> <span className="text-white/90">npm</span> run dev</div>
+                  <div className="text-white/30">ready - started server on 0.0.0.0:3000, url: http://localhost:3000</div>
+                  <div className="text-emerald-400/80">event - compiled client and server successfully in 128 ms</div>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>

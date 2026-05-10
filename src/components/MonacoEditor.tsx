@@ -3,7 +3,7 @@
 import { useCallback, useMemo, useState, useEffect, useRef } from "react";
 import dynamic from "next/dynamic";
 import { useActiveCode, useSandpack } from "@codesandbox/sandpack-react";
-import { X } from "lucide-react";
+import { X, FileCode2, Lock } from "lucide-react";
 import { setupTypeAcquisition } from "@typescript/ata";
 import typescript from "typescript";
 import type { Monaco } from "@monaco-editor/react";
@@ -23,12 +23,29 @@ const EXT_LANG: Record<string, string> = {
   vue: "html",
 };
 
+const EXT_COLOR: Record<string, string> = {
+  js: "#F7DF1E",
+  jsx: "#61DAFB",
+  ts: "#3178C6",
+  tsx: "#3178C6",
+  json: "#6D8086",
+  html: "#E34F26",
+  css: "#1572B6",
+  svelte: "#FF3E00",
+  vue: "#42B883",
+};
+
 function languageFor(path: string) {
   const ext = path.split(".").pop()?.toLowerCase() ?? "";
   return EXT_LANG[ext] ?? "plaintext";
 }
 
-export default function MonacoEditor({ fontSize }: { fontSize: number }) {
+function extColorFor(path: string) {
+  const ext = path.split(".").pop()?.toLowerCase() ?? "";
+  return EXT_COLOR[ext] ?? "#8b8b8b";
+}
+
+export default function MonacoEditor({ fontSize, readOnly = false }: { fontSize: number; readOnly?: boolean }) {
   const { code, updateCode } = useActiveCode();
   const { sandpack } = useSandpack();
   const { activeFile, visibleFiles, setActiveFile } = sandpack;
@@ -291,15 +308,31 @@ export default function MonacoEditor({ fontSize }: { fontSize: number }) {
         { token: "identifier.function", foreground: "FFE600" },
       ],
       colors: {
-        "editor.background": "#050505",
+        "editor.background": "#0A0A0A",
         "editor.foreground": "#E0E0E0",
-        "editorLineNumber.foreground": "#374151",
+        "editorLineNumber.foreground": "#2A2A2A",
         "editorLineNumber.activeForeground": "#FFE600",
-        "editor.lineHighlightBackground": "#ffffff05",
-        "editor.selectionBackground": "#FFE60020",
+        "editor.lineHighlightBackground": "#ffffff04",
+        "editor.lineHighlightBorder": "#ffffff06",
+        "editor.selectionBackground": "#FFE60018",
         "editorCursor.foreground": "#FFE600",
-        "editorBracketMatch.background": "#FFE60020",
-        "editorBracketMatch.border": "#FFE60040",
+        "editorBracketMatch.background": "#FFE60015",
+        "editorBracketMatch.border": "#FFE60030",
+        "editorGutter.background": "#0A0A0A",
+        "editorWidget.background": "#141414",
+        "editorWidget.border": "#ffffff10",
+        "editorSuggestWidget.background": "#141414",
+        "editorSuggestWidget.border": "#ffffff08",
+        "editorSuggestWidget.selectedBackground": "#ffffff0A",
+        "editorSuggestWidget.highlightForeground": "#FFE600",
+        "editorHoverWidget.background": "#141414",
+        "editorHoverWidget.border": "#ffffff08",
+        "input.background": "#0E0E0E",
+        "input.border": "#ffffff10",
+        "scrollbar.shadow": "#00000000",
+        "scrollbarSlider.background": "#ffffff08",
+        "scrollbarSlider.hoverBackground": "#ffffff15",
+        "scrollbarSlider.activeBackground": "#FFE60030",
       }
     });
   }, []);
@@ -312,7 +345,7 @@ export default function MonacoEditor({ fontSize }: { fontSize: number }) {
   );
 
   return (
-    <div className="flex flex-col h-full bg-[#050505]">
+    <div className="flex flex-col h-full bg-[#0A0A0A]">
       {/* Nano Banana Pro decoration CSS — applied via deltaDecorations engine */}
       <style dangerouslySetInnerHTML={{ __html: `
         /* JSX/HTML tag names → light purple #D2A8FF */
@@ -329,26 +362,92 @@ export default function MonacoEditor({ fontSize }: { fontSize: number }) {
         .nbp-func-call { color: #FFE600 !important; }
         /* Class names → pink #fb94ff */
         .nbp-class-name { color: #FB94FF !important; }
+
+        /* ── Monaco Tab Bar Pro ── */
+        .monaco-tab-bar {
+          display: flex;
+          align-items: stretch;
+          gap: 0;
+          min-height: 36px;
+          padding: 0 8px;
+          border-bottom: 1px solid rgba(255,255,255,0.04);
+          background: #0A0A0A;
+          overflow-x: auto;
+          -ms-overflow-style: none;
+          scrollbar-width: none;
+        }
+        .monaco-tab-bar::-webkit-scrollbar { display: none; }
+
+        .monaco-tab {
+          display: flex;
+          align-items: center;
+          gap: 6px;
+          padding: 0 12px;
+          font-size: 12px;
+          font-family: 'Inter', -apple-system, sans-serif;
+          font-weight: 400;
+          color: rgba(255,255,255,0.35);
+          cursor: pointer;
+          white-space: nowrap;
+          position: relative;
+          transition: color 0.15s ease, background 0.15s ease;
+          border-bottom: 2px solid transparent;
+          margin-bottom: -1px;
+        }
+        .monaco-tab:hover {
+          color: rgba(255,255,255,0.65);
+          background: rgba(255,255,255,0.02);
+        }
+        .monaco-tab.active {
+          color: rgba(255,255,255,0.9);
+          border-bottom-color: #FFE600;
+          background: rgba(255,255,255,0.02);
+        }
+        .monaco-tab .tab-dot {
+          width: 6px;
+          height: 6px;
+          border-radius: 50%;
+          flex-shrink: 0;
+        }
+        .monaco-tab .tab-close {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          width: 16px;
+          height: 16px;
+          border-radius: 4px;
+          opacity: 0;
+          color: rgba(255,255,255,0.3);
+          transition: all 0.15s ease;
+          flex-shrink: 0;
+          margin-left: 2px;
+        }
+        .monaco-tab:hover .tab-close,
+        .monaco-tab.active .tab-close {
+          opacity: 1;
+        }
+        .monaco-tab .tab-close:hover {
+          background: rgba(255,255,255,0.08);
+          color: rgba(255,255,255,0.8);
+        }
       ` }} />
-      <div className="flex items-center border-b border-white/[0.03] bg-[#0A0A0A] overflow-x-auto" style={{ minHeight: 36 }}>
-        {visibleFiles.filter(f => f === activeFile).map((f) => (
+
+      {/* Tab Bar */}
+      <div className="monaco-tab-bar">
+        {visibleFiles.map((f: string) => (
           <div
             key={f}
-            className={`group flex items-center gap-2 px-3 py-2 text-xs whitespace-nowrap transition-colors border-b-2 ${
-              f === activeFile
-                ? "bg-[#050505] text-white border-b-[#FFE600]"
-                : "text-[#aaaaaa] hover:text-white hover:bg-white/[0.02] border-b-transparent"
-            }`}
+            className={`monaco-tab ${f === activeFile ? "active" : ""}`}
+            onClick={() => setActiveFile(f)}
           >
-            <button onClick={() => setActiveFile(f)} className="flex-1 text-left">
-              {f.replace(/^\//, "")}
-            </button>
+            <div className="tab-dot" style={{ background: extColorFor(f) }} />
+            <span>{f.replace(/^\//, "")}</span>
             <button 
               onClick={(e) => { 
                 e.stopPropagation(); 
                 sandpack.closeFile(f); 
               }}
-              className="p-0.5 rounded hover:bg-white/10 text-white/30 hover:text-white transition-all ml-1"
+              className="tab-close"
               title="Close file"
             >
               <X className="w-3 h-3" />
@@ -356,6 +455,8 @@ export default function MonacoEditor({ fontSize }: { fontSize: number }) {
           </div>
         ))}
       </div>
+
+      {/* Editor */}
       <div className="flex-1 min-h-0">
         <Editor
           height="100%"
@@ -367,6 +468,7 @@ export default function MonacoEditor({ fontSize }: { fontSize: number }) {
           onMount={handleEditorDidMount}
           beforeMount={handleEditorWillMount}
           options={{
+            readOnly: readOnly,
             minimap: { enabled: false },
             fontSize: fontSize,
             fontFamily: "'JetBrains Mono', monospace",
@@ -379,7 +481,7 @@ export default function MonacoEditor({ fontSize }: { fontSize: number }) {
             renderLineHighlight: "line",
             lineNumbersMinChars: 3,
             folding: true,
-            padding: { top: 8 },
+            padding: { top: 12, bottom: 12 },
             // ── Semantic Highlighting ──
             'semanticHighlighting.enabled': true,
             // ── IntelliSense enhancements ──

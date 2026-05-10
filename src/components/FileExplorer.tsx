@@ -179,9 +179,9 @@ function FolderNodeIcon({ name, open }: { name: string; open: boolean }) {
 
 
 
-type Props = { readOnly?: boolean };
+type Props = { readOnly?: boolean; onCollapse?: () => void };
 
-export default function FileExplorer({ readOnly = false }: Props) {
+export default function FileExplorer({ readOnly = false, onCollapse }: Props) {
   const {
     expanded,
     setExpanded,
@@ -308,7 +308,7 @@ export default function FileExplorer({ readOnly = false }: Props) {
           });
         }}
         style={{ paddingLeft: 6 + depth * 12 }}
-        className={`group flex items-center gap-1 pr-2 py-0.5 cursor-pointer text-xs select-none transition ${
+        className={`group flex items-center gap-1.5 pr-2 py-1 cursor-pointer text-[13px] select-none transition ${
           isActive
             ? "bg-accent/20 text-fg"
             : "text-subtle hover:bg-elevated hover:text-fg"
@@ -342,7 +342,7 @@ export default function FileExplorer({ readOnly = false }: Props) {
               else if (e.key === "Escape") cancelRename();
             }}
             onBlur={commitRename}
-            className="flex-1 min-w-0 bg-panel border border-accent/40 rounded px-1.5 py-0 h-5 text-xs outline-none"
+            className="flex-1 min-w-0 bg-panel border border-accent/40 rounded px-1.5 py-0.5 h-6 text-[13px] outline-none"
           />
         ) : (
           <span className="truncate">{node.name}</span>
@@ -369,7 +369,7 @@ export default function FileExplorer({ readOnly = false }: Props) {
     return (
       <div
         style={{ paddingLeft: 6 + depth * 12 }}
-        className="flex items-center gap-1 pr-2 py-0.5 text-xs"
+        className="flex items-center gap-1.5 pr-2 py-1 text-[13px]"
       >
         <span className="w-3 shrink-0" />
         {pendingNew.kind === "folder" ? (
@@ -391,7 +391,7 @@ export default function FileExplorer({ readOnly = false }: Props) {
             else if (e.key === "Escape") cancelNew();
           }}
           onBlur={commitNew}
-          className="flex-1 min-w-0 bg-panel border border-accent/40 rounded px-1.5 py-0 h-5 text-xs outline-none"
+          className="flex-1 min-w-0 bg-panel border border-accent/40 rounded px-1.5 py-0.5 h-6 text-[13px] outline-none"
         />
       </div>
     );
@@ -430,76 +430,74 @@ export default function FileExplorer({ readOnly = false }: Props) {
         setDropTarget(null);
       }}
     >
-      <div className="sticky top-0 z-10 bg-surface px-2 py-1.5 flex items-center gap-1 text-[10px] uppercase tracking-wide text-muted border-b border-border">
-        {!readOnly ? (
-          <>
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                setContextMenu({
-                  x: e.currentTarget.getBoundingClientRect().left,
-                  y: e.currentTarget.getBoundingClientRect().bottom + 4,
-                  path: "/",
-                  isFolder: true,
-                });
-              }}
-              title="New file"
-              className="inline-flex items-center gap-1 px-1.5 py-1 rounded hover:bg-elevated hover:text-fg transition"
-            >
-              <FilePlus className="w-3 h-3" />
-              File
-            </button>
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                startNew("/", "folder");
-              }}
-              title="New folder"
-              className="inline-flex items-center gap-1 px-1.5 py-1 rounded hover:bg-elevated hover:text-fg transition"
-            >
-              <FolderPlus className="w-3 h-3" />
-              Folder
-            </button>
-            <div className="flex-1" />
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                setShowDeps((v) => !v);
-              }}
-              title="Manage dependencies"
-              className={`p-1 rounded hover:bg-elevated transition ${
-                showDeps ? "text-accent" : "hover:text-fg"
-              }`}
-            >
-              <Package className="w-3.5 h-3.5" />
-            </button>
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                void downloadZip();
-              }}
-              title="Download project as ZIP"
-              className="p-1 rounded hover:bg-elevated hover:text-fg transition"
-            >
-              <Download className="w-3.5 h-3.5" />
-            </button>
-          </>
-        ) : (
-          <>
-            <span className="px-1">Files</span>
-            <div className="flex-1" />
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                void downloadZip();
-              }}
-              title="Download project as ZIP"
-              className="p-1 rounded hover:bg-elevated hover:text-fg transition"
-            >
-              <Download className="w-3.5 h-3.5" />
-            </button>
-          </>
-        )}
+      <div className="sticky top-0 z-10 flex items-center justify-between px-3 h-9 border-b border-white/[0.04] bg-transparent shrink-0">
+        <span className="text-[11px] font-medium text-white/30 tracking-wide">Files</span>
+        <div className="flex items-center gap-0.5">
+          {!readOnly && (
+            <>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setContextMenu({
+                    x: e.currentTarget.getBoundingClientRect().left,
+                    y: e.currentTarget.getBoundingClientRect().bottom + 4,
+                    path: "/",
+                    isFolder: true,
+                  });
+                }}
+                title="New file"
+                className="p-1.5 hover:bg-white/[0.06] rounded transition text-white/20 hover:text-fg"
+              >
+                <FilePlus className="w-3.5 h-3.5" />
+              </button>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  startNew("/", "folder");
+                }}
+                title="New folder"
+                className="p-1.5 hover:bg-white/[0.06] rounded transition text-white/20 hover:text-fg"
+              >
+                <FolderPlus className="w-3.5 h-3.5" />
+              </button>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setShowDeps((v) => !v);
+                }}
+                title="Dependencies"
+                className={`p-1.5 rounded transition ${
+                  showDeps ? "bg-white/[0.06] text-accent" : "text-white/20 hover:bg-white/[0.06] hover:text-fg"
+                }`}
+              >
+                <Package className="w-3.5 h-3.5" />
+              </button>
+            </>
+          )}
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              void downloadZip();
+            }}
+            title="Download ZIP"
+            className="p-1.5 hover:bg-white/[0.06] rounded transition text-white/20 hover:text-fg"
+          >
+            <Download className="w-3.5 h-3.5" />
+          </button>
+          
+          {onCollapse && (
+            <>
+              <div className="w-px h-4 bg-white/[0.06] mx-1" />
+              <button
+                onClick={onCollapse}
+                title="Collapse sidebar"
+                className="p-1.5 hover:bg-white/[0.06] rounded transition text-white/20 hover:text-fg"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            </>
+          )}
+        </div>
       </div>
 
       {showDeps && !readOnly && (

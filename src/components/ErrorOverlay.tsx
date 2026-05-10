@@ -2,6 +2,7 @@
 
 import { useSandpack, type SandpackFiles } from "@codesandbox/sandpack-react";
 import { useEffect, useRef } from "react";
+import { X } from "lucide-react";
 
 /* ─────────────────────────────────────────────────────────────────────
    Types
@@ -235,14 +236,15 @@ export function ErrorOverlay({
 
   return (
     <div
+      className="error-overlay-animate"
       style={{
         position: "absolute",
         inset: 0,
         zIndex: 50,
         background:
-          "linear-gradient(135deg, rgba(15, 8, 8, 0.98) 0%, rgba(25, 10, 10, 0.95) 100%)",
-        backdropFilter: "blur(20px)",
-        WebkitBackdropFilter: "blur(20px)",
+          "linear-gradient(135deg, var(--bg) 0%, var(--surface) 100%)",
+        backdropFilter: "blur(12px)",
+        WebkitBackdropFilter: "blur(12px)",
         display: "flex",
         flexDirection: "column",
         alignItems: "center",
@@ -251,46 +253,70 @@ export function ErrorOverlay({
         overflow: "auto",
       }}
     >
+      <style>{`
+        @keyframes fadeIn {
+          from { opacity: 0; transform: scale(0.98); }
+          to { opacity: 1; transform: scale(1); }
+        }
+        .error-overlay-animate {
+          animation: fadeIn 0.2s ease-out forwards;
+        }
+      `}</style>
       <div
         style={{
           display: "flex",
           alignItems: "center",
-          gap: "1rem",
-          marginBottom: "1.25rem",
+          justifyContent: "space-between",
+          width: "100%",
+          maxWidth: "760px",
+          marginBottom: "1rem",
         }}
       >
         <h2
           style={{
             fontFamily: "'Inter', system-ui, sans-serif",
-            fontSize: "1.25rem",
-            fontWeight: 700,
+            fontSize: "0.85rem",
+            fontWeight: 800,
             color: "#ef4444",
             textTransform: "uppercase",
-            letterSpacing: "0.15em",
-            textShadow: "0 0 20px rgba(239, 68, 68, 0.4)",
+            letterSpacing: "0.2em",
             margin: 0,
+            display: "flex",
+            alignItems: "center",
+            gap: "0.5rem"
           }}
         >
-          {error.path ? "Build Error" : "Runtime Error"}
+          <span style={{ width: "8px", height: "8px", borderRadius: "50%", background: "#ef4444", boxShadow: "0 0 10px #ef4444" }} />
+          {error.path ? "Compilation Error" : "Runtime Exception"}
         </h2>
         {onDismiss && (
           <button
             type="button"
             onClick={onDismiss}
-            title="Dismiss this error"
+            title="Dismiss"
             style={{
-              background: "transparent",
-              border: "1px solid rgba(239, 68, 68, 0.3)",
-              borderRadius: "6px",
-              color: "#fca5a5",
-              padding: "0.15rem 0.6rem",
-              fontSize: "11px",
-              fontFamily: "'Inter', system-ui, sans-serif",
+              background: "var(--panel)",
+              border: "1px solid var(--border)",
+              borderRadius: "50%",
+              color: "var(--fg)",
+              width: "28px",
+              height: "28px",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
               cursor: "pointer",
-              letterSpacing: "0.04em",
+              transition: "all 0.2s ease",
+            }}
+            onMouseOver={(e) => {
+              e.currentTarget.style.background = "rgba(239, 68, 68, 0.2)";
+              e.currentTarget.style.borderColor = "rgba(239, 68, 68, 0.4)";
+            }}
+            onMouseOut={(e) => {
+              e.currentTarget.style.background = "rgba(255, 255, 255, 0.05)";
+              e.currentTarget.style.borderColor = "rgba(255, 255, 255, 0.1)";
             }}
           >
-            Dismiss
+            <X size={14} />
           </button>
         )}
       </div>
@@ -315,7 +341,7 @@ export function ErrorOverlay({
               padding: "0.75rem 1.25rem",
               borderBottom: "1px solid rgba(239, 68, 68, 0.15)",
               fontSize: "12px",
-              color: "#fca5a5",
+              color: "var(--muted)",
               opacity: 0.85,
               display: "flex",
               alignItems: "center",
@@ -338,7 +364,7 @@ export function ErrorOverlay({
           style={{
             padding: "1.25rem 1.5rem",
             fontSize: "14px",
-            color: "#fca5a5",
+            color: "var(--fg)",
             lineHeight: 1.6,
             whiteSpace: "pre-wrap",
             wordBreak: "break-word",

@@ -138,7 +138,7 @@ function SegBtn({
 const customSnippetExtension = javascriptLanguage.data.of({
   autocomplete: (context: any) => {
     const word = context.matchBefore(/\w*/);
-    if (!word || (word.from === word.to && !context.explicit)) return null; ``
+    if (!word || (word.from === word.to && !context.explicit)) return null;
     return {
       from: word.from,
       options: customSnippets.map((s) =>
@@ -190,6 +190,7 @@ export default function Playground({
   const [promptOpen, setPromptOpen] = useState(false);
   const [explorerCollapsed, setExplorerCollapsed] = useState(false);
   const [autoRun, setAutoRun] = useState(true);
+  const [uiScale, setUiScale] = useState(1);
   const explorerCollapsedRef = useRef(false);
 
   const initialFilesRef = useRef<SandpackFiles>(initialFiles ?? tpl.files);
@@ -205,6 +206,15 @@ export default function Playground({
   const isMobile = useIsMobile(768);
   const { width: explorerW, onPointerDown: onExplorerDrag } = useResizable(200, 120, 400);
   const { width: editorW, onPointerDown: onEditorDrag } = useResizable(500, 200, 1200);
+
+  // Sync bundler on editor/template changes
+  useEffect(() => {
+    // Give the new editor a moment to mount before refreshing the bundler
+    const timer = setTimeout(() => {
+      runRef.current?.();
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [editor, templateId]);
 
   function handleRun() {
     setRunning(true);
@@ -377,6 +387,19 @@ export default function Playground({
   }, [autoRun]);
 
   useEffect(() => {
+    const savedUiScale = localStorage.getItem("codepad_uiScale");
+    if (savedUiScale) {
+      const parsed = parseFloat(savedUiScale);
+      if (!isNaN(parsed) && parsed >= 0.8 && parsed <= 2) setUiScale(parsed);
+    }
+  }, []);
+
+  useEffect(() => {
+    localStorage.setItem("codepad_uiScale", uiScale.toString());
+    document.documentElement.style.setProperty("--ui-scale", uiScale.toString());
+  }, [uiScale]);
+
+  useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if ((e.ctrlKey || e.metaKey) && e.key === "s") {
         e.preventDefault();
@@ -458,26 +481,26 @@ export default function Playground({
 
       /* Nano Banana Pro Custom Styles */
       .playground-container {
-        border-radius: 2.5rem;
+        border-radius: 2rem;
         overflow: hidden;
-        border: 1px solid rgba(255, 255, 255, 0.05);
-        background: rgba(10, 10, 10, 0.5);
+        border: 1px solid var(--border-strong);
+        background: var(--surface);
         backdrop-filter: blur(40px);
-        box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+        box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
       }
 
       .panel-rounded {
-        border-radius: 1.5rem;
+        border-radius: 1.25rem;
         margin: 4px;
         overflow: hidden;
-        border: 1px solid rgba(255, 255, 255, 0.03);
-        background: #0A0A0A;
+        border: 1px solid var(--border);
+        background: var(--surface);
         transition: border-color 0.3s ease, box-shadow 0.3s ease;
       }
 
       .panel-rounded:focus-within {
-        border-color: rgba(255, 230, 0, 0.2);
-        box-shadow: 0 0 20px rgba(255, 230, 0, 0.05);
+        border-color: var(--accent);
+        box-shadow: 0 0 20px var(--accent-glow);
       }
 
       /* Scanline Effect */
@@ -485,8 +508,8 @@ export default function Playground({
         content: "";
         position: absolute;
         top: 0; left: 0; bottom: 0; right: 0;
-        background: rgba(18, 16, 16, 0.1);
-        opacity: 0;
+        background: var(--bg);
+        opacity: 0.03;
         z-index: 2;
         pointer-events: none;
         animation: flicker 0.15s infinite;
@@ -534,6 +557,7 @@ export default function Playground({
               onToggleFiles={() => setMobileFilesOpen((prev) => !prev)}
               onTogglePrompt={() => setPromptOpen((prev) => !prev)}
               autoRun={autoRun} setAutoRun={setAutoRun}
+              uiScale={uiScale} setUiScale={setUiScale}
               tplMode={tpl.mode}
             />
           )}
@@ -561,7 +585,7 @@ export default function Playground({
                   initMode: "immediate",
                   showErrorOverlay: false,
                   externalResources: [
-                    "data:text/css,.react-error-overlay { display: none !important; } #webpack-dev-server-client-overlay { display: none !important; } iframe html .sp-overlay { display: none !important; }"
+                    "data:text/css,.react-error-overlay,#webpack-dev-server-client-overlay,.sp-overlay{display:none!important}#ignore.css"
                   ]
                 }}
               >
@@ -659,8 +683,8 @@ export default function Playground({
                             </div>
                           )}
                         </div>
-                        <div className="shrink-0 h-full relative z-10 w-1 flex items-center justify-center cursor-col-resize group" onPointerDown={onEditorDrag}>
-                           <div className="w-px h-full bg-white/5 group-hover:bg-[#FFE600]/40 transition-colors" />
+                        <div className="shrink-0 h-full relative z-10 w-[2px] flex items-center justify-center cursor-col-resize group bg-white/5 hover:bg-[#FFE600]/40 transition-colors" onPointerDown={onEditorDrag}>
+                           <div className="absolute inset-y-0 -left-2 -right-2 z-[-1]" />
                         </div>
                         <div className="flex-1 min-w-0 h-full flex flex-col relative panel-rounded scanline">
                           <div className="flex items-center justify-between px-4 py-2 border-b border-white/5 bg-white/[0.02] shrink-0">

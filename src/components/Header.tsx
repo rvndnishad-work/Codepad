@@ -1,7 +1,8 @@
 import Link from "next/link";
 import Image from "next/image";
-import { auth, signOut } from "@/lib/auth";
+import { auth } from "@/lib/auth";
 import { LogoMark } from "./Logo";
+import { handleSignOut } from "@/app/actions";
 
 export default async function Header() {
   const session = await auth().catch(() => null);
@@ -44,6 +45,12 @@ export default async function Header() {
               >
                 My snippets
               </Link>
+              <Link
+                href="/profile"
+                className="px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest text-white/40 hover:text-[#FFE600] hover:bg-white/5 transition-all"
+              >
+                Profile
+              </Link>
               <div className="flex items-center gap-3 pl-3 ml-2 border-l border-white/5">
                 {user.image ? (
                   <Image
@@ -58,12 +65,7 @@ export default async function Header() {
                     {(user.name ?? user.email ?? "N").slice(0, 1).toUpperCase()}
                   </div>
                 )}
-                <form
-                  action={async () => {
-                    "use server";
-                    await signOut({ redirectTo: "/" });
-                  }}
-                >
+                <form action={handleSignOut}>
                   <button className="text-[10px] font-black uppercase tracking-widest text-white/20 hover:text-red-400 px-3 py-1.5 transition-colors">
                     Sign out
                   </button>

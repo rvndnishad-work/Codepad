@@ -117,7 +117,10 @@ export default function MonacoEditor({ fontSize }: { fontSize: number }) {
 
   useEffect(() => {
     if (ata && code) {
-      ata(code);
+      const timer = setTimeout(() => {
+        ata(code);
+      }, 1500); // 1.5s debounce for type acquisition (heavy task)
+      return () => clearTimeout(timer);
     }
   }, [ata, code]);
 
@@ -261,7 +264,7 @@ export default function MonacoEditor({ fontSize }: { fontSize: number }) {
     applyNanoBananaDecorations();
     editor.onDidChangeModelContent(() => {
       clearTimeout((applyNanoBananaDecorations as any)._t);
-      (applyNanoBananaDecorations as any)._t = setTimeout(applyNanoBananaDecorations, 100);
+      (applyNanoBananaDecorations as any)._t = setTimeout(applyNanoBananaDecorations, 250); // Increased debounce to 250ms
     });
     editor.onDidChangeModel(() => {
       decorationIds = [];

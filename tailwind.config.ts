@@ -5,19 +5,19 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        bg: "#08090c",
-        surface: "#0d1016",
-        panel: "#12151d",
-        elevated: "#181c26",
-        border: "#20242f",
-        "border-strong": "#2a2f3c",
-        muted: "#7b8496",
-        subtle: "#9aa3b5",
-        fg: "#e8ebf2",
+        bg: "var(--bg)",
+        surface: "var(--surface)",
+        panel: "var(--panel)",
+        elevated: "var(--elevated)",
+        border: "var(--border)",
+        "border-strong": "var(--border-strong)",
+        muted: "var(--muted)",
+        subtle: "var(--subtle)",
+        fg: "var(--fg)",
         accent: {
-          DEFAULT: "#7c7fff",
-          soft: "#6366f1",
-          glow: "rgba(124, 127, 255, 0.15)",
+          DEFAULT: "var(--accent)",
+          soft: "var(--accent-soft)",
+          glow: "var(--accent-glow)",
         },
       },
       fontFamily: {

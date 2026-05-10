@@ -14,13 +14,24 @@ export function RunBridge({
   
   useEffect(() => {
     runRef.current = () => {
+      // 1. Attempt standard run if available (for autoRun: false)
       if (typeof sandpack.runSandpack === "function") {
         sandpack.runSandpack();
-      } else {
-        dispatch({ type: "refresh" });
+      } 
+      
+      // 2. Always dispatch a refresh to ensure the bundler wakes up 
+      dispatch({ type: "refresh" });
+
+      // 3. Cache Buster: explicitly nudge the iframe if we are in a browser/preview mode
+      const iframe = document.querySelector(".sp-iframe") as HTMLIFrameElement;
+      if (iframe && iframe.contentWindow) {
+        iframe.contentWindow.postMessage({ type: "refresh" }, "*");
       }
+
+      // 4. Force a status sync
+      onStatusChange?.("running");
     };
-  }, [dispatch, runRef, sandpack]);
+  }, [dispatch, runRef, sandpack, onStatusChange]);
   
   const onStatusChangeRef = useRef(onStatusChange);
   useEffect(() => {

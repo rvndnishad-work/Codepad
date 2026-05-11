@@ -30,7 +30,6 @@ import FileExplorer from "./FileExplorer";
 import { ErrorBridge, ErrorOverlay, type ErrorData } from "./ErrorOverlay";
 import PromptSidebar from "./PromptSidebar";
 import { useResizable } from "@/hooks/useResizable";
-import { cobalt2 } from "@codesandbox/sandpack-themes";
 import { toast } from "sonner";
 import {
   GitFork,
@@ -131,7 +130,7 @@ function SegBtn({
       onClick={onClick}
       title={title}
       className={`inline-flex items-center gap-1.5 px-2.5 py-1 text-xs transition ${active
-          ? "bg-accent text-white"
+          ? "bg-accent text-bg"
           : "text-subtle hover:text-fg hover:bg-elevated"
         }`}
     >
@@ -143,12 +142,12 @@ function SegBtn({
 function ReadOnlyToolbar({ editable }: { editable: boolean }) {
   if (editable) return null;
   return (
-    <div className="flex items-center justify-between px-3 h-8 bg-amber-400/10 border-t border-amber-400/20 shrink-0 select-none">
-      <div className="flex items-center gap-1.5 text-amber-400">
+    <div className="flex items-center justify-between px-3 h-8 bg-accent/10 border-t border-accent/20 shrink-0 select-none">
+      <div className="flex items-center gap-1.5 text-accent">
         <Lock className="w-3 h-3" />
         <span className="text-[10px] font-bold uppercase tracking-widest">Read-only Mode</span>
       </div>
-      <span className="text-[10px] font-medium text-amber-400/70 tracking-wide">Fork to edit this snippet</span>
+      <span className="text-[10px] font-medium text-accent/70 tracking-wide">Fork to edit this snippet</span>
     </div>
   );
 }
@@ -227,7 +226,7 @@ export default function Playground({
   const isDark = resolvedTheme === "dark";
 
   const sandpackTheme = useMemo(() => {
-    if (isDark) return cobalt2;
+    if (isDark) return nbpTheme;
     return {
       colors: {
         surface1: "#ffffff",
@@ -289,9 +288,9 @@ export default function Playground({
   const [promptOpen, setPromptOpen] = useState(false);
   const [explorerCollapsed, setExplorerCollapsed] = useState(false);
   const [autoRun, setAutoRun] = useState(true);
-  const [runKey, setRunKey] = useState(0);
   const [consoleKey, setConsoleKey] = useState(0);
   const [uiScale, setUiScale] = useState(1);
+  const [mounted, setMounted] = useState(false);
   const explorerCollapsedRef = useRef(false);
 
   const initialFilesRef = useRef<SandpackFiles>(initialFiles ?? tpl.files);
@@ -307,15 +306,6 @@ export default function Playground({
   const isMobile = useIsMobile(768);
   const { width: explorerW, onPointerDown: onExplorerDrag } = useResizable(200, 120, 400);
   const { width: editorW, onPointerDown: onEditorDrag } = useResizable(500, 200, 1200);
-
-  // Sync bundler on editor/template changes
-  useEffect(() => {
-    // Give the new editor a moment to mount before refreshing the bundler
-    const timer = setTimeout(() => {
-      runRef.current?.();
-    }, 500);
-    return () => clearTimeout(timer);
-  }, [editor, templateId]);
 
   function handleRun() {
     setRunning(true);
@@ -348,6 +338,7 @@ export default function Playground({
         method,
         headers: { "content-type": "application/json" },
         body: JSON.stringify(payload),
+        cache: "no-store",
       });
       if (!res.ok) throw new Error((await res.text()) || `HTTP ${res.status}`);
       const data = await res.json();
@@ -379,7 +370,7 @@ export default function Playground({
     if (!snippet) return;
     setForking(true);
     try {
-      const res = await fetch(`/api/snippets/${snippet.id}/fork`, { method: "POST" });
+      const res = await fetch(`/api/snippets/${snippet.id}/fork`, { method: "POST", cache: "no-store" });
       if (!res.ok) throw new Error((await res.text()) || `HTTP ${res.status}`);
       const data = await res.json();
       toast.success("Fork created â€” openingâ€¦");
@@ -402,6 +393,7 @@ export default function Playground({
           method: "PATCH",
           headers: { "content-type": "application/json" },
           body: JSON.stringify({ visibility: "public" }),
+          cache: "no-store",
         });
         if (!res.ok) throw new Error(await res.text());
         setVisibility("public");
@@ -442,6 +434,7 @@ export default function Playground({
           method: "PATCH",
           headers: { "content-type": "application/json" },
           body: JSON.stringify({ visibility: "public" }),
+          cache: "no-store",
         });
         if (!res.ok) throw new Error(await res.text());
         setVisibility("public");
@@ -459,6 +452,8 @@ export default function Playground({
       toast(code);
     }
   }
+
+  useEffect(() => { setMounted(true); }, []);
 
   // ── Persistence: Editor Settings ──
   useEffect(() => {
@@ -500,15 +495,22 @@ export default function Playground({
     document.documentElement.style.setProperty("--ui-scale", uiScale.toString());
   }, [uiScale]);
 
+  const handleSaveRef = useRef(handleSave);
+  const handleRunRef = useRef(handleRun);
+  useEffect(() => {
+    handleSaveRef.current = handleSave;
+    handleRunRef.current = handleRun;
+  });
+
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if ((e.ctrlKey || e.metaKey) && e.key === "s") {
         e.preventDefault();
-        void handleSave();
+        void handleSaveRef.current();
       }
       if ((e.ctrlKey || e.metaKey) && e.key === "Enter") {
         e.preventDefault();
-        handleRun();
+        handleRunRef.current();
       }
       if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === "F" || e.key === "f")) {
         e.preventDefault();
@@ -544,8 +546,7 @@ export default function Playground({
       window.removeEventListener("keydown", onKey, { capture: true });
       window.removeEventListener("wheel", onWheel, { capture: true });
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [title, snippetId, signedIn, editable, visibility]);
+  }, []);
 
   // Auto-save: debounced silent PATCH for existing snippets
   useEffect(() => {
@@ -660,8 +661,13 @@ export default function Playground({
 
           <div className="relative flex-1 min-h-0">
             <div className="absolute inset-0">
+              {!mounted ? (
+                <div className="flex items-center justify-center h-full w-full">
+                  <div className="w-5 h-5 border-2 border-accent/30 border-t-accent rounded-full animate-spin" />
+                </div>
+              ) : (
               <SandpackProvider
-                key={`${templateId}-${isDark ? "dark" : "light"}`}
+                key={templateId}
                 theme={{
                   ...sandpackTheme,
                   font: {
@@ -673,15 +679,16 @@ export default function Playground({
                 template={tpl.base}
                 files={initialFilesRef.current}
                 customSetup={customSetup}
-                options={{ 
-                  autorun: autoRun, 
-                  autoReload: autoRun, 
-                  initMode: "immediate",
-                  showErrorOverlay: false,
+                options={{
+                  autorun: autoRun,
+                  autoReload: autoRun,
+                  initMode: "immediate" as const,
+                  recompileMode: "delayed",
+                  recompileDelay: 300,
                   externalResources: [
                     "data:text/css,.react-error-overlay,#webpack-dev-server-client-overlay,.sp-overlay{display:none!important}#ignore.css"
                   ]
-                } as any}
+                }}
               >
                 {isMobile && mobileFilesOpen && (
                   <div className="fixed inset-0 z-[100] flex bg-black/60 backdrop-blur-sm">
@@ -836,6 +843,7 @@ export default function Playground({
                 <ConsoleEntryBridge active={tpl.mode === "console"} />
                 <FormatBridge formatRef={formatRef} />
               </SandpackProvider>
+              )}
             </div>
           </div>
         </div>

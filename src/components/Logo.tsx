@@ -69,12 +69,12 @@ export function LogoWordmark({
 }) {
   return (
     <span className={`inline-flex items-center gap-3 ${className ?? ""}`}>
-      <div className="w-8 h-8 rounded-xl bg-[#FFE600] grid place-items-center shadow-[0_0_20px_rgba(255,230,0,0.3)]">
-         <LogoMark size={20} className="text-black" />
+      <div className="w-8 h-8 rounded-xl bg-accent grid place-items-center shadow-[0_0_20px_rgba(var(--accent-rgb),0.3)]">
+         <LogoMark size={20} className="text-bg" />
       </div>
       <div className="flex flex-col leading-none">
-        <span className="font-black text-lg tracking-tighter text-white">Interviewpad</span>
-        <span className="text-[9px] font-bold text-white/20 uppercase tracking-[0.3em]">Pro Sandbox</span>
+        <span className="font-black text-lg tracking-tighter text-fg">Interviewpad</span>
+        <span className="text-[9px] font-bold text-muted/50 uppercase tracking-[0.3em]">Pro Sandbox</span>
       </div>
     </span>
   );

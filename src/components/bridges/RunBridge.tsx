@@ -14,28 +14,11 @@ export function RunBridge({
   
   useEffect(() => {
     runRef.current = () => {
-      // 1. Attempt standard run if available (for autoRun: false)
       if (typeof sandpack.runSandpack === "function") {
         sandpack.runSandpack();
-      } 
-      
-      // 2. Always dispatch a refresh to ensure the bundler wakes up 
-      dispatch({ type: "refresh" });
-
-      // 3. Cache Buster: explicitly nudge the iframe if we are in a browser/preview mode
-      const iframe = document.querySelector(".sp-iframe") as HTMLIFrameElement;
-      if (iframe) {
-        // Re-setting src is the most reliable way to force a hard reload of the bundler's internal state
-        const currentSrc = iframe.src;
-        iframe.src = "";
-        iframe.src = currentSrc;
       }
-
-      // 4. Force a status sync to give immediate feedback
+      dispatch({ type: "refresh" });
       onStatusChange?.("running");
-      
-      // 5. If Sandpack is already idle and there are no changes, it might not emit a new status.
-      // We manually clear the running state after a short delay to prevent the button from getting stuck.
       if (sandpack.status === "idle") {
         setTimeout(() => {
           onStatusChange?.("idle");

@@ -6,6 +6,7 @@ import { TemplateLogo } from "@/lib/icons";
 import { templatesById } from "@/lib/templates";
 import { Globe, Lock, ArrowUpRight, Star, Search } from "lucide-react";
 import { toast } from "sonner";
+import RelativeTime from "@/components/RelativeTime";
 
 type Item = {
   id: string;
@@ -22,6 +23,7 @@ export default function DashboardList({ initial }: { initial: Item[] }) {
   const [items, setItems] = useState<Item[]>(initial);
   const [query, setQuery] = useState("");
   const [tagFilter, setTagFilter] = useState<string | null>(null);
+  const [pinningIds, setPinningIds] = useState<Set<string>>(new Set());
 
   const allTags = useMemo(() => {
     const set = new Set<string>();
@@ -45,7 +47,9 @@ export default function DashboardList({ initial }: { initial: Item[] }) {
   const others = filtered.filter((i) => !i.pinned);
 
   async function togglePin(item: Item) {
+    if (pinningIds.has(item.id)) return;
     const next = !item.pinned;
+    setPinningIds((prev) => new Set(prev).add(item.id));
     setItems((prev) =>
       prev.map((i) => (i.id === item.id ? { ...i, pinned: next } : i))
     );
@@ -54,6 +58,7 @@ export default function DashboardList({ initial }: { initial: Item[] }) {
         method: "PATCH",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ pinned: next }),
+        cache: "no-store",
       });
       if (!res.ok) throw new Error(await res.text());
     } catch (err) {
@@ -64,6 +69,12 @@ export default function DashboardList({ initial }: { initial: Item[] }) {
       );
       const msg = err instanceof Error ? err.message : String(err);
       toast.error("Couldn't update pin", { description: msg });
+    } finally {
+      setPinningIds((prev) => {
+        const newSet = new Set(prev);
+        newSet.delete(item.id);
+        return newSet;
+      });
     }
   }
 
@@ -74,8 +85,9 @@ export default function DashboardList({ initial }: { initial: Item[] }) {
         <div className="flex items-center gap-4 rounded-xl border border-border bg-panel/70 hover:bg-elevated px-4 py-3 transition">
           <button
             onClick={() => togglePin(s)}
+            disabled={pinningIds.has(s.id)}
             title={s.pinned ? "Unpin" : "Pin"}
-            className={`shrink-0 transition ${
+            className={`shrink-0 transition disabled:opacity-40 disabled:cursor-wait ${
               s.pinned
                 ? "text-amber-400"
                 : "text-muted opacity-0 group-hover:opacity-100 hover:text-amber-400"
@@ -121,7 +133,7 @@ export default function DashboardList({ initial }: { initial: Item[] }) {
               </div>
               <div className="text-xs text-muted mt-0.5">
                 {tpl?.title ?? s.template} · updated{" "}
-                {new Date(s.updatedAt).toLocaleString()}
+                <RelativeTime iso={s.updatedAt} />
               </div>
             </div>
             <ArrowUpRight className="w-4 h-4 text-muted group-hover:text-fg transition shrink-0" />

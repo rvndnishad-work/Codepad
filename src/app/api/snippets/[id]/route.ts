@@ -30,6 +30,13 @@ export async function GET(
   const { id } = await params;
   const snippet = await prisma.snippet.findUnique({ where: { id } });
   if (!snippet) return NextResponse.json({ error: "not found" }, { status: 404 });
+
+  if (snippet.visibility !== "public") {
+    const session = await auth();
+    if (!session?.user?.id || session.user.id !== snippet.userId) {
+      return NextResponse.json({ error: "not found" }, { status: 404 });
+    }
+  }
   return NextResponse.json(snippet);
 }
 

@@ -94,25 +94,18 @@ const toolbarCSS = `
     transform: translateY(0.5px);
   }
 
-  /* 3D Run button — glowing raised */
+  /* 3D Run button — glowing raised, uses accent across themes */
   .tb-run {
-    background: var(--accent);
+    background: linear-gradient(180deg, var(--accent) 0%, var(--accent-soft) 100%);
     box-shadow:
-      inset 0 1px 0 rgba(255,255,255,0.2),
-      0 2px 8px rgba(var(--accent-rgb),0.25);
+      inset 0 1px 0 rgba(255,255,255,0.3),
+      inset 0 -1px 0 rgba(0,0,0,0.08),
+      0 2px 8px rgba(var(--accent-rgb),0.25),
+      0 4px 16px -4px rgba(var(--accent-rgb),0.3);
     border: none;
     color: var(--bg);
     font-weight: 700;
     transition: all 0.2s ease;
-  }
-  .dark .tb-run {
-    background: linear-gradient(180deg, #FFE600 0%, #E6CF00 50%, #D4BF00 100%);
-    box-shadow:
-      inset 0 1px 0 rgba(255,255,255,0.4),
-      inset 0 -1px 0 rgba(0,0,0,0.1),
-      0 2px 8px rgba(255,230,0,0.25),
-      0 4px 16px -4px rgba(255,230,0,0.3);
-    color: black;
   }
   .tb-run:hover {
     opacity: 0.9;
@@ -123,22 +116,22 @@ const toolbarCSS = `
     transform: translateY(1px);
   }
 
-  /* AI button 3D */
+  /* AI button 3D — uses accent across themes */
   .tb-ai {
-    background: linear-gradient(180deg, rgba(99,102,241,0.12) 0%, rgba(99,102,241,0.06) 100%);
+    background: linear-gradient(180deg, rgba(var(--accent-rgb),0.12) 0%, rgba(var(--accent-rgb),0.06) 100%);
     box-shadow:
-      inset 0 1px 0 rgba(99,102,241,0.15),
-      0 1px 3px rgba(0,0,0,0.2);
-    border: 1px solid rgba(99,102,241,0.20);
+      inset 0 1px 0 rgba(var(--accent-rgb),0.15),
+      0 1px 3px rgba(0,0,0,0.15);
+    border: 1px solid rgba(var(--accent-rgb),0.20);
     transition: all 0.2s ease;
   }
   .tb-ai:hover {
-    background: linear-gradient(180deg, rgba(99,102,241,0.18) 0%, rgba(99,102,241,0.10) 100%);
+    background: linear-gradient(180deg, rgba(var(--accent-rgb),0.18) 0%, rgba(var(--accent-rgb),0.10) 100%);
     box-shadow:
-      inset 0 1px 0 rgba(99,102,241,0.20),
-      0 2px 10px rgba(99,102,241,0.15),
-      0 4px 16px -4px rgba(99,102,241,0.2);
-    border-color: rgba(99,102,241,0.30);
+      inset 0 1px 0 rgba(var(--accent-rgb),0.20),
+      0 2px 10px rgba(var(--accent-rgb),0.15),
+      0 4px 16px -4px rgba(var(--accent-rgb),0.2);
+    border-color: rgba(var(--accent-rgb),0.30);
     transform: translateY(-0.5px);
   }
 
@@ -372,17 +365,17 @@ export default function PlaygroundToolbar({
           <div className="tb-sep" />
 
           {/* Run Button — 3D raised */}
-          <button 
+          <button
             onClick={handleRun}
             disabled={running}
             className={`h-8 px-4 rounded-lg flex items-center gap-2 ${
-              running 
-                ? "tb-btn text-muted/40 cursor-wait" 
-                : "tb-run text-black"
+              running
+                ? "tb-btn text-muted/40 cursor-wait"
+                : "tb-run"
             }`}
           >
             {running ? (
-              <div className="w-3.5 h-3.5 border-2 border-muted/20 border-t-black rounded-full animate-spin" />
+              <div className="w-3.5 h-3.5 border-2 border-muted/20 border-t-fg rounded-full animate-spin" />
             ) : (
               <Play className="w-3.5 h-3.5 fill-current" />
             )}
@@ -439,10 +432,10 @@ export default function PlaygroundToolbar({
 
         {/* ── Right: Actions ── */}
         <div className="flex items-center gap-2">
-          {/* AI Assist — 3D indigo */}
-          <button 
+          {/* AI Assist — uses accent */}
+          <button
             onClick={onTogglePrompt}
-            className="tb-ai h-8 px-3 rounded-lg flex items-center gap-1.5 text-indigo-400 group/ai"
+            className="tb-ai h-8 px-3 rounded-lg flex items-center gap-1.5 text-accent group/ai"
           >
             <Sparkles className="w-3.5 h-3.5 group-hover/ai:scale-110 transition-transform" />
             <span className="text-[11px] font-semibold tracking-wide">AI</span>
@@ -497,7 +490,7 @@ export default function PlaygroundToolbar({
 
                   <button
                     onClick={() => { handleShare(); setActionsOpen(false); }}
-                    className="w-full flex items-center gap-2.5 px-3 py-2.5 text-[12px] text-white/70 hover:text-fg hover:bg-white/[0.04] transition-all"
+                    className="w-full flex items-center gap-2.5 px-3 py-2.5 text-[12px] text-muted/70 hover:text-fg hover:bg-elevated transition-all"
                   >
                     <LinkIcon className="w-3.5 h-3.5 opacity-60" />
                     <span className="flex-1 text-left">Copy Public Link</span>
@@ -505,7 +498,7 @@ export default function PlaygroundToolbar({
 
                   <button
                     onClick={() => { handleCopyEmbed(); setActionsOpen(false); }}
-                    className="w-full flex items-center gap-2.5 px-3 py-2.5 text-[12px] text-white/70 hover:text-fg hover:bg-white/[0.04] transition-all"
+                    className="w-full flex items-center gap-2.5 px-3 py-2.5 text-[12px] text-muted/70 hover:text-fg hover:bg-elevated transition-all"
                   >
                     <Code2 className="w-3.5 h-3.5 opacity-60" />
                     <span className="flex-1 text-left">Copy Embed Link</span>

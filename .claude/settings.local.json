@@ -1,0 +1,22 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git -C 'C:\\\\Users\\\\arvin\\\\OneDrive\\\\Desktop\\\\claude\\\\code\\\\codepad' log --all --oneline -30)",
+      "Bash(git -C 'C:\\\\Users\\\\arvin\\\\OneDrive\\\\Desktop\\\\claude\\\\code\\\\codepad' diff HEAD 'C:\\\\Users\\\\arvin\\\\OneDrive\\\\Desktop\\\\claude\\\\code\\\\codepad\\\\.claude\\\\worktrees\\\\awesome-napier-428dc9' -- src/components/Playground.tsx src/components/bridges/FilesBridge.tsx src/components/bridges/RunBridge.tsx)",
+      "Bash(git -C 'C:\\\\Users\\\\arvin\\\\OneDrive\\\\Desktop\\\\claude\\\\code\\\\codepad' status)",
+      "Bash(git -C 'C:\\\\Users\\\\arvin\\\\OneDrive\\\\Desktop\\\\claude\\\\code\\\\codepad' branch --show-current)",
+      "Bash(git -C 'C:\\\\Users\\\\arvin\\\\OneDrive\\\\Desktop\\\\claude\\\\code\\\\codepad' show HEAD:src/components/Playground.tsx)",
+      "Bash(git -C 'C:\\\\Users\\\\arvin\\\\OneDrive\\\\Desktop\\\\claude\\\\code\\\\codepad' diff ab271f8..ddac964 -- src/components/Playground.tsx)",
+      "Bash(netstat -ano)",
+      "Bash(findstr :3000)",
+      "Bash(cd 'C:\\\\Users\\\\arvin\\\\OneDrive\\\\Desktop\\\\claude\\\\code\\\\codepad' && ls node_modules/@codesandbox/sandpack-react/package.json 2>&1 | head -2)",
+      "Bash(xargs grep -l \"showErrorOverlay\\\\|recompileMode\")",
+      "Bash(npm run *)",
+      "Bash(grep -E \"Ready in|ready in|error|EADDRINUSE\" \"C:\\\\\\\\Users\\\\\\\\arvin\\\\\\\\AppData\\\\\\\\Local\\\\\\\\Temp\\\\\\\\claude\\\\\\\\C--Users-arvin-OneDrive-Desktop-claude-code-codepad--claude-worktrees-awesome-napier-428dc9\\\\\\\\4844e21f-563b-4213-a2ac-c85f26ea27dd\\\\\\\\tasks\\\\\\\\bx1gvu6x2.output\")",
+      "mcp__Claude_in_Chrome__tabs_context_mcp",
+      "mcp__Claude_Preview__preview_start",
+      "PowerShell(Get-NetTCPConnection -LocalPort 3000 -ErrorAction SilentlyContinue)",
+      "PowerShell($content = [System.IO.File]::ReadAllText\\(\"C:\\\\Users\\\\arvin\\\\OneDrive\\\\Desktop\\\\claude\\\\code\\\\codepad\\\\.claude\\\\worktrees\\\\awesome-napier-428dc9\\\\src\\\\components\\\\Playground.tsx\"\\); $lines = $content -split \"`n\"; Write-Output \"Total lines: $\\($lines.Count\\)\"; for \\($i = 628; $i -lt 640; $i++\\) { Write-Output \"${i}: $\\($lines[$i]\\)\" })"
+    ]
+  }
+}

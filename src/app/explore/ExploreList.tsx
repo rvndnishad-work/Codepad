@@ -2,10 +2,11 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { TemplateLogo, templateIcon } from "@/lib/icons";
 import { templatesById, groups } from "@/lib/templates";
 import { ArrowUpRight, Compass, Plus, Search } from "lucide-react";
+import RelativeTime from "@/components/RelativeTime";
 
 export type ExploreItem = {
   id: string;
@@ -34,6 +35,7 @@ export default function ExploreList({
   const [filter, setFilter] = useState<string>("all");
   const [loading, setLoading] = useState(false);
   const [query, setQuery] = useState("");
+  const isInitialMount = useRef(true);
 
   const visible = items.filter((s) => {
     const q = query.trim().toLowerCase();
@@ -47,9 +49,13 @@ export default function ExploreList({
     );
   });
 
-  // Refetch when filter changes
+  // Refetch when filter changes (skip initial mount since SSR provides data)
   useEffect(() => {
-    let cancelled = false;
+    if (isInitialMount.current) {
+      isInitialMount.current = false;
+      return;
+    }
+    const controller = new AbortController();
     (async () => {
       setLoading(true);
       const params = new URLSearchParams();
@@ -58,48 +64,50 @@ export default function ExploreList({
         // fetch all and filter client-side per group.
         params.set("group", filter);
       }
-      const res = await fetch(`/api/explore?${params}`);
-      if (!res.ok) {
-        setLoading(false);
-        return;
+      try {
+        const res = await fetch(`/api/explore?${params}`, {
+          signal: controller.signal,
+          cache: "no-store",
+        });
+        if (!res.ok) return;
+        const data = await res.json();
+        const filtered =
+          filter === "all"
+            ? data.items
+            : data.items.filter(
+                (it: ExploreItem) =>
+                  templatesById[it.template]?.group === filter
+              );
+        setItems(filtered);
+        setCursor(data.nextCursor);
+      } catch (err) {
+        if ((err as Error).name === "AbortError") return;
+      } finally {
+        if (!controller.signal.aborted) setLoading(false);
       }
+    })();
+    return () => controller.abort();
+  }, [filter]);
+
+  async function loadMore() {
+    if (!cursor || loading) return;
+    setLoading(true);
+    try {
+      const res = await fetch(`/api/explore?cursor=${cursor}`, { cache: "no-store" });
+      if (!res.ok) return;
       const data = await res.json();
-      if (cancelled) return;
-      const filtered =
+      const incoming: ExploreItem[] =
         filter === "all"
           ? data.items
           : data.items.filter(
               (it: ExploreItem) =>
                 templatesById[it.template]?.group === filter
             );
-      setItems(filtered);
+      setItems((prev) => [...prev, ...incoming]);
       setCursor(data.nextCursor);
+    } finally {
       setLoading(false);
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [filter]);
-
-  async function loadMore() {
-    if (!cursor || loading) return;
-    setLoading(true);
-    const res = await fetch(`/api/explore?cursor=${cursor}`);
-    if (!res.ok) {
-      setLoading(false);
-      return;
     }
-    const data = await res.json();
-    const incoming: ExploreItem[] =
-      filter === "all"
-        ? data.items
-        : data.items.filter(
-            (it: ExploreItem) =>
-              templatesById[it.template]?.group === filter
-          );
-    setItems((prev) => [...prev, ...incoming]);
-    setCursor(data.nextCursor);
-    setLoading(false);
   }
 
   return (
@@ -150,7 +158,7 @@ export default function ExploreList({
               onClick={() => setFilter(f.key)}
               className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold border transition-all duration-200 ${
                 filter === f.key
-                  ? "bg-accent text-black border-accent shadow-[0_0_12px_rgba(var(--accent-rgb),0.25)]"
+                  ? "bg-accent text-bg border-accent shadow-[0_0_12px_rgba(var(--accent-rgb),0.25)]"
                   : "bg-surface border-border text-muted hover:text-fg hover:border-border-strong hover:bg-elevated"
               }`}
             >
@@ -180,7 +188,7 @@ export default function ExploreList({
                 </p>
                 <Link
                   href="/"
-                  className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-accent hover:bg-accent-soft text-black text-sm font-black shadow-[0_0_20px_rgba(var(--accent-rgb),0.2)] transition-all duration-200"
+                  className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-accent hover:bg-accent-soft text-bg text-sm font-black shadow-[0_0_20px_rgba(var(--accent-rgb),0.2)] transition-all duration-200"
                 >
                   <Plus className="w-4 h-4" />
                   Browse templates
@@ -190,7 +198,7 @@ export default function ExploreList({
             {query.trim() && (
               <button
                 onClick={() => setQuery("")}
-                className="mt-4 text-[#FFE600] hover:underline text-sm font-medium"
+                className="mt-4 text-accent hover:underline text-sm font-medium"
               >
                 Clear search
               </button>
@@ -282,9 +290,10 @@ export default function ExploreList({
                       </div>
 
                       {/* Timestamp */}
-                      <span className="text-xs text-muted/40 font-mono tabular-nums shrink-0 hidden sm:block">
-                        {timeAgo(s.updatedAt)}
-                      </span>
+                      <RelativeTime
+                        iso={s.updatedAt}
+                        className="text-xs text-muted/40 font-mono tabular-nums shrink-0 hidden sm:block"
+                      />
 
                       {/* Arrow */}
                       <div className="w-7 h-7 rounded-lg bg-surface/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-200 shrink-0">
@@ -314,15 +323,3 @@ export default function ExploreList({
   );
 }
 
-function timeAgo(iso: string): string {
-  const ms = Date.now() - new Date(iso).getTime();
-  const min = Math.floor(ms / 60_000);
-  if (min < 1) return "just now";
-  if (min < 60) return `${min}m ago`;
-  const hr = Math.floor(min / 60);
-  if (hr < 24) return `${hr}h ago`;
-  const days = Math.floor(hr / 24);
-  if (days < 30) return `${days}d ago`;
-  const months = Math.floor(days / 30);
-  return `${months}mo ago`;
-}

@@ -20,6 +20,7 @@ model User {
   snippets      Snippet[]
   followers     Follow[]  @relation("following")
   following     Follow[]  @relation("follower")
+  blogs         BlogPost[]
   createdAt     DateTime  @default(now())
 }
 
@@ -86,4 +87,22 @@ model Snippet {
   @@index([userId])
   @@index([visibility, updatedAt])
   @@index([viewCount])
+}
+
+model BlogPost {
+  id          String   @id @default(cuid())
+  slug        String   @unique
+  title       String
+  excerpt     String?
+  content     String   // Markdown content
+  coverImage  String?
+  published   Boolean  @default(false)
+  viewCount   Int      @default(0)
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([userId])
+  @@index([published, createdAt])
 }

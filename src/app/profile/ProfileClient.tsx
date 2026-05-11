@@ -1,22 +1,23 @@
 "use client";
 
 import React, { useState } from "react";
-import { 
-  User, 
-  Mail, 
-  MapPin, 
-  Link as LinkIcon, 
-  Github, 
-  Twitter, 
-  Camera, 
-  Save, 
+import {
+  User,
+  Mail,
+  MapPin,
+  Link as LinkIcon,
+  Github,
+  Twitter,
+  Camera,
+  Save,
   ArrowLeft,
   Settings,
   Shield,
   Bell,
   Globe,
   ExternalLink,
-  Code
+  Code,
+  Briefcase,
 } from "lucide-react";
 import Link from "next/link";
 import { toast } from "sonner";
@@ -83,8 +84,8 @@ export default function ProfileClient({ user }: { user: any }) {
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id as any)}
                 className={`w-full flex items-center gap-3 px-4 py-3 rounded-2xl font-black text-xs uppercase tracking-widest transition-all border ${
-                  activeTab === tab.id 
-                    ? "bg-accent/10 border-accent text-accent shadow-[0_0_20px_var(--accent-glow)]" 
+                  activeTab === tab.id
+                    ? "bg-accent/10 border-accent text-accent shadow-[0_0_20px_var(--accent-glow)]"
                     : "bg-surface/50 border-border text-muted hover:bg-surface hover:text-fg"
                 }`}
               >
@@ -92,6 +93,28 @@ export default function ProfileClient({ user }: { user: any }) {
                 {tab.label}
               </button>
             ))}
+
+            <div className="pt-4 mt-4 border-t border-border space-y-2">
+              <div className="px-4 text-[9px] font-black uppercase tracking-[0.2em] text-muted/40 mb-1">
+                Portfolio
+              </div>
+              <Link
+                href="/profile/portfolio"
+                className="w-full flex items-center gap-3 px-4 py-3 rounded-2xl font-black text-xs uppercase tracking-widest transition-all border bg-surface/50 border-border text-muted hover:bg-surface hover:text-fg"
+              >
+                <Briefcase className="w-4 h-4" />
+                Portfolio Settings
+              </Link>
+              {user?.id && (
+                <Link
+                  href={`/u/${user.id}`}
+                  className="w-full flex items-center gap-3 px-4 py-3 rounded-2xl font-black text-xs uppercase tracking-widest transition-all border bg-surface/50 border-border text-muted hover:bg-surface hover:text-fg"
+                >
+                  <ExternalLink className="w-4 h-4" />
+                  View Public Profile
+                </Link>
+              )}
+            </div>
           </aside>
 
           {/* Main Content Area */}

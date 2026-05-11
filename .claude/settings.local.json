@@ -16,7 +16,10 @@
       "mcp__Claude_in_Chrome__tabs_context_mcp",
       "mcp__Claude_Preview__preview_start",
       "PowerShell(Get-NetTCPConnection -LocalPort 3000 -ErrorAction SilentlyContinue)",
-      "PowerShell($content = [System.IO.File]::ReadAllText\\(\"C:\\\\Users\\\\arvin\\\\OneDrive\\\\Desktop\\\\claude\\\\code\\\\codepad\\\\.claude\\\\worktrees\\\\awesome-napier-428dc9\\\\src\\\\components\\\\Playground.tsx\"\\); $lines = $content -split \"`n\"; Write-Output \"Total lines: $\\($lines.Count\\)\"; for \\($i = 628; $i -lt 640; $i++\\) { Write-Output \"${i}: $\\($lines[$i]\\)\" })"
+      "PowerShell($content = [System.IO.File]::ReadAllText\\(\"C:\\\\Users\\\\arvin\\\\OneDrive\\\\Desktop\\\\claude\\\\code\\\\codepad\\\\.claude\\\\worktrees\\\\awesome-napier-428dc9\\\\src\\\\components\\\\Playground.tsx\"\\); $lines = $content -split \"`n\"; Write-Output \"Total lines: $\\($lines.Count\\)\"; for \\($i = 628; $i -lt 640; $i++\\) { Write-Output \"${i}: $\\($lines[$i]\\)\" })",
+      "Bash(npx prisma *)",
+      "Bash(curl -s -o /dev/null -w \"published=false \\(no auth\\): %{http_code}\\\\n\" \"http://localhost:3000/api/blogs?published=false\")",
+      "Bash(curl -s -o /dev/null -w \"default \\(public\\): %{http_code}\\\\n\" \"http://localhost:3000/api/blogs\")"
     ]
   }
 }

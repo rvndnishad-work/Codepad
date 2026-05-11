@@ -1,6 +1,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { auth } from "@/lib/auth";
+import { isAdmin } from "@/lib/admin";
 import { LogoMark } from "./Logo";
 import { handleSignOut } from "@/app/actions";
 
@@ -9,6 +10,7 @@ import ThemeToggle from "./ThemeToggle";
 export default async function Header() {
   const session = await auth().catch(() => null);
   const user = session?.user;
+  const showAdmin = isAdmin(session);
 
   return (
     <header className="sticky top-0 z-[100] bg-bg/80 backdrop-blur-xl border-b border-border">
@@ -35,8 +37,12 @@ export default async function Header() {
               <Link href="/explore" className="text-fg/50 hover:text-fg transition-colors">Explore</Link>
               {user && (
                 <>
+                  <Link href="/interview/new" className="text-fg/50 hover:text-fg transition-colors">Interviews</Link>
                   <Link href="/dashboard" className="text-fg/50 hover:text-fg transition-colors">Dashboard</Link>
                   <Link href="/profile" className="text-fg/50 hover:text-fg transition-colors">Profile</Link>
+                  {showAdmin && (
+                    <Link href="/admin" className="text-accent hover:text-accent-soft transition-colors font-semibold">Admin</Link>
+                  )}
                 </>
               )}
             </div>

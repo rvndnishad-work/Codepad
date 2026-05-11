@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { auth } from "@/lib/auth";
+import { isAdmin } from "@/lib/admin";
 import { prisma } from "@/lib/prisma";
 import { nanoid } from "nanoid";
 
@@ -50,13 +51,24 @@ export async function POST(req: Request) {
 
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
-  const publishedOnly = searchParams.get("published") !== "false";
+  const includeDrafts = searchParams.get("published") === "false";
   const userId = searchParams.get("userId");
+
+  // Drafts are private. Only the owner (or an admin) may list them.
+  if (includeDrafts) {
+    const session = await auth().catch(() => null);
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+    }
+    if (!isAdmin(session) && userId !== session.user.id) {
+      return NextResponse.json({ error: "forbidden" }, { status: 403 });
+    }
+  }
 
   try {
     const blogs = await prisma.blogPost.findMany({
       where: {
-        ...(publishedOnly ? { published: true } : {}),
+        ...(includeDrafts ? {} : { published: true }),
         ...(userId ? { userId } : {}),
       },
       orderBy: { createdAt: "desc" },

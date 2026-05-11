@@ -88,6 +88,14 @@ export default function ChallengeAttemptClient({
     return out;
   }, [starterFiles, testFiles]);
 
+  // Only the starter files should appear as tabs; tests stay hidden and the
+  // Sandpack template's default scratch files (e.g. add.ts) shouldn't show up.
+  const visibleFiles = useMemo(() => Object.keys(starterFiles), [starterFiles]);
+  const activeFile = useMemo(
+    () => (starterFiles["/index.ts"] ? "/index.ts" : visibleFiles[0]),
+    [starterFiles, visibleFiles],
+  );
+
   // Ref to current file state so submit can read them
   const filesRef = useRef<SandpackFiles>(files);
 
@@ -263,11 +271,13 @@ export default function ChallengeAttemptClient({
             theme={isDark ? cobalt2 : "light"}
             files={files}
             options={{
-              autorun: true,
-              autoReload: true,
-              initMode: "immediate",
+              autorun: false,
+              autoReload: false,
+              initMode: "lazy",
               recompileMode: "delayed",
               recompileDelay: 300,
+              visibleFiles,
+              activeFile,
             }}
           >
             <FilesTracker filesRef={filesRef} />

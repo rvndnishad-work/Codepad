@@ -31,6 +31,7 @@ export default async function Header() {
           <nav className="flex items-center">
             <div className="hidden md:flex items-center gap-6 text-sm font-medium mr-6 border-r border-border pr-6 h-16">
               <Link href="/" className="text-fg/50 hover:text-fg transition-colors">Templates</Link>
+              <Link href="/challenges" className="text-fg/50 hover:text-fg transition-colors">Challenges</Link>
               <Link href="/explore" className="text-fg/50 hover:text-fg transition-colors">Explore</Link>
               {user && (
                 <>

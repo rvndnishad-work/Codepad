@@ -8,19 +8,27 @@ datasource db {
 }
 
 model User {
-  id            String    @id @default(cuid())
+  id            String              @id @default(cuid())
   name          String?
-  email         String?   @unique
+  email         String?             @unique
   emailVerified DateTime?
   image         String?
   /// bcrypt hash for credentials login. null when only OAuth is used.
   passwordHash  String?
+  /// Optional public profile bio shown on /u/[id] portfolio page.
+  bio           String?
+  /// Optional "Hire Me" contact (email, URL, etc.) shown on portfolio.
+  hireMeUrl     String?
+  /// Whether the user wants their portfolio publicly visible.
+  portfolioPublic Boolean           @default(true)
   accounts      Account[]
   sessions      Session[]
   snippets      Snippet[]
-  followers     Follow[]  @relation("following")
-  following     Follow[]  @relation("follower")
-  createdAt     DateTime  @default(now())
+  attempts      ChallengeAttempt[]
+  interviewSessions InterviewSession[]
+  followers     Follow[]            @relation("following")
+  following     Follow[]            @relation("follower")
+  createdAt     DateTime            @default(now())
 }
 
 model Follow {
@@ -86,4 +94,81 @@ model Snippet {
   @@index([userId])
   @@index([visibility, updatedAt])
   @@index([viewCount])
+}
+
+/// A coding challenge with starter code + hidden tests.
+/// Difficulty: "easy" | "medium" | "hard". Stored as string for SQLite portability.
+model Challenge {
+  id              String             @id @default(cuid())
+  slug            String             @unique
+  title           String
+  /// Markdown description shown on the detail page.
+  description     String
+  /// "easy" | "medium" | "hard"
+  difficulty      String             @default("easy")
+  /// Sandpack template id (e.g. "test-ts", "react", "vanilla")
+  template        String
+  /// JSON map of starter files visible/editable to the user.
+  starterFiles    String
+  /// JSON map of hidden test files (run but not shown to user).
+  testFiles       String
+  /// JSON-encoded string[] of tag labels (e.g. "arrays", "react", "hooks").
+  tags            String?
+  /// Estimated time to solve, in minutes. Used for the timer default.
+  estimatedMinutes Int               @default(15)
+  /// Optional human-readable category (e.g. "Algorithms", "Frontend").
+  category        String?
+  /// Published challenges show up in the list. Drafts are owner-only.
+  published       Boolean            @default(true)
+  attempts        ChallengeAttempt[]
+  createdAt       DateTime           @default(now())
+  updatedAt       DateTime           @updatedAt
+
+  @@index([published, difficulty])
+}
+
+/// A user's attempt at a challenge.
+/// status: "in_progress" | "passed" | "failed" | "abandoned"
+model ChallengeAttempt {
+  id          String    @id @default(cuid())
+  userId      String
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  challengeId String
+  challenge   Challenge @relation(fields: [challengeId], references: [id], onDelete: Cascade)
+  status      String    @default("in_progress")
+  /// JSON map of the user's final submitted files (excluding hidden tests).
+  files       String?
+  /// JSON-encoded test results: { tests: [{name, status, error?}], passed, total }
+  testResults String?
+  /// Total elapsed seconds at submission.
+  durationSec Int?
+  /// Optional reference to the parent interview session.
+  sessionId   String?
+  startedAt   DateTime  @default(now())
+  finishedAt  DateTime?
+
+  @@index([userId, status])
+  @@index([challengeId])
+  @@index([sessionId])
+}
+
+/// An interview session: a sequence of challenges with a hard time limit.
+/// status: "scheduled" | "in_progress" | "completed" | "abandoned"
+model InterviewSession {
+  id            String   @id @default(cuid())
+  userId        String
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title         String   @default("Interview Session")
+  /// JSON-encoded string[] of challenge IDs, in order.
+  challengeIds  String
+  /// Hard time limit for the whole session, in seconds.
+  totalSec      Int
+  status        String   @default("scheduled")
+  /// Random token used to grant read-only "interviewer view" access.
+  shareToken    String   @unique
+  startedAt     DateTime?
+  finishedAt    DateTime?
+  createdAt     DateTime @default(now())
+
+  @@index([userId, status])
 }

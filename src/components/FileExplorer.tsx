@@ -555,7 +555,7 @@ export default function FileExplorer({ readOnly = false, onCollapse }: Props) {
                 }}
                 disabled={!newDepInput.trim()}
                 title="Add dependency"
-                className="px-2 py-1 rounded bg-accent hover:bg-accent-soft text-white disabled:opacity-40 transition"
+                className="px-2 py-1 rounded bg-accent hover:bg-accent-soft text-bg disabled:opacity-40 transition"
               >
                 <Plus className="w-3 h-3" />
               </button>

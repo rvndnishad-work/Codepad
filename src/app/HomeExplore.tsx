@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { TemplateLogo } from "@/lib/icons";
 import { ArrowUpRight, Flame, Globe, User, ArrowRight } from "lucide-react";
+import RelativeTime from "@/components/RelativeTime";
 
 type Snippet = {
   id: string;
@@ -67,7 +68,7 @@ export default function HomeExplore({ featured }: { featured: Snippet[] }) {
                </div>
                <span className="text-xs font-medium text-muted truncate flex-1">{s.author?.name ?? "Anonymous"}</span>
                <span className="text-[10px] font-bold text-muted/40 uppercase tabular-nums">
-                 {new Date(s.updatedAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
+                 <RelativeTime iso={s.updatedAt} />
                </span>
             </div>
           </Link>

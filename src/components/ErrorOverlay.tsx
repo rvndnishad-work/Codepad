@@ -258,12 +258,12 @@ const overlayCSS = `
     animation: errorSlideIn 0.25s ease-out forwards;
   }
   .error-card {
-    background: #0E0E10;
-    border: 1px solid rgba(239, 68, 68, 0.15);
+    background: var(--surface);
+    border: 1px solid rgba(var(--accent-rgb), 0.25);
     border-radius: 12px;
     box-shadow:
-      0 8px 32px rgba(0, 0, 0, 0.4),
-      inset 0 1px 0 rgba(255,255,255,0.03);
+      0 8px 32px rgba(0, 0, 0, 0.18),
+      inset 0 1px 0 rgba(var(--accent-rgb), 0.04);
     overflow: hidden;
   }
   .error-card-header {
@@ -271,8 +271,8 @@ const overlayCSS = `
     align-items: center;
     gap: 10px;
     padding: 14px 18px;
-    border-bottom: 1px solid rgba(255,255,255,0.04);
-    background: rgba(239, 68, 68, 0.04);
+    border-bottom: 1px solid var(--border);
+    background: rgba(var(--accent-rgb), 0.06);
   }
   .error-badge {
     display: inline-flex;
@@ -284,17 +284,17 @@ const overlayCSS = `
     font-weight: 600;
     font-family: 'Inter', system-ui, sans-serif;
     letter-spacing: 0.02em;
-    color: #f87171;
-    background: rgba(239, 68, 68, 0.10);
-    border: 1px solid rgba(239, 68, 68, 0.15);
+    color: var(--accent);
+    background: rgba(var(--accent-rgb), 0.12);
+    border: 1px solid rgba(var(--accent-rgb), 0.20);
   }
   .error-location {
     font-family: 'JetBrains Mono', monospace;
     font-size: 11px;
-    color: rgba(255,255,255,0.25);
+    color: var(--subtle);
   }
   .error-location strong {
-    color: rgba(255,255,255,0.50);
+    color: var(--muted);
     font-weight: 500;
   }
   .error-message-area {
@@ -302,12 +302,12 @@ const overlayCSS = `
     font-family: 'JetBrains Mono', monospace;
     font-size: 13px;
     line-height: 1.6;
-    color: rgba(255,255,255,0.85);
+    color: var(--fg);
     word-break: break-word;
     white-space: pre-wrap;
   }
   .error-message-area .error-type {
-    color: #f87171;
+    color: var(--accent);
     font-weight: 600;
   }
   .error-dismiss {
@@ -320,18 +320,18 @@ const overlayCSS = `
     border-radius: 6px;
     border: none;
     background: transparent;
-    color: rgba(255,255,255,0.25);
+    color: var(--subtle);
     cursor: pointer;
     transition: all 0.15s ease;
     flex-shrink: 0;
   }
   .error-dismiss:hover {
-    background: rgba(239, 68, 68, 0.12);
-    color: #f87171;
+    background: rgba(var(--accent-rgb), 0.14);
+    color: var(--accent);
   }
   .error-code-frame {
-    border-top: 1px solid rgba(255,255,255,0.04);
-    background: rgba(0,0,0,0.3);
+    border-top: 1px solid var(--border);
+    background: var(--panel);
     padding: 8px 0;
     font-family: 'JetBrains Mono', monospace;
     font-size: 12px;
@@ -343,29 +343,31 @@ const overlayCSS = `
     padding: 1px 18px;
   }
   .error-code-line.is-error {
-    background: rgba(239, 68, 68, 0.08);
-    border-left: 2px solid #ef4444;
+    background: rgba(var(--accent-rgb), 0.10);
+    border-left: 2px solid var(--accent);
     padding-left: 16px;
   }
   .error-code-line .line-num {
-    color: rgba(255,255,255,0.15);
+    color: var(--subtle);
     width: 3ch;
     text-align: right;
     padding-right: 16px;
     user-select: none;
     flex-shrink: 0;
     font-variant-numeric: tabular-nums;
+    opacity: 0.6;
   }
   .error-code-line.is-error .line-num {
-    color: rgba(248, 113, 113, 0.6);
+    color: var(--accent);
+    opacity: 0.8;
   }
   .error-code-line .line-content {
-    color: rgba(255,255,255,0.4);
+    color: var(--muted);
     white-space: pre;
     flex: 1;
   }
   .error-code-line.is-error .line-content {
-    color: rgba(255,255,255,0.85);
+    color: var(--fg);
   }
 `;
 
@@ -396,7 +398,7 @@ export function ErrorOverlay({
           position: "absolute",
           inset: 0,
           zIndex: 50,
-          background: "rgba(5, 5, 8, 0.92)",
+          background: "rgba(var(--bg-rgb), 0.85)",
           backdropFilter: "blur(8px)",
           display: "flex",
           flexDirection: "column",

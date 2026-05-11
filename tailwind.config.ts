@@ -29,16 +29,16 @@ const config: Config = {
         "2xl": "1.125rem",
       },
       boxShadow: {
-        "tile": "0 1px 0 rgba(255,255,255,0.03) inset, 0 1px 2px rgba(0,0,0,0.3)",
+        "tile": "0 1px 0 rgba(var(--accent-rgb),0.04) inset, 0 1px 2px rgba(0,0,0,0.12)",
         "tile-hover":
-          "0 0 0 1px rgba(124,127,255,0.45), 0 8px 24px -8px rgba(124,127,255,0.3)",
-        "soft": "0 2px 8px rgba(0,0,0,0.25)",
+          "0 0 0 1px rgba(var(--accent-rgb),0.45), 0 8px 24px -8px rgba(var(--accent-rgb),0.3)",
+        "soft": "0 2px 8px rgba(0,0,0,0.15)",
       },
       backgroundImage: {
         "grid-pattern":
-          "radial-gradient(circle at 1px 1px, rgba(255,255,255,0.04) 1px, transparent 0)",
+          "radial-gradient(circle at 1px 1px, rgba(var(--accent-rgb),0.07) 1px, transparent 0)",
         "hero-glow":
-          "radial-gradient(800px circle at 50% -20%, rgba(124,127,255,0.12), transparent 60%)",
+          "radial-gradient(800px circle at 50% -20%, rgba(var(--accent-rgb),0.12), transparent 60%)",
       },
       keyframes: {
         "fade-in": { from: { opacity: "0", transform: "translateY(4px)" }, to: { opacity: "1", transform: "translateY(0)" } },

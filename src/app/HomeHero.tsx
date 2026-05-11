@@ -40,7 +40,7 @@ export default function HomeHero({
         {/* Main Headline */}
         <h1 className="text-5xl md:text-7xl font-black tracking-tight text-fg mb-6 leading-[1.05] animate-in fade-in slide-in-from-bottom-6 duration-1000 delay-150">
           Code at the speed <br className="hidden md:block" />
-          <span className="text-transparent bg-clip-text bg-gradient-to-br from-accent via-accent-soft to-[#FF9900]">of thought.</span>
+          <span className="text-transparent bg-clip-text bg-gradient-to-br from-accent to-accent-soft">of thought.</span>
         </h1>
         
         {/* Subtitle */}
@@ -54,7 +54,7 @@ export default function HomeHero({
           {recentSnippet ? (
             <Link
               href={`/play/${recentSnippet.slug}`}
-              className="inline-flex items-center gap-2 px-8 py-4 rounded-xl bg-[#FFE600] hover:bg-[#FFE600]/90 text-black font-bold transition-all transform hover:scale-[1.02] active:scale-[0.98] shadow-[0_0_40px_rgba(255,230,0,0.25)]"
+              className="inline-flex items-center gap-2 px-8 py-4 rounded-xl bg-accent hover:bg-accent-soft text-bg font-bold transition-all transform hover:scale-[1.02] active:scale-[0.98] shadow-[0_0_40px_rgba(var(--accent-rgb),0.25)]"
             >
               <Play className="w-5 h-5 fill-current" />
               Continue: {recentSnippet.title}
@@ -62,7 +62,7 @@ export default function HomeHero({
           ) : (
             <Link
               href="/play?template=react"
-              className="inline-flex items-center gap-2 px-8 py-4 rounded-xl bg-[#FFE600] hover:bg-[#FFE600]/90 text-black font-bold transition-all transform hover:scale-[1.02] active:scale-[0.98] shadow-[0_0_40px_rgba(255,230,0,0.25)]"
+              className="inline-flex items-center gap-2 px-8 py-4 rounded-xl bg-accent hover:bg-accent-soft text-bg font-bold transition-all transform hover:scale-[1.02] active:scale-[0.98] shadow-[0_0_40px_rgba(var(--accent-rgb),0.25)]"
             >
               <Plus className="w-5 h-5" />
               Create First Snippet

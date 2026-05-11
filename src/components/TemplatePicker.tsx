@@ -285,7 +285,7 @@ export default function TemplatePicker({
                       <div className="mt-8 flex flex-col sm:flex-row gap-3 items-center justify-center">
                         <Link
                           href="/play?template=react"
-                          className="inline-flex items-center gap-2 px-5 py-3 rounded-xl bg-accent hover:bg-accent-soft text-white text-sm font-medium shadow-soft transition"
+                          className="inline-flex items-center gap-2 px-5 py-3 rounded-xl bg-accent hover:bg-accent-soft text-bg text-sm font-medium shadow-soft transition"
                         >
                           <Code2 className="w-4 h-4" />
                           {isFresh ? "Create your first snippet" : "Start with React"}
@@ -490,7 +490,7 @@ export default function TemplatePicker({
                 onClick={() => setFilter(f.key)}
                 className={`px-3 py-1.5 rounded-full text-xs font-medium border transition ${
                   active
-                    ? "bg-accent text-white border-accent"
+                    ? "bg-accent text-bg border-accent"
                     : "bg-panel border-border text-subtle hover:text-fg hover:border-border-strong"
                 }`}
               >

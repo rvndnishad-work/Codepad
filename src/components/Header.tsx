@@ -16,8 +16,8 @@ export default async function Header() {
         
         {/* Logo Section */}
         <Link href="/" className="flex items-center gap-2.5 group">
-          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-accent to-[#FF9900] grid place-items-center shadow-[0_0_15px_rgba(255,230,0,0.15)] transition-transform group-hover:scale-105">
-             <LogoMark size={18} className="text-black" />
+          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-accent to-accent-soft grid place-items-center shadow-[0_0_15px_rgba(var(--accent-rgb),0.18)] transition-transform group-hover:scale-105">
+             <LogoMark size={18} className="text-bg" />
           </div>
           <div className="flex flex-col leading-none">
              <span className="font-bold text-lg tracking-tight text-fg group-hover:text-fg/90 transition-colors">
@@ -68,7 +68,7 @@ export default async function Header() {
                 ) : (
                   <Link
                     href="/login"
-                    className="px-4 py-2 rounded-lg bg-fg text-bg text-sm font-semibold hover:bg-fg/90 transition-all shadow-[0_0_20px_rgba(255,255,255,0.1)] active:scale-95"
+                    className="px-4 py-2 rounded-lg bg-fg text-bg text-sm font-semibold hover:bg-fg/90 transition-all shadow-soft active:scale-95"
                   >
                     Sign In
                   </Link>

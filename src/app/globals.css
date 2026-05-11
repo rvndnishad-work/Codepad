@@ -107,9 +107,9 @@ portal-nextjs-toast,
   letter-spacing: normal !important;
 }
 
-/* Nano Banana Pro: Console Styling */
+/* Console Styling — uses theme tokens so it adapts to light/dark */
 .sp-console {
-  background: #0A0A0A !important;
+  background: var(--surface) !important;
 }
 .sp-console-list {
   padding: 8px !important;
@@ -117,18 +117,18 @@ portal-nextjs-toast,
 .sp-console-item {
   font-family: 'JetBrains Mono', monospace !important;
   font-size: 12px !important;
-  border-bottom: 1px solid rgba(255,255,255,0.02) !important;
+  border-bottom: 1px solid var(--border) !important;
   padding: 6px 10px !important;
-  color: rgba(255,255,255,0.7) !important;
+  color: var(--muted) !important;
   max-height: 120px !important;
   overflow: hidden !important;
   line-height: 1.5 !important;
 }
-/* Error items in console — red accent, capped height */
+/* Error items in console — uses accent color, capped height */
 .sp-console-item[data-type="error"],
 .sp-console-item--error {
-  color: #f87171 !important;
-  border-left: 2px solid rgba(239, 68, 68, 0.3) !important;
+  color: var(--accent) !important;
+  border-left: 2px solid rgba(var(--accent-rgb), 0.4) !important;
   padding-left: 10px !important;
   max-height: 80px !important;
 }

@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { TemplateLogo } from "@/lib/icons";
 import { Users, Flame, ArrowUpRight, Clock, Eye } from "lucide-react";
+import RelativeTime from "@/components/RelativeTime";
 
 type FeedItem = {
   id: string;
@@ -84,7 +85,7 @@ export default function DashboardFeed({
                   </span>
                   <span className="flex items-center gap-1">
                     <Clock className="w-3 h-3" />
-                    {new Date(item.updatedAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
+                    <RelativeTime iso={item.updatedAt} />
                   </span>
                 </div>
               </div>

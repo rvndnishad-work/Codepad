@@ -56,16 +56,16 @@ export default function PromptSidebar({ onClose }: { onClose: () => void }) {
   };
 
   return (
-    <div className="w-80 md:w-96 h-full bg-[#1e1e1e] border-l border-border flex flex-col z-10 shrink-0">
+    <div className="w-80 md:w-96 h-full bg-surface border-l border-border flex flex-col z-10 shrink-0">
       {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3 border-b border-border bg-[#0d1016]/50">
-        <div className="flex items-center gap-2 text-white font-medium text-sm">
-          <Sparkles className="w-4 h-4 text-indigo-400" />
+      <div className="flex items-center justify-between px-4 py-3 border-b border-border bg-panel/50">
+        <div className="flex items-center gap-2 text-fg font-medium text-sm">
+          <Sparkles className="w-4 h-4 text-accent" />
           AI Assistant
         </div>
         <button
           onClick={onClose}
-          className="p-1 text-muted hover:text-white hover:bg-elevated rounded transition"
+          className="p-1 text-muted hover:text-fg hover:bg-elevated rounded transition"
         >
           <X className="w-4 h-4" />
         </button>
@@ -84,7 +84,7 @@ export default function PromptSidebar({ onClose }: { onClose: () => void }) {
               className={`w-7 h-7 rounded-full flex items-center justify-center shrink-0 ${
                 m.role === "user"
                   ? "bg-accent/20 text-accent"
-                  : "bg-indigo-500/20 text-indigo-400"
+                  : "bg-accent/10 text-accent"
               }`}
             >
               {m.role === "user" ? (
@@ -96,8 +96,8 @@ export default function PromptSidebar({ onClose }: { onClose: () => void }) {
             <div
               className={`text-sm px-3 py-2 rounded-lg max-w-[85%] whitespace-pre-wrap ${
                 m.role === "user"
-                  ? "bg-accent text-white rounded-tr-none"
-                  : "bg-panel text-white rounded-tl-none border border-border"
+                  ? "bg-accent text-bg rounded-tr-none"
+                  : "bg-panel text-fg rounded-tl-none border border-border"
               }`}
             >
               {m.text}
@@ -106,10 +106,10 @@ export default function PromptSidebar({ onClose }: { onClose: () => void }) {
         ))}
         {loading && (
           <div className="flex gap-3">
-            <div className="w-7 h-7 rounded-full flex items-center justify-center shrink-0 bg-indigo-500/20 text-indigo-400">
+            <div className="w-7 h-7 rounded-full flex items-center justify-center shrink-0 bg-accent/10 text-accent">
               <Bot className="w-4 h-4" />
             </div>
-            <div className="text-sm px-4 py-2 rounded-lg bg-panel text-white rounded-tl-none border border-border flex items-center">
+            <div className="text-sm px-4 py-2 rounded-lg bg-panel text-fg rounded-tl-none border border-border flex items-center">
               <Loader2 className="w-4 h-4 animate-spin text-muted" />
             </div>
           </div>
@@ -117,7 +117,7 @@ export default function PromptSidebar({ onClose }: { onClose: () => void }) {
       </div>
 
       {/* Input */}
-      <div className="p-3 border-t border-border bg-[#0d1016]/30">
+      <div className="p-3 border-t border-border bg-panel/30">
         <form onSubmit={handleSubmit} className="relative">
           <textarea
             value={input}
@@ -129,13 +129,13 @@ export default function PromptSidebar({ onClose }: { onClose: () => void }) {
               }
             }}
             placeholder="Ask about your code..."
-            className="w-full bg-panel border border-border rounded-lg pl-3 pr-10 py-2.5 text-sm text-white outline-none focus:border-accent/50 resize-none shadow-inner"
+            className="w-full bg-panel border border-border rounded-lg pl-3 pr-10 py-2.5 text-sm text-fg outline-none focus:border-accent/50 resize-none shadow-inner"
             rows={2}
           />
           <button
             type="submit"
             disabled={!input.trim() || loading}
-            className="absolute right-2 bottom-2.5 p-1.5 text-white bg-accent hover:bg-accent-soft rounded-md disabled:opacity-50 transition"
+            className="absolute right-2 bottom-2.5 p-1.5 text-bg bg-accent hover:bg-accent-soft rounded-md disabled:opacity-50 transition"
           >
             <Send className="w-3.5 h-3.5" />
           </button>

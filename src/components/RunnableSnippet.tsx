@@ -1,13 +1,43 @@
 "use client";
 
-import { Sandpack } from "@codesandbox/sandpack-react";
-import { useTheme } from "next-themes";
-import { Play } from "lucide-react";
 import { useEffect, useState } from "react";
+import {
+  SandpackProvider,
+  SandpackCodeEditor,
+  SandpackPreview,
+  SandpackConsole,
+  useSandpack,
+} from "@codesandbox/sandpack-react";
+import { useTheme } from "next-themes";
+import { Play, RotateCw, X, Terminal } from "lucide-react";
 
 interface RunnableSnippetProps {
   code: string;
   language: string;
+}
+
+type Template = "vanilla" | "vanilla-ts" | "react" | "react-ts";
+
+function resolveTemplate(language: string): {
+  template: Template;
+  fileName: string;
+  kind: "console" | "preview";
+} {
+  switch (language) {
+    case "react":
+    case "jsx":
+      return { template: "react", fileName: "App.js", kind: "preview" };
+    case "react-ts":
+    case "tsx":
+      return { template: "react-ts", fileName: "App.tsx", kind: "preview" };
+    case "typescript":
+    case "ts":
+      return { template: "vanilla-ts", fileName: "index.ts", kind: "console" };
+    case "javascript":
+    case "js":
+    default:
+      return { template: "vanilla", fileName: "index.js", kind: "console" };
+  }
 }
 
 export default function RunnableSnippet({ code, language }: RunnableSnippetProps) {
@@ -18,72 +48,167 @@ export default function RunnableSnippet({ code, language }: RunnableSnippetProps
     setMounted(true);
   }, []);
 
-  if (!mounted) return (
-    <div className="my-10 rounded-[32px] border border-border bg-panel/30 h-[400px] animate-pulse flex items-center justify-center">
-       <span className="text-[10px] font-black uppercase tracking-widest text-muted">Loading Playground...</span>
-    </div>
-  );
-  
-  // Map common languages to Sandpack templates
-  let template: "vanilla" | "react" | "vue" | "svelte" | "vanilla-ts" | "react-ts" = "vanilla";
-  let fileName = "index.js";
-
-  if (language === "javascript" || language === "js") {
-    template = "vanilla";
-    fileName = "index.js";
-  } else if (language === "typescript" || language === "ts") {
-    template = "vanilla-ts";
-    fileName = "index.ts";
-  } else if (language === "react" || language === "jsx") {
-    template = "react";
-    fileName = "App.js";
-  } else if (language === "react-ts" || language === "tsx") {
-    template = "react-ts";
-    fileName = "App.tsx";
+  if (!mounted) {
+    return (
+      <div className="my-8 rounded-xl h-32 animate-pulse bg-surface/30" />
+    );
   }
 
+  const { template, fileName, kind } = resolveTemplate(language);
+
+  // Auto-size editor to roughly fit the code. ~22px per line of CodeMirror,
+  // plus a little chrome; clamp so tiny snippets aren't ugly and huge ones
+  // don't fill the viewport.
+  const lineCount = Math.max(1, code.split("\n").length);
+  const editorHeight = Math.min(480, Math.max(96, lineCount * 22 + 28));
+
   return (
-    <div className="my-10 rounded-[32px] overflow-hidden border border-border shadow-[0_32px_64px_-16px_rgba(0,0,0,0.3)] bg-panel group">
-      <div className="px-6 py-4 border-b border-border bg-panel/80 backdrop-blur-sm flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="p-2 rounded-xl bg-accent/10 border border-accent/20">
-            <Play className="w-3.5 h-3.5 text-accent fill-current" />
-          </div>
-          <div className="flex flex-col">
-            <span className="text-[10px] font-black uppercase tracking-[0.2em] text-accent">Live Playground</span>
-            <span className="text-[9px] font-bold text-muted uppercase tracking-widest">{language} mode active</span>
-          </div>
+    <div className="my-8 rounded-xl overflow-hidden">
+      <SandpackProvider
+        template={template}
+        theme={resolvedTheme === "dark" ? "dark" : "light"}
+        files={{ [`/${fileName}`]: code }}
+        options={{
+          // Lazy init: bundler doesn't even load until the user clicks Run.
+          autorun: false,
+          autoReload: true,
+          initMode: "lazy",
+          recompileMode: "delayed",
+          recompileDelay: 300,
+        }}
+      >
+        <PlaygroundBody language={language} kind={kind} editorHeight={editorHeight} />
+      </SandpackProvider>
+    </div>
+  );
+}
+
+/**
+ * Inner body that owns the "running" state. Lives inside SandpackProvider so it
+ * can call `runSandpack()` (which boots the bundler on demand).
+ */
+function PlaygroundBody({
+  language,
+  kind,
+  editorHeight,
+}: {
+  language: string;
+  kind: "console" | "preview";
+  editorHeight: number;
+}) {
+  const { sandpack } = useSandpack();
+  const [running, setRunning] = useState(false);
+
+  function handleRun() {
+    sandpack.runSandpack();
+    setRunning(true);
+  }
+
+  function handleHide() {
+    setRunning(false);
+  }
+
+  // Output column has a small header strip; subtract its height so the
+  // overall column matches the editor next to it.
+  const OUTPUT_HEADER_PX = 28;
+  const outputHeight = Math.max(40, editorHeight - OUTPUT_HEADER_PX);
+
+  return (
+    <div className="flex flex-col">
+      {/* Single top toolbar — label on left, run/reset on right */}
+      <div className="px-3 py-1.5 border-b border-border flex items-center justify-between bg-panel/40">
+        <div className="flex items-center gap-2 min-w-0">
+          <Play className="w-3 h-3 text-accent fill-current shrink-0" />
+          <span className="text-[10px] font-black uppercase tracking-[0.18em] text-accent">
+            Playground
+          </span>
+          <span className="text-[10px] font-mono text-muted/60 lowercase truncate">
+            {language}
+          </span>
         </div>
-        <div className="flex gap-2">
-          <div className="w-2.5 h-2.5 rounded-full bg-red-500/20 border border-red-500/40" />
-          <div className="w-2.5 h-2.5 rounded-full bg-amber-500/20 border border-amber-500/40" />
-          <div className="w-2.5 h-2.5 rounded-full bg-emerald-500/20 border border-emerald-500/40" />
+        <button
+          onClick={handleRun}
+          aria-label={running ? "Re-run" : "Run"}
+          title={running ? "Re-run" : "Run"}
+          className={`w-7 h-7 rounded-md flex items-center justify-center transition ${
+            running
+              ? "text-muted hover:text-fg hover:bg-elevated"
+              : "text-accent hover:bg-accent/10"
+          }`}
+        >
+          {running ? <RotateCw className="w-3.5 h-3.5" /> : <Play className="w-3.5 h-3.5 fill-current" />}
+        </button>
+      </div>
+
+      {/* Editor + (optional) output */}
+      <div className="flex flex-col md:flex-row">
+        <div
+          className={`min-w-0 transition-all duration-300 ${
+            running ? "md:w-1/2 w-full" : "w-full"
+          }`}
+        >
+          <SandpackCodeEditor
+            showLineNumbers
+            showTabs={false}
+            showRunButton={false}
+            wrapContent
+            style={{ height: editorHeight }}
+          />
         </div>
+
+        {running && (
+          <div
+            className="min-w-0 md:w-1/2 w-full border-t md:border-t-0 md:border-l border-border
+                       animate-in fade-in slide-in-from-bottom-2 md:slide-in-from-right-4 duration-300"
+          >
+            <div className="flex items-center justify-between px-3 py-1.5 border-b border-border bg-panel/30">
+              <div className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-[0.18em] text-muted">
+                <Terminal className="w-2.5 h-2.5" />
+                {kind === "preview" ? "Preview" : "Console"}
+              </div>
+              <button
+                onClick={handleHide}
+                title="Hide output"
+                className="w-5 h-5 rounded text-muted hover:text-fg hover:bg-elevated transition flex items-center justify-center"
+              >
+                <X className="w-3 h-3" />
+              </button>
+            </div>
+            <div style={{ height: outputHeight }} className="overflow-hidden">
+              {kind === "preview" ? (
+                <SandpackPreview
+                  showOpenInCodeSandbox={false}
+                  showRefreshButton
+                  style={{ height: "100%" }}
+                />
+              ) : (
+                <SandpackConsole style={{ height: "100%" }} resetOnPreviewRestart />
+              )}
+            </div>
+          </div>
+        )}
       </div>
-      
-      <div className="relative">
-        <Sandpack
-          template={template}
-          theme={resolvedTheme === "dark" ? "dark" : "light"}
-          files={{
-            [`/${fileName}`]: code,
+
+      {/*
+        For console-only playgrounds (vanilla JS/TS), we still need the iframe
+        client to be mounted somewhere so that code actually executes —
+        SandpackConsole only displays messages, it doesn't run anything.
+        Render a zero-size, off-screen Preview as the iframe host.
+      */}
+      {kind === "console" && running && (
+        <div
+          aria-hidden
+          style={{
+            position: "absolute",
+            width: 0,
+            height: 0,
+            overflow: "hidden",
+            pointerEvents: "none",
           }}
-          options={{
-            showConsole: true,
-            showConsoleButton: true,
-            editorHeight: 400,
-            showLineNumbers: true,
-            closableTabs: false,
-            autorun: false,
-          }}
-        />
-      </div>
-      
-      <div className="px-6 py-3 bg-panel/30 border-t border-border flex items-center justify-between">
-        <p className="text-[10px] font-medium text-muted/60 italic">
-          Try editing the code above and click "Run" to see the results.
-        </p>
-      </div>
+        >
+          <SandpackPreview showOpenInCodeSandbox={false} />
+        </div>
+      )}
     </div>
   );
 }

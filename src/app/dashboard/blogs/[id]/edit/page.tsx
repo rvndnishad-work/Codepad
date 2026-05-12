@@ -15,6 +15,16 @@ export default async function EditBlogPage({ params }: { params: Promise<{ id: s
   if (!blog) notFound();
   if (blog.userId !== session.user.id) redirect("/dashboard");
 
+  let tags: string[] = [];
+  try {
+    const parsed = blog.tags ? JSON.parse(blog.tags) : [];
+    if (Array.isArray(parsed)) {
+      tags = parsed.filter((t): t is string => typeof t === "string");
+    }
+  } catch {
+    tags = [];
+  }
+
   return (
     <div className="bg-bg min-h-screen flex flex-col">
       <main className="flex-1 mx-auto max-w-7xl w-full px-4 py-8">
@@ -22,6 +32,7 @@ export default async function EditBlogPage({ params }: { params: Promise<{ id: s
           ...blog,
           excerpt: blog.excerpt ?? "",
           coverImage: blog.coverImage ?? "",
+          tags,
           createdAt: blog.createdAt.toISOString(),
           updatedAt: blog.updatedAt.toISOString(),
         }} />

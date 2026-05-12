@@ -1,11 +1,11 @@
 import Link from "next/link";
-import Image from "next/image";
 import { auth } from "@/lib/auth";
 import { isAdmin } from "@/lib/admin";
 import { LogoMark } from "./Logo";
-import { handleSignOut } from "@/app/actions";
 
 import ThemeToggle from "./ThemeToggle";
+import UserMenu from "./UserMenu";
+import MobileNav from "./MobileNav";
 
 export default async function Header() {
   const session = await auth().catch(() => null);
@@ -13,18 +13,21 @@ export default async function Header() {
   const showAdmin = isAdmin(session);
 
   return (
-    <header className="sticky top-0 z-[100] bg-bg/80 backdrop-blur-xl border-b border-border">
-      <div className="mx-auto max-w-7xl px-4 h-16 flex items-center justify-between">
-        
-        {/* Logo Section */}
-        <Link href="/" className="flex items-center gap-2.5 group">
+    <header className="sticky top-0 z-[100] bg-bg/80 backdrop-blur-xl border-b border-border relative">
+      <div className="mx-auto max-w-7xl px-4 h-16 flex items-center justify-between gap-3">
+
+        {/* Mobile: logo doubles as menu trigger (collapsed into MobileNav) */}
+        <MobileNav signedIn={!!user} isAdmin={showAdmin} />
+
+        {/* Desktop: logo links to home */}
+        <Link href="/" className="hidden md:flex items-center gap-2.5 group">
           <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-accent to-accent-soft grid place-items-center shadow-[0_0_15px_rgba(var(--accent-rgb),0.18)] transition-transform group-hover:scale-105">
-             <LogoMark size={18} className="text-bg" />
+            <LogoMark size={18} className="text-bg" />
           </div>
           <div className="flex flex-col leading-none">
-             <span className="font-bold text-lg tracking-tight text-fg group-hover:text-fg/90 transition-colors">
-               Interviewpad<span className="text-fg/30 font-normal">.in</span>
-             </span>
+            <span className="font-bold text-lg tracking-tight text-fg group-hover:text-fg/90 transition-colors">
+              Interviewpad<span className="text-fg/30 font-normal">.in</span>
+            </span>
           </div>
         </Link>
 
@@ -34,44 +37,22 @@ export default async function Header() {
             <div className="hidden md:flex items-center gap-6 text-sm font-medium mr-6 border-r border-border pr-6 h-16">
               <Link href="/" className="text-fg/50 hover:text-fg transition-colors">Templates</Link>
               <Link href="/challenges" className="text-fg/50 hover:text-fg transition-colors">Challenges</Link>
+              <Link href="/blog" className="text-fg/50 hover:text-fg transition-colors">Blog</Link>
               <Link href="/explore" className="text-fg/50 hover:text-fg transition-colors">Explore</Link>
               {user && (
-                <>
-                  <Link href="/interview/new" className="text-fg/50 hover:text-fg transition-colors">Interviews</Link>
-                  <Link href="/dashboard" className="text-fg/50 hover:text-fg transition-colors">Dashboard</Link>
-                  <Link href="/profile" className="text-fg/50 hover:text-fg transition-colors">Profile</Link>
-                  {showAdmin && (
-                    <Link href="/admin" className="text-accent hover:text-accent-soft transition-colors font-semibold">Admin</Link>
-                  )}
-                </>
+                <Link href="/interview/new" className="text-fg/50 hover:text-fg transition-colors">Interviews</Link>
               )}
             </div>
 
             <div className="flex items-center gap-4">
               <ThemeToggle />
-              
+
               <div className="flex items-center gap-4 pl-4 border-l border-border h-8">
                 {user ? (
-                  <div className="flex items-center gap-4">
-                    <form action={handleSignOut}>
-                      <button className="text-sm font-medium text-fg/40 hover:text-fg transition-colors">
-                        Sign out
-                      </button>
-                    </form>
-                    {user.image ? (
-                      <Image
-                        src={user.image}
-                        alt={user.name ?? ""}
-                        width={32}
-                        height={32}
-                        className="rounded-full ring-1 ring-border hover:ring-accent/30 transition-all cursor-pointer"
-                      />
-                    ) : (
-                      <div className="w-8 h-8 rounded-full bg-surface border border-border grid place-items-center text-xs font-semibold text-fg/80 cursor-pointer hover:bg-elevated transition-colors">
-                        {(user.name ?? user.email ?? "U").slice(0, 1).toUpperCase()}
-                      </div>
-                    )}
-                  </div>
+                  <UserMenu
+                    user={{ name: user.name, email: user.email, image: user.image }}
+                    isAdmin={showAdmin}
+                  />
                 ) : (
                   <Link
                     href="/login"

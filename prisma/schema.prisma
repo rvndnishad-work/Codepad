@@ -29,6 +29,9 @@ model User {
   followers     Follow[]            @relation("following")
   following     Follow[]            @relation("follower")
   blogs         BlogPost[]
+  blogReactions BlogReaction[]
+  blogComments  BlogComment[]
+  blogBookmarks BlogBookmark[]
   createdAt     DateTime            @default(now())
 }
 
@@ -183,11 +186,66 @@ model BlogPost {
   coverImage  String?
   published   Boolean  @default(false)
   viewCount   Int      @default(0)
+  /// JSON-encoded string[] of tag labels (e.g. "react", "typescript", "ai").
+  tags        String?
+  /// Admin-only flag for staff-picked / featured posts.
+  featured    Boolean  @default(false)
   userId      String
   user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  reactions   BlogReaction[]
+  comments    BlogComment[]
+  bookmarks   BlogBookmark[]
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
   @@index([userId])
   @@index([published, createdAt])
+  @@index([featured, createdAt])
+}
+
+/// A reaction to a blog post (clap, heart, etc.). Type lets us extend later
+/// without another model. One row per (post, user, type).
+model BlogReaction {
+  id        String   @id @default(cuid())
+  postId    String
+  post      BlogPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  /// "clap" for v1. Future: "heart", "fire", "unicorn".
+  type      String   @default("clap")
+  createdAt DateTime @default(now())
+
+  @@unique([postId, userId, type])
+  @@index([postId])
+  @@index([userId])
+}
+
+/// A comment on a blog post. parentId enables threading — currently flat in UI.
+model BlogComment {
+  id        String        @id @default(cuid())
+  postId    String
+  post      BlogPost      @relation(fields: [postId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  parentId  String?
+  parent    BlogComment?  @relation("CommentReplies", fields: [parentId], references: [id], onDelete: Cascade)
+  replies   BlogComment[] @relation("CommentReplies")
+  content   String
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+
+  @@index([postId, createdAt])
+  @@index([userId])
+}
+
+/// Saved-for-later bookmarks. Composite PK avoids duplicate saves.
+model BlogBookmark {
+  postId    String
+  post      BlogPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@id([postId, userId])
+  @@index([userId, createdAt])
 }

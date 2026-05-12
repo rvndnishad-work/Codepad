@@ -23,17 +23,25 @@ export default function MarkdownRenderer({ content, className = "" }: MarkdownRe
         rehypePlugins={[rehypeHighlight]}
         components={{
           code({ node, inline, className, children, ...props }: any) {
-            const match = /language-(\w+)/.exec(className || "");
-            // Detect 'run' in the meta string (e.g., ```javascript run)
-            const meta = (node as any)?.data?.meta || "";
-            const isRunnable = meta.split(" ").includes("run");
+            // Match both `language-javascript` and `language-javascript-run`
+            // (the `-run` suffix is our runnable marker — see TiptapEditor for why).
+            const match = /language-([\w-]+)/.exec(className || "");
+            const rawLang = match?.[1] ?? "";
 
-            if (!inline && isRunnable && match) {
+            // Backwards-compat: legacy code blocks authored as ```javascript run
+            // would carry the marker on `node.data.meta` — keep detecting it.
+            const meta = (node as any)?.data?.meta || "";
+            const isRunnableByMeta = meta.split(" ").includes("run");
+            const isRunnableByLang = rawLang.endsWith("-run");
+            const isRunnable = isRunnableByLang || isRunnableByMeta;
+            const language = isRunnableByLang ? rawLang.slice(0, -"-run".length) : rawLang;
+
+            if (!inline && isRunnable && language) {
               return (
                 <div className="not-prose">
-                  <RunnableSnippet 
-                    code={String(children).replace(/\n$/, "")} 
-                    language={match[1]} 
+                  <RunnableSnippet
+                    code={String(children).replace(/\n$/, "")}
+                    language={language}
                   />
                 </div>
               );

@@ -5,7 +5,7 @@ import dynamic from "next/dynamic";
 import MarkdownRenderer from "./MarkdownRenderer";
 import TiptapEditor from "./TiptapEditor";
 import { useTheme } from "next-themes";
-import { Save, Eye, Edit3, Image as ImageIcon, Layout, Type, Terminal } from "lucide-react";
+import { Save, Eye, Edit3, Image as ImageIcon, Layout, Type, Terminal, Hash } from "lucide-react";
 import { toast } from "sonner";
 
 const Editor = dynamic(() => import("@monaco-editor/react"), { ssr: false });
@@ -18,8 +18,31 @@ interface BlogEditorProps {
     excerpt: string;
     coverImage: string;
     published: boolean;
+    tags?: string[];
   };
   onSave: (data: any) => Promise<void>;
+}
+
+const TAG_RE = /^[a-z0-9][a-z0-9-]{0,29}$/;
+
+function parseTagsCsv(raw: string): { tags: string[]; invalid: string[] } {
+  const all = raw
+    .split(",")
+    .map((t) => t.trim().toLowerCase())
+    .filter(Boolean);
+  const tags: string[] = [];
+  const invalid: string[] = [];
+  const seen = new Set<string>();
+  for (const t of all) {
+    if (!TAG_RE.test(t)) {
+      invalid.push(t);
+      continue;
+    }
+    if (seen.has(t)) continue;
+    seen.add(t);
+    tags.push(t);
+  }
+  return { tags, invalid };
 }
 
 export default function BlogEditor({ initialData, onSave }: BlogEditorProps) {
@@ -27,6 +50,7 @@ export default function BlogEditor({ initialData, onSave }: BlogEditorProps) {
   const [content, setContent] = useState(initialData?.content ?? "");
   const [excerpt, setExcerpt] = useState(initialData?.excerpt ?? "");
   const [coverImage, setCoverImage] = useState(initialData?.coverImage ?? "");
+  const [tagsCsv, setTagsCsv] = useState((initialData?.tags ?? []).join(", "));
   const [published, setPublished] = useState(initialData?.published ?? false);
   const [view, setView] = useState<"edit" | "preview" | "split">("split");
   const [mode, setMode] = useState<"visual" | "code">("visual");
@@ -40,9 +64,20 @@ export default function BlogEditor({ initialData, onSave }: BlogEditorProps) {
       toast.error("Title is required");
       return;
     }
+    const { tags, invalid } = parseTagsCsv(tagsCsv);
+    if (invalid.length > 0) {
+      toast.error(`Invalid tag${invalid.length > 1 ? "s" : ""}: ${invalid.join(", ")}`, {
+        description: "Use lowercase letters, numbers, and dashes (max 30 chars).",
+      });
+      return;
+    }
+    if (tags.length > 8) {
+      toast.error("Maximum 8 tags allowed");
+      return;
+    }
     setIsSaving(true);
     try {
-      await onSave({ title, content, excerpt, coverImage, published });
+      await onSave({ title, content, excerpt, coverImage, published, tags });
       toast.success("Blog post saved!");
     } catch (error) {
       toast.error("Failed to save blog post");
@@ -169,6 +204,20 @@ export default function BlogEditor({ initialData, onSave }: BlogEditorProps) {
                   </div>
                 </div>
               </div>
+
+              <div className="space-y-1.5 mt-4">
+                <label className="text-[10px] font-black uppercase tracking-widest text-muted">Tags (max 8)</label>
+                <div className="flex items-center gap-3 bg-bg border border-border rounded-xl px-4 py-2 focus-within:border-accent transition-colors">
+                  <Hash className="w-4 h-4 text-muted" />
+                  <input
+                    type="text"
+                    placeholder="react, typescript, ai (comma-separated)"
+                    className="flex-1 bg-transparent text-sm text-fg outline-none"
+                    value={tagsCsv}
+                    onChange={(e) => setTagsCsv(e.target.value)}
+                  />
+                </div>
+              </div>
             </div>
 
             <div className="flex-1 min-h-0 border-t border-border">
@@ -209,7 +258,7 @@ export default function BlogEditor({ initialData, onSave }: BlogEditorProps) {
                 onChange={(e) => setTitle(e.target.value)}
               />
               
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-12">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
                  <div className="space-y-2">
                     <span className="text-[10px] font-black uppercase tracking-widest text-muted/40 px-1">Cover Image</span>
                     <input
@@ -230,6 +279,17 @@ export default function BlogEditor({ initialData, onSave }: BlogEditorProps) {
                       onChange={(e) => setExcerpt(e.target.value)}
                     />
                  </div>
+              </div>
+
+              <div className="space-y-2 mb-12">
+                <span className="text-[10px] font-black uppercase tracking-widest text-muted/40 px-1">Tags (max 8)</span>
+                <input
+                  type="text"
+                  placeholder="react, typescript, ai"
+                  className="w-full bg-panel border border-border rounded-2xl px-5 py-3 text-sm focus:border-accent outline-none transition-all"
+                  value={tagsCsv}
+                  onChange={(e) => setTagsCsv(e.target.value)}
+                />
               </div>
             </div>
 

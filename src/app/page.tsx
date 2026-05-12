@@ -5,7 +5,7 @@ import HomeBento from "./HomeBento";
 import HomeExplore from "./HomeExplore";
 import Link from "next/link";
 import { ArrowRight, BookOpen } from "lucide-react";
-import BlogCard from "@/components/BlogCard";
+import BlogFeedItem, { type BlogFeedEntry } from "@/components/BlogFeedItem";
 import TemplatePicker from "@/components/TemplatePicker";
 
 export default async function HomePage() {
@@ -44,13 +44,27 @@ export default async function HomePage() {
     include: { user: { select: { name: true, image: true } } },
   });
 
-  // Latest blogs
-  const latestBlogs = await prisma.blogPost.findMany({
+  // Latest blogs (feed-style list)
+  const latestBlogsRows = await prisma.blogPost.findMany({
     where: { published: true },
     orderBy: { createdAt: "desc" },
-    take: 3,
+    take: 6,
     include: { user: { select: { name: true, image: true } } },
   });
+
+  // ~200 words per minute is a typical reading speed; content is markdown so
+  // we approximate by counting words.
+  const latestBlogs: BlogFeedEntry[] = latestBlogsRows.map((b) => ({
+    id: b.id,
+    slug: b.slug,
+    title: b.title,
+    excerpt: b.excerpt,
+    coverImage: b.coverImage,
+    viewCount: b.viewCount,
+    createdAt: b.createdAt.toISOString(),
+    readingMinutes: Math.max(1, Math.round(b.content.trim().split(/\s+/).length / 200)),
+    user: { name: b.user.name, image: b.user.image },
+  }));
 
   const featured = featuredRows.map((s) => ({
     id: s.id,
@@ -73,12 +87,12 @@ export default async function HomePage() {
       
       <HomeExplore featured={featured} />
       
-      {/* Latest Stories Section */}
+      {/* Latest Stories — feed-style list (Medium / dev.to inspired) */}
       {latestBlogs.length > 0 && (
         <section className="bg-bg py-24 border-t border-border/50 relative overflow-hidden">
           <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-accent/5 rounded-full blur-[120px] -mr-64 -mt-64" />
-          <div className="mx-auto max-w-6xl px-4 relative z-10">
-            <div className="flex items-end justify-between mb-12">
+          <div className="mx-auto max-w-4xl px-4 relative z-10">
+            <div className="flex items-end justify-between mb-10">
               <div>
                  <div className="inline-flex items-center gap-2 text-[11px] font-black uppercase tracking-widest text-accent mb-2 bg-accent/10 px-3 py-1 rounded-full">
                     <BookOpen className="w-3.5 h-3.5" />
@@ -91,13 +105,10 @@ export default async function HomePage() {
                 <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
               </Link>
             </div>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+
+            <div className="flex flex-col gap-3">
               {latestBlogs.map((blog) => (
-                <BlogCard key={blog.id} blog={{
-                  ...blog,
-                  createdAt: blog.createdAt.toISOString()
-                }} />
+                <BlogFeedItem key={blog.id} blog={blog} />
               ))}
             </div>
           </div>

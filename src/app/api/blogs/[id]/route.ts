@@ -3,12 +3,20 @@ import { z } from "zod";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
+const TAG_RE = /^[a-z0-9][a-z0-9-]{0,29}$/;
+
 const patchSchema = z.object({
   title: z.string().min(1).max(200).optional(),
   content: z.string().min(1).optional(),
   excerpt: z.string().max(500).optional(),
-  coverImage: z.string().url().optional().or(z.literal("")),
+  coverImage: z
+    .string()
+    .url()
+    .refine((u) => /^https?:/.test(u), "must be http(s) URL")
+    .optional()
+    .or(z.literal("")),
   published: z.boolean().optional(),
+  tags: z.array(z.string().regex(TAG_RE)).max(8).optional(),
 });
 
 async function requireOwner(id: string, userId: string) {
@@ -68,10 +76,17 @@ export async function PATCH(
     return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
   }
 
+  // tags need JSON encoding for SQLite; everything else passes through.
+  const { tags, ...rest } = parsed.data;
+  const data = {
+    ...rest,
+    ...(tags !== undefined ? { tags: tags.length > 0 ? JSON.stringify(tags) : null } : {}),
+  };
+
   try {
     const updated = await prisma.blogPost.update({
       where: { id },
-      data: parsed.data,
+      data,
     });
     return NextResponse.json(updated);
   } catch (error) {

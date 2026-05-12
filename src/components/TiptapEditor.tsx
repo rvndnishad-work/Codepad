@@ -164,7 +164,12 @@ export default function TiptapEditor({ content, onChange }: TiptapEditorProps) {
         <div className="flex items-center gap-1 pl-2 ml-auto">
           <button
             onClick={() => {
-              const runnableBlock = "\n\n```javascript run\n// Your interactive code here\nconsole.log('Hello from Codepad!');\n```\n\n";
+              // NOTE: We use a single-token language id (`javascript-run`) rather than
+              // a code-fence meta (` ```javascript run `). tiptap-markdown only keeps
+              // the first whitespace-separated token of the info string, so a meta
+              // flag like "run" gets stripped on save. The `-run` suffix survives the
+              // round-trip and is recognised by MarkdownRenderer.
+              const runnableBlock = "\n\n```javascript-run\n// Your interactive code here\nconsole.log('Hello from Codepad!');\n```\n\n";
               editor.chain().focus().insertContent(runnableBlock).run();
             }}
             className="flex items-center gap-2 px-4 py-2 rounded-xl bg-accent/10 text-accent hover:bg-accent hover:text-bg transition-all text-[10px] font-black uppercase tracking-widest border border-accent/20"

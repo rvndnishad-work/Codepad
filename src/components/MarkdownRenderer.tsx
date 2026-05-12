@@ -1,5 +1,6 @@
 "use client";
 
+import React from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import rehypeHighlight from "rehype-highlight";
@@ -13,7 +14,7 @@ interface MarkdownRendererProps {
 
 export default function MarkdownRenderer({ content, className = "" }: MarkdownRendererProps) {
   return (
-    <article className={`prose prose-invert prose-pre:bg-panel/50 prose-pre:border prose-pre:border-border/50 prose-pre:rounded-xl max-w-none 
+    <article className={`prose prose-invert max-w-none 
       prose-headings:text-fg prose-headings:font-black prose-headings:tracking-tight
       prose-p:text-muted prose-a:text-accent hover:prose-a:text-accent-glow prose-a:no-underline hover:prose-a:underline
       prose-strong:text-fg prose-code:text-accent prose-code:bg-panel/50 prose-code:px-1 prose-code:py-0.5 prose-code:rounded prose-code:before:content-none prose-code:after:content-none
@@ -63,11 +64,27 @@ export default function MarkdownRenderer({ content, className = "" }: MarkdownRe
               )}
             </span>
           ),
-          pre: ({ children }) => (
-            <pre className="relative overflow-hidden group">
-              {children}
-            </pre>
-          ),
+          pre: ({ children }: any) => {
+            const childrenArray = React.Children.toArray(children);
+            // Check if any child is our runnable snippet or a code block that will become one
+            const hasRunnable = childrenArray.some((child: any) => {
+              const className = child?.props?.className || "";
+              const hasNotProse = className.includes("not-prose");
+              const isRunnableCode = className.includes("-run");
+              const innerHasNotProse = child?.props?.children?.props?.className?.includes("not-prose");
+              return hasNotProse || isRunnableCode || innerHasNotProse;
+            });
+
+            if (hasRunnable) {
+              return <>{children}</>;
+            }
+
+            return (
+              <pre className="relative overflow-hidden group border border-border/50 bg-panel/50 rounded-xl my-8">
+                {children}
+              </pre>
+            );
+          },
         }}
       >
         {content}

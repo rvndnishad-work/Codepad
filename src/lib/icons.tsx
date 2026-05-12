@@ -44,12 +44,14 @@ export const templateIcon: Record<
 export function TemplateLogo({
   id,
   size = 28,
+  className,
 }: {
   id: string;
   size?: number;
+  className?: string;
 }) {
   const entry = templateIcon[id];
   if (!entry) return null;
   const { Icon, color } = entry;
-  return <Icon width={size} height={size} style={{ color }} />;
+  return <Icon width={size} height={size} style={{ color }} className={className} />;
 }

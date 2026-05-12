@@ -13,6 +13,27 @@ export default function ThemeToggle() {
     setMounted(true);
   }, []);
 
+  const toggleTheme = (event: React.MouseEvent) => {
+    const isAppearanceTransition =
+      (document as any).startViewTransition &&
+      !window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+    if (!isAppearanceTransition) {
+      setTheme(theme === "dark" ? "light" : "dark");
+      return;
+    }
+
+    const x = event.clientX;
+    const y = event.clientY;
+
+    document.documentElement.style.setProperty("--x", `${x}px`);
+    document.documentElement.style.setProperty("--y", `${y}px`);
+
+    (document as any).startViewTransition(async () => {
+      setTheme(theme === "dark" ? "light" : "dark");
+    });
+  };
+
   if (!mounted) {
     return (
       <div className="w-9 h-9 rounded-xl border border-border bg-surface/50" />
@@ -21,7 +42,7 @@ export default function ThemeToggle() {
 
   return (
     <button
-      onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+      onClick={toggleTheme}
       className="group relative w-9 h-9 rounded-xl border border-border bg-surface/50 hover:bg-elevated hover:border-accent/30 transition-all duration-300 flex items-center justify-center overflow-hidden"
       aria-label="Toggle theme"
     >

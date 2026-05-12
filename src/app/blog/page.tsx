@@ -160,8 +160,8 @@ export default async function BlogListingPage({
       {/* Hero strip (compact) */}
       <div className="border-b border-border bg-bg/50">
         <div className="mx-auto max-w-6xl px-4 py-10">
-          <div className="inline-flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.2em] text-accent mb-3 bg-accent/10 px-3 py-1 rounded-full">
-            <Flame className="w-3 h-3 fill-current" />
+          <div className="inline-flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.2em] text-accent mb-3 bg-accent/10 border border-accent/20 px-4 py-1.5 rounded-full shadow-[0_0_15px_rgba(var(--accent-rgb),0.1)]">
+            <Flame className="w-3 h-3 fill-current animate-pulse" />
             Insights & Engineering
           </div>
           <h1 className="text-3xl md:text-4xl font-black tracking-tight text-fg">
@@ -261,7 +261,7 @@ export default async function BlogListingPage({
           {suggestedUsers.length > 0 && (
             <div className="rounded-2xl border border-border bg-surface p-5">
               <div className="flex items-center gap-2 mb-4">
-                <Users className="w-4 h-4 text-accent" />
+                <Users className="w-4 h-4 text-violet-500" />
                 <h3 className="text-sm font-black tracking-tight text-fg">
                   Who to follow
                 </h3>
@@ -310,7 +310,7 @@ export default async function BlogListingPage({
           {mostRead.length > 0 && (
             <div className="rounded-2xl border border-border bg-surface p-5">
               <div className="flex items-center gap-2 mb-4">
-                <TrendingUp className="w-4 h-4 text-accent" />
+                <TrendingUp className="w-4 h-4 text-emerald-500" />
                 <h3 className="text-sm font-black tracking-tight text-fg">
                   Most read
                 </h3>
@@ -318,7 +318,7 @@ export default async function BlogListingPage({
               <ol className="flex flex-col gap-3">
                 {mostRead.map((p, i) => (
                   <li key={p.id} className="flex items-start gap-3">
-                    <span className="text-2xl font-black text-muted/30 leading-none tabular-nums shrink-0 w-6">
+                    <span className="text-2xl font-black text-emerald-500/20 leading-none tabular-nums shrink-0 w-6">
                       {(i + 1).toString().padStart(2, "0")}
                     </span>
                     <Link
@@ -342,7 +342,7 @@ export default async function BlogListingPage({
           {popularTags.length > 0 && (
             <div className="rounded-2xl border border-border bg-surface p-5">
               <div className="flex items-center gap-2 mb-4">
-                <Hash className="w-4 h-4 text-accent" />
+                <Hash className="w-4 h-4 text-blue-500" />
                 <h3 className="text-sm font-black tracking-tight text-fg">
                   Popular topics
                 </h3>

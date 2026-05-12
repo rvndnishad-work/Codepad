@@ -308,15 +308,21 @@ export default async function BlogPostPage({
               >
                 {blog.user.name ?? "Anonymous"}
               </Link>
-              <div className="flex items-center gap-2 text-[11px] text-muted">
-                <Calendar className="w-3 h-3" />
-                <RelativeTime iso={blog.createdAt.toISOString()} />
-                <span className="text-muted/40">·</span>
-                <BookOpen className="w-3 h-3" />
-                <span>{minutes} min read</span>
-                <span className="text-muted/40">·</span>
-                <Eye className="w-3 h-3" />
-                <span className="tabular-nums">{blog.viewCount}</span>
+              <div className="flex items-center gap-3 text-[11px] font-bold text-muted mt-0.5">
+                <span className="flex items-center gap-1.5 text-blue-500/80">
+                  <Calendar className="w-3.5 h-3.5" />
+                  <RelativeTime iso={blog.createdAt.toISOString()} />
+                </span>
+                <span className="text-muted/30">·</span>
+                <span className="flex items-center gap-1.5 text-emerald-500/80">
+                  <BookOpen className="w-3.5 h-3.5" />
+                  <span>{minutes}m read</span>
+                </span>
+                <span className="text-muted/30">·</span>
+                <span className="flex items-center gap-1.5 text-sky-500/80">
+                  <Eye className="w-3.5 h-3.5" />
+                  <span className="tabular-nums">{blog.viewCount} views</span>
+                </span>
               </div>
             </div>
             <div className="shrink-0 flex items-center gap-2">

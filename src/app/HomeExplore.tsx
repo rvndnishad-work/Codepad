@@ -1,9 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { TemplateLogo } from "@/lib/icons";
+import { templateIcon, TemplateLogo } from "@/lib/icons";
 import { ArrowUpRight, Flame, Globe, User, ArrowRight } from "lucide-react";
 import RelativeTime from "@/components/RelativeTime";
+import { templatesById } from "@/lib/templates";
 
 type Snippet = {
   id: string;
@@ -32,47 +33,71 @@ export default function HomeExplore({ featured }: { featured: Snippet[] }) {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {featured.map((s) => (
-          <Link
-            key={s.id}
-            href={`/play/${s.slug}`}
-            className="group relative rounded-3xl border border-border bg-surface p-6 hover:border-border-strong transition-all shadow-xl"
-          >
-            <div className="absolute top-0 right-0 p-4 opacity-[0.02] group-hover:opacity-[0.05] transition-opacity">
-               <TemplateLogo id={s.template} size={80} />
-            </div>
-            
-            <div className="flex items-center justify-between mb-6">
-               <div className="w-12 h-12 rounded-2xl bg-panel border border-border flex items-center justify-center group-hover:scale-110 transition-transform">
-                  <TemplateLogo id={s.template} size={24} />
-               </div>
-               <div className="flex items-center gap-1 px-2 py-1 rounded-md bg-surface border border-border text-[10px] font-bold text-muted uppercase">
-                  <Globe className="w-3 h-3" />
-                  Public
-               </div>
-            </div>
+        {featured.map((s) => {
+          const meta = templateIcon[s.template];
+          const accentColor = meta?.color ?? "var(--accent)";
+          const tpl = templatesById[s.template];
+          
+          return (
+            <Link
+              key={s.id}
+              href={`/play/${s.slug}`}
+              className="group relative flex items-center gap-5 p-4 rounded-[2rem] border border-border bg-surface hover:bg-elevated transition-all duration-500 hover:scale-[1.02] hover:rotate-1 hover:shadow-[0_20px_40px_-10px_rgba(0,0,0,0.1)] dark:hover:shadow-[0_20px_40px_-10px_rgba(0,0,0,0.5)] overflow-hidden"
+            >
+              {/* Background Glow */}
+              <div
+                className="absolute -left-10 -top-10 w-32 h-32 rounded-full blur-[60px] opacity-0 group-hover:opacity-20 transition-opacity duration-700"
+                style={{ background: accentColor }}
+              />
 
-            <h3 className="text-xl font-bold text-fg mb-2 group-hover:text-accent transition-colors line-clamp-1">
-              {s.title}
-            </h3>
+              {/* Icon Stage */}
+              <div className="relative w-[32%] aspect-square shrink-0 flex items-center justify-center">
+                <div 
+                  className="absolute inset-0 rounded-[30%_70%_70%_30%_/_30%_30%_70%_70%] animate-[blobby_10s_ease-in-out_infinite] opacity-20 group-hover:opacity-40 transition-all duration-700 blur-[2px] border border-white/10"
+                  style={{ background: accentColor }}
+                />
+                <div className="relative w-[50%] h-[50%] flex items-center justify-center group-hover:scale-110 group-hover:-rotate-3 transition-transform duration-500">
+                  <TemplateLogo id={s.template} className="w-full h-full drop-shadow-[0_0_10px_rgba(var(--accent-rgb),0.5)]" />
+                </div>
+              </div>
 
-            <div className="flex items-center gap-3 mt-8 pt-4 border-t border-border">
-               <div className="w-6 h-6 rounded-full bg-surface overflow-hidden ring-2 ring-bg">
+              {/* Content Area */}
+              <div className="flex-1 flex flex-col gap-0.5 min-w-0">
+                <div className="flex items-center justify-between gap-1">
+                  <span className="text-base font-black text-fg tracking-tight group-hover:text-accent transition-colors leading-tight truncate">
+                    {s.title}
+                  </span>
+                  <ArrowUpRight className="w-4 h-4 text-muted/30 group-hover:text-fg group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-all shrink-0" />
+                </div>
+                
+                <div className="flex items-center gap-2 text-xs text-muted mb-1 truncate">
                   {s.author?.image ? (
-                    <img src={s.author.image} alt="" className="w-full h-full object-cover" />
+                    <img
+                      src={s.author.image}
+                      alt=""
+                      className="w-4 h-4 rounded-full border border-border shrink-0 object-cover"
+                    />
                   ) : (
-                    <div className="w-full h-full bg-accent/20 flex items-center justify-center">
-                       <User className="w-3 h-3 text-fg/40" />
-                    </div>
+                    <div className="w-4 h-4 rounded-full bg-surface border border-border shrink-0" />
                   )}
-               </div>
-               <span className="text-xs font-medium text-muted truncate flex-1">{s.author?.name ?? "Anonymous"}</span>
-               <span className="text-[10px] font-bold text-muted/40 uppercase tabular-nums">
-                 <RelativeTime iso={s.updatedAt} />
-               </span>
-            </div>
-          </Link>
-        ))}
+                  <span className="truncate">{s.author?.name ?? "anonymous"}</span>
+                </div>
+
+                <div className="flex items-center justify-between mt-auto pt-1">
+                   <div 
+                      className="text-[11px] font-black uppercase tracking-wider transition-colors"
+                      style={{ color: accentColor }}
+                    >
+                      {tpl?.title ?? s.template}
+                    </div>
+                   <span className="text-[10px] font-bold text-muted/40 uppercase tabular-nums">
+                     <RelativeTime iso={s.updatedAt} />
+                   </span>
+                </div>
+              </div>
+            </Link>
+          );
+        })}
       </div>
 
       <div className="mt-16 rounded-3xl bg-gradient-to-r from-accent to-[#FFB800] p-12 text-center relative overflow-hidden group">

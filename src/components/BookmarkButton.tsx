@@ -57,7 +57,7 @@ export default function BookmarkButton({
         className={`w-12 h-12 rounded-xl border transition-all disabled:opacity-60 flex items-center justify-center ${
           bookmarked
             ? "border-accent/40 bg-accent/10 text-accent"
-            : "border-border bg-surface hover:bg-elevated text-fg/70 hover:text-fg"
+            : "border-border bg-surface hover:bg-accent/5 hover:border-accent/20 text-accent/60 hover:text-accent"
         }`}
       >
         {bookmarked ? (
@@ -78,7 +78,7 @@ export default function BookmarkButton({
       className={`flex items-center gap-2 px-4 py-2 rounded-xl border transition-all disabled:opacity-60 ${
         bookmarked
           ? "border-accent/40 bg-accent/10 text-accent"
-          : "border-border bg-surface hover:bg-elevated text-fg/70 hover:text-fg"
+          : "border-border bg-surface hover:bg-accent/5 hover:border-accent/20 text-accent/60 hover:text-accent"
       }`}
     >
       {bookmarked ? (

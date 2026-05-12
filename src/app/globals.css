@@ -174,8 +174,13 @@ portal-nextjs-toast,
 }
 
 .bg-grid-pattern {
-  background-image: 
+  background-image:
     linear-gradient(to right, rgba(var(--accent-rgb), 1) 1px, transparent 1px),
     linear-gradient(to bottom, rgba(var(--accent-rgb), 1) 1px, transparent 1px);
   background-size: 40px 40px;
 }
+
+/* `showRunButton: false` on SandpackCodeEditor handles Sandpack's built-in
+   Run overlay in v2.20.x — no CSS backstop needed. (Earlier broad selectors
+   like `.sp-wrapper button[title="Run"]` accidentally hid our own toolbar
+   button, since RunnableSnippet renders inside the .sp-wrapper.) */

@@ -17,6 +17,7 @@
       "mcp__Claude_Preview__preview_start",
       "PowerShell(Get-NetTCPConnection -LocalPort 3000 -ErrorAction SilentlyContinue)",
       "PowerShell($content = [System.IO.File]::ReadAllText\\(\"C:\\\\Users\\\\arvin\\\\OneDrive\\\\Desktop\\\\claude\\\\code\\\\codepad\\\\.claude\\\\worktrees\\\\awesome-napier-428dc9\\\\src\\\\components\\\\Playground.tsx\"\\); $lines = $content -split \"`n\"; Write-Output \"Total lines: $\\($lines.Count\\)\"; for \\($i = 628; $i -lt 640; $i++\\) { Write-Output \"${i}: $\\($lines[$i]\\)\" })",
+<<<<<<< HEAD
       "Bash(git -C \"C:\\\\Users\\\\arvin\\\\OneDrive\\\\Desktop\\\\claude\\\\code\\\\codepad\" fetch origin develop)",
       "Bash(git -C \"C:\\\\Users\\\\arvin\\\\OneDrive\\\\Desktop\\\\claude\\\\code\\\\codepad\" log origin/develop --oneline -5)",
       "Bash(git -C \"C:\\\\Users\\\\arvin\\\\OneDrive\\\\Desktop\\\\claude\\\\code\\\\codepad\" log develop --oneline -10)",
@@ -56,6 +57,31 @@
       "Bash(git add *)",
       "Bash(git commit -m ' *)",
       "Bash(gh pr create --base develop --title 'Add Challenge Mode, Interview Sessions, and Portfolio features' --body ' *)"
+=======
+      "Bash(npx prisma *)",
+      "Bash(curl -s -o /dev/null -w \"published=false \\(no auth\\): %{http_code}\\\\n\" \"http://localhost:3000/api/blogs?published=false\")",
+      "Bash(curl -s -o /dev/null -w \"default \\(public\\): %{http_code}\\\\n\" \"http://localhost:3000/api/blogs\")",
+      "Bash(curl -s -o /dev/null -w \"GET /                          %{http_code}\\\\n\" \"http://localhost:3000/\")",
+      "Bash(curl -s -o /dev/null -w \"GET /blog                      %{http_code}\\\\n\" \"http://localhost:3000/blog\")",
+      "Bash(curl -s -o /dev/null -w \"GET /blog?tab=top              %{http_code}\\\\n\" \"http://localhost:3000/blog?tab=top\")",
+      "Bash(curl -s -o /dev/null -w \"GET /blog?tag=ai               %{http_code}\\\\n\" \"http://localhost:3000/blog?tag=ai\")",
+      "Bash(curl -s -o /dev/null -w \"GET /blog/future-of-ssa        %{http_code}\\\\n\" \"http://localhost:3000/blog/future-of-ssa\")",
+      "Bash(curl -s -o /dev/null -w \"GET /api/blogs?published=false \\(no auth, expect 401\\)         %{http_code}\\\\n\" \"http://localhost:3000/api/blogs?published=false\")",
+      "Bash(curl -s -o /dev/null -w \"GET /blog/missing-slug \\(expect 404\\)                         %{http_code}\\\\n\" \"http://localhost:3000/blog/missing-slug\")",
+      "Bash(curl -s -o /dev/null -w \"POST /api/blogs \\(no auth, expect 401\\)                       %{http_code}\\\\n\" -X POST -H \"content-type: application/json\" -d \"{\\\\\"title\\\\\":\\\\\"x\\\\\",\\\\\"content\\\\\":\\\\\"y\\\\\"}\" \"http://localhost:3000/api/blogs\")",
+      "Bash(curl -s -o /dev/null -w \"GET /blog/interactive-demo  %{http_code}\\\\n\" \"http://localhost:3000/blog/interactive-demo\")",
+      "Bash(node -e 'const{PrismaClient}=require\\('\\\\''@prisma/client'\\\\''\\);const p=new PrismaClient\\(\\);p.blogPost.findFirst\\({where:{title:'\\\\''Interactive Demo'\\\\''},select:{slug:true}}\\).then\\(r=>console.log\\('\\\\''slug:'\\\\'',r?.slug\\)\\).finally\\(\\(\\)=>p.$disconnect\\(\\)\\);')",
+      "Bash(curl -s \"http://localhost:3000/blog/interactive-demo--U2Xqg\")",
+      "Bash(grep -oE \"\\(Error[^<]{0,200}\\)\")",
+      "mcp__Claude_in_Chrome__list_connected_browsers",
+      "Bash(curl -s -o /dev/null -w \"GET /blog/future-of-ssa              %{http_code}\\\\n\" \"http://localhost:3000/blog/future-of-ssa\")",
+      "Bash(curl -s -o /dev/null -w \"GET /blog/interactive-demo--U2Xqg   %{http_code}\\\\n\" \"http://localhost:3000/blog/interactive-demo--U2Xqg\")",
+      "Bash(curl -s -o /dev/null -w \"GET /blog/missing-slug              %{http_code}\\\\n\" \"http://localhost:3000/blog/missing-slug\")",
+      "Bash(curl -s -o /dev/null -w \"GET /blog                          %{http_code}\\\\n\" \"http://localhost:3000/blog\")",
+      "Bash(curl -s \"http://localhost:3000/blog/future-of-ssa\")",
+      "Bash(grep -oE \"\\(Error[^<]{0,150}\\)\")",
+      "Bash(curl -s -o /dev/null -w \"GET /blog/interactive-demo--U2Xqg  %{http_code}\\\\n\" \"http://localhost:3000/blog/interactive-demo--U2Xqg\")"
+>>>>>>> 19a8d2224c5c19073f1722340481e37199192003
     ]
   }
 }

@@ -1,6 +1,8 @@
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { redirect } from "next/navigation";
+import Link from "next/link";
+import { Newspaper, Edit3 } from "lucide-react";
 import DashboardHero from "./DashboardHero";
 import DashboardStats from "./DashboardStats";
 import DashboardFeed from "./DashboardFeed";
@@ -63,6 +65,12 @@ export default async function DashboardPage() {
     pinnedCount: mySnippets.filter((s) => s.pinned).length,
   };
 
+  // 5. Fetch User's Blogs
+  const myBlogs = await prisma.blogPost.findMany({
+    where: { userId },
+    orderBy: { createdAt: "desc" },
+  });
+
   const initialItems = mySnippets.map((s) => ({
     id: s.id,
     slug: s.slug,
@@ -104,6 +112,50 @@ export default async function DashboardPage() {
               <div className="text-xs text-muted">{mySnippets.length} items total</div>
             </div>
             <DashboardList initial={initialItems} />
+          </section>
+
+          <section>
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-xl font-bold text-fg tracking-tight">Your Blog Posts</h2>
+              <div className="text-xs text-muted">{myBlogs.length} posts total</div>
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <Link 
+                href="/dashboard/blogs/new"
+                className="flex flex-col items-center justify-center p-6 rounded-2xl border border-dashed border-border hover:border-accent hover:bg-accent/5 transition-all group"
+              >
+                <div className="w-12 h-12 rounded-full bg-surface border border-border flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
+                  <Newspaper className="w-6 h-6 text-accent" />
+                </div>
+                <span className="text-sm font-bold text-fg">Create New Blog</span>
+                <span className="text-xs text-muted">Share your knowledge</span>
+              </Link>
+
+              {myBlogs.map(blog => (
+                <Link 
+                  key={blog.id}
+                  href={`/dashboard/blogs/${blog.id}/edit`}
+                  className="flex flex-col p-6 rounded-2xl border border-border bg-surface hover:border-border-strong transition-all shadow-sm group"
+                >
+                  <div className="flex items-center justify-between mb-2">
+                    <span className={`text-[10px] font-black uppercase tracking-widest px-2 py-0.5 rounded-md border ${blog.published ? "text-accent bg-accent/10 border-accent/20" : "text-muted bg-panel border-border"}`}>
+                      {blog.published ? "Published" : "Draft"}
+                    </span>
+                    <span className="text-[10px] font-bold text-muted/40 uppercase tabular-nums">
+                      {blog.createdAt.toLocaleDateString()}
+                    </span>
+                  </div>
+                  <h3 className="font-bold text-fg group-hover:text-accent transition-colors line-clamp-1">{blog.title}</h3>
+                  <div className="mt-auto pt-3 flex items-center justify-between">
+                    <span className="text-[10px] font-bold text-muted uppercase tracking-widest">
+                      {blog.viewCount} views
+                    </span>
+                    <Edit3 className="w-3 h-3 text-muted group-hover:text-fg transition-colors" />
+                  </div>
+                </Link>
+              ))}
+            </div>
           </section>
         </div>
 

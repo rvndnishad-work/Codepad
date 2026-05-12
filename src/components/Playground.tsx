@@ -74,7 +74,7 @@ const nbpTheme = {
   },
   syntax: {
     plain: "#e0e0e0",
-    comment: { color: "#6b7280", fontStyle: "italic" },
+    comment: { color: "#6b7280", fontStyle: "italic" as const },
     keyword: "#D2A8FF",
     tag: "#D2A8FF",
     punctuation: "#e0e0e0",
@@ -175,7 +175,7 @@ function BasicEditor({ editable }: { editable: boolean }) {
   const ext = activeFile.split('.').pop()?.toLowerCase() || "";
 
   const extensions = useMemo(() => {
-    const base = [autocompletion({ fadeIcons: false }), colorPicker];
+    const base = [autocompletion(), colorPicker];
     if (["js", "jsx", "ts", "tsx"].includes(ext)) {
       base.push(javascript({ jsx: true, typescript: true }));
       base.push(customSnippetExtension);
@@ -242,7 +242,7 @@ export default function Playground({
       },
       syntax: {
         plain: "#1f2937",
-        comment: { color: "#94a3b8", fontStyle: "italic" },
+        comment: { color: "#94a3b8", fontStyle: "italic" as const },
         keyword: "#be185d",
         tag: "#be185d",
         punctuation: "#64748b",

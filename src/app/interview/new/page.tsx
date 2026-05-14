@@ -3,12 +3,15 @@ import { prisma } from "@/lib/prisma";
 import { redirect } from "next/navigation";
 import InterviewBuilder, { type ChallengeOption } from "./InterviewBuilder";
 
+import { validatePageAccess } from "@/lib/settings";
+
 export const metadata = {
   title: "New Interview Session — Interviewpad",
 };
 
 export default async function NewInterviewPage() {
   const session = await auth().catch(() => null);
+  await validatePageAccess("/interview/new", session);
   if (!session?.user?.id) {
     redirect(`/login?next=${encodeURIComponent("/interview/new")}`);
   }

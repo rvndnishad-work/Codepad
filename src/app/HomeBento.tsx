@@ -3,6 +3,11 @@
 import Link from "next/link";
 import { Zap, ShieldCheck, Share2, Code2, ArrowUpRight, Monitor, Laptop, Globe, Cpu } from "lucide-react";
 import { TemplateLogo, templateIcon } from "@/lib/icons";
+import {
+  TemplateCardShell,
+  CardTitleRow,
+  CardSubtitle,
+} from "@/components/TemplateCardShell";
 
 const FEATURES = [
   {
@@ -118,48 +123,16 @@ export default function HomeBento() {
 
         {/* Quick Start Grid */}
         <div className="md:col-span-12 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          {QUICK_STARTS.map((q) => {
-            const meta = templateIcon[q.id];
-            const accentColor = meta?.color ?? "var(--accent)";
-            return (
-              <Link
-                key={q.id}
-                href={`/play?template=${q.id}`}
-                className="group relative flex items-center gap-4 p-3.5 rounded-[1.75rem] border border-border bg-surface hover:bg-elevated transition-all duration-500 hover:scale-[1.02] hover:rotate-1 hover:shadow-[0_15px_30px_-5px_rgba(0,0,0,0.1)] dark:hover:shadow-[0_15px_30px_-5px_rgba(0,0,0,0.5)] overflow-hidden"
-              >
-                {/* Background Glow */}
-                <div
-                  className="absolute -left-10 -top-10 w-28 h-28 rounded-full blur-[50px] opacity-0 group-hover:opacity-20 transition-opacity duration-700"
-                  style={{ background: accentColor }}
-                />
-
-                {/* Icon Stage */}
-                <div className="relative w-[32%] aspect-square shrink-0 flex items-center justify-center">
-                  <div 
-                    className="absolute inset-0 rounded-[30%_70%_70%_30%_/_30%_30%_70%_70%] animate-[blobby_10s_ease-in-out_infinite] opacity-20 group-hover:opacity-40 transition-all duration-700 blur-[2px] border border-white/10"
-                    style={{ background: accentColor }}
-                  />
-                  <div className="relative w-[50%] h-[50%] flex items-center justify-center group-hover:scale-110 group-hover:-rotate-3 transition-transform duration-500">
-                    <TemplateLogo id={q.id} className="w-full h-full drop-shadow-[0_0_10px_rgba(var(--accent-rgb),0.5)]" />
-                  </div>
-                </div>
-
-                {/* Content Area */}
-                <div className="flex-1 flex flex-col gap-0.5 min-w-0">
-                  <div className="flex items-center justify-between gap-1">
-                    <span className="text-base font-black text-fg tracking-tight group-hover:text-accent transition-colors leading-tight truncate">
-                      {q.label}
-                    </span>
-                    <ArrowUpRight className="w-4 h-4 text-muted/30 group-hover:text-fg group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-all shrink-0" />
-                  </div>
-                  
-                  <p className="text-xs text-muted leading-tight line-clamp-1 mt-0.5">
-                    {q.desc}
-                  </p>
-                </div>
-              </Link>
-            );
-          })}
+          {QUICK_STARTS.map((q) => (
+            <TemplateCardShell
+              key={q.id}
+              href={`/play?template=${q.id}`}
+              templateId={q.id}
+            >
+              <CardTitleRow>{q.label}</CardTitleRow>
+              <CardSubtitle>{q.desc}</CardSubtitle>
+            </TemplateCardShell>
+          ))}
         </div>
 
       </div>

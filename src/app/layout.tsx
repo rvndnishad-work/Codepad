@@ -1,6 +1,6 @@
 import "./globals.css";
 import type { Metadata } from "next";
-import { Outfit } from "next/font/google";
+import { Inter, JetBrains_Mono } from "next/font/google";
 import { Toaster } from "sonner";
 import Header from "@/components/Header";
 import HeaderShell from "@/components/HeaderShell";
@@ -9,9 +9,21 @@ import FooterShell from "@/components/FooterShell";
 
 import { ThemeProvider } from "@/components/ThemeProvider";
 
-const outfit = Outfit({
+// Inter is the de-facto UI font for premium dev tools (Vercel, Linear,
+// GitHub, Stripe). It also enables the OpenType character variants
+// (cv02/cv03/cv04, ss01) that globals.css already opts into via
+// font-feature-settings — those are no-ops on the previous font.
+const inter = Inter({
   subsets: ["latin"],
-  variable: "--font-outfit",
+  variable: "--font-sans",
+  display: "swap",
+});
+
+// JetBrains Mono stays for code surfaces; loading it via next/font replaces
+// the manual @import in globals.css and gets us preload + size hints for free.
+const jetbrainsMono = JetBrains_Mono({
+  subsets: ["latin"],
+  variable: "--font-mono",
   display: "swap",
 });
 
@@ -55,7 +67,11 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className={outfit.variable} suppressHydrationWarning>
+    <html
+      lang="en"
+      className={`${inter.variable} ${jetbrainsMono.variable}`}
+      suppressHydrationWarning
+    >
       <body className="min-h-screen font-sans flex flex-col">
         <ThemeProvider attribute="class" defaultTheme="dark" enableSystem={false}>
           <HeaderShell><Header /></HeaderShell>

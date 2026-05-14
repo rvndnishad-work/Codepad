@@ -1,4 +1,5 @@
-@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,400;0,500;0,600;1,400;1,500;1,600&family=Outfit:wght@100;200;300;400;500;600;700;800;900&display=swap');
+/* Fonts are now loaded via next/font in layout.tsx (Inter + JetBrains Mono).
+   That gives us preload, size hints, and avoids the FOUT a CSS @import causes. */
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -47,16 +48,25 @@
     font-size: var(--base-font-size);
     background: var(--bg);
     color: var(--fg);
-    font-family: 'Outfit', 'Inter', system-ui, -apple-system, sans-serif;
+    font-family: var(--font-sans), "Inter", system-ui, -apple-system, "Segoe UI", "Helvetica Neue", sans-serif;
     line-height: 1.6;
     -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
   }
 
   body {
     background: var(--bg);
     color: var(--fg);
-    font-feature-settings: "cv02", "cv03", "cv04", "ss01";
+    /* Inter character variants: single-storey a (cv11), open 4 (cv03),
+       open 6/9 (cv04), tabular figures off, alternate-1 (ss01).
+       These are no-ops on other fonts so they're safe to leave. */
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11", "ss01";
     -webkit-font-smoothing: antialiased;
+  }
+
+  code, pre, kbd, samp {
+    font-family: var(--font-mono), "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
   }
 
   /* Prettier focus ring */
@@ -265,4 +275,158 @@ portal-nextjs-toast,
   }
 }
 
+/* ─────────────────────────────────────────────────────────────────
+   Blog editor — Tiptap writing surface
+   Targets the ProseMirror DOM under `.tiptap-prose`.
+   Themed via existing CSS vars so light/dark Just Work.
+   ──────────────────────────────────────────────────────────────── */
+.tiptap-prose {
+  font-size: 1.125rem;
+  line-height: 1.75;
+  color: var(--fg);
+  outline: none;
+  min-height: 320px;
+  padding: 0.5rem 0 6rem;
+}
+.tiptap-prose > * + * { margin-top: 1em; }
+
+.tiptap-prose h1,
+.tiptap-prose h2,
+.tiptap-prose h3 {
+  color: var(--fg);
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+  margin-top: 1.5em;
+}
+.tiptap-prose h1 { font-size: 2.25rem; }
+.tiptap-prose h2 { font-size: 1.75rem; }
+.tiptap-prose h3 { font-size: 1.375rem; }
+
+.tiptap-prose p { color: var(--fg); }
+.tiptap-prose strong { color: var(--fg); font-weight: 700; }
+.tiptap-prose em { font-style: italic; }
+.tiptap-prose s { text-decoration: line-through; opacity: 0.7; }
+.tiptap-prose u { text-decoration: underline; text-underline-offset: 3px; }
+
+.tiptap-prose a,
+.tiptap-prose .tiptap-link {
+  color: var(--accent);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  text-decoration-thickness: 1.5px;
+  cursor: text;
+}
+.tiptap-prose a:hover { color: var(--accent-soft); }
+
+.tiptap-prose mark {
+  background: rgba(var(--accent-rgb), 0.25);
+  color: inherit;
+  padding: 0 0.15em;
+  border-radius: 0.2em;
+}
+
+.tiptap-prose code:not(pre code) {
+  background: var(--panel);
+  color: var(--accent);
+  padding: 0.15em 0.4em;
+  border-radius: 0.4em;
+  font-size: 0.9em;
+  border: 1px solid var(--border);
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+}
+
+.tiptap-prose blockquote {
+  border-left: 3px solid var(--accent);
+  padding: 0.25rem 0 0.25rem 1.25rem;
+  color: var(--muted);
+  font-style: italic;
+  font-size: 1.15em;
+  margin: 1.5em 0;
+}
+
+.tiptap-prose ul,
+.tiptap-prose ol {
+  padding-left: 1.5rem;
+  margin: 1em 0;
+}
+.tiptap-prose ul { list-style: disc; }
+.tiptap-prose ol { list-style: decimal; }
+.tiptap-prose li { margin: 0.25em 0; }
+.tiptap-prose li::marker { color: var(--muted); }
+.tiptap-prose li > p { margin: 0; }
+
+.tiptap-prose hr {
+  border: none;
+  border-top: 1px solid var(--border);
+  margin: 2.5em auto;
+  width: 60%;
+}
+
+.tiptap-prose .tiptap-image {
+  border-radius: 1rem;
+  border: 1px solid var(--border);
+  margin: 1.75em auto;
+  max-width: 100%;
+  display: block;
+  box-shadow: 0 8px 24px -10px rgba(0, 0, 0, 0.25);
+}
+
+.tiptap-prose pre,
+.tiptap-prose .tiptap-code-block {
+  background: var(--panel);
+  color: var(--fg);
+  border: 1px solid var(--border);
+  border-radius: 0.85rem;
+  padding: 1rem 1.1rem;
+  margin: 1.5em 0;
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 0.9rem;
+  line-height: 1.55;
+  overflow-x: auto;
+}
+.tiptap-prose pre code,
+.tiptap-prose .tiptap-code-block code {
+  background: transparent;
+  color: inherit;
+  padding: 0;
+  border: 0;
+  font-size: inherit;
+}
+
+/* Lowlight syntax tokens (subset) */
+.tiptap-prose .hljs-comment,
+.tiptap-prose .hljs-quote { color: var(--muted); font-style: italic; }
+.tiptap-prose .hljs-keyword,
+.tiptap-prose .hljs-selector-tag,
+.tiptap-prose .hljs-literal { color: #c084fc; }
+.tiptap-prose .hljs-string,
+.tiptap-prose .hljs-attr { color: #34d399; }
+.tiptap-prose .hljs-number,
+.tiptap-prose .hljs-built_in { color: #fbbf24; }
+.tiptap-prose .hljs-title,
+.tiptap-prose .hljs-name,
+.tiptap-prose .hljs-section { color: #60a5fa; }
+.tiptap-prose .hljs-tag { color: var(--accent); }
+
+/* Placeholder shown on empty paragraphs / headings via Tiptap Placeholder ext */
+.tiptap-prose p.is-editor-empty:first-child::before,
+.tiptap-prose h1.is-empty::before,
+.tiptap-prose h2.is-empty::before,
+.tiptap-prose h3.is-empty::before,
+.tiptap-prose p.is-empty::before {
+  content: attr(data-placeholder);
+  color: var(--fg);
+  opacity: 0.25;
+  float: left;
+  height: 0;
+  pointer-events: none;
+}
+
+/* Selection */
+.tiptap-prose ::selection {
+  background: rgba(var(--accent-rgb), 0.25);
+}
+
+.tiptap-editor-content { width: 100%; }
 

@@ -3,6 +3,8 @@ import { prisma } from "@/lib/prisma";
 import { notFound, redirect } from "next/navigation";
 import InterviewRunner, { type SessionChallenge } from "./InterviewRunner";
 
+import { validatePageAccess } from "@/lib/settings";
+
 export const metadata = {
   title: "Interview Session — Interviewpad",
 };
@@ -18,6 +20,7 @@ export default async function InterviewRunPage({
   const { token } = await searchParams;
 
   const session = await auth().catch(() => null);
+  await validatePageAccess("/interview/new", session);
   const interview = await prisma.interviewSession.findUnique({ where: { id } });
   if (!interview) notFound();
 

@@ -1,10 +1,12 @@
 "use client";
 
 import Link from "next/link";
-import { templateIcon, TemplateLogo } from "@/lib/icons";
-import { ArrowUpRight, Flame, Globe, User, ArrowRight } from "lucide-react";
+import { ArrowUpRight, Flame, ArrowRight } from "lucide-react";
 import RelativeTime from "@/components/RelativeTime";
-import { templatesById } from "@/lib/templates";
+import {
+  TemplateCardShell,
+  CardTitleRow,
+} from "@/components/TemplateCardShell";
 
 type Snippet = {
   id: string;
@@ -32,45 +34,17 @@ export default function HomeExplore({ featured }: { featured: Snippet[] }) {
         </Link>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {featured.map((s) => {
-          const meta = templateIcon[s.template];
-          const accentColor = meta?.color ?? "var(--accent)";
-          const tpl = templatesById[s.template];
-          
           return (
-            <Link
+            <TemplateCardShell
               key={s.id}
               href={`/play/${s.slug}`}
-              className="group relative flex items-center gap-5 p-4 rounded-[2rem] border border-border bg-surface hover:bg-elevated transition-all duration-500 hover:scale-[1.02] hover:rotate-1 hover:shadow-[0_20px_40px_-10px_rgba(0,0,0,0.1)] dark:hover:shadow-[0_20px_40px_-10px_rgba(0,0,0,0.5)] overflow-hidden"
+              templateId={s.template}
             >
-              {/* Background Glow */}
-              <div
-                className="absolute -left-10 -top-10 w-32 h-32 rounded-full blur-[60px] opacity-0 group-hover:opacity-20 transition-opacity duration-700"
-                style={{ background: accentColor }}
-              />
-
-              {/* Icon Stage */}
-              <div className="relative w-[32%] aspect-square shrink-0 flex items-center justify-center">
-                <div 
-                  className="absolute inset-0 rounded-[30%_70%_70%_30%_/_30%_30%_70%_70%] animate-[blobby_10s_ease-in-out_infinite] opacity-20 group-hover:opacity-40 transition-all duration-700 blur-[2px] border border-white/10"
-                  style={{ background: accentColor }}
-                />
-                <div className="relative w-[50%] h-[50%] flex items-center justify-center group-hover:scale-110 group-hover:-rotate-3 transition-transform duration-500">
-                  <TemplateLogo id={s.template} className="w-full h-full drop-shadow-[0_0_10px_rgba(var(--accent-rgb),0.5)]" />
-                </div>
-              </div>
-
-              {/* Content Area */}
-              <div className="flex-1 flex flex-col gap-0.5 min-w-0">
-                <div className="flex items-center justify-between gap-1">
-                  <span className="text-base font-black text-fg tracking-tight group-hover:text-accent transition-colors leading-tight truncate">
-                    {s.title}
-                  </span>
-                  <ArrowUpRight className="w-4 h-4 text-muted/30 group-hover:text-fg group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-all shrink-0" />
-                </div>
-                
-                <div className="flex items-center gap-2 text-xs text-muted mb-1 truncate">
+              <CardTitleRow>{s.title}</CardTitleRow>
+              <div className="flex items-center justify-between gap-2 text-[11px] text-muted">
+                <div className="flex items-center gap-1.5 truncate">
                   {s.author?.image ? (
                     <img
                       src={s.author.image}
@@ -82,20 +56,11 @@ export default function HomeExplore({ featured }: { featured: Snippet[] }) {
                   )}
                   <span className="truncate">{s.author?.name ?? "anonymous"}</span>
                 </div>
-
-                <div className="flex items-center justify-between mt-auto pt-1">
-                   <div 
-                      className="text-[11px] font-black uppercase tracking-wider transition-colors"
-                      style={{ color: accentColor }}
-                    >
-                      {tpl?.title ?? s.template}
-                    </div>
-                   <span className="text-[10px] font-bold text-muted/40 uppercase tabular-nums">
-                     <RelativeTime iso={s.updatedAt} />
-                   </span>
-                </div>
+                <span className="text-[10px] font-bold text-muted/40 uppercase tabular-nums shrink-0">
+                  <RelativeTime iso={s.updatedAt} />
+                </span>
               </div>
-            </Link>
+            </TemplateCardShell>
           );
         })}
       </div>

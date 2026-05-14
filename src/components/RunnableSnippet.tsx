@@ -65,7 +65,7 @@ const nbpDarkTheme = {
     string: "#A5D6FF",
   },
   font: {
-    body: 'var(--font-outfit), sans-serif',
+    body: 'var(--font-sans), Inter, sans-serif',
     mono: '"JetBrains Mono", monospace',
     size: "13px",
     lineHeight: "1.6",
@@ -97,7 +97,7 @@ const nbpLightTheme = {
     string: "#15803d",
   },
   font: {
-    body: 'var(--font-outfit), sans-serif',
+    body: 'var(--font-sans), Inter, sans-serif',
     mono: '"JetBrains Mono", monospace',
     size: "13px",
     lineHeight: "1.6",
@@ -126,10 +126,10 @@ export default function RunnableSnippet({ code, language }: RunnableSnippetProps
   const editorHeight = Math.min(600, Math.max(120, lineCount * 24 + 48));
 
   return (
-    <div className={`my-12 rounded-2xl overflow-hidden transition-all duration-500 group/snippet border-2 ${
-      isDark 
-        ? "border-emerald-500/40 bg-white/[0.04] shadow-xl shadow-black/40" 
-        : "border-emerald-500/30 bg-[#fcfdfe] shadow-lg shadow-black/5"
+    <div className={`my-12 rounded-2xl overflow-hidden transition-all duration-500 group/snippet border ${
+      isDark
+        ? "border-accent/25 bg-white/[0.04] shadow-xl shadow-black/40"
+        : "border-accent/30 bg-[#fcfdfe] shadow-lg shadow-black/5"
     }`}>
       <SandpackProvider
         template={template}
@@ -207,19 +207,27 @@ function PlaygroundBody({
           onClick={handleRun}
           aria-label={running ? "Re-run" : "Run"}
           title={running ? "Re-run" : "Run"}
-          className={`group relative flex items-center justify-center transition-all duration-500 overflow-hidden ${
+          // h-9 pinned on both states so only the WIDTH animates as the button
+          // morphs between "Run Snippet" pill (idle) and the round Reset icon
+          // (running). Without this, the running state was 4px taller and the
+          // whole toolbar reflowed vertically during the 500ms transition,
+          // producing a visible header shrink/expand wobble.
+          className={`group relative h-9 shrink-0 flex items-center justify-center transition-all duration-500 overflow-hidden ${
             running
-              ? `w-9 h-9 rounded-full border ${isDark ? "text-white/40 hover:text-white hover:bg-white/10 border-white/5" : "text-black/40 hover:text-black hover:bg-black/5 border-black/5"}`
-              : "px-6 py-2 rounded-full bg-gradient-to-r from-accent to-accent-soft text-bg font-black text-[11px] uppercase tracking-widest shadow-lg shadow-accent/20 hover:shadow-accent/40 hover:scale-105 active:scale-95"
+              ? `w-9 rounded-full border ${isDark ? "text-white/40 hover:text-white hover:bg-white/10 border-white/5" : "text-black/40 hover:text-black hover:bg-black/5 border-black/5"}`
+              : "px-6 rounded-full bg-gradient-to-r from-accent to-accent-soft text-bg font-black text-[11px] uppercase tracking-widest shadow-lg shadow-accent/20 hover:shadow-accent/40 active:scale-95"
           }`}
         >
           {running ? (
             <RotateCw className="w-4 h-4" />
           ) : (
             <>
-              <Play className="w-3.5 h-3.5 fill-current mr-2" />
-              <span>Run Snippet</span>
-              <div className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300" />
+              <Play className="w-3.5 h-3.5 fill-current mr-2 relative z-10" />
+              <span className="relative z-10">Run Snippet</span>
+              {/* Press/hover sheen — black/10 reads cleanly against both the
+                  yellow (dark) and red (light) accents; white/20 was washed
+                  on top of the yellow gradient in dark mode. */}
+              <div className="absolute inset-0 bg-black/10 translate-y-full group-hover:translate-y-0 transition-transform duration-300" />
             </>
           )}
         </button>
@@ -243,18 +251,18 @@ function PlaygroundBody({
 
         {running && (
           <div
-            className={`min-w-0 md:w-1/2 w-full border-t md:border-t-0 md:border-l 
+            className={`min-w-0 md:w-1/2 w-full border-t md:border-t-0 md:border-l
                        animate-in fade-in slide-in-from-bottom-8 md:slide-in-from-right-12 duration-700 ease-[cubic-bezier(0.23,1,0.32,1)] ${
-                         isDark ? "border-white/5" : "border-black/5"
+                         isDark ? "border-white/10" : "border-black/10"
                        }`}
           >
             <div className={`flex items-center justify-between px-4 py-1.5 border-b ${
-              isDark ? "border-white/5 bg-white/[0.02]" : "border-black/5 bg-black/[0.01]"
+              isDark ? "border-white/10 bg-white/[0.02]" : "border-black/10 bg-black/[0.01]"
             }`}>
               <div className={`flex items-center gap-2 text-[9px] font-black uppercase tracking-[0.2em] ${
-                isDark ? "text-white/30" : "text-black/40"
+                isDark ? "text-white/50" : "text-black/50"
               }`}>
-                <Terminal className={`w-3 h-3 ${isDark ? "text-accent/20" : "text-accent/30"}`} />
+                <Terminal className={`w-3 h-3 ${isDark ? "text-accent/40" : "text-accent/40"}`} />
                 {kind === "preview" ? "Preview" : "Console"}
               </div>
               <button
@@ -267,7 +275,7 @@ function PlaygroundBody({
                 <X className="w-3.5 h-3.5" />
               </button>
             </div>
-            <div style={{ height: outputHeight }} className={`overflow-hidden ${isDark ? "bg-[#050505]/50" : "bg-white"}`}>
+            <div style={{ height: outputHeight }} className={`overflow-hidden ${isDark ? "bg-bg/60" : "bg-white"}`}>
               {kind === "preview" ? (
                 <SandpackPreview
                   showOpenInCodeSandbox={false}
@@ -282,8 +290,15 @@ function PlaygroundBody({
         )}
       </div>
 
-      {/* Console host for vanilla JS */}
-      {kind === "console" && running && (
+      {/*
+        Console host for vanilla JS / TS playgrounds. Always mounted (not
+        gated on `running`) so the Sandpack bundler can register the iframe
+        client up-front; when the user clicks Run, `runSandpack()` then has a
+        registered client to boot. Gating mount on `running` created a race
+        where runSandpack() fired before the iframe existed and the bundler
+        never started.
+      */}
+      {kind === "console" && (
         <div
           aria-hidden
           style={{ position: "absolute", width: 0, height: 0, overflow: "hidden", pointerEvents: "none" }}

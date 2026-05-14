@@ -83,6 +83,17 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   providers: [...oauthProviders, credentialsProvider],
   pages: { signIn: "/login" },
   callbacks: {
+    async signIn({ user }) {
+      if (!user.id) return true;
+      const dbUser = await prisma.user.findUnique({
+        where: { id: user.id },
+        select: { banned: true },
+      });
+      if (dbUser?.banned) {
+        throw new Error("Your account has been suspended.");
+      }
+      return true;
+    },
     async jwt({ token, user }) {
       if (user?.id) token.uid = user.id;
       return token;

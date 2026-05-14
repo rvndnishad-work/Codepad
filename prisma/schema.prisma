@@ -32,6 +32,8 @@ model User {
   blogReactions BlogReaction[]
   blogComments  BlogComment[]
   blogBookmarks BlogBookmark[]
+  /// Whether the user is banned from the platform.
+  banned        Boolean           @default(false)
   createdAt     DateTime            @default(now())
 }
 
@@ -188,6 +190,10 @@ model BlogPost {
   viewCount   Int      @default(0)
   /// JSON-encoded string[] of tag labels (e.g. "react", "typescript", "ai").
   tags        String?
+  /// "DRAFT" | "PENDING" | "PUBLISHED" | "REJECTED" | "NEEDS_CHANGES"
+  status      String   @default("DRAFT")
+  /// Feedback from admin if changes are needed or rejection reason.
+  adminNotes  String?
   /// Admin-only flag for staff-picked / featured posts.
   featured    Boolean  @default(false)
   userId      String
@@ -248,4 +254,9 @@ model BlogBookmark {
 
   @@id([postId, userId])
   @@index([userId, createdAt])
+}
+
+model SiteSetting {
+  key   String @id
+  value String // JSON-encoded configuration
 }

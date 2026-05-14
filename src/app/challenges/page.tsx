@@ -2,6 +2,8 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import ChallengeList, { type ChallengeListItem } from "./ChallengeList";
 
+import { validatePageAccess } from "@/lib/settings";
+
 export const metadata = {
   title: "Challenges — Interviewpad",
   description:
@@ -10,6 +12,7 @@ export const metadata = {
 
 export default async function ChallengesPage() {
   const session = await auth().catch(() => null);
+  await validatePageAccess("/challenges", session);
   const userId = session?.user?.id;
 
   const rows = await prisma.challenge.findMany({

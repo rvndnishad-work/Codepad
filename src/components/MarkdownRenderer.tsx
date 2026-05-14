@@ -25,7 +25,7 @@ export default function MarkdownRenderer({ content, className = "" }: MarkdownRe
         components={{
           code({ node, inline, className, children, ...props }: any) {
             // Match both `language-javascript` and `language-javascript-run`
-            // (the `-run` suffix is our runnable marker — see TiptapEditor for why).
+            // (the `-run` suffix is our runnable marker — see blog-editor/SlashMenu for why).
             const match = /language-([\w-]+)/.exec(className || "");
             const rawLang = match?.[1] ?? "";
 

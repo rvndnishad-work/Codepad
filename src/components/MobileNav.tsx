@@ -5,30 +5,25 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Code2, Target, Compass, Briefcase, Shield, ChevronDown, BookOpen } from "lucide-react";
 import { LogoMark } from "./Logo";
+import { NavLinkConfig } from "@/lib/settings-constants";
 
-type Item = {
-  href: string;
-  label: string;
-  icon: React.ComponentType<{ className?: string }>;
-  authOnly?: boolean;
-  adminOnly?: boolean;
+const ICON_MAP: Record<string, any> = {
+  "/": Code2,
+  "/challenges": Target,
+  "/blog": BookOpen,
+  "/explore": Compass,
+  "/interview/new": Briefcase,
 };
 
-const ITEMS: Item[] = [
-  { href: "/", label: "Templates", icon: Code2 },
-  { href: "/challenges", label: "Challenges", icon: Target },
-  { href: "/blog", label: "Blog", icon: BookOpen },
-  { href: "/explore", label: "Explore", icon: Compass },
-  { href: "/interview/new", label: "Interviews", icon: Briefcase, authOnly: true },
-  { href: "/admin", label: "Admin", icon: Shield, adminOnly: true },
-];
 
 export default function MobileNav({
   signedIn,
   isAdmin,
+  navLinks,
 }: {
   signedIn: boolean;
   isAdmin: boolean;
+  navLinks: NavLinkConfig[];
 }) {
   const [open, setOpen] = useState(false);
   const pathname = usePathname();
@@ -60,11 +55,21 @@ export default function MobileNav({
     };
   }, [open]);
 
-  const visibleItems = ITEMS.filter((i) => {
-    if (i.adminOnly) return isAdmin;
-    if (i.authOnly) return signedIn;
-    return true;
-  });
+  const visibleItems = [
+    ...navLinks
+      .filter((link) => {
+        if (link.href === "/interview/new" && !signedIn) return false;
+        if (link.status === "hidden" && !isAdmin) return false;
+        return true;
+      })
+      .map((link) => ({
+        ...link,
+        icon: ICON_MAP[link.href] || Code2,
+        isComingSoon: link.status === "coming_soon",
+        isHidden: link.status === "hidden",
+      })),
+    ...(isAdmin ? [{ href: "/admin", label: "Admin", icon: Shield, adminOnly: true }] : []),
+  ];
 
   return (
     <>
@@ -106,6 +111,26 @@ export default function MobileNav({
                   ? pathname === "/"
                   : pathname === item.href || pathname.startsWith(`${item.href}/`);
               const Icon = item.icon;
+              const isComingSoon = "isComingSoon" in item && item.isComingSoon;
+              const isHidden = "isHidden" in item && item.isHidden;
+
+              const content = (
+                <>
+                  <Icon className="w-4 h-4" />
+                  {item.label}
+                  {isComingSoon && (
+                    <span className="ml-auto text-[8px] px-1 rounded uppercase font-black bg-amber-500/10 text-amber-600/60">
+                      Soon
+                    </span>
+                  )}
+                  {isHidden && isAdmin && (
+                    <span className="ml-auto text-[8px] px-1 rounded uppercase font-black bg-rose-500/20 text-rose-500">
+                      Hidden
+                    </span>
+                  )}
+                </>
+              );
+
               return (
                 <Link
                   key={item.href}
@@ -114,14 +139,13 @@ export default function MobileNav({
                   onClick={() => setOpen(false)}
                   className={`flex items-center gap-3 px-3 py-3 rounded-xl text-sm font-semibold transition-colors ${
                     active
-                      ? item.adminOnly
+                      ? "adminOnly" in item
                         ? "bg-accent/10 text-accent"
                         : "bg-elevated text-fg"
                       : "text-fg/70 hover:bg-elevated hover:text-fg"
-                  }`}
+                  } ${isHidden || (isComingSoon && !isAdmin) ? "opacity-60" : ""}`}
                 >
-                  <Icon className="w-4 h-4" />
-                  {item.label}
+                  {content}
                 </Link>
               );
             })}

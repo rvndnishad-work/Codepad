@@ -22,6 +22,12 @@ import {
   Code2,
 } from "lucide-react";
 import LandingDemo from "./LandingDemo";
+import {
+  TemplateCardShell,
+  CardTitleRow,
+  CardSubtitle,
+  CardChip,
+} from "./TemplateCardShell";
 
 type Welcome = {
   name: string | null;
@@ -48,137 +54,43 @@ const FEATURED_DESCRIPTIONS: Record<string, string> = {
   typescript: "Strict types out of the box, ready to break things safely.",
 };
 
-function Tile({ t }: { t: TemplateDef }) {
-  const meta = templateIcon[t.id];
-  const Icon = meta?.Icon;
-  const chips = tileChips(t);
-  const accentColor = meta?.color ?? "var(--accent)";
+function Tile({ t, showGroupLabel = false }: { t: TemplateDef; showGroupLabel?: boolean }) {
+  // Only show the subtitle if it's actually informative — when the card is
+  // already nested under a group section header (e.g. "Frameworks"), the
+  // group label is redundant. `showGroupLabel` lets the search/filter view
+  // turn it back on when cards are mixed together.
+  const subtitle =
+    t.subtitle ?? (showGroupLabel ? groupLabel(t.group) : undefined);
 
   return (
-    <Link
-      href={`/play?template=${t.id}`}
-      className="group relative flex items-center gap-5 p-3.5 rounded-[2rem] border border-border bg-surface hover:bg-elevated transition-all duration-500 hover:scale-[1.02] hover:rotate-1 hover:shadow-[0_20px_40px_-10px_rgba(0,0,0,0.1)] dark:hover:shadow-[0_20px_40px_-10px_rgba(0,0,0,0.5)] overflow-hidden"
-    >
-      {/* Background Glow */}
-      <div
-        className="absolute -left-10 -top-10 w-32 h-32 rounded-full blur-[60px] opacity-0 group-hover:opacity-20 transition-opacity duration-700"
-        style={{ background: accentColor }}
-      />
-
-      {/* Icon Stage */}
-      <div className="relative w-[32%] aspect-square shrink-0 flex items-center justify-center">
-        {/* Wobbly Background (The 'Stage') */}
-        <div 
-          className="absolute inset-0 rounded-[30%_70%_70%_30%_/_30%_30%_70%_70%] animate-[blobby_10s_ease-in-out_infinite] opacity-20 group-hover:opacity-40 transition-all duration-700 blur-[2px] border border-white/10"
-          style={{ background: accentColor }}
-        />
-        
-        {/* The Icon itself (A balanced emblem inside the wobbly stage) */}
-        <div className="relative w-[50%] h-[50%] flex items-center justify-center group-hover:scale-110 group-hover:-rotate-3 transition-transform duration-500">
-          {Icon ? (
-            <Icon 
-              className="w-full h-full drop-shadow-[0_0_10px_rgba(var(--accent-rgb),0.5)]" 
-              style={{ 
-                color: accentColor,
-                filter: "drop-shadow(0 0 2px rgba(0,0,0,0.1))"
-              }} 
-            />
-          ) : (
-            <span className="text-xl font-black">{t.label}</span>
-          )}
-        </div>
+    <TemplateCardShell href={`/play?template=${t.id}`} templateId={t.id}>
+      <CardTitleRow>{t.title}</CardTitleRow>
+      {subtitle && <CardSubtitle>{subtitle}</CardSubtitle>}
+      <div className="flex flex-wrap gap-1 mt-1">
+        {tileChips(t).map((c) => (
+          <CardChip key={c}>{c}</CardChip>
+        ))}
       </div>
-
-      {/* Content Area */}
-      <div className="flex-1 flex flex-col gap-0.5 min-w-0">
-        <div className="flex items-center justify-between gap-2">
-          <span className="text-lg font-black text-fg tracking-tight group-hover:text-accent transition-colors leading-tight truncate">
-            {t.title}
-          </span>
-          <ArrowUpRight className="w-3.5 h-3.5 text-muted/30 group-hover:text-fg group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-all shrink-0" />
-        </div>
-        
-        <span className="text-[11px] font-black text-muted uppercase tracking-[0.15em] truncate">
-          {t.subtitle ?? groupLabel(t.group)}
-        </span>
-
-        <div className="flex flex-wrap gap-1 mt-2">
-          {chips.map((c) => (
-            <span
-              key={c}
-              className="px-2 py-0.5 rounded-lg border border-border bg-bg/50 text-[10px] font-bold text-muted uppercase tracking-tight"
-            >
-              {c}
-            </span>
-          ))}
-        </div>
-      </div>
-    </Link>
+    </TemplateCardShell>
   );
 }
 
 function FeaturedTile({ t }: { t: TemplateDef }) {
-  const meta = templateIcon[t.id];
-  const Icon = meta?.Icon;
-  const accentColor = meta?.color ?? "var(--accent)";
-
   return (
-    <Link
-      href={`/play?template=${t.id}`}
-      className="group relative flex items-center gap-4 p-3.5 rounded-[1.75rem] border border-border bg-surface hover:bg-elevated transition-all duration-500 hover:scale-[1.02] hover:rotate-1 hover:shadow-[0_15px_30px_-5px_rgba(0,0,0,0.1)] dark:hover:shadow-[0_15px_30px_-5px_rgba(0,0,0,0.5)] overflow-hidden"
-    >
-      {/* Background Glow */}
-      <div
-        className="absolute -left-10 -top-10 w-28 h-28 rounded-full blur-[50px] opacity-0 group-hover:opacity-20 transition-opacity duration-700"
-        style={{ background: accentColor }}
-      />
-
-      {/* Icon Stage */}
-      <div className="relative w-[32%] aspect-square shrink-0 flex items-center justify-center">
-        <div 
-          className="absolute inset-0 rounded-[30%_70%_70%_30%_/_30%_30%_70%_70%] animate-[blobby_10s_ease-in-out_infinite] opacity-20 group-hover:opacity-40 transition-all duration-700 blur-[2px] border border-white/10"
-          style={{ background: accentColor }}
-        />
-        <div className="relative w-[50%] h-[50%] flex items-center justify-center group-hover:scale-110 group-hover:-rotate-3 transition-transform duration-500">
-          {Icon ? (
-            <Icon 
-              className="w-full h-full drop-shadow-[0_0_10px_rgba(var(--accent-rgb),0.5)]" 
-              style={{ color: accentColor }} 
-            />
-          ) : (
-            <span className="text-base font-black">{t.label}</span>
-          )}
-        </div>
+    <TemplateCardShell href={`/play?template=${t.id}`} templateId={t.id}>
+      <CardTitleRow>{t.title}</CardTitleRow>
+      <CardSubtitle>
+        {FEATURED_DESCRIPTIONS[t.id] ?? t.subtitle ?? groupLabel(t.group)}
+      </CardSubtitle>
+      <div className="flex items-center gap-1.5 mt-1">
+        {tileChips(t).map((c) => (
+          <CardChip key={c}>{c}</CardChip>
+        ))}
+        <span className="ml-auto text-[11px] text-accent font-black">
+          Start →
+        </span>
       </div>
-
-      {/* Content Area */}
-      <div className="flex-1 flex flex-col gap-0.5 min-w-0">
-        <div className="flex items-center justify-between gap-1">
-          <span className="text-base font-black text-fg tracking-tight group-hover:text-accent transition-colors leading-tight truncate">
-            {t.title}
-          </span>
-          <ArrowUpRight className="w-4 h-4 text-muted/30 group-hover:text-fg group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-all shrink-0" />
-        </div>
-        
-        <p className="text-xs text-muted leading-tight line-clamp-2 mt-0.5">
-          {FEATURED_DESCRIPTIONS[t.id] ?? t.subtitle ?? groupLabel(t.group)}
-        </p>
-
-        <div className="flex items-center gap-1.5 mt-auto pt-2">
-          {tileChips(t).map((c) => (
-            <span
-              key={c}
-              className="px-2 py-0.5 rounded border border-border bg-bg/50 text-[10px] font-bold text-muted uppercase tracking-tight"
-            >
-              {c}
-            </span>
-          ))}
-          <span className="ml-auto text-xs text-accent font-black">
-            Start →
-          </span>
-        </div>
-      </div>
-    </Link>
+    </TemplateCardShell>
   );
 }
 
@@ -420,73 +332,37 @@ export default function TemplatePicker({
                   Explore all →
                 </Link>
               </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                {featured.slice(0, 6).map((s) => {
-                  const meta = templateIcon[s.template];
-                  const accentColor = meta?.color ?? "var(--accent)";
-                  return (
-                    <Link
-                      key={s.id}
-                      href={`/play/${s.slug}`}
-                      className="group relative flex items-center gap-4 p-3.5 rounded-[2rem] border border-border bg-surface hover:bg-elevated transition-all duration-500 hover:scale-[1.02] hover:rotate-1 hover:shadow-[0_15px_30px_-5px_rgba(0,0,0,0.1)] dark:hover:shadow-[0_15px_30px_-5px_rgba(0,0,0,0.5)] overflow-hidden"
-                    >
-                      {/* Background Glow */}
-                      <div
-                        className="absolute -left-10 -top-10 w-28 h-28 rounded-full blur-[50px] opacity-0 group-hover:opacity-20 transition-opacity duration-700"
-                        style={{ background: accentColor }}
-                      />
-
-                      {/* Icon Stage */}
-                      <div className="relative w-[32%] aspect-square shrink-0 flex items-center justify-center">
-                        <div 
-                          className="absolute inset-0 rounded-[30%_70%_70%_30%_/_30%_30%_70%_70%] animate-[blobby_10s_ease-in-out_infinite] opacity-20 group-hover:opacity-40 transition-all duration-700 blur-[2px] border border-white/10"
-                          style={{ background: accentColor }}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                {featured.slice(0, 6).map((s) => (
+                  <TemplateCardShell
+                    key={s.id}
+                    href={`/play/${s.slug}`}
+                    templateId={s.template}
+                  >
+                    <CardTitleRow>{s.title}</CardTitleRow>
+                    <div className="flex items-center gap-1.5 text-[11px] text-muted truncate">
+                      {s.author?.image ? (
+                        <Image
+                          src={s.author.image}
+                          alt={s.author.name ?? ""}
+                          width={14}
+                          height={14}
+                          className="rounded-full border border-border shrink-0"
                         />
-                        <div className="relative w-[50%] h-[50%] flex items-center justify-center group-hover:scale-110 group-hover:-rotate-3 transition-transform duration-500">
-                          <TemplateLogo id={s.template} className="w-full h-full drop-shadow-[0_0_10px_rgba(var(--accent-rgb),0.5)]" />
-                        </div>
+                      ) : (
+                        <div className="w-3.5 h-3.5 rounded-full bg-surface border border-border shrink-0" />
+                      )}
+                      <span className="truncate">{s.author?.name ?? "anonymous"}</span>
+                    </div>
+                    {s.tags.length > 0 && (
+                      <div className="flex flex-wrap gap-1 mt-1">
+                        {s.tags.slice(0, 2).map((tag) => (
+                          <CardChip key={tag}>#{tag}</CardChip>
+                        ))}
                       </div>
-
-                      {/* Content Area */}
-                      <div className="flex-1 flex flex-col gap-0.5 min-w-0">
-                        <div className="flex items-center justify-between gap-1">
-                          <span className="text-sm font-black text-fg tracking-tight group-hover:text-accent transition-colors leading-tight truncate">
-                            {s.title}
-                          </span>
-                          <ArrowUpRight className="w-3.5 h-3.5 text-muted/30 group-hover:text-fg group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-all shrink-0" />
-                        </div>
-                        
-                        <div className="flex items-center gap-2 text-[10px] text-muted mb-1 truncate">
-                          {s.author?.image ? (
-                            <Image
-                              src={s.author.image}
-                              alt={s.author.name ?? ""}
-                              width={14}
-                              height={14}
-                              className="rounded-full border border-border shrink-0"
-                            />
-                          ) : (
-                            <div className="w-3.5 h-3.5 rounded-full bg-surface border border-border shrink-0" />
-                          )}
-                          <span className="truncate">{s.author?.name ?? "anonymous"}</span>
-                        </div>
-
-                        {s.tags.length > 0 && (
-                          <div className="flex flex-wrap gap-1 mt-auto pt-1">
-                            {s.tags.slice(0, 2).map((tag) => (
-                              <span
-                                key={tag}
-                                className="px-1.5 py-0.5 rounded border border-border bg-bg/50 text-[8px] font-bold text-muted uppercase tracking-tighter"
-                              >
-                                #{tag}
-                              </span>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                    </Link>
-                  );
-                })}
+                    )}
+                  </TemplateCardShell>
+                ))}
               </div>
             </section>
           )}
@@ -571,7 +447,9 @@ export default function TemplatePicker({
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {filtered.map((t) => (
-              <Tile key={t.id} t={t} />
+              // Mixed across groups — show the group label so users still
+              // know what category each card belongs to.
+              <Tile key={t.id} t={t} showGroupLabel />
             ))}
           </div>
         )}

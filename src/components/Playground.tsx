@@ -57,6 +57,7 @@ import PlaygroundToolbar from "./PlaygroundToolbar";
 import { FilesBridge } from "./bridges/FilesBridge";
 import { RunBridge } from "./bridges/RunBridge";
 import { ConsoleEntryBridge } from "./bridges/ConsoleEntryBridge";
+import { ConsoleClearBridge } from "./bridges/ConsoleClearBridge";
 import { FormatBridge } from "./bridges/FormatBridge";
 
 const nbpTheme = {
@@ -302,6 +303,45 @@ export default function Playground({
     const setup: any = tpl.dependencies ? { dependencies: tpl.dependencies } : {};
     return setup;
   }, [tpl]);
+
+  // Initial tab strip is just the entry file. Other files appear as tabs only
+  // when the user clicks them in the explorer (which calls sandpack.openFile).
+  // Entry detection prefers package.json's "main" field, then falls back to
+  // common entry names, then the first non-hidden file.
+  const initialVisibleFiles = useMemo(() => {
+    const f = initialFilesRef.current;
+    const keys = Object.keys(f);
+    const isHidden = (k: string) => {
+      const v = f[k];
+      return typeof v === "object" && (v as { hidden?: boolean }).hidden === true;
+    };
+    // 1. package.json "main"
+    const pkgRaw = f["/package.json"];
+    if (pkgRaw) {
+      const code = typeof pkgRaw === "string" ? pkgRaw : (pkgRaw as { code: string }).code;
+      try {
+        const main = JSON.parse(code).main;
+        if (typeof main === "string") {
+          const normalized = main.startsWith("/") ? main : `/${main}`;
+          if (f[normalized] && !isHidden(normalized)) return [normalized];
+        }
+      } catch {
+        // fall through
+      }
+    }
+    // 2. Common entry names
+    const CANDIDATES = [
+      "/src/App.tsx", "/src/App.jsx", "/App.tsx", "/App.jsx",
+      "/src/index.tsx", "/src/index.jsx", "/src/index.ts", "/src/index.js",
+      "/index.tsx", "/index.jsx", "/index.ts", "/index.js",
+    ];
+    for (const c of CANDIDATES) {
+      if (f[c] && !isHidden(c)) return [c];
+    }
+    // 3. First non-hidden file
+    const firstVisible = keys.find((k) => !isHidden(k));
+    return firstVisible ? [firstVisible] : keys.slice(0, 1);
+  }, []);
   const editable = isOwner || !snippet;
   const isMobile = useIsMobile(768);
   const { width: explorerW, onPointerDown: onExplorerDrag } = useResizable(200, 120, 400);
@@ -685,6 +725,11 @@ export default function Playground({
                   initMode: "immediate" as const,
                   recompileMode: "delayed",
                   recompileDelay: 300,
+                  // Open just the entry file in the tab strip. Additional
+                  // files become tabs only when the user clicks them in the
+                  // explorer (via sandpack.openFile).
+                  visibleFiles: initialVisibleFiles,
+                  activeFile: initialVisibleFiles[0],
                   externalResources: [
                     "data:text/css,.react-error-overlay,#webpack-dev-server-client-overlay,.sp-overlay{display:none!important}#ignore.css"
                   ]
@@ -841,6 +886,7 @@ export default function Playground({
                 <ErrorBridge onError={setBundlerError} />
                 <RunBridge runRef={runRef} onStatusChange={(s) => { if (s === "idle" || s === "done") setRunning(false); }} />
                 <ConsoleEntryBridge active={tpl.mode === "console"} />
+                <ConsoleClearBridge onClear={() => setConsoleKey((k) => k + 1)} />
                 <FormatBridge formatRef={formatRef} />
               </SandpackProvider>
               )}

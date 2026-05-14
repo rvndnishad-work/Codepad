@@ -5,7 +5,8 @@ import HomeBento from "./HomeBento";
 import HomeExplore from "./HomeExplore";
 import Link from "next/link";
 import { ArrowRight, BookOpen } from "lucide-react";
-import BlogFeedItem, { type BlogFeedEntry } from "@/components/BlogFeedItem";
+import { type BlogFeedEntry } from "@/components/BlogFeedItem";
+import BlogCardGrid from "@/components/BlogCardGrid";
 import TemplatePicker from "@/components/TemplatePicker";
 
 export default async function HomePage() {
@@ -44,13 +45,27 @@ export default async function HomePage() {
     include: { user: { select: { name: true, image: true } } },
   });
 
-  // Latest blogs (feed-style list)
+  // Latest blogs (3-up grid)
   const latestBlogsRows = await prisma.blogPost.findMany({
     where: { published: true },
     orderBy: { createdAt: "desc" },
     take: 6,
-    include: { user: { select: { name: true, image: true } } },
+    include: {
+      user: { select: { name: true, image: true } },
+    },
   });
+
+  function safeTags(raw: string | null): string[] {
+    if (!raw) return [];
+    try {
+      const parsed = JSON.parse(raw);
+      return Array.isArray(parsed)
+        ? parsed.filter((t): t is string => typeof t === "string")
+        : [];
+    } catch {
+      return [];
+    }
+  }
 
   // ~200 words per minute is a typical reading speed; content is markdown so
   // we approximate by counting words.
@@ -63,6 +78,7 @@ export default async function HomePage() {
     viewCount: b.viewCount,
     createdAt: b.createdAt.toISOString(),
     readingMinutes: Math.max(1, Math.round(b.content.trim().split(/\s+/).length / 200)),
+    tags: safeTags(b.tags),
     user: { name: b.user.name, image: b.user.image },
   }));
 
@@ -87,11 +103,11 @@ export default async function HomePage() {
       
       <HomeExplore featured={featured} />
       
-      {/* Latest Stories — feed-style list (Medium / dev.to inspired) */}
+      {/* Latest Stories — 3-up card grid (more density than the prior list). */}
       {latestBlogs.length > 0 && (
         <section className="bg-bg py-24 border-t border-border/50 relative overflow-hidden">
           <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-accent/5 rounded-full blur-[120px] -mr-64 -mt-64" />
-          <div className="mx-auto max-w-4xl px-4 relative z-10">
+          <div className="mx-auto max-w-6xl px-4 relative z-10">
             <div className="flex items-end justify-between mb-10">
               <div>
                  <div className="inline-flex items-center gap-2 text-[11px] font-black uppercase tracking-widest text-accent mb-2 bg-accent/10 px-3 py-1 rounded-full">
@@ -106,9 +122,9 @@ export default async function HomePage() {
               </Link>
             </div>
 
-            <div className="flex flex-col gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
               {latestBlogs.map((blog) => (
-                <BlogFeedItem key={blog.id} blog={blog} />
+                <BlogCardGrid key={blog.id} blog={blog} />
               ))}
             </div>
           </div>

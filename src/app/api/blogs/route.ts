@@ -4,21 +4,15 @@ import { auth } from "@/lib/auth";
 import { isAdmin } from "@/lib/admin";
 import { prisma } from "@/lib/prisma";
 import { nanoid } from "nanoid";
-
-const TAG_RE = /^[a-z0-9][a-z0-9-]{0,29}$/;
+import { coverImageSchema, blogTagsSchema } from "@/lib/blog-schema";
 
 const createSchema = z.object({
   title: z.string().min(1).max(200),
   content: z.string().min(1),
   excerpt: z.string().max(500).optional(),
-  coverImage: z
-    .string()
-    .url()
-    .refine((u) => /^https?:/.test(u), "must be http(s) URL")
-    .optional()
-    .or(z.literal("")),
+  coverImage: coverImageSchema.optional(),
   published: z.boolean().optional(),
-  tags: z.array(z.string().regex(TAG_RE)).max(8).optional(),
+  tags: blogTagsSchema.optional(),
 });
 
 export async function POST(req: Request) {

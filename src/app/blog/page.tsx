@@ -1,8 +1,12 @@
 import Link from "next/link";
-import { Flame, Sparkles, TrendingUp, Users, BookOpen, PenSquare, Hash } from "lucide-react";
+import { Flame, Sparkles, TrendingUp, Users, PenSquare, Hash } from "lucide-react";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import BlogFeedItem, { type BlogFeedEntry } from "@/components/BlogFeedItem";
+import { validatePageAccess } from "@/lib/settings";
+import { type BlogFeedEntry } from "@/components/BlogFeedItem";
+import BlogCardHero from "@/components/BlogCardHero";
+import BlogCardGrid from "@/components/BlogCardGrid";
+import BlogRowCompact from "@/components/BlogRowCompact";
 import FollowButton from "@/components/FollowButton";
 
 export const dynamic = "force-dynamic";
@@ -43,6 +47,7 @@ export default async function BlogListingPage({
 }) {
   const sp = await searchParams;
   const session = await auth().catch(() => null);
+  await validatePageAccess("/blog", session);
   const userId = session?.user?.id ?? null;
 
   const requestedTab = (sp.tab as Tab) || "latest";
@@ -212,7 +217,10 @@ export default async function BlogListingPage({
             </div>
           )}
 
-          {/* Feed */}
+          {/* Feed — tiered layout: 1 hero, then a card grid, then a compact
+              list. On the "Most read" tab we skip the hero so the ranking
+              reads cleanly. The split only kicks in once we have enough posts
+              to justify it — small feeds stay as a single card grid. */}
           {items.length === 0 ? (
             <div className="rounded-2xl border border-border bg-surface p-12 text-center">
               {tab === "following" ? (
@@ -228,11 +236,41 @@ export default async function BlogListingPage({
               )}
             </div>
           ) : (
-            <div className="flex flex-col gap-3">
-              {items.map((b) => (
-                <BlogFeedItem key={b.id} blog={b} />
-              ))}
-            </div>
+            (() => {
+              const useHero = tab !== "top" && items.length >= 4;
+              const hero = useHero ? items[0] : null;
+              const gridStart = useHero ? 1 : 0;
+              const gridCount = Math.min(6, items.length - gridStart);
+              const grid = items.slice(gridStart, gridStart + gridCount);
+              const rest = items.slice(gridStart + gridCount);
+              return (
+                <div className="space-y-8">
+                  {hero && <BlogCardHero blog={hero} />}
+
+                  {grid.length > 0 && (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                      {grid.map((b) => (
+                        <BlogCardGrid key={b.id} blog={b} />
+                      ))}
+                    </div>
+                  )}
+
+                  {rest.length > 0 && (
+                    <div>
+                      <h2 className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.2em] text-muted mb-2 pb-2 border-b border-border">
+                        <Sparkles className="w-3 h-3 text-accent" />
+                        More stories
+                      </h2>
+                      <div className="flex flex-col">
+                        {rest.map((b) => (
+                          <BlogRowCompact key={b.id} blog={b} />
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              );
+            })()
           )}
         </div>
 

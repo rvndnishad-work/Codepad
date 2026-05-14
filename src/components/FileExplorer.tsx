@@ -20,6 +20,8 @@ import {
   Pencil,
   Copy,
   Download,
+  ArrowDownAZ,
+  ListOrdered,
 } from "lucide-react";
 import { useFileSystem, FILE_TYPES, type TreeNode, parentDir } from "@/hooks/useFileSystem";
 import { toast } from "sonner";
@@ -203,6 +205,9 @@ export default function FileExplorer({ readOnly = false, onCollapse }: Props) {
     setRenamingPath,
     renameValue,
     setRenameValue,
+    sortMode,
+    setSortMode,
+    reorderSibling,
     tree,
     filePaths,
     activeFile,
@@ -225,6 +230,11 @@ export default function FileExplorer({ readOnly = false, onCollapse }: Props) {
     () => filePaths.find((p) => p.endsWith("/package.json")) ?? "/package.json",
     [filePaths]
   );
+
+  // Where the dragged item would land if dropped right now. "before"/"after"
+  // produce a visible insertion line above/below the target row; "into"
+  // (folders only) highlights the entire row, matching the prior behavior.
+  const [dropPosition, setDropPosition] = useState<"before" | "after" | "into" | null>(null);
 
   const {
     dependencies,
@@ -260,41 +270,96 @@ export default function FileExplorer({ readOnly = false, onCollapse }: Props) {
         onDragEnd={() => {
           setDraggingPath(null);
           setDropTarget(null);
+          setDropPosition(null);
         }}
         onDragOver={(e) => {
-          if (readOnly || !node.isFolder) return;
+          if (readOnly) return;
           const hasExternal = e.dataTransfer.types.includes("Files");
           if (!draggingPath && !hasExternal) return;
+          // Can't drop a folder into itself or one of its descendants.
           if (
             draggingPath &&
             (draggingPath === node.path ||
               node.path.startsWith(draggingPath + "/"))
           )
             return;
+
+          // Detect drop zone within the row:
+          //   ≤ 25% from top  → insert BEFORE this sibling
+          //   ≥ 75% from top  → insert AFTER  this sibling
+          //   middle 50%      → drop INTO (folder only); for files, treated
+          //                     as "after" so reordering still feels natural.
+          const rect = e.currentTarget.getBoundingClientRect();
+          const ratio = (e.clientY - rect.top) / Math.max(1, rect.height);
+          let pos: "before" | "after" | "into";
+          if (node.isFolder && ratio > 0.25 && ratio < 0.75) {
+            pos = "into";
+          } else if (ratio < 0.5) {
+            pos = "before";
+          } else {
+            pos = "after";
+          }
+
+          // Reordering only works inside the same parent. Cross-parent drops
+          // with external files use "into" on folders; non-folder cross-parent
+          // drops are not actionable, so suppress the indicator.
+          if (pos !== "into") {
+            if (
+              draggingPath &&
+              parentDir(draggingPath) !== parentDir(node.path)
+            ) {
+              if (!hasExternal) return;
+              pos = node.isFolder ? "into" : "after";
+            }
+            // Dropping just above/below yourself is a no-op.
+            if (draggingPath === node.path) return;
+          }
+
           e.preventDefault();
           e.stopPropagation();
           e.dataTransfer.dropEffect = hasExternal ? "copy" : "move";
           setDropTarget(node.path);
+          setDropPosition(pos);
         }}
         onDragLeave={() => {
-          if (dropTarget === node.path) setDropTarget(null);
+          if (dropTarget === node.path) {
+            setDropTarget(null);
+            setDropPosition(null);
+          }
         }}
         onDrop={(e) => {
-          if (readOnly || !node.isFolder) return;
+          if (readOnly) return;
           e.preventDefault();
           e.stopPropagation();
           if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
-            void uploadFiles(e.dataTransfer.files, node.path);
-            setExpanded((prev) => new Set(prev).add(node.path));
+            // External file drop: drop into the folder (or its parent if a
+            // file row was the target). Keep prior behavior.
+            const targetFolder = node.isFolder ? node.path : parentDir(node.path);
+            void uploadFiles(e.dataTransfer.files, targetFolder);
+            setExpanded((prev) => new Set(prev).add(targetFolder));
           } else if (draggingPath) {
-            movePath(draggingPath, node.path);
+            if (dropPosition === "into" && node.isFolder) {
+              movePath(draggingPath, node.path);
+            } else if (
+              (dropPosition === "before" || dropPosition === "after") &&
+              parentDir(draggingPath) === parentDir(node.path)
+            ) {
+              reorderSibling(draggingPath, node.path, dropPosition);
+            } else if (node.isFolder) {
+              // Cross-parent fallback: move into the folder.
+              movePath(draggingPath, node.path);
+            }
           }
           setDraggingPath(null);
           setDropTarget(null);
+          setDropPosition(null);
         }}
         onClick={() => {
           if (node.isFolder) toggle(node.path);
-          else sandpack.setActiveFile(node.path);
+          // openFile both adds the path to the tab strip and makes it active.
+          // setActiveFile alone wouldn't open a tab for files we constrained
+          // out of the initial visibleFiles list.
+          else sandpack.openFile(node.path);
         }}
         onContextMenu={(e) => {
           if (readOnly) return;
@@ -307,13 +372,23 @@ export default function FileExplorer({ readOnly = false, onCollapse }: Props) {
             isFolder: node.isFolder,
           });
         }}
-        style={{ paddingLeft: 6 + depth * 12 }}
+        style={{
+          paddingLeft: 6 + depth * 12,
+          ...(isDropTarget && dropPosition === "before"
+            ? { boxShadow: "inset 0 2px 0 0 var(--accent)" }
+            : {}),
+          ...(isDropTarget && dropPosition === "after"
+            ? { boxShadow: "inset 0 -2px 0 0 var(--accent)" }
+            : {}),
+        }}
         className={`group flex items-center gap-1.5 pr-2 py-1 cursor-pointer text-[13px] select-none transition ${
           isActive
             ? "bg-accent/10 text-accent font-medium shadow-[inset_2px_0_0_0_currentColor]"
             : "text-fg/70 hover:bg-elevated hover:text-fg"
         } ${
-          isDropTarget ? "outline outline-1 outline-accent -outline-offset-1" : ""
+          isDropTarget && dropPosition === "into"
+            ? "outline outline-1 outline-accent -outline-offset-1"
+            : ""
         } ${isDragging ? "opacity-50" : ""}`}
       >
         {node.isFolder ? (
@@ -428,6 +503,7 @@ export default function FileExplorer({ readOnly = false, onCollapse }: Props) {
         }
         setDraggingPath(null);
         setDropTarget(null);
+        setDropPosition(null);
       }}
     >
       <div className="sticky top-0 z-10 flex items-center justify-between px-3 h-9 border-b border-border bg-transparent shrink-0">
@@ -471,6 +547,28 @@ export default function FileExplorer({ readOnly = false, onCollapse }: Props) {
                 }`}
               >
                 <Package className="w-3.5 h-3.5" />
+              </button>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setSortMode(sortMode === "manual" ? "name" : "manual");
+                }}
+                title={
+                  sortMode === "manual"
+                    ? "Sort: manual (creation order). Click for A–Z."
+                    : "Sort: A–Z. Click for manual."
+                }
+                className={`p-1.5 rounded transition ${
+                  sortMode === "name"
+                    ? "bg-accent/20 text-accent"
+                    : "text-muted/50 hover:bg-elevated hover:text-fg"
+                }`}
+              >
+                {sortMode === "manual" ? (
+                  <ListOrdered className="w-3.5 h-3.5" />
+                ) : (
+                  <ArrowDownAZ className="w-3.5 h-3.5" />
+                )}
               </button>
             </>
           )}

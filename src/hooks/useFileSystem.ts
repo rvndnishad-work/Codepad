@@ -37,7 +37,22 @@ export type TreeNode = {
   children?: TreeNode[];
 };
 
-export function buildTree(filePaths: string[], emptyFolders: Set<string>): TreeNode[] {
+export type SortMode = "manual" | "name";
+
+/**
+ * Per-parent explicit ordering. Keys are parent paths (e.g. "/", "/src"),
+ * values are arrays of child basenames in the order the user has chosen.
+ * Names not present in the array are appended at the end after applying the
+ * custom order (this is how newly-created files end up at the bottom).
+ */
+export type CustomOrder = Record<string, string[]>;
+
+export function buildTree(
+  filePaths: string[],
+  emptyFolders: Set<string>,
+  sortMode: SortMode = "manual",
+  customOrder: CustomOrder = {},
+): TreeNode[] {
   const root: TreeNode = { name: "", path: "/", isFolder: true, children: [] };
 
   function ensure(parts: string[], makeFolderAtEnd: boolean) {
@@ -65,12 +80,43 @@ export function buildTree(filePaths: string[], emptyFolders: Set<string>): TreeN
   for (const p of filePaths) ensure(p.split("/").filter(Boolean), false);
   for (const f of emptyFolders) ensure(f.split("/").filter(Boolean), true);
 
+  // "manual" preserves the order children were appended (i.e. file/folder
+  // creation order — Object.keys insertion order from Sandpack), then
+  // overlays any explicit user reordering from `customOrder`. When no custom
+  // order is set for a parent, folders are grouped before files so the tree
+  // reads VSCode-style. "name" sorts alphabetically with folders first.
   function sort(node: TreeNode) {
     if (!node.children) return;
-    node.children.sort((a, b) => {
-      if (a.isFolder !== b.isFolder) return a.isFolder ? -1 : 1;
-      return a.name.localeCompare(b.name);
-    });
+    if (sortMode === "name") {
+      node.children.sort((a, b) => {
+        if (a.isFolder !== b.isFolder) return a.isFolder ? -1 : 1;
+        return a.name.localeCompare(b.name);
+      });
+    } else {
+      const explicit = customOrder[node.path];
+      if (explicit && explicit.length > 0) {
+        // Apply the user's explicit ordering. Children whose names appear in
+        // `explicit` are placed in that order; anything new (created since
+        // the order was set) is appended at the end.
+        const byName = new Map(node.children.map((c) => [c.name, c]));
+        const ordered: TreeNode[] = [];
+        for (const name of explicit) {
+          const c = byName.get(name);
+          if (c) {
+            ordered.push(c);
+            byName.delete(name);
+          }
+        }
+        for (const c of node.children) {
+          if (byName.has(c.name)) ordered.push(c);
+        }
+        node.children = ordered;
+      } else {
+        const folders = node.children.filter((c) => c.isFolder);
+        const files = node.children.filter((c) => !c.isFolder);
+        node.children = [...folders, ...files];
+      }
+    }
     for (const c of node.children) sort(c);
   }
   sort(root);
@@ -127,9 +173,30 @@ export function useFileSystem() {
   const [renamingPath, setRenamingPath] = useState<string | null>(null);
   const [renameValue, setRenameValue] = useState("");
 
+  // Sort mode is persisted across sessions. Default to "manual" so files keep
+  // the order the user (or template) created them, instead of being shuffled
+  // alphabetically on every render.
+  const [sortMode, setSortModeState] = useState<SortMode>("manual");
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const saved = window.localStorage.getItem("codepad:files:sortMode");
+    if (saved === "manual" || saved === "name") setSortModeState(saved);
+  }, []);
+  const setSortMode = (m: SortMode) => {
+    setSortModeState(m);
+    if (typeof window !== "undefined") {
+      window.localStorage.setItem("codepad:files:sortMode", m);
+    }
+  };
+
+  // User-defined sibling ordering for manual mode. Populated by drag-reorder.
+  // Cleared when the user switches to A-Z (we don't lose it, just stop
+  // applying it — switching back to manual restores the user's order).
+  const [customOrder, setCustomOrder] = useState<CustomOrder>({});
+
   const tree = useMemo(
-    () => buildTree(filePaths, emptyFolders),
-    [filePaths, emptyFolders]
+    () => buildTree(filePaths, emptyFolders, sortMode, customOrder),
+    [filePaths, emptyFolders, sortMode, customOrder]
   );
 
   // Prune empty-folder placeholders that now contain files
@@ -199,7 +266,7 @@ export function useFileSystem() {
       const tpl =
         FILE_TYPES.find((t) => t.ext === pending.ext)?.template ?? "";
       sandpack.addFile(fullPath, tpl);
-      setTimeout(() => sandpack.setActiveFile(fullPath), 0);
+      setTimeout(() => sandpack.openFile(fullPath), 0);
     } else {
       const fullPath = `${parent}/${name}`;
       setEmptyFolders((prev) => new Set(prev).add(fullPath));
@@ -231,6 +298,59 @@ export function useFileSystem() {
     setContextMenu(null);
   }
 
+  /**
+   * Reorder a sibling within its parent. Used by drag-reorder in the
+   * explorer when the user drops on the top/bottom half of another row in
+   * the SAME parent. The pre-existing `movePath` already covers the
+   * cross-folder case.
+   *
+   * If the parent has no custom order yet, we seed it from the current tree
+   * children so the explicit reorder doesn't yank unrelated siblings to the
+   * end. Children whose names aren't in `customOrder` are appended.
+   */
+  function reorderSibling(
+    draggedPath: string,
+    targetPath: string,
+    position: "before" | "after",
+  ) {
+    if (draggedPath === targetPath) return;
+    const parent = parentDir(draggedPath);
+    if (parent !== parentDir(targetPath)) return;
+    const draggedName = draggedPath.split("/").filter(Boolean).pop()!;
+    const targetName = targetPath.split("/").filter(Boolean).pop()!;
+
+    // Compute the current child order from the tree we just built, so the
+    // user's existing folder-first grouping is preserved when we first seed
+    // the explicit order.
+    function currentOrder(): string[] {
+      const segments = parent === "/" ? [] : parent.split("/").filter(Boolean);
+      let node: TreeNode | undefined = { name: "", path: "/", isFolder: true, children: tree } as TreeNode;
+      for (const seg of segments) {
+        node = node.children?.find((c) => c.name === seg);
+        if (!node) return [];
+      }
+      return node.children?.map((c) => c.name) ?? [];
+    }
+
+    setCustomOrder((prev) => {
+      const seed = prev[parent] ?? currentOrder();
+      const without = seed.filter((n) => n !== draggedName);
+      let targetIdx = without.indexOf(targetName);
+      if (targetIdx === -1) {
+        // Target wasn't in the seed — fall back to current order to be safe.
+        const cur = currentOrder().filter((n) => n !== draggedName);
+        targetIdx = cur.indexOf(targetName);
+        if (targetIdx === -1) return prev;
+        const insertAt = position === "before" ? targetIdx : targetIdx + 1;
+        cur.splice(insertAt, 0, draggedName);
+        return { ...prev, [parent]: cur };
+      }
+      const insertAt = position === "before" ? targetIdx : targetIdx + 1;
+      without.splice(insertAt, 0, draggedName);
+      return { ...prev, [parent]: without };
+    });
+  }
+
   function movePath(fromPath: string, toFolderPath: string) {
     if (fromPath === toFolderPath) return;
     if (
@@ -249,7 +369,7 @@ export function useFileSystem() {
       const code = (files[fromPath] as { code: string }).code;
       sandpack.deleteFile(fromPath);
       sandpack.addFile(newPath, code);
-      if (activeFile === fromPath) sandpack.setActiveFile(newPath);
+      if (activeFile === fromPath) sandpack.openFile(newPath);
       return;
     }
 
@@ -302,7 +422,7 @@ export function useFileSystem() {
       const code = (files[path] as { code: string }).code;
       sandpack.deleteFile(path);
       sandpack.addFile(newPath, code);
-      if (activeFile === path) sandpack.setActiveFile(newPath);
+      if (activeFile === path) sandpack.openFile(newPath);
       return;
     }
 
@@ -389,7 +509,7 @@ export function useFileSystem() {
     }
     if (firstAdded) {
       const target = firstAdded;
-      setTimeout(() => sandpack.setActiveFile(target), 0);
+      setTimeout(() => sandpack.openFile(target), 0);
     }
   }
 
@@ -436,7 +556,7 @@ export function useFileSystem() {
       i++;
     }
     sandpack.addFile(candidate, code);
-    setTimeout(() => sandpack.setActiveFile(candidate), 0);
+    setTimeout(() => sandpack.openFile(candidate), 0);
     setContextMenu(null);
   }
 
@@ -461,6 +581,9 @@ export function useFileSystem() {
     setRenamingPath,
     renameValue,
     setRenameValue,
+    sortMode,
+    setSortMode,
+    reorderSibling,
     tree,
     filePaths,
     activeFile,

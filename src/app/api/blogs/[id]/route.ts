@@ -2,21 +2,15 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-
-const TAG_RE = /^[a-z0-9][a-z0-9-]{0,29}$/;
+import { coverImageSchema, blogTagsSchema } from "@/lib/blog-schema";
 
 const patchSchema = z.object({
   title: z.string().min(1).max(200).optional(),
   content: z.string().min(1).optional(),
   excerpt: z.string().max(500).optional(),
-  coverImage: z
-    .string()
-    .url()
-    .refine((u) => /^https?:/.test(u), "must be http(s) URL")
-    .optional()
-    .or(z.literal("")),
+  coverImage: coverImageSchema.optional(),
   published: z.boolean().optional(),
-  tags: z.array(z.string().regex(TAG_RE)).max(8).optional(),
+  tags: blogTagsSchema.optional(),
 });
 
 async function requireOwner(id: string, userId: string) {

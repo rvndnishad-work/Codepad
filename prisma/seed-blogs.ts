@@ -21,6 +21,8 @@ interface SeedPost {
   daysAgo: number;
   /** View count to make the "Most read" sidebar look real. */
   viewCount: number;
+  /** Admin-pinned / staff pick — surfaces as the homepage hero. */
+  featured?: boolean;
 }
 
 const POSTS: SeedPost[] = [
@@ -75,6 +77,7 @@ const POSTS: SeedPost[] = [
     coverImage: "https://images.unsplash.com/photo-1497366216548-37526070297c?w=1200&q=80",
     daysAgo: 6,
     viewCount: 12030,
+    featured: true,
   },
   {
     title: "AI-assisted coding is changing what 'senior' means",
@@ -83,6 +86,7 @@ const POSTS: SeedPost[] = [
     tags: ["ai", "career", "hiring"],
     daysAgo: 7,
     viewCount: 4380,
+    featured: true,
   },
   {
     title: "A minimal guide to Tailwind v4",
@@ -189,6 +193,7 @@ async function main() {
         coverImage: p.coverImage ?? null,
         tags: JSON.stringify(p.tags),
         published: true,
+        featured: p.featured ?? false,
         viewCount: p.viewCount,
         userId: user.id,
         adminNotes: "__seed__",

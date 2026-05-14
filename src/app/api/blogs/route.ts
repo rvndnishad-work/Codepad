@@ -57,6 +57,17 @@ export async function GET(req: Request) {
   const includeDrafts = searchParams.get("published") === "false";
   const userId = searchParams.get("userId");
 
+  // Cursor pagination — `before` is the createdAt ISO of the last item the
+  // client already has; `limit` caps the batch size. Used by the homepage
+  // horizontal scroller for lazy-loading additional pages.
+  const beforeRaw = searchParams.get("before");
+  const limitRaw = searchParams.get("limit");
+  const before = beforeRaw ? new Date(beforeRaw) : null;
+  const limit = Math.min(
+    Math.max(parseInt(limitRaw ?? "", 10) || 0, 0) || 50,
+    50,
+  );
+
   // Drafts are private. Only the owner (or an admin) may list them.
   if (includeDrafts) {
     const session = await auth().catch(() => null);
@@ -73,8 +84,12 @@ export async function GET(req: Request) {
       where: {
         ...(includeDrafts ? {} : { published: true }),
         ...(userId ? { userId } : {}),
+        ...(before && !Number.isNaN(before.getTime())
+          ? { createdAt: { lt: before } }
+          : {}),
       },
       orderBy: { createdAt: "desc" },
+      take: limit,
       include: {
         user: {
           select: {

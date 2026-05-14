@@ -49,6 +49,10 @@ export default function ImageGenDialog({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<string | null>(null);
+  /** "gemini" | "pollinations" — surfaced as a small badge on the preview. */
+  const [provider, setProvider] = useState<string | null>(null);
+  /** Surfaced when Gemini failed and the server fell back to Pollinations. */
+  const [fallbackNote, setFallbackNote] = useState<string | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   // Reset state when the dialog opens or the initialPrompt changes.
@@ -57,6 +61,8 @@ export default function ImageGenDialog({
     setPrompt(initialPrompt ?? "");
     setError(null);
     setResult(null);
+    setProvider(null);
+    setFallbackNote(null);
     setBusy(false);
     const id = setTimeout(() => textareaRef.current?.focus(), 30);
     return () => clearTimeout(id);
@@ -106,6 +112,8 @@ export default function ImageGenDialog({
         return;
       }
       setResult(body.dataUrl);
+      setProvider(typeof body.provider === "string" ? body.provider : null);
+      setFallbackNote(typeof body.fallbackNote === "string" ? body.fallbackNote : null);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Network error.");
     } finally {
@@ -247,10 +255,17 @@ export default function ImageGenDialog({
           {/* Preview / Loading */}
           {(busy || result) && (
             <div className="space-y-2">
-              <label className="text-[10px] font-black uppercase tracking-widest text-muted flex items-center gap-1.5">
-                <Sparkles className="w-3 h-3 text-accent" />
-                {busy ? "Generating…" : "Preview"}
-              </label>
+              <div className="flex items-center justify-between">
+                <label className="text-[10px] font-black uppercase tracking-widest text-muted flex items-center gap-1.5">
+                  <Sparkles className="w-3 h-3 text-accent" />
+                  {busy ? "Generating…" : "Preview"}
+                </label>
+                {!busy && result && provider && (
+                  <span className="text-[9px] font-black uppercase tracking-[0.15em] px-2 py-0.5 rounded-md bg-accent/10 border border-accent/30 text-accent">
+                    via {provider}
+                  </span>
+                )}
+              </div>
               <div
                 className="w-full rounded-2xl border border-border bg-bg/40 overflow-hidden relative"
                 style={{
@@ -277,6 +292,13 @@ export default function ImageGenDialog({
                   />
                 )}
               </div>
+              {!busy && result && fallbackNote && (
+                <p className="text-[10px] text-muted/70 leading-relaxed">
+                  <span className="font-bold">Note:</span> {fallbackNote} Falling
+                  back to a free provider — image quality may differ. Enable
+                  billing on your Google Cloud project to use Gemini.
+                </p>
+              )}
             </div>
           )}
         </div>

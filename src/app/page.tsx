@@ -3,6 +3,8 @@ import { prisma } from "@/lib/prisma";
 import HomeHero from "./HomeHero";
 import HomeBento from "./HomeBento";
 import HomeExplore from "./HomeExplore";
+import HomeFinalCTA from "./HomeFinalCTA";
+import TrustLogos from "./TrustLogos";
 import Link from "next/link";
 import { ArrowRight, BookOpen, TrendingUp, Pin, Hash, PenSquare } from "lucide-react";
 import { type BlogFeedEntry } from "@/components/BlogFeedItem";
@@ -170,6 +172,8 @@ export default async function HomePage() {
       
       <HomeBento />
       
+      <TrustLogos />
+      
       <HomeExplore featured={featured} />
       
       {/* Latest Stories — editorial mix:
@@ -178,7 +182,7 @@ export default async function HomePage() {
             - Compact "Most read" sidebar with numbered popular posts
           Total ~10 stories visible without scrolling on desktop. */}
       {hasAnyBlog && (
-        <section className="bg-bg py-24 border-t border-border/50 relative overflow-hidden">
+        <section className="bg-bg py-24 relative overflow-hidden">
           <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-accent/5 rounded-full blur-[120px] -mr-64 -mt-64" />
           <div className="mx-auto max-w-6xl px-4 relative z-10">
             <div className="flex items-end justify-between mb-10">
@@ -279,19 +283,8 @@ export default async function HomePage() {
           </div>
         </section>
       )}
-
-      <section id="templates" className="bg-surface py-20">
-        <div className="mx-auto max-w-6xl px-4">
-           <div className="mb-12 text-center">
-              <h2 className="text-3xl font-black text-fg tracking-tight mb-4">The Full Library</h2>
-              <p className="text-muted max-w-lg mx-auto">
-                Explore all 16+ pre-wired templates. From core languages to complex ecosystem variants.
-              </p>
-           </div>
-           {/* TemplatePicker can still be used for the library/search functionality */}
-           <TemplatePicker welcome={welcomeData} featured={[]} hideHero />
-        </div>
-      </section>
+      
+      <HomeFinalCTA />
     </div>
   );
 }

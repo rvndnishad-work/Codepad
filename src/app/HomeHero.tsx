@@ -1,7 +1,8 @@
 "use client";
 
+import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
-import { Sparkles, Plus, Play, LayoutGrid, Lock, ChevronRight, FileCode2, Terminal } from "lucide-react";
+import { Sparkles, Plus, Play, LayoutGrid, ChevronRight } from "lucide-react";
 
 export default function HomeHero({ 
   sessionName, 
@@ -12,8 +13,30 @@ export default function HomeHero({
   snippetCount: number;
   recentSnippet?: { slug: string; title: string; template: string } | null;
 }) {
+  const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
+  const [isHovered, setIsHovered] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      if (!containerRef.current) return;
+      const rect = containerRef.current.getBoundingClientRect();
+      setMousePos({
+        x: e.clientX - rect.left,
+        y: e.clientY - rect.top,
+      });
+    };
+    window.addEventListener("mousemove", handleMouseMove);
+    return () => window.removeEventListener("mousemove", handleMouseMove);
+  }, []);
+
   return (
-    <div className="relative overflow-hidden pt-24 pb-20 md:pt-32 md:pb-32">
+    <div 
+      ref={containerRef}
+      className="relative overflow-hidden pt-24 pb-20 md:pt-32 md:pb-32"
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+    >
       {/* ── Premium Background Setup ── */}
       <div className="absolute inset-0 pointer-events-none flex items-center justify-center overflow-hidden">
         {/* Theme-aware base */}
@@ -22,7 +45,19 @@ export default function HomeHero({
         {/* Subtle non-moving structural grid fading out at the edges */}
         <div 
           className="absolute inset-0 bg-[linear-gradient(rgba(var(--accent-rgb),0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(var(--accent-rgb),0.03)_1px,transparent_1px)] bg-[size:48px_48px]" 
-          style={{ maskImage: "radial-gradient(ellipse 70% 60% at 50% 0%, #000 30%, transparent 100%)", WebkitMaskImage: "radial-gradient(ellipse 70% 60% at 50% 0%, #000 30%, transparent 100%)" }}
+          style={{ 
+            maskImage: "radial-gradient(ellipse 70% 60% at 50% 0%, #000 30%, transparent 100%)", 
+            WebkitMaskImage: "radial-gradient(ellipse 70% 60% at 50% 0%, #000 30%, transparent 100%)" 
+          }}
+        />
+
+        {/* Cursor-following "Spotlight" */}
+        <div 
+          className="absolute inset-0 transition-opacity duration-1000 opacity-0 group-hover:opacity-100"
+          style={{
+            opacity: isHovered ? 1 : 0,
+            background: `radial-gradient(600px circle at ${mousePos.x}px ${mousePos.y}px, rgba(var(--accent-rgb), 0.08), transparent 40%)`,
+          }}
         />
 
         {/* Central glowing orb for depth */}
@@ -61,7 +96,7 @@ export default function HomeHero({
             </Link>
           ) : (
             <Link
-              href="/play?template=react"
+              href="/templates"
               className="inline-flex items-center gap-2 px-8 py-4 rounded-xl bg-accent hover:bg-accent-soft text-bg font-bold transition-all transform hover:scale-[1.02] active:scale-[0.98] shadow-[0_0_40px_rgba(var(--accent-rgb),0.25)]"
             >
               <Plus className="w-5 h-5" />
@@ -97,9 +132,17 @@ export default function HomeHero({
             WebkitMaskImage: "radial-gradient(ellipse 60% 50% at 50% 45%, black 0%, transparent 70%)"
           }}
         >
+          {/* Moving perspective grid */}
           <div className="absolute inset-0 [transform:rotateX(35deg)] origin-center">
             <div className="absolute inset-0 bg-grid-pattern opacity-[0.25] animate-grid-move" />
-            <div className="absolute inset-0 bg-[linear-gradient(to_bottom,rgba(var(--accent-rgb),0.3)_1px,transparent_1px)] bg-[size:100%_60px] animate-grid-move" />
+            <div 
+              className="absolute inset-0 bg-[linear-gradient(to_bottom,rgba(var(--accent-rgb),0.3)_1px,transparent_1px)] bg-[size:100%_60px] animate-grid-move" 
+              style={{
+                background: isHovered 
+                  ? `radial-gradient(800px circle at ${mousePos.x}px ${mousePos.y}px, rgba(var(--accent-rgb), 0.15), transparent 60%)`
+                  : undefined
+              }}
+            />
           </div>
         </div>
       </div>

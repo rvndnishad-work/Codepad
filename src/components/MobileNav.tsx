@@ -3,12 +3,13 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Code2, Target, Compass, Briefcase, Shield, ChevronDown, BookOpen } from "lucide-react";
+import { Code2, Target, Compass, Briefcase, Shield, ChevronDown, BookOpen, Home, Box } from "lucide-react";
 import { LogoMark } from "./Logo";
 import { NavLinkConfig } from "@/lib/settings-constants";
 
 const ICON_MAP: Record<string, any> = {
-  "/": Code2,
+  "/": Home,
+  "/templates": Box,
   "/challenges": Target,
   "/blog": BookOpen,
   "/explore": Compass,

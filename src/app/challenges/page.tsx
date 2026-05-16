@@ -1,6 +1,8 @@
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import ChallengeList, { type ChallengeListItem } from "./ChallengeList";
+import ChallengesHero, { type ChallengesHeroStats } from "./ChallengesHero";
+import TracksSection from "./TracksSection";
 
 import { validatePageAccess } from "@/lib/settings";
 
@@ -59,7 +61,66 @@ export default async function ChallengesPage() {
     userStatus: attemptsByChallenge[c.id] ?? null,
   }));
 
-  return <ChallengeList items={items} signedIn={!!userId} />;
+  // ── Hero stats ──────────────────────────────────────────────────────────
+  // Total challenges + their difficulty breakdown come straight from `items`
+  // so we don't pay for a second query. Interview-sessions count is a small
+  // separate query so the page still works when nobody is signed in.
+  const stats = computeStats(items);
+  const interviewsRun = await prisma.interviewSession.count().catch(() => 0);
+
+  const personal = userId
+    ? computePersonalStats(items)
+    : null;
+
+  const heroStats: ChallengesHeroStats = {
+    ...stats,
+    interviewsRun,
+    personal,
+  };
+
+  return (
+    <>
+      <ChallengesHero stats={heroStats} />
+      <TracksSection userId={userId ?? null} />
+      <ChallengeList items={items} signedIn={!!userId} />
+    </>
+  );
+}
+
+function computeStats(items: ChallengeListItem[]) {
+  let easy = 0;
+  let medium = 0;
+  let hard = 0;
+  let totalMinutes = 0;
+  for (const c of items) {
+    totalMinutes += c.estimatedMinutes;
+    if (c.difficulty === "easy") easy += 1;
+    else if (c.difficulty === "medium") medium += 1;
+    else if (c.difficulty === "hard") hard += 1;
+  }
+  return {
+    totalChallenges: items.length,
+    easy,
+    medium,
+    hard,
+    totalMinutes,
+  };
+}
+
+function computePersonalStats(items: ChallengeListItem[]) {
+  let solved = 0;
+  const byDifficulty = { easy: 0, medium: 0, hard: 0 };
+  for (const c of items) {
+    if (c.userStatus === "passed") {
+      solved += 1;
+      byDifficulty[c.difficulty] += 1;
+    }
+  }
+  return {
+    solved,
+    total: items.length,
+    byDifficulty,
+  };
 }
 
 function parseTags(raw: string | null): string[] {

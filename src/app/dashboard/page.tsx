@@ -2,7 +2,7 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { redirect } from "next/navigation";
 import Link from "next/link";
-import { Newspaper, Edit3 } from "lucide-react";
+import { Newspaper, Edit3, Layers, Plus, Sparkles, Eye, EyeOff } from "lucide-react";
 import DashboardHero from "./DashboardHero";
 import DashboardStats from "./DashboardStats";
 import DashboardFeed from "./DashboardFeed";
@@ -71,6 +71,13 @@ export default async function DashboardPage() {
     orderBy: { createdAt: "desc" },
   });
 
+  // 6. Fetch User's Tracks (authored)
+  const myTracks = await prisma.challengeTrack.findMany({
+    where: { authorId: userId },
+    orderBy: { updatedAt: "desc" },
+    include: { _count: { select: { items: true, enrollments: true } } },
+  });
+
   const initialItems = mySnippets.map((s) => ({
     id: s.id,
     slug: s.slug,
@@ -133,7 +140,7 @@ export default async function DashboardPage() {
               </Link>
 
               {myBlogs.map(blog => (
-                <Link 
+                <Link
                   key={blog.id}
                   href={`/dashboard/blogs/${blog.id}/edit`}
                   className="flex flex-col p-6 rounded-2xl border border-border bg-surface hover:border-border-strong transition-all shadow-sm group"
@@ -150,6 +157,69 @@ export default async function DashboardPage() {
                   <div className="mt-auto pt-3 flex items-center justify-between">
                     <span className="text-[10px] font-bold text-muted uppercase tracking-widest">
                       {blog.viewCount} views
+                    </span>
+                    <Edit3 className="w-3 h-3 text-muted group-hover:text-fg transition-colors" />
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </section>
+
+          <section>
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-xl font-bold text-fg tracking-tight">Your Tracks</h2>
+              <div className="text-xs text-muted">{myTracks.length} tracks total</div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <Link
+                href="/dashboard/tracks/new"
+                className="flex flex-col items-center justify-center p-6 rounded-2xl border border-dashed border-border hover:border-accent hover:bg-accent/5 transition-all group"
+              >
+                <div className="w-12 h-12 rounded-full bg-surface border border-border flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
+                  <Plus className="w-6 h-6 text-accent" />
+                </div>
+                <span className="text-sm font-bold text-fg">Create New Track</span>
+                <span className="text-xs text-muted">Group challenges into a series</span>
+              </Link>
+
+              {myTracks.map((track) => (
+                <Link
+                  key={track.id}
+                  href={`/dashboard/tracks/${track.id}/edit`}
+                  className="flex flex-col p-6 rounded-2xl border border-border bg-surface hover:border-border-strong transition-all shadow-sm group"
+                >
+                  <div className="flex items-center justify-between mb-2">
+                    <span
+                      className={`text-[10px] font-black uppercase tracking-widest px-2 py-0.5 rounded-md border inline-flex items-center gap-1 ${
+                        track.published
+                          ? "text-emerald-500 bg-emerald-500/10 border-emerald-500/20"
+                          : "text-muted bg-panel border-border"
+                      }`}
+                    >
+                      {track.published ? <Eye className="w-2.5 h-2.5" /> : <EyeOff className="w-2.5 h-2.5" />}
+                      {track.published ? "Published" : "Draft"}
+                    </span>
+                    <span className="inline-flex items-center gap-1 text-[10px] font-bold text-muted/60 uppercase tracking-wider">
+                      <Sparkles className="w-2.5 h-2.5" />
+                      {track.tech}
+                    </span>
+                  </div>
+                  <h3 className="font-bold text-fg group-hover:text-accent transition-colors line-clamp-1">
+                    {track.title}
+                  </h3>
+                  {track.tagline && (
+                    <p className="text-xs text-muted line-clamp-2 mt-1 leading-relaxed">
+                      {track.tagline}
+                    </p>
+                  )}
+                  <div className="mt-auto pt-3 flex items-center justify-between">
+                    <span className="inline-flex items-center gap-3 text-[10px] font-bold text-muted uppercase tracking-widest">
+                      <span className="inline-flex items-center gap-1">
+                        <Layers className="w-3 h-3" />
+                        {track._count.items}
+                      </span>
+                      <span>{track._count.enrollments} learners</span>
                     </span>
                     <Edit3 className="w-3 h-3 text-muted group-hover:text-fg transition-colors" />
                   </div>

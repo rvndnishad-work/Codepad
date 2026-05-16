@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { ArrowUpRight, Flame, ArrowRight } from "lucide-react";
 import RelativeTime from "@/components/RelativeTime";
+import RevealOnScroll, { RevealItem } from "@/components/scroll/RevealOnScroll";
 import {
   TemplateCardShell,
   CardTitleRow,
@@ -20,7 +21,7 @@ type Snippet = {
 export default function HomeExplore({ featured }: { featured: Snippet[] }) {
   return (
     <section className="mx-auto max-w-6xl px-4 py-20">
-      <div className="flex items-end justify-between mb-8">
+      <RevealOnScroll className="flex items-end justify-between mb-8">
         <div>
           <div className="inline-flex items-center gap-2 text-[11px] font-black uppercase tracking-widest text-accent mb-2 bg-accent/10 px-3 py-1 rounded-full">
             <Flame className="w-3.5 h-3.5 fill-current" />
@@ -32,16 +33,15 @@ export default function HomeExplore({ featured }: { featured: Snippet[] }) {
           Explore all snippets
           <ArrowUpRight className="w-4 h-4 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
         </Link>
-      </div>
+      </RevealOnScroll>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {featured.map((s) => {
-          return (
-            <TemplateCardShell
-              key={s.id}
-              href={`/play/${s.slug}`}
-              templateId={s.template}
-            >
+      <RevealOnScroll
+        className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"
+        stagger={0.06}
+      >
+        {featured.map((s) => (
+          <RevealItem key={s.id}>
+            <TemplateCardShell href={`/play/${s.slug}`} templateId={s.template}>
               <CardTitleRow>{s.title}</CardTitleRow>
               <div className="flex items-center justify-between gap-2 text-[11px] text-muted">
                 <div className="flex items-center gap-1.5 truncate">
@@ -61,9 +61,9 @@ export default function HomeExplore({ featured }: { featured: Snippet[] }) {
                 </span>
               </div>
             </TemplateCardShell>
-          );
-        })}
-      </div>
+          </RevealItem>
+        ))}
+      </RevealOnScroll>
 
 
     </section>

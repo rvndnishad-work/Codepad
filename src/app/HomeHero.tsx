@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import { Sparkles, Plus, Play, LayoutGrid, ChevronRight } from "lucide-react";
+import { motion, useScroll, useTransform, useReducedMotion } from "framer-motion";
 
 export default function HomeHero({ 
   sessionName, 
@@ -16,6 +17,20 @@ export default function HomeHero({
   const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
   const [isHovered, setIsHovered] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
+  const reducedMotion = useReducedMotion();
+
+  // Scroll-linked parallax: the hero anchors at the top of the page and we
+  // measure progress as the section travels from "filling the viewport" to
+  // "fully scrolled past the top". Title moves least (it's the anchor),
+  // eyebrow and CTAs move more — a subtle 3-layer depth effect.
+  const { scrollYProgress } = useScroll({
+    target: containerRef,
+    offset: ["start start", "end start"],
+  });
+  const titleY = useTransform(scrollYProgress, [0, 1], [0, -40]);
+  const titleOpacity = useTransform(scrollYProgress, [0, 0.7, 1], [1, 0.6, 0.2]);
+  const fastY = useTransform(scrollYProgress, [0, 1], [0, -100]);
+  const fastOpacity = useTransform(scrollYProgress, [0, 0.6, 1], [1, 0.4, 0]);
 
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
@@ -66,26 +81,41 @@ export default function HomeHero({
       
       {/* ── Hero Content ── */}
       <div className="relative z-10 mx-auto max-w-5xl px-4 text-center">
-        {/* Badge */}
-        <div className="inline-flex items-center gap-2 rounded-full border border-border bg-surface/50 px-4 py-2 text-xs font-black text-muted mb-8 tracking-widest uppercase backdrop-blur-md animate-in fade-in slide-in-from-bottom-4 duration-1000">
+        {/* Badge — eyebrow rushes past fastest as you scroll out.
+            Reveal timings: tightened from 1000ms/500ms-delay cascade (1.5s)
+            down to 500ms duration with 80ms staggers (~740ms) so the hero
+            feels present immediately instead of slowly drifting in. */}
+        <motion.div
+          className="inline-flex items-center gap-2 rounded-full border border-border bg-surface/50 px-4 py-2 text-xs font-black text-muted mb-8 tracking-widest uppercase backdrop-blur-md animate-in fade-in slide-in-from-bottom-4 duration-500"
+          style={reducedMotion ? undefined : { y: fastY, opacity: fastOpacity }}
+        >
           <Sparkles className="w-3.5 h-3.5 text-accent" />
           <span>Interviewpad Pro Sandbox</span>
-        </div>
-        
-        {/* Main Headline */}
-        <h1 className="text-5xl md:text-7xl font-black tracking-tight text-fg mb-6 leading-[1.05] animate-in fade-in slide-in-from-bottom-6 duration-1000 delay-150">
+        </motion.div>
+
+        {/* Main Headline — anchor layer, moves least */}
+        <motion.h1
+          className="text-5xl md:text-7xl font-black tracking-tight text-fg mb-6 leading-[1.05] animate-in fade-in slide-in-from-bottom-6 duration-500 delay-[80ms]"
+          style={reducedMotion ? undefined : { y: titleY, opacity: titleOpacity }}
+        >
           Code at the speed <br className="hidden md:block" />
           <span className="text-transparent bg-clip-text bg-gradient-to-br from-accent to-accent-soft">of thought.</span>
-        </h1>
-        
+        </motion.h1>
+
         {/* Subtitle */}
-        <p className="text-muted text-lg md:text-xl mb-10 max-w-2xl mx-auto leading-relaxed animate-in fade-in slide-in-from-bottom-8 duration-1000 delay-300 font-medium">
-          The most powerful browser-based sandbox for JS, TS, and modern frameworks. 
+        <motion.p
+          className="text-muted text-lg md:text-xl mb-10 max-w-2xl mx-auto leading-relaxed animate-in fade-in slide-in-from-bottom-8 duration-500 delay-[160ms] font-medium"
+          style={reducedMotion ? undefined : { y: fastY, opacity: fastOpacity }}
+        >
+          The most powerful browser-based sandbox for JS, TS, and modern frameworks.
           Zero setup. Infinite possibilities.
-        </p>
-        
+        </motion.p>
+
         {/* Call to Actions */}
-        <div className="flex flex-col sm:flex-row items-center justify-center gap-4 animate-in fade-in slide-in-from-bottom-10 duration-1000 delay-500">
+        <motion.div
+          className="flex flex-col sm:flex-row items-center justify-center gap-4 animate-in fade-in slide-in-from-bottom-10 duration-500 delay-[240ms]"
+          style={reducedMotion ? undefined : { y: fastY, opacity: fastOpacity }}
+        >
           {recentSnippet ? (
             <Link
               href={`/play/${recentSnippet.slug}`}
@@ -120,7 +150,7 @@ export default function HomeHero({
               </>
             )}
           </Link>
-        </div>
+        </motion.div>
       </div>
 
       {/* ── Localized Grid "Halo" ── */}

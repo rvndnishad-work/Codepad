@@ -2,7 +2,7 @@ import { auth } from "@/lib/auth";
 import { isAdmin } from "@/lib/admin";
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import { LayoutDashboard, Target, Users, FileText, ArrowLeft, Settings } from "lucide-react";
+import { LayoutDashboard, Target, Users, FileText, ArrowLeft, Settings, Pin, Layers } from "lucide-react";
 
 export const metadata = {
   title: "Admin — Interviewpad",
@@ -41,6 +41,8 @@ export default async function AdminLayout({ children }: { children: React.ReactN
           <aside className="space-y-1">
             <AdminLink href="/admin" icon={LayoutDashboard} label="Dashboard" />
             <AdminLink href="/admin/challenges" icon={Target} label="Challenges" />
+            <AdminLink href="/admin/tracks" icon={Layers} label="Tracks" />
+            <AdminLink href="/admin/snippets" icon={Pin} label="Trends" />
             <AdminLink href="/admin/users" icon={Users} label="Users" />
             <AdminLink href="/admin/blogs" icon={FileText} label="Blogs" />
             <AdminLink href="/admin/settings" icon={Settings} label="Settings" />

@@ -45,6 +45,7 @@
     "@tiptap/starter-kit": "^3.23.1",
     "@typescript/ata": "^0.9.8",
     "bcryptjs": "^3.0.3",
+    "framer-motion": "^12.38.0",
     "highlight.js": "^11.11.1",
     "jszip": "^3.10.1",
     "lowlight": "^3.3.0",

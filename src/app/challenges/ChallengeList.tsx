@@ -73,48 +73,9 @@ export default function ChallengeList({
     });
   }, [items, query, difficulty, selectedTag]);
 
-  const stats = useMemo(() => {
-    const total = items.length;
-    const passed = items.filter((c) => c.userStatus === "passed").length;
-    return { total, passed };
-  }, [items]);
-
   return (
-    <div className="relative min-h-screen">
-      {/* Hero strip */}
-      <div className="relative overflow-hidden border-b border-border">
-        <div className="absolute inset-0 bg-gradient-to-b from-accent/5 to-transparent pointer-events-none" />
-        <div className="relative mx-auto max-w-5xl px-6 py-14">
-          <div className="flex items-center gap-4 mb-4">
-            <div className="w-11 h-11 rounded-2xl bg-accent/10 border border-accent/20 grid place-items-center">
-              <Target className="w-5 h-5 text-accent" />
-            </div>
-            <div>
-              <div className="text-xs font-black tracking-[0.2em] text-muted uppercase mb-0.5">
-                Practice
-              </div>
-              <h1 className="text-3xl font-black tracking-tight text-fg">Challenges</h1>
-            </div>
-            {signedIn && (
-              <div className="ml-auto text-right">
-                <div className="text-2xl font-black text-fg tabular-nums">
-                  {stats.passed}
-                  <span className="text-muted/40 text-base font-bold">/{stats.total}</span>
-                </div>
-                <div className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted">
-                  Solved
-                </div>
-              </div>
-            )}
-          </div>
-          <p className="text-muted text-sm max-w-2xl leading-relaxed">
-            Curated coding problems with hidden tests. Write your solution, run the tests,
-            and submit when you pass. Used to power Interview Sessions.
-          </p>
-        </div>
-      </div>
-
-      <div className="mx-auto max-w-5xl px-6 py-10">
+    <div className="relative">
+      <div className="mx-auto max-w-6xl px-6 py-10">
         {/* Search & Filters */}
         <div className="flex flex-wrap items-center gap-3 mb-6">
           <div className="relative flex-1 min-w-[220px] max-w-md">

@@ -2,9 +2,9 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import HomeHero from "./HomeHero";
 import HomeBento from "./HomeBento";
+import HomeChallenges from "./HomeChallenges";
 import HomeExplore from "./HomeExplore";
 import HomeFinalCTA from "./HomeFinalCTA";
-import TrustLogos from "./TrustLogos";
 import Link from "next/link";
 import { ArrowRight, BookOpen, TrendingUp, Pin, Hash, PenSquare } from "lucide-react";
 import { type BlogFeedEntry } from "@/components/BlogFeedItem";
@@ -41,13 +41,24 @@ export default async function HomePage() {
     };
   }
 
-  // Top public snippets
-  const featuredRows = await prisma.snippet.findMany({
-    where: { visibility: "public" },
-    orderBy: [{ viewCount: "desc" }, { updatedAt: "desc" }],
+  // Top public snippets — admin-pinned ones lead the section; remaining slots
+  // fill by view count so the grid is never empty even when nothing is pinned.
+  const pinnedRows = await prisma.snippet.findMany({
+    where: { visibility: "public", pinned: true },
+    orderBy: { updatedAt: "desc" },
     take: 6,
     include: { user: { select: { name: true, image: true } } },
   });
+  const fillRows =
+    pinnedRows.length < 6
+      ? await prisma.snippet.findMany({
+        where: { visibility: "public", pinned: false },
+        orderBy: [{ viewCount: "desc" }, { updatedAt: "desc" }],
+        take: 6 - pinnedRows.length,
+        include: { user: { select: { name: true, image: true } } },
+      })
+      : [];
+  const featuredRows = [...pinnedRows, ...fillRows];
 
   // Editorial homepage feed: 1 admin-pinned hero, 4 latest cards, 5 popular
   // rows on the sidebar — all three sets deduped so the same story never
@@ -164,18 +175,18 @@ export default async function HomePage() {
 
   return (
     <div className="bg-bg min-h-screen">
-      <HomeHero 
-        sessionName={welcomeData?.name} 
+      <HomeHero
+        sessionName={welcomeData?.name}
         snippetCount={welcomeData?.snippetCount ?? 0}
         recentSnippet={welcomeData?.recent}
       />
-      
+
       <HomeBento />
-      
-      <TrustLogos />
-      
+
       <HomeExplore featured={featured} />
-      
+
+      <HomeChallenges />
+
       {/* Latest Stories — editorial mix:
             - Big hero card (admin-pinned via BlogPost.featured, else freshest)
             - 2x2 grid of recent stories beside / below it
@@ -283,7 +294,7 @@ export default async function HomePage() {
           </div>
         </section>
       )}
-      
+
       <HomeFinalCTA />
     </div>
   );

@@ -4,26 +4,24 @@ import Link from "next/link";
 import { useMemo, useState } from "react";
 import { TemplateLogo } from "@/lib/icons";
 import { templatesById } from "@/lib/templates";
-import { Globe, Lock, ArrowUpRight, Star, Search } from "lucide-react";
+import { Globe, Lock, ArrowUpRight, Star, Trash2, Plus } from "lucide-react";
 import { toast } from "sonner";
 import RelativeTime from "@/components/RelativeTime";
+import WorkspaceToolbar, { type SortKey } from "./WorkspaceToolbar";
+import type { SnippetItem } from "./types";
 
-type Item = {
-  id: string;
-  slug: string;
-  title: string;
-  template: string;
-  updatedAt: string;
-  visibility: "public" | "private";
-  tags: string[];
-  pinned: boolean;
-};
+type VisibilityFilter = "all" | "public" | "private";
+const PAGE_SIZE = 20;
 
-export default function DashboardList({ initial }: { initial: Item[] }) {
-  const [items, setItems] = useState<Item[]>(initial);
+export default function DashboardList({ initial }: { initial: SnippetItem[] }) {
+  const [items, setItems] = useState<SnippetItem[]>(initial);
   const [query, setQuery] = useState("");
   const [tagFilter, setTagFilter] = useState<string | null>(null);
+  const [visFilter, setVisFilter] = useState<VisibilityFilter>("all");
+  const [sort, setSort] = useState<SortKey>("recent");
   const [pinningIds, setPinningIds] = useState<Set<string>>(new Set());
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
 
   const allTags = useMemo(() => {
     const set = new Set<string>();
@@ -33,20 +31,36 @@ export default function DashboardList({ initial }: { initial: Item[] }) {
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
-    return items.filter((i) => {
+    const base = items.filter((i) => {
       if (tagFilter && !i.tags.includes(tagFilter)) return false;
+      if (visFilter === "public" && i.visibility !== "public") return false;
+      if (visFilter === "private" && i.visibility !== "private") return false;
       if (!q) return true;
       return (
         i.title.toLowerCase().includes(q) ||
         i.tags.some((t) => t.toLowerCase().includes(q))
       );
     });
-  }, [items, query, tagFilter]);
+    return [...base].sort((a, b) => {
+      switch (sort) {
+        case "oldest":
+          return a.updatedAt.localeCompare(b.updatedAt);
+        case "title":
+          return a.title.localeCompare(b.title);
+        case "views":
+          return b.viewCount - a.viewCount;
+        case "recent":
+        default:
+          return b.updatedAt.localeCompare(a.updatedAt);
+      }
+    });
+  }, [items, query, tagFilter, visFilter, sort]);
 
   const pinned = filtered.filter((i) => i.pinned);
   const others = filtered.filter((i) => !i.pinned);
+  const othersVisible = others.slice(0, visibleCount);
 
-  async function togglePin(item: Item) {
+  async function togglePin(item: SnippetItem) {
     if (pinningIds.has(item.id)) return;
     const next = !item.pinned;
     setPinningIds((prev) => new Set(prev).add(item.id));
@@ -63,9 +77,7 @@ export default function DashboardList({ initial }: { initial: Item[] }) {
       if (!res.ok) throw new Error(await res.text());
     } catch (err) {
       setItems((prev) =>
-        prev.map((i) =>
-          i.id === item.id ? { ...i, pinned: !next } : i
-        )
+        prev.map((i) => (i.id === item.id ? { ...i, pinned: !next } : i))
       );
       const msg = err instanceof Error ? err.message : String(err);
       toast.error("Couldn't update pin", { description: msg });
@@ -78,11 +90,28 @@ export default function DashboardList({ initial }: { initial: Item[] }) {
     }
   }
 
-  function renderRow(s: Item) {
+  async function handleDelete(item: SnippetItem) {
+    if (deletingId) return;
+    if (!confirm(`Delete "${item.title}"? This can't be undone.`)) return;
+    setDeletingId(item.id);
+    try {
+      const res = await fetch(`/api/snippets/${item.id}`, { method: "DELETE", cache: "no-store" });
+      if (!res.ok) throw new Error((await res.text()) || `HTTP ${res.status}`);
+      setItems((prev) => prev.filter((i) => i.id !== item.id));
+      toast.success("Snippet deleted");
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      toast.error("Delete failed", { description: msg });
+    } finally {
+      setDeletingId(null);
+    }
+  }
+
+  function renderRow(s: SnippetItem) {
     const tpl = templatesById[s.template];
     return (
       <li key={s.id} className="group">
-        <div className="flex items-center gap-4 rounded-xl border border-border bg-panel/70 hover:bg-elevated px-4 py-3 transition">
+        <div className="flex items-center gap-3 rounded-xl border border-border bg-panel/70 hover:bg-elevated px-4 py-3 transition">
           <button
             onClick={() => togglePin(s)}
             disabled={pinningIds.has(s.id)}
@@ -93,10 +122,7 @@ export default function DashboardList({ initial }: { initial: Item[] }) {
                 : "text-muted opacity-0 group-hover:opacity-100 hover:text-amber-400"
             }`}
           >
-            <Star
-              className="w-4 h-4"
-              fill={s.pinned ? "currentColor" : "none"}
-            />
+            <Star className="w-4 h-4" fill={s.pinned ? "currentColor" : "none"} />
           </button>
           <Link
             href={`/play/${s.slug}`}
@@ -132,81 +158,120 @@ export default function DashboardList({ initial }: { initial: Item[] }) {
                 ))}
               </div>
               <div className="text-xs text-muted mt-0.5">
-                {tpl?.title ?? s.template} · updated{" "}
+                {tpl?.title ?? s.template} · {s.viewCount} {s.viewCount === 1 ? "view" : "views"} · updated{" "}
                 <RelativeTime iso={s.updatedAt} />
               </div>
             </div>
             <ArrowUpRight className="w-4 h-4 text-muted group-hover:text-fg transition shrink-0" />
           </Link>
+          <button
+            onClick={() => handleDelete(s)}
+            disabled={deletingId === s.id}
+            className="shrink-0 p-1.5 rounded text-muted opacity-0 group-hover:opacity-100 hover:text-red-400 transition disabled:opacity-40"
+            title="Delete snippet"
+          >
+            <Trash2 className="w-4 h-4" />
+          </button>
         </div>
       </li>
     );
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center gap-3 flex-wrap">
-        <div className="relative flex-1 min-w-[220px]">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted" />
-          <input
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search by title or tag…"
-            className="w-full pl-8 pr-3 py-2 rounded-lg bg-panel border border-border focus:border-accent/60 text-sm outline-none placeholder:text-muted"
-          />
-        </div>
-        {allTags.length > 0 && (
-          <div className="flex items-center gap-1.5 flex-wrap">
+    <div className="space-y-5">
+      <WorkspaceToolbar
+        query={query}
+        onQuery={(v) => {
+          setQuery(v);
+          setVisibleCount(PAGE_SIZE);
+        }}
+        status={
+          visFilter === "all" ? "all" : visFilter === "public" ? "published" : "draft"
+        }
+        onStatus={(v) => {
+          setVisFilter(v === "all" ? "all" : v === "published" ? "public" : "private");
+          setVisibleCount(PAGE_SIZE);
+        }}
+        sort={sort}
+        onSort={setSort}
+        placeholder="Search snippets by title or tag…"
+        statusLabels={{ published: "Public", draft: "Private" }}
+      />
+
+      {allTags.length > 0 && (
+        <div className="flex items-center gap-1.5 flex-wrap">
+          <button
+            onClick={() => setTagFilter(null)}
+            className={`px-2 py-1 rounded-full text-[11px] border transition ${
+              !tagFilter
+                ? "bg-accent text-bg border-accent"
+                : "bg-panel border-border text-subtle hover:text-fg"
+            }`}
+          >
+            All tags
+          </button>
+          {allTags.map((t) => (
             <button
-              onClick={() => setTagFilter(null)}
+              key={t}
+              onClick={() => setTagFilter(t === tagFilter ? null : t)}
               className={`px-2 py-1 rounded-full text-[11px] border transition ${
-                !tagFilter
-                  ? "bg-accent text-white border-accent"
+                t === tagFilter
+                  ? "bg-accent text-bg border-accent"
                   : "bg-panel border-border text-subtle hover:text-fg"
               }`}
             >
-              All
+              #{t}
             </button>
-            {allTags.map((t) => (
-              <button
-                key={t}
-                onClick={() => setTagFilter(t === tagFilter ? null : t)}
-                className={`px-2 py-1 rounded-full text-[11px] border transition ${
-                  t === tagFilter
-                    ? "bg-accent text-white border-accent"
-                    : "bg-panel border-border text-subtle hover:text-fg"
-                }`}
-              >
-                #{t}
-              </button>
-            ))}
-          </div>
-        )}
-      </div>
+          ))}
+        </div>
+      )}
 
       {pinned.length > 0 && (
         <section>
-          <h2 className="text-[10px] font-semibold uppercase tracking-wide text-muted mb-2">
+          <h3 className="text-[10px] font-semibold uppercase tracking-wide text-muted mb-2">
             Pinned
-          </h2>
+          </h3>
           <ul className="grid gap-2">{pinned.map(renderRow)}</ul>
         </section>
       )}
 
-      {others.length > 0 && (
+      {othersVisible.length > 0 && (
         <section>
           {pinned.length > 0 && (
-            <h2 className="text-[10px] font-semibold uppercase tracking-wide text-muted mb-2">
+            <h3 className="text-[10px] font-semibold uppercase tracking-wide text-muted mb-2">
               All snippets
-            </h2>
+            </h3>
           )}
-          <ul className="grid gap-2">{others.map(renderRow)}</ul>
+          <ul className="grid gap-2">{othersVisible.map(renderRow)}</ul>
         </section>
       )}
 
-      {filtered.length === 0 && (
+      {others.length > othersVisible.length && (
+        <div className="flex justify-center">
+          <button
+            onClick={() => setVisibleCount((c) => c + PAGE_SIZE)}
+            className="px-4 py-2 rounded-lg bg-panel border border-border text-sm text-fg hover:bg-elevated transition"
+          >
+            Show more ({others.length - othersVisible.length} hidden)
+          </button>
+        </div>
+      )}
+
+      {filtered.length === 0 && items.length > 0 && (
         <div className="rounded-xl border border-border bg-panel/60 p-8 text-center text-sm text-muted">
           No snippets match your filter.
+        </div>
+      )}
+
+      {items.length === 0 && (
+        <div className="rounded-xl border border-dashed border-border p-10 text-center text-sm text-muted flex flex-col items-center gap-3">
+          <span>You haven't saved any snippets yet.</span>
+          <Link
+            href="/"
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-accent text-bg text-xs font-semibold hover:opacity-90 transition"
+          >
+            <Plus className="w-3.5 h-3.5" /> New Snippet
+          </Link>
         </div>
       )}
     </div>

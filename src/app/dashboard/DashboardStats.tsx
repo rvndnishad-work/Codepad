@@ -1,6 +1,6 @@
 "use client";
 
-import { Box, Eye, Globe, Lock, Star, TrendingUp } from "lucide-react";
+import { Box, Eye, Globe, Lock, Star, Newspaper, Trophy } from "lucide-react";
 
 type StatsProps = {
   total: number;
@@ -8,59 +8,41 @@ type StatsProps = {
   privateCount: number;
   totalViews: number;
   pinnedCount: number;
+  blogsCount: number;
+  challengesCount: number;
 };
 
 export default function DashboardStats({ stats }: { stats: StatsProps }) {
+  const items: { icon: typeof Box; label: string; value: number | string; hint?: string }[] = [
+    { icon: Box, label: "Snippets", value: stats.total, hint: `${stats.publicCount} public · ${stats.privateCount} private` },
+    { icon: Newspaper, label: "Blogs", value: stats.blogsCount },
+    { icon: Trophy, label: "Challenges", value: stats.challengesCount },
+    { icon: Eye, label: "Total views", value: stats.totalViews },
+    { icon: Star, label: "Pinned", value: stats.pinnedCount },
+  ];
+
   return (
-    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-      {/* Total Card */}
-      <div className="col-span-2 rounded-3xl border border-border bg-panel p-6 flex flex-col justify-between overflow-hidden relative group">
-        <div className="absolute top-0 right-0 p-8 opacity-[0.03] transition-transform group-hover:scale-125">
-          <Box className="w-32 h-32" />
-        </div>
-        <div>
-          <h3 className="text-muted text-sm font-medium flex items-center gap-2 mb-1">
-            <Box className="w-4 h-4 text-accent" />
-            Total Snippets
-          </h3>
-          <div className="text-4xl font-bold tracking-tight text-fg">{stats.total}</div>
-        </div>
-        <div className="mt-4 flex gap-4">
-          <div className="flex items-center gap-1.5 text-xs text-subtle">
-            <div className="w-1.5 h-1.5 rounded-full bg-accent" />
-            {stats.publicCount} Public
+    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 mb-6">
+      {items.map((item, i) => {
+        const Icon = item.icon;
+        return (
+          <div
+            key={i}
+            className="flex items-center gap-3 px-4 py-3 rounded-2xl border border-border bg-panel"
+          >
+            <div className="w-9 h-9 rounded-xl bg-surface border border-border grid place-items-center shrink-0">
+              <Icon className="w-4 h-4 text-accent" />
+            </div>
+            <div className="min-w-0">
+              <div className="text-lg font-bold tabular-nums text-fg leading-none">{item.value}</div>
+              <div className="text-[11px] text-muted mt-1 truncate">{item.label}</div>
+              {item.hint && (
+                <div className="text-[10px] text-muted/60 mt-0.5 truncate">{item.hint}</div>
+              )}
+            </div>
           </div>
-          <div className="flex items-center gap-1.5 text-xs text-subtle">
-            <div className="w-1.5 h-1.5 rounded-full bg-border" />
-            {stats.privateCount} Private
-          </div>
-        </div>
-      </div>
-
-      {/* Views Card */}
-      <div className="rounded-3xl border border-border bg-panel p-6 flex flex-col justify-between group">
-        <div className="w-10 h-10 rounded-xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center mb-4 transition-colors group-hover:bg-blue-500/20">
-          <Eye className="w-5 h-5 text-blue-400" />
-        </div>
-        <div>
-          <div className="text-2xl font-bold text-fg">{stats.totalViews}</div>
-          <div className="text-xs text-muted font-medium flex items-center gap-1">
-            Total Views
-            <TrendingUp className="w-3 h-3 text-green-400" />
-          </div>
-        </div>
-      </div>
-
-      {/* Pinned Card */}
-      <div className="rounded-3xl border border-border bg-panel p-6 flex flex-col justify-between group">
-        <div className="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center mb-4 transition-colors group-hover:bg-amber-500/20">
-          <Star className="w-5 h-5 text-amber-400" />
-        </div>
-        <div>
-          <div className="text-2xl font-bold text-fg">{stats.pinnedCount}</div>
-          <div className="text-xs text-muted font-medium">Favorite Snippets</div>
-        </div>
-      </div>
+        );
+      })}
     </div>
   );
 }

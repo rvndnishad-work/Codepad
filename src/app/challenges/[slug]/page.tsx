@@ -28,12 +28,39 @@ export async function generateMetadata({ params }: Props) {
   const { slug } = await params;
   const challenge = await prisma.challenge.findUnique({
     where: { slug },
-    select: { title: true, difficulty: true },
+    select: {
+      title: true,
+      difficulty: true,
+      description: true,
+      published: true,
+      visibility: true,
+    },
   });
   if (!challenge) return { title: "Challenge not found — Interviewpad" };
+  const indexable = challenge.published && challenge.visibility === "public";
+  const description =
+    challenge.description?.slice(0, 160).trim() ||
+    `Solve the "${challenge.title}" coding challenge (${challenge.difficulty}).`;
+  const title = `${challenge.title} — Interviewpad Challenges`;
+  const canonical = `/challenges/${slug}`;
   return {
-    title: `${challenge.title} — Interviewpad Challenges`,
-    description: `Solve the "${challenge.title}" coding challenge (${challenge.difficulty}).`,
+    title,
+    description,
+    alternates: { canonical },
+    robots: indexable
+      ? { index: true, follow: true }
+      : { index: false, follow: false },
+    openGraph: {
+      type: "article",
+      title,
+      description,
+      url: canonical,
+    },
+    twitter: {
+      card: "summary",
+      title,
+      description,
+    },
   };
 }
 
@@ -178,8 +205,33 @@ export default async function ChallengeDetailPage({ params, searchParams }: Prop
   const startStep = nextUnpassedStep < 0 ? 0 : nextUnpassedStep;
   const totalMinutes = challenge.steps.reduce((s, st) => s + st.estimatedMinutes, 0);
 
+  const siteUrl =
+    process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
+  const challengeJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "LearningResource",
+    name: challenge.title,
+    description:
+      challenge.description?.slice(0, 200).trim() ||
+      `Solve the "${challenge.title}" coding challenge.`,
+    url: `${siteUrl}/challenges/${challenge.slug}`,
+    educationalLevel: challenge.difficulty,
+    learningResourceType: isMulti ? "Multi-step coding exercise" : "Coding exercise",
+    timeRequired: `PT${totalMinutes}M`,
+    inLanguage: "en",
+    provider: {
+      "@type": "Organization",
+      name: "Interviewpad",
+      url: siteUrl,
+    },
+  };
+
   return (
     <div className="mx-auto max-w-4xl px-6 py-10">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(challengeJsonLd) }}
+      />
       {/* Back link */}
       <Link
         href="/challenges"

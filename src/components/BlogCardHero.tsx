@@ -1,4 +1,5 @@
 import Link from "next/link";
+import SafeImage from "./SafeImage";
 import { User, BookOpen, Eye } from "lucide-react";
 import RelativeTime from "./RelativeTime";
 import type { BlogFeedEntry } from "./BlogFeedItem";
@@ -16,12 +17,14 @@ export default function BlogCardHero({ blog }: { blog: BlogFeedEntry }) {
     >
       {blog.coverImage ? (
         <div className="relative aspect-[16/10] md:aspect-auto md:h-full overflow-hidden bg-panel">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
+          <SafeImage
             src={blog.coverImage}
             alt=""
-            className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-[1.03]"
-            loading="lazy"
+            fill
+            sizes="(min-width: 768px) 50vw, 100vw"
+            priority
+            className="object-cover transition-transform duration-700 group-hover:scale-[1.03]"
+            unoptimized={blog.coverImage.startsWith("data:")}
           />
           <span className="absolute top-3 left-3 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-bg/80 backdrop-blur border border-border text-[9px] font-black uppercase tracking-[0.18em] text-accent">
             Featured
@@ -61,10 +64,16 @@ export default function BlogCardHero({ blog }: { blog: BlogFeedEntry }) {
 
         <div className="flex items-center gap-3 mt-2 text-[11px] font-bold">
           <span className="flex items-center gap-1.5">
-            <span className="w-5 h-5 rounded-full bg-bg overflow-hidden border border-border shrink-0">
+            <span className="relative w-5 h-5 rounded-full bg-bg overflow-hidden border border-border shrink-0">
               {blog.user.image ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img src={blog.user.image} alt="" className="w-full h-full object-cover" />
+                <SafeImage
+                  src={blog.user.image}
+                  alt=""
+                  fill
+                  sizes="20px"
+                  className="object-cover"
+                  unoptimized={blog.user.image.startsWith("data:")}
+                />
               ) : (
                 <span className="w-full h-full bg-accent/10 flex items-center justify-center">
                   <User className="w-2.5 h-2.5 text-accent" />

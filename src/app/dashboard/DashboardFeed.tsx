@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import SafeImage from "@/components/SafeImage";
 import { TemplateLogo } from "@/lib/icons";
 import { Users, Flame, ArrowUpRight, Clock, Eye } from "lucide-react";
 import RelativeTime from "@/components/RelativeTime";
@@ -95,9 +96,16 @@ export default function DashboardFeed({
               </h4>
               
               <div className="flex items-center gap-2 mt-auto pt-4 border-t border-border/30">
-                <div className="w-5 h-5 rounded-full bg-surface overflow-hidden">
+                <div className="relative w-5 h-5 rounded-full bg-surface overflow-hidden">
                   {item.userImage ? (
-                    <img src={item.userImage} alt="" className="w-full h-full object-cover" />
+                    <SafeImage
+                      src={item.userImage}
+                      alt=""
+                      fill
+                      sizes="20px"
+                      className="object-cover"
+                      unoptimized={item.userImage.startsWith("data:")}
+                    />
                   ) : (
                     <div className="w-full h-full bg-accent/20 flex items-center justify-center text-[10px]">
                       {item.userName?.[0] ?? "?"}

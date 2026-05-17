@@ -1,4 +1,5 @@
 import Link from "next/link";
+import SafeImage from "./SafeImage";
 import { ArrowRight, BookOpen } from "lucide-react";
 import RelativeTime from "./RelativeTime";
 
@@ -44,13 +45,14 @@ export default function RelatedPosts({ posts }: { posts: RelatedPost[] }) {
             className="group rounded-2xl border border-border bg-surface hover:bg-elevated hover:border-border-strong transition-all overflow-hidden"
           >
             {p.coverImage ? (
-              <div className="aspect-[16/9] overflow-hidden border-b border-border">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
+              <div className="relative aspect-[16/9] overflow-hidden border-b border-border">
+                <SafeImage
                   src={p.coverImage}
                   alt=""
-                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                  loading="lazy"
+                  fill
+                  sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
+                  className="object-cover group-hover:scale-105 transition-transform duration-500"
+                  unoptimized={p.coverImage.startsWith("data:")}
                 />
               </div>
             ) : (

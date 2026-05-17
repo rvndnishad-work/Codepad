@@ -1,4 +1,5 @@
 import Link from "next/link";
+import SafeImage from "./SafeImage";
 import { User, MessageCircle, Eye, BookOpen, Heart } from "lucide-react";
 import RelativeTime from "./RelativeTime";
 
@@ -30,10 +31,16 @@ export default function BlogFeedItem({ blog }: { blog: BlogFeedEntry }) {
       <div className="flex-1 min-w-0 flex flex-col gap-2">
         {/* Author + date */}
         <div className="flex items-center gap-2.5 text-[11px]">
-          <div className="w-5 h-5 rounded-full bg-surface overflow-hidden border border-border shrink-0">
+          <div className="relative w-5 h-5 rounded-full bg-surface overflow-hidden border border-border shrink-0">
             {blog.user.image ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={blog.user.image} alt="" className="w-full h-full object-cover" />
+              <SafeImage
+                src={blog.user.image}
+                alt=""
+                fill
+                sizes="20px"
+                className="object-cover"
+                unoptimized={blog.user.image.startsWith("data:")}
+              />
             ) : (
               <div className="w-full h-full bg-accent/10 flex items-center justify-center">
                 <User className="w-2.5 h-2.5 text-accent" />
@@ -104,13 +111,14 @@ export default function BlogFeedItem({ blog }: { blog: BlogFeedEntry }) {
       {/* Right: thumbnail (only if cover exists) */}
       {blog.coverImage && (
         <div className="shrink-0 hidden sm:block">
-          <div className="w-32 h-24 md:w-40 md:h-28 rounded-xl overflow-hidden border border-border bg-panel">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
+          <div className="relative w-32 h-24 md:w-40 md:h-28 rounded-xl overflow-hidden border border-border bg-panel">
+            <SafeImage
               src={blog.coverImage}
               alt=""
-              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-              loading="lazy"
+              fill
+              sizes="(min-width: 768px) 160px, 128px"
+              className="object-cover group-hover:scale-105 transition-transform duration-500"
+              unoptimized={blog.coverImage.startsWith("data:")}
             />
           </div>
         </div>

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import SafeImage from "./SafeImage";
 import { BookOpen, Eye } from "lucide-react";
 import RelativeTime from "./RelativeTime";
 import type { BlogFeedEntry } from "./BlogFeedItem";
@@ -14,14 +15,15 @@ export default function BlogRowCompact({ blog }: { blog: BlogFeedEntry }) {
       href={`/blog/${blog.slug}`}
       className="group flex items-center gap-4 py-3 border-b border-border last:border-b-0 hover:bg-bg/40 -mx-2 px-2 rounded-lg transition-colors"
     >
-      <div className="w-14 h-14 rounded-lg bg-panel border border-border overflow-hidden shrink-0">
+      <div className="relative w-14 h-14 rounded-lg bg-panel border border-border overflow-hidden shrink-0">
         {blog.coverImage ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
+          <SafeImage
             src={blog.coverImage}
             alt=""
-            className="w-full h-full object-cover"
-            loading="lazy"
+            fill
+            sizes="56px"
+            className="object-cover"
+            unoptimized={blog.coverImage.startsWith("data:")}
           />
         ) : (
           <div className="w-full h-full bg-gradient-to-br from-accent/15 to-accent/0 flex items-center justify-center">

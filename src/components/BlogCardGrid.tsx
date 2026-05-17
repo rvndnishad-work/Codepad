@@ -1,4 +1,5 @@
 import Link from "next/link";
+import SafeImage from "./SafeImage";
 import { User, BookOpen } from "lucide-react";
 import RelativeTime from "./RelativeTime";
 import type { BlogFeedEntry } from "./BlogFeedItem";
@@ -15,12 +16,13 @@ export default function BlogCardGrid({ blog }: { blog: BlogFeedEntry }) {
     >
       <div className="aspect-[16/9] bg-panel relative overflow-hidden">
         {blog.coverImage ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
+          <SafeImage
             src={blog.coverImage}
             alt=""
-            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-[1.04]"
-            loading="lazy"
+            fill
+            sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
+            className="object-cover transition-transform duration-500 group-hover:scale-[1.04]"
+            unoptimized={blog.coverImage.startsWith("data:")}
           />
         ) : (
           <div className="w-full h-full bg-gradient-to-br from-accent/15 via-accent/5 to-transparent flex items-center justify-center">
@@ -56,10 +58,16 @@ export default function BlogCardGrid({ blog }: { blog: BlogFeedEntry }) {
         )}
 
         <div className="mt-auto pt-3 flex items-center gap-2 text-[10px] font-bold border-t border-border">
-          <span className="w-4 h-4 rounded-full bg-bg overflow-hidden border border-border shrink-0">
+          <span className="relative w-4 h-4 rounded-full bg-bg overflow-hidden border border-border shrink-0">
             {blog.user.image ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={blog.user.image} alt="" className="w-full h-full object-cover" />
+              <SafeImage
+                src={blog.user.image}
+                alt=""
+                fill
+                sizes="16px"
+                className="object-cover"
+                unoptimized={blog.user.image.startsWith("data:")}
+              />
             ) : (
               <span className="w-full h-full bg-accent/10 flex items-center justify-center">
                 <User className="w-2 h-2 text-accent" />

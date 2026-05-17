@@ -85,7 +85,7 @@ export default function AdminBlogModerationModal({ blog, onClose }: AdminBlogMod
           <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
           <div
             onClick={(e) => e.stopPropagation()}
-            className="relative w-full max-w-lg rounded-2xl border border-border bg-panel/95 backdrop-blur shadow-soft overflow-hidden"
+            className="relative w-full max-w-lg rounded-2xl border border-border bg-panel shadow-soft overflow-hidden"
           >
             <div className="flex items-center justify-between px-6 py-4 border-b border-border">
               <div className="flex items-center gap-2">

@@ -9,7 +9,7 @@ import { NavLinkConfig } from "@/lib/settings-constants";
 
 const ICON_MAP: Record<string, any> = {
   "/": Home,
-  "/templates": Box,
+  "/playgrounds": Box,
   "/challenges": Target,
   "/blog": BookOpen,
   "/explore": Compass,

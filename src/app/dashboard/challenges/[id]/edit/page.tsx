@@ -1,21 +1,34 @@
+import { notFound, redirect } from "next/navigation";
+import { auth } from "@/lib/auth";
+import { isAdmin } from "@/lib/admin";
 import { prisma } from "@/lib/prisma";
-import { notFound } from "next/navigation";
-import ChallengeForm from "../../ChallengeForm";
+import ChallengeForm from "@/app/admin/challenges/ChallengeForm";
 import {
   blankStep,
   type ChallengeFormInput,
   type ChallengeStepInput,
-} from "../../challenge-form-types";
+} from "@/app/admin/challenges/challenge-form-types";
 
-type Props = { params: Promise<{ id: string }> };
+type Params = { params: Promise<{ id: string }> };
 
-export default async function EditChallengePage({ params }: Props) {
+export default async function EditUserChallengePage({ params }: Params) {
   const { id } = await params;
+  const session = await auth().catch(() => null);
+  const userId = session?.user?.id;
+  if (!userId) redirect(`/login?next=/dashboard/challenges/${id}/edit`);
+
   const challenge = await prisma.challenge.findUnique({
     where: { id },
     include: { steps: { orderBy: { position: "asc" } } },
   });
   if (!challenge) notFound();
+
+  // Ownership check — author or admin only. Admins should normally edit at
+  // /admin/challenges/[id]/edit, but allowing the dashboard path too means
+  // a moderator can deep-link from a user report later.
+  if (challenge.authorId !== userId && !isAdmin(session)) {
+    notFound();
+  }
 
   let tags: string[] = [];
   try {
@@ -27,9 +40,6 @@ export default async function EditChallengePage({ params }: Props) {
     tags = [];
   }
 
-  // After Stage 1 backfill every Challenge has at least one step. If a row
-  // pre-dates the migration script for any reason, synthesize a step from
-  // the legacy columns so the form never opens empty.
   const steps: ChallengeStepInput[] =
     challenge.steps.length > 0
       ? challenge.steps.map((s) => ({
@@ -69,16 +79,18 @@ export default async function EditChallengePage({ params }: Props) {
   };
 
   return (
-    <ChallengeForm
-      mode="edit"
-      initial={initial}
-      surface={{
-        redirectTo: "/admin/challenges",
-        createEndpoint: "/api/admin/challenges",
-        itemEndpoint: `/api/admin/challenges/${challenge.id}`,
-        isAdmin: true,
-      }}
-    />
+    <div className="mx-auto max-w-6xl px-6 py-10">
+      <ChallengeForm
+        mode="edit"
+        initial={initial}
+        surface={{
+          redirectTo: "/dashboard",
+          createEndpoint: "/api/challenges",
+          itemEndpoint: `/api/challenges/${challenge.slug}`,
+          isAdmin: false,
+        }}
+      />
+    </div>
   );
 }
 

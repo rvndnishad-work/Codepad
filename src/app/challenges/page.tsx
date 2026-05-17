@@ -2,7 +2,8 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import ChallengeList, { type ChallengeListItem } from "./ChallengeList";
 import ChallengesHero, { type ChallengesHeroStats } from "./ChallengesHero";
-import TracksSection from "./TracksSection";
+import ContinueStrip from "./ContinueStrip";
+import FeaturedShelf from "./FeaturedShelf";
 
 import { validatePageAccess } from "@/lib/settings";
 
@@ -18,8 +19,17 @@ export default async function ChallengesPage() {
   const userId = session?.user?.id;
 
   const rows = await prisma.challenge.findMany({
-    where: { published: true },
-    orderBy: [{ difficulty: "asc" }, { createdAt: "asc" }],
+    // Only public+published challenges show up in discovery. Private ones
+    // stay unlisted regardless of who's browsing — the magic-link / email
+    // match is what grants visibility.
+    where: { published: true, visibility: "public" },
+    // Featured first, then easier challenges, then newest — keeps the grid
+    // welcoming for first-time visitors while still rewarding curation.
+    orderBy: [
+      { featured: "desc" },
+      { difficulty: "asc" },
+      { createdAt: "asc" },
+    ],
     select: {
       id: true,
       slug: true,
@@ -28,6 +38,8 @@ export default async function ChallengesPage() {
       tags: true,
       category: true,
       estimatedMinutes: true,
+      featured: true,
+      _count: { select: { steps: true } },
     },
   });
 
@@ -58,6 +70,8 @@ export default async function ChallengesPage() {
     tags: parseTags(c.tags),
     category: c.category,
     estimatedMinutes: c.estimatedMinutes,
+    stepCount: c._count.steps,
+    featured: c.featured,
     userStatus: attemptsByChallenge[c.id] ?? null,
   }));
 
@@ -81,7 +95,8 @@ export default async function ChallengesPage() {
   return (
     <>
       <ChallengesHero stats={heroStats} />
-      <TracksSection userId={userId ?? null} />
+      <ContinueStrip userId={userId ?? null} />
+      <FeaturedShelf />
       <ChallengeList items={items} signedIn={!!userId} />
     </>
   );

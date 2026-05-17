@@ -28,14 +28,11 @@ model User {
   interviewSessions InterviewSession[]
   /// Challenges the user has authored. null author = admin/curated.
   authoredChallenges Challenge[]      @relation("AuthoredChallenges")
-  /// Tracks the user has authored. null author = admin/curated.
-  authoredTracks    ChallengeTrack[]
-  /// User's enrollment rows — one per track they've started/stashed/completed.
-  trackEnrollments  ChallengeTrackEnrollment[]
-  /// Invitations this user has received (matched by email at acceptance).
-  trackInvitations  TrackInvitation[] @relation("InvitedUser")
-  /// Invitations this user has sent (as a track author).
-  sentTrackInvites  TrackInvitation[] @relation("InvitedBy")
+  /// Enrollments + invitations on the unified Challenge model. Replaces the
+  /// retired Track equivalents (dropped in Stage 3 cleanup).
+  challengeEnrollments  ChallengeEnrollment[]
+  challengeInvitations  ChallengeInvitation[] @relation("ChallengeInvitedUser")
+  sentChallengeInvites  ChallengeInvitation[] @relation("ChallengeInvitedBy")
   followers     Follow[]            @relation("following")
   following     Follow[]            @relation("follower")
   blogs         BlogPost[]
@@ -140,6 +137,9 @@ model Challenge {
   /// same field on ChallengeTrack (Track is being folded into Challenge in
   /// Stage 2 — keeping the names aligned so the migration is mechanical).
   visibility      String             @default("public")
+  /// Staff-pick flag — surfaces a star badge on /challenges and bumps the
+  /// challenge to the top of the grid. Admin-only.
+  featured        Boolean            @default(false)
   /// Single null author = admin/curated; non-null = user-authored.
   authorId        String?
   author          User?              @relation("AuthoredChallenges", fields: [authorId], references: [id], onDelete: SetNull)
@@ -148,14 +148,12 @@ model Challenge {
   /// step (auto-created during the Stage 1 backfill). Multi-step challenges
   /// (formerly Tracks) have N steps that the participant walks through.
   steps           ChallengeStep[]
-  /// Join rows linking this challenge to any tracks that include it.
-  /// Kept during Stage 1 for backward compat — dropped in Stage 2 when
-  /// Tracks fold into Challenges.
-  trackItems      ChallengeTrackItem[]
+  enrollments     ChallengeEnrollment[]
+  invitations     ChallengeInvitation[]
   createdAt       DateTime           @default(now())
   updatedAt       DateTime           @updatedAt
 
-  @@index([published, difficulty])
+  @@index([published, featured, difficulty])
   @@index([authorId])
 }
 
@@ -197,123 +195,52 @@ model ChallengeStep {
   @@index([challengeId, position])
 }
 
-/// A curated, ordered group of challenges. "JavaScript Series", "React Kata",
-/// etc. Layers on top of Challenge — adding a track is purely additive, no
-/// existing challenge data needs to change.
-model ChallengeTrack {
-  id          String   @id @default(cuid())
-  slug        String   @unique
-  title       String
-  /// Markdown description shown on /tracks/[slug].
-  description String
-  /// One-line tagline shown on card grids.
-  tagline     String?
-  coverImage  String?
-  /// One of: "javascript" | "typescript" | "react" | "vue" | "node" |
-  /// "algorithms" | "general". Drives the tech-filter chips on /challenges.
-  tech        String   @default("general")
-  /// JSON-encoded string[] for additional free-form tags.
-  tags        String?
-  /// "easy" | "medium" | "hard" | "mixed". Author-set, not derived.
-  difficulty  String   @default("mixed")
-  published   Boolean  @default(false)
-  /// "public" | "private". Only meaningful when published=true:
-  ///   public  → listed on /challenges, anyone can view + enroll
-  ///   private → unlisted, viewable only by author/admin or a holder of a
-  ///             matching TrackInvitation token (magic-link share).
-  visibility  String   @default("public")
-  /// Staff-pick flag for the Featured row on /challenges.
-  featured    Boolean  @default(false)
-  /// Null author = admin/curated; non-null = user-authored (v2+ feature).
-  authorId    String?
-  author      User?    @relation(fields: [authorId], references: [id], onDelete: SetNull)
-  items       ChallengeTrackItem[]
-  enrollments ChallengeTrackEnrollment[]
-  invitations TrackInvitation[]
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+/// Stage 2 unified enrollment — replaces ChallengeTrackEnrollment once
+/// Tracks are folded into Challenges. Same shape, same status state machine.
+model ChallengeEnrollment {
+  id            String    @id @default(cuid())
+  userId        String
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  challengeId   String
+  challenge     Challenge @relation(fields: [challengeId], references: [id], onDelete: Cascade)
+  /// "active" | "stashed" | "completed" | "abandoned"
+  status        String    @default("active")
+  startedAt     DateTime  @default(now())
+  lastVisitedAt DateTime  @default(now())
+  completedAt   DateTime?
 
-  @@index([published, visibility, featured])
-  @@index([tech, published])
-  @@index([authorId])
+  @@unique([userId, challengeId])
+  @@index([userId, status])
+  @@index([challengeId])
 }
 
-/// Ordered join between a track and the challenges it contains. Explicit join
-/// model (rather than implicit many-to-many) because we need `position` for
-/// ordering and likely a per-item `note` later.
-model ChallengeTrackItem {
-  id          String         @id @default(cuid())
-  trackId     String
-  track       ChallengeTrack @relation(fields: [trackId], references: [id], onDelete: Cascade)
-  challengeId String
-  challenge   Challenge      @relation(fields: [challengeId], references: [id], onDelete: Cascade)
-  position    Int
-  /// Short author commentary shown on the track detail page
-  /// ("Try without a hashmap first").
-  note        String?
-  /// Optional walkthrough / explainer URL. YouTube / Vimeo / Loom get
-  /// auto-embedded on the challenge attempt page; other URLs become a link.
-  videoUrl    String?
-  /// Optional longer hint surfaced on the challenge attempt page behind a
-  /// "Show hint" toggle so participants only see it on demand.
-  hint        String?
-
-  @@unique([trackId, challengeId])
-  @@index([trackId, position])
-}
-
-/// Magic-link invitation that grants access to a private track. The author
-/// generates one row per email; the row carries an opaque `token` used as a
-/// shareable link (the author copies/emails/WhatsApps it themselves — we
-/// don't send mail). On click, the token is validated server-side and (if
-/// the visitor is signed in) the userId is linked so future visits without
-/// the token still resolve.
-///
+/// Stage 2 unified invitation — replaces TrackInvitation. Same magic-link
+/// model: opaque token, email-keyed, status state machine.
 /// status: "pending" | "accepted" | "revoked"
-model TrackInvitation {
-  id          String         @id @default(cuid())
-  trackId     String
-  track       ChallengeTrack @relation(fields: [trackId], references: [id], onDelete: Cascade)
-  /// Lowercased, trimmed email. Canonical identifier for the invitee.
+model ChallengeInvitation {
+  id          String     @id @default(cuid())
+  challengeId String
+  challenge   Challenge  @relation(fields: [challengeId], references: [id], onDelete: Cascade)
   email       String
-  /// Linked when an invitee with a matching email signs in, or when any
-  /// signed-in visitor opens the magic-link. Useful for "who accepted" UX.
   userId      String?
-  user        User?          @relation("InvitedUser", fields: [userId], references: [id], onDelete: SetNull)
-  /// Random opaque string used as the magic-link token.
-  token       String         @unique
+  user        User?      @relation("ChallengeInvitedUser", fields: [userId], references: [id], onDelete: SetNull)
+  token       String     @unique
   invitedById String?
-  invitedBy   User?          @relation("InvitedBy", fields: [invitedById], references: [id], onDelete: SetNull)
-  status      String         @default("pending")
+  invitedBy   User?      @relation("ChallengeInvitedBy", fields: [invitedById], references: [id], onDelete: SetNull)
+  status      String     @default("pending")
   acceptedAt  DateTime?
-  createdAt   DateTime       @default(now())
+  createdAt   DateTime   @default(now())
 
-  @@unique([trackId, email])
+  @@unique([challengeId, email])
   @@index([email])
   @@index([userId])
-  @@index([trackId, status])
+  @@index([challengeId, status])
 }
 
 /// A user's relationship to a track. One row per (user, track); state machine
 /// driven by user actions. Track progress is computed from ChallengeAttempt
 /// rows — we don't denormalise the "solved count" to avoid drift.
 /// status: "active" | "stashed" | "completed" | "abandoned"
-model ChallengeTrackEnrollment {
-  id            String         @id @default(cuid())
-  userId        String
-  user          User           @relation(fields: [userId], references: [id], onDelete: Cascade)
-  trackId       String
-  track         ChallengeTrack @relation(fields: [trackId], references: [id], onDelete: Cascade)
-  status        String         @default("active")
-  startedAt     DateTime       @default(now())
-  lastVisitedAt DateTime       @default(now())
-  completedAt   DateTime?
-
-  @@unique([userId, trackId])
-  @@index([userId, status])
-  @@index([trackId])
-}
-
 /// A user's attempt at a challenge.
 /// status: "in_progress" | "passed" | "failed" | "abandoned"
 model ChallengeAttempt {

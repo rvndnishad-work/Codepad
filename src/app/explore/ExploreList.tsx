@@ -187,11 +187,11 @@ export default function ExploreList({
                   something cool, then mark it public from the Share menu.
                 </p>
                 <Link
-                  href="/"
+                  href="/playgrounds"
                   className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-accent hover:bg-accent-soft text-bg text-sm font-black shadow-[0_0_20px_rgba(var(--accent-rgb),0.2)] transition-all duration-200"
                 >
                   <Plus className="w-4 h-4" />
-                  Browse templates
+                  Browse playgrounds
                 </Link>
               </>
             )}

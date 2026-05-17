@@ -4,17 +4,16 @@ import { auth } from "@/lib/auth";
 import { isAdmin } from "@/lib/admin";
 import { prisma } from "@/lib/prisma";
 
-type Params = { params: Promise<{ id: string }> };
+type Params = { params: Promise<{ slug: string }> };
 
-// Track invitation tokens are opaque, URL-safe, ~22 chars. 128 bits of
-// entropy is plenty for magic links that never enter a search index.
+// 128 bits of entropy, URL-safe — same pattern as the Track equivalent.
 function makeToken(): string {
   return randomBytes(16).toString("base64url");
 }
 
-// Permissive but real email validation. We don't want to over-reject (real
-// users have addresses with `+` and dots in odd places), so the rule is just
-// "has an @ with non-empty parts on either side, plus a dot in the domain."
+// "has an @ with non-empty parts and a dot in the domain" — permissive but
+// not insane. Identical helper to the Track invites route so a copy-paste
+// from one to the other behaves the same.
 function looksLikeEmail(raw: string): boolean {
   const e = raw.trim().toLowerCase();
   if (e.length < 5 || e.length > 254) return false;
@@ -25,29 +24,49 @@ function looksLikeEmail(raw: string): boolean {
   return local.length > 0 && /\./.test(domain) && !/\s/.test(e);
 }
 
-// GET /api/tracks/[id]/invites
-// Returns the invitation list for the track. Only the author or admin can
-// see it (knowing who's been invited shouldn't be a public surface).
+// Look up a Challenge by slug and authorise the caller as author OR admin.
+// Returns the resolved challenge id and slug, or a NextResponse error to
+// bubble up.
+async function authorise(
+  slug: string,
+  userId: string,
+  callerIsAdmin: boolean
+): Promise<
+  | { kind: "ok"; id: string; slug: string }
+  | { kind: "error"; response: NextResponse }
+> {
+  const challenge = await prisma.challenge.findUnique({
+    where: { slug },
+    select: { id: true, slug: true, authorId: true },
+  });
+  if (!challenge) {
+    return {
+      kind: "error",
+      response: NextResponse.json({ error: "Challenge not found" }, { status: 404 }),
+    };
+  }
+  if (challenge.authorId !== userId && !callerIsAdmin) {
+    return {
+      kind: "error",
+      response: NextResponse.json({ error: "Forbidden" }, { status: 403 }),
+    };
+  }
+  return { kind: "ok", id: challenge.id, slug: challenge.slug };
+}
+
+// GET /api/challenges/[slug]/invites — author/admin only.
 export async function GET(_req: Request, { params }: Params) {
   const session = await auth().catch(() => null);
   const userId = session?.user?.id;
   if (!userId) {
     return NextResponse.json({ error: "Sign in required" }, { status: 401 });
   }
-  const { id } = await params;
-  const track = await prisma.challengeTrack.findUnique({
-    where: { id },
-    select: { id: true, authorId: true, slug: true },
-  });
-  if (!track) {
-    return NextResponse.json({ error: "Track not found" }, { status: 404 });
-  }
-  if (track.authorId !== userId && !isAdmin(session)) {
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-  }
+  const { slug } = await params;
+  const result = await authorise(slug, userId, isAdmin(session));
+  if (result.kind === "error") return result.response;
 
-  const invitations = await prisma.trackInvitation.findMany({
-    where: { trackId: id },
+  const invitations = await prisma.challengeInvitation.findMany({
+    where: { challengeId: result.id },
     orderBy: { createdAt: "desc" },
     select: {
       id: true,
@@ -59,31 +78,21 @@ export async function GET(_req: Request, { params }: Params) {
       user: { select: { id: true, name: true, image: true } },
     },
   });
-  return NextResponse.json({ trackSlug: track.slug, invitations });
+  return NextResponse.json({ challengeSlug: result.slug, invitations });
 }
 
-// POST /api/tracks/[id]/invites
-// Body: { emails: string[] }
-// Creates one invitation per email. Idempotent: re-inviting an existing
-// (trackId, email) pair returns the existing row instead of erroring.
+// POST /api/challenges/[slug]/invites — batch invite by email.
+// Idempotent: re-inviting an email that already has a row returns the
+// existing token instead of generating a new one.
 export async function POST(req: Request, { params }: Params) {
   const session = await auth().catch(() => null);
   const userId = session?.user?.id;
   if (!userId) {
     return NextResponse.json({ error: "Sign in required" }, { status: 401 });
   }
-  const { id } = await params;
-
-  const track = await prisma.challengeTrack.findUnique({
-    where: { id },
-    select: { id: true, authorId: true, slug: true },
-  });
-  if (!track) {
-    return NextResponse.json({ error: "Track not found" }, { status: 404 });
-  }
-  if (track.authorId !== userId && !isAdmin(session)) {
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-  }
+  const { slug } = await params;
+  const result = await authorise(slug, userId, isAdmin(session));
+  if (result.kind === "error") return result.response;
 
   const body = (await req.json().catch(() => null)) as { emails?: unknown } | null;
   if (!body || !Array.isArray(body.emails)) {
@@ -98,11 +107,11 @@ export async function POST(req: Request, { params }: Params) {
     cleaned.push(lower);
   }
   if (cleaned.length === 0) {
-    return NextResponse.json({ error: "No valid email addresses provided" }, { status: 400 });
+    return NextResponse.json(
+      { error: "No valid email addresses provided" },
+      { status: 400 }
+    );
   }
-
-  // Cap per-request batch so an over-eager paste doesn't blow up. Authors who
-  // need more can repeat the call; we don't (yet) enforce a per-track cap.
   if (cleaned.length > 50) {
     return NextResponse.json(
       { error: "Up to 50 invitations per request" },
@@ -110,19 +119,17 @@ export async function POST(req: Request, { params }: Params) {
     );
   }
 
-  // Look up existing rows for these emails on this track so we can upsert in
-  // a single query each.
-  const existing = await prisma.trackInvitation.findMany({
-    where: { trackId: id, email: { in: cleaned } },
+  const existing = await prisma.challengeInvitation.findMany({
+    where: { challengeId: result.id, email: { in: cleaned } },
     select: { id: true, email: true },
   });
   const existingByEmail = new Map(existing.map((e) => [e.email, e.id]));
 
   const toCreate = cleaned.filter((e) => !existingByEmail.has(e));
   if (toCreate.length > 0) {
-    await prisma.trackInvitation.createMany({
+    await prisma.challengeInvitation.createMany({
       data: toCreate.map((email) => ({
-        trackId: id,
+        challengeId: result.id,
         email,
         token: makeToken(),
         invitedById: userId,
@@ -131,8 +138,8 @@ export async function POST(req: Request, { params }: Params) {
     });
   }
 
-  const all = await prisma.trackInvitation.findMany({
-    where: { trackId: id, email: { in: cleaned } },
+  const all = await prisma.challengeInvitation.findMany({
+    where: { challengeId: result.id, email: { in: cleaned } },
     orderBy: { createdAt: "desc" },
     select: {
       id: true,
@@ -144,5 +151,5 @@ export async function POST(req: Request, { params }: Params) {
       user: { select: { id: true, name: true, image: true } },
     },
   });
-  return NextResponse.json({ trackSlug: track.slug, invitations: all });
+  return NextResponse.json({ challengeSlug: result.slug, invitations: all });
 }

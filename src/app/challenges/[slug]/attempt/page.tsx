@@ -1,6 +1,9 @@
 import { auth } from "@/lib/auth";
+import { isAdmin } from "@/lib/admin";
 import { prisma } from "@/lib/prisma";
 import { notFound, redirect } from "next/navigation";
+import Link from "next/link";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import ChallengeAttemptClient from "./ChallengeAttemptClient";
 import TrackHelpPanel, { type TrackHelpContext } from "./TrackHelpPanel";
 import { parseVideoUrl } from "@/lib/video";
@@ -21,82 +24,258 @@ export default async function ChallengeAttemptPage({
   searchParams,
 }: {
   params: Promise<{ slug: string }>;
-  searchParams: Promise<{ session?: string; track?: string }>;
+  searchParams: Promise<{
+    session?: string;
+    step?: string;
+    invite?: string;
+  }>;
 }) {
   const { slug } = await params;
-  const { session: sessionIdParam, track: trackSlugParam } = await searchParams;
+  const {
+    session: sessionIdParam,
+    step: stepParam,
+    invite: inviteToken,
+  } = await searchParams;
 
   const session = await auth().catch(() => null);
   if (!session?.user?.id) {
-    redirect(`/login?next=${encodeURIComponent(`/challenges/${slug}/attempt`)}`);
+    redirect(
+      `/login?next=${encodeURIComponent(
+        `/challenges/${slug}/attempt${stepParam ? `?step=${stepParam}` : ""}`
+      )}`
+    );
   }
+  const userId = session.user.id;
+  const userEmail = session.user?.email?.toLowerCase() ?? null;
 
-  const challenge = await prisma.challenge.findUnique({ where: { slug } });
-  if (!challenge || !challenge.published) notFound();
+  const challenge = await prisma.challenge.findUnique({
+    where: { slug },
+    include: {
+      steps: { orderBy: { position: "asc" } },
+    },
+  });
+  if (!challenge) notFound();
 
-  const starterFiles = JSON.parse(challenge.starterFiles) as Record<string, string>;
-  const testFiles = JSON.parse(challenge.testFiles) as Record<string, string>;
+  // ── Access control (mirrors /tracks/[slug] page) ──────────────────────
+  // - Author/admin always.
+  // - published+public → anyone.
+  // - published+private → must hold a magic-link token or already have an
+  //   accepted invitation.
+  // - Anything else → 404 (non-enumerable, like /tracks did).
+  const isOwner = challenge.authorId === userId;
+  const callerIsAdmin = isAdmin(session);
+  let canView = isOwner || callerIsAdmin;
 
-  // If the user arrived from a track detail page, load that track's per-item
-  // walkthrough metadata (note, hint, video) and pass it to the help panel.
-  // Silently skip if the track or its link to this challenge isn't found —
-  // a stale ?track=… param shouldn't break the attempt page.
-  let trackContext: TrackHelpContext | null = null;
-  if (trackSlugParam) {
-    const track = await prisma.challengeTrack.findUnique({
-      where: { slug: trackSlugParam },
-      select: {
-        slug: true,
-        title: true,
-        published: true,
-        items: {
-          orderBy: { position: "asc" },
-          select: {
-            position: true,
-            challengeId: true,
-            note: true,
-            videoUrl: true,
-            hint: true,
+  if (!canView) {
+    if (!challenge.published) notFound();
+    if (challenge.visibility === "public") {
+      canView = true;
+    } else {
+      // private
+      if (inviteToken) {
+        const inv = await prisma.challengeInvitation.findUnique({
+          where: { token: inviteToken },
+          select: { id: true, challengeId: true, status: true, userId: true },
+        });
+        if (
+          inv &&
+          inv.challengeId === challenge.id &&
+          inv.status !== "revoked"
+        ) {
+          if (inv.status === "pending" || inv.userId !== userId) {
+            await prisma.challengeInvitation.update({
+              where: { id: inv.id },
+              data: {
+                status: "accepted",
+                userId,
+                acceptedAt: inv.status === "pending" ? new Date() : undefined,
+              },
+            });
+          }
+          canView = true;
+        }
+      }
+      if (!canView) {
+        const orClauses: Array<{ userId: string } | { email: string }> = [
+          { userId },
+        ];
+        if (userEmail) orClauses.push({ email: userEmail });
+        const matched = await prisma.challengeInvitation.findFirst({
+          where: {
+            challengeId: challenge.id,
+            status: { not: "revoked" },
+            OR: orClauses,
           },
-        },
-      },
-    });
-    if (track && track.published) {
-      const item = track.items.find((i) => i.challengeId === challenge.id);
-      if (item) {
-        trackContext = {
-          trackSlug: track.slug,
-          trackTitle: track.title,
-          positionLabel: `Step ${item.position + 1} of ${track.items.length}`,
-          authorNote: item.note,
-          hint: item.hint,
-          video: parseVideoUrl(item.videoUrl),
-        };
+          select: { id: true },
+        });
+        if (matched) canView = true;
       }
     }
   }
 
+  if (!canView) notFound();
+
+  // ── Resolve active step ───────────────────────────────────────────────
+  const steps = challenge.steps;
+  if (steps.length === 0) {
+    // Defensive: should never happen after Stage 1 backfill, but if a row
+    // somehow lacks steps, we'd otherwise crash on undefined access.
+    notFound();
+  }
+  const requested = stepParam ? parseInt(stepParam, 10) : 0;
+  const stepIndex = Number.isFinite(requested)
+    ? Math.max(0, Math.min(steps.length - 1, requested))
+    : 0;
+  const activeStep = steps[stepIndex];
+
+  const starterFiles = JSON.parse(activeStep.starterFiles) as Record<string, string>;
+  const testFiles = JSON.parse(activeStep.testFiles) as Record<string, string>;
+
+  // ── Help panel: hint/video for the active step ────────────────────────
+  // Surfaces per-step hint + video for both single-step and multi-step
+  // challenges. Replaces the older track-context lookup — author content
+  // now lives on the step itself.
+  const stepHasHelp = !!(activeStep.hint || activeStep.videoUrl || activeStep.title);
+  const helpContext: TrackHelpContext | null = stepHasHelp
+    ? {
+        // Reusing the existing TrackHelpPanel verbatim — the field names are
+        // generic enough that a "Challenge: Step 2 of 3" label fits cleanly.
+        trackSlug: challenge.slug,
+        trackTitle: challenge.title,
+        positionLabel: `Step ${stepIndex + 1} of ${steps.length}`,
+        authorNote: activeStep.title ?? null,
+        hint: activeStep.hint,
+        video: parseVideoUrl(activeStep.videoUrl),
+      }
+    : null;
+
+  const isMulti = steps.length > 1;
+  const prevHref =
+    stepIndex > 0
+      ? `/challenges/${slug}/attempt?step=${stepIndex - 1}`
+      : null;
+  const nextHref =
+    stepIndex < steps.length - 1
+      ? `/challenges/${slug}/attempt?step=${stepIndex + 1}`
+      : null;
+
   return (
     <>
-      {trackContext && (
+      {isMulti && (
         <div className="mx-auto max-w-6xl px-4 pt-4">
-          <TrackHelpPanel context={trackContext} />
+          <StepNavigator
+            slug={challenge.slug}
+            steps={steps.map((s, i) => ({
+              position: i,
+              title: s.title ?? `Question ${i + 1}`,
+            }))}
+            currentStep={stepIndex}
+            prevHref={prevHref}
+            nextHref={nextHref}
+          />
+        </div>
+      )}
+      {helpContext && (
+        <div className="mx-auto max-w-6xl px-4 pt-4">
+          <TrackHelpPanel context={helpContext} />
         </div>
       )}
       <ChallengeAttemptClient
         challenge={{
           id: challenge.id,
           slug: challenge.slug,
-          title: challenge.title,
-          description: challenge.description,
+          // For multi-step we render the step's own title; for single-step
+          // the parent Challenge title is the canonical one.
+          title: isMulti && activeStep.title
+            ? `${challenge.title} · ${activeStep.title}`
+            : challenge.title,
+          description: activeStep.description,
           difficulty: challenge.difficulty,
-          template: challenge.template,
-          estimatedMinutes: challenge.estimatedMinutes,
+          template: activeStep.template,
+          estimatedMinutes: activeStep.estimatedMinutes,
         }}
         starterFiles={starterFiles}
         testFiles={testFiles}
         sessionId={sessionIdParam ?? null}
       />
     </>
+  );
+}
+
+// Inline server component — keeps the layout shift-free and JS-free.
+function StepNavigator({
+  slug,
+  steps,
+  currentStep,
+  prevHref,
+  nextHref,
+}: {
+  slug: string;
+  steps: { position: number; title: string }[];
+  currentStep: number;
+  prevHref: string | null;
+  nextHref: string | null;
+}) {
+  return (
+    <div className="rounded-2xl border border-accent/30 bg-accent/5 p-3 flex items-center gap-3">
+      <Link
+        href={`/challenges/${slug}`}
+        className="text-xs font-bold text-muted hover:text-fg transition whitespace-nowrap"
+      >
+        ← Back to challenge
+      </Link>
+      <div className="flex-1 flex items-center gap-1 overflow-x-auto">
+        {steps.map((s) => {
+          const isActive = s.position === currentStep;
+          return (
+            <Link
+              key={s.position}
+              href={`/challenges/${slug}/attempt?step=${s.position}`}
+              className={`shrink-0 px-3 py-1.5 rounded-lg text-[11px] font-bold transition border ${
+                isActive
+                  ? "bg-accent text-bg border-accent"
+                  : "bg-surface text-muted border-border hover:text-fg hover:border-border-strong"
+              }`}
+              aria-current={isActive ? "step" : undefined}
+            >
+              <span className="font-mono tabular-nums opacity-70 mr-1.5">
+                {s.position + 1}
+              </span>
+              <span className="truncate max-w-[160px] inline-block align-bottom">
+                {s.title}
+              </span>
+            </Link>
+          );
+        })}
+      </div>
+      <div className="flex items-center gap-1 shrink-0">
+        {prevHref ? (
+          <Link
+            href={prevHref}
+            className="w-8 h-8 rounded-lg border border-border bg-surface text-muted hover:text-fg hover:border-border-strong grid place-items-center transition"
+            aria-label="Previous step"
+          >
+            <ChevronLeft className="w-4 h-4" />
+          </Link>
+        ) : (
+          <div className="w-8 h-8 rounded-lg border border-border/30 grid place-items-center text-muted/30">
+            <ChevronLeft className="w-4 h-4" />
+          </div>
+        )}
+        {nextHref ? (
+          <Link
+            href={nextHref}
+            className="w-8 h-8 rounded-lg border border-border bg-surface text-muted hover:text-fg hover:border-border-strong grid place-items-center transition"
+            aria-label="Next step"
+          >
+            <ChevronRight className="w-4 h-4" />
+          </Link>
+        ) : (
+          <div className="w-8 h-8 rounded-lg border border-border/30 grid place-items-center text-muted/30">
+            <ChevronRight className="w-4 h-4" />
+          </div>
+        )}
+      </div>
+    </div>
   );
 }

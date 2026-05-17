@@ -126,7 +126,7 @@ export default function HomeHero({
             </Link>
           ) : (
             <Link
-              href="/templates"
+              href="/playgrounds"
               className="inline-flex items-center gap-2 px-8 py-4 rounded-xl bg-accent hover:bg-accent-soft text-bg font-bold transition-all transform hover:scale-[1.02] active:scale-[0.98] shadow-[0_0_40px_rgba(var(--accent-rgb),0.25)]"
             >
               <Plus className="w-5 h-5" />

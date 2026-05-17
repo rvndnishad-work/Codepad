@@ -409,6 +409,28 @@ portal-nextjs-toast,
 .tiptap-prose .hljs-section { color: #60a5fa; }
 .tiptap-prose .hljs-tag { color: var(--accent); }
 
+/* Code-peek tokens used by /playgrounds tiles. Same palette as tiptap so
+   inline snippets stay visually consistent across the app. */
+.code-peek .hljs-comment,
+.code-peek .hljs-quote { color: rgba(148, 163, 184, 0.6); font-style: italic; }
+.code-peek .hljs-keyword,
+.code-peek .hljs-selector-tag,
+.code-peek .hljs-literal { color: #c084fc; }
+.code-peek .hljs-string,
+.code-peek .hljs-attr { color: #6ee7b7; }
+.code-peek .hljs-number,
+.code-peek .hljs-built_in { color: #fbbf24; }
+.code-peek .hljs-title,
+.code-peek .hljs-title.function_,
+.code-peek .hljs-name,
+.code-peek .hljs-section { color: #60a5fa; }
+.code-peek .hljs-tag { color: #f87171; }
+.code-peek .hljs-tag .hljs-name { color: #f87171; }
+.code-peek .hljs-tag .hljs-attr { color: #fbbf24; }
+.code-peek .hljs-params { color: #e2e8f0; }
+.code-peek .hljs-variable,
+.code-peek .hljs-template-variable { color: #f0abfc; }
+
 /* Placeholder shown on empty paragraphs / headings via Tiptap Placeholder ext */
 .tiptap-prose p.is-editor-empty:first-child::before,
 .tiptap-prose h1.is-empty::before,

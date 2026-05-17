@@ -72,7 +72,15 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       className={`${inter.variable} ${jetbrainsMono.variable}`}
       suppressHydrationWarning
     >
-      <body className="min-h-screen font-sans flex flex-col">
+      <body
+        className="min-h-screen font-sans flex flex-col"
+        // Some browser extensions (e.g. ColorZilla) inject attributes like
+        // cz-shortcut-listen="true" onto <body> before React hydrates, which
+        // triggers a "server vs client HTML mismatch" warning. The injection
+        // is benign — suppress the warning for this element only. Doesn't
+        // cover our own components; they're still hydration-checked normally.
+        suppressHydrationWarning
+      >
         <ThemeProvider attribute="class" defaultTheme="dark" enableSystem={false}>
           <HeaderShell><Header /></HeaderShell>
           <main className="flex-1 flex flex-col">{children}</main>

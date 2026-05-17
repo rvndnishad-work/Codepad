@@ -42,7 +42,7 @@ export default function Footer() {
           <div>
             <h4 className="text-xs font-black uppercase tracking-[0.2em] text-accent mb-6">Product</h4>
             <ul className="space-y-4 text-sm font-bold">
-              <li><Link href="/" className="text-muted hover:text-fg transition-colors">Templates</Link></li>
+              <li><Link href="/playgrounds" className="text-muted hover:text-fg transition-colors">Playgrounds</Link></li>
               <li><Link href="/explore" className="text-muted hover:text-fg transition-colors">Explore</Link></li>
               <li><Link href="/play" className="text-muted hover:text-fg transition-colors">New Sandbox</Link></li>
               <li><Link href="/dashboard" className="text-muted hover:text-fg transition-colors">Dashboard</Link></li>

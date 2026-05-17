@@ -4,9 +4,8 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { validatePageAccess } from "@/lib/settings";
 import { type BlogFeedEntry } from "@/components/BlogFeedItem";
-import BlogCardHero from "@/components/BlogCardHero";
-import BlogCardGrid from "@/components/BlogCardGrid";
-import BlogRowCompact from "@/components/BlogRowCompact";
+import FeaturedCarousel from "@/components/FeaturedCarousel";
+import BlogStoriesList from "@/components/BlogStoriesList";
 import FollowButton from "@/components/FollowButton";
 
 export const dynamic = "force-dynamic";
@@ -55,7 +54,7 @@ export default async function BlogListingPage({
     requestedTab === "following" && !userId ? "latest" : requestedTab;
   const tag = sp.tag?.trim().toLowerCase() || null;
 
-  // Build the where clause based on the active tab.
+  // Build the where clause for the main feed.
   let where: any = { published: true };
   let orderBy: any = { createdAt: "desc" as const };
 
@@ -72,22 +71,43 @@ export default async function BlogListingPage({
     };
   }
 
-  // Tag filter (server-side LIKE on the JSON string is good enough for SQLite).
   if (tag) {
     where = { ...where, tags: { contains: `"${tag}"` } };
   }
 
+  // Featured carousel only shows up on the Latest tab when there's no active
+  // tag filter (otherwise the user is asking for a narrower view).
+  const showFeatured = tab === "latest" && !tag;
+  const featuredRows = showFeatured
+    ? await prisma.blogPost.findMany({
+        where: { published: true, featured: true },
+        orderBy: { updatedAt: "desc" },
+        take: 8,
+        include: {
+          user: { select: { id: true, name: true, image: true } },
+          _count: { select: { reactions: true, comments: true } },
+        },
+      })
+    : [];
+
+  // Main feed — exclude anything already shown in the carousel, then fetch the
+  // first page. Lazy load tops this up via /api/blogs.
+  const featuredIds = new Set(featuredRows.map((r) => r.id));
+  const mainWhere = showFeatured
+    ? { ...where, featured: false }
+    : where;
+
   const rows = await prisma.blogPost.findMany({
-    where,
+    where: mainWhere,
     orderBy,
-    take: 30,
+    take: 12,
     include: {
       user: { select: { id: true, name: true, image: true } },
       _count: { select: { reactions: true, comments: true } },
     },
   });
 
-  const items: BlogFeedEntry[] = rows.map((b) => ({
+  const toEntry = (b: typeof rows[number]): BlogFeedEntry => ({
     id: b.id,
     slug: b.slug,
     title: b.title,
@@ -100,7 +120,16 @@ export default async function BlogListingPage({
     reactionCount: b._count.reactions,
     commentCount: b._count.comments,
     user: { name: b.user.name, image: b.user.image },
-  }));
+  });
+
+  const featured: BlogFeedEntry[] = featuredRows.map(toEntry);
+  const items: BlogFeedEntry[] = rows.map(toEntry);
+
+  // Cursor pagination on the latest tab uses createdAt; top/following can't
+  // lazy-load (their order isn't a stable createdAt scan), so we ship a finite
+  // first page. Empty cursor = nothing to lazy load.
+  const canLazyLoad = tab === "latest" && rows.length === 12;
+  const lazyCursor = canLazyLoad ? rows[rows.length - 1].createdAt.toISOString() : null;
 
   // Sidebar data — fetched in parallel.
   const [popularTagsRaw, suggestedUsers, mostRead] = await Promise.all([
@@ -217,10 +246,12 @@ export default async function BlogListingPage({
             </div>
           )}
 
-          {/* Feed — tiered layout: 1 hero, then a card grid, then a compact
-              list. On the "Most read" tab we skip the hero so the ranking
-              reads cleanly. The split only kicks in once we have enough posts
-              to justify it — small feeds stay as a single card grid. */}
+          {/* Feed: featured carousel (Latest tab only, no tag filter) on top,
+              unified BlogStoriesList below. The list lazy-loads more via
+              /api/blogs on the Latest tab; Top and Following tabs render a
+              single finite page. */}
+          {featured.length > 0 && <FeaturedCarousel items={featured} />}
+
           {items.length === 0 ? (
             <div className="rounded-2xl border border-border bg-surface p-12 text-center">
               {tab === "following" ? (
@@ -236,41 +267,21 @@ export default async function BlogListingPage({
               )}
             </div>
           ) : (
-            (() => {
-              const useHero = tab !== "top" && items.length >= 4;
-              const hero = useHero ? items[0] : null;
-              const gridStart = useHero ? 1 : 0;
-              const gridCount = Math.min(6, items.length - gridStart);
-              const grid = items.slice(gridStart, gridStart + gridCount);
-              const rest = items.slice(gridStart + gridCount);
-              return (
-                <div className="space-y-8">
-                  {hero && <BlogCardHero blog={hero} />}
-
-                  {grid.length > 0 && (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-                      {grid.map((b) => (
-                        <BlogCardGrid key={b.id} blog={b} />
-                      ))}
-                    </div>
-                  )}
-
-                  {rest.length > 0 && (
-                    <div>
-                      <h2 className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.2em] text-muted mb-2 pb-2 border-b border-border">
-                        <Sparkles className="w-3 h-3 text-accent" />
-                        More stories
-                      </h2>
-                      <div className="flex flex-col">
-                        {rest.map((b) => (
-                          <BlogRowCompact key={b.id} blog={b} />
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              );
-            })()
+            <div>
+              {featured.length > 0 && (
+                <h2 className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.2em] text-muted mb-2 pb-2 border-b border-border">
+                  <Sparkles className="w-3 h-3 text-accent" />
+                  More stories
+                </h2>
+              )}
+              <BlogStoriesList
+                initialItems={items}
+                initialCursor={lazyCursor}
+                excludeIds={Array.from(featuredIds)}
+                tag={tag}
+                enableLazy={canLazyLoad}
+              />
+            </div>
           )}
         </div>
 

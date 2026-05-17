@@ -56,10 +56,12 @@ export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
   const includeDrafts = searchParams.get("published") === "false";
   const userId = searchParams.get("userId");
+  const tag = searchParams.get("tag")?.trim().toLowerCase() || null;
+  const excludeFeatured = searchParams.get("excludeFeatured") === "true";
 
   // Cursor pagination — `before` is the createdAt ISO of the last item the
   // client already has; `limit` caps the batch size. Used by the homepage
-  // horizontal scroller for lazy-loading additional pages.
+  // horizontal scroller and the /blog "More stories" list for lazy-loading.
   const beforeRaw = searchParams.get("before");
   const limitRaw = searchParams.get("limit");
   const before = beforeRaw ? new Date(beforeRaw) : null;
@@ -84,6 +86,10 @@ export async function GET(req: Request) {
       where: {
         ...(includeDrafts ? {} : { published: true }),
         ...(userId ? { userId } : {}),
+        ...(excludeFeatured ? { featured: false } : {}),
+        // SQLite doesn't have a native JSON-array filter, so we LIKE-match the
+        // tag as a quoted substring inside the JSON-encoded tags column.
+        ...(tag ? { tags: { contains: `"${tag}"` } } : {}),
         ...(before && !Number.isNaN(before.getTime())
           ? { createdAt: { lt: before } }
           : {}),
@@ -97,6 +103,7 @@ export async function GET(req: Request) {
             image: true,
           },
         },
+        _count: { select: { reactions: true, comments: true } },
       },
     });
     return NextResponse.json(blogs);

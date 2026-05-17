@@ -68,7 +68,7 @@ export default function RevealOnScroll({
           transition: {
             duration,
             delay,
-            ease: EASE_EXPO_OUT as unknown as number[],
+            ease: EASE_EXPO_OUT as unknown as [number, number, number, number],
           },
         },
       };
@@ -114,7 +114,7 @@ export function RevealItem({
     show: {
       opacity: 1,
       y: 0,
-      transition: { duration, ease: EASE_EXPO_OUT as unknown as number[] },
+      transition: { duration, ease: EASE_EXPO_OUT as unknown as [number, number, number, number] },
     },
   };
 

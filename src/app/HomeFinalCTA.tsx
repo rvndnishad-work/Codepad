@@ -27,7 +27,7 @@ export default function HomeFinalCTA() {
     show: {
       opacity: 1,
       y: 0,
-      transition: { duration: 0.7, ease: EASE_EXPO_OUT as unknown as number[] },
+      transition: { duration: 0.7, ease: EASE_EXPO_OUT as unknown as [number, number, number, number] },
     },
   };
 
@@ -36,7 +36,7 @@ export default function HomeFinalCTA() {
     show: {
       opacity: 1,
       y: 0,
-      transition: { duration: 0.6, ease: EASE_EXPO_OUT as unknown as number[] },
+      transition: { duration: 0.6, ease: EASE_EXPO_OUT as unknown as [number, number, number, number] },
     },
   };
 

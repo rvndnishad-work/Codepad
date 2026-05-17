@@ -131,34 +131,6 @@ export default function ChallengeForm({
   // at render time so the modal always reflects the latest edits.
   const [previewStep, setPreviewStep] = useState<number | null>(null);
 
-  function parseFiles(
-    label: "starter" | "tests",
-    raw: string
-  ): Record<string, string> | null {
-    if (!raw.trim()) return {};
-    try {
-      const parsed = JSON.parse(raw);
-      if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
-        toast.error(
-          `${label === "starter" ? "Starter" : "Test"} files must be a JSON object`
-        );
-        return null;
-      }
-      for (const [k, v] of Object.entries(parsed)) {
-        if (typeof v !== "string") {
-          toast.error(`${label}: ${k} must hold a string`);
-          return null;
-        }
-      }
-      return parsed as Record<string, string>;
-    } catch {
-      toast.error(
-        `${label === "starter" ? "Starter" : "Test"} files are not valid JSON`
-      );
-      return null;
-    }
-  }
-
   // Verify both file maps parse before opening — surface friendlier errors
   // than a Sandpack runtime crash. Returns the live preview payload (or
   // null if the JSON is malformed in either editor).

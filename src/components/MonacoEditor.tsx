@@ -295,6 +295,12 @@ export default function MonacoEditor({ fontSize, readOnly = false }: { fontSize:
   }, []);
 
   const handleEditorWillMount = useCallback((monaco: Monaco) => {
+    // Monaco's model registry is a global singleton that survives React
+    // unmounts. Without this, navigating from one playground to another with
+    // overlapping file paths (e.g. /index.js) makes the editor re-attach to
+    // the previous playground's cached model, showing stale code.
+    monaco.editor.getModels().forEach((m: any) => m.dispose());
+
     // Nano Banana Pro Theme Definition
     monaco.editor.defineTheme("nano-banana-pro", {
       base: "vs-dark",

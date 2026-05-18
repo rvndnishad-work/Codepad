@@ -114,8 +114,8 @@ export default function InterviewRunner({
   const [startRequestSending, setStartRequestSending] = useState(false);
   const [approvalModalOpen, setApprovalModalOpen] = useState(false);
 
-  // Guest polls for status change (session started by host)
-  // Host polls for start requests from candidate
+  // Candidate polls for status change (session started by interviewer)
+  // Interviewer polls for start requests from candidate
   useEffect(() => {
     if (status !== "scheduled") return;
     const poll = setInterval(async () => {
@@ -126,28 +126,28 @@ export default function InterviewRunner({
         );
         if (!res.ok) return;
         const data = await res.json();
-        // Guest: session started → reload to enter live state
-        if (!isOwner && data.status === "in_progress") {
+        // Candidate: session started → reload to enter live state
+        if (!interviewerView && data.status === "in_progress") {
           window.location.reload();
         }
-        // Host: candidate knocked — show approval modal
-        if (isOwner && data.startRequested && !approvalModalOpen) {
+        // Interviewer: candidate knocked — show approval modal
+        if (interviewerView && data.startRequested && !approvalModalOpen) {
           setApprovalModalOpen(true);
           setStartRequested(true);
         }
         // Sync dismissed request
-        if (isOwner && !data.startRequested && startRequested) {
+        if (interviewerView && !data.startRequested && startRequested) {
           setStartRequested(false);
         }
       } catch {}
     }, 3000);
     return () => clearInterval(poll);
-  }, [status, isOwner, interview.id, interview.shareToken, approvalModalOpen, startRequested]);
+  }, [status, interviewerView, interview.id, interview.shareToken, approvalModalOpen, startRequested]);
 
   async function requestStart() {
     setStartRequestSending(true);
     try {
-      const res = await fetch(`/api/interview/${interview.id}`, {
+      const res = await fetch(`/api/interview/${interview.id}?token=${interview.shareToken}`, {
         method: "PATCH",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ startRequested: true }),
@@ -164,7 +164,7 @@ export default function InterviewRunner({
 
   async function approveStart() {
     // Clear the request flag then start the session
-    await fetch(`/api/interview/${interview.id}`, {
+    await fetch(`/api/interview/${interview.id}?token=${interview.shareToken}`, {
       method: "PATCH",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({ startRequested: false }),
@@ -175,7 +175,7 @@ export default function InterviewRunner({
   }
 
   async function dismissRequest() {
-    await fetch(`/api/interview/${interview.id}`, {
+    await fetch(`/api/interview/${interview.id}?token=${interview.shareToken}`, {
       method: "PATCH",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({ startRequested: false }),
@@ -213,7 +213,7 @@ export default function InterviewRunner({
 
   // Auto-end when timer expires.
   useEffect(() => {
-    if (expired && !interviewerView) void finish("completed");
+    if (expired && interviewerView) void finish("completed");
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [expired]);
 
@@ -235,7 +235,7 @@ export default function InterviewRunner({
 
   async function start() {
     try {
-      const res = await fetch(`/api/interview/${interview.id}`, {
+      const res = await fetch(`/api/interview/${interview.id}?token=${interview.shareToken}`, {
         method: "PATCH",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({
@@ -259,7 +259,7 @@ export default function InterviewRunner({
     setSavingNotes(true);
     setNotesSaved(false);
     try {
-      await fetch(`/api/interview/${interview.id}`, {
+      await fetch(`/api/interview/${interview.id}?token=${interview.shareToken}`, {
         method: "PATCH",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ notes: val }),
@@ -274,7 +274,7 @@ export default function InterviewRunner({
 
   async function finish(target: "completed" | "abandoned", finalVerdict?: string) {
     try {
-      const res = await fetch(`/api/interview/${interview.id}`, {
+      const res = await fetch(`/api/interview/${interview.id}?token=${interview.shareToken}`, {
         method: "PATCH",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ 
@@ -709,8 +709,8 @@ export default function InterviewRunner({
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
         {/* Left Column (Span 2): Challenge Queue & CTA */}
         <div className="lg:col-span-2 space-y-6">
-          {/* Start CTA — Owner only */}
-          {status === "scheduled" && isOwner && (
+          {/* Start CTA — Interviewer only */}
+          {status === "scheduled" && interviewerView && (
             <div className="p-5 rounded-xl border border-accent/30 bg-accent/5 flex items-center justify-between gap-4">
               <div>
                 <div className="text-sm font-bold text-fg mb-0.5">Ready when you are.</div>
@@ -728,8 +728,8 @@ export default function InterviewRunner({
             </div>
           )}
 
-          {/* Guest waiting state */}
-          {status === "scheduled" && !isOwner && (
+          {/* Candidate waiting state */}
+          {status === "scheduled" && !interviewerView && (
             <div className="p-5 rounded-xl border border-border bg-surface/50 space-y-4">
               <div className="flex items-center gap-4">
                 {startRequested ? (
@@ -841,7 +841,7 @@ export default function InterviewRunner({
         </div>
 
         {/* Right Column: Private Interviewer Notes & Outcomes */}
-        {!interviewerView && (
+        {interviewerView && (
           <div className="rounded-xl border border-border bg-surface/50 p-5 space-y-6">
             <div>
               <div className="text-[10px] font-black uppercase tracking-[0.15em] text-accent flex items-center justify-between">
@@ -879,7 +879,7 @@ export default function InterviewRunner({
       </div>
 
       {/* End session */}
-      {status === "in_progress" && !interviewerView && (
+      {status === "in_progress" && interviewerView && (
         <div className="mt-10 pt-6 border-t border-border flex items-center justify-between">
           <div className="text-xs text-muted">
             <Clock className="w-3 h-3 inline mr-1 -mt-0.5" />

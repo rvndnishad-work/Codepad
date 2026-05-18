@@ -54,11 +54,22 @@ export async function PATCH(
 
   const existing = await prisma.interviewSession.findUnique({
     where: { id },
-    select: { userId: true, shareToken: true },
+    select: { userId: true, shareToken: true, creatorRole: true },
   });
   if (!existing) return NextResponse.json({ error: "not found" }, { status: 404 });
 
   const isOwner = existing.userId === session.user.id;
+  const { searchParams } = new URL(req.url);
+  const token = searchParams.get("token");
+  const hasShareToken = !!token && token === existing.shareToken;
+
+  // Resolve dynamic interviewer role
+  let isInterviewer = false;
+  if (existing.creatorRole === "interviewer") {
+    isInterviewer = isOwner;
+  } else {
+    isInterviewer = isOwner ? false : hasShareToken;
+  }
 
   const body = await req.json().catch(() => null);
   const parsed = patchSchema.safeParse(body);
@@ -75,8 +86,8 @@ export async function PATCH(
     return NextResponse.json({ success: true });
   }
 
-  // All other fields (status, notes, verdict etc.) require ownership
-  if (!isOwner) {
+  // All other fields (status, notes, verdict etc.) require being the Interviewer
+  if (!isInterviewer) {
     return NextResponse.json({ error: "forbidden" }, { status: 403 });
   }
 

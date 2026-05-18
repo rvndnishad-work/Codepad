@@ -515,95 +515,159 @@ export default function InterviewRunner({
                 <ScreenShare className={`w-4 h-4 ${screenShare ? "text-accent" : ""}`} />
               </button>
 
-              {!interviewerView && (
-                <div className="h-6 w-[1px] bg-border mx-1" />
-              )}
-
-              {!interviewerView && (
-                <button
-                  onClick={() => setSimColleague(!simColleague)}
-                  className={`px-3 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-wider transition ${
-                    simColleague 
-                      ? "bg-accent/15 border border-accent/20 text-accent hover:bg-accent/25" 
-                      : "bg-surface border border-border text-muted hover:text-fg"
-                  }`}
-                >
-                  {simColleague ? "Remove Mock Peer" : "Simulate Mock Peer"}
-                </button>
-              )}
+              <div className="h-6 w-[1px] bg-border mx-1" />
+              <button
+                onClick={() => setSimColleague(!simColleague)}
+                className={`px-3 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-wider transition ${
+                  simColleague 
+                    ? "bg-accent/15 border border-accent/20 text-accent hover:bg-accent/25" 
+                    : "bg-surface border border-border text-muted hover:text-fg"
+                }`}
+              >
+                {simColleague ? "Remove Mock Peer" : "Simulate Mock Peer"}
+              </button>
             </div>
           </div>
 
           {/* Grid display for active member cameras */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-            {/* Candidate Frame */}
+            {/* Candidate Frame (Left) */}
             <div className="rounded-xl border border-border bg-surface/50 aspect-video relative overflow-hidden flex flex-col justify-between p-4 group">
-              {camEnabled ? (
-                <div className="absolute inset-0 bg-gradient-to-tr from-accent/5 via-transparent to-violet-500/5 flex items-center justify-center">
-                  <div className="w-16 h-16 rounded-full bg-accent/15 border border-accent/25 flex items-center justify-center text-accent font-black text-xl animate-pulse">
-                    C
+              {!interviewerView ? (
+                // Local webcam feed (You as Candidate)
+                camEnabled ? (
+                  <div className="absolute inset-0 bg-gradient-to-tr from-accent/5 via-transparent to-violet-500/5 flex items-center justify-center">
+                    <div className="w-16 h-16 rounded-full bg-accent/15 border border-accent/25 flex items-center justify-center text-accent font-black text-xl animate-pulse">
+                      C
+                    </div>
+                    {/* Dynamic Sound Decibels */}
+                    <div className="absolute bottom-4 left-4 flex items-end gap-0.5 h-6">
+                      {userDecibels.map((db, idx) => (
+                        <div 
+                          key={idx} 
+                          style={{ height: `${db}%` }} 
+                          className="w-1 rounded-full bg-accent transition-all duration-150" 
+                        />
+                      ))}
+                    </div>
                   </div>
-                  {/* Dynamic Sound Decibels visual representation */}
-                  <div className="absolute bottom-4 left-4 flex items-end gap-0.5 h-6">
-                    {userDecibels.map((db, idx) => (
-                      <div 
-                        key={idx} 
-                        style={{ height: `${db}%` }} 
-                        className="w-1 rounded-full bg-accent transition-all duration-150" 
-                      />
-                    ))}
+                ) : (
+                  <div className="absolute inset-0 flex items-center justify-center text-muted">
+                    <VideoOff className="w-8 h-8 opacity-40" />
                   </div>
-                </div>
+                )
               ) : (
-                <div className="absolute inset-0 flex items-center justify-center text-muted">
-                  <VideoOff className="w-8 h-8 opacity-40" />
-                </div>
+                // Remote/Simulated peer feed (The Candidate)
+                simColleague ? (
+                  <div className="absolute inset-0 bg-gradient-to-tr from-accent/5 via-transparent to-violet-500/5 flex items-center justify-center">
+                    <div className="text-center space-y-2">
+                      <div className="w-16 h-16 rounded-full bg-accent/10 border border-accent/20 flex items-center justify-center text-accent font-black text-xl relative mx-auto">
+                        {interview.candidateName ? interview.candidateName.substring(0, 2).toUpperCase() : "C"}
+                        <span className="absolute bottom-0 right-0 w-4.5 h-4.5 rounded-full bg-emerald-500 border-2 border-surface flex items-center justify-center">
+                          <Mic className="w-2.5 h-2.5 text-white" />
+                        </span>
+                      </div>
+                      <div className="text-[10px] font-black uppercase tracking-wider text-fg/80">{interview.candidateName || "Candidate"}</div>
+                      <div className="text-[9px] text-muted flex items-center justify-center gap-1">
+                        <Wifi className="w-3 h-3 text-emerald-500" />
+                        Latency: 18ms (Excellent)
+                      </div>
+                    </div>
+
+                    {/* Decibels Wave */}
+                    <div className="absolute bottom-4 left-4 flex items-end gap-0.5 h-6">
+                      {peerDecibels.map((db, idx) => (
+                        <div 
+                          key={idx} 
+                          style={{ height: `${db}%` }} 
+                          className="w-1 rounded-full bg-accent transition-all duration-150" 
+                        />
+                      ))}
+                    </div>
+                  </div>
+                ) : (
+                  <div className="absolute inset-0 flex flex-col items-center justify-center p-6 text-center text-muted gap-2">
+                    <Users className="w-8 h-8 opacity-40" />
+                    <div className="text-xs font-bold text-fg/70">Waiting for candidate...</div>
+                    <div className="text-[10px] text-muted max-w-[200px]">Send the candidate invite link to allow them to join the room.</div>
+                  </div>
+                )
               )}
 
-              <div className="absolute top-4 right-4 bg-black/40 text-white rounded-full px-2 py-0.5 text-[9px] font-mono flex items-center gap-1">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                {interviewerView ? "Candidate" : "You (Candidate)"}
-              </div>
+              {/* Status tag */}
+              {(!interviewerView || simColleague) && (
+                <div className="absolute top-4 right-4 bg-black/40 text-white rounded-full px-2 py-0.5 text-[9px] font-mono flex items-center gap-1">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                  {!interviewerView ? "You (Candidate)" : (interview.candidateName || "Candidate")}
+                </div>
+              )}
             </div>
 
-            {/* Interviewer Frame */}
+            {/* Interviewer Frame (Right) */}
             <div className="rounded-xl border border-border bg-surface/50 aspect-video relative overflow-hidden flex flex-col justify-between p-4">
-              {simColleague ? (
-                <div className="absolute inset-0 bg-gradient-to-tr from-violet-500/5 via-transparent to-accent/5 flex items-center justify-center">
-                  <div className="text-center space-y-2">
-                    <div className="w-16 h-16 rounded-full bg-violet-500/10 border border-violet-500/20 flex items-center justify-center text-violet-500 font-black text-xl relative mx-auto">
-                      AN
-                      <span className="absolute bottom-0 right-0 w-4.5 h-4.5 rounded-full bg-emerald-500 border-2 border-surface flex items-center justify-center">
-                        <Mic className="w-2.5 h-2.5 text-white" />
-                      </span>
+              {interviewerView ? (
+                // Local webcam feed (You as Interviewer)
+                camEnabled ? (
+                  <div className="absolute inset-0 bg-gradient-to-tr from-violet-500/5 via-transparent to-accent/5 flex items-center justify-center">
+                    <div className="w-16 h-16 rounded-full bg-violet-500/10 border border-violet-500/20 flex items-center justify-center text-violet-500 font-black text-xl animate-pulse">
+                      I
                     </div>
-                    <div className="text-[10px] font-black uppercase tracking-wider text-fg/80">{interviewerView ? "You (Interviewer)" : "Arvind Nishad (Interviewer)"}</div>
-                    <div className="text-[9px] text-muted flex items-center justify-center gap-1">
-                      <Wifi className="w-3 h-3 text-emerald-500" />
-                      Latency: 12ms (Excellent)
+                    {/* Dynamic Sound Decibels */}
+                    <div className="absolute bottom-4 left-4 flex items-end gap-0.5 h-6">
+                      {userDecibels.map((db, idx) => (
+                        <div 
+                          key={idx} 
+                          style={{ height: `${db}%` }} 
+                          className="w-1 rounded-full bg-violet-500 transition-all duration-150" 
+                        />
+                      ))}
                     </div>
                   </div>
-
-                  {/* Decibels Wave */}
-                  <div className="absolute bottom-4 left-4 flex items-end gap-0.5 h-6">
-                    {peerDecibels.map((db, idx) => (
-                      <div 
-                        key={idx} 
-                        style={{ height: `${db}%` }} 
-                        className="w-1 rounded-full bg-violet-500 transition-all duration-150" 
-                      />
-                    ))}
+                ) : (
+                  <div className="absolute inset-0 flex items-center justify-center text-muted">
+                    <VideoOff className="w-8 h-8 opacity-40" />
                   </div>
-                </div>
+                )
               ) : (
-                <div className="absolute inset-0 flex flex-col items-center justify-center p-6 text-center text-muted gap-2">
-                  <Users className="w-8 h-8 opacity-40" />
-                  <div className="text-xs font-bold text-fg/70">Waiting for peer...</div>
-                  <div className="text-[10px] text-muted max-w-[200px]">Click invite to share this live practicing lobby with your team.</div>
-                </div>
+                // Remote/Simulated peer feed (The Interviewer)
+                simColleague ? (
+                  <div className="absolute inset-0 bg-gradient-to-tr from-violet-500/5 via-transparent to-accent/5 flex items-center justify-center">
+                    <div className="text-center space-y-2">
+                      <div className="w-16 h-16 rounded-full bg-violet-500/10 border border-violet-500/20 flex items-center justify-center text-violet-500 font-black text-xl relative mx-auto">
+                        AN
+                        <span className="absolute bottom-0 right-0 w-4.5 h-4.5 rounded-full bg-emerald-500 border-2 border-surface flex items-center justify-center">
+                          <Mic className="w-2.5 h-2.5 text-white" />
+                        </span>
+                      </div>
+                      <div className="text-[10px] font-black uppercase tracking-wider text-fg/80">Arvind Nishad (Interviewer)</div>
+                      <div className="text-[9px] text-muted flex items-center justify-center gap-1">
+                        <Wifi className="w-3 h-3 text-emerald-500" />
+                        Latency: 12ms (Excellent)
+                      </div>
+                    </div>
+
+                    {/* Decibels Wave */}
+                    <div className="absolute bottom-4 left-4 flex items-end gap-0.5 h-6">
+                      {peerDecibels.map((db, idx) => (
+                        <div 
+                          key={idx} 
+                          style={{ height: `${db}%` }} 
+                          className="w-1 rounded-full bg-violet-500 transition-all duration-150" 
+                        />
+                      ))}
+                    </div>
+                  </div>
+                ) : (
+                  <div className="absolute inset-0 flex flex-col items-center justify-center p-6 text-center text-muted gap-2">
+                    <Users className="w-8 h-8 opacity-40" />
+                    <div className="text-xs font-bold text-fg/70">Waiting for interviewer...</div>
+                    <div className="text-[10px] text-muted max-w-[200px]">Waiting for the interviewer to join the call lobby.</div>
+                  </div>
+                )
               )}
 
-              {simColleague && (
+              {/* Status tag */}
+              {(interviewerView || simColleague) && (
                 <div className="absolute top-4 right-4 bg-black/40 text-white rounded-full px-2 py-0.5 text-[9px] font-mono flex items-center gap-1">
                   <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
                   {interviewerView ? "You (Interviewer)" : "Arvind (Interviewer)"}

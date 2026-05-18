@@ -15,9 +15,11 @@ import {
   MessageSquare,
   Heart,
   MoreHorizontal,
-  Edit3
+  Edit3,
+  Eye
 } from "lucide-react";
 import AdminBlogModerationModal from "./AdminBlogModerationModal";
+import { BulkRowCheckbox } from "./BlogsBulkTable";
 
 interface AdminBlogRowProps {
   blog: {
@@ -28,6 +30,7 @@ interface AdminBlogRowProps {
     featured: boolean;
     adminNotes: string | null;
     createdAt: Date;
+    viewCount: number;
     user: {
       id: string;
       name: string | null;
@@ -57,6 +60,9 @@ export default function AdminBlogRow({ blog }: AdminBlogRowProps) {
   return (
     <>
       <tr className="group hover:bg-elevated/30 transition-colors">
+        <td className="pl-6 pr-2 py-4 w-8">
+          <BulkRowCheckbox id={blog.id} />
+        </td>
         <td className="px-6 py-4 max-w-md">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-lg bg-muted/20 border border-border flex items-center justify-center flex-shrink-0">
@@ -102,6 +108,10 @@ export default function AdminBlogRow({ blog }: AdminBlogRowProps) {
 
         <td className="px-6 py-4">
           <div className="flex items-center justify-center gap-4">
+            <div className="flex flex-col items-center" title="Views">
+              <Eye className="w-3.5 h-3.5 text-muted mb-0.5" />
+              <span className="text-[10px] font-mono font-bold text-muted">{blog.viewCount}</span>
+            </div>
             <div className="flex flex-col items-center" title="Reactions">
               <Heart className="w-3.5 h-3.5 text-muted mb-0.5" />
               <span className="text-[10px] font-mono font-bold text-muted">{blog._count.reactions}</span>

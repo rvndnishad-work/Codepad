@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { validatePageAccess } from "@/lib/settings";
 import { type BlogFeedEntry } from "@/components/BlogFeedItem";
 import BlogStoriesList from "@/components/BlogStoriesList";
+import FeaturedCarousel from "@/components/FeaturedCarousel";
 import FollowButton from "@/components/FollowButton";
 
 export const dynamic = "force-dynamic";
@@ -74,11 +75,27 @@ export default async function BlogListingPage({
     where = { ...where, tags: { contains: `"${tag}"` } };
   }
 
-  // Single unified feed — featured / non-featured all rendered as rows. Admin
-  // pinning still works (BlogPost.featured), but the field no longer affects
-  // how /blog presents items: everything is one chronological list.
+  // Featured carousel runs only on the Latest tab with no tag filter — once the
+  // user has narrowed the view, a horizontal "pinned" rail just gets in the way.
+  const showFeatured = tab === "latest" && !tag;
+  const featuredRows = showFeatured
+    ? await prisma.blogPost.findMany({
+        where: { published: true, featured: true },
+        orderBy: { updatedAt: "desc" },
+        take: 8,
+        include: {
+          user: { select: { id: true, name: true, image: true } },
+          _count: { select: { reactions: true, comments: true } },
+        },
+      })
+    : [];
+
+  // Main feed — exclude carousel items so we don't show them twice, then fetch
+  // the first page. Lazy load tops this up via /api/blogs.
+  const mainWhere = showFeatured ? { ...where, featured: false } : where;
+
   const rows = await prisma.blogPost.findMany({
-    where,
+    where: mainWhere,
     orderBy,
     take: 12,
     include: {
@@ -87,7 +104,7 @@ export default async function BlogListingPage({
     },
   });
 
-  const items: BlogFeedEntry[] = rows.map((b) => ({
+  const toEntry = (b: typeof rows[number]): BlogFeedEntry => ({
     id: b.id,
     slug: b.slug,
     title: b.title,
@@ -100,7 +117,11 @@ export default async function BlogListingPage({
     reactionCount: b._count.reactions,
     commentCount: b._count.comments,
     user: { name: b.user.name, image: b.user.image },
-  }));
+  });
+
+  const featured: BlogFeedEntry[] = featuredRows.map(toEntry);
+  const featuredIds = featuredRows.map((r) => r.id);
+  const items: BlogFeedEntry[] = rows.map(toEntry);
 
   // Cursor pagination on the latest tab uses createdAt; top/following can't
   // lazy-load (their order isn't a stable createdAt scan), so we ship a finite
@@ -184,6 +205,12 @@ export default async function BlogListingPage({
         </div>
       </div>
 
+      {featured.length > 0 && (
+        <div className="mx-auto max-w-6xl px-4 pt-8">
+          <FeaturedCarousel items={featured} />
+        </div>
+      )}
+
       <main className="mx-auto max-w-6xl px-4 py-8 grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-10">
         {/* MAIN COLUMN */}
         <div>
@@ -223,8 +250,8 @@ export default async function BlogListingPage({
             </div>
           )}
 
-          {/* Unified feed: every published post renders as a row. Lazy-loaded
-              on the Latest tab; Top and Following ship a single finite page. */}
+          {/* Unified row feed. Lazy load runs on the Latest tab; Top and Following ship a single finite page. */}
+
           {items.length === 0 ? (
             <div className="rounded-2xl border border-border bg-surface p-12 text-center">
               {tab === "following" ? (
@@ -243,6 +270,7 @@ export default async function BlogListingPage({
             <BlogStoriesList
               initialItems={items}
               initialCursor={lazyCursor}
+              excludeIds={featuredIds}
               tag={tag}
               enableLazy={canLazyLoad}
             />

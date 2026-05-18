@@ -1,28 +1,79 @@
 import { prisma } from "@/lib/prisma";
 import { FileText, Search, Filter, CheckCircle2, Clock, AlertCircle, Star } from "lucide-react";
 import AdminBlogRow from "./AdminBlogRow";
+import BlogsBulkTable, { BulkHeaderCheckbox } from "./BlogsBulkTable";
 import Link from "next/link";
 
+import Pagination from "../Pagination";
+import SortSelect from "./SortSelect";
+
 interface AdminBlogsPageProps {
-  searchParams: Promise<{ q?: string; status?: string }>;
+  searchParams: Promise<{ q?: string; status?: string; page?: string; sortBy?: string }>;
 }
 
 export default async function AdminBlogsPage({ searchParams }: AdminBlogsPageProps) {
-  const { q, status } = await searchParams;
+  const { q, status, page, sortBy } = await searchParams;
+  const currentPage = Math.max(1, parseInt(page || "1", 10));
+  const ITEMS_PER_PAGE = 10;
+  const skip = (currentPage - 1) * ITEMS_PER_PAGE;
+  const currentSort = sortBy || "createdAt_desc";
+
+  const whereClause = {
+    AND: [
+      q ? {
+        OR: [
+          { title: { contains: q } },
+          { slug: { contains: q } },
+        ],
+      } : {},
+      status === "FEATURED"
+        ? { featured: true }
+        : status
+        ? { status }
+        : {},
+    ]
+  };
+
+  let orderBy: any = { createdAt: "desc" };
+
+  if (currentSort === "createdAt_asc") {
+    orderBy = { createdAt: "asc" };
+  } else if (currentSort === "viewCount_desc") {
+    orderBy = { viewCount: "desc" };
+  } else if (currentSort === "reactions_desc") {
+    orderBy = {
+      reactions: {
+        _count: "desc"
+      }
+    };
+  } else if (currentSort === "comments_desc") {
+    orderBy = {
+      comments: {
+        _count: "desc"
+      }
+    };
+  } else if (currentSort === "featured_desc") {
+    orderBy = [
+      { featured: "desc" },
+      { createdAt: "desc" }
+    ];
+  } else if (currentSort === "author_asc") {
+    orderBy = {
+      user: {
+        name: "asc"
+      }
+    };
+  }
+
+  const totalCount = await prisma.blogPost.count({
+    where: whereClause
+  });
 
   const blogs = await prisma.blogPost.findMany({
-    where: {
-      AND: [
-        q ? {
-          OR: [
-            { title: { contains: q } },
-            { slug: { contains: q } },
-          ],
-        } : {},
-        status ? { status } : {},
-      ]
-    },
-    orderBy: { createdAt: "desc" },
+    where: whereClause,
+    orderBy,
+    skip,
+    take: ITEMS_PER_PAGE,
     include: {
       user: {
         select: {
@@ -41,11 +92,16 @@ export default async function AdminBlogsPage({ searchParams }: AdminBlogsPagePro
     },
   });
 
+  const allBlogsCount = await prisma.blogPost.count();
+  const pendingCount = await prisma.blogPost.count({ where: { status: "PENDING" } });
+  const publishedCount = await prisma.blogPost.count({ where: { status: "PUBLISHED" } });
+  const featuredCount = await prisma.blogPost.count({ where: { featured: true } });
+
   const stats = {
-    total: blogs.length,
-    pending: blogs.filter(b => b.status === "PENDING").length,
-    published: blogs.filter(b => b.status === "PUBLISHED").length,
-    featured: blogs.filter(b => b.featured).length,
+    total: allBlogsCount,
+    pending: pendingCount,
+    published: publishedCount,
+    featured: featuredCount,
   };
 
   return (
@@ -66,22 +122,27 @@ export default async function AdminBlogsPage({ searchParams }: AdminBlogsPagePro
           </div>
         </div>
 
-        <div className="flex items-center gap-3 w-full sm:w-auto">
-          <form className="relative flex-1 sm:w-64">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted" />
-            <input
-              type="text"
-              name="q"
-              defaultValue={q}
-              placeholder="Search blogs..."
-              className="w-full bg-surface border border-border rounded-xl py-2 pl-10 pr-4 text-sm focus:outline-none focus:ring-2 focus:ring-accent/20 focus:border-accent transition"
-            />
-          </form>
+        <div className="flex flex-col md:flex-row md:items-center gap-3 w-full sm:w-auto">
+          <div className="flex items-center gap-3 w-full sm:w-auto">
+            <form className="relative flex-1 sm:w-64">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted" />
+              <input
+                type="text"
+                name="q"
+                defaultValue={q}
+                placeholder="Search blogs..."
+                className="w-full bg-surface border border-border rounded-xl py-2 pl-10 pr-4 text-sm focus:outline-none focus:ring-2 focus:ring-accent/20 focus:border-accent transition"
+              />
+            </form>
+
+            <SortSelect />
+          </div>
           
-          <div className="flex items-center gap-1 bg-surface border border-border rounded-xl p-1">
+          <div className="flex items-center gap-1 bg-surface border border-border rounded-xl p-1 w-fit">
             <FilterLink current={status} value="" label="All" />
             <FilterLink current={status} value="PENDING" label="Pending" />
             <FilterLink current={status} value="PUBLISHED" label="Published" />
+            <FilterLink current={status} value="FEATURED" label="Featured" />
             <FilterLink current={status} value="NEEDS_CHANGES" label="Changes" />
           </div>
         </div>
@@ -103,26 +164,39 @@ export default async function AdminBlogsPage({ searchParams }: AdminBlogsPagePro
           )}
         </div>
       ) : (
-        <div className="rounded-2xl border border-border bg-surface overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm text-left border-collapse">
-              <thead className="bg-elevated/50 text-[10px] uppercase tracking-[0.15em] text-muted border-b border-border">
-                <tr>
-                  <th className="px-6 py-4 font-bold">Blog Post</th>
-                  <th className="px-6 py-4 font-bold">Author</th>
-                  <th className="px-6 py-4 font-bold">Status</th>
-                  <th className="px-6 py-4 font-bold text-center">Stats</th>
-                  <th className="px-6 py-4 font-bold text-right">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-border/50">
-                {blogs.map((blog) => (
-                  <AdminBlogRow key={blog.id} blog={blog} />
-                ))}
-              </tbody>
-            </table>
+        <BlogsBulkTable>
+          <div className="rounded-2xl border border-border bg-surface overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm text-left border-collapse">
+                <thead className="bg-elevated/50 text-[10px] uppercase tracking-[0.15em] text-muted border-b border-border">
+                  <tr>
+                    <th className="pl-6 pr-2 py-4 w-8">
+                      <BulkHeaderCheckbox ids={blogs.map((b) => b.id)} />
+                    </th>
+                    <th className="px-6 py-4 font-bold">Blog Post</th>
+                    <th className="px-6 py-4 font-bold">Author</th>
+                    <th className="px-6 py-4 font-bold">Status</th>
+                    <th className="px-6 py-4 font-bold text-center">Stats</th>
+                    <th className="px-6 py-4 font-bold text-right">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-border/50">
+                  {blogs.map((blog) => (
+                    <AdminBlogRow key={blog.id} blog={blog} />
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <Pagination
+              currentPage={currentPage}
+              totalPages={Math.ceil(totalCount / ITEMS_PER_PAGE)}
+              totalItems={totalCount}
+              itemsPerPage={ITEMS_PER_PAGE}
+              baseUrl="/admin/blogs"
+              currentParams={{ q, status, sortBy }}
+            />
           </div>
-        </div>
+        </BlogsBulkTable>
       )}
     </div>
   );

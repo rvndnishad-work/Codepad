@@ -9,6 +9,7 @@ function FooterShellInner({ children }: { children: ReactNode }) {
   // Hide footer where vertical space matters (playground, embeds)
   if (pathname?.startsWith("/embed")) return null;
   if (pathname?.startsWith("/play")) return null;
+  if (pathname?.startsWith("/admin")) return null;
   if (params?.get("view") === "preview") return null;
   return <>{children}</>;
 }

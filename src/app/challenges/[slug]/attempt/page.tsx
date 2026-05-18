@@ -28,6 +28,9 @@ export default async function ChallengeAttemptPage({
     session?: string;
     step?: string;
     invite?: string;
+    multiplayer?: string;
+    sim?: string;
+    token?: string;
   }>;
 }) {
   const { slug } = await params;
@@ -35,18 +38,47 @@ export default async function ChallengeAttemptPage({
     session: sessionIdParam,
     step: stepParam,
     invite: inviteToken,
+    multiplayer: multiplayerParam,
+    sim: simParam,
+    token: tokenParam,
   } = await searchParams;
 
   const session = await auth().catch(() => null);
-  if (!session?.user?.id) {
+
+  let isCollabPeer = false;
+  let isInterviewer = false;
+  if (sessionIdParam) {
+    const interviewSession = await prisma.interviewSession.findUnique({
+      where: { id: sessionIdParam },
+      select: { shareToken: true, userId: true, creatorRole: true },
+    });
+    if (interviewSession) {
+      const isSessionOwner = session?.user?.id === interviewSession.userId;
+      const hasValidToken = !!tokenParam && tokenParam === interviewSession.shareToken;
+
+      if (hasValidToken) isCollabPeer = true;
+
+      // Determine this viewer's role based on creatorRole logic
+      if (interviewSession.creatorRole === "interviewer") {
+        // Owner is the Interviewer, token-holder is the Candidate
+        isInterviewer = isSessionOwner;
+      } else {
+        // Default: Owner is Candidate, token-holder is Interviewer
+        isInterviewer = hasValidToken;
+      }
+    }
+  }
+
+  if (!isCollabPeer && !session?.user?.id) {
     redirect(
       `/login?next=${encodeURIComponent(
         `/challenges/${slug}/attempt${stepParam ? `?step=${stepParam}` : ""}`
       )}`
     );
   }
-  const userId = session.user.id;
-  const userEmail = session.user?.email?.toLowerCase() ?? null;
+  
+  const userId = session?.user?.id ?? "collab-peer";
+  const userEmail = session?.user?.email?.toLowerCase() ?? null;
 
   const challenge = await prisma.challenge.findUnique({
     where: { slug },
@@ -64,7 +96,7 @@ export default async function ChallengeAttemptPage({
   // - Anything else → 404 (non-enumerable, like /tracks did).
   const isOwner = challenge.authorId === userId;
   const callerIsAdmin = isAdmin(session);
-  let canView = isOwner || callerIsAdmin;
+  let canView = isCollabPeer || isOwner || callerIsAdmin;
 
   if (!canView) {
     if (!challenge.published) notFound();
@@ -150,13 +182,23 @@ export default async function ChallengeAttemptPage({
     : null;
 
   const isMulti = steps.length > 1;
+  
+  // Preserve essential query parameters for peers navigating between steps
+  const queryParams = new URLSearchParams();
+  if (sessionIdParam) queryParams.set("session", sessionIdParam);
+  if (tokenParam) queryParams.set("token", tokenParam);
+  if (multiplayerParam) queryParams.set("multiplayer", multiplayerParam);
+  if (simParam) queryParams.set("sim", simParam);
+  
+  const baseQueryStr = queryParams.toString() ? `&${queryParams.toString()}` : "";
+
   const prevHref =
     stepIndex > 0
-      ? `/challenges/${slug}/attempt?step=${stepIndex - 1}`
+      ? `/challenges/${slug}/attempt?step=${stepIndex - 1}${baseQueryStr}`
       : null;
   const nextHref =
     stepIndex < steps.length - 1
-      ? `/challenges/${slug}/attempt?step=${stepIndex + 1}`
+      ? `/challenges/${slug}/attempt?step=${stepIndex + 1}${baseQueryStr}`
       : null;
 
   return (
@@ -172,6 +214,7 @@ export default async function ChallengeAttemptPage({
             currentStep={stepIndex}
             prevHref={prevHref}
             nextHref={nextHref}
+            baseQueryStr={baseQueryStr}
           />
         </div>
       )}
@@ -197,6 +240,9 @@ export default async function ChallengeAttemptPage({
         starterFiles={starterFiles}
         testFiles={testFiles}
         sessionId={sessionIdParam ?? null}
+        multiplayer={multiplayerParam === "true"}
+        sim={simParam === "true"}
+        isInterviewer={isInterviewer}
       />
     </>
   );
@@ -209,20 +255,22 @@ function StepNavigator({
   currentStep,
   prevHref,
   nextHref,
+  baseQueryStr,
 }: {
   slug: string;
   steps: { position: number; title: string }[];
   currentStep: number;
   prevHref: string | null;
   nextHref: string | null;
+  baseQueryStr: string;
 }) {
   return (
     <div className="rounded-2xl border border-accent/30 bg-accent/5 p-3 flex items-center gap-3">
       <Link
-        href={`/challenges/${slug}`}
+        href={baseQueryStr.includes("session=") ? `/interview/${new URLSearchParams(baseQueryStr).get("session")}?lobby=true` : `/challenges/${slug}`}
         className="text-xs font-bold text-muted hover:text-fg transition whitespace-nowrap"
       >
-        ← Back to challenge
+        {baseQueryStr.includes("session=") ? "← Back to Lobby" : "← Back to challenge"}
       </Link>
       <div className="flex-1 flex items-center gap-1 overflow-x-auto">
         {steps.map((s) => {
@@ -230,7 +278,7 @@ function StepNavigator({
           return (
             <Link
               key={s.position}
-              href={`/challenges/${slug}/attempt?step=${s.position}`}
+              href={`/challenges/${slug}/attempt?step=${s.position}${baseQueryStr}`}
               className={`shrink-0 px-3 py-1.5 rounded-lg text-[11px] font-bold transition border ${
                 isActive
                   ? "bg-accent text-bg border-accent"

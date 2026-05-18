@@ -278,13 +278,24 @@ model InterviewSession {
   userId        String
   user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   title         String   @default("Interview Session")
+  candidateName String?
+  type          String   @default("mock") // "mock" | "live"
+  verdict       String?  // "success" | "failed" | "left_in_between" | "suspicious"
+  notes         String?
+  creatorRole   String   @default("candidate") // "interviewer" | "candidate"
+  /// Set when a guest candidate requests the interviewer to start the session.
+  startRequestedAt DateTime?
   /// JSON-encoded string[] of challenge IDs, in order.
   challengeIds  String
+  /// Tracks the ID of the challenge currently being worked on
+  activeChallengeId String?
   /// Hard time limit for the whole session, in seconds.
   totalSec      Int
   status        String   @default("scheduled")
   /// Random token used to grant read-only "interviewer view" access.
   shareToken    String   @unique
+  /// A friendly 4-digit access code (e.g., "4921")
+  shortCode     String?  @unique
   startedAt     DateTime?
   finishedAt    DateTime?
   createdAt     DateTime @default(now())

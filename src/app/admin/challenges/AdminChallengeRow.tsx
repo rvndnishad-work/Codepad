@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { toast } from "sonner";
 import { Edit3, Trash2, ExternalLink } from "lucide-react";
+import { BulkRowCheckbox } from "./ChallengesBulkTable";
 
 type Row = {
   id: string;
@@ -71,6 +72,9 @@ export default function AdminChallengeRow({ challenge }: { challenge: Row }) {
 
   return (
     <tr className="border-t border-border hover:bg-elevated/30 transition">
+      <td className="pl-4 pr-2 py-3 w-8">
+        <BulkRowCheckbox id={challenge.id} />
+      </td>
       <td className="px-4 py-3">
         <div className="font-bold text-fg">{challenge.title}</div>
         <div className="text-[11px] text-muted font-mono">{challenge.slug}</div>

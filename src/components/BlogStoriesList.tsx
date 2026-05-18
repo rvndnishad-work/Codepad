@@ -66,6 +66,7 @@ export default function BlogStoriesList({
       const params = new URLSearchParams({
         before: cursor,
         limit: String(batchSize),
+        excludeFeatured: "true",
       });
       if (tag) params.set("tag", tag);
       const res = await fetch(`/api/blogs?${params}`, { cache: "no-store" });

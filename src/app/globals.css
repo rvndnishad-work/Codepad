@@ -32,8 +32,8 @@
     --surface: #11131a;
     --panel: #181c26;
     --elevated: #242936;
-    --border: rgba(255, 255, 255, 0.08);
-    --border-strong: rgba(255, 255, 255, 0.15);
+    --border: rgba(123, 132, 150, 0.15);
+    --border-strong: rgba(123, 132, 150, 0.25);
     --muted: #7b8496;
     --subtle: #9aa3b5;
     --fg: #e8ebf2;

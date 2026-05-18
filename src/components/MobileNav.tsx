@@ -13,7 +13,7 @@ const ICON_MAP: Record<string, any> = {
   "/challenges": Target,
   "/blog": BookOpen,
   "/explore": Compass,
-  "/interview/new": Briefcase,
+  "/interview": Briefcase,
 };
 
 
@@ -59,7 +59,7 @@ export default function MobileNav({
   const visibleItems = [
     ...navLinks
       .filter((link) => {
-        if (link.href === "/interview/new" && !signedIn) return false;
+        if (link.href === "/interview" && !signedIn) return false;
         if (link.status === "hidden" && !isAdmin) return false;
         return true;
       })

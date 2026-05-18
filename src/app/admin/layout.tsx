@@ -2,7 +2,8 @@ import { auth } from "@/lib/auth";
 import { isAdmin } from "@/lib/admin";
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import { LayoutDashboard, Target, Users, FileText, ArrowLeft, Settings, Pin } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
+import AdminLink from "./AdminLink";
 
 export const metadata = {
   title: "Admin — Interviewpad",
@@ -14,75 +15,78 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   if (!isAdmin(session)) notFound();
 
   return (
-    <div className="min-h-screen bg-bg text-fg">
-      <div className="mx-auto max-w-7xl px-6 py-8">
-        <div className="flex items-center justify-between mb-8">
-          <div className="flex items-center gap-3">
-            <Link
-              href="/"
-              className="w-9 h-9 rounded-xl bg-surface border border-border flex items-center justify-center text-muted hover:text-fg hover:border-border-strong transition"
-              title="Back to site"
-            >
-              <ArrowLeft className="w-4 h-4" />
-            </Link>
+    <div className="bg-bg text-fg flex flex-col lg:flex-row overflow-hidden h-[calc(100vh-64px)]">
+      {/* Premium Left Sidebar Dashboard Menu */}
+      <aside className="w-full lg:w-60 shrink-0 border-b lg:border-b-0 lg:border-r border-border bg-panel flex flex-col h-auto lg:h-full z-20">
+        {/* Brand Header */}
+        <div className="p-5 border-b border-border flex items-center justify-between">
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-lg bg-accent flex items-center justify-center text-bg font-black text-sm shrink-0">
+              IP
+            </div>
             <div>
-              <div className="text-[10px] font-black tracking-[0.2em] text-muted uppercase">
+              <div className="text-[9px] font-black tracking-[0.2em] text-muted uppercase leading-none">
                 Internal
               </div>
-              <h1 className="text-xl font-black tracking-tight">Admin</h1>
+              <h1 className="text-sm font-black tracking-tight mt-0.5">Admin Panel</h1>
             </div>
           </div>
-          <div className="text-[10px] text-muted font-mono">
-            signed in as {session?.user?.email}
+          <Link
+            href="/"
+            className="w-7 h-7 rounded-lg bg-surface border border-border flex items-center justify-center text-muted hover:text-fg hover:border-border-strong transition"
+            title="Back to site"
+          >
+            <ArrowLeft className="w-3.5 h-3.5" />
+          </Link>
+        </div>
+
+        {/* Dynamic Sidebar Links */}
+        <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
+          <div className="text-[9px] font-bold tracking-wider text-muted/55 uppercase px-3 mb-2">
+            Core
+          </div>
+          <AdminLink href="/admin" icon="LayoutDashboard" label="Dashboard" />
+          <AdminLink href="/admin/inbox" icon="Inbox" label="Inbox" />
+          <AdminLink href="/admin/challenges" icon="Target" label="Challenges" />
+          <AdminLink href="/admin/attempts" icon="Code2" label="Attempts" />
+          <AdminLink href="/admin/interviews" icon="Briefcase" label="Interviews" />
+          
+          <div className="text-[9px] font-bold tracking-wider text-muted/55 uppercase px-3 pt-4 mb-2">
+            Content & Users
+          </div>
+          <AdminLink href="/admin/snippets" icon="Pin" label="Trends" />
+          <AdminLink href="/admin/users" icon="Users" label="Users" />
+          <AdminLink href="/admin/blogs" icon="FileText" label="Blogs" />
+          <AdminLink href="/admin/comments" icon="MessageCircle" label="Comments" />
+          
+          <div className="text-[9px] font-bold tracking-wider text-muted/55 uppercase px-3 pt-4 mb-2">
+            System
+          </div>
+          <AdminLink href="/admin/settings" icon="Settings" label="Settings" />
+        </nav>
+
+        {/* Bottom Profile Details */}
+        <div className="p-4 border-t border-border bg-elevated/20 flex items-center gap-3">
+          <div className="w-8 h-8 rounded-full bg-accent/10 flex items-center justify-center text-accent font-mono font-bold text-xs uppercase shrink-0">
+            {session?.user?.name?.[0] || session?.user?.email?.[0] || "A"}
+          </div>
+          <div className="min-w-0 flex-1">
+            <div className="text-xs font-bold text-fg truncate">
+              {session?.user?.name || "Administrator"}
+            </div>
+            <div className="text-[10px] text-muted truncate leading-none mt-0.5">
+              {session?.user?.email}
+            </div>
           </div>
         </div>
+      </aside>
 
-        <div className="grid grid-cols-1 lg:grid-cols-[220px_1fr] gap-8">
-          <aside className="space-y-1">
-            <AdminLink href="/admin" icon={LayoutDashboard} label="Dashboard" />
-            <AdminLink href="/admin/challenges" icon={Target} label="Challenges" />
-            {/* Tracks admin removed in Stage 2 — Tracks are now multi-step
-                Challenges. Edit at /admin/challenges/[id]/edit. */}
-            <AdminLink href="/admin/snippets" icon={Pin} label="Trends" />
-            <AdminLink href="/admin/users" icon={Users} label="Users" />
-            <AdminLink href="/admin/blogs" icon={FileText} label="Blogs" />
-            <AdminLink href="/admin/settings" icon={Settings} label="Settings" />
-          </aside>
-
-          <section>{children}</section>
+      {/* Main Scrollable Dashboard Content */}
+      <main className="flex-1 h-full overflow-y-auto bg-surface">
+        <div className="px-6 py-8 lg:px-10 lg:py-8 max-w-6xl mx-auto w-full">
+          {children}
         </div>
-      </div>
+      </main>
     </div>
-  );
-}
-
-function AdminLink({
-  href,
-  icon: Icon,
-  label,
-  disabled,
-}: {
-  href: string;
-  icon: React.ComponentType<{ className?: string }>;
-  label: string;
-  disabled?: boolean;
-}) {
-  if (disabled) {
-    return (
-      <div className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-xs font-bold uppercase tracking-wider text-muted/30 cursor-not-allowed">
-        <Icon className="w-4 h-4" />
-        {label}
-        <span className="ml-auto text-[9px] font-medium normal-case tracking-normal">soon</span>
-      </div>
-    );
-  }
-  return (
-    <Link
-      href={href}
-      className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-xs font-bold uppercase tracking-wider text-muted hover:text-fg hover:bg-surface transition"
-    >
-      <Icon className="w-4 h-4" />
-      {label}
-    </Link>
   );
 }

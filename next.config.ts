@@ -31,6 +31,16 @@ const nextConfig: NextConfig = {
         destination: "/playgrounds",
         permanent: true,
       },
+      {
+        source: "/j",
+        destination: "/join",
+        permanent: true,
+      },
+      {
+        source: "/j/:code",
+        destination: "/join/:code",
+        permanent: true,
+      },
     ];
   },
 };

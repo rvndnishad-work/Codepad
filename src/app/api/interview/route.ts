@@ -1,14 +1,17 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { nanoid } from "nanoid";
+import { nanoid, customAlphabet } from "nanoid";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { clientKey, rateLimit } from "@/lib/rate-limit";
 
 const createSchema = z.object({
   title: z.string().min(1).max(120).optional(),
+  candidateName: z.string().max(80).optional().nullable(),
+  type: z.enum(["mock", "live"]).optional(),
   challengeIds: z.array(z.string().min(1)).min(1).max(10),
   totalSec: z.number().int().min(60).max(60 * 60 * 4), // 1 min – 4 hrs
+  creatorRole: z.enum(["interviewer", "candidate"]).optional().default("candidate"),
 });
 
 export async function POST(req: Request) {
@@ -42,16 +45,37 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "no valid challenges" }, { status: 400 });
   }
 
+  const generateShortCode = customAlphabet("0123456789", 4);
+  let shortCode = generateShortCode();
+  let retries = 0;
+  
+  // Prevent collision on 4-digit code
+  while (retries < 10) {
+    const exists = await prisma.interviewSession.findUnique({ where: { shortCode } });
+    if (!exists) break;
+    shortCode = generateShortCode();
+    retries++;
+  }
+  
+  // Fallback to 6-char alphanumeric if space is highly saturated/bad luck
+  if (retries >= 10) {
+    shortCode = nanoid(6).toUpperCase();
+  }
+
   const interview = await prisma.interviewSession.create({
     data: {
       userId: session.user.id,
       title: parsed.data.title ?? "Interview Session",
+      candidateName: parsed.data.candidateName ?? null,
+      type: parsed.data.type ?? "mock",
       challengeIds: JSON.stringify(ordered),
       totalSec: parsed.data.totalSec,
       shareToken: nanoid(24),
+      shortCode,
       status: "scheduled",
+      creatorRole: parsed.data.creatorRole,
     },
-    select: { id: true, shareToken: true },
+    select: { id: true, shareToken: true, shortCode: true },
   });
 
   return NextResponse.json(interview, { status: 201 });

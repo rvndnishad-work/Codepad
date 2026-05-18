@@ -12,5 +12,5 @@ export const DEFAULT_NAV_LINKS: NavLinkConfig[] = [
   { href: "/challenges", label: "Challenges", status: "visible" },
   { href: "/blog", label: "Blog", status: "visible" },
   { href: "/explore", label: "Explore", status: "visible" },
-  { href: "/interview/new", label: "Interviews", status: "visible" },
+  { href: "/interview", label: "Interviews", status: "visible" },
 ];

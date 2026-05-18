@@ -4,7 +4,7 @@ import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Shield, User, Trash2, ExternalLink, Code2, Target, FileText, Loader2, Edit3, ShieldAlert } from "lucide-react";
+import { Shield, User, Trash2, ExternalLink, Code2, Target, FileText, Loader2, Edit3, ShieldAlert, ShieldOff } from "lucide-react";
 import AdminUserEditModal from "./AdminUserEditModal";
 
 interface AdminUserRowProps {
@@ -31,6 +31,7 @@ export default function AdminUserRow({ user }: AdminUserRowProps) {
   const router = useRouter();
   const [isDeleting, setIsDeleting] = useState(false);
   const [isEditOpen, setIsEditOpen] = useState(false);
+  const [isToggling, setIsToggling] = useState(false);
 
   async function handleDelete() {
     if (!confirm(`Are you sure you want to delete ${user.name || user.email}? This action is permanent and will delete all their data.`)) {
@@ -53,6 +54,33 @@ export default function AdminUserRow({ user }: AdminUserRowProps) {
       alert("Error deleting user. Please try again.");
     } finally {
       setIsDeleting(false);
+    }
+  }
+
+  async function handleToggleBan() {
+    const action = user.banned ? "unban" : "ban";
+    if (!confirm(`${action === "ban" ? "Ban" : "Unban"} ${user.name || user.email}?`)) {
+      return;
+    }
+
+    setIsToggling(true);
+    try {
+      const res = await fetch(`/api/admin/users/${user.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ banned: !user.banned }),
+      });
+
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error || `Failed to ${action} user`);
+      }
+
+      router.refresh();
+    } catch (err) {
+      alert(err instanceof Error ? err.message : `Error ${action}ning user.`);
+    } finally {
+      setIsToggling(false);
     }
   }
 
@@ -147,7 +175,7 @@ export default function AdminUserRow({ user }: AdminUserRowProps) {
         </td>
 
         <td className="px-6 py-4 text-right">
-          <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+          <div className={`flex items-center justify-end gap-2 transition-opacity ${user.banned ? "opacity-100" : "opacity-0 group-hover:opacity-100"}`}>
             <button
               onClick={() => setIsEditOpen(true)}
               className="p-2 rounded-lg bg-surface border border-border text-muted hover:text-accent hover:border-accent/50 transition"
@@ -155,7 +183,7 @@ export default function AdminUserRow({ user }: AdminUserRowProps) {
             >
               <Edit3 className="w-4 h-4" />
             </button>
-            
+
             <Link
               href={`/u/${user.id}`}
               target="_blank"
@@ -164,7 +192,28 @@ export default function AdminUserRow({ user }: AdminUserRowProps) {
             >
               <ExternalLink className="w-4 h-4" />
             </Link>
-            
+
+            {!user.isAdmin && (
+              <button
+                onClick={handleToggleBan}
+                disabled={isToggling}
+                className={`p-2 rounded-lg border transition disabled:opacity-50 ${
+                  user.banned
+                    ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-500 hover:bg-emerald-500/15"
+                    : "bg-surface border-border text-muted hover:text-red-500 hover:border-red-500/50"
+                }`}
+                title={user.banned ? "Unban User" : "Ban User"}
+              >
+                {isToggling ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : user.banned ? (
+                  <ShieldOff className="w-4 h-4" />
+                ) : (
+                  <ShieldAlert className="w-4 h-4" />
+                )}
+              </button>
+            )}
+
             {!user.isAdmin && (
               <button
                 onClick={handleDelete}

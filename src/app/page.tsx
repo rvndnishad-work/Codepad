@@ -6,10 +6,11 @@ import HomeChallenges from "./HomeChallenges";
 import HomeExplore from "./HomeExplore";
 import HomeFinalCTA from "./HomeFinalCTA";
 import Link from "next/link";
-import { ArrowRight, BookOpen, TrendingUp, Pin, Hash, PenSquare } from "lucide-react";
+import { ArrowRight, BookOpen, TrendingUp, Hash, PenSquare } from "lucide-react";
 import { type BlogFeedEntry } from "@/components/BlogFeedItem";
 import BlogCardHero from "@/components/BlogCardHero";
 import BlogLazyFeed from "@/components/BlogLazyFeed";
+import FeaturedCarousel from "@/components/FeaturedCarousel";
 import BlogPopularRow from "@/components/BlogPopularRow";
 import TemplatePicker from "@/components/TemplatePicker";
 
@@ -94,11 +95,13 @@ export default async function HomePage() {
     };
   }
 
-  const [featuredRow, popularRows, recentRows] = await Promise.all([
-    // Admin-pinned hero: most recent featured post.
-    prisma.blogPost.findFirst({
+  const [pinnedBlogRows, popularRows, recentRows] = await Promise.all([
+    // Admin-pinned hero rail — show all featured posts in a carousel above the
+    // editorial grid. Capped at 8 to keep the carousel sensible to swipe.
+    prisma.blogPost.findMany({
       where: { published: true, featured: true },
-      orderBy: { createdAt: "desc" },
+      orderBy: { updatedAt: "desc" },
+      take: 8,
       include: { user: { select: { name: true, image: true } } },
     }),
     // Popular sidebar: top 6 by all-time views (over-fetch by 1 in case the
@@ -122,9 +125,10 @@ export default async function HomePage() {
   ]);
 
   const usedIds = new Set<string>();
-  const heroEntry: BlogFeedEntry | null = featuredRow
-    ? (usedIds.add(featuredRow.id), toEntry(featuredRow as BlogRow))
-    : null;
+  const pinnedEntries: BlogFeedEntry[] = pinnedBlogRows.map((b) => {
+    usedIds.add(b.id);
+    return toEntry(b as BlogRow);
+  });
   const popularEntries: BlogFeedEntry[] = popularRows
     .filter((b) => !usedIds.has(b.id))
     .slice(0, 5)
@@ -136,11 +140,12 @@ export default async function HomePage() {
     .filter((b) => !usedIds.has(b.id))
     .map((b) => toEntry(b as BlogRow));
 
-  // If no admin-pinned post exists, promote the freshest unused recent to hero
-  // so the editorial layout doesn't fall apart.
-  let homeHero = heroEntry;
+  // When admins haven't pinned anything, promote the freshest unused recent to
+  // a hero card so the section still has a focal point. With a pinned
+  // carousel above, the BlogCardHero is skipped — its role is filled.
+  let homeHero: BlogFeedEntry | null = null;
   let homeGrid = latestGridEntries;
-  if (!homeHero && homeGrid.length > 0) {
+  if (pinnedEntries.length === 0 && homeGrid.length > 0) {
     homeHero = homeGrid[0];
     homeGrid = homeGrid.slice(1);
   }
@@ -153,6 +158,7 @@ export default async function HomePage() {
   });
   const idsAlreadyShown = new Set<string>();
   if (homeHero) idsAlreadyShown.add(homeHero.id);
+  pinnedEntries.forEach((p) => idsAlreadyShown.add(p.id));
   popularEntries.forEach((p) => idsAlreadyShown.add(p.id));
   homeGrid.forEach((g) => idsAlreadyShown.add(g.id));
   const scrollerCursor: string | null =
@@ -162,7 +168,11 @@ export default async function HomePage() {
 
 
 
-  const hasAnyBlog = !!homeHero || homeGrid.length > 0 || popularEntries.length > 0;
+  const hasAnyBlog =
+    !!homeHero ||
+    pinnedEntries.length > 0 ||
+    homeGrid.length > 0 ||
+    popularEntries.length > 0;
 
   const featured = featuredRows.map((s) => ({
     id: s.id,
@@ -213,24 +223,25 @@ export default async function HomePage() {
               </Link>
             </div>
 
+            {/* Pinned posts: full-width hero carousel above the editorial grid
+                so it doesn't squeeze the sidebar. Renders only when admins
+                have pinned at least one post. */}
+            {pinnedEntries.length > 0 && (
+              <div className="mb-8">
+                <FeaturedCarousel items={pinnedEntries} />
+              </div>
+            )}
+
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
               {/* Main column — hero + a single row of 3 grid cards. Keeps the
                   homepage section compact (the full feed lives on /blog) and
                   matches the height of the stacked sidebar widgets on the
                   right. Takes 2/3 of the width on desktop. */}
               <div className="lg:col-span-2 space-y-6">
-                {homeHero && (
-                  <div className="relative">
-                    {/* Pin badge floats above the hero when this story was
-                        explicitly featured by an admin (vs. just the freshest). */}
-                    {!!featuredRow && featuredRow.id === homeHero.id && (
-                      <span className="absolute top-3 left-3 z-10 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-bg/90 backdrop-blur border border-accent/40 text-[9px] font-black uppercase tracking-[0.18em] text-accent">
-                        <Pin className="w-2.5 h-2.5 fill-current" />
-                        Staff pick
-                      </span>
-                    )}
-                    <BlogCardHero blog={homeHero} />
-                  </div>
+                {/* BlogCardHero only appears when nothing is pinned — the
+                    carousel above takes its role when pinned posts exist. */}
+                {homeHero && pinnedEntries.length === 0 && (
+                  <BlogCardHero blog={homeHero} />
                 )}
 
                 {homeGrid.length > 0 && (

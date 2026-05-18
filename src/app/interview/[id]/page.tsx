@@ -14,10 +14,10 @@ export default async function InterviewRunPage({
   searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ token?: string }>;
+  searchParams: Promise<{ token?: string; lobby?: string }>;
 }) {
   const { id } = await params;
-  const { token } = await searchParams;
+  const { token, lobby } = await searchParams;
 
   const session = await auth().catch(() => null);
   await validatePageAccess("/interview/new", session);
@@ -33,7 +33,37 @@ export default async function InterviewRunPage({
     }
     notFound();
   }
-  const interviewerView = !isOwner && hasShareToken;
+  // Resolving role alignment based on creator selection
+  let interviewerView = false;
+  if (interview.creatorRole === "interviewer") {
+    // If the creator chose "I am the Interviewer", then the Owner IS the Interviewer.
+    // Therefore, the Guest (who has the token) is the Candidate.
+    if (isOwner) interviewerView = true;
+    else if (hasShareToken) interviewerView = false;
+  } else {
+    // Default fallback: Creator is Candidate. Owner IS Candidate. Guest is Interviewer.
+    if (isOwner) interviewerView = false;
+    else if (hasShareToken) interviewerView = true;
+  }
+
+  // Auto-redirect guest to active challenge if not explicitly visiting lobby
+  if (
+    !isOwner &&
+    hasShareToken &&
+    interview.status === "in_progress" &&
+    interview.activeChallengeId &&
+    lobby !== "true"
+  ) {
+    const activeChallenge = await prisma.challenge.findUnique({
+      where: { id: interview.activeChallengeId },
+      select: { slug: true },
+    });
+    if (activeChallenge) {
+      redirect(
+        `/challenges/${activeChallenge.slug}/attempt?session=${interview.id}&multiplayer=true&token=${token}`
+      );
+    }
+  }
 
   const ids: string[] = (() => {
     try {
@@ -84,9 +114,14 @@ export default async function InterviewRunPage({
       interview={{
         id: interview.id,
         title: interview.title,
+        candidateName: interview.candidateName,
+        type: interview.type,
+        verdict: interview.verdict,
+        notes: interview.notes,
         totalSec: interview.totalSec,
         status: interview.status as "scheduled" | "in_progress" | "completed" | "abandoned",
         shareToken: interview.shareToken,
+        shortCode: interview.shortCode,
         startedAtIso: interview.startedAt ? interview.startedAt.toISOString() : null,
         finishedAtIso: interview.finishedAt ? interview.finishedAt.toISOString() : null,
       }}
@@ -97,6 +132,7 @@ export default async function InterviewRunPage({
         durationSec: a.durationSec ?? null,
       }))}
       interviewerView={interviewerView}
+      isOwner={isOwner}
     />
   );
 }

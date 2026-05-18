@@ -38,6 +38,9 @@ const difficultyBg: Record<string, string> = {
 export default function InterviewBuilder({ challenges }: { challenges: ChallengeOption[] }) {
   const router = useRouter();
   const [title, setTitle] = useState("Interview Session");
+  const [candidateName, setCandidateName] = useState("");
+  const [type, setType] = useState<"mock" | "live">("mock");
+  const [creatorRole, setCreatorRole] = useState<"interviewer" | "candidate">("interviewer");
   const [selected, setSelected] = useState<string[]>([]);
   const [minutes, setMinutes] = useState(30);
   const [creating, setCreating] = useState(false);
@@ -87,8 +90,11 @@ export default function InterviewBuilder({ challenges }: { challenges: Challenge
         headers: { "content-type": "application/json" },
         body: JSON.stringify({
           title: title.trim() || "Interview Session",
+          candidateName: candidateName.trim() || null,
+          type,
           challengeIds: selected,
           totalSec: minutes * 60,
+          creatorRole,
         }),
         cache: "no-store",
       });
@@ -105,7 +111,7 @@ export default function InterviewBuilder({ challenges }: { challenges: Challenge
   return (
     <div className="mx-auto max-w-5xl px-6 py-10">
       <Link
-        href="/challenges"
+        href="/interview"
         className="inline-flex items-center gap-1.5 text-xs font-semibold text-muted hover:text-fg transition mb-6"
       >
         <ArrowLeft className="w-3.5 h-3.5" />
@@ -130,7 +136,7 @@ export default function InterviewBuilder({ challenges }: { challenges: Challenge
       </p>
 
       {/* Title + time limit */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-10">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
         <div>
           <label className="block text-[11px] font-bold uppercase tracking-wider text-muted mb-2">
             Session title
@@ -162,6 +168,77 @@ export default function InterviewBuilder({ challenges }: { challenges: Challenge
                 {Math.max(totalEstimate, 5)}m
               </span>
             </span>
+          </div>
+        </div>
+      </div>
+
+      {/* Candidate Name + Interview Type Classifier */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-10 pb-6 border-b border-border/60">
+        <div>
+          <label className="block text-[11px] font-bold uppercase tracking-wider text-muted mb-2">
+            Candidate Name (Optional)
+          </label>
+          <input
+            value={candidateName}
+            onChange={(e) => setCandidateName(e.target.value)}
+            placeholder="e.g. John Doe"
+            className="w-full px-3.5 py-2.5 rounded-xl bg-surface border border-border focus:border-accent/40 focus:bg-elevated text-sm text-fg outline-none transition mb-4"
+          />
+          <label className="block text-[11px] font-bold uppercase tracking-wider text-muted mb-2">
+            Who are you in this session?
+          </label>
+          <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={() => setCreatorRole("interviewer")}
+              className={`flex-1 py-2.5 rounded-xl text-xs font-bold transition border ${
+                creatorRole === "interviewer"
+                  ? "bg-accent/10 border-accent/40 text-accent font-extrabold"
+                  : "bg-surface border-border text-muted hover:text-fg hover:bg-elevated"
+              }`}
+            >
+              I am the Interviewer
+            </button>
+            <button
+              type="button"
+              onClick={() => setCreatorRole("candidate")}
+              className={`flex-1 py-2.5 rounded-xl text-xs font-bold transition border ${
+                creatorRole === "candidate"
+                  ? "bg-accent/10 border-accent/40 text-accent font-extrabold"
+                  : "bg-surface border-border text-muted hover:text-fg hover:bg-elevated"
+              }`}
+            >
+              I am the Candidate
+            </button>
+          </div>
+        </div>
+        <div>
+          <label className="block text-[11px] font-bold uppercase tracking-wider text-muted mb-2">
+            Interview Type Classifier
+          </label>
+          <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={() => setType("mock")}
+              className={`flex-1 py-2.5 rounded-xl text-xs font-bold transition border ${
+                type === "mock"
+                  ? "bg-indigo-500/10 border-indigo-500/40 text-indigo-500 font-extrabold"
+                  : "bg-surface border-border text-muted hover:text-fg hover:bg-elevated"
+              }`}
+            >
+              Mock Practice (Internal Team)
+            </button>
+            <button
+              type="button"
+              onClick={() => setType("live")}
+              className={`flex-1 py-2.5 rounded-xl text-xs font-bold transition border ${
+                type === "live"
+                  ? "bg-emerald-500/10 border-emerald-500/40 text-emerald-500 font-extrabold"
+                  : "bg-surface border-border text-muted hover:text-fg hover:bg-elevated"
+              }`}
+            >
+              Live / Actual Interview
+            </button>
           </div>
         </div>
       </div>

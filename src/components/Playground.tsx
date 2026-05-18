@@ -14,18 +14,11 @@ function useIsMobile(breakpoint = 768) {
 import {
   SandpackProvider,
   SandpackLayout,
-  SandpackCodeEditor,
   SandpackPreview,
   SandpackConsole,
   useSandpack,
   type SandpackFiles,
 } from "@codesandbox/sandpack-react";
-import { javascript, javascriptLanguage } from "@codemirror/lang-javascript";
-import { css } from "@codemirror/lang-css";
-import { html } from "@codemirror/lang-html";
-import { autocompletion, snippetCompletion } from "@codemirror/autocomplete";
-import { customSnippets } from "@/lib/snippets";
-import { colorPicker } from "@replit/codemirror-css-color-picker";
 import FileExplorer from "./FileExplorer";
 import { ErrorBridge, ErrorOverlay, type ErrorData } from "./ErrorOverlay";
 import PromptSidebar from "./PromptSidebar";
@@ -153,54 +146,6 @@ function ReadOnlyToolbar({ editable }: { editable: boolean }) {
   );
 }
 
-const customSnippetExtension = javascriptLanguage.data.of({
-  autocomplete: (context: any) => {
-    const word = context.matchBefore(/\w*/);
-    if (!word || (word.from === word.to && !context.explicit)) return null;
-    return {
-      from: word.from,
-      options: customSnippets.map((s) =>
-        snippetCompletion(s.cm6InsertText || s.insertText, {
-          label: s.label,
-          info: s.documentation,
-          type: "keyword",
-        })
-      ),
-    };
-  },
-});
-
-function BasicEditor({ editable }: { editable: boolean }) {
-  const { sandpack } = useSandpack();
-  const activeFile = sandpack.activeFile;
-  const ext = activeFile.split('.').pop()?.toLowerCase() || "";
-
-  const extensions = useMemo(() => {
-    const base = [autocompletion(), colorPicker];
-    if (["js", "jsx", "ts", "tsx"].includes(ext)) {
-      base.push(javascript({ jsx: true, typescript: true }));
-      base.push(customSnippetExtension);
-    } else if (["css", "scss"].includes(ext)) {
-      base.push(css());
-    } else if (ext === "html") {
-      base.push(html());
-    }
-    return base;
-  }, [ext]);
-
-  return (
-    <SandpackCodeEditor
-      extensions={extensions}
-      showLineNumbers
-      showTabs
-      closableTabs
-      wrapContent
-      readOnly={!editable}
-      style={{ height: "100%" }}
-    />
-  );
-}
-
 function StatusDot() {
   const { sandpack } = useSandpack();
   const status = sandpack.status;
@@ -273,7 +218,6 @@ export default function Playground({
   const [view, setView] = useState<"preview" | "console" | "both">(
     tpl.mode === "console" ? "console" : "preview"
   );
-  const [editor, setEditor] = useState<"sandpack" | "monaco">("sandpack");
   const [fontSize, setFontSize] = useState(14);
   const [snippetId, setSnippetId] = useState<string | null>(snippet?.id ?? null);
   const [currentSlug, setCurrentSlug] = useState<string | null>(snippet?.slug ?? null);
@@ -497,9 +441,6 @@ export default function Playground({
 
   // ── Persistence: Editor Settings ──
   useEffect(() => {
-    const savedEditor = localStorage.getItem("interviewpad_editor");
-    if (savedEditor === "sandpack" || savedEditor === "monaco") setEditor(savedEditor);
-
     const savedFontSize = localStorage.getItem("interviewpad_fontSize");
     if (savedFontSize) {
       const parsed = parseInt(savedFontSize, 10);
@@ -509,10 +450,6 @@ export default function Playground({
     const savedAutoRun = localStorage.getItem("interviewpad_autoRun");
     if (savedAutoRun !== null) setAutoRun(savedAutoRun === "true");
   }, []);
-
-  useEffect(() => {
-    localStorage.setItem("interviewpad_editor", editor);
-  }, [editor]);
 
   useEffect(() => {
     localStorage.setItem("interviewpad_fontSize", fontSize.toString());
@@ -684,7 +621,7 @@ export default function Playground({
             <PlaygroundToolbar
               templateId={templateId} tplTitle={tpl.title} title={title} setTitle={setTitle}
               dirty={dirty} setDirty={setDirty} editable={editable} signedIn={signedIn}
-              saving={saving} lastSavedAt={lastSavedAt} editor={editor} setEditor={setEditor}
+              saving={saving} lastSavedAt={lastSavedAt}
               fontSize={fontSize} setFontSize={setFontSize} view={view} setView={setView}
               snippetId={snippetId} visibility={visibility} setVisibility={setVisibility}
               snippet={snippet} isOwner={isOwner} forking={forking}
@@ -757,11 +694,7 @@ export default function Playground({
                       <div className="flex flex-col h-full bg-bg">
                         <div className="flex-[0_0_55%] min-h-0 overflow-hidden flex flex-col ide-panel">
                           <div className="flex-1 min-h-0">
-                            {editor === "sandpack" ? (
-                              <BasicEditor editable={editable} />
-                            ) : (
-                              <MonacoEditor fontSize={fontSize} readOnly={!editable} />
-                            )}
+                            <MonacoEditor fontSize={fontSize} readOnly={!editable} />
                           </div>
                           <ReadOnlyToolbar editable={editable} />
                         </div>
@@ -820,13 +753,9 @@ export default function Playground({
                         )}
                         <div style={{ width: editorW, minWidth: 0 }} className="h-full shrink-0 flex flex-col ide-panel">
                           <div className="flex-1 min-h-0">
-                            {editor === "sandpack" ? (
-                              <BasicEditor editable={editable} />
-                            ) : (
-                              <div className="h-full w-full min-w-0">
-                                <MonacoEditor fontSize={fontSize} readOnly={!editable} />
-                              </div>
-                            )}
+                            <div className="h-full w-full min-w-0">
+                              <MonacoEditor fontSize={fontSize} readOnly={!editable} />
+                            </div>
                           </div>
                           <ReadOnlyToolbar editable={editable} />
                         </div>

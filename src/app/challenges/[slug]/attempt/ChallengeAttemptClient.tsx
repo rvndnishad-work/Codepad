@@ -11,10 +11,17 @@ import {
 } from "@codesandbox/sandpack-react";
 import { cobalt2 } from "@codesandbox/sandpack-themes";
 import { javascript } from "@codemirror/lang-javascript";
+import dynamic from "next/dynamic";
 import * as Y from "yjs";
 import { WebrtcProvider } from "y-webrtc";
 import { yCollab } from "y-codemirror.next";
 import randomColor from "randomcolor";
+
+// Collaborative CodeMirror editor — loaded client-side only (uses browser APIs)
+const CollaborativeEditor = dynamic(
+  () => import("@/components/CollaborativeEditor"),
+  { ssr: false }
+);
 import {
   ArrowLeft,
   CheckCircle2,
@@ -67,6 +74,8 @@ type ChatMessage = {
   time: string;
   isSystem?: boolean;
 };
+
+type LiveLog = { id: string; method: string; data: unknown[]; ts: number };
 
 const difficultyColor: Record<string, string> = {
   easy: "text-emerald-500",
@@ -126,7 +135,11 @@ export default function ChallengeAttemptClient({
     // Connect to secure WebRTC room
     const roomName = `interviewpad-room-${sessionId}`;
     const provider = new WebrtcProvider(roomName, yDoc, {
-      signaling: ['wss://signaling.yjs.dev', 'wss://y-webrtc-signaling-eu.herokuapp.com']
+      signaling: [
+        "ws://localhost:4444",                         // local dev signaling
+        "wss://signaling.yjs.dev",                    // public fallback
+        "wss://y-webrtc-signaling-eu.herokuapp.com",
+      ],
     });
 
     // Set awareness (Cursor colors and User tags)
@@ -225,42 +238,81 @@ export default function ChallengeAttemptClient({
   const [submittedStatus, setSubmittedStatus] = useState<"passed" | "failed" | null>(null);
 
   // Bottom Tests drawer: collapsed by default, drag-to-resize when open.
-  const [testsOpen, setTestsOpen] = useState(false);
-  const [testsHeightPct, setTestsHeightPct] = useState(45);
-  const [drawerTab, setDrawerTab] = useState<"tests" | "console">("tests");
+  const [testsOpen, setTestsOpen] = useState(true);
+  const [testsHeightPct, setTestsHeightPct] = useState(30);
+  const [drawerTab, setDrawerTab] = useState<"tests" | "console">("console");
 
   // Live console: captures console.log messages from every Sandpack iframe
   // (preview AND tests client) via window postMessage. Lives at this level so
   // it captures output regardless of which tab is open or even before the
   // user has expanded the drawer.
+  //
+  // Test runs can emit dozens of logs in rapid succession; we buffer in a ref
+  // and flush via requestAnimationFrame so the parent renders at most once per
+  // frame instead of once per log.
   const [liveLogs, setLiveLogs] = useState<LiveLog[]>([]);
   useEffect(() => {
+    type Op = { kind: "log"; item: LiveLog } | { kind: "clear" };
+    const pending: Op[] = [];
+    let rafId: number | null = null;
+
+    function flush() {
+      rafId = null;
+      if (pending.length === 0) return;
+      const ops = pending.splice(0);
+      setLiveLogs((prev) => {
+        let next = prev;
+        let mutated = false;
+        for (const op of ops) {
+          if (op.kind === "clear") {
+            if (!mutated) {
+              next = [];
+              mutated = true;
+            } else {
+              next.length = 0;
+            }
+          } else {
+            if (!mutated) {
+              next = [...prev];
+              mutated = true;
+            }
+            next.push(op.item);
+          }
+        }
+        return next.length > 300 ? next.slice(next.length - 300) : next;
+      });
+    }
+
     function onMessage(e: MessageEvent) {
       const data = e.data as
         | { type?: string; codesandbox?: boolean; log?: unknown }
         | null;
       if (!data || data.type !== "console" || !data.codesandbox) return;
       const items = Array.isArray(data.log) ? data.log : [data.log];
-      setLiveLogs((prev) => {
-        const next = [...prev];
-        for (const raw of items) {
-          const item = raw as { id?: string; method?: string; data?: unknown[] };
-          if (item?.method === "clear") {
-            next.length = 0;
-            continue;
-          }
-          next.push({
+      for (const raw of items) {
+        const item = raw as { id?: string; method?: string; data?: unknown[] };
+        if (item?.method === "clear") {
+          pending.push({ kind: "clear" });
+          continue;
+        }
+        pending.push({
+          kind: "log",
+          item: {
             id: item?.id ?? `${Date.now()}-${Math.random()}`,
             method: item?.method ?? "log",
             data: Array.isArray(item?.data) ? item.data : [],
             ts: Date.now(),
-          });
-        }
-        return next.length > 300 ? next.slice(next.length - 300) : next;
-      });
+          },
+        });
+      }
+      if (rafId === null) rafId = requestAnimationFrame(flush);
     }
+
     window.addEventListener("message", onMessage);
-    return () => window.removeEventListener("message", onMessage);
+    return () => {
+      window.removeEventListener("message", onMessage);
+      if (rafId !== null) cancelAnimationFrame(rafId);
+    };
   }, []);
   const clearLiveLogs = () => setLiveLogs([]);
   const editorPaneRef = useRef<HTMLDivElement>(null);
@@ -328,6 +380,200 @@ export default function ChallengeAttemptClient({
 
   const filesRef = useRef<SandpackFiles>(files);
 
+  // Bridge ref — populated by a child component placed inside SandpackProvider
+  // so the parent can drive Sandpack mutations (updateFile / addFile) and
+  // dispatch surgical run-tests events from outside the provider tree.
+  type SandpackBridge = {
+    updateFile: (path: string, code: string) => void;
+    addFile?: (path: string, code: string) => void;
+    files: SandpackFiles;
+    runSandpack?: () => void;
+    clients?: Record<string, { dispatch?: (msg: unknown) => void } | undefined>;
+  };
+  const sandpackBridgeRef = useRef<SandpackBridge | null>(null);
+
+  // Sentinel markers delimit the auto-appended debug block inside /index.ts.
+  // We strip everything between these markers before submitting so the block
+  // never ships with the candidate's solution.
+  const DEBUG_BEGIN = "// ─── @debug-run (auto, edit input above) ───";
+  const DEBUG_END = "// ─── end @debug-run ───";
+
+  function stripDebugBlock(src: string): string {
+    const begin = src.indexOf(DEBUG_BEGIN);
+    if (begin === -1) return src;
+    const end = src.indexOf(DEBUG_END, begin);
+    if (end === -1) return src.slice(0, begin).replace(/\n+$/, "") + "\n";
+    return (
+      src.slice(0, begin).replace(/\n+$/, "") +
+      "\n" +
+      src.slice(end + DEBUG_END.length).replace(/^\n+/, "")
+    );
+  }
+
+  function runDebug(rawInput: string) {
+    const bridge = sandpackBridgeRef.current;
+    const indexFile = bridge?.files["/index.ts"];
+    const rawCode =
+      typeof indexFile === "string"
+        ? indexFile
+        : (indexFile as { code: string } | undefined)?.code ?? "";
+
+    // Always strip any previous debug block first so we don't stack them.
+    const baseCode = stripDebugBlock(rawCode);
+    const match = baseCode.match(/export\s+(?:async\s+)?(?:function|const|let|var)\s+(\w+)/);
+    if (!match) {
+      toast.error("Could not find an exported function in /index.ts");
+      return;
+    }
+    const fnName = match[1];
+
+    // Parse the user's input — try JSON (number, array, object, string), fall
+    // back to raw string. Empty input means call with no args.
+    let argLiteral = "";
+    let parsedArg: unknown = undefined;
+    let hasArg = false;
+    const trimmed = rawInput.trim();
+    if (trimmed.length > 0) {
+      try {
+        parsedArg = JSON.parse(trimmed);
+        argLiteral = JSON.stringify(parsedArg);
+        hasArg = true;
+      } catch {
+        parsedArg = trimmed;
+        argLiteral = JSON.stringify(trimmed);
+        hasArg = true;
+      }
+    }
+
+    // Update the visible debug block in /index.ts so the candidate sees the
+    // exact call we're about to make. Block is stripped on submit.
+    const debugBlock = `\n\n${DEBUG_BEGIN}\nconsole.log("→ ${fnName}(${argLiteral})", ${fnName}(${argLiteral}));\n${DEBUG_END}\n`;
+    const newCode = baseCode.replace(/\n+$/, "") + debugBlock;
+    if (bridge) bridge.updateFile("/index.ts", newCode);
+
+    // Execute LOCALLY — no Jest, no Sandpack iframe. We strip the
+    // TypeScript annotations with a small heuristic, then evaluate the
+    // function body in a fresh Function scope. console.log is intercepted
+    // and emitted as Sandpack-shaped postMessage events so the existing
+    // LiveConsole pipeline picks them up.
+    runLocalDebug(baseCode, fnName, parsedArg, argLiteral, hasArg);
+  }
+
+  function runLocalDebug(
+    tsCode: string,
+    fnName: string,
+    arg: unknown,
+    argLiteral: string,
+    hasArg: boolean,
+  ) {
+    const js = stripTsAnnotations(tsCode);
+    const sendLog = (method: string, data: unknown[]) => {
+      window.postMessage(
+        {
+          type: "console",
+          codesandbox: true,
+          log: [
+            {
+              id: `local-${Date.now()}-${Math.random()}`,
+              method,
+              data,
+            },
+          ],
+        },
+        "*",
+      );
+    };
+
+    const orig = {
+      log: console.log,
+      error: console.error,
+      warn: console.warn,
+      info: console.info,
+    };
+    console.log = (...a: unknown[]) => sendLog("log", a);
+    console.error = (...a: unknown[]) => sendLog("error", a);
+    console.warn = (...a: unknown[]) => sendLog("warn", a);
+    console.info = (...a: unknown[]) => sendLog("info", a);
+
+    try {
+      // Append `return fnName;` so we can grab the user's function out of
+      // the synthesized scope.
+      const factory = new Function(`${js}\n;return typeof ${fnName} !== "undefined" ? ${fnName} : undefined;`);
+      const fn = factory() as ((...args: unknown[]) => unknown) | undefined;
+      if (typeof fn !== "function") {
+        sendLog("error", [`[run code] no function named ${fnName} found after evaluation`]);
+        return;
+      }
+      const result = hasArg ? fn(arg) : fn();
+      sendLog("log", [`→ ${fnName}(${argLiteral}) =`, result]);
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? `${e.name}: ${e.message}` : String(e);
+      sendLog("error", [`[run code error]`, msg]);
+    } finally {
+      console.log = orig.log;
+      console.error = orig.error;
+      console.warn = orig.warn;
+      console.info = orig.info;
+    }
+  }
+
+  // Best-effort TypeScript-to-JS stripper for the local Run-code path. Covers
+  // the patterns seen in test-style challenges (typed params, return types,
+  // interfaces, generics, simple `as` casts). NOT a full TS parser — anything
+  // exotic (decorators, enums, complex conditional types) should be done via
+  // the real Jest path (Run tests / Submit) which uses Sandpack's transpiler.
+  function stripTsAnnotations(src: string): string {
+    let s = src;
+    // Drop 'export' keyword so declarations live as locals in our Function.
+    s = s.replace(
+      /^\s*export\s+(?:default\s+)?(?=(?:async\s+)?(?:function|const|let|var|class))/gm,
+      "",
+    );
+    // Drop interface { ... } blocks.
+    s = s.replace(/^\s*interface\s+\w+(?:\s+extends\s+[\w,<>\s]+)?\s*\{[^}]*\}\s*/gm, "");
+    // Drop `type Foo = ...;` aliases (single-line).
+    s = s.replace(/^\s*type\s+\w+(?:<[^>]+>)?\s*=\s*[^;]+;\s*/gm, "");
+    // Strip generic parameters on function / class declarations.
+    s = s.replace(/(\bfunction\s+\w+|\bclass\s+\w+)<[^>]+>/g, "$1");
+    // Strip parameter type annotations:  (a: number, b?: string[]) → (a, b)
+    s = s.replace(/(\(\s*|,\s*)([\w$]+)\s*\??\s*:\s*[\w<>\[\]|&,\s.'"]+?(?=\s*[,)=])/g, "$1$2");
+    // Strip return-type annotation:  function f(): X {  → function f() {
+    s = s.replace(/\)\s*:\s*[\w<>\[\]|&,\s.'"]+?(?=\s*[{=])/g, ")");
+    // Strip `as Type` casts. Be conservative — only word-y type names.
+    s = s.replace(/\s+as\s+(?:const|[\w<>\[\]|&]+)/g, "");
+    return s;
+  }
+
+  // Manual "Run tests" trigger — fires the full test suite. With watchMode off
+  // this is the only way to run real assertions besides clicking Watch.
+  const [runningTests, setRunningTests] = useState(false);
+  function runTests() {
+    const triggerRerun = () => {
+      const watchBtn = Array.from(
+        document.querySelectorAll<HTMLButtonElement>("button"),
+      ).find(
+        (b) =>
+          b.textContent?.trim() === "Watch" &&
+          b.className?.includes("sp-test-header"),
+      );
+      if (!watchBtn) return false;
+      watchBtn.click();
+      window.setTimeout(() => watchBtn.click(), 200);
+      return true;
+    };
+    // Make sure the sandbox is running first
+    sandpackBridgeRef.current?.runSandpack?.();
+    setRunningTests(true);
+    window.setTimeout(() => setRunningTests(false), 4000);
+    if (!triggerRerun()) {
+      let tries = 0;
+      const interval = window.setInterval(() => {
+        tries++;
+        if (triggerRerun() || tries > 20) window.clearInterval(interval);
+      }, 150);
+    }
+  }
+
   function handleTestsComplete(specs: Record<string, any>) {
     const flat: FlatTest[] = [];
     function walk(node: any, path: string) {
@@ -385,11 +631,16 @@ export default function ChallengeAttemptClient({
     }
   }
 
+  // Pending submission flag — set when user clicks Submit without test
+  // results yet. We auto-trigger a test run, then submit once results land.
+  const submitAfterTestsRef = useRef(false);
   async function handleSubmit() {
     setTestsOpen(true);
     setDrawerTab("tests");
     if (!testRun) {
-      toast.error("Run the tests first.");
+      toast.info("Running tests before submission…");
+      submitAfterTestsRef.current = true;
+      runTests();
       return;
     }
     setSubmitting(true);
@@ -398,7 +649,10 @@ export default function ChallengeAttemptClient({
       for (const [path, file] of Object.entries(filesRef.current)) {
         if (testFiles[path]) continue;
         const code = typeof file === "string" ? file : (file as { code: string }).code;
-        submittedFiles[path] = code;
+        // Strip the auto-debug block before shipping so the candidate's
+        // submission doesn't include test invocations they only used for
+        // debugging.
+        submittedFiles[path] = path === "/index.ts" ? stripDebugBlock(code) : code;
       }
       const res = await fetch(`/api/challenges/${challenge.slug}/attempt`, {
         method: "POST",
@@ -426,6 +680,15 @@ export default function ChallengeAttemptClient({
       setSubmitting(false);
     }
   }
+
+  // When tests complete after Submit-without-results, finish the submission.
+  useEffect(() => {
+    if (submitAfterTestsRef.current && testRun) {
+      submitAfterTestsRef.current = false;
+      void handleSubmit();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [testRun]);
 
   function handleSendChat(e: React.FormEvent) {
     e.preventDefault();
@@ -529,6 +792,22 @@ export default function ChallengeAttemptClient({
             </div>
           )}
 
+          {submittedStatus !== "passed" && (
+            <button
+              onClick={() => {
+                setTestsOpen(true);
+                setDrawerTab("tests");
+                runTests();
+              }}
+              disabled={runningTests}
+              className="px-3 py-2 rounded-lg border border-border bg-surface hover:bg-elevated text-xs font-bold text-fg flex items-center gap-1.5 transition disabled:opacity-50 disabled:cursor-not-allowed"
+              title="Run the full test suite against your code"
+            >
+              <FlaskConical className="w-3.5 h-3.5 text-accent" />
+              {runningTests ? "Running…" : "Run tests"}
+            </button>
+          )}
+
           {submittedStatus === "passed" ? (
             <div className="px-4 py-2 rounded-lg bg-emerald-500/10 text-emerald-500 border border-emerald-500/30 text-xs font-bold flex items-center gap-1.5">
               <CheckCircle2 className="w-3.5 h-3.5" />
@@ -539,7 +818,7 @@ export default function ChallengeAttemptClient({
               onClick={handleSubmit}
               disabled={submitting}
               className="px-4 py-2 rounded-lg bg-accent hover:bg-accent-soft text-bg text-xs font-bold flex items-center gap-1.5 transition disabled:opacity-50 disabled:cursor-not-allowed shadow-[0_0_16px_rgba(var(--accent-rgb),0.2)]"
-              title={!testRun ? "Tests will open below — run them first" : "Submit attempt"}
+              title={!testRun ? "Tests will run first, then submit" : "Submit attempt"}
             >
               <Send className="w-3.5 h-3.5" />
               {submitting ? "Submitting…" : "Submit Solution"}
@@ -588,12 +867,38 @@ export default function ChallengeAttemptClient({
               activeFile,
             }}
           >
-            <FilesTracker filesRef={filesRef} />
+            <FilesTracker filesRef={filesRef} bridgeRef={sandpackBridgeRef} />
             <div ref={editorPaneRef} className="flex flex-col h-full">
               {/* Editor — fills remaining space */}
               <div className="flex-1 min-h-0">
                 {multiplayer ? (
-                  <SyncingEditor yDoc={yDoc} provider={webrtcProvider} />
+                  // Real-time collaborative editor (Yjs + y-webrtc + CodeMirror)
+                  // onChange syncs the current code into Sandpack so the test runner
+                  // always evaluates the latest version without the candidate
+                  // having to do anything extra.
+                  <CollaborativeEditor
+                    roomId={`challenge-${sessionId}-${challenge.id}`}
+                    language="typescript"
+                    // Only the candidate (non-interviewer who owns the session)
+                    // seeds the room with starter code. The interviewer receives it.
+                    defaultValue={!isInterviewer ? (starterFiles["/index.ts"] ?? Object.values(starterFiles)[0] ?? "") : undefined}
+                    username={isInterviewer ? "Interviewer" : "Candidate"}
+                    userColor={isInterviewer ? "#8b5cf6" : "#10b981"}
+                    readOnly={false}
+                    onChange={(code) => {
+                      // Push the latest code from the collaborative editor into
+                      // Sandpack's file system so Run Tests always uses fresh content.
+                      const bridge = sandpackBridgeRef.current;
+                      if (bridge) {
+                        try {
+                          bridge.updateFile("/index.ts", code);
+                        } catch {
+                          bridge.addFile?.("/index.ts", code);
+                        }
+                      }
+                    }}
+                    height="100%"
+                  />
                 ) : (
                   <SandpackCodeEditor
                     showLineNumbers
@@ -684,17 +989,33 @@ export default function ChallengeAttemptClient({
                     )}
                   </button>
                 </div>
-                <div className="flex-1 min-h-0">
-                  {drawerTab === "tests" ? (
+                <div className="flex-1 min-h-0 relative">
+                  {/* Both panels stay mounted so Sandpack state survives tab
+                      switches and the Watch toggle stays in DOM for our
+                      Run-code button to trigger. */}
+                  <div
+                    className="absolute inset-0"
+                    style={{ visibility: drawerTab === "tests" ? "visible" : "hidden" }}
+                    aria-hidden={drawerTab !== "tests"}
+                  >
                     <SandpackTests
                       onComplete={handleTestsComplete}
                       showVerboseButton
                       showWatchButton
                       style={{ height: "100%" }}
                     />
-                  ) : (
-                    <LiveConsole />
-                  )}
+                  </div>
+                  <div
+                    className="absolute inset-0"
+                    style={{ visibility: drawerTab === "console" ? "visible" : "hidden" }}
+                    aria-hidden={drawerTab !== "console"}
+                  >
+                    <LiveConsole
+                      logs={liveLogs}
+                      onClear={clearLiveLogs}
+                      onRunDebug={runDebug}
+                    />
+                  </div>
                 </div>
               </div>
             </div>
@@ -812,54 +1133,56 @@ export default function ChallengeAttemptClient({
 
 function FilesTracker({
   filesRef,
+  bridgeRef,
 }: {
   filesRef: React.MutableRefObject<SandpackFiles>;
+  bridgeRef?: React.MutableRefObject<{
+    updateFile: (path: string, code: string) => void;
+    addFile?: (path: string, code: string) => void;
+    files: SandpackFiles;
+    runSandpack?: () => void;
+    clients?: Record<string, { dispatch?: (msg: unknown) => void } | undefined>;
+  } | null>;
 }) {
   const { sandpack } = useSandpack();
   useEffect(() => {
     filesRef.current = sandpack.files;
-  }, [sandpack.files, filesRef]);
+    if (bridgeRef) {
+      const sp = sandpack as unknown as {
+        updateFile: (p: string, c: string) => void;
+        addFile?: (p: string, c: string) => void;
+        files: SandpackFiles;
+        runSandpack?: () => void;
+        clients?: Record<string, { dispatch?: (msg: unknown) => void } | undefined>;
+      };
+      bridgeRef.current = {
+        updateFile: sp.updateFile,
+        addFile: sp.addFile,
+        files: sp.files,
+        runSandpack: sp.runSandpack,
+        clients: sp.clients,
+      };
+    }
+  }, [sandpack, sandpack.files, filesRef, bridgeRef]);
   return null;
 }
 
 // SandpackConsole only subscribes to clients that exist when it mounts, so it
 // misses logs from the tests client (which Sandpack registers later for the
-// Jest worker). We listen on window postMessage instead to catch console
-// output from every Sandpack iframe — preview, tests, anything.
-type LiveLog = { id: string; method: string; data: unknown[]; ts: number };
+// Jest worker). The parent component listens on window postMessage and passes
+// the accumulated log buffer down so output is captured even when the Console
+// tab isn't currently mounted/visible.
 
-function LiveConsole() {
-  const [logs, setLogs] = useState<LiveLog[]>([]);
-
-  useEffect(() => {
-    function onMessage(e: MessageEvent) {
-      const data = e.data as
-        | { type?: string; codesandbox?: boolean; log?: unknown }
-        | null;
-      if (!data || data.type !== "console" || !data.codesandbox) return;
-      const items = Array.isArray(data.log) ? data.log : [data.log];
-      setLogs((prev) => {
-        const next = [...prev];
-        for (const raw of items) {
-          const item = raw as { id?: string; method?: string; data?: unknown[] };
-          if (item?.method === "clear") {
-            next.length = 0;
-            continue;
-          }
-          next.push({
-            id: item?.id ?? `${Date.now()}-${Math.random()}`,
-            method: item?.method ?? "log",
-            data: Array.isArray(item?.data) ? item.data : [],
-            ts: Date.now(),
-          });
-        }
-        // Cap to keep the list snappy
-        return next.length > 300 ? next.slice(next.length - 300) : next;
-      });
-    }
-    window.addEventListener("message", onMessage);
-    return () => window.removeEventListener("message", onMessage);
-  }, []);
+function LiveConsole({
+  logs,
+  onClear,
+  onRunDebug,
+}: {
+  logs: LiveLog[];
+  onClear: () => void;
+  onRunDebug?: (input: string) => void;
+}) {
+  const [debugInput, setDebugInput] = useState("5");
 
   function formatArg(v: unknown): string {
     if (v === null) return "null";
@@ -881,19 +1204,48 @@ function LiveConsole() {
     log: "border-transparent text-fg/90",
   };
 
+  function runDebugSubmit(e?: React.FormEvent) {
+    e?.preventDefault();
+    onRunDebug?.(debugInput);
+  }
+
   return (
     <div className="flex flex-col h-full bg-bg font-mono text-xs">
-      <div className="px-3 py-1.5 border-b border-border/40 shrink-0 flex items-center justify-between text-[10px] text-muted/70">
-        <span>
+      <div className="px-3 py-1.5 border-b border-border/40 shrink-0 flex items-center justify-between gap-3 text-[10px] text-muted/70">
+        <span className="shrink-0">
           {logs.length === 0
-            ? "console output appears here"
+            ? "console output"
             : `${logs.length} message${logs.length === 1 ? "" : "s"}`}
         </span>
+        {onRunDebug && (
+          <form
+            onSubmit={runDebugSubmit}
+            className="flex items-center gap-1.5 flex-1 min-w-0 justify-end"
+          >
+            <label className="text-muted/60 shrink-0 normal-case">Input:</label>
+            <input
+              type="text"
+              value={debugInput}
+              onChange={(e) => setDebugInput(e.target.value)}
+              placeholder="5"
+              spellCheck={false}
+              className="min-w-0 flex-1 max-w-[140px] bg-surface border border-border rounded px-2 py-0.5 text-[10px] font-mono text-fg focus:outline-none focus:border-accent"
+              title="JSON value or string. Empty = call with no args."
+            />
+            <button
+              type="submit"
+              className="px-2 py-0.5 rounded bg-accent/15 text-accent hover:bg-accent/25 font-bold text-[10px] uppercase tracking-wider transition shrink-0"
+              title="Call your exported function with this input. Real tests also re-run, but Console only cares about your logs."
+            >
+              ▶ Run code
+            </button>
+          </form>
+        )}
         <button
           type="button"
-          onClick={() => setLogs([])}
+          onClick={onClear}
           disabled={logs.length === 0}
-          className="px-2 py-0.5 rounded hover:bg-surface text-muted hover:text-fg transition disabled:opacity-40 disabled:cursor-not-allowed"
+          className="px-2 py-0.5 rounded hover:bg-surface text-muted hover:text-fg transition disabled:opacity-40 disabled:cursor-not-allowed shrink-0"
         >
           Clear
         </button>
@@ -901,9 +1253,7 @@ function LiveConsole() {
       <div className="flex-1 min-h-0 overflow-y-auto">
         {logs.length === 0 ? (
           <div className="text-muted/50 text-center py-8 text-[11px] leading-relaxed px-4">
-            Add <code className="px-1 py-0.5 rounded bg-surface/60 text-fg/80">console.log(...)</code> in your code, then run the tests.
-            <br />
-            Output from every test invocation will appear here.
+            Add <code className="px-1 py-0.5 rounded bg-surface/60 text-fg/80">console.log(...)</code> in your code, then click <strong className="text-fg/80">Run code</strong> above (or let the tests run).
           </div>
         ) : (
           <ul>

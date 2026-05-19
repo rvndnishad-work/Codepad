@@ -342,49 +342,41 @@ export default function InterviewRunner({
     setShowShareMenu(false);
   }
 
+  const activeChallengeId = challenges.find((c) => attemptByChallenge.get(c.id) !== "passed")?.id;
+
   return (
-    <div className="mx-auto max-w-5xl px-6 py-10 space-y-8">
-      {/* Navigation & Header */}
-      <div>
-        <Link
-          href="/interview"
-          className="inline-flex items-center gap-1.5 text-xs font-semibold text-muted hover:text-fg transition mb-6"
-        >
-          <ArrowLeft className="w-3.5 h-3.5" />
-          Back to Interviews
-        </Link>
+    <div className="min-h-[85vh] bg-bg relative overflow-hidden text-fg selection:bg-accent/30 selection:text-accent font-sans flex flex-col justify-center py-6 md:py-10">
+      {/* Atmospheric Background Gradients */}
+      <div className="fixed inset-0 pointer-events-none z-0">
+        <div className={`absolute top-0 left-0 w-[50vw] h-[50vw] rounded-full blur-[120px] opacity-10 dark:opacity-20 transition-colors duration-1000 ${status === "in_progress" ? "bg-amber-500/20 dark:bg-amber-500/30 animate-pulse" : status === "completed" ? "bg-emerald-500/20 dark:bg-emerald-500/30" : "bg-accent/10 dark:bg-accent/20"}`} />
+        <div className={`absolute bottom-0 right-0 w-[60vw] h-[60vw] rounded-full blur-[150px] opacity-10 dark:opacity-20 transition-colors duration-1000 ${status === "in_progress" ? "bg-rose-500/10 dark:bg-rose-500/20" : status === "completed" ? "bg-emerald-500/10 dark:bg-emerald-500/20" : "bg-violet-500/10 dark:bg-violet-500/20"}`} />
+      </div>
 
-        <div className="flex flex-wrap items-start justify-between gap-4">
-          <div className="flex items-start gap-4">
-            <div className="w-12 h-12 rounded-2xl bg-accent/10 border border-accent/20 grid place-items-center shrink-0">
-              <Trophy className="w-5 h-5 text-accent" />
+      <div className="max-w-5xl w-full mx-auto px-6 relative z-10 space-y-5">
+        
+        {/* Navigation & Header Actions */}
+        <div className="flex items-center justify-between">
+          <Link
+            href="/interview"
+            className="inline-flex items-center gap-2 text-xs font-semibold tracking-wider text-muted hover:text-fg transition-colors group"
+          >
+            <div className="p-1 rounded-full bg-surface border border-border group-hover:border-border-strong group-hover:bg-panel transition-all">
+              <ArrowLeft className="w-3.5 h-3.5 group-hover:-translate-x-0.5 transition-transform text-muted" />
             </div>
-            <div className="min-w-0">
-              <div className="text-xs font-black tracking-[0.2em] text-muted uppercase mb-0.5 flex items-center gap-2">
-                Cooperative Mock Workspace
-                {interviewerView && (
-                  <span className="text-accent normal-case tracking-normal font-semibold flex items-center gap-1">
-                    <Eye className="w-3 h-3" /> Interviewer View
-                  </span>
-                )}
-              </div>
-              <h1 className="text-3xl font-black tracking-tight text-fg">{interview.title}</h1>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-3">
-            {/* Share button — always visible to session owner, never to guests */}
+            Exit Arena
+          </Link>
+          
+          <div className="flex items-center gap-2">
             {isOwner && (
               <div className="flex items-center gap-2">
-                {/* Invite Candidate (single slot) */}
+                {/* Invite Candidate Button */}
                 <div className="relative">
                   <button
                     onClick={() => { setShowShareMenu(!showShareMenu); setShowCoInviteMenu(false); }}
-                    className="px-3.5 py-2.5 rounded-xl border border-border bg-bg hover:bg-panel text-xs font-bold text-muted hover:text-fg transition flex items-center gap-1.5 shadow-sm"
-                    title="Invite Candidate — one slot only"
+                    className="px-3.5 py-2 rounded-full bg-surface/85 backdrop-blur-xl border border-border hover:bg-panel hover:border-border-strong text-xs font-bold uppercase tracking-wider transition-all duration-300 flex items-center gap-2 shadow-sm"
                   >
                     <Users className="w-3.5 h-3.5 text-accent" />
-                    Invite Candidate
+                    Candidate
                   </button>
                   {showShareMenu && (
                     <div className="absolute right-0 top-full mt-2 w-72 bg-bg border border-border rounded-xl shadow-xl p-1.5 z-50 animate-in fade-in zoom-in-95 duration-200">
@@ -400,7 +392,7 @@ export default function InterviewRunner({
                           </p>
                         </div>
                       )}
-                      <button onClick={copyCandidateLink} className="w-full text-left px-3 py-2.5 rounded-lg text-xs font-medium text-muted hover:text-fg hover:bg-surface transition flex items-center gap-2">
+                      <button onClick={copyCandidateLink} className="w-full text-left px-3 py-2 rounded-lg text-xs font-medium text-muted hover:text-fg hover:bg-surface transition flex items-center gap-2">
                         <Copy className="w-3.5 h-3.5" /> Copy Candidate Link
                       </button>
                       <button onClick={() => { window.open(`https://wa.me/?text=${encodeURIComponent(`Join my coding interview as the candidate!\nLink: ${candidateLink}`)}`, "_blank"); setShowShareMenu(false); }} className="w-full text-left px-3 py-2.5 rounded-lg text-xs font-medium text-emerald-500/80 hover:text-emerald-500 hover:bg-surface transition flex items-center gap-2">
@@ -413,16 +405,15 @@ export default function InterviewRunner({
                   )}
                 </div>
 
-                {/* Invite Co-Interviewer (multiple slots) — only for Interviewers */}
+                {/* Invite Co-Interviewer Button */}
                 {interviewerView && (
                   <div className="relative">
                     <button
                       onClick={() => { setShowCoInviteMenu(!showCoInviteMenu); setShowShareMenu(false); }}
-                      className="px-3.5 py-2.5 rounded-xl border border-border bg-bg hover:bg-panel text-xs font-bold text-muted hover:text-fg transition flex items-center gap-1.5 shadow-sm"
-                      title="Invite Co-Interviewer — multiple allowed"
+                      className="px-3.5 py-2 rounded-full bg-surface/85 backdrop-blur-xl border border-border hover:bg-panel hover:border-border-strong text-xs font-bold uppercase tracking-wider transition-all duration-300 flex items-center gap-2 shadow-sm"
                     >
                       <Share2 className="w-3.5 h-3.5 text-violet-500" />
-                      Invite Co-Interviewer
+                      Observer
                     </button>
                     {showCoInviteMenu && (
                       <div className="absolute right-0 top-full mt-2 w-72 bg-bg border border-border rounded-xl shadow-xl p-1.5 z-50 animate-in fade-in zoom-in-95 duration-200">
@@ -430,7 +421,7 @@ export default function InterviewRunner({
                           <p className="text-[10px] text-muted font-black uppercase tracking-wider mb-1">Co-Interviewer Invite</p>
                           <p className="text-[10px] text-muted/70">Multiple interviewers can join with this link to observe the session.</p>
                         </div>
-                        <button onClick={copyCoInterviewerLink} className="w-full text-left px-3 py-2.5 rounded-lg text-xs font-medium text-muted hover:text-fg hover:bg-surface transition flex items-center gap-2">
+                        <button onClick={copyCoInterviewerLink} className="w-full text-left px-3 py-2 rounded-lg text-xs font-medium text-muted hover:text-fg hover:bg-surface transition flex items-center gap-2">
                           <Copy className="w-3.5 h-3.5" /> Copy Co-Interviewer Link
                         </button>
                         <button onClick={() => { window.open(`https://wa.me/?text=${encodeURIComponent(`Join my coding interview as a co-interviewer!\nLink: ${coInterviewerLink}`)}`, "_blank"); setShowCoInviteMenu(false); }} className="w-full text-left px-3 py-2.5 rounded-lg text-xs font-medium text-emerald-500/80 hover:text-emerald-500 hover:bg-surface transition flex items-center gap-2">
@@ -445,581 +436,626 @@ export default function InterviewRunner({
                 )}
               </div>
             )}
-
-            {/* Multiplayer Call Command Center Trigger - Hidden once ended */}
-            {status !== "completed" && status !== "abandoned" && (
-              <button
-                onClick={() => setInCall(!inCall)}
-                className={`px-4 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all flex items-center gap-2 shadow-md ${
-                  inCall 
-                    ? "bg-rose-500 text-white hover:bg-rose-600 hover:scale-[1.02] active:scale-[0.98]" 
-                    : "bg-accent text-bg hover:bg-accent-soft hover:scale-[1.02] active:scale-[0.98]"
-                }`}
-              >
-                {inCall ? (
-                  <>
-                    <PhoneOff className="w-3.5 h-3.5" />
-                    Leave Calling Room
-                  </>
-                ) : (
-                  <>
-                    <PhoneCall className="w-3.5 h-3.5" />
-                    Join Colleague Call
-                  </>
-                )}
-              </button>
-            )}
           </div>
         </div>
-      </div>
 
-      {/* Multiplayer Video Calling Lobby Canvas */}
-      {inCall && (
-        <div className="rounded-2xl border border-border bg-bg shadow-sm overflow-hidden p-6 space-y-6">
-          <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 pb-4 border-b border-border">
-            <div>
-              <div className="text-[10px] font-black uppercase tracking-[0.15em] text-accent flex items-center gap-1.5">
-                <Radio className="w-3 h-3 text-accent animate-ping" />
-                Live Session Active
+        {/* Unified Glassmorphic Dashboard Window */}
+        <div className="border border-border bg-surface/20 backdrop-blur-md rounded-2xl shadow-xl overflow-hidden animate-in fade-in zoom-in-98 duration-500">
+          
+          {/* Dashboard Header Bar */}
+          <div className="border-b border-border bg-surface/40 px-6 py-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 rounded-xl bg-accent/10 border border-accent/20 flex items-center justify-center text-accent shadow-sm shrink-0">
+                <Sparkles className="w-4.5 h-4.5 animate-pulse" />
               </div>
-              <h3 className="text-sm font-black uppercase tracking-wider text-fg mt-1">Multiplayer Mock Call</h3>
-            </div>
-
-            {/* Calling Room Call Bar Buttons */}
-            <div className="flex items-center gap-2 bg-surface/50 border border-border rounded-xl p-1 shrink-0">
-              <button
-                onClick={() => setMicEnabled(!micEnabled)}
-                className={`p-2 rounded-lg transition ${
-                  micEnabled ? "bg-bg text-fg shadow-sm border border-border" : "text-muted hover:bg-muted/10 hover:text-rose-500"
-                }`}
-                title={micEnabled ? "Mute Microphone" : "Unmute Microphone"}
-              >
-                {micEnabled ? <Mic className="w-4 h-4 text-accent" /> : <MicOff className="w-4 h-4 text-rose-500" />}
-              </button>
-              <button
-                onClick={() => setCamEnabled(!camEnabled)}
-                className={`p-2 rounded-lg transition ${
-                  camEnabled ? "bg-bg text-fg shadow-sm border border-border" : "text-muted hover:bg-muted/10 hover:text-rose-500"
-                }`}
-                title={camEnabled ? "Disable Video Camera" : "Enable Video Camera"}
-              >
-                {camEnabled ? <Video className="w-4 h-4 text-accent" /> : <VideoOff className="w-4 h-4 text-rose-500" />}
-              </button>
-              <button
-                onClick={() => setScreenShare(!screenShare)}
-                className={`p-2 rounded-lg transition ${
-                  screenShare ? "bg-bg text-fg shadow-sm border border-border" : "text-muted hover:bg-muted/10"
-                }`}
-                title={screenShare ? "Stop Screen Share" : "Share Screen"}
-              >
-                <ScreenShare className={`w-4 h-4 ${screenShare ? "text-accent" : ""}`} />
-              </button>
-
-              <div className="h-6 w-[1px] bg-border mx-1" />
-              <button
-                onClick={() => setSimColleague(!simColleague)}
-                className={`px-3 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-wider transition ${
-                  simColleague 
-                    ? "bg-accent/15 border border-accent/20 text-accent hover:bg-accent/25" 
-                    : "bg-surface border border-border text-muted hover:text-fg"
-                }`}
-              >
-                {simColleague ? "Remove Mock Peer" : "Simulate Mock Peer"}
-              </button>
-            </div>
-          </div>
-
-          {/* Grid display for active member cameras */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-            {/* Candidate Frame (Left) */}
-            <div className="rounded-xl border border-border bg-surface/50 aspect-video relative overflow-hidden flex flex-col justify-between p-4 group">
-              {!interviewerView ? (
-                // Local webcam feed (You as Candidate)
-                camEnabled ? (
-                  <div className="absolute inset-0 bg-gradient-to-tr from-accent/5 via-transparent to-violet-500/5 flex items-center justify-center">
-                    <div className="w-16 h-16 rounded-full bg-accent/15 border border-accent/25 flex items-center justify-center text-accent font-black text-xl animate-pulse">
-                      C
-                    </div>
-                    {/* Dynamic Sound Decibels */}
-                    <div className="absolute bottom-4 left-4 flex items-end gap-0.5 h-6">
-                      {userDecibels.map((db, idx) => (
-                        <div 
-                          key={idx} 
-                          style={{ height: `${db}%` }} 
-                          className="w-1 rounded-full bg-accent transition-all duration-150" 
-                        />
-                      ))}
-                    </div>
-                  </div>
-                ) : (
-                  <div className="absolute inset-0 flex items-center justify-center text-muted">
-                    <VideoOff className="w-8 h-8 opacity-40" />
-                  </div>
-                )
-              ) : (
-                // Remote/Simulated peer feed (The Candidate)
-                simColleague ? (
-                  <div className="absolute inset-0 bg-gradient-to-tr from-accent/5 via-transparent to-violet-500/5 flex items-center justify-center">
-                    <div className="text-center space-y-2">
-                      <div className="w-16 h-16 rounded-full bg-accent/10 border border-accent/20 flex items-center justify-center text-accent font-black text-xl relative mx-auto">
-                        {interview.candidateName ? interview.candidateName.substring(0, 2).toUpperCase() : "C"}
-                        <span className="absolute bottom-0 right-0 w-4.5 h-4.5 rounded-full bg-emerald-500 border-2 border-surface flex items-center justify-center">
-                          <Mic className="w-2.5 h-2.5 text-white" />
-                        </span>
-                      </div>
-                      <div className="text-[10px] font-black uppercase tracking-wider text-fg/80">{interview.candidateName || "Candidate"}</div>
-                      <div className="text-[9px] text-muted flex items-center justify-center gap-1">
-                        <Wifi className="w-3 h-3 text-emerald-500" />
-                        Latency: 18ms (Excellent)
-                      </div>
-                    </div>
-
-                    {/* Decibels Wave */}
-                    <div className="absolute bottom-4 left-4 flex items-end gap-0.5 h-6">
-                      {peerDecibels.map((db, idx) => (
-                        <div 
-                          key={idx} 
-                          style={{ height: `${db}%` }} 
-                          className="w-1 rounded-full bg-accent transition-all duration-150" 
-                        />
-                      ))}
-                    </div>
-                  </div>
-                ) : (
-                  <div className="absolute inset-0 flex flex-col items-center justify-center p-6 text-center text-muted gap-2">
-                    <Users className="w-8 h-8 opacity-40" />
-                    <div className="text-xs font-bold text-fg/70">Waiting for candidate...</div>
-                    <div className="text-[10px] text-muted max-w-[200px]">Send the candidate invite link to allow them to join the room.</div>
-                  </div>
-                )
-              )}
-
-              {/* Status tag */}
-              {(!interviewerView || simColleague) && (
-                <div className="absolute top-4 right-4 bg-black/40 text-white rounded-full px-2 py-0.5 text-[9px] font-mono flex items-center gap-1">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                  {!interviewerView ? "You (Candidate)" : (interview.candidateName || "Candidate")}
-                </div>
-              )}
-            </div>
-
-            {/* Interviewer Frame (Right) */}
-            <div className="rounded-xl border border-border bg-surface/50 aspect-video relative overflow-hidden flex flex-col justify-between p-4">
-              {interviewerView ? (
-                // Local webcam feed (You as Interviewer)
-                camEnabled ? (
-                  <div className="absolute inset-0 bg-gradient-to-tr from-violet-500/5 via-transparent to-accent/5 flex items-center justify-center">
-                    <div className="w-16 h-16 rounded-full bg-violet-500/10 border border-violet-500/20 flex items-center justify-center text-violet-500 font-black text-xl animate-pulse">
-                      I
-                    </div>
-                    {/* Dynamic Sound Decibels */}
-                    <div className="absolute bottom-4 left-4 flex items-end gap-0.5 h-6">
-                      {userDecibels.map((db, idx) => (
-                        <div 
-                          key={idx} 
-                          style={{ height: `${db}%` }} 
-                          className="w-1 rounded-full bg-violet-500 transition-all duration-150" 
-                        />
-                      ))}
-                    </div>
-                  </div>
-                ) : (
-                  <div className="absolute inset-0 flex items-center justify-center text-muted">
-                    <VideoOff className="w-8 h-8 opacity-40" />
-                  </div>
-                )
-              ) : (
-                // Remote/Simulated peer feed (The Interviewer)
-                simColleague ? (
-                  <div className="absolute inset-0 bg-gradient-to-tr from-violet-500/5 via-transparent to-accent/5 flex items-center justify-center">
-                    <div className="text-center space-y-2">
-                      <div className="w-16 h-16 rounded-full bg-violet-500/10 border border-violet-500/20 flex items-center justify-center text-violet-500 font-black text-xl relative mx-auto">
-                        AN
-                        <span className="absolute bottom-0 right-0 w-4.5 h-4.5 rounded-full bg-emerald-500 border-2 border-surface flex items-center justify-center">
-                          <Mic className="w-2.5 h-2.5 text-white" />
-                        </span>
-                      </div>
-                      <div className="text-[10px] font-black uppercase tracking-wider text-fg/80">Arvind Nishad (Interviewer)</div>
-                      <div className="text-[9px] text-muted flex items-center justify-center gap-1">
-                        <Wifi className="w-3 h-3 text-emerald-500" />
-                        Latency: 12ms (Excellent)
-                      </div>
-                    </div>
-
-                    {/* Decibels Wave */}
-                    <div className="absolute bottom-4 left-4 flex items-end gap-0.5 h-6">
-                      {peerDecibels.map((db, idx) => (
-                        <div 
-                          key={idx} 
-                          style={{ height: `${db}%` }} 
-                          className="w-1 rounded-full bg-violet-500 transition-all duration-150" 
-                        />
-                      ))}
-                    </div>
-                  </div>
-                ) : (
-                  <div className="absolute inset-0 flex flex-col items-center justify-center p-6 text-center text-muted gap-2">
-                    <Users className="w-8 h-8 opacity-40" />
-                    <div className="text-xs font-bold text-fg/70">Waiting for interviewer...</div>
-                    <div className="text-[10px] text-muted max-w-[200px]">Waiting for the interviewer to join the call lobby.</div>
-                  </div>
-                )
-              )}
-
-              {/* Status tag */}
-              {(interviewerView || simColleague) && (
-                <div className="absolute top-4 right-4 bg-black/40 text-white rounded-full px-2 py-0.5 text-[9px] font-mono flex items-center gap-1">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                  {interviewerView ? "You (Interviewer)" : "Arvind (Interviewer)"}
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Status / Timer / Score row */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-        <Stat
-          label="Status"
-          value={
-            status === "scheduled"
-              ? "Not started"
-              : status === "in_progress"
-                ? "In progress"
-                : status === "completed"
-                  ? "Completed"
-                  : "Abandoned"
-          }
-          accent={status === "in_progress" ? "amber" : status === "completed" ? "emerald" : "muted"}
-        />
-        <Stat
-          label="Time remaining"
-          value={status === "scheduled" ? formatDuration(interview.totalSec) : formatDuration(remainingSec)}
-          accent={remainingSec < 60 && status === "in_progress" ? "rose" : "fg"}
-        />
-        <Stat
-          label="Score"
-          value={`${passedCount}/${challenges.length}`}
-          accent={passedCount === challenges.length && challenges.length > 0 ? "emerald" : "fg"}
-        />
-      </div>
-
-      {/* Main Grid Content */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
-        {/* Left Column (Span 2): Challenge Queue & CTA */}
-        <div className="lg:col-span-2 space-y-6">
-          {/* Start CTA — Interviewer only */}
-          {status === "scheduled" && interviewerView && (
-            <div className="p-5 rounded-xl border border-accent/30 bg-accent/5 flex items-center justify-between gap-4">
               <div>
-                <div className="text-sm font-bold text-fg mb-0.5">Ready when you are.</div>
-                <div className="text-xs text-muted">
-                  The clock starts as soon as you click. Hard limit: {formatDuration(interview.totalSec)}.
+                <h2 className="text-sm font-bold text-fg tracking-tight leading-none">{interview.title || "Interview Session"}</h2>
+                <div className="flex items-center gap-2.5 mt-1.5">
+                  {interview.candidateName && (
+                    <span className="text-[11px] text-muted flex items-center gap-1">
+                      <Users className="w-3 h-3 text-muted/70" /> Candidate: <span className="font-semibold text-fg/80">{interview.candidateName}</span>
+                    </span>
+                  )}
+                  {interview.type && (
+                    <>
+                      <span className="text-muted/30 text-xs leading-none">•</span>
+                      <span className="text-[9px] font-semibold bg-panel border border-border px-2 py-0.5 rounded-full text-muted uppercase tracking-wider">
+                        {interview.type}
+                      </span>
+                    </>
+                  )}
                 </div>
               </div>
-              <button
-                onClick={start}
-                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-accent hover:bg-accent-soft text-bg font-bold transition shadow-[0_0_20px_rgba(var(--accent-rgb),0.25)]"
-              >
-                <Play className="w-4 h-4 fill-current" />
-                Start clock
-              </button>
             </div>
-          )}
 
-          {/* Candidate waiting state */}
-          {status === "scheduled" && !interviewerView && (
-            <div className="p-5 rounded-xl border border-border bg-surface/50 space-y-4">
-              <div className="flex items-center gap-4">
-                {startRequested ? (
-                  <div className="w-8 h-8 rounded-full border-2 border-accent/40 border-t-accent animate-spin shrink-0" />
-                ) : (
-                  <div className="w-8 h-8 rounded-full bg-accent/10 border border-accent/20 grid place-items-center shrink-0">
-                    <Play className="w-4 h-4 text-accent" />
+            <div className="flex items-center gap-3">
+              {/* Call Trigger Button */}
+              {status !== "completed" && status !== "abandoned" && (
+                <button
+                  onClick={() => setInCall(!inCall)}
+                  className={`px-3.5 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all duration-300 flex items-center gap-1.5 shadow-sm border ${
+                    inCall 
+                      ? "bg-rose-500/10 border-rose-500/30 text-rose-500 hover:bg-rose-500/20" 
+                      : "bg-accent/10 border border-accent/20 text-accent hover:bg-accent/20"
+                  }`}
+                >
+                  {inCall ? (
+                    <>
+                      <PhoneOff className="w-3 h-3" />
+                      Leave Call
+                    </>
+                  ) : (
+                    <>
+                      <PhoneCall className="w-3 h-3" />
+                      Join Call
+                    </>
+                  )}
+                </button>
+              )}
+              
+              <span className={`text-[9px] font-bold px-2 py-0.5 rounded-md uppercase tracking-wider border shadow-sm ${
+                interviewerView 
+                  ? "bg-indigo-500/10 border-indigo-500/20 text-indigo-500 dark:text-indigo-400" 
+                  : "bg-amber-500/10 border-amber-500/20 text-amber-500 dark:text-amber-400"
+              }`}>
+                {interviewerView ? "Interviewer" : "Candidate"}
+              </span>
+            </div>
+          </div>
+
+          {/* Multiplayer Video Calling Lobby Canvas */}
+          {inCall && (
+            <div className="border-b border-border bg-bg/60 p-5 space-y-4 animate-in slide-in-from-top-4 duration-300">
+              <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 pb-3 border-b border-border/80">
+                <div>
+                  <div className="text-[10px] font-bold uppercase tracking-[0.15em] text-accent flex items-center gap-1.5">
+                    <Radio className="w-3 h-3 text-accent animate-ping" />
+                    Live Collaboration Active
                   </div>
-                )}
-                <div className="flex-1">
-                  <div className="text-sm font-bold text-fg mb-0.5">
-                    {startRequested ? "Waiting for the interviewer to approve…" : "Ready to begin?"}
-                  </div>
-                  <div className="text-xs text-muted">
-                    {startRequested
-                      ? "Your request has been sent. The interviewer will start the clock shortly."
-                      : "Click the button to notify the interviewer that you're ready to start."}
-                  </div>
+                  <h3 className="text-xs font-bold uppercase tracking-wider text-fg mt-0.5">Multiplayer Mock Call</h3>
                 </div>
-                {!startRequested && (
+
+                {/* Calling Room Call Bar Buttons */}
+                <div className="flex items-center gap-2 bg-surface/50 border border-border rounded-xl p-1 shrink-0">
                   <button
-                    onClick={requestStart}
-                    disabled={startRequestSending}
-                    className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-accent hover:bg-accent-soft text-bg font-bold transition shadow-[0_0_20px_rgba(var(--accent-rgb),0.25)] disabled:opacity-60"
+                    onClick={() => setMicEnabled(!micEnabled)}
+                    className={`p-1.5 rounded-lg transition ${
+                      micEnabled ? "bg-bg text-fg shadow-sm border border-border" : "text-muted hover:bg-muted/10 hover:text-rose-500"
+                    }`}
+                    title={micEnabled ? "Mute Microphone" : "Unmute Microphone"}
                   >
-                    <Play className="w-4 h-4 fill-current" />
-                    {startRequestSending ? "Sending…" : "Request to Start"}
+                    {micEnabled ? <Mic className="w-3.5 h-3.5 text-accent" /> : <MicOff className="w-3.5 h-3.5 text-rose-500" />}
                   </button>
-                )}
-              </div>
-            </div>
-          )}
+                  <button
+                    onClick={() => setCamEnabled(!camEnabled)}
+                    className={`p-1.5 rounded-lg transition ${
+                      camEnabled ? "bg-bg text-fg shadow-sm border border-border" : "text-muted hover:bg-muted/10 hover:text-rose-500"
+                    }`}
+                    title={camEnabled ? "Disable Video Camera" : "Enable Video Camera"}
+                  >
+                    {camEnabled ? <Video className="w-3.5 h-3.5 text-accent" /> : <VideoOff className="w-3.5 h-3.5 text-rose-500" />}
+                  </button>
+                  <button
+                    onClick={() => setScreenShare(!screenShare)}
+                    className={`p-1.5 rounded-lg transition ${
+                      screenShare ? "bg-bg text-fg shadow-sm border border-border" : "text-muted hover:bg-muted/10"
+                    }`}
+                    title={screenShare ? "Stop Screen Share" : "Share Screen"}
+                  >
+                    <ScreenShare className={`w-3.5 h-3.5 ${screenShare ? "text-accent" : ""}`} />
+                  </button>
 
-          {/* Challenge queue */}
-          <div>
-            <h2 className="text-xs font-black uppercase tracking-[0.2em] text-muted mb-3">
-              Challenge Queue
-            </h2>
-            <ul className="flex flex-col gap-3">
-              {challenges.map((c, idx) => {
-                const result = attemptByChallenge.get(c.id);
-                const passed = result === "passed";
-                const attempted = !!result;
-                const canEnter = status === "in_progress";
-                
-                // Cooperatively pass calling & simulation context down to editor attempts
-                let href: string | null = canEnter 
-                  ? `/challenges/${c.slug}/attempt?session=${interview.id}&multiplayer=true${simColleague ? "&sim=true" : ""}` 
-                  : null;
-                  
-                if (href && interviewerView) {
-                  href += `&token=${interview.shareToken}`;
-                }
-                  
-                return (
-                  <li
-                    key={c.id}
-                    className={`group flex items-center gap-4 p-4 rounded-xl border transition ${
-                      passed
-                        ? "border-emerald-500/30 bg-emerald-500/5"
-                        : attempted
-                          ? "border-amber-500/30 bg-amber-500/5"
-                          : "border-border bg-surface"
+                  <div className="h-5 w-[1px] bg-border mx-1" />
+                  <button
+                    onClick={() => setSimColleague(!simColleague)}
+                    className={`px-2.5 py-1 rounded-lg text-[9px] font-bold uppercase tracking-wider transition ${
+                      simColleague 
+                        ? "bg-accent/15 border border-accent/20 text-accent hover:bg-accent/25" 
+                        : "bg-surface border border-border text-muted hover:text-fg"
                     }`}
                   >
-                    <span className="text-sm font-mono text-muted tabular-nums w-6 text-right">
-                      {idx + 1}.
-                    </span>
-                    <div className="shrink-0">
-                      {passed ? (
-                        <CheckCircle2 className="w-5 h-5 text-emerald-500" />
-                      ) : result === "failed" ? (
-                        <XCircle className="w-5 h-5 text-rose-500/60" />
-                      ) : (
-                        <div className="w-5 h-5 rounded-full border-2 border-muted/30" />
-                      )}
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <div className="text-sm font-semibold text-fg/90 group-hover:text-fg truncate">
-                        {c.title}
-                      </div>
-                      <div className="text-[10px] text-muted/60">
-                        {c.estimatedMinutes}m estimate
-                      </div>
-                    </div>
-                    <div
-                      className={`px-2.5 py-1 rounded-md border text-[10px] font-bold uppercase tracking-wider ${difficultyBg[c.difficulty]} ${difficultyColor[c.difficulty]} shrink-0`}
-                    >
-                      {c.difficulty}
-                    </div>
-                    {href ? (
-                      <Link
-                        href={href}
-                        className="px-3 py-1.5 rounded-lg bg-accent hover:bg-accent-soft text-bg text-xs font-bold transition shrink-0 inline-flex items-center gap-1 shadow-sm"
-                      >
-                        {interviewerView ? "Observe" : passed ? "Revisit" : attempted ? "Resume" : "Start"}
-                        <ExternalLink className="w-3 h-3" />
-                      </Link>
-                    ) : (
-                      <span className="text-[11px] text-muted/40 shrink-0">
-                        {status === "scheduled" ? "Locked" : interviewerView ? "View only" : "—"}
-                      </span>
-                    )}
-                  </li>
-                );
-              })}
-            </ul>
-          </div>
-        </div>
-
-        {/* Right Column: Private Interviewer Notes & Outcomes */}
-        {interviewerView && (
-          <div className="rounded-xl border border-border bg-surface/50 p-5 space-y-6">
-            <div>
-              <div className="text-[10px] font-black uppercase tracking-[0.15em] text-accent flex items-center justify-between">
-                <span>Interviewer Panel</span>
-                {savingNotes ? (
-                  <span className="text-muted/60 normal-case tracking-normal animate-pulse">Saving...</span>
-                ) : notesSaved ? (
-                  <span className="text-emerald-500 normal-case tracking-normal font-bold">Saved</span>
-                ) : null}
-              </div>
-              <h3 className="text-sm font-black uppercase tracking-wider text-fg mt-1">Live Evaluation Notes</h3>
-            </div>
-
-            <textarea
-              value={notes}
-              onChange={(e) => handleSaveNotes(e.target.value)}
-              placeholder="Record candidate strengths, coding speed, communication style, or system design insights here. Saves automatically on change..."
-              rows={8}
-              className="w-full p-3.5 rounded-xl bg-surface border border-border focus:border-accent/40 focus:bg-elevated text-xs text-fg outline-none transition resize-none leading-relaxed"
-            />
-
-            {verdict && (
-              <div className="rounded-xl border border-border bg-surface/80 p-4 space-y-2">
-                <div className="text-[9px] font-black uppercase tracking-wider text-muted">Final Verdict Outcome</div>
-                <div className="flex items-center gap-1.5 text-xs font-black uppercase tracking-wider">
-                  {verdict === "success" && <span className="text-emerald-500">🟢 Met Bar (Success)</span>}
-                  {verdict === "failed" && <span className="text-rose-500">🔴 Failed to Meet Bar</span>}
-                  {verdict === "left_in_between" && <span className="text-muted">⚪ Walkout / Incomplete</span>}
-                  {verdict === "suspicious" && <span className="text-amber-500">⚠️ Flagged Suspicious</span>}
+                    {simColleague ? "Remove Mock Peer" : "Simulate Mock Peer"}
+                  </button>
                 </div>
               </div>
-            )}
+
+              {/* Grid display for active member cameras */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* Candidate Frame (Left) */}
+                <div className="rounded-xl border border-border bg-surface/50 aspect-video relative overflow-hidden flex flex-col justify-between p-4 group shadow-inner">
+                  {!interviewerView ? (
+                    // Local webcam feed (You as Candidate)
+                    camEnabled ? (
+                      <div className="absolute inset-0 bg-gradient-to-tr from-accent/5 via-transparent to-violet-500/5 flex items-center justify-center">
+                        <div className="w-14 h-14 rounded-full bg-accent/15 border border-accent/25 flex items-center justify-center text-accent font-black text-xl animate-pulse">
+                          C
+                        </div>
+                        {/* Dynamic Sound Decibels */}
+                        <div className="absolute bottom-4 left-4 flex items-end gap-0.5 h-6">
+                          {userDecibels.map((db, idx) => (
+                            <div 
+                              key={idx} 
+                              style={{ height: `${db}%` }} 
+                              className="w-1 rounded-full bg-accent transition-all duration-150" 
+                            />
+                          ))}
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="absolute inset-0 flex items-center justify-center text-muted">
+                        <VideoOff className="w-7 h-7 opacity-40" />
+                      </div>
+                    )
+                  ) : (
+                    // Remote/Simulated peer feed (The Candidate)
+                    simColleague ? (
+                      <div className="absolute inset-0 bg-gradient-to-tr from-accent/5 via-transparent to-violet-500/5 flex items-center justify-center">
+                        <div className="text-center space-y-2">
+                          <div className="w-14 h-14 rounded-full bg-accent/10 border border-accent/20 flex items-center justify-center text-accent font-black text-lg relative mx-auto shadow-sm">
+                            {interview.candidateName ? interview.candidateName.substring(0, 2).toUpperCase() : "C"}
+                            <span className="absolute bottom-0 right-0 w-4 h-4 rounded-full bg-emerald-500 border-2 border-surface flex items-center justify-center shadow shadow-emerald-500/20">
+                              <Mic className="w-2 h-2 text-white" />
+                            </span>
+                          </div>
+                          <div className="text-[10px] font-bold uppercase tracking-wider text-fg/80">{interview.candidateName || "Candidate"}</div>
+                          <div className="text-[9px] text-muted flex items-center justify-center gap-1">
+                            <Wifi className="w-2.5 h-2.5 text-emerald-500" />
+                            18ms (Excellent)
+                          </div>
+                        </div>
+
+                        {/* Decibels Wave */}
+                        <div className="absolute bottom-4 left-4 flex items-end gap-0.5 h-6">
+                          {peerDecibels.map((db, idx) => (
+                            <div 
+                              key={idx} 
+                              style={{ height: `${db}%` }} 
+                              className="w-1 rounded-full bg-accent transition-all duration-150" 
+                            />
+                          ))}
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="absolute inset-0 flex flex-col items-center justify-center p-6 text-center text-muted gap-1.5">
+                        <Users className="w-7 h-7 opacity-40" />
+                        <div className="text-xs font-bold text-fg/70">Waiting for candidate...</div>
+                        <div className="text-[9px] text-muted max-w-[200px]">Send the candidate invite link to allow them to join the room.</div>
+                      </div>
+                    )
+                  )}
+
+                  {/* Status tag */}
+                  {(!interviewerView || simColleague) && (
+                    <div className="absolute top-4 right-4 bg-black/40 text-white rounded-full px-2 py-0.5 text-[9px] font-mono flex items-center gap-1">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                      {!interviewerView ? "You (Candidate)" : (interview.candidateName || "Candidate")}
+                    </div>
+                  )}
+                </div>
+
+                {/* Interviewer Frame (Right) */}
+                <div className="rounded-xl border border-border bg-surface/50 aspect-video relative overflow-hidden flex flex-col justify-between p-4 shadow-inner">
+                  {interviewerView ? (
+                    // Local webcam feed (You as Interviewer)
+                    camEnabled ? (
+                      <div className="absolute inset-0 bg-gradient-to-tr from-violet-500/5 via-transparent to-accent/5 flex items-center justify-center">
+                        <div className="w-14 h-14 rounded-full bg-violet-500/10 border border-violet-500/20 flex items-center justify-center text-violet-500 font-black text-xl animate-pulse">
+                          I
+                        </div>
+                        {/* Dynamic Sound Decibels */}
+                        <div className="absolute bottom-4 left-4 flex items-end gap-0.5 h-6">
+                          {userDecibels.map((db, idx) => (
+                            <div 
+                              key={idx} 
+                              style={{ height: `${db}%` }} 
+                              className="w-1 rounded-full bg-violet-500 transition-all duration-150" 
+                            />
+                          ))}
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="absolute inset-0 flex items-center justify-center text-muted">
+                        <VideoOff className="w-7 h-7 opacity-40" />
+                      </div>
+                    )
+                  ) : (
+                    // Remote/Simulated peer feed (The Interviewer)
+                    simColleague ? (
+                      <div className="absolute inset-0 bg-gradient-to-tr from-violet-500/5 via-transparent to-accent/5 flex items-center justify-center">
+                        <div className="text-center space-y-2">
+                          <div className="w-14 h-14 rounded-full bg-violet-500/10 border border-violet-500/20 flex items-center justify-center text-violet-500 font-black text-lg relative mx-auto shadow-sm">
+                            AN
+                            <span className="absolute bottom-0 right-0 w-4.5 h-4.5 rounded-full bg-emerald-500 border-2 border-surface flex items-center justify-center shadow">
+                              <Mic className="w-2.5 h-2.5 text-white" />
+                            </span>
+                          </div>
+                          <div className="text-[10px] font-bold uppercase tracking-wider text-fg/80">Arvind Nishad (Interviewer)</div>
+                          <div className="text-[9px] text-muted flex items-center justify-center gap-1">
+                            <Wifi className="w-2.5 h-2.5 text-emerald-500" />
+                            12ms (Excellent)
+                          </div>
+                        </div>
+
+                        {/* Decibels Wave */}
+                        <div className="absolute bottom-4 left-4 flex items-end gap-0.5 h-6">
+                          {peerDecibels.map((db, idx) => (
+                            <div 
+                              key={idx} 
+                              style={{ height: `${db}%` }} 
+                              className="w-1 rounded-full bg-violet-500 transition-all duration-150" 
+                            />
+                          ))}
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="absolute inset-0 flex flex-col items-center justify-center p-6 text-center text-muted gap-1.5">
+                        <Users className="w-7 h-7 opacity-40" />
+                        <div className="text-xs font-bold text-fg/70">Waiting for interviewer...</div>
+                        <div className="text-[9px] text-muted max-w-[200px]">Waiting for the interviewer to join the call lobby.</div>
+                      </div>
+                    )
+                  )}
+
+                  {/* Status tag */}
+                  {(interviewerView || simColleague) && (
+                    <div className="absolute top-4 right-4 bg-black/40 text-white rounded-full px-2 py-0.5 text-[9px] font-mono flex items-center gap-1">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                      {interviewerView ? "You (Interviewer)" : "Arvind (Interviewer)"}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Grid Content Panels */}
+          <div className="grid grid-cols-1 md:grid-cols-12 divide-y md:divide-y-0 md:divide-x divide-border bg-surface/5">
+            
+            {/* LEFT COLUMN: Command Panel */}
+            <div className="md:col-span-5 p-5 space-y-5">
+              
+              {/* Status and Timer Box */}
+              <div className="p-4 rounded-xl border border-border bg-surface/50 shadow-sm relative overflow-hidden group">
+                <div className="absolute top-0 right-0 w-24 h-24 bg-accent/5 rounded-full blur-xl pointer-events-none" />
+                <div className="flex items-center justify-between mb-3">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-muted/80">Timer Status</span>
+                  <span className={`text-[9px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider ${
+                    status === "completed"
+                      ? "bg-emerald-500/10 border border-emerald-500/20 text-emerald-500"
+                      : status === "abandoned"
+                        ? "bg-rose-500/10 border border-rose-500/20 text-rose-500"
+                        : status === "in_progress"
+                          ? "bg-indigo-500/10 border border-indigo-500/20 text-indigo-500 animate-pulse"
+                          : "bg-muted/10 border border-border text-muted"
+                  }`}>
+                    {status === "completed" ? "Concluded" : status === "abandoned" ? "Abandoned" : status === "in_progress" ? "Live" : "Standby"}
+                  </span>
+                </div>
+
+                <div className="space-y-1">
+                  <span className="text-[10px] font-bold uppercase tracking-widest text-muted/70 flex items-center gap-1">
+                    <Clock className="w-3 h-3" /> Time Remaining
+                  </span>
+                  <div className={`text-4xl font-mono font-bold tracking-tight transition-colors duration-500 tabular-nums ${remainingSec < 60 && status === "in_progress" ? "text-rose-500 drop-shadow-[0_0_20px_rgba(244,63,94,0.4)] animate-pulse" : "text-fg"}`}>
+                    {status === "scheduled" ? formatDuration(interview.totalSec) : formatDuration(remainingSec)}
+                  </div>
+                </div>
+              </div>
+
+              {/* Action triggers */}
+              <div className="space-y-2.5">
+                {status === "scheduled" && interviewerView && (
+                  <button
+                    onClick={start}
+                    className="w-full relative overflow-hidden group/btn px-4 py-2.5 rounded-lg bg-accent hover:bg-accent-soft text-bg transition-all duration-300 shadow-md hover:-translate-y-0.5 flex items-center justify-between"
+                  >
+                    <span className="text-xs font-bold uppercase tracking-wider">Initiate Clock</span>
+                    <Play className="w-3.5 h-3.5 fill-current" />
+                  </button>
+                )}
+
+                {status === "scheduled" && !interviewerView && (
+                  <div className="p-4 rounded-xl border border-border bg-surface/30 text-center space-y-3.5">
+                    <div className="relative w-10 h-10 mx-auto">
+                      <div className="absolute inset-0 rounded-full bg-accent/20 animate-ping" />
+                      <div className="relative w-10 h-10 rounded-full bg-accent/10 border border-accent/25 grid place-items-center">
+                        <Play className="w-3.5 h-3.5 text-accent fill-current translate-x-0.5" />
+                      </div>
+                    </div>
+                    <div>
+                      <div className="text-xs font-bold uppercase tracking-wider text-fg">Awaiting Interviewer</div>
+                      <div className="text-[11px] text-muted mt-1 leading-relaxed">Please standby. The interviewer will launch the round shortly.</div>
+                    </div>
+                    {startRequested ? (
+                      <div className="inline-flex items-center gap-1.5 text-[10px] font-bold text-accent px-3 py-1 bg-accent/10 border border-accent/20 rounded-full animate-pulse mx-auto">
+                        Signal Sent • Ready
+                      </div>
+                    ) : (
+                      <button
+                        onClick={requestStart}
+                        disabled={startRequestSending}
+                        className="px-4 py-2 rounded-lg bg-surface hover:bg-panel border border-border text-[11px] font-bold text-fg transition-all active:scale-95 disabled:opacity-50"
+                      >
+                        {startRequestSending ? "Sending Signal..." : "Signal Ready"}
+                      </button>
+                    )}
+                  </div>
+                )}
+
+                {status === "in_progress" && interviewerView && (
+                  <button
+                    onClick={() => setVerdictModalOpen(true)}
+                    className="w-full px-4 py-2.5 rounded-lg bg-rose-500 hover:bg-rose-600 text-white font-bold uppercase tracking-wider text-xs transition-all duration-300 shadow-md hover:-translate-y-0.5 flex items-center justify-between"
+                  >
+                    <span>Conclude round</span>
+                    <CheckCircle2 className="w-4 h-4" />
+                  </button>
+                )}
+
+                {status === "in_progress" && !interviewerView && (
+                  <div className="p-3 rounded-xl border border-accent/10 bg-accent/5 text-center space-y-1 animate-pulse">
+                    <div className="text-xs font-bold uppercase tracking-wider text-accent">Session Active</div>
+                    <div className="text-[10px] text-muted">Proceed to the challenge roadmap on the right.</div>
+                  </div>
+                )}
+
+                {(status === "completed" || status === "abandoned") && (
+                  <div className="flex items-center gap-3 p-3.5 rounded-xl border border-emerald-500/10 bg-emerald-500/5 text-emerald-600 dark:text-emerald-500 shadow-sm">
+                    <Trophy className="w-4 h-4 shrink-0" />
+                    <div>
+                      <div className="text-xs font-bold uppercase tracking-wider leading-none">Round Concluded</div>
+                      {verdict && <div className="text-[10px] text-muted mt-1">Verdict: <span className="font-semibold text-fg/80 capitalize">{verdict.replace(/_/g, ' ')}</span></div>}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Private Notes (Interviewer) or Guidelines (Candidate) */}
+              {interviewerView ? (
+                <div className="p-4 rounded-xl border border-border bg-surface/50 shadow-sm relative overflow-hidden group">
+                  <div className="absolute top-0 right-0 w-24 h-24 bg-accent/5 rounded-full blur-xl pointer-events-none group-hover:bg-accent/10 transition-all duration-500" />
+                  
+                  <div className="flex items-center gap-2 mb-2">
+                    <Sparkles className="w-3.5 h-3.5 text-accent animate-pulse" />
+                    <span className="text-[10px] font-black uppercase tracking-[0.2em] text-muted">Evaluation Notes</span>
+                  </div>
+                  
+                  <textarea
+                    value={notes}
+                    onChange={(e) => handleSaveNotes(e.target.value)}
+                    placeholder="Record insights, communication skills, or code quality seamlessly..."
+                    className="w-full h-24 bg-transparent text-xs text-fg placeholder:text-muted/60 focus:outline-none resize-none leading-relaxed"
+                  />
+                  
+                  <div className="flex justify-end items-center gap-1.5 text-[9px] text-muted border-t border-border/50 pt-2 mt-2">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                    {savingNotes ? "Saving..." : notesSaved ? "Saved" : "Auto-saved"}
+                  </div>
+                </div>
+              ) : (
+                <div className="p-4 rounded-xl border border-border bg-surface/50 shadow-sm relative overflow-hidden group">
+                  <div className="absolute top-0 right-0 w-24 h-24 bg-accent/5 rounded-full blur-xl pointer-events-none" />
+                  <div className="flex items-center gap-2 mb-2.5">
+                    <Sparkles className="w-3.5 h-3.5 text-accent animate-pulse" />
+                    <span className="text-[10px] font-black uppercase tracking-[0.2em] text-muted">Guidelines</span>
+                  </div>
+                  <ul className="space-y-2 text-xs text-muted/95">
+                    <li className="flex items-start gap-1.5">
+                      <span className="text-accent font-bold">1.</span>
+                      <span>Think out loud to explain your problem solving workflow.</span>
+                    </li>
+                    <li className="flex items-start gap-1.5">
+                      <span className="text-accent font-bold">2.</span>
+                      <span>Consider edge cases and code complexities before writing.</span>
+                    </li>
+                    <li className="flex items-start gap-1.5">
+                      <span className="text-accent font-bold">3.</span>
+                      <span>Collaborate with your evaluator to ensure clear intent.</span>
+                    </li>
+                  </ul>
+                </div>
+              )}
+            </div>
+
+            {/* RIGHT COLUMN: Challenge Timeline Steps */}
+            <div className="md:col-span-7 p-5 space-y-4">
+              
+              <div className="border-b border-border/50 pb-2.5 flex items-center justify-between">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-muted/80">Challenge Sequence</span>
+                <span className="text-[10px] text-muted/60 font-mono">{challenges.length} Steps</span>
+              </div>
+
+              <div className="relative pl-6 border-l border-dashed border-border/80 space-y-4 py-1">
+                {challenges.map((c, idx) => {
+                  const result = attemptByChallenge.get(c.id);
+                  const passed = result === "passed";
+                  const attempted = !!result;
+                  const canEnter = status === "in_progress";
+                  const isActive = activeChallengeId === c.id;
+                  
+                  let href: string | null = canEnter 
+                    ? `/challenges/${c.slug}/attempt?session=${interview.id}&multiplayer=true` 
+                    : null;
+                    
+                  if (href && interviewerView) {
+                    href += `&token=${interview.shareToken}`;
+                  }
+                  
+                  // Style configurations
+                  let statusTag = "bg-panel border border-border text-muted";
+                  if (isActive && status === "in_progress") {
+                    statusTag = "bg-indigo-500/10 border border-indigo-500/20 text-indigo-500 dark:text-indigo-400 font-semibold animate-pulse";
+                  } else if (passed) {
+                    statusTag = "bg-emerald-500/10 border border-emerald-500/20 text-emerald-500 dark:text-emerald-400 font-semibold";
+                  } else if (result === "failed") {
+                    statusTag = "bg-rose-500/10 border border-rose-500/20 text-rose-500 dark:text-rose-400 font-semibold";
+                  }
+
+                  return (
+                    <div key={c.id} className="relative group">
+                      
+                      {/* Interactive node dot on the left path line */}
+                      <div className="absolute -left-[31px] top-1/2 -translate-y-1/2 w-4 h-4 rounded-full border-2 border-border bg-bg flex items-center justify-center transition-all duration-300 group-hover:border-accent">
+                        <div className={`w-1.5 h-1.5 rounded-full ${isActive && status === "in_progress" ? "bg-accent animate-ping" : passed ? "bg-emerald-500" : result === "failed" ? "bg-rose-500" : "bg-border"}`} />
+                      </div>
+
+                      {/* Card layout details */}
+                      <div className="p-3.5 rounded-xl border border-border bg-surface/50 shadow-sm transition-all duration-300 hover:border-border-strong hover:bg-surface hover:-translate-y-0.5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                        <div className="space-y-1">
+                          <div className="flex items-center gap-2">
+                            <span className="text-[9px] font-bold uppercase tracking-wider text-muted">Stage {idx + 1}</span>
+                            <span className={`text-[9px] font-bold uppercase px-1.5 py-0.5 rounded-md ${statusTag}`}>
+                              {isActive && status === "in_progress" ? "Active Step" : passed ? "Passed" : result === "failed" ? "Failed" : "Pending"}
+                            </span>
+                          </div>
+                          <h3 className="text-sm font-bold text-fg tracking-tight">{c.title}</h3>
+                          <div className="flex items-center gap-2 text-[11px] text-muted">
+                            <span className={`font-semibold capitalize ${difficultyColor[c.difficulty]}`}>
+                              {c.difficulty}
+                            </span>
+                            <span>•</span>
+                            <span className="flex items-center gap-1">
+                              <Clock className="w-3 h-3 text-muted/70" />
+                              {c.estimatedMinutes}m est.
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* Right side workspace entry CTA */}
+                        <div className="shrink-0 flex items-center gap-2">
+                          {href ? (
+                            <Link
+                              href={href}
+                              className="px-3.5 py-1.5 rounded-lg bg-surface hover:bg-panel border border-border hover:border-border-strong text-xs font-bold text-fg transition-all flex items-center gap-1.5 group-hover:text-accent shadow-sm"
+                            >
+                              {interviewerView ? (
+                                <>
+                                  <Eye className="w-3.5 h-3.5 text-muted group-hover:text-accent transition-colors" />
+                                  Observe Code
+                                </>
+                              ) : (
+                                <>
+                                  <Play className="w-3 h-3 fill-current" />
+                                  {passed ? "Revisit Code" : attempted ? "Resume Attempt" : "Enter Workspace"}
+                                </>
+                              )}
+                            </Link>
+                          ) : (
+                            <button
+                              disabled
+                              className="px-3.5 py-1.5 rounded-lg bg-surface/30 border border-border/50 text-xs font-bold text-muted/60 flex items-center gap-1.5 cursor-not-allowed"
+                            >
+                              View Only
+                            </button>
+                          )}
+                        </div>
+
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
           </div>
-        )}
+        </div>
+
       </div>
 
-      {/* End session */}
-      {status === "in_progress" && interviewerView && (
-        <div className="mt-10 pt-6 border-t border-border flex items-center justify-between">
-          <div className="text-xs text-muted">
-            <Clock className="w-3 h-3 inline mr-1 -mt-0.5" />
-            {formatDuration(remainingSec)} remaining
-          </div>
-          <button
-            onClick={() => setVerdictModalOpen(true)}
-            className="px-5 py-2.5 rounded-xl border border-border bg-surface hover:bg-elevated text-sm font-bold text-fg transition"
-          >
-            End session
-          </button>
-        </div>
-      )}
-
-      {status === "completed" && (
-        <div className="mt-10 pt-6 border-t border-border p-5 rounded-xl bg-emerald-500/5 border-emerald-500/30 space-y-3">
-          <div className="flex flex-wrap items-center justify-between gap-4">
-            <div className="flex items-center gap-3">
-              <Trophy className="w-5 h-5 text-emerald-500" />
-              <h2 className="text-lg font-black text-fg">Session complete</h2>
-            </div>
-            {verdict && (
-              <div className="px-3 py-1 rounded-xl text-[10px] font-black uppercase tracking-wider border bg-surface/50">
-                {verdict === "success" && <span className="text-emerald-500">🟢 Met Bar</span>}
-                {verdict === "failed" && <span className="text-rose-500">🔴 Failed</span>}
-                {verdict === "left_in_between" && <span className="text-muted">⚪ Walkout</span>}
-                {verdict === "suspicious" && <span className="text-amber-500">⚠️ Flagged Suspicious</span>}
-              </div>
-            )}
-          </div>
-          <p className="text-sm text-muted">
-            Final score: <span className="text-fg font-bold tabular-nums">{passedCount}/{challenges.length}</span> challenges passed.
-          </p>
-        </div>
-      )}
-
-      {/* Structured End-Session Verdict Modal Overlay */}
+      {/* Verdict Selection Dialog */}
       {verdictModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-background/80 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="relative w-full max-w-lg rounded-2xl border border-border bg-surface p-6 shadow-xl space-y-6">
-            <div>
-              <h3 className="text-lg font-black text-fg">Complete Interview Session</h3>
-              <p className="text-xs text-muted mt-1">
-                Select the final assessment verdict for this candidate's round.
-              </p>
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-300">
+          <div className="w-full max-w-lg bg-surface border border-border rounded-2xl shadow-2xl p-6 space-y-5 animate-in zoom-in-95 duration-300 relative overflow-hidden">
+            <div className="absolute top-0 right-0 w-32 h-32 bg-accent/5 rounded-full blur-2xl pointer-events-none -mr-10 -mt-10" />
+            
+            <div className="flex items-start justify-between relative z-10">
+              <div>
+                <h3 className="text-lg font-bold text-fg tracking-tight">Lock Session Verdict</h3>
+                <p className="text-xs text-muted mt-1">Select the official recommendation for this candidate. This action will conclude the session.</p>
+              </div>
+              <button
+                onClick={() => setVerdictModalOpen(false)}
+                className="p-1.5 rounded-lg text-muted hover:text-fg hover:bg-panel transition-all"
+              >
+                <XCircle className="w-5 h-5" />
+              </button>
             </div>
 
-            <div className="grid grid-cols-1 gap-2.5">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2 relative z-10">
               {[
-                {
-                  id: "success",
-                  label: "🟢 Met Bar (Success)",
-                  desc: "Passed the technical criteria. Strong code design and problem-solving.",
-                  bg: "hover:bg-emerald-500/5 hover:border-emerald-500/30",
-                  activeBg: "bg-emerald-500/10 border-emerald-500/40 text-emerald-500",
-                },
-                {
-                  id: "failed",
-                  label: "🔴 Did Not Meet Bar (Failed)",
-                  desc: "Failed to meet key coding standards or solve primary edge cases.",
-                  bg: "hover:bg-rose-500/5 hover:border-rose-500/30",
-                  activeBg: "bg-rose-500/10 border-rose-500/40 text-rose-500",
-                },
-                {
-                  id: "left_in_between",
-                  label: "⚪ Walkout (Left In Between)",
-                  desc: "Candidate closed the browser or abandoned the round mid-way.",
-                  bg: "hover:bg-zinc-500/5 hover:border-zinc-500/30",
-                  activeBg: "bg-zinc-500/10 border-zinc-500/40 text-zinc-500",
-                },
-                {
-                  id: "suspicious",
-                  label: "⚠️ Flagged Suspicious (Cheating / AI Assistance)",
-                  desc: "Suspected of copy-pasting code, tab switching, or external AI usage.",
-                  bg: "hover:bg-amber-500/5 hover:border-amber-500/30",
-                  activeBg: "bg-amber-500/10 border-amber-500/40 text-amber-500",
-                },
+                { id: "success", label: "Met Bar (Success)", desc: "Strong code design and problem-solving.", bg: "hover:bg-emerald-500/5 hover:border-emerald-500/20", activeBg: "bg-emerald-500/10 border-emerald-500/40 text-emerald-600 shadow-[0_2px_8px_rgba(16,185,129,0.08)]", icon: <CheckCircle2 className="w-4 h-4 text-emerald-500" /> },
+                { id: "failed", label: "Did Not Meet Bar", desc: "Failed to meet key coding standards.", bg: "hover:bg-rose-500/5 hover:border-rose-500/20", activeBg: "bg-rose-500/10 border-rose-500/40 text-rose-600 shadow-[0_2px_8px_rgba(244,63,94,0.08)]", icon: <XCircle className="w-4 h-4 text-rose-500" /> },
+                { id: "left_in_between", label: "Walkout", desc: "Candidate abandoned the round mid-way.", bg: "hover:bg-panel hover:border-border-strong", activeBg: "bg-panel border-border-strong text-fg shadow-[0_2px_8px_rgba(0,0,0,0.04)]", icon: <ArrowLeft className="w-4 h-4 text-muted" /> },
+                { id: "suspicious", label: "Flagged Suspicious", desc: "Suspected of cheating or external AI usage.", bg: "hover:bg-amber-500/5 hover:border-amber-500/20", activeBg: "bg-amber-500/10 border-amber-500/40 text-amber-600 shadow-[0_2px_8px_rgba(245,158,11,0.08)]", icon: <Radio className="w-4 h-4 text-amber-500 animate-pulse" /> },
               ].map((v) => (
                 <button
                   key={v.id}
                   type="button"
                   onClick={() => setSelectedVerdict(v.id as any)}
-                  className={`w-full text-left p-3.5 rounded-xl border transition flex flex-col ${
+                  className={`w-full text-left p-3.5 rounded-xl border transition-all duration-300 flex items-start gap-3 ${
                     selectedVerdict === v.id ? v.activeBg : `bg-surface border-border ${v.bg} text-fg/80`
                   }`}
                 >
-                  <div className="text-xs font-black uppercase tracking-wider">{v.label}</div>
-                  <div className="text-[10px] text-muted mt-1 leading-relaxed">{v.desc}</div>
+                  <div className="mt-0.5 shrink-0">{v.icon}</div>
+                  <div>
+                    <div className="text-xs font-bold uppercase tracking-wider">{v.label}</div>
+                    <div className="text-[11px] text-muted mt-0.5 leading-relaxed">{v.desc}</div>
+                  </div>
                 </button>
               ))}
             </div>
 
-            <div className="flex items-center justify-end gap-2 pt-2">
+            <div className="flex items-center justify-end gap-2.5 pt-3 relative z-10 border-t border-border">
               <button
                 type="button"
                 onClick={() => setVerdictModalOpen(false)}
-                className="px-4 py-2 rounded-xl text-xs font-bold text-muted hover:text-fg hover:bg-surface transition"
+                className="px-4 py-2 rounded-lg text-xs font-semibold text-muted hover:text-fg hover:bg-panel transition-all"
               >
                 Cancel
               </button>
               <button
                 type="button"
                 onClick={() => finish("completed", selectedVerdict)}
-                className="px-5 py-2.5 rounded-xl bg-accent hover:bg-accent-soft text-bg text-xs font-black uppercase tracking-wider transition shadow-md"
+                className="px-5 py-2 rounded-lg bg-rose-500 hover:bg-rose-600 text-white text-xs font-semibold tracking-wide transition-all duration-300 shadow-sm"
               >
-                Confirm & Finish
+                Lock Verdict
               </button>
             </div>
           </div>
         </div>
       )}
 
-      {/* Candidate Start Request Approval Modal */}
+      {/* Candidate Start Request Approval Modal Overlay */}
       {approvalModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="w-full max-w-md mx-4 bg-bg border border-border rounded-2xl shadow-2xl p-6 space-y-5 animate-in zoom-in-95 duration-200">
-            <div className="flex items-center gap-4">
-              <div className="relative w-14 h-14 shrink-0">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-300">
+          <div className="w-full max-w-md bg-surface border border-border rounded-2xl shadow-2xl p-6 space-y-6 animate-in zoom-in-95 duration-300 relative overflow-hidden">
+            <div className="absolute top-0 right-0 w-32 h-32 bg-accent/5 rounded-full blur-2xl pointer-events-none -mr-10 -mt-10" />
+            
+            <div className="flex items-start gap-4 relative z-10">
+              <div className="relative w-12 h-12 shrink-0">
                 <div className="absolute inset-0 rounded-full bg-accent/20 animate-ping" />
-                <div className="relative w-14 h-14 rounded-full bg-accent/15 border border-accent/30 grid place-items-center">
-                  <Play className="w-6 h-6 text-accent fill-current" />
+                <div className="relative w-12 h-12 rounded-full bg-accent/10 border border-accent/25 grid place-items-center shadow-sm">
+                  <Play className="w-4 h-4 text-accent fill-current translate-x-0.5" />
                 </div>
               </div>
-              <div>
-                <div className="text-base font-black text-fg">Candidate is Ready!</div>
-                <div className="text-xs text-muted mt-0.5">The candidate has requested to start the interview. Approve to begin the session and start the clock.</div>
+              <div className="pt-0.5">
+                <div className="text-lg font-bold text-fg tracking-tight">Candidate is Ready</div>
+                <div className="text-xs text-muted mt-1 leading-relaxed">The candidate has signaled. Authorize to begin the session and start the clock.</div>
               </div>
             </div>
-            <div className="flex gap-3 pt-2">
+            
+            <div className="flex gap-2.5 pt-3 relative z-10 border-t border-border">
               <button
                 onClick={dismissRequest}
-                className="flex-1 py-2.5 rounded-xl border border-border bg-surface text-xs font-bold text-muted hover:text-fg hover:bg-elevated transition"
+                className="flex-1 py-2 rounded-lg border border-border bg-surface hover:bg-panel text-xs font-semibold text-muted hover:text-fg transition-all"
               >
-                Not Yet
+                Standby
               </button>
               <button
                 onClick={approveStart}
-                className="flex-1 py-2.5 rounded-xl bg-accent hover:bg-accent-soft text-bg text-xs font-black uppercase tracking-wider transition shadow-[0_0_20px_rgba(var(--accent-rgb),0.3)]"
+                className="flex-1 py-2 rounded-lg bg-accent hover:bg-accent-soft text-bg text-xs font-semibold transition-all duration-300 shadow-sm"
               >
-                ✓ Approve & Start
+                Authorize
               </button>
             </div>
           </div>

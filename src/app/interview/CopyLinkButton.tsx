@@ -9,28 +9,32 @@ export default function CopyLinkButton({ inviteUrl }: { inviteUrl: string }) {
 
   async function handleCopy() {
     try {
-      // Local copy helper using window/navigator
       const shareUrl = `${window.location.origin}${inviteUrl.substring(inviteUrl.indexOf("/interview"))}`;
       await navigator.clipboard.writeText(shareUrl);
       setCopied(true);
-      toast.success("Practice invite link copied!", { description: "Share this link with your colleague to join a live voice call." });
+      toast.success("Invite link copied", {
+        description: "Share it with anyone you want to join this interview room.",
+      });
       setTimeout(() => setCopied(false), 2000);
     } catch {
-      toast.error("Failed to copy link.");
+      toast.error("Couldn't copy link", {
+        description: "Your browser blocked clipboard access. Copy the URL from the address bar instead.",
+      });
     }
   }
 
   return (
     <button
       onClick={handleCopy}
-      className={`p-2.5 rounded-xl border transition flex items-center justify-center shrink-0 ${
-        copied 
-          ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-500" 
-          : "bg-surface border-border text-muted hover:text-fg hover:bg-panel"
+      aria-label={copied ? "Invite link copied" : "Copy invite link"}
+      className={`h-10 w-10 rounded-xl border transition-all duration-200 flex items-center justify-center shrink-0 hover:scale-[1.02] active:scale-[0.98] ${
+        copied
+          ? "bg-emerald-500/20 border-emerald-500/30 text-emerald-400"
+          : "bg-bg border-border text-sky-500 dark:text-sky-400 hover:text-sky-600 dark:hover:text-sky-300 hover:border-sky-500/50 hover:bg-sky-500/5"
       }`}
-      title="Copy mock colleague invite link"
+      title="Copy invite link"
     >
-      {copied ? <Check className="w-3.5 h-3.5" /> : <LinkIcon className="w-3.5 h-3.5" />}
+      {copied ? <Check className="w-4 h-4" /> : <LinkIcon className="w-4 h-4" />}
     </button>
   );
 }

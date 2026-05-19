@@ -29,21 +29,9 @@ import {
   Send,
   RotateCcw,
   Clock,
-  Video,
-  VideoOff,
-  Mic,
-  MicOff,
-  MessageSquare,
-  Users,
-  Radio,
-  Wifi,
-  Sparkles,
-  Smartphone,
   FlaskConical,
-  ChevronUp,
-  ChevronDown,
-  GripHorizontal,
   Terminal,
+  Play,
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -65,14 +53,6 @@ type FlatTest = {
   name: string;
   status: "pass" | "fail" | "idle" | "running";
   error: string | null;
-};
-
-type ChatMessage = {
-  id: string;
-  sender: string;
-  text: string;
-  time: string;
-  isSystem?: boolean;
 };
 
 type LiveLog = { id: string; method: string; data: unknown[]; ts: number };
@@ -118,13 +98,6 @@ export default function ChallengeAttemptClient({
     }
   }, [multiplayer, sessionId, challenge.id]);
 
-  // Real-time Multiplayer Workspace States
-  const [colleagueActive, setColleagueActive] = useState(sim);
-  const [userMicActive, setUserMicActive] = useState(true);
-  const [userCamActive, setUserCamActive] = useState(true);
-  const [peerDecibels, setPeerDecibels] = useState<number[]>([10, 10, 10, 10, 10]);
-  const [inputChat, setInputChat] = useState("");
-
   // Yjs and WebRTC Real-Time State
   const [yDoc] = useState(() => new Y.Doc());
   const [webrtcProvider, setWebrtcProvider] = useState<WebrtcProvider | null>(null);
@@ -158,76 +131,6 @@ export default function ChallengeAttemptClient({
     };
   }, [multiplayer, sessionId, yDoc, sim]);
 
-  const [chatMessages, setChatMessages] = useState<ChatMessage[]>(() => {
-    const list: ChatMessage[] = [];
-    if (multiplayer) {
-      list.push({
-        id: "sys_1",
-        sender: "System",
-        text: "Multiplayer session initialized. Concurrency CRDT code synchronization channel online.",
-        time: "Just now",
-        isSystem: true,
-      });
-      if (sim) {
-        list.push({
-          id: "sys_2",
-          sender: "Arvind Nishad (Interviewer)",
-          text: "Hi! I'm Arvind. I will be observing your workspace and providing structural hints here as you type. Let me know when you are ready to write code!",
-          time: "Just now",
-        });
-      }
-    }
-    return list;
-  });
-
-  // Animated colleague audio decibels loop when speaking
-  useEffect(() => {
-    if (!multiplayer || !colleagueActive) return;
-    const interval = setInterval(() => {
-      // Simulate speaking activity with random decibel indicators
-      setPeerDecibels(Array.from({ length: 5 }, () => Math.floor(Math.random() * 50) + 5));
-    }, 180);
-    return () => clearInterval(interval);
-  }, [multiplayer, colleagueActive]);
-
-  // Simulated Interviewer Active Feedback Loop
-  const hintCounterRef = useRef(0);
-  useEffect(() => {
-    if (!multiplayer || !sim) return;
-
-    // Trigger dynamic helpful hints based on chronological timers to mimic active code observation
-    const timer1 = setTimeout(() => {
-      setChatMessages((prev) => [
-        ...prev,
-        {
-          id: `hint_${Date.now()}`,
-          sender: "Arvind Nishad (Interviewer)",
-          text: "🔍 Tip: Make sure to review basic input constraints first. Validating standard null/empty states now will avoid unit test failures later!",
-          time: "Just now",
-        }
-      ]);
-      toast.info("New message from Interviewer", { description: "Review tips in the sidebar chat." });
-    }, 12000);
-
-    const timer2 = setTimeout(() => {
-      setChatMessages((prev) => [
-        ...prev,
-        {
-          id: `hint_${Date.now()}`,
-          sender: "Arvind Nishad (Interviewer)",
-          text: "💡 Optimization Hint: We are looking for an O(N) linear time complexity implementation here. Try to achieve it without using nested loop counts if possible!",
-          time: "Just now",
-        }
-      ]);
-      toast.info("Interviewer posted a hint", { description: "Check code time complexity target." });
-    }, 32000);
-
-    return () => {
-      clearTimeout(timer1);
-      clearTimeout(timer2);
-    };
-  }, [multiplayer, sim]);
-
   // Test state
   const [testRun, setTestRun] = useState<{
     passed: number;
@@ -237,19 +140,10 @@ export default function ChallengeAttemptClient({
   const [submitting, setSubmitting] = useState(false);
   const [submittedStatus, setSubmittedStatus] = useState<"passed" | "failed" | null>(null);
 
-  // Bottom Tests drawer: collapsed by default, drag-to-resize when open.
-  const [testsOpen, setTestsOpen] = useState(true);
-  const [testsHeightPct, setTestsHeightPct] = useState(30);
-  const [drawerTab, setDrawerTab] = useState<"tests" | "console">("console");
+  // Tabbed sidebar state (Console or Tests)
+  const [sidebarTab, setSidebarTab] = useState<"console" | "tests">("console");
 
-  // Live console: captures console.log messages from every Sandpack iframe
-  // (preview AND tests client) via window postMessage. Lives at this level so
-  // it captures output regardless of which tab is open or even before the
-  // user has expanded the drawer.
-  //
-  // Test runs can emit dozens of logs in rapid succession; we buffer in a ref
-  // and flush via requestAnimationFrame so the parent renders at most once per
-  // frame instead of once per log.
+  // Live console logs
   const [liveLogs, setLiveLogs] = useState<LiveLog[]>([]);
   useEffect(() => {
     type Op = { kind: "log"; item: LiveLog } | { kind: "clear" };
@@ -314,41 +208,8 @@ export default function ChallengeAttemptClient({
       if (rafId !== null) cancelAnimationFrame(rafId);
     };
   }, []);
+
   const clearLiveLogs = () => setLiveLogs([]);
-  const editorPaneRef = useRef<HTMLDivElement>(null);
-  const draggingRef = useRef(false);
-
-  useEffect(() => {
-    function onMove(e: MouseEvent) {
-      if (!draggingRef.current) return;
-      const pane = editorPaneRef.current;
-      if (!pane) return;
-      const rect = pane.getBoundingClientRect();
-      const fromBottom = rect.bottom - e.clientY;
-      const pct = (fromBottom / rect.height) * 100;
-      setTestsHeightPct(Math.max(20, Math.min(80, pct)));
-    }
-    function onUp() {
-      if (!draggingRef.current) return;
-      draggingRef.current = false;
-      document.body.style.cursor = "";
-      document.body.style.userSelect = "";
-    }
-    window.addEventListener("mousemove", onMove);
-    window.addEventListener("mouseup", onUp);
-    return () => {
-      window.removeEventListener("mousemove", onMove);
-      window.removeEventListener("mouseup", onUp);
-    };
-  }, []);
-
-  function startDragTests(e: React.MouseEvent) {
-    if (!testsOpen) return;
-    e.preventDefault();
-    draggingRef.current = true;
-    document.body.style.cursor = "ns-resize";
-    document.body.style.userSelect = "none";
-  }
 
   // Elapsed time
   const startedAtRef = useRef<number>(Date.now());
@@ -375,14 +236,11 @@ export default function ChallengeAttemptClient({
   const visibleFiles = useMemo(() => Object.keys(starterFiles), [starterFiles]);
   const activeFile = useMemo(
     () => (starterFiles["/index.ts"] ? "/index.ts" : visibleFiles[0]),
-    [starterFiles, visibleFiles],
+    [starterFiles, visibleFiles]
   );
 
   const filesRef = useRef<SandpackFiles>(files);
 
-  // Bridge ref — populated by a child component placed inside SandpackProvider
-  // so the parent can drive Sandpack mutations (updateFile / addFile) and
-  // dispatch surgical run-tests events from outside the provider tree.
   type SandpackBridge = {
     updateFile: (path: string, code: string) => void;
     addFile?: (path: string, code: string) => void;
@@ -392,9 +250,6 @@ export default function ChallengeAttemptClient({
   };
   const sandpackBridgeRef = useRef<SandpackBridge | null>(null);
 
-  // Sentinel markers delimit the auto-appended debug block inside /index.ts.
-  // We strip everything between these markers before submitting so the block
-  // never ships with the candidate's solution.
   const DEBUG_BEGIN = "// ─── @debug-run (auto, edit input above) ───";
   const DEBUG_END = "// ─── end @debug-run ───";
 
@@ -410,7 +265,7 @@ export default function ChallengeAttemptClient({
     );
   }
 
-  function runDebug(rawInput: string) {
+  function runDebug() {
     const bridge = sandpackBridgeRef.current;
     const indexFile = bridge?.files["/index.ts"];
     const rawCode =
@@ -418,54 +273,11 @@ export default function ChallengeAttemptClient({
         ? indexFile
         : (indexFile as { code: string } | undefined)?.code ?? "";
 
-    // Always strip any previous debug block first so we don't stack them.
     const baseCode = stripDebugBlock(rawCode);
-    const match = baseCode.match(/export\s+(?:async\s+)?(?:function|const|let|var)\s+(\w+)/);
-    if (!match) {
-      toast.error("Could not find an exported function in /index.ts");
-      return;
-    }
-    const fnName = match[1];
-
-    // Parse the user's input — try JSON (number, array, object, string), fall
-    // back to raw string. Empty input means call with no args.
-    let argLiteral = "";
-    let parsedArg: unknown = undefined;
-    let hasArg = false;
-    const trimmed = rawInput.trim();
-    if (trimmed.length > 0) {
-      try {
-        parsedArg = JSON.parse(trimmed);
-        argLiteral = JSON.stringify(parsedArg);
-        hasArg = true;
-      } catch {
-        parsedArg = trimmed;
-        argLiteral = JSON.stringify(trimmed);
-        hasArg = true;
-      }
-    }
-
-    // Update the visible debug block in /index.ts so the candidate sees the
-    // exact call we're about to make. Block is stripped on submit.
-    const debugBlock = `\n\n${DEBUG_BEGIN}\nconsole.log("→ ${fnName}(${argLiteral})", ${fnName}(${argLiteral}));\n${DEBUG_END}\n`;
-    const newCode = baseCode.replace(/\n+$/, "") + debugBlock;
-    if (bridge) bridge.updateFile("/index.ts", newCode);
-
-    // Execute LOCALLY — no Jest, no Sandpack iframe. We strip the
-    // TypeScript annotations with a small heuristic, then evaluate the
-    // function body in a fresh Function scope. console.log is intercepted
-    // and emitted as Sandpack-shaped postMessage events so the existing
-    // LiveConsole pipeline picks them up.
-    runLocalDebug(baseCode, fnName, parsedArg, argLiteral, hasArg);
+    runLocalDebug(baseCode);
   }
 
-  function runLocalDebug(
-    tsCode: string,
-    fnName: string,
-    arg: unknown,
-    argLiteral: string,
-    hasArg: boolean,
-  ) {
+  function runLocalDebug(tsCode: string) {
     const js = stripTsAnnotations(tsCode);
     const sendLog = (method: string, data: unknown[]) => {
       window.postMessage(
@@ -480,7 +292,7 @@ export default function ChallengeAttemptClient({
             },
           ],
         },
-        "*",
+        "*"
       );
     };
 
@@ -496,16 +308,9 @@ export default function ChallengeAttemptClient({
     console.info = (...a: unknown[]) => sendLog("info", a);
 
     try {
-      // Append `return fnName;` so we can grab the user's function out of
-      // the synthesized scope.
-      const factory = new Function(`${js}\n;return typeof ${fnName} !== "undefined" ? ${fnName} : undefined;`);
-      const fn = factory() as ((...args: unknown[]) => unknown) | undefined;
-      if (typeof fn !== "function") {
-        sendLog("error", [`[run code] no function named ${fnName} found after evaluation`]);
-        return;
-      }
-      const result = hasArg ? fn(arg) : fn();
-      sendLog("log", [`→ ${fnName}(${argLiteral}) =`, result]);
+      // Evaluate the raw Javascript block inside a fresh sandbox scope
+      const factory = new Function(js);
+      factory();
     } catch (e: unknown) {
       const msg = e instanceof Error ? `${e.name}: ${e.message}` : String(e);
       sendLog("error", [`[run code error]`, msg]);
@@ -517,51 +322,52 @@ export default function ChallengeAttemptClient({
     }
   }
 
-  // Best-effort TypeScript-to-JS stripper for the local Run-code path. Covers
-  // the patterns seen in test-style challenges (typed params, return types,
-  // interfaces, generics, simple `as` casts). NOT a full TS parser — anything
-  // exotic (decorators, enums, complex conditional types) should be done via
-  // the real Jest path (Run tests / Submit) which uses Sandpack's transpiler.
   function stripTsAnnotations(src: string): string {
     let s = src;
-    // Drop 'export' keyword so declarations live as locals in our Function.
+    
+    // Remove export statements (keep the declaration itself)
     s = s.replace(
       /^\s*export\s+(?:default\s+)?(?=(?:async\s+)?(?:function|const|let|var|class))/gm,
-      "",
+      ""
     );
-    // Drop interface { ... } blocks.
+    
+    // Remove interface declarations
     s = s.replace(/^\s*interface\s+\w+(?:\s+extends\s+[\w,<>\s]+)?\s*\{[^}]*\}\s*/gm, "");
-    // Drop `type Foo = ...;` aliases (single-line).
+    
+    // Remove type declarations
     s = s.replace(/^\s*type\s+\w+(?:<[^>]+>)?\s*=\s*[^;]+;\s*/gm, "");
-    // Strip generic parameters on function / class declarations.
+    
+    // Remove function/class generics (e.g., fizzBuzz<T>)
     s = s.replace(/(\bfunction\s+\w+|\bclass\s+\w+)<[^>]+>/g, "$1");
-    // Strip parameter type annotations:  (a: number, b?: string[]) → (a, b)
-    s = s.replace(/(\(\s*|,\s*)([\w$]+)\s*\??\s*:\s*[\w<>\[\]|&,\s.'"]+?(?=\s*[,)=])/g, "$1$2");
-    // Strip return-type annotation:  function f(): X {  → function f() {
-    s = s.replace(/\)\s*:\s*[\w<>\[\]|&,\s.'"]+?(?=\s*[{=])/g, ")");
-    // Strip `as Type` casts. Be conservative — only word-y type names.
+    
+    // Remove parameter type annotations (e.g., n: number or array: string[])
+    s = s.replace(/([\w$]+)\s*\??\s*:\s*[\w<>\[\]|&,\s.'"]+(?=\s*[,)])/g, "$1");
+    
+    // Remove function return type annotations (e.g., ): string[] { or ): void =>)
+    s = s.replace(/\)\s*:\s*[\w<>\[\]|&,\s.'"]+(?=\s*[{=])/g, ")");
+    
+    // Remove type assertions (e.g., as const or as string)
     s = s.replace(/\s+as\s+(?:const|[\w<>\[\]|&]+)/g, "");
+    
     return s;
   }
 
-  // Manual "Run tests" trigger — fires the full test suite. With watchMode off
-  // this is the only way to run real assertions besides clicking Watch.
   const [runningTests, setRunningTests] = useState(false);
   function runTests() {
     const triggerRerun = () => {
       const watchBtn = Array.from(
-        document.querySelectorAll<HTMLButtonElement>("button"),
+        document.querySelectorAll<HTMLButtonElement>("button")
       ).find(
         (b) =>
           b.textContent?.trim() === "Watch" &&
-          b.className?.includes("sp-test-header"),
+          b.className?.includes("sp-test-header")
       );
       if (!watchBtn) return false;
       watchBtn.click();
       window.setTimeout(() => watchBtn.click(), 200);
       return true;
     };
-    // Make sure the sandbox is running first
+
     sandpackBridgeRef.current?.runSandpack?.();
     setRunningTests(true);
     window.setTimeout(() => setRunningTests(false), 4000);
@@ -599,44 +405,15 @@ export default function ChallengeAttemptClient({
       walk(spec, path);
     }
     const passed = flat.filter((t) => t.status === "pass").length;
-    // Defer state update — SandpackTests can invoke this synchronously during
-    // its own render, which would otherwise trigger React's "setState during
-    // render of another component" warning.
+    
     queueMicrotask(() => {
       setTestRun({ passed, total: flat.length, tests: flat });
     });
-
-    // Interactive simulated interviewer reaction to test runs
-    if (multiplayer && sim) {
-      setTimeout(() => {
-        const passRate = flat.length > 0 ? passed / flat.length : 0;
-        let responseText = "";
-        if (passRate === 1) {
-          responseText = "🎉 Fantastic! All unit tests passed on your first run. The structural flow is completely sound. Go ahead and submit your solution!";
-        } else if (passRate > 0.5) {
-          responseText = "⚡ Good progress. Most tests are passing, but you have a couple of failing cases. Check the stack traces on the right to squash the remaining edge bugs.";
-        } else {
-          responseText = "🔧 No worries! That's what mock playground rounds are for. Walk me through your design plan and we can fix the logical issues together.";
-        }
-        setChatMessages((prev) => [
-          ...prev,
-          {
-            id: `test_reaction_${Date.now()}`,
-            sender: "Arvind Nishad (Interviewer)",
-            text: responseText,
-            time: "Just now"
-          }
-        ]);
-      }, 1000);
-    }
   }
 
-  // Pending submission flag — set when user clicks Submit without test
-  // results yet. We auto-trigger a test run, then submit once results land.
   const submitAfterTestsRef = useRef(false);
   async function handleSubmit() {
-    setTestsOpen(true);
-    setDrawerTab("tests");
+    setSidebarTab("tests");
     if (!testRun) {
       toast.info("Running tests before submission…");
       submitAfterTestsRef.current = true;
@@ -649,9 +426,6 @@ export default function ChallengeAttemptClient({
       for (const [path, file] of Object.entries(filesRef.current)) {
         if (testFiles[path]) continue;
         const code = typeof file === "string" ? file : (file as { code: string }).code;
-        // Strip the auto-debug block before shipping so the candidate's
-        // submission doesn't include test invocations they only used for
-        // debugging.
         submittedFiles[path] = path === "/index.ts" ? stripDebugBlock(code) : code;
       }
       const res = await fetch(`/api/challenges/${challenge.slug}/attempt`, {
@@ -681,7 +455,6 @@ export default function ChallengeAttemptClient({
     }
   }
 
-  // When tests complete after Submit-without-results, finish the submission.
   useEffect(() => {
     if (submitAfterTestsRef.current && testRun) {
       submitAfterTestsRef.current = false;
@@ -689,36 +462,6 @@ export default function ChallengeAttemptClient({
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [testRun]);
-
-  function handleSendChat(e: React.FormEvent) {
-    e.preventDefault();
-    if (!inputChat.trim()) return;
-
-    const userMsg: ChatMessage = {
-      id: `chat_${Date.now()}`,
-      sender: "You (Candidate)",
-      text: inputChat.trim(),
-      time: "Just now",
-    };
-
-    setChatMessages((prev) => [...prev, userMsg]);
-    setInputChat("");
-
-    // Simulate interviewer immediate vocal/chat feedback
-    if (sim && colleagueActive) {
-      setTimeout(() => {
-        setChatMessages((prev) => [
-          ...prev,
-          {
-            id: `reply_${Date.now()}`,
-            sender: "Arvind Nishad (Interviewer)",
-            text: "Got it! Your logic here looks clear. Let's make sure it handles high volumetric payloads efficiently.",
-            time: "Just now",
-          }
-        ]);
-      }, 1500);
-    }
-  }
 
   if (!mounted) {
     return (
@@ -729,405 +472,238 @@ export default function ChallengeAttemptClient({
   }
 
   return (
-    <div className="flex flex-col h-screen bg-bg">
-      {/* Top bar */}
-      <header className="flex items-center justify-between gap-4 px-4 py-3 border-b border-border bg-surface shrink-0">
-        <div className="flex items-center gap-3 min-w-0">
-          <Link
-            href={sessionId ? `/interview/${sessionId}` : `/challenges/${challenge.slug}`}
-            className="text-muted hover:text-fg transition shrink-0"
-            title="Back to session queue"
-          >
-            <ArrowLeft className="w-4 h-4" />
-          </Link>
-          <div className="min-w-0">
-            <h1 className="font-bold text-sm text-fg truncate">{challenge.title}</h1>
-            <div className="flex items-center gap-2 text-[10px] text-muted/70">
-              <span className={`uppercase font-bold tracking-wider ${difficultyColor[challenge.difficulty]}`}>
-                {challenge.difficulty}
-              </span>
-              <span>·</span>
-              <span className="flex items-center gap-1">
-                <Clock className="w-2.5 h-2.5" />
-                {formatDuration(elapsedSec)}
-              </span>
-            </div>
-          </div>
-        </div>
+    <SandpackProvider
+      key={challenge.id}
+      template={challenge.template as any}
+      theme={isDark ? cobalt2 : "light"}
+      files={files}
+      options={{
+        autorun: false,
+        autoReload: false,
+        initMode: "lazy",
+        recompileMode: "delayed",
+        recompileDelay: 300,
+        visibleFiles,
+        activeFile,
+      }}
+    >
+      <FilesTracker filesRef={filesRef} bridgeRef={sandpackBridgeRef} />
 
-        {/* Presence Indicator Overlay */}
-        {multiplayer && (
-          <div className="hidden sm:flex items-center gap-1.5 bg-bg border border-border px-2.5 py-1 rounded-full shadow-sm">
-            <div className="flex -space-x-1.5">
-              <div className="w-5 h-5 rounded-full bg-accent border border-bg flex items-center justify-center text-[8px] font-black text-bg" title="You (Candidate)">
-                C
-              </div>
-              {colleagueActive && (
-                <div className="w-5 h-5 rounded-full bg-violet-500 border border-bg flex items-center justify-center text-[8px] font-black text-white" title="Arvind (Interviewer)">
-                  A
-                </div>
-              )}
-            </div>
-            <span className="text-[9px] font-black uppercase text-muted tracking-wider">
-              {colleagueActive ? "2 Developers Online" : "Solo Practice Lobby"}
-            </span>
-          </div>
-        )}
-
-        <div className="flex items-center gap-2 shrink-0">
-          {testRun && (
-            <div
-              className={`px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 ${
-                testRun.passed === testRun.total
-                  ? "bg-emerald-500/10 text-emerald-500 border border-emerald-500/30"
-                  : "bg-rose-500/10 text-rose-500 border border-rose-500/30"
-              }`}
+      <div className="flex flex-col h-screen bg-bg overflow-hidden">
+        {/* Top bar */}
+        <header className="flex items-center justify-between gap-4 px-4 py-3 border-b border-border bg-surface shrink-0">
+          <div className="flex items-center gap-3 min-w-0">
+            <Link
+              href={sessionId ? `/interview/${sessionId}` : `/challenges/${challenge.slug}`}
+              className="text-muted hover:text-fg transition shrink-0"
+              title="Back to session queue"
             >
-              {testRun.passed === testRun.total ? (
-                <CheckCircle2 className="w-3.5 h-3.5" />
-              ) : (
-                <XCircle className="w-3.5 h-3.5" />
-              )}
-              {testRun.passed}/{testRun.total}
-            </div>
-          )}
-
-          {submittedStatus !== "passed" && (
-            <button
-              onClick={() => {
-                setTestsOpen(true);
-                setDrawerTab("tests");
-                runTests();
-              }}
-              disabled={runningTests}
-              className="px-3 py-2 rounded-lg border border-border bg-surface hover:bg-elevated text-xs font-bold text-fg flex items-center gap-1.5 transition disabled:opacity-50 disabled:cursor-not-allowed"
-              title="Run the full test suite against your code"
-            >
-              <FlaskConical className="w-3.5 h-3.5 text-accent" />
-              {runningTests ? "Running…" : "Run tests"}
-            </button>
-          )}
-
-          {submittedStatus === "passed" ? (
-            <div className="px-4 py-2 rounded-lg bg-emerald-500/10 text-emerald-500 border border-emerald-500/30 text-xs font-bold flex items-center gap-1.5">
-              <CheckCircle2 className="w-3.5 h-3.5" />
-              Submitted
-            </div>
-          ) : (
-            <button
-              onClick={handleSubmit}
-              disabled={submitting}
-              className="px-4 py-2 rounded-lg bg-accent hover:bg-accent-soft text-bg text-xs font-bold flex items-center gap-1.5 transition disabled:opacity-50 disabled:cursor-not-allowed shadow-[0_0_16px_rgba(var(--accent-rgb),0.2)]"
-              title={!testRun ? "Tests will run first, then submit" : "Submit attempt"}
-            >
-              <Send className="w-3.5 h-3.5" />
-              {submitting ? "Submitting…" : "Submit Solution"}
-            </button>
-          )}
-
-          {submittedStatus && (
-            <button
-              onClick={() => {
-                setTestRun(null);
-                setSubmittedStatus(null);
-                startedAtRef.current = Date.now();
-                setElapsedSec(0);
-              }}
-              className="px-3 py-2 rounded-lg border border-border bg-surface hover:bg-elevated text-xs font-bold text-muted hover:text-fg transition flex items-center gap-1.5"
-              title="Try again"
-            >
-              <RotateCcw className="w-3.5 h-3.5" />
-              Retry
-            </button>
-          )}
-        </div>
-      </header>
-
-      {/* Body: Responsive grid panes */}
-      <div className="flex-1 grid grid-cols-12 min-h-0">
-        {/* Description */}
-        <aside className={`${multiplayer ? "col-span-12 md:col-span-3 lg:col-span-2.5" : "col-span-12 md:col-span-4 lg:col-span-3"} overflow-y-auto border-r border-border bg-bg p-5`}>
-          <ChallengeDescription markdown={challenge.description} />
-        </aside>
-
-        {/* Editor + Tests (bottom drawer) via Sandpack */}
-        <div className={`${multiplayer ? "col-span-12 md:col-span-6 lg:col-span-6.5" : "col-span-12 md:col-span-8 lg:col-span-9"} min-h-0`}>
-          <SandpackProvider
-            key={challenge.id}
-            template={challenge.template as any}
-            theme={isDark ? cobalt2 : "light"}
-            files={files}
-            options={{
-              autorun: false,
-              autoReload: false,
-              initMode: "lazy",
-              recompileMode: "delayed",
-              recompileDelay: 300,
-              visibleFiles,
-              activeFile,
-            }}
-          >
-            <FilesTracker filesRef={filesRef} bridgeRef={sandpackBridgeRef} />
-            <div ref={editorPaneRef} className="flex flex-col h-full">
-              {/* Editor — fills remaining space */}
-              <div className="flex-1 min-h-0">
-                {multiplayer ? (
-                  // Real-time collaborative editor (Yjs + y-webrtc + CodeMirror)
-                  // onChange syncs the current code into Sandpack so the test runner
-                  // always evaluates the latest version without the candidate
-                  // having to do anything extra.
-                  <CollaborativeEditor
-                    roomId={`challenge-${sessionId}-${challenge.id}`}
-                    language="typescript"
-                    // Only the candidate (non-interviewer who owns the session)
-                    // seeds the room with starter code. The interviewer receives it.
-                    defaultValue={!isInterviewer ? (starterFiles["/index.ts"] ?? Object.values(starterFiles)[0] ?? "") : undefined}
-                    username={isInterviewer ? "Interviewer" : "Candidate"}
-                    userColor={isInterviewer ? "#8b5cf6" : "#10b981"}
-                    readOnly={false}
-                    onChange={(code) => {
-                      // Push the latest code from the collaborative editor into
-                      // Sandpack's file system so Run Tests always uses fresh content.
-                      const bridge = sandpackBridgeRef.current;
-                      if (bridge) {
-                        try {
-                          bridge.updateFile("/index.ts", code);
-                        } catch {
-                          bridge.addFile?.("/index.ts", code);
-                        }
-                      }
-                    }}
-                    height="100%"
-                  />
-                ) : (
-                  <SandpackCodeEditor
-                    showLineNumbers
-                    showTabs
-                    closableTabs={false}
-                    wrapContent
-                    extensions={[javascript({ jsx: true, typescript: true })]}
-                    style={{ height: "100%" }}
-                  />
-                )}
-              </div>
-
-              {/* Tests drawer — collapsed by default, drag-to-resize when open */}
-              <div
-                className="shrink-0 border-t border-border bg-bg flex flex-col overflow-hidden"
-                style={{ height: testsOpen ? `${testsHeightPct}%` : "36px" }}
-              >
-                {testsOpen && (
-                  <div
-                    onMouseDown={startDragTests}
-                    className="h-1.5 cursor-ns-resize bg-border/40 hover:bg-accent/40 transition shrink-0 group flex items-center justify-center"
-                    title="Drag to resize"
-                  >
-                    <GripHorizontal className="w-3 h-3 text-muted/50 group-hover:text-accent transition" />
-                  </div>
-                )}
-                <div className="h-9 shrink-0 flex items-center justify-between gap-2 pl-2 pr-3 border-b border-border/40 bg-surface/30">
-                  <div className="flex items-center gap-1">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        if (!testsOpen) setTestsOpen(true);
-                        setDrawerTab("tests");
-                      }}
-                      className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-black uppercase tracking-wider transition ${
-                        testsOpen && drawerTab === "tests"
-                          ? "bg-bg text-fg shadow-sm border border-border"
-                          : "text-muted hover:text-fg hover:bg-surface"
-                      }`}
-                    >
-                      <FlaskConical className="w-3.5 h-3.5 text-accent" />
-                      Tests
-                      {testRun && (
-                        <span
-                          className={`px-1.5 py-0.5 rounded text-[10px] font-black tabular-nums normal-case tracking-normal ${
-                            testRun.passed === testRun.total
-                              ? "bg-emerald-500/15 text-emerald-500"
-                              : "bg-rose-500/15 text-rose-500"
-                          }`}
-                        >
-                          {testRun.passed}/{testRun.total}
-                        </span>
-                      )}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        if (!testsOpen) setTestsOpen(true);
-                        setDrawerTab("console");
-                      }}
-                      className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-black uppercase tracking-wider transition ${
-                        testsOpen && drawerTab === "console"
-                          ? "bg-bg text-fg shadow-sm border border-border"
-                          : "text-muted hover:text-fg hover:bg-surface"
-                      }`}
-                      title="See console.log output from your code when tests run"
-                    >
-                      <Terminal className="w-3.5 h-3.5 text-accent" />
-                      Console
-                    </button>
-                    {!testsOpen && (
-                      <span className="ml-2 text-[10px] font-bold text-muted/60 normal-case tracking-normal">
-                        Click a tab to expand
-                      </span>
-                    )}
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => setTestsOpen((v) => !v)}
-                    className="p-1 rounded-md text-muted hover:text-fg hover:bg-surface transition"
-                    title={testsOpen ? "Collapse" : "Expand"}
-                    aria-label={testsOpen ? "Collapse panel" : "Expand panel"}
-                  >
-                    {testsOpen ? (
-                      <ChevronDown className="w-3.5 h-3.5" />
-                    ) : (
-                      <ChevronUp className="w-3.5 h-3.5" />
-                    )}
-                  </button>
-                </div>
-                <div className="flex-1 min-h-0 relative">
-                  {/* Both panels stay mounted so Sandpack state survives tab
-                      switches and the Watch toggle stays in DOM for our
-                      Run-code button to trigger. */}
-                  <div
-                    className="absolute inset-0"
-                    style={{ visibility: drawerTab === "tests" ? "visible" : "hidden" }}
-                    aria-hidden={drawerTab !== "tests"}
-                  >
-                    <SandpackTests
-                      onComplete={handleTestsComplete}
-                      showVerboseButton
-                      showWatchButton
-                      style={{ height: "100%" }}
-                    />
-                  </div>
-                  <div
-                    className="absolute inset-0"
-                    style={{ visibility: drawerTab === "console" ? "visible" : "hidden" }}
-                    aria-hidden={drawerTab !== "console"}
-                  >
-                    <LiveConsole
-                      logs={liveLogs}
-                      onClear={clearLiveLogs}
-                      onRunDebug={runDebug}
-                    />
-                  </div>
-                </div>
-              </div>
-            </div>
-          </SandpackProvider>
-        </div>
-
-        {/* Multiplayer Video Audio Calling & Chat Sidebar */}
-        {multiplayer && (
-          <aside className="col-span-12 md:col-span-3 lg:col-span-3 border-l border-border bg-bg flex flex-col min-h-0 justify-between">
-            {/* Colleague Active Media Stream Frame */}
-            <div className="p-4 border-b border-border space-y-3 shrink-0">
-              <div className="text-[10px] font-black uppercase tracking-wider text-muted flex items-center justify-between">
-                <span>Interviewer Stream</span>
-                <span className="flex items-center gap-1 text-[9px] text-accent normal-case">
-                  <Radio className="w-2.5 h-2.5 animate-pulse text-accent" />
-                  Live WebRTC Link
+              <ArrowLeft className="w-4 h-4" />
+            </Link>
+            <div className="min-w-0">
+              <h1 className="font-bold text-sm text-fg truncate">{challenge.title}</h1>
+              <div className="flex items-center gap-2 text-[10px] text-muted/70">
+                <span className={`uppercase font-bold tracking-wider ${difficultyColor[challenge.difficulty]}`}>
+                  {challenge.difficulty}
+                </span>
+                <span>·</span>
+                <span className="flex items-center gap-1">
+                  <Clock className="w-2.5 h-2.5" />
+                  {formatDuration(elapsedSec)}
                 </span>
               </div>
+            </div>
+          </div>
 
-              {colleagueActive ? (
-                <div className="rounded-xl border border-border bg-surface relative overflow-hidden aspect-video flex flex-col justify-end p-3">
-                  <div className="absolute inset-0 bg-gradient-to-tr from-violet-500/5 via-transparent to-accent/5 flex items-center justify-center">
-                    <div className="text-center space-y-1.5">
-                      <div className="w-11 h-11 rounded-full bg-violet-500/10 border border-violet-500/25 flex items-center justify-center text-violet-500 font-black text-sm relative mx-auto">
-                        AN
-                        <span className="absolute bottom-0 right-0 w-3 h-3 rounded-full bg-emerald-500 border border-surface" />
-                      </div>
-                      <div className="text-[10px] font-bold text-fg/80">Arvind Nishad</div>
-                    </div>
-                  </div>
+          {/* Toolbar Center/Right buttons */}
+          <div className="flex items-center gap-3 shrink-0">
+            {testRun && (
+              <div
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 ${
+                  testRun.passed === testRun.total
+                    ? "bg-emerald-500/10 text-emerald-500 border border-emerald-500/30"
+                    : "bg-rose-500/10 text-rose-500 border border-rose-500/30"
+                }`}
+              >
+                {testRun.passed === testRun.total ? (
+                  <CheckCircle2 className="w-3.5 h-3.5" />
+                ) : (
+                  <XCircle className="w-3.5 h-3.5" />
+                )}
+                {testRun.passed}/{testRun.total}
+              </div>
+            )}
 
-                  {/* Decibel meters */}
-                  <div className="absolute bottom-3 left-3 flex items-end gap-0.5 h-4">
-                    {peerDecibels.map((db, idx) => (
-                      <div 
-                        key={idx} 
-                        style={{ height: `${db}%` }} 
-                        className="w-[3px] rounded-full bg-violet-500 transition-all duration-150" 
-                      />
-                    ))}
-                  </div>
+            {/* Run Code trigger button in Toolbar */}
+            {submittedStatus !== "passed" && (
+              <button
+                onClick={() => {
+                  setSidebarTab("console");
+                  runDebug();
+                }}
+                className="px-3 py-2 rounded-lg border border-border bg-surface hover:bg-elevated text-xs font-bold text-fg flex items-center gap-1.5 transition shadow-sm"
+                title="Execute index.ts script immediately and view logs"
+              >
+                <Play className="w-3.5 h-3.5 text-emerald-500 fill-current" />
+                Run code
+              </button>
+            )}
 
-                  <div className="absolute top-2.5 right-2.5 bg-black/40 text-white rounded-full px-2 py-0.5 text-[8px] font-mono flex items-center gap-0.5">
-                    <Wifi className="w-2.5 h-2.5 text-emerald-400" />
-                    12ms
-                  </div>
-                </div>
+            {submittedStatus !== "passed" && (
+              <button
+                onClick={() => {
+                  setSidebarTab("tests");
+                  runTests();
+                }}
+                disabled={runningTests}
+                className="px-3 py-2 rounded-lg border border-border bg-surface hover:bg-elevated text-xs font-bold text-fg flex items-center gap-1.5 transition disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
+                title="Run the full test suite against your code"
+              >
+                <FlaskConical className="w-3.5 h-3.5 text-accent" />
+                {runningTests ? "Running…" : "Run tests"}
+              </button>
+            )}
+
+            {submittedStatus === "passed" ? (
+              <div className="px-4 py-2 rounded-lg bg-emerald-500/10 text-emerald-500 border border-emerald-500/30 text-xs font-bold flex items-center gap-1.5">
+                <CheckCircle2 className="w-3.5 h-3.5" />
+                Submitted
+              </div>
+            ) : (
+              <button
+                onClick={handleSubmit}
+                disabled={submitting}
+                className="px-4 py-2 rounded-lg bg-accent hover:bg-accent-soft text-bg text-xs font-bold flex items-center gap-1.5 transition disabled:opacity-50 disabled:cursor-not-allowed shadow-[0_0_16px_rgba(var(--accent-rgb),0.2)]"
+                title={!testRun ? "Tests will run first, then submit" : "Submit attempt"}
+              >
+                <Send className="w-3.5 h-3.5" />
+                {submitting ? "Submitting…" : "Submit Solution"}
+              </button>
+            )}
+
+            {submittedStatus && (
+              <button
+                onClick={() => {
+                  setTestRun(null);
+                  setSubmittedStatus(null);
+                  startedAtRef.current = Date.now();
+                  setElapsedSec(0);
+                }}
+                className="px-3 py-2 rounded-lg border border-border bg-surface hover:bg-elevated text-xs font-bold text-muted hover:text-fg transition flex items-center gap-1.5 shadow-sm"
+                title="Try again"
+              >
+                <RotateCcw className="w-3.5 h-3.5" />
+                Retry
+              </button>
+            )}
+          </div>
+        </header>
+
+        {/* Body: Flat responsive layout grid — stretches 100% full height */}
+        <div className="flex-1 grid grid-cols-12 min-h-0 h-full overflow-hidden">
+          {/* Description Panel (3/12 columns on desktop) */}
+          <aside className="col-span-12 md:col-span-4 lg:col-span-3 overflow-y-auto border-r border-border bg-bg p-5 h-full">
+            <ChallengeDescription markdown={challenge.description} />
+          </aside>
+
+          {/* Center Editor Panel (6/12 columns on desktop) — stretches 100% full height */}
+          <div className="col-span-12 md:col-span-8 lg:col-span-6 min-h-0 flex flex-col border-r border-border h-full overflow-hidden">
+            <div className="flex-1 min-h-0 h-full relative">
+              {multiplayer ? (
+                <SyncingEditor yDoc={yDoc} provider={webrtcProvider} />
               ) : (
-                <div className="rounded-xl border border-border bg-surface/40 flex flex-col items-center justify-center p-4 text-center gap-1.5 aspect-video">
-                  <Users className="w-6 h-6 text-muted/50" />
-                  <div className="text-[10px] font-bold text-muted">Interviewer not in call</div>
-                  <button 
-                    onClick={() => setColleagueActive(true)}
-                    className="px-2.5 py-1 rounded bg-accent/15 text-accent text-[9px] font-black uppercase hover:bg-accent/25 transition mt-1"
-                  >
-                    Simulate Colleague Join
-                  </button>
-                </div>
+                <SandpackCodeEditor
+                  showLineNumbers
+                  showTabs
+                  closableTabs={false}
+                  wrapContent
+                  extensions={[javascript({ jsx: true, typescript: true })]}
+                  style={{ height: "100%", width: "100%" }}
+                />
+              )}
+            </div>
+          </div>
+
+          {/* Desktop & Mobile Split Sidebar: Console and Tests Tabs (3/12 columns on desktop) — stretches 100% full height */}
+          <aside className="col-span-12 lg:col-span-3 flex flex-col min-h-0 bg-bg border-l border-border h-full overflow-hidden">
+            {/* Tab Switcher Header */}
+            <div className="h-10 shrink-0 flex items-center justify-between px-3 border-b border-border bg-surface/30">
+              <div className="flex items-center gap-1.5">
+                <button
+                  type="button"
+                  onClick={() => setSidebarTab("console")}
+                  className={`flex items-center gap-1 px-2.5 py-1 rounded-md text-[10px] font-black uppercase tracking-wider transition ${
+                    sidebarTab === "console"
+                      ? "bg-bg text-fg shadow-sm border border-border"
+                      : "text-muted hover:text-fg hover:bg-surface/50"
+                  }`}
+                >
+                  <Terminal className="w-3 h-3 text-accent" />
+                  Console
+                  {liveLogs.length > 0 && (
+                    <span className="px-1 py-0.5 rounded text-[8px] bg-accent/15 text-accent font-mono ml-1">
+                      {liveLogs.length}
+                    </span>
+                  )}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setSidebarTab("tests")}
+                  className={`flex items-center gap-1 px-2.5 py-1 rounded-md text-[10px] font-black uppercase tracking-wider transition ${
+                    sidebarTab === "tests"
+                      ? "bg-bg text-fg shadow-sm border border-border"
+                      : "text-muted hover:text-fg hover:bg-surface/50"
+                  }`}
+                >
+                  <FlaskConical className="w-3 h-3 text-accent" />
+                  Tests
+                  {testRun && (
+                    <span
+                      className={`px-1 py-0.5 rounded text-[8px] font-mono ml-1 ${
+                        testRun.passed === testRun.total
+                          ? "bg-emerald-500/15 text-emerald-500"
+                          : "bg-rose-500/15 text-rose-500"
+                      }`}
+                    >
+                      {testRun.passed}/{testRun.total}
+                    </span>
+                  )}
+                </button>
+              </div>
+              
+              {sidebarTab === "console" && (
+                <button
+                  type="button"
+                  onClick={clearLiveLogs}
+                  disabled={liveLogs.length === 0}
+                  className="px-2 py-0.5 rounded hover:bg-surface text-[10px] text-muted hover:text-fg transition disabled:opacity-40 disabled:cursor-not-allowed"
+                >
+                  Clear
+                </button>
               )}
             </div>
 
-            {/* Glassmorphic Real-time Chat Feed */}
-            <div className="flex-1 flex flex-col min-h-0 bg-surface/20">
-              <div className="px-4 py-2 border-b border-border text-[9px] font-black uppercase tracking-wider text-muted flex items-center gap-1 shrink-0">
-                <MessageSquare className="w-3 h-3 text-accent" />
-                Collaborator hint stream
-              </div>
-
-              {/* Chat Container scroll block */}
-              <div className="flex-1 overflow-y-auto p-4 space-y-3 scrollbar-thin">
-                {chatMessages.map((msg) => {
-                  const isUser = msg.sender.startsWith("You");
-                  return (
-                    <div key={msg.id} className={`space-y-0.5 ${isUser ? "text-right" : ""}`}>
-                      <div className="text-[8px] font-black text-muted/70 tracking-wide uppercase">
-                        {msg.sender}
-                      </div>
-                      <div className={`inline-block max-w-[90%] rounded-xl p-2.5 text-xs text-left leading-relaxed ${
-                        msg.isSystem
-                          ? "bg-muted/10 border border-border text-muted font-mono text-[10px]"
-                          : isUser
-                            ? "bg-accent text-bg font-semibold shadow-sm rounded-tr-none"
-                            : "bg-surface border border-border text-fg/90 shadow-sm rounded-tl-none border-l-2 border-l-violet-500"
-                      }`}>
-                        {msg.text}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-
-              {/* Chat Form submission bottom */}
-              <form onSubmit={handleSendChat} className="p-3 border-t border-border bg-bg flex items-center gap-2 shrink-0">
-                <input
-                  type="text"
-                  value={inputChat}
-                  onChange={(e) => setInputChat(e.target.value)}
-                  placeholder="Ask for feedback or hints..."
-                  className="flex-1 min-w-0 bg-surface border border-border rounded-lg px-3 py-1.5 text-xs text-fg focus:outline-none focus:border-accent"
+            {/* Sidebar Body */}
+            <div className="flex-1 min-h-0 relative">
+              <div className={`absolute inset-0 ${sidebarTab === "console" ? "block" : "hidden"}`}>
+                <LiveConsole
+                  logs={liveLogs}
+                  onClear={clearLiveLogs}
                 />
-                <button
-                  type="submit"
-                  className="w-8 h-8 rounded-lg bg-accent text-bg hover:bg-accent-soft flex items-center justify-center shrink-0 shadow-sm transition"
-                >
-                  <Send className="w-3.5 h-3.5" />
-                </button>
-              </form>
+              </div>
+              <div className={`absolute inset-0 ${sidebarTab === "tests" ? "block" : "hidden"}`}>
+                <SandpackTests
+                  onComplete={handleTestsComplete}
+                  showVerboseButton
+                  showWatchButton
+                  style={{ height: "100%" }}
+                />
+              </div>
             </div>
           </aside>
-        )}
+        </div>
       </div>
-    </div>
+    </SandpackProvider>
   );
 }
 
@@ -1167,22 +743,13 @@ function FilesTracker({
   return null;
 }
 
-// SandpackConsole only subscribes to clients that exist when it mounts, so it
-// misses logs from the tests client (which Sandpack registers later for the
-// Jest worker). The parent component listens on window postMessage and passes
-// the accumulated log buffer down so output is captured even when the Console
-// tab isn't currently mounted/visible.
-
 function LiveConsole({
   logs,
   onClear,
-  onRunDebug,
 }: {
   logs: LiveLog[];
   onClear: () => void;
-  onRunDebug?: (input: string) => void;
 }) {
-  const [debugInput, setDebugInput] = useState("5");
 
   function formatArg(v: unknown): string {
     if (v === null) return "null";
@@ -1204,56 +771,12 @@ function LiveConsole({
     log: "border-transparent text-fg/90",
   };
 
-  function runDebugSubmit(e?: React.FormEvent) {
-    e?.preventDefault();
-    onRunDebug?.(debugInput);
-  }
-
   return (
     <div className="flex flex-col h-full bg-bg font-mono text-xs">
-      <div className="px-3 py-1.5 border-b border-border/40 shrink-0 flex items-center justify-between gap-3 text-[10px] text-muted/70">
-        <span className="shrink-0">
-          {logs.length === 0
-            ? "console output"
-            : `${logs.length} message${logs.length === 1 ? "" : "s"}`}
-        </span>
-        {onRunDebug && (
-          <form
-            onSubmit={runDebugSubmit}
-            className="flex items-center gap-1.5 flex-1 min-w-0 justify-end"
-          >
-            <label className="text-muted/60 shrink-0 normal-case">Input:</label>
-            <input
-              type="text"
-              value={debugInput}
-              onChange={(e) => setDebugInput(e.target.value)}
-              placeholder="5"
-              spellCheck={false}
-              className="min-w-0 flex-1 max-w-[140px] bg-surface border border-border rounded px-2 py-0.5 text-[10px] font-mono text-fg focus:outline-none focus:border-accent"
-              title="JSON value or string. Empty = call with no args."
-            />
-            <button
-              type="submit"
-              className="px-2 py-0.5 rounded bg-accent/15 text-accent hover:bg-accent/25 font-bold text-[10px] uppercase tracking-wider transition shrink-0"
-              title="Call your exported function with this input. Real tests also re-run, but Console only cares about your logs."
-            >
-              ▶ Run code
-            </button>
-          </form>
-        )}
-        <button
-          type="button"
-          onClick={onClear}
-          disabled={logs.length === 0}
-          className="px-2 py-0.5 rounded hover:bg-surface text-muted hover:text-fg transition disabled:opacity-40 disabled:cursor-not-allowed shrink-0"
-        >
-          Clear
-        </button>
-      </div>
       <div className="flex-1 min-h-0 overflow-y-auto">
         {logs.length === 0 ? (
           <div className="text-muted/50 text-center py-8 text-[11px] leading-relaxed px-4">
-            Add <code className="px-1 py-0.5 rounded bg-surface/60 text-fg/80">console.log(...)</code> in your code, then click <strong className="text-fg/80">Run code</strong> above (or let the tests run).
+            Add <code className="px-1 py-0.5 rounded bg-surface/60 text-fg/80">console.log(...)</code> in your code, then click <strong className="text-fg/80">Run code</strong> in the header toolbar above (or let the tests run).
           </div>
         ) : (
           <ul>
@@ -1281,6 +804,13 @@ function LiveConsole({
   );
 }
 
+function formatDuration(sec: number): string {
+  const m = Math.floor(sec / 60);
+  const s = sec % 60;
+  return `${m}:${s.toString().padStart(2, "0")}`;
+}
+
+// Collaborative sync editor matching the main WebRTC connection room
 function SyncingEditor({
   yDoc,
   provider,
@@ -1292,22 +822,59 @@ function SyncingEditor({
   const { activeFile } = sandpack;
   const activeCode = sandpack.files[activeFile]?.code ?? "";
 
-  // Insert initial code into Y.Text if it is empty.
-  // Using a ref to prevent looping during rapid peer sync
-  const initializedRef = useRef<Record<string, boolean>>({});
-  
+  const [synced, setSynced] = useState(false);
+
   useEffect(() => {
-    if (!activeFile) return;
-    const yText = yDoc.getText(activeFile);
-    
-    // If the doc is entirely empty and hasn't been initialized locally
-    if (yText.length === 0 && !initializedRef.current[activeFile]) {
-      yDoc.transact(() => {
-        yText.insert(0, activeCode);
-      });
-      initializedRef.current[activeFile] = true;
+    if (!provider) return;
+
+    if (provider.connected) {
+      setSynced(true);
     }
-  }, [activeFile, yDoc, activeCode]);
+
+    const handleSynced = ({ synced: isSynced }: { synced: boolean }) => {
+      if (isSynced) setSynced(true);
+    };
+
+    provider.on("synced", handleSynced);
+    return () => {
+      provider.off("synced", handleSynced);
+    };
+  }, [provider]);
+
+  useEffect(() => {
+    if (!activeFile || !synced) return;
+
+    const yText = yDoc.getText(activeFile);
+    const yMeta = yDoc.getMap<boolean>("meta");
+
+    function seedIfAlone() {
+      if (yText.length > 0) return;
+      if (yMeta.get(`seeded-${activeFile}`)) return;
+
+      // Check if there are other peers in the room
+      if (provider) {
+        const remoteIds = [...provider.awareness.getStates().keys()].filter(
+          (id) => id !== yDoc.clientID
+        );
+        if (remoteIds.length > 0) {
+          // Other peers exist, let's wait for them to sync their content
+          return;
+        }
+      }
+
+      // We are genuinely alone or first, let's seed the starter code atomics
+      yDoc.transact(() => {
+        if (yText.length === 0 && !yMeta.get(`seeded-${activeFile}`)) {
+          yText.insert(0, activeCode);
+          yMeta.set(`seeded-${activeFile}`, true);
+        }
+      });
+    }
+
+    // Delay seeding by 500ms to allow WebRTC peers list to populate
+    const timer = window.setTimeout(seedIfAlone, 500);
+    return () => window.clearTimeout(timer);
+  }, [activeFile, yDoc, synced, provider, activeCode]);
 
   const extensions = useMemo(() => {
     const exts: any[] = [javascript({ jsx: true, typescript: true })];
@@ -1319,20 +886,75 @@ function SyncingEditor({
   }, [provider, activeFile, yDoc]);
 
   return (
-    <SandpackCodeEditor
-      key={activeFile} // Force remount if file changes to fully re-bind yCollab to new Y.Text
-      showLineNumbers
-      showTabs
-      closableTabs={false}
-      wrapContent
-      extensions={extensions}
-      style={{ height: "100%" }}
-    />
-  );
-}
+    <>
+      <SandpackCodeEditor
+        key={activeFile}
+        showLineNumbers
+        showTabs
+        closableTabs={false}
+        wrapContent
+        extensions={extensions}
+        style={{ height: "100%", width: "100%" }}
+      />
 
-function formatDuration(sec: number): string {
-  const m = Math.floor(sec / 60);
-  const s = sec % 60;
-  return `${m}:${s.toString().padStart(2, "0")}`;
+      {/* Global CSS overrides to style collaborative cursors with an elite, futuristic HUD look */}
+      <style dangerouslySetInnerHTML={{ __html: `
+        /* Premium custom caretaker selection colors */
+        .cm-ySelection {
+          background-color: rgba(139, 92, 246, 0.15) !important;
+          border-radius: 2px !important;
+        }
+        .cm-ySelectionCaret, .cm-ySelection-caret {
+          position: relative !important;
+          border-left: 2px solid currentColor !important;
+          border-right: none !important;
+          margin-left: -1px !important;
+          margin-right: -1px !important;
+          height: 1.25em !important;
+          align-self: center !important;
+        }
+        /* Sleek glowing pin dot at the top of caret line */
+        .cm-ySelectionCaret::after, .cm-ySelection-caret::after {
+          content: "" !important;
+          position: absolute !important;
+          top: 0 !important;
+          left: -2.5px !important;
+          width: 6px !important;
+          height: 6px !important;
+          border-radius: 50% !important;
+          background-color: inherit !important;
+          box-shadow: 0 0 10px currentColor !important;
+        }
+        /* Custom high-contrast HUD hover label badge */
+        .cm-ySelectionInfo, .cm-ySelection-info {
+          position: absolute !important;
+          top: -1.8em !important;
+          left: 0 !important;
+          background-color: inherit !important;
+          color: #ffffff !important;
+          font-family: "Outfit", "Inter", sans-serif !important;
+          font-size: 9px !important;
+          font-weight: 900 !important;
+          text-transform: uppercase !important;
+          letter-spacing: 0.08em !important;
+          padding: 2px 6px !important;
+          border-radius: 3px !important;
+          box-shadow: 0 3px 10px rgba(0, 0, 0, 0.4) !important;
+          white-space: nowrap !important;
+          opacity: 0.85 !important;
+          transition: opacity 0.2s cubic-bezier(0.16, 1, 0.3, 1), transform 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
+          transform: translateY(3px) scale(0.92) !important;
+          pointer-events: none !important;
+          z-index: 100 !important;
+        }
+        .cm-ySelectionCaret:hover .cm-ySelection-info,
+        .cm-ySelection-caret:hover .cm-ySelection-info,
+        .cm-ySelectionCaret:hover .cm-ySelectionInfo,
+        .cm-ySelection-caret:hover .cm-ySelectionInfo {
+          opacity: 1 !important;
+          transform: translateY(0) scale(1) !important;
+        }
+      ` }} />
+    </>
+  );
 }

@@ -1,7 +1,7 @@
 import "./globals.css";
 import type { Metadata } from "next";
 import { Inter, JetBrains_Mono } from "next/font/google";
-import { Toaster } from "sonner";
+import ThemedToaster from "@/components/ThemedToaster";
 import Header from "@/components/Header";
 import HeaderShell from "@/components/HeaderShell";
 import Footer from "@/components/Footer";
@@ -85,17 +85,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <HeaderShell><Header /></HeaderShell>
           <main className="flex-1 flex flex-col">{children}</main>
           <FooterShell><Footer /></FooterShell>
-          <Toaster
-            theme="dark"
-            position="bottom-right"
-            toastOptions={{
-              style: {
-                background: "var(--surface)",
-                border: "1px solid var(--border)",
-                color: "var(--fg)",
-              },
-            }}
-          />
+          <ThemedToaster />
         </ThemeProvider>
       </body>
     </html>

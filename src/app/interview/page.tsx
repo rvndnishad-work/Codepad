@@ -43,25 +43,41 @@ export default async function InterviewDashboardPage() {
     orderBy: { createdAt: "desc" },
   });
 
-  // Fetch all challenge titles so we can list challenge queues beautifully on the slots
+  // Fetch challenge + playground titles so we can list queue chips on the slots
+  function parseStringIds(raw: string): string[] {
+    try {
+      const parsed = JSON.parse(raw);
+      return Array.isArray(parsed)
+        ? parsed.filter((x): x is string => typeof x === "string")
+        : [];
+    } catch {
+      return [];
+    }
+  }
+
   const allChallengeIds = Array.from(
-    new Set(
-      interviews.flatMap((i) => {
-        try {
-          const parsed = JSON.parse(i.challengeIds);
-          return Array.isArray(parsed) ? parsed.filter((x): x is string => typeof x === "string") : [];
-        } catch {
-          return [];
-        }
-      })
-    )
+    new Set(interviews.flatMap((i) => parseStringIds(i.challengeIds)))
+  );
+  const allPlaygroundIds = Array.from(
+    new Set(interviews.flatMap((i) => parseStringIds(i.playgroundIds)))
   );
 
-  const challenges = await prisma.challenge.findMany({
-    where: { id: { in: allChallengeIds } },
-    select: { id: true, title: true },
-  });
+  const [challenges, snippets] = await Promise.all([
+    allChallengeIds.length > 0
+      ? prisma.challenge.findMany({
+          where: { id: { in: allChallengeIds } },
+          select: { id: true, title: true },
+        })
+      : Promise.resolve([]),
+    allPlaygroundIds.length > 0
+      ? prisma.snippet.findMany({
+          where: { id: { in: allPlaygroundIds }, userId },
+          select: { id: true, title: true },
+        })
+      : Promise.resolve([]),
+  ]);
   const challengeMap = new Map(challenges.map((c) => [c.id, c.title]));
+  const playgroundMap = new Map(snippets.map((s) => [s.id, s.title]));
 
   // Calculate dynamic HUD Stats from active interviews
   const totalSlots = interviews.length;
@@ -216,14 +232,13 @@ export default async function InterviewDashboardPage() {
               </div>
 
               {interviews.map((slot) => {
-                const parsedIds: string[] = (() => {
-                  try {
-                    const parsed = JSON.parse(slot.challengeIds);
-                    return Array.isArray(parsed) ? parsed.filter((x): x is string => typeof x === "string") : [];
-                  } catch {
-                    return [];
-                  }
-                })();
+                const isPlaygroundSlot = (slot.sourceType ?? "challenge") === "playground";
+                const parsedIds: string[] = parseStringIds(
+                  isPlaygroundSlot ? slot.playgroundIds : slot.challengeIds
+                );
+                const titleFor = isPlaygroundSlot
+                  ? (id: string) => playgroundMap.get(id) || "Untitled playground"
+                  : (id: string) => challengeMap.get(id) || "Loading challenge...";
 
                 const dateLabel = formatRelativeTime(slot.createdAt);
 
@@ -249,6 +264,11 @@ export default async function InterviewDashboardPage() {
                   : "bg-indigo-500/15 text-indigo-400";
                 const typeText = isLive ? "Live Screen" : "Mock Practice";
 
+                const sourceBg = isPlaygroundSlot
+                  ? "bg-violet-500/15 text-violet-400"
+                  : "bg-cyan-500/15 text-cyan-400";
+                const sourceText = isPlaygroundSlot ? "Playground" : "Challenge";
+
                 const href = `/interview/${slot.id}`;
                 const inviteUrl = `${process.env.NEXTAUTH_URL || ""}/interview/${slot.id}?token=${slot.shareToken}`;
 
@@ -260,10 +280,13 @@ export default async function InterviewDashboardPage() {
                     <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-5">
                       <div className="space-y-2.5 min-w-0 flex-1">
 
-                        {/* Meta pills row (status / type / verdict only) */}
+                        {/* Meta pills row (status / source / type / verdict) */}
                         <div className="flex flex-wrap items-center gap-2">
                           <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${statusBg}`}>
                             {statusText}
+                          </span>
+                          <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${sourceBg}`}>
+                            {sourceText}
                           </span>
                           <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${typeBg}`}>
                             {typeText}
@@ -305,18 +328,18 @@ export default async function InterviewDashboardPage() {
                           </div>
                         </div>
 
-                        {/* Challenge queue (capped at 3 visible) */}
+                        {/* Queue chips (challenges OR playgrounds, capped at 3 visible) */}
                         {parsedIds.length > 0 && (
                           <div className="flex flex-wrap items-center gap-x-2 gap-y-1.5 text-xs text-muted/80 pt-1">
                             <span className="font-bold text-[10px] uppercase tracking-wider text-muted/50 font-mono">
                               Queue ({parsedIds.length}):
                             </span>
                             <div className="flex flex-wrap items-center gap-1.5 min-w-0">
-                              {parsedIds.slice(0, 3).map((cid, idx) => {
-                                const title = challengeMap.get(cid) || "Loading challenge...";
+                              {parsedIds.slice(0, 3).map((id, idx) => {
+                                const title = titleFor(id);
                                 return (
                                   <span
-                                    key={cid}
+                                    key={id}
                                     className="px-2 py-0.5 rounded bg-bg/60 text-[10px] text-fg/80 max-w-[150px] truncate"
                                     title={title}
                                   >
@@ -329,7 +352,7 @@ export default async function InterviewDashboardPage() {
                                   className="px-2 py-0.5 rounded bg-bg/40 text-[10px] text-muted/80"
                                   title={parsedIds
                                     .slice(3)
-                                    .map((cid, i) => `${i + 4}. ${challengeMap.get(cid) || "Untitled"}`)
+                                    .map((id, i) => `${i + 4}. ${titleFor(id)}`)
                                     .join("\n")}
                                 >
                                   +{parsedIds.length - 3} more

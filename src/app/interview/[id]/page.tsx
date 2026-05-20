@@ -1,7 +1,10 @@
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { notFound, redirect } from "next/navigation";
-import InterviewRunner, { type SessionChallenge } from "./InterviewRunner";
+import InterviewRunner, {
+  type SessionChallenge,
+  type SessionPlayground,
+} from "./InterviewRunner";
 
 import { validatePageAccess } from "@/lib/settings";
 
@@ -46,8 +49,11 @@ export default async function InterviewRunPage({
     else if (hasShareToken) interviewerView = true;
   }
 
-  // Auto-redirect guest to active challenge if not explicitly visiting lobby
+  const sourceType = (interview.sourceType ?? "challenge") as "challenge" | "playground";
+
+  // Auto-redirect guest to active challenge (challenge sessions only)
   if (
+    sourceType === "challenge" &&
     !isOwner &&
     hasShareToken &&
     interview.status === "in_progress" &&
@@ -65,28 +71,38 @@ export default async function InterviewRunPage({
     }
   }
 
-  const ids: string[] = (() => {
+  function parseIds(raw: string): string[] {
     try {
-      const parsed = JSON.parse(interview.challengeIds);
-      return Array.isArray(parsed) ? parsed.filter((x): x is string => typeof x === "string") : [];
+      const parsed = JSON.parse(raw);
+      return Array.isArray(parsed)
+        ? parsed.filter((x): x is string => typeof x === "string")
+        : [];
     } catch {
       return [];
     }
-  })();
+  }
 
-  const challenges = await prisma.challenge.findMany({
-    where: { id: { in: ids } },
-    select: {
-      id: true,
-      slug: true,
-      title: true,
-      difficulty: true,
-      estimatedMinutes: true,
-    },
-  });
-  const byId = new Map(challenges.map((c) => [c.id, c]));
-  const ordered: SessionChallenge[] = ids
-    .map((id) => byId.get(id))
+  const challengeIds = parseIds(interview.challengeIds);
+  const playgroundIds = parseIds(interview.playgroundIds);
+
+  const [challengeRows, snippetRows] = await Promise.all([
+    challengeIds.length > 0
+      ? prisma.challenge.findMany({
+          where: { id: { in: challengeIds } },
+          select: { id: true, slug: true, title: true, difficulty: true, estimatedMinutes: true },
+        })
+      : Promise.resolve([]),
+    playgroundIds.length > 0
+      ? prisma.snippet.findMany({
+          where: { id: { in: playgroundIds }, userId: interview.userId },
+          select: { id: true, slug: true, title: true, template: true },
+        })
+      : Promise.resolve([]),
+  ]);
+
+  const challengeById = new Map(challengeRows.map((c) => [c.id, c]));
+  const ordered: SessionChallenge[] = challengeIds
+    .map((id) => challengeById.get(id))
     .filter((c): c is NonNullable<typeof c> => !!c)
     .map((c) => ({
       id: c.id,
@@ -94,6 +110,17 @@ export default async function InterviewRunPage({
       title: c.title,
       difficulty: c.difficulty as "easy" | "medium" | "hard",
       estimatedMinutes: c.estimatedMinutes,
+    }));
+
+  const playgroundById = new Map(snippetRows.map((s) => [s.id, s]));
+  const orderedPlaygrounds: SessionPlayground[] = playgroundIds
+    .map((id) => playgroundById.get(id))
+    .filter((s): s is NonNullable<typeof s> => !!s)
+    .map((s) => ({
+      id: s.id,
+      slug: s.slug,
+      title: s.title,
+      template: s.template,
     }));
 
   // Fetch attempts already made within this session.
@@ -124,8 +151,12 @@ export default async function InterviewRunPage({
         shortCode: interview.shortCode,
         startedAtIso: interview.startedAt ? interview.startedAt.toISOString() : null,
         finishedAtIso: interview.finishedAt ? interview.finishedAt.toISOString() : null,
+        sourceType,
+        scenario: interview.scenario,
+        activePlaygroundId: interview.activePlaygroundId,
       }}
       challenges={ordered}
+      playgrounds={orderedPlaygrounds}
       attempts={attempts.map((a) => ({
         challengeId: a.challengeId,
         status: a.status as "passed" | "failed" | "in_progress" | "abandoned",

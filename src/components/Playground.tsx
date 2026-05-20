@@ -289,7 +289,16 @@ export default function Playground({
   const editable = isOwner || !snippet;
   const isMobile = useIsMobile(768);
   const { width: explorerW, onPointerDown: onExplorerDrag } = useResizable(200, 120, 400);
-  const { width: editorW, onPointerDown: onEditorDrag } = useResizable(500, 200, 1200);
+  const { width: editorW, onPointerDown: onEditorDrag, setWidth: setEditorW } = useResizable(500, 200, 2000);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const explorerWidth = explorerCollapsed ? 40 : explorerW;
+      const remainingW = window.innerWidth - explorerWidth;
+      setEditorW(Math.max(200, Math.floor(remainingW * 0.5)));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   function handleRun() {
     setRunning(true);

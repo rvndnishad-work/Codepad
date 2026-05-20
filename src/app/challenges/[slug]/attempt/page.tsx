@@ -243,6 +243,7 @@ export default async function ChallengeAttemptPage({
         multiplayer={multiplayerParam === "true"}
         sim={simParam === "true"}
         isInterviewer={isInterviewer}
+        shareToken={tokenParam ?? ""}
       />
     </>
   );

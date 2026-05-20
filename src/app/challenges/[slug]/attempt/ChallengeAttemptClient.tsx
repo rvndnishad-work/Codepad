@@ -37,6 +37,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import ChallengeDescription from "../../ChallengeDescription";
+import SessionTimer from "@/components/SessionTimer";
 
 type Challenge = {
   id: string;
@@ -71,6 +72,7 @@ export default function ChallengeAttemptClient({
   multiplayer = false,
   sim = false,
   isInterviewer = false,
+  shareToken = "",
 }: {
   challenge: Challenge;
   starterFiles: Record<string, string>;
@@ -79,6 +81,7 @@ export default function ChallengeAttemptClient({
   multiplayer?: boolean;
   sim?: boolean;
   isInterviewer?: boolean;
+  shareToken?: string;
 }) {
   const router = useRouter();
   const { resolvedTheme } = useTheme();
@@ -514,6 +517,15 @@ export default function ChallengeAttemptClient({
               </div>
             </div>
           </div>
+
+          {/* Live Remaining Interview Timer */}
+          {sessionId && (
+            <SessionTimer
+              sessionId={sessionId}
+              shareToken={shareToken}
+              isInterviewer={isInterviewer}
+            />
+          )}
 
           {/* Toolbar Center/Right buttons */}
           <div className="flex items-center gap-3 shrink-0">

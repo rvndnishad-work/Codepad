@@ -9,8 +9,15 @@ const patchSchema = z.object({
   finishedAt: z.string().datetime().nullable().optional(),
   verdict: z.enum(["success", "failed", "left_in_between", "suspicious"]).nullable().optional(),
   notes: z.string().max(4000).nullable().optional(),
+  // Interviewer-editable: prompt shown to the candidate during a
+  // playground round. Can be edited live as the round unfolds.
+  scenario: z.string().max(2000).nullable().optional(),
+  // Interviewer-controlled: which playground in the queue is currently
+  // being worked on. Parallels activeChallengeId.
+  activePlaygroundId: z.string().nullable().optional(),
   // Guest-only: candidate requesting the interviewer to start the session.
   startRequested: z.boolean().optional(),
+  totalSec: z.number().int().positive().optional(),
 });
 
 // GET — lightweight polling endpoint so guests can detect when session starts
@@ -24,7 +31,7 @@ export async function GET(
 
   const existing = await prisma.interviewSession.findUnique({
     where: { id },
-    select: { status: true, startRequestedAt: true, shareToken: true },
+    select: { status: true, startRequestedAt: true, shareToken: true, totalSec: true, startedAt: true },
   });
   if (!existing) return NextResponse.json({ error: "not found" }, { status: 404 });
 
@@ -39,6 +46,8 @@ export async function GET(
   return NextResponse.json({
     status: existing.status,
     startRequested: !!existing.startRequestedAt,
+    totalSec: existing.totalSec,
+    startedAt: existing.startedAt ? existing.startedAt.toISOString() : null,
   });
 }
 
@@ -99,11 +108,24 @@ export async function PATCH(
     data.finishedAt = parsed.data.finishedAt ? new Date(parsed.data.finishedAt) : null;
   if (parsed.data.verdict !== undefined) data.verdict = parsed.data.verdict;
   if (parsed.data.notes !== undefined) data.notes = parsed.data.notes;
+  if (parsed.data.scenario !== undefined) data.scenario = parsed.data.scenario;
+  if (parsed.data.activePlaygroundId !== undefined)
+    data.activePlaygroundId = parsed.data.activePlaygroundId;
+  if (parsed.data.totalSec !== undefined) data.totalSec = parsed.data.totalSec;
 
   const updated = await prisma.interviewSession.update({
     where: { id },
     data,
-    select: { id: true, status: true, verdict: true, notes: true },
+    select: {
+      id: true,
+      status: true,
+      verdict: true,
+      notes: true,
+      scenario: true,
+      activePlaygroundId: true,
+      totalSec: true,
+      startedAt: true,
+    },
   });
   return NextResponse.json(updated);
 }

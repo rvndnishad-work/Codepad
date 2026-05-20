@@ -285,10 +285,25 @@ model InterviewSession {
   creatorRole   String   @default("candidate") // "interviewer" | "candidate"
   /// Set when a guest candidate requests the interviewer to start the session.
   startRequestedAt DateTime?
+  /// What kind of starter material drives this session.
+  /// "challenge" — DSA/algorithm-style round backed by Challenge.testFiles.
+  /// "playground" — open framework/scenario round backed by Snippet.files,
+  /// judged manually by the interviewer (no automated tests).
+  sourceType    String   @default("challenge")
   /// JSON-encoded string[] of challenge IDs, in order.
+  /// Used when sourceType = "challenge". May be "[]" otherwise.
   challengeIds  String
-  /// Tracks the ID of the challenge currently being worked on
+  /// Tracks the ID of the challenge currently being worked on.
   activeChallengeId String?
+  /// JSON-encoded string[] of Snippet IDs (playgrounds), in order.
+  /// Used when sourceType = "playground". May be "[]" otherwise.
+  playgroundIds String   @default("[]")
+  /// Tracks the ID of the playground currently being worked on.
+  activePlaygroundId String?
+  /// Free-text scenario / prompt shown to the candidate during
+  /// playground rounds (e.g. "Add pagination to this list component").
+  /// Editable by the interviewer live; saved with the session.
+  scenario      String?
   /// Hard time limit for the whole session, in seconds.
   totalSec      Int
   status        String   @default("scheduled")

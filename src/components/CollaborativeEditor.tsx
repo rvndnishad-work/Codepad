@@ -36,7 +36,16 @@ import { css } from "@codemirror/lang-css";
 import { html } from "@codemirror/lang-html";
 import { oneDark } from "@codemirror/theme-one-dark";
 import { indentOnInput, bracketMatching, syntaxHighlighting, defaultHighlightStyle, foldGutter } from "@codemirror/language";
-import { closeBrackets, closeBracketsKeymap, autocompletion, completionKeymap } from "@codemirror/autocomplete";
+import {
+  closeBrackets,
+  closeBracketsKeymap,
+  autocompletion,
+  completionKeymap,
+  completeAnyWord,
+  type CompletionContext,
+  type CompletionResult,
+  type Completion,
+} from "@codemirror/autocomplete";
 import { Users, Wifi, WifiOff } from "lucide-react";
 
 type Language = "javascript" | "typescript" | "python" | "css" | "html";
@@ -86,6 +95,137 @@ interface Peer {
   color: string;
 }
 
+const jsKeywords = [
+  "const", "let", "var", "function", "return", "if", "else", "for", "while", "do",
+  "switch", "case", "break", "continue", "class", "export", "import", "default",
+  "new", "this", "typeof", "instanceof", "try", "catch", "finally", "throw",
+  "async", "await", "yield", "null", "undefined", "true", "false"
+].map(w => ({ label: w, type: "keyword" }));
+
+const jsGlobals = [
+  { label: "console", type: "constant", detail: "Console output" },
+  { label: "window", type: "constant", detail: "Global window object" },
+  { label: "document", type: "constant", detail: "DOM document object" },
+  { label: "Math", type: "constant", detail: "Math library" },
+  { label: "JSON", type: "constant", detail: "JSON parser/serializer" },
+  { label: "Promise", type: "constant", detail: "Async Promise constructor" },
+  { label: "Array", type: "class", detail: "Array constructor" },
+  { label: "Object", type: "class", detail: "Object constructor" },
+  { label: "String", type: "class", detail: "String constructor" },
+  { label: "Number", type: "class", detail: "Number constructor" },
+  { label: "Boolean", type: "class", detail: "Boolean constructor" },
+  { label: "Date", type: "class", detail: "Date constructor" },
+  { label: "RegExp", type: "class", detail: "RegExp constructor" },
+  { label: "Error", type: "class", detail: "Error constructor" },
+  { label: "setTimeout", type: "function", detail: "(fn, ms)" },
+  { label: "setInterval", type: "function", detail: "(fn, ms)" },
+  { label: "clearTimeout", type: "function", detail: "(id)" },
+  { label: "clearInterval", type: "function", detail: "(id)" },
+  { label: "fetch", type: "function", detail: "(url, options)" },
+  { label: "parseInt", type: "function", detail: "(str, radix)" },
+  { label: "parseFloat", type: "function", detail: "(str)" },
+  { label: "isNaN", type: "function", detail: "(val)" }
+];
+
+const consoleMethods = [
+  "log", "warn", "error", "info", "clear", "table", "dir", "time", "timeEnd", "group", "groupEnd"
+].map(m => ({ label: m, type: "method", detail: "console method" }));
+
+const documentMethods = [
+  "getElementById", "querySelector", "querySelectorAll", "createElement", "createTextNode",
+  "body", "head", "title", "addEventListener", "removeEventListener", "cookie"
+].map(m => ({ label: m, type: "method", detail: "document property/method" }));
+
+const windowMethods = [
+  "addEventListener", "removeEventListener", "setTimeout", "setInterval", "clearTimeout",
+  "clearInterval", "alert", "confirm", "prompt", "location", "history",
+  "localStorage", "sessionStorage", "fetch", "innerWidth", "innerHeight"
+].map(m => ({ label: m, type: "method", detail: "window property/method" }));
+
+const mathMethods = [
+  "abs", "ceil", "floor", "round", "max", "min", "pow", "sqrt", "random", "sin", "cos", "tan", "PI", "E"
+].map(m => ({ label: m, type: "method", detail: "Math constant/function" }));
+
+const jsonMethods = [
+  "stringify", "parse"
+].map(m => ({ label: m, type: "method", detail: "JSON method" }));
+
+const promiseMethods = [
+  "resolve", "reject", "all", "race", "allSettled", "any"
+].map(m => ({ label: m, type: "method", detail: "Promise method" }));
+
+const objectMethods = [
+  "keys", "values", "entries", "assign", "create", "defineProperty", "freeze", "seal"
+].map(m => ({ label: m, type: "method", detail: "Object method" }));
+
+const arrayPrototypeMethods = [
+  "map", "filter", "reduce", "forEach", "find", "findIndex", "includes", "indexOf",
+  "slice", "splice", "push", "pop", "shift", "unshift", "join", "some", "every",
+  "sort", "reverse", "concat", "flat", "flatMap"
+].map(m => ({ label: m, type: "method", detail: "Array method" }));
+
+const stringPrototypeMethods = [
+  "split", "replace", "replaceAll", "substring", "slice", "toLowerCase", "toUpperCase",
+  "trim", "charAt", "charCodeAt", "startsWith", "endsWith", "match", "search"
+].map(m => ({ label: m, type: "method", detail: "String method" }));
+
+function jsCompletionSource(context: CompletionContext): CompletionResult | null {
+  const line = context.state.doc.lineAt(context.pos);
+  const textBefore = line.text.slice(0, context.pos - line.from);
+
+  // 1. Dot-member completion (e.g. console.l)
+  const memberMatch = /([a-zA-Z_$][a-zA-Z0-9_$]*)\.([a-zA-Z0-9_$]*)$/.exec(textBefore);
+  if (memberMatch) {
+    const [, objName, typed] = memberMatch;
+    let list: any[] = [];
+    if (objName === "console") list = consoleMethods;
+    else if (objName === "document") list = documentMethods;
+    else if (objName === "window") list = windowMethods;
+    else if (objName === "Math") list = mathMethods;
+    else if (objName === "JSON") list = jsonMethods;
+    else if (objName === "Promise") list = promiseMethods;
+    else if (objName === "Object") list = objectMethods;
+
+    if (list.length === 0) {
+      list = [...arrayPrototypeMethods, ...stringPrototypeMethods];
+    }
+
+    const from = context.pos - typed.length;
+    return {
+      from,
+      options: list,
+      validFor: /^[a-zA-Z0-9_$]*$/
+    };
+  }
+
+  // 2. Word completion (keywords + globals + buffer words)
+  const wordMatch = context.matchBefore(/[a-zA-Z_$][a-zA-Z0-9_$]*$/);
+  if (wordMatch) {
+    const allOptions = [...jsKeywords, ...jsGlobals, ...arrayPrototypeMethods, ...stringPrototypeMethods];
+    
+    // Add local buffer word suggestions
+    const bufferCompletions = completeAnyWord(context);
+    const bufferOptions = (bufferCompletions && "options" in bufferCompletions) ? bufferCompletions.options : [];
+    
+    const merged: Completion[] = [...allOptions];
+    const seen = new Set(merged.map(o => o.label));
+    for (const opt of bufferOptions) {
+      if (!seen.has(opt.label)) {
+        merged.push(opt);
+        seen.add(opt.label);
+      }
+    }
+
+    return {
+      from: wordMatch.from,
+      options: merged,
+      validFor: /^[a-zA-Z0-9_$]*$/
+    };
+  }
+
+  return null;
+}
+
 export default function CollaborativeEditor({
   roomId,
   language = "typescript",
@@ -101,6 +241,7 @@ export default function CollaborativeEditor({
   const viewRef = useRef<EditorView | null>(null);
 
   const [connected, setConnected] = useState(false);
+  const [fontSize, setFontSize] = useState(13);
   const [peers, setPeers] = useState<Peer[]>([]);
   const [peerCount, setPeerCount] = useState(0);
 
@@ -201,6 +342,31 @@ export default function CollaborativeEditor({
           indentWithTab,
         ]),
 
+        // Font scaling keybindings (Ctrl/Cmd + Plus/Minus/Equal)
+        keymap.of([
+          {
+            key: "Mod-=",
+            run: () => {
+              setFontSize((prev) => Math.min(prev + 1, 30));
+              return true;
+            },
+          },
+          {
+            key: "Mod-+",
+            run: () => {
+              setFontSize((prev) => Math.min(prev + 1, 30));
+              return true;
+            },
+          },
+          {
+            key: "Mod--",
+            run: () => {
+              setFontSize((prev) => Math.max(prev - 1, 9));
+              return true;
+            },
+          },
+        ]),
+
         // History (undo/redo)
         history(),
 
@@ -215,7 +381,7 @@ export default function CollaborativeEditor({
         closeBrackets(),
 
         // Autocompletion
-        autocompletion(),
+        autocompletion({ override: [jsCompletionSource] }),
 
         // Syntax
         syntaxHighlighting(defaultHighlightStyle, { fallback: true }),
@@ -242,7 +408,7 @@ export default function CollaborativeEditor({
           "&": { height: "100%", background: "transparent" },
           ".cm-scroller": {
             fontFamily: '"JetBrains Mono", "Fira Code", "Cascadia Code", monospace',
-            fontSize: "13px",
+            fontSize: "var(--editor-font-size, 13px)",
             lineHeight: "1.6",
           },
           ".cm-gutters": { background: "transparent", borderRight: "1px solid rgba(255,255,255,0.07)" },
@@ -378,6 +544,7 @@ export default function CollaborativeEditor({
       <div
         ref={editorRef}
         className="flex-1 min-h-0 overflow-auto bg-[#1a1b26]"
+        style={{ "--editor-font-size": `${fontSize}px` } as React.CSSProperties}
       />
     </div>
   );

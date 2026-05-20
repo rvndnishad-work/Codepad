@@ -31,7 +31,7 @@ export const templates: TemplateDef[] = [
     group: "empty",
     category: "empty",
     base: "vanilla",
-    label: "JS",
+    label: "Empty JS",
     accent: "#f7df1e",
     mode: "console",
     files: {
@@ -48,7 +48,7 @@ export const templates: TemplateDef[] = [
     group: "empty",
     category: "empty",
     base: "vanilla-ts",
-    label: "TS",
+    label: "Empty TS",
     accent: "#3178c6",
     mode: "console",
     files: {
@@ -65,7 +65,7 @@ export const templates: TemplateDef[] = [
     group: "empty",
     category: "empty",
     base: "react",
-    label: "React",
+    label: "Empty React",
     accent: "#61dafb",
     files: {
       "/App.js": `export default function App() {\n  return <h1>Hello, React!</h1>;\n}\n`,

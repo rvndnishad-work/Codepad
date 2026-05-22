@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState, useRef } from "react";
 import Link from "next/link";
+import dynamic from "next/dynamic";
 import {
   ArrowLeft,
   CheckCircle2,
@@ -32,6 +33,8 @@ import {
   Check,
 } from "lucide-react";
 import { toast } from "sonner";
+
+const Monaco = dynamic(() => import("@monaco-editor/react"), { ssr: false });
 
 export type SessionChallenge = {
   id: string;
@@ -70,6 +73,8 @@ type Attempt = {
   challengeId: string;
   status: "passed" | "failed" | "in_progress" | "abandoned";
   durationSec: number | null;
+  files?: string | null;
+  testResults?: string | null;
 };
 
 const difficultyColor: Record<string, string> = {
@@ -203,6 +208,55 @@ export default function InterviewRunner({
   const [verdict, setVerdict] = useState(interview.verdict);
   const [verdictModalOpen, setVerdictModalOpen] = useState(false);
   const [selectedVerdict, setSelectedVerdict] = useState<"success" | "failed" | "left_in_between" | "suspicious">("success");
+
+  // Post-interview Evaluation Summary Dashboard states
+  const [selectedReviewId, setSelectedReviewId] = useState<string | null>(
+    challenges[0]?.id || null
+  );
+  const [activeReviewTab, setActiveReviewTab] = useState<"code" | "tests">("code");
+  const [activeFileKey, setActiveFileKey] = useState<string>("");
+
+  const activeReviewAttempt = useMemo(() => {
+    if (!selectedReviewId) return null;
+    return attempts.find((a) => a.challengeId === selectedReviewId) || null;
+  }, [selectedReviewId, attempts]);
+
+  const activeReviewChallenge = useMemo(() => {
+    if (!selectedReviewId) return null;
+    return challenges.find((c) => c.id === selectedReviewId) || null;
+  }, [selectedReviewId, challenges]);
+
+  const reviewFiles = useMemo(() => {
+    if (!activeReviewAttempt?.files) return {} as Record<string, string>;
+    try {
+      return JSON.parse(activeReviewAttempt.files) as Record<string, string>;
+    } catch {
+      return {} as Record<string, string>;
+    }
+  }, [activeReviewAttempt]);
+
+  const reviewFileKeys = useMemo(() => Object.keys(reviewFiles), [reviewFiles]);
+
+  useEffect(() => {
+    if (reviewFileKeys.length > 0) {
+      setActiveFileKey((prev) => reviewFileKeys.includes(prev) ? prev : reviewFileKeys[0]);
+    } else {
+      setActiveFileKey("");
+    }
+  }, [reviewFileKeys]);
+
+  const reviewTestResults = useMemo(() => {
+    if (!activeReviewAttempt?.testResults) return null;
+    try {
+      return JSON.parse(activeReviewAttempt.testResults) as {
+        passed: number;
+        total: number;
+        tests: Array<{ name: string; status: "pass" | "fail" | string; error?: string | null }>;
+      };
+    } catch {
+      return null;
+    }
+  }, [activeReviewAttempt]);
 
 
 
@@ -895,195 +949,416 @@ export default function InterviewRunner({
 
             </div>
 
-            {/* RIGHT COLUMN: Round queue (challenges) or Scenario + playgrounds */}
-            <div className="md:col-span-7 p-5 space-y-5 flex flex-col justify-between">
+            {/* RIGHT COLUMN: Concluded Evaluation Summary OR Live Round sequence */}
+            <div className="md:col-span-7 p-5 space-y-5 flex flex-col justify-between min-h-[480px]">
 
-                <div className="border-b border-border pb-3 flex items-center justify-between">
-                  <span className="text-[10px] font-black uppercase tracking-[0.2em] text-muted">
-                    {isPlayground ? "Playground Rounds" : "Challenge Sequence"}
-                  </span>
-                  <span className="text-[10px] text-muted font-mono tracking-wider bg-bg/60 border border-border px-2 py-0.5 rounded-full">
-                    {isPlayground ? playgrounds.length : challenges.length} {isPlayground ? "Rooms" : "Steps"}
-                  </span>
-                </div>
+              {status === "completed" || status === "abandoned" ? (
+                <div className="space-y-4 flex-1 flex flex-col min-h-0">
+                  {/* Dashboard Header */}
+                  <div className="flex flex-col gap-1 pb-3 border-b border-border">
+                    <h3 className="text-xs font-black uppercase tracking-[0.2em] text-accent flex items-center gap-1.5">
+                      <Trophy className="w-3.5 h-3.5 text-accent" />
+                      Post-Round Review Dashboard
+                    </h3>
+                    <p className="text-[10px] text-muted">
+                      Review candidate's final submitted code and test cases. Select a step below:
+                    </p>
+                  </div>
 
-              {isPlayground ? (
-                <div className="relative pl-6 border-l border-dashed border-border space-y-4 py-1 max-h-[480px] overflow-y-auto pr-2 scrollbar-thin">
-                  {playgrounds.map((p, idx) => {
-                    const canEnter = status === "in_progress";
-                    const isActive = interview.activePlaygroundId === p.id;
-                    const tokenQuery = isOwner
-                      ? ""
-                      : `?token=${interview.shareToken}`;
-                    const href = canEnter
-                      ? `/interview/${interview.id}/play/${p.id}${tokenQuery}`
-                      : null;
+                  {/* Challenge Step Selectors */}
+                  <div className="flex flex-wrap gap-2 pb-1">
+                    {challenges.map((c, idx) => {
+                      const attempt = attempts.find((a) => a.challengeId === c.id);
+                      const passed = attempt?.status === "passed";
+                      const failed = attempt?.status === "failed";
+                      const isSelected = selectedReviewId === c.id;
 
-                    let statusTag = "bg-bg/60 border border-border text-muted";
-                    if (isActive && status === "in_progress") {
-                      statusTag = "bg-indigo-500/10 border border-indigo-500/20 text-indigo-500 dark:text-indigo-400 font-extrabold animate-pulse";
-                    }
+                      let statusBadgeColor = "text-muted bg-surface/50 border-border";
+                      if (passed) {
+                        statusBadgeColor = "text-emerald-500 bg-emerald-500/10 border-emerald-500/20";
+                      } else if (failed) {
+                        statusBadgeColor = "text-rose-500 bg-rose-500/10 border-rose-500/20";
+                      }
 
-                    const tColor = templateColors[p.template] || {
-                      border: "hover:border-accent/40 dark:hover:border-accent/30",
-                      glow: "hover:shadow-[0_0_20px_rgba(99,102,241,0.08)]",
-                      text: "text-accent",
-                      bg: "bg-accent/10 border-accent/20"
-                    };
+                      return (
+                        <button
+                          key={c.id}
+                          onClick={() => setSelectedReviewId(c.id)}
+                          className={`flex items-center gap-2 px-3 py-1.5 rounded-xl border text-[10px] font-bold transition-all active:scale-95 ${
+                            isSelected
+                              ? "bg-accent/15 border-accent text-accent shadow-sm"
+                              : "bg-surface border-border hover:bg-elevated hover:border-border-strong text-muted hover:text-fg"
+                          }`}
+                        >
+                          <span className="font-mono">Step {idx + 1}</span>
+                          <span>•</span>
+                          <span>{c.title}</span>
+                          <span className={`text-[8px] font-black uppercase px-1.5 py-0.5 rounded border ${statusBadgeColor}`}>
+                            {passed ? "Passed" : failed ? "Failed" : "Unattempted"}
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
 
-                    return (
-                      <div key={p.id} className="relative group">
-                        <div className="absolute -left-[31px] top-1/2 -translate-y-1/2 w-4 h-4 rounded-full border-2 border-border bg-bg flex items-center justify-center transition-all duration-300 group-hover:border-accent shadow-sm">
-                          <div className={`w-1.5 h-1.5 rounded-full ${isActive && status === "in_progress" ? "bg-accent animate-ping" : "bg-border/60"}`} />
-                        </div>
-
-                        <div className={`p-4 rounded-2xl border border-border bg-bg/60 shadow-sm transition-all duration-300 hover:bg-elevated hover:-translate-y-0.5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 ${tColor.border} ${tColor.glow}`}>
-                          <div className="space-y-1">
-                            <div className="flex items-center gap-2">
-                              <span className="text-[9px] font-extrabold uppercase tracking-wider text-muted">Round {idx + 1}</span>
-                              <span className={`text-[9px] font-black uppercase px-2 py-0.5 rounded-full border tracking-wide ${statusTag}`}>
-                                {isActive && status === "in_progress" ? "Active" : "Queued"}
+                  {/* Selected Challenge Details & Submissions */}
+                  {activeReviewChallenge ? (
+                    <div className="flex-1 flex flex-col space-y-4 min-h-0">
+                      {activeReviewAttempt ? (
+                        <div className="flex-1 flex flex-col space-y-4 min-h-0">
+                          {/* Attempt Metrics Banner */}
+                          <div className="grid grid-cols-2 gap-3">
+                            <div className="p-3 rounded-xl border border-border bg-bg/40 flex flex-col justify-between">
+                              <span className="text-[9px] font-black uppercase tracking-wider text-muted">Solve Status</span>
+                              <span className={`text-xs font-black uppercase tracking-wide mt-1.5 ${
+                                activeReviewAttempt.status === "passed"
+                                  ? "text-emerald-500"
+                                  : "text-rose-500"
+                              }`}>
+                                {activeReviewAttempt.status === "passed" ? "Success (Passed)" : "Did Not Pass"}
                               </span>
                             </div>
-                            <h3 className="text-sm font-bold text-fg tracking-tight">{p.title}</h3>
-                            <div className="flex items-center gap-2 text-[11px] text-muted">
-                              <span className={`text-[9px] font-black uppercase px-2 py-0.5 rounded-full border tracking-wider shadow-sm ${tColor.bg} ${tColor.text}`}>
-                                {p.template || "playground"}
+                            <div className="p-3 rounded-xl border border-border bg-bg/40 flex flex-col justify-between">
+                              <span className="text-[9px] font-black uppercase tracking-wider text-muted">Test Cases</span>
+                              <span className="text-xs font-mono font-black text-fg mt-1.5">
+                                {reviewTestResults ? `${reviewTestResults.passed} / ${reviewTestResults.total} passed` : "N/A"}
                               </span>
-                              <span>•</span>
-                              <span>Scenario round (judged manually)</span>
                             </div>
                           </div>
 
-                          <div className="shrink-0 flex items-center gap-2">
-                            {href ? (
-                              <Link
-                                href={href}
-                                className="px-4 py-2 rounded-xl bg-bg hover:bg-elevated border border-border hover:border-accent/40 text-xs font-bold text-fg transition-all flex items-center gap-1.5 group-hover:text-accent shadow-sm active:scale-95"
-                              >
-                                {interviewerView ? (
-                                  <>
-                                    <Eye className="w-3.5 h-3.5 text-muted group-hover:text-accent transition-colors" />
-                                    Observe Code
-                                  </>
-                                ) : (
-                                  <>
-                                    <Play className="w-3 h-3 fill-current" />
-                                    Enter Workspace
-                                  </>
-                                )}
-                              </Link>
-                            ) : (
+                          {/* Code vs Test tabs */}
+                          <div className="flex border-b border-border">
+                            <button
+                              onClick={() => setActiveReviewTab("code")}
+                              className={`px-4 py-2 text-xs font-bold transition-all border-b-2 -mb-[2px] ${
+                                activeReviewTab === "code"
+                                  ? "border-accent text-accent"
+                                  : "border-transparent text-muted hover:text-fg"
+                              }`}
+                            >
+                              Code Submitted
+                            </button>
+                            {reviewTestResults && (
                               <button
-                                disabled
-                                className="px-4 py-2 rounded-xl bg-bg/60 border border-border text-xs font-bold text-muted flex items-center gap-1.5 cursor-not-allowed"
+                                onClick={() => setActiveReviewTab("tests")}
+                                className={`px-4 py-2 text-xs font-bold transition-all border-b-2 -mb-[2px] ${
+                                  activeReviewTab === "tests"
+                                    ? "border-accent text-accent"
+                                    : "border-transparent text-muted hover:text-fg"
+                                }`}
                               >
-                                Locked
+                                Test Cases ({reviewTestResults.passed}/{reviewTestResults.total})
                               </button>
                             )}
                           </div>
+
+                          {/* Active Tab Screen Content */}
+                          <div className="flex-1 flex flex-col min-h-0">
+                            {activeReviewTab === "code" ? (
+                              <div className="flex-1 flex flex-col rounded-xl border border-border bg-bg/30 overflow-hidden min-h-0">
+                                {/* File Explorer Tab bar */}
+                                <div className="flex items-center overflow-x-auto border-b border-border bg-surface shrink-0 scrollbar-none">
+                                  {reviewFileKeys.map((fk) => (
+                                    <button
+                                      key={fk}
+                                      onClick={() => setActiveFileKey(fk)}
+                                      className={`px-3 py-1.5 text-[10px] font-mono border-r border-border transition-colors ${
+                                        fk === activeFileKey
+                                          ? "bg-bg/60 text-fg font-semibold"
+                                          : "text-muted hover:text-fg hover:bg-bg/25"
+                                      }`}
+                                    >
+                                      {fk.replace(/^\//, "")}
+                                    </button>
+                                  ))}
+                                  {reviewFileKeys.length === 0 && (
+                                    <span className="p-3 text-xs text-muted italic">No files submitted.</span>
+                                  )}
+                                </div>
+
+                                {/* Monaco Reader */}
+                                <div className="flex-1 min-h-[250px] relative">
+                                  {activeFileKey ? (
+                                    <Monaco
+                                      height="250px"
+                                      language={
+                                        activeFileKey.endsWith(".ts") || activeFileKey.endsWith(".tsx")
+                                          ? "typescript"
+                                          : activeFileKey.endsWith(".js") || activeFileKey.endsWith(".jsx")
+                                            ? "javascript"
+                                            : "plaintext"
+                                      }
+                                      theme="vs-dark"
+                                      value={reviewFiles[activeFileKey] ?? ""}
+                                      options={{
+                                        readOnly: true,
+                                        minimap: { enabled: false },
+                                        fontSize: 12,
+                                        fontFamily: "'JetBrains Mono', monospace",
+                                        automaticLayout: true,
+                                        scrollBeyondLastLine: false,
+                                        tabSize: 2,
+                                        wordWrap: "on",
+                                        lineNumbersMinChars: 3,
+                                      }}
+                                    />
+                                  ) : (
+                                    <div className="absolute inset-0 flex items-center justify-center text-xs text-muted/50 italic">
+                                      Select a file to view code submission.
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                            ) : (
+                              // Test Results Tab
+                              <div className="flex-1 overflow-y-auto max-h-[300px] space-y-2 pr-1 scrollbar-thin">
+                                {reviewTestResults?.tests.map((t, tIdx) => {
+                                  const isPass = t.status === "pass";
+                                  return (
+                                    <div
+                                      key={tIdx}
+                                      className={`p-3 rounded-xl border flex flex-col gap-1.5 transition-all ${
+                                        isPass
+                                          ? "bg-emerald-500/5 border-emerald-500/10 text-emerald-600 dark:text-emerald-400"
+                                          : "bg-rose-500/5 border-rose-500/15 text-rose-600 dark:text-rose-400"
+                                      }`}
+                                    >
+                                      <div className="flex items-center justify-between gap-3">
+                                        <div className="flex items-center gap-2 min-w-0">
+                                          {isPass ? (
+                                            <CheckCircle2 className="w-3.5 h-3.5 shrink-0 text-emerald-500" />
+                                          ) : (
+                                            <XCircle className="w-3.5 h-3.5 shrink-0 text-rose-500" />
+                                          )}
+                                          <span className="text-[11px] font-bold truncate text-fg">
+                                            {t.name || `Test Case #${tIdx + 1}`}
+                                          </span>
+                                        </div>
+                                        <span className={`text-[8px] font-black uppercase px-1.5 py-0.5 rounded border ${
+                                          isPass ? "bg-emerald-500/10 border-emerald-500/25" : "bg-rose-500/10 border-rose-500/25"
+                                        }`}>
+                                          {isPass ? "Pass" : "Fail"}
+                                        </span>
+                                      </div>
+                                      {t.error && (
+                                        <div className="font-mono text-[9px] bg-black/40 border border-white/5 rounded-lg p-2 overflow-x-auto text-muted whitespace-pre-wrap">
+                                          {t.error}
+                                        </div>
+                                      )}
+                                    </div>
+                                  );
+                                })}
+                                {(!reviewTestResults || reviewTestResults.tests.length === 0) && (
+                                  <div className="text-center p-6 text-xs text-muted italic">
+                                    No detailed test results available.
+                                  </div>
+                                )}
+                              </div>
+                            )}
+                          </div>
                         </div>
-                      </div>
-                    );
-                  })}
+                      ) : (
+                        <div className="flex-1 flex flex-col items-center justify-center p-12 text-center border border-dashed border-border rounded-2xl bg-bg/30">
+                          <FileText className="w-8 h-8 text-muted/40 mb-3" />
+                          <div className="text-xs font-black uppercase text-fg/70">No Attempt Recorded</div>
+                          <p className="text-[10px] text-muted max-w-[280px] mt-1.5 leading-relaxed">
+                            The candidate did not attempt or submit any code for this step during the session.
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  ) : null}
                 </div>
               ) : (
-                <div className="relative pl-6 border-l border-dashed border-border space-y-4 py-1 max-h-[480px] overflow-y-auto pr-2 scrollbar-thin">
-                  {challenges.map((c, idx) => {
-                    const result = attemptByChallenge.get(c.id);
-                    const passed = result === "passed";
-                    const attempted = !!result;
-                    const canEnter = status === "in_progress";
-                    const isActive = activeChallengeId === c.id;
-                    
-                    let href: string | null = canEnter 
-                      ? `/challenges/${c.slug}/attempt?session=${interview.id}&multiplayer=true` 
-                      : null;
-                      
-                    if (href && interview.shareToken) {
-                      href += `&token=${interview.shareToken}`;
-                    }
-                    
-                    // Style configurations
-                    let statusTag = "bg-bg/60 border border-border text-muted";
-                    if (isActive && status === "in_progress") {
-                      statusTag = "bg-indigo-500/10 border border-indigo-500/20 text-indigo-500 dark:text-indigo-400 font-extrabold animate-pulse";
-                    } else if (passed) {
-                      statusTag = "bg-emerald-500/10 border border-emerald-500/20 text-emerald-500 dark:text-emerald-400 font-extrabold";
-                    } else if (result === "failed") {
-                      statusTag = "bg-rose-500/10 border border-rose-500/20 text-rose-500 dark:text-rose-400 font-extrabold";
-                    }
+                <>
+                  <div className="border-b border-border pb-3 flex items-center justify-between">
+                    <span className="text-[10px] font-black uppercase tracking-[0.2em] text-muted">
+                      {isPlayground ? "Playground Rounds" : "Challenge Sequence"}
+                    </span>
+                    <span className="text-[10px] text-muted font-mono tracking-wider bg-bg/60 border border-border px-2 py-0.5 rounded-full">
+                      {isPlayground ? playgrounds.length : challenges.length} {isPlayground ? "Rooms" : "Steps"}
+                    </span>
+                  </div>
 
-                    const diffColors = {
-                      easy: { text: "text-emerald-500 dark:text-emerald-400", bg: "bg-emerald-500/10 border-emerald-500/20" },
-                      medium: { text: "text-amber-500 dark:text-amber-400", bg: "bg-amber-500/10 border-amber-500/20" },
-                      hard: { text: "text-rose-500 dark:text-rose-400", bg: "bg-rose-500/10 border-rose-500/20" }
-                    }[c.difficulty] || { text: "text-accent", bg: "bg-accent/10 border-accent/20" };
+                  {isPlayground ? (
+                    <div className="relative pl-6 border-l border-dashed border-border space-y-4 py-1 max-h-[480px] overflow-y-auto pr-2 scrollbar-thin">
+                      {playgrounds.map((p, idx) => {
+                        const canEnter = status === "in_progress";
+                        const isActive = interview.activePlaygroundId === p.id;
+                        const tokenQuery = isOwner
+                          ? ""
+                          : `?token=${interview.shareToken}`;
+                        const href = canEnter
+                          ? `/interview/${interview.id}/play/${p.id}${tokenQuery}`
+                          : null;
 
-                    return (
-                      <div key={c.id} className="relative group">
-                        
-                        {/* Interactive node dot on the left path line */}
-                        <div className="absolute -left-[31px] top-1/2 -translate-y-1/2 w-4 h-4 rounded-full border-2 border-border bg-bg flex items-center justify-center transition-all duration-300 group-hover:border-accent shadow-sm">
-                          <div className={`w-1.5 h-1.5 rounded-full ${isActive && status === "in_progress" ? "bg-accent animate-ping" : passed ? "bg-emerald-500" : result === "failed" ? "bg-rose-500" : "bg-border/60"}`} />
-                        </div>
+                        let statusTag = "bg-bg/60 border border-border text-muted";
+                        if (isActive && status === "in_progress") {
+                          statusTag = "bg-indigo-500/10 border border-indigo-500/20 text-indigo-500 dark:text-indigo-400 font-extrabold animate-pulse";
+                        }
 
-                        {/* Card layout details */}
-                        <div className="p-4 rounded-2xl border border-border bg-bg/60 shadow-sm transition-all duration-300 hover:bg-elevated hover:border-accent/30 hover:shadow-[0_0_20px_rgba(99,102,241,0.08)] hover:-translate-y-0.5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                          <div className="space-y-1">
-                            <div className="flex items-center gap-2">
-                              <span className="text-[9px] font-extrabold uppercase tracking-wider text-muted">Stage {idx + 1}</span>
-                              <span className={`text-[9px] font-black uppercase px-2 py-0.5 rounded-full border tracking-wide ${statusTag}`}>
-                                {isActive && status === "in_progress" ? "Active Step" : passed ? "Passed" : result === "failed" ? "Failed" : "Pending"}
-                              </span>
+                        const tColor = templateColors[p.template] || {
+                          border: "hover:border-accent/40 dark:hover:border-accent/30",
+                          glow: "hover:shadow-[0_0_20px_rgba(99,102,241,0.08)]",
+                          text: "text-accent",
+                          bg: "bg-accent/10 border-accent/20"
+                        };
+
+                        return (
+                          <div key={p.id} className="relative group">
+                            <div className="absolute -left-[31px] top-1/2 -translate-y-1/2 w-4 h-4 rounded-full border-2 border-border bg-bg flex items-center justify-center transition-all duration-300 group-hover:border-accent shadow-sm">
+                              <div className={`w-1.5 h-1.5 rounded-full ${isActive && status === "in_progress" ? "bg-accent animate-ping" : "bg-border/60"}`} />
                             </div>
-                            <h3 className="text-sm font-bold text-fg tracking-tight">{c.title}</h3>
-                            <div className="flex items-center gap-2.5 text-[11px] text-muted">
-                              <span className={`text-[9px] font-black uppercase px-2 py-0.5 rounded-full border tracking-wider shadow-sm ${diffColors.bg} ${diffColors.text}`}>
-                                {c.difficulty}
-                              </span>
-                              <span>•</span>
-                              <span className="flex items-center gap-1 text-[11px]">
-                                <Clock className="w-3.5 h-3.5 text-muted/65" />
-                                {c.estimatedMinutes}m est.
-                              </span>
-                            </div>
-                          </div>
 
-                          {/* Right side workspace entry CTA */}
-                          <div className="shrink-0 flex items-center gap-2">
-                            {href ? (
-                              <Link
-                                href={href}
-                                className="px-4 py-2 rounded-xl bg-bg hover:bg-elevated border border-border hover:border-accent/40 text-xs font-bold text-fg transition-all flex items-center gap-1.5 group-hover:text-accent shadow-sm active:scale-95"
-                              >
-                                {interviewerView ? (
-                                  <>
-                                    <Eye className="w-3.5 h-3.5 text-muted group-hover:text-accent transition-colors" />
-                                    Observe Code
-                                  </>
+                            <div className={`p-4 rounded-2xl border border-border bg-bg/60 shadow-sm transition-all duration-300 hover:bg-elevated hover:-translate-y-0.5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 ${tColor.border} ${tColor.glow}`}>
+                              <div className="space-y-1">
+                                <div className="flex items-center gap-2">
+                                  <span className="text-[9px] font-extrabold uppercase tracking-wider text-muted">Round {idx + 1}</span>
+                                  <span className={`text-[9px] font-black uppercase px-2 py-0.5 rounded-full border tracking-wide ${statusTag}`}>
+                                    {isActive && status === "in_progress" ? "Active" : "Queued"}
+                                  </span>
+                                </div>
+                                <h3 className="text-sm font-bold text-fg tracking-tight">{p.title}</h3>
+                                <div className="flex items-center gap-2 text-[11px] text-muted">
+                                  <span className={`text-[9px] font-black uppercase px-2 py-0.5 rounded-full border tracking-wider shadow-sm ${tColor.bg} ${tColor.text}`}>
+                                    {p.template || "playground"}
+                                  </span>
+                                  <span>•</span>
+                                  <span>Scenario round (judged manually)</span>
+                                </div>
+                              </div>
+
+                              <div className="shrink-0 flex items-center gap-2">
+                                {href ? (
+                                  <Link
+                                    href={href}
+                                    className="px-4 py-2 rounded-xl bg-bg hover:bg-elevated border border-border hover:border-accent/40 text-xs font-bold text-fg transition-all flex items-center gap-1.5 group-hover:text-accent shadow-sm active:scale-95"
+                                  >
+                                    {interviewerView ? (
+                                      <>
+                                        <Eye className="w-3.5 h-3.5 text-muted group-hover:text-accent transition-colors" />
+                                        Observe Code
+                                      </>
+                                    ) : (
+                                      <>
+                                        <Play className="w-3 h-3 fill-current" />
+                                        Enter Workspace
+                                      </>
+                                    )}
+                                  </Link>
                                 ) : (
-                                  <>
-                                    <Play className="w-3 h-3 fill-current" />
-                                    {passed ? "Revisit Code" : attempted ? "Resume Attempt" : "Enter Workspace"}
-                                  </>
+                                  <button
+                                    disabled
+                                    className="px-4 py-2 rounded-xl bg-bg/60 border border-border text-xs font-bold text-muted flex items-center gap-1.5 cursor-not-allowed"
+                                  >
+                                    Locked
+                                  </button>
                                 )}
-                              </Link>
-                            ) : (
-                              <button
-                                disabled
-                                className="px-4 py-2 rounded-xl bg-bg/60 border border-border text-xs font-bold text-muted flex items-center gap-1.5 cursor-not-allowed"
-                              >
-                                View Only
-                              </button>
-                            )}
+                              </div>
+                            </div>
                           </div>
+                        );
+                      })}
+                    </div>
+                  ) : (
+                    <div className="relative pl-6 border-l border-dashed border-border space-y-4 py-1 max-h-[480px] overflow-y-auto pr-2 scrollbar-thin">
+                      {challenges.map((c, idx) => {
+                        const result = attemptByChallenge.get(c.id);
+                        const passed = result === "passed";
+                        const attempted = !!result;
+                        const canEnter = status === "in_progress";
+                        const isActive = activeChallengeId === c.id;
 
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
+                        let href: string | null = canEnter
+                          ? `/challenges/${c.slug}/attempt?session=${interview.id}&multiplayer=true`
+                          : null;
+
+                        if (href && interview.shareToken) {
+                          href += `&token=${interview.shareToken}`;
+                        }
+
+                        // Style configurations
+                        let statusTag = "bg-bg/60 border border-border text-muted";
+                        if (isActive && status === "in_progress") {
+                          statusTag = "bg-indigo-500/10 border border-indigo-500/20 text-indigo-500 dark:text-indigo-400 font-extrabold animate-pulse";
+                        } else if (passed) {
+                          statusTag = "bg-emerald-500/10 border border-emerald-500/20 text-emerald-500 dark:text-emerald-400 font-extrabold";
+                        } else if (result === "failed") {
+                          statusTag = "bg-rose-500/10 border border-rose-500/20 text-rose-500 dark:text-rose-400 font-extrabold";
+                        }
+
+                        const diffColors = {
+                          easy: { text: "text-emerald-500 dark:text-emerald-400", bg: "bg-emerald-500/10 border-emerald-500/20" },
+                          medium: { text: "text-amber-500 dark:text-amber-400", bg: "bg-amber-500/10 border-amber-500/20" },
+                          hard: { text: "text-rose-500 dark:text-rose-400", bg: "bg-rose-500/10 border-rose-500/20" }
+                        }[c.difficulty] || { text: "text-accent", bg: "bg-accent/10 border-accent/20" };
+
+                        return (
+                          <div key={c.id} className="relative group">
+
+                            {/* Interactive node dot on the left path line */}
+                            <div className="absolute -left-[31px] top-1/2 -translate-y-1/2 w-4 h-4 rounded-full border-2 border-border bg-bg flex items-center justify-center transition-all duration-300 group-hover:border-accent shadow-sm">
+                              <div className={`w-1.5 h-1.5 rounded-full ${isActive && status === "in_progress" ? "bg-accent animate-ping" : passed ? "bg-emerald-500" : result === "failed" ? "bg-rose-500" : "bg-border/60"}`} />
+                            </div>
+
+                            {/* Card layout details */}
+                            <div className="p-4 rounded-2xl border border-border bg-bg/60 shadow-sm transition-all duration-300 hover:bg-elevated hover:border-accent/30 hover:shadow-[0_0_20px_rgba(99,102,241,0.08)] hover:-translate-y-0.5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                              <div className="space-y-1">
+                                <div className="flex items-center gap-2">
+                                  <span className="text-[9px] font-extrabold uppercase tracking-wider text-muted">Stage {idx + 1}</span>
+                                  <span className={`text-[9px] font-black uppercase px-2 py-0.5 rounded-full border tracking-wide ${statusTag}`}>
+                                    {isActive && status === "in_progress" ? "Active Step" : passed ? "Passed" : result === "failed" ? "Failed" : "Pending"}
+                                  </span>
+                                </div>
+                                <h3 className="text-sm font-bold text-fg tracking-tight">{c.title}</h3>
+                                <div className="flex items-center gap-2.5 text-[11px] text-muted">
+                                  <span className={`text-[9px] font-black uppercase px-2 py-0.5 rounded-full border tracking-wider shadow-sm ${diffColors.bg} ${diffColors.text}`}>
+                                    {c.difficulty}
+                                  </span>
+                                  <span>•</span>
+                                  <span className="flex items-center gap-1 text-[11px]">
+                                    <Clock className="w-3.5 h-3.5 text-muted/65" />
+                                    {c.estimatedMinutes}m est.
+                                  </span>
+                                </div>
+                              </div>
+
+                              {/* Right side workspace entry CTA */}
+                              <div className="shrink-0 flex items-center gap-2">
+                                {href ? (
+                                  <Link
+                                    href={href}
+                                    className="px-4 py-2 rounded-xl bg-bg hover:bg-elevated border border-border hover:border-accent/40 text-xs font-bold text-fg transition-all flex items-center gap-1.5 group-hover:text-accent shadow-sm active:scale-95"
+                                  >
+                                    {interviewerView ? (
+                                      <>
+                                        <Eye className="w-3.5 h-3.5 text-muted group-hover:text-accent transition-colors" />
+                                        Observe Code
+                                      </>
+                                    ) : (
+                                      <>
+                                        <Play className="w-3 h-3 fill-current" />
+                                        {passed ? "Revisit Code" : attempted ? "Resume Attempt" : "Enter Workspace"}
+                                      </>
+                                    )}
+                                  </Link>
+                                ) : (
+                                  <button
+                                    disabled
+                                    className="px-4 py-2 rounded-xl bg-bg/60 border border-border text-xs font-bold text-muted flex items-center gap-1.5 cursor-not-allowed"
+                                  >
+                                    View Only
+                                  </button>
+                                )}
+                              </div>
+
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </>
               )}
             </div>
 

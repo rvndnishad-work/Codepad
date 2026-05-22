@@ -132,6 +132,8 @@ export default async function InterviewRunPage({
       status: true,
       durationSec: true,
       finishedAt: true,
+      files: true,
+      testResults: true,
     },
     orderBy: { startedAt: "asc" },
   });
@@ -161,6 +163,8 @@ export default async function InterviewRunPage({
         challengeId: a.challengeId,
         status: a.status as "passed" | "failed" | "in_progress" | "abandoned",
         durationSec: a.durationSec ?? null,
+        files: a.files,
+        testResults: a.testResults,
       }))}
       interviewerView={interviewerView}
       isOwner={isOwner}

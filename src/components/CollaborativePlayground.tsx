@@ -640,6 +640,41 @@ function Bridge({
     return () => yFiles.unobserveDeep(observer);
   }, [yDoc, sandpack]);
 
+  // Synchronize changes from sandpack.files back to yFiles (Yjs) to support
+  // file creations, deletions, and name changes in real-time across peers.
+  useEffect(() => {
+    const yFiles = yDoc.getMap<Y.Text>("files");
+    
+    yDoc.transact(() => {
+      // 1. Identify added or updated files
+      for (const [path, file] of Object.entries(sandpack.files)) {
+        if (!file || (typeof file === "object" && file.hidden)) continue;
+        const code = typeof file === "string" ? file : file.code ?? "";
+        
+        let yText = yFiles.get(path);
+        if (!yText) {
+          yText = new Y.Text();
+          yText.insert(0, code);
+          yFiles.set(path, yText);
+        } else {
+          const currentYTextVal = yText.toString();
+          if (currentYTextVal !== code) {
+            yText.delete(0, yText.length);
+            yText.insert(0, code);
+          }
+        }
+      }
+      
+      // 2. Identify deleted files
+      yFiles.forEach((_, path) => {
+        const file = sandpack.files[path];
+        if (!file || (typeof file === "object" && file.hidden)) {
+          yFiles.delete(path);
+        }
+      });
+    });
+  }, [sandpack.files, yDoc]);
+
   const dynamicStyles = useMemo(() => {
     return `
       .ide-divider {

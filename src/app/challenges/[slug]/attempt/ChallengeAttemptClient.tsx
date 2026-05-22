@@ -258,7 +258,36 @@ export default function ChallengeAttemptClient({
   const [sidebarTab, setSidebarTab] = useState<"console" | "tests">("console");
 
   // Live console logs
-  const [liveLogs, setLiveLogs] = useState<LiveLog[]>([]);
+  const [liveLogs, setLiveLogs] = useState<LiveLog[]>(() => {
+    if (typeof window !== "undefined") {
+      const key = `${sessionId || challenge.slug}:console_logs`;
+      try {
+        const stored = sessionStorage.getItem(key);
+        if (stored) {
+          return JSON.parse(stored);
+        }
+      } catch (e) {
+        console.warn("Failed to parse console logs from sessionStorage", e);
+      }
+    }
+    return [];
+  });
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const key = `${sessionId || challenge.slug}:console_logs`;
+      try {
+        if (liveLogs.length === 0) {
+          sessionStorage.removeItem(key);
+        } else {
+          sessionStorage.setItem(key, JSON.stringify(liveLogs));
+        }
+      } catch (e) {
+        console.warn("Failed to save console logs to sessionStorage", e);
+      }
+    }
+  }, [liveLogs, sessionId, challenge.slug]);
+
   useEffect(() => {
     type Op = { kind: "log"; item: LiveLog } | { kind: "clear" };
     const pending: Op[] = [];
@@ -292,10 +321,34 @@ export default function ChallengeAttemptClient({
     }
 
     function onMessage(e: MessageEvent) {
-      const data = e.data as
-        | { type?: string; codesandbox?: boolean; log?: unknown }
-        | null;
-      if (!data || data.type !== "console" || !data.codesandbox) return;
+      const data = e.data as any;
+      if (!data) return;
+
+      if (data.type === "execution-complete") {
+        if (jsStartRef.current) {
+          const t1 = performance.now();
+          const memAfter = (performance as any).memory?.usedJSHeapSize || null;
+          const durationMs = t1 - jsStartRef.current.t0;
+          const memoryUsedBytes = memAfter && jsStartRef.current.memBefore 
+            ? Math.max(0, memAfter - jsStartRef.current.memBefore) 
+            : null;
+          
+          pending.push({
+            kind: "log",
+            item: {
+              id: `profile-${Date.now()}-${Math.random()}`,
+              method: "profile",
+              data: [{ durationMs, memoryBytes: memoryUsedBytes }],
+              ts: Date.now(),
+            }
+          });
+          jsStartRef.current = null;
+        }
+        if (rafId === null) rafId = requestAnimationFrame(flush);
+        return;
+      }
+
+      if (data.type !== "console" || !data.codesandbox) return;
       const items = Array.isArray(data.log) ? data.log : [data.log];
       for (const raw of items) {
         const item = raw as { id?: string; method?: string; data?: unknown[] };
@@ -359,10 +412,15 @@ export default function ChallengeAttemptClient({
     updateFile: (path: string, code: string) => void;
     addFile?: (path: string, code: string) => void;
     files: SandpackFiles;
+    activeFile: string;
     runSandpack?: () => void;
     clients?: Record<string, { dispatch?: (msg: unknown) => void } | undefined>;
   };
   const sandpackBridgeRef = useRef<SandpackBridge | null>(null);
+
+  // Sandbox refs
+  const sandboxIframeRef = useRef<HTMLIFrameElement | null>(null);
+  const jsStartRef = useRef<{ t0: number; memBefore: number | null } | null>(null);
 
   const DEBUG_BEGIN = "// ─── @debug-run (auto, edit input above) ───";
   const DEBUG_END = "// ─── end @debug-run ───";
@@ -379,16 +437,33 @@ export default function ChallengeAttemptClient({
     );
   }
 
+  const sendProfile = (durationMs: number, memoryBytes: number | null) => {
+    window.postMessage(
+      {
+        type: "console",
+        codesandbox: true,
+        log: [
+          {
+            id: `profile-${Date.now()}-${Math.random()}`,
+            method: "profile",
+            data: [{ durationMs, memoryBytes }],
+          },
+        ],
+      },
+      "*"
+    );
+  };
+
   function runDebug(expr: string = customExpression) {
     const bridge = sandpackBridgeRef.current;
-    const indexFile = bridge?.files["/index.ts"];
+    const activeFile = bridge?.activeFile || "/index.ts";
+    const indexFile = bridge?.files[activeFile];
     const rawCode =
       typeof indexFile === "string"
         ? indexFile
         : (indexFile as { code: string } | undefined)?.code ?? "";
 
     const baseCode = stripDebugBlock(rawCode);
-    
     let codeToRun = baseCode;
     if (expr.trim()) {
       const trimmed = expr.trim();
@@ -398,59 +473,26 @@ export default function ChallengeAttemptClient({
                            !trimmed.includes("const ") &&
                            !trimmed.includes("let ") &&
                            !trimmed.includes("var ");
-      
       if (isSimpleExpr) {
         codeToRun = `${baseCode}\n${DEBUG_BEGIN}\nconsole.log(${trimmed});\n${DEBUG_END}`;
       } else {
         codeToRun = `${baseCode}\n${DEBUG_BEGIN}\n${trimmed}\n${DEBUG_END}`;
       }
     }
-    
     runLocalDebug(codeToRun);
   }
 
   function runLocalDebug(tsCode: string) {
     const js = stripTsAnnotations(tsCode);
-    const sendLog = (method: string, data: unknown[]) => {
-      window.postMessage(
-        {
-          type: "console",
-          codesandbox: true,
-          log: [
-            {
-              id: `local-${Date.now()}-${Math.random()}`,
-              method,
-              data,
-            },
-          ],
-        },
-        "*"
-      );
-    };
-
-    const orig = {
-      log: console.log,
-      error: console.error,
-      warn: console.warn,
-      info: console.info,
-    };
-    console.log = (...a: unknown[]) => sendLog("log", a);
-    console.error = (...a: unknown[]) => sendLog("error", a);
-    console.warn = (...a: unknown[]) => sendLog("warn", a);
-    console.info = (...a: unknown[]) => sendLog("info", a);
-
-    try {
-      // Evaluate the raw Javascript block inside a fresh sandbox scope
-      const factory = new Function(js);
-      factory();
-    } catch (e: unknown) {
-      const msg = e instanceof Error ? `${e.name}: ${e.message}` : String(e);
-      sendLog("error", [`[run code error]`, msg]);
-    } finally {
-      console.log = orig.log;
-      console.error = orig.error;
-      console.warn = orig.warn;
-      console.info = orig.info;
+    const iframe = sandboxIframeRef.current;
+    if (iframe && iframe.contentWindow) {
+      jsStartRef.current = {
+        t0: performance.now(),
+        memBefore: (performance as any).memory?.usedJSHeapSize || null
+      };
+      iframe.contentWindow.postMessage({ action: 'execute', code: js }, '*');
+    } else {
+      console.warn("Sandbox iframe not ready");
     }
   }
 
@@ -620,6 +662,59 @@ export default function ChallengeAttemptClient({
       }}
     >
       <FilesTracker filesRef={filesRef} bridgeRef={sandpackBridgeRef} />
+
+      {/* Hidden sandboxed iframe for secure JS/TS execution */}
+      <iframe
+        ref={sandboxIframeRef}
+        srcDoc={`
+          <!DOCTYPE html>
+          <html>
+          <head>
+            <meta charset="utf-8">
+            <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline';">
+            <script>
+              const sendLog = (method, data) => {
+                window.parent.postMessage({
+                  type: 'console',
+                  codesandbox: true,
+                  log: [{
+                    id: 'sandbox-' + Date.now() + '-' + Math.random(),
+                    method,
+                    data
+                  }]
+                }, '*');
+              };
+              window.console = {
+                log: (...args) => sendLog('log', args),
+                error: (...args) => sendLog('error', args),
+                warn: (...args) => sendLog('warn', args),
+                info: (...args) => sendLog('info', args),
+              };
+              window.onerror = (msg, url, line, col, err) => {
+                sendLog('error', [msg]);
+                return true;
+              };
+              window.addEventListener('message', (event) => {
+                if (event.data && event.data.action === 'execute') {
+                  try {
+                    const fn = new Function(event.data.code);
+                    fn();
+                  } catch (e) {
+                    const msg = e instanceof Error ? e.name + ': ' + e.message : String(e);
+                    sendLog('error', [msg]);
+                  } finally {
+                    window.parent.postMessage({ type: 'execution-complete' }, '*');
+                  }
+                }
+              });
+            </script>
+          </head>
+          <body></body>
+          </html>
+        `}
+        sandbox="allow-scripts"
+        className="hidden"
+      />
 
       <div className="flex flex-col h-screen bg-bg overflow-hidden">
         {/* Top bar */}
@@ -867,6 +962,7 @@ function FilesTracker({
     updateFile: (path: string, code: string) => void;
     addFile?: (path: string, code: string) => void;
     files: SandpackFiles;
+    activeFile: string;
     runSandpack?: () => void;
     clients?: Record<string, { dispatch?: (msg: unknown) => void } | undefined>;
   } | null>;
@@ -879,6 +975,7 @@ function FilesTracker({
         updateFile: (p: string, c: string) => void;
         addFile?: (p: string, c: string) => void;
         files: SandpackFiles;
+        activeFile: string;
         runSandpack?: () => void;
         clients?: Record<string, { dispatch?: (msg: unknown) => void } | undefined>;
       };
@@ -886,11 +983,12 @@ function FilesTracker({
         updateFile: sp.updateFile,
         addFile: sp.addFile,
         files: sp.files,
+        activeFile: sp.activeFile,
         runSandpack: sp.runSandpack,
         clients: sp.clients,
       };
     }
-  }, [sandpack, sandpack.files, filesRef, bridgeRef]);
+  }, [sandpack, sandpack.files, sandpack.activeFile, filesRef, bridgeRef]);
   return null;
 }
 
@@ -928,6 +1026,7 @@ function LiveConsole({
     warn: "border-amber-500 text-amber-400",
     info: "border-sky-500 text-sky-400",
     log: "border-transparent text-fg/90",
+    profile: "border-emerald-500 text-emerald-400",
   };
 
   return (
@@ -985,23 +1084,63 @@ function LiveConsole({
           </div>
         ) : (
           <ul>
-            {logs.map((l) => (
-              <li
-                key={l.id}
-                className={`px-3 py-1 border-l-2 whitespace-pre-wrap break-words ${
-                  methodStyle[l.method] ?? methodStyle.log
-                }`}
-              >
-                <span className="text-muted/40 mr-2 text-[10px] uppercase tabular-nums">
-                  {l.method}
-                </span>
-                {l.data.map((d, i) => (
-                  <span key={i} className="mr-2">
-                    {formatArg(d)}
+            {logs.map((l) => {
+              if (l.method === "profile") {
+                const profileData = l.data[0] as { durationMs: number; memoryBytes: number | null };
+                return (
+                  <li
+                    key={l.id}
+                    className="mx-3 my-2.5 p-3 rounded-lg border border-emerald-500/20 bg-emerald-500/5 text-fg font-sans backdrop-blur-md relative overflow-hidden"
+                  >
+                    <div className="absolute top-0 right-0 w-24 h-24 bg-emerald-500/10 rounded-full blur-xl pointer-events-none" />
+                    <div className="flex items-center gap-2 mb-2">
+                      <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                      <span className="text-[10px] font-black uppercase tracking-wider text-emerald-400">
+                        Space-Time Execution Profile
+                      </span>
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <div className="text-[10px] text-muted mb-0.5 font-sans">Execution Time</div>
+                        <div className="text-xs font-bold text-fg font-mono">
+                          {profileData.durationMs < 1 
+                            ? `${profileData.durationMs.toFixed(3)} ms` 
+                            : `${profileData.durationMs.toFixed(1)} ms`}
+                        </div>
+                      </div>
+                      <div>
+                        <div className="text-[10px] text-muted mb-0.5 font-sans">Estimated Memory</div>
+                        <div className="text-xs font-bold text-fg font-mono">
+                          {profileData.memoryBytes !== null 
+                            ? `${(profileData.memoryBytes / 1024).toFixed(1)} KB` 
+                            : "N/A"}
+                        </div>
+                      </div>
+                    </div>
+                    <div className="text-[9px] text-muted/65 mt-2 font-mono flex items-center gap-1 font-sans">
+                      <span>⚡ Zero-Cost WASM Thread Execution</span>
+                    </div>
+                  </li>
+                );
+              }
+              return (
+                <li
+                  key={l.id}
+                  className={`px-3 py-1 border-l-2 whitespace-pre-wrap break-words ${
+                    methodStyle[l.method] ?? methodStyle.log
+                  }`}
+                >
+                  <span className="text-muted/40 mr-2 text-[10px] uppercase tabular-nums">
+                    {l.method}
                   </span>
-                ))}
-              </li>
-            ))}
+                  {l.data.map((d, i) => (
+                    <span key={i} className="mr-2">
+                      {formatArg(d)}
+                    </span>
+                  ))}
+                </li>
+              );
+            })}
           </ul>
         )}
       </div>

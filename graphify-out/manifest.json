@@ -416,8 +416,8 @@
     "hash": "c93deebbf1ac14638d86482b0f2d2942"
   },
   "C:\\Users\\arvin\\OneDrive\\Desktop\\claude\\code\\codepad\\src\\app\\challenges\\[slug]\\attempt\\ChallengeAttemptClient.tsx": {
-    "mtime": 1779427024.83074,
-    "hash": "6be60d469bd540f7fb2b70a13d11eefd"
+    "mtime": 1779445603.1107001,
+    "hash": "9983c52f01eaecf8830344b31e20e145"
   },
   "C:\\Users\\arvin\\OneDrive\\Desktop\\claude\\code\\codepad\\src\\app\\challenges\\[slug]\\attempt\\page.tsx": {
     "mtime": 1779271161.9948375,
@@ -680,12 +680,12 @@
     "hash": "60dbdcee1c8183fd312215febfa8bb49"
   },
   "C:\\Users\\arvin\\OneDrive\\Desktop\\claude\\code\\codepad\\src\\components\\CollaborativeEditor.tsx": {
-    "mtime": 1779428820.2494087,
-    "hash": "3378a7066ea8fff5db5203cb1cc774f1"
+    "mtime": 1779445541.446063,
+    "hash": "9e48ab74c5160071b68b39a0116a19a5"
   },
   "C:\\Users\\arvin\\OneDrive\\Desktop\\claude\\code\\codepad\\src\\components\\CollaborativePlayground.tsx": {
-    "mtime": 1779428822.8390653,
-    "hash": "44c82b8bea09c2ca0c3db623deaa69c6"
+    "mtime": 1779445553.3237574,
+    "hash": "6b141237b3c9fe81d1ff9d8ecab4e86c"
   },
   "C:\\Users\\arvin\\OneDrive\\Desktop\\claude\\code\\codepad\\src\\components\\CollaborativePlaygroundLoader.tsx": {
     "mtime": 1779202738.538092,
@@ -962,6 +962,10 @@
   "C:\\Users\\arvin\\OneDrive\\Desktop\\claude\\code\\codepad\\src\\lib\\settings.ts": {
     "mtime": 1778801964.4748118,
     "hash": "76c15aed69db370abcac9243eca298d4"
+  },
+  "C:\\Users\\arvin\\OneDrive\\Desktop\\claude\\code\\codepad\\src\\lib\\signaling.ts": {
+    "mtime": 1779445519.151847,
+    "hash": "08a211810853688c7552aa75d8598263"
   },
   "C:\\Users\\arvin\\OneDrive\\Desktop\\claude\\code\\codepad\\src\\lib\\snippets.ts": {
     "mtime": 1778564696.3001442,

@@ -59,6 +59,7 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import ChallengeDescription from "../../ChallengeDescription";
 import SessionTimer from "@/components/SessionTimer";
+import { getSignalingUrls } from "@/lib/signaling";
 
 type Challenge = {
   id: string;
@@ -84,6 +85,42 @@ const difficultyColor: Record<string, string> = {
   medium: "text-amber-500",
   hard: "text-rose-500",
 };
+
+function extractDefaultExpression(starterFiles: Record<string, string>): string {
+  const code = starterFiles["/index.ts"] || "";
+  if (code.includes("fizzBuzz")) {
+    return "fizzBuzz(5)";
+  }
+  if (code.includes("twoSum")) {
+    return "twoSum([2, 7, 11, 15], 9)";
+  }
+  if (code.includes("debounce")) {
+    return `// Debounce template
+const log = debounce((val) => console.log(val), 100);
+log('hello');
+log('world');`;
+  }
+  if (code.includes("flatten")) {
+    return "flatten([1, [2, [3, [4]], 5]])";
+  }
+  if (code.includes("reverseList")) {
+    return `// Reverse List template
+const head = new ListNode(1, new ListNode(2, new ListNode(3)));
+const rev = reverseList(head);
+console.log(JSON.stringify(rev));`;
+  }
+  
+  // Generic fallback: regex match for exported function or class
+  const funcMatch = code.match(/(?:export\s+)?function\s+(\w+)/);
+  if (funcMatch && funcMatch[1]) {
+    return `${funcMatch[1]}()`;
+  }
+  const classMatch = code.match(/(?:export\s+)?class\s+(\w+)/);
+  if (classMatch && classMatch[1]) {
+    return `new ${classMatch[1]}()`;
+  }
+  return "";
+}
 
 export default function ChallengeAttemptClient({
   challenge,
@@ -111,6 +148,17 @@ export default function ChallengeAttemptClient({
   const isDark = resolvedTheme === "dark";
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
+
+  // Custom Expression run state
+  const initialCustomExpr = useMemo(() => {
+    return extractDefaultExpression(starterFiles);
+  }, [starterFiles]);
+
+  const [customExpression, setCustomExpression] = useState(initialCustomExpr);
+
+  useEffect(() => {
+    setCustomExpression(initialCustomExpr);
+  }, [initialCustomExpr]);
 
   // Sync active challenge with backend for auto-routing
   useEffect(() => {
@@ -156,10 +204,7 @@ export default function ChallengeAttemptClient({
     //    every connection attempt — removed.)
     const roomName = `interviewpad-room-${sessionId}`;
     const provider = new WebrtcProvider(roomName, yDoc, {
-      signaling: [
-        "ws://localhost:4444",        // local dev signaling
-        "wss://signaling.yjs.dev",    // public fallback
-      ],
+      signaling: getSignalingUrls(),
     });
 
     // Set initial awareness (Cursor colors and User tags)
@@ -334,7 +379,7 @@ export default function ChallengeAttemptClient({
     );
   }
 
-  function runDebug() {
+  function runDebug(expr: string = customExpression) {
     const bridge = sandpackBridgeRef.current;
     const indexFile = bridge?.files["/index.ts"];
     const rawCode =
@@ -343,7 +388,25 @@ export default function ChallengeAttemptClient({
         : (indexFile as { code: string } | undefined)?.code ?? "";
 
     const baseCode = stripDebugBlock(rawCode);
-    runLocalDebug(baseCode);
+    
+    let codeToRun = baseCode;
+    if (expr.trim()) {
+      const trimmed = expr.trim();
+      const isSimpleExpr = !trimmed.includes(";") &&
+                           !trimmed.includes("\n") &&
+                           !trimmed.includes("console.log") &&
+                           !trimmed.includes("const ") &&
+                           !trimmed.includes("let ") &&
+                           !trimmed.includes("var ");
+      
+      if (isSimpleExpr) {
+        codeToRun = `${baseCode}\n${DEBUG_BEGIN}\nconsole.log(${trimmed});\n${DEBUG_END}`;
+      } else {
+        codeToRun = `${baseCode}\n${DEBUG_BEGIN}\n${trimmed}\n${DEBUG_END}`;
+      }
+    }
+    
+    runLocalDebug(codeToRun);
   }
 
   function runLocalDebug(tsCode: string) {
@@ -773,6 +836,10 @@ export default function ChallengeAttemptClient({
                 <LiveConsole
                   logs={liveLogs}
                   onClear={clearLiveLogs}
+                  customExpression={customExpression}
+                  setCustomExpression={setCustomExpression}
+                  defaultExpression={initialCustomExpr}
+                  onRun={() => runDebug(customExpression)}
                 />
               </div>
               <div className={`absolute inset-0 ${sidebarTab === "tests" ? "block" : "hidden"}`}>
@@ -830,9 +897,17 @@ function FilesTracker({
 function LiveConsole({
   logs,
   onClear,
+  customExpression,
+  setCustomExpression,
+  defaultExpression,
+  onRun,
 }: {
   logs: LiveLog[];
   onClear: () => void;
+  customExpression: string;
+  setCustomExpression: (val: string) => void;
+  defaultExpression: string;
+  onRun: () => void;
 }) {
 
   function formatArg(v: unknown): string {
@@ -857,10 +932,56 @@ function LiveConsole({
 
   return (
     <div className="flex flex-col h-full bg-bg font-mono text-xs">
+      {/* Custom Run Expression Panel */}
+      <div className="flex flex-col gap-2 p-3 bg-surface/30 border-b border-border/85 shrink-0">
+        <div className="flex items-center justify-between">
+          <span className="text-[9px] font-black uppercase tracking-wider text-muted flex items-center gap-1 font-sans">
+            <Play className="w-2.5 h-2.5 text-emerald-500 fill-current" />
+            Custom Run Expression
+          </span>
+          {defaultExpression && customExpression !== defaultExpression && (
+            <button
+              type="button"
+              onClick={() => setCustomExpression(defaultExpression)}
+              className="text-[9px] font-bold text-accent hover:text-accent-soft transition uppercase tracking-wider font-sans"
+            >
+              Reset to template
+            </button>
+          )}
+        </div>
+        <div className="relative group">
+          <textarea
+            value={customExpression}
+            onChange={(e) => setCustomExpression(e.target.value)}
+            placeholder="e.g. twoSum([2, 7, 11, 15], 9)"
+            rows={Math.min(4, Math.max(1, customExpression.split("\n").length))}
+            className="w-full bg-surface border border-border/70 focus:border-accent rounded-lg p-2 pr-10 text-fg font-mono text-xs focus:outline-none focus:ring-1 focus:ring-accent/40 resize-none transition-all duration-200 shadow-sm leading-relaxed"
+            style={{ minHeight: "36px", maxHeight: "120px" }}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
+                e.preventDefault();
+                onRun();
+              }
+            }}
+          />
+          <button
+            type="button"
+            onClick={onRun}
+            className="absolute right-2 bottom-2 p-1.5 rounded-md bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 hover:bg-emerald-500/20 hover:text-emerald-300 transition duration-200 shadow-sm hover:shadow-emerald-500/10"
+            title="Run Expression (Ctrl + Enter)"
+          >
+            <Play className="w-3.5 h-3.5 fill-current" />
+          </button>
+        </div>
+        <div className="text-[9px] text-muted/65 leading-relaxed font-sans mt-0.5">
+          Press <kbd className="px-1 py-0.5 rounded bg-surface border border-border text-[8px] font-mono">Ctrl</kbd> + <kbd className="px-1 py-0.5 rounded bg-surface border border-border text-[8px] font-mono">Enter</kbd> to execute and print the returned value below.
+        </div>
+      </div>
+
       <div className="flex-1 min-h-0 overflow-y-auto">
         {logs.length === 0 ? (
-          <div className="text-muted/50 text-center py-8 text-[11px] leading-relaxed px-4">
-            Add <code className="px-1 py-0.5 rounded bg-surface/60 text-fg/80">console.log(...)</code> in your code, then click <strong className="text-fg/80">Run code</strong> in the header toolbar above (or let the tests run).
+          <div className="text-muted/50 text-center py-8 text-[11px] leading-relaxed px-4 font-sans">
+            No console outputs yet. Click the <strong className="text-fg/80">Play</strong> button above to run your custom expression, or insert <code className="px-1 py-0.5 rounded bg-surface/60 text-fg/80 font-mono">console.log(...)</code> in your code.
           </div>
         ) : (
           <ul>

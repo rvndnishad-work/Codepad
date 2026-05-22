@@ -47,6 +47,7 @@ import {
   type Completion,
 } from "@codemirror/autocomplete";
 import { Users, Wifi, WifiOff } from "lucide-react";
+import { getSignalingUrls } from "@/lib/signaling";
 
 type Language = "javascript" | "typescript" | "python" | "css" | "html";
 
@@ -310,10 +311,7 @@ export default function CollaborativeEditor({
     // ── 2. WebRTC provider ───────────────────────────────────────
     const roomName = `interviewpad-collab-${roomId}`;
     const provider = new WebrtcProvider(roomName, ydoc, {
-      signaling: [
-        "ws://localhost:4444",              // local dev signaling (run: npx y-webrtc-signaling --port 4444)
-        "wss://signaling.yjs.dev",          // public fallback
-      ],
+      signaling: getSignalingUrls(),
     });
     providerRef.current = provider;
 

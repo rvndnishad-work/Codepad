@@ -75,6 +75,7 @@ import {
 import type { SandpackFiles } from "@codesandbox/sandpack-react";
 import { Users, Wifi, WifiOff, Play, Terminal, PanelBottom, Folder, MessageSquare, Send, X, GripHorizontal } from "lucide-react";
 import FileExplorer from "./FileExplorer";
+import { getSignalingUrls } from "@/lib/signaling";
 import { useResizable } from "@/hooks/useResizable";
 import { useResizableHeight } from "@/hooks/useResizableHeight";
 
@@ -258,10 +259,7 @@ export default function CollaborativePlayground({
     const color = isInterviewer ? "#8b5cf6" : "#10b981"; // Sleek Purple for Interviewer, Vibrant Emerald for Candidate
     const roleLabel = isInterviewer ? " (Interviewer)" : " (Candidate)";
     const wp = new WebrtcProvider(`interviewpad-pg-${roomId}`, yDoc, {
-      signaling: [
-        "ws://localhost:4444",
-        "wss://signaling.yjs.dev",
-      ],
+      signaling: getSignalingUrls(),
     });
     wp.awareness.setLocalStateField("user", {
       name: username + roleLabel,

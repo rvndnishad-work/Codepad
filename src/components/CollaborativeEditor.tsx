@@ -57,6 +57,7 @@ interface CollaborativeEditorProps {
   readOnly?: boolean;
   username?: string;
   userColor?: string;
+  isInterviewer?: boolean;
   onChange?: (value: string) => void;
   className?: string;
   height?: string;
@@ -233,19 +234,71 @@ export default function CollaborativeEditor({
   readOnly = false,
   username = "Anonymous",
   userColor,
+  isInterviewer,
   onChange,
   className = "",
   height = "100%",
 }: CollaborativeEditorProps) {
   const editorRef = useRef<HTMLDivElement>(null);
   const viewRef = useRef<EditorView | null>(null);
+  const providerRef = useRef<WebrtcProvider | null>(null);
+
+  const readOnlyCompartmentRef = useRef(new Compartment());
+  const languageCompartmentRef = useRef(new Compartment());
+
+  const onChangeRef = useRef(onChange);
+  useEffect(() => {
+    onChangeRef.current = onChange;
+  }, [onChange]);
 
   const [connected, setConnected] = useState(false);
   const [fontSize, setFontSize] = useState(13);
   const [peers, setPeers] = useState<Peer[]>([]);
   const [peerCount, setPeerCount] = useState(0);
 
-  const color = userColor ?? stringToColor(username);
+  const color = userColor ?? (
+    isInterviewer === undefined
+      ? stringToColor(username)
+      : (isInterviewer ? "#8b5cf6" : "#10b981")
+  );
+
+  // Dynamic user awareness (name, color, role)
+  useEffect(() => {
+    const provider = providerRef.current;
+    if (!provider) return;
+
+    const roleLabel = isInterviewer === undefined
+      ? ""
+      : (isInterviewer ? " (Interviewer)" : " (Candidate)");
+
+    const finalName = username.endsWith(" (Interviewer)") || username.endsWith(" (Candidate)") || username.endsWith(" (interviewer)") || username.endsWith(" (candidate)")
+      ? username
+      : username + roleLabel;
+
+    provider.awareness.setLocalStateField("user", {
+      name: finalName,
+      color,
+      colorLight: color + "33",
+    });
+  }, [username, color, isInterviewer]);
+
+  // Dynamic readOnly config transaction
+  useEffect(() => {
+    if (viewRef.current) {
+      viewRef.current.dispatch({
+        effects: readOnlyCompartmentRef.current.reconfigure(EditorState.readOnly.of(readOnly))
+      });
+    }
+  }, [readOnly]);
+
+  // Dynamic language config transaction
+  useEffect(() => {
+    if (viewRef.current) {
+      viewRef.current.dispatch({
+        effects: languageCompartmentRef.current.reconfigure(getLanguageExtension(language))
+      });
+    }
+  }, [language]);
 
   useEffect(() => {
     if (!editorRef.current) return;
@@ -260,13 +313,21 @@ export default function CollaborativeEditor({
       signaling: [
         "ws://localhost:4444",              // local dev signaling (run: npx y-webrtc-signaling --port 4444)
         "wss://signaling.yjs.dev",          // public fallback
-        "wss://y-webrtc-signaling-eu.herokuapp.com",
       ],
     });
+    providerRef.current = provider;
 
-    // Set local user awareness (shows up as cursor label for others)
+    // Set initial local user awareness (shows up as cursor label for others)
+    const roleLabel = isInterviewer === undefined
+      ? ""
+      : (isInterviewer ? " (Interviewer)" : " (Candidate)");
+
+    const finalName = username.endsWith(" (Interviewer)") || username.endsWith(" (Candidate)") || username.endsWith(" (interviewer)") || username.endsWith(" (candidate)")
+      ? username
+      : username + roleLabel;
+
     provider.awareness.setLocalStateField("user", {
-      name: username,
+      name: finalName,
       color,
       colorLight: color + "33",
     });
@@ -328,7 +389,8 @@ export default function CollaborativeEditor({
     provider.awareness.on("change", updatePeers);
 
     // ── 3. CodeMirror setup ──────────────────────────────────────
-    const readOnlyCompartment = new Compartment();
+    const readOnlyCompartment = readOnlyCompartmentRef.current;
+    const languageCompartment = languageCompartmentRef.current;
 
     const state = EditorState.create({
       doc: ytext.toString(),
@@ -385,7 +447,7 @@ export default function CollaborativeEditor({
 
         // Syntax
         syntaxHighlighting(defaultHighlightStyle, { fallback: true }),
-        getLanguageExtension(language),
+        languageCompartment.of(getLanguageExtension(language)),
 
         // Theme
         oneDark,
@@ -398,8 +460,8 @@ export default function CollaborativeEditor({
 
         // Fire onChange on every local edit
         EditorView.updateListener.of((update) => {
-          if (update.docChanged && onChange) {
-            onChange(update.state.doc.toString());
+          if (update.docChanged && onChangeRef.current) {
+            onChangeRef.current(update.state.doc.toString());
           }
         }),
 
@@ -415,8 +477,8 @@ export default function CollaborativeEditor({
           ".cm-activeLineGutter": { background: "rgba(255,255,255,0.04)" },
 
           // Futuristic Collaborative Selections and Glowing Caret Pins
+          // Futuristic Collaborative Selections and Glowing Caret Pins
           ".cm-ySelection": {
-            backgroundColor: "rgba(139, 92, 246, 0.15) !important",
             borderRadius: "2px",
           },
           ".cm-ySelectionCaret, .cm-ySelection-caret": {
@@ -437,7 +499,7 @@ export default function CollaborativeEditor({
             width: "6px",
             height: "6px",
             borderRadius: "50%",
-            backgroundColor: "inherit",
+            backgroundColor: "currentColor",
             boxShadow: "0 0 10px currentColor",
           },
           // High-End HUD Hover Info Tooltip
@@ -445,7 +507,6 @@ export default function CollaborativeEditor({
             position: "absolute",
             top: "-1.8em",
             left: "0",
-            backgroundColor: "inherit",
             color: "#ffffff !important",
             fontFamily: '"Outfit", "Inter", sans-serif',
             fontSize: "9px !important",
@@ -456,15 +517,21 @@ export default function CollaborativeEditor({
             borderRadius: "3px !important",
             boxShadow: "0 3px 10px rgba(0, 0, 0, 0.4)",
             whiteSpace: "nowrap",
-            opacity: "0.85",
-            transition: "opacity 0.2s cubic-bezier(0.16, 1, 0.3, 1), transform 0.2s cubic-bezier(0.16, 1, 0.3, 1)",
-            transform: "translateY(3px) scale(0.92)",
+            opacity: "1 !important",
             pointerEvents: "none",
             zIndex: "100",
           },
-          ".cm-ySelectionCaret:hover .cm-ySelection-info, .cm-ySelection-caret:hover .cm-ySelection-info, .cm-ySelectionCaret:hover .cm-ySelectionInfo, .cm-ySelection-caret:hover .cm-ySelectionInfo": {
-            opacity: "1",
-            transform: "translateY(0) scale(1)",
+          ".cm-ySelectionInfo::after, .cm-ySelection-info::after": {
+            content: '""',
+            position: "absolute",
+            bottom: "-3px",
+            left: "6px",
+            width: "6px",
+            height: "6px",
+            backgroundColor: "inherit",
+            transform: "rotate(45deg)",
+            boxShadow: "2px 2px 2px rgba(0, 0, 0, 0.2)",
+            zIndex: -1,
           },
         }),
       ],
@@ -489,9 +556,10 @@ export default function CollaborativeEditor({
       provider.awareness.off("change", updatePeers);
       provider.destroy();
       ydoc.destroy();
+      providerRef.current = null;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [roomId, username, color]);
+  }, [roomId]);
 
   return (
     <div className={`flex flex-col ${className}`} style={{ height }}>

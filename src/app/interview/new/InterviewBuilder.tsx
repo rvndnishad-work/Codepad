@@ -308,11 +308,11 @@ export default function InterviewBuilder({
   return (
     <div className="min-h-screen bg-bg relative overflow-hidden text-fg selection:bg-accent/30 selection:text-accent font-sans py-8 md:py-12 transition-colors duration-300">
       
-      {/* Immersive Atmospheric Ambient Glows — Faint and elegant in light mode, gorgeous in dark mode */}
+      {/* Immersive Atmospheric Ambient Glows — Subtle in light mode, gorgeous in dark mode */}
       <div className="fixed inset-0 pointer-events-none z-0">
-        <div className="absolute top-0 right-0 w-[45vw] h-[45vw] rounded-full blur-[140px] opacity-[0.03] dark:opacity-15 bg-accent/20 transition-all duration-500" />
-        <div className="absolute bottom-0 left-0 w-[55vw] h-[55vw] rounded-full blur-[160px] opacity-[0.03] dark:opacity-15 bg-indigo-500/20 transition-all duration-500" />
-        <div className="absolute top-1/2 left-1/3 w-[30vw] h-[30vw] rounded-full blur-[180px] opacity-[0.02] dark:opacity-10 bg-fuchsia-500/10 transition-all duration-500" />
+        <div className="absolute top-0 right-0 w-[45vw] h-[45vw] rounded-full blur-[140px] opacity-[0.06] dark:opacity-15 bg-violet-500/30 dark:bg-accent/20 transition-all duration-500" />
+        <div className="absolute bottom-0 left-0 w-[55vw] h-[55vw] rounded-full blur-[160px] opacity-[0.05] dark:opacity-15 bg-indigo-500/30 dark:bg-indigo-500/20 transition-all duration-500" />
+        <div className="absolute top-1/2 left-1/3 w-[30vw] h-[30vw] rounded-full blur-[180px] opacity-[0.04] dark:opacity-10 bg-fuchsia-500/20 dark:bg-fuchsia-500/10 transition-all duration-500" />
       </div>
 
       <div className="max-w-[1400px] w-full mx-auto px-6 relative z-10 space-y-6">
@@ -351,8 +351,8 @@ export default function InterviewBuilder({
         {/* 12-Column Spatial Split Layout */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
           
-          {/* LEFT: Configuration Deck (Span 4) */}
-          <div className="lg:col-span-4 space-y-6">
+          {/* LEFT: Configuration Deck (Span 4) — sticky on lg so it stays in view as the pool scrolls */}
+          <div className="lg:col-span-4 space-y-6 lg:sticky lg:top-6 lg:self-start">
             <div className="bg-surface/85 border border-border backdrop-blur-xl rounded-2xl shadow-[0_8px_30px_rgba(0,0,0,0.03)] dark:shadow-[0_8px_32px_rgba(0,0,0,0.37)] p-6 space-y-6 transition-all duration-300 hover:border-border-strong">
               
               <div className="flex items-center gap-3 border-b border-border pb-4">
@@ -375,7 +375,7 @@ export default function InterviewBuilder({
                     value={title}
                     onChange={(e) => setTitle(e.target.value)}
                     placeholder="e.g. Senior Fullstack Assessment"
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-panel border border-border focus:border-accent/40 dark:focus:border-accent/40 focus:bg-panel text-xs text-fg placeholder:text-muted/40 outline-none transition-all shadow-inner group-hover:border-border-strong"
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-panel border border-border focus:border-accent/50 focus:bg-panel text-xs text-fg placeholder:text-muted/60 dark:placeholder:text-muted/50 outline-none transition-all shadow-inner group-hover:border-border-strong"
                   />
                   <div className="absolute bottom-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-accent/30 to-transparent scale-x-0 group-focus-within:scale-x-100 transition-all duration-300" />
                 </div>
@@ -384,14 +384,14 @@ export default function InterviewBuilder({
               {/* Candidate Input */}
               <div className="space-y-2">
                 <label className="block text-[10px] font-bold uppercase tracking-wider text-muted/80">
-                  Candidate Name <span className="text-muted/40 font-normal lowercase">(optional)</span>
+                  Candidate Name <span className="text-muted/70 font-normal lowercase">(optional)</span>
                 </label>
                 <div className="relative group">
                   <input
                     value={candidateName}
                     onChange={(e) => setCandidateName(e.target.value)}
                     placeholder="e.g. Alexis Jordan"
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-panel border border-border focus:border-accent/40 dark:focus:border-accent/40 focus:bg-panel text-xs text-fg placeholder:text-muted/40 outline-none transition-all shadow-inner group-hover:border-border-strong"
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-panel border border-border focus:border-accent/50 focus:bg-panel text-xs text-fg placeholder:text-muted/60 dark:placeholder:text-muted/50 outline-none transition-all shadow-inner group-hover:border-border-strong"
                   />
                   <div className="absolute bottom-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-accent/30 to-transparent scale-x-0 group-focus-within:scale-x-100 transition-all duration-300" />
                 </div>
@@ -437,7 +437,7 @@ export default function InterviewBuilder({
                     onChange={(e) => setMinutes(Number(e.target.value))}
                     className="w-full h-1 bg-border rounded-lg appearance-none cursor-pointer accent-accent transition-all hover:bg-border-strong"
                   />
-                  <div className="flex items-center justify-between text-[9px] text-muted/50 font-semibold tracking-wider uppercase font-mono">
+                  <div className="flex items-center justify-between text-[9px] text-muted/80 font-semibold tracking-wider uppercase font-mono">
                     <span>5 Min</span>
                     <span>Custom limit</span>
                     <span>240 Min</span>
@@ -523,7 +523,7 @@ export default function InterviewBuilder({
                     <FileText className="w-3.5 h-3.5 text-accent" />
                     Prompt / Guidelines (Note)
                   </span>
-                  <span className="text-[10px] text-muted/50 font-mono tracking-wider font-semibold">
+                  <span className="text-[10px] text-muted font-mono tracking-wider font-semibold">
                     {scenario.length}/2000
                   </span>
                 </div>
@@ -532,7 +532,7 @@ export default function InterviewBuilder({
                   onChange={(e) => setScenario(e.target.value.slice(0, 2000))}
                   rows={4}
                   placeholder="Provide prompt guidelines or project specs. E.g.: 'Implement real-time search with debouncing. Ensure states bind correctly and errors render gracefully.'"
-                  className="w-full px-3 py-2.5 rounded-xl bg-panel border border-border focus:border-accent/40 dark:focus:border-accent/40 focus:bg-panel text-xs text-fg placeholder:text-muted/40 outline-none transition-all shadow-inner leading-relaxed resize-none"
+                  className="w-full px-3 py-2.5 rounded-xl bg-panel border border-border focus:border-accent/50 focus:bg-panel text-xs text-fg placeholder:text-muted/60 dark:placeholder:text-muted/50 outline-none transition-all shadow-inner leading-relaxed resize-none"
                 />
               </div>
 
@@ -560,10 +560,10 @@ export default function InterviewBuilder({
                 <button
                   onClick={handleStart}
                   disabled={selected.length === 0 || creating}
-                  className="w-full py-3 rounded-xl bg-gradient-to-r from-violet-500 via-fuchsia-500 to-indigo-500 hover:opacity-95 disabled:opacity-40 disabled:cursor-not-allowed text-xs font-black uppercase tracking-widest text-bg dark:text-bg transition-all duration-300 shadow-[0_4px_20px_rgba(139,92,246,0.25)] hover:shadow-[0_8px_30px_rgba(217,70,239,0.35)] flex items-center justify-center gap-2 transform active:scale-[0.98]"
+                  className="w-full py-3 rounded-xl bg-gradient-to-r from-violet-500 via-fuchsia-500 to-indigo-500 hover:opacity-95 disabled:opacity-40 disabled:cursor-not-allowed text-xs font-black uppercase tracking-widest text-white transition-all duration-300 shadow-[0_4px_20px_rgba(139,92,246,0.25)] hover:shadow-[0_8px_30px_rgba(217,70,239,0.35)] flex items-center justify-center gap-2 transform active:scale-[0.98]"
                 >
                   <Play className="w-3.5 h-3.5 fill-current" />
-                  {creating ? "Launching Session..." : "Provision Arena"}
+                  {creating ? "Creating Session..." : "Start Interview Session"}
                 </button>
               </div>
 
@@ -607,10 +607,10 @@ export default function InterviewBuilder({
             </div>
 
             {/* Split Screen curation panel (Material Pool on the left, Timeline Sequence on the right) */}
-            <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-start">
+            <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-stretch">
               
               {/* Material Pool (Span 7) */}
-              <div className="md:col-span-7 space-y-4">
+              <div className="md:col-span-7 space-y-4 flex flex-col">
                 
                 {/* Search & Filters */}
                 <div className="bg-surface border border-border rounded-xl p-4 space-y-3">
@@ -625,7 +625,7 @@ export default function InterviewBuilder({
                           ? "Filter playrooms or stack templates..."
                           : "Find coding, concepts, titles..."
                       }
-                      className="w-full pl-9.5 pr-4 py-2 rounded-lg bg-panel border border-border focus:border-accent/40 dark:focus:border-accent/40 focus:bg-panel text-xs text-fg placeholder:text-muted/40 outline-none transition-all shadow-inner"
+                      className="w-full pl-9.5 pr-4 py-2 rounded-lg bg-panel border border-border focus:border-accent/50 focus:bg-panel text-xs text-fg placeholder:text-muted/60 dark:placeholder:text-muted/50 outline-none transition-all shadow-inner"
                     />
                   </div>
 
@@ -657,10 +657,10 @@ export default function InterviewBuilder({
 
                 {/* Pool Display */}
                 {sourceType === "challenge" ? (
-                  <div className="max-h-[380px] lg:max-h-[580px] overflow-y-auto space-y-3 pr-2 scrollbar-thin scrollbar-thumb-border/45">
+                  <div className="flex-1 min-h-[380px] max-h-[640px] overflow-y-auto space-y-3 pr-2 scrollbar-thin scrollbar-thumb-border/45">
                     {filteredAvailable.length === 0 ? (
-                      <div className="rounded-2xl border border-dashed border-border bg-surface/40 dark:bg-surface/10 p-12 text-center text-xs text-muted/70 space-y-2">
-                        <BookOpen className="w-8 h-8 text-muted/30 mx-auto" />
+                      <div className="rounded-2xl border border-dashed border-border bg-surface p-12 text-center text-xs text-muted space-y-2">
+                        <BookOpen className="w-8 h-8 text-muted/50 mx-auto" />
                         <p>No matching challenges in global bank.</p>
                       </div>
                     ) : (
@@ -675,7 +675,7 @@ export default function InterviewBuilder({
                                 {c.difficulty}
                               </span>
                               {c.category && (
-                                <span className="text-[9px] font-bold text-muted/65 uppercase tracking-widest bg-panel px-1.5 py-0.5 rounded border border-border">{c.category}</span>
+                                <span className="text-[9px] font-bold text-muted uppercase tracking-widest bg-panel px-1.5 py-0.5 rounded border border-border">{c.category}</span>
                               )}
                             </div>
                             <h3 className="text-xs font-bold text-fg/90 group-hover:text-fg truncate">{c.title}</h3>
@@ -698,10 +698,10 @@ export default function InterviewBuilder({
                     )}
                   </div>
                 ) : (
-                  <div className="max-h-[380px] lg:max-h-[580px] overflow-y-auto space-y-3 pr-2 scrollbar-thin scrollbar-thumb-border/45">
+                  <div className="flex-1 min-h-[380px] max-h-[640px] overflow-y-auto space-y-3 pr-2 scrollbar-thin scrollbar-thumb-border/45">
                     {filteredPlaygrounds.length === 0 ? (
-                      <div className="rounded-2xl border border-dashed border-border bg-surface/40 dark:bg-surface/10 p-12 text-center text-xs text-muted/70 space-y-2">
-                        <FolderOpen className="w-8 h-8 text-muted/30 mx-auto" />
+                      <div className="rounded-2xl border border-dashed border-border bg-surface p-12 text-center text-xs text-muted space-y-2">
+                        <FolderOpen className="w-8 h-8 text-muted/50 mx-auto" />
                         <p>No playgrounds matching current query.</p>
                       </div>
                     ) : (
@@ -758,8 +758,8 @@ export default function InterviewBuilder({
 
               </div>
 
-              <div className="md:col-span-5">
-                <div className="bg-surface border border-border backdrop-blur-xl rounded-2xl p-5 space-y-4 min-h-[300px] lg:h-[708px] flex flex-col">
+              <div className="md:col-span-5 flex flex-col">
+                <div className="bg-surface border border-border backdrop-blur-xl rounded-2xl p-5 space-y-4 min-h-[300px] flex-1 flex flex-col">
                   
                   <div className="flex items-center justify-between border-b border-border pb-3 shrink-0">
                     <span className="text-[10px] font-bold uppercase tracking-widest text-fg/80">Arena Timeline</span>
@@ -770,9 +770,9 @@ export default function InterviewBuilder({
 
                   {selected.length === 0 ? (
                     <div className="flex-1 flex flex-col items-center justify-center p-6 text-center space-y-3">
-                      <BookOpen className="w-10 h-10 text-muted/30 animate-pulse" />
+                      <BookOpen className="w-10 h-10 text-muted/50 animate-pulse" />
                       <div>
-                        <h4 className="text-xs font-bold text-fg/80">Timeline is Empty</h4>
+                        <h4 className="text-xs font-bold text-fg">Timeline is Empty</h4>
                         <p className="text-[10px] text-muted leading-relaxed mt-1 max-w-[200px] mx-auto">
                           {sourceType === "playground"
                             ? "Select collaborative sandboxes to build chronological round targets."

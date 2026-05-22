@@ -11,17 +11,38 @@ import {
 } from "@codesandbox/sandpack-react";
 import { cobalt2 } from "@codesandbox/sandpack-themes";
 import { javascript } from "@codemirror/lang-javascript";
-import dynamic from "next/dynamic";
 import * as Y from "yjs";
 import { WebrtcProvider } from "y-webrtc";
 import { yCollab } from "y-codemirror.next";
-import randomColor from "randomcolor";
-
-// Collaborative CodeMirror editor — loaded client-side only (uses browser APIs)
-const CollaborativeEditor = dynamic(
-  () => import("@/components/CollaborativeEditor"),
-  { ssr: false }
-);
+import { EditorState } from "@codemirror/state";
+import {
+  EditorView,
+  keymap,
+  lineNumbers,
+  drawSelection,
+  highlightActiveLine,
+  highlightActiveLineGutter,
+} from "@codemirror/view";
+import {
+  defaultKeymap,
+  history,
+  historyKeymap,
+  indentWithTab,
+} from "@codemirror/commands";
+import { oneDark } from "@codemirror/theme-one-dark";
+import {
+  indentOnInput,
+  bracketMatching,
+  syntaxHighlighting,
+  defaultHighlightStyle,
+  foldGutter,
+} from "@codemirror/language";
+import {
+  closeBrackets,
+  closeBracketsKeymap,
+  autocompletion,
+  completionKeymap,
+} from "@codemirror/autocomplete";
 import {
   ArrowLeft,
   CheckCircle2,
@@ -73,6 +94,7 @@ export default function ChallengeAttemptClient({
   sim = false,
   isInterviewer = false,
   shareToken = "",
+  username = "Anonymous",
 }: {
   challenge: Challenge;
   starterFiles: Record<string, string>;
@@ -82,6 +104,7 @@ export default function ChallengeAttemptClient({
   sim?: boolean;
   isInterviewer?: boolean;
   shareToken?: string;
+  username?: string;
 }) {
   const router = useRouter();
   const { resolvedTheme } = useTheme();
@@ -105,32 +128,75 @@ export default function ChallengeAttemptClient({
   const [yDoc] = useState(() => new Y.Doc());
   const [webrtcProvider, setWebrtcProvider] = useState<WebrtcProvider | null>(null);
 
+  // Dynamic user presence updates
+  useEffect(() => {
+    if (!webrtcProvider) return;
+    const color = isInterviewer ? "#8b5cf6" : "#10b981";
+    const roleLabel = isInterviewer ? " (Interviewer)" : " (Candidate)";
+    webrtcProvider.awareness.setLocalStateField("user", {
+      name: username + roleLabel,
+      color: color,
+      colorLight: color + "33",
+    });
+  }, [webrtcProvider, username, isInterviewer]);
+
   useEffect(() => {
     if (!multiplayer || !sessionId) return;
-    
-    // Connect to secure WebRTC room
+
+    // Connect to secure WebRTC room.
+    //
+    // NOTE on signaling servers:
+    //  - ws://localhost:4444 only works when the dev signaling server is
+    //    running (`npm run dev:signal`). It's the most reliable choice for
+    //    cross-browser-profile testing on a single machine.
+    //  - wss://signaling.yjs.dev is the public Yjs signaling fallback. It
+    //    works for genuine WAN testing but has been flaky / rate-limited
+    //    in the past. (The old `y-webrtc-signaling-eu.herokuapp.com` URL
+    //    in this list pre-dated Heroku's free tier shutdown and now hangs
+    //    every connection attempt — removed.)
     const roomName = `interviewpad-room-${sessionId}`;
     const provider = new WebrtcProvider(roomName, yDoc, {
       signaling: [
-        "ws://localhost:4444",                         // local dev signaling
-        "wss://signaling.yjs.dev",                    // public fallback
-        "wss://y-webrtc-signaling-eu.herokuapp.com",
+        "ws://localhost:4444",        // local dev signaling
+        "wss://signaling.yjs.dev",    // public fallback
       ],
     });
 
-    // Set awareness (Cursor colors and User tags)
-    const username = isInterviewer ? "Interviewer" : "Candidate";
-    const color = randomColor({ luminosity: "dark", format: "hex" });
+    // Set initial awareness (Cursor colors and User tags)
+    const color = isInterviewer ? "#8b5cf6" : "#10b981"; // Sleek Purple for Interviewer, Vibrant Emerald for Candidate
+    const roleLabel = isInterviewer ? " (Interviewer)" : " (Candidate)";
     provider.awareness.setLocalStateField("user", {
-      name: username,
+      name: username + roleLabel,
       color: color,
-      colorLight: color + "80", // 50% opacity
+      colorLight: color + "33", // Sleek translucent selection
     });
+
+    // Diagnostic logging — visible in DevTools so the user can confirm
+    // both tabs land in the same room and watch peer discovery.
+    if (typeof window !== "undefined") {
+      console.info(
+        `[multiplayer] joined room "${roomName}" as ${
+          isInterviewer ? "interviewer" : "candidate"
+        } (clientID ${yDoc.clientID})`
+      );
+      const logStatus = () => {
+        const peers = [...provider.awareness.getStates().keys()].filter(
+          (id) => id !== yDoc.clientID
+        );
+        console.info(
+          `[multiplayer] peers=${peers.length} connected=${provider.connected} bcconns=${(provider as unknown as { room?: { bcConns?: Set<unknown> } }).room?.bcConns?.size ?? 0}`
+        );
+      };
+      provider.on("peers", logStatus);
+      provider.awareness.on("change", logStatus);
+      provider.on("synced", logStatus);
+    }
 
     setWebrtcProvider(provider);
 
     return () => {
       provider.destroy();
+      setWebrtcProvider(null);
     };
   }, [multiplayer, sessionId, yDoc, sim]);
 
@@ -620,9 +686,15 @@ export default function ChallengeAttemptClient({
 
           {/* Center Editor Panel (6/12 columns on desktop) — stretches 100% full height */}
           <div className="col-span-12 md:col-span-8 lg:col-span-6 min-h-0 flex flex-col border-r border-border h-full overflow-hidden">
-            <div className="flex-1 min-h-0 h-full relative">
+            <div className="flex-1 min-h-0 h-full relative flex flex-col">
               {multiplayer ? (
-                <SyncingEditor yDoc={yDoc} provider={webrtcProvider} />
+                <SyncingEditor
+                  yDoc={yDoc}
+                  provider={webrtcProvider}
+                  starterFiles={starterFiles}
+                  isInterviewer={isInterviewer}
+                  isDark={isDark}
+                />
               ) : (
                 <SandpackCodeEditor
                   showLineNumbers
@@ -822,98 +894,201 @@ function formatDuration(sec: number): string {
   return `${m}:${s.toString().padStart(2, "0")}`;
 }
 
-// Collaborative sync editor matching the main WebRTC connection room
+// Collaborative sync editor matching the main WebRTC connection room.
+//
+// IMPORTANT: We do NOT use SandpackCodeEditor here. Sandpack initialises its
+// own CodeMirror EditorState from sandpack.files[activeFile].code, so when
+// yCollab later inserts the seeded text into the same view you end up with
+// the starter code rendered twice (the "duplicate code" bug). Sandpack also
+// owns the doc, so y-codemirror.next's bidirectional binding never actually
+// pushes local edits into yText, which is why edits don't sync.
+//
+// Instead we mount a raw CodeMirror 6 EditorView whose initial doc IS the
+// yText, and mirror any yText changes back into Sandpack via
+// `sandpack.updateFile` so the test runner still picks them up.
 function SyncingEditor({
   yDoc,
   provider,
+  starterFiles,
+  isInterviewer,
+  isDark,
 }: {
   yDoc: Y.Doc;
   provider: WebrtcProvider | null;
+  starterFiles: Record<string, string>;
+  isInterviewer: boolean;
+  isDark: boolean;
 }) {
   const { sandpack } = useSandpack();
   const { activeFile } = sandpack;
-  const activeCode = sandpack.files[activeFile]?.code ?? "";
 
   const [synced, setSynced] = useState(false);
+  const [peerCount, setPeerCount] = useState(0);
+
+  // Resolve the shared Y.Text for the active file. `yDoc.getText(path)` is
+  // idempotent (same logical instance per yDoc) and is a TOP-LEVEL shared
+  // type, so it's automatically synced with peers — no map-key race that
+  // can leave clients bound to orphaned Y.Text instances.
+  const yText = useMemo(() => yDoc.getText(activeFile), [yDoc, activeFile]);
 
   useEffect(() => {
     if (!provider) return;
-
-    if (provider.connected) {
-      setSynced(true);
-    }
-
-    const handleSynced = ({ synced: isSynced }: { synced: boolean }) => {
+    if (provider.connected) setSynced(true);
+    const handle = ({ synced: isSynced }: { synced: boolean }) => {
       if (isSynced) setSynced(true);
     };
-
-    provider.on("synced", handleSynced);
-    return () => {
-      provider.off("synced", handleSynced);
+    provider.on("synced", handle);
+    const onAware = () => {
+      const remote = [...provider.awareness.getStates().keys()].filter(
+        (id) => id !== yDoc.clientID
+      );
+      setPeerCount(remote.length);
     };
-  }, [provider]);
+    provider.awareness.on("change", onAware);
+    onAware();
+    return () => {
+      provider.off("synced", handle);
+      provider.awareness.off("change", onAware);
+    };
+  }, [provider, yDoc]);
 
+  // Seed starter files into the shared doc.
+  //
+  // Either role can seed (so the candidate joining first still gets code),
+  // and we coordinate with three guards to avoid duplicate content:
+  //
+  //   1. `yMeta.seeded` — a shared boolean. The first peer to transact()
+  //      flips it; any later peer with synced doc sees it true and bails.
+  //
+  //   2. A deterministic clientID tiebreaker — when peers can see each
+  //      other in awareness, only the lowest clientID seeds.
+  //
+  //   3. `isInterviewer` as a soft hint — if we appear alone and we're
+  //      the candidate, we wait an extra grace window so the interviewer
+  //      (the natural seeder) gets a chance to win.
+  //
+  // We INTENTIONALLY do NOT gate on the `synced` event here. In y-webrtc,
+  // `synced` only fires after a sync handshake with a peer (or with a
+  // signaling server that retains state). If the only available signaling
+  // server is unreachable AND there's no peer, `synced` never fires, and
+  // gating on it would leave the editor empty forever. Instead we wait a
+  // fixed wall-clock window, then run the decision regardless. If a peer
+  // shows up later, the CRDT merge + `yMeta.seeded` flag keeps content
+  // single-copy.
   useEffect(() => {
-    if (!activeFile || !synced) return;
-
-    const yText = yDoc.getText(activeFile);
+    if (!provider) return;
     const yMeta = yDoc.getMap<boolean>("meta");
 
-    function seedIfAlone() {
-      if (yText.length > 0) return;
-      if (yMeta.get(`seeded-${activeFile}`)) return;
+    let cancelled = false;
 
-      // Check if there are other peers in the room
-      if (provider) {
-        const remoteIds = [...provider.awareness.getStates().keys()].filter(
-          (id) => id !== yDoc.clientID
-        );
-        if (remoteIds.length > 0) {
-          // Other peers exist, let's wait for them to sync their content
-          return;
+    const performSeed = () => {
+      if (cancelled) return;
+      if (yMeta.get("seeded")) return;
+      yDoc.transact(() => {
+        if (yMeta.get("seeded")) return;
+        for (const [path, code] of Object.entries(starterFiles)) {
+          const t = yDoc.getText(path);
+          if (t.length === 0) t.insert(0, code);
         }
+        yMeta.set("seeded", true);
+      });
+    };
+
+    function maybeSeed() {
+      if (cancelled || yMeta.get("seeded")) return;
+      const remoteIds = [...provider!.awareness.getStates().keys()].filter(
+        (id) => id !== yDoc.clientID
+      );
+
+      if (remoteIds.length === 0) {
+        // Appear to be alone. The interviewer seeds straight away; the
+        // candidate waits a bit longer in case the interviewer is just
+        // slow to peer with us.
+        if (!isInterviewer) {
+          window.setTimeout(performSeed, 1500);
+        } else {
+          performSeed();
+        }
+        return;
       }
 
-      // We are genuinely alone or first, let's seed the starter code atomics
-      yDoc.transact(() => {
-        if (yText.length === 0 && !yMeta.get(`seeded-${activeFile}`)) {
-          yText.insert(0, activeCode);
-          yMeta.set(`seeded-${activeFile}`, true);
-        }
-      });
+      // Peers are present: deterministic tiebreaker (lowest clientID wins).
+      const lowest = Math.min(yDoc.clientID, ...remoteIds);
+      if (lowest === yDoc.clientID) {
+        performSeed();
+      } else {
+        // Other peer should seed; fall back if they don't within 2.5s.
+        window.setTimeout(performSeed, 2500);
+      }
     }
 
-    // Delay seeding by 500ms to allow WebRTC peers list to populate
-    const timer = window.setTimeout(seedIfAlone, 500);
-    return () => window.clearTimeout(timer);
-  }, [activeFile, yDoc, synced, provider, activeCode]);
+    // Wait ~1.2s for awareness to populate so the tiebreaker has accurate
+    // peer information. After that we commit — no further waiting on
+    // signaling state.
+    const t = window.setTimeout(maybeSeed, 1200);
+    return () => {
+      cancelled = true;
+      window.clearTimeout(t);
+    };
+  }, [provider, yDoc, starterFiles, isInterviewer]);
 
-  const extensions = useMemo(() => {
-    const exts: any[] = [javascript({ jsx: true, typescript: true })];
-    if (provider) {
-      const yText = yDoc.getText(activeFile);
-      exts.push(yCollab(yText, provider.awareness));
+  // Mirror yText changes into Sandpack so the test runner & "Run code"
+  // button operate on the latest collaborative content.
+  useEffect(() => {
+    const handlers: Array<{ text: Y.Text; fn: () => void }> = [];
+    for (const path of Object.keys(starterFiles)) {
+      const t = yDoc.getText(path);
+      const fn = () => {
+        const newCode = t.toString();
+        const current = sandpack.files[path]?.code;
+        if (current !== newCode) sandpack.updateFile(path, newCode);
+      };
+      t.observe(fn);
+      handlers.push({ text: t, fn });
     }
-    return exts;
-  }, [provider, activeFile, yDoc]);
+    return () => {
+      for (const { text, fn } of handlers) text.unobserve(fn);
+    };
+  }, [yDoc, starterFiles, sandpack]);
 
   return (
     <>
-      <SandpackCodeEditor
-        key={activeFile}
-        showLineNumbers
-        showTabs
-        closableTabs={false}
-        wrapContent
-        extensions={extensions}
-        style={{ height: "100%", width: "100%" }}
-      />
+      {/* Simple file-tab strip — matches the look of SandpackCodeEditor's tabs. */}
+      <div className="h-9 shrink-0 flex items-stretch border-b border-border bg-surface text-[11px] font-mono">
+        <div className="flex items-center gap-2 px-3 border-r border-border bg-bg text-fg">
+          <span className="w-1.5 h-1.5 rounded-full bg-accent" />
+          <span className="truncate">{activeFile.replace(/^\//, "")}</span>
+        </div>
+        <div className="flex-1" />
+        <div className="px-3 flex items-center gap-2 text-[9px] uppercase tracking-widest font-bold">
+          {provider ? (
+            peerCount > 0 ? (
+              <span className="text-emerald-500">● Live · {peerCount} peer{peerCount === 1 ? "" : "s"}</span>
+            ) : synced ? (
+              <span className="text-amber-500" title="Connected to signaling but no peer in the room yet. If this persists, see the README — `npm run dev:signal` is the most reliable path locally.">● Waiting for peer…</span>
+            ) : (
+              <span className="text-amber-500" title="Could not reach a signaling server. Editor still works offline; collaboration will start once peering succeeds.">● Offline</span>
+            )
+          ) : (
+            <span className="text-muted/60">Solo</span>
+          )}
+        </div>
+      </div>
+
+      <div className="flex-1 min-h-0 relative">
+        <CollabCodeMirror
+          key={activeFile}
+          yText={yText}
+          provider={provider}
+          path={activeFile}
+          isDark={isDark}
+        />
+      </div>
 
       {/* Global CSS overrides to style collaborative cursors with an elite, futuristic HUD look */}
       <style dangerouslySetInnerHTML={{ __html: `
         /* Premium custom caretaker selection colors */
         .cm-ySelection {
-          background-color: rgba(139, 92, 246, 0.15) !important;
           border-radius: 2px !important;
         }
         .cm-ySelectionCaret, .cm-ySelection-caret {
@@ -934,7 +1109,7 @@ function SyncingEditor({
           width: 6px !important;
           height: 6px !important;
           border-radius: 50% !important;
-          background-color: inherit !important;
+          background-color: currentColor !important;
           box-shadow: 0 0 10px currentColor !important;
         }
         /* Custom high-contrast HUD hover label badge */
@@ -942,7 +1117,6 @@ function SyncingEditor({
           position: absolute !important;
           top: -1.8em !important;
           left: 0 !important;
-          background-color: inherit !important;
           color: #ffffff !important;
           font-family: "Outfit", "Inter", sans-serif !important;
           font-size: 9px !important;
@@ -953,20 +1127,113 @@ function SyncingEditor({
           border-radius: 3px !important;
           box-shadow: 0 3px 10px rgba(0, 0, 0, 0.4) !important;
           white-space: nowrap !important;
-          opacity: 0.85 !important;
-          transition: opacity 0.2s cubic-bezier(0.16, 1, 0.3, 1), transform 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
-          transform: translateY(3px) scale(0.92) !important;
+          opacity: 1 !important;
           pointer-events: none !important;
           z-index: 100 !important;
         }
-        .cm-ySelectionCaret:hover .cm-ySelection-info,
-        .cm-ySelection-caret:hover .cm-ySelection-info,
-        .cm-ySelectionCaret:hover .cm-ySelectionInfo,
-        .cm-ySelection-caret:hover .cm-ySelectionInfo {
-          opacity: 1 !important;
-          transform: translateY(0) scale(1) !important;
+        /* Dynamic pointer/arrow at the bottom of name tag inheriting the user's inline background color */
+        .cm-ySelectionInfo::after, .cm-ySelection-info::after {
+          content: "" !important;
+          position: absolute !important;
+          bottom: -3px !important;
+          left: 6px !important;
+          width: 6px !important;
+          height: 6px !important;
+          background-color: inherit !important;
+          transform: rotate(45deg) !important;
+          box-shadow: 2px 2px 2px rgba(0, 0, 0, 0.2) !important;
+          z-index: -1 !important;
         }
       ` }} />
     </>
   );
+}
+
+/**
+ * Raw CodeMirror 6 editor whose document IS the shared Y.Text. yCollab
+ * handles bidirectional sync — local edits land in yText (and thus reach
+ * peers), and remote edits land in this view automatically.
+ *
+ * `yText` is a top-level shared type from `yDoc.getText(path)`, so it
+ * starts empty and gets populated by either the local seed (interviewer)
+ * or remote sync (candidate). yCollab applies those updates to the view
+ * as soon as they arrive.
+ */
+function CollabCodeMirror({
+  yText,
+  provider,
+  path,
+  isDark,
+}: {
+  yText: Y.Text;
+  provider: WebrtcProvider | null;
+  path: string;
+  isDark: boolean;
+}) {
+  const hostRef = useRef<HTMLDivElement | null>(null);
+  const viewRef = useRef<EditorView | null>(null);
+
+  useEffect(() => {
+    if (!hostRef.current || !provider) return;
+
+    const themeExt = isDark ? [oneDark] : [];
+
+    const state = EditorState.create({
+      doc: yText.toString(),
+      extensions: [
+        keymap.of([
+          ...closeBracketsKeymap,
+          ...defaultKeymap,
+          ...historyKeymap,
+          ...completionKeymap,
+          indentWithTab,
+        ]),
+        history(),
+        lineNumbers(),
+        highlightActiveLine(),
+        highlightActiveLineGutter(),
+        drawSelection(),
+        foldGutter(),
+        indentOnInput(),
+        bracketMatching(),
+        closeBrackets(),
+        autocompletion(),
+        syntaxHighlighting(defaultHighlightStyle, { fallback: true }),
+        javascript({ jsx: true, typescript: /\.tsx?$/.test(path) }),
+        ...themeExt,
+        // ── The crucial binding ─────────────────────────────────
+        // yText IS the editor doc. No Sandpack layer fighting us for
+        // ownership, so local edits flow into yText (→ peers) and
+        // remote edits flow into the view automatically.
+        yCollab(yText, provider.awareness),
+        EditorView.theme({
+          "&": { height: "100%", background: "transparent" },
+          ".cm-scroller": {
+            fontFamily: '"JetBrains Mono", "Fira Code", "Cascadia Code", monospace',
+            fontSize: "13px",
+            lineHeight: "1.6",
+          },
+          ".cm-gutters": {
+            background: "transparent",
+            borderRight: isDark
+              ? "1px solid rgba(255,255,255,0.07)"
+              : "1px solid rgba(0,0,0,0.08)",
+          },
+          ".cm-activeLineGutter": {
+            background: isDark ? "rgba(255,255,255,0.04)" : "rgba(0,0,0,0.03)",
+          },
+        }),
+      ],
+    });
+
+    const view = new EditorView({ state, parent: hostRef.current });
+    viewRef.current = view;
+
+    return () => {
+      view.destroy();
+      viewRef.current = null;
+    };
+  }, [provider, yText, isDark, path]);
+
+  return <div ref={hostRef} className="absolute inset-0 overflow-auto" />;
 }

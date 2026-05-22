@@ -12,22 +12,24 @@ export async function PATCH(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params;
-  const session = await auth();
-  if (!session?.user?.id) {
-    return NextResponse.json({ error: "unauthorized" }, { status: 401 });
-  }
+  const session = await auth().catch(() => null);
+
+  const { searchParams } = new URL(req.url);
+  const token = searchParams.get("token");
 
   const interview = await prisma.interviewSession.findUnique({
     where: { id },
-    select: { userId: true },
+    select: { userId: true, shareToken: true },
   });
 
   if (!interview) {
     return NextResponse.json({ error: "not found" }, { status: 404 });
   }
 
-  // Only the session owner can set the active challenge.
-  if (interview.userId !== session.user.id) {
+  const isOwner = !!session?.user?.id && interview.userId === session.user.id;
+  const hasShareToken = !!token && token === interview.shareToken;
+
+  if (!isOwner && !hasShareToken) {
     return NextResponse.json({ error: "forbidden" }, { status: 403 });
   }
 

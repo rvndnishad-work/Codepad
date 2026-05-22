@@ -47,12 +47,14 @@ export default async function ChallengeAttemptPage({
 
   let isCollabPeer = false;
   let isInterviewer = false;
+  let candidateName = "";
   if (sessionIdParam) {
     const interviewSession = await prisma.interviewSession.findUnique({
       where: { id: sessionIdParam },
-      select: { shareToken: true, userId: true, creatorRole: true },
+      select: { shareToken: true, userId: true, creatorRole: true, candidateName: true },
     });
     if (interviewSession) {
+      candidateName = interviewSession.candidateName ?? "";
       const isSessionOwner = session?.user?.id === interviewSession.userId;
       const hasValidToken = !!tokenParam && tokenParam === interviewSession.shareToken;
 
@@ -201,6 +203,10 @@ export default async function ChallengeAttemptPage({
       ? `/challenges/${slug}/attempt?step=${stepIndex + 1}${baseQueryStr}`
       : null;
 
+  const username = isInterviewer
+    ? session?.user?.name?.split(/\s+/)[0] || "Interviewer"
+    : candidateName.trim() || "Candidate";
+
   return (
     <>
       {isMulti && (
@@ -244,6 +250,7 @@ export default async function ChallengeAttemptPage({
         sim={simParam === "true"}
         isInterviewer={isInterviewer}
         shareToken={tokenParam ?? ""}
+        username={username}
       />
     </>
   );

@@ -73,6 +73,15 @@ export default function SessionTimer({
         }
         if (data.status !== undefined && data.status !== status) {
           setStatus(data.status);
+          if (data.status === "completed" || data.status === "abandoned") {
+            toast.info("This session has been concluded. Exiting arena...");
+            const backHref = isInterviewer
+              ? `/interview/${sessionId}?lobby=true`
+              : `/interview/${sessionId}?token=${shareToken}&lobby=true`;
+            setTimeout(() => {
+              window.location.href = backHref;
+            }, 1500);
+          }
         }
       } catch (err) {
         console.error("SessionTimer sync failed:", err);
@@ -80,7 +89,7 @@ export default function SessionTimer({
     }, 5000);
 
     return () => clearInterval(pollInterval);
-  }, [sessionId, shareToken, totalSec, startedAt, status]);
+  }, [sessionId, shareToken, totalSec, startedAt, status, isInterviewer]);
 
   // 3. Close dropdown when clicking outside
   useEffect(() => {

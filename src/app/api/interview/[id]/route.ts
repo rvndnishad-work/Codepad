@@ -56,10 +56,7 @@ export async function PATCH(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params;
-  const session = await auth();
-  if (!session?.user?.id) {
-    return NextResponse.json({ error: "unauthorized" }, { status: 401 });
-  }
+  const session = await auth().catch(() => null);
 
   const existing = await prisma.interviewSession.findUnique({
     where: { id },
@@ -67,10 +64,14 @@ export async function PATCH(
   });
   if (!existing) return NextResponse.json({ error: "not found" }, { status: 404 });
 
-  const isOwner = existing.userId === session.user.id;
+  const isOwner = !!session?.user?.id && existing.userId === session.user.id;
   const { searchParams } = new URL(req.url);
   const token = searchParams.get("token");
   const hasShareToken = !!token && token === existing.shareToken;
+
+  if (!isOwner && !hasShareToken) {
+    return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+  }
 
   // Resolve dynamic interviewer role
   let isInterviewer = false;

@@ -28,6 +28,8 @@ import {
   Mail,
   Copy,
   FileText,
+  ChevronDown,
+  Check,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -197,50 +199,12 @@ export default function InterviewRunner({
   const startedMs = startedAt ? new Date(startedAt).getTime() : null;
   const [now, setNow] = useState<number>(Date.now());
 
-  // Evaluator notes & outcomes
-  const [notes, setNotes] = useState(interview.notes || "");
-  const [savingNotes, setSavingNotes] = useState(false);
-  const [notesSaved, setNotesSaved] = useState(false);
+
   const [verdict, setVerdict] = useState(interview.verdict);
   const [verdictModalOpen, setVerdictModalOpen] = useState(false);
   const [selectedVerdict, setSelectedVerdict] = useState<"success" | "failed" | "left_in_between" | "suspicious">("success");
 
-  // Scenario prompt for playground rounds. Editable by the interviewer
-  // (live, debounced autosave); read-only for the candidate.
-  const [scenario, setScenario] = useState(interview.scenario || "");
-  const [scenarioSaving, setScenarioSaving] = useState(false);
-  const [scenarioSaved, setScenarioSaved] = useState(false);
-  const scenarioTimerRef = useRef<NodeJS.Timeout | null>(null);
 
-  async function saveScenario(next: string) {
-    setScenarioSaving(true);
-    setScenarioSaved(false);
-    try {
-      const res = await fetch(
-        `/api/interview/${interview.id}?token=${interview.shareToken}`,
-        {
-          method: "PATCH",
-          headers: { "content-type": "application/json" },
-          body: JSON.stringify({ scenario: next.length ? next : null }),
-        }
-      );
-      if (!res.ok) throw new Error(await res.text());
-      setScenarioSaved(true);
-      setTimeout(() => setScenarioSaved(false), 1500);
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : "Unexpected error";
-      toast.error("Couldn't save scenario", { description: msg });
-    } finally {
-      setScenarioSaving(false);
-    }
-  }
-
-  function onScenarioChange(value: string) {
-    const next = value.slice(0, 2000);
-    setScenario(next);
-    if (scenarioTimerRef.current) clearTimeout(scenarioTimerRef.current);
-    scenarioTimerRef.current = setTimeout(() => saveScenario(next), 600);
-  }
 
   // Multiplayer Real-Time State variables
   const [inCall, setInCall] = useState(false);
@@ -248,8 +212,7 @@ export default function InterviewRunner({
   const [camEnabled, setCamEnabled] = useState(true);
   const [screenShare, setScreenShare] = useState(false);
   const [simColleague, setSimColleague] = useState(false);
-  const [showShareMenu, setShowShareMenu] = useState(false);
-  const [showCoInviteMenu, setShowCoInviteMenu] = useState(false);
+
   const [userDecibels, setUserDecibels] = useState<number[]>([15, 30, 20, 45, 15]);
   const [peerDecibels, setPeerDecibels] = useState<number[]>([10, 15, 8, 12, 10]);
 
@@ -257,6 +220,27 @@ export default function InterviewRunner({
   const [startRequested, setStartRequested] = useState(false);
   const [startRequestSending, setStartRequestSending] = useState(false);
   const [approvalModalOpen, setApprovalModalOpen] = useState(false);
+
+  // Quick Join strip — toggle observer link disclosure
+  const [showObserverLink, setShowObserverLink] = useState(false);
+  const [codeCopied, setCodeCopied] = useState(false);
+
+  const getFirstStageHref = () => {
+    if (interview.sourceType === "playground") {
+      const p = playgrounds[0];
+      if (!p) return null;
+      const tokenQuery = isOwner ? "" : `?token=${interview.shareToken}`;
+      return `/interview/${interview.id}/play/${p.id}${tokenQuery}`;
+    } else {
+      const c = challenges[0];
+      if (!c) return null;
+      let href = `/challenges/${c.slug}/attempt?session=${interview.id}&multiplayer=true`;
+      if (interview.shareToken) {
+        href += `&token=${interview.shareToken}`;
+      }
+      return href;
+    }
+  };
 
   // Candidate polls for status change (session started by interviewer)
   // Interviewer polls for start requests from candidate
@@ -270,9 +254,14 @@ export default function InterviewRunner({
         );
         if (!res.ok) return;
         const data = await res.json();
-        // Candidate: session started → reload to enter live state
+        // Candidate: session started → redirect to first stage immediately
         if (!interviewerView && data.status === "in_progress") {
-          window.location.reload();
+          const dest = getFirstStageHref();
+          if (dest) {
+            window.location.href = dest;
+          } else {
+            window.location.reload();
+          }
         }
         // Interviewer: candidate knocked — show approval modal
         if (interviewerView && data.startRequested && !approvalModalOpen) {
@@ -379,42 +368,46 @@ export default function InterviewRunner({
 
   async function start() {
     try {
+      const payload: any = {
+        status: "in_progress",
+        startedAt: new Date().toISOString(),
+      };
+      if (interview.sourceType === "playground" && playgrounds[0]) {
+        payload.activePlaygroundId = playgrounds[0].id;
+      }
+
       const res = await fetch(`/api/interview/${interview.id}?token=${interview.shareToken}`, {
         method: "PATCH",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({
-          status: "in_progress",
-          startedAt: new Date().toISOString(),
-        }),
+        body: JSON.stringify(payload),
         cache: "no-store",
       });
       if (!res.ok) throw new Error(await res.text());
+
+      if (interview.sourceType !== "playground" && challenges[0]) {
+        await fetch(`/api/interview/${interview.id}/active?token=${interview.shareToken}`, {
+          method: "PATCH",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ challengeId: challenges[0].id }),
+        }).catch(() => {});
+      }
+
       const iso = new Date().toISOString();
       setStartedAt(iso);
       setStatus("in_progress");
+
+      // Interviewer: Redirect to the first stage immediately!
+      const dest = getFirstStageHref();
+      if (dest) {
+        window.location.href = dest;
+      }
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
       toast.error("Couldn't start clock", { description: msg });
     }
   }
 
-  async function handleSaveNotes(val: string) {
-    setNotes(val);
-    setSavingNotes(true);
-    setNotesSaved(false);
-    try {
-      await fetch(`/api/interview/${interview.id}?token=${interview.shareToken}`, {
-        method: "PATCH",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ notes: val }),
-      });
-      setNotesSaved(true);
-    } catch (err) {
-      console.error("Failed to save notes:", err);
-    } finally {
-      setSavingNotes(false);
-    }
-  }
+
 
   async function finish(target: "completed" | "abandoned", finalVerdict?: string) {
     try {
@@ -440,29 +433,29 @@ export default function InterviewRunner({
   }
 
   const shareCode = interview.shortCode || interview.shareToken;
-  const joinUrl = `${typeof window !== "undefined" ? window.location.origin : ""}/j/${shareCode}`;
+  const joinUrl = `${typeof window !== "undefined" ? window.location.origin : ""}/join/${shareCode}`;
   const candidateLink = `${typeof window !== "undefined" ? window.location.origin : ""}/interview/${interview.id}?token=${interview.shareToken}`;
   // Co-interviewer link appends a ?cointerviewer=1 hint so the lobby knows to greet them differently  
   const coInterviewerLink = `${typeof window !== "undefined" ? window.location.origin : ""}/interview/${interview.id}?token=${interview.shareToken}&cointerviewer=1`;
   const shareText = `Join my live coding session on Interviewpad!\n\nLink: ${joinUrl}\nCode: ${interview.shortCode || "N/A"}`;
 
-  async function copyShareLink() {
+  async function copyCandidateLink() {
     try {
-      await navigator.clipboard.writeText(shareText);
-      toast.success("Invite copied to clipboard!", { description: "Share this with your colleague." });
-      setShowShareMenu(false);
+      await navigator.clipboard.writeText(candidateLink);
+      toast.success("Candidate link copied!", { description: "Share this with the candidate. Only one candidate slot." });
     } catch {
       toast.error("Failed to copy link.");
     }
   }
 
-  async function copyCandidateLink() {
+  async function copyAccessCode() {
+    if (!interview.shortCode) return;
     try {
-      await navigator.clipboard.writeText(candidateLink);
-      toast.success("Candidate link copied!", { description: "Share this with the candidate. Only one candidate slot." });
-      setShowShareMenu(false);
+      await navigator.clipboard.writeText(interview.shortCode);
+      setCodeCopied(true);
+      setTimeout(() => setCodeCopied(false), 1500);
     } catch {
-      toast.error("Failed to copy link.");
+      toast.error("Failed to copy access code.");
     }
   }
 
@@ -470,34 +463,17 @@ export default function InterviewRunner({
     try {
       await navigator.clipboard.writeText(coInterviewerLink);
       toast.success("Co-Interviewer link copied!", { description: "Multiple interviewers can join with this link." });
-      setShowCoInviteMenu(false);
     } catch {
       toast.error("Failed to copy link.");
     }
-  }
-
-  function shareWhatsApp() {
-    window.open(`https://wa.me/?text=${encodeURIComponent(shareText)}`, "_blank");
-    setShowShareMenu(false);
-  }
-
-  function shareEmail() {
-    window.open(`mailto:?subject=Join my coding session&body=${encodeURIComponent(shareText)}`, "_blank");
-    setShowShareMenu(false);
   }
 
   const activeChallengeId = challenges.find((c) => attemptByChallenge.get(c.id) !== "passed")?.id;
 
   return (
     <div className="min-h-[85vh] bg-bg relative overflow-hidden text-fg selection:bg-accent/30 selection:text-accent font-sans flex flex-col justify-center py-6 md:py-10">
-      {/* Decorative Grid Pattern Overlay */}
-      <div className="absolute inset-0 bg-grid-pattern [mask-image:radial-gradient(ellipse_at_center,white,transparent_75%)] opacity-[0.03] pointer-events-none z-0" />
-      
-      {/* Atmospheric Background Gradients */}
-      <div className="fixed inset-0 pointer-events-none z-0">
-        <div className={`absolute top-0 left-0 w-[50vw] h-[50vw] rounded-full blur-[120px] opacity-10 dark:opacity-20 transition-colors duration-1000 ${status === "in_progress" ? "bg-amber-500/20 dark:bg-amber-500/30 animate-pulse" : status === "completed" ? "bg-emerald-500/20 dark:bg-emerald-500/30" : "bg-accent/10 dark:bg-accent/20"}`} />
-        <div className={`absolute bottom-0 right-0 w-[60vw] h-[60vw] rounded-full blur-[150px] opacity-10 dark:opacity-20 transition-colors duration-1000 ${status === "in_progress" ? "bg-rose-500/10 dark:bg-rose-500/20" : status === "completed" ? "bg-emerald-500/10 dark:bg-emerald-500/20" : "bg-violet-500/10 dark:bg-violet-500/20"}`} />
-      </div>
+      {/* Single soft glow behind hero (matches /interview pattern) */}
+      <div className="absolute top-[-10%] right-[-10%] w-[500px] h-[500px] rounded-full bg-accent/5 blur-[120px] pointer-events-none z-0" />
 
       <div className="max-w-5xl w-full mx-auto px-6 relative z-10 space-y-5">
         
@@ -507,90 +483,19 @@ export default function InterviewRunner({
             href="/interview"
             className="inline-flex items-center gap-2.5 text-xs font-medium tracking-wider text-muted hover:text-fg transition-all duration-300 group"
           >
-            <div className="p-1.5 rounded-full bg-surface/50 backdrop-blur border border-border/80 group-hover:border-accent/40 group-hover:bg-panel transition-all shadow-sm">
+            <div className="p-1.5 rounded-full bg-surface border border-border group-hover:border-accent/40 group-hover:bg-elevated transition-all shadow-sm">
               <ArrowLeft className="w-3.5 h-3.5 group-hover:-translate-x-0.5 transition-transform text-muted group-hover:text-accent" />
             </div>
             <span className="font-bold uppercase tracking-widest text-[10px]">Exit Arena</span>
           </Link>
           
-          <div className="flex items-center gap-2">
-            {isOwner && (
-              <div className="flex items-center gap-2">
-                {/* Invite Candidate Button */}
-                <div className="relative">
-                  <button
-                    onClick={() => { setShowShareMenu(!showShareMenu); setShowCoInviteMenu(false); }}
-                    className="px-3.5 py-2 rounded-full bg-surface/60 backdrop-blur-xl border border-border/60 hover:bg-panel hover:border-border text-xs font-bold uppercase tracking-wider transition-all duration-300 flex items-center gap-2 shadow-sm active:scale-95"
-                  >
-                    <Users className="w-3.5 h-3.5 text-accent" />
-                    Candidate
-                  </button>
-                  {showShareMenu && (
-                    <div className="absolute right-0 top-full mt-2 w-72 bg-panel/95 backdrop-blur-xl border border-border/80 rounded-2xl shadow-2xl p-2 z-50 animate-in fade-in zoom-in-95 duration-200">
-                      <div className="px-3 py-2.5 border-b border-border/40 mb-1.5">
-                        <p className="text-[10px] text-muted font-black uppercase tracking-wider mb-1">Candidate Invite Link</p>
-                        <p className="text-[10px] text-muted/70 leading-relaxed">One candidate slot — only one person can join as the candidate.</p>
-                      </div>
-                      {interview.shortCode && (
-                        <div className="px-3 py-2.5 border-b border-border/40 mb-1.5 flex flex-col items-center justify-center gap-1.5">
-                          <p className="text-[10px] text-muted font-black uppercase tracking-wider">Access Code</p>
-                          <p className="text-lg font-mono text-fg bg-surface/50 border border-border/40 px-3 py-1 rounded-lg tracking-[0.25em] shadow-inner select-all">
-                            {interview.shortCode}
-                          </p>
-                        </div>
-                      )}
-                      <button onClick={copyCandidateLink} className="w-full text-left px-3 py-2 rounded-lg text-xs font-medium text-muted hover:text-fg hover:bg-surface/60 transition flex items-center gap-2">
-                        <Copy className="w-3.5 h-3.5" /> Copy Candidate Link
-                      </button>
-                      <button onClick={() => { window.open(`https://wa.me/?text=${encodeURIComponent(`Join my coding interview as the candidate!\nLink: ${candidateLink}`)}`, "_blank"); setShowShareMenu(false); }} className="w-full text-left px-3 py-2 rounded-lg text-xs font-medium text-emerald-500/80 hover:text-emerald-500 hover:bg-emerald-500/5 transition flex items-center gap-2">
-                        <MessageCircle className="w-3.5 h-3.5" /> Share via WhatsApp
-                      </button>
-                      <button onClick={() => { window.open(`mailto:?subject=You are invited to a coding interview&body=${encodeURIComponent(`Join as the candidate:\n${candidateLink}`)}`, "_blank"); setShowShareMenu(false); }} className="w-full text-left px-3 py-2 rounded-lg text-xs font-medium text-amber-500/80 hover:text-amber-500 hover:bg-amber-500/5 transition flex items-center gap-2">
-                        <Mail className="w-3.5 h-3.5" /> Share via Email
-                      </button>
-                    </div>
-                  )}
-                </div>
-
-                {/* Invite Co-Interviewer Button */}
-                {interviewerView && (
-                  <div className="relative">
-                    <button
-                      onClick={() => { setShowCoInviteMenu(!showCoInviteMenu); setShowShareMenu(false); }}
-                      className="px-3.5 py-2 rounded-full bg-surface/60 backdrop-blur-xl border border-border/60 hover:bg-panel hover:border-border text-xs font-bold uppercase tracking-wider transition-all duration-300 flex items-center gap-2 shadow-sm active:scale-95"
-                    >
-                      <Share2 className="w-3.5 h-3.5 text-violet-500" />
-                      Observer
-                    </button>
-                    {showCoInviteMenu && (
-                      <div className="absolute right-0 top-full mt-2 w-72 bg-panel/95 backdrop-blur-xl border border-border/80 rounded-2xl shadow-2xl p-2 z-50 animate-in fade-in zoom-in-95 duration-200">
-                        <div className="px-3 py-2.5 border-b border-border/40 mb-1.5">
-                          <p className="text-[10px] text-muted font-black uppercase tracking-wider mb-1">Co-Interviewer Invite</p>
-                          <p className="text-[10px] text-muted/70 leading-relaxed">Multiple interviewers can join with this link to observe the session.</p>
-                        </div>
-                        <button onClick={copyCoInterviewerLink} className="w-full text-left px-3 py-2 rounded-lg text-xs font-medium text-muted hover:text-fg hover:bg-surface/60 transition flex items-center gap-2">
-                          <Copy className="w-3.5 h-3.5" /> Copy Co-Interviewer Link
-                        </button>
-                        <button onClick={() => { window.open(`https://wa.me/?text=${encodeURIComponent(`Join my coding interview as a co-interviewer!\nLink: ${coInterviewerLink}`)}`, "_blank"); setShowCoInviteMenu(false); }} className="w-full text-left px-3 py-2 rounded-lg text-xs font-medium text-emerald-500/80 hover:text-emerald-500 hover:bg-emerald-500/5 transition flex items-center gap-2">
-                          <MessageCircle className="w-3.5 h-3.5" /> Share via WhatsApp
-                        </button>
-                        <button onClick={() => { window.open(`mailto:?subject=Join as co-interviewer&body=${encodeURIComponent(`Co-Interviewer link:\n${coInterviewerLink}`)}`, "_blank"); setShowCoInviteMenu(false); }} className="w-full text-left px-3 py-2 rounded-lg text-xs font-medium text-amber-500/80 hover:text-amber-500 hover:bg-amber-500/5 transition flex items-center gap-2">
-                          <Mail className="w-3.5 h-3.5" /> Share via Email
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
         </div>
 
-        {/* Unified Glassmorphic Dashboard Window */}
-        <div className="border border-border/50 bg-surface/20 backdrop-blur-md rounded-2xl shadow-xl overflow-hidden animate-in fade-in zoom-in-98 duration-500">
-          
+        {/* Dashboard Window */}
+        <div className="border border-border bg-surface rounded-2xl shadow-xl overflow-hidden animate-in fade-in zoom-in-98 duration-500">
+
           {/* Dashboard Header Bar */}
-          <div className="border-b border-border/50 bg-surface/30 px-6 py-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div className="border-b border-border bg-elevated px-6 py-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div className="flex items-center gap-3">
               <div className="w-9 h-9 rounded-xl bg-accent/5 border border-accent/20 flex items-center justify-center text-accent shadow-inner shrink-0 relative overflow-hidden">
                 <div className="absolute inset-0 bg-accent/5 animate-pulse" />
@@ -607,7 +512,7 @@ export default function InterviewRunner({
                   {interview.type && (
                     <>
                       <span className="text-muted/30 text-xs leading-none">•</span>
-                      <span className="text-[9px] font-bold bg-panel/60 border border-border/50 px-2 py-0.5 rounded-full text-muted/95 uppercase tracking-wider">
+                      <span className="text-[9px] font-bold bg-bg/60 border border-border px-2 py-0.5 rounded-full text-muted uppercase tracking-wider">
                         {interview.type}
                       </span>
                     </>
@@ -653,8 +558,8 @@ export default function InterviewRunner({
 
           {/* Multiplayer Video Calling Lobby Canvas */}
           {inCall && (
-            <div className="border-b border-border/40 bg-surface/10 backdrop-blur-md p-6 space-y-5 animate-in slide-in-from-top-4 duration-300">
-              <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 pb-4 border-b border-border/30">
+            <div className="border-b border-border bg-bg/40 p-6 space-y-5 animate-in slide-in-from-top-4 duration-300">
+              <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 pb-4 border-b border-border">
                 <div>
                   <div className="text-[10px] font-black uppercase tracking-[0.2em] text-accent flex items-center gap-2">
                     <span className="relative flex h-2 w-2">
@@ -667,7 +572,7 @@ export default function InterviewRunner({
                 </div>
 
                 {/* Calling Room Call Bar Buttons */}
-                <div className="flex items-center gap-2.5 bg-panel/80 backdrop-blur border border-border/80 rounded-full px-3.5 py-1.5 shrink-0 shadow-soft">
+                <div className="flex items-center gap-2.5 bg-panel border border-border rounded-full px-3.5 py-1.5 shrink-0 shadow-sm">
                   <button
                     onClick={() => setMicEnabled(!micEnabled)}
                     className={`p-2 rounded-full transition-all duration-300 hover:scale-110 active:scale-95 border ${
@@ -714,7 +619,7 @@ export default function InterviewRunner({
               {/* Grid display for active member cameras */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {/* Candidate Frame (Left) */}
-                <div className="rounded-2xl border border-border/40 bg-surface/30 backdrop-blur-sm aspect-video relative overflow-hidden flex flex-col justify-between p-5 group shadow-inner transition-all duration-300 hover:border-accent/25">
+                <div className="rounded-2xl border border-border bg-bg aspect-video relative overflow-hidden flex flex-col justify-between p-5 group shadow-inner transition-all duration-300 hover:border-accent/40">
                   
                   {!interviewerView ? (
                     // Local webcam feed (You as Candidate)
@@ -723,13 +628,13 @@ export default function InterviewRunner({
                         <div className="relative">
                           {/* Pulse Rings */}
                           <div className="absolute inset-0 rounded-full bg-accent/20 animate-ping opacity-60" />
-                          <div className="w-16 h-16 rounded-full bg-accent/10 border border-accent/25 flex items-center justify-center text-accent font-black text-2xl relative shadow-md backdrop-blur">
+                          <div className="w-16 h-16 rounded-full bg-accent/10 border border-accent/25 flex items-center justify-center text-accent font-black text-2xl relative shadow-md">
                             C
                           </div>
                         </div>
                         
                         {/* Dynamic Sound Decibels */}
-                        <div className="absolute bottom-4 left-4 flex items-end gap-1 h-8 px-2.5 py-1 rounded-lg bg-black/40 backdrop-blur-sm border border-white/5">
+                        <div className="absolute bottom-4 left-4 flex items-end gap-1 h-8 px-2.5 py-1 rounded-lg bg-black/50 border border-white/10">
                           {userDecibels.map((db, idx) => (
                             <div 
                               key={idx} 
@@ -750,7 +655,7 @@ export default function InterviewRunner({
                       <div className="absolute inset-0 bg-gradient-to-tr from-accent/5 via-transparent to-violet-500/5 flex items-center justify-center">
                         <div className="text-center space-y-2.5">
                           <div className="relative mx-auto">
-                            <div className="w-16 h-16 rounded-full bg-accent/5 border border-accent/20 flex items-center justify-center text-accent font-black text-xl relative shadow-md backdrop-blur">
+                            <div className="w-16 h-16 rounded-full bg-accent/5 border border-accent/20 flex items-center justify-center text-accent font-black text-xl relative shadow-md">
                               {interview.candidateName ? interview.candidateName.substring(0, 2).toUpperCase() : "C"}
                               <span className="absolute bottom-0 right-0 w-5 h-5 rounded-full bg-emerald-500 border-2 border-surface flex items-center justify-center shadow shadow-emerald-500/30">
                                 <Mic className="w-2.5 h-2.5 text-white" />
@@ -767,7 +672,7 @@ export default function InterviewRunner({
                         </div>
 
                         {/* Decibels Wave */}
-                        <div className="absolute bottom-4 left-4 flex items-end gap-1 h-8 px-2.5 py-1 rounded-lg bg-black/40 backdrop-blur-sm border border-white/5">
+                        <div className="absolute bottom-4 left-4 flex items-end gap-1 h-8 px-2.5 py-1 rounded-lg bg-black/50 border border-white/10">
                           {peerDecibels.map((db, idx) => (
                             <div 
                               key={idx} 
@@ -796,7 +701,7 @@ export default function InterviewRunner({
                 </div>
 
                 {/* Interviewer Frame (Right) */}
-                <div className="rounded-2xl border border-border/40 bg-surface/30 backdrop-blur-sm aspect-video relative overflow-hidden flex flex-col justify-between p-5 group shadow-inner transition-all duration-300 hover:border-violet-500/25">
+                <div className="rounded-2xl border border-border bg-bg aspect-video relative overflow-hidden flex flex-col justify-between p-5 group shadow-inner transition-all duration-300 hover:border-violet-500/40">
                   
                   {interviewerView ? (
                     // Local webcam feed (You as Interviewer)
@@ -804,13 +709,13 @@ export default function InterviewRunner({
                       <div className="absolute inset-0 bg-gradient-to-tr from-violet-500/5 via-transparent to-accent/5 flex items-center justify-center">
                         <div className="relative">
                           <div className="absolute inset-0 rounded-full bg-violet-500/20 animate-ping opacity-60" />
-                          <div className="w-16 h-16 rounded-full bg-violet-500/10 border border-violet-500/25 flex items-center justify-center text-violet-500 font-black text-2xl relative shadow-md backdrop-blur">
+                          <div className="w-16 h-16 rounded-full bg-violet-500/10 border border-violet-500/25 flex items-center justify-center text-violet-500 font-black text-2xl relative shadow-md">
                             I
                           </div>
                         </div>
                         
                         {/* Dynamic Sound Decibels */}
-                        <div className="absolute bottom-4 left-4 flex items-end gap-1 h-8 px-2.5 py-1 rounded-lg bg-black/40 backdrop-blur-sm border border-white/5">
+                        <div className="absolute bottom-4 left-4 flex items-end gap-1 h-8 px-2.5 py-1 rounded-lg bg-black/50 border border-white/10">
                           {userDecibels.map((db, idx) => (
                             <div 
                               key={idx} 
@@ -831,7 +736,7 @@ export default function InterviewRunner({
                       <div className="absolute inset-0 bg-gradient-to-tr from-violet-500/5 via-transparent to-accent/5 flex items-center justify-center">
                         <div className="text-center space-y-2.5">
                           <div className="relative mx-auto">
-                            <div className="w-16 h-16 rounded-full bg-violet-500/5 border border-violet-500/20 flex items-center justify-center text-violet-500 font-black text-xl relative shadow-md backdrop-blur">
+                            <div className="w-16 h-16 rounded-full bg-violet-500/5 border border-violet-500/20 flex items-center justify-center text-violet-500 font-black text-xl relative shadow-md">
                               AN
                               <span className="absolute bottom-0 right-0 w-5 h-5 rounded-full bg-emerald-500 border-2 border-surface flex items-center justify-center shadow shadow-emerald-500/30">
                                 <Mic className="w-2.5 h-2.5 text-white" />
@@ -848,7 +753,7 @@ export default function InterviewRunner({
                         </div>
 
                         {/* Decibels Wave */}
-                        <div className="absolute bottom-4 left-4 flex items-end gap-1 h-8 px-2.5 py-1 rounded-lg bg-black/40 backdrop-blur-sm border border-white/5">
+                        <div className="absolute bottom-4 left-4 flex items-end gap-1 h-8 px-2.5 py-1 rounded-lg bg-black/50 border border-white/10">
                           {peerDecibels.map((db, idx) => (
                             <div 
                               key={idx} 
@@ -880,13 +785,13 @@ export default function InterviewRunner({
           )}
 
           {/* Grid Content Panels */}
-          <div className="grid grid-cols-1 md:grid-cols-12 divide-y md:divide-y-0 md:divide-x divide-border/25 bg-surface/5">
+          <div className="grid grid-cols-1 md:grid-cols-12 divide-y md:divide-y-0 md:divide-x divide-border bg-surface">
             
             {/* LEFT COLUMN: Command Panel */}
             <div className="md:col-span-5 p-5 space-y-6 flex flex-col">
               
               {/* Status and Timer Box */}
-              <div className="p-5 rounded-2xl border border-border/30 bg-panel/35 backdrop-blur-md shadow-lg relative overflow-hidden group transition-all duration-300 hover:border-border/50">
+              <div className="p-5 rounded-2xl border border-border bg-bg/60 relative overflow-hidden group transition-colors duration-300 hover:bg-elevated">
                 <div className="absolute top-0 right-0 w-24 h-24 bg-accent/5 rounded-full blur-xl pointer-events-none transition-all duration-500 group-hover:bg-accent/10" />
                 <div className="flex items-center justify-between mb-4">
                   <span className="text-[10px] font-black uppercase tracking-[0.2em] text-muted">Timer Status</span>
@@ -897,7 +802,7 @@ export default function InterviewRunner({
                         ? "bg-rose-500/10 border-rose-500/20 text-rose-500 dark:text-rose-400"
                         : status === "in_progress"
                           ? "bg-indigo-500/15 border-indigo-500/25 text-indigo-500 dark:text-indigo-400 animate-pulse shadow-[0_0_12px_rgba(99,102,241,0.2)]"
-                          : "bg-panel/60 border-border/40 text-muted"
+                          : "bg-bg/60 border-border text-muted"
                   }`}>
                     {status === "completed" ? "Concluded" : status === "abandoned" ? "Abandoned" : status === "in_progress" ? "Live" : "Standby"}
                   </span>
@@ -926,10 +831,10 @@ export default function InterviewRunner({
                 )}
 
                 {status === "scheduled" && !interviewerView && (
-                  <div className="p-5 rounded-2xl border border-border/30 bg-panel/35 backdrop-blur-md text-center space-y-4 shadow-xl">
+                  <div className="p-5 rounded-2xl border border-border bg-bg/60 text-center space-y-4">
                     <div className="relative w-12 h-12 mx-auto">
                       <div className="absolute inset-0 rounded-full bg-accent/20 animate-ping opacity-60" />
-                      <div className="relative w-12 h-12 rounded-full bg-accent/10 border border-accent/25 grid place-items-center shadow-md backdrop-blur">
+                      <div className="relative w-12 h-12 rounded-full bg-accent/10 border border-accent/25 grid place-items-center shadow-md">
                         <Play className="w-4 h-4 text-accent fill-current translate-x-0.5" />
                       </div>
                     </div>
@@ -946,7 +851,7 @@ export default function InterviewRunner({
                       <button
                         onClick={requestStart}
                         disabled={startRequestSending}
-                        className="px-4.5 py-2 rounded-xl bg-surface/60 border border-border/50 text-[11px] font-bold text-fg hover:bg-panel hover:border-accent/40 hover:text-accent transition-all active:scale-95 disabled:opacity-50 shadow-sm"
+                        className="px-4.5 py-2 rounded-xl bg-bg border border-border text-[11px] font-bold text-fg hover:bg-elevated hover:border-accent/40 hover:text-accent transition-all active:scale-95 disabled:opacity-50 shadow-sm"
                       >
                         {startRequestSending ? "Sending Signal..." : "Signal Ready"}
                       </button>
@@ -965,7 +870,7 @@ export default function InterviewRunner({
                 )}
 
                 {status === "in_progress" && !interviewerView && (
-                  <div className="p-4 rounded-xl border border-accent/20 bg-accent/5 backdrop-blur-sm text-center space-y-1.5 animate-pulse">
+                  <div className="p-4 rounded-xl border border-accent/30 bg-accent/10 text-center space-y-1.5 animate-pulse">
                     <div className="text-xs font-black uppercase tracking-wider text-accent">Session Active</div>
                     <div className="text-[10px] text-muted">Proceed to the challenge roadmap on the right.</div>
                   </div>
@@ -980,7 +885,7 @@ export default function InterviewRunner({
                       <div className="text-xs font-extrabold uppercase tracking-wider leading-none">Round Concluded</div>
                       {verdict && (
                         <div className="text-[10px] text-muted mt-1.5 flex items-center gap-1.5">
-                          Verdict: <span className="font-semibold text-fg/80 capitalize bg-panel/60 border border-border/40 px-2 py-0.5 rounded-full">{verdict.replace(/_/g, ' ')}</span>
+                          Verdict: <span className="font-semibold text-fg capitalize bg-bg/60 border border-border px-2 py-0.5 rounded-full">{verdict.replace(/_/g, ' ')}</span>
                         </div>
                       )}
                     </div>
@@ -988,100 +893,22 @@ export default function InterviewRunner({
                 )}
               </div>
 
-              {/* Private Notes (Interviewer) or Guidelines (Candidate) */}
-              {interviewerView ? (
-                <div className="p-5 rounded-2xl border border-border/30 bg-panel/30 backdrop-blur-md shadow-lg relative overflow-hidden group transition-all duration-300 hover:border-border/50 flex-1 flex flex-col justify-between">
-                  <div className="absolute top-0 right-0 w-24 h-24 bg-accent/5 rounded-full blur-xl pointer-events-none group-hover:bg-accent/10 transition-all duration-500" />
-                  
-                  <div>
-                    <div className="flex items-center gap-2 mb-3">
-                      <Sparkles className="w-3.5 h-3.5 text-accent animate-pulse" />
-                      <span className="text-[10px] font-black uppercase tracking-[0.2em] text-muted">Evaluation Notes</span>
-                    </div>
-                    
-                    <textarea
-                      value={notes}
-                      onChange={(e) => handleSaveNotes(e.target.value)}
-                      placeholder="Record insights, communication skills, or code quality seamlessly..."
-                      className="w-full h-32 bg-surface/40 backdrop-blur-sm border border-border/30 rounded-xl p-3.5 text-xs text-fg placeholder:text-muted/50 focus:outline-none focus:border-accent/40 focus:bg-surface/60 transition-all duration-300 resize-none leading-relaxed shadow-inner"
-                    />
-                  </div>
-                  
-                  <div className="flex justify-end items-center gap-2 text-[9px] text-muted border-t border-border/20 pt-2.5 mt-3">
-                    <span className={`w-1.5 h-1.5 rounded-full ${savingNotes ? "bg-amber-500 animate-pulse" : "bg-emerald-500"}`} />
-                    <span className="font-mono tracking-wider uppercase">{savingNotes ? "Saving Changes..." : notesSaved ? "Changes Saved" : "Auto-saved"}</span>
-                  </div>
-                </div>
-              ) : (
-                <div className="p-5 rounded-2xl border border-border/30 bg-panel/30 backdrop-blur-md shadow-lg relative overflow-hidden group transition-all duration-300 hover:border-border/50">
-                  <div className="absolute top-0 right-0 w-24 h-24 bg-accent/5 rounded-full blur-xl pointer-events-none" />
-                  <div className="flex items-center gap-2 mb-3.5">
-                    <Sparkles className="w-3.5 h-3.5 text-accent animate-pulse" />
-                    <span className="text-[10px] font-black uppercase tracking-[0.2em] text-muted">Guidelines</span>
-                  </div>
-                  <ul className="space-y-3.5 text-xs text-muted/90">
-                    <li className="flex items-start gap-2.5">
-                      <span className="w-5 h-5 rounded-md bg-accent/10 border border-accent/20 text-accent font-extrabold flex items-center justify-center shrink-0 text-[10px]">1</span>
-                      <span className="leading-relaxed">Think out loud to explain your problem solving workflow.</span>
-                    </li>
-                    <li className="flex items-start gap-2.5">
-                      <span className="w-5 h-5 rounded-md bg-accent/10 border border-accent/20 text-accent font-extrabold flex items-center justify-center shrink-0 text-[10px]">2</span>
-                      <span className="leading-relaxed">Consider edge cases and code complexities before writing.</span>
-                    </li>
-                    <li className="flex items-start gap-2.5">
-                      <span className="w-5 h-5 rounded-md bg-accent/10 border border-accent/20 text-accent font-extrabold flex items-center justify-center shrink-0 text-[10px]">3</span>
-                      <span className="leading-relaxed">Collaborate with your evaluator to ensure clear intent.</span>
-                    </li>
-                  </ul>
-                </div>
-              )}
             </div>
 
             {/* RIGHT COLUMN: Round queue (challenges) or Scenario + playgrounds */}
             <div className="md:col-span-7 p-5 space-y-5 flex flex-col justify-between">
 
-              <div className="space-y-5">
-                {(scenario || interviewerView) && (
-                  <div className="rounded-2xl border border-border/30 bg-panel/30 backdrop-blur-md p-5 space-y-3 shadow-lg hover:border-border/50 transition-all duration-300">
-                    <div className="flex items-center justify-between">
-                      <span className="text-[10px] font-black uppercase tracking-[0.2em] text-accent flex items-center gap-1.5">
-                        <FileText className="w-3.5 h-3.5" />
-                        Scenario / Prompt
-                      </span>
-                      {interviewerView ? (
-                        <span className="text-[10px] text-muted/60 font-mono tracking-wider">
-                          {scenarioSaving ? "Saving…" : scenarioSaved ? "Saved" : "Editable"}
-                        </span>
-                      ) : (
-                        <span className="text-[10px] text-muted/60 font-mono tracking-wider">Read-only</span>
-                      )}
-                    </div>
-                    {interviewerView ? (
-                      <textarea
-                        value={scenario}
-                        onChange={(e) => onScenarioChange(e.target.value)}
-                        rows={4}
-                        placeholder="Describe the task for the candidate (e.g. 'Add pagination to this list component')."
-                        className="w-full px-3.5 py-3 rounded-xl bg-surface/40 backdrop-blur-sm border border-border/30 focus:border-accent/40 focus:bg-surface/60 text-xs text-fg placeholder:text-muted/50 outline-none transition-all duration-300 leading-relaxed resize-none shadow-inner"
-                      />
-                    ) : (
-                      <p className="text-xs text-fg whitespace-pre-wrap leading-relaxed bg-surface/20 rounded-xl p-3.5 border border-border/25">{scenario}</p>
-                    )}
-                  </div>
-                )}
-
-                <div className="border-b border-border/20 pb-3 flex items-center justify-between">
+                <div className="border-b border-border pb-3 flex items-center justify-between">
                   <span className="text-[10px] font-black uppercase tracking-[0.2em] text-muted">
                     {isPlayground ? "Playground Rounds" : "Challenge Sequence"}
                   </span>
-                  <span className="text-[10px] text-muted/60 font-mono tracking-wider bg-panel/60 border border-border/30 px-2 py-0.5 rounded-full">
+                  <span className="text-[10px] text-muted font-mono tracking-wider bg-bg/60 border border-border px-2 py-0.5 rounded-full">
                     {isPlayground ? playgrounds.length : challenges.length} {isPlayground ? "Rooms" : "Steps"}
                   </span>
                 </div>
-              </div>
 
               {isPlayground ? (
-                <div className="relative pl-6 border-l border-dashed border-border/40 space-y-4 py-1 max-h-[480px] overflow-y-auto pr-2 scrollbar-thin">
+                <div className="relative pl-6 border-l border-dashed border-border space-y-4 py-1 max-h-[480px] overflow-y-auto pr-2 scrollbar-thin">
                   {playgrounds.map((p, idx) => {
                     const canEnter = status === "in_progress";
                     const isActive = interview.activePlaygroundId === p.id;
@@ -1092,7 +919,7 @@ export default function InterviewRunner({
                       ? `/interview/${interview.id}/play/${p.id}${tokenQuery}`
                       : null;
 
-                    let statusTag = "bg-panel/40 border border-border/30 text-muted";
+                    let statusTag = "bg-bg/60 border border-border text-muted";
                     if (isActive && status === "in_progress") {
                       statusTag = "bg-indigo-500/10 border border-indigo-500/20 text-indigo-500 dark:text-indigo-400 font-extrabold animate-pulse";
                     }
@@ -1106,11 +933,11 @@ export default function InterviewRunner({
 
                     return (
                       <div key={p.id} className="relative group">
-                        <div className="absolute -left-[31px] top-1/2 -translate-y-1/2 w-4 h-4 rounded-full border-2 border-border/60 bg-bg flex items-center justify-center transition-all duration-300 group-hover:border-accent shadow-sm">
+                        <div className="absolute -left-[31px] top-1/2 -translate-y-1/2 w-4 h-4 rounded-full border-2 border-border bg-bg flex items-center justify-center transition-all duration-300 group-hover:border-accent shadow-sm">
                           <div className={`w-1.5 h-1.5 rounded-full ${isActive && status === "in_progress" ? "bg-accent animate-ping" : "bg-border/60"}`} />
                         </div>
 
-                        <div className={`p-4 rounded-2xl border border-border/30 bg-panel/30 backdrop-blur-md shadow-sm transition-all duration-300 hover:bg-surface/50 hover:-translate-y-0.5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 ${tColor.border} ${tColor.glow}`}>
+                        <div className={`p-4 rounded-2xl border border-border bg-bg/60 shadow-sm transition-all duration-300 hover:bg-elevated hover:-translate-y-0.5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 ${tColor.border} ${tColor.glow}`}>
                           <div className="space-y-1">
                             <div className="flex items-center gap-2">
                               <span className="text-[9px] font-extrabold uppercase tracking-wider text-muted">Round {idx + 1}</span>
@@ -1132,7 +959,7 @@ export default function InterviewRunner({
                             {href ? (
                               <Link
                                 href={href}
-                                className="px-4 py-2 rounded-xl bg-surface/60 hover:bg-panel border border-border/50 hover:border-accent/40 text-xs font-bold text-fg transition-all flex items-center gap-1.5 group-hover:text-accent shadow-sm active:scale-95"
+                                className="px-4 py-2 rounded-xl bg-bg hover:bg-elevated border border-border hover:border-accent/40 text-xs font-bold text-fg transition-all flex items-center gap-1.5 group-hover:text-accent shadow-sm active:scale-95"
                               >
                                 {interviewerView ? (
                                   <>
@@ -1149,7 +976,7 @@ export default function InterviewRunner({
                             ) : (
                               <button
                                 disabled
-                                className="px-4 py-2 rounded-xl bg-surface/20 border border-border/30 text-xs font-bold text-muted/40 flex items-center gap-1.5 cursor-not-allowed"
+                                className="px-4 py-2 rounded-xl bg-bg/60 border border-border text-xs font-bold text-muted flex items-center gap-1.5 cursor-not-allowed"
                               >
                                 Locked
                               </button>
@@ -1161,7 +988,7 @@ export default function InterviewRunner({
                   })}
                 </div>
               ) : (
-                <div className="relative pl-6 border-l border-dashed border-border/40 space-y-4 py-1 max-h-[480px] overflow-y-auto pr-2 scrollbar-thin">
+                <div className="relative pl-6 border-l border-dashed border-border space-y-4 py-1 max-h-[480px] overflow-y-auto pr-2 scrollbar-thin">
                   {challenges.map((c, idx) => {
                     const result = attemptByChallenge.get(c.id);
                     const passed = result === "passed";
@@ -1173,12 +1000,12 @@ export default function InterviewRunner({
                       ? `/challenges/${c.slug}/attempt?session=${interview.id}&multiplayer=true` 
                       : null;
                       
-                    if (href && interviewerView) {
+                    if (href && interview.shareToken) {
                       href += `&token=${interview.shareToken}`;
                     }
                     
                     // Style configurations
-                    let statusTag = "bg-panel/40 border border-border/30 text-muted";
+                    let statusTag = "bg-bg/60 border border-border text-muted";
                     if (isActive && status === "in_progress") {
                       statusTag = "bg-indigo-500/10 border border-indigo-500/20 text-indigo-500 dark:text-indigo-400 font-extrabold animate-pulse";
                     } else if (passed) {
@@ -1197,12 +1024,12 @@ export default function InterviewRunner({
                       <div key={c.id} className="relative group">
                         
                         {/* Interactive node dot on the left path line */}
-                        <div className="absolute -left-[31px] top-1/2 -translate-y-1/2 w-4 h-4 rounded-full border-2 border-border/60 bg-bg flex items-center justify-center transition-all duration-300 group-hover:border-accent shadow-sm">
+                        <div className="absolute -left-[31px] top-1/2 -translate-y-1/2 w-4 h-4 rounded-full border-2 border-border bg-bg flex items-center justify-center transition-all duration-300 group-hover:border-accent shadow-sm">
                           <div className={`w-1.5 h-1.5 rounded-full ${isActive && status === "in_progress" ? "bg-accent animate-ping" : passed ? "bg-emerald-500" : result === "failed" ? "bg-rose-500" : "bg-border/60"}`} />
                         </div>
 
                         {/* Card layout details */}
-                        <div className="p-4 rounded-2xl border border-border/30 bg-panel/30 backdrop-blur-md shadow-sm transition-all duration-300 hover:bg-surface/50 hover:border-accent/30 hover:shadow-[0_0_20px_rgba(99,102,241,0.08)] hover:-translate-y-0.5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                        <div className="p-4 rounded-2xl border border-border bg-bg/60 shadow-sm transition-all duration-300 hover:bg-elevated hover:border-accent/30 hover:shadow-[0_0_20px_rgba(99,102,241,0.08)] hover:-translate-y-0.5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                           <div className="space-y-1">
                             <div className="flex items-center gap-2">
                               <span className="text-[9px] font-extrabold uppercase tracking-wider text-muted">Stage {idx + 1}</span>
@@ -1228,7 +1055,7 @@ export default function InterviewRunner({
                             {href ? (
                               <Link
                                 href={href}
-                                className="px-4 py-2 rounded-xl bg-surface/60 hover:bg-panel border border-border/50 hover:border-accent/40 text-xs font-bold text-fg transition-all flex items-center gap-1.5 group-hover:text-accent shadow-sm active:scale-95"
+                                className="px-4 py-2 rounded-xl bg-bg hover:bg-elevated border border-border hover:border-accent/40 text-xs font-bold text-fg transition-all flex items-center gap-1.5 group-hover:text-accent shadow-sm active:scale-95"
                               >
                                 {interviewerView ? (
                                   <>
@@ -1245,7 +1072,7 @@ export default function InterviewRunner({
                             ) : (
                               <button
                                 disabled
-                                className="px-4 py-2 rounded-xl bg-surface/20 border border-border/30 text-xs font-bold text-muted/40 flex items-center gap-1.5 cursor-not-allowed"
+                                className="px-4 py-2 rounded-xl bg-bg/60 border border-border text-xs font-bold text-muted flex items-center gap-1.5 cursor-not-allowed"
                               >
                                 View Only
                               </button>
@@ -1263,12 +1090,129 @@ export default function InterviewRunner({
           </div>
         </div>
 
+        {/* Quick Join Strip — code-first share for the candidate. Observer link tucked behind a disclosure. */}
+        {isOwner && (
+          <div className="rounded-2xl border border-border bg-surface shadow-sm overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-300">
+            {/* Candidate row — access code is the hero */}
+            <div className="flex flex-col md:flex-row md:items-center gap-4 md:gap-5 p-4 md:p-5">
+              <div className="flex items-center gap-3 md:gap-4 min-w-0 flex-1">
+                <div className="w-9 h-9 rounded-xl bg-accent/10 border border-accent/20 flex items-center justify-center text-accent shrink-0">
+                  <Users className="w-4 h-4" />
+                </div>
+                <div className="min-w-0">
+                  <div className="text-[10px] font-black uppercase tracking-[0.18em] text-muted">Candidate access code</div>
+                  {interview.shortCode ? (
+                    <div className="flex items-center gap-2 mt-0.5">
+                      <span className="font-mono font-black text-2xl md:text-3xl tracking-[0.2em] text-accent select-all leading-none">
+                        {interview.shortCode}
+                      </span>
+                      <button
+                        onClick={copyAccessCode}
+                        className="ml-1 inline-flex items-center gap-1 px-2 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider bg-bg border border-border hover:bg-elevated hover:border-accent/40 hover:text-accent text-muted transition active:scale-95"
+                        title="Copy access code"
+                      >
+                        {codeCopied ? (
+                          <>
+                            <Check className="w-3 h-3 text-emerald-500" /> Copied
+                          </>
+                        ) : (
+                          <>
+                            <Copy className="w-3 h-3" /> Copy
+                          </>
+                        )}
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="text-xs text-muted mt-1">No code generated</div>
+                  )}
+                </div>
+              </div>
+
+              {/* Inline share actions */}
+              <div className="flex items-center gap-2 shrink-0 w-full md:w-auto">
+                <button
+                  onClick={copyCandidateLink}
+                  className="flex-1 md:flex-none px-3 py-2 rounded-xl bg-bg border border-border hover:bg-elevated hover:border-accent/40 hover:text-accent text-muted text-[10px] font-bold uppercase tracking-wider transition active:scale-95 inline-flex items-center justify-center gap-1.5"
+                  title="Copy candidate join link"
+                >
+                  <LinkIcon className="w-3.5 h-3.5" />
+                  Copy link
+                </button>
+                <button
+                  onClick={() => { window.open(`https://wa.me/?text=${encodeURIComponent(`Join my coding interview as the candidate!\nLink: ${candidateLink}`)}`, "_blank"); }}
+                  className="flex-1 md:flex-none px-3 py-2 rounded-xl bg-emerald-500/10 border border-emerald-500/20 hover:bg-emerald-500/15 text-emerald-500 text-[10px] font-bold uppercase tracking-wider transition active:scale-95 inline-flex items-center justify-center gap-1.5"
+                >
+                  <MessageCircle className="w-3.5 h-3.5" />
+                  WhatsApp
+                </button>
+                <button
+                  onClick={() => { window.open(`mailto:?subject=You are invited to a coding interview&body=${encodeURIComponent(`Join as the candidate:\n${candidateLink}`)}`, "_blank"); }}
+                  className="flex-1 md:flex-none px-3 py-2 rounded-xl bg-amber-500/10 border border-amber-500/20 hover:bg-amber-500/15 text-amber-500 text-[10px] font-bold uppercase tracking-wider transition active:scale-95 inline-flex items-center justify-center gap-1.5"
+                >
+                  <Mail className="w-3.5 h-3.5" />
+                  Email
+                </button>
+              </div>
+            </div>
+
+            {/* Observer disclosure */}
+            <div className="border-t border-border">
+              <button
+                onClick={() => setShowObserverLink((v) => !v)}
+                className="w-full flex items-center justify-between gap-3 px-5 py-2.5 text-[10px] font-bold uppercase tracking-wider text-muted hover:text-fg transition group"
+                aria-expanded={showObserverLink}
+              >
+                <span className="inline-flex items-center gap-2">
+                  <Share2 className="w-3.5 h-3.5 text-violet-500" />
+                  Observer share link
+                  <span className="text-[9px] font-mono text-muted normal-case tracking-normal">view & note-taking</span>
+                </span>
+                <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${showObserverLink ? "rotate-180" : ""}`} />
+              </button>
+
+              {showObserverLink && (
+                <div className="px-5 pb-4 pt-1 space-y-2.5 animate-in fade-in slide-in-from-top-1 duration-200">
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="text"
+                      readOnly
+                      value={coInterviewerLink}
+                      className="flex-1 min-w-0 bg-bg border border-border rounded-lg px-3 py-2 text-xs font-mono text-fg select-all outline-none"
+                    />
+                    <button
+                      onClick={copyCoInterviewerLink}
+                      className="p-2 rounded-lg bg-bg border border-border hover:bg-elevated hover:border-violet-500/40 hover:text-violet-500 text-muted transition active:scale-95"
+                      title="Copy observer link"
+                    >
+                      <Copy className="w-3.5 h-3.5" />
+                    </button>
+                    <button
+                      onClick={() => { window.open(`https://wa.me/?text=${encodeURIComponent(`Join my coding interview as an observer!\nLink: ${coInterviewerLink}`)}`, "_blank"); }}
+                      className="p-2 rounded-lg bg-bg border border-border hover:bg-elevated hover:text-emerald-500 text-muted transition active:scale-95"
+                      title="Share via WhatsApp"
+                    >
+                      <MessageCircle className="w-3.5 h-3.5" />
+                    </button>
+                    <button
+                      onClick={() => { window.open(`mailto:?subject=Join as co-interviewer&body=${encodeURIComponent(`Co-Interviewer link:\n${coInterviewerLink}`)}`, "_blank"); }}
+                      className="p-2 rounded-lg bg-bg border border-border hover:bg-elevated hover:text-amber-500 text-muted transition active:scale-95"
+                      title="Share via Email"
+                    >
+                      <Mail className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
       </div>
 
       {/* Verdict Selection Dialog */}
       {verdictModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-md animate-in fade-in duration-300">
-          <div className="w-full max-w-lg bg-surface/95 backdrop-blur-xl border border-border/40 rounded-2xl shadow-2xl p-6 space-y-5 animate-in zoom-in-95 duration-300 relative overflow-hidden">
+          <div className="w-full max-w-lg bg-surface border border-border rounded-2xl shadow-2xl p-6 space-y-5 animate-in zoom-in-95 duration-300 relative overflow-hidden">
             <div className="absolute top-0 right-0 w-32 h-32 bg-accent/5 rounded-full blur-2xl pointer-events-none -mr-10 -mt-10" />
             
             <div className="flex items-start justify-between relative z-10">
@@ -1288,7 +1232,7 @@ export default function InterviewRunner({
               {[
                 { id: "success", label: "Met Bar (Success)", desc: "Strong code design and problem-solving.", bg: "hover:bg-emerald-500/5 hover:border-emerald-500/20", activeBg: "bg-emerald-500/10 border-emerald-500/35 text-emerald-600 dark:text-emerald-400 shadow-[0_4px_20px_rgba(16,185,129,0.12)]", icon: <CheckCircle2 className="w-4 h-4 text-emerald-500" /> },
                 { id: "failed", label: "Did Not Meet Bar", desc: "Failed to meet key coding standards.", bg: "hover:bg-rose-500/5 hover:border-rose-500/20", activeBg: "bg-rose-500/10 border-rose-500/35 text-rose-600 dark:text-rose-400 shadow-[0_4px_20px_rgba(244,63,94,0.12)]", icon: <XCircle className="w-4 h-4 text-rose-500" /> },
-                { id: "left_in_between", label: "Walkout", desc: "Candidate abandoned the round mid-way.", bg: "hover:bg-panel hover:border-border-strong", activeBg: "bg-panel/85 border-border-strong text-fg shadow-[0_4px_20px_rgba(0,0,0,0.06)]", icon: <ArrowLeft className="w-4 h-4 text-muted" /> },
+                { id: "left_in_between", label: "Walkout", desc: "Candidate abandoned the round mid-way.", bg: "hover:bg-elevated", activeBg: "bg-elevated border-border text-fg shadow-[0_4px_20px_rgba(0,0,0,0.06)]", icon: <ArrowLeft className="w-4 h-4 text-muted" /> },
                 { id: "suspicious", label: "Flagged Suspicious", desc: "Suspected of cheating or AI usage.", bg: "hover:bg-amber-500/5 hover:border-amber-500/20", activeBg: "bg-amber-500/10 border-amber-500/35 text-amber-600 dark:text-amber-400 shadow-[0_4px_20px_rgba(245,158,11,0.12)]", icon: <Radio className="w-4 h-4 text-amber-500 animate-pulse" /> },
               ].map((v) => (
                 <button
@@ -1296,7 +1240,7 @@ export default function InterviewRunner({
                   type="button"
                   onClick={() => setSelectedVerdict(v.id as any)}
                   className={`w-full text-left p-3.5 rounded-xl border transition-all duration-300 flex items-start gap-3 ${
-                    selectedVerdict === v.id ? v.activeBg : `bg-surface/50 border-border/40 ${v.bg} text-fg/80`
+                    selectedVerdict === v.id ? v.activeBg : `bg-bg border-border ${v.bg} text-fg`
                   }`}
                 >
                   <div className="mt-0.5 shrink-0">{v.icon}</div>
@@ -1308,7 +1252,7 @@ export default function InterviewRunner({
               ))}
             </div>
 
-            <div className="flex items-center justify-end gap-2.5 pt-4 relative z-10 border-t border-border/20">
+            <div className="flex items-center justify-end gap-2.5 pt-4 relative z-10 border-t border-border">
               <button
                 type="button"
                 onClick={() => setVerdictModalOpen(false)}
@@ -1331,13 +1275,13 @@ export default function InterviewRunner({
       {/* Candidate Start Request Approval Modal Overlay */}
       {approvalModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-md animate-in fade-in duration-300">
-          <div className="w-full max-w-md bg-surface/95 backdrop-blur-xl border border-border/40 rounded-2xl shadow-2xl p-6 space-y-6 animate-in zoom-in-95 duration-300 relative overflow-hidden">
+          <div className="w-full max-w-md bg-surface border border-border rounded-2xl shadow-2xl p-6 space-y-6 animate-in zoom-in-95 duration-300 relative overflow-hidden">
             <div className="absolute top-0 right-0 w-32 h-32 bg-accent/5 rounded-full blur-2xl pointer-events-none -mr-10 -mt-10" />
             
             <div className="flex items-start gap-4 relative z-10">
               <div className="relative w-12 h-12 shrink-0">
                 <div className="absolute inset-0 rounded-full bg-accent/20 animate-ping opacity-60" />
-                <div className="relative w-12 h-12 rounded-full bg-accent/10 border border-accent/25 grid place-items-center shadow-md backdrop-blur">
+                <div className="relative w-12 h-12 rounded-full bg-accent/10 border border-accent/25 grid place-items-center shadow-md">
                   <Play className="w-4 h-4 text-accent fill-current translate-x-0.5" />
                 </div>
               </div>
@@ -1347,10 +1291,10 @@ export default function InterviewRunner({
               </div>
             </div>
             
-            <div className="flex gap-2.5 pt-4 relative z-10 border-t border-border/20">
+            <div className="flex gap-2.5 pt-4 relative z-10 border-t border-border">
               <button
                 onClick={dismissRequest}
-                className="flex-1 py-2 rounded-xl border border-border/50 bg-surface/60 hover:bg-panel text-xs font-semibold text-muted hover:text-fg transition-all active:scale-95"
+                className="flex-1 py-2 rounded-xl border border-border bg-bg hover:bg-elevated text-xs font-semibold text-muted hover:text-fg transition-all active:scale-95"
               >
                 Standby
               </button>
@@ -1388,7 +1332,7 @@ function Stat({
             ? "text-muted"
             : "text-fg";
   return (
-    <div className="p-4 rounded-xl border border-border bg-surface/50">
+    <div className="p-4 rounded-xl border border-border bg-surface">
       <div className="text-[10px] font-black uppercase tracking-[0.2em] text-muted mb-1">
         {label}
       </div>

@@ -197,7 +197,9 @@ export default function CollaborativePlayground({
     return isDark ? nbpTheme : nbpLightTheme;
   }, [isDark]);
 
-  const [yDoc] = useState(() => new Y.Doc());
+  const yDoc = useMemo(() => {
+    return new Y.Doc();
+  }, [roomId]);
   const [provider, setProvider] = useState<WebrtcProvider | null>(null);
   const [connected, setConnected] = useState(false);
   const [peers, setPeers] = useState<RemotePeer[]>([]);
@@ -238,19 +240,31 @@ export default function CollaborativePlayground({
     return entries[0]?.[0] ?? "/index.js";
   }, [initialFiles]);
 
+  // Dynamic user presence updates
+  useEffect(() => {
+    if (!provider) return;
+    const color = isInterviewer ? "#8b5cf6" : "#10b981";
+    const roleLabel = isInterviewer ? " (Interviewer)" : " (Candidate)";
+    provider.awareness.setLocalStateField("user", {
+      name: username + roleLabel,
+      color,
+      colorLight: color + "33",
+    });
+  }, [provider, username, isInterviewer]);
+
   // Seed-once: only the interviewer is allowed to seed, eliminating the
   // double-seed race. Candidates wait for the seed to propagate.
   useEffect(() => {
-    const color = stringToColor(username + (isInterviewer ? "-i" : "-c"));
+    const color = isInterviewer ? "#8b5cf6" : "#10b981"; // Sleek Purple for Interviewer, Vibrant Emerald for Candidate
+    const roleLabel = isInterviewer ? " (Interviewer)" : " (Candidate)";
     const wp = new WebrtcProvider(`interviewpad-pg-${roomId}`, yDoc, {
       signaling: [
         "ws://localhost:4444",
         "wss://signaling.yjs.dev",
-        "wss://y-webrtc-signaling-eu.herokuapp.com",
       ],
     });
     wp.awareness.setLocalStateField("user", {
-      name: username,
+      name: username + roleLabel,
       color,
       colorLight: color + "33",
     });
@@ -324,10 +338,10 @@ export default function CollaborativePlayground({
       clearTimeout(seedTimer);
       wp.awareness.off("change", onAware);
       wp.destroy();
+      setProvider(null);
     };
-    // initialFiles + roomId stable per mount
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [roomId, yDoc]);
 
   return (
     <SandpackProvider
@@ -372,10 +386,7 @@ function Bridge({
   const isDark = resolvedTheme !== "light";
   const activePath = sandpack.activeFile;
   const peerCount = peers.length;
-  const selfColor = useMemo(
-    () => stringToColor(username + (isInterviewer ? "-i" : "-c")),
-    [username, isInterviewer]
-  );
+  const selfColor = isInterviewer ? "#8b5cf6" : "#10b981";
 
   const [explorerCollapsed, setExplorerCollapsed] = useState(false);
   const [chatOpen, setChatOpen] = useState(false);
@@ -1083,18 +1094,37 @@ function CollabCodeMirror({
   const viewRef = useRef<EditorView | null>(null);
   const [fontSize, setFontSize] = useState(13);
 
+  const onLocalEditRef = useRef(onLocalEdit);
   useEffect(() => {
-    if (!hostRef.current || !provider) return;
+    onLocalEditRef.current = onLocalEdit;
+  }, [onLocalEdit]);
 
-    const yFiles = yDoc.getMap<Y.Text>("files");
-    let yText = yFiles.get(path);
-    if (!yText) {
-      yText = new Y.Text();
-      if (initialCode) {
-        yText.insert(0, initialCode);
+  const yFiles = useMemo(() => yDoc.getMap<Y.Text>("files"), [yDoc]);
+  const [yText, setYText] = useState<Y.Text | null>(() => yFiles.get(path) || null);
+
+  // 1. Observe changes to the files map and resolve/update yText instance.
+  // This handles the transition from loading/connecting state to when the files
+  // actually sync or get seeded by a peer.
+  useEffect(() => {
+    const updateYText = () => {
+      const current = yFiles.get(path);
+      if (current !== yText) {
+        setYText(current || null);
       }
-      yFiles.set(path, yText);
-    }
+    };
+
+    // Run immediately
+    updateYText();
+
+    yFiles.observe(updateYText);
+    return () => {
+      yFiles.unobserve(updateYText);
+    };
+  }, [yFiles, path, yText]);
+
+  // 2. Initialize CodeMirror only when we have a resolved yText instance.
+  useEffect(() => {
+    if (!hostRef.current || !provider || !yText) return;
 
     const themeExt = isDark ? [oneDark] : [];
 
@@ -1147,7 +1177,7 @@ function CollabCodeMirror({
         ...themeExt,
         yCollab(yText, provider.awareness),
         EditorView.updateListener.of((u) => {
-          if (u.docChanged) onLocalEdit(u.state.doc.toString());
+          if (u.docChanged && onLocalEditRef.current) onLocalEditRef.current(u.state.doc.toString());
         }),
         // Theme overrides — copied from CollaborativeEditor so it looks
         // identical to the rest of the multiplayer interview surface.
@@ -1170,7 +1200,6 @@ function CollabCodeMirror({
               : "rgba(0,0,0,0.03)",
           },
           ".cm-ySelection": {
-            backgroundColor: "rgba(139, 92, 246, 0.15) !important",
             borderRadius: "2px",
           },
           ".cm-ySelectionCaret, .cm-ySelection-caret": {
@@ -1190,21 +1219,38 @@ function CollabCodeMirror({
             width: "6px",
             height: "6px",
             borderRadius: "50%",
-            backgroundColor: "inherit",
+            backgroundColor: "currentColor",
             boxShadow: "0 0 10px currentColor",
           },
           ".cm-ySelectionInfo, .cm-ySelection-info": {
             position: "absolute",
-            top: "-1.4em",
-            left: "-2px",
-            fontSize: "10px",
-            fontFamily: "var(--font-mono), monospace",
-            padding: "1px 6px",
-            borderRadius: "4px",
-            color: "white",
+            top: "-1.8em",
+            left: "0",
+            color: "#ffffff !important",
+            fontFamily: '"Outfit", "Inter", sans-serif',
+            fontSize: "9px !important",
+            fontWeight: "900 !important",
+            textTransform: "uppercase",
+            letterSpacing: "0.08em",
+            padding: "2px 6px !important",
+            borderRadius: "3px !important",
+            boxShadow: "0 3px 10px rgba(0, 0, 0, 0.4)",
             whiteSpace: "nowrap",
+            opacity: "1 !important",
             pointerEvents: "none",
-            zIndex: 10,
+            zIndex: 100,
+          },
+          ".cm-ySelectionInfo::after, .cm-ySelection-info::after": {
+            content: '""',
+            position: "absolute",
+            bottom: "-3px",
+            left: "6px",
+            width: "6px",
+            height: "6px",
+            backgroundColor: "inherit",
+            transform: "rotate(45deg)",
+            boxShadow: "2px 2px 2px rgba(0, 0, 0, 0.2)",
+            zIndex: -1,
           },
         }),
       ],
@@ -1217,9 +1263,22 @@ function CollabCodeMirror({
       view.destroy();
       viewRef.current = null;
     };
-    // onLocalEdit captured by closure each render is fine
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [provider, path, yDoc, isDark]);
+  }, [provider, yText, isDark]);
+
+  if (!yText) {
+    return (
+      <div className="h-full w-full flex flex-col items-center justify-center bg-bg font-sans text-muted text-xs select-none gap-3">
+        <div className="relative w-8 h-8 flex items-center justify-center">
+          <div className="absolute inset-0 border-2 border-accent/20 rounded-full" />
+          <div className="absolute inset-0 border-2 border-accent border-t-transparent rounded-full animate-spin" />
+        </div>
+        <span className="animate-pulse tracking-wide font-mono text-[10px] uppercase text-muted/60">
+          Syncing code environment...
+        </span>
+      </div>
+    );
+  }
 
   return <div ref={hostRef} className="h-full w-full" style={{ "--editor-font-size": `${fontSize}px` } as React.CSSProperties} />;
 }

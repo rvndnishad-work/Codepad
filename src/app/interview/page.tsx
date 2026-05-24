@@ -21,9 +21,23 @@ import {
   CheckCircle2,
   ListTodo,
   Sparkles,
+  Layers,
+  Zap,
+  Monitor,
+  Lock,
+  ShieldCheck,
+  Terminal,
+  HelpCircle,
+  Code,
+  Eye,
+  Laptop,
+  MessageSquare,
+  BadgeCheck,
 } from "lucide-react";
 import CopyLinkButton from "./CopyLinkButton";
 import DeleteSessionButton from "./DeleteSessionButton";
+import CandidateInterviewView from "./CandidateInterviewView";
+import UserTypeChooser from "./UserTypeChooser";
 
 export const metadata = {
   title: "Mock & Live Interview Sessions — Interviewpad",
@@ -36,6 +50,29 @@ export default async function InterviewDashboardPage() {
   }
 
   const userId = session.user.id;
+  const userType = (session.user as { userType?: string | null } | undefined)?.userType ?? null;
+
+  // Legacy users who haven't set a type yet — prompt them once
+  if (userType === null || userType === undefined) {
+    return (
+      <div className="min-h-screen bg-bg text-fg py-16 px-6">
+        <UserTypeChooser />
+      </div>
+    );
+  }
+
+  // Candidate experience: focused on joining + practicing
+  if (userType === "candidate") {
+    return (
+      <div className="min-h-screen bg-bg text-fg py-10 px-6 lg:px-8">
+        <div className="mx-auto max-w-6xl">
+          <CandidateInterviewView userId={userId} userName={session.user?.name ?? null} />
+        </div>
+      </div>
+    );
+  }
+
+  // Recruiter (and admin) experience: full management dashboard below
 
   // Retrieve all interview slots created by the logged-in candidate
   const interviews = await prisma.interviewSession.findMany({
@@ -95,52 +132,197 @@ export default async function InterviewDashboardPage() {
   return (
     <div className="min-h-screen bg-bg text-fg font-sans py-12 px-6 lg:px-8 relative overflow-hidden">
       
-      {/* Single soft glow behind hero */}
-      <div className="absolute top-[-10%] right-[-10%] w-[500px] h-[500px] rounded-full bg-accent/5 blur-[120px] pointer-events-none" />
+      {/* Soft color blobs for premium dark high-tech aesthetics */}
+      <div className="absolute top-[-10%] right-[-10%] w-[600px] h-[600px] rounded-full bg-indigo-500/5 blur-[150px] pointer-events-none" />
+      <div className="absolute bottom-[20%] left-[-10%] w-[500px] h-[500px] rounded-full bg-emerald-500/3 blur-[120px] pointer-events-none" />
 
-      <div className="mx-auto max-w-7xl space-y-10 relative z-10">
+      <div className="mx-auto max-w-7xl space-y-12 relative z-10">
 
-        {/* Elite Hero Command Banner */}
-        <div className="relative overflow-hidden rounded-3xl border border-border bg-surface p-8 md:p-10">
-          {/* Radial Light Halo behind Hero */}
-          <div className="absolute inset-0 bg-gradient-to-br from-accent/[0.04] via-transparent to-transparent pointer-events-none" />
-          <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-8">
-            <div className="space-y-4 max-w-2xl">
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-accent/10 text-accent">
-                <span className="flex h-1.5 w-1.5 rounded-full bg-accent animate-pulse" />
-                <span className="text-[10px] font-bold uppercase tracking-widest font-mono">
-                  Live · Multiplayer
+        {/* Floating Premium Workspace Notification Banner */}
+        {userType === "recruiter" && (
+          <div className="relative overflow-hidden rounded-2xl border border-emerald-500/20 bg-gradient-to-r from-emerald-500/[0.03] to-teal-500/[0.01] p-4 backdrop-blur-md">
+            <div className="absolute top-0 left-0 h-full w-[4px] bg-emerald-500" />
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+              <div className="flex items-start gap-3.5 min-w-0">
+                <div className="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 shrink-0 shadow-inner">
+                  <Briefcase className="w-5 h-5" />
+                </div>
+                <div className="min-w-0 space-y-0.5">
+                  <div className="text-sm font-bold text-fg flex items-center gap-1.5">
+                    Hiring & Enterprise Workspace Active
+                    <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-black uppercase tracking-wider bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+                      PRO
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-muted leading-relaxed">
+                    Collaborate with teammates, curate shared code challenge templates, track candidate focus-losses, and invite co-interviewers in real-time.
+                  </p>
+                </div>
+              </div>
+              <Link
+                href="/dashboard"
+                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-600 active:scale-95 text-white text-[11px] font-bold uppercase tracking-wider transition-all shadow-md shadow-emerald-950/30 shrink-0"
+              >
+                Go to Workspaces
+                <ChevronRight className="w-4 h-4" />
+              </Link>
+            </div>
+          </div>
+        )}
+
+        {/* Elite Command & Branding Banner */}
+        <div className="relative overflow-hidden rounded-3xl border border-border bg-gradient-to-br from-panel/90 to-surface/40 p-8 md:p-10 shadow-xl">
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,var(--color-accent-soft)_0%,transparent_40%)] opacity-[0.06] pointer-events-none" />
+          <div className="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-8">
+            <div className="space-y-4 max-w-3xl">
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-accent/10 border border-accent/25 text-accent">
+                <span className="flex h-2 w-2 rounded-full bg-accent animate-pulse" />
+                <span className="text-[10px] font-black uppercase tracking-widest font-mono">
+                  1-to-1 Live Editor · Collaborative Sandbox
                 </span>
               </div>
 
               <div className="space-y-2">
-                <h1 className="text-3xl md:text-4xl font-black tracking-tight text-fg leading-tight">
-                  Skip the{" "}
-                  <span className="bg-gradient-to-r from-accent to-accent-soft bg-clip-text text-transparent">
-                    screen-share.
+                <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight text-fg leading-tight">
+                  Skip the screen-share, build{" "}
+                  <span className="bg-gradient-to-r from-accent to-indigo-400 bg-clip-text text-transparent">
+                    real playgrounds.
                   </span>
                 </h1>
                 <p className="text-sm text-muted leading-relaxed max-w-xl">
-                  Share one link and you're both inside the same live editor — typing, running tests, and switching files in real time. Spin up a coding round in under a minute, no setup on the candidate's end.
+                  Share a secure, magic token link and meet inside the same live environment. Write code in Monaco, run assertions using Jest, and toggle between test files with no installation or account creation required for your candidate.
                 </p>
               </div>
             </div>
 
-            <div className="shrink-0 flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 md:justify-end">
+            <div className="shrink-0 flex flex-col sm:flex-row items-stretch sm:items-center gap-3 lg:justify-end">
               <Link
                 href="/interview/new?type=live&role=interviewer"
-                className="inline-flex items-center justify-center gap-2.5 px-6 py-3.5 rounded-xl bg-gradient-to-r from-accent to-accent-soft hover:brightness-110 text-bg font-bold text-xs uppercase tracking-widest transition-all duration-300 hover:scale-[1.03] active:scale-[0.97] hover:translate-y-[-1px] group cursor-pointer"
+                className="inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-xl bg-gradient-to-r from-accent to-indigo-500 hover:brightness-110 text-white font-bold text-xs uppercase tracking-widest transition-all duration-300 hover:scale-[1.03] active:scale-[0.97] hover:shadow-lg hover:shadow-accent/20 cursor-pointer"
               >
-                <Plus className="w-4 h-4 transition-transform group-hover:rotate-90" />
-                Schedule interview
+                <Plus className="w-4 h-4 transition-transform hover:rotate-90 shrink-0" />
+                Schedule Interview
               </Link>
               <Link
                 href="/interview/new?type=mock&role=candidate"
-                className="inline-flex items-center justify-center gap-2.5 px-6 py-3.5 rounded-xl bg-elevated hover:brightness-125 text-fg font-bold text-xs uppercase tracking-widest transition-all duration-300 hover:scale-[1.03] active:scale-[0.97] hover:translate-y-[-1px] cursor-pointer"
+                className="inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-xl bg-elevated border border-border hover:brightness-125 text-fg font-bold text-xs uppercase tracking-widest transition-all duration-300 hover:scale-[1.03] active:scale-[0.97] cursor-pointer"
               >
-                <Sparkles className="w-4 h-4" />
-                Mock interview
+                <Sparkles className="w-4 h-4 shrink-0 text-indigo-400 animate-pulse" />
+                Mock Interview
               </Link>
+            </div>
+          </div>
+        </div>
+
+        {/* Dynamic Stepper: The Multiplayer Live Pipeline */}
+        <div className="space-y-6">
+          <div className="space-y-1">
+            <h2 className="text-xs font-black uppercase tracking-widest text-muted/80 flex items-center gap-2">
+              <Zap className="w-4 h-4 text-accent" />
+              The Live Multiplayer Interview Pipeline
+            </h2>
+            <p className="text-xs text-muted/60">How professional workspaces handle technical evaluations end-to-end.</p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div className="rounded-2xl border border-border bg-surface/50 p-5 space-y-3 relative hover:border-accent/40 transition duration-200">
+              <div className="w-9 h-9 rounded-xl bg-accent/15 flex items-center justify-center text-accent font-bold font-mono text-sm border border-accent/20">
+                1
+              </div>
+              <h3 className="text-xs font-extrabold uppercase tracking-wide text-fg">Configure Queue</h3>
+              <p className="text-[11px] text-muted/80 leading-relaxed">
+                Add challenge tracks or playground templates from your shared team library directly into the active session queue.
+              </p>
+            </div>
+
+            <div className="rounded-2xl border border-border bg-surface/50 p-5 space-y-3 relative hover:border-accent/40 transition duration-200">
+              <div className="w-9 h-9 rounded-xl bg-indigo-500/15 flex items-center justify-center text-indigo-400 font-bold font-mono text-sm border border-indigo-500/20">
+                2
+              </div>
+              <h3 className="text-xs font-extrabold uppercase tracking-wide text-fg">Secure Invite</h3>
+              <p className="text-[11px] text-muted/80 leading-relaxed">
+                Generate a secure, expiring token link. Candidates enter in one-click, bypassing logins or development environment setup.
+              </p>
+            </div>
+
+            <div className="rounded-2xl border border-border bg-surface/50 p-5 space-y-3 relative hover:border-accent/40 transition duration-200">
+              <div className="w-9 h-9 rounded-xl bg-sky-500/15 flex items-center justify-center text-sky-400 font-bold font-mono text-sm border border-sky-500/20">
+                3
+              </div>
+              <h3 className="text-xs font-extrabold uppercase tracking-wide text-fg">Co-Pilot & Screen</h3>
+              <p className="text-[11px] text-muted/80 leading-relaxed">
+                Evaluate typing live with zero latency. Run code dynamically on Sandpack and watch logs/terminal outputs stream in real-time.
+              </p>
+            </div>
+
+            <div className="rounded-2xl border border-border bg-surface/50 p-5 space-y-3 relative hover:border-accent/40 transition duration-200">
+              <div className="w-9 h-9 rounded-xl bg-emerald-500/15 flex items-center justify-center text-emerald-400 font-bold font-mono text-sm border border-emerald-500/20">
+                4
+              </div>
+              <h3 className="text-xs font-extrabold uppercase tracking-wide text-fg">Review & Score</h3>
+              <p className="text-[11px] text-muted/80 leading-relaxed">
+                Collaborate with multiple evaluators, leave hidden private notes, track anti-cheat logs, and record a definitive verdict.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* Premium Professional Workspace Showcase Card */}
+        <div className="rounded-3xl border border-border bg-gradient-to-br from-panel to-bg p-6 md:p-8 space-y-6 relative overflow-hidden">
+          <div className="absolute top-0 right-0 w-[400px] h-[400px] rounded-full bg-accent/3 blur-[100px] pointer-events-none" />
+          
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-border pb-6">
+            <div className="space-y-1">
+              <h2 className="text-lg font-bold text-fg flex items-center gap-2">
+                <Layers className="w-5 h-5 text-indigo-400" />
+                Professional Workspace Integration
+              </h2>
+              <p className="text-xs text-muted">A central operating hub tailored specifically for high-growth engineering teams.</p>
+            </div>
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 font-mono text-[10px] uppercase tracking-wider">
+              <ShieldCheck className="w-3.5 h-3.5" /> Secure Proctoring Active
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div className="space-y-2">
+              <div className="w-8 h-8 rounded-lg bg-indigo-500/10 flex items-center justify-center text-indigo-400">
+                <Code className="w-4 h-4" />
+              </div>
+              <h4 className="text-xs font-bold text-fg">Shared Challenge Libraries</h4>
+              <p className="text-[11px] text-muted leading-relaxed">
+                Consolidate your technical assessment questions. Keep boilerplate templates, data structures, and assertions standardized across your hiring team.
+              </p>
+            </div>
+
+            <div className="space-y-2">
+              <div className="w-8 h-8 rounded-lg bg-red-500/10 flex items-center justify-center text-red-400">
+                <Eye className="w-4 h-4" />
+              </div>
+              <h4 className="text-xs font-bold text-fg">Anti-Cheat Tab Proctoring</h4>
+              <p className="text-[11px] text-muted leading-relaxed">
+                Monitor focus switches and clipboard operations. Interviewpad flags copy-paste actions and logs them in real-time on your evaluator dashboard.
+              </p>
+            </div>
+
+            <div className="space-y-2">
+              <div className="w-8 h-8 rounded-lg bg-sky-500/10 flex items-center justify-center text-sky-400">
+                <Users className="w-4 h-4" />
+              </div>
+              <h4 className="text-xs font-bold text-fg">Multi-Evaluator Panels</h4>
+              <p className="text-[11px] text-muted leading-relaxed">
+                Two heads are better than one. Invite secondary evaluators to observe the sandbox, chat, leave internal notes, and score collaborative sessions.
+              </p>
+            </div>
+
+            <div className="space-y-2">
+              <div className="w-8 h-8 rounded-lg bg-emerald-500/10 flex items-center justify-center text-emerald-400">
+                <MessageSquare className="w-4 h-4" />
+              </div>
+              <h4 className="text-xs font-bold text-fg">Internal Scoring & Verdicts</h4>
+              <p className="text-[11px] text-muted leading-relaxed">
+                Grade automatically against test criteria. Supplement execution stats with private feedback channels, performance scoring, and definitive verdict labels.
+              </p>
             </div>
           </div>
         </div>

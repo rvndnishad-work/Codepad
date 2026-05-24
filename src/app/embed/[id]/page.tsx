@@ -1,4 +1,4 @@
-import Playground from "@/components/Playground";
+import PlaygroundLoader from "@/components/PlaygroundLoader";
 import { prisma } from "@/lib/prisma";
 import { notFound } from "next/navigation";
 import type { SandpackFiles } from "@codesandbox/sandpack-react";
@@ -20,7 +20,7 @@ export default async function EmbedPage({
   const files = JSON.parse(snippet.files) as SandpackFiles;
   return (
     <div className="fixed inset-0 flex">
-      <Playground
+      <PlaygroundLoader
         templateId={snippet.template}
         initialTitle={snippet.title}
         initialFiles={files}
@@ -39,3 +39,4 @@ export default async function EmbedPage({
     </div>
   );
 }
+

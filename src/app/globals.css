@@ -452,3 +452,74 @@ portal-nextjs-toast,
 
 .tiptap-editor-content { width: 100%; }
 
+/* ─────────────────────────────────────────────────────────────────
+   Collaborative CodeMirror 6 Peer Presence (y-codemirror.next)
+   ──────────────────────────────────────────────────────────────── */
+.cm-ySelection {
+  background-color: rgba(var(--accent-rgb), 0.15);
+  transition: background-color 0.2s ease-in-out;
+}
+
+.cm-yCursor {
+  position: relative;
+  border-left: 2px solid;
+  border-right: none;
+  margin-left: -1px;
+  margin-right: -1px;
+  box-sizing: border-box;
+  pointer-events: none;
+  display: inline-block;
+  height: 1.4em;
+  vertical-align: middle;
+}
+
+/* Collaborative peer tooltip label above cursor */
+.cm-yCursor-info {
+  position: absolute;
+  top: -1.5em;
+  left: -2px;
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1;
+  color: #ffffff;
+  padding: 3px 6px;
+  border-radius: 4px;
+  white-space: nowrap;
+  user-select: none;
+  pointer-events: none;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4), 0 2px 4px rgba(0, 0, 0, 0.2);
+  z-index: 50;
+  
+  /* Fade out label after 1.5s of inactivity */
+  animation: cm-cursor-label-fade 2s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+  animation-delay: 1.5s;
+}
+
+/* Beautiful dynamic arrow pointer beneath the label, matching the user's color */
+.cm-yCursor-info::after {
+  content: "";
+  position: absolute;
+  bottom: -3px;
+  left: 6px;
+  width: 6px;
+  height: 6px;
+  background-color: inherit;
+  transform: rotate(45deg);
+  z-index: -1;
+}
+
+@keyframes cm-cursor-label-fade {
+  0% { opacity: 1; }
+  75% { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+/* Keep cursor label visible on line hover or focus */
+.cm-editor:hover .cm-yCursor-info,
+.cm-yCursor:hover .cm-yCursor-info {
+  opacity: 1 !important;
+  animation: none;
+}
+
+

@@ -96,13 +96,26 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     },
     async jwt({ token, user }) {
       if (user?.id) token.uid = user.id;
+      // Always refresh userType from DB so changes (e.g. via UserTypeChooser)
+      // land in the session on the very next page load — no client-side
+      // session.update() round-trip needed. Single-column read on the PK,
+      // cheap enough at session-rate.
+      if (token.uid) {
+        const dbUser = await prisma.user.findUnique({
+          where: { id: token.uid as string },
+          select: { userType: true },
+        });
+        token.userType = dbUser?.userType ?? null;
+      }
       return token;
     },
     async session({ session, token, user }) {
-      // JWT path: read uid from token. Database path: user.id is already on user.
       if (session.user) {
         if (token?.uid) session.user.id = token.uid as string;
         else if (user?.id) session.user.id = user.id;
+        // Expose userType so client + server components can branch on it
+        (session.user as { userType?: string | null }).userType =
+          (token?.userType as string | null | undefined) ?? null;
       }
       return session;
     },

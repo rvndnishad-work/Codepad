@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, Target, Users, FileText, Settings, Pin, Briefcase, Code2, MessageCircle, Inbox } from "lucide-react";
+import { LayoutDashboard, Target, Users, FileText, Settings, Pin, Briefcase, Code2, MessageCircle, Inbox, Building2 } from "lucide-react";
 
 const iconsMap = {
   LayoutDashboard,
@@ -15,7 +15,9 @@ const iconsMap = {
   Code2,
   MessageCircle,
   Inbox,
+  Building2,
 };
+
 
 export type IconName = keyof typeof iconsMap;
 
@@ -51,10 +53,10 @@ export default function AdminLink({
   return (
     <Link
       href={href}
-      className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-xs font-bold uppercase tracking-wider transition ${
+      className={`flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all duration-200 ${
         isActive
-          ? "bg-surface text-fg border-l-2 border-violet-500 rounded-l-none pl-2.5"
-          : "text-muted hover:text-fg hover:bg-surface"
+          ? "bg-violet-500/10 text-violet-400 border-l-2 border-violet-500 pl-3 shadow-[0_0_15px_rgba(139,92,246,0.05)]"
+          : "text-muted hover:text-fg hover:bg-panel/40"
       }`}
     >
       {Icon && <Icon className="w-4 h-4" />}

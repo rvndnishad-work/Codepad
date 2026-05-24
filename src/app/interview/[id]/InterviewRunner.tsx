@@ -67,6 +67,10 @@ type Interview = {
   sourceType: "challenge" | "playground";
   scenario: string | null;
   activePlaygroundId: string | null;
+  rubric?: {
+    ratings: string;
+    notes: string | null;
+  } | null;
 };
 
 type Attempt = {
@@ -75,6 +79,7 @@ type Attempt = {
   durationSec: number | null;
   files?: string | null;
   testResults?: string | null;
+  score?: number | null;
 };
 
 const difficultyColor: Record<string, string> = {
@@ -208,6 +213,24 @@ export default function InterviewRunner({
   const [verdict, setVerdict] = useState(interview.verdict);
   const [verdictModalOpen, setVerdictModalOpen] = useState(false);
   const [selectedVerdict, setSelectedVerdict] = useState<"success" | "failed" | "left_in_between" | "suspicious">("success");
+
+  // Rubric States
+  const parsedRubric = useMemo(() => {
+    if (!interview.rubric) return null;
+    try {
+      return {
+        ratings: JSON.parse(interview.rubric.ratings) as Record<string, number>,
+        notes: interview.rubric.notes,
+      };
+    } catch {
+      return null;
+    }
+  }, [interview.rubric]);
+
+  const [rubricCodeQuality, setRubricCodeQuality] = useState(parsedRubric?.ratings?.CodeQuality ?? 3);
+  const [rubricCommunication, setRubricCommunication] = useState(parsedRubric?.ratings?.Communication ?? 3);
+  const [rubricProblemSolving, setRubricProblemSolving] = useState(parsedRubric?.ratings?.ProblemSolving ?? 3);
+  const [rubricNotes, setRubricNotes] = useState(parsedRubric?.notes ?? "");
 
   // Post-interview Evaluation Summary Dashboard states
   const [selectedReviewId, setSelectedReviewId] = useState<string | null>(
@@ -465,13 +488,23 @@ export default function InterviewRunner({
 
   async function finish(target: "completed" | "abandoned", finalVerdict?: string) {
     try {
+      const rubricPayload = {
+        ratings: {
+          CodeQuality: rubricCodeQuality,
+          Communication: rubricCommunication,
+          ProblemSolving: rubricProblemSolving,
+        },
+        notes: rubricNotes || null,
+      };
+
       const res = await fetch(`/api/interview/${interview.id}?token=${interview.shareToken}`, {
         method: "PATCH",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ 
           status: target, 
           finishedAt: new Date().toISOString(),
-          verdict: finalVerdict || null
+          verdict: finalVerdict || null,
+          rubric: rubricPayload,
         }),
         cache: "no-store",
       });
@@ -688,7 +721,7 @@ export default function InterviewRunner({
                         </div>
                         
                         {/* Dynamic Sound Decibels */}
-                        <div className="absolute bottom-4 left-4 flex items-end gap-1 h-8 px-2.5 py-1 rounded-lg bg-black/50 border border-white/10">
+                        <div className="absolute bottom-4 left-4 flex items-end gap-1 h-8 px-2.5 py-1 rounded-lg bg-black/50 border border-border">
                           {userDecibels.map((db, idx) => (
                             <div 
                               key={idx} 
@@ -726,7 +759,7 @@ export default function InterviewRunner({
                         </div>
 
                         {/* Decibels Wave */}
-                        <div className="absolute bottom-4 left-4 flex items-end gap-1 h-8 px-2.5 py-1 rounded-lg bg-black/50 border border-white/10">
+                        <div className="absolute bottom-4 left-4 flex items-end gap-1 h-8 px-2.5 py-1 rounded-lg bg-black/50 border border-border">
                           {peerDecibels.map((db, idx) => (
                             <div 
                               key={idx} 
@@ -747,7 +780,7 @@ export default function InterviewRunner({
 
                   {/* Status tag */}
                   {(!interviewerView || simColleague) && (
-                    <div className="absolute top-4 left-4 bg-black/40 backdrop-blur-sm text-white rounded-full px-2.5 py-1 text-[9px] font-mono flex items-center gap-1.5 border border-white/5">
+                    <div className="absolute top-4 left-4 bg-black/40 backdrop-blur-sm text-white rounded-full px-2.5 py-1 text-[9px] font-mono flex items-center gap-1.5 border border-border">
                       <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
                       {!interviewerView ? "You (Candidate)" : (interview.candidateName || "Candidate")}
                     </div>
@@ -769,7 +802,7 @@ export default function InterviewRunner({
                         </div>
                         
                         {/* Dynamic Sound Decibels */}
-                        <div className="absolute bottom-4 left-4 flex items-end gap-1 h-8 px-2.5 py-1 rounded-lg bg-black/50 border border-white/10">
+                        <div className="absolute bottom-4 left-4 flex items-end gap-1 h-8 px-2.5 py-1 rounded-lg bg-black/50 border border-border">
                           {userDecibels.map((db, idx) => (
                             <div 
                               key={idx} 
@@ -807,7 +840,7 @@ export default function InterviewRunner({
                         </div>
 
                         {/* Decibels Wave */}
-                        <div className="absolute bottom-4 left-4 flex items-end gap-1 h-8 px-2.5 py-1 rounded-lg bg-black/50 border border-white/10">
+                        <div className="absolute bottom-4 left-4 flex items-end gap-1 h-8 px-2.5 py-1 rounded-lg bg-black/50 border border-border">
                           {peerDecibels.map((db, idx) => (
                             <div 
                               key={idx} 
@@ -828,7 +861,7 @@ export default function InterviewRunner({
 
                   {/* Status tag */}
                   {(interviewerView || simColleague) && (
-                    <div className="absolute top-4 left-4 bg-black/40 backdrop-blur-sm text-white rounded-full px-2.5 py-1 text-[9px] font-mono flex items-center gap-1.5 border border-white/5">
+                    <div className="absolute top-4 left-4 bg-black/40 backdrop-blur-sm text-white rounded-full px-2.5 py-1 text-[9px] font-mono flex items-center gap-1.5 border border-border">
                       <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
                       {interviewerView ? "You (Interviewer)" : "Arvind (Interviewer)"}
                     </div>
@@ -931,15 +964,69 @@ export default function InterviewRunner({
                 )}
 
                 {(status === "completed" || status === "abandoned") && (
-                  <div className="flex items-center gap-3.5 p-4 rounded-2xl border border-emerald-500/20 bg-emerald-500/5 text-emerald-600 dark:text-emerald-500 shadow-sm">
-                    <div className="w-8 h-8 rounded-lg bg-emerald-500/10 border border-emerald-500/25 flex items-center justify-center shrink-0">
-                      <Trophy className="w-4 h-4 text-emerald-500" />
+                  <div className="space-y-4 w-full">
+                    <div className="flex items-center gap-3.5 p-4 rounded-2xl border border-emerald-500/20 bg-emerald-500/5 text-emerald-600 dark:text-emerald-500 shadow-sm animate-fade-in">
+                      <div className="w-8 h-8 rounded-lg bg-emerald-500/10 border border-emerald-500/25 flex items-center justify-center shrink-0">
+                        <Trophy className="w-4 h-4 text-emerald-500" />
+                      </div>
+                      <div>
+                        <div className="text-xs font-extrabold uppercase tracking-wider leading-none">Round Concluded</div>
+                        {verdict && (
+                          <div className="text-[10px] text-muted mt-1.5 flex items-center gap-1.5">
+                            Verdict: <span className="font-semibold text-fg capitalize bg-bg/60 border border-border px-2 py-0.5 rounded-full">{verdict.replace(/_/g, ' ')}</span>
+                          </div>
+                        )}
+                      </div>
                     </div>
-                    <div>
-                      <div className="text-xs font-extrabold uppercase tracking-wider leading-none">Round Concluded</div>
-                      {verdict && (
-                        <div className="text-[10px] text-muted mt-1.5 flex items-center gap-1.5">
-                          Verdict: <span className="font-semibold text-fg capitalize bg-bg/60 border border-border px-2 py-0.5 rounded-full">{verdict.replace(/_/g, ' ')}</span>
+
+                    <div className="p-5 rounded-2xl border border-border bg-bg/60 space-y-4 animate-fade-in delay-75">
+                      <div className="flex items-center justify-between border-b border-border pb-3">
+                        <span className="text-[10px] font-black uppercase tracking-[0.2em] text-muted">Evaluation Rubric</span>
+                        {interviewerView && (
+                          <Link
+                            href={`/interview/${interview.id}/report?token=${interview.shareToken}`}
+                            target="_blank"
+                            className="text-[9px] font-bold text-accent hover:underline flex items-center gap-1.5"
+                          >
+                            <FileText className="w-3.5 h-3.5" />
+                            View PDF Report
+                          </Link>
+                        )}
+                      </div>
+
+                      <div className="space-y-3.5">
+                        {[
+                          { name: "Code Quality", val: rubricCodeQuality },
+                          { name: "Communication", val: rubricCommunication },
+                          { name: "Problem Solving", val: rubricProblemSolving }
+                        ].map((m) => (
+                          <div key={m.name} className="space-y-1.5">
+                            <div className="flex items-center justify-between text-[11px]">
+                              <span className="font-bold text-muted">{m.name}</span>
+                              <span className="font-mono font-bold text-accent">{m.val} / 5</span>
+                            </div>
+                            <div className="w-full bg-border h-2 rounded-full overflow-hidden flex gap-0.5">
+                              {[1, 2, 3, 4, 5].map((star) => (
+                                <div
+                                  key={star}
+                                  className={`h-full flex-1 transition-all duration-500 ${
+                                    star <= m.val
+                                      ? "bg-gradient-to-r from-amber-400 to-orange-500"
+                                      : "bg-surface/30"
+                                  }`}
+                                />
+                              ))}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+
+                      {rubricNotes && (
+                        <div className="space-y-2 pt-3 border-t border-border">
+                          <span className="text-[10px] font-black uppercase tracking-[0.15em] text-muted block">Notes & Feedback</span>
+                          <p className="text-xs text-fg/80 italic leading-relaxed bg-surface/30 p-3 rounded-xl border border-border whitespace-pre-wrap">
+                            {rubricNotes}
+                          </p>
                         </div>
                       )}
                     </div>
@@ -953,20 +1040,26 @@ export default function InterviewRunner({
             <div className="md:col-span-7 p-5 space-y-5 flex flex-col justify-between min-h-[480px]">
 
               {status === "completed" || status === "abandoned" ? (
-                <div className="space-y-4 flex-1 flex flex-col min-h-0">
+                <div className="space-y-5 flex-1 flex flex-col min-h-0 p-6 rounded-3xl border border-border bg-surface/30 backdrop-blur-md shadow-2xl relative overflow-hidden animate-fade-in">
+                  {/* Subtle glass glow circles inside the dashboard */}
+                  <div className="absolute top-[-50px] right-[-50px] w-48 h-48 bg-accent/5 rounded-full blur-[64px] pointer-events-none" />
+                  <div className="absolute bottom-[-50px] left-[-50px] w-48 h-48 bg-emerald-500/5 rounded-full blur-[64px] pointer-events-none" />
+
                   {/* Dashboard Header */}
-                  <div className="flex flex-col gap-1 pb-3 border-b border-border">
-                    <h3 className="text-xs font-black uppercase tracking-[0.2em] text-accent flex items-center gap-1.5">
-                      <Trophy className="w-3.5 h-3.5 text-accent" />
+                  <div className="flex flex-col gap-1.5 pb-4 border-b border-border relative z-10 transition-all duration-300 hover:border-accent/25">
+                    <h3 className="text-xs font-black uppercase tracking-[0.25em] text-accent flex items-center gap-2">
+                      <div className="w-6 h-6 rounded-lg bg-accent/10 border border-accent/20 flex items-center justify-center">
+                        <Trophy className="w-3.5 h-3.5 text-accent animate-pulse" />
+                      </div>
                       Post-Round Review Dashboard
                     </h3>
-                    <p className="text-[10px] text-muted">
-                      Review candidate's final submitted code and test cases. Select a step below:
+                    <p className="text-[10px] text-muted tracking-wide mt-1 pl-8">
+                      Review candidate's final submitted code and test cases. Select a step below to inspect:
                     </p>
                   </div>
 
                   {/* Challenge Step Selectors */}
-                  <div className="flex flex-wrap gap-2 pb-1">
+                  <div className="flex flex-wrap gap-2.5 pb-2 relative z-10 animate-fade-in delay-75">
                     {challenges.map((c, idx) => {
                       const attempt = attempts.find((a) => a.challengeId === c.id);
                       const passed = attempt?.status === "passed";
@@ -974,27 +1067,30 @@ export default function InterviewRunner({
                       const isSelected = selectedReviewId === c.id;
 
                       let statusBadgeColor = "text-muted bg-surface/50 border-border";
+                      let statusBadgeLabel = "Unattempted";
                       if (passed) {
-                        statusBadgeColor = "text-emerald-500 bg-emerald-500/10 border-emerald-500/20";
+                        statusBadgeColor = "text-emerald-500 bg-emerald-500/10 border-emerald-500/25 shadow-[0_0_8px_rgba(16,185,129,0.06)]";
+                        statusBadgeLabel = "Passed";
                       } else if (failed) {
-                        statusBadgeColor = "text-rose-500 bg-rose-500/10 border-rose-500/20";
+                        statusBadgeColor = "text-rose-500 bg-rose-500/10 border-rose-500/25 shadow-[0_0_8px_rgba(244,63,94,0.06)]";
+                        statusBadgeLabel = "Failed";
                       }
 
                       return (
                         <button
                           key={c.id}
                           onClick={() => setSelectedReviewId(c.id)}
-                          className={`flex items-center gap-2 px-3 py-1.5 rounded-xl border text-[10px] font-bold transition-all active:scale-95 ${
+                          className={`flex items-center gap-2.5 px-3.5 py-2 rounded-xl border text-[10px] font-extrabold tracking-wide transition-all active:scale-95 duration-200 relative overflow-hidden ${
                             isSelected
-                              ? "bg-accent/15 border-accent text-accent shadow-sm"
-                              : "bg-surface border-border hover:bg-elevated hover:border-border-strong text-muted hover:text-fg"
+                              ? "bg-accent/10 border-accent/40 text-accent shadow-[0_0_15px_rgba(var(--accent-rgb),0.1)]"
+                              : "bg-surface/50 border-border hover:bg-elevated hover:border-border-strong text-muted hover:text-fg"
                           }`}
                         >
-                          <span className="font-mono">Step {idx + 1}</span>
-                          <span>•</span>
-                          <span>{c.title}</span>
-                          <span className={`text-[8px] font-black uppercase px-1.5 py-0.5 rounded border ${statusBadgeColor}`}>
-                            {passed ? "Passed" : failed ? "Failed" : "Unattempted"}
+                          <span className="font-mono text-[9px] opacity-70">Step {idx + 1}</span>
+                          <span className="w-1 h-1 rounded-full bg-border-strong" />
+                          <span className="truncate">{c.title}</span>
+                          <span className={`text-[8px] font-black uppercase px-2 py-0.5 rounded border ${statusBadgeColor}`}>
+                            {statusBadgeLabel}
                           </span>
                         </button>
                       );
@@ -1003,14 +1099,21 @@ export default function InterviewRunner({
 
                   {/* Selected Challenge Details & Submissions */}
                   {activeReviewChallenge ? (
-                    <div className="flex-1 flex flex-col space-y-4 min-h-0">
+                    <div className="flex-1 flex flex-col space-y-4 min-h-0 relative z-10 animate-fade-in delay-100">
                       {activeReviewAttempt ? (
                         <div className="flex-1 flex flex-col space-y-4 min-h-0">
                           {/* Attempt Metrics Banner */}
-                          <div className="grid grid-cols-2 gap-3">
-                            <div className="p-3 rounded-xl border border-border bg-bg/40 flex flex-col justify-between">
-                              <span className="text-[9px] font-black uppercase tracking-wider text-muted">Solve Status</span>
-                              <span className={`text-xs font-black uppercase tracking-wide mt-1.5 ${
+                          <div className="grid grid-cols-2 gap-3.5">
+                            <div className="p-3.5 rounded-2xl border border-border bg-bg/20 hover:bg-bg/30 transition-all duration-300 flex flex-col justify-between group shadow-sm">
+                              <div className="flex items-center justify-between">
+                                <span className="text-[9px] font-extrabold uppercase tracking-widest text-muted">Solve Status</span>
+                                <div className={`w-1.5 h-1.5 rounded-full ${
+                                  activeReviewAttempt.status === "passed"
+                                    ? "bg-emerald-500 animate-ping"
+                                    : "bg-rose-500"
+                                }`} />
+                              </div>
+                              <span className={`text-xs font-black uppercase tracking-wide mt-2.5 flex items-center gap-1.5 ${
                                 activeReviewAttempt.status === "passed"
                                   ? "text-emerald-500"
                                   : "text-rose-500"
@@ -1018,22 +1121,29 @@ export default function InterviewRunner({
                                 {activeReviewAttempt.status === "passed" ? "Success (Passed)" : "Did Not Pass"}
                               </span>
                             </div>
-                            <div className="p-3 rounded-xl border border-border bg-bg/40 flex flex-col justify-between">
-                              <span className="text-[9px] font-black uppercase tracking-wider text-muted">Test Cases</span>
-                              <span className="text-xs font-mono font-black text-fg mt-1.5">
-                                {reviewTestResults ? `${reviewTestResults.passed} / ${reviewTestResults.total} passed` : "N/A"}
+                            <div className="p-3.5 rounded-2xl border border-border bg-bg/20 hover:bg-bg/30 transition-all duration-300 flex flex-col justify-between group shadow-sm">
+                              <div className="flex items-center justify-between">
+                                <span className="text-[9px] font-extrabold uppercase tracking-widest text-muted">Result Grade</span>
+                                <span className="text-[9px] font-mono text-muted">Score / Rating</span>
+                              </div>
+                              <span className="text-xs font-mono font-black text-fg mt-2.5">
+                                {activeReviewAttempt.score != null
+                                  ? `${activeReviewAttempt.score} %`
+                                  : reviewTestResults
+                                  ? `${reviewTestResults.passed} / ${reviewTestResults.total} passed`
+                                  : "0 / 0 passed"}
                               </span>
                             </div>
                           </div>
 
                           {/* Code vs Test tabs */}
-                          <div className="flex border-b border-border">
+                          <div className="flex border-b border-border gap-1">
                             <button
                               onClick={() => setActiveReviewTab("code")}
-                              className={`px-4 py-2 text-xs font-bold transition-all border-b-2 -mb-[2px] ${
+                              className={`px-4 py-2 text-xs font-black uppercase tracking-wider transition-all border-b-2 -mb-[2px] ${
                                 activeReviewTab === "code"
                                   ? "border-accent text-accent"
-                                  : "border-transparent text-muted hover:text-fg"
+                                  : "border-transparent text-muted hover:text-fg hover:border-border-strong"
                               }`}
                             >
                               Code Submitted
@@ -1041,10 +1151,10 @@ export default function InterviewRunner({
                             {reviewTestResults && (
                               <button
                                 onClick={() => setActiveReviewTab("tests")}
-                                className={`px-4 py-2 text-xs font-bold transition-all border-b-2 -mb-[2px] ${
+                                className={`px-4 py-2 text-xs font-black uppercase tracking-wider transition-all border-b-2 -mb-[2px] ${
                                   activeReviewTab === "tests"
                                     ? "border-accent text-accent"
-                                    : "border-transparent text-muted hover:text-fg"
+                                    : "border-transparent text-muted hover:text-fg hover:border-border-strong"
                                 }`}
                               >
                                 Test Cases ({reviewTestResults.passed}/{reviewTestResults.total})
@@ -1053,28 +1163,44 @@ export default function InterviewRunner({
                           </div>
 
                           {/* Active Tab Screen Content */}
-                          <div className="flex-1 flex flex-col min-h-0">
+                          <div className="flex-1 flex flex-col min-h-0 animate-fade-in delay-150">
                             {activeReviewTab === "code" ? (
-                              <div className="flex-1 flex flex-col rounded-xl border border-border bg-bg/30 overflow-hidden min-h-0">
+                              <div className="flex-1 flex flex-col rounded-2xl border border-border bg-bg/10 backdrop-blur-sm overflow-hidden min-h-0 shadow-md">
                                 {/* File Explorer Tab bar */}
                                 <div className="flex items-center overflow-x-auto border-b border-border bg-surface shrink-0 scrollbar-none">
-                                  {reviewFileKeys.map((fk) => (
-                                    <button
-                                      key={fk}
-                                      onClick={() => setActiveFileKey(fk)}
-                                      className={`px-3 py-1.5 text-[10px] font-mono border-r border-border transition-colors ${
-                                        fk === activeFileKey
-                                          ? "bg-bg/60 text-fg font-semibold"
-                                          : "text-muted hover:text-fg hover:bg-bg/25"
-                                      }`}
-                                    >
-                                      {fk.replace(/^\//, "")}
-                                    </button>
-                                  ))}
+                                  {reviewFileKeys.map((fk) => {
+                                    const isSelected = fk === activeFileKey;
+                                    return (
+                                      <button
+                                        key={fk}
+                                        onClick={() => setActiveFileKey(fk)}
+                                        className={`px-4 py-2.5 text-[10px] font-mono border-r border-border transition-all flex items-center gap-1.5 ${
+                                          isSelected
+                                            ? "bg-bg/40 text-fg font-black border-b border-b-accent"
+                                            : "text-muted hover:text-fg hover:bg-bg/20"
+                                        }`}
+                                      >
+                                        <div className={`w-1.5 h-1.5 rounded-full ${isSelected ? "bg-accent" : "bg-muted/40"}`} />
+                                        {fk.replace(/^\//, "")}
+                                      </button>
+                                    );
+                                  })}
                                   {reviewFileKeys.length === 0 && (
-                                    <span className="p-3 text-xs text-muted italic">No files submitted.</span>
+                                    <span className="p-3.5 text-xs text-muted italic">No files submitted.</span>
                                   )}
                                 </div>
+
+                                {/* Active File Header Info Bar */}
+                                {activeFileKey && (
+                                  <div className="px-4 py-2 border-b border-border bg-surface/20 flex items-center justify-between text-[9px] font-extrabold uppercase tracking-wider text-muted">
+                                    <span className="flex items-center gap-1.5 text-fg/80">
+                                      <span className="text-accent">●</span> Active File: {activeFileKey}
+                                    </span>
+                                    <span className="bg-bg/50 border border-border px-2 py-0.5 rounded-md font-mono text-[8px]">
+                                      {activeFileKey.split(".").pop() ?? "code"}
+                                    </span>
+                                  </div>
+                                )}
 
                                 {/* Monaco Reader */}
                                 <div className="flex-1 min-h-[250px] relative">
@@ -1111,13 +1237,13 @@ export default function InterviewRunner({
                               </div>
                             ) : (
                               // Test Results Tab
-                              <div className="flex-1 overflow-y-auto max-h-[300px] space-y-2 pr-1 scrollbar-thin">
+                              <div className="flex-1 overflow-y-auto max-h-[300px] space-y-2.5 pr-1 scrollbar-thin">
                                 {reviewTestResults?.tests.map((t, tIdx) => {
                                   const isPass = t.status === "pass";
                                   return (
                                     <div
                                       key={tIdx}
-                                      className={`p-3 rounded-xl border flex flex-col gap-1.5 transition-all ${
+                                      className={`p-3.5 rounded-2xl border flex flex-col gap-2 transition-all hover:translate-x-0.5 duration-200 ${
                                         isPass
                                           ? "bg-emerald-500/5 border-emerald-500/10 text-emerald-600 dark:text-emerald-400"
                                           : "bg-rose-500/5 border-rose-500/15 text-rose-600 dark:text-rose-400"
@@ -1126,22 +1252,22 @@ export default function InterviewRunner({
                                       <div className="flex items-center justify-between gap-3">
                                         <div className="flex items-center gap-2 min-w-0">
                                           {isPass ? (
-                                            <CheckCircle2 className="w-3.5 h-3.5 shrink-0 text-emerald-500" />
+                                            <CheckCircle2 className="w-4.5 h-4.5 shrink-0 text-emerald-500" />
                                           ) : (
-                                            <XCircle className="w-3.5 h-3.5 shrink-0 text-rose-500" />
+                                            <XCircle className="w-4.5 h-4.5 shrink-0 text-rose-500" />
                                           )}
-                                          <span className="text-[11px] font-bold truncate text-fg">
+                                          <span className="text-xs font-black truncate text-fg">
                                             {t.name || `Test Case #${tIdx + 1}`}
                                           </span>
                                         </div>
-                                        <span className={`text-[8px] font-black uppercase px-1.5 py-0.5 rounded border ${
+                                        <span className={`text-[8px] font-black uppercase px-2 py-0.5 rounded border ${
                                           isPass ? "bg-emerald-500/10 border-emerald-500/25" : "bg-rose-500/10 border-rose-500/25"
                                         }`}>
                                           {isPass ? "Pass" : "Fail"}
                                         </span>
                                       </div>
                                       {t.error && (
-                                        <div className="font-mono text-[9px] bg-black/40 border border-white/5 rounded-lg p-2 overflow-x-auto text-muted whitespace-pre-wrap">
+                                        <div className="font-mono text-[9.5px] bg-black/40 border border-border rounded-xl p-3 overflow-x-auto text-muted whitespace-pre-wrap leading-relaxed">
                                           {t.error}
                                         </div>
                                       )}
@@ -1525,6 +1651,57 @@ export default function InterviewRunner({
                   </div>
                 </button>
               ))}
+            </div>
+
+            {/* Structured Rubric Evaluation */}
+            <div className="border-t border-border pt-4 mt-2 space-y-4 relative z-10 max-h-[300px] overflow-y-auto pr-1 scrollbar-thin">
+              <h4 className="text-[10px] font-black uppercase tracking-wider text-accent">Structured Rubric Evaluation</h4>
+              
+              <div className="space-y-3">
+                {[
+                  { name: "Code Quality", value: rubricCodeQuality, setter: setRubricCodeQuality, desc: "Cleanliness, structure, safety, and readability." },
+                  { name: "Communication", value: rubricCommunication, setter: setRubricCommunication, desc: "Explaining thought process and proactive collaboration." },
+                  { name: "Problem Solving", value: rubricProblemSolving, setter: setRubricProblemSolving, desc: "Logic correctness, efficiency, and debugging." }
+                ].map((metric) => (
+                  <div key={metric.name} className="flex flex-col gap-1.5 p-3 rounded-xl bg-bg/40 border border-border">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-bold text-fg">{metric.name}</span>
+                      <span className="text-xs font-mono font-bold text-accent">{metric.value} / 5</span>
+                    </div>
+                    <div className="flex items-center gap-3.5">
+                      <input
+                        type="range"
+                        min="1"
+                        max="5"
+                        value={metric.value}
+                        onChange={(e) => metric.setter(Number(e.target.value))}
+                        className="flex-1 accent-accent cursor-pointer bg-border h-1.5 rounded-lg appearance-none"
+                      />
+                      <div className="flex gap-0.5">
+                        {[1, 2, 3, 4, 5].map((star) => (
+                          <span
+                            key={star}
+                            className={`text-xs ${star <= metric.value ? "text-amber-400" : "text-muted/30"}`}
+                          >
+                            ★
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                    <span className="text-[10px] text-muted/70">{metric.desc}</span>
+                  </div>
+                ))}
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-fg">Rich-Text Feedback & Notes</label>
+                <textarea
+                  value={rubricNotes}
+                  onChange={(e) => setRubricNotes(e.target.value)}
+                  placeholder="Provide structured feedback regarding code design, algorithmic complexity, communication style, etc..."
+                  className="w-full min-h-[80px] p-3 rounded-xl border border-border bg-bg/40 text-fg text-xs placeholder:text-muted/50 focus:outline-none focus:border-accent/40 resize-y"
+                />
+              </div>
             </div>
 
             <div className="flex items-center justify-end gap-2.5 pt-4 relative z-10 border-t border-border">

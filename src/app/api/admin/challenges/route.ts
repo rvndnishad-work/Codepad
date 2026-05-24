@@ -6,6 +6,15 @@ import { prisma } from "@/lib/prisma";
 
 const filesSchema = z.record(z.string(), z.string());
 
+const testCaseSchema = z.object({
+  id: z.string().min(1).max(100),
+  name: z.string().min(1).max(200),
+  input: z.string().max(20_000),
+  expected: z.string().max(20_000),
+  isHidden: z.boolean().default(false),
+  weight: z.number().int().min(1).max(100).default(10),
+});
+
 const stepSchema = z.object({
   title: z.string().max(200).optional(),
   description: z.string().min(1).max(20_000),
@@ -15,6 +24,7 @@ const stepSchema = z.object({
   estimatedMinutes: z.number().int().min(1).max(300),
   hint: z.string().max(20_000).optional(),
   videoUrl: z.string().max(500).optional(),
+  testCases: z.array(testCaseSchema).optional(),
 });
 
 const payloadSchema = z.object({
@@ -91,6 +101,7 @@ export async function POST(req: Request) {
         estimatedMinutes: s.estimatedMinutes,
         hint: s.hint || null,
         videoUrl: s.videoUrl || null,
+        testCasesJson: JSON.stringify(s.testCases || []),
       })),
     });
 

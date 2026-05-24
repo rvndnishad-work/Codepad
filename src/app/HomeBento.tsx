@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Zap, ShieldCheck, Share2, Code2, ArrowUpRight, Monitor, Laptop, Globe, Cpu, Play, RotateCcw, Loader2 } from "lucide-react";
+import { Zap, ShieldCheck, Share2, Code2, ArrowUpRight, Monitor, Laptop, Globe, Cpu, Play, RotateCcw, Loader2, Brain, Workflow, FileText, Calendar } from "lucide-react";
 import { TemplateLogo, templateIcon } from "@/lib/icons";
 import RevealOnScroll, { RevealItem } from "@/components/scroll/RevealOnScroll";
 import { SpotlightGroup, SpotlightCard } from "@/components/scroll/SpotlightGroup";
@@ -169,7 +169,7 @@ function CodeDemoCard() {
     <div className="md:col-span-8 rounded-3xl border border-border bg-surface p-1 overflow-hidden group shadow-2xl hover:border-border-strong transition-colors">
       <div className="bg-panel rounded-[22px] h-full overflow-hidden flex flex-col">
         {/* Browser chrome with Run button */}
-        <div className="flex items-center gap-3 px-4 py-2.5 border-b border-border/30 bg-surface/50">
+        <div className="flex items-center gap-3 px-4 py-2.5 border-b border-border bg-surface/50">
           <div className="flex gap-1.5">
             <div className="w-2.5 h-2.5 rounded-full bg-red-500/20" />
             <div className="w-2.5 h-2.5 rounded-full bg-amber-500/20" />
@@ -207,7 +207,7 @@ function CodeDemoCard() {
         {/* Two-column body: code | console */}
         <div className="flex-1 grid grid-cols-1 md:grid-cols-[1.4fr_1fr]">
           {/* Code column */}
-          <div className="px-5 py-5 font-mono text-sm md:border-r border-border/30">
+          <div className="px-5 py-5 font-mono text-sm md:border-r border-border">
             <div className="flex items-center gap-2 mb-3">
               <span className="text-[10px] uppercase tracking-[0.18em] text-muted font-bold">
                 index.js
@@ -241,7 +241,7 @@ function CodeDemoCard() {
           </div>
 
           {/* Console column */}
-          <div className="px-5 py-5 font-mono text-xs bg-bg/30 border-t md:border-t-0 border-border/30">
+          <div className="px-5 py-5 font-mono text-xs bg-bg/30 border-t md:border-t-0 border-border">
             <div className="flex items-center gap-2 mb-3">
               <div className={`w-1.5 h-1.5 rounded-full ${statusDot}`} />
               <span className="text-[10px] uppercase tracking-[0.18em] text-muted font-bold">
@@ -269,7 +269,7 @@ function CodeDemoCard() {
                   );
                 })}
                 {isDone && (
-                  <div className="pt-2 mt-2 border-t border-border/30 text-[10px] text-muted/70 uppercase tracking-wider">
+                  <div className="pt-2 mt-2 border-t border-border text-[10px] text-muted/70 uppercase tracking-wider">
                     Returned in 0.04 ms
                   </div>
                 )}
@@ -285,20 +285,38 @@ function CodeDemoCard() {
 const FEATURES = [
   {
     icon: Zap,
-    title: "Instant Spin-up",
-    body: "Zero install, zero config. From idea to running code in under 2 seconds.",
+    title: "Instant Developer Sandbox",
+    body: "Zero install, zero config. Run modern frontend & backend runtimes, share secure snippets, and build public portfolios.",
     color: "#FFE600"
   },
   {
     icon: ShieldCheck,
-    title: "Secure Sandbox",
-    body: "Fully isolated execution environment. Your code runs locally in your browser.",
+    title: "Secure Isolated Runtimes",
+    body: "Run sandboxed code in browser-based workers or isolated multi-language virtual machines (Python, Go, Java, Node).",
     color: "#9DFF00"
   },
   {
-    icon: Share2,
-    title: "Pro Sharing",
-    body: "Public links, forking, and embedding. Build a portfolio of tiny ideas.",
+    icon: Brain,
+    title: "AI Proctoring Telemetry",
+    body: "Detect instant block copy-pastes and tab blurs. Reconstruct candidate attempts via interactive Monaco playbacks.",
+    color: "#FF3D00"
+  },
+  {
+    icon: Workflow,
+    title: "Test-Case Auto-Grading",
+    body: "Design structured, weighted test case matrices and score candidate algorithms automatically on submission.",
+    color: "#E040FB"
+  },
+  {
+    icon: FileText,
+    title: "Structured Rubrics & PDFs",
+    body: "Standardize interviewer grading dimensions (Code Quality, Communication, Solving) and export beautiful PDF dossiers.",
+    color: "#00E5FF"
+  },
+  {
+    icon: Calendar,
+    title: "ATS & Scheduling Sync",
+    body: "Automate invitations with Greenhouse, Ashby, & Lever webhooks. Sync interview slots with dynamic iCal triggers.",
     color: "#FFB800"
   }
 ];

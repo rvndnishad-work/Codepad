@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, useCallback } from "react";
 import { useTheme } from "next-themes";
 import {
   SandpackProvider,
@@ -126,6 +126,10 @@ export default function ChallengeAttemptClient({
   challenge,
   starterFiles,
   testFiles,
+  testCasesJson = "[]",
+  stepId,
+  takeHomeStartedAtIso,
+  takeHomeTimeLimitMin,
   sessionId,
   multiplayer = false,
   sim = false,
@@ -136,6 +140,10 @@ export default function ChallengeAttemptClient({
   challenge: Challenge;
   starterFiles: Record<string, string>;
   testFiles: Record<string, string>;
+  testCasesJson?: string;
+  stepId: string;
+  takeHomeStartedAtIso?: string;
+  takeHomeTimeLimitMin?: number;
   sessionId: string | null;
   multiplayer?: boolean;
   sim?: boolean;
@@ -154,11 +162,36 @@ export default function ChallengeAttemptClient({
     return extractDefaultExpression(starterFiles);
   }, [starterFiles]);
 
-  const [customExpression, setCustomExpression] = useState(initialCustomExpr);
+  const [customExpression, setCustomExpression] = useState(() => {
+    if (typeof window !== "undefined") {
+      const key = `${sessionId || challenge.slug}:custom_expression`;
+      try {
+        const stored = sessionStorage.getItem(key);
+        if (stored !== null) return stored;
+      } catch (e) {
+        console.warn("Failed to load customExpression from sessionStorage", e);
+      }
+    }
+    return "";
+  });
 
   useEffect(() => {
-    setCustomExpression(initialCustomExpr);
-  }, [initialCustomExpr]);
+    if (typeof window !== "undefined") {
+      const key = `${sessionId || challenge.slug}:custom_expression`;
+      const stored = sessionStorage.getItem(key);
+      if (stored === null) {
+        setCustomExpression(initialCustomExpr);
+      }
+    } else {
+      setCustomExpression(initialCustomExpr);
+    }
+  }, [initialCustomExpr, sessionId, challenge.slug]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const key = `${sessionId || challenge.slug}:custom_expression`;
+    sessionStorage.setItem(key, customExpression);
+  }, [customExpression, sessionId, challenge.slug]);
 
   // Sync active challenge with backend for auto-routing
   useEffect(() => {
@@ -250,12 +283,51 @@ export default function ChallengeAttemptClient({
     passed: number;
     total: number;
     tests: FlatTest[];
-  } | null>(null);
+  } | null>(() => {
+    if (typeof window !== "undefined") {
+      const key = `${sessionId || challenge.slug}:test_run`;
+      try {
+        const stored = sessionStorage.getItem(key);
+        if (stored) return JSON.parse(stored);
+      } catch (e) {
+        console.warn("Failed to load testRun from sessionStorage", e);
+      }
+    }
+    return null;
+  });
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const key = `${sessionId || challenge.slug}:test_run`;
+    if (testRun) {
+      sessionStorage.setItem(key, JSON.stringify(testRun));
+    } else {
+      sessionStorage.removeItem(key);
+    }
+  }, [testRun, sessionId, challenge.slug]);
+
   const [submitting, setSubmitting] = useState(false);
   const [submittedStatus, setSubmittedStatus] = useState<"passed" | "failed" | null>(null);
 
   // Tabbed sidebar state (Console or Tests)
-  const [sidebarTab, setSidebarTab] = useState<"console" | "tests">("console");
+  const [sidebarTab, setSidebarTab] = useState<"console" | "tests">(() => {
+    if (typeof window !== "undefined") {
+      const key = `${sessionId || challenge.slug}:sidebar_tab`;
+      try {
+        const stored = sessionStorage.getItem(key);
+        if (stored === "console" || stored === "tests") return stored as "console" | "tests";
+      } catch (e) {
+        console.warn("Failed to load sidebarTab from sessionStorage", e);
+      }
+    }
+    return "console";
+  });
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const key = `${sessionId || challenge.slug}:sidebar_tab`;
+    sessionStorage.setItem(key, sidebarTab);
+  }, [sidebarTab, sessionId, challenge.slug]);
 
   // Live console logs
   const [liveLogs, setLiveLogs] = useState<LiveLog[]>(() => {
@@ -388,17 +460,192 @@ export default function ChallengeAttemptClient({
     return () => clearInterval(interval);
   }, []);
 
+  // B2B Take-Home Countdown Timer & Auto-Submit
+  const isTakeHome = !!takeHomeStartedAtIso && !!takeHomeTimeLimitMin;
+  const takeHomeStartMs = useMemo(() => takeHomeStartedAtIso ? new Date(takeHomeStartedAtIso).getTime() : Date.now(), [takeHomeStartedAtIso]);
+  const takeHomeDurationMs = useMemo(() => (takeHomeTimeLimitMin || 60) * 60 * 1000, [takeHomeTimeLimitMin]);
+
+  const [remainingTakeHomeSec, setRemainingTakeHomeSec] = useState(() => {
+    if (!isTakeHome) return 0;
+    const elapsed = Date.now() - takeHomeStartMs;
+    return Math.max(0, Math.floor((takeHomeDurationMs - elapsed) / 1000));
+  });
+
+  async function handleAutoSubmitOnTimeExpiration() {
+    toast.error("Time has expired!", {
+      description: "Auto-submitting your code and locking your workspace...",
+    });
+    setSubmitting(true);
+    try {
+      const submittedFiles: Record<string, string> = {};
+      for (const [path, file] of Object.entries(filesRef.current)) {
+        if (testFiles[path]) continue;
+        const code = typeof file === "string" ? file : (file as { code: string }).code;
+        submittedFiles[path] = path === "/index.ts" ? stripDebugBlock(code) : code;
+      }
+      const token = typeof window !== "undefined" ? new URLSearchParams(window.location.search).get("token") || undefined : undefined;
+      const res = await fetch(`/api/challenges/${challenge.slug}/attempt`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          files: submittedFiles,
+          testResults: testRun || { passed: 0, total: 0, tests: [] },
+          durationSec: elapsedSec,
+          sessionId,
+          stepId,
+          token,
+        }),
+        cache: "no-store",
+      });
+      if (!res.ok) throw new Error((await res.text()) || `HTTP ${res.status}`);
+      toast.success("Assessment locked successfully.");
+      window.location.reload();
+    } catch (err) {
+      console.error("Auto-submission failed:", err);
+      window.location.reload();
+    }
+  }
+
+  useEffect(() => {
+    if (!isTakeHome) return;
+    const interval = setInterval(() => {
+      const elapsed = Date.now() - takeHomeStartMs;
+      const remaining = Math.max(0, Math.floor((takeHomeDurationMs - elapsed) / 1000));
+      setRemainingTakeHomeSec(remaining);
+      
+      if (remaining <= 0) {
+        clearInterval(interval);
+        handleAutoSubmitOnTimeExpiration();
+      }
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [isTakeHome, takeHomeStartMs, takeHomeDurationMs]);
+
+  // ── B2B Candidate Telemetry & Integrity Recording ───────────────────
+  const eventsBufferRef = useRef<Array<{ t: number; type: "snapshot" | "blur" | "focus" | "paste"; payload: any }>>([]);
+  const telemetryStartMsRef = useRef<number>(Date.now());
+  const prevSnapshotFilesRef = useRef<string>("");
+
+  const logTelemetryEvent = useCallback((type: "snapshot" | "blur" | "focus" | "paste", payload: any) => {
+    const elapsedMs = Date.now() - telemetryStartMsRef.current;
+    eventsBufferRef.current.push({ t: elapsedMs, type, payload });
+  }, []);
+
+  useEffect(() => {
+    const handleBlur = () => {
+      logTelemetryEvent("blur", { timestamp: Date.now() });
+    };
+    const handleFocus = () => {
+      logTelemetryEvent("focus", { timestamp: Date.now() });
+    };
+    const handlePaste = (e: ClipboardEvent) => {
+      const text = e.clipboardData?.getData("text") || "";
+      logTelemetryEvent("paste", {
+        timestamp: Date.now(),
+        length: text.length,
+        snippet: text.substring(0, 100),
+      });
+    };
+
+    window.addEventListener("blur", handleBlur);
+    window.addEventListener("focus", handleFocus);
+    document.addEventListener("paste", handlePaste);
+
+    return () => {
+      window.removeEventListener("blur", handleBlur);
+      window.removeEventListener("focus", handleFocus);
+      document.removeEventListener("paste", handlePaste);
+    };
+  }, [logTelemetryEvent]);
+
+  useEffect(() => {
+    const interval = setInterval(async () => {
+      if (eventsBufferRef.current.length === 0) return;
+      const toFlush = [...eventsBufferRef.current];
+      eventsBufferRef.current = [];
+
+      const token = typeof window !== "undefined" ? new URLSearchParams(window.location.search).get("token") || undefined : undefined;
+
+      try {
+        const res = await fetch(`/api/challenges/${challenge.slug}/telemetry`, {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({
+            events: toFlush,
+            token,
+          }),
+          cache: "no-store",
+        });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      } catch (err) {
+        console.error("Failed to flush candidate telemetry:", err);
+        eventsBufferRef.current = [...toFlush, ...eventsBufferRef.current];
+      }
+    }, 10000);
+
+    return () => clearInterval(interval);
+  }, [challenge.slug]);
+
+  const visualTestCases = useMemo(() => {
+    try {
+      return JSON.parse(testCasesJson) as {
+        id: string;
+        name: string;
+        input: string;
+        expected: string;
+        isHidden: boolean;
+        weight: number;
+      }[];
+    } catch {
+      return [];
+    }
+  }, [testCasesJson]);
+
   // Compose Sandpack files: starter (editable) + tests (hidden)
   const files: SandpackFiles = useMemo(() => {
     const out: SandpackFiles = {};
     for (const [path, code] of Object.entries(starterFiles)) {
       out[path] = { code };
     }
-    for (const [path, code] of Object.entries(testFiles)) {
-      out[path] = { code, hidden: true, readOnly: true };
+
+    if (visualTestCases && visualTestCases.length > 0) {
+      // Dynamic Jest test case compilation
+      const entryPath = starterFiles["/index.ts"] ? "/index.ts" : Object.keys(starterFiles)[0] || "/index.ts";
+      const entryModule = entryPath.replace(/\.(ts|js|tsx|jsx)$/, "").replace(/^\//, "./");
+
+      const code = starterFiles[entryPath] || "";
+      let fnName = "solve";
+      const funcMatch = code.match(/(?:export\s+)?function\s+(\w+)/);
+      if (funcMatch && funcMatch[1]) {
+        fnName = funcMatch[1];
+      }
+
+      let codeLines = [
+        `import * as Solution from '${entryModule}';`,
+        ``,
+        `// Auto-generated B2B visual test grading suite`,
+      ];
+
+      visualTestCases.forEach((tc, idx) => {
+        codeLines.push(`test(${JSON.stringify(tc.name || `Test Case #${idx + 1}`)}, () => {`);
+        codeLines.push(`  const fn = (Solution as any).${fnName} || (Solution as any).default || Solution;`);
+        codeLines.push(`  if (typeof fn !== 'function') {`);
+        codeLines.push(`    throw new Error('Could not find function "${fnName}" in entry file.');`);
+        codeLines.push(`  }`);
+        codeLines.push(`  const result = fn(${tc.input});`);
+        codeLines.push(`  expect(result).toEqual(${tc.expected});`);
+        codeLines.push(`});`);
+        codeLines.push(``);
+      });
+
+      out["/visual_grader.test.ts"] = { code: codeLines.join("\n"), hidden: true, readOnly: true };
+    } else {
+      for (const [path, code] of Object.entries(testFiles)) {
+        out[path] = { code, hidden: true, readOnly: true };
+      }
     }
     return out;
-  }, [starterFiles, testFiles]);
+  }, [starterFiles, testFiles, visualTestCases]);
 
   const visibleFiles = useMemo(() => Object.keys(starterFiles), [starterFiles]);
   const activeFile = useMemo(
@@ -602,6 +849,7 @@ export default function ChallengeAttemptClient({
         const code = typeof file === "string" ? file : (file as { code: string }).code;
         submittedFiles[path] = path === "/index.ts" ? stripDebugBlock(code) : code;
       }
+      const token = typeof window !== "undefined" ? new URLSearchParams(window.location.search).get("token") || undefined : undefined;
       const res = await fetch(`/api/challenges/${challenge.slug}/attempt`, {
         method: "POST",
         headers: { "content-type": "application/json" },
@@ -610,6 +858,8 @@ export default function ChallengeAttemptClient({
           testResults: testRun,
           durationSec: elapsedSec,
           sessionId,
+          stepId,
+          token,
         }),
         cache: "no-store",
       });
@@ -661,7 +911,12 @@ export default function ChallengeAttemptClient({
         activeFile,
       }}
     >
-      <FilesTracker filesRef={filesRef} bridgeRef={sandpackBridgeRef} />
+      <FilesTracker
+        filesRef={filesRef}
+        bridgeRef={sandpackBridgeRef}
+        logTelemetryEvent={logTelemetryEvent}
+        prevSnapshotFilesRef={prevSnapshotFilesRef}
+      />
 
       {/* Hidden sandboxed iframe for secure JS/TS execution */}
       <iframe
@@ -734,10 +989,23 @@ export default function ChallengeAttemptClient({
                   {challenge.difficulty}
                 </span>
                 <span>·</span>
-                <span className="flex items-center gap-1">
-                  <Clock className="w-2.5 h-2.5" />
-                  {formatDuration(elapsedSec)}
-                </span>
+                {isTakeHome ? (
+                  <span className={`flex items-center gap-1.5 px-2 py-0.5 rounded-md border font-mono tabular-nums ${
+                    remainingTakeHomeSec < 60
+                      ? "text-rose-500 border-rose-500/35 bg-rose-500/10 font-black animate-pulse"
+                      : remainingTakeHomeSec < 300
+                      ? "text-amber-400 border-amber-400/35 bg-amber-400/10 font-bold"
+                      : "text-emerald-400 border-emerald-400/35 bg-emerald-400/10"
+                  }`}>
+                    <Clock className="w-3 h-3 shrink-0" />
+                    <span>{formatDuration(remainingTakeHomeSec)}</span>
+                  </span>
+                ) : (
+                  <span className="flex items-center gap-1">
+                    <Clock className="w-2.5 h-2.5" />
+                    {formatDuration(elapsedSec)}
+                  </span>
+                )}
               </div>
             </div>
           </div>
@@ -956,6 +1224,8 @@ export default function ChallengeAttemptClient({
 function FilesTracker({
   filesRef,
   bridgeRef,
+  logTelemetryEvent,
+  prevSnapshotFilesRef,
 }: {
   filesRef: React.MutableRefObject<SandpackFiles>;
   bridgeRef?: React.MutableRefObject<{
@@ -966,6 +1236,8 @@ function FilesTracker({
     runSandpack?: () => void;
     clients?: Record<string, { dispatch?: (msg: unknown) => void } | undefined>;
   } | null>;
+  logTelemetryEvent?: (type: "snapshot" | "blur" | "focus" | "paste", payload: any) => void;
+  prevSnapshotFilesRef?: React.MutableRefObject<string>;
 }) {
   const { sandpack } = useSandpack();
   useEffect(() => {
@@ -988,7 +1260,25 @@ function FilesTracker({
         clients: sp.clients,
       };
     }
-  }, [sandpack, sandpack.files, sandpack.activeFile, filesRef, bridgeRef]);
+
+    // Reactively compile and log file snapshots upon code modifications
+    if (logTelemetryEvent && prevSnapshotFilesRef) {
+      const flattenedFiles: Record<string, string> = {};
+      for (const [path, file] of Object.entries(sandpack.files)) {
+        flattenedFiles[path] = typeof file === "string" ? file : file.code;
+      }
+      const filesStr = JSON.stringify(flattenedFiles);
+      
+      if (filesStr !== prevSnapshotFilesRef.current) {
+        prevSnapshotFilesRef.current = filesStr;
+        
+        logTelemetryEvent("snapshot", {
+          activeFile: sandpack.activeFile,
+          files: flattenedFiles,
+        });
+      }
+    }
+  }, [sandpack, sandpack.files, sandpack.activeFile, filesRef, bridgeRef, logTelemetryEvent, prevSnapshotFilesRef]);
   return null;
 }
 
@@ -1032,7 +1322,7 @@ function LiveConsole({
   return (
     <div className="flex flex-col h-full bg-bg font-mono text-xs">
       {/* Custom Run Expression Panel */}
-      <div className="flex flex-col gap-2 p-3 bg-surface/30 border-b border-border/85 shrink-0">
+      <div className="flex flex-col gap-2 p-3 bg-surface/30 border-b border-border shrink-0">
         <div className="flex items-center justify-between">
           <span className="text-[9px] font-black uppercase tracking-wider text-muted flex items-center gap-1 font-sans">
             <Play className="w-2.5 h-2.5 text-emerald-500 fill-current" />
@@ -1054,7 +1344,7 @@ function LiveConsole({
             onChange={(e) => setCustomExpression(e.target.value)}
             placeholder="e.g. twoSum([2, 7, 11, 15], 9)"
             rows={Math.min(4, Math.max(1, customExpression.split("\n").length))}
-            className="w-full bg-surface border border-border/70 focus:border-accent rounded-lg p-2 pr-10 text-fg font-mono text-xs focus:outline-none focus:ring-1 focus:ring-accent/40 resize-none transition-all duration-200 shadow-sm leading-relaxed"
+            className="w-full bg-surface border border-border focus:border-accent rounded-lg p-2 pr-10 text-fg font-mono text-xs focus:outline-none focus:ring-1 focus:ring-accent/40 resize-none transition-all duration-200 shadow-sm leading-relaxed"
             style={{ minHeight: "36px", maxHeight: "120px" }}
             onKeyDown={(e) => {
               if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {

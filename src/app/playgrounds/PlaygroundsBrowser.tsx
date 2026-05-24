@@ -107,6 +107,40 @@ function WelcomeStrip({ w }: { w: NonNullable<Welcome> }) {
   );
 }
 
+function GuestWelcomeStrip() {
+  return (
+    <div className="group/welcome relative rounded-2xl border border-border bg-surface/50 dark:bg-[#11131a]/60 backdrop-blur-xl p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 overflow-hidden shadow-soft dark:shadow-[0_0_50px_-12px_rgba(139,92,246,0.12)] hover:border-violet-500/30 dark:hover:border-violet-500/20 transition-all duration-300">
+      <div className="absolute -top-20 -left-20 w-44 h-44 rounded-full bg-violet-500/10 dark:bg-violet-500/15 blur-3xl pointer-events-none group-hover/welcome:scale-110 transition-transform duration-500" />
+      <div className="absolute -bottom-20 -right-20 w-44 h-44 rounded-full bg-fuchsia-500/5 dark:bg-fuchsia-500/10 blur-3xl pointer-events-none group-hover/welcome:scale-110 transition-transform duration-500" />
+
+      <div className="flex items-center gap-4 relative">
+        <div className="w-11 h-11 rounded-xl bg-violet-500/10 grid place-items-center shrink-0">
+          <Rocket className="w-5 h-5 text-violet-400 animate-pulse" />
+        </div>
+        <div className="min-w-0">
+          <div className="text-sm font-bold text-fg leading-snug">
+            Save and share your custom sandboxes
+          </div>
+          <div className="text-xs text-muted mt-0.5">
+            Sign in to persist your modifications, fork popular templates, and build your portfolio.
+          </div>
+        </div>
+      </div>
+
+      <div className="flex items-center gap-3 shrink-0 relative">
+        <Link
+          href="/login"
+          className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-violet-500 hover:bg-violet-600 text-xs font-bold text-white transition-all shadow-md shadow-violet-500/10 hover:shadow-violet-500/20"
+        >
+          Sign In / Sign Up
+          <ArrowRight className="w-3.5 h-3.5" />
+        </Link>
+      </div>
+    </div>
+  );
+}
+
+
 /**
  * Soft mouse-tracked "bulb" that washes the grid in a violet glow and
  * brightens whatever cards happen to sit under the cursor. The overlay sits
@@ -345,11 +379,40 @@ export default function PlaygroundsBrowser({ welcome }: { welcome: Welcome }) {
           </span>
         </div>
 
-        {welcome && welcome.snippetCount > 0 && (
-          <div className="mt-10 text-left">
+        {/* Category Filters Bar */}
+        <div className="mt-8 flex flex-wrap items-center justify-center gap-2.5">
+          <button
+            onClick={() => setFilter("all")}
+            className={`px-4 py-2 rounded-full text-xs font-bold transition-all duration-300 border ${
+              filter === "all"
+                ? "bg-violet-500 text-white border-violet-500 shadow-md shadow-violet-500/15"
+                : "bg-surface/40 hover:bg-surface/75 border-border text-muted hover:text-fg hover:border-border-strong backdrop-blur-sm"
+            }`}
+          >
+            All Sandboxes
+          </button>
+          {groups.map((g) => (
+            <button
+              key={g.key}
+              onClick={() => setFilter(g.key)}
+              className={`px-4 py-2 rounded-full text-xs font-bold transition-all duration-300 border ${
+                filter === g.key
+                  ? "bg-violet-500 text-white border-violet-500 shadow-md shadow-violet-500/15"
+                  : "bg-surface/40 hover:bg-surface/75 border-border text-muted hover:text-fg hover:border-border-strong backdrop-blur-sm"
+              }`}
+            >
+              {g.label}
+            </button>
+          ))}
+        </div>
+
+        <div className="mt-10 text-left">
+          {welcome ? (
             <WelcomeStrip w={welcome} />
-          </div>
-        )}
+          ) : (
+            <GuestWelcomeStrip />
+          )}
+        </div>
       </header>
 
       {/* Most Popular — Fast Track section */}

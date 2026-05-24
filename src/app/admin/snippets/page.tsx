@@ -121,7 +121,7 @@ export default async function AdminSnippetsPage({ searchParams }: AdminSnippetsP
                   <th className="px-6 py-4 font-bold text-right">Actions</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-border/50">
+              <tbody className="divide-y divide-border">
                 {snippets.map((s, i) => (
                   <AdminSnippetRow
                     key={s.id}

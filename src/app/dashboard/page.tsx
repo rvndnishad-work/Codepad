@@ -64,6 +64,16 @@ export default async function DashboardPage() {
     include: { _count: { select: { steps: true, attempts: true } } },
   });
 
+  const myWorkspaces = await prisma.workspaceMember.findMany({
+    where: { userId },
+    include: {
+      workspace: {
+        select: { name: true, slug: true, planName: true },
+      },
+    },
+    orderBy: { role: "asc" },
+  });
+
   const stats = {
     total: mySnippets.length,
     publicCount: mySnippets.filter((s) => s.visibility === "public").length,
@@ -133,7 +143,13 @@ export default async function DashboardPage() {
           />
         </div>
         <aside className="lg:col-span-4 space-y-8">
-          <DashboardSidebar />
+          <DashboardSidebar
+            workspaces={myWorkspaces.map((m) => ({
+              name: m.workspace.name,
+              slug: m.workspace.slug,
+              plan: m.workspace.planName,
+            }))}
+          />
         </aside>
       </div>
     </div>

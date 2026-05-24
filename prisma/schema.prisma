@@ -15,6 +15,10 @@ model User {
   image         String?
   /// bcrypt hash for credentials login. null when only OAuth is used.
   passwordHash  String?
+  /// User type — "candidate" (job seeker), "recruiter" (hiring), or null
+  /// for legacy accounts that haven't been migrated to the new taxonomy.
+  /// Drives navbar, dashboard, and interview-route experience.
+  userType      String?
   /// Optional public profile bio shown on /u/[id] portfolio page.
   bio           String?
   /// Optional "Hire Me" contact (email, URL, etc.) shown on portfolio.
@@ -41,6 +45,7 @@ model User {
   blogBookmarks BlogBookmark[]
   /// Whether the user is banned from the platform.
   banned        Boolean           @default(false)
+  workspaces    WorkspaceMember[]
   createdAt     DateTime            @default(now())
 }
 
@@ -150,6 +155,9 @@ model Challenge {
   steps           ChallengeStep[]
   enrollments     ChallengeEnrollment[]
   invitations     ChallengeInvitation[]
+  takeHomeAssignments TakeHomeAssignment[]
+  workspaceId     String?
+  workspace       Workspace?         @relation(fields: [workspaceId], references: [id], onDelete: SetNull)
   createdAt       DateTime           @default(now())
   updatedAt       DateTime           @updatedAt
 
@@ -187,6 +195,8 @@ model ChallengeStep {
   hint             String?
   /// Optional walkthrough video. YouTube / Vimeo / Loom auto-embed.
   videoUrl         String?
+  /// JSON-encoded array of test cases: Array<{ id: string, name: string, input: string, expected: string, isHidden: boolean, weight: number }>
+  testCasesJson    String             @default("[]")
   attempts         ChallengeAttempt[]
   createdAt        DateTime           @default(now())
   updatedAt        DateTime           @updatedAt
@@ -261,10 +271,16 @@ model ChallengeAttempt {
   testResults String?
   /// Total elapsed seconds at submission.
   durationSec Int?
+  /// Calculated overall score (e.g. 85 out of 100)
+  score       Int?
   /// Optional reference to the parent interview session.
   sessionId   String?
   startedAt   DateTime  @default(now())
   finishedAt  DateTime?
+  /// Optional relation to a B2B Take-Home Assignment
+  takeHomeAssignment TakeHomeAssignment?
+  eventLog    SessionEventLog?
+  integrityReport CandidateIntegrityReport?
 
   @@index([userId, status])
   @@index([challengeId])
@@ -313,9 +329,17 @@ model InterviewSession {
   shortCode     String?  @unique
   startedAt     DateTime?
   finishedAt    DateTime?
+  workspaceId   String?
+  workspace     Workspace? @relation(fields: [workspaceId], references: [id], onDelete: SetNull)
+  /// Optional link to first-class Candidate entity (V2). When set, the
+  /// candidateName field above acts as a denormalized snapshot.
+  candidateId   String?
+  candidate     Candidate? @relation(fields: [candidateId], references: [id], onDelete: SetNull)
+  rubric        InterviewRubric?
   createdAt     DateTime @default(now())
 
   @@index([userId, status])
+  @@index([candidateId])
 }
 
 model BlogPost {
@@ -398,4 +422,129 @@ model BlogBookmark {
 model SiteSetting {
   key   String @id
   value String // JSON-encoded configuration
+}
+
+model TakeHomeAssignment {
+  id             String           @id @default(cuid())
+  challengeId    String
+  challenge      Challenge        @relation(fields: [challengeId], references: [id], onDelete: Cascade)
+  candidateName  String
+  candidateEmail String
+  token          String           @unique // Secure random URL token
+  status         String           @default("PENDING") // PENDING, ACTIVE, SUBMITTED, EXPIRED
+  expiresAt      DateTime         // Link activation deadline
+  timeLimitMin   Int              @default(60) // Countdown timer duration (in minutes) once started
+  startedAt      DateTime?
+  submittedAt    DateTime?
+  attemptId      String?          @unique
+  attempt        ChallengeAttempt? @relation(fields: [attemptId], references: [id], onDelete: SetNull)
+  workspaceId    String?
+  workspace      Workspace?       @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  /// Optional link to the first-class Candidate entity. Backfilled by the
+  /// candidate seed/migration; candidateName/email above are retained as a
+  /// denormalized snapshot for back-compat and for guest invites.
+  candidateId    String?
+  candidate      Candidate?       @relation(fields: [candidateId], references: [id], onDelete: SetNull)
+  createdAt      DateTime         @default(now())
+
+  @@index([token])
+  @@index([candidateEmail])
+  @@index([candidateId])
+}
+
+model Workspace {
+  id                  String               @id @default(cuid())
+  name                String
+  slug                String               @unique
+  stripeCustomerId    String?              @unique
+  stripeSubscriptionId String?             @unique
+  planName            String               @default("FREE") // FREE, GROWTH, ENTERPRISE
+  members             WorkspaceMember[]
+  challenges          Challenge[]
+  sessions            InterviewSession[]
+  takeHomes           TakeHomeAssignment[]
+  candidates          Candidate[]
+  atsIntegration      AtsIntegration?
+  createdAt           DateTime             @default(now())
+}
+
+/// First-class candidate entity scoped to a workspace.
+/// Replaces the previous "implicit candidate" pattern where candidate info
+/// only lived inline on TakeHomeAssignment / InterviewSession rows.
+/// status: "active" | "hired" | "rejected" | "archived"
+model Candidate {
+  id          String   @id @default(cuid())
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  name        String
+  email       String?
+  phone       String?
+  /// Where this candidate came from (e.g. "linkedin", "referral", "ats", "manual").
+  source      String?
+  /// Free-text notes — the recruiter's running journal on the candidate.
+  notes       String?
+  /// JSON-encoded string[] of tags (e.g. ["senior", "react", "remote-ok"]).
+  tags        String?
+  /// Pipeline status.
+  status      String   @default("active")
+  takeHomes   TakeHomeAssignment[]
+  sessions    InterviewSession[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([workspaceId, email])
+  @@index([workspaceId, status])
+  @@index([workspaceId, name])
+}
+
+model WorkspaceMember {
+  id          String    @id @default(cuid())
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  userId      String
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role        String    @default("INTERVIEWER") // OWNER, ADMIN, INTERVIEWER, VIEWER
+
+  @@unique([workspaceId, userId])
+}
+
+model SessionEventLog {
+  id          String           @id @default(cuid())
+  attemptId   String           @unique
+  attempt     ChallengeAttempt @relation(fields: [attemptId], references: [id], onDelete: Cascade)
+  eventsData  String           // JSON array of event deltas: Array<{ t: number, type: string, payload: any }>
+  createdAt   DateTime         @default(now())
+}
+
+model CandidateIntegrityReport {
+  id            String           @id @default(cuid())
+  attemptId     String           @unique
+  attempt       ChallengeAttempt @relation(fields: [attemptId], references: [id], onDelete: Cascade)
+  suspicionScore Int             @default(0) // 0 to 100
+  totalBlurSec  Int              @default(0)
+  blurCount     Int              @default(0)
+  pasteCount    Int              @default(0)
+  pasteDetails  String           // JSON list of pasted blocks: Array<{ t: number, length: number, snippet: string }>
+  createdAt     DateTime         @default(now())
+}
+
+model InterviewRubric {
+  id            String           @id @default(cuid())
+  sessionId     String           @unique
+  session       InterviewSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  ratings       String           // JSON Map of { "Communication": 4, "CodeQuality": 5, "ProblemSolving": 5 }
+  notes         String?          // Rich-text feedback
+  interviewerId String
+  createdAt     DateTime         @default(now())
+}
+
+model AtsIntegration {
+  id            String    @id @default(cuid())
+  workspaceId   String    @unique
+  workspace     Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  provider      String    // GREENHOUSE, LEVER, ASHBY
+  apiKey        String    // Encrypted API key or credentials token
+  webhookSecret String?   // Secret to verify signatures
+  settings      String    @default("{}") // JSON string of settings
+  createdAt     DateTime  @default(now())
 }

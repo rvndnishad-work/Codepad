@@ -1,16 +1,19 @@
 "use client";
 
 import { useState } from "react";
-import { updateNavLinks } from "@/lib/settings";
+import { updateNavLinks, updateB2bSettings, B2bSettingsConfig } from "@/lib/settings";
 import { NavLinkConfig, NavStatus } from "@/lib/settings-constants";
-import { Eye, EyeOff, Clock, Save, Loader2 } from "lucide-react";
+import { Eye, EyeOff, Clock, Save, Loader2, Users, DollarSign, ShieldAlert } from "lucide-react";
 
 export default function SettingsForm({
   initialLinks,
+  initialB2bSettings,
 }: {
   initialLinks: NavLinkConfig[];
+  initialB2bSettings: B2bSettingsConfig;
 }) {
   const [links, setLinks] = useState(initialLinks);
+  const [b2bSettings, setB2bSettings] = useState<B2bSettingsConfig>(initialB2bSettings);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
 
@@ -24,7 +27,10 @@ export default function SettingsForm({
     setSaving(true);
     setMessage(null);
     try {
-      await updateNavLinks(links);
+      await Promise.all([
+        updateNavLinks(links),
+        updateB2bSettings(b2bSettings),
+      ]);
       setMessage({ type: "success", text: "Settings saved successfully!" });
       setTimeout(() => setMessage(null), 3000);
     } catch (error) {
@@ -83,22 +89,110 @@ export default function SettingsForm({
           ))}
         </div>
 
-        <div className="mt-8 flex items-center justify-between">
-          <div>
-            {message && (
-              <div className={`text-xs font-bold ${message.type === "success" ? "text-emerald-500" : "text-rose-500"} animate-in fade-in slide-in-from-left-2`}>
-                {message.text}
+      </div>
+
+      <div className="rounded-2xl border border-border bg-surface p-6">
+        <h3 className="text-xs font-black uppercase tracking-[0.2em] text-muted mb-6 flex items-center gap-2">
+          SaaS Billing & Limits
+        </h3>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {/* Free Plan Seat Limit */}
+          <div className="p-5 rounded-xl border border-border bg-bg/50 space-y-3">
+            <div className="flex items-center gap-2.5">
+              <div className="p-2 rounded-lg bg-accent/10 text-accent">
+                <Users className="w-4 h-4" />
               </div>
-            )}
+              <div>
+                <label className="text-sm font-bold text-fg block">Free Plan Seat Limit</label>
+                <span className="text-[11px] text-muted leading-tight block mt-0.5">
+                  Max teammate seats in a Free workspace.
+                </span>
+              </div>
+            </div>
+            <div className="flex items-center gap-4 pt-1">
+              <input
+                type="range"
+                min="1"
+                max="20"
+                value={b2bSettings.freeSeatLimit}
+                onChange={(e) =>
+                  setB2bSettings((prev) => ({
+                    ...prev,
+                    freeSeatLimit: parseInt(e.target.value, 10),
+                  }))
+                }
+                className="w-full accent-accent bg-border h-1.5 rounded-lg appearance-none cursor-pointer"
+              />
+              <span className="text-sm font-mono font-bold px-3 py-1 rounded bg-bg border border-border w-12 text-center text-fg">
+                {b2bSettings.freeSeatLimit}
+              </span>
+            </div>
           </div>
-          <button
-            onClick={handleSave}
-            disabled={saving}
-            className="ml-auto flex items-center gap-2 px-6 py-2.5 rounded-xl bg-fg text-bg text-sm font-bold hover:bg-fg/90 transition shadow-soft disabled:opacity-50 active:scale-95"
-          >
-            {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-            Save Changes
-          </button>
+
+          {/* Growth Plan Seat Pricing */}
+          <div className="p-5 rounded-xl border border-border bg-bg/50 space-y-3">
+            <div className="flex items-center gap-2.5">
+              <div className="p-2 rounded-lg bg-emerald-500/10 text-emerald-400">
+                <DollarSign className="w-4 h-4" />
+              </div>
+              <div>
+                <label className="text-sm font-bold text-fg block">Growth Plan Seat Pricing</label>
+                <span className="text-[11px] text-muted leading-tight block mt-0.5">
+                  Seat cost in USD per month on Growth.
+                </span>
+              </div>
+            </div>
+            <div className="relative pt-1 max-w-[160px]">
+              <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted" />
+              <input
+                type="number"
+                min="1"
+                max="500"
+                value={b2bSettings.seatPrice}
+                onChange={(e) =>
+                  setB2bSettings((prev) => ({
+                    ...prev,
+                    seatPrice: Math.max(1, parseInt(e.target.value, 10) || 0),
+                  }))
+                }
+                className="w-full pl-9 pr-4 py-2 bg-bg border border-border rounded-xl text-sm font-mono font-bold text-fg focus:outline-none focus:border-accent transition"
+              />
+            </div>
+          </div>
+
+          {/* Global AI Proctoring */}
+          <div className="p-5 rounded-xl border border-border bg-bg/50 md:col-span-2 flex items-center justify-between gap-4">
+            <div className="flex gap-2.5">
+              <div className="p-2 rounded-lg bg-purple-500/10 text-purple-400 shrink-0 h-10 w-10 flex items-center justify-center">
+                <ShieldAlert className="w-4 h-4" />
+              </div>
+              <div>
+                <label className="text-sm font-bold text-fg block">Global AI Proctoring Telemetry</label>
+                <span className="text-[11px] text-muted leading-relaxed block mt-0.5 max-w-xl">
+                  Enable platform-wide candidate focus tracking, paste telemetry, blur timing logs, and suspicious integrity ratings calculations.
+                </span>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={() =>
+                setB2bSettings((prev) => ({
+                  ...prev,
+                  proctoringEnabled: !prev.proctoringEnabled,
+                }))
+              }
+              className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+                b2bSettings.proctoringEnabled ? "bg-accent" : "bg-border"
+              }`}
+            >
+              <span
+                className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-surface shadow ring-0 transition duration-200 ease-in-out ${
+                  b2bSettings.proctoringEnabled ? "translate-x-5" : "translate-x-0"
+                }`}
+              />
+            </button>
+          </div>
         </div>
       </div>
 
@@ -114,6 +208,24 @@ export default function SettingsForm({
             disabled for regular users.
           </p>
         </div>
+      </div>
+
+      <div className="flex items-center justify-between pt-4 border-t border-border">
+        <div>
+          {message && (
+            <div className={`text-xs font-bold ${message.type === "success" ? "text-emerald-500" : "text-rose-500"} animate-in fade-in slide-in-from-left-2`}>
+              {message.text}
+            </div>
+          )}
+        </div>
+        <button
+          onClick={handleSave}
+          disabled={saving}
+          className="flex items-center gap-2 px-6 py-2.5 rounded-xl bg-fg text-bg text-sm font-bold hover:bg-fg/90 transition shadow-soft disabled:opacity-50 active:scale-95"
+        >
+          {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+          Save Changes
+        </button>
       </div>
     </div>
   );

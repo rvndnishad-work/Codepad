@@ -71,7 +71,24 @@ export default async function ChallengeAttemptPage({
     }
   }
 
-  if (!isCollabPeer && !session?.user?.id) {
+  const challenge = await prisma.challenge.findUnique({
+    where: { slug },
+    include: {
+      steps: { orderBy: { position: "asc" } },
+    },
+  });
+  if (!challenge) notFound();
+
+  let takeHomeAssignment = null;
+  if (tokenParam) {
+    takeHomeAssignment = await prisma.takeHomeAssignment.findUnique({
+      where: { token: tokenParam },
+    });
+  }
+
+  const isTakeHomeValid = !!(takeHomeAssignment && takeHomeAssignment.challengeId === challenge.id);
+
+  if (!isCollabPeer && !isTakeHomeValid && !session?.user?.id) {
     redirect(
       `/login?next=${encodeURIComponent(
         `/challenges/${slug}/attempt${stepParam ? `?step=${stepParam}` : ""}`
@@ -82,14 +99,6 @@ export default async function ChallengeAttemptPage({
   const userId = session?.user?.id ?? "collab-peer";
   const userEmail = session?.user?.email?.toLowerCase() ?? null;
 
-  const challenge = await prisma.challenge.findUnique({
-    where: { slug },
-    include: {
-      steps: { orderBy: { position: "asc" } },
-    },
-  });
-  if (!challenge) notFound();
-
   // ── Access control (mirrors /tracks/[slug] page) ──────────────────────
   // - Author/admin always.
   // - published+public → anyone.
@@ -99,6 +108,28 @@ export default async function ChallengeAttemptPage({
   const isOwner = challenge.authorId === userId;
   const callerIsAdmin = isAdmin(session);
   let canView = isCollabPeer || isOwner || callerIsAdmin;
+
+  if (isTakeHomeValid && takeHomeAssignment) {
+    const now = new Date();
+    const timeLimitMs = takeHomeAssignment.timeLimitMin * 60 * 1000;
+    const startedAtTime = takeHomeAssignment.startedAt ? takeHomeAssignment.startedAt.getTime() : now.getTime();
+    const isTimeUp = now.getTime() > startedAtTime + timeLimitMs;
+
+    if (takeHomeAssignment.status === "ACTIVE" && isTimeUp) {
+      // Auto-conclude the take-home assessment
+      await prisma.takeHomeAssignment.update({
+        where: { token: tokenParam },
+        data: { status: "SUBMITTED", submittedAt: now },
+      });
+      takeHomeAssignment.status = "SUBMITTED";
+    }
+
+    if (takeHomeAssignment.status !== "ACTIVE") {
+      redirect(`/take-home/${tokenParam}`);
+    }
+
+    canView = true; // Fully authorized via valid active take-home link
+  }
 
   if (!canView) {
     if (!challenge.published) notFound();
@@ -245,6 +276,10 @@ export default async function ChallengeAttemptPage({
         }}
         starterFiles={starterFiles}
         testFiles={testFiles}
+        testCasesJson={activeStep.testCasesJson || "[]"}
+        stepId={activeStep.id}
+        takeHomeStartedAtIso={takeHomeAssignment?.startedAt ? takeHomeAssignment.startedAt.toISOString() : undefined}
+        takeHomeTimeLimitMin={takeHomeAssignment?.timeLimitMin ?? undefined}
         sessionId={sessionIdParam ?? null}
         multiplayer={multiplayerParam === "true"}
         sim={simParam === "true"}
@@ -314,7 +349,7 @@ function StepNavigator({
             <ChevronLeft className="w-4 h-4" />
           </Link>
         ) : (
-          <div className="w-8 h-8 rounded-lg border border-border/30 grid place-items-center text-muted/30">
+          <div className="w-8 h-8 rounded-lg border border-border grid place-items-center text-muted/30">
             <ChevronLeft className="w-4 h-4" />
           </div>
         )}
@@ -327,7 +362,7 @@ function StepNavigator({
             <ChevronRight className="w-4 h-4" />
           </Link>
         ) : (
-          <div className="w-8 h-8 rounded-lg border border-border/30 grid place-items-center text-muted/30">
+          <div className="w-8 h-8 rounded-lg border border-border grid place-items-center text-muted/30">
             <ChevronRight className="w-4 h-4" />
           </div>
         )}

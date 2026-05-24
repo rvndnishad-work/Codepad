@@ -24,7 +24,7 @@
  *   className   — extra CSS classes for the wrapper div
  */
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useMemo } from "react";
 import * as Y from "yjs";
 import { WebrtcProvider } from "y-webrtc";
 import { yCollab } from "y-codemirror.next";
@@ -577,33 +577,12 @@ export default function CollaborativeEditor({
         </div>
 
         {/* Online peers */}
-        <div className="flex items-center gap-1.5">
-          {peers.map((p) => (
-            <div
-              key={p.id}
-              title={p.name}
-              className="w-5 h-5 rounded-full flex items-center justify-center text-[8px] font-black text-white/90 ring-1 ring-white/20"
-              style={{ background: p.color }}
-            >
-              {p.name.charAt(0).toUpperCase()}
-            </div>
-          ))}
-          {/* Local user bubble */}
-          <div
-            title={`${username} (you)`}
-            className="w-5 h-5 rounded-full flex items-center justify-center text-[8px] font-black text-white/90 ring-2 ring-white/40"
-            style={{ background: color }}
-          >
-            {username.charAt(0).toUpperCase()}
-          </div>
-
-          {peers.length > 0 && (
-            <div className="flex items-center gap-1 ml-1">
-              <Users className="w-3 h-3 text-white/40" />
-              <span className="text-[10px] text-white/40 font-mono">{peerCount + 1}</span>
-            </div>
-          )}
-        </div>
+        <PresenceAvatarGroup
+          username={username}
+          isInterviewer={isInterviewer}
+          selfColor={color}
+          peers={peers}
+        />
       </div>
 
       {/* Editor surface */}
@@ -612,6 +591,111 @@ export default function CollaborativeEditor({
         className="flex-1 min-h-0 overflow-auto bg-[#1a1b26]"
         style={{ "--editor-font-size": `${fontSize}px` } as React.CSSProperties}
       />
+    </div>
+  );
+}
+
+function PresenceAvatarGroup({
+  username,
+  isInterviewer,
+  selfColor,
+  peers,
+}: {
+  username: string;
+  isInterviewer?: boolean;
+  selfColor: string;
+  peers: Peer[];
+}) {
+  const allUsers = useMemo(() => {
+    const isSelfInterviewer = isInterviewer ?? (username.includes("(Interviewer)") || username.includes("interviewer"));
+    const selfRole = isInterviewer === undefined ? (isSelfInterviewer ? "Interviewer" : "Candidate") : (isInterviewer ? "Interviewer" : "Candidate");
+    const selfDisplayName = username
+      .replace(" (Interviewer)", "")
+      .replace(" (Candidate)", "")
+      .replace(" (interviewer)", "")
+      .replace(" (candidate)", "");
+
+    return [
+      {
+        id: "self",
+        name: selfDisplayName,
+        role: selfRole,
+        color: selfColor,
+        isSelf: true,
+      },
+      ...peers.map((p) => {
+        const isPeerInterviewer = p.name.includes("(Interviewer)") || p.name.includes("interviewer");
+        const displayName = p.name
+          .replace(" (Interviewer)", "")
+          .replace(" (Candidate)", "")
+          .replace(" (interviewer)", "")
+          .replace(" (candidate)", "");
+        return {
+          id: String(p.id),
+          name: displayName,
+          role: isPeerInterviewer ? "Interviewer" : "Candidate",
+          color: p.color,
+          isSelf: false,
+        };
+      }),
+    ];
+  }, [username, isInterviewer, selfColor, peers]);
+
+  return (
+    <div className="flex items-center gap-2">
+      <div className="flex -space-x-1.5 overflow-hidden py-1">
+        {allUsers.map((user) => {
+          const initials = user.name.charAt(0).toUpperCase();
+          const shadowStyle = {
+            boxShadow: `0 0 8px ${user.color}22, inset 0 0 3px ${user.color}44`,
+            borderColor: user.color,
+          };
+
+          return (
+            <div
+              key={user.id}
+              style={shadowStyle}
+              className="relative group w-7 h-7 rounded-full border border-white/10 bg-[#1e1e2e] text-fg font-sans font-bold text-[10px] flex items-center justify-center cursor-pointer select-none transition-all duration-200 hover:-translate-y-0.5 hover:z-20 hover:scale-105 active:scale-95"
+            >
+              {/* Initials text */}
+              <span className="tracking-wide text-[9px]" style={{ color: user.color }}>
+                {initials}
+              </span>
+
+              {/* Online status indicator dot on the avatar */}
+              <span
+                className="absolute bottom-0 right-0 w-2 h-2 rounded-full border border-[#1e1e2e] animate-pulse"
+                style={{ backgroundColor: user.color }}
+              />
+
+              {/* Rich Glassmorphic Tooltip */}
+              <div className="absolute top-8 left-1/2 -translate-x-1/2 scale-95 opacity-0 group-hover:scale-100 group-hover:opacity-100 pointer-events-none transition-all duration-150 z-50">
+                <div className="bg-[#181c26]/95 backdrop-blur-md border border-white/10 shadow-xl rounded-xl px-2.5 py-1.5 text-center whitespace-nowrap min-w-[100px]">
+                  <p className="text-[10px] font-bold text-fg leading-tight">
+                    {user.name} {user.isSelf && <span className="text-white/45 text-[8px] font-normal">(You)</span>}
+                  </p>
+                  <p className="text-[8px] tracking-wider uppercase font-black mt-0.5" style={{ color: user.color }}>
+                    {user.role}
+                  </p>
+                </div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      <div className="flex items-center gap-1 pl-1 border-l border-white/10">
+        {peers.length === 0 ? (
+          <span className="text-[9px] uppercase tracking-widest font-extrabold text-white/30 animate-pulse">
+            waiting for peer
+          </span>
+        ) : (
+          <span className="text-[9px] uppercase tracking-widest font-extrabold text-emerald-400 flex items-center gap-1">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping" />
+            Live
+          </span>
+        )}
+      </div>
     </div>
   );
 }

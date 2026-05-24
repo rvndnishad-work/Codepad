@@ -190,10 +190,10 @@ export default function DashboardFeedHub({
   ] as const;
 
   return (
-    <div className="rounded-2xl border border-border bg-bg shadow-sm overflow-hidden">
+    <div className="rounded-2xl border border-border bg-gradient-to-b from-panel/40 via-panel/25 to-panel/15 backdrop-blur-md shadow-lg overflow-hidden">
       {/* Category Tab Bar Wrapper */}
-      <div className="border-b border-border bg-panel/30 p-2 flex flex-wrap items-center justify-between gap-4">
-        <div className="flex items-center gap-1">
+      <div className="border-b border-border bg-panel/40 p-2 flex flex-wrap items-center justify-between gap-4">
+        <div className="flex items-center gap-1 flex-wrap">
           {TABS.map(tab => {
             const Icon = tab.icon;
             const isActive = activeTab === tab.id;
@@ -201,16 +201,16 @@ export default function DashboardFeedHub({
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all duration-200 ${
+                className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all duration-200 border ${
                   isActive 
-                    ? "bg-bg text-fg shadow-sm border border-border" 
-                    : "text-muted hover:text-fg hover:bg-surface/50"
+                    ? "bg-elevated text-fg border-border shadow-[0_0_15px_rgba(0,0,0,0.15)]" 
+                    : "border-transparent text-muted hover:text-fg hover:bg-panel/20"
                 }`}
               >
-                <Icon className={`w-3.5 h-3.5 ${isActive ? "text-accent" : ""}`} />
+                <Icon className={`w-3.5 h-3.5 transition-colors ${isActive ? "text-accent" : ""}`} />
                 <span>{tab.label}</span>
-                <span className={`text-[10px] font-mono font-bold px-1.5 py-0.5 rounded-full ${
-                  isActive ? "bg-accent/15 text-accent" : "bg-muted/10 text-muted"
+                <span className={`text-[10px] font-mono font-bold px-1.5 py-0.5 rounded-full transition-colors ${
+                  isActive ? "bg-accent/15 text-accent border border-accent/20" : "bg-muted/10 text-muted"
                 }`}>
                   {tab.count}
                 </span>
@@ -222,19 +222,19 @@ export default function DashboardFeedHub({
         {/* Tab-specific View Filters Control Strip */}
         <div className="flex items-center gap-2 pr-2">
           {activeTab === "snippets" && (
-            <div className="flex items-center gap-1 bg-surface/60 border border-border rounded-xl p-1">
+            <div className="flex items-center gap-1 bg-panel/20 border border-border rounded-xl p-1">
               <button
                 onClick={() => setSnippetSort("recent")}
-                className={`px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider transition ${
-                  snippetSort === "recent" ? "bg-bg text-fg shadow-sm border border-border" : "text-muted hover:text-fg"
+                className={`px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider transition border ${
+                  snippetSort === "recent" ? "bg-elevated text-fg border-border-strong shadow-sm" : "border-transparent text-muted hover:text-fg hover:bg-panel/20"
                 }`}
               >
                 Recent
               </button>
               <button
                 onClick={() => setSnippetSort("views")}
-                className={`px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider transition ${
-                  snippetSort === "views" ? "bg-bg text-fg shadow-sm border border-border" : "text-muted hover:text-fg"
+                className={`px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider transition border ${
+                  snippetSort === "views" ? "bg-elevated text-fg border-border-strong shadow-sm" : "border-transparent text-muted hover:text-fg hover:bg-panel/20"
                 }`}
               >
                 Most Viewed
@@ -243,19 +243,19 @@ export default function DashboardFeedHub({
           )}
 
           {activeTab === "blogs" && (
-            <div className="flex items-center gap-1 bg-surface/60 border border-border rounded-xl p-1">
+            <div className="flex items-center gap-1 bg-panel/20 border border-border rounded-xl p-1">
               <button
                 onClick={() => setBlogSort("recent")}
-                className={`px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider transition ${
-                  blogSort === "recent" ? "bg-bg text-fg shadow-sm border border-border" : "text-muted hover:text-fg"
+                className={`px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider transition border ${
+                  blogSort === "recent" ? "bg-elevated text-fg border-border-strong shadow-sm" : "border-transparent text-muted hover:text-fg hover:bg-panel/20"
                 }`}
               >
                 Recent
               </button>
               <button
                 onClick={() => setBlogSort("views")}
-                className={`px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider transition ${
-                  blogSort === "views" ? "bg-bg text-fg shadow-sm border border-border" : "text-muted hover:text-fg"
+                className={`px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider transition border ${
+                  blogSort === "views" ? "bg-elevated text-fg border-border-strong shadow-sm" : "border-transparent text-muted hover:text-fg hover:bg-panel/20"
                 }`}
               >
                 Most Viewed
@@ -264,19 +264,19 @@ export default function DashboardFeedHub({
           )}
 
           {activeTab === "challenges" && (
-            <div className="flex items-center gap-1 bg-surface/60 border border-border rounded-xl p-1">
+            <div className="flex items-center gap-1 bg-panel/20 border border-border rounded-xl p-1">
               <button
                 onClick={() => setChallengeSort("recent")}
-                className={`px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider transition ${
-                  challengeSort === "recent" ? "bg-bg text-fg shadow-sm border border-border" : "text-muted hover:text-fg"
+                className={`px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider transition border ${
+                  challengeSort === "recent" ? "bg-elevated text-fg border-border-strong shadow-sm" : "border-transparent text-muted hover:text-fg hover:bg-panel/20"
                 }`}
               >
                 Recent
               </button>
               <button
                 onClick={() => setChallengeSort("attempts")}
-                className={`px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider transition ${
-                  challengeSort === "attempts" ? "bg-bg text-fg shadow-sm border border-border" : "text-muted hover:text-fg"
+                className={`px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider transition border ${
+                  challengeSort === "attempts" ? "bg-elevated text-fg border-border-strong shadow-sm" : "border-transparent text-muted hover:text-fg hover:bg-panel/20"
                 }`}
               >
                 Most Solved
@@ -285,27 +285,27 @@ export default function DashboardFeedHub({
           )}
 
           {activeTab === "solutions" && (
-            <div className="flex items-center gap-1 bg-surface/60 border border-border rounded-xl p-1">
+            <div className="flex items-center gap-1 bg-panel/20 border border-border rounded-xl p-1">
               <button
                 onClick={() => setAttemptFilter("all")}
-                className={`px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider transition ${
-                  attemptFilter === "all" ? "bg-bg text-fg shadow-sm border border-border" : "text-muted hover:text-fg"
+                className={`px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider transition border ${
+                  attemptFilter === "all" ? "bg-elevated text-fg border-border-strong shadow-sm" : "border-transparent text-muted hover:text-fg hover:bg-panel/20"
                 }`}
               >
                 All
               </button>
               <button
                 onClick={() => setAttemptFilter("passed")}
-                className={`px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider transition ${
-                  attemptFilter === "passed" ? "bg-bg text-fg shadow-sm border border-border" : "text-muted hover:text-fg"
+                className={`px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider transition border ${
+                  attemptFilter === "passed" ? "bg-elevated text-fg border-border-strong shadow-sm" : "border-transparent text-muted hover:text-fg hover:bg-panel/20"
                 }`}
               >
                 Passed
               </button>
               <button
                 onClick={() => setAttemptFilter("failed")}
-                className={`px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider transition ${
-                  attemptFilter === "failed" ? "bg-bg text-fg shadow-sm border border-border" : "text-muted hover:text-fg"
+                className={`px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider transition border ${
+                  attemptFilter === "failed" ? "bg-elevated text-fg border-border-strong shadow-sm" : "border-transparent text-muted hover:text-fg hover:bg-panel/20"
                 }`}
               >
                 Failed
@@ -316,7 +316,7 @@ export default function DashboardFeedHub({
       </div>
 
       {/* Main Tab Feed Lists Container */}
-      <div className="divide-y divide-border min-h-[350px] bg-bg flex flex-col justify-between">
+      <div className="divide-y divide-border min-h-[350px] bg-transparent flex flex-col justify-between">
         <div className="divide-y divide-border">
           
           {/* TAB 1: Shared Snippets Feed */}
@@ -324,59 +324,82 @@ export default function DashboardFeedHub({
             getSortedSnippets().length === 0 ? (
               <div className="p-16 text-center text-xs text-muted">No shared snippets shared yet.</div>
             ) : (
-              getSortedSnippets().map(snippet => (
-                <div key={snippet.id} className="p-4 hover:bg-panel/30 transition flex items-center justify-between gap-4">
-                  <div className="flex items-center gap-3 min-w-0">
-                    <div className="w-8 h-8 rounded-full overflow-hidden bg-muted relative shrink-0">
-                      {snippet.user?.image ? (
-                        <Image src={snippet.user.image} alt="" fill className="object-cover" />
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center text-[10px] font-black text-muted">
-                          {(snippet.user?.name || "?")[0]}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-5">
+                {getSortedSnippets().map(snippet => (
+                  <div key={snippet.id} className="rounded-xl border border-accent/15 bg-gradient-to-br from-accent/[0.04] via-panel/20 to-panel/10 p-4 hover:border-accent/40 hover:bg-panel/30 transition-all duration-300 flex flex-col justify-between gap-4 group relative overflow-hidden">
+                    <div className="absolute top-0 right-0 w-24 h-24 bg-accent/[0.04] rounded-full blur-2xl group-hover:scale-110 pointer-events-none" />
+                    
+                    {/* Top Header Row */}
+                    <div className="flex items-center justify-between gap-3 min-w-0">
+                      <div className="flex items-center gap-2 min-w-0">
+                        <div className="w-7 h-7 rounded-full overflow-hidden bg-bg border border-border relative shrink-0">
+                          {snippet.user?.image ? (
+                            <Image src={snippet.user.image} alt="" fill className="object-cover" />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center text-[10px] font-black text-muted">
+                              {(snippet.user?.name || "?")[0].toUpperCase()}
+                            </div>
+                          )}
                         </div>
-                      )}
+                        <div className="min-w-0">
+                          <div className="text-[10px] font-bold text-fg truncate">
+                            {snippet.user?.name || "Anonymous"}
+                          </div>
+                          <div className="text-[9px] text-muted truncate">
+                            {snippet.user?.email || "No email"}
+                          </div>
+                        </div>
+                      </div>
+                      <span className="text-[9px] font-mono text-muted shrink-0 bg-bg border border-border px-1.5 py-0.5 rounded-full">
+                        {formatRelativeTime(snippet.createdAt)}
+                      </span>
                     </div>
-                    <div className="min-w-0">
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs font-bold text-fg truncate">{snippet.title}</span>
+
+                    {/* Title & Template Badge */}
+                    <div className="space-y-2">
+                      <div className="flex items-start justify-between gap-2">
+                        <span className="text-xs font-bold text-fg group-hover:text-accent transition line-clamp-1">{snippet.title}</span>
                         {snippet.pinned && (
-                          <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-accent/15 text-accent text-[8px] font-black uppercase tracking-wider border border-accent/20">
+                          <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-lg bg-accent/10 text-accent text-[8px] font-black uppercase tracking-wider border border-accent/20 shrink-0">
                             <Pin className="w-2.5 h-2.5 rotate-[45deg]" />
                             Pinned
                           </span>
                         )}
                       </div>
-                      <div className="text-[10px] text-muted truncate mt-0.5">
-                        Created by {snippet.user?.name || snippet.user?.email || "Anonymous"} • Template: <span className="font-mono text-[9px] font-black text-muted-strong uppercase">{snippet.template}</span>
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-[8px] font-mono font-black text-muted uppercase tracking-wider bg-bg px-2 py-0.5 rounded border border-border">
+                          {snippet.template}
+                        </span>
                       </div>
                     </div>
-                  </div>
 
-                  <div className="flex items-center gap-3 shrink-0">
-                    <span className="text-[10px] font-mono font-bold text-muted flex items-center gap-1 bg-surface/50 border border-border px-2 py-0.5 rounded-full">
-                      <Eye className="w-3.5 h-3.5" />
-                      {snippet.viewCount} views
-                    </span>
-                    <span className="text-[10px] font-mono text-muted mr-1">{formatRelativeTime(snippet.createdAt)}</span>
-                    <button
-                      onClick={() => handleToggleSnippetPinned(snippet.id)}
-                      disabled={loadingId === snippet.id}
-                      className={`inline-flex items-center justify-center w-8 h-8 rounded-xl border transition ${
-                        snippet.pinned 
-                          ? "bg-accent/10 border-accent/30 text-accent hover:bg-accent/25" 
-                          : "bg-surface border-border text-muted hover:text-fg hover:border-border-strong"
-                      }`}
-                      title={snippet.pinned ? "Unpin snippet" : "Pin snippet"}
-                    >
-                      {loadingId === snippet.id ? (
-                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                      ) : (
-                        <Pin className="w-3.5 h-3.5 rotate-[45deg]" />
-                      )}
-                    </button>
+                    {/* Footer Metrics & Actions */}
+                    <div className="flex items-center justify-between pt-2 border-t border-border">
+                      <span className="text-[9px] font-mono font-bold text-muted flex items-center gap-1 bg-bg border border-border px-2 py-0.5 rounded-full">
+                        <Eye className="w-3 h-3" />
+                        {snippet.viewCount} views
+                      </span>
+
+                      <button
+                        onClick={() => handleToggleSnippetPinned(snippet.id)}
+                        disabled={loadingId === snippet.id}
+                        className={`inline-flex items-center justify-center w-7 h-7 rounded-lg border transition ${
+                          snippet.pinned 
+                            ? "bg-accent/10 border-accent/30 text-accent hover:bg-accent/20" 
+                            : "bg-bg border border-border-strong text-muted hover:text-fg hover:border-accent/40"
+                        }`}
+                        title={snippet.pinned ? "Unpin snippet" : "Pin snippet"}
+                      >
+                        {loadingId === snippet.id ? (
+                          <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                        ) : (
+                          <Pin className="w-3.5 h-3.5 rotate-[45deg]" />
+                        )}
+                      </button>
+                    </div>
                   </div>
-                </div>
-              ))
+                ))}
+              </div>
             )
           )}
 
@@ -385,58 +408,74 @@ export default function DashboardFeedHub({
             getSortedBlogs().length === 0 ? (
               <div className="p-16 text-center text-xs text-muted">No blog posts found.</div>
             ) : (
-              getSortedBlogs().map(post => (
-                <div key={post.id} className="p-4 hover:bg-panel/30 transition flex items-center justify-between gap-4">
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs font-bold text-fg truncate">{post.title}</span>
-                      {post.featured && (
-                        <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-accent/15 text-accent text-[8px] font-black uppercase tracking-wider border border-accent/20">
-                          <Star className="w-2.5 h-2.5 fill-accent" />
-                          Featured
-                        </span>
-                      )}
-                      <span className={`text-[8px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded border ${
-                        post.status === "PUBLISHED" ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-500" :
-                        post.status === "PENDING" ? "bg-amber-500/10 border-amber-500/20 text-amber-500" :
-                        "bg-muted/10 border-border text-muted"
-                      }`}>
-                        {post.status.toLowerCase()}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-5">
+                {getSortedBlogs().map(post => (
+                  <div key={post.id} className="rounded-xl border border-violet-500/15 bg-gradient-to-br from-violet-500/[0.04] via-panel/20 to-panel/10 p-4 hover:border-violet-500/40 hover:bg-panel/30 transition-all duration-300 flex flex-col justify-between gap-4 group relative overflow-hidden">
+                    <div className="absolute top-0 right-0 w-24 h-24 bg-violet-500/[0.04] rounded-full blur-2xl group-hover:scale-110 pointer-events-none" />
+                    
+                    {/* Top Header: Author & Time */}
+                    <div className="flex items-center justify-between gap-3">
+                      <span className="text-[10px] font-bold text-muted truncate">
+                        By {post.user.name || post.user.email}
+                      </span>
+                      <span className="text-[9px] font-mono text-muted bg-bg border border-border px-1.5 py-0.5 rounded-full shrink-0">
+                        {formatRelativeTime(post.createdAt)}
                       </span>
                     </div>
-                    <div className="text-[10px] text-muted truncate mt-0.5">
-                      By {post.user.name || post.user.email} • {formatRelativeTime(post.createdAt)}
+
+                    {/* Title & Badges */}
+                    <div className="space-y-2">
+                      <div className="flex items-start justify-between gap-2">
+                        <span className="text-xs font-bold text-fg group-hover:text-violet-400 transition line-clamp-2">{post.title}</span>
+                      </div>
+                      
+                      <div className="flex flex-wrap items-center gap-1.5">
+                        {post.featured && (
+                          <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-accent/10 text-accent text-[8px] font-black uppercase tracking-wider border border-accent/20">
+                            <Star className="w-2.5 h-2.5 fill-accent" />
+                            Featured
+                          </span>
+                        )}
+                        <span className={`text-[8px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded border ${
+                          post.status === "PUBLISHED" ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-400" :
+                          post.status === "PENDING" ? "bg-amber-500/10 border-amber-500/20 text-amber-400" :
+                          "bg-muted/10 border-border text-muted"
+                        }`}>
+                          {post.status.toLowerCase()}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Footer Metrics & Actions */}
+                    <div className="flex items-center justify-between pt-2 border-t border-border gap-2">
+                      <div className="flex items-center gap-1.5 bg-bg border border-border px-2 py-0.5 rounded-full text-[9px] font-mono font-bold text-muted">
+                        <span className="flex items-center gap-0.5"><Eye className="w-3 h-3" /> {post.viewCount}</span>
+                        <span className="w-1 h-1 rounded-full bg-border" />
+                        <span className="flex items-center gap-0.5"><Heart className="w-3 h-3" /> {post._count.reactions}</span>
+                        <span className="w-1 h-1 rounded-full bg-border" />
+                        <span className="flex items-center gap-0.5"><MessageSquare className="w-3 h-3" /> {post._count.comments}</span>
+                      </div>
+
+                      <button
+                        onClick={() => handleToggleBlogFeatured(post.id)}
+                        disabled={loadingId === post.id}
+                        className={`inline-flex items-center justify-center px-2.5 py-1.5 rounded-lg border text-[9px] font-black uppercase tracking-wider transition ${
+                          post.featured 
+                            ? "bg-accent/10 border-accent/30 text-accent hover:bg-accent/20" 
+                            : "bg-bg border border-border-strong text-muted hover:text-fg hover:border-accent/40"
+                        }`}
+                      >
+                        {loadingId === post.id ? (
+                          <Loader2 className="w-3 h-3 animate-spin mr-1" />
+                        ) : (
+                          <Star className={`w-3 h-3 mr-1 ${post.featured ? "fill-accent" : ""}`} />
+                        )}
+                        {post.featured ? "Featured" : "Feature"}
+                      </button>
                     </div>
                   </div>
-
-                  <div className="flex items-center gap-3 shrink-0">
-                    <div className="flex items-center gap-2 bg-surface/50 border border-border px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold text-muted">
-                      <span className="flex items-center gap-0.5"><Eye className="w-3 h-3" /> {post.viewCount}</span>
-                      <span className="w-1 h-1 rounded-full bg-border" />
-                      <span className="flex items-center gap-0.5"><Heart className="w-3 h-3" /> {post._count.reactions}</span>
-                      <span className="w-1 h-1 rounded-full bg-border" />
-                      <span className="flex items-center gap-0.5"><MessageSquare className="w-3 h-3" /> {post._count.comments}</span>
-                    </div>
-
-                    <button
-                      onClick={() => handleToggleBlogFeatured(post.id)}
-                      disabled={loadingId === post.id}
-                      className={`inline-flex items-center justify-center px-3 py-1.5 rounded-xl border text-[10px] font-black uppercase tracking-wider transition ${
-                        post.featured 
-                          ? "bg-accent/15 border-accent/30 text-accent hover:bg-accent/25" 
-                          : "bg-surface border-border text-muted hover:text-fg hover:border-border-strong"
-                      }`}
-                    >
-                      {loadingId === post.id ? (
-                        <Loader2 className="w-3 h-3 animate-spin mr-1" />
-                      ) : (
-                        <Star className={`w-3 h-3 mr-1 ${post.featured ? "fill-accent" : ""}`} />
-                      )}
-                      {post.featured ? "Featured" : "Feature"}
-                    </button>
-                  </div>
-                </div>
-              ))
+                ))}
+              </div>
             )
           )}
 
@@ -445,55 +484,67 @@ export default function DashboardFeedHub({
             getSortedChallenges().length === 0 ? (
               <div className="p-16 text-center text-xs text-muted">No challenges created yet.</div>
             ) : (
-              getSortedChallenges().map(challenge => (
-                <div key={challenge.id} className="p-4 hover:bg-panel/30 transition flex items-center justify-between gap-4">
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs font-bold text-fg truncate">{challenge.title}</span>
-                      {challenge.featured && (
-                        <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-accent/15 text-accent text-[8px] font-black uppercase tracking-wider border border-accent/20">
-                          <Star className="w-2.5 h-2.5 fill-accent" />
-                          Featured
-                        </span>
-                      )}
-                      <span className={`text-[8px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded ${
-                        challenge.difficulty === "easy" ? "bg-emerald-500/10 text-emerald-500 border-emerald-500/20" :
-                        challenge.difficulty === "medium" ? "bg-amber-500/10 text-amber-500 border-amber-500/20" :
-                        "bg-red-500/10 text-red-500 border-red-500/20"
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-5">
+                {getSortedChallenges().map(challenge => (
+                  <div key={challenge.id} className="rounded-xl border border-accent/15 bg-gradient-to-br from-accent/[0.04] via-panel/20 to-panel/10 p-4 hover:border-accent/40 hover:bg-panel/30 transition-all duration-300 flex flex-col justify-between gap-4 group relative overflow-hidden">
+                    <div className="absolute top-0 right-0 w-24 h-24 bg-accent/[0.04] rounded-full blur-2xl group-hover:scale-110 pointer-events-none" />
+                    
+                    {/* Top Header: Category & Difficulty */}
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-bg border border-border text-muted">
+                        {challenge.category || "General"}
+                      </span>
+                      <span className={`text-[8px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded border ${
+                        challenge.difficulty === "easy" ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20" :
+                        challenge.difficulty === "medium" ? "bg-amber-500/10 text-amber-400 border-amber-500/20" :
+                        "bg-red-500/10 text-red-400 border-red-500/20"
                       }`}>
                         {challenge.difficulty}
                       </span>
                     </div>
-                    <div className="text-[10px] text-muted truncate mt-0.5">
-                      Category: {challenge.category || "General"} • Created {formatRelativeTime(challenge.createdAt)}
+
+                    {/* Challenge Title */}
+                    <div className="space-y-1">
+                      <span className="text-xs font-bold text-fg group-hover:text-accent transition line-clamp-2">{challenge.title}</span>
+                      <div className="text-[9px] text-muted">
+                        Created {formatRelativeTime(challenge.createdAt)}
+                      </div>
+                    </div>
+
+                    {/* Footer Metrics & Action */}
+                    <div className="flex items-center justify-between pt-2 border-t border-border">
+                      <span className="text-[9px] font-mono font-bold text-muted flex items-center gap-1 bg-bg border border-border px-2 py-0.5 rounded-full">
+                        <TrendingUp className="w-3 h-3 text-accent" />
+                        {challenge._count.attempts} attempts
+                      </span>
+
+                      <div className="flex items-center gap-2">
+                        {challenge.featured && (
+                          <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-accent/10 text-accent text-[8px] font-black uppercase tracking-wider border border-accent/20 shrink-0">
+                            <Star className="w-2 h-2 fill-accent" />
+                            Featured
+                          </span>
+                        )}
+                        <button
+                          onClick={() => handleToggleChallengeFeatured(challenge.id)}
+                          disabled={loadingId === challenge.id}
+                          className={`inline-flex items-center justify-center px-2.5 py-1.5 rounded-lg border text-[9px] font-black uppercase tracking-wider transition ${
+                            challenge.featured 
+                              ? "bg-accent/10 border-accent/30 text-accent hover:bg-accent/20" 
+                              : "bg-bg border border-border-strong text-muted hover:text-fg hover:border-accent/40"
+                          }`}
+                        >
+                          {loadingId === challenge.id ? (
+                            <Loader2 className="w-3 h-3 animate-spin" />
+                          ) : (
+                            <Star className={`w-3 h-3 ${challenge.featured ? "fill-accent" : ""}`} />
+                          )}
+                        </button>
+                      </div>
                     </div>
                   </div>
-
-                  <div className="flex items-center gap-3 shrink-0">
-                    <span className="text-[10px] font-mono font-bold text-muted flex items-center gap-1 bg-surface/50 border border-border px-2.5 py-0.5 rounded-full">
-                      <TrendingUp className="w-3.5 h-3.5 text-accent" />
-                      {challenge._count.attempts} attempts
-                    </span>
-
-                    <button
-                      onClick={() => handleToggleChallengeFeatured(challenge.id)}
-                      disabled={loadingId === challenge.id}
-                      className={`inline-flex items-center justify-center px-3 py-1.5 rounded-xl border text-[10px] font-black uppercase tracking-wider transition ${
-                        challenge.featured 
-                          ? "bg-accent/15 border-accent/30 text-accent hover:bg-accent/25" 
-                          : "bg-surface border-border text-muted hover:text-fg hover:border-border-strong"
-                      }`}
-                    >
-                      {loadingId === challenge.id ? (
-                        <Loader2 className="w-3 h-3 animate-spin mr-1" />
-                      ) : (
-                        <Star className={`w-3 h-3 mr-1 ${challenge.featured ? "fill-accent" : ""}`} />
-                      )}
-                      {challenge.featured ? "Featured" : "Feature"}
-                    </button>
-                  </div>
-                </div>
-              ))
+                ))}
+              </div>
             )
           )}
 
@@ -502,61 +553,84 @@ export default function DashboardFeedHub({
             getFilteredAttempts().length === 0 ? (
               <div className="p-16 text-center text-xs text-muted">No solution attempts match this filter.</div>
             ) : (
-              getFilteredAttempts().map(attempt => (
-                <div key={attempt.id} className="p-4 hover:bg-panel/30 transition flex items-center justify-between gap-4">
-                  <div className="flex items-center gap-3 min-w-0">
-                    <div className="w-8 h-8 rounded-full overflow-hidden bg-muted relative shrink-0">
-                      {attempt.user.image ? (
-                        <Image src={attempt.user.image} alt="" fill className="object-cover" />
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center text-[10px] font-black text-muted">
-                          {(attempt.user.name || "?")[0]}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-5">
+                {getFilteredAttempts().map(attempt => (
+                  <div key={attempt.id} className="rounded-xl border border-emerald-500/15 bg-gradient-to-br from-emerald-500/[0.04] via-panel/20 to-panel/10 p-4 hover:border-emerald-500/40 hover:bg-panel/30 transition-all duration-300 flex flex-col justify-between gap-4 group relative overflow-hidden">
+                    <div className="absolute top-0 right-0 w-24 h-24 bg-emerald-500/[0.04] rounded-full blur-2xl group-hover:scale-110 pointer-events-none" />
+                    
+                    {/* Top User Info Row */}
+                    <div className="flex items-center justify-between gap-3">
+                      <div className="flex items-center gap-2 min-w-0">
+                        <div className="w-7 h-7 rounded-full overflow-hidden bg-bg border border-border relative shrink-0">
+                          {attempt.user.image ? (
+                            <Image src={attempt.user.image} alt="" fill className="object-cover" />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center text-[10px] font-black text-muted">
+                              {(attempt.user.name || "?")[0].toUpperCase()}
+                            </div>
+                          )}
                         </div>
-                      )}
-                    </div>
-                    <div className="min-w-0">
-                      <div className="text-xs font-bold text-fg truncate">
-                        {attempt.user.name || attempt.user.email}
+                        <div className="min-w-0">
+                          <div className="text-[10px] font-bold text-fg truncate">
+                            {attempt.user.name || "Developer"}
+                          </div>
+                          <div className="text-[9px] text-muted truncate">
+                            {attempt.user.email}
+                          </div>
+                        </div>
                       </div>
-                      <div className="text-[10px] text-muted truncate mt-0.5">
-                        attempted <Link href={`/admin/challenges?q=${attempt.challenge.slug}`} className="text-muted-strong hover:text-accent font-semibold">{attempt.challenge.title}</Link>
-                      </div>
+                      <span className="text-[9px] font-mono text-muted shrink-0 bg-bg border border-border px-1.5 py-0.5 rounded-full">
+                        {formatRelativeTime(attempt.startedAt)}
+                      </span>
                     </div>
-                  </div>
 
-                  <div className="flex items-center gap-3 shrink-0">
-                    <span className={`text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full ${
-                      attempt.challenge.difficulty === "easy" ? "bg-emerald-500/10 text-emerald-500" :
-                      attempt.challenge.difficulty === "medium" ? "bg-amber-500/10 text-amber-500" :
-                      "bg-red-500/10 text-red-500"
-                    }`}>
-                      {attempt.challenge.difficulty}
-                    </span>
-                    <span className={`inline-flex items-center gap-1 text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full ${
-                      attempt.status === "passed" ? "bg-emerald-500/20 text-emerald-400" :
-                      attempt.status === "failed" ? "bg-red-500/20 text-red-400" :
-                      "bg-muted/30 text-muted"
-                    }`}>
-                      {attempt.status === "passed" ? (
-                        <CheckCircle2 className="w-2.5 h-2.5" />
-                      ) : attempt.status === "failed" ? (
-                        <XCircle className="w-2.5 h-2.5" />
-                      ) : (
-                        <AlertCircle className="w-2.5 h-2.5" />
-                      )}
-                      {attempt.status}
-                    </span>
-                    <span className="text-[10px] font-mono text-muted">{formatRelativeTime(attempt.startedAt)}</span>
+                    {/* Attempt Details */}
+                    <div className="space-y-1.5">
+                      <div className="text-[10px] text-muted">
+                        Attempted challenge:
+                      </div>
+                      <Link 
+                        href={`/admin/challenges?q=${attempt.challenge.slug}`} 
+                        className="text-xs font-bold text-fg hover:text-accent transition line-clamp-1 block"
+                      >
+                        {attempt.challenge.title}
+                      </Link>
+                    </div>
+
+                    {/* Bottom badges */}
+                    <div className="flex items-center justify-between pt-2 border-t border-border">
+                      <span className={`text-[8px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full border ${
+                        attempt.challenge.difficulty === "easy" ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20" :
+                        attempt.challenge.difficulty === "medium" ? "bg-amber-500/10 text-amber-400 border-amber-500/20" :
+                        "bg-red-500/10 text-red-400 border-red-500/20"
+                      }`}>
+                        {attempt.challenge.difficulty}
+                      </span>
+
+                      <span className={`inline-flex items-center gap-1 text-[8px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full border ${
+                        attempt.status === "passed" ? "bg-emerald-500/10 border-emerald-500/25 text-emerald-400" :
+                        attempt.status === "failed" ? "bg-red-500/10 border-red-500/25 text-red-400" :
+                        "bg-panel/40 border border-border text-muted"
+                      }`}>
+                        {attempt.status === "passed" ? (
+                          <CheckCircle2 className="w-2.5 h-2.5" />
+                        ) : attempt.status === "failed" ? (
+                          <XCircle className="w-2.5 h-2.5" />
+                        ) : (
+                          <AlertCircle className="w-2.5 h-2.5" />
+                        )}
+                        {attempt.status}
+                      </span>
+                    </div>
                   </div>
-                </div>
-              ))
+                ))}
+              </div>
             )
           )}
-
         </div>
 
         {/* Global Catalog Footer Details */}
-        <div className="bg-panel/20 p-3 border-t border-border flex items-center justify-between text-xs text-muted font-medium">
+        <div className="bg-panel/40 backdrop-blur-md p-4 border-t border-border flex items-center justify-between text-xs text-muted font-medium">
           <span>Displaying top entries from index logs.</span>
           {activeTab === "blogs" && (
             <Link href="/admin/blogs" className="font-bold text-accent hover:underline inline-flex items-center gap-1">

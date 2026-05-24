@@ -24,7 +24,10 @@ export default async function InterviewRunPage({
 
   const session = await auth().catch(() => null);
   await validatePageAccess("/interview/new", session);
-  const interview = await prisma.interviewSession.findUnique({ where: { id } });
+  const interview = await prisma.interviewSession.findUnique({
+    where: { id },
+    include: { rubric: true },
+  });
   if (!interview) notFound();
 
   // Access: owner OR holder of correct shareToken (read-only).
@@ -134,6 +137,7 @@ export default async function InterviewRunPage({
       finishedAt: true,
       files: true,
       testResults: true,
+      score: true,
     },
     orderBy: { startedAt: "asc" },
   });
@@ -156,6 +160,10 @@ export default async function InterviewRunPage({
         sourceType,
         scenario: interview.scenario,
         activePlaygroundId: interview.activePlaygroundId,
+        rubric: interview.rubric ? {
+          ratings: interview.rubric.ratings,
+          notes: interview.rubric.notes,
+        } : null,
       }}
       challenges={ordered}
       playgrounds={orderedPlaygrounds}
@@ -165,6 +173,7 @@ export default async function InterviewRunPage({
         durationSec: a.durationSec ?? null,
         files: a.files,
         testResults: a.testResults,
+        score: a.score,
       }))}
       interviewerView={interviewerView}
       isOwner={isOwner}

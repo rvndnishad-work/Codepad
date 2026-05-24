@@ -52,37 +52,33 @@ export default async function AdminChallengesPage() {
       ) : (
         <ChallengesBulkTable>
           <div className="rounded-2xl border border-border bg-surface overflow-hidden">
-            <table className="w-full text-sm">
-              <thead className="bg-elevated/50 text-[10px] uppercase tracking-[0.15em] text-muted">
-                <tr>
-                  <th className="pl-4 pr-2 py-3 w-8">
-                    <BulkHeaderCheckbox ids={rows.map((r) => r.id)} />
-                  </th>
-                  <th className="text-left px-4 py-3 font-bold">Title</th>
-                  <th className="text-left px-4 py-3 font-bold">Difficulty</th>
-                  <th className="text-left px-4 py-3 font-bold">Category</th>
-                  <th className="text-left px-4 py-3 font-bold">Attempts</th>
-                  <th className="text-left px-4 py-3 font-bold">Status</th>
-                  <th className="text-right px-4 py-3 font-bold"></th>
-                </tr>
-              </thead>
-              <tbody>
-                {rows.map((c) => (
-                  <AdminChallengeRow
-                    key={c.id}
-                    challenge={{
-                      id: c.id,
-                      slug: c.slug,
-                      title: c.title,
-                      difficulty: c.difficulty,
-                      category: c.category,
-                      published: c.published,
-                      attempts: c._count.attempts,
-                    }}
-                  />
-                ))}
-              </tbody>
-            </table>
+            <div className="hidden lg:grid lg:grid-cols-[40px_3fr_1.2fr_1.2fr_1fr_1.2fr_2.5fr] lg:items-center lg:px-6 lg:py-4 bg-elevated/50 text-[10px] uppercase tracking-[0.15em] text-muted border-b border-border font-bold">
+              <div className="flex items-center justify-center">
+                <BulkHeaderCheckbox ids={rows.map((r) => r.id)} />
+              </div>
+              <div>Title</div>
+              <div>Difficulty</div>
+              <div>Category</div>
+              <div>Attempts</div>
+              <div>Status</div>
+              <div className="text-right">Actions</div>
+            </div>
+            <div className="divide-y divide-border">
+              {rows.map((c) => (
+                <AdminChallengeRow
+                  key={c.id}
+                  challenge={{
+                    id: c.id,
+                    slug: c.slug,
+                    title: c.title,
+                    difficulty: c.difficulty,
+                    category: c.category,
+                    published: c.published,
+                    attempts: c._count.attempts,
+                  }}
+                />
+              ))}
+            </div>
           </div>
         </ChallengesBulkTable>
       )}

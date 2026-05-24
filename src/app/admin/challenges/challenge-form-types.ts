@@ -4,6 +4,15 @@
 // "use client" — server components can't call functions exported from a
 // client module.
 
+export type TestCaseInput = {
+  id: string;
+  name: string;
+  input: string;
+  expected: string;
+  isHidden: boolean;
+  weight: number;
+};
+
 export type ChallengeStepInput = {
   title: string;
   description: string;
@@ -13,6 +22,7 @@ export type ChallengeStepInput = {
   estimatedMinutes: number;
   hint: string;
   videoUrl: string;
+  testCases: TestCaseInput[];
 };
 
 export type ChallengeFormInput = {
@@ -50,5 +60,6 @@ export function blankStep(): ChallengeStepInput {
     estimatedMinutes: 15,
     hint: "",
     videoUrl: "",
+    testCases: [],
   };
 }

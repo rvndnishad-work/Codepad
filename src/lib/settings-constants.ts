@@ -8,6 +8,8 @@ export interface NavLinkConfig {
 
 export const DEFAULT_NAV_LINKS: NavLinkConfig[] = [
   { href: "/", label: "Home", status: "visible" },
+  { href: "/features", label: "Features", status: "visible" },
+  { href: "/pricing", label: "Pricing", status: "visible" },
   { href: "/playgrounds", label: "Playgrounds", status: "visible" },
   { href: "/challenges", label: "Challenges", status: "visible" },
   { href: "/blog", label: "Blog", status: "visible" },

@@ -8,6 +8,7 @@ const schema = z.object({
   name: z.string().trim().min(1).max(80).optional(),
   email: z.string().trim().toLowerCase().email().max(254),
   password: z.string().min(8).max(200),
+  userType: z.enum(["candidate", "recruiter"]).optional(),
 });
 
 export async function POST(req: Request) {
@@ -37,7 +38,7 @@ export async function POST(req: Request) {
     );
   }
 
-  const { name, email, password } = parsed.data;
+  const { name, email, password, userType } = parsed.data;
 
   const existing = await prisma.user.findUnique({
     where: { email },
@@ -59,6 +60,7 @@ export async function POST(req: Request) {
       data: {
         passwordHash,
         ...(name ? { name } : {}),
+        ...(userType ? { userType } : {}),
       },
     });
   } else {
@@ -67,6 +69,7 @@ export async function POST(req: Request) {
         email,
         name: name ?? email.split("@")[0],
         passwordHash,
+        userType: userType ?? null,
       },
     });
   }

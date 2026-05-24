@@ -138,7 +138,7 @@ export default function ChallengesBulkTable({ children }: { children: ReactNode 
       {selected.size > 0 && (
         <div className="fixed inset-x-0 bottom-4 z-40 flex justify-center px-4 pointer-events-none">
           <div className="pointer-events-auto bg-bg/95 backdrop-blur border border-border rounded-2xl shadow-2xl px-4 py-3 flex flex-wrap items-center gap-2 max-w-[920px]">
-            <div className="flex items-center gap-2 pr-3 border-r border-border/60">
+            <div className="flex items-center gap-2 pr-3 border-r border-border">
               <span className="inline-flex items-center justify-center w-7 h-7 rounded-full bg-accent text-bg text-xs font-black tabular-nums">
                 {selected.size}
               </span>

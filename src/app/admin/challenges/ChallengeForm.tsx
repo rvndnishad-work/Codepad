@@ -21,6 +21,10 @@ import {
   Save,
   Trash2,
   X,
+  Eye,
+  EyeOff,
+  Award,
+  Sparkles,
 } from "lucide-react";
 
 // Types + pure helpers live in `./challenge-form-types` so server components
@@ -239,6 +243,7 @@ export default function ChallengeForm({
       estimatedMinutes: number;
       hint?: string;
       videoUrl?: string;
+      testCases?: any[];
     }[] = [];
 
     for (const [i, step] of form.steps.entries()) {
@@ -272,6 +277,7 @@ export default function ChallengeForm({
         estimatedMinutes: Number(step.estimatedMinutes) || 15,
         hint: step.hint.trim() || undefined,
         videoUrl: step.videoUrl.trim() || undefined,
+        testCases: step.testCases || [],
       });
     }
 
@@ -775,7 +781,7 @@ function StepRow({
       </div>
 
       {expanded && (
-        <div className="border-t border-border/50 p-4 space-y-3">
+        <div className="border-t border-border p-4 space-y-3">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
             <Field label="Step title" className="md:col-span-2">
               <input
@@ -858,6 +864,153 @@ function StepRow({
                 emptyHint="No test files yet — click + to add one."
               />
             </Field>
+          </div>
+
+          {/* Visual Test Case Builder */}
+          <div className="rounded-xl border border-border bg-surface/50 p-4 space-y-3 mt-3">
+            <div className="flex items-center justify-between">
+              <div>
+                <h4 className="text-xs font-black uppercase tracking-[0.15em] text-muted inline-flex items-center gap-1.5">
+                  <Award className="w-3.5 h-3.5 text-accent" />
+                  Visual Test Cases (Grading Engine)
+                </h4>
+                <p className="text-[10px] text-muted/60 mt-0.5 max-w-xl leading-relaxed">
+                  Add structured inputs, outputs, and point weights. When candidates submit their code, the platform grades it automatically against these cases.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  const currentCases = step.testCases || [];
+                  const newCases = [
+                    ...currentCases,
+                    {
+                      id: Math.random().toString(36).substring(7),
+                      name: `Test Case #${currentCases.length + 1}`,
+                      input: "",
+                      expected: "",
+                      isHidden: false,
+                      weight: 10,
+                    },
+                  ];
+                  onUpdate("testCases", newCases);
+                }}
+                className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-accent text-bg text-[10px] font-black uppercase tracking-wider hover:bg-accent-soft transition"
+              >
+                <Plus className="w-3 h-3" />
+                Add Test Case
+              </button>
+            </div>
+
+            {(!step.testCases || step.testCases.length === 0) ? (
+              <div className="rounded-lg border border-dashed border-border p-6 text-center">
+                <FlaskConical className="w-6 h-6 text-muted/40 mx-auto mb-2" />
+                <div className="text-xs font-bold text-muted/80">No visual test cases defined</div>
+                <div className="text-[10px] text-muted/50 mt-1 max-w-sm mx-auto">
+                  Click &quot;Add Test Case&quot; to define inputs, expected outputs, and scoring weights for automatic grading.
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-3 max-h-[400px] overflow-y-auto pr-1">
+                {step.testCases.map((tc, tcIdx) => (
+                  <div key={tc.id} className="rounded-lg border border-border bg-elevated/40 p-3 space-y-2.5 hover:border-border-strong transition">
+                    <div className="flex items-center justify-between gap-2">
+                      <input
+                        value={tc.name}
+                        onChange={(e) => {
+                          const updated = step.testCases.map((c, i) => i === tcIdx ? { ...c, name: e.target.value } : c);
+                          onUpdate("testCases", updated);
+                        }}
+                        className="bg-transparent font-bold text-xs text-fg focus:outline-none border-b border-transparent focus:border-accent/40 w-full max-w-sm py-0.5"
+                        placeholder="Test Case Name"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const updated = step.testCases.filter((_, i) => i !== tcIdx);
+                          onUpdate("testCases", updated);
+                        }}
+                        className="text-muted/60 hover:text-rose-500 transition p-1"
+                        title="Remove Test Case"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-[9px] font-black uppercase tracking-wider text-muted/70 mb-1">Input / Arguments</label>
+                        <textarea
+                          value={tc.input}
+                          onChange={(e) => {
+                            const updated = step.testCases.map((c, i) => i === tcIdx ? { ...c, input: e.target.value } : c);
+                            onUpdate("testCases", updated);
+                          }}
+                          className={`${inputClass} font-mono text-xs`}
+                          rows={2}
+                          placeholder="e.g. [1, 2], 3"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-[9px] font-black uppercase tracking-wider text-muted/70 mb-1">Expected Output</label>
+                        <textarea
+                          value={tc.expected}
+                          onChange={(e) => {
+                            const updated = step.testCases.map((c, i) => i === tcIdx ? { ...c, expected: e.target.value } : c);
+                            onUpdate("testCases", updated);
+                          }}
+                          className={`${inputClass} font-mono text-xs`}
+                          rows={2}
+                          placeholder="e.g. [0, 1]"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="flex flex-wrap items-center gap-4 pt-1 text-[11px] text-muted">
+                      <label className="flex items-center gap-1.5 cursor-pointer hover:text-fg transition select-none">
+                        <input
+                          type="checkbox"
+                          checked={tc.isHidden}
+                          onChange={(e) => {
+                            const updated = step.testCases.map((c, i) => i === tcIdx ? { ...c, isHidden: e.target.checked } : c);
+                            onUpdate("testCases", updated);
+                          }}
+                          className="w-3.5 h-3.5 accent-accent"
+                        />
+                        <span className="inline-flex items-center gap-1">
+                          {tc.isHidden ? (
+                            <>
+                              <EyeOff className="w-3 h-3 text-amber-500" />
+                              Hidden from candidate
+                            </>
+                          ) : (
+                            <>
+                              <Eye className="w-3 h-3 text-emerald-500" />
+                              Publicly visible
+                            </>
+                          )}
+                        </span>
+                      </label>
+                      <div className="flex items-center gap-1.5 ml-auto">
+                        <span className="text-[9px] font-black uppercase tracking-wider">Score Weight:</span>
+                        <input
+                          type="number"
+                          min={1}
+                          max={100}
+                          value={tc.weight}
+                          onChange={(e) => {
+                            const updated = step.testCases.map((c, i) => i === tcIdx ? { ...c, weight: Number(e.target.value) || 0 } : c);
+                            onUpdate("testCases", updated);
+                          }}
+                          className={`${inputClass} w-16 py-0.5 text-center font-mono`}
+                        />
+                        <span className="text-[10px] font-bold">pts</span>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
 
           <Field
@@ -979,7 +1132,7 @@ function TemplatePicker({
                 </li>
               ))}
             </ul>
-            <div className="px-3 pt-1 pb-2 border-t border-border/50 text-[9px] text-muted/50 leading-relaxed">
+            <div className="px-3 pt-1 pb-2 border-t border-border text-[9px] text-muted/50 leading-relaxed">
               Replaces the current question&apos;s description, starter,
               tests, and Sandpack template. Title is preserved.
             </div>

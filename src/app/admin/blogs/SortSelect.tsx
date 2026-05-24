@@ -20,7 +20,7 @@ export default function SortSelect() {
       <select
         value={currentSort}
         onChange={(e) => handleSortChange(e.target.value)}
-        className="appearance-none bg-surface border border-border rounded-xl py-2 pl-4 pr-10 text-sm focus:outline-none focus:ring-2 focus:ring-accent/20 focus:border-accent transition cursor-pointer font-medium text-muted hover:text-fg hover:border-border-strong min-w-[140px]"
+        className="appearance-none bg-panel/20 border border-border backdrop-blur-md rounded-xl py-2 pl-4 pr-10 text-sm text-fg focus:outline-none focus:ring-2 focus:ring-accent/20 focus:border-accent transition cursor-pointer font-medium hover:text-fg hover:border-border min-w-[140px]"
       >
         <option value="createdAt_desc">Date: Newest</option>
         <option value="featured_desc">Featured First</option>

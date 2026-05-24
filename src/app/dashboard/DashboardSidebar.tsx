@@ -1,6 +1,7 @@
 "use client";
 
-import { Newspaper, Keyboard, Info, ExternalLink, MessageSquare } from "lucide-react";
+import Link from "next/link";
+import { Newspaper, Keyboard, Info, ExternalLink, MessageSquare, Building2, Plus, Sparkles } from "lucide-react";
 
 const NEWS = [
   { title: "Monaco Editor Intelligence Boost", date: "May 2", href: "#" },
@@ -14,9 +15,75 @@ const SHORTCUTS = [
   { keys: ["Ctrl", "P"], label: "Search files" },
 ];
 
-export default function DashboardSidebar() {
+type WorkspaceItem = {
+  name: string;
+  slug: string;
+  plan: string;
+};
+
+export default function DashboardSidebar({
+  workspaces = [],
+}: {
+  workspaces?: WorkspaceItem[];
+}) {
   return (
     <div className="space-y-6">
+      {/* Corporate Hubs Section */}
+      <div className="rounded-3xl border border-indigo-500/20 bg-indigo-500/5 p-6 relative overflow-hidden">
+        {/* Background shine */}
+        <div className="absolute top-0 right-0 w-24 h-24 bg-accent/10 rounded-full blur-2xl pointer-events-none" />
+        
+        <h3 className="text-xs font-black text-indigo-400 uppercase tracking-widest flex items-center justify-between mb-4">
+          <span className="flex items-center gap-2">
+            <Building2 className="w-4 h-4 text-indigo-400" />
+            Recruitment Hubs
+          </span>
+          <span className="text-[9px] font-black uppercase bg-indigo-500/10 px-1.5 py-0.5 rounded border border-indigo-500/15">
+            B2B SaaS
+          </span>
+        </h3>
+
+        {workspaces.length === 0 ? (
+          <div className="space-y-3.5">
+            <p className="text-xs text-muted/90 leading-relaxed">
+              Unlock developer asynchronous screening, automated test builders, and collaborative candidate review panels.
+            </p>
+            <Link
+              href="/w/create"
+              className="w-full py-2.5 rounded-xl bg-accent hover:bg-accent-soft text-bg text-[10px] font-black uppercase tracking-wider transition-colors shadow-soft flex items-center justify-center gap-1"
+            >
+              <Plus className="w-3.5 h-3.5 stroke-[3px]" />
+              <span>Create Workspace</span>
+            </Link>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            <div className="space-y-1.5 max-h-48 overflow-y-auto pr-1">
+              {workspaces.map((ws) => (
+                <Link
+                  key={ws.slug}
+                  href={`/w/${ws.slug}`}
+                  className="flex items-center justify-between gap-2 p-2.5 rounded-xl border border-border bg-surface/30 hover:border-indigo-500/30 hover:bg-surface/60 transition-all text-xs font-bold text-muted hover:text-fg group"
+                >
+                  <span className="truncate">{ws.name}</span>
+                  <span className="text-[8px] font-black uppercase text-indigo-400 shrink-0 px-1 rounded bg-indigo-500/10 border border-indigo-500/15">
+                    {ws.plan}
+                  </span>
+                </Link>
+              ))}
+            </div>
+            
+            <Link
+              href="/w/create"
+              className="flex items-center justify-center gap-1.5 w-full py-2 rounded-xl border border-dashed border-border hover:border-indigo-400 hover:text-indigo-400 text-muted/70 text-[10px] font-black uppercase tracking-wider transition-colors"
+            >
+              <Plus className="w-3.5 h-3.5" />
+              <span>Add Workspace</span>
+            </Link>
+          </div>
+        )}
+      </div>
+
       {/* News Section */}
       <div className="rounded-3xl border border-border bg-panel p-6">
         <h3 className="text-sm font-semibold text-fg flex items-center gap-2 mb-4">

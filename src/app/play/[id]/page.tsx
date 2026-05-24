@@ -1,8 +1,10 @@
-import Playground from "@/components/Playground";
+import PlaygroundLoader from "@/components/PlaygroundLoader";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
 import { notFound } from "next/navigation";
 import type { SandpackFiles } from "@codesandbox/sandpack-react";
+
+
 
 export default async function SavedPlaygroundPage({
   params,
@@ -48,7 +50,7 @@ export default async function SavedPlaygroundPage({
   const tags = parseTags(snippet.tags);
 
   const inner = (
-    <Playground
+    <PlaygroundLoader
       templateId={snippet.template}
       initialTitle={snippet.title}
       initialFiles={files}

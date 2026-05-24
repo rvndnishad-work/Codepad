@@ -1,4 +1,4 @@
-import { getNavLinks } from "@/lib/settings";
+import { getNavLinks, getB2bSettings } from "@/lib/settings";
 import SettingsForm from "./SettingsForm";
 
 export const metadata = {
@@ -6,7 +6,10 @@ export const metadata = {
 };
 
 export default async function SettingsPage() {
-  const links = await getNavLinks();
+  const [links, b2bSettings] = await Promise.all([
+    getNavLinks(),
+    getB2bSettings(),
+  ]);
 
   return (
     <div>
@@ -15,7 +18,8 @@ export default async function SettingsPage() {
         <p className="text-sm text-muted mt-1">Configure global application behavior.</p>
       </div>
 
-      <SettingsForm initialLinks={links} />
+      <SettingsForm initialLinks={links} initialB2bSettings={b2bSettings} />
     </div>
   );
 }
+

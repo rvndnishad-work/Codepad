@@ -349,6 +349,7 @@ export default function CollaborativePlayground({
       options={{ activeFile: initialActive }}
     >
       <Bridge
+        roomId={roomId}
         provider={provider}
         yDoc={yDoc}
         peers={peers}
@@ -363,6 +364,7 @@ export default function CollaborativePlayground({
 
 
 function Bridge({
+  roomId,
   provider,
   yDoc,
   peers,
@@ -371,6 +373,7 @@ function Bridge({
   isInterviewer,
   initialFiles,
 }: {
+  roomId: string;
   provider: WebrtcProvider | null;
   yDoc: Y.Doc;
   peers: RemotePeer[];
@@ -392,18 +395,111 @@ function Bridge({
   const [unreadCount, setUnreadCount] = useState(0);
   const [rightView, setRightView] = useState<"preview" | "both" | "console">("both");
 
-  const { width: explorerW, onPointerDown: onExplorerDrag } = useResizable(200, 120, 400);
+  const { width: explorerW, onPointerDown: onExplorerDrag, setWidth: setExplorerW } = useResizable(200, 120, 400);
   const { width: editorW, onPointerDown: onEditorDrag, setWidth: setEditorW } = useResizable(500, 200, 2000);
   const { height: consoleH, onPointerDown: onConsoleDrag, setHeight: setConsoleH } = useResizableHeight(200, 80, 1200);
 
+  // Hydrate states from sessionStorage on mount
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    try {
+      const savedExplorerCollapsed = sessionStorage.getItem(`${roomId}:explorer_collapsed`);
+      if (savedExplorerCollapsed !== null) {
+        setExplorerCollapsed(savedExplorerCollapsed === "true");
+      }
+
+      const savedChatOpen = sessionStorage.getItem(`${roomId}:chat_open`);
+      if (savedChatOpen !== null) {
+        setChatOpen(savedChatOpen === "true");
+      }
+
+      const savedRightView = sessionStorage.getItem(`${roomId}:right_view`);
+      if (savedRightView !== null) {
+        setRightView(savedRightView as "preview" | "both" | "console");
+      }
+
+      const savedExplorerW = sessionStorage.getItem(`${roomId}:explorer_w`);
+      if (savedExplorerW !== null) {
+        setExplorerW(parseInt(savedExplorerW, 10));
+      }
+
+      const savedEditorW = sessionStorage.getItem(`${roomId}:editor_w`);
+      if (savedEditorW !== null) {
+        setEditorW(parseInt(savedEditorW, 10));
+      }
+
+      const savedConsoleH = sessionStorage.getItem(`${roomId}:console_h`);
+      if (savedConsoleH !== null) {
+        setConsoleH(parseInt(savedConsoleH, 10));
+      }
+      
+      const savedActivePath = sessionStorage.getItem(`${roomId}:active_path`);
+      if (savedActivePath !== null) {
+        // Delayed to make sure Sandpack has loaded its files
+        const timer = setTimeout(() => {
+          if (sandpack.files[savedActivePath]) {
+            sandpack.openFile(savedActivePath);
+          }
+        }, 100);
+        return () => clearTimeout(timer);
+      }
+    } catch (e) {
+      console.warn("Failed to load session states:", e);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [roomId]);
+
+  // Persist states to sessionStorage
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    sessionStorage.setItem(`${roomId}:explorer_collapsed`, String(explorerCollapsed));
+  }, [explorerCollapsed, roomId]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    sessionStorage.setItem(`${roomId}:chat_open`, String(chatOpen));
+  }, [chatOpen, roomId]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    sessionStorage.setItem(`${roomId}:right_view`, rightView);
+  }, [rightView, roomId]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    sessionStorage.setItem(`${roomId}:explorer_w`, String(explorerW));
+  }, [explorerW, roomId]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    sessionStorage.setItem(`${roomId}:editor_w`, String(editorW));
+  }, [editorW, roomId]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    sessionStorage.setItem(`${roomId}:console_h`, String(consoleH));
+  }, [consoleH, roomId]);
+
+  useEffect(() => {
+    if (typeof window === "undefined" || !activePath) return;
+    sessionStorage.setItem(`${roomId}:active_path`, activePath);
+  }, [activePath, roomId]);
+
   useEffect(() => {
     if (typeof window !== "undefined") {
-      const explorerWidth = explorerCollapsed ? 40 : explorerW;
-      const remainingW = window.innerWidth - explorerWidth;
-      setEditorW(Math.max(200, Math.floor(remainingW * 0.5)));
+      const savedExplorerW = sessionStorage.getItem(`${roomId}:explorer_w`);
+      if (savedExplorerW === null) {
+        const explorerWidth = explorerCollapsed ? 40 : explorerW;
+        const remainingW = window.innerWidth - explorerWidth;
+        setEditorW(Math.max(200, Math.floor(remainingW * 0.5)));
+      }
 
-      const totalH = window.innerHeight - 64; // 64px header
-      setConsoleH(Math.max(80, Math.floor(totalH * 0.4)));
+      const savedConsoleH = sessionStorage.getItem(`${roomId}:console_h`);
+      if (savedConsoleH === null) {
+        const totalH = window.innerHeight - 64; // 64px header
+        setConsoleH(Math.max(80, Math.floor(totalH * 0.4)));
+      }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -620,6 +716,36 @@ function Bridge({
     const yFiles = yDoc.getMap<Y.Text>("files");
     const observer = (events: Y.YEvent<Y.AbstractType<unknown>>[]) => {
       for (const ev of events) {
+        // Handle Map-level updates (additions, deletions, name updates)
+        if (ev.target === yFiles) {
+          const mapEvent = ev as Y.YMapEvent<Y.Text>;
+          mapEvent.changes.keys.forEach((change, path) => {
+            if (change.action === "add") {
+              const yText = yFiles.get(path);
+              if (yText) {
+                const code = yText.toString();
+                if (!sandpack.files[path]) {
+                  sandpack.addFile(path, code);
+                }
+              }
+            } else if (change.action === "delete") {
+              if (sandpack.files[path]) {
+                sandpack.deleteFile(path);
+              }
+            } else if (change.action === "update") {
+              const yText = yFiles.get(path);
+              if (yText) {
+                const code = yText.toString();
+                const current = sandpack.files[path]?.code;
+                if (current !== code) {
+                  sandpack.updateFile(path, code);
+                }
+              }
+            }
+          });
+          continue;
+        }
+
         // ev.target is the Y.Text whose contents changed
         const target = ev.target;
         if (!(target instanceof Y.Text)) continue;
@@ -722,7 +848,7 @@ function Bridge({
           <>
             <div style={{ width: explorerW, minWidth: 0 }} className="h-full shrink-0 flex flex-col ide-panel border-r border-border bg-surface/30">
               <div className="flex-1 min-h-0 overflow-y-auto">
-                <FileExplorer readOnly onCollapse={() => setExplorerCollapsed(true)} />
+                <FileExplorer readOnly={false} onCollapse={() => setExplorerCollapsed(true)} />
               </div>
             </div>
             <div className="ide-divider h-full w-px cursor-col-resize" onPointerDown={onExplorerDrag}>
@@ -803,24 +929,12 @@ function Bridge({
                 )}
               </div>
               <div className="w-px h-4 bg-border mx-1" />
-              <PresenceDot
-                label={username + (isInterviewer ? " (you · interviewer)" : " (you · candidate)")}
-                color={selfColor}
-                self
+              <PresenceAvatarGroup
+                username={username}
+                isInterviewer={isInterviewer}
+                selfColor={selfColor}
+                peers={peers}
               />
-              {peers.map((p) => (
-                <PresenceDot key={p.id} label={p.name} color={p.color} />
-              ))}
-              {peers.length === 0 ? (
-                <span className="text-[9px] uppercase tracking-widest font-bold text-muted/50 ml-1">
-                  waiting for peer
-                </span>
-              ) : (
-                <span className="text-[9px] uppercase tracking-widest font-bold text-emerald-500 ml-1 flex items-center gap-1">
-                  <Users className="w-3 h-3" />
-                  Live
-                </span>
-              )}
             </div>
           </div>
           <div className="flex-1 min-h-0 overflow-hidden">
@@ -948,6 +1062,103 @@ function Bridge({
         )}
       </div>
     </>
+  );
+}
+
+function PresenceAvatarGroup({
+  username,
+  isInterviewer,
+  selfColor,
+  peers,
+}: {
+  username: string;
+  isInterviewer: boolean;
+  selfColor: string;
+  peers: RemotePeer[];
+}) {
+  const allUsers = useMemo(() => {
+    return [
+      {
+        id: "self",
+        name: username,
+        role: isInterviewer ? "Interviewer" : "Candidate",
+        color: selfColor,
+        isSelf: true,
+      },
+      ...peers.map((p) => {
+        const isPeerInterviewer = p.name.includes("(Interviewer)") || p.name.includes("interviewer");
+        const displayName = p.name
+          .replace(" (Interviewer)", "")
+          .replace(" (Candidate)", "")
+          .replace(" (interviewer)", "")
+          .replace(" (candidate)", "");
+        return {
+          id: String(p.id),
+          name: displayName,
+          role: isPeerInterviewer ? "Interviewer" : "Candidate",
+          color: p.color,
+          isSelf: false,
+        };
+      }),
+    ];
+  }, [username, isInterviewer, selfColor, peers]);
+
+  return (
+    <div className="flex items-center gap-2">
+      <div className="flex -space-x-1.5 overflow-hidden py-1">
+        {allUsers.map((user) => {
+          const initials = user.name.charAt(0).toUpperCase();
+          const shadowStyle = {
+            boxShadow: `0 0 8px ${user.color}22, inset 0 0 3px ${user.color}44`,
+            borderColor: user.color,
+          };
+
+          return (
+            <div
+              key={user.id}
+              style={shadowStyle}
+              className="relative group w-7 h-7 rounded-full border bg-surface text-fg font-sans font-bold text-[10px] flex items-center justify-center cursor-pointer select-none transition-all duration-200 hover:-translate-y-0.5 hover:z-20 hover:scale-105 active:scale-95"
+            >
+              {/* Initials text */}
+              <span className="tracking-wide text-[9px]" style={{ color: user.color }}>
+                {initials}
+              </span>
+
+              {/* Online status indicator dot on the avatar */}
+              <span
+                className="absolute bottom-0 right-0 w-2 h-2 rounded-full border border-surface animate-pulse"
+                style={{ backgroundColor: user.color }}
+              />
+
+              {/* Rich Glassmorphic Tooltip */}
+              <div className="absolute top-8 left-1/2 -translate-x-1/2 scale-95 opacity-0 group-hover:scale-100 group-hover:opacity-100 pointer-events-none transition-all duration-150 z-50">
+                <div className="bg-panel/95 backdrop-blur-md border border-border shadow-xl rounded-xl px-2.5 py-1.5 text-center whitespace-nowrap min-w-[100px]">
+                  <p className="text-[10px] font-bold text-fg leading-tight">
+                    {user.name} {user.isSelf && <span className="text-muted/60 text-[8px] font-normal">(You)</span>}
+                  </p>
+                  <p className="text-[8px] tracking-wider uppercase font-black mt-0.5" style={{ color: user.color }}>
+                    {user.role}
+                  </p>
+                </div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      <div className="flex items-center gap-1 pl-1 border-l border-border/60">
+        {peers.length === 0 ? (
+          <span className="text-[9px] uppercase tracking-widest font-extrabold text-muted/45 animate-pulse">
+            waiting for peer
+          </span>
+        ) : (
+          <span className="text-[9px] uppercase tracking-widest font-extrabold text-emerald-500 flex items-center gap-1">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping" />
+            Live
+          </span>
+        )}
+      </div>
+    </div>
   );
 }
 

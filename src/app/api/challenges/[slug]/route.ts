@@ -53,6 +53,14 @@ export async function PATCH(req: Request, { params }: Params) {
           estimatedMinutes?: number;
           hint?: string;
           videoUrl?: string;
+          testCases?: {
+            id: string;
+            name: string;
+            input: string;
+            expected: string;
+            isHidden?: boolean;
+            weight?: number;
+          }[];
         }[];
       }
     | null;
@@ -119,6 +127,7 @@ export async function PATCH(req: Request, { params }: Params) {
             estimatedMinutes: s.estimatedMinutes ?? 15,
             hint: s.hint || null,
             videoUrl: s.videoUrl || null,
+            testCasesJson: JSON.stringify(s.testCases ?? []),
           })),
         });
       }

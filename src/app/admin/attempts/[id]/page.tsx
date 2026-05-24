@@ -12,6 +12,9 @@ import {
   FileCode,
   Briefcase,
   ExternalLink,
+  Award,
+  Sparkles,
+  Play
 } from "lucide-react";
 
 interface AdminAttemptDetailPageProps {
@@ -87,6 +90,8 @@ export default async function AdminAttemptDetailPage({ params }: AdminAttemptDet
         select: { id: true, slug: true, title: true, difficulty: true, category: true },
       },
       step: { select: { id: true, title: true, position: true } },
+      integrityReport: true,
+      eventLog: { select: { id: true } },
     },
   });
 
@@ -165,7 +170,7 @@ export default async function AdminAttemptDetailPage({ params }: AdminAttemptDet
           </Link>
         </div>
 
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-6">
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mt-6">
           <Stat icon={Clock} label="Duration" value={formatDuration(attempt.durationSec)} />
           <Stat
             icon={Calendar}
@@ -186,8 +191,52 @@ export default async function AdminAttemptDetailPage({ params }: AdminAttemptDet
                 : "—"
             }
           />
+          <Stat
+            icon={Award}
+            label="Grade Score"
+            value={attempt.score != null ? `${attempt.score} / 100` : "—"}
+          />
         </div>
       </div>
+
+      {/* Corporate AI Assessment Telemetry & Session Replay proctoring block */}
+      {attempt.integrityReport && (
+        <div className="rounded-3xl border border-indigo-500/20 bg-[#161B2E]/60 backdrop-blur-md p-6 flex flex-col md:flex-row justify-between items-start md:items-center gap-6 shadow-xl relative overflow-hidden transition-all hover:border-accent/20">
+          <div className="space-y-2 max-w-xl">
+            <h3 className="text-xs font-black text-indigo-400 uppercase tracking-widest flex items-center gap-2">
+              <Sparkles className="w-4 h-4 animate-pulse" /> AI Proctoring & Replay Log Auditor
+            </h3>
+            <p className="text-sm font-black text-[#F3F4F6]">
+              Risk Assessment Rating:{" "}
+              <span className={`px-2 py-0.5 rounded-lg border text-[10px] font-black uppercase ml-1.5 ${
+                attempt.integrityReport.suspicionScore < 25
+                  ? "text-emerald-400 border-emerald-500/35 bg-emerald-500/10"
+                  : attempt.integrityReport.suspicionScore < 55
+                  ? "text-amber-400 border-amber-400/35 bg-amber-400/10"
+                  : "text-rose-500 border-rose-500/35 bg-rose-500/10 font-black animate-pulse"
+              }`}>
+                {attempt.integrityReport.suspicionScore}%{" "}
+                {attempt.integrityReport.suspicionScore < 25
+                  ? "Secure"
+                  : attempt.integrityReport.suspicionScore < 55
+                  ? "Low Risk"
+                  : "High Risk"}
+              </span>
+            </p>
+            <p className="text-xs text-muted leading-relaxed">
+              We tracked <span className="text-[#F3F4F6] font-bold">{attempt.integrityReport.blurCount} browser tab blurs</span> (candidate left screen for <span className="text-[#F3F4F6] font-bold">{attempt.integrityReport.totalBlurSec} seconds</span>) and <span className="text-[#F3F4F6] font-bold">{attempt.integrityReport.pasteCount} keyboard block pastes</span>. Large copy-pastes or high-speed typing bursts indicate external AI code generation.
+            </p>
+          </div>
+
+          <Link
+            href={`/admin/attempts/${attempt.id}/replay`}
+            className="inline-flex items-center gap-2 px-5 py-3 rounded-xl bg-accent hover:bg-accent-soft text-bg text-xs font-black uppercase tracking-wider transition-colors shadow-soft shrink-0 w-full md:w-auto text-center justify-center cursor-pointer"
+          >
+            <Play className="w-3.5 h-3.5 fill-current" />
+            <span>Watch Session Replay</span>
+          </Link>
+        </div>
+      )}
 
       {tests?.tests && tests.tests.length > 0 && (
         <div className="rounded-2xl border border-border bg-surface overflow-hidden">
@@ -196,7 +245,7 @@ export default async function AdminAttemptDetailPage({ params }: AdminAttemptDet
               Test results ({tests.tests.length})
             </h3>
           </div>
-          <ul className="divide-y divide-border/50">
+          <ul className="divide-y divide-border-strong">
             {tests.tests.map((t, i) => {
               const testBadge =
                 t.status === "passed" || t.status === "pass"

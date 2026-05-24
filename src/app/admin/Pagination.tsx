@@ -74,7 +74,7 @@ export default function Pagination({
             <ChevronLeft className="w-4 h-4" />
           </Link>
         ) : (
-          <div className="w-8 h-8 rounded-lg border border-border/40 flex items-center justify-center text-muted/30 cursor-not-allowed">
+          <div className="w-8 h-8 rounded-lg border border-border flex items-center justify-center text-muted/30 cursor-not-allowed">
             <ChevronLeft className="w-4 h-4" />
           </div>
         )}
@@ -120,7 +120,7 @@ export default function Pagination({
             <ChevronRight className="w-4 h-4" />
           </Link>
         ) : (
-          <div className="w-8 h-8 rounded-lg border border-border/40 flex items-center justify-center text-muted/30 cursor-not-allowed">
+          <div className="w-8 h-8 rounded-lg border border-border flex items-center justify-center text-muted/30 cursor-not-allowed">
             <ChevronRight className="w-4 h-4" />
           </div>
         )}

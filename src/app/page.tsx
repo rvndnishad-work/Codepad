@@ -1,9 +1,11 @@
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import HomeHero from "./HomeHero";
+import TrustLogos from "./TrustLogos";
 import HomeBento from "./HomeBento";
-import HomeChallenges from "./HomeChallenges";
+import HomeInfographic from "./HomeInfographic";
 import HomeExplore from "./HomeExplore";
+import HomeChallenges from "./HomeChallenges";
 import HomeFinalCTA from "./HomeFinalCTA";
 import Link from "next/link";
 import { ArrowRight, BookOpen, TrendingUp, Hash, PenSquare } from "lucide-react";
@@ -191,7 +193,11 @@ export default async function HomePage() {
         recentSnippet={welcomeData?.recent}
       />
 
+      <TrustLogos />
+
       <HomeBento />
+
+      <HomeInfographic />
 
       <HomeExplore featured={featured} />
 

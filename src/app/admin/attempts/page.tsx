@@ -61,6 +61,16 @@ export default async function AdminAttemptsPage({ searchParams }: AdminAttemptsP
         user: { select: { id: true, name: true, email: true } },
         challenge: { select: { id: true, slug: true, title: true, difficulty: true } },
         step: { select: { id: true, title: true, position: true } },
+        takeHomeAssignment: {
+          select: {
+            workspace: {
+              select: {
+                name: true,
+                slug: true,
+              },
+            },
+          },
+        },
       },
     }),
     prisma.challengeAttempt.groupBy({
@@ -89,6 +99,7 @@ export default async function AdminAttemptsPage({ searchParams }: AdminAttemptsP
       user: a.user,
       challenge: a.challenge,
       step: a.step,
+      takeHomeWorkspace: a.takeHomeAssignment?.workspace ?? null,
     };
   });
 
@@ -161,24 +172,18 @@ export default async function AdminAttemptsPage({ searchParams }: AdminAttemptsP
       ) : (
         <>
           <div className="rounded-2xl border border-border bg-surface overflow-hidden">
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm text-left border-collapse">
-                <thead className="bg-elevated/50 text-[10px] uppercase tracking-[0.15em] text-muted border-b border-border">
-                  <tr>
-                    <th className="px-6 py-4 font-bold">User</th>
-                    <th className="px-6 py-4 font-bold">Challenge</th>
-                    <th className="px-6 py-4 font-bold">Status</th>
-                    <th className="px-6 py-4 font-bold text-center">Tests</th>
-                    <th className="px-6 py-4 font-bold">Duration / Started</th>
-                    <th className="px-6 py-4 font-bold text-right">Actions</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-border/50">
-                  {rowData.map((a) => (
-                    <AdminAttemptRow key={a.id} attempt={a} />
-                  ))}
-                </tbody>
-              </table>
+            <div className="hidden lg:grid lg:grid-cols-[1.8fr_2.2fr_1.2fr_1fr_1.5fr_1.5fr] lg:items-center lg:px-6 lg:py-4 bg-elevated/50 text-[10px] uppercase tracking-[0.15em] text-muted border-b border-border font-bold">
+              <div>User</div>
+              <div>Challenge</div>
+              <div>Status</div>
+              <div className="text-center">Tests</div>
+              <div>Duration / Started</div>
+              <div className="text-right">Actions</div>
+            </div>
+            <div className="divide-y divide-border">
+              {rowData.map((a) => (
+                <AdminAttemptRow key={a.id} attempt={a} />
+              ))}
             </div>
           </div>
 

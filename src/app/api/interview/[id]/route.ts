@@ -18,6 +18,11 @@ const patchSchema = z.object({
   // Guest-only: candidate requesting the interviewer to start the session.
   startRequested: z.boolean().optional(),
   totalSec: z.number().int().positive().optional(),
+  // Rubric support
+  rubric: z.object({
+    ratings: z.record(z.string(), z.number().min(1).max(5)),
+    notes: z.string().max(5000).nullable().optional(),
+  }).nullable().optional(),
 });
 
 // GET — lightweight polling endpoint so guests can detect when session starts
@@ -114,6 +119,31 @@ export async function PATCH(
     data.activePlaygroundId = parsed.data.activePlaygroundId;
   if (parsed.data.totalSec !== undefined) data.totalSec = parsed.data.totalSec;
 
+  if (parsed.data.rubric !== undefined) {
+    const rubricData = parsed.data.rubric;
+    const interviewerId = session?.user?.id || existing.userId;
+    if (rubricData) {
+      await prisma.interviewRubric.upsert({
+        where: { sessionId: id },
+        create: {
+          sessionId: id,
+          ratings: JSON.stringify(rubricData.ratings),
+          notes: rubricData.notes || null,
+          interviewerId,
+        },
+        update: {
+          ratings: JSON.stringify(rubricData.ratings),
+          notes: rubricData.notes || null,
+          interviewerId,
+        },
+      });
+    } else {
+      await prisma.interviewRubric.delete({
+        where: { sessionId: id },
+      }).catch(() => null);
+    }
+  }
+
   const updated = await prisma.interviewSession.update({
     where: { id },
     data,
@@ -126,6 +156,7 @@ export async function PATCH(
       activePlaygroundId: true,
       totalSec: true,
       startedAt: true,
+      rubric: true,
     },
   });
   return NextResponse.json(updated);

@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
-import { Sparkles, Plus, Play, LayoutGrid, ChevronRight } from "lucide-react";
+import { Sparkles, Plus, Play, LayoutGrid, ChevronRight, Building2 } from "lucide-react";
 import { motion, useScroll, useTransform, useReducedMotion } from "framer-motion";
 
 export default function HomeHero({ 
@@ -90,7 +90,7 @@ export default function HomeHero({
           style={reducedMotion ? undefined : { y: fastY, opacity: fastOpacity }}
         >
           <Sparkles className="w-3.5 h-3.5 text-accent" />
-          <span>Interviewpad Pro Sandbox</span>
+          <span>Interviewpad Pro & B2B Recruitment Suite</span>
         </motion.div>
 
         {/* Main Headline — anchor layer, moves least */}
@@ -98,8 +98,8 @@ export default function HomeHero({
           className="text-5xl md:text-7xl font-black tracking-tight text-fg mb-6 leading-[1.05] animate-in fade-in slide-in-from-bottom-6 duration-500 delay-[80ms]"
           style={reducedMotion ? undefined : { y: titleY, opacity: titleOpacity }}
         >
-          Code at the speed <br className="hidden md:block" />
-          <span className="text-transparent bg-clip-text bg-gradient-to-br from-accent to-accent-soft">of thought.</span>
+          Evaluate developers <br className="hidden md:block" />
+          <span className="text-transparent bg-clip-text bg-gradient-to-br from-accent to-accent-soft">at scale.</span>
         </motion.h1>
 
         {/* Subtitle */}
@@ -107,8 +107,8 @@ export default function HomeHero({
           className="text-muted text-lg md:text-xl mb-10 max-w-2xl mx-auto leading-relaxed animate-in fade-in slide-in-from-bottom-8 duration-500 delay-[160ms] font-medium"
           style={reducedMotion ? undefined : { y: fastY, opacity: fastOpacity }}
         >
-          The most powerful browser-based sandbox for JS, TS, and modern frameworks.
-          Zero setup. Infinite possibilities.
+          The most powerful collaborative sandbox for developers and technical recruiters.
+          Host live multiplayer coding panels, execute secure take-home assessments, and review timeline replays with AI proctoring telemetry.
         </motion.p>
 
         {/* Call to Actions */}
@@ -122,7 +122,7 @@ export default function HomeHero({
               className="inline-flex items-center gap-2 px-8 py-4 rounded-xl bg-accent hover:bg-accent-soft text-bg font-bold transition-all transform hover:scale-[1.02] active:scale-[0.98] shadow-[0_0_40px_rgba(var(--accent-rgb),0.25)]"
             >
               <Play className="w-5 h-5 fill-current" />
-              Continue: {recentSnippet.title}
+              Sandbox Playground
             </Link>
           ) : (
             <Link
@@ -130,23 +130,31 @@ export default function HomeHero({
               className="inline-flex items-center gap-2 px-8 py-4 rounded-xl bg-accent hover:bg-accent-soft text-bg font-bold transition-all transform hover:scale-[1.02] active:scale-[0.98] shadow-[0_0_40px_rgba(var(--accent-rgb),0.25)]"
             >
               <Plus className="w-5 h-5" />
-              Create First Snippet
+              Open Playground
             </Link>
           )}
+
+          <Link
+            href="/features"
+            className="inline-flex items-center gap-2 px-8 py-4 rounded-xl bg-surface hover:bg-elevated text-fg border border-border transition-all font-semibold transform hover:scale-[1.02] active:scale-[0.98]"
+          >
+            <Building2 className="w-5 h-5 text-accent" />
+            Recruiter Platform
+          </Link>
           
           <Link
             href={sessionName ? "/dashboard" : "/login"}
-            className="inline-flex items-center gap-2 px-8 py-4 rounded-xl bg-surface hover:bg-elevated text-fg border border-border transition-all font-semibold"
+            className="inline-flex items-center gap-2 px-8 py-4 rounded-xl bg-surface/40 hover:bg-surface text-fg border border-border transition-all font-semibold"
           >
             {sessionName ? (
               <>
                 <LayoutGrid className="w-5 h-5" />
-                Your Dashboard
+                Dashboard
               </>
             ) : (
               <>
                 <ChevronRight className="w-5 h-5" />
-                Sign in to save
+                Sign In
               </>
             )}
           </Link>

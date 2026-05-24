@@ -51,6 +51,7 @@ export default async function EditUserChallengePage({ params }: Params) {
           estimatedMinutes: s.estimatedMinutes,
           hint: s.hint ?? "",
           videoUrl: s.videoUrl ?? "",
+          testCases: parseTestCases(s.testCasesJson),
         }))
       : [
           {
@@ -99,5 +100,14 @@ function prettyJson(raw: string): string {
     return JSON.stringify(JSON.parse(raw), null, 2);
   } catch {
     return raw;
+  }
+}
+
+function parseTestCases(raw: string | null | undefined): any[] {
+  if (!raw) return [];
+  try {
+    return JSON.parse(raw);
+  } catch {
+    return [];
   }
 }

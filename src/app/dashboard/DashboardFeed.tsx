@@ -95,7 +95,7 @@ export default function DashboardFeed({
                 {item.title}
               </h4>
               
-              <div className="flex items-center gap-2 mt-auto pt-4 border-t border-border/30">
+              <div className="flex items-center gap-2 mt-auto pt-4 border-t border-border">
                 <div className="relative w-5 h-5 rounded-full bg-surface overflow-hidden">
                   {item.userImage ? (
                     <SafeImage

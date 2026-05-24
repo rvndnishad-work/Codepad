@@ -11,8 +11,32 @@ import { getNavLinks } from "@/lib/settings";
 export default async function Header() {
   const session = await auth().catch(() => null);
   const user = session?.user;
+  const userType = (user as { userType?: string | null } | undefined)?.userType ?? null;
   const showAdmin = isAdmin(session);
-  const navLinks = await getNavLinks();
+  const rawNavLinks = await getNavLinks();
+
+  // Dynamically filter links based on auth state + user type
+  const navLinks = rawNavLinks.filter((link) => {
+    if (!user) {
+      // Unauthenticated visitors see marketing landing pages and blog
+      return !["/playgrounds", "/challenges", "/explore", "/interview"].includes(link.href);
+    }
+
+    // Hide marketing pages from logged-in users
+    if (["/features", "/pricing"].includes(link.href)) return false;
+
+    // User-type-aware nav: trim the surface to what's relevant per role
+    if (userType === "recruiter") {
+      // Recruiters care about hiring infrastructure, not casual learning
+      return !["/playgrounds", "/explore"].includes(link.href);
+    }
+    if (userType === "candidate") {
+      // Candidates focus on practice + their own interviews; no enterprise surfaces
+      return true;
+    }
+    // userType is unset (legacy) — show everything
+    return true;
+  });
 
   return (
     <header className="sticky top-0 z-[100] bg-bg/80 backdrop-blur-xl border-b border-border relative">
@@ -28,6 +52,15 @@ export default async function Header() {
         <div className="flex items-center gap-4">
           <nav className="flex items-center">
             <div className="hidden md:flex items-center gap-6 text-sm font-medium mr-6 border-r border-border pr-6 h-16">
+              {/* Recruiter-only quick link to their workspaces hub */}
+              {userType === "recruiter" && (
+                <Link
+                  href="/dashboard"
+                  className="transition-colors flex items-center h-full text-fg/50 hover:text-fg"
+                >
+                  <span className="relative flex items-center gap-1.5">Workspaces</span>
+                </Link>
+              )}
               {navLinks.map((link) => {
                 if (link.href === "/interview" && !user) return null;
 

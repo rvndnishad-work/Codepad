@@ -22,6 +22,8 @@ const submitSchema = z.object({
   }),
   durationSec: z.number().int().min(0).max(60 * 60 * 24),
   sessionId: z.string().optional().nullable(),
+  stepId: z.string().optional().nullable(),
+  token: z.string().optional().nullable(),
 });
 
 export async function POST(
@@ -29,12 +31,38 @@ export async function POST(
   { params }: { params: Promise<{ slug: string }> }
 ) {
   const { slug } = await params;
+  const body = await req.json().catch(() => null);
+  const parsed = submitSchema.safeParse(body);
+  if (!parsed.success) {
+    return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
+  }
+
+  const { files, testResults, durationSec, sessionId, stepId, token } = parsed.data;
+
   const session = await auth();
-  if (!session?.user?.id) {
+  let candidateUserId = session?.user?.id;
+
+  if (!candidateUserId && token) {
+    const assignment = await prisma.takeHomeAssignment.findUnique({
+      where: { token },
+      select: { candidateEmail: true },
+    });
+    if (assignment) {
+      const candidateUser = await prisma.user.findFirst({
+        where: { email: { equals: assignment.candidateEmail } },
+        select: { id: true },
+      });
+      if (candidateUser) {
+        candidateUserId = candidateUser.id;
+      }
+    }
+  }
+
+  if (!candidateUserId) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }
 
-  const rl = rateLimit(clientKey(req, session.user.id), 30, 60_000);
+  const rl = rateLimit(clientKey(req, candidateUserId), 30, 60_000);
   if (!rl.ok) {
     return NextResponse.json(
       { error: "rate limited" },
@@ -50,27 +78,68 @@ export async function POST(
     return NextResponse.json({ error: "challenge not found" }, { status: 404 });
   }
 
-  const body = await req.json().catch(() => null);
-  const parsed = submitSchema.safeParse(body);
-  if (!parsed.success) {
-    return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
-  }
-
-  const { files, testResults, durationSec, sessionId } = parsed.data;
   const status =
     testResults.total > 0 && testResults.passed === testResults.total
       ? "passed"
       : "failed";
 
+  if (token) {
+    try {
+      await prisma.takeHomeAssignment.update({
+        where: { token },
+        data: { status: "SUBMITTED", submittedAt: new Date() },
+      });
+    } catch (e) {
+      console.error("Failed to update take-home assignment status on submit:", e);
+    }
+  }
+
+  // Calculate grading engine score
+  let score: number | null = null;
+  if (stepId) {
+    const step = await prisma.challengeStep.findUnique({
+      where: { id: stepId },
+      select: { testCasesJson: true },
+    });
+    if (step && step.testCasesJson) {
+      try {
+        const visualCases = JSON.parse(step.testCasesJson) as { name: string; weight: number }[];
+        if (visualCases.length > 0) {
+          let calculatedScore = 0;
+          let totalWeight = 0;
+          visualCases.forEach((tc) => {
+            const matchedTest = testResults.tests.find((t) => t.name === tc.name);
+            const passed = matchedTest && matchedTest.status === "pass";
+            const weight = Number(tc.weight) || 0;
+            totalWeight += weight;
+            if (passed) {
+              calculatedScore += weight;
+            }
+          });
+          score = totalWeight > 0 ? Math.round((calculatedScore / totalWeight) * 100) : 0;
+        }
+      } catch (e) {
+        console.error("Failed to calculate score:", e);
+      }
+    }
+  }
+
+  // Fallback: simple passed percentage
+  if (score === null && testResults.total > 0) {
+    score = Math.round((testResults.passed / testResults.total) * 100);
+  }
+
   const attempt = await prisma.challengeAttempt.create({
     data: {
-      userId: session.user.id,
+      userId: candidateUserId,
       challengeId: challenge.id,
+      stepId: stepId ?? null,
       status,
       files: JSON.stringify(files),
       testResults: JSON.stringify(testResults),
       durationSec,
       sessionId: sessionId ?? null,
+      score,
       finishedAt: new Date(),
     },
     select: { id: true, status: true },

@@ -128,7 +128,7 @@ export default async function AdminCommentsPage({ searchParams }: AdminCommentsP
                     <th className="px-6 py-4 font-bold text-right">Actions</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-border/50">
+                <tbody className="divide-y divide-border">
                   {rows.map((c) => (
                     <AdminCommentRow key={c.id} comment={c} />
                   ))}

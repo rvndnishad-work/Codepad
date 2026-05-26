@@ -117,18 +117,35 @@ export default function FloatingJarvisAgent() {
 
         rec.onresult = (event: any) => {
           const transcript = event.results[0][0].transcript;
-          if (transcript) {
-            setPromptInput(prev => {
-              const base = prev.trim();
-              return base ? `${base} ${transcript}` : transcript;
-            });
-            toast.success("Voice transcribed successfully.");
-          }
+          if (!transcript) return;
+
+          // Snapshot the PTT flag — if this transcription was triggered by
+          // holding the push-to-talk key, the final result should both
+          // populate the input AND auto-fire send. We clear the flag here
+          // so a subsequent click-to-dictate session doesn't accidentally
+          // inherit it.
+          const wasPushToTalk = pushToTalkPendingRef.current;
+          pushToTalkPendingRef.current = false;
+
+          setPromptInput(prev => {
+            const base = prev.trim();
+            const next = base ? `${base} ${transcript}` : transcript;
+            if (wasPushToTalk) {
+              // Defer the send so React commits the new promptInput first
+              // (some downstream handlers read the input directly).
+              setTimeout(() => handleSendPromptRef.current(next), 30);
+            }
+            return next;
+          });
+          toast.success(wasPushToTalk ? "Voice directive submitted." : "Voice transcribed successfully.");
         };
 
         rec.onerror = (err: any) => {
           console.error("Dictation failure:", err);
           setIsListening(false);
+          // Clear the PTT flag on error too — otherwise the next legitimate
+          // dictation session could spuriously auto-submit.
+          pushToTalkPendingRef.current = false;
           toast.error("Speech recognition failed. Try speaking louder or check permissions.");
         };
 
@@ -667,6 +684,83 @@ export default function FloatingJarvisAgent() {
     reader.readAsDataURL(file);
   };
 
+  // Keep the ref pointing at the latest handleSendPrompt closure so the
+  // SpeechRecognition handler (bound once on mount, line ~108) can invoke
+  // the current version without us needing to re-bind onresult every render.
+  useEffect(() => {
+    handleSendPromptRef.current = (text: string) => {
+      void handleSendPrompt(text);
+    };
+  });
+
+  // Push-to-talk: hold ` (backtick) anywhere on the page to dictate, release
+  // to submit. Skipped when focus is in an editable element so a user typing
+  // a stray ` doesn't hijack the keystroke. Opens the floating HUD if closed.
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const PTT_CODE = "Backquote";
+    let pttPressed = false;
+
+    const isEditableTarget = (el: EventTarget | null): boolean => {
+      if (!(el instanceof HTMLElement)) return false;
+      if (el.isContentEditable) return true;
+      const tag = el.tagName;
+      return tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT";
+    };
+
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.code !== PTT_CODE) return;
+      if (e.repeat) return; // auto-repeat while held — only react to initial press
+      if (e.ctrlKey || e.altKey || e.metaKey || e.shiftKey) return;
+      if (isEditableTarget(document.activeElement)) return;
+      if (!recognitionRef.current) return;
+
+      e.preventDefault();
+      pttPressed = true;
+      pushToTalkPendingRef.current = true;
+      setIsOpen(true);
+      try {
+        recognitionRef.current.start();
+      } catch {
+        // SpeechRecognition throws if start() is called while already running.
+        // Safe to ignore — the existing session continues.
+      }
+    };
+
+    const onKeyUp = (e: KeyboardEvent) => {
+      if (e.code !== PTT_CODE || !pttPressed) return;
+      pttPressed = false;
+      e.preventDefault();
+      try {
+        recognitionRef.current?.stop();
+      } catch {
+        /* ignore */
+      }
+    };
+
+    // Reset PTT state if focus leaves the window while held (otherwise the
+    // keyup would never fire and the next ` press wouldn't behave right).
+    const onBlur = () => {
+      if (pttPressed) {
+        pttPressed = false;
+        pushToTalkPendingRef.current = false;
+        try {
+          recognitionRef.current?.stop();
+        } catch { /* ignore */ }
+      }
+    };
+
+    window.addEventListener("keydown", onKeyDown);
+    window.addEventListener("keyup", onKeyUp);
+    window.addEventListener("blur", onBlur);
+    return () => {
+      window.removeEventListener("keydown", onKeyDown);
+      window.removeEventListener("keyup", onKeyUp);
+      window.removeEventListener("blur", onBlur);
+    };
+  }, []);
+
   const handleSendPrompt = async (text: string) => {
     const promptToSend = text.trim();
     if (!promptToSend) return;
@@ -941,8 +1035,19 @@ export default function FloatingJarvisAgent() {
             </div>
           )}
 
+          {/* Push-to-talk hint — sits just above the input so users discover
+              the hotkey naturally. Disappears while actively listening to keep
+              the UI quiet when the bar is the active surface. */}
+          {!isListening && (
+            <div className="px-3 pt-2 pb-1 text-[9px] font-mono text-muted/60 flex items-center gap-1.5 select-none">
+              <span className="opacity-70">Hold</span>
+              <kbd className="px-1.5 py-0.5 rounded border border-border bg-panel/60 text-violet-400 text-[10px] leading-none">`</kbd>
+              <span className="opacity-70">to push-to-talk</span>
+            </div>
+          )}
+
           {/* Holographic terminal prompt input */}
-          <form 
+          <form
             onSubmit={(e) => { e.preventDefault(); handleSendPrompt(promptInput); }}
             className="p-3 border-t border-border bg-panel/20 flex gap-2 items-center relative z-10"
           >

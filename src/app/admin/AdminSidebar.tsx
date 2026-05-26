@@ -54,6 +54,7 @@ export default function AdminSidebar({ session }: AdminSidebarProps) {
       <AdminLink href="/admin/challenges" icon="Target" label="Challenges" />
       <AdminLink href="/admin/attempts" icon="Code2" label="Attempts" />
       <AdminLink href="/admin/interviews" icon="Briefcase" label="Interviews" />
+      <AdminLink href="/admin/ai-interviews" icon="Coins" label="AI Credits" />
       <AdminLink href="/admin/workspaces" icon="Building2" label="Workspaces" />
 
       
@@ -68,6 +69,8 @@ export default function AdminSidebar({ session }: AdminSidebarProps) {
       <div className="text-[9px] font-bold tracking-wider text-muted/55 uppercase px-3 pt-4 mb-2">
         System
       </div>
+      <AdminLink href="/admin/copilot" icon="GemmaMark" label="Gemma Copilot" />
+      <AdminLink href="/admin/todos" icon="ClipboardList" label="Todos" />
       <AdminLink href="/admin/settings" icon="Settings" label="Settings" />
     </nav>
   );

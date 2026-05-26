@@ -2,9 +2,15 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, Target, Users, FileText, Settings, Pin, Briefcase, Code2, MessageCircle, Inbox, Building2 } from "lucide-react";
+import { LayoutDashboard, Target, Users, FileText, Settings, Pin, Briefcase, Code2, MessageCircle, Inbox, Building2, Sparkles, Coins, ClipboardList } from "lucide-react";
+import type { ComponentType } from "react";
+import GemmaMark from "./copilot/GemmaMark";
 
-const iconsMap = {
+// Lucide icons accept className; our custom GemmaMark accepts className + size.
+// The shared shape below is the subset every nav icon must support.
+type NavIcon = ComponentType<{ className?: string; size?: number }>;
+
+const iconsMap: Record<string, NavIcon> = {
   LayoutDashboard,
   Target,
   Users,
@@ -16,6 +22,11 @@ const iconsMap = {
   MessageCircle,
   Inbox,
   Building2,
+  Sparkles,
+  Coins,
+  ClipboardList,
+  // Custom brand glyph — used for the Gemma Copilot row.
+  GemmaMark,
 };
 
 
@@ -43,7 +54,7 @@ export default function AdminLink({
   if (disabled) {
     return (
       <div className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-xs font-bold uppercase tracking-wider text-muted/30 cursor-not-allowed">
-        {Icon && <Icon className="w-4 h-4" />}
+        {Icon && <Icon className="w-4 h-4" size={16} />}
         {label}
         <span className="ml-auto text-[9px] font-medium normal-case tracking-normal">soon</span>
       </div>
@@ -59,7 +70,7 @@ export default function AdminLink({
           : "text-muted hover:text-fg hover:bg-panel/40"
       }`}
     >
-      {Icon && <Icon className="w-4 h-4" />}
+      {Icon && <Icon className="w-4 h-4" size={16} />}
       {label}
     </Link>
   );

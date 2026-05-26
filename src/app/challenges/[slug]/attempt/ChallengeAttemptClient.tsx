@@ -522,11 +522,11 @@ export default function ChallengeAttemptClient({
   }, [isTakeHome, takeHomeStartMs, takeHomeDurationMs]);
 
   // ── B2B Candidate Telemetry & Integrity Recording ───────────────────
-  const eventsBufferRef = useRef<Array<{ t: number; type: "snapshot" | "blur" | "focus" | "paste"; payload: any }>>([]);
+  const eventsBufferRef = useRef<Array<{ t: number; type: "snapshot" | "blur" | "focus" | "paste" | "keystroke"; payload: any }>>([]);
   const telemetryStartMsRef = useRef<number>(Date.now());
   const prevSnapshotFilesRef = useRef<string>("");
 
-  const logTelemetryEvent = useCallback((type: "snapshot" | "blur" | "focus" | "paste", payload: any) => {
+  const logTelemetryEvent = useCallback((type: "snapshot" | "blur" | "focus" | "paste" | "keystroke", payload: any) => {
     const elapsedMs = Date.now() - telemetryStartMsRef.current;
     eventsBufferRef.current.push({ t: elapsedMs, type, payload });
   }, []);
@@ -546,15 +546,26 @@ export default function ChallengeAttemptClient({
         snippet: text.substring(0, 100),
       });
     };
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Capture key timings for alphanumeric, backspace, delete, and punctuation
+      if (e.key.length === 1 || e.key === "Backspace" || e.key === "Delete") {
+        logTelemetryEvent("keystroke", {
+          timestamp: Date.now(),
+          key: e.key.length === 1 ? "alphanumeric" : e.key,
+        });
+      }
+    };
 
     window.addEventListener("blur", handleBlur);
     window.addEventListener("focus", handleFocus);
     document.addEventListener("paste", handlePaste);
+    window.addEventListener("keydown", handleKeyDown);
 
     return () => {
       window.removeEventListener("blur", handleBlur);
       window.removeEventListener("focus", handleFocus);
       document.removeEventListener("paste", handlePaste);
+      window.removeEventListener("keydown", handleKeyDown);
     };
   }, [logTelemetryEvent]);
 

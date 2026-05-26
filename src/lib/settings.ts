@@ -106,4 +106,46 @@ export async function updateB2bSettings(config: B2bSettingsConfig) {
   });
 }
 
+export type InterviewArenaSettings = {
+  showMockToDeveloper: boolean;
+  showScheduleToDeveloper: boolean;
+  showMockToRecruiter: boolean;
+  showScheduleToRecruiter: boolean;
+};
+
+const DEFAULT_ARENA_SETTINGS: InterviewArenaSettings = {
+  showMockToDeveloper: true,
+  showScheduleToDeveloper: false, // Default is false for developers as requested
+  showMockToRecruiter: true,
+  showScheduleToRecruiter: true,
+};
+
+export async function getInterviewArenaSettings(): Promise<InterviewArenaSettings> {
+  try {
+    const setting = await prisma.siteSetting.findUnique({
+      where: { key: "interview_arena_settings" },
+    });
+
+    if (!setting) return DEFAULT_ARENA_SETTINGS;
+
+    return JSON.parse(setting.value) as InterviewArenaSettings;
+  } catch (error) {
+    console.error("Failed to fetch Interview Arena settings:", error);
+    return DEFAULT_ARENA_SETTINGS;
+  }
+}
+
+export async function updateInterviewArenaSettings(config: InterviewArenaSettings) {
+  const session = await auth().catch(() => null);
+  if (!isAdmin(session)) {
+    throw new Error("Unauthorized: Platform administrator access required.");
+  }
+  return prisma.siteSetting.upsert({
+    where: { key: "interview_arena_settings" },
+    update: { value: JSON.stringify(config) },
+    create: { key: "interview_arena_settings", value: JSON.stringify(config) },
+  });
+}
+
+
 

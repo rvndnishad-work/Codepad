@@ -6,21 +6,31 @@ import InterviewBuilder, {
   type PlaygroundOption,
 } from "./InterviewBuilder";
 
-import { validatePageAccess } from "@/lib/settings";
+import { validatePageAccess, getInterviewArenaSettings } from "@/lib/settings";
 import { templates } from "@/lib/templates";
 
 export const metadata = {
   title: "New Interview Session — Interviewpad",
 };
 
-export default async function NewInterviewPage() {
+export default async function NewInterviewPage({
+  searchParams,
+}: {
+  searchParams?: Promise<{ role?: string; type?: string }>;
+}) {
   const session = await auth().catch(() => null);
   await validatePageAccess("/interview/new", session);
   if (!session?.user?.id) {
     redirect(`/login?next=${encodeURIComponent("/interview/new")}`);
   }
 
-  const [challengeRows, snippetRows] = await Promise.all([
+  const sp = searchParams ? await searchParams : {};
+  const queryRole = sp.role ?? null;
+  const dbUserType = (session.user as { userType?: string | null } | undefined)?.userType ?? null;
+  const userType = queryRole === "candidate" ? "candidate" : dbUserType;
+  const arenaSettings = await getInterviewArenaSettings();
+
+  const [challengeRows, snippetRows, promptScenarioRows] = await Promise.all([
     prisma.challenge.findMany({
       where: { published: true },
       orderBy: [{ difficulty: "asc" }, { createdAt: "asc" }],
@@ -42,6 +52,19 @@ export default async function NewInterviewPage() {
         title: true,
         template: true,
         updatedAt: true,
+      },
+    }),
+    prisma.promptScenario.findMany({
+      where: { published: true },
+      orderBy: { createdAt: "asc" },
+      select: {
+        id: true,
+        slug: true,
+        title: true,
+        difficulty: true,
+        estimatedMinutes: true,
+        category: true,
+        objective: true,
       },
     }),
   ]);
@@ -74,5 +97,23 @@ export default async function NewInterviewPage() {
     })),
   ];
 
-  return <InterviewBuilder challenges={challenges} playgrounds={playgrounds} />;
+  const promptScenarios = promptScenarioRows.map((p) => ({
+    id: p.id,
+    slug: p.slug,
+    title: p.title,
+    difficulty: p.difficulty as "beginner" | "intermediate" | "advanced",
+    estimatedMinutes: p.estimatedMinutes,
+    category: p.category,
+    objective: p.objective,
+  }));
+
+  return (
+    <InterviewBuilder
+      challenges={challenges}
+      playgrounds={playgrounds}
+      promptScenarios={promptScenarios}
+      userType={userType}
+      arenaSettings={arenaSettings}
+    />
+  );
 }

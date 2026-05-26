@@ -52,7 +52,7 @@ export default async function InterviewRunPage({
     else if (hasShareToken) interviewerView = true;
   }
 
-  const sourceType = (interview.sourceType ?? "challenge") as "challenge" | "playground";
+  const sourceType = (interview.sourceType ?? "challenge") as "challenge" | "playground" | "prompt" | "combined";
 
   // Auto-redirect guest to active challenge (challenge sessions only)
   if (
@@ -87,8 +87,9 @@ export default async function InterviewRunPage({
 
   const challengeIds = parseIds(interview.challengeIds);
   const playgroundIds = parseIds(interview.playgroundIds);
+  const promptScenarioIds = parseIds(interview.promptScenarioIds);
 
-  const [challengeRows, snippetRows] = await Promise.all([
+  const [challengeRows, snippetRows, promptScenarioRows] = await Promise.all([
     challengeIds.length > 0
       ? prisma.challenge.findMany({
           where: { id: { in: challengeIds } },
@@ -99,6 +100,12 @@ export default async function InterviewRunPage({
       ? prisma.snippet.findMany({
           where: { id: { in: playgroundIds }, userId: interview.userId },
           select: { id: true, slug: true, title: true, template: true },
+        })
+      : Promise.resolve([]),
+    promptScenarioIds.length > 0
+      ? prisma.promptScenario.findMany({
+          where: { id: { in: promptScenarioIds } },
+          select: { id: true, slug: true, title: true, difficulty: true, estimatedMinutes: true, category: true, objective: true, description: true },
         })
       : Promise.resolve([]),
   ]);
@@ -126,21 +133,54 @@ export default async function InterviewRunPage({
       template: s.template,
     }));
 
+  const promptScenarioById = new Map(promptScenarioRows.map((p) => [p.id, p]));
+  const orderedPromptScenarios = promptScenarioIds
+    .map((id) => promptScenarioById.get(id))
+    .filter((p): p is NonNullable<typeof p> => !!p)
+    .map((p) => ({
+      id: p.id,
+      slug: p.slug,
+      title: p.title,
+      difficulty: p.difficulty,
+      estimatedMinutes: p.estimatedMinutes,
+      category: p.category,
+      objective: p.objective,
+      description: p.description,
+    }));
+
   // Fetch attempts already made within this session.
-  const attempts = await prisma.challengeAttempt.findMany({
-    where: { sessionId: interview.id },
-    select: {
-      id: true,
-      challengeId: true,
-      status: true,
-      durationSec: true,
-      finishedAt: true,
-      files: true,
-      testResults: true,
-      score: true,
-    },
-    orderBy: { startedAt: "asc" },
-  });
+  const [attempts, promptAttempts] = await Promise.all([
+    prisma.challengeAttempt.findMany({
+      where: { sessionId: interview.id },
+      select: {
+        id: true,
+        challengeId: true,
+        status: true,
+        durationSec: true,
+        finishedAt: true,
+        files: true,
+        testResults: true,
+        score: true,
+      },
+      orderBy: { startedAt: "asc" },
+    }),
+    prisma.promptAttempt.findMany({
+      where: { sessionId: interview.id },
+      select: {
+        id: true,
+        scenarioId: true,
+        promptText: true,
+        charCount: true,
+        tokenEstimate: true,
+        score: true,
+        rubricScores: true,
+        feedback: true,
+        graderType: true,
+        durationSec: true,
+      },
+      orderBy: { createdAt: "asc" },
+    }),
+  ]);
 
   return (
     <InterviewRunner
@@ -160,6 +200,7 @@ export default async function InterviewRunPage({
         sourceType,
         scenario: interview.scenario,
         activePlaygroundId: interview.activePlaygroundId,
+        userId: interview.userId,
         rubric: interview.rubric ? {
           ratings: interview.rubric.ratings,
           notes: interview.rubric.notes,
@@ -167,6 +208,7 @@ export default async function InterviewRunPage({
       }}
       challenges={ordered}
       playgrounds={orderedPlaygrounds}
+      promptScenarios={orderedPromptScenarios}
       attempts={attempts.map((a) => ({
         challengeId: a.challengeId,
         status: a.status as "passed" | "failed" | "in_progress" | "abandoned",
@@ -174,6 +216,18 @@ export default async function InterviewRunPage({
         files: a.files,
         testResults: a.testResults,
         score: a.score,
+      }))}
+      promptAttempts={promptAttempts.map((a) => ({
+        id: a.id,
+        scenarioId: a.scenarioId,
+        promptText: a.promptText,
+        charCount: a.charCount,
+        tokenEstimate: a.tokenEstimate,
+        score: a.score,
+        rubricScores: a.rubricScores,
+        feedback: a.feedback,
+        graderType: a.graderType,
+        durationSec: a.durationSec,
       }))}
       interviewerView={interviewerView}
       isOwner={isOwner}

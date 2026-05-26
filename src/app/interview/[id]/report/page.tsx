@@ -17,7 +17,7 @@ import {
 } from "lucide-react";
 
 export const metadata = {
-  title: "Executive Candidate Report — Codepad Recruiter",
+  title: "Executive Candidate Report — Interviewpad Recruiter",
 };
 
 export default async function CandidateReportPage({
@@ -186,7 +186,7 @@ export default async function CandidateReportPage({
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div>
               <div className="text-[10px] font-black uppercase tracking-[0.25em] text-accent print:text-zinc-500">
-                Codepad Recruiter Platform
+                Interviewpad Recruiter Platform
               </div>
               <h1 className="text-2xl sm:text-3xl font-extrabold text-fg tracking-tight mt-1 print:text-zinc-900">
                 Executive Candidate Report
@@ -418,7 +418,7 @@ export default async function CandidateReportPage({
 
         {/* Footer Signature */}
         <div className="p-6 bg-[#121214]/50 border-t border-[#27272a] flex flex-col sm:flex-row items-center justify-between gap-3 text-[10px] text-muted print:bg-transparent print:border-zinc-200 print:text-zinc-500">
-          <span>Codepad Candidate Report • Confidential Evaluation Summary</span>
+          <span>Interviewpad Candidate Report • Confidential Evaluation Summary</span>
           <span>Generated: {new Date().toLocaleString()}</span>
         </div>
       </div>

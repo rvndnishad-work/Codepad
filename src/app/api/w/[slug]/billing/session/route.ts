@@ -1,6 +1,6 @@
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { stripe } from "@/lib/stripe";
+import { getStripe } from "@/lib/stripe";
 import { NextResponse } from "next/server";
 
 export async function POST(
@@ -33,6 +33,14 @@ export async function POST(
 
     const origin = req.headers.get("origin") || "http://localhost:3000";
 
+    const body = await req.json().catch(() => ({}));
+    const plan = (body.plan || "GROWTH") as "STARTER" | "GROWTH";
+    const cadence = (body.cadence || "monthly") as "monthly" | "annual";
+
+    // Lazy-init resolves here (after the auth + plan checks). Throws a clear
+    // 500 if STRIPE_SECRET_KEY is missing — caught by the outer try/catch.
+    const stripe = getStripe();
+
     // 1. If already subscribed, redirect to Stripe Billing Customer Portal
     if (workspace.stripeCustomerId && workspace.stripeSubscriptionId) {
       const portalSession = await stripe.billingPortal.sessions.create({
@@ -63,6 +71,21 @@ export async function POST(
     // 3. Create Checkout Session for Subscription Upgrade
     const seatCount = workspace.members.length;
 
+    const isStarter = plan === "STARTER";
+    const priceAmount = isStarter
+      ? (cadence === "monthly" ? 1900 : 1500)
+      : (cadence === "monthly" ? 4900 : 3900);
+
+    const productName = isStarter
+      ? "Interviewpad Starter Workspace Seats"
+      : "Interviewpad Growth Workspace Seats";
+
+    const productDescription = isStarter
+      ? "Per-seat premium team workspace licenses (Starter Tier)."
+      : "Per-seat premium team workspace licenses (Growth Tier).";
+
+    const interval = cadence === "monthly" ? "month" : "year";
+
     const checkoutSession = await stripe.checkout.sessions.create({
       customer: stripeCustomerId,
       mode: "subscription",
@@ -72,12 +95,12 @@ export async function POST(
           price_data: {
             currency: "usd",
             product_data: {
-              name: "Codepad Growth Workspace Seats",
-              description: "Per-seat premium team workspace licenses.",
+              name: productName,
+              description: productDescription,
             },
-            unit_amount: 4900, // $49.00 per seat/month
+            unit_amount: priceAmount,
             recurring: {
-              interval: "month",
+              interval: interval,
             },
           },
           quantity: seatCount,
@@ -85,9 +108,17 @@ export async function POST(
       ],
       success_url: `${origin}/w/${slug}?billing_success=true&session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${origin}/w/${slug}?billing_cancel=true`,
+      subscription_data: {
+        metadata: {
+          workspaceId: workspace.id,
+          workspaceSlug: workspace.slug,
+          planName: plan,
+        },
+      },
       metadata: {
         workspaceId: workspace.id,
         workspaceSlug: workspace.slug,
+        planName: plan,
       },
     });
 

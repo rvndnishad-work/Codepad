@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { LayoutDashboard, User as UserIcon, LogOut, Shield } from "lucide-react";
+import { LayoutDashboard, User as UserIcon, LogOut, Shield, CreditCard } from "lucide-react";
 import { handleSignOut } from "@/app/actions";
 
 type UserShape = {
@@ -93,6 +93,12 @@ export default function UserMenu({
               href="/profile"
               icon={UserIcon}
               label="Profile"
+              onClick={() => setOpen(false)}
+            />
+            <MenuLink
+              href="/pricing"
+              icon={CreditCard}
+              label="Pricing"
               onClick={() => setOpen(false)}
             />
             {isAdmin && (

@@ -16,6 +16,7 @@ import {
   Sparkles,
   Play
 } from "lucide-react";
+import AIRubricDraft from "./AIRubricDraft";
 
 interface AdminAttemptDetailPageProps {
   params: Promise<{ id: string }>;
@@ -201,40 +202,51 @@ export default async function AdminAttemptDetailPage({ params }: AdminAttemptDet
 
       {/* Corporate AI Assessment Telemetry & Session Replay proctoring block */}
       {attempt.integrityReport && (
-        <div className="rounded-3xl border border-indigo-500/20 bg-[#161B2E]/60 backdrop-blur-md p-6 flex flex-col md:flex-row justify-between items-start md:items-center gap-6 shadow-xl relative overflow-hidden transition-all hover:border-accent/20">
-          <div className="space-y-2 max-w-xl">
-            <h3 className="text-xs font-black text-indigo-400 uppercase tracking-widest flex items-center gap-2">
-              <Sparkles className="w-4 h-4 animate-pulse" /> AI Proctoring & Replay Log Auditor
-            </h3>
-            <p className="text-sm font-black text-[#F3F4F6]">
-              Risk Assessment Rating:{" "}
-              <span className={`px-2 py-0.5 rounded-lg border text-[10px] font-black uppercase ml-1.5 ${
-                attempt.integrityReport.suspicionScore < 25
-                  ? "text-emerald-400 border-emerald-500/35 bg-emerald-500/10"
-                  : attempt.integrityReport.suspicionScore < 55
-                  ? "text-amber-400 border-amber-400/35 bg-amber-400/10"
-                  : "text-rose-500 border-rose-500/35 bg-rose-500/10 font-black animate-pulse"
-              }`}>
-                {attempt.integrityReport.suspicionScore}%{" "}
-                {attempt.integrityReport.suspicionScore < 25
-                  ? "Secure"
-                  : attempt.integrityReport.suspicionScore < 55
-                  ? "Low Risk"
-                  : "High Risk"}
-              </span>
-            </p>
-            <p className="text-xs text-muted leading-relaxed">
-              We tracked <span className="text-[#F3F4F6] font-bold">{attempt.integrityReport.blurCount} browser tab blurs</span> (candidate left screen for <span className="text-[#F3F4F6] font-bold">{attempt.integrityReport.totalBlurSec} seconds</span>) and <span className="text-[#F3F4F6] font-bold">{attempt.integrityReport.pasteCount} keyboard block pastes</span>. Large copy-pastes or high-speed typing bursts indicate external AI code generation.
-            </p>
+        <div className="rounded-3xl border border-indigo-500/20 bg-[#161B2E]/60 backdrop-blur-md p-6 flex flex-col gap-6 shadow-xl relative overflow-hidden transition-all hover:border-accent/20">
+          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+            <div className="space-y-2 max-w-xl">
+              <h3 className="text-xs font-black text-indigo-400 uppercase tracking-widest flex items-center gap-2">
+                <Sparkles className="w-4 h-4 animate-pulse" /> AI Proctoring & Replay Log Auditor
+              </h3>
+              <p className="text-sm font-black text-[#F3F4F6]">
+                Risk Assessment Rating:{" "}
+                <span className={`px-2 py-0.5 rounded-lg border text-[10px] font-black uppercase ml-1.5 ${
+                  attempt.integrityReport.suspicionScore < 25
+                    ? "text-emerald-400 border-emerald-500/35 bg-emerald-500/10"
+                    : attempt.integrityReport.suspicionScore < 55
+                    ? "text-amber-400 border-amber-400/35 bg-amber-400/10"
+                    : "text-rose-500 border-rose-500/35 bg-rose-500/10 font-black animate-pulse"
+                }`}>
+                  {attempt.integrityReport.suspicionScore}%{" "}
+                  {attempt.integrityReport.suspicionScore < 25
+                    ? "Secure"
+                    : attempt.integrityReport.suspicionScore < 55
+                    ? "Low Risk"
+                    : "High Risk"}
+                </span>
+              </p>
+              <p className="text-xs text-muted leading-relaxed">
+                We tracked <span className="text-[#F3F4F6] font-bold">{attempt.integrityReport.blurCount} browser tab blurs</span> (candidate left screen for <span className="text-[#F3F4F6] font-bold">{attempt.integrityReport.totalBlurSec} seconds</span>) and <span className="text-[#F3F4F6] font-bold">{attempt.integrityReport.pasteCount} keyboard block pastes</span>. Large copy-pastes or high-speed typing bursts indicate external AI code generation.
+              </p>
+            </div>
+
+            <Link
+              href={`/admin/attempts/${attempt.id}/replay`}
+              className="inline-flex items-center gap-2 px-5 py-3 rounded-xl bg-accent hover:bg-accent-soft text-bg text-xs font-black uppercase tracking-wider transition-colors shadow-soft shrink-0 w-full md:w-auto text-center justify-center cursor-pointer"
+            >
+              <Play className="w-3.5 h-3.5 fill-current" />
+              <span>Watch Session Replay</span>
+            </Link>
           </div>
 
-          <Link
-            href={`/admin/attempts/${attempt.id}/replay`}
-            className="inline-flex items-center gap-2 px-5 py-3 rounded-xl bg-accent hover:bg-accent-soft text-bg text-xs font-black uppercase tracking-wider transition-colors shadow-soft shrink-0 w-full md:w-auto text-center justify-center cursor-pointer"
-          >
-            <Play className="w-3.5 h-3.5 fill-current" />
-            <span>Watch Session Replay</span>
-          </Link>
+          <AIRubricDraft
+            suspicionScore={attempt.integrityReport.suspicionScore}
+            blurCount={attempt.integrityReport.blurCount}
+            totalBlurSec={attempt.integrityReport.totalBlurSec}
+            pasteCount={attempt.integrityReport.pasteCount}
+            passedCount={tests?.passed ?? 0}
+            totalCount={tests?.total ?? 0}
+          />
         </div>
       )}
 

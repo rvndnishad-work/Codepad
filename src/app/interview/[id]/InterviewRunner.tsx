@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState, useRef } from "react";
 import Link from "next/link";
 import dynamic from "next/dynamic";
+import PromptChallengeRunner from "./PromptChallengeRunner";
 import {
   ArrowLeft,
   CheckCircle2,
@@ -64,9 +65,10 @@ type Interview = {
   shortCode?: string | null;
   startedAtIso: string | null;
   finishedAtIso: string | null;
-  sourceType: "challenge" | "playground";
+  sourceType: "challenge" | "playground" | "prompt" | "combined";
   scenario: string | null;
   activePlaygroundId: string | null;
+  userId?: string | null;
   rubric?: {
     ratings: string;
     notes: string | null;
@@ -187,22 +189,66 @@ const templateColors: Record<string, { border: string; glow: string; text: strin
   }
 };
 
+export type SessionPromptScenario = {
+  id: string;
+  slug: string;
+  title: string;
+  difficulty: string;
+  estimatedMinutes: number;
+  category: string;
+  objective: string;
+  description: string;
+};
+
+export type PromptAttempt = {
+  id: string;
+  scenarioId: string;
+  promptText: string;
+  charCount: number;
+  tokenEstimate: number;
+  score: number | null;
+  rubricScores: string | null;
+  feedback: string | null;
+  graderType: string | null;
+  durationSec: number | null;
+};
+
 export default function InterviewRunner({
   interview,
   challenges,
   playgrounds,
+  promptScenarios = [],
   attempts,
+  promptAttempts = [],
   interviewerView,
   isOwner = false,
 }: {
   interview: Interview;
   challenges: SessionChallenge[];
   playgrounds: SessionPlayground[];
+  promptScenarios?: SessionPromptScenario[];
   attempts: Attempt[];
+  promptAttempts?: PromptAttempt[];
   interviewerView: boolean;
   isOwner?: boolean;
 }) {
   const isPlayground = interview.sourceType === "playground";
+  const isPrompt = interview.sourceType === "prompt";
+  const isCombined = interview.sourceType === "combined";
+
+  const [selectedPromptScenario, setSelectedPromptScenario] = useState<SessionPromptScenario | null>(null);
+
+  const activeScenario = useMemo(() => {
+    if (!isPrompt || promptScenarios.length === 0) return null;
+    return promptScenarios.find(
+      (p) => !promptAttempts.some((a) => a.scenarioId === p.id)
+    ) || promptScenarios[0];
+  }, [isPrompt, promptScenarios, promptAttempts]);
+
+  const initialAttempt = useMemo(() => {
+    if (!activeScenario) return null;
+    return promptAttempts.find((a) => a.scenarioId === activeScenario.id) || null;
+  }, [activeScenario, promptAttempts]);
   const [status, setStatus] = useState(interview.status);
   const [startedAt, setStartedAt] = useState<string | null>(interview.startedAtIso);
 
@@ -233,21 +279,42 @@ export default function InterviewRunner({
   const [rubricNotes, setRubricNotes] = useState(parsedRubric?.notes ?? "");
 
   // Post-interview Evaluation Summary Dashboard states
-  const [selectedReviewId, setSelectedReviewId] = useState<string | null>(
-    challenges[0]?.id || null
-  );
+  const [selectedReview, setSelectedReview] = useState<{
+    id: string;
+    type: "challenge" | "playground" | "prompt";
+  } | null>(() => {
+    if (challenges.length > 0) return { id: challenges[0].id, type: "challenge" };
+    if (playgrounds.length > 0) return { id: playgrounds[0].id, type: "playground" };
+    if (promptScenarios.length > 0) return { id: promptScenarios[0].id, type: "prompt" };
+    return null;
+  });
   const [activeReviewTab, setActiveReviewTab] = useState<"code" | "tests">("code");
   const [activeFileKey, setActiveFileKey] = useState<string>("");
 
-  const activeReviewAttempt = useMemo(() => {
-    if (!selectedReviewId) return null;
-    return attempts.find((a) => a.challengeId === selectedReviewId) || null;
-  }, [selectedReviewId, attempts]);
-
   const activeReviewChallenge = useMemo(() => {
-    if (!selectedReviewId) return null;
-    return challenges.find((c) => c.id === selectedReviewId) || null;
-  }, [selectedReviewId, challenges]);
+    if (!selectedReview || selectedReview.type !== "challenge") return null;
+    return challenges.find((c) => c.id === selectedReview.id) || null;
+  }, [selectedReview, challenges]);
+
+  const activeReviewPlayground = useMemo(() => {
+    if (!selectedReview || selectedReview.type !== "playground") return null;
+    return playgrounds.find((p) => p.id === selectedReview.id) || null;
+  }, [selectedReview, playgrounds]);
+
+  const activeReviewPrompt = useMemo(() => {
+    if (!selectedReview || selectedReview.type !== "prompt") return null;
+    return promptScenarios.find((ps) => ps.id === selectedReview.id) || null;
+  }, [selectedReview, promptScenarios]);
+
+  const activeReviewAttempt = useMemo(() => {
+    if (!selectedReview || selectedReview.type !== "challenge") return null;
+    return attempts.find((a) => a.challengeId === selectedReview.id) || null;
+  }, [selectedReview, attempts]);
+
+  const activeReviewPromptAttempt = useMemo(() => {
+    if (!selectedReview || selectedReview.type !== "prompt") return null;
+    return promptAttempts.find((a) => a.scenarioId === selectedReview.id) || null;
+  }, [selectedReview, promptAttempts]);
 
   const reviewFiles = useMemo(() => {
     if (!activeReviewAttempt?.files) return {} as Record<string, string>;
@@ -303,6 +370,9 @@ export default function InterviewRunner({
   const [codeCopied, setCodeCopied] = useState(false);
 
   const getFirstStageHref = () => {
+    if (interview.sourceType === "combined") {
+      return null;
+    }
     if (interview.sourceType === "playground") {
       const p = playgrounds[0];
       if (!p) return null;
@@ -872,7 +942,48 @@ export default function InterviewRunner({
           )}
 
           {/* Grid Content Panels */}
-          <div className="grid grid-cols-1 md:grid-cols-12 divide-y md:divide-y-0 md:divide-x divide-border bg-surface">
+          {(isPrompt || selectedPromptScenario) && status !== "scheduled" ? (
+            <div className="p-6 bg-surface space-y-4 flex flex-col">
+              {isCombined && (
+                <div className="flex items-center justify-between border-b border-border pb-3 shrink-0">
+                  <button
+                    onClick={() => setSelectedPromptScenario(null)}
+                    className="px-4 py-2 rounded-xl bg-bg hover:bg-elevated border border-border text-xs font-bold text-fg transition-all flex items-center gap-1.5 hover:text-accent shadow-sm active:scale-95 animate-in fade-in duration-300"
+                  >
+                    <ArrowLeft className="w-3.5 h-3.5" />
+                    Back to Central Lobby
+                  </button>
+                  <span className="text-[10px] font-black uppercase tracking-wider text-muted">
+                    Prompt Engineering Workspace
+                  </span>
+                </div>
+              )}
+              {(() => {
+                const scenarioToRun = isPrompt ? activeScenario : selectedPromptScenario;
+                if (!scenarioToRun) {
+                  return (
+                    <div className="text-center p-8 text-muted">
+                      No prompt scenarios assigned to this session.
+                    </div>
+                  );
+                }
+                const specificAttempt = promptAttempts.find((a) => a.scenarioId === scenarioToRun.id) || null;
+                return (
+                  <PromptChallengeRunner
+                    scenario={scenarioToRun}
+                    sessionId={interview.id}
+                    userId={isOwner ? interview.userId : null}
+                    initialAttempt={specificAttempt}
+                    interviewerView={interviewerView}
+                    onSuccessSubmit={(newAttempt) => {
+                      window.location.reload();
+                    }}
+                  />
+                );
+              })()}
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-12 divide-y md:divide-y-0 md:divide-x divide-border bg-surface">
             
             {/* LEFT COLUMN: Command Panel */}
             <div className="md:col-span-5 p-5 space-y-6 flex flex-col">
@@ -907,17 +1018,19 @@ export default function InterviewRunner({
 
               {/* Action triggers */}
               <div className="space-y-3">
-                {status === "scheduled" && interviewerView && (
+                {status === "scheduled" && (interviewerView || interview.type === "mock") && (
                   <button
                     onClick={start}
                     className="w-full relative overflow-hidden group/btn px-5 py-3 rounded-xl bg-accent hover:bg-accent-soft text-bg transition-all duration-300 shadow-md hover:shadow-accent/20 hover:-translate-y-0.5 active:scale-[0.98] flex items-center justify-between"
                   >
-                    <span className="text-xs font-black uppercase tracking-wider">Initiate Clock</span>
+                    <span className="text-xs font-black uppercase tracking-wider">
+                      {interview.type === "mock" ? "Start Practice" : "Initiate Clock"}
+                    </span>
                     <Play className="w-3.5 h-3.5 fill-current transition-transform group-hover/btn:translate-x-0.5" />
                   </button>
                 )}
 
-                {status === "scheduled" && !interviewerView && (
+                {status === "scheduled" && !interviewerView && interview.type !== "mock" && (
                   <div className="p-5 rounded-2xl border border-border bg-bg/60 text-center space-y-4">
                     <div className="relative w-12 h-12 mx-auto">
                       <div className="absolute inset-0 rounded-full bg-accent/20 animate-ping opacity-60" />
@@ -946,7 +1059,7 @@ export default function InterviewRunner({
                   </div>
                 )}
 
-                {status === "in_progress" && interviewerView && (
+                {status === "in_progress" && (interviewerView || interview.type === "mock") && (
                   <button
                     onClick={() => setVerdictModalOpen(true)}
                     className="w-full px-5 py-3 rounded-xl bg-gradient-to-r from-rose-500 to-pink-600 hover:from-rose-600 hover:to-pink-700 text-white font-extrabold uppercase tracking-widest text-[10px] transition-all duration-300 shadow-lg hover:shadow-rose-500/25 hover:-translate-y-0.5 active:scale-[0.98] flex items-center justify-between"
@@ -956,10 +1069,54 @@ export default function InterviewRunner({
                   </button>
                 )}
 
-                {status === "in_progress" && !interviewerView && (
+                {status === "in_progress" && !interviewerView && interview.type !== "mock" && (
                   <div className="p-4 rounded-xl border border-accent/30 bg-accent/10 text-center space-y-1.5 animate-pulse">
                     <div className="text-xs font-black uppercase tracking-wider text-accent">Session Active</div>
                     <div className="text-[10px] text-muted">Proceed to the challenge roadmap on the right.</div>
+                  </div>
+                )}
+
+
+                {interview.type === "mock" && status !== "completed" && status !== "abandoned" && (
+                  <div className="p-4.5 rounded-2xl border border-indigo-500/20 bg-indigo-500/[0.03] space-y-3.5 shadow-sm animate-fade-in">
+                    <div className="flex items-center gap-2 border-b border-indigo-500/10 pb-2">
+                      <Sparkles className="w-4 h-4 text-indigo-400" />
+                      <h4 className="text-xs font-bold uppercase tracking-wider text-indigo-400">Self-Practice Guide</h4>
+                    </div>
+                    <ul className="space-y-3 text-[11px] text-muted leading-relaxed font-sans">
+                      <li className="flex items-start gap-2.5">
+                        <span className="w-4.5 h-4.5 rounded-full bg-indigo-500/10 text-indigo-400 flex items-center justify-center font-bold text-[9px] mt-0.5 border border-indigo-500/20 shrink-0">1</span>
+                        <div className="space-y-0.5">
+                          <p className="text-fg font-semibold">Start &amp; Attempt Challenges</p>
+                          <p className="text-[10px] text-muted/70">Click &quot;Start Practice&quot; to begin, then solve challenges using the timeline on the right.</p>
+                        </div>
+                      </li>
+                      <li className="flex items-start gap-2.5">
+                        <span className="w-4.5 h-4.5 rounded-full bg-indigo-500/10 text-indigo-400 flex items-center justify-center font-bold text-[9px] mt-0.5 border border-indigo-500/20 shrink-0">2</span>
+                        <div className="space-y-0.5">
+                          <p className="text-fg font-semibold">Think Aloud &amp; Simulate</p>
+                          <p className="text-[10px] text-muted/70">Describe your logic out loud while writing code. It develops excellent muscle memory!</p>
+                        </div>
+                      </li>
+                      <li className="flex items-start gap-2.5">
+                        <span className="w-4.5 h-4.5 rounded-full bg-indigo-500/10 text-indigo-400 flex items-center justify-center font-bold text-[9px] mt-0.5 border border-indigo-500/20 shrink-0">3</span>
+                        <div className="space-y-0.5">
+                          <p className="text-fg font-semibold">Self-Evaluation Rubric</p>
+                          <p className="text-[10px] text-muted/70">When done, click &quot;Conclude round&quot; to score yourself on Code Quality, Problem Solving, and Communication.</p>
+                        </div>
+                      </li>
+                    </ul>
+                    
+                    <div className="pt-2.5 border-t border-indigo-500/10 space-y-2">
+                      <p className="text-[10px] text-muted leading-relaxed">Want peer feedback? Copy the link to invite a friend or mentor to act as your interviewer:</p>
+                      <button
+                        onClick={copyCoInterviewerLink}
+                        className="w-full py-1.5 rounded-lg bg-bg border border-border text-[10px] font-bold text-fg hover:bg-elevated hover:border-indigo-500/30 hover:text-indigo-400 transition-all flex items-center justify-center gap-1.5 active:scale-[0.97]"
+                      >
+                        <Share2 className="w-3.5 h-3.5" />
+                        Copy guest link
+                      </button>
+                    </div>
                   </div>
                 )}
 
@@ -1034,9 +1191,7 @@ export default function InterviewRunner({
                 )}
               </div>
 
-            </div>
-
-            {/* RIGHT COLUMN: Concluded Evaluation Summary OR Live Round sequence */}
+                        {/* RIGHT COLUMN: Concluded Evaluation Summary OR Live Round sequence */}
             <div className="md:col-span-7 p-5 space-y-5 flex flex-col justify-between min-h-[480px]">
 
               {status === "completed" || status === "abandoned" ? (
@@ -1054,17 +1209,18 @@ export default function InterviewRunner({
                       Post-Round Review Dashboard
                     </h3>
                     <p className="text-[10px] text-muted tracking-wide mt-1 pl-8">
-                      Review candidate's final submitted code and test cases. Select a step below to inspect:
+                      Review candidate's final submitted work across all curated steps. Select a round to inspect:
                     </p>
                   </div>
 
-                  {/* Challenge Step Selectors */}
-                  <div className="flex flex-wrap gap-2.5 pb-2 relative z-10 animate-fade-in delay-75">
+                  {/* Round Step Selectors */}
+                  <div className="flex flex-wrap gap-2.5 pb-2 relative z-10 animate-fade-in delay-75 max-h-[120px] overflow-y-auto pr-1 scrollbar-thin">
+                    {/* DSA Challenges */}
                     {challenges.map((c, idx) => {
                       const attempt = attempts.find((a) => a.challengeId === c.id);
                       const passed = attempt?.status === "passed";
                       const failed = attempt?.status === "failed";
-                      const isSelected = selectedReviewId === c.id;
+                      const isSelected = selectedReview?.id === c.id && selectedReview?.type === "challenge";
 
                       let statusBadgeColor = "text-muted bg-surface/50 border-border";
                       let statusBadgeLabel = "Unattempted";
@@ -1079,16 +1235,72 @@ export default function InterviewRunner({
                       return (
                         <button
                           key={c.id}
-                          onClick={() => setSelectedReviewId(c.id)}
+                          onClick={() => setSelectedReview({ id: c.id, type: "challenge" })}
                           className={`flex items-center gap-2.5 px-3.5 py-2 rounded-xl border text-[10px] font-extrabold tracking-wide transition-all active:scale-95 duration-200 relative overflow-hidden ${
                             isSelected
                               ? "bg-accent/10 border-accent/40 text-accent shadow-[0_0_15px_rgba(var(--accent-rgb),0.1)]"
                               : "bg-surface/50 border-border hover:bg-elevated hover:border-border-strong text-muted hover:text-fg"
                           }`}
                         >
-                          <span className="font-mono text-[9px] opacity-70">Step {idx + 1}</span>
+                          <span className="font-mono text-[9px] opacity-70">DSA Step {idx + 1}</span>
                           <span className="w-1 h-1 rounded-full bg-border-strong" />
-                          <span className="truncate">{c.title}</span>
+                          <span className="truncate max-w-[120px]">{c.title}</span>
+                          <span className={`text-[8px] font-black uppercase px-2 py-0.5 rounded border ${statusBadgeColor}`}>
+                            {statusBadgeLabel}
+                          </span>
+                        </button>
+                      );
+                    })}
+
+                    {/* Playgrounds */}
+                    {playgrounds.map((p, idx) => {
+                      const isSelected = selectedReview?.id === p.id && selectedReview?.type === "playground";
+
+                      return (
+                        <button
+                          key={p.id}
+                          onClick={() => setSelectedReview({ id: p.id, type: "playground" })}
+                          className={`flex items-center gap-2.5 px-3.5 py-2 rounded-xl border text-[10px] font-extrabold tracking-wide transition-all active:scale-95 duration-200 relative overflow-hidden ${
+                            isSelected
+                              ? "bg-indigo-500/10 border-indigo-500/40 text-indigo-500 shadow-[0_0_15px_rgba(99,102,241,0.1)]"
+                              : "bg-surface/50 border-border hover:bg-elevated hover:border-border-strong text-muted hover:text-fg"
+                          }`}
+                        >
+                          <span className="font-mono text-[9px] opacity-70">Playground {idx + 1}</span>
+                          <span className="w-1 h-1 rounded-full bg-border-strong" />
+                          <span className="truncate max-w-[120px]">{p.title}</span>
+                          <span className="text-[8px] font-black uppercase px-2 py-0.5 rounded border text-muted bg-surface/50 border-border">
+                            Manual
+                          </span>
+                        </button>
+                      );
+                    })}
+
+                    {/* Prompt Scenarios */}
+                    {promptScenarios.map((ps, idx) => {
+                      const attempt = promptAttempts.find((a) => a.scenarioId === ps.id);
+                      const isSelected = selectedReview?.id === ps.id && selectedReview?.type === "prompt";
+
+                      let statusBadgeColor = "text-muted bg-surface/50 border-border";
+                      let statusBadgeLabel = "Unattempted";
+                      if (attempt) {
+                        statusBadgeColor = "text-emerald-500 bg-emerald-500/10 border-emerald-500/25";
+                        statusBadgeLabel = `${attempt.score}%`;
+                      }
+
+                      return (
+                        <button
+                          key={ps.id}
+                          onClick={() => setSelectedReview({ id: ps.id, type: "prompt" })}
+                          className={`flex items-center gap-2.5 px-3.5 py-2 rounded-xl border text-[10px] font-extrabold tracking-wide transition-all active:scale-95 duration-200 relative overflow-hidden ${
+                            isSelected
+                              ? "bg-amber-500/10 border-amber-500/40 text-amber-500 shadow-[0_0_15px_rgba(245,158,11,0.1)]"
+                              : "bg-surface/50 border-border hover:bg-elevated hover:border-border-strong text-muted hover:text-fg"
+                          }`}
+                        >
+                          <span className="font-mono text-[9px] opacity-70">Prompt {idx + 1}</span>
+                          <span className="w-1 h-1 rounded-full bg-border-strong" />
+                          <span className="truncate max-w-[120px]">{ps.title}</span>
                           <span className={`text-[8px] font-black uppercase px-2 py-0.5 rounded border ${statusBadgeColor}`}>
                             {statusBadgeLabel}
                           </span>
@@ -1097,201 +1309,328 @@ export default function InterviewRunner({
                     })}
                   </div>
 
-                  {/* Selected Challenge Details & Submissions */}
-                  {activeReviewChallenge ? (
+                  {/* Selected Round Details & Submissions */}
+                  {selectedReview ? (
                     <div className="flex-1 flex flex-col space-y-4 min-h-0 relative z-10 animate-fade-in delay-100">
-                      {activeReviewAttempt ? (
-                        <div className="flex-1 flex flex-col space-y-4 min-h-0">
-                          {/* Attempt Metrics Banner */}
-                          <div className="grid grid-cols-2 gap-3.5">
-                            <div className="p-3.5 rounded-2xl border border-border bg-bg/20 hover:bg-bg/30 transition-all duration-300 flex flex-col justify-between group shadow-sm">
-                              <div className="flex items-center justify-between">
-                                <span className="text-[9px] font-extrabold uppercase tracking-widest text-muted">Solve Status</span>
-                                <div className={`w-1.5 h-1.5 rounded-full ${
-                                  activeReviewAttempt.status === "passed"
-                                    ? "bg-emerald-500 animate-ping"
-                                    : "bg-rose-500"
-                                }`} />
-                              </div>
-                              <span className={`text-xs font-black uppercase tracking-wide mt-2.5 flex items-center gap-1.5 ${
-                                activeReviewAttempt.status === "passed"
-                                  ? "text-emerald-500"
-                                  : "text-rose-500"
-                              }`}>
-                                {activeReviewAttempt.status === "passed" ? "Success (Passed)" : "Did Not Pass"}
-                              </span>
-                            </div>
-                            <div className="p-3.5 rounded-2xl border border-border bg-bg/20 hover:bg-bg/30 transition-all duration-300 flex flex-col justify-between group shadow-sm">
-                              <div className="flex items-center justify-between">
-                                <span className="text-[9px] font-extrabold uppercase tracking-widest text-muted">Result Grade</span>
-                                <span className="text-[9px] font-mono text-muted">Score / Rating</span>
-                              </div>
-                              <span className="text-xs font-mono font-black text-fg mt-2.5">
-                                {activeReviewAttempt.score != null
-                                  ? `${activeReviewAttempt.score} %`
-                                  : reviewTestResults
-                                  ? `${reviewTestResults.passed} / ${reviewTestResults.total} passed`
-                                  : "0 / 0 passed"}
-                              </span>
-                            </div>
-                          </div>
-
-                          {/* Code vs Test tabs */}
-                          <div className="flex border-b border-border gap-1">
-                            <button
-                              onClick={() => setActiveReviewTab("code")}
-                              className={`px-4 py-2 text-xs font-black uppercase tracking-wider transition-all border-b-2 -mb-[2px] ${
-                                activeReviewTab === "code"
-                                  ? "border-accent text-accent"
-                                  : "border-transparent text-muted hover:text-fg hover:border-border-strong"
-                              }`}
-                            >
-                              Code Submitted
-                            </button>
-                            {reviewTestResults && (
-                              <button
-                                onClick={() => setActiveReviewTab("tests")}
-                                className={`px-4 py-2 text-xs font-black uppercase tracking-wider transition-all border-b-2 -mb-[2px] ${
-                                  activeReviewTab === "tests"
-                                    ? "border-accent text-accent"
-                                    : "border-transparent text-muted hover:text-fg hover:border-border-strong"
-                                }`}
-                              >
-                                Test Cases ({reviewTestResults.passed}/{reviewTestResults.total})
-                              </button>
-                            )}
-                          </div>
-
-                          {/* Active Tab Screen Content */}
-                          <div className="flex-1 flex flex-col min-h-0 animate-fade-in delay-150">
-                            {activeReviewTab === "code" ? (
-                              <div className="flex-1 flex flex-col rounded-2xl border border-border bg-bg/10 backdrop-blur-sm overflow-hidden min-h-0 shadow-md">
-                                {/* File Explorer Tab bar */}
-                                <div className="flex items-center overflow-x-auto border-b border-border bg-surface shrink-0 scrollbar-none">
-                                  {reviewFileKeys.map((fk) => {
-                                    const isSelected = fk === activeFileKey;
-                                    return (
-                                      <button
-                                        key={fk}
-                                        onClick={() => setActiveFileKey(fk)}
-                                        className={`px-4 py-2.5 text-[10px] font-mono border-r border-border transition-all flex items-center gap-1.5 ${
-                                          isSelected
-                                            ? "bg-bg/40 text-fg font-black border-b border-b-accent"
-                                            : "text-muted hover:text-fg hover:bg-bg/20"
-                                        }`}
-                                      >
-                                        <div className={`w-1.5 h-1.5 rounded-full ${isSelected ? "bg-accent" : "bg-muted/40"}`} />
-                                        {fk.replace(/^\//, "")}
-                                      </button>
-                                    );
-                                  })}
-                                  {reviewFileKeys.length === 0 && (
-                                    <span className="p-3.5 text-xs text-muted italic">No files submitted.</span>
-                                  )}
-                                </div>
-
-                                {/* Active File Header Info Bar */}
-                                {activeFileKey && (
-                                  <div className="px-4 py-2 border-b border-border bg-surface/20 flex items-center justify-between text-[9px] font-extrabold uppercase tracking-wider text-muted">
-                                    <span className="flex items-center gap-1.5 text-fg/80">
-                                      <span className="text-accent">●</span> Active File: {activeFileKey}
-                                    </span>
-                                    <span className="bg-bg/50 border border-border px-2 py-0.5 rounded-md font-mono text-[8px]">
-                                      {activeFileKey.split(".").pop() ?? "code"}
-                                    </span>
+                      
+                      {selectedReview.type === "challenge" && activeReviewChallenge && (
+                        <>
+                          {activeReviewAttempt ? (
+                            <div className="flex-1 flex flex-col space-y-4 min-h-0">
+                              {/* Attempt Metrics Banner */}
+                              <div className="grid grid-cols-2 gap-3.5">
+                                <div className="p-3.5 rounded-2xl border border-border bg-bg/20 hover:bg-bg/30 transition-all duration-300 flex flex-col justify-between group shadow-sm">
+                                  <div className="flex items-center justify-between">
+                                    <span className="text-[9px] font-extrabold uppercase tracking-widest text-muted">Solve Status</span>
+                                    <div className={`w-1.5 h-1.5 rounded-full ${
+                                      activeReviewAttempt.status === "passed"
+                                        ? "bg-emerald-500 animate-ping"
+                                        : "bg-rose-500"
+                                    }`} />
                                   </div>
-                                )}
-
-                                {/* Monaco Reader */}
-                                <div className="flex-1 min-h-[250px] relative">
-                                  {activeFileKey ? (
-                                    <Monaco
-                                      height="250px"
-                                      language={
-                                        activeFileKey.endsWith(".ts") || activeFileKey.endsWith(".tsx")
-                                          ? "typescript"
-                                          : activeFileKey.endsWith(".js") || activeFileKey.endsWith(".jsx")
-                                            ? "javascript"
-                                            : "plaintext"
-                                      }
-                                      theme="vs-dark"
-                                      value={reviewFiles[activeFileKey] ?? ""}
-                                      options={{
-                                        readOnly: true,
-                                        minimap: { enabled: false },
-                                        fontSize: 12,
-                                        fontFamily: "'JetBrains Mono', monospace",
-                                        automaticLayout: true,
-                                        scrollBeyondLastLine: false,
-                                        tabSize: 2,
-                                        wordWrap: "on",
-                                        lineNumbersMinChars: 3,
-                                      }}
-                                    />
-                                  ) : (
-                                    <div className="absolute inset-0 flex items-center justify-center text-xs text-muted/50 italic">
-                                      Select a file to view code submission.
-                                    </div>
-                                  )}
+                                  <span className={`text-xs font-black uppercase tracking-wide mt-2.5 flex items-center gap-1.5 ${
+                                    activeReviewAttempt.status === "passed"
+                                      ? "text-emerald-500"
+                                      : "text-rose-500"
+                                  }`}>
+                                    {activeReviewAttempt.status === "passed" ? "Success (Passed)" : "Did Not Pass"}
+                                  </span>
+                                </div>
+                                <div className="p-3.5 rounded-2xl border border-border bg-bg/20 hover:bg-bg/30 transition-all duration-300 flex flex-col justify-between group shadow-sm">
+                                  <div className="flex items-center justify-between">
+                                    <span className="text-[9px] font-extrabold uppercase tracking-widest text-muted">Result Grade</span>
+                                    <span className="text-[9px] font-mono text-muted">Score / Rating</span>
+                                  </div>
+                                  <span className="text-xs font-mono font-black text-fg mt-2.5">
+                                    {activeReviewAttempt.score != null
+                                      ? `${activeReviewAttempt.score} %`
+                                      : reviewTestResults
+                                      ? `${reviewTestResults.passed} / ${reviewTestResults.total} passed`
+                                      : "0 / 0 passed"}
+                                  </span>
                                 </div>
                               </div>
-                            ) : (
-                              // Test Results Tab
-                              <div className="flex-1 overflow-y-auto max-h-[300px] space-y-2.5 pr-1 scrollbar-thin">
-                                {reviewTestResults?.tests.map((t, tIdx) => {
-                                  const isPass = t.status === "pass";
-                                  return (
-                                    <div
-                                      key={tIdx}
-                                      className={`p-3.5 rounded-2xl border flex flex-col gap-2 transition-all hover:translate-x-0.5 duration-200 ${
-                                        isPass
-                                          ? "bg-emerald-500/5 border-emerald-500/10 text-emerald-600 dark:text-emerald-400"
-                                          : "bg-rose-500/5 border-rose-500/15 text-rose-600 dark:text-rose-400"
-                                      }`}
-                                    >
-                                      <div className="flex items-center justify-between gap-3">
-                                        <div className="flex items-center gap-2 min-w-0">
-                                          {isPass ? (
-                                            <CheckCircle2 className="w-4.5 h-4.5 shrink-0 text-emerald-500" />
-                                          ) : (
-                                            <XCircle className="w-4.5 h-4.5 shrink-0 text-rose-500" />
-                                          )}
-                                          <span className="text-xs font-black truncate text-fg">
-                                            {t.name || `Test Case #${tIdx + 1}`}
-                                          </span>
-                                        </div>
-                                        <span className={`text-[8px] font-black uppercase px-2 py-0.5 rounded border ${
-                                          isPass ? "bg-emerald-500/10 border-emerald-500/25" : "bg-rose-500/10 border-rose-500/25"
-                                        }`}>
-                                          {isPass ? "Pass" : "Fail"}
+
+                              {/* Code vs Test tabs */}
+                              <div className="flex border-b border-border gap-1">
+                                <button
+                                  onClick={() => setActiveReviewTab("code")}
+                                  className={`px-4 py-2 text-xs font-black uppercase tracking-wider transition-all border-b-2 -mb-[2px] ${
+                                    activeReviewTab === "code"
+                                      ? "border-accent text-accent"
+                                      : "border-transparent text-muted hover:text-fg hover:border-border-strong"
+                                  }`}
+                                >
+                                  Code Submitted
+                                </button>
+                                {reviewTestResults && (
+                                  <button
+                                    onClick={() => setActiveReviewTab("tests")}
+                                    className={`px-4 py-2 text-xs font-black uppercase tracking-wider transition-all border-b-2 -mb-[2px] ${
+                                      activeReviewTab === "tests"
+                                        ? "border-accent text-accent"
+                                        : "border-transparent text-muted hover:text-fg hover:border-border-strong"
+                                    }`}
+                                  >
+                                    Test Cases ({reviewTestResults.passed}/{reviewTestResults.total})
+                                  </button>
+                                )}
+                              </div>
+
+                              {/* Active Tab Screen Content */}
+                              <div className="flex-1 flex flex-col min-h-0 animate-fade-in delay-150">
+                                {activeReviewTab === "code" ? (
+                                  <div className="flex-1 flex flex-col rounded-2xl border border-border bg-bg/10 backdrop-blur-sm overflow-hidden min-h-0 shadow-md">
+                                    {/* File Explorer Tab bar */}
+                                    <div className="flex items-center overflow-x-auto border-b border-border bg-surface shrink-0 scrollbar-none">
+                                      {reviewFileKeys.map((fk) => {
+                                        const isSelected = fk === activeFileKey;
+                                        return (
+                                          <button
+                                            key={fk}
+                                            onClick={() => setActiveFileKey(fk)}
+                                            className={`px-4 py-2.5 text-[10px] font-mono border-r border-border transition-all flex items-center gap-1.5 ${
+                                              isSelected
+                                                ? "bg-bg/40 text-fg font-black border-b border-b-accent"
+                                                : "text-muted hover:text-fg hover:bg-bg/20"
+                                            }`}
+                                          >
+                                            <div className={`w-1.5 h-1.5 rounded-full ${isSelected ? "bg-accent" : "bg-muted/40"}`} />
+                                            {fk.replace(/^\//, "")}
+                                          </button>
+                                        );
+                                      })}
+                                      {reviewFileKeys.length === 0 && (
+                                        <span className="p-3.5 text-xs text-muted italic">No files submitted.</span>
+                                      )}
+                                    </div>
+
+                                    {/* Active File Header Info Bar */}
+                                    {activeFileKey && (
+                                      <div className="px-4 py-2 border-b border-border bg-surface/20 flex items-center justify-between text-[9px] font-extrabold uppercase tracking-wider text-muted">
+                                        <span className="flex items-center gap-1.5 text-fg/80">
+                                          <span className="text-accent">●</span> Active File: {activeFileKey}
+                                        </span>
+                                        <span className="bg-bg/50 border border-border px-2 py-0.5 rounded-md font-mono text-[8px]">
+                                          {activeFileKey.split(".").pop() ?? "code"}
                                         </span>
                                       </div>
-                                      {t.error && (
-                                        <div className="font-mono text-[9.5px] bg-black/40 border border-border rounded-xl p-3 overflow-x-auto text-muted whitespace-pre-wrap leading-relaxed">
-                                          {t.error}
+                                    )}
+
+                                    {/* Monaco Reader */}
+                                    <div className="flex-1 min-h-[250px] relative">
+                                      {activeFileKey ? (
+                                        <Monaco
+                                          height="250px"
+                                          language={
+                                            activeFileKey.endsWith(".ts") || activeFileKey.endsWith(".tsx")
+                                              ? "typescript"
+                                              : activeFileKey.endsWith(".js") || activeFileKey.endsWith(".jsx")
+                                                ? "javascript"
+                                                : "plaintext"
+                                          }
+                                          theme="vs-dark"
+                                          value={reviewFiles[activeFileKey] ?? ""}
+                                          options={{
+                                            readOnly: true,
+                                            minimap: { enabled: false },
+                                            fontSize: 12,
+                                            fontFamily: "'JetBrains Mono', monospace",
+                                            automaticLayout: true,
+                                            scrollBeyondLastLine: false,
+                                            tabSize: 2,
+                                            wordWrap: "on",
+                                            lineNumbersMinChars: 3,
+                                          }}
+                                        />
+                                      ) : (
+                                        <div className="absolute inset-0 flex items-center justify-center text-xs text-muted/50 italic">
+                                          Select a file to view code submission.
                                         </div>
                                       )}
                                     </div>
-                                  );
-                                })}
-                                {(!reviewTestResults || reviewTestResults.tests.length === 0) && (
-                                  <div className="text-center p-6 text-xs text-muted italic">
-                                    No detailed test results available.
+                                  </div>
+                                ) : (
+                                  // Test Results Tab
+                                  <div className="flex-1 overflow-y-auto max-h-[300px] space-y-2.5 pr-1 scrollbar-thin">
+                                    {reviewTestResults?.tests.map((t, tIdx) => {
+                                      const isPass = t.status === "pass";
+                                      return (
+                                        <div
+                                          key={tIdx}
+                                          className={`p-3.5 rounded-2xl border flex flex-col gap-2 transition-all hover:translate-x-0.5 duration-200 ${
+                                            isPass
+                                              ? "bg-emerald-500/5 border-emerald-500/10 text-emerald-600 dark:text-emerald-400"
+                                              : "bg-rose-500/5 border-rose-500/15 text-rose-600 dark:text-rose-400"
+                                          }`}
+                                        >
+                                          <div className="flex items-center justify-between gap-3">
+                                            <div className="flex items-center gap-2 min-w-0">
+                                              {isPass ? (
+                                                <CheckCircle2 className="w-4.5 h-4.5 shrink-0 text-emerald-500" />
+                                              ) : (
+                                                <XCircle className="w-4.5 h-4.5 shrink-0 text-rose-500" />
+                                              )}
+                                              <span className="text-xs font-black truncate text-fg">
+                                                {t.name || `Test Case #${tIdx + 1}`}
+                                              </span>
+                                            </div>
+                                            <span className={`text-[8px] font-black uppercase px-2 py-0.5 rounded border ${
+                                              isPass ? "bg-emerald-500/10 border-emerald-500/25" : "bg-rose-500/10 border-rose-500/25"
+                                            }`}>
+                                              {isPass ? "Pass" : "Fail"}
+                                            </span>
+                                          </div>
+                                          {t.error && (
+                                            <div className="font-mono text-[9.5px] bg-black/40 border border-border rounded-xl p-3 overflow-x-auto text-muted whitespace-pre-wrap leading-relaxed">
+                                              {t.error}
+                                            </div>
+                                          )}
+                                        </div>
+                                      );
+                                    })}
+                                    {(!reviewTestResults || reviewTestResults.tests.length === 0) && (
+                                      <div className="text-center p-6 text-xs text-muted italic">
+                                        No detailed test results available.
+                                      </div>
+                                    )}
                                   </div>
                                 )}
                               </div>
-                            )}
+                            </div>
+                          ) : (
+                            <div className="flex-1 flex flex-col items-center justify-center p-12 text-center border border-dashed border-border rounded-2xl bg-bg/30">
+                              <FileText className="w-8 h-8 text-muted/40 mb-3" />
+                              <div className="text-xs font-black uppercase text-fg/70">No Attempt Recorded</div>
+                              <p className="text-[10px] text-muted max-w-[280px] mt-1.5 leading-relaxed">
+                                The candidate did not attempt or submit any code for this step during the session.
+                              </p>
+                            </div>
+                          )}
+                        </>
+                      )}
+
+                      {selectedReview.type === "playground" && activeReviewPlayground && (
+                        <div className="flex-1 flex flex-col space-y-4 min-h-0">
+                          <div className="p-4 rounded-2xl border border-border bg-bg/20 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                            <div>
+                              <h4 className="text-sm font-bold text-fg">{activeReviewPlayground.title}</h4>
+                              <p className="text-xs text-muted mt-1">
+                                Framework: <span className="font-mono bg-bg/50 px-2 py-0.5 border border-border rounded text-fg">{activeReviewPlayground.template}</span>
+                              </p>
+                            </div>
+                            <Link
+                              href={`/interview/${interview.id}/play/${activeReviewPlayground.id}${isOwner ? "" : `?token=${interview.shareToken}`}`}
+                              className="px-4 py-2 rounded-xl bg-bg hover:bg-elevated border border-border hover:border-indigo-500/40 text-xs font-bold text-fg transition-all flex items-center gap-1.5 hover:text-indigo-500 shadow-sm active:scale-95 shrink-0"
+                            >
+                              <Eye className="w-3.5 h-3.5" />
+                              Observe Sandbox Code
+                            </Link>
+                          </div>
+                          <div className="p-8 rounded-2xl border border-border bg-bg/30 text-center space-y-3.5">
+                            <FileText className="w-8 h-8 text-muted/40 mx-auto" />
+                            <div className="text-xs font-bold text-fg/80">Manual Evaluation Workspace</div>
+                            <p className="text-xs text-muted max-w-md mx-auto leading-relaxed">
+                              This system design sandbox round requires manual grading by the interviewer. Click the action button above to enter the workspace read-only, where you can inspect final code files and view the live browser execution output directly.
+                            </p>
                           </div>
                         </div>
-                      ) : (
-                        <div className="flex-1 flex flex-col items-center justify-center p-12 text-center border border-dashed border-border rounded-2xl bg-bg/30">
-                          <FileText className="w-8 h-8 text-muted/40 mb-3" />
-                          <div className="text-xs font-black uppercase text-fg/70">No Attempt Recorded</div>
-                          <p className="text-[10px] text-muted max-w-[280px] mt-1.5 leading-relaxed">
-                            The candidate did not attempt or submit any code for this step during the session.
-                          </p>
+                      )}
+
+                      {selectedReview.type === "prompt" && activeReviewPrompt && (
+                        <div className="flex-1 flex flex-col space-y-4 min-h-0">
+                          {activeReviewPromptAttempt ? (
+                            <div className="flex-1 flex flex-col space-y-4 min-h-0 overflow-y-auto pr-1 scrollbar-thin">
+                              {/* Attempt Metrics Banner */}
+                              <div className="grid grid-cols-2 gap-3.5">
+                                <div className="p-3.5 rounded-2xl border border-border bg-bg/20 flex flex-col justify-between shadow-sm">
+                                  <span className="text-[9px] font-extrabold uppercase tracking-widest text-muted">Evaluation Status</span>
+                                  <span className="text-xs font-black text-emerald-500 mt-2.5 uppercase">
+                                    Graded ({activeReviewPromptAttempt.graderType === "ai" ? "Gemini AI" : "Local"})
+                                  </span>
+                                </div>
+                                <div className="p-3.5 rounded-2xl border border-border bg-bg/20 flex flex-col justify-between shadow-sm">
+                                  <span className="text-[9px] font-extrabold uppercase tracking-widest text-muted">AI Grader Score</span>
+                                  <span className="text-xs font-mono font-black text-fg mt-2.5">
+                                    {activeReviewPromptAttempt.score}%
+                                  </span>
+                                </div>
+                              </div>
+
+                              {/* Rubric Breakdown */}
+                              {activeReviewPromptAttempt.rubricScores && (
+                                <div className="p-4 rounded-2xl border border-border bg-bg/10 space-y-3.5">
+                                  <h4 className="text-xs font-bold uppercase tracking-widest text-fg/80">Rubric Dimensions</h4>
+                                  <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-3">
+                                    {(() => {
+                                      try {
+                                        const rubric = JSON.parse(activeReviewPromptAttempt.rubricScores);
+                                        return [
+                                          { key: "clarity", label: "Clarity & Structure" },
+                                          { key: "specificity", label: "Technical Specificity" },
+                                          { key: "efficiency", label: "Token Efficiency" },
+                                          { key: "context", label: "Contextual Persona" },
+                                          { key: "constraints", label: "Constraint Specification" },
+                                          { key: "edgeCases", label: "Edge-Case Mitigation" },
+                                        ].map((item) => {
+                                          const val = rubric[item.key] || 0;
+                                          let barColor = "bg-accent";
+                                          if (val < 50) barColor = "bg-rose-500";
+                                          else if (val < 75) barColor = "bg-amber-500";
+
+                                          return (
+                                            <div key={item.key} className="space-y-1">
+                                              <div className="flex items-center justify-between text-[11px] font-bold">
+                                                <span className="text-muted">{item.label}</span>
+                                                <span className="text-fg/80">{val}/100</span>
+                                              </div>
+                                              <div className="h-1.5 w-full bg-panel border border-border rounded-full overflow-hidden">
+                                                <div
+                                                  style={{ width: `${val}%` }}
+                                                  className={`h-full ${barColor} rounded-full`}
+                                                />
+                                              </div>
+                                            </div>
+                                          );
+                                        });
+                                      } catch {
+                                        return null;
+                                      }
+                                    })()}
+                                  </div>
+                                </div>
+                              )}
+
+                              {/* Feedback text */}
+                              {activeReviewPromptAttempt.feedback && (
+                                <div className="space-y-2">
+                                  <span className="text-[10px] font-black uppercase tracking-widest text-muted">Detailed Grader Feedback</span>
+                                  <div className="p-4 rounded-2xl border border-border bg-bg/20 text-xs leading-relaxed text-muted whitespace-pre-wrap">
+                                    {activeReviewPromptAttempt.feedback}
+                                  </div>
+                                </div>
+                              )}
+
+                              {/* Submitted Prompt */}
+                              <div className="space-y-2">
+                                <span className="text-[10px] font-black uppercase tracking-widest text-muted">Submitted Prompt Text</span>
+                                <pre className="p-4 bg-panel border border-border rounded-2xl text-[10px] font-mono whitespace-pre-wrap overflow-x-auto text-fg/80 leading-relaxed shadow-inner">
+                                  {activeReviewPromptAttempt.promptText}
+                                </pre>
+                              </div>
+                            </div>
+                          ) : (
+                            <div className="flex-1 flex flex-col items-center justify-center p-12 text-center border border-dashed border-border rounded-2xl bg-bg/30">
+                              <FileText className="w-8 h-8 text-muted/40 mb-3" />
+                              <div className="text-xs font-black uppercase text-fg/70">No Attempt Recorded</div>
+                              <p className="text-[10px] text-muted max-w-[280px] mt-1.5 leading-relaxed">
+                                The candidate did not submit any prompt response for this step during the session.
+                              </p>
+                            </div>
+                          )}
                         </div>
                       )}
+
                     </div>
                   ) : null}
                 </div>
@@ -1299,14 +1638,289 @@ export default function InterviewRunner({
                 <>
                   <div className="border-b border-border pb-3 flex items-center justify-between">
                     <span className="text-[10px] font-black uppercase tracking-[0.2em] text-muted">
-                      {isPlayground ? "Playground Rounds" : "Challenge Sequence"}
+                      {isCombined
+                        ? "Unified Interview Timeline"
+                        : isPlayground
+                        ? "Playground Rounds"
+                        : "Challenge Sequence"}
                     </span>
                     <span className="text-[10px] text-muted font-mono tracking-wider bg-bg/60 border border-border px-2 py-0.5 rounded-full">
-                      {isPlayground ? playgrounds.length : challenges.length} {isPlayground ? "Rooms" : "Steps"}
+                      {isCombined
+                        ? `${challenges.length + playgrounds.length + promptScenarios.length} Rounds`
+                        : isPlayground
+                        ? `${playgrounds.length} Rooms`
+                        : `${challenges.length} Steps`}
                     </span>
                   </div>
 
-                  {isPlayground ? (
+                  {isCombined ? (
+                    <div className="relative pl-6 border-l border-dashed border-border space-y-5 py-1 max-h-[480px] overflow-y-auto pr-2 scrollbar-thin">
+                      
+                      {/* Section 1: Algorithmic / DSA Challenges */}
+                      {challenges.length > 0 && (
+                        <div className="space-y-4">
+                          <div className="text-[9px] font-black uppercase tracking-widest text-muted/80 pb-1 border-b border-border/50">
+                            Algorithmic / DSA Challenges
+                          </div>
+                          {challenges.map((c, idx) => {
+                            const result = attemptByChallenge.get(c.id);
+                            const passed = result === "passed";
+                            const attempted = !!result;
+                            const canEnter = status === "in_progress";
+                            const isActive = activeChallengeId === c.id;
+
+                            let href: string | null = canEnter
+                              ? `/challenges/${c.slug}/attempt?session=${interview.id}&multiplayer=true`
+                              : null;
+
+                            if (href && interview.shareToken) {
+                              href += `&token=${interview.shareToken}`;
+                            }
+
+                            // Style configurations
+                            let statusTag = "bg-bg/60 border border-border text-muted";
+                            if (isActive && status === "in_progress") {
+                              statusTag = "bg-indigo-500/10 border border-indigo-500/20 text-indigo-500 dark:text-indigo-400 font-extrabold animate-pulse";
+                            } else if (passed) {
+                              statusTag = "bg-emerald-500/10 border border-emerald-500/20 text-emerald-500 dark:text-emerald-400 font-extrabold";
+                            } else if (result === "failed") {
+                              statusTag = "bg-rose-500/10 border border-rose-500/20 text-rose-500 dark:text-rose-400 font-extrabold";
+                            }
+
+                            const diffColors = {
+                              easy: { text: "text-emerald-500 dark:text-emerald-400", bg: "bg-emerald-500/10 border-emerald-500/20" },
+                              medium: { text: "text-amber-500 dark:text-amber-400", bg: "bg-amber-500/10 border-amber-500/20" },
+                              hard: { text: "text-rose-500 dark:text-rose-400", bg: "bg-rose-500/10 border-rose-500/20" }
+                            }[c.difficulty] || { text: "text-accent", bg: "bg-accent/10 border-accent/20" };
+
+                            return (
+                              <div key={c.id} className="relative group">
+                                <div className="absolute -left-[31px] top-1/2 -translate-y-1/2 w-4 h-4 rounded-full border-2 border-border bg-bg flex items-center justify-center transition-all duration-300 group-hover:border-accent shadow-sm">
+                                  <div className={`w-1.5 h-1.5 rounded-full ${isActive && status === "in_progress" ? "bg-accent animate-ping" : passed ? "bg-emerald-500" : result === "failed" ? "bg-rose-500" : "bg-border/60"}`} />
+                                </div>
+
+                                <div className="p-4 rounded-2xl border border-border bg-bg/60 shadow-sm transition-all duration-300 hover:bg-elevated hover:border-accent/30 hover:shadow-[0_0_20px_rgba(99,102,241,0.08)] hover:-translate-y-0.5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                                  <div className="space-y-1">
+                                    <div className="flex items-center gap-2">
+                                      <span className="text-[9px] font-extrabold uppercase tracking-wider text-muted">DSA Round {idx + 1}</span>
+                                      <span className={`text-[9px] font-black uppercase px-2 py-0.5 rounded-full border tracking-wide ${statusTag}`}>
+                                        {isActive && status === "in_progress" ? "Active Step" : passed ? "Passed" : result === "failed" ? "Failed" : "Pending"}
+                                      </span>
+                                    </div>
+                                    <h3 className="text-sm font-bold text-fg tracking-tight">{c.title}</h3>
+                                    <div className="flex items-center gap-2.5 text-[11px] text-muted">
+                                      <span className={`text-[9px] font-black uppercase px-2 py-0.5 rounded-full border tracking-wider shadow-sm ${diffColors.bg} ${diffColors.text}`}>
+                                        {c.difficulty}
+                                      </span>
+                                      <span>•</span>
+                                      <span className="flex items-center gap-1 text-[11px]">
+                                        <Clock className="w-3.5 h-3.5 text-muted/65" />
+                                        {c.estimatedMinutes}m est.
+                                      </span>
+                                    </div>
+                                  </div>
+
+                                  <div className="shrink-0 flex items-center gap-2">
+                                    {href ? (
+                                      <Link
+                                        href={href}
+                                        className="px-4 py-2 rounded-xl bg-bg hover:bg-elevated border border-border hover:border-accent/40 text-xs font-bold text-fg transition-all flex items-center gap-1.5 group-hover:text-accent shadow-sm active:scale-95"
+                                      >
+                                        {interviewerView ? (
+                                          <>
+                                            <Eye className="w-3.5 h-3.5 text-muted group-hover:text-accent transition-colors" />
+                                            Observe Code
+                                          </>
+                                        ) : (
+                                          <>
+                                            <Play className="w-3 h-3 fill-current" />
+                                            {passed ? "Revisit Code" : attempted ? "Resume Attempt" : "Enter Workspace"}
+                                          </>
+                                        )}
+                                      </Link>
+                                    ) : (
+                                      <button
+                                        disabled
+                                        className="px-4 py-2 rounded-xl bg-bg/60 border border-border text-xs font-bold text-muted flex items-center gap-1.5 cursor-not-allowed"
+                                      >
+                                        Locked
+                                      </button>
+                                    )}
+                                  </div>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
+
+                      {/* Section 2: Collaborative Playgrounds */}
+                      {playgrounds.length > 0 && (
+                        <div className="space-y-4">
+                          <div className="text-[9px] font-black uppercase tracking-widest text-muted/80 pb-1 border-b border-border/50">
+                            Collaborative Playgrounds
+                          </div>
+                          {playgrounds.map((p, idx) => {
+                            const canEnter = status === "in_progress";
+                            const isActive = interview.activePlaygroundId === p.id;
+                            const tokenQuery = isOwner ? "" : `?token=${interview.shareToken}`;
+                            const href = canEnter ? `/interview/${interview.id}/play/${p.id}${tokenQuery}` : null;
+
+                            let statusTag = "bg-bg/60 border border-border text-muted";
+                            if (isActive && status === "in_progress") {
+                              statusTag = "bg-indigo-500/10 border border-indigo-500/20 text-indigo-500 dark:text-indigo-400 font-extrabold animate-pulse";
+                            }
+
+                            const tColor = templateColors[p.template] || {
+                              border: "hover:border-accent/40 dark:hover:border-accent/30",
+                              glow: "hover:shadow-[0_0_20px_rgba(99,102,241,0.08)]",
+                              text: "text-accent",
+                              bg: "bg-accent/10 border-accent/20"
+                            };
+
+                            return (
+                              <div key={p.id} className="relative group">
+                                <div className="absolute -left-[31px] top-1/2 -translate-y-1/2 w-4 h-4 rounded-full border-2 border-border bg-bg flex items-center justify-center transition-all duration-300 group-hover:border-accent shadow-sm">
+                                  <div className={`w-1.5 h-1.5 rounded-full ${isActive && status === "in_progress" ? "bg-accent animate-ping" : "bg-border/60"}`} />
+                                </div>
+
+                                <div className={`p-4 rounded-2xl border border-border bg-bg/60 shadow-sm transition-all duration-300 hover:bg-elevated hover:-translate-y-0.5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 ${tColor.border} ${tColor.glow}`}>
+                                  <div className="space-y-1">
+                                    <div className="flex items-center gap-2">
+                                      <span className="text-[9px] font-extrabold uppercase tracking-wider text-muted">Playground Round {idx + 1}</span>
+                                      <span className={`text-[9px] font-black uppercase px-2 py-0.5 rounded-full border tracking-wide ${statusTag}`}>
+                                        {isActive && status === "in_progress" ? "Active" : "Queued"}
+                                      </span>
+                                    </div>
+                                    <h3 className="text-sm font-bold text-fg tracking-tight">{p.title}</h3>
+                                    <div className="flex items-center gap-2 text-[11px] text-muted">
+                                      <span className={`text-[9px] font-black uppercase px-2 py-0.5 rounded-full border tracking-wider shadow-sm ${tColor.bg} ${tColor.text}`}>
+                                        {p.template || "playground"}
+                                      </span>
+                                      <span>•</span>
+                                      <span>Scenario round (judged manually)</span>
+                                    </div>
+                                  </div>
+
+                                  <div className="shrink-0 flex items-center gap-2">
+                                    {href ? (
+                                      <Link
+                                        href={href}
+                                        className="px-4 py-2 rounded-xl bg-bg hover:bg-elevated border border-border hover:border-accent/40 text-xs font-bold text-fg transition-all flex items-center gap-1.5 group-hover:text-accent shadow-sm active:scale-95"
+                                      >
+                                        {interviewerView ? (
+                                          <>
+                                            <Eye className="w-3.5 h-3.5 text-muted group-hover:text-accent transition-colors" />
+                                            Observe Code
+                                          </>
+                                        ) : (
+                                          <>
+                                            <Play className="w-3 h-3 fill-current" />
+                                            Enter Workspace
+                                          </>
+                                        )}
+                                      </Link>
+                                    ) : (
+                                      <button
+                                        disabled
+                                        className="px-4 py-2 rounded-xl bg-bg/60 border border-border text-xs font-bold text-muted flex items-center gap-1.5 cursor-not-allowed"
+                                      >
+                                        Locked
+                                      </button>
+                                    )}
+                                  </div>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
+
+                      {/* Section 3: AI Prompt Engineering Scenarios */}
+                      {promptScenarios.length > 0 && (
+                        <div className="space-y-4">
+                          <div className="text-[9px] font-black uppercase tracking-widest text-muted/80 pb-1 border-b border-border/50">
+                            AI Prompt Engineering Scenarios
+                          </div>
+                          {promptScenarios.map((ps, idx) => {
+                            const attempt = promptAttempts.find((a) => a.scenarioId === ps.id);
+                            const hasAttempt = !!attempt;
+                            const score = attempt?.score;
+                            const canEnter = status === "in_progress";
+
+                            let statusTag = "bg-bg/60 border border-border text-muted";
+                            if (hasAttempt) {
+                              statusTag = "bg-emerald-500/10 border border-emerald-500/20 text-emerald-500 dark:text-emerald-400 font-extrabold";
+                            }
+
+                            const diffColors = {
+                              beginner: { text: "text-emerald-500 dark:text-emerald-400", bg: "bg-emerald-500/10 border-emerald-500/20" },
+                              intermediate: { text: "text-amber-500 dark:text-amber-400", bg: "bg-amber-500/10 border-amber-500/20" },
+                              advanced: { text: "text-rose-500 dark:text-rose-400", bg: "bg-rose-500/10 border-rose-500/20" }
+                            }[ps.difficulty] || { text: "text-accent", bg: "bg-accent/10 border-accent/20" };
+
+                            return (
+                              <div key={ps.id} className="relative group">
+                                <div className="absolute -left-[31px] top-1/2 -translate-y-1/2 w-4 h-4 rounded-full border-2 border-border bg-bg flex items-center justify-center transition-all duration-300 group-hover:border-accent shadow-sm">
+                                  <div className={`w-1.5 h-1.5 rounded-full ${hasAttempt ? "bg-emerald-500" : "bg-border/60"}`} />
+                                </div>
+
+                                <div className="p-4 rounded-2xl border border-border bg-bg/60 shadow-sm transition-all duration-300 hover:bg-elevated hover:border-accent/30 hover:shadow-[0_0_20px_rgba(99,102,241,0.08)] hover:-translate-y-0.5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                                  <div className="space-y-1">
+                                    <div className="flex items-center gap-2">
+                                      <span className="text-[9px] font-extrabold uppercase tracking-wider text-muted">Prompt Round {idx + 1}</span>
+                                      <span className={`text-[9px] font-black uppercase px-2 py-0.5 rounded-full border tracking-wide ${statusTag}`}>
+                                        {hasAttempt ? `Completed (${score}%)` : "Pending"}
+                                      </span>
+                                    </div>
+                                    <h3 className="text-sm font-bold text-fg tracking-tight">{ps.title}</h3>
+                                    <div className="flex items-center gap-2.5 text-[11px] text-muted">
+                                      <span className={`text-[9px] font-black uppercase px-2 py-0.5 rounded-full border tracking-wider shadow-sm ${diffColors.bg} ${diffColors.text}`}>
+                                        {ps.difficulty}
+                                      </span>
+                                      <span>•</span>
+                                      <span className="text-[9px] font-bold bg-bg/60 border border-border px-2 py-0.5 rounded text-muted uppercase tracking-wider">
+                                        {ps.category}
+                                      </span>
+                                    </div>
+                                  </div>
+
+                                  <div className="shrink-0 flex items-center gap-2">
+                                    {canEnter ? (
+                                      <button
+                                        onClick={() => setSelectedPromptScenario(ps)}
+                                        className="px-4 py-2 rounded-xl bg-bg hover:bg-elevated border border-border hover:border-accent/40 text-xs font-bold text-fg transition-all flex items-center gap-1.5 group-hover:text-accent shadow-sm active:scale-95"
+                                      >
+                                        {interviewerView ? (
+                                          <>
+                                            <Eye className="w-3.5 h-3.5 text-muted group-hover:text-accent transition-colors" />
+                                            Observe Response
+                                          </>
+                                        ) : (
+                                          <>
+                                            <Play className="w-3 h-3 fill-current" />
+                                            {hasAttempt ? "Revisit Prompt" : "Enter Workspace"}
+                                          </>
+                                        )}
+                                      </button>
+                                    ) : (
+                                      <button
+                                        disabled
+                                        className="px-4 py-2 rounded-xl bg-bg/60 border border-border text-xs font-bold text-muted flex items-center gap-1.5 cursor-not-allowed"
+                                      >
+                                        Locked
+                                      </button>
+                                    )}
+                                  </div>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
+
+                    </div>
+                  ) : isPlayground ? (
                     <div className="relative pl-6 border-l border-dashed border-border space-y-4 py-1 max-h-[480px] overflow-y-auto pr-2 scrollbar-thin">
                       {playgrounds.map((p, idx) => {
                         const canEnter = status === "in_progress";
@@ -1486,9 +2100,10 @@ export default function InterviewRunner({
                   )}
                 </>
               )}
-            </div>
+            </div>          </div>
 
           </div>
+          )}
         </div>
 
         {/* Quick Join Strip — code-first share for the candidate. Observer link tucked behind a disclosure. */}
@@ -1618,8 +2233,14 @@ export default function InterviewRunner({
             
             <div className="flex items-start justify-between relative z-10">
               <div>
-                <h3 className="text-lg font-bold text-fg tracking-tight">Lock Session Verdict</h3>
-                <p className="text-xs text-muted mt-1">Select the official recommendation for this candidate. This action will conclude the session.</p>
+                <h3 className="text-lg font-bold text-fg tracking-tight">
+                  {interview.type === "mock" ? "Conclude & Rate Practice Session" : "Lock Session Verdict"}
+                </h3>
+                <p className="text-xs text-muted mt-1">
+                  {interview.type === "mock"
+                    ? "Complete your self-evaluation to rate your execution, code cleanliness, and problem solving."
+                    : "Select the official recommendation for this candidate. This action will conclude the session."}
+                </p>
               </div>
               <button
                 onClick={() => setVerdictModalOpen(false)}
@@ -1631,10 +2252,38 @@ export default function InterviewRunner({
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2 relative z-10">
               {[
-                { id: "success", label: "Met Bar (Success)", desc: "Strong code design and problem-solving.", bg: "hover:bg-emerald-500/5 hover:border-emerald-500/20", activeBg: "bg-emerald-500/10 border-emerald-500/35 text-emerald-600 dark:text-emerald-400 shadow-[0_4px_20px_rgba(16,185,129,0.12)]", icon: <CheckCircle2 className="w-4 h-4 text-emerald-500" /> },
-                { id: "failed", label: "Did Not Meet Bar", desc: "Failed to meet key coding standards.", bg: "hover:bg-rose-500/5 hover:border-rose-500/20", activeBg: "bg-rose-500/10 border-rose-500/35 text-rose-600 dark:text-rose-400 shadow-[0_4px_20px_rgba(244,63,94,0.12)]", icon: <XCircle className="w-4 h-4 text-rose-500" /> },
-                { id: "left_in_between", label: "Walkout", desc: "Candidate abandoned the round mid-way.", bg: "hover:bg-elevated", activeBg: "bg-elevated border-border text-fg shadow-[0_4px_20px_rgba(0,0,0,0.06)]", icon: <ArrowLeft className="w-4 h-4 text-muted" /> },
-                { id: "suspicious", label: "Flagged Suspicious", desc: "Suspected of cheating or AI usage.", bg: "hover:bg-amber-500/5 hover:border-amber-500/20", activeBg: "bg-amber-500/10 border-amber-500/35 text-amber-600 dark:text-amber-400 shadow-[0_4px_20px_rgba(245,158,11,0.12)]", icon: <Radio className="w-4 h-4 text-amber-500 animate-pulse" /> },
+                {
+                  id: "success",
+                  label: interview.type === "mock" ? "Target Achieved (Success)" : "Met Bar (Success)",
+                  desc: interview.type === "mock" ? "I solved the challenges, passed the tests, and followed good design." : "Strong code design and problem-solving.",
+                  bg: "hover:bg-emerald-500/5 hover:border-emerald-500/20",
+                  activeBg: "bg-emerald-500/10 border-emerald-500/35 text-emerald-600 dark:text-emerald-400 shadow-[0_4px_20px_rgba(16,185,129,0.12)]",
+                  icon: <CheckCircle2 className="w-4 h-4 text-emerald-500" />
+                },
+                {
+                  id: "failed",
+                  label: interview.type === "mock" ? "Need More Prep" : "Did Not Meet Bar",
+                  desc: interview.type === "mock" ? "I struggled with logic correctness, efficiency, or debugging." : "Failed to meet key coding standards.",
+                  bg: "hover:bg-rose-500/5 hover:border-rose-500/20",
+                  activeBg: "bg-rose-500/10 border-rose-500/35 text-rose-600 dark:text-rose-400 shadow-[0_4px_20px_rgba(244,63,94,0.12)]",
+                  icon: <XCircle className="w-4 h-4 text-rose-500" />
+                },
+                {
+                  id: "left_in_between",
+                  label: interview.type === "mock" ? "Incomplete Practice" : "Walkout",
+                  desc: interview.type === "mock" ? "I left the practice slot before completing all stages." : "Candidate abandoned the round mid-way.",
+                  bg: "hover:bg-elevated",
+                  activeBg: "bg-elevated border-border text-fg shadow-[0_4px_20px_rgba(0,0,0,0.06)]",
+                  icon: <ArrowLeft className="w-4 h-4 text-muted" />
+                },
+                {
+                  id: "suspicious",
+                  label: interview.type === "mock" ? "AI/Reference Assisted" : "Flagged Suspicious",
+                  desc: interview.type === "mock" ? "I referenced solution guides, external docs, or used AI helpers." : "Suspected of cheating or AI usage.",
+                  bg: "hover:bg-amber-500/5 hover:border-amber-500/20",
+                  activeBg: "bg-amber-500/10 border-amber-500/35 text-amber-600 dark:text-amber-400 shadow-[0_4px_20px_rgba(245,158,11,0.12)]",
+                  icon: <Radio className="w-4 h-4 text-amber-500 animate-pulse" />
+                },
               ].map((v) => (
                 <button
                   key={v.id}
@@ -1717,7 +2366,7 @@ export default function InterviewRunner({
                 onClick={() => finish("completed", selectedVerdict)}
                 className="px-5 py-2 rounded-xl bg-gradient-to-r from-rose-500 to-pink-600 hover:from-rose-600 hover:to-pink-700 text-white text-xs font-bold tracking-wide transition-all duration-300 shadow-md hover:shadow-rose-500/25 active:scale-95"
               >
-                Lock Verdict
+                {interview.type === "mock" ? "Save Self-Rating" : "Lock Verdict"}
               </button>
             </div>
           </div>

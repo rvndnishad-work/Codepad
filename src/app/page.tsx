@@ -1,7 +1,6 @@
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import HomeHero from "./HomeHero";
-import TrustLogos from "./TrustLogos";
 import HomeBento from "./HomeBento";
 import HomeInfographic from "./HomeInfographic";
 import HomeExplore from "./HomeExplore";
@@ -191,9 +190,8 @@ export default async function HomePage() {
         sessionName={welcomeData?.name}
         snippetCount={welcomeData?.snippetCount ?? 0}
         recentSnippet={welcomeData?.recent}
+        userType={session?.user ? (session.user as any).userType ?? null : null}
       />
-
-      <TrustLogos />
 
       <HomeBento />
 
@@ -202,6 +200,8 @@ export default async function HomePage() {
       <HomeExplore featured={featured} />
 
       <HomeChallenges />
+
+      <HomeFinalCTA />
 
       {/* Latest Stories — editorial mix:
             - Big hero card (admin-pinned via BlogPost.featured, else freshest)
@@ -311,8 +311,6 @@ export default async function HomePage() {
           </div>
         </section>
       )}
-
-      <HomeFinalCTA />
     </div>
   );
 }

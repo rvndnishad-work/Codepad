@@ -6,6 +6,7 @@ import { Play } from "lucide-react";
 
 export default function StartButton({ token }: { token: string }) {
   const [loading, setLoading] = useState(false);
+  const [accepted, setAccepted] = useState(false);
 
   async function handleStart() {
     if (!confirm("Are you ready to initiate your test? The countdown clock will start immediately and cannot be paused.")) {
@@ -39,15 +40,30 @@ export default function StartButton({ token }: { token: string }) {
   }
 
   return (
-    <button
-      onClick={handleStart}
-      disabled={loading}
-      className="w-full relative overflow-hidden group/btn px-5 py-3 rounded-xl bg-accent hover:bg-accent-soft text-bg transition-all duration-300 shadow-[0_0_24px_rgba(var(--accent-rgb),0.15)] hover:shadow-[0_0_32px_rgba(var(--accent-rgb),0.35)] hover:-translate-y-0.5 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-between"
-    >
-      <span className="text-xs font-black uppercase tracking-wider text-bg">
-        {loading ? "Spawning Secure Sandbox..." : "Start Assessment"}
-      </span>
-      <Play className="w-3.5 h-3.5 fill-current text-bg transition-transform group-hover/btn:translate-x-0.5" />
-    </button>
+    <div className="space-y-4 pt-4 border-t border-border/20">
+      <label className="flex items-start gap-3 cursor-pointer group/label select-none text-xs text-muted hover:text-[#F3F4F6] transition-colors">
+        <input
+          type="checkbox"
+          checked={accepted}
+          onChange={(e) => setAccepted(e.target.checked)}
+          className="mt-0.5 w-4 h-4 rounded border-border bg-[#101424] text-accent focus:ring-accent focus:ring-offset-[#0B0F19] cursor-pointer accent-accent"
+        />
+        <span className="leading-relaxed">
+          I acknowledge the proctoring disclosures and agree to abide by the technical assessment rules and protocol.
+        </span>
+      </label>
+
+      <button
+        onClick={handleStart}
+        disabled={loading || !accepted}
+        className="w-full relative overflow-hidden group/btn px-5 py-3 rounded-xl bg-accent hover:bg-accent-soft text-bg transition-all duration-300 shadow-[0_0_24px_rgba(var(--accent-rgb),0.15)] hover:shadow-[0_0_32px_rgba(var(--accent-rgb),0.35)] hover:-translate-y-0.5 active:scale-[0.98] disabled:opacity-30 disabled:translate-y-0 disabled:shadow-none disabled:cursor-not-allowed flex items-center justify-between"
+      >
+        <span className="text-xs font-black uppercase tracking-wider text-bg">
+          {loading ? "Spawning Secure Sandbox..." : "I'm ready — start the timer"}
+        </span>
+        <Play className="w-3.5 h-3.5 fill-current text-bg transition-transform group-hover/btn:translate-x-0.5" />
+      </button>
+    </div>
   );
 }
+

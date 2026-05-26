@@ -65,7 +65,7 @@ export async function PATCH(
 
   const existing = await prisma.interviewSession.findUnique({
     where: { id },
-    select: { userId: true, shareToken: true, creatorRole: true },
+    select: { userId: true, shareToken: true, creatorRole: true, type: true },
   });
   if (!existing) return NextResponse.json({ error: "not found" }, { status: 404 });
 
@@ -80,7 +80,10 @@ export async function PATCH(
 
   // Resolve dynamic interviewer role
   let isInterviewer = false;
-  if (existing.creatorRole === "interviewer") {
+  if (existing.type === "mock") {
+    // In mock practice sessions, anyone with access (owner or shareToken holder) has full controls
+    isInterviewer = isOwner || hasShareToken;
+  } else if (existing.creatorRole === "interviewer") {
     isInterviewer = isOwner;
   } else {
     isInterviewer = isOwner ? false : hasShareToken;

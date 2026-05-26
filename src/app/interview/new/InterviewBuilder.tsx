@@ -22,8 +22,10 @@ import {
   Shield,
   HelpCircle,
   FolderOpen,
+  Brain,
 } from "lucide-react";
 import { toast } from "sonner";
+import { type InterviewArenaSettings } from "@/lib/settings";
 
 export type ChallengeOption = {
   id: string;
@@ -43,7 +45,17 @@ export type PlaygroundOption = {
   isTemplate?: boolean;
 };
 
-type SourceType = "challenge" | "playground";
+export type PromptScenarioOption = {
+  id: string;
+  slug: string;
+  title: string;
+  difficulty: "beginner" | "intermediate" | "advanced";
+  estimatedMinutes: number;
+  category: string;
+  objective: string;
+};
+
+type SourceType = "challenge" | "playground" | "prompt";
 
 const difficultyColor: Record<string, string> = {
   easy: "text-emerald-600 dark:text-emerald-400",
@@ -160,17 +172,41 @@ const templateColors: Record<string, { border: string; glow: string; text: strin
 export default function InterviewBuilder({
   challenges,
   playgrounds,
+  promptScenarios = [],
+  userType = null,
+  arenaSettings = null,
 }: {
   challenges: ChallengeOption[];
   playgrounds: PlaygroundOption[];
+  promptScenarios: PromptScenarioOption[];
+  userType?: string | null;
+  arenaSettings?: InterviewArenaSettings | null;
 }) {
   const router = useRouter();
   const searchParams = useSearchParams();
 
+  // Check which session type options are allowed based on userType and dynamic arenaSettings
+  const isCandidate = userType === "candidate";
+  const isRecruiter = userType === "recruiter";
+
+  const isMockAllowed = isCandidate 
+    ? (arenaSettings?.showMockToDeveloper ?? true) 
+    : isRecruiter 
+      ? (arenaSettings?.showMockToRecruiter ?? true) 
+      : true;
+
+  const isLiveAllowed = isCandidate 
+    ? false // ALWAYS false for candidates as they only have mock interviews
+    : isRecruiter 
+      ? (arenaSettings?.showScheduleToRecruiter ?? true) 
+      : true;
+
+  const isInterviewerRoleAllowed = isLiveAllowed;
+
   const initialType: "mock" | "live" =
-    searchParams?.get("type") === "live" ? "live" : "mock";
+    searchParams?.get("type") === "live" && isLiveAllowed ? "live" : isMockAllowed ? "mock" : "live";
   const initialRole: "interviewer" | "candidate" =
-    searchParams?.get("role") === "candidate" ? "candidate" : "interviewer";
+    searchParams?.get("role") === "candidate" ? "candidate" : isInterviewerRoleAllowed ? "interviewer" : "candidate";
   const initialSource: SourceType =
     searchParams?.get("source") === "playground" ? "playground" : "challenge";
 
@@ -179,7 +215,15 @@ export default function InterviewBuilder({
   const [type, setType] = useState<"mock" | "live">(initialType);
   const [creatorRole, setCreatorRole] = useState<"interviewer" | "candidate">(initialRole);
   const [sourceType, setSourceType] = useState<SourceType>(initialSource);
-  const [selected, setSelected] = useState<string[]>([]);
+  const [selectedTimeline, setSelectedTimeline] = useState<{
+    id: string;
+    type: "challenge" | "playground" | "prompt";
+    title: string;
+    difficulty?: string;
+    template?: string;
+    category?: string;
+    estimatedMinutes: number;
+  }[]>([]);
   const [scenario, setScenario] = useState("");
   const [minutes, setMinutes] = useState(60);
   const [creating, setCreating] = useState(false);
@@ -189,31 +233,31 @@ export default function InterviewBuilder({
   const [filterDifficulty, setFilterDifficulty] = useState<string>("all");
 
   useEffect(() => {
-    setSelected([]);
     setSearchQuery("");
     setFilterDifficulty("all");
   }, [sourceType]);
 
   const selectedChallenges = useMemo(
-    () =>
-      sourceType === "challenge"
-        ? selected.map((id) => challenges.find((c) => c.id === id)!).filter(Boolean)
-        : [],
-    [selected, challenges, sourceType]
+    () => selectedTimeline.filter((item) => item.type === "challenge"),
+    [selectedTimeline]
   );
   const selectedPlaygrounds = useMemo(
-    () =>
-      sourceType === "playground"
-        ? selected.map((id) => playgrounds.find((p) => p.id === id)!).filter(Boolean)
-        : [],
-    [selected, playgrounds, sourceType]
+    () => selectedTimeline.filter((item) => item.type === "playground"),
+    [selectedTimeline]
+  );
+  const selectedPromptScenarios = useMemo(
+    () => selectedTimeline.filter((item) => item.type === "prompt"),
+    [selectedTimeline]
   );
 
-  const totalEstimate = selectedChallenges.reduce((sum, c) => sum + c.estimatedMinutes, 0);
+  const totalEstimate = useMemo(
+    () => selectedTimeline.reduce((sum, item) => sum + item.estimatedMinutes, 0),
+    [selectedTimeline]
+  );
 
   const filteredAvailable = useMemo(() => {
     return challenges.filter((c) => {
-      const isSelected = selected.includes(c.id);
+      const isSelected = selectedTimeline.some((item) => item.id === c.id && item.type === "challenge");
       if (isSelected) return false;
 
       const matchesSearch =
@@ -224,11 +268,12 @@ export default function InterviewBuilder({
 
       return matchesSearch && matchesDifficulty;
     });
-  }, [challenges, selected, searchQuery, filterDifficulty]);
+  }, [challenges, selectedTimeline, searchQuery, filterDifficulty]);
 
   const filteredPlaygrounds = useMemo(() => {
     return playgrounds.filter((p) => {
-      if (selected.includes(p.id)) return false;
+      const isSelected = selectedTimeline.some((item) => item.id === p.id && item.type === "playground");
+      if (isSelected) return false;
       const q = searchQuery.toLowerCase();
       if (!q) return true;
       return (
@@ -236,49 +281,88 @@ export default function InterviewBuilder({
         p.template.toLowerCase().includes(q)
       );
     });
-  }, [playgrounds, selected, searchQuery]);
+  }, [playgrounds, selectedTimeline, searchQuery]);
+
+  const filteredPromptScenarios = useMemo(() => {
+    return promptScenarios.filter((p) => {
+      const isSelected = selectedTimeline.some((item) => item.id === p.id && item.type === "prompt");
+      if (isSelected) return false;
+
+      const matchesSearch =
+        p.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        p.category.toLowerCase().includes(searchQuery.toLowerCase());
+
+      const matchesDifficulty = filterDifficulty === "all" || p.difficulty === filterDifficulty;
+
+      return matchesSearch && matchesDifficulty;
+    });
+  }, [promptScenarios, selectedTimeline, searchQuery, filterDifficulty]);
 
   const availableCount =
     sourceType === "challenge"
-      ? challenges.filter((c) => !selected.includes(c.id)).length
-      : playgrounds.filter((p) => !selected.includes(p.id)).length;
+      ? challenges.filter((c) => !selectedTimeline.some((item) => item.id === c.id && item.type === "challenge")).length
+      : sourceType === "playground"
+      ? playgrounds.filter((p) => !selectedTimeline.some((item) => item.id === p.id && item.type === "playground")).length
+      : promptScenarios.filter((p) => !selectedTimeline.some((item) => item.id === p.id && item.type === "prompt")).length;
 
   function add(id: string) {
-    setSelected((prev) => (prev.includes(id) ? prev : [...prev, id]));
+    if (sourceType === "challenge") {
+      const c = challenges.find((x) => x.id === id);
+      if (c) {
+        setSelectedTimeline((prev) => [...prev, { id, type: "challenge", title: c.title, difficulty: c.difficulty, estimatedMinutes: c.estimatedMinutes }]);
+      }
+    } else if (sourceType === "playground") {
+      const p = playgrounds.find((x) => x.id === id);
+      if (p) {
+        setSelectedTimeline((prev) => [...prev, { id, type: "playground", title: p.title, template: p.template, estimatedMinutes: 15 }]);
+      }
+    } else if (sourceType === "prompt") {
+      const p = promptScenarios.find((x) => x.id === id);
+      if (p) {
+        setSelectedTimeline((prev) => [...prev, { id, type: "prompt", title: p.title, difficulty: p.difficulty, category: p.category, estimatedMinutes: p.estimatedMinutes }]);
+      }
+    }
   }
-  function remove(id: string) {
-    setSelected((prev) => prev.filter((x) => x !== id));
+
+  function remove(id: string, type: "challenge" | "playground" | "prompt") {
+    setSelectedTimeline((prev) => prev.filter((item) => !(item.id === id && item.type === type)));
   }
-  function moveUp(id: string) {
-    setSelected((prev) => {
-      const idx = prev.indexOf(id);
-      if (idx <= 0) return prev;
+
+  function moveUp(index: number) {
+    if (index <= 0) return;
+    setSelectedTimeline((prev) => {
       const out = [...prev];
-      [out[idx - 1], out[idx]] = [out[idx], out[idx - 1]];
+      [out[index - 1], out[index]] = [out[index], out[index - 1]];
       return out;
     });
   }
-  function moveDown(id: string) {
-    setSelected((prev) => {
-      const idx = prev.indexOf(id);
-      if (idx === -1 || idx >= prev.length - 1) return prev;
+
+  function moveDown(index: number) {
+    setSelectedTimeline((prev) => {
+      if (index === -1 || index >= prev.length - 1) return prev;
       const out = [...prev];
-      [out[idx], out[idx + 1]] = [out[idx + 1], out[idx]];
+      [out[index], out[index + 1]] = [out[index + 1], out[index]];
       return out;
     });
   }
 
   async function handleStart() {
-    if (selected.length === 0) {
-      toast.error(
-        sourceType === "playground"
-          ? "Pick at least one playground."
-          : "Pick at least one challenge."
-      );
+    if (selectedTimeline.length === 0) {
+      toast.error("Pick at least one round to schedule.");
       return;
     }
     setCreating(true);
     try {
+      const challengeIds = selectedTimeline.filter((item) => item.type === "challenge").map((item) => item.id);
+      const playgroundIds = selectedTimeline.filter((item) => item.type === "playground").map((item) => item.id);
+      const promptScenarioIds = selectedTimeline.filter((item) => item.type === "prompt").map((item) => item.id);
+
+      let finalSourceType: "challenge" | "playground" | "prompt" | "combined" = "combined";
+      const uniqueTypes = Array.from(new Set(selectedTimeline.map((item) => item.type)));
+      if (uniqueTypes.length === 1) {
+        finalSourceType = uniqueTypes[0] as any;
+      }
+
       const res = await fetch("/api/interview", {
         method: "POST",
         headers: { "content-type": "application/json" },
@@ -286,9 +370,10 @@ export default function InterviewBuilder({
           title: title.trim() || "Interview Session",
           candidateName: candidateName.trim() || null,
           type,
-          sourceType,
-          challengeIds: sourceType === "challenge" ? selected : [],
-          playgroundIds: sourceType === "playground" ? selected : [],
+          sourceType: finalSourceType,
+          challengeIds,
+          playgroundIds,
+          promptScenarioIds,
           scenario: scenario.trim() || null,
           totalSec: minutes * 60,
           creatorRole,
@@ -446,75 +531,83 @@ export default function InterviewBuilder({
               </div>
 
               {/* Segmented Controls: Creator Role & Interview Type */}
-              <div className="grid grid-cols-2 gap-4">
-                
-                {/* Role Toggle */}
-                <div className="space-y-2">
-                  <label className="block text-[10px] font-bold uppercase tracking-wider text-muted/80">
-                    Your Arena Role
-                  </label>
-                  <div className="flex flex-col gap-1.5 p-1.5 bg-panel border border-border rounded-xl">
-                    <button
-                      type="button"
-                      onClick={() => setCreatorRole("interviewer")}
-                      className={`w-full py-2 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all duration-300 flex items-center justify-center gap-1.5 ${
-                        creatorRole === "interviewer"
-                          ? "bg-accent text-bg shadow-md dark:shadow-lg dark:shadow-accent/10 font-extrabold"
-                          : "text-muted hover:text-fg"
-                      }`}
-                    >
-                      <Shield className="w-3 h-3" />
-                      Interviewer
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setCreatorRole("candidate")}
-                      className={`w-full py-2 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all duration-300 flex items-center justify-center gap-1.5 ${
-                        creatorRole === "candidate"
-                          ? "bg-accent text-bg shadow-md dark:shadow-lg dark:shadow-accent/10 font-extrabold"
-                          : "text-muted hover:text-fg"
-                      }`}
-                    >
-                      <User className="w-3 h-3" />
-                      Candidate
-                    </button>
+              {isLiveAllowed && (
+                <div className="grid grid-cols-2 gap-4">
+                  
+                  {/* Role Toggle */}
+                  <div className="space-y-2">
+                    <label className="block text-[10px] font-bold uppercase tracking-wider text-muted/80">
+                      Your Arena Role
+                    </label>
+                    <div className="flex flex-col gap-1.5 p-1.5 bg-panel border border-border rounded-xl">
+                      {isInterviewerRoleAllowed && (
+                        <button
+                          type="button"
+                          onClick={() => setCreatorRole("interviewer")}
+                          className={`w-full py-2 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all duration-300 flex items-center justify-center gap-1.5 ${
+                            creatorRole === "interviewer"
+                              ? "bg-accent text-bg shadow-md dark:shadow-lg dark:shadow-accent/10 font-extrabold"
+                              : "text-muted hover:text-fg"
+                          }`}
+                        >
+                          <Shield className="w-3 h-3" />
+                          Interviewer
+                        </button>
+                      )}
+                      <button
+                        type="button"
+                        onClick={() => setCreatorRole("candidate")}
+                        className={`w-full py-2 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all duration-300 flex items-center justify-center gap-1.5 ${
+                          creatorRole === "candidate"
+                            ? "bg-accent text-bg shadow-md dark:shadow-lg dark:shadow-accent/10 font-extrabold"
+                            : "text-muted hover:text-fg"
+                        }`}
+                      >
+                        <User className="w-3 h-3" />
+                        Candidate
+                      </button>
+                    </div>
                   </div>
-                </div>
 
-                {/* Classifier Toggle */}
-                <div className="space-y-2">
-                  <label className="block text-[10px] font-bold uppercase tracking-wider text-muted/80">
-                    Session Class
-                  </label>
-                  <div className="flex flex-col gap-1.5 p-1.5 bg-panel border border-border rounded-xl">
-                    <button
-                      type="button"
-                      onClick={() => setType("mock")}
-                      className={`w-full py-2 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all duration-300 flex items-center justify-center gap-1.5 border border-transparent ${
-                        type === "mock"
-                          ? "bg-indigo-500/10 dark:bg-indigo-500/20 border-indigo-500/25 dark:border-indigo-500/40 text-indigo-600 dark:text-indigo-400 font-extrabold"
-                          : "text-muted hover:text-fg"
-                      }`}
-                    >
-                      <HelpCircle className="w-3 h-3" />
-                      Mock Practice
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setType("live")}
-                      className={`w-full py-2 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all duration-300 flex items-center justify-center gap-1.5 border border-transparent ${
-                        type === "live"
-                          ? "bg-emerald-500/10 dark:bg-emerald-500/20 border-emerald-500/25 dark:border-emerald-500/40 text-emerald-600 dark:text-emerald-400 font-extrabold"
-                          : "text-muted hover:text-fg"
-                      }`}
-                    >
-                      <Zap className="w-3 h-3" />
-                      Live Session
-                    </button>
+                  {/* Classifier Toggle */}
+                  <div className="space-y-2">
+                    <label className="block text-[10px] font-bold uppercase tracking-wider text-muted/80">
+                      Session Class
+                    </label>
+                    <div className="flex flex-col gap-1.5 p-1.5 bg-panel border border-border rounded-xl">
+                      {isMockAllowed && (
+                        <button
+                          type="button"
+                          onClick={() => setType("mock")}
+                          className={`w-full py-2 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all duration-300 flex items-center justify-center gap-1.5 border border-transparent ${
+                            type === "mock"
+                              ? "bg-indigo-500/10 dark:bg-indigo-500/20 border-indigo-500/25 dark:border-indigo-500/40 text-indigo-600 dark:text-indigo-400 font-extrabold"
+                              : "text-muted hover:text-fg"
+                          }`}
+                        >
+                          <HelpCircle className="w-3 h-3" />
+                          Mock Practice
+                        </button>
+                      )}
+                      {isLiveAllowed && (
+                        <button
+                          type="button"
+                          onClick={() => setType("live")}
+                          className={`w-full py-2 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all duration-300 flex items-center justify-center gap-1.5 border border-transparent ${
+                            type === "live"
+                              ? "bg-emerald-500/10 dark:bg-emerald-500/20 border-emerald-500/25 dark:border-emerald-500/40 text-emerald-600 dark:text-emerald-400 font-extrabold"
+                              : "text-muted hover:text-fg"
+                          }`}
+                        >
+                          <Zap className="w-3 h-3" />
+                          Live Session
+                        </button>
+                      )}
+                    </div>
                   </div>
-                </div>
 
-              </div>
+                </div>
+              )}
 
               {/* Scenario Note field — styled with specific background and custom note border in dark mode */}
               <div className="space-y-2 pt-2 border-t border-border animate-in fade-in duration-300">
@@ -559,7 +652,7 @@ export default function InterviewBuilder({
 
                 <button
                   onClick={handleStart}
-                  disabled={selected.length === 0 || creating}
+                  disabled={selectedTimeline.length === 0 || creating}
                   className="w-full py-3 rounded-xl bg-gradient-to-r from-violet-500 via-fuchsia-500 to-indigo-500 hover:opacity-95 disabled:opacity-40 disabled:cursor-not-allowed text-xs font-black uppercase tracking-widest text-white transition-all duration-300 shadow-[0_4px_20px_rgba(139,92,246,0.25)] hover:shadow-[0_8px_30px_rgba(217,70,239,0.35)] flex items-center justify-center gap-2 transform active:scale-[0.98]"
                 >
                   <Play className="w-3.5 h-3.5 fill-current" />
@@ -577,7 +670,7 @@ export default function InterviewBuilder({
             <div className="bg-surface border border-border backdrop-blur-xl rounded-2xl p-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
               <span className="text-xs font-extrabold uppercase tracking-widest text-fg/80 px-2">Round Source Curation</span>
               
-              <div className="flex items-center gap-2 bg-panel p-1 border border-border rounded-xl max-w-md w-full md:w-auto">
+              <div className="flex items-center gap-2 bg-panel p-1 border border-border rounded-xl max-w-lg w-full md:w-auto">
                 <button
                   type="button"
                   onClick={() => setSourceType("challenge")}
@@ -603,6 +696,21 @@ export default function InterviewBuilder({
                   <Beaker className="w-3.5 h-3.5" />
                   Realworld Playgrounds
                 </button>
+
+                {!isCandidate && (
+                  <button
+                    type="button"
+                    onClick={() => setSourceType("prompt")}
+                    className={`flex-1 md:flex-none px-4 py-2 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all duration-300 flex items-center justify-center gap-1.5 border border-transparent ${
+                      sourceType === "prompt"
+                        ? "bg-accent text-bg dark:text-bg shadow-md font-extrabold"
+                        : "text-muted hover:text-fg dark:hover:bg-[#171b28]/60"
+                    }`}
+                  >
+                    <Brain className="w-3.5 h-3.5" />
+                    Prompt Challenges
+                  </button>
+                )}
               </div>
             </div>
 
@@ -623,6 +731,8 @@ export default function InterviewBuilder({
                       placeholder={
                         sourceType === "playground"
                           ? "Filter playrooms or stack templates..."
+                          : sourceType === "prompt"
+                          ? "Filter prompt challenges..."
                           : "Find coding, concepts, titles..."
                       }
                       className="w-full pl-9.5 pr-4 py-2 rounded-lg bg-panel border border-border focus:border-accent/50 focus:bg-panel text-xs text-fg placeholder:text-muted/60 dark:placeholder:text-muted/50 outline-none transition-all shadow-inner"
@@ -630,7 +740,7 @@ export default function InterviewBuilder({
                   </div>
 
                   {/* Difficulty Filters only for challenges */}
-                  {sourceType === "challenge" && (
+                  {(sourceType === "challenge" || sourceType === "prompt") && (
                     <div className="flex items-center gap-1 overflow-x-auto scrollbar-none pt-1">
                       {[
                         { id: "all", label: "All Levels" },
@@ -697,7 +807,7 @@ export default function InterviewBuilder({
                       ))
                     )}
                   </div>
-                ) : (
+                ) : sourceType === "playground" ? (
                   <div className="flex-1 min-h-[380px] max-h-[640px] overflow-y-auto space-y-3 pr-2 scrollbar-thin scrollbar-thumb-border/45">
                     {filteredPlaygrounds.length === 0 ? (
                       <div className="rounded-2xl border border-dashed border-border bg-surface p-12 text-center text-xs text-muted space-y-2">
@@ -754,6 +864,45 @@ export default function InterviewBuilder({
                       })
                     )}
                   </div>
+                ) : (
+                  <div className="flex-1 min-h-[380px] max-h-[640px] overflow-y-auto space-y-3 pr-2 scrollbar-thin scrollbar-thumb-border/45">
+                    {filteredPromptScenarios.length === 0 ? (
+                      <div className="rounded-2xl border border-dashed border-border bg-surface p-12 text-center text-xs text-muted space-y-2">
+                        <Brain className="w-8 h-8 text-muted/50 mx-auto" />
+                        <p>No prompt scenarios matching current query.</p>
+                      </div>
+                    ) : (
+                      filteredPromptScenarios.map((p) => (
+                        <div
+                          key={p.id}
+                          className="p-4 rounded-xl border border-border bg-surface/50 hover:bg-surface/90 shadow-sm dark:shadow-md transition-all duration-300 hover:border-border-strong hover:-translate-y-0.5 flex items-center justify-between gap-4 group"
+                        >
+                          <div className="space-y-1.5 min-w-0">
+                            <div className="flex items-center gap-2">
+                              <span className={`text-[9px] font-bold uppercase px-2 py-0.5 rounded border leading-none font-mono ${difficultyBg[p.difficulty === "beginner" ? "easy" : p.difficulty === "advanced" ? "hard" : "medium"]} ${difficultyColor[p.difficulty === "beginner" ? "easy" : p.difficulty === "advanced" ? "hard" : "medium"]}`}>
+                                {p.difficulty === "beginner" ? "easy" : p.difficulty === "advanced" ? "hard" : "medium"}
+                              </span>
+                              <span className="text-[9px] font-bold text-muted uppercase tracking-widest bg-panel px-1.5 py-0.5 rounded border border-border">{p.category}</span>
+                            </div>
+                            <h3 className="text-xs font-bold text-fg/90 group-hover:text-fg truncate">{p.title}</h3>
+                            <div className="flex items-center gap-1.5 text-[10px] text-muted">
+                              <Clock className="w-3 h-3 text-muted/60" />
+                              <span>{p.estimatedMinutes}m recommended</span>
+                            </div>
+                          </div>
+
+                          <button
+                            type="button"
+                            onClick={() => add(p.id)}
+                            className="px-3 py-1.5 rounded-lg bg-panel hover:bg-surface border border-border hover:border-border-strong text-[10px] font-bold text-fg group-hover:text-accent transition flex items-center gap-1 shrink-0 shadow-sm"
+                          >
+                            <Plus className="w-3.5 h-3.5 text-muted group-hover:text-accent" />
+                            Add
+                          </button>
+                        </div>
+                      ))
+                    )}
+                  </div>
                 )}
 
               </div>
@@ -764,19 +913,17 @@ export default function InterviewBuilder({
                   <div className="flex items-center justify-between border-b border-border pb-3 shrink-0">
                     <span className="text-[10px] font-bold uppercase tracking-widest text-fg/80">Arena Timeline</span>
                     <span className="text-[10px] font-mono text-muted tracking-wider bg-panel px-2 py-0.5 rounded border border-border">
-                      {selected.length} {selected.length === 1 ? "Round" : "Rounds"}
+                      {selectedTimeline.length} {selectedTimeline.length === 1 ? "Round" : "Rounds"}
                     </span>
                   </div>
 
-                  {selected.length === 0 ? (
+                  {selectedTimeline.length === 0 ? (
                     <div className="flex-1 flex flex-col items-center justify-center p-6 text-center space-y-3">
                       <BookOpen className="w-10 h-10 text-muted/50 animate-pulse" />
                       <div>
                         <h4 className="text-xs font-bold text-fg">Timeline is Empty</h4>
                         <p className="text-[10px] text-muted leading-relaxed mt-1 max-w-[200px] mx-auto">
-                          {sourceType === "playground"
-                            ? "Select collaborative sandboxes to build chronological round targets."
-                            : "Inject DSA coding challenges into the scheduled execution track."}
+                          Browse and add DSA Challenges, Realworld Playgrounds, or Prompt Challenges to curate your session timeline.
                         </p>
                       </div>
                     </div>
@@ -786,29 +933,64 @@ export default function InterviewBuilder({
                       {/* Interactive Chronological Vertical Timeline path */}
                       <div className="absolute left-[9px] top-4 bottom-4 w-[2px] bg-gradient-to-b from-violet-500 via-fuchsia-500 to-indigo-500 rounded z-0" />
 
-                      {sourceType === "challenge" ? (
-                        selectedChallenges.map((c, idx) => (
+                      {selectedTimeline.map((item, idx) => {
+                        const isChallenge = item.type === "challenge";
+                        const isPlayground = item.type === "playground";
+                        const isPrompt = item.type === "prompt";
+
+                        let badgeText = "DSA Challenge";
+                        let badgeColor = "text-fuchsia-500 dark:text-fuchsia-400 border-fuchsia-500/20 bg-fuchsia-500/10";
+                        let circleColor = "border-fuchsia-500";
+                        
+                        if (isPlayground) {
+                          badgeText = "Playground";
+                          badgeColor = "text-violet-500 dark:text-violet-400 border-violet-500/20 bg-violet-500/10";
+                          circleColor = "border-violet-500";
+                        } else if (isPrompt) {
+                          badgeText = "Prompt Challenge";
+                          badgeColor = "text-indigo-500 dark:text-indigo-400 border-indigo-500/20 bg-indigo-500/10";
+                          circleColor = "border-indigo-500";
+                        }
+
+                        return (
                           <div
-                            key={c.id}
+                            key={`${item.type}-${item.id}`}
                             className="relative flex gap-3 items-start group animate-in fade-in slide-in-from-right-4 duration-300"
                           >
                             {/* Chronological Circle Tracker node */}
-                            <div className="absolute left-[-22px] top-1.5 w-3 h-3 rounded-full bg-bg border-[3px] border-fuchsia-500 z-10 transition-transform group-hover:scale-125 shadow-lg shadow-fuchsia-500/25" />
+                            <div className={`absolute left-[-22px] top-1.5 w-3 h-3 rounded-full bg-bg border-[3px] ${circleColor} z-10 transition-transform group-hover:scale-125 shadow-lg`} />
 
                             <div className="flex-1 bg-panel border border-border rounded-xl p-3.5 flex items-center justify-between gap-3 group-hover:border-border-strong group-hover:bg-surface transition-all">
-                              <div className="min-w-0 space-y-1">
-                                <span className="text-[9px] font-extrabold uppercase font-mono tracking-widest text-fuchsia-500 dark:text-fuchsia-400">
-                                  Round {idx + 1 < 10 ? `0${idx + 1}` : idx + 1}
-                                </span>
-                                <h4 className="text-[11px] font-bold text-fg truncate leading-none">{c.title}</h4>
-                                <div className="flex items-center gap-2 text-[9px] text-muted">
-                                  <span className={`font-semibold capitalize font-mono ${difficultyColor[c.difficulty]}`}>
-                                    {c.difficulty}
+                              <div className="min-w-0 space-y-1 flex-1">
+                                <div className="flex items-center gap-1.5 flex-wrap">
+                                  <span className="text-[9px] font-extrabold uppercase font-mono tracking-widest text-muted">
+                                    Round {idx + 1 < 10 ? `0${idx + 1}` : idx + 1}
                                   </span>
+                                  <span className={`inline-flex items-center px-1.5 py-0.2 rounded text-[8px] font-bold uppercase tracking-wider border ${badgeColor}`}>
+                                    {badgeText}
+                                  </span>
+                                </div>
+                                <h4 className="text-[11px] font-bold text-fg truncate leading-none mt-1">{item.title}</h4>
+                                <div className="flex items-center gap-2 text-[9px] text-muted flex-wrap">
+                                  {isChallenge && item.difficulty && (
+                                    <span className={`font-semibold capitalize font-mono ${difficultyColor[item.difficulty]}`}>
+                                      {item.difficulty}
+                                    </span>
+                                  )}
+                                  {isPlayground && item.template && (
+                                    <span className="font-semibold uppercase tracking-wider font-mono text-violet-400">
+                                      {item.template}
+                                    </span>
+                                  )}
+                                  {isPrompt && item.difficulty && (
+                                    <span className={`font-semibold capitalize font-mono ${difficultyColor[item.difficulty === "beginner" ? "easy" : item.difficulty === "advanced" ? "hard" : "medium"]}`}>
+                                      {item.difficulty}
+                                    </span>
+                                  )}
                                   <span>·</span>
                                   <span className="flex items-center gap-0.5">
                                     <Clock className="w-2.5 h-2.5" />
-                                    {c.estimatedMinutes}m
+                                    {item.estimatedMinutes}m
                                   </span>
                                 </div>
                               </div>
@@ -818,7 +1000,7 @@ export default function InterviewBuilder({
                                 <div className="flex items-center gap-1">
                                   <button
                                     type="button"
-                                    onClick={() => moveUp(c.id)}
+                                    onClick={() => moveUp(idx)}
                                     disabled={idx === 0}
                                     className="p-1 rounded bg-panel hover:bg-surface border border-border text-muted hover:text-fg disabled:opacity-30 disabled:cursor-not-allowed transition"
                                   >
@@ -826,8 +1008,8 @@ export default function InterviewBuilder({
                                   </button>
                                   <button
                                     type="button"
-                                    onClick={() => moveDown(c.id)}
-                                    disabled={idx === selectedChallenges.length - 1}
+                                    onClick={() => moveDown(idx)}
+                                    disabled={idx === selectedTimeline.length - 1}
                                     className="p-1 rounded bg-panel hover:bg-surface border border-border text-muted hover:text-fg disabled:opacity-30 disabled:cursor-not-allowed transition"
                                   >
                                     <ChevronDown className="w-3 h-3" />
@@ -835,7 +1017,7 @@ export default function InterviewBuilder({
                                 </div>
                                 <button
                                   type="button"
-                                  onClick={() => remove(c.id)}
+                                  onClick={() => remove(item.id, item.type)}
                                   className="w-full py-1 rounded bg-rose-500/10 border border-rose-500/20 text-rose-500 hover:bg-rose-500 hover:text-white transition flex items-center justify-center"
                                   title="Remove round"
                                 >
@@ -845,73 +1027,8 @@ export default function InterviewBuilder({
 
                             </div>
                           </div>
-                        ))
-                      ) : (
-                        selectedPlaygrounds.map((p, idx) => {
-                          const scheme = templateColors[p.template] || {
-                            border: "hover:border-accent/40",
-                            glow: "hover:shadow-[0_0_15px_rgba(var(--accent-rgb),0.1)]",
-                            text: "text-accent",
-                            bg: "bg-accent/10 border-accent/20",
-                          };
-
-                          return (
-                            <div
-                              key={p.id}
-                              className="relative flex gap-3 items-start group animate-in fade-in slide-in-from-right-4 duration-300"
-                            >
-                              {/* Chronological Circle Tracker node */}
-                              <div className="absolute left-[-22px] top-1.5 w-3 h-3 rounded-full bg-bg border-[3px] border-violet-500 z-10 transition-transform group-hover:scale-125 shadow-lg shadow-violet-500/25" />
-
-                              <div className="flex-1 bg-panel border border-border rounded-xl p-3.5 flex items-center justify-between gap-3 group-hover:border-border-strong group-hover:bg-surface transition-all">
-                                <div className="min-w-0 space-y-1">
-                                  <span className="text-[9px] font-extrabold uppercase font-mono tracking-widest text-violet-600 dark:text-violet-400">
-                                    Round {idx + 1 < 10 ? `0${idx + 1}` : idx + 1}
-                                  </span>
-                                  <h4 className="text-[11px] font-bold text-fg truncate leading-none">{p.title}</h4>
-                                  <div className="flex items-center gap-2 text-[9px]">
-                                    <span className={`font-semibold uppercase tracking-wider font-mono ${scheme.text}`}>
-                                      {p.template}
-                                    </span>
-                                  </div>
-                                </div>
-
-                                {/* Controls */}
-                                <div className="flex flex-col gap-1 shrink-0 opacity-80 group-hover:opacity-100 transition-opacity">
-                                  <div className="flex items-center gap-1">
-                                    <button
-                                      type="button"
-                                      onClick={() => moveUp(p.id)}
-                                      disabled={idx === 0}
-                                      className="p-1 rounded bg-panel hover:bg-surface border border-border text-muted hover:text-fg disabled:opacity-30 disabled:cursor-not-allowed transition"
-                                    >
-                                      <ChevronUp className="w-3 h-3" />
-                                    </button>
-                                    <button
-                                      type="button"
-                                      onClick={() => moveDown(p.id)}
-                                      disabled={idx === selectedPlaygrounds.length - 1}
-                                      className="p-1 rounded bg-panel hover:bg-surface border border-border text-muted hover:text-fg disabled:opacity-30 disabled:cursor-not-allowed transition"
-                                    >
-                                      <ChevronDown className="w-3 h-3" />
-                                    </button>
-                                  </div>
-                                  <button
-                                    type="button"
-                                    onClick={() => remove(p.id)}
-                                    className="w-full py-1 rounded bg-rose-500/10 border border-rose-500/20 text-rose-500 hover:bg-rose-500 hover:text-white transition flex items-center justify-center"
-                                    title="Remove round"
-                                  >
-                                    <Trash2 className="w-3 h-3" />
-                                  </button>
-                                </div>
-
-                              </div>
-                            </div>
-                          );
-                        })
-                      )}
-
+                        );
+                      })}
                     </div>
                   )}
 

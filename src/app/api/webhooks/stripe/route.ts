@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
-import { stripe } from "@/lib/stripe";
+import { getStripe } from "@/lib/stripe";
+import { recordPurchase } from "@/lib/ai-interview/credits";
 import { NextResponse } from "next/server";
 import type Stripe from "stripe";
 
@@ -12,7 +13,7 @@ export async function POST(req: Request) {
   try {
     const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
     if (webhookSecret && signature) {
-      event = stripe.webhooks.constructEvent(body, signature, webhookSecret);
+      event = getStripe().webhooks.constructEvent(body, signature, webhookSecret);
     } else {
       // Graceful fallback for local development without active webhook tunnels
       console.warn("Stripe webhook: No STRIPE_WEBHOOK_SECRET or stripe-signature header found. Parsing raw body directly for development.");
@@ -31,8 +32,34 @@ export async function POST(req: Request) {
       case "checkout.session.completed": {
         const session = event.data.object as Stripe.Checkout.Session;
         const workspaceId = session.metadata?.workspaceId;
+
+        // Branch on the metadata.kind so one webhook can route both
+        // subscription upgrades and one-time AI credit purchases.
+        if (session.metadata?.kind === "AI_CREDIT_PACK") {
+          const credits = Number(session.metadata.credits);
+          // payment_intent is the most stable idempotency anchor for one-time
+          // payments — survives webhook redelivery and refund cycles.
+          const chargeId = (session.payment_intent as string) || session.id;
+          if (workspaceId && Number.isFinite(credits) && credits > 0 && chargeId) {
+            const res = await recordPurchase({
+              workspaceId,
+              amount: credits,
+              stripeChargeId: chargeId,
+              note: `Stripe checkout ${session.id} — pack ${session.metadata.packId}`,
+            });
+            console.log(
+              `AI credit pack ${session.metadata.packId} (${credits}) for workspace ${workspaceId}: ${res.recorded ? "credited" : "already recorded"}`
+            );
+          } else {
+            console.warn("AI_CREDIT_PACK checkout missing required metadata", session.id);
+          }
+          break;
+        }
+
+        // Subscription upgrade path (pre-existing behavior).
         const stripeSubscriptionId = session.subscription as string;
         const stripeCustomerId = session.customer as string;
+        const planName = (session.metadata?.planName || "GROWTH") as "STARTER" | "GROWTH";
 
         if (workspaceId && stripeSubscriptionId) {
           await prisma.workspace.update({
@@ -40,10 +67,10 @@ export async function POST(req: Request) {
             data: {
               stripeSubscriptionId,
               stripeCustomerId,
-              planName: "GROWTH",
+              planName,
             },
           });
-          console.log(`Workspace ${workspaceId} upgraded to GROWTH plan via checkout success.`);
+          console.log(`Workspace ${workspaceId} upgraded to ${planName} plan via checkout success.`);
         }
         break;
       }
@@ -63,7 +90,9 @@ export async function POST(req: Request) {
 
       case "customer.subscription.updated": {
         const sub = event.data.object as Stripe.Subscription;
-        const planName = sub.status === "active" ? "GROWTH" : "FREE";
+        const planName = sub.status === "active"
+          ? ((sub.metadata?.planName || "GROWTH") as "STARTER" | "GROWTH" | "FREE")
+          : "FREE";
         await prisma.workspace.updateMany({
           where: { stripeSubscriptionId: sub.id },
           data: {

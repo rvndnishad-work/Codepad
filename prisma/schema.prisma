@@ -8,52 +8,49 @@ datasource db {
 }
 
 model User {
-  id            String              @id @default(cuid())
-  name          String?
-  email         String?             @unique
-  emailVerified DateTime?
-  image         String?
+  id                   String                @id @default(cuid())
+  name                 String?
+  email                String?               @unique
+  emailVerified        DateTime?
+  image                String?
   /// bcrypt hash for credentials login. null when only OAuth is used.
-  passwordHash  String?
+  passwordHash         String?
+  /// Optional public profile bio shown on /u/[id] portfolio page.
+  bio                  String?
+  /// Optional "Hire Me" contact (email, URL, etc.) shown on portfolio.
+  hireMeUrl            String?
+  /// Whether the user wants their portfolio publicly visible.
+  portfolioPublic      Boolean               @default(true)
+  /// Whether the user is banned from the platform.
+  banned               Boolean               @default(false)
+  createdAt            DateTime              @default(now())
   /// User type — "candidate" (job seeker), "recruiter" (hiring), or null
   /// for legacy accounts that haven't been migrated to the new taxonomy.
   /// Drives navbar, dashboard, and interview-route experience.
-  userType      String?
-  /// Optional public profile bio shown on /u/[id] portfolio page.
-  bio           String?
-  /// Optional "Hire Me" contact (email, URL, etc.) shown on portfolio.
-  hireMeUrl     String?
-  /// Whether the user wants their portfolio publicly visible.
-  portfolioPublic Boolean           @default(true)
-  accounts      Account[]
-  sessions      Session[]
-  snippets      Snippet[]
-  attempts      ChallengeAttempt[]
-  interviewSessions InterviewSession[]
-  /// Challenges the user has authored. null author = admin/curated.
-  authoredChallenges Challenge[]      @relation("AuthoredChallenges")
-  /// Enrollments + invitations on the unified Challenge model. Replaces the
-  /// retired Track equivalents (dropped in Stage 3 cleanup).
-  challengeEnrollments  ChallengeEnrollment[]
-  challengeInvitations  ChallengeInvitation[] @relation("ChallengeInvitedUser")
-  sentChallengeInvites  ChallengeInvitation[] @relation("ChallengeInvitedBy")
-  followers     Follow[]            @relation("following")
-  following     Follow[]            @relation("follower")
-  blogs         BlogPost[]
-  blogReactions BlogReaction[]
-  blogComments  BlogComment[]
-  blogBookmarks BlogBookmark[]
-  /// Whether the user is banned from the platform.
-  banned        Boolean           @default(false)
-  workspaces    WorkspaceMember[]
-  createdAt     DateTime            @default(now())
+  userType             String?
+  accounts             Account[]
+  blogBookmarks        BlogBookmark[]
+  blogComments         BlogComment[]
+  blogs                BlogPost[]
+  blogReactions        BlogReaction[]
+  authoredChallenges   Challenge[]           @relation("AuthoredChallenges")
+  attempts             ChallengeAttempt[]
+  challengeEnrollments ChallengeEnrollment[]
+  sentChallengeInvites ChallengeInvitation[] @relation("ChallengeInvitedBy")
+  challengeInvitations ChallengeInvitation[] @relation("ChallengeInvitedUser")
+  followers            Follow[]              @relation("following")
+  following            Follow[]              @relation("follower")
+  interviewSessions    InterviewSession[]
+  sessions             Session[]
+  snippets             Snippet[]
+  workspaces           WorkspaceMember[]
 }
 
 model Follow {
   followerId  String
   followingId String
-  follower    User   @relation("follower", fields: [followerId], references: [id], onDelete: Cascade)
   following   User   @relation("following", fields: [followingId], references: [id], onDelete: Cascade)
+  follower    User   @relation("follower", fields: [followerId], references: [id], onDelete: Cascade)
 
   @@id([followerId, followingId])
 }
@@ -105,9 +102,9 @@ model Snippet {
   pinned     Boolean  @default(false)
   viewCount  Int      @default(0)
   userId     String?
-  user       User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
+  user       User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
   @@index([visibility, updatedAt])
@@ -117,49 +114,46 @@ model Snippet {
 /// A coding challenge with starter code + hidden tests.
 /// Difficulty: "easy" | "medium" | "hard". Stored as string for SQLite portability.
 model Challenge {
-  id              String             @id @default(cuid())
-  slug            String             @unique
-  title           String
+  id                  String                @id @default(cuid())
+  slug                String                @unique
+  title               String
   /// Markdown description shown on the detail page.
-  description     String
+  description         String
   /// "easy" | "medium" | "hard"
-  difficulty      String             @default("easy")
+  difficulty          String                @default("easy")
   /// Sandpack template id (e.g. "test-ts", "react", "vanilla")
-  template        String
+  template            String
   /// JSON map of starter files visible/editable to the user.
-  starterFiles    String
+  starterFiles        String
   /// JSON map of hidden test files (run but not shown to user).
-  testFiles       String
+  testFiles           String
   /// JSON-encoded string[] of tag labels (e.g. "arrays", "react", "hooks").
-  tags            String?
+  tags                String?
   /// Estimated time to solve, in minutes. Used for the timer default.
-  estimatedMinutes Int               @default(15)
+  estimatedMinutes    Int                   @default(15)
   /// Optional human-readable category (e.g. "Algorithms", "Frontend").
-  category        String?
+  category            String?
   /// Published challenges show up in the list. Drafts are owner-only.
-  published       Boolean            @default(true)
+  published           Boolean               @default(true)
   /// "public" | "private". Only meaningful when published=true; mirrors the
   /// same field on ChallengeTrack (Track is being folded into Challenge in
   /// Stage 2 — keeping the names aligned so the migration is mechanical).
-  visibility      String             @default("public")
+  visibility          String                @default("public")
   /// Staff-pick flag — surfaces a star badge on /challenges and bumps the
   /// challenge to the top of the grid. Admin-only.
-  featured        Boolean            @default(false)
+  featured            Boolean               @default(false)
   /// Single null author = admin/curated; non-null = user-authored.
-  authorId        String?
-  author          User?              @relation("AuthoredChallenges", fields: [authorId], references: [id], onDelete: SetNull)
-  attempts        ChallengeAttempt[]
-  /// Ordered substeps. A "classic" single-question challenge has exactly one
-  /// step (auto-created during the Stage 1 backfill). Multi-step challenges
-  /// (formerly Tracks) have N steps that the participant walks through.
-  steps           ChallengeStep[]
-  enrollments     ChallengeEnrollment[]
-  invitations     ChallengeInvitation[]
+  authorId            String?
+  workspaceId         String?
+  createdAt           DateTime              @default(now())
+  updatedAt           DateTime              @updatedAt
+  workspace           Workspace?            @relation(fields: [workspaceId], references: [id])
+  author              User?                 @relation("AuthoredChallenges", fields: [authorId], references: [id])
+  attempts            ChallengeAttempt[]
+  enrollments         ChallengeEnrollment[]
+  invitations         ChallengeInvitation[]
+  steps               ChallengeStep[]
   takeHomeAssignments TakeHomeAssignment[]
-  workspaceId     String?
-  workspace       Workspace?         @relation(fields: [workspaceId], references: [id], onDelete: SetNull)
-  createdAt       DateTime           @default(now())
-  updatedAt       DateTime           @updatedAt
 
   @@index([published, featured, difficulty])
   @@index([authorId])
@@ -175,7 +169,6 @@ model Challenge {
 model ChallengeStep {
   id               String             @id @default(cuid())
   challengeId      String
-  challenge        Challenge          @relation(fields: [challengeId], references: [id], onDelete: Cascade)
   position         Int
   /// Optional per-step title — for multi-step challenges this is "Step 1:
   /// Two Sum". Single-step challenges just leave it null and reuse the
@@ -197,9 +190,10 @@ model ChallengeStep {
   videoUrl         String?
   /// JSON-encoded array of test cases: Array<{ id: string, name: string, input: string, expected: string, isHidden: boolean, weight: number }>
   testCasesJson    String             @default("[]")
-  attempts         ChallengeAttempt[]
   createdAt        DateTime           @default(now())
   updatedAt        DateTime           @updatedAt
+  attempts         ChallengeAttempt[]
+  challenge        Challenge          @relation(fields: [challengeId], references: [id], onDelete: Cascade)
 
   @@unique([challengeId, position])
   @@index([challengeId, position])
@@ -210,14 +204,14 @@ model ChallengeStep {
 model ChallengeEnrollment {
   id            String    @id @default(cuid())
   userId        String
-  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   challengeId   String
-  challenge     Challenge @relation(fields: [challengeId], references: [id], onDelete: Cascade)
   /// "active" | "stashed" | "completed" | "abandoned"
   status        String    @default("active")
   startedAt     DateTime  @default(now())
   lastVisitedAt DateTime  @default(now())
   completedAt   DateTime?
+  challenge     Challenge @relation(fields: [challengeId], references: [id], onDelete: Cascade)
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([userId, challengeId])
   @@index([userId, status])
@@ -228,18 +222,18 @@ model ChallengeEnrollment {
 /// model: opaque token, email-keyed, status state machine.
 /// status: "pending" | "accepted" | "revoked"
 model ChallengeInvitation {
-  id          String     @id @default(cuid())
+  id          String    @id @default(cuid())
   challengeId String
-  challenge   Challenge  @relation(fields: [challengeId], references: [id], onDelete: Cascade)
   email       String
   userId      String?
-  user        User?      @relation("ChallengeInvitedUser", fields: [userId], references: [id], onDelete: SetNull)
-  token       String     @unique
+  token       String    @unique
   invitedById String?
-  invitedBy   User?      @relation("ChallengeInvitedBy", fields: [invitedById], references: [id], onDelete: SetNull)
-  status      String     @default("pending")
+  status      String    @default("pending")
   acceptedAt  DateTime?
-  createdAt   DateTime   @default(now())
+  createdAt   DateTime  @default(now())
+  invitedBy   User?     @relation("ChallengeInvitedBy", fields: [invitedById], references: [id])
+  user        User?     @relation("ChallengeInvitedUser", fields: [userId], references: [id])
+  challenge   Challenge @relation(fields: [challengeId], references: [id], onDelete: Cascade)
 
   @@unique([challengeId, email])
   @@index([email])
@@ -254,33 +248,33 @@ model ChallengeInvitation {
 /// A user's attempt at a challenge.
 /// status: "in_progress" | "passed" | "failed" | "abandoned"
 model ChallengeAttempt {
-  id          String    @id @default(cuid())
-  userId      String
-  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  challengeId String
-  challenge   Challenge @relation(fields: [challengeId], references: [id], onDelete: Cascade)
+  id                 String                    @id @default(cuid())
+  userId             String
+  challengeId        String
   /// Which step inside the challenge this attempt is for. Nullable for
   /// pre-migration rows; populated by the Stage 1 backfill script. New
   /// attempts MUST set this.
-  stepId      String?
-  step        ChallengeStep? @relation(fields: [stepId], references: [id], onDelete: SetNull)
-  status      String    @default("in_progress")
+  stepId             String?
+  status             String                    @default("in_progress")
   /// JSON map of the user's final submitted files (excluding hidden tests).
-  files       String?
+  files              String?
   /// JSON-encoded test results: { tests: [{name, status, error?}], passed, total }
-  testResults String?
+  testResults        String?
   /// Total elapsed seconds at submission.
-  durationSec Int?
-  /// Calculated overall score (e.g. 85 out of 100)
-  score       Int?
+  durationSec        Int?
   /// Optional reference to the parent interview session.
-  sessionId   String?
-  startedAt   DateTime  @default(now())
-  finishedAt  DateTime?
-  /// Optional relation to a B2B Take-Home Assignment
+  sessionId          String?
+  startedAt          DateTime                  @default(now())
+  finishedAt         DateTime?
+  /// Calculated overall score (e.g. 85 out of 100)
+  score              Int?
+  aiSuspicionScore   Float?
+  integrityReport    CandidateIntegrityReport?
+  step               ChallengeStep?            @relation(fields: [stepId], references: [id])
+  challenge          Challenge                 @relation(fields: [challengeId], references: [id], onDelete: Cascade)
+  user               User                      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  eventLog           SessionEventLog?
   takeHomeAssignment TakeHomeAssignment?
-  eventLog    SessionEventLog?
-  integrityReport CandidateIntegrityReport?
 
   @@index([userId, status])
   @@index([challengeId])
@@ -290,82 +284,86 @@ model ChallengeAttempt {
 /// An interview session: a sequence of challenges with a hard time limit.
 /// status: "scheduled" | "in_progress" | "completed" | "abandoned"
 model InterviewSession {
-  id            String   @id @default(cuid())
-  userId        String
-  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  title         String   @default("Interview Session")
-  candidateName String?
-  type          String   @default("mock") // "mock" | "live"
-  verdict       String?  // "success" | "failed" | "left_in_between" | "suspicious"
-  notes         String?
-  creatorRole   String   @default("candidate") // "interviewer" | "candidate"
+  id                 String           @id @default(cuid())
+  userId             String
+  title              String           @default("Interview Session")
+  candidateName      String?
+  type               String           @default("mock")
+  verdict            String?
+  notes              String?
+  creatorRole        String           @default("candidate")
   /// Set when a guest candidate requests the interviewer to start the session.
-  startRequestedAt DateTime?
+  startRequestedAt   DateTime?
   /// What kind of starter material drives this session.
   /// "challenge" — DSA/algorithm-style round backed by Challenge.testFiles.
   /// "playground" — open framework/scenario round backed by Snippet.files,
   /// judged manually by the interviewer (no automated tests).
-  sourceType    String   @default("challenge")
+  sourceType         String           @default("challenge")
   /// JSON-encoded string[] of challenge IDs, in order.
   /// Used when sourceType = "challenge". May be "[]" otherwise.
-  challengeIds  String
+  challengeIds       String
   /// Tracks the ID of the challenge currently being worked on.
-  activeChallengeId String?
+  activeChallengeId  String?
   /// JSON-encoded string[] of Snippet IDs (playgrounds), in order.
   /// Used when sourceType = "playground". May be "[]" otherwise.
-  playgroundIds String   @default("[]")
+  playgroundIds      String           @default("[]")
+  /// JSON-encoded string[] of PromptScenario IDs, in order.
+  /// Used when sourceType = "prompt". May be "[]" otherwise.
+  promptScenarioIds  String           @default("[]")
   /// Tracks the ID of the playground currently being worked on.
   activePlaygroundId String?
   /// Free-text scenario / prompt shown to the candidate during
   /// playground rounds (e.g. "Add pagination to this list component").
   /// Editable by the interviewer live; saved with the session.
-  scenario      String?
+  scenario           String?
   /// Hard time limit for the whole session, in seconds.
-  totalSec      Int
-  status        String   @default("scheduled")
+  totalSec           Int
+  status             String           @default("scheduled")
   /// Random token used to grant read-only "interviewer view" access.
-  shareToken    String   @unique
+  shareToken         String           @unique
   /// A friendly 4-digit access code (e.g., "4921")
-  shortCode     String?  @unique
-  startedAt     DateTime?
-  finishedAt    DateTime?
-  workspaceId   String?
-  workspace     Workspace? @relation(fields: [workspaceId], references: [id], onDelete: SetNull)
+  shortCode          String?          @unique
+  startedAt          DateTime?
+  finishedAt         DateTime?
+  workspaceId        String?
   /// Optional link to first-class Candidate entity (V2). When set, the
   /// candidateName field above acts as a denormalized snapshot.
-  candidateId   String?
-  candidate     Candidate? @relation(fields: [candidateId], references: [id], onDelete: SetNull)
-  rubric        InterviewRubric?
-  createdAt     DateTime @default(now())
+  candidateId        String?
+  aiSuspicionScore   Float?
+  createdAt          DateTime         @default(now())
+  rubric             InterviewRubric?
+  candidate          Candidate?       @relation(fields: [candidateId], references: [id])
+  workspace          Workspace?       @relation(fields: [workspaceId], references: [id])
+  user               User             @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId, status])
   @@index([candidateId])
 }
 
 model BlogPost {
-  id          String   @id @default(cuid())
-  slug        String   @unique
-  title       String
-  excerpt     String?
-  content     String   // Markdown content
-  coverImage  String?
-  published   Boolean  @default(false)
-  viewCount   Int      @default(0)
+  id         String         @id @default(cuid())
+  slug       String         @unique
+  title      String
+  excerpt    String?
+  content    String
+  coverImage String?
+  published  Boolean        @default(false)
+  viewCount  Int            @default(0)
   /// JSON-encoded string[] of tag labels (e.g. "react", "typescript", "ai").
-  tags        String?
+  tags       String?
   /// "DRAFT" | "PENDING" | "PUBLISHED" | "REJECTED" | "NEEDS_CHANGES"
-  status      String   @default("DRAFT")
+  status     String         @default("DRAFT")
   /// Feedback from admin if changes are needed or rejection reason.
-  adminNotes  String?
+  adminNotes String?
   /// Admin-only flag for staff-picked / featured posts.
-  featured    Boolean  @default(false)
-  userId      String
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  reactions   BlogReaction[]
-  comments    BlogComment[]
-  bookmarks   BlogBookmark[]
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  featured   Boolean        @default(false)
+  userId     String
+  createdAt  DateTime       @default(now())
+  updatedAt  DateTime       @updatedAt
+  bookmarks  BlogBookmark[]
+  comments   BlogComment[]
+  user       User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  reactions  BlogReaction[]
 
   @@index([userId])
   @@index([published, createdAt])
@@ -377,12 +375,12 @@ model BlogPost {
 model BlogReaction {
   id        String   @id @default(cuid())
   postId    String
-  post      BlogPost @relation(fields: [postId], references: [id], onDelete: Cascade)
   userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   /// "clap" for v1. Future: "heart", "fire", "unicorn".
   type      String   @default("clap")
   createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  post      BlogPost @relation(fields: [postId], references: [id], onDelete: Cascade)
 
   @@unique([postId, userId, type])
   @@index([postId])
@@ -393,15 +391,15 @@ model BlogReaction {
 model BlogComment {
   id        String        @id @default(cuid())
   postId    String
-  post      BlogPost      @relation(fields: [postId], references: [id], onDelete: Cascade)
   userId    String
-  user      User          @relation(fields: [userId], references: [id], onDelete: Cascade)
   parentId  String?
-  parent    BlogComment?  @relation("CommentReplies", fields: [parentId], references: [id], onDelete: Cascade)
-  replies   BlogComment[] @relation("CommentReplies")
   content   String
   createdAt DateTime      @default(now())
   updatedAt DateTime      @updatedAt
+  parent    BlogComment?  @relation("CommentReplies", fields: [parentId], references: [id], onDelete: Cascade)
+  replies   BlogComment[] @relation("CommentReplies")
+  user      User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  post      BlogPost      @relation(fields: [postId], references: [id], onDelete: Cascade)
 
   @@index([postId, createdAt])
   @@index([userId])
@@ -410,10 +408,10 @@ model BlogComment {
 /// Saved-for-later bookmarks. Composite PK avoids duplicate saves.
 model BlogBookmark {
   postId    String
-  post      BlogPost @relation(fields: [postId], references: [id], onDelete: Cascade)
   userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  post      BlogPost @relation(fields: [postId], references: [id], onDelete: Cascade)
 
   @@id([postId, userId])
   @@index([userId, createdAt])
@@ -421,31 +419,31 @@ model BlogBookmark {
 
 model SiteSetting {
   key   String @id
-  value String // JSON-encoded configuration
+  value String
 }
 
 model TakeHomeAssignment {
-  id             String           @id @default(cuid())
+  id             String            @id @default(cuid())
   challengeId    String
-  challenge      Challenge        @relation(fields: [challengeId], references: [id], onDelete: Cascade)
   candidateName  String
   candidateEmail String
-  token          String           @unique // Secure random URL token
-  status         String           @default("PENDING") // PENDING, ACTIVE, SUBMITTED, EXPIRED
-  expiresAt      DateTime         // Link activation deadline
-  timeLimitMin   Int              @default(60) // Countdown timer duration (in minutes) once started
+  token          String            @unique
+  status         String            @default("PENDING")
+  expiresAt      DateTime
+  timeLimitMin   Int               @default(60)
   startedAt      DateTime?
   submittedAt    DateTime?
-  attemptId      String?          @unique
-  attempt        ChallengeAttempt? @relation(fields: [attemptId], references: [id], onDelete: SetNull)
+  attemptId      String?           @unique
   workspaceId    String?
-  workspace      Workspace?       @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
   /// Optional link to the first-class Candidate entity. Backfilled by the
   /// candidate seed/migration; candidateName/email above are retained as a
   /// denormalized snapshot for back-compat and for guest invites.
   candidateId    String?
-  candidate      Candidate?       @relation(fields: [candidateId], references: [id], onDelete: SetNull)
-  createdAt      DateTime         @default(now())
+  createdAt      DateTime          @default(now())
+  candidate      Candidate?        @relation(fields: [candidateId], references: [id])
+  workspace      Workspace?        @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  attempt        ChallengeAttempt? @relation(fields: [attemptId], references: [id])
+  challenge      Challenge         @relation(fields: [challengeId], references: [id], onDelete: Cascade)
 
   @@index([token])
   @@index([candidateEmail])
@@ -453,19 +451,31 @@ model TakeHomeAssignment {
 }
 
 model Workspace {
-  id                  String               @id @default(cuid())
-  name                String
-  slug                String               @unique
-  stripeCustomerId    String?              @unique
-  stripeSubscriptionId String?             @unique
-  planName            String               @default("FREE") // FREE, GROWTH, ENTERPRISE
-  members             WorkspaceMember[]
-  challenges          Challenge[]
-  sessions            InterviewSession[]
-  takeHomes           TakeHomeAssignment[]
-  candidates          Candidate[]
-  atsIntegration      AtsIntegration?
-  createdAt           DateTime             @default(now())
+  id                   String                    @id @default(cuid())
+  name                 String
+  slug                 String                    @unique
+  stripeCustomerId     String?                   @unique
+  stripeSubscriptionId String?                   @unique
+  planName             String                    @default("FREE")
+  /// Phase 4.1 workspace-level kill-switch for outbound external MCP calls
+  /// during AI screenings. Even if individual templates have ExternalMcpServer
+  /// bindings, the wire is dead unless this flag is true. Defaults false so
+  /// nothing leaks while admins are still figuring out their setup.
+  allowExternalMcp     Boolean                   @default(false)
+  createdAt            DateTime                  @default(now())
+  aiCreditLedger       AIInterviewCreditLedger[]
+  aiInterviewSessions  AIInterviewSession[]
+  aiInterviewTemplates AIInterviewTemplate[]
+  atsIntegration       AtsIntegration?
+  candidates           Candidate[]
+  challenges           Challenge[]
+  sessions             InterviewSession[]
+  mcpApiKeys           McpApiKey[]
+  mcpAuditLogs         McpAuditLog[]
+  externalMcpServers   ExternalMcpServer[]
+  promptScenarios      PromptScenario[]
+  takeHomes            TakeHomeAssignment[]
+  members              WorkspaceMember[]
 }
 
 /// First-class candidate entity scoped to a workspace.
@@ -473,24 +483,25 @@ model Workspace {
 /// only lived inline on TakeHomeAssignment / InterviewSession rows.
 /// status: "active" | "hired" | "rejected" | "archived"
 model Candidate {
-  id          String   @id @default(cuid())
-  workspaceId String
-  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
-  name        String
-  email       String?
-  phone       String?
+  id                  String               @id @default(cuid())
+  workspaceId         String
+  name                String
+  email               String?
+  phone               String?
   /// Where this candidate came from (e.g. "linkedin", "referral", "ats", "manual").
-  source      String?
+  source              String?
   /// Free-text notes — the recruiter's running journal on the candidate.
-  notes       String?
+  notes               String?
   /// JSON-encoded string[] of tags (e.g. ["senior", "react", "remote-ok"]).
-  tags        String?
+  tags                String?
   /// Pipeline status.
-  status      String   @default("active")
-  takeHomes   TakeHomeAssignment[]
-  sessions    InterviewSession[]
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  status              String               @default("active")
+  createdAt           DateTime             @default(now())
+  updatedAt           DateTime             @updatedAt
+  aiInterviewSessions AIInterviewSession[]
+  workspace           Workspace            @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  sessions            InterviewSession[]
+  takeHomes           TakeHomeAssignment[]
 
   @@unique([workspaceId, email])
   @@index([workspaceId, status])
@@ -500,51 +511,330 @@ model Candidate {
 model WorkspaceMember {
   id          String    @id @default(cuid())
   workspaceId String
-  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
   userId      String
+  role        String    @default("INTERVIEWER")
   user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  role        String    @default("INTERVIEWER") // OWNER, ADMIN, INTERVIEWER, VIEWER
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
 
   @@unique([workspaceId, userId])
 }
 
 model SessionEventLog {
-  id          String           @id @default(cuid())
-  attemptId   String           @unique
-  attempt     ChallengeAttempt @relation(fields: [attemptId], references: [id], onDelete: Cascade)
-  eventsData  String           // JSON array of event deltas: Array<{ t: number, type: string, payload: any }>
-  createdAt   DateTime         @default(now())
+  id         String           @id @default(cuid())
+  attemptId  String           @unique
+  eventsData String
+  createdAt  DateTime         @default(now())
+  attempt    ChallengeAttempt @relation(fields: [attemptId], references: [id], onDelete: Cascade)
 }
 
 model CandidateIntegrityReport {
-  id            String           @id @default(cuid())
-  attemptId     String           @unique
-  attempt       ChallengeAttempt @relation(fields: [attemptId], references: [id], onDelete: Cascade)
-  suspicionScore Int             @default(0) // 0 to 100
-  totalBlurSec  Int              @default(0)
-  blurCount     Int              @default(0)
-  pasteCount    Int              @default(0)
-  pasteDetails  String           // JSON list of pasted blocks: Array<{ t: number, length: number, snippet: string }>
-  createdAt     DateTime         @default(now())
+  id             String           @id @default(cuid())
+  attemptId      String           @unique
+  suspicionScore Int              @default(0)
+  totalBlurSec   Int              @default(0)
+  blurCount      Int              @default(0)
+  pasteCount     Int              @default(0)
+  pasteDetails   String
+  createdAt      DateTime         @default(now())
+  attempt        ChallengeAttempt @relation(fields: [attemptId], references: [id], onDelete: Cascade)
 }
 
 model InterviewRubric {
   id            String           @id @default(cuid())
   sessionId     String           @unique
-  session       InterviewSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
-  ratings       String           // JSON Map of { "Communication": 4, "CodeQuality": 5, "ProblemSolving": 5 }
-  notes         String?          // Rich-text feedback
+  ratings       String
+  notes         String?
   interviewerId String
   createdAt     DateTime         @default(now())
+  session       InterviewSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
 }
 
 model AtsIntegration {
   id            String    @id @default(cuid())
   workspaceId   String    @unique
-  workspace     Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
-  provider      String    // GREENHOUSE, LEVER, ASHBY
-  apiKey        String    // Encrypted API key or credentials token
-  webhookSecret String?   // Secret to verify signatures
-  settings      String    @default("{}") // JSON string of settings
+  provider      String
+  apiKey        String
+  webhookSecret String?
+  settings      String    @default("{}")
   createdAt     DateTime  @default(now())
+  workspace     Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
 }
+
+model AIInterviewSession {
+  id               String                    @id @default(cuid())
+  workspaceId      String
+  candidateId      String?
+  /// One-time token used in candidate-facing URL. Distinct from the session id
+  /// so admin/internal ids are never leaked.
+  inviteToken      String                    @unique @default(cuid())
+  candidateName    String
+  candidateEmail   String
+  positionTitle    String
+  status           String                    @default("PENDING")
+  chatHistory      String
+  filesJson        String
+  templateId       String
+  score            Int?
+  ratings          String?
+  aiSummary        String?
+  /// Proctoring signal — 0..1, populated when integrity events are captured.
+  aiSuspicionScore Float?
+  /// Set atomically when the candidate sends their first message. Acts as the
+  /// "credit consumed" sentinel — `updateMany WHERE startedAt IS NULL` guards
+  /// against double-charge from concurrent first POSTs.
+  startedAt        DateTime?
+  finishedAt       DateTime?
+  /// Phase 4.1 outbound MCP budget counters. Each external-MCP call by the
+  /// AI interviewer bumps these; if any exceeds the per-session cap, Gemini
+  /// gets a tool error (not the screening — that continues).
+  outboundCallCount      Int     @default(0)
+  outboundResponseBytes  Int     @default(0)
+  outboundElapsedMs      Int     @default(0)
+  /// JSON snapshot of available external tools at session start. Cached so
+  /// every turn doesn't re-fetch tools/list from the customer's MCP server.
+  /// Shape: `{ servers: [{ id, label, tools: [...] }], cachedAt }`.
+  outboundToolsListCache String?
+  createdAt        DateTime                  @default(now())
+  updatedAt        DateTime                  @updatedAt
+  ledgerEntries    AIInterviewCreditLedger[]
+  candidate        Candidate?                @relation(fields: [candidateId], references: [id])
+  workspace        Workspace                 @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@index([workspaceId, status])
+  @@index([workspaceId, createdAt])
+  @@index([candidateId])
+}
+
+/// Workspace-scoped custom screening templates. The default `scaffolds.ts`
+/// catalog still ships as builtins; rows here layer on top and are merged at
+/// resolve time. NULL workspaceId is reserved for any future "global custom"
+/// templates an admin might seed.
+model AIInterviewTemplate {
+  id               String     @id @default(cuid())
+  workspaceId      String?
+  title            String
+  description      String
+  starterFiles     String
+  testsCode        String
+  estimatedMinutes Int        @default(30)
+  createdAt        DateTime   @default(now())
+  updatedAt        DateTime   @updatedAt
+  workspace        Workspace? @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  externalMcpBindings TemplateExternalMcp[]
+
+  @@index([workspaceId])
+}
+
+/// Append-only ledger of credit movements for a workspace. Balance is computed
+/// as SUM(amount). `amount` is signed: positive for PURCHASE/GRANT/REFUND,
+/// negative for CONSUMPTION.
+model AIInterviewCreditLedger {
+  id             String              @id @default(cuid())
+  workspaceId    String
+  kind           String
+  amount         Int
+  sessionId      String?
+  stripeChargeId String?
+  adminUserId    String?
+  note           String?
+  createdAt      DateTime            @default(now())
+  session        AIInterviewSession? @relation(fields: [sessionId], references: [id])
+  workspace      Workspace           @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@index([workspaceId, createdAt])
+  @@index([sessionId])
+}
+
+/// Workspace-scoped MCP API key. The full secret is shown ONCE at creation
+/// and only the SHA-256 hash is persisted. `keyPreview` is the first few
+/// characters of the plaintext, kept for UI display ("ip_live_a1b2…") so
+/// recruiters can identify which key to revoke without ever seeing the
+/// secret again.
+model McpApiKey {
+  id              String        @id @default(cuid())
+  workspaceId     String
+  label           String
+  keyHash         String        @unique
+  keyPreview      String
+  /// JSON-encoded string[] of scopes, e.g. `["read"]` or `["read","write"]`.
+  /// Phase 1 ships read-only; write tools arrive in Phase 2 and gate on this.
+  scopes          String        @default("[\"read\"]")
+  createdByUserId String?
+  lastUsedAt      DateTime?
+  revokedAt       DateTime?
+  createdAt       DateTime      @default(now())
+  workspace       Workspace     @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  auditLogs       McpAuditLog[]
+
+  @@index([workspaceId, revokedAt])
+}
+
+/// Append-only log of every MCP tool/resource invocation. Lets recruiters
+/// (and admins) audit which keys touched what data. Args are stored as
+/// truncated JSON because some tool params could be large.
+model McpAuditLog {
+  id            String     @id @default(cuid())
+  workspaceId   String
+  apiKeyId      String?
+  /// "tool" | "resource" (inbound, from a customer's API key) or "outbound"
+  /// (the AI interviewer calling into a customer-configured external MCP).
+  kind          String
+  name          String
+  argsJson      String?
+  resultSummary String?
+  errorCode     String?
+  durationMs    Int        @default(0)
+  /// Populated for kind="outbound" — the remote MCP URL the call hit.
+  outboundUrl   String?
+  createdAt     DateTime   @default(now())
+  apiKey        McpApiKey? @relation(fields: [apiKeyId], references: [id])
+  workspace     Workspace  @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@index([workspaceId, createdAt])
+  @@index([apiKeyId, createdAt])
+}
+
+/// A prompt engineering challenge scenario.
+model PromptScenario {
+  id               String          @id @default(cuid())
+  slug             String          @unique
+  title            String
+  description      String
+  objective        String
+  expectedTraits   String
+  difficulty       String          @default("intermediate")
+  category         String          @default("code-generation")
+  estimatedMinutes Int             @default(10)
+  workspaceId      String?
+  rubricWeights    String          @default("{\"clarity\":20,\"specificity\":20,\"efficiency\":15,\"context\":15,\"constraints\":15,\"edgeCases\":15}")
+  published        Boolean         @default(true)
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
+  attempts         PromptAttempt[]
+  workspace        Workspace?      @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@index([workspaceId, published])
+  @@index([difficulty, category])
+}
+
+/// A candidate's submitted prompt for a scenario.
+model PromptAttempt {
+  id            String         @id @default(cuid())
+  scenarioId    String
+  promptText    String
+  charCount     Int
+  tokenEstimate Int
+  score         Int?
+  rubricScores  String?
+  feedback      String?
+  graderType    String?
+  sessionId     String?
+  userId        String?
+  durationSec   Int?
+  createdAt     DateTime       @default(now())
+  scenario      PromptScenario @relation(fields: [scenarioId], references: [id], onDelete: Cascade)
+
+  @@index([scenarioId])
+  @@index([sessionId])
+  @@index([userId])
+}
+
+/// Workspace-configured outbound MCP server. Used by the AI interviewer
+/// (Phase 4.1) to call into customer-specific context during a screening —
+/// internal docs, ATS, repo summaries, etc.
+///
+/// `authToken` is encrypted at rest (AES-256-GCM via src/lib/crypto/at-rest.ts).
+/// Never returned to the UI after creation; the page passes only
+/// `hasAuthToken: boolean` to the client.
+///
+/// `enabled` defaults to false so misconfigured servers can't accidentally
+/// start being called. Wiring also requires per-template binding (TemplateExternalMcp)
+/// AND the workspace-level `allowExternalMcp` kill-switch — three gates.
+model ExternalMcpServer {
+  id               String    @id @default(cuid())
+  workspaceId      String
+  workspace        Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  name             String    // human-readable label
+  url              String    // remote MCP endpoint URL
+  authToken        String?   // bearer token (encrypted at rest). NEVER returned via API.
+  enabled          Boolean   @default(false)
+  lastTestedAt     DateTime?
+  lastTestStatus   String?   // "ok" | "error" | null
+  lastTestSummary  String?   // short result text — tool count or error message
+  createdByUserId  String?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+  templateBindings TemplateExternalMcp[]
+
+  @@index([workspaceId])
+}
+
+/// Per-template binding for external MCP servers. The AI interviewer only
+/// surfaces a server's tools to Gemini if (a) the server is enabled, (b)
+/// it's bound here to the screening's template, and (c) the workspace has
+/// `allowExternalMcp = true`. Three gates, all must be true.
+model TemplateExternalMcp {
+  id                  String    @id @default(cuid())
+  templateId          String
+  externalMcpServerId String
+  createdAt           DateTime  @default(now())
+  template            AIInterviewTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
+  server              ExternalMcpServer   @relation(fields: [externalMcpServerId], references: [id], onDelete: Cascade)
+
+  @@unique([templateId, externalMcpServerId])
+  @@index([templateId])
+  @@index([externalMcpServerId])
+}
+
+/// Admin-only running scratchpad for the Interviewpad platform itself.
+/// Internal to the platform team; not shown to recruiters/candidates.
+/// `status` is a string for SQLite portability: BACKLOG | TODO | IN_PROGRESS | DONE.
+/// `priority` is a string for the same reason: LOW | MEDIUM | HIGH.
+/// `category` is free text so admins can group items however makes sense
+/// at the moment ("MCP", "AI Screening", "Marketing", "Bug fix", etc.).
+model AdminTodo {
+  id           String    @id @default(cuid())
+  /// Stable, human-readable ticket key like "IP-7" — the project-style identifier
+  /// admins can drop into commit messages or chat. Format: `IP-<ticketSeq>`.
+  /// Generated once at create time and never changes. Unique across the project.
+  ticketKey    String?   @unique
+  /// Monotonically increasing sequence number used to mint ticketKey. Stored
+  /// separately so future renaming/re-prefixing doesn't have to re-derive.
+  ticketSeq    Int?      @unique
+  title        String
+  body         String?
+  /// JSON-encoded array of `{ text: string, done: boolean }`. Stored as a
+  /// string for SQLite portability; the UI ticks checkboxes interactively.
+  acceptanceCriteria String?
+  /// Free-form scratchpad for the dev/product owner picking up the ticket —
+  /// edge cases noticed mid-spec, links, who to ask, design tradeoffs, etc.
+  ownerNotes   String?
+  status       String    @default("BACKLOG")
+  priority     String    @default("MEDIUM")
+  category     String?
+  /// Optional notes from the admin who added it — useful when someone else picks it up later.
+  addedByEmail String?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  completedAt  DateTime?
+
+  @@index([status, priority])
+}
+
+/// Tracks alerts generated by Gemma's RAG and monitoring engine
+model GemmaAlert {
+  id             String    @id @default(cuid())
+  type           String    // "INTEGRITY" | "MODERATION" | "SYSTEM_STALL" | "SECURITY"
+  title          String
+  body           String
+  severity       String    @default("MEDIUM") // "LOW" | "MEDIUM" | "HIGH" | "CRITICAL"
+  status         String    @default("UNRESOLVED") // "UNRESOLVED" | "DISMISSED" | "RESOLVED"
+  proposedAction String?   // JSON text of suggested action payload
+  targetId       String?   // Reference ID for polymorphic associations (user, post, attempt, etc.)
+  createdAt      DateTime  @default(now())
+  resolvedAt     DateTime?
+
+  @@index([status, severity])
+  @@index([type, status])
+}
+

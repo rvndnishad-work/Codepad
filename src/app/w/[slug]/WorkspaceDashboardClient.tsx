@@ -27,6 +27,10 @@ import {
   Eye,
   ChevronRight,
   Upload,
+  Brain,
+  Copy,
+  X,
+  Search,
 } from "lucide-react";
 import AddCandidateDialog from "./AddCandidateDialog";
 import BulkAddCandidatesDialog from "./BulkAddCandidatesDialog";
@@ -97,8 +101,41 @@ type CandidateItem = {
   createdAt: string;
 };
 
+type PromptScenario = {
+  id: string;
+  slug: string;
+  title: string;
+  description: string;
+  objective: string;
+  expectedTraits: string;
+  difficulty: string;
+  category: string;
+  estimatedMinutes: number;
+  workspaceId: string | null;
+  published: boolean;
+};
+
+type PromptAttemptItem = {
+  id: string;
+  promptText: string;
+  charCount: number;
+  tokenEstimate: number;
+  score: number | null;
+  rubricScores: string | null;
+  feedback: string | null;
+  graderType: string | null;
+  sessionId: string | null;
+  userId: string | null;
+  durationSec: number | null;
+  createdAt: string;
+  scenarioTitle: string;
+  scenarioCategory: string;
+  scenarioDifficulty: string;
+};
+
 type Props = {
   workspace: {
+    id: string;
     name: string;
     slug: string;
     planName: string;
@@ -108,6 +145,8 @@ type Props = {
   members: Member[];
   sessions: InterviewSessionItem[];
   candidates: CandidateItem[];
+  promptScenarios?: PromptScenario[];
+  promptAttempts?: PromptAttemptItem[];
 };
 
 type TabId =
@@ -134,8 +173,25 @@ export default function WorkspaceDashboardClient({
   members,
   sessions,
   candidates,
+  promptScenarios = [],
+  promptAttempts = [],
 }: Props) {
   const router = useRouter();
+  const [interviewSubTab, setInterviewSubTab] = useState<"sessions" | "attempts" | "scenarios">("sessions");
+  const [currentPromptScenarios, setCurrentPromptScenarios] = useState<PromptScenario[]>(promptScenarios);
+  const [currentPromptAttempts, setCurrentPromptAttempts] = useState<PromptAttemptItem[]>(promptAttempts);
+  const [createPromptOpen, setCreatePromptOpen] = useState(false);
+  const [scenarioTitle, setScenarioTitle] = useState("");
+  const [scenarioDesc, setScenarioDesc] = useState("");
+  const [scenarioObjective, setScenarioObjective] = useState("");
+  const [scenarioCategory, setScenarioCategory] = useState("code-generation");
+  const [scenarioDifficulty, setScenarioDifficulty] = useState("intermediate");
+  const [scenarioEstMin, setScenarioEstMin] = useState("10");
+  const [scenarioKeywords, setScenarioKeywords] = useState("");
+  const [scenarioFormat, setScenarioFormat] = useState("");
+  const [scenarioConstraints, setScenarioConstraints] = useState("");
+  const [creatingScenario, setCreatingScenario] = useState(false);
+  const [selectedAttempt, setSelectedAttempt] = useState<any | null>(null);
   const [addCandidateOpen, setAddCandidateOpen] = useState(false);
   const [bulkAddOpen, setBulkAddOpen] = useState(false);
   const [candidateSort, setCandidateSort] = useState<"recent" | "name" | "status" | "take-homes" | "interviews">("recent");
@@ -496,12 +552,86 @@ export default function WorkspaceDashboardClient({
       
       // Reset form
       setTeammateEmail("");
+    } finally {
+      setInviting(false);
+    }
+  }
+
+  async function handleCreateScenario(e: React.FormEvent) {
+    e.preventDefault();
+    if (!scenarioTitle.trim() || !scenarioDesc.trim() || !scenarioObjective.trim()) {
+      toast.error("Please fill in the title, description, and objective.");
+      return;
+    }
+
+    setCreatingScenario(true);
+    try {
+      const keywords = scenarioKeywords.split(",").map(k => k.trim()).filter(Boolean);
+      const constraints = scenarioConstraints.split("\n").map(c => c.trim()).filter(Boolean);
+      const expectedTraits = {
+        keywords,
+        format: scenarioFormat.trim(),
+        constraints
+      };
+
+      const res = await fetch(`/api/prompt-challenges`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          title: scenarioTitle,
+          description: scenarioDesc,
+          objective: scenarioObjective,
+          expectedTraits,
+          difficulty: scenarioDifficulty,
+          category: scenarioCategory,
+          estimatedMinutes: parseInt(scenarioEstMin, 10) || 10,
+          workspaceId: workspace.id,
+        }),
+      });
+
+      const data = await res.json().catch(() => null);
+      if (!res.ok) throw new Error(data?.error ?? `HTTP ${res.status}`);
+
+      toast.success("Prompt scenario created successfully!");
+      
+      if (data.scenario) {
+        setCurrentPromptScenarios([data.scenario, ...currentPromptScenarios]);
+      }
+
+      // Reset form & close
+      setScenarioTitle("");
+      setScenarioDesc("");
+      setScenarioObjective("");
+      setScenarioKeywords("");
+      setScenarioFormat("");
+      setScenarioConstraints("");
+      setScenarioEstMin("10");
+      setCreatePromptOpen(false);
     } catch (err) {
-      toast.error("Failed to enroll teammate", {
+      toast.error("Failed to create prompt scenario", {
         description: err instanceof Error ? err.message : String(err),
       });
     } finally {
-      setInviting(false);
+      setCreatingScenario(false);
+    }
+  }
+
+  async function handleDeleteScenario(id: string) {
+    if (!confirm("Are you sure you want to delete this custom scenario?")) return;
+    try {
+      const res = await fetch(`/api/prompt-challenges/${id}`, {
+        method: "DELETE",
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => null);
+        throw new Error(data?.error ?? `HTTP ${res.status}`);
+      }
+      toast.success("Scenario deleted successfully!");
+      setCurrentPromptScenarios(currentPromptScenarios.filter(s => s.id !== id));
+    } catch (err) {
+      toast.error("Failed to delete scenario", {
+        description: err instanceof Error ? err.message : String(err),
+      });
     }
   }
 
@@ -843,107 +973,168 @@ export default function WorkspaceDashboardClient({
           {/* INTERVIEWS */}
           {activeTab === "interviews" && (
             <div className="space-y-4">
-              <div className="flex justify-between items-center gap-4">
-                <div>
-                  <h3 className="text-lg font-semibold text-fg tracking-tight">Live interviews</h3>
-                  <p className="text-xs text-muted mt-0.5">Real-time pair-programming sessions scheduled by your team.</p>
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-border pb-3 gap-4">
+                <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-none">
+                  {[
+                    { id: "sessions", label: "Live Sessions" },
+                    { id: "attempts", label: "Candidate Attempts" },
+                    { id: "scenarios", label: "Scenario Library" },
+                  ].map((subTab) => (
+                    <button
+                      key={subTab.id}
+                      type="button"
+                      onClick={() => setInterviewSubTab(subTab.id as any)}
+                      className={`px-4 py-2 text-xs font-semibold uppercase tracking-wider transition-colors border-b-2 leading-none shrink-0 ${
+                        interviewSubTab === subTab.id
+                          ? "border-accent text-accent font-extrabold"
+                          : "border-transparent text-muted hover:text-fg"
+                      }`}
+                    >
+                      {subTab.label}
+                    </button>
+                  ))}
                 </div>
-                <Link
-                  href="/interview/new"
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-accent hover:bg-accent-soft text-bg text-[11px] font-semibold uppercase tracking-wider transition-colors"
-                >
-                  <Plus className="w-3.5 h-3.5" />
-                  <span>New interview</span>
-                </Link>
+
+                {interviewSubTab === "sessions" && (
+                  <Link
+                    href="/interview/new"
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-accent hover:bg-accent-soft text-bg text-[11px] font-semibold uppercase tracking-wider transition-colors shrink-0"
+                  >
+                    <Plus className="w-3.5 h-3.5" />
+                    <span>New interview</span>
+                  </Link>
+                )}
+
+                {interviewSubTab === "scenarios" && (
+                  <button
+                    onClick={() => setCreatePromptOpen(true)}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-accent hover:bg-accent-soft text-bg text-[11px] font-semibold uppercase tracking-wider transition-colors shrink-0 animate-fade-in"
+                  >
+                    <Plus className="w-3.5 h-3.5" />
+                    <span>Create Custom Scenario</span>
+                  </button>
+                )}
               </div>
 
-              {sessions.length === 0 ? (
-                <div className="rounded-xl border border-border bg-surface p-12 text-center">
-                  <div className="w-12 h-12 rounded-xl bg-violet-500/10 border border-violet-500/20 flex items-center justify-center text-violet-500 mx-auto mb-3">
-                    <Briefcase className="w-5 h-5" />
+              {/* SUB TAB 1: SESSIONS */}
+              {interviewSubTab === "sessions" && (
+                <>
+                  <div className="flex justify-between items-center gap-4">
+                    <div>
+                      <h3 className="text-lg font-semibold text-fg tracking-tight">Live interviews</h3>
+                      <p className="text-xs text-muted mt-0.5">Real-time pair-programming sessions scheduled by your team.</p>
+                    </div>
                   </div>
-                  <p className="text-sm font-semibold text-fg">No interviews yet</p>
-                  <p className="text-xs text-muted mt-1 max-w-sm mx-auto">
-                    Schedule a live pair-programming round with a candidate.
-                  </p>
-                </div>
-              ) : (
-                <div className="rounded-xl border border-border bg-surface overflow-hidden">
-                  <table className="w-full text-left text-sm">
-                    <thead>
-                      <tr className="bg-elevated/60 border-b border-border text-muted uppercase text-[10px] tracking-[0.14em]">
-                        <th className="px-4 py-3 font-semibold">Session</th>
-                        <th className="px-4 py-3 font-semibold">Candidate</th>
-                        <th className="px-4 py-3 font-semibold">Interviewer</th>
-                        <th className="px-4 py-3 font-semibold">Status</th>
-                        <th className="px-4 py-3 font-semibold">Code</th>
-                        <th className="px-4 py-3 font-semibold text-right">Actions</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-border">
-                      {sessions.map((s) => {
-                        const isDone = !!s.finishedAt || s.status === "completed" || s.status === "finished";
-                        const isLive = !!s.startedAt && !isDone;
-                        const statusColor = isDone
-                          ? "text-emerald-600 dark:text-emerald-400 border-emerald-500/25 bg-emerald-500/[0.06]"
-                          : isLive
-                          ? "text-indigo-600 dark:text-indigo-400 border-indigo-500/25 bg-indigo-500/[0.08]"
-                          : "text-amber-600 dark:text-amber-400 border-amber-500/25 bg-amber-500/[0.06]";
-                        const statusLabel = isDone ? "Completed" : isLive ? "Live" : "Scheduled";
 
-                        return (
-                          <tr key={s.id} className="hover:bg-panel/30 transition-colors">
-                            <td className="px-4 py-3 align-middle">
-                              <div className="font-semibold text-fg text-sm truncate">{s.title}</div>
-                              <div className="text-[11px] text-muted mt-0.5 font-mono">
-                                {Math.round(s.totalSec / 60)} min · {s.type}
-                              </div>
-                            </td>
-                            <td className="px-4 py-3 align-middle text-xs text-fg">
-                              {s.candidateName || <span className="text-muted/60 italic">—</span>}
-                            </td>
-                            <td className="px-4 py-3 align-middle">
-                              <div className="text-xs text-fg">{s.interviewerName || "Unknown"}</div>
-                              <div className="text-[11px] text-muted font-mono mt-0.5">{s.interviewerEmail}</div>
-                            </td>
-                            <td className="px-4 py-3 align-middle">
-                              <span className={`inline-flex items-center px-2 py-0.5 rounded-md border text-[10px] font-semibold uppercase tracking-wider ${statusColor}`}>
-                                {statusLabel}
-                              </span>
-                              {s.verdict && (
-                                <div className="text-[10px] text-muted mt-1 capitalize">{s.verdict.replace(/_/g, " ")}</div>
-                              )}
-                            </td>
-                            <td className="px-4 py-3 align-middle font-mono text-[11px] text-fg">
-                              {s.shortCode || <span className="text-muted/60">—</span>}
-                            </td>
-                            <td className="px-4 py-3 align-middle text-right">
-                              <div className="inline-flex items-center gap-1.5">
-                                {isDone ? (
-                                  <Link
-                                    href={`/interview/${s.shareToken}`}
-                                    className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-accent/10 border border-accent/25 text-[11px] font-semibold text-accent hover:bg-accent/15 transition-colors"
-                                  >
-                                    <Eye className="w-3 h-3" />
-                                    Review
-                                  </Link>
-                                ) : (
-                                  <Link
-                                    href={`/interview/${s.shareToken}`}
-                                    className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-panel/40 border border-border hover:border-accent/40 text-[11px] font-semibold text-muted hover:text-fg transition-colors"
-                                  >
-                                    <Play className="w-3 h-3" />
-                                    Open
-                                  </Link>
-                                )}
-                              </div>
-                            </td>
+                  {sessions.length === 0 ? (
+                    <div className="rounded-xl border border-border bg-surface p-12 text-center">
+                      <div className="w-12 h-12 rounded-xl bg-violet-500/10 border border-violet-500/20 flex items-center justify-center text-violet-500 mx-auto mb-3">
+                        <Briefcase className="w-5 h-5" />
+                      </div>
+                      <p className="text-sm font-semibold text-fg">No interviews yet</p>
+                      <p className="text-xs text-muted mt-1 max-w-sm mx-auto">
+                        Schedule a live pair-programming round with a candidate.
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="rounded-xl border border-border bg-surface overflow-hidden">
+                      <table className="w-full text-left text-sm">
+                        <thead>
+                          <tr className="bg-elevated/60 border-b border-border text-muted uppercase text-[10px] tracking-[0.14em]">
+                            <th className="px-4 py-3 font-semibold">Session</th>
+                            <th className="px-4 py-3 font-semibold">Candidate</th>
+                            <th className="px-4 py-3 font-semibold">Interviewer</th>
+                            <th className="px-4 py-3 font-semibold">Status</th>
+                            <th className="px-4 py-3 font-semibold">Code</th>
+                            <th className="px-4 py-3 font-semibold text-right">Actions</th>
                           </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
-                </div>
+                        </thead>
+                        <tbody className="divide-y divide-border">
+                          {sessions.map((s) => {
+                            const isDone = !!s.finishedAt || s.status === "completed" || s.status === "finished";
+                            const isLive = !!s.startedAt && !isDone;
+                            const statusColor = isDone
+                              ? "text-emerald-600 dark:text-emerald-400 border-emerald-500/25 bg-emerald-500/[0.06]"
+                              : isLive
+                              ? "text-indigo-600 dark:text-indigo-400 border-indigo-500/25 bg-indigo-500/[0.08]"
+                              : "text-amber-600 dark:text-amber-400 border-amber-500/25 bg-amber-500/[0.06]";
+                            const statusLabel = isDone ? "Completed" : isLive ? "Live" : "Scheduled";
+
+                            return (
+                              <tr key={s.id} className="hover:bg-panel/30 transition-colors">
+                                <td className="px-4 py-3 align-middle">
+                                  <div className="font-semibold text-fg text-sm truncate">{s.title}</div>
+                                  <div className="text-[11px] text-muted mt-0.5 font-mono">
+                                    {Math.round(s.totalSec / 60)} min · {s.type}
+                                  </div>
+                                </td>
+                                <td className="px-4 py-3 align-middle text-xs text-fg">
+                                  {s.candidateName || <span className="text-muted/60 italic">—</span>}
+                                </td>
+                                <td className="px-4 py-3 align-middle">
+                                  <div className="text-xs text-fg">{s.interviewerName || "Unknown"}</div>
+                                  <div className="text-[11px] text-muted font-mono mt-0.5">{s.interviewerEmail}</div>
+                                </td>
+                                <td className="px-4 py-3 align-middle">
+                                  <span className={`inline-flex items-center px-2 py-0.5 rounded-md border text-[10px] font-semibold uppercase tracking-wider ${statusColor}`}>
+                                    {statusLabel}
+                                  </span>
+                                  {s.verdict && (
+                                    <div className="text-[10px] text-muted mt-1 capitalize">{s.verdict.replace(/_/g, " ")}</div>
+                                  )}
+                                </td>
+                                <td className="px-4 py-3 align-middle font-mono text-[11px] text-fg">
+                                  {s.shortCode || <span className="text-muted/60">—</span>}
+                                </td>
+                                <td className="px-4 py-3 align-middle text-right">
+                                  <div className="inline-flex items-center gap-1.5">
+                                    {isDone ? (
+                                      <Link
+                                        href={`/interview/${s.shareToken}`}
+                                        className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-accent/10 border border-accent/25 text-[11px] font-semibold text-accent hover:bg-accent/15 transition-colors"
+                                      >
+                                        <Eye className="w-3 h-3" />
+                                        Review
+                                      </Link>
+                                    ) : (
+                                      <Link
+                                        href={`/interview/${s.shareToken}`}
+                                        className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-panel/40 border border-border hover:border-accent/40 text-[11px] font-semibold text-muted hover:text-fg transition-colors"
+                                      >
+                                        <Play className="w-3 h-3" />
+                                        Open
+                                      </Link>
+                                    )}
+                                  </div>
+                                </td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                </>
+              )}
+
+              {/* SUB TAB 2: CANDIDATE ATTEMPTS */}
+              {interviewSubTab === "attempts" && (
+                <PromptAttemptsSection
+                  promptAttempts={currentPromptAttempts}
+                  onSelectAttempt={setSelectedAttempt}
+                  sessions={sessions}
+                />
+              )}
+
+              {/* SUB TAB 3: SCENARIO LIBRARY */}
+              {interviewSubTab === "scenarios" && (
+                <ScenarioLibrarySection
+                  promptScenarios={currentPromptScenarios}
+                  workspaceId={workspace.id}
+                  slug={workspace.slug}
+                  onOpenCreateModal={() => setCreatePromptOpen(true)}
+                  onDeleteScenario={handleDeleteScenario}
+                />
               )}
             </div>
           )}
@@ -1912,6 +2103,612 @@ export default function WorkspaceDashboardClient({
         onClose={() => setBulkAddOpen(false)}
         workspaceSlug={workspace.slug}
       />
+
+      {/* Custom Prompt Scenario Creation Modal */}
+      {createPromptOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-bg/85 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="w-full max-w-2xl bg-surface border border-border rounded-xl shadow-2xl overflow-hidden max-h-[90vh] flex flex-col animate-in slide-in-from-bottom duration-300">
+            {/* Header */}
+            <div className="px-6 py-4 border-b border-border flex items-center justify-between bg-panel/30">
+              <div className="flex items-center gap-2">
+                <Brain className="w-5 h-5 text-indigo-500 animate-pulse" />
+                <h2 className="text-base font-semibold text-fg">Create Custom Prompt Scenario</h2>
+              </div>
+              <button
+                onClick={() => setCreatePromptOpen(false)}
+                className="p-1 rounded-md hover:bg-panel text-muted hover:text-fg transition-colors"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Form */}
+            <form onSubmit={handleCreateScenario} className="flex-1 overflow-y-auto p-6 space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-1">
+                  <label className="text-[10px] font-semibold uppercase tracking-wider text-muted">Scenario Title</label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="e.g., Write a Rest API Spec Generator prompt"
+                    value={scenarioTitle}
+                    onChange={(e) => setScenarioTitle(e.target.value)}
+                    className="w-full px-3 py-2 rounded-md border border-border bg-bg text-fg text-xs focus:outline-none focus:border-accent/40"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-[10px] font-semibold uppercase tracking-wider text-muted">Estimated Duration (Minutes)</label>
+                  <input
+                    type="number"
+                    min="1"
+                    max="120"
+                    required
+                    value={scenarioEstMin}
+                    onChange={(e) => setScenarioEstMin(e.target.value)}
+                    className="w-full px-3 py-2 rounded-md border border-border bg-bg text-fg text-xs focus:outline-none focus:border-accent/40"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-1">
+                  <label className="text-[10px] font-semibold uppercase tracking-wider text-muted">Category</label>
+                  <select
+                    value={scenarioCategory}
+                    onChange={(e) => setScenarioCategory(e.target.value)}
+                    className="w-full px-3 py-2 rounded-md border border-border bg-bg text-fg text-xs focus:outline-none focus:border-accent/40"
+                  >
+                    <option value="code-generation">Code Generation</option>
+                    <option value="debugging">Debugging</option>
+                    <option value="api-design">API Design</option>
+                    <option value="data-analysis">Data Analysis</option>
+                    <option value="system-design">System Design</option>
+                    <option value="creative">Creative / Docs</option>
+                  </select>
+                </div>
+                <div className="space-y-1">
+                  <label className="text-[10px] font-semibold uppercase tracking-wider text-muted">Difficulty</label>
+                  <select
+                    value={scenarioDifficulty}
+                    onChange={(e) => setScenarioDifficulty(e.target.value)}
+                    className="w-full px-3 py-2 rounded-md border border-border bg-bg text-fg text-xs focus:outline-none focus:border-accent/40"
+                  >
+                    <option value="beginner">Beginner</option>
+                    <option value="intermediate">Intermediate</option>
+                    <option value="advanced">Advanced</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-[10px] font-semibold uppercase tracking-wider text-muted">Scenario Description (Markdown support)</label>
+                <p className="text-[10px] text-muted -mt-0.5">Describe the context, the system setting, or the background information.</p>
+                <textarea
+                  required
+                  placeholder="Provide background context here..."
+                  value={scenarioDesc}
+                  onChange={(e) => setScenarioDesc(e.target.value)}
+                  className="w-full h-24 p-3 rounded-md border border-border bg-bg text-fg text-xs focus:outline-none focus:border-accent/40 resize-y"
+                />
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-[10px] font-semibold uppercase tracking-wider text-muted">Objective / Task Goal</label>
+                <p className="text-[10px] text-muted -mt-0.5">Explain exactly what the user's prompt needs to achieve.</p>
+                <textarea
+                  required
+                  placeholder="State the objective clearly..."
+                  value={scenarioObjective}
+                  onChange={(e) => setScenarioObjective(e.target.value)}
+                  className="w-full h-20 p-3 rounded-md border border-border bg-bg text-fg text-xs focus:outline-none focus:border-accent/40 resize-y"
+                />
+              </div>
+
+              <div className="border-t border-border/60 pt-4 space-y-3">
+                <h4 className="text-xs font-semibold text-fg flex items-center gap-1.5 text-indigo-400">
+                  <Sparkles className="w-3.5 h-3.5" /> Grading Helper Traits (Keywords & Constraints)
+                </h4>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-semibold uppercase tracking-wider text-muted">Expected Keywords (Comma-separated)</label>
+                    <input
+                      type="text"
+                      placeholder="e.g., sort, filter, pagination, typescript"
+                      value={scenarioKeywords}
+                      onChange={(e) => setScenarioKeywords(e.target.value)}
+                      className="w-full px-3 py-2 rounded-md border border-border bg-bg text-fg text-xs focus:outline-none focus:border-accent/40"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-semibold uppercase tracking-wider text-muted">Output Format Expectation</label>
+                    <input
+                      type="text"
+                      placeholder="e.g., JSON, markdown codeblock, yaml"
+                      value={scenarioFormat}
+                      onChange={(e) => setScenarioFormat(e.target.value)}
+                      className="w-full px-3 py-2 rounded-md border border-border bg-bg text-fg text-xs focus:outline-none focus:border-accent/40"
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-[10px] font-semibold uppercase tracking-wider text-muted">Negative Constraints (One per line)</label>
+                  <p className="text-[10px] text-muted -mt-0.5">Things the prompt must avoid or instruct the AI not to do.</p>
+                  <textarea
+                    placeholder="e.g., No external styling libraries&#10;Do not use inline styles"
+                    value={scenarioConstraints}
+                    onChange={(e) => setScenarioConstraints(e.target.value)}
+                    className="w-full h-16 p-3 rounded-md border border-border bg-bg text-fg text-xs focus:outline-none focus:border-accent/40 resize-y"
+                  />
+                </div>
+              </div>
+
+              {/* Actions */}
+              <div className="flex justify-end gap-2 border-t border-border pt-4">
+                <button
+                  type="button"
+                  onClick={() => setCreatePromptOpen(false)}
+                  className="px-4 py-2 rounded-md border border-border text-xs font-medium text-muted hover:text-fg hover:bg-panel transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={creatingScenario}
+                  className="px-4 py-2 rounded-md bg-accent hover:bg-accent-soft text-bg text-xs font-semibold tracking-wider transition-colors disabled:opacity-50"
+                >
+                  {creatingScenario ? "Creating..." : "Create Scenario"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Candidate Attempt Feedback Review Modal */}
+      {selectedAttempt && (() => {
+        const rubric = selectedAttempt.rubricScores
+          ? (typeof selectedAttempt.rubricScores === "string"
+              ? JSON.parse(selectedAttempt.rubricScores)
+              : selectedAttempt.rubricScores)
+          : { clarity: 0, specificity: 0, efficiency: 0, context: 0, constraints: 0, edgeCases: 0 };
+        
+        const candidateName = getCandidateNameFromSession(selectedAttempt, sessions);
+        
+        return (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-bg/85 backdrop-blur-sm animate-in fade-in duration-200">
+            <div className="w-full max-w-3xl bg-surface border border-border rounded-xl shadow-2xl overflow-hidden max-h-[90vh] flex flex-col animate-in slide-in-from-bottom duration-300">
+              {/* Header */}
+              <div className="px-6 py-4 border-b border-border flex items-center justify-between bg-panel/30">
+                <div className="flex items-center gap-2.5">
+                  <Brain className="w-5 h-5 text-indigo-500 animate-pulse" />
+                  <div>
+                    <h2 className="text-base font-semibold text-fg">Prompt Evaluation Review</h2>
+                    <p className="text-[10px] text-muted mt-0.5">
+                      Candidate: <span className="text-fg font-medium">{candidateName}</span> &bull; Scenario: <span className="text-fg font-medium">{selectedAttempt.scenarioTitle}</span>
+                    </p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setSelectedAttempt(null)}
+                  className="p-1 rounded-md hover:bg-panel text-muted hover:text-fg transition-colors"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+
+              {/* Body */}
+              <div className="flex-1 overflow-y-auto p-6 space-y-6">
+                {/* Score Summary Panel */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  {/* Left: Overall score circle */}
+                  <div className="bg-panel/20 border border-border/60 rounded-xl p-4 flex flex-col items-center justify-center text-center relative overflow-hidden">
+                    <div className="absolute top-2 right-2 flex items-center gap-1 text-[9px] font-semibold uppercase tracking-wider text-indigo-400 bg-indigo-500/10 px-1.5 py-0.5 rounded">
+                      <Sparkles className="w-2.5 h-2.5" /> {selectedAttempt.graderType === "ai" ? "Gemini AI" : "Rules Grader"}
+                    </div>
+                    
+                    <span className="text-[10px] font-bold text-muted uppercase tracking-wider">Overall Score</span>
+                    <div className="relative flex items-center justify-center my-2">
+                      <div className="text-4xl font-extrabold text-indigo-500">{selectedAttempt.score ?? 0}</div>
+                      <div className="text-xs text-muted/60 self-end mb-1">/100</div>
+                    </div>
+                    <span className="text-[10px] text-muted mt-1">
+                      {selectedAttempt.durationSec ? `${Math.round(selectedAttempt.durationSec / 60)}m taken` : "Untimed"} &bull; {selectedAttempt.tokenEstimate} tokens
+                    </span>
+                  </div>
+
+                  {/* Right: Dimension rubric breakdowns */}
+                  <div className="md:col-span-2 bg-panel/10 border border-border/40 rounded-xl p-4 space-y-3">
+                    <h3 className="text-xs font-semibold text-fg tracking-wide">6-Dimension Rubric Evaluation</h3>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-2">
+                      {Object.entries({
+                        Clarity: rubric.clarity,
+                        Specificity: rubric.specificity,
+                        Efficiency: rubric.efficiency,
+                        Context: rubric.context,
+                        Constraints: rubric.constraints,
+                        "Edge Cases": rubric.edgeCases
+                      }).map(([key, val]) => {
+                        const score = Number(val || 0);
+                        let barColor = "bg-rose-500";
+                        if (score >= 75) barColor = "bg-emerald-500";
+                        else if (score >= 50) barColor = "bg-amber-500";
+                        
+                        return (
+                          <div key={key} className="space-y-1">
+                            <div className="flex justify-between text-[10px]">
+                              <span className="text-muted font-medium">{key}</span>
+                              <span className="text-fg font-semibold">{score}%</span>
+                            </div>
+                            <div className="h-1.5 w-full bg-border rounded-full overflow-hidden">
+                              <div className={`h-full ${barColor} transition-all duration-500`} style={{ width: `${score}%` }} />
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </div>
+
+                {/* AI Feedback */}
+                {selectedAttempt.feedback && (
+                  <div className="bg-indigo-500/[0.03] border border-indigo-500/20 rounded-xl p-4 space-y-2">
+                    <h3 className="text-xs font-semibold text-indigo-400 flex items-center gap-1.5">
+                      <Sparkles className="w-3.5 h-3.5" /> Evaluator Feedback Insights
+                    </h3>
+                    <p className="text-xs text-muted leading-relaxed whitespace-pre-wrap font-sans">
+                      {selectedAttempt.feedback}
+                    </p>
+                  </div>
+                )}
+
+                {/* Submitted Prompt */}
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-xs font-semibold text-fg">Candidate's Prompt</h3>
+                    <button
+                      onClick={() => {
+                        navigator.clipboard.writeText(selectedAttempt.promptText);
+                        toast.success("Prompt copied to clipboard!");
+                      }}
+                      className="inline-flex items-center gap-1 text-[10px] text-muted hover:text-fg hover:bg-panel px-2 py-1 rounded border border-border/40 transition-colors"
+                    >
+                      <Copy className="w-3 h-3" /> Copy Prompt
+                    </button>
+                  </div>
+                  <pre className="font-mono text-xs text-fg leading-relaxed bg-bg border border-border rounded-lg p-4 max-h-[220px] overflow-y-auto whitespace-pre-wrap select-text selection:bg-indigo-500/25">
+                    {selectedAttempt.promptText}
+                  </pre>
+                </div>
+              </div>
+
+              {/* Actions */}
+              <div className="flex justify-end bg-panel/30 border-t border-border px-6 py-4">
+                <button
+                  onClick={() => setSelectedAttempt(null)}
+                  className="px-4 py-2 bg-accent hover:bg-accent-soft text-bg rounded-md text-xs font-semibold tracking-wider transition-colors"
+                >
+                  Close Review
+                </button>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
     </div>
   );
 }
+
+function getCandidateNameFromSession(attempt: PromptAttemptItem, sessions: any[]) {
+  if (attempt.sessionId) {
+    const session = sessions.find((s) => s.id === attempt.sessionId);
+    if (session?.candidateName) return session.candidateName;
+  }
+  return "Practice User / Developer";
+}
+
+interface PromptAttemptsSectionProps {
+  promptAttempts: PromptAttemptItem[];
+  onSelectAttempt: (attempt: PromptAttemptItem) => void;
+  sessions: any[];
+}
+
+export function PromptAttemptsSection({
+  promptAttempts,
+  onSelectAttempt,
+  sessions,
+}: PromptAttemptsSectionProps) {
+  const [searchTerm, setSearchTerm] = useState("");
+  
+  const filteredAttempts = useMemo(() => {
+    return promptAttempts.filter((a) => {
+      const name = getCandidateNameFromSession(a, sessions).toLowerCase();
+      const title = a.scenarioTitle.toLowerCase();
+      const term = searchTerm.toLowerCase();
+      return name.includes(term) || title.includes(term);
+    });
+  }, [promptAttempts, searchTerm, sessions]);
+
+  return (
+    <div className="space-y-4 animate-in fade-in duration-300">
+      {/* Filters and search */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+        <div>
+          <h3 className="text-sm font-semibold text-fg">Prompt Evaluation Roster</h3>
+          <p className="text-xs text-muted mt-0.5">Review submissions from candidates and developers.</p>
+        </div>
+        <div className="w-full sm:w-64 relative">
+          <input
+            type="text"
+            placeholder="Search candidate or scenario..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full pl-8 pr-3 py-1.5 rounded-md border border-border bg-bg text-fg text-xs focus:outline-none focus:border-accent/40"
+          />
+          <Search className="w-3.5 h-3.5 text-muted/60 absolute left-2.5 top-1/2 -translate-y-1/2" />
+        </div>
+      </div>
+
+      {filteredAttempts.length === 0 ? (
+        <div className="rounded-xl border border-border bg-surface p-12 text-center space-y-3">
+          <div className="inline-flex p-3 rounded-full bg-panel text-muted/40">
+            <Brain className="w-6 h-6" />
+          </div>
+          <div>
+            <h4 className="text-xs font-semibold text-fg">No attempts found</h4>
+            <p className="text-[11px] text-muted mt-1 max-w-[280px] mx-auto leading-relaxed">
+              When candidates complete prompt engineering rounds, their detailed scores and feedback will appear here.
+            </p>
+          </div>
+        </div>
+      ) : (
+        <div className="rounded-xl border border-border bg-surface overflow-hidden shadow-sm">
+          <div className="overflow-x-auto">
+            <table className="w-full border-collapse text-left">
+              <thead>
+                <tr className="border-b border-border bg-panel/30 text-[10px] font-semibold uppercase tracking-wider text-muted select-none">
+                  <th className="px-4 py-3 align-middle font-semibold">Candidate</th>
+                  <th className="px-4 py-3 align-middle font-semibold">Scenario</th>
+                  <th className="px-4 py-3 align-middle font-semibold">Score</th>
+                  <th className="px-4 py-3 align-middle font-semibold">Tokens</th>
+                  <th className="px-4 py-3 align-middle font-semibold">Grader</th>
+                  <th className="px-4 py-3 align-middle font-semibold">Submitted At</th>
+                  <th className="px-4 py-3 align-middle text-right font-semibold">Action</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-border/60">
+                {filteredAttempts.map((a) => {
+                  const name = getCandidateNameFromSession(a, sessions);
+                  const isSession = !!a.sessionId;
+                  
+                  // Score styling
+                  const score = a.score ?? 0;
+                  let scoreColor = "text-rose-500 bg-rose-500/10 border-rose-500/20";
+                  if (score >= 75) scoreColor = "text-emerald-500 bg-emerald-500/10 border-emerald-500/20";
+                  else if (score >= 50) scoreColor = "text-amber-500 bg-amber-500/10 border-amber-500/20";
+
+                  return (
+                    <tr key={a.id} className="hover:bg-panel/10 text-xs transition-colors group">
+                      <td className="px-4 py-3.5 align-middle">
+                        <div className="flex flex-col">
+                          <span className="font-semibold text-fg group-hover:text-indigo-400 transition-colors">{name}</span>
+                          <span className="text-[10px] text-muted mt-0.5 font-mono">
+                            {isSession ? "Interview Session" : "Practice Mode"}
+                          </span>
+                        </div>
+                      </td>
+                      <td className="px-4 py-3.5 align-middle">
+                        <div className="flex flex-col">
+                          <span className="font-medium text-fg">{a.scenarioTitle}</span>
+                          <span className="text-[10px] text-muted mt-0.5 capitalize">
+                            {a.scenarioCategory.replace("-", " ")} &bull; {a.scenarioDifficulty}
+                          </span>
+                        </div>
+                      </td>
+                      <td className="px-4 py-3.5 align-middle">
+                        <span className={`inline-flex items-center px-2 py-0.5 rounded-full border text-[11px] font-bold ${scoreColor}`}>
+                          {a.score !== null ? `${a.score}%` : "Ungraded"}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3.5 align-middle font-mono text-[11px] text-muted">
+                        {a.tokenEstimate}
+                      </td>
+                      <td className="px-4 py-3.5 align-middle">
+                        {a.graderType === "ai" ? (
+                          <span className="inline-flex items-center gap-1 text-[10px] font-medium text-indigo-400">
+                            <Sparkles className="w-2.5 h-2.5" /> Gemini AI
+                          </span>
+                        ) : (
+                          <span className="text-[10px] text-muted">Rules Engine</span>
+                        )}
+                      </td>
+                      <td className="px-4 py-3.5 align-middle text-muted">
+                        {new Date(a.createdAt).toLocaleDateString(undefined, {
+                          month: "short",
+                          day: "numeric",
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        })}
+                      </td>
+                      <td className="px-4 py-3.5 align-middle text-right">
+                        <button
+                          onClick={() => onSelectAttempt(a)}
+                          className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-accent/10 border border-accent/25 text-[11px] font-semibold text-accent hover:bg-accent/15 transition-colors"
+                        >
+                          <Eye className="w-3 h-3" />
+                          Review
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+interface ScenarioLibrarySectionProps {
+  promptScenarios: PromptScenario[];
+  workspaceId: string;
+  slug: string;
+  onOpenCreateModal: () => void;
+  onDeleteScenario?: (id: string) => void;
+}
+
+export function ScenarioLibrarySection({
+  promptScenarios,
+  workspaceId,
+  slug,
+  onOpenCreateModal,
+  onDeleteScenario,
+}: ScenarioLibrarySectionProps) {
+  const [difficultyFilter, setDifficultyFilter] = useState<string>("all");
+  const [categoryFilter, setCategoryFilter] = useState<string>("all");
+
+  const filteredScenarios = useMemo(() => {
+    return promptScenarios.filter((s) => {
+      const matchDiff = difficultyFilter === "all" || s.difficulty === difficultyFilter;
+      const matchCat = categoryFilter === "all" || s.category === categoryFilter;
+      return matchDiff && matchCat;
+    });
+  }, [promptScenarios, difficultyFilter, categoryFilter]);
+
+  return (
+    <div className="space-y-4 animate-in fade-in duration-300">
+      {/* Header and Add Button */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+        <div>
+          <h3 className="text-sm font-semibold text-fg">Prompt Challenges Library</h3>
+          <p className="text-xs text-muted mt-0.5">Manage custom challenges or review platform built-in ones.</p>
+        </div>
+        <button
+          onClick={onOpenCreateModal}
+          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-indigo-600 hover:bg-indigo-500 text-white text-[11px] font-semibold uppercase tracking-wider transition-colors"
+        >
+          <Plus className="w-3.5 h-3.5" />
+          Create Custom Scenario
+        </button>
+      </div>
+
+      {/* Filters */}
+      <div className="flex flex-wrap gap-2 items-center bg-panel/10 p-2 border border-border/40 rounded-lg">
+        <span className="text-[10px] font-bold text-muted uppercase tracking-wider px-2">Filters:</span>
+        
+        {/* Difficulty */}
+        <select
+          value={difficultyFilter}
+          onChange={(e) => setDifficultyFilter(e.target.value)}
+          className="px-2 py-1 bg-bg border border-border rounded text-xs text-muted focus:outline-none"
+        >
+          <option value="all">All Difficulties</option>
+          <option value="beginner">Beginner</option>
+          <option value="intermediate">Intermediate</option>
+          <option value="advanced">Advanced</option>
+        </select>
+
+        {/* Category */}
+        <select
+          value={categoryFilter}
+          onChange={(e) => setCategoryFilter(e.target.value)}
+          className="px-2 py-1 bg-bg border border-border rounded text-xs text-muted focus:outline-none"
+        >
+          <option value="all">All Categories</option>
+          <option value="code-generation">Code Generation</option>
+          <option value="debugging">Debugging</option>
+          <option value="api-design">API Design</option>
+          <option value="data-analysis">Data Analysis</option>
+          <option value="system-design">System Design</option>
+          <option value="creative">Creative / Docs</option>
+        </select>
+
+        <span className="text-[10px] text-muted/60 ml-auto pr-2 font-mono">
+          Showing {filteredScenarios.length} scenarios
+        </span>
+      </div>
+
+      {filteredScenarios.length === 0 ? (
+        <div className="rounded-xl border border-border bg-surface p-12 text-center space-y-3">
+          <div className="inline-flex p-3 rounded-full bg-panel text-muted/40">
+            <Brain className="w-6 h-6" />
+          </div>
+          <div>
+            <h4 className="text-xs font-semibold text-fg">No scenarios match your filters</h4>
+            <p className="text-[11px] text-muted mt-1">Try adjusting your filters or create a custom one.</p>
+          </div>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {filteredScenarios.map((s) => {
+            const isCustom = s.workspaceId !== null;
+            
+            // Diff badge
+            let diffColor = "text-emerald-500 bg-emerald-500/10 border-emerald-500/20";
+            if (s.difficulty === "intermediate") diffColor = "text-amber-500 bg-amber-500/10 border-amber-500/20";
+            else if (s.difficulty === "advanced") diffColor = "text-rose-500 bg-rose-500/10 border-rose-500/20";
+
+            return (
+              <div
+                key={s.id}
+                className="group relative flex flex-col bg-surface border border-border hover:border-indigo-500/40 rounded-xl p-5 hover:shadow-lg transition-all duration-300 overflow-hidden"
+              >
+                <div className="flex items-start justify-between">
+                  <div className="flex items-center gap-1.5">
+                    <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-bold border uppercase tracking-wider ${diffColor}`}>
+                      {s.difficulty}
+                    </span>
+                    <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-medium bg-panel/60 border border-border text-muted uppercase tracking-wider">
+                      {s.category.replace("-", " ")}
+                    </span>
+                  </div>
+                  
+                  {isCustom ? (
+                    <span className="text-[9px] font-bold text-indigo-400 bg-indigo-500/10 px-1.5 py-0.5 rounded border border-indigo-500/20 uppercase tracking-wider animate-pulse">
+                      Custom
+                    </span>
+                  ) : (
+                    <span className="text-[9px] font-medium text-muted bg-panel px-1.5 py-0.5 rounded border border-border uppercase tracking-wider">
+                      Platform Built-in
+                    </span>
+                  )}
+                </div>
+
+                <h4 className="text-sm font-semibold text-fg group-hover:text-indigo-400 transition-colors mt-3">
+                  {s.title}
+                </h4>
+
+                <p className="text-[11px] text-muted mt-2 line-clamp-2 leading-relaxed">
+                  {s.description}
+                </p>
+
+                <div className="mt-4 pt-4 border-t border-border/40 flex items-center justify-between text-[11px] text-muted">
+                  <div className="flex items-center gap-1 font-medium">
+                    <Clock className="w-3.5 h-3.5 text-muted/60" />
+                    <span>Est. {s.estimatedMinutes} mins</span>
+                  </div>
+
+                  {isCustom && onDeleteScenario && (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onDeleteScenario(s.id);
+                      }}
+                      className="inline-flex items-center gap-1 text-rose-500 hover:text-rose-400 hover:bg-rose-500/10 px-2 py-1 rounded transition-all"
+                    >
+                      <Trash2 className="w-3 h-3" /> Delete
+                    </button>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+

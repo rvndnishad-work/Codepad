@@ -11,9 +11,10 @@ const createSchema = z
     title: z.string().min(1).max(120).optional(),
     candidateName: z.string().max(80).optional().nullable(),
     type: z.enum(["mock", "live"]).optional(),
-    sourceType: z.enum(["challenge", "playground"]).optional().default("challenge"),
+    sourceType: z.enum(["challenge", "playground", "prompt", "combined"]).optional().default("challenge"),
     challengeIds: z.array(z.string().min(1)).max(10).optional(),
     playgroundIds: z.array(z.string().min(1)).max(10).optional(),
+    promptScenarioIds: z.array(z.string().min(1)).max(10).optional(),
     scenario: z.string().max(2000).nullable().optional(),
     totalSec: z.number().int().min(60).max(60 * 60 * 4), // 1 min – 4 hrs
     creatorRole: z.enum(["interviewer", "candidate"]).optional().default("candidate"),
@@ -22,10 +23,14 @@ const createSchema = z
     (d) =>
       d.sourceType === "playground"
         ? (d.playgroundIds?.length ?? 0) >= 1
+        : d.sourceType === "prompt"
+        ? (d.promptScenarioIds?.length ?? 0) >= 1
+        : d.sourceType === "combined"
+        ? (d.challengeIds?.length ?? 0) + (d.playgroundIds?.length ?? 0) + (d.promptScenarioIds?.length ?? 0) >= 1
         : (d.challengeIds?.length ?? 0) >= 1,
     {
       message:
-        "Pick at least one challenge (for challenge rounds) or one playground (for playground rounds)",
+        "Pick at least one challenge, playground, or prompt scenario for your interview rounds",
     }
   );
 
@@ -49,29 +54,27 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
   }
 
-  // Resolve and validate the source material based on sourceType.
+  // Resolve and validate the source material.
   // - challenge: published rows from the global Challenge bank.
   // - playground: Snippets owned by the current user (any visibility).
+  // - prompt: published prompt scenarios.
   let orderedChallengeIds: string[] = [];
   let orderedPlaygroundIds: string[] = [];
+  let orderedPromptScenarioIds: string[] = [];
 
-  if (parsed.data.sourceType === "playground") {
-    const requested = parsed.data.playgroundIds ?? [];
-    
-    // Distinguish templates vs database-backed snippets
-    const templateIds = requested.filter((id) => id.startsWith("template:"));
-    const snippetIds = requested.filter((id) => !id.startsWith("template:"));
+  const requestedPlaygrounds = parsed.data.playgroundIds ?? [];
+  if (requestedPlaygrounds.length > 0) {
+    const templateIds = requestedPlaygrounds.filter((id) => id.startsWith("template:"));
+    const snippetIds = requestedPlaygrounds.filter((id) => !id.startsWith("template:"));
 
-    // Verify owned database-backed snippets
     const owned = await prisma.snippet.findMany({
       where: { id: { in: snippetIds }, userId: session.user.id },
       select: { id: true },
     });
     const validSnippetIds = new Set(owned.map((s) => s.id));
 
-    // Map requested IDs to final validated database snippet IDs, creating snippets for templates
     const finalIds: string[] = [];
-    for (const reqId of requested) {
+    for (const reqId of requestedPlaygrounds) {
       if (reqId.startsWith("template:")) {
         const templateKey = reqId.substring("template:".length);
         const tDef = templatesById[templateKey];
@@ -94,21 +97,40 @@ export async function POST(req: Request) {
         finalIds.push(reqId);
       }
     }
-
     orderedPlaygroundIds = finalIds;
-    if (orderedPlaygroundIds.length === 0) {
-      return NextResponse.json({ error: "no valid playgrounds" }, { status: 400 });
-    }
-  } else {
-    const requested = parsed.data.challengeIds ?? [];
+  }
+
+  const requestedPrompts = parsed.data.promptScenarioIds ?? [];
+  if (requestedPrompts.length > 0) {
+    const scenarios = await prisma.promptScenario.findMany({
+      where: { id: { in: requestedPrompts }, published: true },
+      select: { id: true },
+    });
+    const validIds = new Set(scenarios.map((p) => p.id));
+    orderedPromptScenarioIds = requestedPrompts.filter((id) => validIds.has(id));
+  }
+
+  const requestedChallenges = parsed.data.challengeIds ?? [];
+  if (requestedChallenges.length > 0) {
     const challenges = await prisma.challenge.findMany({
-      where: { id: { in: requested }, published: true },
+      where: { id: { in: requestedChallenges }, published: true },
       select: { id: true },
     });
     const validIds = new Set(challenges.map((c) => c.id));
-    orderedChallengeIds = requested.filter((id) => validIds.has(id));
-    if (orderedChallengeIds.length === 0) {
-      return NextResponse.json({ error: "no valid challenges" }, { status: 400 });
+    orderedChallengeIds = requestedChallenges.filter((id) => validIds.has(id));
+  }
+
+  // Validate that we have at least what sourceType demands
+  if (parsed.data.sourceType === "playground" && orderedPlaygroundIds.length === 0) {
+    return NextResponse.json({ error: "no valid playgrounds" }, { status: 400 });
+  } else if (parsed.data.sourceType === "prompt" && orderedPromptScenarioIds.length === 0) {
+    return NextResponse.json({ error: "no valid prompt scenarios" }, { status: 400 });
+  } else if (parsed.data.sourceType === "challenge" && orderedChallengeIds.length === 0) {
+    return NextResponse.json({ error: "no valid challenges" }, { status: 400 });
+  } else if (parsed.data.sourceType === "combined") {
+    const totalCount = orderedChallengeIds.length + orderedPlaygroundIds.length + orderedPromptScenarioIds.length;
+    if (totalCount === 0) {
+      return NextResponse.json({ error: "no valid rounds selected" }, { status: 400 });
     }
   }
 
@@ -138,6 +160,7 @@ export async function POST(req: Request) {
       sourceType: parsed.data.sourceType,
       challengeIds: JSON.stringify(orderedChallengeIds),
       playgroundIds: JSON.stringify(orderedPlaygroundIds),
+      promptScenarioIds: JSON.stringify(orderedPromptScenarioIds),
       scenario: parsed.data.scenario ?? null,
       totalSec: parsed.data.totalSec,
       shareToken: nanoid(24),

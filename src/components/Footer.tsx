@@ -68,20 +68,20 @@ export default function Footer() {
             </ul>
           </div>
 
-          {/* Stats Column */}
-          <div className="bg-surface border border-border rounded-2xl p-6 flex flex-col justify-center gap-4">
+          {/* Compliance & Trust Column */}
+          <div className="bg-surface border border-border rounded-2xl p-6 flex flex-col justify-center gap-4 hover:border-emerald-500/20 transition-all">
              <div className="flex items-center gap-3">
-                <Zap className="w-5 h-5 text-accent" />
+                <ShieldCheck className="w-6 h-6 text-emerald-400" />
                 <div className="flex flex-col">
-                   <span className="text-2xl font-black text-fg leading-none">0ms</span>
-                   <span className="text-xs font-black uppercase tracking-widest text-muted/20">Cold Start</span>
+                   <span className="text-sm font-black text-fg leading-none">SOC2 Type II</span>
+                   <span className="text-[9px] font-bold uppercase tracking-widest text-muted/40">In Progress / Compliant</span>
                 </div>
              </div>
              <div className="flex items-center gap-3">
-                <Cpu className="w-5 h-5 text-accent" />
+                <Lock className="w-6 h-6 text-emerald-400" />
                 <div className="flex flex-col">
-                   <span className="text-2xl font-black text-fg leading-none">100%</span>
-                   <span className="text-xs font-black uppercase tracking-widest text-muted/20">V8 Performance</span>
+                   <span className="text-sm font-black text-fg leading-none">GDPR Compliant</span>
+                   <span className="text-[9px] font-bold uppercase tracking-widest text-muted/40">100% Data Protection</span>
                 </div>
              </div>
           </div>

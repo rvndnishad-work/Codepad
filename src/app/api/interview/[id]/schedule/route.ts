@@ -60,18 +60,18 @@ export async function POST(
     const icsContent = [
       "BEGIN:VCALENDAR",
       "VERSION:2.0",
-      "PRODID:-//Codepad Recruiter Platform//NONSGML v1.0//EN",
+      "PRODID:-//Interviewpad Recruiter Platform//NONSGML v1.0//EN",
       "CALSCALE:GREGORIAN",
       "METHOD:REQUEST",
       "BEGIN:VEVENT",
-      `UID:${interview.id}@codepad.dev`,
+      `UID:${interview.id}@interviewpad.dev`,
       `DTSTAMP:${formatICSDate(new Date())}`,
       `DTSTART:${formatICSDate(parsedStart)}`,
       `DTEND:${formatICSDate(parsedEnd)}`,
-      `SUMMARY:Coding Interview: ${interview.candidateName || "Candidate"} x Codepad`,
+      `SUMMARY:Coding Interview: ${interview.candidateName || "Candidate"} x Interviewpad`,
       `DESCRIPTION:Join the collaborative developer coding room: ${roomUrl}\\n\\nPrepare your coding sandbox. We support multiple backend runtimes.`,
       `LOCATION:${roomUrl}`,
-      `ORGANIZER;CN=Codepad Interviewer:MAILTO:${interviewerEmail}`,
+      `ORGANIZER;CN=Interviewpad Interviewer:MAILTO:${interviewerEmail}`,
       `ATTENDEE;ROLE=REQ-PARTICIPANT;PARTSTAT=NEEDS-ACTION;RSVP=TRUE;CN=Candidate:MAILTO:${candidateEmail}`,
       "STATUS:CONFIRMED",
       "SEQUENCE:0",
@@ -81,7 +81,7 @@ export async function POST(
 
     // Emulated Google Calendar insertion log payload
     const googleCalendarInsertPayload = {
-      summary: `Coding Interview: ${interview.candidateName || "Candidate"} x Codepad`,
+      summary: `Coding Interview: ${interview.candidateName || "Candidate"} x Interviewpad`,
       location: roomUrl,
       description: `Join the collaborative developer coding room: ${roomUrl}`,
       start: { dateTime: parsedStart.toISOString() },

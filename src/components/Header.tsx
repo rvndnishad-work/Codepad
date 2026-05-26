@@ -1,49 +1,95 @@
 import Link from "next/link";
 import { auth } from "@/lib/auth";
 import { isAdmin } from "@/lib/admin";
+import { prisma } from "@/lib/prisma";
+import { BookOpen, CreditCard } from "lucide-react";
 import HeaderLogo from "./HeaderLogo";
+import NavDropdown from "./NavDropdown";
 
 import ThemeToggle from "./ThemeToggle";
 import UserMenu from "./UserMenu";
 import MobileNav from "./MobileNav";
-import { getNavLinks } from "@/lib/settings";
 
 export default async function Header() {
   const session = await auth().catch(() => null);
   const user = session?.user;
   const userType = (user as { userType?: string | null } | undefined)?.userType ?? null;
   const showAdmin = isAdmin(session);
-  const rawNavLinks = await getNavLinks();
 
-  // Dynamically filter links based on auth state + user type
-  const navLinks = rawNavLinks.filter((link) => {
-    if (!user) {
-      // Unauthenticated visitors see marketing landing pages and blog
-      return !["/playgrounds", "/challenges", "/explore", "/interview"].includes(link.href);
+  // Resolve the recruiter's "best" workspace landing. Signed-in recruiters with
+  // a workspace deep-link straight into it; otherwise we send them to the
+  // creation flow. Unauthenticated visitors get nudged to /pricing where the
+  // marketing copy explains workspaces.
+  let workspaceHref = "/pricing";
+  let aiScreeningHref = "/pricing";
+  if (user?.id) {
+    const firstMembership = await prisma.workspaceMember.findFirst({
+      where: { userId: user.id },
+      orderBy: { workspace: { name: "asc" } },
+      select: { workspace: { select: { slug: true } } },
+    });
+    if (firstMembership?.workspace.slug) {
+      workspaceHref = `/w/${firstMembership.workspace.slug}`;
+      aiScreeningHref = `/w/${firstMembership.workspace.slug}/ai-interviews`;
+    } else if (userType === "recruiter") {
+      workspaceHref = "/w/create";
+      aiScreeningHref = "/w/create";
     }
+  }
 
-    // Hide marketing pages from logged-in users
-    if (["/features", "/pricing"].includes(link.href)) return false;
+  // For developers menu group. /interview is signed-in-only; for visitors we
+  // surface a generic landing instead of a dead link.
+  // Icons are passed as string names because we're crossing the RSC server →
+  // client boundary — see NavDropdown.tsx ICON_MAP for the registry.
+  const developerItems = [
+    {
+      href: "/playgrounds",
+      label: "Playgrounds",
+      description: "Whiteboard-style code sandboxes — no setup.",
+      iconName: "Box" as const,
+    },
+    {
+      href: "/challenges",
+      label: "Challenges",
+      description: "Browse the public challenge catalog.",
+      iconName: "Target" as const,
+    },
+    {
+      href: user ? "/interview?role=candidate" : "/login?next=/interview",
+      label: "Interviews",
+      description: user
+        ? "Your upcoming and past sessions."
+        : "Sign in to view your interviews.",
+      iconName: "Briefcase" as const,
+    },
+  ];
 
-    // User-type-aware nav: trim the surface to what's relevant per role
-    if (userType === "recruiter") {
-      // Recruiters care about hiring infrastructure, not casual learning
-      return !["/playgrounds", "/explore"].includes(link.href);
-    }
-    if (userType === "candidate") {
-      // Candidates focus on practice + their own interviews; no enterprise surfaces
-      return true;
-    }
-    // userType is unset (legacy) — show everything
-    return true;
-  });
+  const recruiterItems = [
+    {
+      href: workspaceHref,
+      label: "Workspaces",
+      description: "Manage candidates, interviews, and your team.",
+      iconName: "Building2" as const,
+    },
+    {
+      href: aiScreeningHref,
+      label: "AI Screening",
+      description: "Let an AI agent run first-round interviews.",
+      iconName: "Sparkles" as const,
+      badge: "New",
+    },
+  ];
 
   return (
     <header className="sticky top-0 z-[100] bg-bg/80 backdrop-blur-xl border-b border-border relative">
       <div className="mx-auto max-w-7xl px-4 h-16 flex items-center justify-between gap-3">
-
         {/* Mobile: logo doubles as menu trigger (collapsed into MobileNav) */}
-        <MobileNav signedIn={!!user} isAdmin={showAdmin} navLinks={navLinks} />
+        <MobileNav
+          signedIn={!!user}
+          isAdmin={showAdmin}
+          developerItems={developerItems}
+          recruiterItems={recruiterItems}
+        />
 
         {/* Desktop: logo links to home */}
         <HeaderLogo />
@@ -52,56 +98,28 @@ export default async function Header() {
         <div className="flex items-center gap-4">
           <nav className="flex items-center">
             <div className="hidden md:flex items-center gap-6 text-sm font-medium mr-6 border-r border-border pr-6 h-16">
-              {/* Recruiter-only quick link to their workspaces hub */}
-              {userType === "recruiter" && (
-                <Link
-                  href="/dashboard"
-                  className="transition-colors flex items-center h-full text-fg/50 hover:text-fg"
-                >
-                  <span className="relative flex items-center gap-1.5">Workspaces</span>
-                </Link>
-              )}
-              {navLinks.map((link) => {
-                if (link.href === "/interview" && !user) return null;
+              <NavDropdown label="For Developers" items={developerItems} />
+              <NavDropdown label="For Recruiters" items={recruiterItems} />
 
-                const isHidden = link.status === "hidden";
-                const isComingSoon = link.status === "coming_soon";
+              <Link
+                href="/blog"
+                className="transition-colors flex items-center h-full text-fg/50 hover:text-fg"
+              >
+                <span className="relative flex items-center gap-1.5">
+                  <BookOpen className="w-3.5 h-3.5" />
+                  Blog
+                </span>
+              </Link>
 
-                // Admins see everything, but with a badge
-                if (isHidden && !showAdmin) return null;
-
-                const content = (
-                  <span className="relative flex items-center gap-1.5">
-                    {link.label}
-                    {(isComingSoon || isHidden) && showAdmin && (
-                      <span
-                        className={`text-[8px] px-1 rounded uppercase font-black ${
-                          isHidden ? "bg-rose-500/20 text-rose-500" : "bg-amber-500/20 text-amber-500"
-                        }`}
-                      >
-                        {isHidden ? "Hidden" : "Soon"}
-                      </span>
-                    )}
-                    {isComingSoon && !showAdmin && (
-                      <span className="text-[8px] px-1 rounded uppercase font-black bg-amber-500/10 text-amber-600/60">
-                        Soon
-                      </span>
-                    )}
-                  </span>
-                );
-
-                return (
-                  <Link
-                    key={link.href}
-                    href={link.href}
-                    className={`transition-colors flex items-center h-full ${
-                      isHidden || (isComingSoon && !showAdmin) ? "text-fg/40 hover:text-fg/60" : "text-fg/50 hover:text-fg"
-                    }`}
-                  >
-                    {content}
-                  </Link>
-                );
-              })}
+              <Link
+                href="/pricing"
+                className="transition-colors flex items-center h-full text-fg/50 hover:text-fg"
+              >
+                <span className="relative flex items-center gap-1.5">
+                  <CreditCard className="w-3.5 h-3.5" />
+                  Pricing
+                </span>
+              </Link>
             </div>
 
             <div className="flex items-center gap-4">

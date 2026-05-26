@@ -99,7 +99,7 @@ export default async function HomeChallenges() {
           </RevealItem>
           <RevealItem>
             <p className="text-muted text-base md:text-lg leading-relaxed mt-5 max-w-2xl mx-auto">
-              Codepad isn&apos;t just a sandbox. It&apos;s a complete interview engine —
+              Interviewpad isn&apos;t just a sandbox. It&apos;s a complete interview engine —
               from curated coding challenges to live mock sessions you can run with anyone, anywhere.
             </p>
           </RevealItem>

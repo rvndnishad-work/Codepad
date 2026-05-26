@@ -19,6 +19,7 @@ import {
   Zap,
 } from "lucide-react";
 import JoinInterviewBox from "./JoinInterviewBox";
+import { getInterviewArenaSettings } from "@/lib/settings";
 
 type Props = {
   userId: string;
@@ -37,6 +38,8 @@ type Props = {
  * workspace shell at /w/[slug], not here.
  */
 export default async function CandidateInterviewView({ userId, userName }: Props) {
+  const arenaSettings = await getInterviewArenaSettings();
+
   // Pull take-homes assigned to this candidate (by email match — best-effort,
   // since TakeHomeAssignment stores email inline rather than a userId FK).
   const me = await prisma.user.findUnique({
@@ -262,13 +265,15 @@ export default async function CandidateInterviewView({ userId, userName }: Props
               </p>
             </div>
             <div className="p-5 space-y-2.5">
-              <Link
-                href="/interview/new?type=mock&role=candidate"
-                className="flex items-center justify-center gap-2 w-full py-2.5 rounded-xl bg-gradient-to-r from-accent to-indigo-500 hover:brightness-110 active:scale-95 text-white text-[11px] font-bold uppercase tracking-wider transition-all"
-              >
-                <Play className="w-3.5 h-3.5 fill-current" />
-                Start Mock Interview
-              </Link>
+              {arenaSettings.showMockToDeveloper && (
+                <Link
+                  href="/interview/new?type=mock&role=candidate"
+                  className="flex items-center justify-center gap-2 w-full py-2.5 rounded-xl bg-gradient-to-r from-accent to-indigo-500 hover:brightness-110 active:scale-95 text-white text-[11px] font-bold uppercase tracking-wider transition-all"
+                >
+                  <Play className="w-3.5 h-3.5 fill-current" />
+                  Start Mock Interview
+                </Link>
+              )}
               <Link
                 href="/challenges"
                 className="flex items-center justify-center gap-2 w-full py-2.5 rounded-xl bg-panel/50 border border-border text-muted hover:text-fg hover:border-accent/40 active:scale-95 text-[11px] font-bold uppercase tracking-wider transition-all"

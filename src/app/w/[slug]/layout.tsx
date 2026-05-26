@@ -142,6 +142,7 @@ export default async function WorkspaceLayout({ children, params }: Props) {
 
           <WorkspaceSidebarNav
             slug={slug}
+            planName={activeWorkspace.planName}
             counts={{
               challenges: activeWorkspace._count.challenges,
               interviews: activeWorkspace._count.sessions,

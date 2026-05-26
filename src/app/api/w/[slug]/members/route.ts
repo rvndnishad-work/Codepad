@@ -1,6 +1,6 @@
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { stripe } from "@/lib/stripe";
+import { getStripe } from "@/lib/stripe";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { getB2bSettings } from "@/lib/settings";
@@ -90,6 +90,7 @@ export async function POST(
     // If on active metered subscription, scale up Stripe seats
     if (workspace.planName === "GROWTH" && workspace.stripeSubscriptionId) {
       try {
+        const stripe = getStripe();
         const subscription = await stripe.subscriptions.retrieve(workspace.stripeSubscriptionId);
         const subItemId = subscription.items.data[0]?.id;
         if (subItemId) {
@@ -188,6 +189,7 @@ export async function DELETE(
     // Scale down Stripe seats count
     if (workspace.planName === "GROWTH" && workspace.stripeSubscriptionId) {
       try {
+        const stripe = getStripe();
         const subscription = await stripe.subscriptions.retrieve(workspace.stripeSubscriptionId);
         const subItemId = subscription.items.data[0]?.id;
         if (subItemId) {

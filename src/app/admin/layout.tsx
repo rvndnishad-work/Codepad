@@ -2,6 +2,7 @@ import { auth } from "@/lib/auth";
 import { isAdmin } from "@/lib/admin";
 import { notFound } from "next/navigation";
 import AdminSidebar from "./AdminSidebar";
+import FloatingJarvisAgent from "./FloatingJarvisAgent";
 
 export const metadata = {
   title: "Admin — Interviewpad",
@@ -26,6 +27,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
         <div className="px-6 py-8 lg:px-10 lg:py-8 max-w-6xl mx-auto w-full">
           {children}
         </div>
+        <FloatingJarvisAgent />
       </main>
     </div>
   );

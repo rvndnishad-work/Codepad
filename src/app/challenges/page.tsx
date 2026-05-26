@@ -4,6 +4,7 @@ import ChallengeList, { type ChallengeListItem } from "./ChallengeList";
 import ChallengesHero, { type ChallengesHeroStats } from "./ChallengesHero";
 import ContinueStrip from "./ContinueStrip";
 import FeaturedShelf from "./FeaturedShelf";
+import TracksCarousel from "./TracksCarousel";
 
 import { validatePageAccess } from "@/lib/settings";
 
@@ -97,6 +98,7 @@ export default async function ChallengesPage() {
       <ChallengesHero stats={heroStats} />
       <ContinueStrip userId={userId ?? null} />
       <FeaturedShelf />
+      <TracksCarousel items={items} signedIn={!!userId} />
       <ChallengeList items={items} signedIn={!!userId} />
     </>
   );

@@ -12,10 +12,14 @@ import {
   Users,
   CreditCard,
   Sparkles,
+  Bot,
+  KeyRound,
+  Plug,
 } from "lucide-react";
 
 type Props = {
   slug: string;
+  planName: string;
   counts: {
     challenges: number;
     interviews: number;
@@ -33,12 +37,19 @@ type Item = {
   count?: number | null;
 };
 
-export default function WorkspaceSidebarNav({ slug, counts }: Props) {
+export default function WorkspaceSidebarNav({ slug, planName, counts }: Props) {
   const pathname = usePathname();
   const params = useSearchParams();
   const activeSection = params.get("section") || "overview";
 
   const onWorkspaceRoute = pathname === `/w/${slug}`;
+  const planHasAiScreening = planName === "GROWTH" || planName === "ENTERPRISE";
+  const aiScreeningHref = `/w/${slug}/ai-interviews`;
+  const isAiScreeningActive = pathname === aiScreeningHref;
+  const apiKeysHref = `/w/${slug}/api-keys`;
+  const isApiKeysActive = pathname === apiKeysHref;
+  const externalMcpHref = `/w/${slug}/external-mcp`;
+  const isExternalMcpActive = pathname === externalMcpHref;
 
   const operational: Item[] = [
     { section: "overview", label: "Overview", icon: Compass, count: null },
@@ -96,6 +107,62 @@ export default function WorkspaceSidebarNav({ slug, counts }: Props) {
         </div>
         {operational.map(renderItem)}
       </div>
+
+      {planHasAiScreening && (
+        <div className="space-y-1">
+          <div className="text-[10px] font-semibold uppercase tracking-[0.14em] text-muted/70 px-2.5 mb-1.5">
+            Automation
+          </div>
+          <Link
+            href={aiScreeningHref}
+            className={`group flex items-center justify-between gap-2 px-2.5 py-1.5 rounded-md text-[12px] font-medium transition-colors ${
+              isAiScreeningActive
+                ? "bg-indigo-500/10 text-indigo-600 dark:text-indigo-300"
+                : "text-muted hover:text-fg hover:bg-panel/40"
+            }`}
+          >
+            <span className="flex items-center gap-2 min-w-0">
+              <Bot className={`w-3.5 h-3.5 shrink-0 ${isAiScreeningActive ? "text-indigo-500" : "text-muted/60"}`} />
+              <span className="truncate">AI Screening</span>
+            </span>
+            <span className="inline-flex items-center justify-center px-1.5 h-[18px] rounded-full text-[9px] font-bold uppercase tracking-wider shrink-0 bg-amber-500/10 text-amber-400 border border-amber-500/20">
+              New
+            </span>
+          </Link>
+          <Link
+            href={apiKeysHref}
+            className={`group flex items-center justify-between gap-2 px-2.5 py-1.5 rounded-md text-[12px] font-medium transition-colors ${
+              isApiKeysActive
+                ? "bg-indigo-500/10 text-indigo-600 dark:text-indigo-300"
+                : "text-muted hover:text-fg hover:bg-panel/40"
+            }`}
+          >
+            <span className="flex items-center gap-2 min-w-0">
+              <KeyRound className={`w-3.5 h-3.5 shrink-0 ${isApiKeysActive ? "text-indigo-500" : "text-muted/60"}`} />
+              <span className="truncate">MCP API Keys</span>
+            </span>
+            <span className="inline-flex items-center justify-center px-1.5 h-[18px] rounded-full text-[9px] font-bold uppercase tracking-wider shrink-0 bg-amber-500/10 text-amber-400 border border-amber-500/20">
+              New
+            </span>
+          </Link>
+          <Link
+            href={externalMcpHref}
+            className={`group flex items-center justify-between gap-2 px-2.5 py-1.5 rounded-md text-[12px] font-medium transition-colors ${
+              isExternalMcpActive
+                ? "bg-indigo-500/10 text-indigo-600 dark:text-indigo-300"
+                : "text-muted hover:text-fg hover:bg-panel/40"
+            }`}
+          >
+            <span className="flex items-center gap-2 min-w-0">
+              <Plug className={`w-3.5 h-3.5 shrink-0 ${isExternalMcpActive ? "text-indigo-500" : "text-muted/60"}`} />
+              <span className="truncate">External MCP</span>
+            </span>
+            <span className="inline-flex items-center justify-center px-1.5 h-[18px] rounded-full text-[9px] font-bold uppercase tracking-wider shrink-0 bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">
+              Beta
+            </span>
+          </Link>
+        </div>
+      )}
 
       <div className="space-y-1">
         <div className="text-[10px] font-semibold uppercase tracking-[0.14em] text-muted/70 px-2.5 mb-1.5">

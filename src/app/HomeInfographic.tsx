@@ -93,7 +93,7 @@ export default function HomeInfographic() {
           </RevealItem>
           <RevealItem>
             <p className="text-muted text-base md:text-lg leading-relaxed mt-4 max-w-2xl mx-auto">
-              Codepad builds, executes, synchronizes, and profiles code entirely inside the browser thread. Zero server setup. Perfect privacy. Infinite scale.
+              Interviewpad builds, executes, synchronizes, and profiles code entirely inside the browser thread. Zero server setup. Perfect privacy. Infinite scale.
             </p>
           </RevealItem>
         </RevealOnScroll>

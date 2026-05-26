@@ -80,6 +80,48 @@ export default async function WorkspaceDashboardPage({ params }: Props) {
 
   if (!workspace) notFound();
 
+  const [promptScenarios, promptAttempts] = await Promise.all([
+    prisma.promptScenario.findMany({
+      where: {
+        OR: [
+          { workspaceId: workspace.id },
+          { workspaceId: null },
+        ]
+      },
+      orderBy: { createdAt: "desc" },
+    }),
+    prisma.promptAttempt.findMany({
+      where: {
+        OR: [
+          { scenario: { workspaceId: workspace.id } },
+          { sessionId: { in: workspace.sessions.map((s) => s.id) } },
+        ]
+      },
+      include: {
+        scenario: { select: { title: true, category: true, difficulty: true } },
+      },
+      orderBy: { createdAt: "desc" },
+    }),
+  ]);
+
+  const formattedPromptAttempts = promptAttempts.map((a) => ({
+    id: a.id,
+    promptText: a.promptText,
+    charCount: a.charCount,
+    tokenEstimate: a.tokenEstimate,
+    score: a.score,
+    rubricScores: a.rubricScores,
+    feedback: a.feedback,
+    graderType: a.graderType,
+    sessionId: a.sessionId,
+    userId: a.userId,
+    durationSec: a.durationSec,
+    createdAt: a.createdAt.toISOString(),
+    scenarioTitle: a.scenario.title,
+    scenarioCategory: a.scenario.category,
+    scenarioDifficulty: a.scenario.difficulty,
+  }));
+
   // Map workspace take-homes into a flat, client-friendly structure
   const formattedTakeHomes = workspace.takeHomes.map((th) => ({
     id: th.id,
@@ -161,6 +203,7 @@ export default async function WorkspaceDashboardPage({ params }: Props) {
       {/* Main Interactive Client Component */}
       <WorkspaceDashboardClient
         workspace={{
+          id: workspace.id,
           name: workspace.name,
           slug: workspace.slug,
           planName: workspace.planName,
@@ -170,6 +213,8 @@ export default async function WorkspaceDashboardPage({ params }: Props) {
         members={formattedMembers}
         sessions={formattedSessions}
         candidates={formattedCandidates}
+        promptScenarios={promptScenarios}
+        promptAttempts={formattedPromptAttempts}
       />
     </div>
   );

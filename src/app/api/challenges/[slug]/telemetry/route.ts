@@ -2,13 +2,14 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { NextResponse } from "next/server";
 import { z } from "zod";
+import { analyzeTelemetry } from "@/lib/proctoring/ai-detection";
 
 const telemetrySchema = z.object({
   events: z
     .array(
       z.object({
         t: z.number().int().min(0),
-        type: z.enum(["snapshot", "blur", "focus", "paste"]),
+        type: z.enum(["snapshot", "blur", "focus", "paste", "keystroke"]),
         payload: z.any(),
       })
     )
@@ -70,7 +71,7 @@ export async function POST(
       challengeId: challenge.id,
       status: "in_progress",
     },
-    select: { id: true },
+    select: { id: true, files: true, sessionId: true },
     orderBy: { startedAt: "desc" },
   });
 
@@ -162,6 +163,18 @@ export async function POST(
   suspicionScore += Math.floor(totalBlurSec * 1.5);
   suspicionScore = Math.min(100, Math.max(0, suspicionScore));
 
+  // Compute advanced AI typing & streaming metrics
+  let finalCodeLength = 0;
+  if (attempt?.files) {
+    try {
+      const filesMap = JSON.parse(attempt.files) as Record<string, string>;
+      finalCodeLength = Object.values(filesMap).reduce((sum, content) => sum + content.length, 0);
+    } catch {}
+  }
+
+  const aiResult = analyzeTelemetry(combinedEvents, finalCodeLength);
+  const aiSuspicionScore = aiResult.aiSuspicionScore;
+
   // 3. Upsert Integrity Report
   await prisma.candidateIntegrityReport.upsert({
     where: { attemptId },
@@ -182,5 +195,19 @@ export async function POST(
     },
   });
 
-  return NextResponse.json({ ok: true, suspicionScore });
+  // Update ChallengeAttempt with the new advanced AI proctoring score
+  await prisma.challengeAttempt.update({
+    where: { id: attemptId },
+    data: { aiSuspicionScore },
+  });
+
+  // Sync to parent interview session if active
+  if (attempt.sessionId) {
+    await prisma.interviewSession.update({
+      where: { id: attempt.sessionId },
+      data: { aiSuspicionScore },
+    });
+  }
+
+  return NextResponse.json({ ok: true, suspicionScore, aiSuspicionScore });
 }

@@ -207,7 +207,7 @@ async function main() {
   ];
 
   let takehomeCount = 0;
-  for (const b of takehomeBlueprints) {
+  for (const b of takehomeBlueprints as any[]) {
     // For SUBMITTED take-homes, create a real ChallengeAttempt first so the
     // replay link in the UI is followable.
     let attemptId: string | null = null;

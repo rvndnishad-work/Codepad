@@ -17,7 +17,21 @@ export type EmailResult =
   | { sent: true; provider: "resend" | "console"; id?: string }
   | { sent: false; reason: string };
 
-const FROM = process.env.EMAIL_FROM || "Interviewpad <noreply@interviewpad.in>";
+/**
+ * Resolve the sender at call time (not module load) so env loaded after import
+ * is honored. In Resend "test mode" — a real API key but no *verified* domain —
+ * the only sender Resend accepts is `onboarding@resend.dev`, and it will only
+ * deliver to your own Resend account email. So when EMAIL_FROM is unset we
+ * default to that test sender outside production, and to the verified-domain
+ * address in production.
+ */
+function resolveFrom(): string {
+  if (process.env.EMAIL_FROM) return process.env.EMAIL_FROM;
+  if (process.env.NODE_ENV !== "production") {
+    return "Interviewpad (dev) <onboarding@resend.dev>";
+  }
+  return "Interviewpad <noreply@interviewpad.in>";
+}
 
 export async function sendEmail(msg: EmailMessage): Promise<EmailResult> {
   if (!msg.to || !msg.subject) {
@@ -42,7 +56,7 @@ export async function sendEmail(msg: EmailMessage): Promise<EmailResult> {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        from: FROM,
+        from: resolveFrom(),
         to: [msg.to],
         subject: msg.subject,
         html: msg.html,

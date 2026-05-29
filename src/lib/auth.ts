@@ -12,6 +12,7 @@ import {
   decryptTotpSecret,
   verifyTotpCode,
 } from "@/lib/totp";
+import { rateLimit } from "@/lib/rate-limit";
 
 /**
  * IP-42 P5: credentials login enforces TOTP when the user has it enabled.
@@ -35,6 +36,17 @@ class TotpRequired extends CredentialsSignin {
 class TotpInvalid extends CredentialsSignin {
   code = "TotpInvalid";
 }
+/** IP-55: thrown when too many TOTP/backup verification attempts are made for
+ *  an account in the window — brute-force protection. */
+class TotpRateLimited extends CredentialsSignin {
+  code = "TotpRateLimited";
+}
+
+// Per-account cap on TOTP/backup verification attempts. 6-digit TOTP has 1e6
+// combinations and rolls every 30s, so 10 tries / 15 min is plenty for a real
+// user fumbling a code while making online guessing infeasible.
+const TOTP_MAX_ATTEMPTS = 10;
+const TOTP_ATTEMPT_WINDOW_MS = 15 * 60_000;
 
 const credsSchema = z.object({
   email: z.string().email(),
@@ -136,6 +148,19 @@ const credentialsProvider = Credentials({
     if (user.totpEnabledAt && user.totpSecret) {
       if (!totp) {
         throw new TotpRequired();
+      }
+      // IP-55: brute-force protection. Gate the verify path per account before
+      // checking the code. The first password-only submit (TotpRequired above)
+      // doesn't consume budget — only actual code submissions do.
+      const rl = rateLimit(`totp:${user.id}`, TOTP_MAX_ATTEMPTS, TOTP_ATTEMPT_WINDOW_MS);
+      if (!rl.ok) {
+        await logSecurityEvent(
+          user.id,
+          "TOTP_RATE_LIMITED",
+          { phase: "login", resetMs: rl.resetMs },
+          request as Request,
+        );
+        throw new TotpRateLimited();
       }
       const plaintext = decryptTotpSecret(user.totpSecret);
       const cleaned = totp.trim();

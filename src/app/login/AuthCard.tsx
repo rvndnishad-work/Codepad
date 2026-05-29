@@ -102,6 +102,11 @@ export default function AuthCard({
             setTotp("");
             return;
           }
+          if (errCode === "TotpRateLimited") {
+            setTotpError("Too many attempts. Wait a few minutes and try again.");
+            setTotp("");
+            return;
+          }
           throw new Error(
             errCode === "CredentialsSignin"
               ? "Wrong email or password."

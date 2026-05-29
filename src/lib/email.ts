@@ -27,6 +27,9 @@ import { TEMPLATES, type TemplateName, type TemplateProps } from "@/emails";
 import { prisma } from "@/lib/prisma";
 
 const RESEND_ENDPOINT = "https://api.resend.com/emails";
+const RESEND_BATCH_ENDPOINT = "https://api.resend.com/emails/batch";
+/** Resend's batch endpoint accepts up to 100 messages per call. */
+const BATCH_CHUNK = 100;
 
 export type SendEmailInput<T extends TemplateName> = {
   template: T;
@@ -221,4 +224,167 @@ async function markLogFailed(id: string, reason: string) {
       },
     })
     .catch((e) => console.error("[email] EmailLog markFailed failed:", e));
+}
+
+export type BatchSendResult = {
+  total: number;
+  sent: number;
+  suppressed: number;
+  failed: number;
+};
+
+/**
+ * Send ONE template to MANY recipients via Resend's batch endpoint (IP-72).
+ *
+ * Why batch rather than N sendEmail() calls: 50–100 individual POSTs trip
+ * Resend's per-second rate limit and make a recruiter wait through a slow
+ * sequential loop. The batch endpoint takes up to 100 pre-rendered messages in
+ * a single request, so the whole dispatch is 1 (or few) API calls.
+ *
+ * Still honors the full EmailLog + suppression contract: suppressed recipients
+ * are skipped + logged, every send gets a queued→sent/failed EmailLog row, and
+ * the keyless dev path console-stubs. Resend's batch API doesn't support
+ * per-item Idempotency-Key, so callers should guard against duplicate dispatch
+ * upstream (the take-home flow does — one assignment row per candidate).
+ */
+export async function sendTemplatedBatch<T extends TemplateName>(
+  template: T,
+  items: {
+    to: string;
+    props: TemplateProps[T];
+    workspaceId?: string;
+    sessionId?: string;
+  }[],
+): Promise<BatchSendResult> {
+  const def = TEMPLATES[template] as unknown as
+    | {
+        Component: React.ComponentType<unknown>;
+        subject: (p: unknown) => string;
+        text: (p: unknown) => string;
+      }
+    | undefined;
+  if (!def) return { total: items.length, sent: 0, suppressed: 0, failed: items.length };
+  if (items.length === 0) return { total: 0, sent: 0, suppressed: 0, failed: 0 };
+
+  // One suppression query for the whole batch.
+  const suppressedSet = new Set<string>();
+  try {
+    const hits = await prisma.emailSuppression.findMany({
+      where: { address: { in: items.map((i) => normalizeAddress(i.to)) } },
+      select: { address: true },
+    });
+    for (const h of hits) suppressedSet.add(h.address);
+  } catch (e) {
+    console.error("[email:batch] suppression query failed:", e);
+  }
+
+  const from = resolveFrom();
+  const apiKey = process.env.RESEND_API_KEY;
+  let sent = 0;
+  let suppressed = 0;
+  let failed = 0;
+
+  type Prepared = {
+    logId: string | null;
+    payload: { from: string; to: string[]; subject: string; html: string; text: string };
+  };
+  const prepared: Prepared[] = [];
+
+  for (const item of items) {
+    const addr = normalizeAddress(item.to);
+    if (suppressedSet.has(addr)) {
+      suppressed++;
+      await prisma.emailLog
+        .create({
+          data: {
+            template,
+            recipientEmail: addr,
+            workspaceId: item.workspaceId ?? null,
+            sessionId: item.sessionId ?? null,
+            status: "suppressed",
+            errorReason: "address on suppression list",
+          },
+        })
+        .catch(() => null);
+      continue;
+    }
+    let html: string;
+    try {
+      html = await render(React.createElement(def.Component, item.props as object));
+    } catch {
+      failed++;
+      await prisma.emailLog
+        .create({
+          data: {
+            template,
+            recipientEmail: addr,
+            workspaceId: item.workspaceId ?? null,
+            sessionId: item.sessionId ?? null,
+            status: "failed",
+            errorReason: "template render failed",
+          },
+        })
+        .catch(() => null);
+      continue;
+    }
+    const log = await prisma.emailLog
+      .create({
+        data: {
+          template,
+          recipientEmail: addr,
+          workspaceId: item.workspaceId ?? null,
+          sessionId: item.sessionId ?? null,
+          status: "queued",
+        },
+        select: { id: true },
+      })
+      .catch(() => null);
+    prepared.push({
+      logId: log?.id ?? null,
+      payload: { from, to: [item.to], subject: def.subject(item.props), html, text: def.text(item.props) },
+    });
+  }
+
+  // Dev fallback — console-stub, mark queued rows sent.
+  if (!apiKey) {
+    for (const pr of prepared) {
+      console.log(`[email:dev-stub:batch] to=${pr.payload.to.join(",")} subject="${pr.payload.subject}"`);
+      if (pr.logId) await markLogSent(pr.logId, null);
+      sent++;
+    }
+    return { total: items.length, sent, suppressed, failed };
+  }
+
+  // Chunked batch POST. Resend returns `data` in the same order as input.
+  for (let i = 0; i < prepared.length; i += BATCH_CHUNK) {
+    const chunk = prepared.slice(i, i + BATCH_CHUNK);
+    try {
+      const res = await fetch(RESEND_BATCH_ENDPOINT, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
+        body: JSON.stringify(chunk.map((c) => c.payload)),
+      });
+      if (!res.ok) {
+        const errText = await res.text().catch(() => "");
+        for (const c of chunk) {
+          failed++;
+          if (c.logId) await markLogFailed(c.logId, `Resend batch ${res.status}: ${errText.slice(0, 120)}`);
+        }
+        continue;
+      }
+      const body = (await res.json().catch(() => ({}))) as { data?: { id?: string }[] };
+      const ids = body.data ?? [];
+      for (let j = 0; j < chunk.length; j++) {
+        sent++;
+        if (chunk[j].logId) await markLogSent(chunk[j].logId!, ids[j]?.id ?? null);
+      }
+    } catch (err) {
+      for (const c of chunk) {
+        failed++;
+        if (c.logId) await markLogFailed(c.logId, err instanceof Error ? err.message : "batch fetch failed");
+      }
+    }
+  }
+
+  return { total: items.length, sent, suppressed, failed };
 }

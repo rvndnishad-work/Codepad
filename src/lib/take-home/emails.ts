@@ -6,7 +6,7 @@
  * All sends are fire-and-forget at the call site: a transport failure must
  * never roll back the underlying action (assignment created, submission saved).
  */
-import { sendEmail } from "@/lib/email";
+import { sendEmail, sendTemplatedBatch, type BatchSendResult } from "@/lib/email";
 import { prisma } from "@/lib/prisma";
 
 /** Base URL for candidate/recruiter links — matches the AI-screening helper. */
@@ -45,6 +45,38 @@ export async function sendTakeHomeInvite(args: {
     // Stable key so an accidental double-assign / retry doesn't double-email.
     idempotencyKey: args.takeHomeId ? `th-invite:${args.takeHomeId}` : undefined,
   });
+}
+
+/**
+ * Bulk take-home invites (IP-72) — one challenge → many candidates, sent via
+ * Resend's batch endpoint so a 50–100 candidate dispatch is a single API call
+ * instead of a rate-limited sequential loop. Each row already has its own
+ * assignment + token (created by bulkDispatchTakeHomesAction before this runs).
+ */
+export async function sendBulkTakeHomeInvites(args: {
+  workspaceId: string;
+  workspaceName: string;
+  challengeTitle: string;
+  timeLimitMin: number;
+  expiresAt: Date;
+  rows: { name: string; email: string; token: string; takeHomeId: string }[];
+}): Promise<BatchSendResult> {
+  return sendTemplatedBatch(
+    "take-home-invite",
+    args.rows.map((r) => ({
+      to: r.email,
+      props: {
+        candidateName: r.name,
+        challengeTitle: args.challengeTitle,
+        workspaceName: args.workspaceName,
+        takeHomeUrl: takeHomeUrl(r.token),
+        timeLimitMin: args.timeLimitMin,
+        expiresAt: args.expiresAt.toISOString(),
+      },
+      workspaceId: args.workspaceId,
+      sessionId: r.takeHomeId,
+    })),
+  );
 }
 
 export async function sendTakeHomeReminder(args: {

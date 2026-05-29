@@ -1168,11 +1168,22 @@ export default function WorkspaceDashboardClient({
             <div className="space-y-6">
               {/* Invite candidate form */}
               <div className="rounded-xl border border-border bg-surface p-5 space-y-4">
-                <div>
-                  <h3 className="text-sm font-semibold text-fg flex items-center gap-1.5">
-                    <Plus className="w-4 h-4 text-indigo-500" /> Invite candidate
-                  </h3>
-                  <p className="text-xs text-muted mt-0.5">Generate a secure expiring invitation link.</p>
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <h3 className="text-sm font-semibold text-fg flex items-center gap-1.5">
+                      <Plus className="w-4 h-4 text-indigo-500" /> Invite candidate
+                    </h3>
+                    <p className="text-xs text-muted mt-0.5">Generate a secure expiring invitation link.</p>
+                  </div>
+                  {/* Bulk entry point — the single form is one-at-a-time; the
+                      bulk dispatch (many candidates at once) lives in Pipeline. */}
+                  <Link
+                    href={`/w/${workspace.slug}?section=candidates&view=pipeline`}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-border bg-panel/40 hover:bg-panel text-[11px] font-semibold text-fg shrink-0 transition-colors"
+                  >
+                    <Users className="w-3.5 h-3.5 text-indigo-500" />
+                    Send to many →
+                  </Link>
                 </div>
 
                 <form onSubmit={handleGenerateTakeHome} className="grid grid-cols-1 md:grid-cols-4 gap-3 items-end">

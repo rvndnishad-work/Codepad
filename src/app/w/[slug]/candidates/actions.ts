@@ -402,6 +402,9 @@ export type BulkDispatchResult = {
   dispatched: number;
   skipped: number;
   errored: number;
+  /** How many invite emails Resend accepted (IP-72). May be < dispatched if
+   *  some recipients are on the suppression list or the transport failed. */
+  emailed: number;
   details: BulkDispatchPerRow[];
   challengeTitle: string;
 };
@@ -466,6 +469,11 @@ export async function bulkDispatchTakeHomesAction(
   const expiresAt = new Date();
   expiresAt.setDate(expiresAt.getDate() + input.daysToExpire);
 
+  // Collected during the transaction so we can email AFTER it commits — emails
+  // aren't transactional, and we never want to invite a candidate whose row
+  // rolled back. Carries the full token (details[] only keeps a preview).
+  const dispatchedRows: { name: string; email: string; token: string; takeHomeId: string }[] = [];
+
   // Single transaction — all-or-nothing. A 100-row batch is well within
   // SQLite/Postgres comfort zones; the transaction also guarantees that a
   // crash mid-loop doesn't leave half-sent state.
@@ -509,10 +517,7 @@ export async function bulkDispatchTakeHomesAction(
           tokenPreview: token.slice(0, 8) + "…",
           candidateId: candidate.id,
         });
-
-        // TODO(IP-72): wire email send here once IP-24 lands. Today this is
-        // a no-op — the recruiter copies the token/link from the leaderboard
-        // and shares manually, same as the single-dispatch flow.
+        dispatchedRows.push({ name: r.name, email: r.email, token, takeHomeId: created.id });
       } catch (err) {
         details.push({
           email: r.email,
@@ -531,6 +536,32 @@ export async function bulkDispatchTakeHomesAction(
   const skipped = details.filter((d) => d.status === "skipped").length;
   const errored = details.filter((d) => d.status === "errored").length;
 
+  // IP-72: email the invites via Resend's batch endpoint (one call for the
+  // whole batch). Runs AFTER the transaction commits. Failures here don't undo
+  // the assignments — the recruiter can still copy links — so we report the
+  // emailed count separately rather than throwing.
+  let emailed = 0;
+  if (dispatchedRows.length > 0) {
+    try {
+      const ws = await prisma.workspace.findUnique({
+        where: { id: workspaceId },
+        select: { name: true },
+      });
+      const { sendBulkTakeHomeInvites } = await import("@/lib/take-home/emails");
+      const res = await sendBulkTakeHomeInvites({
+        workspaceId,
+        workspaceName: ws?.name ?? "your workspace",
+        challengeTitle: challenge.title,
+        timeLimitMin: input.timeLimitMin,
+        expiresAt,
+        rows: dispatchedRows,
+      });
+      emailed = res.sent;
+    } catch (err) {
+      console.error("[bulk-take-home] invite emails failed:", err);
+    }
+  }
+
   // IP-37: workspace audit row. Single row per bulk dispatch — meta records
   // the aggregate counts + a small recipient sample so the audit trail is
   // useful without being verbose.
@@ -544,6 +575,7 @@ export async function bulkDispatchTakeHomesAction(
     meta: {
       challengeTitle: challenge.title,
       dispatched,
+      emailed,
       skipped,
       errored,
       timeLimitMin: input.timeLimitMin,
@@ -559,7 +591,7 @@ export async function bulkDispatchTakeHomesAction(
   revalidatePath(`/w/${slug}/leaderboard`);
   revalidatePath(`/w/${slug}`);
 
-  return { dispatched, skipped, errored, details, challengeTitle: challenge.title };
+  return { dispatched, emailed, skipped, errored, details, challengeTitle: challenge.title };
 }
 
 /* ──────────────────────────────────────────────────────────────────────────

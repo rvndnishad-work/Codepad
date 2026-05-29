@@ -347,7 +347,14 @@ export default function CandidatePipelineClient({
           onClose={() => setBulkSendOpen(false)}
           onComplete={(r) => {
             toast.success(
-              `Dispatched ${r.dispatched} take-home${r.dispatched === 1 ? "" : "s"} of ${r.challengeTitle}. ${r.skipped} skipped, ${r.errored} errored.`,
+              `Dispatched ${r.dispatched} take-home${r.dispatched === 1 ? "" : "s"} of ${r.challengeTitle} — ${r.emailed} invite${r.emailed === 1 ? "" : "s"} emailed.`,
+              {
+                description:
+                  (r.skipped || r.errored ? `${r.skipped} skipped, ${r.errored} errored. ` : "") +
+                  (r.dispatched > r.emailed
+                    ? `${r.dispatched - r.emailed} not emailed (suppressed or transport issue) — links still available.`
+                    : ""),
+              },
             );
             // Reload to pull fresh take-home counts everywhere.
             window.location.href = `/w/${slug}?section=candidates&view=leaderboard`;

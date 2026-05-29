@@ -595,6 +595,233 @@ export async function bulkDispatchTakeHomesAction(
 }
 
 /* ──────────────────────────────────────────────────────────────────────────
+ * Multi-question take-home sessions (IP-88)
+ * ──────────────────────────────────────────────────────────────────────────
+ * The take-home builder curates a SET of questions (DSA + prompt + playground)
+ * and assigns to N selected candidates. Each candidate gets one async,
+ * tokenized InterviewSession (type="take-home") sharing the curated set, with a
+ * per-question timer map + a start deadline. Mirrors bulkDispatchTakeHomesAction
+ * for candidate upsert/dedup, but creates sessions instead of single-challenge
+ * assignments, and emails via the IP-72 batch path.
+ */
+const DEFAULT_QUESTION_MIN = 30;
+
+export type TakeHomeCuration = {
+  challengeIds: string[];
+  playgroundIds: string[];
+  promptScenarioIds: string[];
+  /** sourceId -> minutes (per-question timer). Missing → DEFAULT_QUESTION_MIN. */
+  perQuestionMinutes: Record<string, number>;
+};
+
+export type CreateTakeHomeSessionsInput = {
+  title: string;
+  curation: TakeHomeCuration;
+  recipients: BulkRecipient[];
+  daysToExpire: number;
+  scenario?: string | null;
+};
+
+export type CreateTakeHomeSessionsResult = {
+  created: number;
+  emailed: number;
+  skipped: number;
+  errored: number;
+  details: BulkDispatchPerRow[];
+};
+
+export async function bulkCreateTakeHomeSessions(
+  slug: string,
+  input: CreateTakeHomeSessionsInput,
+): Promise<CreateTakeHomeSessionsResult> {
+  const { workspaceId, actorUserId, actorEmail } = await assertWorkspaceMember(slug);
+
+  const challengeIds = [...new Set(input.curation.challengeIds ?? [])];
+  const playgroundIds = [...new Set(input.curation.playgroundIds ?? [])];
+  const promptScenarioIds = [...new Set(input.curation.promptScenarioIds ?? [])];
+  const totalQuestions = challengeIds.length + playgroundIds.length + promptScenarioIds.length;
+
+  if (totalQuestions === 0) throw new Error("Add at least one question to the take-home.");
+  if (input.daysToExpire < DAYS_TO_EXPIRE_MIN || input.daysToExpire > DAYS_TO_EXPIRE_MAX) {
+    throw new Error(`Days to expire must be between ${DAYS_TO_EXPIRE_MIN} and ${DAYS_TO_EXPIRE_MAX}.`);
+  }
+  if (!Array.isArray(input.recipients) || input.recipients.length === 0) {
+    throw new Error("Pick at least one candidate.");
+  }
+  if (input.recipients.length > BULK_DISPATCH_MAX) {
+    throw new Error(`Capped at ${BULK_DISPATCH_MAX} candidates per send.`);
+  }
+
+  // Validate the auto-gradable sources exist (challenges + prompt scenarios).
+  // Playgrounds are open snippets/templates — trusted as-is in Phase 1.
+  const [foundChallenges, foundPrompts] = await Promise.all([
+    challengeIds.length
+      ? prisma.challenge.findMany({ where: { id: { in: challengeIds } }, select: { id: true } })
+      : Promise.resolve([]),
+    promptScenarioIds.length
+      ? prisma.promptScenario.findMany({ where: { id: { in: promptScenarioIds } }, select: { id: true } })
+      : Promise.resolve([]),
+  ]);
+  if (foundChallenges.length !== challengeIds.length) throw new Error("One or more challenges no longer exist.");
+  if (foundPrompts.length !== promptScenarioIds.length) throw new Error("One or more prompt challenges no longer exist.");
+
+  // Per-question limits + the whole-session ceiling (sum of per-question budgets).
+  const perQuestionMinutes: Record<string, number> = {};
+  let totalMinutes = 0;
+  for (const id of [...challengeIds, ...playgroundIds, ...promptScenarioIds]) {
+    const m = Number(input.curation.perQuestionMinutes?.[id]) || DEFAULT_QUESTION_MIN;
+    const clamped = Math.min(Math.max(m, TIME_LIMIT_MIN), TIME_LIMIT_MAX);
+    perQuestionMinutes[id] = clamped;
+    totalMinutes += clamped;
+  }
+
+  const sourceTypeCount = [challengeIds.length, playgroundIds.length, promptScenarioIds.length].filter((n) => n > 0).length;
+  const sourceType =
+    sourceTypeCount > 1
+      ? "combined"
+      : challengeIds.length
+        ? "challenge"
+        : playgroundIds.length
+          ? "playground"
+          : "prompt";
+
+  // Recipient dedup + validation (same rules as bulk dispatch).
+  const seenEmails = new Set<string>();
+  const cleaned: BulkRecipient[] = [];
+  const details: BulkDispatchPerRow[] = [];
+  for (const r of input.recipients) {
+    const email = (r.email ?? "").toLowerCase().trim();
+    const name = (r.name ?? "").trim();
+    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      details.push({ email: r.email ?? "(empty)", status: "errored", reason: "Invalid email" });
+      continue;
+    }
+    if (!name) {
+      details.push({ email, status: "errored", reason: "Missing name" });
+      continue;
+    }
+    if (seenEmails.has(email)) {
+      details.push({ email, status: "skipped", reason: "Duplicate in this batch" });
+      continue;
+    }
+    seenEmails.add(email);
+    cleaned.push({ name, email });
+  }
+  if (cleaned.length === 0) throw new Error("No valid candidates after dedup / validation.");
+
+  const deadlineAt = new Date();
+  deadlineAt.setDate(deadlineAt.getDate() + input.daysToExpire);
+
+  const sessionsJson = {
+    challengeIds: JSON.stringify(challengeIds),
+    playgroundIds: JSON.stringify(playgroundIds),
+    promptScenarioIds: JSON.stringify(promptScenarioIds),
+    questionTimeLimitsJson: JSON.stringify(perQuestionMinutes),
+  };
+
+  const createdRows: { name: string; email: string; token: string; sessionId: string }[] = [];
+
+  await prisma.$transaction(async (tx) => {
+    for (const r of cleaned) {
+      try {
+        const candidate = await tx.candidate.upsert({
+          where: { workspaceId_email: { workspaceId, email: r.email } },
+          update: { name: r.name },
+          create: {
+            workspaceId,
+            name: r.name,
+            email: r.email,
+            source: "take-home",
+            status: "active",
+            stage: "TAKE_HOME",
+            stageChangedAt: new Date(),
+          },
+          select: { id: true },
+        });
+
+        const token = crypto.randomBytes(32).toString("hex");
+        const created = await tx.interviewSession.create({
+          data: {
+            userId: actorUserId,
+            workspaceId,
+            candidateId: candidate.id,
+            candidateName: r.name,
+            title: input.title?.trim() || "Take-home assessment",
+            type: "take-home",
+            creatorRole: "interviewer",
+            status: "scheduled",
+            sourceType,
+            challengeIds: sessionsJson.challengeIds,
+            playgroundIds: sessionsJson.playgroundIds,
+            promptScenarioIds: sessionsJson.promptScenarioIds,
+            questionTimeLimitsJson: sessionsJson.questionTimeLimitsJson,
+            scenario: input.scenario?.trim() || null,
+            totalSec: totalMinutes * 60,
+            shareToken: crypto.randomBytes(16).toString("hex"),
+            candidateAccessToken: token,
+            deadlineAt,
+          },
+          select: { id: true },
+        });
+
+        details.push({ email: r.email, status: "dispatched", tokenPreview: token.slice(0, 8) + "…", candidateId: candidate.id });
+        createdRows.push({ name: r.name, email: r.email, token, sessionId: created.id });
+      } catch (err) {
+        details.push({ email: r.email, status: "errored", reason: (err as Error).message?.slice(0, 200) ?? "unknown" });
+      }
+    }
+  });
+
+  const created = details.filter((d) => d.status === "dispatched").length;
+  const skipped = details.filter((d) => d.status === "skipped").length;
+  const errored = details.filter((d) => d.status === "errored").length;
+
+  // Batch invite emails (IP-72), after the transaction commits.
+  let emailed = 0;
+  if (createdRows.length > 0) {
+    try {
+      const ws = await prisma.workspace.findUnique({ where: { id: workspaceId }, select: { name: true } });
+      const { sendBulkTakeHomeSessionInvites } = await import("@/lib/take-home/emails");
+      const res = await sendBulkTakeHomeSessionInvites({
+        workspaceId,
+        workspaceName: ws?.name ?? "your workspace",
+        title: input.title?.trim() || "Take-home assessment",
+        questionCount: totalQuestions,
+        deadlineAt,
+        rows: createdRows,
+      });
+      emailed = res.sent;
+    } catch (err) {
+      console.error("[take-home-sessions] invite emails failed:", err);
+    }
+  }
+
+  void writeWorkspaceAuditEntry({
+    workspaceId,
+    actorUserId,
+    actorEmail,
+    action: WORKSPACE_AUDIT_ACTIONS.BULK_TAKE_HOME_DISPATCHED,
+    targetType: "take-home-session-batch",
+    targetId: null,
+    meta: {
+      title: input.title,
+      questionCount: totalQuestions,
+      created,
+      emailed,
+      skipped,
+      errored,
+      daysToExpire: input.daysToExpire,
+      sampleRecipients: details.filter((d) => d.status === "dispatched").slice(0, 5).map((d) => d.email),
+    },
+  });
+
+  revalidatePath(`/w/${slug}`);
+  revalidatePath(`/w/${slug}/emails`);
+
+  return { created, emailed, skipped, errored, details };
+}
+
+/* ──────────────────────────────────────────────────────────────────────────
  * Leaderboard CSV export (IP-35)
  * ──────────────────────────────────────────────────────────────────────────
  * Server action returning CSV text. Caller (the leaderboard client) wraps it

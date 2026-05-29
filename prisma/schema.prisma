@@ -559,6 +559,21 @@ model InterviewSession {
   /// candidateName field above acts as a denormalized snapshot.
   candidateId        String?
   aiSuspicionScore   Float?
+  /// ── Async take-home mode (IP-88) ───────────────────────────────────────
+  /// When `type = "take-home"` this session is an async, candidate-self-serve
+  /// assessment rather than a live interview. The fields below only apply in
+  /// that mode; live/mock sessions leave them null.
+  ///
+  /// Tokenless candidate "do-the-assessment" link, distinct from `shareToken`
+  /// (which grants the interviewer read-only view).
+  candidateAccessToken  String?       @unique
+  /// Last moment the candidate may START the take-home (the invite expiry).
+  deadlineAt            DateTime?
+  /// Idempotency flag for the 24h reminder cron (mirrors TakeHomeAssignment).
+  reminderSentAt        DateTime?
+  /// Per-question time limits, JSON map { [sourceId]: minutes }. Drives the
+  /// per-question countdown in the async runner.
+  questionTimeLimitsJson String?
   createdAt          DateTime         @default(now())
   rubric             InterviewRubric?
   candidate          Candidate?       @relation(fields: [candidateId], references: [id])
@@ -568,6 +583,8 @@ model InterviewSession {
   @@index([userId, status])
   @@index([candidateId])
   @@index([workspaceId])
+  /// Listing take-home sessions per workspace (IP-88).
+  @@index([workspaceId, type])
 }
 
 model BlogPost {

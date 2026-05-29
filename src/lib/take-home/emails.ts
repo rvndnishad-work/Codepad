@@ -18,6 +18,42 @@ export function takeHomeUrl(token: string): string {
   return `${appBaseUrl()}/take-home/${token}`;
 }
 
+/** Async multi-question take-home session runner link (IP-88). */
+export function takeHomeSessionUrl(token: string): string {
+  return `${appBaseUrl()}/take-home/s/${token}`;
+}
+
+/**
+ * Bulk invites for session-backed multi-question take-homes (IP-88) — sent via
+ * the Resend batch path. Each row already has its own InterviewSession +
+ * candidateAccessToken (created by bulkCreateTakeHomeSessions).
+ */
+export async function sendBulkTakeHomeSessionInvites(args: {
+  workspaceId: string;
+  workspaceName: string;
+  title: string;
+  questionCount: number;
+  deadlineAt: Date;
+  rows: { name: string; email: string; token: string; sessionId: string }[];
+}): Promise<BatchSendResult> {
+  return sendTemplatedBatch(
+    "take-home-session-invite",
+    args.rows.map((r) => ({
+      to: r.email,
+      props: {
+        candidateName: r.name,
+        title: args.title,
+        workspaceName: args.workspaceName,
+        takeHomeUrl: takeHomeSessionUrl(r.token),
+        questionCount: args.questionCount,
+        deadlineAt: args.deadlineAt.toISOString(),
+      },
+      workspaceId: args.workspaceId,
+      sessionId: r.sessionId,
+    })),
+  );
+}
+
 export async function sendTakeHomeInvite(args: {
   candidateName: string;
   candidateEmail: string;

@@ -41,6 +41,11 @@ import {
   takeHomeSubmittedRecruiterText,
   type TakeHomeSubmittedRecruiterProps,
 } from "./TakeHomeSubmittedRecruiter";
+import {
+  TakeHomeSessionInvite,
+  takeHomeSessionInviteText,
+  type TakeHomeSessionInviteProps,
+} from "./TakeHomeSessionInvite";
 
 /**
  * Registry shape: each entry describes how to subject-line, render, and
@@ -93,6 +98,12 @@ export const TEMPLATES = {
     subject: (p) => `${p.candidateName} submitted their take-home — ${p.challengeTitle}`,
     text: takeHomeSubmittedRecruiterText,
   } satisfies TemplateDef<TakeHomeSubmittedRecruiterProps>,
+
+  "take-home-session-invite": {
+    Component: TakeHomeSessionInvite,
+    subject: (p) => `Your take-home from ${p.workspaceName}: ${p.title}`,
+    text: takeHomeSessionInviteText,
+  } satisfies TemplateDef<TakeHomeSessionInviteProps>,
 } as const;
 
 /** Allowed template names. */
@@ -106,4 +117,5 @@ export type TemplateProps = {
   "take-home-reminder": TakeHomeReminderProps;
   "take-home-submitted-candidate": TakeHomeSubmittedCandidateProps;
   "take-home-submitted-recruiter": TakeHomeSubmittedRecruiterProps;
+  "take-home-session-invite": TakeHomeSessionInviteProps;
 };

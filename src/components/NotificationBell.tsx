@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, useCallback } from "react";
+import Link from "next/link";
 import {
   Bell,
   BellRing,
@@ -240,10 +241,13 @@ export default function NotificationBell() {
           </div>
 
           <footer className="px-3 py-2 border-t border-border bg-panel/40">
-            <p className="text-[10px] text-muted leading-relaxed">
-              Per-type email & in-app preferences land alongside the email
-              service (IP-24).
-            </p>
+            <Link
+              href="/profile/notifications"
+              onClick={() => setOpen(false)}
+              className="text-[11px] font-medium text-muted hover:text-fg transition-colors"
+            >
+              Notification settings →
+            </Link>
           </footer>
         </div>
       )}

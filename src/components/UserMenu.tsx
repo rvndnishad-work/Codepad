@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { LayoutDashboard, User as UserIcon, LogOut, Shield, CreditCard, Bell, ShieldCheck } from "lucide-react";
+import { LayoutDashboard, User as UserIcon, LogOut, Shield, Bell, ShieldCheck } from "lucide-react";
 import { handleSignOut } from "@/app/actions";
 
 type UserShape = {
@@ -98,19 +98,13 @@ export default function UserMenu({
             <MenuLink
               href="/profile/notifications"
               icon={Bell}
-              label="Notifications"
+              label="Notification settings"
               onClick={() => setOpen(false)}
             />
             <MenuLink
               href="/profile/security"
               icon={ShieldCheck}
               label="Security"
-              onClick={() => setOpen(false)}
-            />
-            <MenuLink
-              href="/pricing"
-              icon={CreditCard}
-              label="Pricing"
               onClick={() => setOpen(false)}
             />
             {isAdmin && (

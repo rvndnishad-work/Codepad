@@ -265,19 +265,19 @@ function ToggleCell({
         title={title}
         onClick={onClick}
         disabled={forcedOn}
-        className={`relative w-10 h-5 rounded-full border transition ${
+        className={`relative inline-flex items-center w-10 h-5 px-[2px] rounded-full border transition ${
           forcedOn
             ? "bg-amber-500/40 border-amber-500/60 cursor-not-allowed"
             : active
               ? muted
-                ? "bg-muted/30 border-muted/40 hover:brightness-110"
+                ? "bg-emerald-500/40 border-emerald-500/50 hover:brightness-110"
                 : "bg-emerald-500/80 border-emerald-500 hover:brightness-110"
-              : "bg-bg/40 border-border hover:border-fg/60"
+              : "bg-elevated border-border hover:border-fg/60"
         }`}
       >
         <span
-          className={`absolute top-[1px] w-3.5 h-3.5 rounded-full bg-fg transition-transform ${
-            active ? "translate-x-[20px]" : "translate-x-[2px]"
+          className={`block w-4 h-4 rounded-full bg-fg shadow-sm transition-transform ${
+            active ? "translate-x-[18px]" : "translate-x-0"
           }`}
         />
         {pending && (

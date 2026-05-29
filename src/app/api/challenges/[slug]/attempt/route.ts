@@ -41,6 +41,10 @@ export async function POST(
 
   const session = await auth();
   let candidateUserId = session?.user?.id;
+  // Tracks whether `token` matched a legacy single-challenge TakeHomeAssignment
+  // (vs an IP-88 session candidateAccessToken). Only the assignment path runs
+  // the TakeHomeAssignment status update below.
+  let assignmentTokenMatched = false;
 
   if (!candidateUserId && token) {
     const assignment = await prisma.takeHomeAssignment.findUnique({
@@ -48,12 +52,37 @@ export async function POST(
       select: { candidateEmail: true },
     });
     if (assignment) {
+      assignmentTokenMatched = true;
       const candidateUser = await prisma.user.findFirst({
         where: { email: { equals: assignment.candidateEmail } },
         select: { id: true },
       });
       if (candidateUser) {
         candidateUserId = candidateUser.id;
+      }
+    } else {
+      // IP-88: session-backed take-home — `token` is an InterviewSession
+      // candidateAccessToken. Resolve (or create) the candidate user from the
+      // session's linked Candidate so attempts attach to a real user + the
+      // session via `sessionId`.
+      const thSession = await prisma.interviewSession.findUnique({
+        where: { candidateAccessToken: token },
+        select: { id: true, candidateName: true, candidate: { select: { email: true, name: true } } },
+      });
+      const email = thSession?.candidate?.email ?? null;
+      if (email) {
+        let cu = await prisma.user.findFirst({ where: { email: { equals: email } }, select: { id: true } });
+        if (!cu) {
+          cu = await prisma.user.create({
+            data: {
+              email: email.toLowerCase(),
+              name: thSession?.candidate?.name ?? thSession?.candidateName ?? "Candidate",
+              portfolioPublic: false,
+            },
+            select: { id: true },
+          });
+        }
+        candidateUserId = cu.id;
       }
     }
   }
@@ -86,7 +115,7 @@ export async function POST(
   // Captured here so the IP-27 submission emails (fired after score is
   // computed below) can look up everything they need by id.
   let submittedTakeHomeId: string | null = null;
-  if (token) {
+  if (token && assignmentTokenMatched) {
     try {
       const updated = await prisma.takeHomeAssignment.update({
         where: { token },

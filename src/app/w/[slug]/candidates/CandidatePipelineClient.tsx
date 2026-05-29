@@ -235,7 +235,7 @@ export default function CandidatePipelineClient({
         </div>
         <div className="flex items-center gap-2 shrink-0">
           <Link
-            href={`/w/${slug}/leaderboard`}
+            href={`/w/${slug}?section=candidates&view=leaderboard`}
             className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-[11px] font-semibold text-fg border border-border bg-panel/40 hover:bg-panel"
           >
             <Trophy className="w-3 h-3" />
@@ -350,7 +350,7 @@ export default function CandidatePipelineClient({
               `Dispatched ${r.dispatched} take-home${r.dispatched === 1 ? "" : "s"} of ${r.challengeTitle}. ${r.skipped} skipped, ${r.errored} errored.`,
             );
             // Reload to pull fresh take-home counts everywhere.
-            window.location.href = `/w/${slug}/leaderboard`;
+            window.location.href = `/w/${slug}?section=candidates&view=leaderboard`;
           }}
         />
       )}

@@ -855,7 +855,7 @@ export default function WorkspaceDashboardClient({
                       <h4 className="text-[11px] font-semibold uppercase tracking-[0.12em] text-muted">Recent take-homes</h4>
                     </div>
                     <Link
-                      href={`/w/${workspace.slug}?section=take-homes`}
+                      href={`/w/${workspace.slug}?section=assessments&view=take-homes`}
                       className="text-[11px] font-semibold text-accent hover:underline"
                     >
                       View all
@@ -888,7 +888,7 @@ export default function WorkspaceDashboardClient({
                       <h4 className="text-[11px] font-semibold uppercase tracking-[0.12em] text-muted">Recent interviews</h4>
                     </div>
                     <Link
-                      href={`/w/${workspace.slug}?section=interviews`}
+                      href={`/w/${workspace.slug}?section=assessments&view=interviews`}
                       className="text-[11px] font-semibold text-accent hover:underline"
                     >
                       View all

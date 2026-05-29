@@ -97,6 +97,25 @@ export async function POST(
       },
     });
 
+    // IP-27: fire the candidate invite email. Fire-and-forget — the assignment
+    // is already persisted, so a transport failure must not fail the request
+    // (recruiter can still copy the link from the dashboard).
+    void (async () => {
+      const { sendTakeHomeInvite } = await import("@/lib/take-home/emails");
+      const res = await sendTakeHomeInvite({
+        candidateName,
+        candidateEmail: normalizedEmail,
+        challengeTitle: challenge.title,
+        workspaceName: workspace.name,
+        token,
+        timeLimitMin,
+        expiresAt,
+        workspaceId: workspace.id,
+        takeHomeId: takeHome.id,
+      });
+      if (!res.sent) console.warn(`[take-home-invite] ${normalizedEmail}: ${res.reason}`);
+    })();
+
     return NextResponse.json({
       ok: true,
       takeHome: {

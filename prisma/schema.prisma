@@ -663,6 +663,9 @@ model TakeHomeAssignment {
   timeLimitMin   Int               @default(60)
   startedAt      DateTime?
   submittedAt    DateTime?
+  /// Set when the 24h reminder email fired (IP-27). Guards the reminder cron
+  /// against double-sending on re-runs.
+  reminderSentAt DateTime?
   attemptId      String?           @unique
   workspaceId    String?
   /// Optional link to the first-class Candidate entity. Backfilled by the

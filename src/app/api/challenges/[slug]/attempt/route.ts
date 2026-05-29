@@ -83,6 +83,9 @@ export async function POST(
       ? "passed"
       : "failed";
 
+  // Captured here so the IP-27 submission emails (fired after score is
+  // computed below) can look up everything they need by id.
+  let submittedTakeHomeId: string | null = null;
   if (token) {
     try {
       const updated = await prisma.takeHomeAssignment.update({
@@ -97,6 +100,7 @@ export async function POST(
           challenge: { select: { title: true } },
         },
       });
+      submittedTakeHomeId = updated.id;
       // IP-44: notify workspace owners/admins. Fire-and-forget — failure
       // here must not roll back the submission.
       const { notifyTakeHomeSubmitted } = await import("@/lib/notifications/triggers");
@@ -148,6 +152,22 @@ export async function POST(
   // Fallback: simple passed percentage
   if (score === null && testResults.total > 0) {
     score = Math.round((testResults.passed / testResults.total) * 100);
+  }
+
+  // IP-27: take-home submission emails — candidate confirmation + recruiter
+  // notify. Fire-and-forget with the score now available. Never block/throw
+  // past the submission.
+  if (submittedTakeHomeId) {
+    const thId = submittedTakeHomeId;
+    const submitScore = score;
+    void (async () => {
+      try {
+        const { sendTakeHomeSubmissionEmails } = await import("@/lib/take-home/emails");
+        await sendTakeHomeSubmissionEmails({ takeHomeId: thId, score: submitScore });
+      } catch (e) {
+        console.error("[take-home-submit-emails] failed:", e);
+      }
+    })();
   }
 
   const attempt = await prisma.challengeAttempt.create({

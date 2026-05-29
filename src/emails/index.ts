@@ -21,6 +21,26 @@ import {
   screeningCompletedText,
   type ScreeningCompletedProps,
 } from "./ScreeningCompleted";
+import {
+  TakeHomeInvite,
+  takeHomeInviteText,
+  type TakeHomeInviteProps,
+} from "./TakeHomeInvite";
+import {
+  TakeHomeReminder,
+  takeHomeReminderText,
+  type TakeHomeReminderProps,
+} from "./TakeHomeReminder";
+import {
+  TakeHomeSubmittedCandidate,
+  takeHomeSubmittedCandidateText,
+  type TakeHomeSubmittedCandidateProps,
+} from "./TakeHomeSubmittedCandidate";
+import {
+  TakeHomeSubmittedRecruiter,
+  takeHomeSubmittedRecruiterText,
+  type TakeHomeSubmittedRecruiterProps,
+} from "./TakeHomeSubmittedRecruiter";
 
 /**
  * Registry shape: each entry describes how to subject-line, render, and
@@ -49,6 +69,30 @@ export const TEMPLATES = {
       `${p.candidateName} completed their AI screening for ${p.positionTitle} — ${p.score}%`,
     text: screeningCompletedText,
   } satisfies TemplateDef<ScreeningCompletedProps>,
+
+  "take-home-invite": {
+    Component: TakeHomeInvite,
+    subject: (p) => `Your take-home from ${p.workspaceName}: ${p.challengeTitle}`,
+    text: takeHomeInviteText,
+  } satisfies TemplateDef<TakeHomeInviteProps>,
+
+  "take-home-reminder": {
+    Component: TakeHomeReminder,
+    subject: (p) => `Reminder: your ${p.workspaceName} take-home closes soon`,
+    text: takeHomeReminderText,
+  } satisfies TemplateDef<TakeHomeReminderProps>,
+
+  "take-home-submitted-candidate": {
+    Component: TakeHomeSubmittedCandidate,
+    subject: (p) => `We received your take-home: ${p.challengeTitle}`,
+    text: takeHomeSubmittedCandidateText,
+  } satisfies TemplateDef<TakeHomeSubmittedCandidateProps>,
+
+  "take-home-submitted-recruiter": {
+    Component: TakeHomeSubmittedRecruiter,
+    subject: (p) => `${p.candidateName} submitted their take-home — ${p.challengeTitle}`,
+    text: takeHomeSubmittedRecruiterText,
+  } satisfies TemplateDef<TakeHomeSubmittedRecruiterProps>,
 } as const;
 
 /** Allowed template names. */
@@ -58,4 +102,8 @@ export type TemplateName = keyof typeof TEMPLATES;
 export type TemplateProps = {
   "ai-screening-invite": AiScreeningInviteProps;
   "screening-completed": ScreeningCompletedProps;
+  "take-home-invite": TakeHomeInviteProps;
+  "take-home-reminder": TakeHomeReminderProps;
+  "take-home-submitted-candidate": TakeHomeSubmittedCandidateProps;
+  "take-home-submitted-recruiter": TakeHomeSubmittedRecruiterProps;
 };

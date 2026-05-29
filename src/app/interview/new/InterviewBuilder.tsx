@@ -34,6 +34,9 @@ export type ChallengeOption = {
   difficulty: "easy" | "medium" | "hard";
   estimatedMinutes: number;
   category: string | null;
+  /** True when this challenge belongs to the launching workspace (vs the
+   *  global public bank). Workspace-owned items sort + render first. */
+  workspaceOwned?: boolean;
 };
 
 export type PlaygroundOption = {
@@ -53,6 +56,8 @@ export type PromptScenarioOption = {
   estimatedMinutes: number;
   category: string;
   objective: string;
+  /** True when owned by the launching workspace (vs the global bank). */
+  workspaceOwned?: boolean;
 };
 
 type SourceType = "challenge" | "playground" | "prompt";
@@ -185,6 +190,12 @@ export default function InterviewBuilder({
   const router = useRouter();
   const searchParams = useSearchParams();
 
+  // Launched from a workspace's assessments tab (?workspaceSlug=). A workspace
+  // interview is always a recruiter running a LIVE session as the INTERVIEWER,
+  // so we force + lock those choices and route "back" into the workspace.
+  const workspaceSlug = searchParams?.get("workspaceSlug") || null;
+  const fromWorkspace = !!workspaceSlug;
+
   // Check which session type options are allowed based on userType and dynamic arenaSettings
   const isCandidate = userType === "candidate";
   const isRecruiter = userType === "recruiter";
@@ -203,10 +214,20 @@ export default function InterviewBuilder({
 
   const isInterviewerRoleAllowed = isLiveAllowed;
 
-  const initialType: "mock" | "live" =
-    searchParams?.get("type") === "live" && isLiveAllowed ? "live" : isMockAllowed ? "mock" : "live";
-  const initialRole: "interviewer" | "candidate" =
-    searchParams?.get("role") === "candidate" ? "candidate" : isInterviewerRoleAllowed ? "interviewer" : "candidate";
+  const initialType: "mock" | "live" = fromWorkspace
+    ? "live"
+    : searchParams?.get("type") === "live" && isLiveAllowed
+      ? "live"
+      : isMockAllowed
+        ? "mock"
+        : "live";
+  const initialRole: "interviewer" | "candidate" = fromWorkspace
+    ? "interviewer"
+    : searchParams?.get("role") === "candidate"
+      ? "candidate"
+      : isInterviewerRoleAllowed
+        ? "interviewer"
+        : "candidate";
   const initialSource: SourceType =
     searchParams?.get("source") === "playground" ? "playground" : "challenge";
 
@@ -410,13 +431,13 @@ export default function InterviewBuilder({
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-border pb-6">
           <div className="space-y-1">
             <Link
-              href="/interview"
+              href={workspaceSlug ? `/w/${workspaceSlug}?section=assessments&view=interviews` : "/interview"}
               className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-muted hover:text-fg transition-all group"
             >
               <div className="p-1 rounded-full bg-surface border border-border group-hover:border-border-strong group-hover:bg-panel transition-all">
                 <ArrowLeft className="w-3.5 h-3.5 group-hover:-translate-x-0.5 transition-transform text-muted" />
               </div>
-              Back to Sessions
+              {workspaceSlug ? "Back to workspace" : "Back to Sessions"}
             </Link>
             <h1 className="text-2xl md:text-3xl font-extrabold tracking-tight bg-gradient-to-r from-violet-600 via-fuchsia-500 to-indigo-600 dark:from-violet-400 dark:via-fuchsia-400 dark:to-indigo-400 bg-clip-text text-transparent mt-2">
               Interview Arena Builder
@@ -551,10 +572,32 @@ export default function InterviewBuilder({
                 </div>
               </div>
 
-              {/* Segmented Controls: Creator Role & Interview Type */}
-              {isLiveAllowed && (
+              {/* Segmented Controls: Creator Role & Interview Type.
+                  When launched from a workspace these are fixed (a workspace
+                  interview is always an interviewer-run live session), so we
+                  show a locked indicator instead of editable toggles. */}
+              {fromWorkspace ? (
                 <div className="grid grid-cols-2 gap-4">
-                  
+                  <div className="space-y-2">
+                    <label className="block text-[10px] font-bold uppercase tracking-wider text-muted/80">
+                      Your Arena Role
+                    </label>
+                    <div className="flex items-center gap-2 px-3 py-2.5 bg-panel border border-border rounded-xl text-[10px] font-bold uppercase tracking-wider text-fg">
+                      <Shield className="w-3 h-3 text-accent" /> Interviewer
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <label className="block text-[10px] font-bold uppercase tracking-wider text-muted/80">
+                      Session Class
+                    </label>
+                    <div className="flex items-center gap-2 px-3 py-2.5 bg-panel border border-border rounded-xl text-[10px] font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400">
+                      <Zap className="w-3 h-3" /> Live Session
+                    </div>
+                  </div>
+                </div>
+              ) : isLiveAllowed ? (
+                <div className="grid grid-cols-2 gap-4">
+
                   {/* Role Toggle */}
                   <div className="space-y-2">
                     <label className="block text-[10px] font-bold uppercase tracking-wider text-muted/80">
@@ -628,7 +671,7 @@ export default function InterviewBuilder({
                   </div>
 
                 </div>
-              )}
+              ) : null}
 
               {/* Scenario Note field — styled with specific background and custom note border in dark mode */}
               <div className="space-y-2 pt-2 border-t border-border animate-in fade-in duration-300">
@@ -756,7 +799,7 @@ export default function InterviewBuilder({
                           ? "Filter prompt challenges..."
                           : "Find coding, concepts, titles..."
                       }
-                      className="w-full pl-9.5 pr-4 py-2 rounded-lg bg-panel border border-border focus:border-accent/50 focus:bg-panel text-xs text-fg placeholder:text-muted/60 dark:placeholder:text-muted/50 outline-none transition-all shadow-inner"
+                      className="w-full pl-10 pr-4 py-2 rounded-lg bg-panel border border-border focus:border-accent/50 focus:bg-panel text-xs text-fg placeholder:text-muted/60 dark:placeholder:text-muted/50 outline-none transition-all shadow-inner"
                     />
                   </div>
 
@@ -792,7 +835,7 @@ export default function InterviewBuilder({
                     {filteredAvailable.length === 0 ? (
                       <div className="rounded-2xl border border-dashed border-border bg-surface p-12 text-center text-xs text-muted space-y-2">
                         <BookOpen className="w-8 h-8 text-muted/50 mx-auto" />
-                        <p>No matching challenges in global bank.</p>
+                        <p>No matching challenges found.</p>
                       </div>
                     ) : (
                       filteredAvailable.map((c) => (
@@ -802,6 +845,11 @@ export default function InterviewBuilder({
                         >
                           <div className="space-y-1.5 min-w-0">
                             <div className="flex items-center gap-2">
+                              {c.workspaceOwned && (
+                                <span className="text-[9px] font-bold uppercase px-2 py-0.5 rounded border leading-none tracking-wider bg-violet-500/10 border-violet-500/30 text-violet-600 dark:text-violet-400">
+                                  Workspace
+                                </span>
+                              )}
                               <span className={`text-[9px] font-bold uppercase px-2 py-0.5 rounded border leading-none font-mono ${difficultyBg[c.difficulty]} ${difficultyColor[c.difficulty]}`}>
                                 {c.difficulty}
                               </span>
@@ -900,6 +948,11 @@ export default function InterviewBuilder({
                         >
                           <div className="space-y-1.5 min-w-0">
                             <div className="flex items-center gap-2">
+                              {p.workspaceOwned && (
+                                <span className="text-[9px] font-bold uppercase px-2 py-0.5 rounded border leading-none tracking-wider bg-violet-500/10 border-violet-500/30 text-violet-600 dark:text-violet-400">
+                                  Workspace
+                                </span>
+                              )}
                               <span className={`text-[9px] font-bold uppercase px-2 py-0.5 rounded border leading-none font-mono ${difficultyBg[p.difficulty === "beginner" ? "easy" : p.difficulty === "advanced" ? "hard" : "medium"]} ${difficultyColor[p.difficulty === "beginner" ? "easy" : p.difficulty === "advanced" ? "hard" : "medium"]}`}>
                                 {p.difficulty === "beginner" ? "easy" : p.difficulty === "advanced" ? "hard" : "medium"}
                               </span>

@@ -3,6 +3,7 @@ import { isAdmin } from "@/lib/admin";
 import { notFound } from "next/navigation";
 import AdminSidebar from "./AdminSidebar";
 import FloatingJarvisAgent from "./FloatingJarvisAgent";
+import { getAdminPersona } from "@/lib/admin-persona.server";
 
 export const metadata = {
   title: "Admin — Interviewpad",
@@ -13,6 +14,10 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   const session = await auth().catch(() => null);
   if (!isAdmin(session)) notFound();
 
+  // Persona is read once in the layout so the server-rendered sidebar matches
+  // the cookie on first paint — no client-side flicker between defaults.
+  const persona = await getAdminPersona();
+
   return (
     <div className="bg-bg text-fg flex flex-col lg:flex-row overflow-hidden h-[calc(100vh-64px)] relative">
       {/* Background ambient spotlight glows */}
@@ -20,7 +25,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
       <div className="absolute bottom-[-10%] right-[-10%] w-[600px] h-[600px] bg-fuchsia-500/5 rounded-full blur-[150px] pointer-events-none z-0" />
 
       {/* Dynamic Collapsible & Frosted Navigation Sidebar */}
-      <AdminSidebar session={session} />
+      <AdminSidebar session={session} persona={persona} />
 
       {/* Main Scrollable Dashboard Content */}
       <main className="flex-1 h-full overflow-y-auto bg-surface relative z-10">

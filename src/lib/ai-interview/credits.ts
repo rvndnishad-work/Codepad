@@ -142,8 +142,28 @@ export async function consumeCreditIfFirstTurn(
       },
     });
 
-    return { charged: true };
-  });
+    // Compute post-consumption balance INSIDE the transaction so we read a
+    // consistent snapshot. Pass it out for the IP-44 notification trigger to
+    // evaluate against the threshold.
+    const newBalance = await sumLedger(tx, session.workspaceId);
+
+    return { charged: true, workspaceId: session.workspaceId, newBalance };
+  })
+    .then(async (result) => {
+      // IP-44: AI_CREDITS_LOW notification fires AFTER the transaction so a
+      // notification failure can never roll back the credit charge. Helper
+      // is dedup-guarded (24h per workspace) and threshold-guarded.
+      if (result.charged && result.workspaceId && result.newBalance !== undefined) {
+        const { notifyAiCreditsLowIfNeeded } = await import(
+          "@/lib/notifications/triggers"
+        );
+        await notifyAiCreditsLowIfNeeded({
+          workspaceId: result.workspaceId,
+          balance: result.newBalance,
+        });
+      }
+      return { charged: result.charged };
+    });
 }
 
 async function sumLedger(

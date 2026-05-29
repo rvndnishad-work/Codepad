@@ -1,3 +1,6 @@
+"use client";
+
+import { useState, useEffect } from "react";
 import {
   CheckCircle2,
   ChevronRight,
@@ -6,18 +9,33 @@ import {
   ListChecks,
   Share2,
   Target,
+  Users,
+  ShieldCheck,
+  Briefcase
 } from "lucide-react";
 import RevealOnScroll, { RevealItem } from "@/components/scroll/RevealOnScroll";
 import { SpotlightGroup, SpotlightCard } from "@/components/scroll/SpotlightGroup";
 
-// NOTE — Phase 1 (scroll animations) intentionally drops the auto-loop phase
-// machine that lived here previously. The three cards now render in their
-// completed/rest state and rely on the shared RevealOnScroll wrapper for the
-// only motion in this section (a staggered fade-up as the row enters view).
-// Phase 3 of the scroll-animations plan will reintroduce a scroll-pinned
-// story so the user *scrubs* through the three steps as they scroll.
-
 export default function HomeChallengesFlow() {
+  const [persona, setPersona] = useState<"candidate" | "recruiter" | null>(null);
+
+  useEffect(() => {
+    // Initial load
+    const saved = localStorage.getItem("ipad.persona");
+    if (saved === "candidate" || saved === "recruiter") {
+      setPersona(saved as "candidate" | "recruiter");
+    }
+
+    // Event listener for changes
+    const handlePersonaChange = (e: Event) => {
+      setPersona((e as CustomEvent).detail);
+    };
+    window.addEventListener("ipad-persona-change", handlePersonaChange);
+    return () => window.removeEventListener("ipad-persona-change", handlePersonaChange);
+  }, []);
+
+  const isRecruiter = persona === "recruiter";
+
   return (
     <SpotlightGroup>
       <RevealOnScroll
@@ -28,10 +46,11 @@ export default function HomeChallengesFlow() {
           <SpotlightCard className="rounded-3xl w-full h-full">
             <FlowCard
               index={1}
-              icon={<Target className="w-3.5 h-3.5" />}
-              title="Pick a challenge"
+              icon={isRecruiter ? <Briefcase className="w-3.5 h-3.5" /> : <Target className="w-3.5 h-3.5" />}
+              title={isRecruiter ? "Author campaign" : "Pick a challenge"}
+              isRecruiter={isRecruiter}
             >
-              <PickCard />
+              {isRecruiter ? <RecruiterPickCard /> : <PickCard />}
             </FlowCard>
           </SpotlightCard>
         </RevealItem>
@@ -42,10 +61,11 @@ export default function HomeChallengesFlow() {
           <SpotlightCard className="rounded-3xl w-full h-full">
             <FlowCard
               index={2}
-              icon={<Code2 className="w-3.5 h-3.5" />}
-              title="Solve it live"
+              icon={isRecruiter ? <ShieldCheck className="w-3.5 h-3.5" /> : <Code2 className="w-3.5 h-3.5" />}
+              title={isRecruiter ? "Proctor sessions" : "Solve it live"}
+              isRecruiter={isRecruiter}
             >
-              <SolveCard />
+              {isRecruiter ? <RecruiterSolveCard /> : <SolveCard />}
             </FlowCard>
           </SpotlightCard>
         </RevealItem>
@@ -56,10 +76,11 @@ export default function HomeChallengesFlow() {
           <SpotlightCard className="rounded-3xl w-full h-full">
             <FlowCard
               index={3}
-              icon={<ListChecks className="w-3.5 h-3.5" />}
-              title="Build an interview"
+              icon={isRecruiter ? <Users className="w-3.5 h-3.5" /> : <ListChecks className="w-3.5 h-3.5" />}
+              title={isRecruiter ? "Evaluate candidates" : "Build an interview"}
+              isRecruiter={isRecruiter}
             >
-              <BuildCard />
+              {isRecruiter ? <RecruiterBuildCard /> : <BuildCard />}
             </FlowCard>
           </SpotlightCard>
         </RevealItem>
@@ -73,20 +94,26 @@ function FlowCard({
   icon,
   title,
   children,
+  isRecruiter
 }: {
   index: number;
   icon: React.ReactNode;
   title: string;
   children: React.ReactNode;
+  isRecruiter?: boolean;
 }) {
   return (
-    <div className="relative w-full h-full rounded-3xl border border-border bg-panel p-5 hover:border-border-strong transition-colors flex flex-col">
+    <div className={`relative w-full h-full rounded-3xl border bg-panel p-5 transition-colors flex flex-col ${
+      isRecruiter ? "hover:border-indigo-500/40 border-border" : "hover:border-border-strong border-border"
+    }`}>
       <div className="flex items-center gap-2 mb-4">
-        <div className="w-7 h-7 rounded-lg flex items-center justify-center text-xs font-black bg-bg/40 text-muted border border-border">
+        <div className={`w-7 h-7 rounded-lg flex items-center justify-center text-xs font-black bg-bg/40 border ${
+          isRecruiter ? "text-indigo-400 border-indigo-500/25" : "text-muted border-border"
+        }`}>
           {index}
         </div>
         <div className="flex items-center gap-1.5 text-fg">
-          <span className="text-muted">{icon}</span>
+          <span className={isRecruiter ? "text-indigo-400" : "text-muted"}>{icon}</span>
           <span className="font-black text-sm">{title}</span>
         </div>
       </div>
@@ -145,6 +172,44 @@ function PickCard() {
   );
 }
 
+/* ────────── Step 1: Recruiter Pick Card ────────── */
+function RecruiterPickCard() {
+  return (
+    <div className="rounded-xl border border-indigo-500/30 bg-bg/40 p-4 relative min-h-[120px]">
+      <div className="flex items-start justify-between gap-3 mb-3">
+        <div className="min-w-0">
+          <div className="text-fg font-bold text-sm truncate">React Architect</div>
+          <div className="text-muted text-[10px] mt-0.5 uppercase tracking-wider">
+            MCP autograded challenge
+          </div>
+        </div>
+        <div className="text-[10px] font-black uppercase tracking-wider px-2 py-1 rounded-md border text-indigo-400 bg-indigo-500/10 border-indigo-500/30">
+          Active
+        </div>
+      </div>
+      <div className="flex flex-wrap items-center gap-1.5 text-[11px] text-muted">
+        <span className="inline-flex items-center gap-1">
+          <Clock className="w-3 h-3 text-indigo-400 animate-pulse" />
+          60 min
+        </span>
+        <span className="text-muted/30">·</span>
+        <span className="px-1.5 py-0.5 rounded bg-bg/60 border border-border text-[10px] text-fg/80">
+          AI Proctoring
+        </span>
+        <span className="px-1.5 py-0.5 rounded bg-bg/60 border border-border text-[10px] text-fg/80">
+          Jest Grader
+        </span>
+      </div>
+      <div
+        className="absolute -top-2 -right-2 w-7 h-7 rounded-full bg-indigo-500 flex items-center justify-center shadow-md animate-pulse"
+        aria-hidden
+      >
+        <CheckCircle2 className="w-4 h-4 text-white" />
+      </div>
+    </div>
+  );
+}
+
 /* ────────── Step 2: Solve it live ────────── */
 
 const SOLUTION = "return target - sum;";
@@ -166,6 +231,29 @@ function SolveCard() {
           <div className="h-full bg-emerald-500 w-full" />
         </div>
         <span className="text-[10px] font-bold text-emerald-500">3/3 passing</span>
+      </div>
+    </div>
+  );
+}
+
+/* ────────── Step 2: Recruiter Solve Card ────────── */
+function RecruiterSolveCard() {
+  return (
+    <div className="rounded-xl border border-indigo-500/30 bg-bg/40 p-4 font-mono min-h-[120px] text-[10px]">
+      <div className="text-[10px] uppercase tracking-wider text-muted mb-2 font-mono">proctoring_feed.log</div>
+      <div className="text-slate-300 min-h-[1.4em] leading-[1.4em] whitespace-pre flex justify-between">
+        <span>› Tab switches:</span>
+        <span className="text-amber-400 font-bold">1 warning</span>
+      </div>
+      <div className="text-slate-300 min-h-[1.4em] leading-[1.4em] whitespace-pre flex justify-between">
+        <span>› Clipboard:</span>
+        <span className="text-rose-400 font-bold">Blocked paste</span>
+      </div>
+      <div className="mt-3 flex items-center gap-2">
+        <div className="flex-1 h-1.5 bg-slate-800 rounded-full overflow-hidden">
+          <div className="h-full bg-indigo-500 w-full animate-pulse" />
+        </div>
+        <span className="text-[10px] font-bold text-indigo-400">Keystroke telemetry</span>
       </div>
     </div>
   );
@@ -222,6 +310,40 @@ function BuildCard() {
       <div className="flex items-center gap-2 text-[11px] font-bold">
         <Share2 className="w-3 h-3 text-accent" />
         <span className="text-accent">Share link ready</span>
+      </div>
+    </div>
+  );
+}
+
+/* ────────── Step 3: Recruiter Build Card ────────── */
+function RecruiterBuildCard() {
+  return (
+    <div className="rounded-xl border border-indigo-500/30 bg-bg/40 p-4 min-h-[120px]">
+      <div className="flex items-center justify-between mb-2.5">
+        <div className="text-[10px] uppercase tracking-wider text-muted">
+          AI Candidate Dossier
+        </div>
+        <div className="text-[10px] text-emerald-400 font-mono font-bold">
+          94/100
+        </div>
+      </div>
+      <div className="space-y-2 mb-3 text-[11px] text-slate-300">
+        <div className="flex justify-between">
+          <span>Problem Solving:</span>
+          <span className="text-fg font-bold">94%</span>
+        </div>
+        <div className="flex justify-between">
+          <span>Code Quality:</span>
+          <span className="text-fg font-bold">96%</span>
+        </div>
+        <div className="flex justify-between">
+          <span>Proctoring Flag:</span>
+          <span className="text-emerald-400 font-bold uppercase text-[9px]">Clean</span>
+        </div>
+      </div>
+      <div className="flex items-center gap-2 text-[11px] font-bold text-indigo-400">
+        <Share2 className="w-3.5 h-3.5 text-indigo-400" />
+        <span>Dossier ready for review</span>
       </div>
     </div>
   );

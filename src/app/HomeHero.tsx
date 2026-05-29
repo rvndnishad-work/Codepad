@@ -40,11 +40,17 @@ export default function HomeHero({
   const selectPersona = (chosen: "candidate" | "recruiter") => {
     setPersona(chosen);
     localStorage.setItem("ipad.persona", chosen);
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(new CustomEvent("ipad-persona-change", { detail: chosen }));
+    }
   };
 
   const clearPersona = () => {
     setPersona(null);
     localStorage.removeItem("ipad.persona");
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(new CustomEvent("ipad-persona-change", { detail: null }));
+    }
   };
 
   // Scroll-linked parallax measurements
@@ -218,12 +224,12 @@ export default function HomeHero({
 
               {/* Call to Actions */}
               <motion.div
-                className="flex flex-col sm:flex-row items-center justify-center gap-4 max-w-lg mx-auto"
+                className="flex flex-col sm:flex-row items-center justify-center gap-4 max-w-xl mx-auto"
                 style={reducedMotion ? undefined : { y: fastY, opacity: fastOpacity }}
               >
                 <Link
                   href="/challenges"
-                  className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-8 py-4 rounded-xl bg-accent hover:bg-accent-soft text-bg font-bold transition-all transform hover:scale-[1.02] active:scale-[0.98] shadow-[0_0_40px_rgba(var(--accent-rgb),0.25)]"
+                  className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-8 py-4 rounded-xl bg-accent hover:bg-accent-soft text-bg font-bold transition-all transform hover:scale-[1.02] active:scale-[0.98] shadow-[0_0_40px_rgba(var(--accent-rgb),0.25)] whitespace-nowrap"
                 >
                   <Play className="w-5 h-5 fill-current" />
                   Explore Challenges
@@ -232,7 +238,7 @@ export default function HomeHero({
                 {recentSnippet ? (
                   <Link
                     href={`/play/${recentSnippet.slug}`}
-                    className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-8 py-4 rounded-xl bg-surface hover:bg-elevated text-fg border border-border transition-all font-semibold transform hover:scale-[1.02] active:scale-[0.98]"
+                    className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-8 py-4 rounded-xl bg-surface hover:bg-elevated text-fg border border-border transition-all font-semibold transform hover:scale-[1.02] active:scale-[0.98] whitespace-nowrap"
                   >
                     <LayoutGrid className="w-5 h-5 text-accent" />
                     Resume Sandbox
@@ -240,7 +246,7 @@ export default function HomeHero({
                 ) : (
                   <Link
                     href="/playgrounds"
-                    className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-8 py-4 rounded-xl bg-surface hover:bg-elevated text-fg border border-border transition-all font-semibold transform hover:scale-[1.02] active:scale-[0.98]"
+                    className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-8 py-4 rounded-xl bg-surface hover:bg-elevated text-fg border border-border transition-all font-semibold transform hover:scale-[1.02] active:scale-[0.98] whitespace-nowrap"
                   >
                     <Plus className="w-5 h-5" />
                     Open Sandbox Playground
@@ -311,12 +317,12 @@ export default function HomeHero({
 
               {/* Call to Actions */}
               <motion.div
-                className="flex flex-col sm:flex-row items-center justify-center gap-4 max-w-lg mx-auto"
+                className="flex flex-col sm:flex-row items-center justify-center gap-4 max-w-xl mx-auto"
                 style={reducedMotion ? undefined : { y: fastY, opacity: fastOpacity }}
               >
                 <Link
                   href={sessionName ? "/dashboard" : "/login?next=/dashboard"}
-                  className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-8 py-4 rounded-xl bg-indigo-500 hover:bg-indigo-600 text-white font-bold transition-all transform hover:scale-[1.02] active:scale-[0.98] shadow-[0_0_40px_rgba(99,102,241,0.25)]"
+                  className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-8 py-4 rounded-xl bg-indigo-500 hover:bg-indigo-600 text-white font-bold transition-all transform hover:scale-[1.02] active:scale-[0.98] shadow-[0_0_40px_rgba(99,102,241,0.25)] whitespace-nowrap"
                 >
                   <LayoutGrid className="w-5 h-5" />
                   {sessionName ? "Go to Workspaces" : "Access Workspace"}
@@ -324,7 +330,7 @@ export default function HomeHero({
 
                 <Link
                   href="/features"
-                  className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-8 py-4 rounded-xl bg-surface hover:bg-elevated text-fg border border-border transition-all font-semibold transform hover:scale-[1.02] active:scale-[0.98]"
+                  className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-8 py-4 rounded-xl bg-surface hover:bg-elevated text-fg border border-border transition-all font-semibold transform hover:scale-[1.02] active:scale-[0.98] whitespace-nowrap"
                 >
                   <Sparkles className="w-5 h-5 text-indigo-400" />
                   Explore Features

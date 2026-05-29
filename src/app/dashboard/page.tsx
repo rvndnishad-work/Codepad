@@ -17,6 +17,24 @@ export default async function DashboardPage() {
   if (!session?.user?.id) redirect("/login");
   const userId = session.user.id;
 
+  const me = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { email: true },
+  });
+
+  const myTakeHomes = me?.email
+    ? await prisma.takeHomeAssignment.findMany({
+        where: { candidateEmail: me.email.toLowerCase() },
+        orderBy: { createdAt: "desc" },
+        take: 10,
+        include: {
+          challenge: { select: { title: true } },
+          workspace: { select: { name: true } },
+          attempt: { select: { score: true } },
+        },
+      })
+    : [];
+
   const mySnippets = await prisma.snippet.findMany({
     where: { userId },
     orderBy: [{ pinned: "desc" }, { updatedAt: "desc" }],
@@ -149,6 +167,7 @@ export default async function DashboardPage() {
               slug: m.workspace.slug,
               plan: m.workspace.planName,
             }))}
+            takeHomes={myTakeHomes}
           />
         </aside>
       </div>

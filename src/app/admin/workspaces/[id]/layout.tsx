@@ -24,24 +24,34 @@ export default async function WorkspaceDetailLayout({ params, children }: Props)
 
   const { id } = await params;
 
-  const workspace = await prisma.workspace.findUnique({
-    where: { id },
-    select: {
-      id: true,
-      name: true,
-      slug: true,
-      planName: true,
-      createdAt: true,
-      _count: {
-        select: {
-          members: true,
-          challenges: true,
-          takeHomes: true,
-          sessions: true,
+  // Fetch the workspace metadata + counts for every tab in one round-trip.
+  // The attempts count is a cross-table join (no direct workspaceId on
+  // ChallengeAttempt) so it needs its own query — both run in parallel.
+  const [workspace, attemptCount] = await Promise.all([
+    prisma.workspace.findUnique({
+      where: { id },
+      select: {
+        id: true,
+        name: true,
+        slug: true,
+        planName: true,
+        createdAt: true,
+        _count: {
+          select: {
+            members: true,
+            challenges: true,
+            takeHomes: true,
+            sessions: true,
+            candidates: true,
+            aiInterviewSessions: true,
+          },
         },
       },
-    },
-  });
+    }),
+    prisma.challengeAttempt.count({
+      where: { challenge: { workspaceId: id } },
+    }),
+  ]);
 
   if (!workspace) notFound();
 
@@ -87,6 +97,9 @@ export default async function WorkspaceDetailLayout({ params, children }: Props)
           challenges: workspace._count.challenges,
           interviews: workspace._count.sessions,
           replays: workspace._count.takeHomes,
+          candidates: workspace._count.candidates,
+          aiInterviews: workspace._count.aiInterviewSessions,
+          attempts: attemptCount,
         }}
       />
 

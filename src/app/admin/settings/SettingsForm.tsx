@@ -1,27 +1,32 @@
 "use client";
 
 import { useState } from "react";
-import { updateNavLinks, updateB2bSettings, B2bSettingsConfig, updateInterviewArenaSettings, InterviewArenaSettings } from "@/lib/settings";
+import {
+  updateNavLinks,
+  updateB2bSettings,
+  B2bSettingsConfig,
+  updateInterviewArenaSettings,
+  InterviewArenaSettings,
+} from "@/lib/settings";
 import { NavLinkConfig, NavStatus } from "@/lib/settings-constants";
-import { 
-  Eye, 
-  EyeOff, 
-  Clock, 
-  Save, 
-  Loader2, 
-  Users, 
-  DollarSign, 
-  ShieldAlert, 
-  Settings, 
-  CreditCard, 
-  ShieldCheck, 
-  Link2, 
-  Sliders, 
+import {
+  Eye,
+  EyeOff,
+  Clock,
+  Save,
+  Loader2,
+  Users,
+  DollarSign,
+  ShieldAlert,
+  Settings,
+  CreditCard,
+  ShieldCheck,
+  Sliders,
   CheckCircle2,
   Sparkles,
   Zap,
   Play,
-  Brain
+  Brain,
 } from "lucide-react";
 
 export default function SettingsForm({
@@ -39,17 +44,13 @@ export default function SettingsForm({
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
 
-  // Tabbed recruiter state
-  const [activeTab, setActiveTab] = useState<"nav" | "billing" | "proctoring" | "integrations" | "arena">("nav");
+  // Tabbed recruiter state. (ATS integrations moved to per-workspace UI at
+  // /w/[slug]/integrations — see IP-32. Multi-tenant SaaS: each recruiting team
+  // owns their own ATS account, so there's no useful platform-global tier.)
+  const [activeTab, setActiveTab] = useState<"nav" | "billing" | "proctoring" | "arena">("nav");
 
   // Advanced Proctoring Heuristics Slider (Mock/UI State)
   const [sensitivity, setSensitivity] = useState(75);
-
-  // ATS Webhook Fields (Mock/UI State)
-  const [atsLever, setAtsLever] = useState("https://api.lever.co/v1/webhooks/interviewpad");
-  const [atsGreenhouse, setAtsGreenhouse] = useState("https://api.greenhouse.io/v1/webhooks/interviewpad");
-  const [atsAshby, setAtsAshby] = useState("https://api.ashbyhq.com/v1/webhooks/interviewpad");
-  const [atsEnabled, setAtsEnabled] = useState(true);
 
   const handleStatusChange = (href: string, status: NavStatus) => {
     setLinks((prev) =>
@@ -66,6 +67,7 @@ export default function SettingsForm({
         updateB2bSettings(b2bSettings),
         updateInterviewArenaSettings(arenaSettings),
       ]);
+
       setMessage({ type: "success", text: "Settings saved successfully!" });
       setTimeout(() => setMessage(null), 3000);
     } catch (error) {
@@ -81,7 +83,6 @@ export default function SettingsForm({
   const saveSensitivityPreference = () => {
     if (typeof window !== "undefined") {
       localStorage.setItem("ipad_proctoring_sensitivity", sensitivity.toString());
-      localStorage.setItem("ipad_ats_enabled", atsEnabled.toString());
     }
   };
 
@@ -130,18 +131,6 @@ export default function SettingsForm({
         >
           <ShieldCheck className="w-3.5 h-3.5" />
           AI Proctoring & Telemetry
-        </button>
-        <button
-          type="button"
-          onClick={() => setActiveTab("integrations")}
-          className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-xs font-black uppercase tracking-wider transition ${
-            activeTab === "integrations"
-              ? "bg-accent text-bg shadow-sm"
-              : "text-muted hover:text-fg hover:bg-elevated"
-          }`}
-        >
-          <Link2 className="w-3.5 h-3.5" />
-          ATS Webhooks
         </button>
         <button
           type="button"
@@ -372,91 +361,6 @@ export default function SettingsForm({
         </div>
       )}
 
-      {/* Tab 4: ATS Integrations Webhooks */}
-      {activeTab === "integrations" && (
-        <div className="rounded-2xl border border-border bg-surface p-6 animate-fade-in space-y-6">
-          <div className="flex items-center justify-between border-b border-border/40 pb-4">
-            <div>
-              <h3 className="text-xs font-black uppercase tracking-[0.2em] text-muted mb-1 flex items-center gap-2">
-                ATS System Integrations
-              </h3>
-              <p className="text-xs text-muted leading-relaxed">
-                Automatically push graded candidate results and scorecards into your ATS platform.
-              </p>
-            </div>
-
-            <button
-              type="button"
-              onClick={() => setAtsEnabled(prev => !prev)}
-              className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
-                atsEnabled ? "bg-accent" : "bg-border"
-              }`}
-            >
-              <span
-                className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-surface shadow ring-0 transition duration-200 ease-in-out ${
-                  atsEnabled ? "translate-x-5" : "translate-x-0"
-                }`}
-              />
-            </button>
-          </div>
-
-          {atsEnabled ? (
-            <div className="space-y-4">
-              {/* Ashby Integration */}
-              <div className="p-4 rounded-xl border border-border bg-bg/50 space-y-2">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-black uppercase tracking-wider text-fg">Ashby Integration</span>
-                  <span className="px-2 py-0.5 rounded text-[8px] font-black bg-emerald-500/10 text-emerald-400 border border-emerald-500/25">ACTIVE</span>
-                </div>
-                <div className="relative">
-                  <input
-                    type="text"
-                    value={atsAshby}
-                    onChange={(e) => setAtsAshby(e.target.value)}
-                    className="w-full pl-3 pr-4 py-2 bg-bg border border-border rounded-xl text-xs font-mono text-muted focus:outline-none focus:border-accent"
-                  />
-                </div>
-              </div>
-
-              {/* Lever Integration */}
-              <div className="p-4 rounded-xl border border-border bg-bg/50 space-y-2">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-black uppercase tracking-wider text-fg">Lever Integration</span>
-                  <span className="px-2 py-0.5 rounded text-[8px] font-black bg-emerald-500/10 text-emerald-400 border border-emerald-500/25">ACTIVE</span>
-                </div>
-                <div className="relative">
-                  <input
-                    type="text"
-                    value={atsLever}
-                    onChange={(e) => setAtsLever(e.target.value)}
-                    className="w-full pl-3 pr-4 py-2 bg-bg border border-border rounded-xl text-xs font-mono text-muted focus:outline-none focus:border-accent"
-                  />
-                </div>
-              </div>
-
-              {/* Greenhouse Integration */}
-              <div className="p-4 rounded-xl border border-border bg-bg/50 space-y-2">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-black uppercase tracking-wider text-fg">Greenhouse Integration</span>
-                  <span className="px-2 py-0.5 rounded text-[8px] font-black bg-emerald-500/10 text-emerald-400 border border-emerald-500/25">ACTIVE</span>
-                </div>
-                <div className="relative">
-                  <input
-                    type="text"
-                    value={atsGreenhouse}
-                    onChange={(e) => setAtsGreenhouse(e.target.value)}
-                    className="w-full pl-3 pr-4 py-2 bg-bg border border-border rounded-xl text-xs font-mono text-muted focus:outline-none focus:border-accent"
-                  />
-                </div>
-              </div>
-            </div>
-          ) : (
-            <div className="rounded-xl border border-border bg-[#101424]/40 p-8 text-center text-xs text-muted">
-              ATS integrations are disabled. Toggle the switch to configure Greenhouse, Ashby, and Lever.
-            </div>
-          )}
-        </div>
-      )}
 
       {/* Tab 5: Interview Arena Settings */}
       {activeTab === "arena" && (
@@ -663,3 +567,4 @@ function StatusButton({
     </button>
   );
 }
+

@@ -30,6 +30,7 @@ import {
   StickyNote,
   Calendar,
   User as UserIcon,
+  Link2,
 } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -59,10 +60,40 @@ interface TodoRow {
   completedAt: string | null;
 }
 
+export interface DependencyEdge {
+  id: string;
+  fromId: string;
+  toId: string;
+  /** "BLOCKS" | "FOLLOWS_FROM" | "RELATES_TO" */
+  type: string;
+}
+
 interface Props {
   todos: TodoRow[];
   categories: string[];
+  dependencies: DependencyEdge[];
 }
+
+/**
+ * Per-direction display copy for a dependency type. Outgoing means the row's
+ * `fromId === this.id`; incoming is `toId === this.id`. The inverse phrasing
+ * is what shows up in the "linked tickets" section of the detail modal.
+ */
+const DEP_LABEL_OUT: Record<string, string> = {
+  BLOCKS: "Blocks",
+  FOLLOWS_FROM: "Spawned from",
+  RELATES_TO: "Relates to",
+};
+const DEP_LABEL_IN: Record<string, string> = {
+  BLOCKS: "Blocked by",
+  FOLLOWS_FROM: "Spawned",
+  RELATES_TO: "Relates to",
+};
+const DEP_TONE: Record<string, string> = {
+  BLOCKS: "border-rose-500/30 bg-rose-500/[0.05] text-rose-300",
+  FOLLOWS_FROM: "border-indigo-500/30 bg-indigo-500/[0.05] text-indigo-300",
+  RELATES_TO: "border-slate-500/30 bg-slate-500/[0.05] text-slate-300",
+};
 
 const COLUMNS: { id: TodoStatus; label: string; accent: string }[] = [
   { id: "BACKLOG", label: "Backlog", accent: "border-slate-500/30" },
@@ -87,6 +118,7 @@ const STATUS_STYLES: Record<string, string> = {
 export default function AdminTodosConsole({
   todos: initialTodos,
   categories: initialCategories,
+  dependencies,
 }: Props) {
   const [todos, setTodos] = useState<TodoRow[]>(initialTodos);
   const [filterCategory, setFilterCategory] = useState<string>("ALL");
@@ -347,6 +379,9 @@ export default function AdminTodosConsole({
           onClose={() => setOpenTicketId(null)}
           onPatch={patchTodo}
           onDelete={handleDelete}
+          dependencies={dependencies}
+          todos={todos}
+          onOpenLinked={(id) => setOpenTicketId(id)}
         />
       )}
     </div>
@@ -552,12 +587,46 @@ function TicketDetailModal({
   onClose,
   onPatch,
   onDelete,
+  dependencies,
+  todos,
+  onOpenLinked,
 }: {
   todo: TodoRow;
   onClose: () => void;
   onPatch: (id: string, patch: Partial<TodoRow>) => void;
   onDelete: (t: TodoRow) => void;
+  dependencies: DependencyEdge[];
+  todos: TodoRow[];
+  onOpenLinked: (id: string) => void;
 }) {
+  // Index todos by id once — modal renders many chips and we don't want to
+  // re-scan the array per chip.
+  const todosById = useMemo(() => {
+    const m = new Map<string, TodoRow>();
+    todos.forEach((t) => m.set(t.id, t));
+    return m;
+  }, [todos]);
+
+  // Bucket dependency edges into outgoing and incoming groups, keyed by type.
+  // Outgoing reads "this → other" via DEP_LABEL_OUT; incoming reads
+  // "other → this" via DEP_LABEL_IN.
+  const linked = useMemo(() => {
+    const outgoing: Record<string, { dep: DependencyEdge; other: TodoRow }[]> = {};
+    const incoming: Record<string, { dep: DependencyEdge; other: TodoRow }[]> = {};
+    for (const d of dependencies) {
+      if (d.fromId === todo.id) {
+        const other = todosById.get(d.toId);
+        if (!other) continue;
+        (outgoing[d.type] ||= []).push({ dep: d, other });
+      } else if (d.toId === todo.id) {
+        const other = todosById.get(d.fromId);
+        if (!other) continue;
+        (incoming[d.type] ||= []).push({ dep: d, other });
+      }
+    }
+    return { outgoing, incoming };
+  }, [dependencies, todosById, todo.id]);
+
   // Portal to document.body — the admin layout has `<main z-10>` which creates
   // a stacking context, and the sidebar is `lg:z-20` as a sibling at the
   // layout level. Rendering the modal inline would put its z-50 *inside* the
@@ -676,6 +745,12 @@ function TicketDetailModal({
                   onPatch(todo.id, { body: next });
                   await updateTodoAction(todo.id, { body: next });
                 }}
+              />
+
+              <LinkedTicketsSection
+                outgoing={linked.outgoing}
+                incoming={linked.incoming}
+                onOpenLinked={onOpenLinked}
               />
 
               <AcceptanceCriteriaSection
@@ -1145,6 +1220,102 @@ function AcceptanceCriteriaSection({
           className="flex-1 px-2 py-1.5 rounded-md border border-border bg-bg text-xs text-fg focus:outline-none focus:border-accent"
         />
       </form>
+    </div>
+  );
+}
+
+/**
+ * Linked-tickets section for the ticket detail modal. Reads the pre-bucketed
+ * `outgoing` and `incoming` edge groups and renders one row per dependency
+ * type that has any links, with chips that open the linked ticket's modal.
+ *
+ * Empty state: render nothing rather than show "no links yet" — the section
+ * is only useful when there's structure to show.
+ */
+function LinkedTicketsSection({
+  outgoing,
+  incoming,
+  onOpenLinked,
+}: {
+  outgoing: Record<string, { dep: DependencyEdge; other: TodoRow }[]>;
+  incoming: Record<string, { dep: DependencyEdge; other: TodoRow }[]>;
+  onOpenLinked: (id: string) => void;
+}) {
+  const orderedTypes = ["BLOCKS", "FOLLOWS_FROM", "RELATES_TO"] as const;
+  const hasAny = orderedTypes.some(
+    (t) => (outgoing[t]?.length ?? 0) > 0 || (incoming[t]?.length ?? 0) > 0,
+  );
+  if (!hasAny) return null;
+
+  return (
+    <div className="space-y-2">
+      <div className="text-[10px] font-black uppercase text-muted tracking-wider flex items-center gap-1">
+        <Link2 className="w-3.5 h-3.5" /> Linked tickets
+      </div>
+      <div className="rounded-lg border border-border bg-bg/40 p-3 space-y-2.5">
+        {orderedTypes.map((type) => {
+          const out = outgoing[type] ?? [];
+          const inc = incoming[type] ?? [];
+          if (out.length === 0 && inc.length === 0) return null;
+          return (
+            <div key={type} className="space-y-1.5">
+              {out.length > 0 && (
+                <LinkedRow
+                  label={DEP_LABEL_OUT[type] ?? type}
+                  tone={DEP_TONE[type] ?? ""}
+                  items={out.map(({ other }) => other)}
+                  onOpenLinked={onOpenLinked}
+                />
+              )}
+              {inc.length > 0 && (
+                <LinkedRow
+                  label={DEP_LABEL_IN[type] ?? type}
+                  tone={DEP_TONE[type] ?? ""}
+                  items={inc.map(({ other }) => other)}
+                  onOpenLinked={onOpenLinked}
+                />
+              )}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+function LinkedRow({
+  label,
+  tone,
+  items,
+  onOpenLinked,
+}: {
+  label: string;
+  tone: string;
+  items: TodoRow[];
+  onOpenLinked: (id: string) => void;
+}) {
+  return (
+    <div className="flex items-start gap-2">
+      <div className="text-[10px] font-bold uppercase tracking-wider text-muted/80 w-[88px] shrink-0 pt-1">
+        {label}
+      </div>
+      <div className="flex flex-wrap gap-1.5 flex-1 min-w-0">
+        {items.map((t) => (
+          <button
+            key={t.id}
+            type="button"
+            onClick={() => onOpenLinked(t.id)}
+            className={`inline-flex items-center gap-1.5 px-2 py-1 rounded-md border text-[10.5px] font-semibold hover:brightness-125 transition max-w-full ${tone}`}
+            title={t.title}
+          >
+            <span className="font-mono shrink-0">{t.ticketKey ?? "—"}</span>
+            <span className="text-fg/90 font-normal truncate">{t.title}</span>
+            {t.status === "DONE" && (
+              <span className="text-emerald-400 shrink-0">✓</span>
+            )}
+          </button>
+        ))}
+      </div>
     </div>
   );
 }

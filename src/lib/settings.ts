@@ -147,5 +147,3 @@ export async function updateInterviewArenaSettings(config: InterviewArenaSetting
   });
 }
 
-
-

@@ -168,10 +168,10 @@ export default function BlogsBulkTable({
         <div className="fixed inset-x-0 bottom-4 z-40 flex justify-center px-4 pointer-events-none">
           <div className="pointer-events-auto bg-bg/95 backdrop-blur border border-border rounded-2xl shadow-2xl px-4 py-3 flex flex-wrap items-center gap-2 max-w-[920px]">
             <div className="flex items-center gap-2 pr-3 border-r border-border">
-              <span className="inline-flex items-center justify-center w-7 h-7 rounded-full bg-accent text-bg text-xs font-black tabular-nums">
+              <span className="inline-flex items-center justify-center w-7 h-7 rounded-full bg-accent text-bg text-xs font-bold tabular-nums">
                 {selected.size}
               </span>
-              <span className="text-xs font-bold text-fg">selected</span>
+              <span className="text-xs font-semibold text-fg">selected</span>
             </div>
 
             {BAR_ACTIONS.map((a) => {
@@ -183,7 +183,7 @@ export default function BlogsBulkTable({
                   key={a}
                   onClick={() => runAction(a)}
                   disabled={busy !== null}
-                  className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-[11px] font-bold transition disabled:opacity-50 ${TONE_CLASS[conf.tone]}`}
+                  className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-[11px] font-semibold transition disabled:opacity-50 ${TONE_CLASS[conf.tone]}`}
                 >
                   {isBusy ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Icon className="w-3.5 h-3.5" />}
                   {conf.label}

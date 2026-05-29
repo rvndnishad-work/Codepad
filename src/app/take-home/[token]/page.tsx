@@ -1,13 +1,45 @@
 import { notFound, redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import Link from "next/link";
+import { headers } from "next/headers";
 import { Award, Clock, Calendar, CheckCircle2, AlertTriangle, ShieldCheck, Play, ChevronDown, Sparkles } from "lucide-react";
 import StartButton from "./StartButton";
+import MobileLobby from "@/components/MobileLobby";
+import { shouldRenderMobileLobby } from "@/lib/device";
 
-type Props = { params: Promise<{ token: string }> };
+type Props = {
+  params: Promise<{ token: string }>;
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+};
 
-export default async function TakeHomeLobbyPage({ params }: Props) {
+export default async function TakeHomeLobbyPage({ params, searchParams }: Props) {
   const { token } = await params;
+  const sp = (await searchParams) ?? {};
+
+  // IP-38: mobile-handoff lobby. Bail to the QR/email lobby before doing any
+  // DB work so a phone-arriving candidate doesn't trigger a status mutation
+  // they can't follow through on.
+  const hdrs = await headers();
+  const showLobby = shouldRenderMobileLobby({
+    userAgent: hdrs.get("user-agent"),
+    searchParams: sp,
+    cookieHeader: hdrs.get("cookie"),
+  });
+  if (showLobby) {
+    const host = hdrs.get("host") ?? "interviewpad.in";
+    const proto = hdrs.get("x-forwarded-proto") ?? "https";
+    const fullUrl = `${proto}://${host}/take-home/${token}`;
+    return (
+      <MobileLobby
+        url={fullUrl}
+        title="Open your take-home on desktop"
+        subtitle="Take-homes use a full IDE — scan the code below with your laptop to continue."
+        tokenLabel="take-home"
+        emailEnabled={!!process.env.RESEND_API_KEY}
+      />
+    );
+  }
+
   const assignment = await prisma.takeHomeAssignment.findUnique({
     where: { token },
     include: {

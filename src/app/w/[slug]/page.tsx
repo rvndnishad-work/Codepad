@@ -2,6 +2,7 @@ import { prisma } from "@/lib/prisma";
 import { notFound } from "next/navigation";
 import WorkspaceDashboardClient from "./WorkspaceDashboardClient";
 import { Building2 } from "lucide-react";
+import { PIPELINE_STAGES, type PipelineStage } from "@/lib/crm/stages";
 
 type Props = {
   params: Promise<{ slug: string }>;
@@ -45,8 +46,9 @@ export default async function WorkspaceDashboardPage({ params }: Props) {
       },
       takeHomes: {
         include: {
-          challenge: { select: { title: true } },
-          attempt: { select: { score: true } },
+          challenge: { select: { id: true, title: true, difficulty: true } },
+          attempt: { select: { score: true, startedAt: true } },
+          candidate: { select: { id: true, stage: true } },
         },
         orderBy: { createdAt: "desc" },
       },
@@ -80,7 +82,7 @@ export default async function WorkspaceDashboardPage({ params }: Props) {
 
   if (!workspace) notFound();
 
-  const [promptScenarios, promptAttempts] = await Promise.all([
+  const [promptScenarios, promptAttempts, globalChallenges] = await Promise.all([
     prisma.promptScenario.findMany({
       where: {
         OR: [
@@ -101,6 +103,16 @@ export default async function WorkspaceDashboardPage({ params }: Props) {
         scenario: { select: { title: true, category: true, difficulty: true } },
       },
       orderBy: { createdAt: "desc" },
+    }),
+    prisma.challenge.findMany({
+      where: {
+        OR: [
+          { published: true, workspaceId: null },
+          { workspaceId: workspace.id },
+        ],
+      },
+      select: { id: true, title: true, difficulty: true },
+      orderBy: { title: "asc" },
     }),
   ]);
 
@@ -133,9 +145,15 @@ export default async function WorkspaceDashboardPage({ params }: Props) {
     timeLimitMin: th.timeLimitMin,
     startedAt: th.startedAt ? th.startedAt.toISOString() : null,
     submittedAt: th.submittedAt ? th.submittedAt.toISOString() : null,
+    createdAt: th.createdAt.toISOString(),
+    challengeId: th.challenge.id,
     challengeTitle: th.challenge.title,
+    challengeDifficulty: th.challenge.difficulty,
     attemptId: th.attemptId,
     score: th.attempt?.score ?? null,
+    attemptStartedAt: th.attempt?.startedAt ? th.attempt.startedAt.toISOString() : null,
+    candidateId: th.candidate?.id ?? null,
+    candidateStage: th.candidate?.stage ?? null,
   }));
 
   // Map workspace members
@@ -168,7 +186,7 @@ export default async function WorkspaceDashboardPage({ params }: Props) {
     interviewerEmail: s.user.email,
   }));
 
-  // Map workspace candidates — first-class CRM entity
+  // Map workspace candidates
   const formattedCandidates = workspace.candidates.map((c) => ({
     id: c.id,
     name: c.name,
@@ -176,12 +194,33 @@ export default async function WorkspaceDashboardPage({ params }: Props) {
     phone: c.phone,
     source: c.source,
     status: c.status,
+    stage: c.stage,
+    rejectReason: c.rejectReason,
+    rejectReasonNote: c.rejectReasonNote,
+    stageChangedAt: c.stageChangedAt ? c.stageChangedAt.toISOString() : null,
     tags: c.tags ? (JSON.parse(c.tags) as string[]) : [],
     takeHomeCount: c._count.takeHomes,
     sessionCount: c._count.sessions,
     updatedAt: c.updatedAt.toISOString(),
     createdAt: c.createdAt.toISOString(),
   }));
+
+  // Bucket candidates for Pipeline view
+  const buckets: Record<PipelineStage, typeof formattedCandidates> = {
+    APPLIED: [],
+    SCREENED: [],
+    TAKE_HOME: [],
+    ONSITE: [],
+    OFFER: [],
+    HIRED: [],
+    REJECTED: [],
+  };
+  for (const c of formattedCandidates) {
+    const s = (PIPELINE_STAGES as readonly string[]).includes(c.stage)
+      ? (c.stage as PipelineStage)
+      : "APPLIED";
+    buckets[s].push(c);
+  }
 
   return (
     <div className="space-y-6">
@@ -209,10 +248,12 @@ export default async function WorkspaceDashboardPage({ params }: Props) {
           planName: workspace.planName,
         }}
         challenges={workspace.challenges}
+        pipelineChallenges={globalChallenges}
         takeHomes={formattedTakeHomes}
         members={formattedMembers}
         sessions={formattedSessions}
         candidates={formattedCandidates}
+        initialBuckets={buckets as any}
         promptScenarios={promptScenarios}
         promptAttempts={formattedPromptAttempts}
       />

@@ -88,6 +88,47 @@
   ::-webkit-scrollbar-thumb:hover { background: var(--subtle); }
 }
 
+/* ────────────────────────────────────────────────────────────────────────
+ * Chunkier horizontal scrollbar for long Kanban / pipeline surfaces.
+ * Scoped via `.kanban-scroll` so it doesn't bleed into other scroll
+ * containers. Bigger click target, persistent visibility, and an accent
+ * hover state so the affordance is discoverable + grabbable on long pipelines.
+ * Falls back to the base scrollbar on browsers that ignore these prefixes.
+ * ──────────────────────────────────────────────────────────────────────── */
+.kanban-scroll {
+  /* Firefox + modern Chromium */
+  scrollbar-width: auto;
+  scrollbar-color: var(--border-strong) transparent;
+  scroll-behavior: smooth;
+  /* Always show the bar so users notice they can scroll horizontally */
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+.kanban-scroll::-webkit-scrollbar {
+  height: 14px;
+}
+.kanban-scroll::-webkit-scrollbar-track {
+  background: var(--border);
+  border-radius: 10px;
+  margin-inline: 1rem;
+}
+.kanban-scroll::-webkit-scrollbar-thumb {
+  background: var(--border-strong);
+  border: 3px solid transparent;
+  background-clip: padding-box;
+  border-radius: 10px;
+  min-width: 60px; /* don't let the thumb shrink to a sliver on very long tracks */
+  transition: background-color 120ms ease;
+}
+.kanban-scroll::-webkit-scrollbar-thumb:hover {
+  background: var(--accent);
+  background-clip: padding-box;
+}
+.kanban-scroll::-webkit-scrollbar-thumb:active {
+  background: var(--accent-soft);
+  background-clip: padding-box;
+}
+
 /* Sandpack should fill available space */
 .sp-wrapper,
 .sp-layout {

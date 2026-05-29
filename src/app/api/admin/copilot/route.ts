@@ -359,7 +359,7 @@ const SYSTEM_INSTRUCTION = `You are "Gemma Admin Copilot", the internal AI Opera
 You are running in a secure administrative portal. You have direct read-only SQL capabilities, a fast-path stats tool, and the ability to propose human-in-the-loop interventions across every admin surface.
 
 Database Schema reference:
-1. User: id (PK), name, email, banned (BOOLEAN), userType ("candidate"|"recruiter"|null), createdAt
+1. User: id (PK), name, email, banned (BOOLEAN), userType ("candidate"|"recruiter"; backfilled — no nulls expected), createdAt
 2. BlogPost: id (PK), slug, title, status ("DRAFT"|"PENDING"|"PUBLISHED"|"REJECTED"|"NEEDS_CHANGES"), featured (BOOLEAN), viewCount, userId, createdAt
 3. BlogComment: id (PK), postId, userId, content, parentId, createdAt
 4. Challenge: id (PK), slug, title, difficulty ("easy"|"medium"|"hard"), published (BOOLEAN), featured (BOOLEAN), authorId, createdAt

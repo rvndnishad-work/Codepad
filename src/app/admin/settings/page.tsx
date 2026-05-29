@@ -19,10 +19,10 @@ export default async function SettingsPage() {
         <p className="text-sm text-muted mt-1">Configure global application behavior.</p>
       </div>
 
-      <SettingsForm 
-        initialLinks={links} 
-        initialB2bSettings={b2bSettings} 
-        initialArenaSettings={arenaSettings} 
+      <SettingsForm
+        initialLinks={links}
+        initialB2bSettings={b2bSettings}
+        initialArenaSettings={arenaSettings}
       />
     </div>
   );

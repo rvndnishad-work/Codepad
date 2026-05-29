@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Newspaper, Keyboard, Info, ExternalLink, MessageSquare, Building2, Plus, Sparkles } from "lucide-react";
+import { Newspaper, Keyboard, Info, ExternalLink, MessageSquare, Building2, Plus, Sparkles, ArrowRight, Clock, CheckCircle2 } from "lucide-react";
 
 const NEWS = [
   { title: "Monaco Editor Intelligence Boost", date: "May 2", href: "#" },
@@ -23,11 +23,66 @@ type WorkspaceItem = {
 
 export default function DashboardSidebar({
   workspaces = [],
+  takeHomes = [],
 }: {
   workspaces?: WorkspaceItem[];
+  takeHomes?: any[];
 }) {
   return (
     <div className="space-y-6">
+      {/* Take-Home Assignments */}
+      {takeHomes.length > 0 && (
+        <div className="rounded-3xl border border-border bg-gradient-to-br from-panel/90 to-surface/40 p-6 overflow-hidden shadow-sm relative">
+          <div className="absolute top-0 right-0 w-32 h-32 rounded-full bg-indigo-500/10 blur-[50px] pointer-events-none" />
+          
+          <div className="flex items-center gap-2 mb-4">
+            <Clock className="w-4 h-4 text-indigo-400" />
+            <h3 className="text-xs font-black uppercase tracking-widest text-fg">
+              Assigned Assessments
+            </h3>
+          </div>
+
+          <div className="space-y-3">
+            {takeHomes.map((th) => {
+              const statusColor =
+                th.status === "SUBMITTED" ? "text-emerald-500 border-emerald-500/25 bg-emerald-500/10"
+                : th.status === "ACTIVE" ? "text-indigo-400 border-indigo-500/25 bg-indigo-500/10"
+                : th.status === "EXPIRED" ? "text-rose-400 border-rose-500/25 bg-rose-500/10"
+                : "text-amber-400 border-amber-500/25 bg-amber-500/10";
+              const expired = th.expiresAt && new Date(th.expiresAt).getTime() < Date.now();
+              const href = th.status === "SUBMITTED" ? "#" : expired ? "#" : `/take-home/${th.token}`;
+              
+              return (
+                <div key={th.id} className="p-3 rounded-xl border border-border bg-surface/50 hover:bg-surface transition-colors space-y-2">
+                  <div className="flex items-start justify-between gap-2">
+                    <Link href={href} className="font-bold text-xs text-fg hover:text-indigo-400 transition-colors line-clamp-1">
+                      {th.challenge.title}
+                    </Link>
+                    <span className={`shrink-0 inline-flex items-center px-1.5 py-0.5 rounded border text-[8px] font-black uppercase tracking-wider ${statusColor}`}>
+                      {th.status}
+                    </span>
+                  </div>
+                  
+                  <div className="flex items-center justify-between mt-1">
+                    <div className="text-[10px] text-muted">
+                      From <span className="font-semibold text-fg/80">{th.workspace?.name ?? "—"}</span>
+                    </div>
+                    {th.status !== "SUBMITTED" && !expired && (
+                      <Link
+                        href={href}
+                        className="inline-flex items-center gap-1 text-[10px] font-bold text-indigo-400 hover:text-indigo-300 transition-colors group"
+                      >
+                        Start <ArrowRight className="w-3 h-3 group-hover:translate-x-0.5 transition-transform" />
+                      </Link>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
       {/* Corporate Hubs Section */}
       <div className="rounded-3xl border border-indigo-500/20 bg-indigo-500/5 p-6 relative overflow-hidden">
         {/* Background shine */}

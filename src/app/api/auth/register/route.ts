@@ -69,7 +69,10 @@ export async function POST(req: Request) {
         email,
         name: name ?? email.split("@")[0],
         passwordHash,
-        userType: userType ?? null,
+        // userType is always set so the admin can rely on a candidate/recruiter
+        // partition. Most signups default to "candidate"; recruiters opt in
+        // explicitly via the signup form.
+        userType: userType ?? "candidate",
       },
     });
   }

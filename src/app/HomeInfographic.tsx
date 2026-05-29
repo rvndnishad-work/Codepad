@@ -21,7 +21,7 @@ import {
 import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 import RevealOnScroll, { RevealItem } from "@/components/scroll/RevealOnScroll";
 
-type Stage = "vfs" | "yjs" | "sandbox" | "telemetry";
+type Stage = "vfs" | "yjs" | "sandbox" | "telemetry" | "mcp" | "ats" | "antiCheat" | "dossier";
 
 interface StageInfo {
   id: Stage;
@@ -67,9 +67,335 @@ const STAGES: StageInfo[] = [
   }
 ];
 
+const RECRUITER_STAGES: StageInfo[] = [
+  {
+    id: "mcp",
+    number: "01",
+    tag: "Design",
+    title: "MCP Challenge Authoring",
+    desc: "Create bespoke screening challenges. Connect your private custom prompts, rubrics, and autograders via Model Context Protocol.",
+    metrics: ["MCP integration", "Custom LLM rubrics", "JUnit/Jest autograders"]
+  },
+  {
+    id: "ats",
+    number: "02",
+    tag: "Integrations",
+    title: "ATS Sync & Campaign Lobby",
+    desc: "Deploy screening lobbies and track candidate campaigns directly inside your ATS (Greenhouse, Lever, Ashby) with expiring tokens.",
+    metrics: ["ATS sync webhooks", "Expiring link tokens", "ID verification lobby"]
+  },
+  {
+    id: "antiCheat",
+    number: "03",
+    tag: "Security",
+    title: "Anti-Cheat Sandbox & Logs",
+    desc: "Monitor candidates in real-time. Detect browser tab changes, lock copy-pastes, and compile attempts with full playback logs.",
+    metrics: ["Tab change telemetry", "Clipboard block tracking", "Full timeline replay"]
+  },
+  {
+    id: "dossier",
+    number: "04",
+    tag: "Evaluation",
+    title: "AI Dossier & Radar Reports",
+    desc: "AI automatically scores candidate code across custom rubrics (Problem Solving, Security, Speed) and compiles premium PDF dossiers.",
+    metrics: ["AI grading dossier", "Radar metric charts", "Standardized rubrics"]
+  }
+];
+
+/* ─────────────────────────────────────────────────────────────────
+   Stage 1: MCP Grader Tool Simulator
+   ──────────────────────────────────────────────────────────────── */
+function McpSimulator() {
+  const [activeTool, setActiveTool] = useState("grade_structure");
+
+  return (
+    <motion.div 
+      initial={{ opacity: 0, scale: 0.95 }}
+      animate={{ opacity: 1, scale: 1 }}
+      exit={{ opacity: 0, scale: 0.95 }}
+      className="w-full grid grid-cols-1 sm:grid-cols-5 gap-4 font-mono text-[10px] text-slate-200"
+    >
+      <div className="sm:col-span-2 border border-slate-800 bg-slate-950/60 rounded-xl p-3 flex flex-col gap-1.5">
+        <div className="text-[9px] font-bold uppercase text-slate-500 tracking-wider mb-1 flex items-center gap-1.5">
+          <Network className="w-3 h-3 text-indigo-400" /> MCP Catalog
+        </div>
+        {[
+          { id: "grade_structure", label: "grade_structure", desc: "Code quality heuristics" },
+          { id: "grade_performance", label: "grade_performance", desc: "Big-O time & space" },
+          { id: "check_anti_cheat", label: "check_anti_cheat", desc: "Plagiarism checker" }
+        ].map(t => (
+          <button
+            key={t.id}
+            type="button"
+            onClick={() => setActiveTool(t.id)}
+            className={`text-left p-2 rounded border transition-all ${
+              activeTool === t.id ? "bg-slate-900 border-indigo-500/30 text-white" : "border-transparent hover:bg-slate-900/40 text-slate-400"
+            }`}
+          >
+            <div className="font-bold text-[10px] text-indigo-400">{t.label}</div>
+            <div className="text-[8px] text-slate-500">{t.desc}</div>
+          </button>
+        ))}
+      </div>
+
+      <div className="sm:col-span-3 border border-slate-800 bg-slate-950/40 rounded-xl p-3 flex flex-col justify-between min-h-[160px] text-slate-400">
+        <div>
+          <div className="flex items-center justify-between border-b border-slate-900 pb-2 mb-2">
+            <span className="text-[8px] uppercase tracking-wider text-slate-500">JSON-RPC Session</span>
+            <span className="w-1.5 h-1.5 rounded-full bg-indigo-500" />
+          </div>
+          {activeTool === "grade_structure" && (
+            <div className="space-y-1">
+              <div><span className="text-indigo-400">› Call:</span> grade_structure()</div>
+              <div><span className="text-slate-600">Checking complexity, class bounds...</span></div>
+              <div className="text-emerald-400">✓ Clean separation of layout files (95/100)</div>
+              <div className="text-emerald-400">✓ No hardcoded environment variables</div>
+            </div>
+          )}
+          {activeTool === "grade_performance" && (
+            <div className="space-y-1">
+              <div><span className="text-indigo-400">› Call:</span> grade_performance()</div>
+              <div><span className="text-slate-600">Evaluating sandbox runtime benchmark...</span></div>
+              <div className="text-emerald-400">✓ Average execution time: 0.04 ms (O(1))</div>
+              <div className="text-amber-400">▲ Memory footprint: 18.2MB (Expected: &lt;15MB)</div>
+            </div>
+          )}
+          {activeTool === "check_anti_cheat" && (
+            <div className="space-y-1">
+              <div><span className="text-indigo-400">› Call:</span> check_anti_cheat()</div>
+              <div><span className="text-slate-600">Cross-referencing GitHub snippets...</span></div>
+              <div className="text-emerald-400">✓ 98% original keystroke cadence pattern</div>
+              <div className="text-emerald-400">✓ Plagiarism probability: 2% (Safe bounds)</div>
+            </div>
+          )}
+        </div>
+        <div className="mt-2 pt-2 border-t border-slate-900 flex justify-between items-center text-[8px] text-slate-500">
+          <span>SERVER: ONLINE</span>
+          <span>MCP PROTOCOL V1.2</span>
+        </div>
+      </div>
+    </motion.div>
+  );
+}
+
+/* ─────────────────────────────────────────────────────────────────
+   Stage 2: ATS & Lobby Simulator
+   ──────────────────────────────────────────────────────────────── */
+function AtsSimulator() {
+  const [candidates, setCandidates] = useState([
+    { name: "Arvin Nishad", status: "In Lobby", role: "Frontend Architect", badge: "LOBBY" },
+    { name: "Sarah Connor", status: "Invite Sent", role: "SecOps Engineer", badge: "SENT" }
+  ]);
+
+  return (
+    <motion.div 
+      initial={{ opacity: 0, scale: 0.95 }}
+      animate={{ opacity: 1, scale: 1 }}
+      exit={{ opacity: 0, scale: 0.95 }}
+      className="w-full flex flex-col gap-4 font-mono text-[10px] text-slate-200"
+    >
+      <div className="border border-slate-800 bg-slate-950/60 rounded-xl p-4 relative min-h-[160px] flex flex-col justify-between">
+        <div className="space-y-3">
+          <div className="text-[9px] font-bold uppercase text-slate-500 tracking-wider flex items-center gap-1.5">
+            <Users className="w-3.5 h-3.5 text-indigo-400" /> ATS Campaign Lobby
+          </div>
+          <div className="space-y-2">
+            {candidates.map((c, i) => (
+              <div key={i} className="flex justify-between items-center bg-slate-900/60 p-2.5 rounded-lg border border-slate-800">
+                <div className="flex items-center gap-2">
+                  <div className="w-2.5 h-2.5 rounded-full bg-indigo-500" />
+                  <div>
+                    <div className="font-bold text-white">{c.name}</div>
+                    <div className="text-[8px] text-slate-500">{c.role}</div>
+                  </div>
+                </div>
+                <span className={`px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-wider ${
+                  c.badge === "LOBBY" ? "bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 animate-pulse" : "bg-slate-800 text-slate-500"
+                }`}>
+                  {c.status}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+        <div className="flex justify-between text-[8px] text-slate-500 border-t border-slate-900 pt-2.5">
+          <span>ATS CONNECTIONS: 3 ACTIVE</span>
+          <span className="text-emerald-400">Greenhouse Webhook: OK</span>
+        </div>
+      </div>
+    </motion.div>
+  );
+}
+
+/* ─────────────────────────────────────────────────────────────────
+   Stage 3: Candidate Live Proctoring Monitor
+   ──────────────────────────────────────────────────────────────── */
+function AntiCheatSimulator() {
+  const [logs, setLogs] = useState<string[]>([]);
+  const [status, setStatus] = useState("ACTIVE");
+  const timersRef = useRef<ReturnType<typeof setTimeout>[]>([]);
+
+  useEffect(() => {
+    const steps = [
+      { log: "[11:33:05] Session created. Entering sandbox environment...", status: "ACTIVE" },
+      { log: "[11:33:12] Candidate blurred tab. Focus lost.", status: "TAB_BLUR" },
+      { log: "[11:33:18] Warning: Tried copying code block from external site.", status: "CLIPBOARD_WARN" },
+      { log: "[11:33:25] Clipboard paste BLOCKED by Interviewpad CSP.", status: "BLOCKED" },
+      { log: "[11:33:30] Focus restored. Active coding resumed.", status: "ACTIVE" }
+    ];
+
+    let tIndex = 0;
+    const runLogs = () => {
+      if (tIndex < steps.length) {
+        setLogs(prev => [...prev, steps[tIndex].log]);
+        setStatus(steps[tIndex].status);
+        tIndex++;
+        const t = setTimeout(runLogs, 1500);
+        timersRef.current.push(t);
+      } else {
+        const t = setTimeout(() => {
+          setLogs([]);
+          setStatus("ACTIVE");
+          tIndex = 0;
+          runLogs();
+        }, 4000);
+        timersRef.current.push(t);
+      }
+    };
+
+    runLogs();
+    return () => timersRef.current.forEach(clearTimeout);
+  }, []);
+
+  return (
+    <motion.div 
+      initial={{ opacity: 0, scale: 0.95 }}
+      animate={{ opacity: 1, scale: 1 }}
+      exit={{ opacity: 0, scale: 0.95 }}
+      className="w-full flex flex-col gap-4 font-mono text-[10px] text-slate-200"
+    >
+      <div className="border border-slate-800 bg-slate-950/60 rounded-xl p-4 relative min-h-[160px] flex flex-col justify-between">
+        <div className="space-y-3">
+          <div className="flex justify-between items-center">
+            <div className="text-[9px] font-bold uppercase text-slate-500 tracking-wider flex items-center gap-1.5">
+              <ShieldCheck className="w-3.5 h-3.5 text-indigo-400" /> Live Proctoring Feed
+            </div>
+            <span className={`px-2 py-0.5 rounded text-[8px] font-black ${
+              status === "ACTIVE" 
+                ? "bg-emerald-500/10 text-emerald-400" 
+                : status === "BLOCKED" || status === "CLIPBOARD_WARN"
+                ? "bg-rose-500/10 text-rose-400 animate-pulse"
+                : "bg-amber-500/10 text-amber-400"
+            }`}>
+              {status}
+            </span>
+          </div>
+
+          <div className="space-y-1 text-slate-400 max-h-[100px] overflow-hidden">
+            {logs.map((l, i) => (
+              <div key={i} className={l.includes("BLOCKED") || l.includes("Warning") ? "text-rose-400" : "text-slate-400"}>
+                {l}
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div className="flex justify-between text-[8px] text-slate-500 border-t border-slate-900 pt-2.5">
+          <span>SESSION TELEMETRY: MONITORED</span>
+          <span>KEYSTROKE PLAYBACK: READY</span>
+        </div>
+      </div>
+    </motion.div>
+  );
+}
+
+/* ─────────────────────────────────────────────────────────────────
+   Stage 4: AI Radar / Dossier Simulator
+   ──────────────────────────────────────────────────────────────── */
+function DossierSimulator() {
+  const [pulse, setPulse] = useState(false);
+
+  useEffect(() => {
+    const t = setInterval(() => setPulse(p => !p), 1500);
+    return () => clearInterval(t);
+  }, []);
+
+  const metrics = [
+    { name: "Problem Solving", score: 94 },
+    { name: "Code Quality", score: 96 },
+    { name: "Big-O Optimization", score: 90 },
+    { name: "Architecture", score: 95 }
+  ];
+
+  return (
+    <motion.div 
+      initial={{ opacity: 0, scale: 0.95 }}
+      animate={{ opacity: 1, scale: 1 }}
+      exit={{ opacity: 0, scale: 0.95 }}
+      className="w-full grid grid-cols-1 sm:grid-cols-12 gap-4 font-mono text-[10px] text-slate-200"
+    >
+      <div className="sm:col-span-5 flex flex-col gap-3 justify-center">
+        {metrics.map((m, idx) => (
+          <div key={idx} className="border border-slate-800 bg-slate-950/60 p-2.5 rounded-xl">
+            <div className="flex justify-between text-[8px] uppercase tracking-wider text-slate-500 mb-1">
+              <span>{m.name}</span>
+              <span className="text-indigo-400 font-bold">{m.score}%</span>
+            </div>
+            <div className="h-1 bg-slate-800 rounded-full overflow-hidden">
+              <div className="h-full bg-indigo-500" style={{ width: `${m.score}%` }} />
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <div className="sm:col-span-7 border border-slate-800 bg-slate-950/40 rounded-xl p-3 flex flex-col min-h-[160px] justify-between text-slate-400">
+        <div>
+          <div className="flex justify-between items-center border-b border-slate-900 pb-2 mb-2">
+            <span className="text-[8px] uppercase tracking-wider text-slate-500">AI Scoring Output</span>
+            <span className="text-[8px] text-emerald-400 font-bold">STABLE PROFILE</span>
+          </div>
+          <div className="text-2xl font-black text-indigo-400 py-1 flex items-baseline gap-1 leading-none select-none">
+            94 <span className="text-xs font-medium text-slate-500">/ 100 overall score</span>
+          </div>
+          <p className="text-[7.5px] text-slate-500 leading-normal mt-2">
+            The candidate demonstrates superb architectural separation and highly optimized algorithms. Proctoring checks returned clean signals with 0 clipboard pastes.
+          </p>
+        </div>
+
+        <div className="flex justify-between text-[8px] text-slate-600 border-t border-slate-900 pt-2">
+          <span>DOSSIER: READY</span>
+          <span>DOWNLOAD PDF REPORT</span>
+        </div>
+      </div>
+    </motion.div>
+  );
+}
+
 export default function HomeInfographic() {
-  const [activeStage, setActiveStage] = useState<Stage>("vfs");
+  const [persona, setPersona] = useState<"candidate" | "recruiter" | null>(null);
+  const [activeStage, setActiveStage] = useState<string>("vfs");
   const reducedMotion = useReducedMotion();
+
+  useEffect(() => {
+    // Initial load
+    const saved = localStorage.getItem("ipad.persona");
+    if (saved === "candidate" || saved === "recruiter") {
+      setPersona(saved as "candidate" | "recruiter");
+      setActiveStage(saved === "recruiter" ? "mcp" : "vfs");
+    }
+
+    // Event listener for changes
+    const handlePersonaChange = (e: Event) => {
+      const targetPersona = (e as CustomEvent).detail;
+      setPersona(targetPersona);
+      setActiveStage(targetPersona === "recruiter" ? "mcp" : "vfs");
+    };
+    window.addEventListener("ipad-persona-change", handlePersonaChange);
+    return () => window.removeEventListener("ipad-persona-change", handlePersonaChange);
+  }, []);
+
+  const currentStages = persona === "recruiter" ? RECRUITER_STAGES : STAGES;
+  const isRecruiter = persona === "recruiter";
 
   return (
     <section className="mx-auto max-w-6xl px-4 py-24 relative overflow-hidden">
@@ -81,19 +407,33 @@ export default function HomeInfographic() {
         {/* Title */}
         <RevealOnScroll className="mb-16 text-center" stagger={0.1}>
           <RevealItem>
-            <div className="inline-flex items-center gap-2 text-[11px] font-black uppercase tracking-[0.2em] text-accent mb-3 bg-accent/10 px-3 py-1.5 rounded-full">
+            <div className={`inline-flex items-center gap-2 text-[11px] font-black uppercase tracking-[0.2em] mb-3 px-3 py-1.5 rounded-full ${
+              isRecruiter ? "text-indigo-400 bg-indigo-500/10" : "text-accent bg-accent/10"
+            }`}>
               <Cpu className="w-3.5 h-3.5" />
-              Runtime Architecture
+              {isRecruiter ? "Hiring Lifecycle Flow" : "Runtime Architecture"}
             </div>
           </RevealItem>
           <RevealItem>
             <h2 className="text-3xl md:text-5xl font-black text-fg tracking-tight leading-[1.05] max-w-3xl mx-auto">
-              How it works: <span className="text-transparent bg-clip-text bg-gradient-to-br from-accent to-accent-soft">zero cloud cost.</span>
+              {isRecruiter ? (
+                <>
+                  Standardized evaluations, <span className="text-transparent bg-clip-text bg-gradient-to-br from-indigo-400 to-indigo-600">built on trust.</span>
+                </>
+              ) : (
+                <>
+                  How it works: <span className="text-transparent bg-clip-text bg-gradient-to-br from-accent to-accent-soft">zero cloud cost.</span>
+                </>
+              )}
             </h2>
           </RevealItem>
           <RevealItem>
-            <p className="text-muted text-base md:text-lg leading-relaxed mt-4 max-w-2xl mx-auto">
-              Interviewpad builds, executes, synchronizes, and profiles code entirely inside the browser thread. Zero server setup. Perfect privacy. Infinite scale.
+            <p className="text-muted text-base md:text-lg leading-relaxed mt-4 max-w-2xl mx-auto font-medium">
+              {isRecruiter ? (
+                "Author campaigns, sync ATS webhooks, monitor anti-cheat signals, and export premium AI radar scorecards instantly from a single dashboard."
+              ) : (
+                "Interviewpad builds, executes, synchronizes, and profiles code entirely inside the browser thread. Zero server setup. Perfect privacy. Infinite scale."
+              )}
             </p>
           </RevealItem>
         </RevealOnScroll>
@@ -102,7 +442,7 @@ export default function HomeInfographic() {
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-stretch">
           {/* Left Column: Interactive Tab Control Panels */}
           <div className="lg:col-span-5 flex flex-col justify-center gap-3">
-            {STAGES.map((stage) => {
+            {currentStages.map((stage) => {
               const isActive = activeStage === stage.id;
               return (
                 <button
@@ -111,7 +451,9 @@ export default function HomeInfographic() {
                   onClick={() => setActiveStage(stage.id)}
                   className={`text-left rounded-2xl border p-5 transition-all relative overflow-hidden flex gap-4 ${
                     isActive 
-                      ? "bg-surface border-accent/30 shadow-[0_4px_20px_-5px_rgba(var(--accent-rgb),0.12)]" 
+                      ? isRecruiter
+                        ? "bg-surface border-indigo-500/30 shadow-[0_4px_20px_-5px_rgba(99,102,241,0.12)]"
+                        : "bg-surface border-accent/30 shadow-[0_4px_20px_-5px_rgba(var(--accent-rgb),0.12)]" 
                       : "bg-bg/40 border-border hover:border-border-strong hover:bg-surface/30"
                   }`}
                 >
@@ -119,20 +461,26 @@ export default function HomeInfographic() {
                   {isActive && (
                     <motion.div 
                       layoutId="active-accent-bar"
-                      className="absolute left-0 top-0 bottom-0 w-1 bg-accent"
+                      className={`absolute left-0 top-0 bottom-0 w-1 ${isRecruiter ? "bg-indigo-500" : "bg-accent"}`}
                       transition={reducedMotion ? { duration: 0 } : { type: "spring", stiffness: 300, damping: 30 }}
                     />
                   )}
 
                   {/* Stage number */}
-                  <div className={`font-mono text-xs font-black select-none ${isActive ? "text-accent" : "text-muted/50"}`}>
+                  <div className={`font-mono text-xs font-black select-none ${
+                    isActive ? isRecruiter ? "text-indigo-400" : "text-accent" : "text-muted/50"
+                  }`}>
                     {stage.number}
                   </div>
 
                   <div className="space-y-1">
                     <div className="flex items-center gap-2">
                       <span className={`text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded ${
-                        isActive ? "bg-accent/10 text-accent border border-accent/20" : "bg-muted/10 text-muted/80"
+                        isActive 
+                          ? isRecruiter
+                            ? "bg-indigo-500/10 text-indigo-400 border border-indigo-500/20"
+                            : "bg-accent/10 text-accent border border-accent/20"
+                          : "bg-muted/10 text-muted/80"
                       }`}>
                         {stage.tag}
                       </span>
@@ -152,7 +500,7 @@ export default function HomeInfographic() {
                         <div className="flex flex-wrap gap-x-3 gap-y-1.5 mt-3 pt-3 border-t border-border">
                           {stage.metrics.map((m, i) => (
                             <span key={i} className="inline-flex items-center gap-1 text-[10px] text-muted/80 font-mono">
-                              <span className="w-1 h-1 bg-accent rounded-full" />
+                              <span className={`w-1.5 h-1.5 rounded-full ${isRecruiter ? "bg-indigo-500" : "bg-accent"}`} />
                               {m}
                             </span>
                           ))}
@@ -180,11 +528,13 @@ export default function HomeInfographic() {
                   <div className="w-2.5 h-2.5 rounded-full bg-emerald-500/30" />
                 </div>
                 <span className="text-[10px] uppercase font-mono text-slate-500 tracking-wider">
-                  runtime_debugger.sh
+                  {isRecruiter ? "campaign_telemetry.sh" : "runtime_debugger.sh"}
                 </span>
               </div>
-              <div className="text-[10px] font-mono bg-slate-900 border border-slate-800 px-2 py-0.5 rounded text-accent flex items-center gap-1.5">
-                <span className="w-1.5 h-1.5 rounded-full bg-accent animate-pulse" />
+              <div className={`text-[10px] font-mono bg-slate-900 border border-slate-800 px-2 py-0.5 rounded flex items-center gap-1.5 ${
+                isRecruiter ? "text-indigo-400" : "text-accent"
+              }`}>
+                <span className={`w-1.5 h-1.5 rounded-full animate-pulse ${isRecruiter ? "bg-indigo-400" : "bg-accent"}`} />
                 LIVE VIEW
               </div>
             </div>
@@ -196,13 +546,18 @@ export default function HomeInfographic() {
                 {activeStage === "yjs" && <YjsSimulator key="yjs" />}
                 {activeStage === "sandbox" && <SandboxSimulator key="sandbox" />}
                 {activeStage === "telemetry" && <TelemetrySimulator key="telemetry" />}
+                
+                {activeStage === "mcp" && <McpSimulator key="mcp" />}
+                {activeStage === "ats" && <AtsSimulator key="ats" />}
+                {activeStage === "antiCheat" && <AntiCheatSimulator key="antiCheat" />}
+                {activeStage === "dossier" && <DossierSimulator key="dossier" />}
               </AnimatePresence>
             </div>
 
             {/* Simulator Footer Status bar */}
             <div className="mt-4 pt-3 border-t border-slate-900 flex justify-between text-[9px] font-mono text-slate-500 relative z-10">
-              <span>SANDBOXING_LEVEL: MAXIMUM</span>
-              <span>COMPILER: V8_SANDPACK_ENGINE v2.20</span>
+              <span>{isRecruiter ? "PROCTORING_CADENCE: ACTIVE" : "SANDBOXING_LEVEL: MAXIMUM"}</span>
+              <span>{isRecruiter ? "INTEGRATIONS: VERIFIED" : "COMPILER: V8_SANDPACK_ENGINE v2.20"}</span>
             </div>
           </div>
         </div>

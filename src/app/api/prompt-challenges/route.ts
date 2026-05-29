@@ -29,7 +29,7 @@ export async function GET(req: NextRequest) {
 }
 
 // POST /api/prompt-challenges
-// Creates a new custom prompt scenario scoped to a workspace
+// Creates a new custom prompt scenario (scoped to a workspace, or platform-wide practice arena if workspaceId is null/omitted)
 export async function POST(req: NextRequest) {
   try {
     const session = await auth();
@@ -49,23 +49,25 @@ export async function POST(req: NextRequest) {
       workspaceId
     } = body;
 
-    if (!title || !description || !objective || !workspaceId) {
+    if (!title || !description || !objective) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
     }
 
-    // Verify workspace membership
-    const workspace = await prisma.workspace.findUnique({
-      where: { id: workspaceId },
-      include: { members: { select: { userId: true } } }
-    });
+    if (workspaceId) {
+      // Verify workspace membership
+      const workspace = await prisma.workspace.findUnique({
+        where: { id: workspaceId },
+        include: { members: { select: { userId: true } } }
+      });
 
-    if (!workspace) {
-      return NextResponse.json({ error: "Workspace not found" }, { status: 404 });
-    }
+      if (!workspace) {
+        return NextResponse.json({ error: "Workspace not found" }, { status: 404 });
+      }
 
-    const isMember = workspace.members.some((m) => m.userId === session.user!.id);
-    if (!isMember) {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+      const isMember = workspace.members.some((m) => m.userId === session.user!.id);
+      if (!isMember) {
+        return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+      }
     }
 
     // Generate slug
@@ -89,7 +91,7 @@ export async function POST(req: NextRequest) {
         difficulty: difficulty || "intermediate",
         category: category || "code-generation",
         estimatedMinutes: estimatedMinutes ? parseInt(estimatedMinutes, 10) : 10,
-        workspaceId,
+        workspaceId: workspaceId || null,
       }
     });
 

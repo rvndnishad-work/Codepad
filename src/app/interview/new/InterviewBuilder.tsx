@@ -211,7 +211,8 @@ export default function InterviewBuilder({
     searchParams?.get("source") === "playground" ? "playground" : "challenge";
 
   const [title, setTitle] = useState("Interview Session");
-  const [candidateName, setCandidateName] = useState("");
+  const [candidateName, setCandidateName] = useState(searchParams?.get("candidateName") || "");
+  const [candidateEmail, setCandidateEmail] = useState(searchParams?.get("candidateEmail") || "");
   const [type, setType] = useState<"mock" | "live">(initialType);
   const [creatorRole, setCreatorRole] = useState<"interviewer" | "candidate">(initialRole);
   const [sourceType, setSourceType] = useState<SourceType>(initialSource);
@@ -369,6 +370,9 @@ export default function InterviewBuilder({
         body: JSON.stringify({
           title: title.trim() || "Interview Session",
           candidateName: candidateName.trim() || null,
+          candidateEmail: candidateEmail.trim() || null,
+          workspaceSlug: searchParams?.get("workspaceSlug") || null,
+          candidateId: searchParams?.get("candidateId") || null,
           type,
           sourceType: finalSourceType,
           challengeIds,
@@ -476,6 +480,23 @@ export default function InterviewBuilder({
                     value={candidateName}
                     onChange={(e) => setCandidateName(e.target.value)}
                     placeholder="e.g. Alexis Jordan"
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-panel border border-border focus:border-accent/50 focus:bg-panel text-xs text-fg placeholder:text-muted/60 dark:placeholder:text-muted/50 outline-none transition-all shadow-inner group-hover:border-border-strong"
+                  />
+                  <div className="absolute bottom-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-accent/30 to-transparent scale-x-0 group-focus-within:scale-x-100 transition-all duration-300" />
+                </div>
+              </div>
+
+              {/* Candidate Email Input */}
+              <div className="space-y-2 animate-in fade-in duration-300">
+                <label className="block text-[10px] font-bold uppercase tracking-wider text-muted/80">
+                  Candidate Email <span className="text-muted/70 font-normal lowercase">(optional)</span>
+                </label>
+                <div className="relative group">
+                  <input
+                    type="email"
+                    value={candidateEmail}
+                    onChange={(e) => setCandidateEmail(e.target.value)}
+                    placeholder="e.g. alexis@company.com"
                     className="w-full px-3.5 py-2.5 rounded-xl bg-panel border border-border focus:border-accent/50 focus:bg-panel text-xs text-fg placeholder:text-muted/60 dark:placeholder:text-muted/50 outline-none transition-all shadow-inner group-hover:border-border-strong"
                   />
                   <div className="absolute bottom-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-accent/30 to-transparent scale-x-0 group-focus-within:scale-x-100 transition-all duration-300" />

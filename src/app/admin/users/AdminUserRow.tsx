@@ -4,7 +4,7 @@ import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Shield, User, Trash2, ExternalLink, Code2, Target, FileText, Loader2, Edit3, ShieldAlert, ShieldOff } from "lucide-react";
+import { Shield, User, Trash2, ExternalLink, Code2, Target, FileText, Loader2, Edit3, ShieldAlert, ShieldOff, GraduationCap, Briefcase } from "lucide-react";
 import AdminUserEditModal from "./AdminUserEditModal";
 
 interface AdminUserRowProps {
@@ -17,6 +17,7 @@ interface AdminUserRowProps {
     hireMeUrl: string | null;
     portfolioPublic: boolean;
     banned: boolean;
+    userType: string | null;
     createdAt: Date;
     isAdmin: boolean;
     _count: {
@@ -154,11 +155,13 @@ export default function AdminUserRow({ user }: AdminUserRowProps) {
               )}
               
               {user.banned && (
-                <div className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-red-500/10 text-red-400 text-[9px] font-black uppercase tracking-wider border border-red-500/20 shadow-sm">
+                <div className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-red-500/10 text-red-400 text-[10px] font-semibold uppercase tracking-wide border border-red-500/20 shadow-sm">
                   <ShieldAlert className="w-2.5 h-2.5" />
                   Banned
                 </div>
               )}
+
+              <UserTypeBadge userType={user.userType} />
             </div>
           </div>
           {user.workspaces && user.workspaces.length > 0 && (
@@ -276,4 +279,30 @@ export default function AdminUserRow({ user }: AdminUserRowProps) {
       )}
     </>
   );
+}
+
+/**
+ * Renders the user's userType as a small chip alongside the Admin/User/Banned
+ * badges. Every user is expected to be candidate or recruiter post-backfill;
+ * the null branch returns nothing so we don't render a meaningless chip if a
+ * row somehow slips through with no type set.
+ */
+function UserTypeBadge({ userType }: { userType: string | null }) {
+  if (userType === "candidate") {
+    return (
+      <div className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-sky-500/10 text-sky-400 text-[10px] font-semibold uppercase tracking-wide border border-sky-500/20">
+        <GraduationCap className="w-2.5 h-2.5" />
+        Candidate
+      </div>
+    );
+  }
+  if (userType === "recruiter") {
+    return (
+      <div className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 text-[10px] font-semibold uppercase tracking-wide border border-emerald-500/20">
+        <Briefcase className="w-2.5 h-2.5" />
+        Recruiter
+      </div>
+    );
+  }
+  return null;
 }

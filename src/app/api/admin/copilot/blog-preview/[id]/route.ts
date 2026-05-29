@@ -13,15 +13,16 @@ import { prisma } from "@/lib/prisma";
  */
 export async function GET(
   _req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   const session = await auth().catch(() => null);
   if (!isAdmin(session)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
+  const { id } = await params;
   const post = await prisma.blogPost.findUnique({
-    where: { id: params.id },
+    where: { id },
     include: {
       user: { select: { id: true, name: true, email: true, createdAt: true } },
     },

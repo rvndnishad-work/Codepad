@@ -65,7 +65,7 @@ export default function AdminBlogRow({ blog }: AdminBlogRowProps) {
         {/* Column 1: Checkbox */}
         <div className="flex items-center lg:justify-center mb-3 lg:mb-0">
           <BulkRowCheckbox id={blog.id} />
-          <span className="lg:hidden text-[10px] uppercase font-bold text-muted ml-2 tracking-wider">Select Blog</span>
+          <span className="lg:hidden text-[11px] uppercase font-semibold text-muted ml-2 tracking-wide">Select Blog</span>
         </div>
 
         {/* Column 2: Blog Post Info */}
@@ -90,13 +90,13 @@ export default function AdminBlogRow({ blog }: AdminBlogRowProps) {
 
         {/* Column 3: Author */}
         <div className="mt-2 lg:mt-0 flex items-center lg:block">
-          <span className="lg:hidden text-[9px] uppercase tracking-wider font-bold text-muted w-20 mr-2 block">Author:</span>
+          <span className="lg:hidden text-[11px] uppercase tracking-wide font-semibold text-muted w-20 mr-2 block">Author</span>
           <div className="flex items-center gap-2">
             <div className="w-6 h-6 rounded-full overflow-hidden bg-muted relative border border-border">
               {blog.user.image ? (
                 <Image src={blog.user.image} alt="" fill className="object-cover" />
               ) : (
-                <div className="w-full h-full flex items-center justify-center text-[8px] font-black text-muted bg-bg animate-fade-in">
+                <div className="w-full h-full flex items-center justify-center text-[10px] font-semibold text-muted bg-bg animate-fade-in">
                   {(blog.user.name || "?")[0].toUpperCase()}
                 </div>
               )}
@@ -109,8 +109,8 @@ export default function AdminBlogRow({ blog }: AdminBlogRowProps) {
 
         {/* Column 4: Status */}
         <div className="mt-2 lg:mt-0 flex items-center lg:block">
-          <span className="lg:hidden text-[9px] uppercase tracking-wider font-bold text-muted w-20 mr-2 block">Status:</span>
-          <div className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider border ${config.color}`}>
+          <span className="lg:hidden text-[11px] uppercase tracking-wide font-semibold text-muted w-20 mr-2 block">Status</span>
+          <div className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-semibold uppercase tracking-wide border ${config.color}`}>
             <config.icon className="w-3 h-3" />
             {config.label}
           </div>
@@ -118,19 +118,19 @@ export default function AdminBlogRow({ blog }: AdminBlogRowProps) {
 
         {/* Column 5: Stats */}
         <div className="mt-3 lg:mt-0 flex items-center lg:block">
-          <span className="lg:hidden text-[9px] uppercase tracking-wider font-bold text-muted w-20 mr-2 block">Stats:</span>
+          <span className="lg:hidden text-[11px] uppercase tracking-wide font-semibold text-muted w-20 mr-2 block">Stats</span>
           <div className="flex items-center gap-4 bg-bg lg:bg-transparent border border-border lg:border-none px-3 py-1 lg:p-0 rounded-lg">
             <div className="flex items-center gap-1 group/stat" title="Views">
               <Eye className="w-3.5 h-3.5 text-muted group-hover/stat:text-accent transition" />
-              <span className="text-[10px] font-mono font-bold text-muted group-hover/stat:text-accent transition">{blog.viewCount}</span>
+              <span className="text-xs font-mono font-semibold tabular-nums text-muted group-hover/stat:text-accent transition">{blog.viewCount}</span>
             </div>
             <div className="flex items-center gap-1 group/stat" title="Reactions">
               <Heart className="w-3.5 h-3.5 text-muted group-hover/stat:text-accent transition" />
-              <span className="text-[10px] font-mono font-bold text-muted group-hover/stat:text-accent transition">{blog._count.reactions}</span>
+              <span className="text-xs font-mono font-semibold tabular-nums text-muted group-hover/stat:text-accent transition">{blog._count.reactions}</span>
             </div>
             <div className="flex items-center gap-1 group/stat" title="Comments">
               <MessageSquare className="w-3.5 h-3.5 text-muted group-hover/stat:text-accent transition" />
-              <span className="text-[10px] font-mono font-bold text-muted group-hover/stat:text-accent transition">{blog._count.comments}</span>
+              <span className="text-xs font-mono font-semibold tabular-nums text-muted group-hover/stat:text-accent transition">{blog._count.comments}</span>
             </div>
           </div>
         </div>

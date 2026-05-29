@@ -1,10 +1,13 @@
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { notFound, redirect } from "next/navigation";
+import { headers } from "next/headers";
 import InterviewRunner, {
   type SessionChallenge,
   type SessionPlayground,
 } from "./InterviewRunner";
+import MobileLobby from "@/components/MobileLobby";
+import { shouldRenderMobileLobby } from "@/lib/device";
 
 import { validatePageAccess } from "@/lib/settings";
 
@@ -17,10 +20,36 @@ export default async function InterviewRunPage({
   searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ token?: string; lobby?: string }>;
+  searchParams: Promise<{ token?: string; lobby?: string; desktop?: string }>;
 }) {
   const { id } = await params;
-  const { token, lobby } = await searchParams;
+  const sp = await searchParams;
+  const { token, lobby } = sp;
+
+  // IP-38: mobile-handoff lobby. Run before any auth check so a candidate on
+  // a phone always gets the QR experience first; auth and access checks
+  // happen on the post-bypass request.
+  const hdrs = await headers();
+  const showLobby = shouldRenderMobileLobby({
+    userAgent: hdrs.get("user-agent"),
+    searchParams: sp,
+    cookieHeader: hdrs.get("cookie"),
+  });
+  if (showLobby) {
+    const host = hdrs.get("host") ?? "interviewpad.in";
+    const proto = hdrs.get("x-forwarded-proto") ?? "https";
+    const qs = token ? `?token=${encodeURIComponent(token)}` : "";
+    const fullUrl = `${proto}://${host}/interview/${id}${qs}`;
+    return (
+      <MobileLobby
+        url={fullUrl}
+        title="Open this interview on desktop"
+        subtitle="Live interviews need a desktop editor — scan to continue on your laptop."
+        tokenLabel="interview"
+        emailEnabled={!!process.env.RESEND_API_KEY}
+      />
+    );
+  }
 
   const session = await auth().catch(() => null);
   await validatePageAccess("/interview/new", session);

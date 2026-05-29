@@ -20,7 +20,7 @@ model User {
   /// Optional "Hire Me" contact (email, URL, etc.) shown on portfolio.
   hireMeUrl            String?
   /// Whether the user wants their portfolio publicly visible.
-  portfolioPublic      Boolean               @default(true)
+  portfolioPublic      Boolean               @default(false)
   /// Whether the user is banned from the platform.
   banned               Boolean               @default(false)
   createdAt            DateTime              @default(now())
@@ -28,6 +28,20 @@ model User {
   /// for legacy accounts that haven't been migrated to the new taxonomy.
   /// Drives navbar, dashboard, and interview-route experience.
   userType             String?
+
+  /// TOTP secret (RFC 6238), encrypted at rest with the AES-GCM helper
+  /// (`v1:iv:tag:ct` format, same as IP-2). Null when 2FA is not enrolled.
+  totpSecret           String?
+  /// Set when the user finishes the verify step. Until this is non-null the
+  /// `totpSecret` is a "pending" enrollment that shouldn't gate logins —
+  /// keeping the active-vs-pending distinction as one boolean check.
+  totpEnabledAt        DateTime?
+  /// JSON-encoded array of `{ hash: string, usedAt: string | null }`. Each
+  /// `hash` is a SHA-256 hex digest of a one-time backup code. Storing
+  /// hashes (not plaintext, not reversible-encrypted) means a DB leak still
+  /// can't reveal the codes.
+  totpBackupCodes      String?
+
   accounts             Account[]
   blogBookmarks        BlogBookmark[]
   blogComments         BlogComment[]
@@ -44,6 +58,122 @@ model User {
   sessions             Session[]
   snippets             Snippet[]
   workspaces           WorkspaceMember[]
+  securityEvents       SecurityAuditLog[]
+  notifications        Notification[]
+  notificationPreferences NotificationPreference[]
+}
+
+/// Admin-composed broadcast (IP-45). One row per admin send; the per-recipient
+/// fan-out rows live in Notification with broadcastId set. Recipient count is
+/// denormalised so the sent log can render without a per-row aggregate.
+model BroadcastNotification {
+  id              String   @id @default(cuid())
+  composedById    String
+  /// Audience selector: "ALL" | "ALL_CANDIDATES" | "ALL_RECRUITERS"
+  /// | "WORKSPACE" | "USER"
+  audienceType    String
+  /// Only set when audienceType is "WORKSPACE" or "USER" — the workspace id
+  /// or user id the broadcast targets. Null for the broad audiences.
+  audienceTarget  String?
+  title           String
+  body            String?
+  href            String?
+  recipientCount  Int      @default(0)
+  /// Set when the broadcast finishes fanning out. Null while in progress.
+  sentAt          DateTime?
+  createdAt       DateTime @default(now())
+  notifications   Notification[]
+
+  @@index([composedById, createdAt])
+}
+
+/// In-app notification (IP-40). One row per delivered notification per user.
+/// Cross-persona: candidates and recruiters both see the same shape; the
+/// `type` field discriminates rendering. `payload` is event-specific JSON —
+/// kept small (URLs + a couple of strings), not used to store anything
+/// sensitive.
+model Notification {
+  id        String    @id @default(cuid())
+  userId    String
+  /// Set when this row was fanned out from a BroadcastNotification (IP-45).
+  /// Null for event-driven rows (IP-44). Lets the admin sent log group
+  /// fanned-out rows + count read/dismiss rates.
+  broadcastId String?
+  broadcast BroadcastNotification? @relation(fields: [broadcastId], references: [id], onDelete: SetNull)
+  /// Stable type discriminator. Current values (extensible):
+  ///   INTERVIEW_SCHEDULED       — recruiter scheduled a session for this candidate
+  ///   INTERVIEW_REPLAY_READY    — replay finished processing, ready to review
+  ///   TAKE_HOME_EXPIRING        — < 24h remaining on a pending take-home
+  ///   TAKE_HOME_SUBMITTED       — candidate submitted; recruiter view
+  ///   SCORECARD_REQUESTED       — recruiter needs to finalize a scorecard
+  ///   PROMPT_UPVOTED            — community upvoted your prompt attempt
+  ///   AI_CREDITS_LOW            — workspace AI screening credits running low
+  ///   SECURITY_2FA_ENABLED      — self-notification on TOTP enrollment success
+  ///   SECURITY_2FA_DISABLED     — self-notification on TOTP disable
+  type      String
+  title     String
+  body      String?
+  /// Optional URL the row links to when clicked.
+  href      String?
+  /// Event-specific JSON for the renderer (e.g. candidate name, workspace
+  /// slug, deltas). Stored as a string for SQLite portability.
+  payload   String?
+  /// Null while unread. Mutated on first click / "Mark all read".
+  readAt    DateTime?
+  /// Set when the user explicitly dismisses (X button). Row stays for audit
+  /// but is hidden from the dropdown.
+  dismissedAt DateTime?
+  createdAt DateTime  @default(now())
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, dismissedAt, createdAt])
+  @@index([userId, readAt])
+}
+
+/// Per-user notification preferences (IP-47). One row per (userId, type)
+/// pair; absence means "use default" so a fresh account doesn't need to
+/// pre-populate every type.
+///
+/// Security types (SECURITY_2FA_*) and ADMIN_BROADCAST are forced ON in the
+/// helper layer regardless of any preference row — these aren't user-suppressible.
+model NotificationPreference {
+  id            String   @id @default(cuid())
+  userId        String
+  type          String
+  inAppEnabled  Boolean  @default(true)
+  emailEnabled  Boolean  @default(true)
+  updatedAt     DateTime @updatedAt
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, type])
+  @@index([userId])
+}
+
+/// User-scoped security audit trail (IP-42). Separate from McpAuditLog so
+/// MCP telemetry stays workspace-scoped and we have a clean per-user trail
+/// for compliance asks. Reusable for future events: password changes, sign-
+/// in from a new device, recovery-code use, etc.
+model SecurityAuditLog {
+  id        String   @id @default(cuid())
+  userId    String
+  /// Stable enum-ish string. Current values:
+  ///   TOTP_ENROLL_START   — user clicked "Set up 2FA", secret minted but unverified
+  ///   TOTP_ENROLL_VERIFY  — user successfully verified the first 6-digit code
+  ///   TOTP_DISABLE        — user disabled 2FA
+  ///   TOTP_VERIFY_FAILED  — bad code during enrollment verify (rate-limit signal)
+  ///   TOTP_BACKUP_REGEN   — backup codes regenerated
+  event     String
+  /// Approximate client IP (best-effort, from request headers).
+  ip        String?
+  /// User-agent string for the request.
+  userAgent String?
+  /// Event-specific JSON. Kept small — never store secrets here.
+  meta      String?
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+  @@index([event, createdAt])
 }
 
 model Follow {
@@ -338,6 +468,7 @@ model InterviewSession {
 
   @@index([userId, status])
   @@index([candidateId])
+  @@index([workspaceId])
 }
 
 model BlogPost {
@@ -448,6 +579,7 @@ model TakeHomeAssignment {
   @@index([token])
   @@index([candidateEmail])
   @@index([candidateId])
+  @@index([workspaceId])
 }
 
 model Workspace {
@@ -494,8 +626,24 @@ model Candidate {
   notes               String?
   /// JSON-encoded string[] of tags (e.g. ["senior", "react", "remote-ok"]).
   tags                String?
-  /// Pipeline status.
+  /// Disposition flag — semantically "what's the current bucket for this
+  /// person?" Historical values: active/future_hire/do_not_hire/hired/
+  /// rejected/archived. Coexists with `stage` (the pipeline position) — see
+  /// IP-34. Kept for backwards compat with existing queries.
   status              String               @default("active")
+  /// IP-34: pipeline stage. One of:
+  ///   APPLIED → SCREENED → TAKE_HOME → ONSITE → OFFER → HIRED
+  ///                                                       ↘ REJECTED
+  /// REJECTED requires `rejectReason` set. Drag-drop on the Kanban moves
+  /// candidates between these.
+  stage               String               @default("APPLIED")
+  /// IP-34: when set, why this candidate was rejected.
+  ///   SKILL_GAP / CULTURE_FIT / COMP_MISMATCH / NO_RESPONSE / WITHDREW / OTHER
+  rejectReason        String?
+  /// Free-text expansion on rejectReason (e.g. "Salary expectation 30% over band").
+  rejectReasonNote    String?
+  /// Last time `stage` mutated — drives "time-in-stage" diagnostics.
+  stageChangedAt      DateTime?
   createdAt           DateTime             @default(now())
   updatedAt           DateTime             @updatedAt
   aiInterviewSessions AIInterviewSession[]
@@ -506,6 +654,7 @@ model Candidate {
   @@unique([workspaceId, email])
   @@index([workspaceId, status])
   @@index([workspaceId, name])
+  @@index([workspaceId, stage])
 }
 
 model WorkspaceMember {
@@ -696,28 +845,33 @@ model McpAuditLog {
 
 /// A prompt engineering challenge scenario.
 model PromptScenario {
-  id               String          @id @default(cuid())
-  slug             String          @unique
+  id               String           @id @default(cuid())
+  slug             String           @unique
   title            String
   description      String
   objective        String
   expectedTraits   String
-  difficulty       String          @default("intermediate")
-  category         String          @default("code-generation")
-  estimatedMinutes Int             @default(10)
+  difficulty       String           @default("intermediate")
+  category         String           @default("code-generation")
+  estimatedMinutes Int              @default(10)
   workspaceId      String?
-  rubricWeights    String          @default("{\"clarity\":20,\"specificity\":20,\"efficiency\":15,\"context\":15,\"constraints\":15,\"edgeCases\":15}")
-  published        Boolean         @default(true)
-  createdAt        DateTime        @default(now())
-  updatedAt        DateTime        @updatedAt
+  rubricWeights    String           @default("{\"clarity\":20,\"specificity\":20,\"efficiency\":15,\"context\":15,\"constraints\":15,\"edgeCases\":15}")
+  published        Boolean          @default(true)
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
   attempts         PromptAttempt[]
-  workspace        Workspace?      @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  exemplars        PromptExemplar[]
+  workspace        Workspace?       @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
 
   @@index([workspaceId, published])
   @@index([difficulty, category])
 }
 
 /// A candidate's submitted prompt for a scenario.
+///
+/// When `shared = true`, this attempt is also visible in the Community Prompts
+/// tab for its scenario. `shareUpvotes` is the denormalised upvote count used
+/// for sort order; the authoritative records live in PromptUpvote.
 model PromptAttempt {
   id            String         @id @default(cuid())
   scenarioId    String
@@ -731,12 +885,51 @@ model PromptAttempt {
   sessionId     String?
   userId        String?
   durationSec   Int?
+  shared        Boolean        @default(false)
+  shareTitle    String?
+  shareNote     String?
+  shareUpvotes  Int            @default(0)
   createdAt     DateTime       @default(now())
   scenario      PromptScenario @relation(fields: [scenarioId], references: [id], onDelete: Cascade)
+  upvotes       PromptUpvote[]
 
   @@index([scenarioId])
   @@index([sessionId])
   @@index([userId])
+  @@index([scenarioId, shared, shareUpvotes])
+}
+
+/// Admin-curated example prompts attached to a scenario. Shown in the
+/// "Exemplar Prompts" section of the Practice runner so developers can study
+/// well-scoring approaches before writing their own. `source` is "admin" by
+/// default; a future tool may promote high-upvote community shares to exemplars.
+model PromptExemplar {
+  id           String         @id @default(cuid())
+  scenarioId   String
+  title        String
+  promptText   String
+  summary      String
+  rubricScores String?
+  source       String         @default("admin")
+  authorId     String?
+  createdAt    DateTime       @default(now())
+  scenario     PromptScenario @relation(fields: [scenarioId], references: [id], onDelete: Cascade)
+
+  @@index([scenarioId])
+}
+
+/// One row per (attempt, user) upvote. Unique constraint enforces a single
+/// vote per user per shared attempt. PromptAttempt.shareUpvotes mirrors the
+/// count so the community list can sort without joining.
+model PromptUpvote {
+  id        String        @id @default(cuid())
+  attemptId String
+  userId    String
+  createdAt DateTime      @default(now())
+  attempt   PromptAttempt @relation(fields: [attemptId], references: [id], onDelete: Cascade)
+
+  @@unique([attemptId, userId])
+  @@index([attemptId])
 }
 
 /// Workspace-configured outbound MCP server. Used by the AI interviewer
@@ -818,7 +1011,35 @@ model AdminTodo {
   updatedAt    DateTime  @updatedAt
   completedAt  DateTime?
 
+  outgoingDeps AdminTodoDependency[] @relation("DepFrom")
+  incomingDeps AdminTodoDependency[] @relation("DepTo")
+
   @@index([status, priority])
+}
+
+/// Jira-style ticket-to-ticket links so deferred follow-ups, blockers, and
+/// spawn relationships are queryable instead of buried in ownerNotes.
+///
+/// Directed edge: `(from, to, type)` reads "from {type} to":
+///   BLOCKS         — from must complete before to starts
+///   FOLLOWS_FROM   — from was spawned/deferred from to (parent → child trail)
+///   RELATES_TO     — informational, no ordering implied (symmetric in intent)
+///
+/// We store one row per directed edge (no auto-inverse). Read-side UI
+/// computes "Blocked by"/"Spawned by" by looking at incoming edges. Composite
+/// unique prevents accidental duplicate links.
+model AdminTodoDependency {
+  id        String    @id @default(cuid())
+  fromId    String
+  toId      String
+  type      String
+  createdAt DateTime  @default(now())
+  from      AdminTodo @relation("DepFrom", fields: [fromId], references: [id], onDelete: Cascade)
+  to        AdminTodo @relation("DepTo",   fields: [toId],   references: [id], onDelete: Cascade)
+
+  @@unique([fromId, toId, type])
+  @@index([toId, type])
+  @@index([fromId, type])
 }
 
 /// Tracks alerts generated by Gemma's RAG and monitoring engine

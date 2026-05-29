@@ -192,13 +192,33 @@ export default async function CandidateDetailPage({ params }: Props) {
           </div>
 
           <div className="flex-1 min-w-0">
-            <div className="flex flex-col sm:flex-row sm:items-center gap-3 mb-2">
-              <h2 className="text-xl font-semibold text-fg tracking-tight truncate">{candidate.name}</h2>
-              <CandidateStatusControl
-                workspaceSlug={slug}
-                candidateId={candidate.id}
-                initialStatus={candidate.status}
-              />
+            <div className="flex flex-col lg:flex-row lg:items-center gap-3 justify-between w-full mb-2">
+              <div className="flex flex-wrap items-center gap-3 min-w-0">
+                <h2 className="text-xl font-semibold text-fg tracking-tight truncate">{candidate.name}</h2>
+                <CandidateStatusControl
+                  workspaceSlug={slug}
+                  candidateId={candidate.id}
+                  initialStatus={candidate.status}
+                />
+              </div>
+
+              {/* CRM Actions */}
+              <div className="flex items-center gap-2 shrink-0 mt-2 lg:mt-0">
+                <Link
+                  href={`/interview/new?type=live&workspaceSlug=${workspace.slug}&candidateId=${candidate.id}&candidateName=${encodeURIComponent(candidate.name)}&candidateEmail=${encodeURIComponent(candidate.email || "")}`}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-accent hover:bg-accent-soft text-bg text-[11px] font-semibold uppercase tracking-wider transition-colors shadow-sm"
+                >
+                  <Briefcase className="w-3.5 h-3.5" />
+                  Schedule Interview
+                </Link>
+                <Link
+                  href={`/w/${workspace.slug}?section=candidates&view=list`}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-panel border border-border hover:border-border-strong text-fg text-[11px] font-semibold uppercase tracking-wider transition-colors shadow-sm"
+                >
+                  <Clock className="w-3.5 h-3.5" />
+                  Assign Take-Home
+                </Link>
+              </div>
             </div>
 
             <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-[12px] text-muted">

@@ -6,15 +6,14 @@ import {
   Compass,
   Trophy,
   Briefcase,
-  Clock,
   UserCircle2,
-  FileVideo,
   Users,
   CreditCard,
   Sparkles,
   Bot,
   KeyRound,
   Plug,
+  Workflow,
 } from "lucide-react";
 
 type Props = {
@@ -50,14 +49,14 @@ export default function WorkspaceSidebarNav({ slug, planName, counts }: Props) {
   const isApiKeysActive = pathname === apiKeysHref;
   const externalMcpHref = `/w/${slug}/external-mcp`;
   const isExternalMcpActive = pathname === externalMcpHref;
+  const atsHref = `/w/${slug}/ats`;
+  const isAtsActive = pathname === atsHref;
 
   const operational: Item[] = [
     { section: "overview", label: "Overview", icon: Compass, count: null },
-    { section: "challenges", label: "Challenges", icon: Trophy, count: counts.challenges },
-    { section: "interviews", label: "Interviews", icon: Briefcase, count: counts.interviews },
-    { section: "take-homes", label: "Take-homes", icon: Clock, count: counts.takeHomes },
     { section: "candidates", label: "Candidates", icon: UserCircle2, count: counts.candidates },
-    { section: "replays", label: "Replays", icon: FileVideo, count: counts.replays },
+    { section: "assessments", label: "Assessments", icon: Briefcase, count: counts.interviews + counts.takeHomes + counts.replays },
+    { section: "library", label: "Library", icon: Trophy, count: counts.challenges },
   ];
 
   const admin: Item[] = [
@@ -109,7 +108,7 @@ export default function WorkspaceSidebarNav({ slug, planName, counts }: Props) {
       </div>
 
       {planHasAiScreening && (
-        <div className="space-y-1">
+        <div className="space-y-1 mt-4">
           <div className="text-[10px] font-semibold uppercase tracking-[0.14em] text-muted/70 px-2.5 mb-1.5">
             Automation
           </div>
@@ -161,10 +160,26 @@ export default function WorkspaceSidebarNav({ slug, planName, counts }: Props) {
               Beta
             </span>
           </Link>
+          <Link
+            href={atsHref}
+            className={`group flex items-center justify-between gap-2 px-2.5 py-1.5 rounded-md text-[12px] font-medium transition-colors ${
+              isAtsActive
+                ? "bg-indigo-500/10 text-indigo-600 dark:text-indigo-300"
+                : "text-muted hover:text-fg hover:bg-panel/40"
+            }`}
+          >
+            <span className="flex items-center gap-2 min-w-0">
+              <Workflow className={`w-3.5 h-3.5 shrink-0 ${isAtsActive ? "text-indigo-500" : "text-muted/60"}`} />
+              <span className="truncate">ATS Sync</span>
+            </span>
+            <span className="inline-flex items-center justify-center px-1.5 h-[18px] rounded-full text-[9px] font-bold uppercase tracking-wider shrink-0 bg-amber-500/10 text-amber-400 border border-amber-500/20">
+              New
+            </span>
+          </Link>
         </div>
       )}
 
-      <div className="space-y-1">
+      <div className="space-y-1 mt-4">
         <div className="text-[10px] font-semibold uppercase tracking-[0.14em] text-muted/70 px-2.5 mb-1.5">
           Settings
         </div>
@@ -173,3 +188,4 @@ export default function WorkspaceSidebarNav({ slug, planName, counts }: Props) {
     </>
   );
 }
+

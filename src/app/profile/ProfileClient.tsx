@@ -107,7 +107,7 @@ export default function ProfileClient({ user }: { user: any }) {
               </Link>
               {user?.id && (
                 <Link
-                  href={`/u/${user.id}`}
+                  href={`/u/${user.id}/portfolio`}
                   className="w-full flex items-center gap-3 px-4 py-3 rounded-2xl font-black text-xs uppercase tracking-widest transition-all border bg-surface/50 border-border text-muted hover:bg-surface hover:text-fg"
                 >
                   <ExternalLink className="w-4 h-4" />

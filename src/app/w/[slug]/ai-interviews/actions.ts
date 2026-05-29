@@ -80,11 +80,24 @@ export async function createAIInterviewSessionAction(
     throw new Error("Missing required invite fields");
   }
 
+  // IP-34: seed the CRM Candidate row so this person shows up in the
+  // workspace pipeline. Idempotent — re-inviting an existing candidate
+  // keeps their current stage (auto-forward is IP-69).
+  const { upsertCandidateForWorkflow } = await import("@/lib/crm/auto-create");
+  const candidate = await upsertCandidateForWorkflow({
+    workspaceId: workspace.id,
+    name: data.candidateName.trim(),
+    email: data.candidateEmail.trim().toLowerCase(),
+    source: "ai-interview-create",
+    initialStage: "SCREENED",
+  });
+
   // No credit is consumed here — invites are free. The charge happens on the
   // candidate's first message to /api/ai-interview/message.
   const session = await prisma.aIInterviewSession.create({
     data: {
       workspaceId: workspace.id,
+      candidateId: candidate.candidateId,
       candidateName: data.candidateName.trim(),
       candidateEmail: data.candidateEmail.trim().toLowerCase(),
       positionTitle: data.positionTitle.trim(),

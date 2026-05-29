@@ -15,9 +15,43 @@ import FeaturedCarousel from "@/components/FeaturedCarousel";
 import BlogPopularRow from "@/components/BlogPopularRow";
 import TemplatePicker from "@/components/TemplatePicker";
 
+async function loadStats() {
+  try {
+    const [total, byDifficulty, sumMinutes, sessions] = await Promise.all([
+      prisma.challenge.count({ where: { published: true } }),
+      prisma.challenge.groupBy({
+        by: ["difficulty"],
+        where: { published: true },
+        _count: true,
+      }),
+      prisma.challenge.aggregate({
+        where: { published: true },
+        _sum: { estimatedMinutes: true },
+      }),
+      prisma.interviewSession.count(),
+    ]);
+    const counts: Record<string, number> = {};
+    for (const g of byDifficulty) {
+      const n = typeof g._count === "number" ? g._count : 0;
+      counts[g.difficulty] = n;
+    }
+    return {
+      totalChallenges: total,
+      easy: counts.easy ?? 0,
+      medium: counts.medium ?? 0,
+      hard: counts.hard ?? 0,
+      totalMinutes: sumMinutes._sum.estimatedMinutes ?? 0,
+      interviewsRun: sessions,
+    };
+  } catch {
+    return { totalChallenges: 0, easy: 0, medium: 0, hard: 0, totalMinutes: 0, interviewsRun: 0 };
+  }
+}
+
 export default async function HomePage() {
   const session = await auth().catch(() => null);
   const userId = session?.user?.id;
+  const stats = await loadStats();
 
   let welcomeData: {
     name: string | null;
@@ -199,7 +233,7 @@ export default async function HomePage() {
 
       <HomeExplore featured={featured} />
 
-      <HomeChallenges />
+      <HomeChallenges stats={stats} />
 
       <HomeFinalCTA />
 

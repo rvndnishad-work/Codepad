@@ -65,7 +65,16 @@ export async function PATCH(
 
   const existing = await prisma.interviewSession.findUnique({
     where: { id },
-    select: { userId: true, shareToken: true, creatorRole: true, type: true },
+    select: {
+      userId: true,
+      shareToken: true,
+      creatorRole: true,
+      type: true,
+      // IP-44: capture pre-update status + title so we can detect the
+      // transition INTO "completed" without re-querying.
+      status: true,
+      title: true,
+    },
   });
   if (!existing) return NextResponse.json({ error: "not found" }, { status: 404 });
 
@@ -162,6 +171,33 @@ export async function PATCH(
       rubric: true,
     },
   });
+
+  // IP-44: notification triggers on status transition INTO "completed".
+  // Compare existing.status to the new status so re-saving a completed
+  // session (e.g. to edit notes) does not re-notify.
+  if (
+    parsed.data.status === "completed" &&
+    existing.status !== "completed"
+  ) {
+    const triggers = await import("@/lib/notifications/triggers");
+    void triggers.notifyInterviewReplayReady({
+      sessionId: id,
+      ownerId: existing.userId,
+      title: existing.title,
+      type: existing.type,
+    });
+    // SCORECARD_REQUESTED only fires when no rubric exists at completion
+    // time. If the recruiter completes + scores in one shot, no notification.
+    if (!updated.rubric) {
+      void triggers.notifyScorecardRequested({
+        sessionId: id,
+        ownerId: existing.userId,
+        title: existing.title,
+        type: existing.type,
+      });
+    }
+  }
+
   return NextResponse.json(updated);
 }
 

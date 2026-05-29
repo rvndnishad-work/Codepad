@@ -1,10 +1,14 @@
 import { notFound } from "next/navigation";
+import { headers } from "next/headers";
 import { prisma } from "@/lib/prisma";
 import { resolveTemplate } from "@/lib/ai-interview/template-resolver";
 import AIInterviewWorkspace from "./AIInterviewWorkspace";
+import MobileLobby from "@/components/MobileLobby";
+import { shouldRenderMobileLobby } from "@/lib/device";
 
 type Props = {
   params: Promise<{ token: string }>;
+  searchParams?: Promise<Record<string, string | string[] | undefined>>;
 };
 
 const DEFAULT_STARTER_FILES = {
@@ -74,8 +78,33 @@ export default function App() {
 }`
 };
 
-export default async function AIInterviewRunPage({ params }: Props) {
+export default async function AIInterviewRunPage({ params, searchParams }: Props) {
   const { token } = await params;
+  const sp = (searchParams ? await searchParams : {}) ?? {};
+
+  // IP-38: mobile-handoff lobby. Run *before* DB lookup so a mobile candidate
+  // never burns a session-state mutation they can't finish (AI screenings
+  // consume credits on first message).
+  const hdrs = await headers();
+  const showLobby = shouldRenderMobileLobby({
+    userAgent: hdrs.get("user-agent"),
+    searchParams: sp,
+    cookieHeader: hdrs.get("cookie"),
+  });
+  if (showLobby) {
+    const host = hdrs.get("host") ?? "interviewpad.in";
+    const proto = hdrs.get("x-forwarded-proto") ?? "https";
+    const fullUrl = `${proto}://${host}/ai-interview/${token}`;
+    return (
+      <MobileLobby
+        url={fullUrl}
+        title="Open your AI screening on desktop"
+        subtitle="AI screenings use a full IDE and chat console — scan to continue on a laptop."
+        tokenLabel="ai-interview"
+        emailEnabled={!!process.env.RESEND_API_KEY}
+      />
+    );
+  }
 
   // Look up by inviteToken — the internal session id is never exposed to the
   // candidate's browser.

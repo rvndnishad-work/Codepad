@@ -10,6 +10,9 @@ const createSchema = z
   .object({
     title: z.string().min(1).max(120).optional(),
     candidateName: z.string().max(80).optional().nullable(),
+    candidateEmail: z.string().email().optional().or(z.literal("")).nullable(),
+    workspaceSlug: z.string().optional().nullable(),
+    candidateId: z.string().optional().nullable(),
     type: z.enum(["mock", "live"]).optional(),
     sourceType: z.enum(["challenge", "playground", "prompt", "combined"]).optional().default("challenge"),
     challengeIds: z.array(z.string().min(1)).max(10).optional(),
@@ -151,11 +154,87 @@ export async function POST(req: Request) {
     shortCode = nanoid(6).toUpperCase();
   }
 
+  // Resolve Workspace context
+  let workspaceId: string | null = null;
+  let candidateId: string | null = parsed.data.candidateId ?? null;
+
+  if (parsed.data.workspaceSlug) {
+    const workspace = await prisma.workspace.findUnique({
+      where: { slug: parsed.data.workspaceSlug },
+      include: { members: true },
+    });
+    if (!workspace) {
+      return NextResponse.json({ error: "Workspace not found" }, { status: 404 });
+    }
+    const isMember = workspace.members.some((m) => m.userId === session.user.id);
+    if (!isMember) {
+      return NextResponse.json({ error: "Forbidden: You are not a member of this workspace" }, { status: 403 });
+    }
+    workspaceId = workspace.id;
+  }
+
+  // Handle Candidate CRM Sync
+  if (workspaceId) {
+    if (candidateId) {
+      const candidateExists = await prisma.candidate.findFirst({
+        where: { id: candidateId, workspaceId },
+      });
+      if (!candidateExists) {
+        return NextResponse.json({ error: "Candidate not found in this workspace" }, { status: 400 });
+      }
+    } else {
+      const candidateName = parsed.data.candidateName?.trim() || "Candidate";
+      const candidateEmail = parsed.data.candidateEmail?.trim()?.toLowerCase() || null;
+
+      if (candidateEmail) {
+        const candidate = await prisma.candidate.upsert({
+          where: { workspaceId_email: { workspaceId, email: candidateEmail } },
+          update: { name: candidateName },
+          create: {
+            workspaceId,
+            name: candidateName,
+            email: candidateEmail,
+            source: "interview",
+            status: "active",
+            stage: "ONSITE",
+            stageChangedAt: new Date(),
+          },
+        });
+        candidateId = candidate.id;
+      } else if (parsed.data.candidateName) {
+        const candidate = await prisma.candidate.create({
+          data: {
+            workspaceId,
+            name: candidateName,
+            email: null,
+            source: "interview",
+            status: "active",
+            stage: "ONSITE",
+            stageChangedAt: new Date(),
+          },
+        });
+        candidateId = candidate.id;
+      }
+    }
+  }
+
+  // Denormalize candidateName from Candidate record if omitted in the payload
+  let finalCandidateName = parsed.data.candidateName ?? null;
+  if (candidateId && !finalCandidateName) {
+    const candidateRow = await prisma.candidate.findUnique({
+      where: { id: candidateId },
+      select: { name: true },
+    });
+    if (candidateRow) {
+      finalCandidateName = candidateRow.name;
+    }
+  }
+
   const interview = await prisma.interviewSession.create({
     data: {
       userId: session.user.id,
       title: parsed.data.title ?? "Interview Session",
-      candidateName: parsed.data.candidateName ?? null,
+      candidateName: finalCandidateName,
       type: parsed.data.type ?? "mock",
       sourceType: parsed.data.sourceType,
       challengeIds: JSON.stringify(orderedChallengeIds),
@@ -167,6 +246,8 @@ export async function POST(req: Request) {
       shortCode,
       status: "scheduled",
       creatorRole: parsed.data.creatorRole,
+      workspaceId,
+      candidateId,
     },
     select: { id: true, shareToken: true, shortCode: true },
   });

@@ -32,6 +32,11 @@ import {
   FileText,
   ChevronDown,
   Check,
+  X,
+  MessageSquare,
+  Layers,
+  Code,
+  Terminal,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -982,6 +987,181 @@ export default function InterviewRunner({
                 );
               })()}
             </div>
+          ) : status === "scheduled" ? (
+            <div className="w-full max-w-5xl mx-auto p-4 md:p-8 space-y-6 animate-fade-in pb-12">
+              <div className="text-center space-y-2 mb-8">
+                <h2 className="text-3xl font-black tracking-tight text-fg">Session Waiting Room</h2>
+                <p className="text-muted text-sm max-w-lg mx-auto">
+                  {interview.type === "mock" 
+                    ? "Welcome to your mock interview session. Review the upcoming rounds and start when you are ready." 
+                    : "The session is currently on standby. Invite the candidate and any co-interviewers, then initiate the clock to begin."}
+                </p>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
+                
+                {/* LEFT COL: Start & Timer */}
+                <div className="md:col-span-5 space-y-6 flex flex-col">
+                  <div className="p-8 rounded-3xl border border-border bg-surface/50 shadow-sm flex flex-col justify-between items-center text-center h-full relative overflow-hidden group">
+                    <div className="absolute inset-0 bg-gradient-to-b from-accent/5 to-transparent pointer-events-none" />
+                    
+                    <div className="space-y-3 relative z-10 w-full mb-8 mt-4">
+                      <div className="text-xs font-black uppercase tracking-[0.2em] text-muted">Session Duration</div>
+                      <div className="text-5xl font-mono font-extrabold text-fg tabular-nums">{formatDuration(interview.totalSec)}</div>
+                      <div className="text-xs text-muted/70 font-medium">Timer is currently on standby</div>
+                    </div>
+
+                    <div className="w-full relative z-10">
+                      {(interviewerView || interview.type === "mock") ? (
+                        <button
+                          onClick={start}
+                          className="w-full relative overflow-hidden group/btn px-6 py-5 rounded-2xl bg-accent hover:bg-accent-soft text-bg transition-all duration-300 shadow-[0_0_40px_rgba(var(--accent-rgb),0.3)] hover:shadow-[0_0_60px_rgba(var(--accent-rgb),0.4)] hover:-translate-y-1 active:scale-[0.98] flex items-center justify-center gap-3"
+                        >
+                          <Play className="w-5 h-5 fill-current transition-transform group-hover/btn:scale-110" />
+                          <span className="text-sm font-black uppercase tracking-widest">
+                            {interview.type === "mock" ? "Start Practice" : "Initiate Clock"}
+                          </span>
+                        </button>
+                      ) : (
+                        <div className="w-full p-5 rounded-2xl border border-border bg-bg/50 flex flex-col items-center justify-center gap-3">
+                          <div className="relative w-10 h-10">
+                            <div className="absolute inset-0 rounded-full bg-accent/20 animate-ping opacity-60" />
+                            <div className="relative w-10 h-10 rounded-full bg-accent/10 flex items-center justify-center border border-accent/20">
+                              <Clock className="w-4 h-4 text-accent" />
+                            </div>
+                          </div>
+                          <span className="text-xs font-black uppercase tracking-wider text-fg">Awaiting Interviewer</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {/* RIGHT COL: Invites & Rounds */}
+                <div className="md:col-span-7 space-y-6">
+                  {isOwner && (
+                    <div className="rounded-3xl border border-accent/20 bg-accent/5 overflow-hidden shadow-sm animate-in fade-in slide-in-from-bottom-4 duration-300">
+                      <div className="flex flex-col md:flex-row md:items-center gap-6 p-6 md:p-8">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 mb-3">
+                            <div className="w-7 h-7 rounded-lg bg-accent/20 flex items-center justify-center text-accent">
+                              <Users className="w-4 h-4" />
+                            </div>
+                            <span className="text-xs font-black uppercase tracking-[0.2em] text-accent">Candidate Access</span>
+                          </div>
+                          <p className="text-xs text-fg/80 mb-5">Share this code or link with the candidate so they can join the session.</p>
+                          
+                          {interview.shortCode ? (
+                            <div className="flex items-center gap-3 bg-surface border border-accent/20 rounded-2xl p-3 shadow-inner">
+                              <span className="font-mono font-black text-3xl md:text-4xl tracking-[0.25em] text-accent select-all pl-3 flex-1">
+                                {interview.shortCode}
+                              </span>
+                              <div className="h-10 w-px bg-border mx-2" />
+                              <div className="flex flex-col gap-1.5 shrink-0 pr-1">
+                                <button onClick={copyAccessCode} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-wider bg-bg border border-border hover:bg-elevated hover:border-accent/40 hover:text-accent text-muted transition active:scale-95">
+                                  {codeCopied ? <Check className="w-3 h-3 text-emerald-500" /> : <Copy className="w-3 h-3" />} Code
+                                </button>
+                                <button onClick={copyCandidateLink} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-wider bg-bg border border-border hover:bg-elevated hover:border-accent/40 hover:text-accent text-muted transition active:scale-95">
+                                  <LinkIcon className="w-3 h-3" /> Link
+                                </button>
+                              </div>
+                            </div>
+                          ) : (
+                            <div className="text-xs text-muted">No code generated</div>
+                          )}
+                        </div>
+
+                        <div className="md:w-48 shrink-0 flex flex-col gap-2 border-t md:border-t-0 md:border-l border-accent/10 pt-5 md:pt-0 md:pl-6">
+                          <span className="text-[10px] font-black uppercase tracking-wider text-muted mb-1">Quick Share</span>
+                          <button onClick={() => { window.open(`https://wa.me/?text=${encodeURIComponent(`Join my coding interview as the candidate!\nLink: ${candidateLink}`)}`, "_blank"); }} className="w-full px-4 py-2.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 hover:bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 text-xs font-bold transition flex items-center gap-2.5">
+                            <MessageCircle className="w-4 h-4" /> WhatsApp
+                          </button>
+                          <button onClick={() => { window.open(`mailto:?subject=You are invited to a coding interview&body=${encodeURIComponent(`Join as the candidate:\n${candidateLink}`)}`, "_blank"); }} className="w-full px-4 py-2.5 rounded-xl bg-amber-500/10 border border-amber-500/20 hover:bg-amber-500/15 text-amber-600 dark:text-amber-400 text-xs font-bold transition flex items-center gap-2.5">
+                            <Mail className="w-4 h-4" /> Email
+                          </button>
+                        </div>
+                      </div>
+
+                      <div className="bg-surface/50 border-t border-accent/10 px-6 md:px-8 py-3.5 flex items-center justify-between gap-4">
+                        <div className="flex items-center gap-2.5 min-w-0">
+                          <Share2 className="w-4 h-4 text-violet-500 shrink-0" />
+                          <span className="text-[10px] font-black uppercase tracking-wider text-muted shrink-0">Observer Link:</span>
+                          <input type="text" readOnly value={coInterviewerLink} className="bg-transparent border-none outline-none text-xs font-mono text-fg/70 w-full truncate" />
+                        </div>
+                        <div className="flex items-center gap-1.5 shrink-0">
+                          <button onClick={copyCoInterviewerLink} className="p-2 rounded-lg hover:bg-bg border border-transparent hover:border-violet-500/40 text-muted hover:text-violet-500 transition" title="Copy Observer Link">
+                            <Copy className="w-4 h-4" />
+                          </button>
+                          <button onClick={() => { window.open(`https://wa.me/?text=${encodeURIComponent(`Join my coding interview as an observer!\nLink: ${coInterviewerLink}`)}`, "_blank"); }} className="p-2 rounded-lg hover:bg-bg border border-transparent hover:border-emerald-500/40 text-muted hover:text-emerald-500 transition" title="Share via WhatsApp">
+                            <MessageCircle className="w-4 h-4" />
+                          </button>
+                          <button onClick={() => { window.open(`mailto:?subject=Join as co-interviewer&body=${encodeURIComponent(`Co-Interviewer link:\n${coInterviewerLink}`)}`, "_blank"); }} className="p-2 rounded-lg hover:bg-bg border border-transparent hover:border-amber-500/40 text-muted hover:text-amber-500 transition" title="Share via Email">
+                            <Mail className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="p-6 md:p-8 rounded-3xl border border-border bg-surface/50 shadow-sm flex flex-col">
+                    <div className="flex items-center gap-2.5 mb-6">
+                      <div className="w-7 h-7 rounded-lg bg-indigo-500/10 flex items-center justify-center text-indigo-500">
+                        <Layers className="w-4 h-4" />
+                      </div>
+                      <span className="text-xs font-black uppercase tracking-[0.2em] text-fg">Session Itinerary</span>
+                    </div>
+
+                    {(challenges.length + playgrounds.length + promptScenarios.length) === 0 ? (
+                      <div className="flex-1 flex items-center justify-center py-8 text-xs text-muted italic">
+                        No specific rounds configured for this session.
+                      </div>
+                    ) : (
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        {challenges.map((c, i) => (
+                          <div key={c.id} className="p-4 rounded-2xl border border-border bg-bg/50 flex items-center gap-4">
+                            <div className="w-8 h-8 rounded-xl bg-surface border border-border flex items-center justify-center text-[11px] font-black text-muted shrink-0">{i + 1}</div>
+                            <div className="min-w-0 flex-1">
+                              <div className="text-sm font-bold text-fg truncate">{c.title}</div>
+                              <div className="text-[10px] text-muted mt-1 flex items-center gap-2">
+                                <span className="uppercase px-1.5 py-[1px] bg-surface border border-border rounded text-[9px] font-black">{c.difficulty}</span>
+                                {c.estimatedMinutes} mins
+                              </div>
+                            </div>
+                            <Code className="w-4 h-4 text-muted/30" />
+                          </div>
+                        ))}
+                        {playgrounds.map((p, i) => (
+                          <div key={p.id} className="p-4 rounded-2xl border border-border bg-bg/50 flex items-center gap-4">
+                            <div className="w-8 h-8 rounded-xl bg-surface border border-border flex items-center justify-center text-[11px] font-black text-muted shrink-0">{challenges.length + i + 1}</div>
+                            <div className="min-w-0 flex-1">
+                              <div className="text-sm font-bold text-fg truncate">{p.title}</div>
+                              <div className="text-[10px] text-muted mt-1 flex items-center gap-2">
+                                <span className="uppercase px-1.5 py-[1px] bg-surface border border-border rounded text-[9px] font-black">Sandbox</span>
+                                {p.template}
+                              </div>
+                            </div>
+                            <Terminal className="w-4 h-4 text-muted/30" />
+                          </div>
+                        ))}
+                        {promptScenarios.map((ps, i) => (
+                          <div key={ps.id} className="p-4 rounded-2xl border border-border bg-bg/50 flex items-center gap-4">
+                            <div className="w-8 h-8 rounded-xl bg-surface border border-border flex items-center justify-center text-[11px] font-black text-muted shrink-0">{challenges.length + playgrounds.length + i + 1}</div>
+                            <div className="min-w-0 flex-1">
+                              <div className="text-sm font-bold text-fg truncate">{ps.title}</div>
+                              <div className="text-[10px] text-muted mt-1 flex items-center gap-2">
+                                <span className="uppercase px-1.5 py-[1px] bg-surface border border-border rounded text-[9px] font-black">AI Prompt</span>
+                                {ps.difficulty}
+                              </div>
+                            </div>
+                            <MessageSquare className="w-4 h-4 text-muted/30" />
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-12 divide-y md:divide-y-0 md:divide-x divide-border bg-surface">
             
@@ -989,11 +1169,15 @@ export default function InterviewRunner({
             <div className="md:col-span-5 p-5 space-y-6 flex flex-col">
               
               {/* Status and Timer Box */}
-              <div className="p-5 rounded-2xl border border-border bg-bg/60 relative overflow-hidden group transition-colors duration-300 hover:bg-elevated">
-                <div className="absolute top-0 right-0 w-24 h-24 bg-accent/5 rounded-full blur-xl pointer-events-none transition-all duration-500 group-hover:bg-accent/10" />
-                <div className="flex items-center justify-between mb-4">
-                  <span className="text-[10px] font-black uppercase tracking-[0.2em] text-muted">Timer Status</span>
-                  <span className={`text-[9px] font-extrabold px-2.5 py-0.5 rounded-full border uppercase tracking-wider ${
+              <div className="p-6 rounded-3xl border border-border bg-gradient-to-br from-panel/90 to-surface/40 backdrop-blur-md relative overflow-hidden group shadow-lg">
+                <div className="absolute top-[-50px] right-[-50px] w-32 h-32 bg-accent/10 rounded-full blur-[40px] pointer-events-none transition-all duration-500 group-hover:bg-accent/20" />
+                <div className="absolute bottom-[-30px] left-[-30px] w-24 h-24 bg-indigo-500/10 rounded-full blur-[30px] pointer-events-none" />
+                <div className="flex items-center justify-between mb-5 relative z-10">
+                  <span className="text-[10px] font-black uppercase tracking-[0.25em] text-muted flex items-center gap-2">
+                    <Clock className="w-3.5 h-3.5" />
+                    Timer Status
+                  </span>
+                  <span className={`text-[9px] font-extrabold px-3 py-1 rounded-full border uppercase tracking-wider shadow-sm ${
                     status === "completed"
                       ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-500 dark:text-emerald-400"
                       : status === "abandoned"
@@ -1006,59 +1190,18 @@ export default function InterviewRunner({
                   </span>
                 </div>
 
-                <div className="space-y-1.5">
+                <div className="space-y-2 relative z-10">
                   <span className="text-[10px] font-black uppercase tracking-[0.2em] text-muted/70 flex items-center gap-1.5">
-                    <Clock className="w-3.5 h-3.5 text-muted/60" /> Time Remaining
+                     Time Remaining
                   </span>
                   <div className={`text-4xl md:text-5xl font-mono font-extrabold tracking-tight transition-colors duration-500 tabular-nums ${remainingSec < 60 && status === "in_progress" ? "text-rose-500 drop-shadow-[0_0_20px_rgba(244,63,94,0.35)] animate-pulse" : "text-fg"}`}>
-                    {status === "scheduled" ? formatDuration(interview.totalSec) : formatDuration(remainingSec)}
+                    {formatDuration(remainingSec)}
                   </div>
                 </div>
               </div>
 
               {/* Action triggers */}
               <div className="space-y-3">
-                {status === "scheduled" && (interviewerView || interview.type === "mock") && (
-                  <button
-                    onClick={start}
-                    className="w-full relative overflow-hidden group/btn px-5 py-3 rounded-xl bg-accent hover:bg-accent-soft text-bg transition-all duration-300 shadow-md hover:shadow-accent/20 hover:-translate-y-0.5 active:scale-[0.98] flex items-center justify-between"
-                  >
-                    <span className="text-xs font-black uppercase tracking-wider">
-                      {interview.type === "mock" ? "Start Practice" : "Initiate Clock"}
-                    </span>
-                    <Play className="w-3.5 h-3.5 fill-current transition-transform group-hover/btn:translate-x-0.5" />
-                  </button>
-                )}
-
-                {status === "scheduled" && !interviewerView && interview.type !== "mock" && (
-                  <div className="p-5 rounded-2xl border border-border bg-bg/60 text-center space-y-4">
-                    <div className="relative w-12 h-12 mx-auto">
-                      <div className="absolute inset-0 rounded-full bg-accent/20 animate-ping opacity-60" />
-                      <div className="relative w-12 h-12 rounded-full bg-accent/10 border border-accent/25 grid place-items-center shadow-md">
-                        <Play className="w-4 h-4 text-accent fill-current translate-x-0.5" />
-                      </div>
-                    </div>
-                    <div>
-                      <div className="text-xs font-black uppercase tracking-wider text-fg">Awaiting Interviewer</div>
-                      <div className="text-[11px] text-muted mt-1.5 leading-relaxed max-w-[280px] mx-auto">Please standby. The interviewer will launch the round shortly.</div>
-                    </div>
-                    {startRequested ? (
-                      <div className="inline-flex items-center gap-1.5 text-[9px] font-black uppercase tracking-wider text-accent px-4 py-1.5 bg-accent/10 border border-accent/20 rounded-full animate-pulse mx-auto shadow-sm">
-                        <span className="w-1.5 h-1.5 rounded-full bg-accent animate-ping" />
-                        Signal Sent • Ready
-                      </div>
-                    ) : (
-                      <button
-                        onClick={requestStart}
-                        disabled={startRequestSending}
-                        className="px-4.5 py-2 rounded-xl bg-bg border border-border text-[11px] font-bold text-fg hover:bg-elevated hover:border-accent/40 hover:text-accent transition-all active:scale-95 disabled:opacity-50 shadow-sm"
-                      >
-                        {startRequestSending ? "Sending Signal..." : "Signal Ready"}
-                      </button>
-                    )}
-                  </div>
-                )}
-
                 {status === "in_progress" && (interviewerView || interview.type === "mock") && (
                   <button
                     onClick={() => setVerdictModalOpen(true)}
@@ -1121,29 +1264,37 @@ export default function InterviewRunner({
                 )}
 
                 {(status === "completed" || status === "abandoned") && (
-                  <div className="space-y-4 w-full">
-                    <div className="flex items-center gap-3.5 p-4 rounded-2xl border border-emerald-500/20 bg-emerald-500/5 text-emerald-600 dark:text-emerald-500 shadow-sm animate-fade-in">
-                      <div className="w-8 h-8 rounded-lg bg-emerald-500/10 border border-emerald-500/25 flex items-center justify-center shrink-0">
-                        <Trophy className="w-4 h-4 text-emerald-500" />
+                  <div className="space-y-5 w-full">
+                    <div className="flex items-center gap-4 p-5 rounded-3xl border border-emerald-500/30 bg-gradient-to-r from-emerald-500/10 to-teal-500/5 text-emerald-600 dark:text-emerald-400 shadow-sm animate-fade-in relative overflow-hidden">
+                      <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,var(--color-emerald-500)_0%,transparent_40%)] opacity-[0.08]" />
+                      <div className="w-10 h-10 rounded-xl bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center shrink-0 relative z-10 shadow-inner">
+                        <Trophy className="w-5 h-5 text-emerald-500" />
                       </div>
-                      <div>
-                        <div className="text-xs font-extrabold uppercase tracking-wider leading-none">Round Concluded</div>
+                      <div className="relative z-10">
+                        <div className="text-[11px] font-black uppercase tracking-[0.2em] leading-none mb-1.5 text-emerald-500">Round Concluded</div>
                         {verdict && (
-                          <div className="text-[10px] text-muted mt-1.5 flex items-center gap-1.5">
-                            Verdict: <span className="font-semibold text-fg capitalize bg-bg/60 border border-border px-2 py-0.5 rounded-full">{verdict.replace(/_/g, ' ')}</span>
+                          <div className="text-[10px] text-muted flex items-center gap-1.5">
+                            Verdict: <span className="font-bold text-fg capitalize bg-bg/80 border border-border px-2 py-0.5 rounded-md shadow-sm">{verdict.replace(/_/g, ' ')}</span>
                           </div>
                         )}
                       </div>
                     </div>
 
-                    <div className="p-5 rounded-2xl border border-border bg-bg/60 space-y-4 animate-fade-in delay-75">
-                      <div className="flex items-center justify-between border-b border-border pb-3">
-                        <span className="text-[10px] font-black uppercase tracking-[0.2em] text-muted">Evaluation Rubric</span>
+                    <div className="p-6 rounded-3xl border border-border bg-gradient-to-b from-surface/50 to-bg/50 backdrop-blur-sm space-y-6 animate-fade-in delay-75 shadow-lg relative overflow-hidden">
+                      <div className="absolute top-0 right-0 w-[200px] h-[200px] bg-indigo-500/5 rounded-full blur-[50px] pointer-events-none" />
+                      
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-border/50 pb-4 relative z-10">
+                        <div className="flex items-center gap-2">
+                          <div className="w-6 h-6 rounded-md bg-indigo-500/10 flex items-center justify-center text-indigo-400 border border-indigo-500/20">
+                            <Sparkles className="w-3.5 h-3.5" />
+                          </div>
+                          <span className="text-[11px] font-black uppercase tracking-[0.2em] text-fg">Evaluation Rubric</span>
+                        </div>
                         {interviewerView && (
                           <Link
                             href={`/interview/${interview.id}/report?token=${interview.shareToken}`}
                             target="_blank"
-                            className="text-[9px] font-bold text-accent hover:underline flex items-center gap-1.5"
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-indigo-500/10 text-indigo-400 hover:bg-indigo-500/20 transition-colors text-[10px] font-bold tracking-wider"
                           >
                             <FileText className="w-3.5 h-3.5" />
                             View PDF Report
@@ -1151,25 +1302,31 @@ export default function InterviewRunner({
                         )}
                       </div>
 
-                      <div className="space-y-3.5">
+                      <div className="space-y-4 relative z-10">
                         {[
-                          { name: "Code Quality", val: rubricCodeQuality },
-                          { name: "Communication", val: rubricCommunication },
-                          { name: "Problem Solving", val: rubricProblemSolving }
+                          { name: "Code Quality", val: rubricCodeQuality, icon: Code },
+                          { name: "Communication", val: rubricCommunication, icon: MessageSquare },
+                          { name: "Problem Solving", val: rubricProblemSolving, icon: Layers }
                         ].map((m) => (
-                          <div key={m.name} className="space-y-1.5">
+                          <div key={m.name} className="space-y-2 group">
                             <div className="flex items-center justify-between text-[11px]">
-                              <span className="font-bold text-muted">{m.name}</span>
-                              <span className="font-mono font-bold text-accent">{m.val} / 5</span>
+                              <span className="font-bold text-muted flex items-center gap-1.5 group-hover:text-fg transition-colors">
+                                <m.icon className="w-3.5 h-3.5 text-muted/60 group-hover:text-accent transition-colors" />
+                                {m.name}
+                              </span>
+                              <div className="flex items-center gap-1.5">
+                                <span className="font-mono font-black text-accent text-xs">{m.val}</span>
+                                <span className="text-muted/50 font-mono">/ 5</span>
+                              </div>
                             </div>
-                            <div className="w-full bg-border h-2 rounded-full overflow-hidden flex gap-0.5">
+                            <div className="w-full bg-bg/50 border border-border h-2.5 rounded-full overflow-hidden flex gap-0.5 p-[1px]">
                               {[1, 2, 3, 4, 5].map((star) => (
                                 <div
                                   key={star}
-                                  className={`h-full flex-1 transition-all duration-500 ${
+                                  className={`h-full flex-1 rounded-[2px] transition-all duration-500 ${
                                     star <= m.val
-                                      ? "bg-gradient-to-r from-amber-400 to-orange-500"
-                                      : "bg-surface/30"
+                                      ? "bg-gradient-to-r from-accent to-indigo-400 shadow-[0_0_8px_rgba(99,102,241,0.4)]"
+                                      : "bg-surface"
                                   }`}
                                 />
                               ))}
@@ -1179,19 +1336,25 @@ export default function InterviewRunner({
                       </div>
 
                       {rubricNotes && (
-                        <div className="space-y-2 pt-3 border-t border-border">
-                          <span className="text-[10px] font-black uppercase tracking-[0.15em] text-muted block">Notes & Feedback</span>
-                          <p className="text-xs text-fg/80 italic leading-relaxed bg-surface/30 p-3 rounded-xl border border-border whitespace-pre-wrap">
-                            {rubricNotes}
-                          </p>
+                        <div className="space-y-2.5 pt-4 border-t border-border/50 relative z-10">
+                          <span className="text-[10px] font-black uppercase tracking-[0.2em] text-muted flex items-center gap-1.5">
+                            <FileText className="w-3 h-3 text-muted/60" /> Notes & Feedback
+                          </span>
+                          <div className="relative">
+                            <div className="absolute top-0 left-0 w-1 h-full bg-accent/40 rounded-l-xl" />
+                            <p className="text-xs text-fg/90 italic leading-relaxed bg-surface/50 p-4 pl-5 rounded-xl border border-border whitespace-pre-wrap shadow-inner">
+                              {rubricNotes}
+                            </p>
+                          </div>
                         </div>
                       )}
                     </div>
                   </div>
                 )}
               </div>
+            </div>
 
-                        {/* RIGHT COLUMN: Concluded Evaluation Summary OR Live Round sequence */}
+            {/* RIGHT COLUMN: Concluded Evaluation Summary OR Live Round sequence */}
             <div className="md:col-span-7 p-5 space-y-5 flex flex-col justify-between min-h-[480px]">
 
               {status === "completed" || status === "abandoned" ? (
@@ -2100,14 +2263,14 @@ export default function InterviewRunner({
                   )}
                 </>
               )}
-            </div>          </div>
+            </div>
 
           </div>
           )}
         </div>
 
         {/* Quick Join Strip — code-first share for the candidate. Observer link tucked behind a disclosure. */}
-        {isOwner && (
+        {isOwner && status !== "scheduled" && (
           <div className="rounded-2xl border border-border bg-surface shadow-sm overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-300">
             {/* Candidate row — access code is the hero */}
             <div className="flex flex-col md:flex-row md:items-center gap-4 md:gap-5 p-4 md:p-5">

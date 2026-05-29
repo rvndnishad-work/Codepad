@@ -34,6 +34,8 @@ import {
 } from "lucide-react";
 import AddCandidateDialog from "./AddCandidateDialog";
 import BulkAddCandidatesDialog from "./BulkAddCandidatesDialog";
+import CandidatePipelineClient from "./candidates/CandidatePipelineClient";
+import LeaderboardClient from "./leaderboard/LeaderboardClient";
 
 type Challenge = {
   id: string;
@@ -54,9 +56,15 @@ type TakeHome = {
   timeLimitMin: number;
   startedAt: string | null;
   submittedAt: string | null;
+  createdAt?: string;
+  challengeId?: string;
   challengeTitle: string;
+  challengeDifficulty?: string;
   attemptId: string | null;
   score: number | null;
+  attemptStartedAt?: string | null;
+  candidateId?: string | null;
+  candidateStage?: string | null;
 };
 
 type Member = {
@@ -141,20 +149,20 @@ type Props = {
     planName: string;
   };
   challenges: Challenge[];
+  pipelineChallenges?: any[];
   takeHomes: TakeHome[];
   members: Member[];
   sessions: InterviewSessionItem[];
   candidates: CandidateItem[];
+  initialBuckets?: any;
   promptScenarios?: PromptScenario[];
   promptAttempts?: PromptAttemptItem[];
 };
 
 type TabId =
-  | "challenges"
-  | "interviews"
-  | "take-homes"
   | "candidates"
-  | "replays"
+  | "assessments"
+  | "library"
   | "members"
   | "billing"
   | "integrations";
@@ -169,14 +177,29 @@ const PLAN_BADGES: Record<string, string> = {
 export default function WorkspaceDashboardClient({
   workspace,
   challenges,
+  pipelineChallenges = [],
   takeHomes,
   members,
   sessions,
   candidates,
+  initialBuckets,
   promptScenarios = [],
   promptAttempts = [],
 }: Props) {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const sectionParam = searchParams.get("section");
+  const viewParam = searchParams.get("view");
+  
+  const validSections: TabId[] = ["candidates", "assessments", "library", "members", "billing", "integrations"];
+  const activeTab: TabId | "overview" = (sectionParam && validSections.includes(sectionParam as TabId))
+    ? (sectionParam as TabId)
+    : "overview";
+
+  // Candidates sub-tab logic
+  const candidateSubTab = (activeTab === "candidates" && viewParam) ? viewParam : "list";
+  const assessmentSubTab = (activeTab === "assessments" && viewParam) ? viewParam : "interviews";
+
   const [interviewSubTab, setInterviewSubTab] = useState<"sessions" | "attempts" | "scenarios">("sessions");
   const [currentPromptScenarios, setCurrentPromptScenarios] = useState<PromptScenario[]>(promptScenarios);
   const [currentPromptAttempts, setCurrentPromptAttempts] = useState<PromptAttemptItem[]>(promptAttempts);
@@ -198,12 +221,7 @@ export default function WorkspaceDashboardClient({
   const [candidateStatusFilter, setCandidateStatusFilter] = useState<string>("all");
   const [selectedCandidateIds, setSelectedCandidateIds] = useState<Set<string>>(new Set());
   const [bulkDeleting, setBulkDeleting] = useState(false);
-  const searchParams = useSearchParams();
-  const sectionParam = searchParams.get("section");
-  const validSections: TabId[] = ["challenges", "interviews", "take-homes", "candidates", "replays", "members", "billing", "integrations"];
-  const activeTab: TabId | "overview" = (sectionParam && validSections.includes(sectionParam as TabId))
-    ? (sectionParam as TabId)
-    : "overview";
+
   
   // Lists data in state so client can append newly created ones instantly
   const [currentTakeHomes, setCurrentTakeHomes] = useState<TakeHome[]>(takeHomes);
@@ -907,8 +925,8 @@ export default function WorkspaceDashboardClient({
             </div>
           )}
 
-          {/* CHALLENGES */}
-          {activeTab === "challenges" && (
+          {/* LIBRARY */}
+          {activeTab === "library" && (
             <div className="space-y-4">
               <div className="flex justify-between items-center gap-4">
                 <div>
@@ -970,34 +988,42 @@ export default function WorkspaceDashboardClient({
             </div>
           )}
 
-          {/* INTERVIEWS */}
-          {activeTab === "interviews" && (
-            <div className="space-y-4">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-border pb-3 gap-4">
-                <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-none">
+          {/* ASSESSMENTS */}
+          {activeTab === "assessments" && (
+            <div className="space-y-5">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div className="inline-flex items-center p-1 rounded-xl bg-elevated/50 border border-border/60 backdrop-blur-sm shadow-sm overflow-x-auto scrollbar-none">
                   {[
-                    { id: "sessions", label: "Live Sessions" },
-                    { id: "attempts", label: "Candidate Attempts" },
-                    { id: "scenarios", label: "Scenario Library" },
-                  ].map((subTab) => (
-                    <button
-                      key={subTab.id}
-                      type="button"
-                      onClick={() => setInterviewSubTab(subTab.id as any)}
-                      className={`px-4 py-2 text-xs font-semibold uppercase tracking-wider transition-colors border-b-2 leading-none shrink-0 ${
-                        interviewSubTab === subTab.id
-                          ? "border-accent text-accent font-extrabold"
-                          : "border-transparent text-muted hover:text-fg"
-                      }`}
-                    >
-                      {subTab.label}
-                    </button>
-                  ))}
+                    { id: "interviews", label: "Interviews", icon: "🎙" },
+                    { id: "attempts", label: "Attempts", icon: "📝" },
+                    { id: "take-homes", label: "Take-Homes", icon: "📦" },
+                    { id: "replays", label: "Replays", icon: "▶️" },
+                    { id: "scenarios", label: "Scenarios", icon: "🧩" },
+                  ].map((subTab) => {
+                    const isActive = assessmentSubTab === subTab.id;
+                    return (
+                      <Link
+                        key={subTab.id}
+                        href={`/w/${workspace.slug}?section=assessments&view=${subTab.id}`}
+                        className={`relative flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-[11px] font-semibold tracking-wide transition-all duration-200 shrink-0 ${
+                          isActive
+                            ? "bg-surface text-fg shadow-md shadow-black/10 dark:shadow-black/30 ring-1 ring-border/80"
+                            : "text-muted hover:text-fg hover:bg-surface/50"
+                        }`}
+                      >
+                        <span className="text-[13px] leading-none">{subTab.icon}</span>
+                        <span>{subTab.label}</span>
+                        {isActive && (
+                          <span className="absolute -bottom-px left-3 right-3 h-[2px] rounded-full bg-accent/60" />
+                        )}
+                      </Link>
+                    );
+                  })}
                 </div>
 
-                {interviewSubTab === "sessions" && (
+                {assessmentSubTab === "interviews" && (
                   <Link
-                    href="/interview/new"
+                    href={`/interview/new?workspaceSlug=${workspace.slug}`}
                     className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-accent hover:bg-accent-soft text-bg text-[11px] font-semibold uppercase tracking-wider transition-colors shrink-0"
                   >
                     <Plus className="w-3.5 h-3.5" />
@@ -1005,7 +1031,7 @@ export default function WorkspaceDashboardClient({
                   </Link>
                 )}
 
-                {interviewSubTab === "scenarios" && (
+                {assessmentSubTab === "scenarios" && (
                   <button
                     onClick={() => setCreatePromptOpen(true)}
                     className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-accent hover:bg-accent-soft text-bg text-[11px] font-semibold uppercase tracking-wider transition-colors shrink-0 animate-fade-in"
@@ -1016,8 +1042,8 @@ export default function WorkspaceDashboardClient({
                 )}
               </div>
 
-              {/* SUB TAB 1: SESSIONS */}
-              {interviewSubTab === "sessions" && (
+              {/* INTERVIEWS (Live Sessions) */}
+              {assessmentSubTab === "interviews" && (
                 <>
                   <div className="flex justify-between items-center gap-4">
                     <div>
@@ -1117,8 +1143,8 @@ export default function WorkspaceDashboardClient({
                 </>
               )}
 
-              {/* SUB TAB 2: CANDIDATE ATTEMPTS */}
-              {interviewSubTab === "attempts" && (
+              {/* CANDIDATE ATTEMPTS */}
+              {assessmentSubTab === "attempts" && (
                 <PromptAttemptsSection
                   promptAttempts={currentPromptAttempts}
                   onSelectAttempt={setSelectedAttempt}
@@ -1126,8 +1152,8 @@ export default function WorkspaceDashboardClient({
                 />
               )}
 
-              {/* SUB TAB 3: SCENARIO LIBRARY */}
-              {interviewSubTab === "scenarios" && (
+              {/* SCENARIO LIBRARY */}
+              {assessmentSubTab === "scenarios" && (
                 <ScenarioLibrarySection
                   promptScenarios={currentPromptScenarios}
                   workspaceId={workspace.id}
@@ -1136,11 +1162,9 @@ export default function WorkspaceDashboardClient({
                   onDeleteScenario={handleDeleteScenario}
                 />
               )}
-            </div>
-          )}
 
           {/* TAKE-HOMES */}
-          {activeTab === "take-homes" && (
+          {assessmentSubTab === "take-homes" && (
             <div className="space-y-6">
               {/* Invite candidate form */}
               <div className="rounded-xl border border-border bg-surface p-5 space-y-4">
@@ -1292,8 +1316,120 @@ export default function WorkspaceDashboardClient({
             </div>
           )}
 
+          {/* REPLAYS */}
+          {assessmentSubTab === "replays" && (
+            <div className="space-y-4">
+              <div>
+                <h3 className="text-lg font-semibold text-fg tracking-tight">Session replays</h3>
+                <p className="text-xs text-muted mt-0.5">
+                  Re-watch candidate sessions — keystrokes, code states, and final submissions.
+                </p>
+              </div>
+
+              {replayItems.length === 0 ? (
+                <div className="rounded-xl border border-border bg-surface p-12 text-center">
+                  <div className="w-12 h-12 rounded-xl bg-purple-500/10 border border-purple-500/20 flex items-center justify-center text-purple-500 mx-auto mb-3">
+                    <FileVideo className="w-5 h-5" />
+                  </div>
+                  <p className="text-sm font-semibold text-fg">No replays yet</p>
+                  <p className="text-xs text-muted mt-1 max-w-sm mx-auto">
+                    Replays appear here once candidates complete take-homes or finish interviews.
+                  </p>
+                </div>
+              ) : (
+                <div className="rounded-xl border border-border bg-surface overflow-hidden">
+                  <table className="w-full text-left text-sm">
+                    <thead>
+                      <tr className="bg-elevated/60 border-b border-border text-muted uppercase text-[10px] tracking-[0.14em]">
+                        <th className="px-4 py-3 font-semibold">Source</th>
+                        <th className="px-4 py-3 font-semibold">Candidate</th>
+                        <th className="px-4 py-3 font-semibold">Title</th>
+                        <th className="px-4 py-3 font-semibold">Recorded</th>
+                        <th className="px-4 py-3 font-semibold">Score</th>
+                        <th className="px-4 py-3 font-semibold text-right">Action</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-border">
+                      {replayItems.map((r) => {
+                        const ts = new Date(r.timestamp);
+                        const tsLabel = ts.toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" });
+                        const sourceColor = r.kind === "take-home"
+                          ? "text-purple-600 dark:text-purple-400 border-purple-500/25 bg-purple-500/[0.06]"
+                          : "text-violet-600 dark:text-violet-400 border-violet-500/25 bg-violet-500/[0.08]";
+                        return (
+                          <tr key={`${r.kind}-${r.id}`} className="hover:bg-panel/30 transition-colors">
+                            <td className="px-4 py-3 align-middle">
+                              <span className={`inline-flex items-center px-2 py-0.5 rounded-md border text-[10px] font-semibold uppercase tracking-wider ${sourceColor}`}>
+                                {r.kind === "take-home" ? "Take-home" : "Interview"}
+                              </span>
+                            </td>
+                            <td className="px-4 py-3 align-middle text-xs text-fg">{r.candidate}</td>
+                            <td className="px-4 py-3 align-middle text-xs text-fg truncate max-w-[260px]">{r.title}</td>
+                            <td className="px-4 py-3 align-middle text-xs text-muted">{tsLabel}</td>
+                            <td className="px-4 py-3 align-middle">
+                              {r.score !== null ? (
+                                <span className="inline-flex items-center gap-1 text-xs font-semibold text-emerald-600 dark:text-emerald-400">
+                                  <Award className="w-3.5 h-3.5" />
+                                  <span className="tabular-nums">{r.score}%</span>
+                                </span>
+                              ) : (
+                                <span className="text-muted/50">—</span>
+                              )}
+                            </td>
+                            <td className="px-4 py-3 align-middle text-right">
+                              <Link
+                                href={r.href}
+                                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-accent/10 border border-accent/25 text-[11px] font-semibold text-accent hover:bg-accent/15 transition-colors"
+                              >
+                                <Play className="w-3 h-3" />
+                                Watch
+                              </Link>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+          )}
+            </div>
+          )}
+
           {/* CANDIDATES */}
           {activeTab === "candidates" && (
+            <div className="space-y-5">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div className="inline-flex items-center p-1 rounded-xl bg-elevated/50 border border-border/60 backdrop-blur-sm shadow-sm overflow-x-auto scrollbar-none">
+                  {[
+                    { id: "list", label: "Roster", icon: "👥" },
+                    { id: "pipeline", label: "Pipeline", icon: "📊" },
+                    { id: "leaderboard", label: "Leaderboard", icon: "🏆" },
+                  ].map((subTab) => {
+                    const isActive = candidateSubTab === subTab.id;
+                    return (
+                      <Link
+                        key={subTab.id}
+                        href={`/w/${workspace.slug}?section=candidates&view=${subTab.id}`}
+                        className={`relative flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-[11px] font-semibold tracking-wide transition-all duration-200 shrink-0 ${
+                          isActive
+                            ? "bg-surface text-fg shadow-md shadow-black/10 dark:shadow-black/30 ring-1 ring-border/80"
+                            : "text-muted hover:text-fg hover:bg-surface/50"
+                        }`}
+                      >
+                        <span className="text-[13px] leading-none">{subTab.icon}</span>
+                        <span>{subTab.label}</span>
+                        {isActive && (
+                          <span className="absolute -bottom-px left-3 right-3 h-[2px] rounded-full bg-accent/60" />
+                        )}
+                      </Link>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {candidateSubTab === "list" && (
             <div className="space-y-3">
               <div className="flex items-center justify-between gap-4 flex-wrap">
                 <div>
@@ -1529,82 +1665,56 @@ export default function WorkspaceDashboardClient({
                 </div>
               )}
             </div>
-          )}
+              )}
 
-          {/* REPLAYS */}
-          {activeTab === "replays" && (
-            <div className="space-y-4">
-              <div>
-                <h3 className="text-lg font-semibold text-fg tracking-tight">Session replays</h3>
-                <p className="text-xs text-muted mt-0.5">
-                  Re-watch candidate sessions — keystrokes, code states, and final submissions.
-                </p>
-              </div>
-
-              {replayItems.length === 0 ? (
-                <div className="rounded-xl border border-border bg-surface p-12 text-center">
-                  <div className="w-12 h-12 rounded-xl bg-purple-500/10 border border-purple-500/20 flex items-center justify-center text-purple-500 mx-auto mb-3">
-                    <FileVideo className="w-5 h-5" />
-                  </div>
-                  <p className="text-sm font-semibold text-fg">No replays yet</p>
-                  <p className="text-xs text-muted mt-1 max-w-sm mx-auto">
-                    Replays appear here once candidates complete take-homes or finish interviews.
-                  </p>
+              {candidateSubTab === "pipeline" && (
+                <div className="min-h-[600px]">
+                  <CandidatePipelineClient
+                    slug={workspace.slug}
+                    workspaceName={workspace.name}
+                    canEdit={true}
+                    initialBuckets={initialBuckets}
+                    challenges={pipelineChallenges || []}
+                  />
                 </div>
-              ) : (
-                <div className="rounded-xl border border-border bg-surface overflow-hidden">
-                  <table className="w-full text-left text-sm">
-                    <thead>
-                      <tr className="bg-elevated/60 border-b border-border text-muted uppercase text-[10px] tracking-[0.14em]">
-                        <th className="px-4 py-3 font-semibold">Source</th>
-                        <th className="px-4 py-3 font-semibold">Candidate</th>
-                        <th className="px-4 py-3 font-semibold">Title</th>
-                        <th className="px-4 py-3 font-semibold">Recorded</th>
-                        <th className="px-4 py-3 font-semibold">Score</th>
-                        <th className="px-4 py-3 font-semibold text-right">Action</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-border">
-                      {replayItems.map((r) => {
-                        const ts = new Date(r.timestamp);
-                        const tsLabel = ts.toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" });
-                        const sourceColor = r.kind === "take-home"
-                          ? "text-purple-600 dark:text-purple-400 border-purple-500/25 bg-purple-500/[0.06]"
-                          : "text-violet-600 dark:text-violet-400 border-violet-500/25 bg-violet-500/[0.08]";
-                        return (
-                          <tr key={`${r.kind}-${r.id}`} className="hover:bg-panel/30 transition-colors">
-                            <td className="px-4 py-3 align-middle">
-                              <span className={`inline-flex items-center px-2 py-0.5 rounded-md border text-[10px] font-semibold uppercase tracking-wider ${sourceColor}`}>
-                                {r.kind === "take-home" ? "Take-home" : "Interview"}
-                              </span>
-                            </td>
-                            <td className="px-4 py-3 align-middle text-xs text-fg">{r.candidate}</td>
-                            <td className="px-4 py-3 align-middle text-xs text-fg truncate max-w-[260px]">{r.title}</td>
-                            <td className="px-4 py-3 align-middle text-xs text-muted">{tsLabel}</td>
-                            <td className="px-4 py-3 align-middle">
-                              {r.score !== null ? (
-                                <span className="inline-flex items-center gap-1 text-xs font-semibold text-emerald-600 dark:text-emerald-400">
-                                  <Award className="w-3.5 h-3.5" />
-                                  <span className="tabular-nums">{r.score}%</span>
-                                </span>
-                              ) : (
-                                <span className="text-muted/50">—</span>
-                              )}
-                            </td>
-                            <td className="px-4 py-3 align-middle text-right">
-                              <Link
-                                href={r.href}
-                                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-accent/10 border border-accent/25 text-[11px] font-semibold text-accent hover:bg-accent/15 transition-colors"
-                              >
-                                <Play className="w-3 h-3" />
-                                Watch
-                              </Link>
-                            </td>
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
+              )}
+
+              {candidateSubTab === "leaderboard" && (
+                <div className="min-h-[600px]">
+                  <LeaderboardClient
+                    slug={workspace.slug}
+                    workspaceName={workspace.name}
+                    challenges={challenges}
+                    activeChallengeId={searchParams.get("challenge")}
+                    rows={takeHomes.map((a) => {
+                      const dispatchedAt = a.createdAt || new Date().toISOString();
+                      const submittedAt = a.submittedAt || null;
+                      const startedAt = a.attemptStartedAt || null;
+                      let timeToSubmitMin = null;
+                      if (startedAt && submittedAt) {
+                        const ms = new Date(submittedAt).getTime() - new Date(startedAt).getTime();
+                        timeToSubmitMin = Math.round(ms / 60000);
+                      }
+                      return {
+                        id: a.id,
+                        candidateName: a.candidateName,
+                        candidateEmail: a.candidateEmail,
+                        status: a.status,
+                        score: a.score ?? null,
+                        challengeId: a.challengeId || "",
+                        challengeTitle: a.challengeTitle,
+                        challengeDifficulty: a.challengeDifficulty || "intermediate",
+                        dispatchedAt,
+                        submittedAt,
+                        expiresAt: a.expiresAt,
+                        timeToSubmitMin,
+                        candidateId: a.candidateId ?? null,
+                        candidateStage: a.candidateStage ?? null,
+                        candidateTags: a.candidateId ? (candidates.find((c) => c.id === a.candidateId)?.tags || []) : [],
+                        tokenPreview: a.token.slice(0, 8) + "…",
+                      };
+                    })}
+                  />
                 </div>
               )}
             </div>

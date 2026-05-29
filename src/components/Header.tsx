@@ -9,6 +9,7 @@ import NavDropdown from "./NavDropdown";
 import ThemeToggle from "./ThemeToggle";
 import UserMenu from "./UserMenu";
 import MobileNav from "./MobileNav";
+import NotificationBell from "./NotificationBell";
 
 export default async function Header() {
   const session = await auth().catch(() => null);
@@ -53,6 +54,13 @@ export default async function Header() {
       label: "Challenges",
       description: "Browse the public challenge catalog.",
       iconName: "Target" as const,
+    },
+    {
+      href: "/interview/prompt-practice",
+      label: "Prompt Arena",
+      description: "Evaluate and practice prompt engineering quality.",
+      iconName: "Sparkles" as const,
+      badge: "New",
     },
     {
       href: user ? "/interview?role=candidate" : "/login?next=/interview",
@@ -124,6 +132,10 @@ export default async function Header() {
 
             <div className="flex items-center gap-4">
               <ThemeToggle />
+              {/* Bell shows for any authenticated user — both candidates and
+                  recruiters get the same notification model (IP-40). The bell
+                  silently no-ops when unauthenticated (API returns 401). */}
+              {user ? <NotificationBell /> : null}
 
               <div className="flex items-center gap-4 pl-4 border-l border-border h-8">
                 {user ? (

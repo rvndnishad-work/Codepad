@@ -107,18 +107,23 @@ export default async function AdminBlogsPage({ searchParams }: AdminBlogsPagePro
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <h2 className="text-2xl font-black tracking-tight bg-gradient-to-r from-fg to-fg/80 bg-clip-text text-transparent">Blogs</h2>
-          <div className="flex items-center gap-4 mt-1">
-            <p className="text-sm text-muted">
-              {stats.total} total
-            </p>
-            {stats.pending > 0 && (
-              <span className="flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-amber-500/10 text-amber-400 text-[10px] font-black uppercase tracking-wider border border-amber-500/20 shadow-sm">
-                <Clock className="w-3 h-3" />
-                {stats.pending} Pending
-              </span>
-            )}
+        <div className="flex items-start gap-3">
+          <div className="w-10 h-10 rounded-xl bg-panel/40 border border-border flex items-center justify-center text-muted shrink-0 mt-0.5">
+            <FileText className="w-5 h-5" />
+          </div>
+          <div>
+            <h2 className="text-2xl font-black tracking-tight text-fg">Blogs</h2>
+            <div className="flex items-center gap-3 mt-1 flex-wrap">
+              <p className="text-sm text-muted">
+                {stats.total} total · {stats.published} published
+              </p>
+              {stats.pending > 0 && (
+                <span className="flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-amber-500/10 text-amber-400 text-[11px] font-semibold uppercase tracking-wide border border-amber-500/20 shadow-sm">
+                  <Clock className="w-3 h-3" />
+                  {stats.pending} Pending
+                </span>
+              )}
+            </div>
           </div>
         </div>
 
@@ -150,14 +155,14 @@ export default async function AdminBlogsPage({ searchParams }: AdminBlogsPagePro
 
       {blogs.length === 0 ? (
         <div className="rounded-2xl border border-border bg-panel/30 backdrop-blur-md p-16 text-center shadow-lg">
-          <div className="w-12 h-12 rounded-2xl bg-muted/5 flex items-center justify-center mx-auto mb-4 text-muted border border-border">
+          <div className="w-12 h-12 rounded-2xl bg-muted/5 flex items-center justify-center mx-auto mb-4 text-muted/60 border border-border">
             <FileText className="w-6 h-6" />
           </div>
           <p className="text-muted text-sm font-medium">No blogs found.</p>
           {(q || status) && (
             <Link
               href="/admin/blogs"
-              className="mt-4 text-xs font-bold text-accent hover:underline"
+              className="mt-4 inline-block text-xs font-bold text-accent hover:underline"
             >
               Clear filters
             </Link>
@@ -166,7 +171,7 @@ export default async function AdminBlogsPage({ searchParams }: AdminBlogsPagePro
       ) : (
         <BlogsBulkTable>
           <div className="rounded-2xl border border-border bg-panel/30 backdrop-blur-md overflow-hidden shadow-lg">
-            <div className="hidden lg:grid lg:grid-cols-[40px_3fr_1.5fr_1.2fr_1.5fr_1.8fr] lg:items-center lg:px-6 lg:py-4 bg-panel/40 text-[10px] uppercase tracking-[0.15em] text-muted border-b border-border font-black">
+            <div className="hidden lg:grid lg:grid-cols-[40px_3fr_1.5fr_1.2fr_1.5fr_1.8fr] lg:items-center lg:px-6 lg:py-4 bg-panel/40 text-[11px] uppercase tracking-wide text-muted border-b border-border font-semibold">
               <div className="flex items-center justify-center">
                 <BulkHeaderCheckbox ids={blogs.map((b) => b.id)} />
               </div>
@@ -201,9 +206,9 @@ function FilterLink({ current, value, label }: { current?: string, value: string
   return (
     <Link
       href={`/admin/blogs${value ? `?status=${value}` : ""}`}
-      className={`px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wider transition-all duration-200 border ${
-        isActive 
-          ? "bg-elevated text-fg border-border shadow-sm" 
+      className={`px-3 py-1.5 rounded-lg text-[11px] font-semibold uppercase tracking-wide transition-all duration-200 border ${
+        isActive
+          ? "bg-elevated text-fg border-border shadow-sm"
           : "border-transparent text-muted hover:text-fg hover:bg-panel/40"
       }`}
     >

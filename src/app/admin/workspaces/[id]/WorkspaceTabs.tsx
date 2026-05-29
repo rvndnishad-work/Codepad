@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, Target, Briefcase, FileVideo, Users, CreditCard } from "lucide-react";
+import { LayoutDashboard, Target, Briefcase, FileVideo, Users, CreditCard, UserSquare, Sparkles, Code2 } from "lucide-react";
 
 type Props = {
   workspaceId: string;
@@ -11,6 +11,9 @@ type Props = {
     challenges: number;
     interviews: number;
     replays: number;
+    candidates: number;
+    aiInterviews: number;
+    attempts: number;
   };
 };
 
@@ -18,10 +21,17 @@ export default function WorkspaceTabs({ workspaceId, counts }: Props) {
   const pathname = usePathname();
   const base = `/admin/workspaces/${workspaceId}`;
 
+  // Tab order mirrors the recruiter mental model: data first (candidates +
+  // their challenges), then activity (interviews, AI screens, attempts,
+  // replays), then admin (members, billing). New tabs inserted next to the
+  // most-related existing tab; nothing was reordered.
   const tabs = [
     { href: base, label: "Overview", icon: LayoutDashboard, count: null as number | null },
     { href: `${base}/challenges`, label: "Challenges", icon: Target, count: counts.challenges },
+    { href: `${base}/candidates`, label: "Candidates", icon: UserSquare, count: counts.candidates },
     { href: `${base}/interviews`, label: "Interviews", icon: Briefcase, count: counts.interviews },
+    { href: `${base}/ai-interviews`, label: "AI Interviews", icon: Sparkles, count: counts.aiInterviews },
+    { href: `${base}/attempts`, label: "Attempts", icon: Code2, count: counts.attempts },
     { href: `${base}/replays`, label: "Replays", icon: FileVideo, count: counts.replays },
     { href: `${base}/members`, label: "Members", icon: Users, count: counts.members },
     { href: `${base}/billing`, label: "Billing", icon: CreditCard, count: null },

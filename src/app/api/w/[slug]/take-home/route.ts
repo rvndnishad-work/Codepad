@@ -66,7 +66,9 @@ export async function POST(
     const normalizedEmail = candidateEmail.toLowerCase().trim();
 
     // Upsert the first-class Candidate row so this candidate appears in the
-    // workspace's CRM roster going forward.
+    // workspace's CRM roster going forward. New rows start at stage=TAKE_HOME
+    // (they're receiving a take-home, so APPLIED would already be stale).
+    // EXISTING rows keep their stage — auto-forward-transition is IP-69.
     const candidate = await prisma.candidate.upsert({
       where: { workspaceId_email: { workspaceId: workspace.id, email: normalizedEmail } },
       update: { name: candidateName },
@@ -76,6 +78,8 @@ export async function POST(
         email: normalizedEmail,
         source: "take-home",
         status: "active",
+        stage: "TAKE_HOME",
+        stageChangedAt: new Date(),
       },
     });
 

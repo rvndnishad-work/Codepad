@@ -5,6 +5,8 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { ArrowLeft, Menu, X } from "lucide-react";
 import AdminLink from "./AdminLink";
+import AdminPersonaToggle from "./AdminPersonaToggle";
+import type { AdminPersona } from "@/lib/admin-persona";
 
 interface AdminSidebarProps {
   session: {
@@ -14,9 +16,10 @@ interface AdminSidebarProps {
       image?: string | null;
     } | null;
   } | null;
+  persona: AdminPersona;
 }
 
-export default function AdminSidebar({ session }: AdminSidebarProps) {
+export default function AdminSidebar({ session, persona }: AdminSidebarProps) {
   const [isOpen, setIsOpen] = useState(false);
   const pathname = usePathname();
 
@@ -44,6 +47,9 @@ export default function AdminSidebar({ session }: AdminSidebarProps) {
     .toUpperCase()
     .slice(0, 2);
 
+  // Nav is split by persona so the sidebar only shows what's relevant to the
+  // admin's current job. "Core" + "System" are always rendered; the middle
+  // section flips based on the toggle.
   const NavigationLinks = () => (
     <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
       <div className="text-[9px] font-bold tracking-wider text-muted/55 uppercase px-3 mb-2">
@@ -51,26 +57,36 @@ export default function AdminSidebar({ session }: AdminSidebarProps) {
       </div>
       <AdminLink href="/admin" icon="LayoutDashboard" label="Dashboard" />
       <AdminLink href="/admin/inbox" icon="Inbox" label="Inbox" />
-      <AdminLink href="/admin/challenges" icon="Target" label="Challenges" />
-      <AdminLink href="/admin/attempts" icon="Code2" label="Attempts" />
-      <AdminLink href="/admin/interviews" icon="Briefcase" label="Interviews" />
-      <AdminLink href="/admin/ai-interviews" icon="Coins" label="AI Credits" />
-      <AdminLink href="/admin/workspaces" icon="Building2" label="Workspaces" />
 
-      
-      <div className="text-[9px] font-bold tracking-wider text-muted/55 uppercase px-3 pt-4 mb-2">
-        Content & Users
+      {/* Persona toggle drives which group of links renders below. */}
+      <div className="pt-4">
+        <AdminPersonaToggle initial={persona} />
       </div>
-      <AdminLink href="/admin/snippets" icon="Pin" label="Trends" />
-      <AdminLink href="/admin/users" icon="Users" label="Users" />
-      <AdminLink href="/admin/blogs" icon="FileText" label="Blogs" />
-      <AdminLink href="/admin/comments" icon="MessageCircle" label="Comments" />
-      
+
+      {persona === "candidate" ? (
+        <>
+          <AdminLink href="/admin/users" icon="Users" label="Users" />
+          <AdminLink href="/admin/snippets" icon="Pin" label="Trends" />
+          <AdminLink href="/admin/blogs" icon="FileText" label="Blogs" />
+          <AdminLink href="/admin/comments" icon="MessageCircle" label="Comments" />
+          <AdminLink href="/admin/challenges" icon="Target" label="Challenges" />
+          <AdminLink href="/admin/attempts" icon="Code2" label="Attempts" />
+        </>
+      ) : (
+        <>
+          <AdminLink href="/admin/users/recruiters" icon="Users" label="Users" />
+          <AdminLink href="/admin/workspaces" icon="Building2" label="Workspaces" />
+          <AdminLink href="/admin/interviews" icon="Briefcase" label="Interviews" />
+          <AdminLink href="/admin/ai-interviews" icon="Coins" label="AI Credits" />
+        </>
+      )}
+
       <div className="text-[9px] font-bold tracking-wider text-muted/55 uppercase px-3 pt-4 mb-2">
         System
       </div>
       <AdminLink href="/admin/copilot" icon="GemmaMark" label="Gemma Copilot" />
       <AdminLink href="/admin/todos" icon="ClipboardList" label="Todos" />
+      <AdminLink href="/admin/notifications" icon="Megaphone" label="Notifications" />
       <AdminLink href="/admin/settings" icon="Settings" label="Settings" />
     </nav>
   );

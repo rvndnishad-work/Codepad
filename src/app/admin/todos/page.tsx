@@ -17,10 +17,12 @@ export default async function AdminTodosPage() {
   // We sort by priority then createdAt so high-priority items float to the top
   // of each column on first render. Drag-reordering within a column is not
   // persisted in this iteration — order is purely status + priority + recency.
-  const rows = await prisma.adminTodo.findMany({
-    orderBy: { createdAt: "desc" },
-    take: 500,
-  });
+  const [rows, dependencies] = await Promise.all([
+    prisma.adminTodo.findMany({ orderBy: { createdAt: "desc" }, take: 500 }),
+    prisma.adminTodoDependency.findMany({
+      select: { id: true, fromId: true, toId: true, type: true },
+    }),
+  ]);
 
   const priorityRank: Record<string, number> = { HIGH: 0, MEDIUM: 1, LOW: 2 };
   rows.sort((a, b) => {
@@ -37,6 +39,7 @@ export default async function AdminTodosPage() {
   return (
     <AdminTodosConsole
       categories={categories}
+      dependencies={dependencies}
       todos={rows.map((r) => {
         let ac: { text: string; done: boolean }[] = [];
         if (r.acceptanceCriteria) {

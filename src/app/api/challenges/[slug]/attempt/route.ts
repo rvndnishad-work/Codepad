@@ -85,10 +85,31 @@ export async function POST(
 
   if (token) {
     try {
-      await prisma.takeHomeAssignment.update({
+      const updated = await prisma.takeHomeAssignment.update({
         where: { token },
         data: { status: "SUBMITTED", submittedAt: new Date() },
+        select: {
+          id: true,
+          candidateName: true,
+          candidateId: true,
+          workspaceId: true,
+          workspace: { select: { slug: true } },
+          challenge: { select: { title: true } },
+        },
       });
+      // IP-44: notify workspace owners/admins. Fire-and-forget — failure
+      // here must not roll back the submission.
+      const { notifyTakeHomeSubmitted } = await import("@/lib/notifications/triggers");
+      if (updated.workspaceId && updated.workspace?.slug) {
+        void notifyTakeHomeSubmitted({
+          workspaceId: updated.workspaceId,
+          workspaceSlug: updated.workspace.slug,
+          candidateName: updated.candidateName,
+          challengeTitle: updated.challenge.title,
+          takeHomeId: updated.id,
+          candidateId: updated.candidateId,
+        });
+      }
     } catch (e) {
       console.error("Failed to update take-home assignment status on submit:", e);
     }

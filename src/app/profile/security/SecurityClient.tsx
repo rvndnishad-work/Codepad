@@ -35,6 +35,9 @@ type AuditEvent = {
 
 type Props = {
   email: string | null;
+  /** Set when the user was redirected here by the forced-enrollment gate
+   *  (IP-42 AC #6) — admins / paid-workspace admins who haven't enrolled. */
+  required?: boolean;
   enrolled: boolean;
   enabledAt: string | null;
   pendingEnrollment: boolean;
@@ -65,6 +68,7 @@ const EVENT_LABELS: Record<string, { label: string; tone: "ok" | "warn" | "neutr
 
 export default function SecurityClient({
   email,
+  required = false,
   enrolled,
   enabledAt,
   pendingEnrollment,
@@ -236,6 +240,24 @@ export default function SecurityClient({
             </p>
           </div>
         </header>
+
+        {/* Forced-enrollment notice (IP-42 AC #6). Shown when the gate
+            redirected the user here and they still haven't enrolled. */}
+        {required && !enrolled && (
+          <div className="rounded-2xl border border-amber-500/30 bg-amber-500/[0.07] p-4 flex items-start gap-3">
+            <AlertTriangle className="w-5 h-5 text-amber-400 shrink-0 mt-0.5" />
+            <div className="space-y-1">
+              <div className="text-sm font-semibold text-amber-200">
+                Two-factor authentication is required for your account
+              </div>
+              <p className="text-[12px] text-amber-100/80 leading-relaxed">
+                Admins and paid-plan workspace owners/admins must enable 2FA.
+                Finish enrollment below to regain access to the admin console and
+                your workspaces.
+              </p>
+            </div>
+          </div>
+        )}
 
         {/* 2FA status card */}
         <section className="rounded-2xl border border-border bg-surface/60 p-5 space-y-4">

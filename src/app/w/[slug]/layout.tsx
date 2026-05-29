@@ -9,6 +9,11 @@ import {
 } from "lucide-react";
 import UserMenu from "@/components/UserMenu";
 import { isAdmin } from "@/lib/admin";
+import {
+  ensureTotpEnrolledOrRedirect,
+  PAID_PLANS,
+  WORKSPACE_ADMIN_ROLES,
+} from "@/lib/totp-gate";
 import WorkspaceSidebarNav from "./WorkspaceSidebarNav";
 
 type Props = {
@@ -51,8 +56,15 @@ export default async function WorkspaceLayout({ children, params }: Props) {
 
   if (!activeWorkspace) notFound();
 
-  const isMember = activeWorkspace.members.some((m) => m.userId === userId);
-  if (!isMember) redirect("/dashboard");
+  const myRole = activeWorkspace.members.find((m) => m.userId === userId)?.role;
+  if (!myRole) redirect("/dashboard");
+
+  // IP-42 AC #6: owners/admins of a paid-plan workspace must carry a second
+  // factor before reaching workspace surfaces (candidate data, integrations).
+  const mustEnroll2fa =
+    (WORKSPACE_ADMIN_ROLES as readonly string[]).includes(myRole) &&
+    (PAID_PLANS as readonly string[]).includes(activeWorkspace.planName);
+  await ensureTotpEnrolledOrRedirect(userId, mustEnroll2fa);
 
   // Replay count = submitted take-homes + finished interview sessions
   const submittedTakeHomes = await prisma.takeHomeAssignment.count({

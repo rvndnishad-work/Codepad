@@ -1,5 +1,6 @@
 import { auth } from "@/lib/auth";
 import { isAdmin } from "@/lib/admin";
+import { ensureTotpEnrolledOrRedirect } from "@/lib/totp-gate";
 import { notFound } from "next/navigation";
 import AdminSidebar from "./AdminSidebar";
 import FloatingJarvisAgent from "./FloatingJarvisAgent";
@@ -13,6 +14,11 @@ export const metadata = {
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   const session = await auth().catch(() => null);
   if (!isAdmin(session)) notFound();
+
+  // IP-42 AC #6: admins must carry a second factor before reaching the console.
+  if (session?.user?.id) {
+    await ensureTotpEnrolledOrRedirect(session.user.id, true);
+  }
 
   // Persona is read once in the layout so the server-rendered sidebar matches
   // the cookie on first paint — no client-side flicker between defaults.

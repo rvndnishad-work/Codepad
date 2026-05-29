@@ -8,7 +8,12 @@ export const metadata = {
   robots: { index: false, follow: false },
 };
 
-export default async function SecurityPage() {
+type Props = {
+  searchParams: Promise<{ enroll?: string }>;
+};
+
+export default async function SecurityPage({ searchParams }: Props) {
+  const { enroll } = await searchParams;
   const session = await auth().catch(() => null);
   if (!session?.user?.id) {
     redirect("/login?callbackUrl=/profile/security");
@@ -48,6 +53,7 @@ export default async function SecurityPage() {
   return (
     <SecurityClient
       email={user?.email ?? null}
+      required={enroll === "required"}
       enrolled={!!user?.totpEnabledAt}
       enabledAt={user?.totpEnabledAt?.toISOString() ?? null}
       pendingEnrollment={!!user?.totpSecret && !user?.totpEnabledAt}

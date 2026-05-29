@@ -176,6 +176,61 @@ model SecurityAuditLog {
   @@index([event, createdAt])
 }
 
+/// Transactional email log (IP-25). One row per `sendEmail()` dispatch — the
+/// row is written *before* the Resend POST (status="queued") and updated to
+/// `sent` or `failed` immediately after. The Resend webhook (IP-25 AC #5)
+/// flips it to `delivered` / `bounced` / `complained` / `opened` / `clicked`.
+///
+/// `providerId` is the Resend message id — webhook events join on it.
+/// `template` is the registry key from src/emails/index.ts so we can roll up
+/// per-template delivery stats.
+model EmailLog {
+  id             String    @id @default(cuid())
+  template       String
+  recipientEmail String
+  /// Optional workspace context — set when the send was triggered by a
+  /// workspace-scoped action (invite, notify, etc.).
+  workspaceId    String?
+  /// Optional interview / take-home / generic session id for traceability.
+  sessionId      String?
+  /// Resend message id, when the provider accepted the request. Null while
+  /// queued and on failed sends.
+  providerId     String?
+  /// queued | sent | failed | delivered | bounced | complained | opened |
+  /// clicked | suppressed. `suppressed` is the short-circuit case when the
+  /// recipient is on the EmailSuppression list — we record the attempt
+  /// without contacting Resend.
+  status         String    @default("queued")
+  /// Set when status flips to `failed` or `bounced`. Carries the Resend
+  /// reason string truncated to a reasonable length.
+  errorReason    String?
+  createdAt      DateTime  @default(now())
+  /// Updated each time a webhook event lands so the admin view can sort by
+  /// most-recent activity.
+  lastEventAt    DateTime?
+
+  @@index([recipientEmail, createdAt])
+  @@index([providerId])
+  @@index([status, createdAt])
+  @@index([workspaceId, createdAt])
+}
+
+/// Outbound deliverability suppression list (IP-25). Once an address hard-
+/// bounces or files a complaint we never send to it again — Resend penalizes
+/// senders that keep mailing known-bad addresses. Stored canonical (lowercase
+/// trim) so lookups are exact-match.
+model EmailSuppression {
+  id        String   @id @default(cuid())
+  address   String   @unique
+  /// hard_bounce | complaint | unsubscribe | manual
+  reason    String
+  /// Optional human note (admin context).
+  note      String?
+  addedAt   DateTime @default(now())
+
+  @@index([reason, addedAt])
+}
+
 /// Workspace-scoped audit trail (IP-37). Separate from McpAuditLog (which is
 /// specialized for MCP telemetry — durationMs, errorCode, outboundUrl,
 /// apiKey relation) and from SecurityAuditLog (which is user-scoped).

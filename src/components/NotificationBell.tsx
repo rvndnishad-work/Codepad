@@ -194,10 +194,21 @@ export default function NotificationBell() {
                   const isUnread = !n.readAt;
                   return (
                     <li key={n.id}>
-                      <button
-                        type="button"
+                      {/* Row is a div (not a button) so the dismiss button can
+                          nest inside it without invalid-nested-interactive
+                          markup + the React hydration warning (IP-52). Keyboard
+                          access preserved via role/tabIndex + Enter/Space. */}
+                      <div
+                        role="button"
+                        tabIndex={0}
                         onClick={() => onItemClick(n)}
-                        className={`group w-full px-3 py-2.5 flex items-start gap-2.5 text-left hover:bg-panel/30 ${
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter" || e.key === " ") {
+                            e.preventDefault();
+                            onItemClick(n);
+                          }
+                        }}
+                        className={`group w-full px-3 py-2.5 flex items-start gap-2.5 text-left cursor-pointer hover:bg-panel/30 focus:outline-none focus-visible:bg-panel/40 ${
                           isUnread ? "bg-indigo-500/[0.03]" : ""
                         }`}
                       >
@@ -232,7 +243,7 @@ export default function NotificationBell() {
                         >
                           <X className="w-3 h-3" />
                         </button>
-                      </button>
+                      </div>
                     </li>
                   );
                 })}

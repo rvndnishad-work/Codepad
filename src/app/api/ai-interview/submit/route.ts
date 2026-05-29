@@ -338,6 +338,7 @@ async function notifyWorkspaceRecruiters(params: {
         score: params.score,
         aiSuspicionScore: params.aiSuspicionScore,
         consoleUrl,
+        workspaceId: params.workspaceId,
       });
       if (!res.sent) {
         console.warn(`[ai-submit-notify] ${m.user.email}: ${res.reason}`);

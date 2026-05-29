@@ -92,6 +92,7 @@ export async function sendTakeHomeSubmissionEmails(args: {
       challenge: { select: { title: true } },
       workspace: {
         select: {
+          id: true,
           name: true,
           slug: true,
           members: {
@@ -106,6 +107,7 @@ export async function sendTakeHomeSubmissionEmails(args: {
 
   const challengeTitle = th.challenge.title;
   const workspaceName = th.workspace.name;
+  const workspaceId = th.workspace.id;
 
   // 1. Candidate confirmation.
   const candidateSend = th.candidateEmail
@@ -113,6 +115,7 @@ export async function sendTakeHomeSubmissionEmails(args: {
         template: "take-home-submitted-candidate",
         to: th.candidateEmail,
         props: { candidateName: th.candidateName, challengeTitle, workspaceName },
+        workspaceId,
         sessionId: args.takeHomeId,
         idempotencyKey: `th-submit-candidate:${args.takeHomeId}`,
       })
@@ -134,6 +137,7 @@ export async function sendTakeHomeSubmissionEmails(args: {
           reviewUrl,
           score: args.score,
         },
+        workspaceId,
         sessionId: args.takeHomeId,
         idempotencyKey: `th-submit-recruiter:${args.takeHomeId}:${m.user.email}`,
       }),

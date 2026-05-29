@@ -15,6 +15,7 @@ import {
   Plug,
   Workflow,
   ScrollText,
+  Mail,
 } from "lucide-react";
 
 type Props = {
@@ -54,6 +55,8 @@ export default function WorkspaceSidebarNav({ slug, planName, counts }: Props) {
   const isAtsActive = pathname === atsHref;
   const auditHref = `/w/${slug}/audit`;
   const isAuditActive = pathname === auditHref;
+  const emailsHref = `/w/${slug}/emails`;
+  const isEmailsActive = pathname === emailsHref;
 
   const operational: Item[] = [
     { section: "overview", label: "Overview", icon: Compass, count: null },
@@ -204,6 +207,26 @@ export default function WorkspaceSidebarNav({ slug, planName, counts }: Props) {
           <span className="flex items-center gap-2 min-w-0">
             <ScrollText className={`w-3.5 h-3.5 shrink-0 ${isAuditActive ? "text-indigo-500" : "text-muted/60"}`} />
             <span className="truncate">Audit log</span>
+          </span>
+          <span className="inline-flex items-center justify-center px-1.5 h-[18px] rounded-full text-[9px] font-bold uppercase tracking-wider shrink-0 bg-amber-500/10 text-amber-400 border border-amber-500/20">
+            New
+          </span>
+        </Link>
+        {/*
+          IP-27 follow-on: workspace-scoped email delivery log. Same OWNER/ADMIN
+          gating as the audit log; lives on a direct route, not a ?section=.
+        */}
+        <Link
+          href={emailsHref}
+          className={`group flex items-center justify-between gap-2 px-2.5 py-1.5 rounded-md text-[12px] font-medium transition-colors ${
+            isEmailsActive
+              ? "bg-indigo-500/10 text-indigo-600 dark:text-indigo-300"
+              : "text-muted hover:text-fg hover:bg-panel/40"
+          }`}
+        >
+          <span className="flex items-center gap-2 min-w-0">
+            <Mail className={`w-3.5 h-3.5 shrink-0 ${isEmailsActive ? "text-indigo-500" : "text-muted/60"}`} />
+            <span className="truncate">Email activity</span>
           </span>
           <span className="inline-flex items-center justify-center px-1.5 h-[18px] rounded-full text-[9px] font-bold uppercase tracking-wider shrink-0 bg-amber-500/10 text-amber-400 border border-amber-500/20">
             New

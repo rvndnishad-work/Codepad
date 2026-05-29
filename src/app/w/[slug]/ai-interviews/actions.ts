@@ -118,6 +118,7 @@ export async function createAIInterviewSessionAction(
     positionTitle: session.positionTitle,
     workspaceName: workspace.name,
     inviteUrl,
+    workspaceId: workspace.id,
   }).then((res) => {
     if (!res.sent) {
       console.warn(`[ai-invite-email] failed for ${session.candidateEmail}: ${res.reason}`);

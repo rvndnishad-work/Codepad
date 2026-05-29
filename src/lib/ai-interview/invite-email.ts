@@ -11,6 +11,8 @@ export type InviteEmailInput = {
   positionTitle: string;
   workspaceName: string;
   inviteUrl: string;
+  /** Attribution for the EmailLog row (workspace Email activity view). */
+  workspaceId?: string;
 };
 
 /**
@@ -28,5 +30,6 @@ export async function sendInviteEmail(input: InviteEmailInput): Promise<EmailRes
       workspaceName: input.workspaceName,
       inviteUrl: input.inviteUrl,
     },
+    workspaceId: input.workspaceId,
   });
 }

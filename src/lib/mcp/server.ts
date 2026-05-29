@@ -441,6 +441,7 @@ export function buildMcpServer(auth: AuthedKey): McpServer {
               positionTitle: session.positionTitle,
               workspaceName: auth.workspaceName,
               inviteUrl,
+              workspaceId: auth.workspaceId,
             }).then((res) => {
               if (!res.sent) {
                 console.warn(

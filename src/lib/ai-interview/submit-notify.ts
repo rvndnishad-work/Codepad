@@ -14,6 +14,8 @@ export type RecruiterNotifyInput = {
   score: number;
   aiSuspicionScore: number | null;
   consoleUrl: string;
+  /** Attribution for the EmailLog row (workspace Email activity view). */
+  workspaceId?: string;
 };
 
 /**
@@ -34,5 +36,6 @@ export async function sendRecruiterNotifyEmail(input: RecruiterNotifyInput) {
       aiSuspicionScore: input.aiSuspicionScore,
       consoleUrl: input.consoleUrl,
     },
+    workspaceId: input.workspaceId,
   });
 }

@@ -176,6 +176,50 @@ model SecurityAuditLog {
   @@index([event, createdAt])
 }
 
+/// Workspace-scoped audit trail (IP-37). Separate from McpAuditLog (which is
+/// specialized for MCP telemetry — durationMs, errorCode, outboundUrl,
+/// apiKey relation) and from SecurityAuditLog (which is user-scoped).
+///
+/// One row per workspace-mutating action. The `action` column is a stable
+/// enum-ish string discriminator; `meta` carries event-specific JSON. We
+/// store an actorUserId snapshot (rather than only relying on the FK) so
+/// that user deletion still leaves a readable trail for compliance.
+///
+/// Coverage today (IP-37 MVP): pipeline stage transitions, bulk take-home
+/// dispatch, ATS connect/disconnect. Remaining writers tracked in IP-76.
+model WorkspaceAuditLog {
+  id           String    @id @default(cuid())
+  workspaceId  String
+  actorUserId  String?
+  /// Snapshot of actor email at write time — survives the actor's deletion
+  /// for compliance readability ("rvndnishad@..." stays after the row goes).
+  actorEmail   String?
+  /// Stable discriminator. Current values:
+  ///   PIPELINE_STAGE_CHANGED
+  ///   BULK_TAKE_HOME_DISPATCHED
+  ///   ATS_INTEGRATION_CONNECTED
+  ///   ATS_INTEGRATION_DISCONNECTED
+  ///   ATS_INTEGRATION_TEST_SENT
+  ///   (extensible — IP-76 wires more)
+  action       String
+  /// Optional polymorphic reference. e.g. "candidate" + candidate.id, or
+  /// "takeHomeAssignment" + assignment.id. Used by the UI to deep-link.
+  targetType   String?
+  targetId     String?
+  /// Event-specific JSON. Kept small; never store secrets.
+  meta         String?
+  /// Best-effort client IP from request headers (`x-forwarded-for` etc).
+  ip           String?
+  /// User-agent string.
+  userAgent    String?
+  createdAt    DateTime  @default(now())
+  workspace    Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@index([workspaceId, createdAt])
+  @@index([workspaceId, action, createdAt])
+  @@index([workspaceId, actorUserId, createdAt])
+}
+
 model Follow {
   followerId  String
   followingId String
@@ -608,6 +652,7 @@ model Workspace {
   promptScenarios      PromptScenario[]
   takeHomes            TakeHomeAssignment[]
   members              WorkspaceMember[]
+  auditLogs            WorkspaceAuditLog[]
 }
 
 /// First-class candidate entity scoped to a workspace.

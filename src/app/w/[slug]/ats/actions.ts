@@ -6,6 +6,10 @@ import { revalidatePath } from "next/cache";
 import { workspacePlanAllowsAiScreening } from "@/lib/ai-interview/credits";
 import { validateOutboundUrl } from "@/lib/mcp/outbound";
 import { encryptAtRest, decryptAtRest } from "@/lib/crypto/at-rest";
+import {
+  writeWorkspaceAuditEntry,
+  WORKSPACE_AUDIT_ACTIONS,
+} from "@/lib/workspace-audit";
 
 /**
  * Per-workspace ATS integration (IP-32). Each workspace owns its own
@@ -51,7 +55,11 @@ async function assertWorkspaceAdmin(slug: string) {
     throw new Error("Only workspace owners/admins can manage ATS integrations.");
   }
 
-  return { workspace, userId: session.user.id };
+  return {
+    workspace,
+    userId: session.user.id,
+    actorEmail: session.user.email ?? null,
+  };
 }
 
 type StoredSettings = { webhookUrl?: string };
@@ -119,7 +127,7 @@ export type SaveAtsInput = {
 };
 
 export async function saveAtsIntegrationAction(slug: string, input: SaveAtsInput) {
-  const { workspace } = await assertWorkspaceAdmin(slug);
+  const { workspace, userId, actorEmail } = await assertWorkspaceAdmin(slug);
 
   if (!VALID_PROVIDERS.has(input.provider)) {
     throw new Error("Unknown provider.");
@@ -182,13 +190,47 @@ export async function saveAtsIntegrationAction(slug: string, input: SaveAtsInput
     });
   }
 
+  // IP-37: workspace audit row. Connecting and "updating an existing" are
+  // both logged as CONNECTED — meta carries the provider + whether a key was
+  // rotated so the trail distinguishes setup vs maintenance.
+  void writeWorkspaceAuditEntry({
+    workspaceId: workspace.id,
+    actorUserId: userId,
+    actorEmail,
+    action: WORKSPACE_AUDIT_ACTIONS.ATS_INTEGRATION_CONNECTED,
+    targetType: "atsIntegration",
+    targetId: workspace.id,
+    meta: {
+      provider: input.provider,
+      wasExisting: !!existing,
+      apiKeyRotated: input.apiKey !== undefined,
+      webhookSecretRotated: input.webhookSecret !== undefined,
+    },
+  });
+
   revalidatePath(`/w/${slug}/ats`);
   return { success: true };
 }
 
 export async function disconnectAtsIntegrationAction(slug: string) {
-  const { workspace } = await assertWorkspaceAdmin(slug);
+  const { workspace, userId, actorEmail } = await assertWorkspaceAdmin(slug);
+  // Read provider first so the audit row records which one was removed.
+  const existing = await prisma.atsIntegration.findUnique({
+    where: { workspaceId: workspace.id },
+    select: { provider: true },
+  });
   await prisma.atsIntegration.deleteMany({ where: { workspaceId: workspace.id } });
+
+  void writeWorkspaceAuditEntry({
+    workspaceId: workspace.id,
+    actorUserId: userId,
+    actorEmail,
+    action: WORKSPACE_AUDIT_ACTIONS.ATS_INTEGRATION_DISCONNECTED,
+    targetType: "atsIntegration",
+    targetId: workspace.id,
+    meta: { provider: existing?.provider ?? "unknown" },
+  });
+
   revalidatePath(`/w/${slug}/ats`);
   return { success: true };
 }
@@ -223,7 +265,7 @@ function samplePayload(provider: AtsProvider) {
 }
 
 export async function sendAtsTestEventAction(slug: string): Promise<AtsTestResult> {
-  const { workspace } = await assertWorkspaceAdmin(slug);
+  const { workspace, userId, actorEmail } = await assertWorkspaceAdmin(slug);
 
   const row = await prisma.atsIntegration.findUnique({
     where: { workspaceId: workspace.id },
@@ -264,10 +306,37 @@ export async function sendAtsTestEventAction(slug: string): Promise<AtsTestResul
     const rawText = await upstream.text();
     const truncated = rawText.length > MAX_BODY_BYTES;
     const body = truncated ? rawText.slice(0, MAX_BODY_BYTES) + "\n…(truncated)" : rawText;
+    // IP-37: audit the test attempt with outcome.
+    void writeWorkspaceAuditEntry({
+      workspaceId: workspace.id,
+      actorUserId: userId,
+      actorEmail,
+      action: WORKSPACE_AUDIT_ACTIONS.ATS_INTEGRATION_TEST_SENT,
+      targetType: "atsIntegration",
+      targetId: workspace.id,
+      meta: {
+        provider: row.provider,
+        httpStatus: upstream.status,
+        durationMs,
+      },
+    });
     return { ok: true, httpStatus: upstream.status, durationMs, body };
   } catch (err) {
     const durationMs = Date.now() - startedAt;
     const aborted = (err as Error)?.name === "AbortError";
+    void writeWorkspaceAuditEntry({
+      workspaceId: workspace.id,
+      actorUserId: userId,
+      actorEmail,
+      action: WORKSPACE_AUDIT_ACTIONS.ATS_INTEGRATION_TEST_SENT,
+      targetType: "atsIntegration",
+      targetId: workspace.id,
+      meta: {
+        provider: row.provider,
+        durationMs,
+        outcome: aborted ? "timeout" : "network_error",
+      },
+    });
     return {
       ok: false,
       error: aborted

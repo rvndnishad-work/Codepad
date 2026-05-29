@@ -10,6 +10,10 @@ import {
   REJECT_REASONS,
   type RejectReason,
 } from "@/lib/crm/stages";
+import {
+  writeWorkspaceAuditEntry,
+  WORKSPACE_AUDIT_ACTIONS,
+} from "@/lib/workspace-audit";
 
 /**
  * Authorize as a member of the workspace + return the workspace id.
@@ -28,7 +32,14 @@ async function assertWorkspaceMember(slug: string) {
   if (!workspace) throw new Error("Workspace not found");
   const member = workspace.members.find((m) => m.userId === session.user.id);
   if (!member) throw new Error("Not a member of this workspace");
-  return { workspaceId: workspace.id, role: member.role };
+  return {
+    workspaceId: workspace.id,
+    role: member.role,
+    // Actor context for audit writes (IP-37). Email snapshot lets rows stay
+    // readable even after the actor account is deleted.
+    actorUserId: session.user.id,
+    actorEmail: session.user.email ?? null,
+  };
 }
 
 export type UpdateStageInput = {
@@ -43,9 +54,19 @@ export async function updateCandidateStageAction(
   slug: string,
   input: UpdateStageInput,
 ) {
-  const { workspaceId } = await assertWorkspaceMember(slug);
+  const { workspaceId, actorUserId, actorEmail } = await assertWorkspaceMember(slug);
   if (!isPipelineStage(input.toStage)) {
     throw new Error(`Unknown stage: ${input.toStage}`);
+  }
+
+  // Snapshot the previous stage for the audit row so the trail reads
+  // "moved Ava Patel from SCREENED → ONSITE" rather than only the new stage.
+  const previous = await prisma.candidate.findUnique({
+    where: { id: input.candidateId },
+    select: { stage: true, name: true, workspaceId: true },
+  });
+  if (!previous || previous.workspaceId !== workspaceId) {
+    throw new Error("Candidate not found in this workspace.");
   }
 
   // Reject-reason gate — server-side enforced so even a direct action call
@@ -81,6 +102,25 @@ export async function updateCandidateStageAction(
   if (updated.count === 0) {
     throw new Error("Candidate not found in this workspace.");
   }
+
+  // IP-37: workspace audit row. Fire-and-forget — failure here logs but
+  // never rolls back the stage transition the user just committed to.
+  void writeWorkspaceAuditEntry({
+    workspaceId,
+    actorUserId,
+    actorEmail,
+    action: WORKSPACE_AUDIT_ACTIONS.PIPELINE_STAGE_CHANGED,
+    targetType: "candidate",
+    targetId: input.candidateId,
+    meta: {
+      candidateName: previous.name,
+      fromStage: previous.stage,
+      toStage: input.toStage,
+      ...(input.toStage === "REJECTED"
+        ? { rejectReason: input.rejectReason, hasNote: !!input.rejectReasonNote?.trim() }
+        : {}),
+    },
+  });
 
   revalidatePath(`/w/${slug}/candidates`);
   revalidatePath(`/w/${slug}`);
@@ -135,7 +175,7 @@ export async function importCandidatesCsvAction(
   slug: string,
   csv: string,
 ): Promise<CsvImportResult> {
-  const { workspaceId } = await assertWorkspaceMember(slug);
+  const { workspaceId, actorUserId, actorEmail } = await assertWorkspaceMember(slug);
 
   if (csv.length > MAX_CSV_BYTES) {
     throw new Error(
@@ -252,6 +292,23 @@ export async function importCandidatesCsvAction(
     }
   });
 
+  // IP-37: workspace audit row for the import batch.
+  if (result.imported > 0 || result.skipped > 0 || result.errored > 0) {
+    void writeWorkspaceAuditEntry({
+      workspaceId,
+      actorUserId,
+      actorEmail,
+      action: WORKSPACE_AUDIT_ACTIONS.CANDIDATE_CSV_IMPORTED,
+      targetType: "workspace",
+      targetId: workspaceId,
+      meta: {
+        imported: result.imported,
+        skipped: result.skipped,
+        errored: result.errored,
+      },
+    });
+  }
+
   revalidatePath(`/w/${slug}/candidates`);
   revalidatePath(`/w/${slug}`);
   return result;
@@ -353,7 +410,7 @@ export async function bulkDispatchTakeHomesAction(
   slug: string,
   input: BulkDispatchInput,
 ): Promise<BulkDispatchResult> {
-  const { workspaceId } = await assertWorkspaceMember(slug);
+  const { workspaceId, actorUserId, actorEmail } = await assertWorkspaceMember(slug);
 
   // Input validation up-front so we don't open a transaction just to error.
   if (!input.challengeId) throw new Error("Challenge is required.");
@@ -473,6 +530,30 @@ export async function bulkDispatchTakeHomesAction(
   const dispatched = details.filter((d) => d.status === "dispatched").length;
   const skipped = details.filter((d) => d.status === "skipped").length;
   const errored = details.filter((d) => d.status === "errored").length;
+
+  // IP-37: workspace audit row. Single row per bulk dispatch — meta records
+  // the aggregate counts + a small recipient sample so the audit trail is
+  // useful without being verbose.
+  void writeWorkspaceAuditEntry({
+    workspaceId,
+    actorUserId,
+    actorEmail,
+    action: WORKSPACE_AUDIT_ACTIONS.BULK_TAKE_HOME_DISPATCHED,
+    targetType: "challenge",
+    targetId: challenge.id,
+    meta: {
+      challengeTitle: challenge.title,
+      dispatched,
+      skipped,
+      errored,
+      timeLimitMin: input.timeLimitMin,
+      daysToExpire: input.daysToExpire,
+      sampleRecipients: details
+        .filter((d) => d.status === "dispatched")
+        .slice(0, 5)
+        .map((d) => d.email),
+    },
+  });
 
   revalidatePath(`/w/${slug}/candidates`);
   revalidatePath(`/w/${slug}/leaderboard`);

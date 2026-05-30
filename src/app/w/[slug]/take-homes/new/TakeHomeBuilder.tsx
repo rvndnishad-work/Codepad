@@ -325,10 +325,18 @@ function GroupCard({
 
         {/* Candidates */}
         <div className="space-y-2.5">
+          <div className="text-[10px] font-bold uppercase tracking-wider text-muted/80">Candidates</div>
           <button type="button" onClick={() => onPatch((gr) => ({ ...gr, pickerOpen: !gr.pickerOpen }))}
-            className="w-full flex items-center justify-between text-[10px] font-bold uppercase tracking-wider text-muted/80 hover:text-fg transition-colors">
-            <span className="flex items-center gap-1.5"><Users className="w-3.5 h-3.5" /> Candidates · {g.candidateIds.size} selected</span>
-            <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-300 ${g.pickerOpen ? "rotate-180" : ""}`} />
+            className={`w-full flex items-center justify-between gap-2 px-3.5 py-2.5 rounded-xl border text-sm transition-all ${
+              g.pickerOpen ? "border-accent/50 bg-panel shadow-inner" : "border-border bg-panel hover:border-accent/40"
+            }`}>
+            <span className="flex items-center gap-2 min-w-0">
+              <Users className="w-4 h-4 text-accent shrink-0" />
+              {g.candidateIds.size > 0
+                ? <span className="font-semibold text-fg">{g.candidateIds.size} candidate{g.candidateIds.size === 1 ? "" : "s"} selected</span>
+                : <span className="font-medium text-muted/70">Select candidates…</span>}
+            </span>
+            <ChevronDown className={`w-4 h-4 text-muted shrink-0 transition-transform duration-300 ${g.pickerOpen ? "rotate-180" : ""}`} />
           </button>
 
           {g.candidateIds.size > 0 && (
@@ -362,16 +370,18 @@ function GroupCard({
                   </button>
                 )}
               </div>
+              {/* Only candidates available to THIS group (not already assigned
+                  elsewhere) are listed — assigned ones are hidden, not greyed. */}
               <div className="max-h-[220px] overflow-y-auto space-y-0.5 pr-1 scrollbar-thin">
-                {visibleCands.length === 0 ? (
-                  <div className="text-center text-xs text-muted py-4">No candidates — paste emails below.</div>
-                ) : visibleCands.map((c) => {
-                  const otherGroup = assignedTo.get(c.id);
-                  const lockedElsewhere = !!otherGroup && otherGroup !== g.id;
+                {availableHere.length === 0 ? (
+                  <div className="text-center text-xs text-muted py-4">
+                    {visibleCands.length === 0 ? "No candidates — paste emails below." : "Everyone matching is already in another group."}
+                  </div>
+                ) : availableHere.map((c) => {
                   const checked = g.candidateIds.has(c.id);
                   return (
-                    <button key={c.id} type="button" disabled={lockedElsewhere} onClick={() => onToggleCand(c.id)}
-                      className={`w-full flex items-center gap-2.5 p-1.5 rounded-lg text-left transition-colors ${lockedElsewhere ? "opacity-40 cursor-not-allowed" : checked ? "bg-accent/[0.06]" : "hover:bg-bg"}`}>
+                    <button key={c.id} type="button" onClick={() => onToggleCand(c.id)}
+                      className={`w-full flex items-center gap-2.5 p-1.5 rounded-lg text-left transition-colors ${checked ? "bg-accent/[0.06]" : "hover:bg-bg"}`}>
                       <span className={`w-4 h-4 rounded-[5px] border grid place-items-center shrink-0 transition-colors ${checked ? "bg-accent border-accent text-bg" : "border-border"}`}>
                         {checked && <Check className="w-3 h-3" strokeWidth={3} />}
                       </span>
@@ -380,9 +390,7 @@ function GroupCard({
                         <span className="block text-xs font-medium text-fg truncate">{c.name}</span>
                         <span className="block text-[10px] text-muted truncate">{c.email}</span>
                       </span>
-                      {lockedElsewhere
-                        ? <span className="text-[9px] font-bold uppercase tracking-wider text-amber-500 shrink-0">in a group</span>
-                        : <span className="text-[9px] font-bold uppercase tracking-wider text-muted/60 shrink-0">{c.stage}</span>}
+                      <span className="text-[9px] font-bold uppercase tracking-wider text-muted/60 shrink-0">{c.stage}</span>
                     </button>
                   );
                 })}

@@ -91,12 +91,16 @@ export default async function TakeHomeSessionRunner({ params, searchParams }: Pr
   const totalQuestions = challengeIds.length + playgroundIds.length + promptScenarioIds.length;
 
   const shell = (children: React.ReactNode) => (
-    <div className="min-h-screen bg-[#0B0F19] text-[#F3F4F6] flex flex-col items-center px-4 py-12 font-sans">
-      <div className="w-full max-w-2xl bg-[#161B2E]/60 border border-border backdrop-blur-md rounded-3xl p-6 md:p-8 shadow-2xl">
+    <div className="min-h-screen bg-bg text-fg flex flex-col items-center px-4 py-10 font-sans relative overflow-hidden">
+      <div className="absolute inset-0 -z-10 pointer-events-none">
+        <div className="absolute top-[-120px] left-[-80px] w-[34rem] h-[34rem] rounded-full blur-[140px] bg-accent/[0.06] dark:bg-accent/10" />
+        <div className="absolute bottom-[-120px] right-[-80px] w-[34rem] h-[34rem] rounded-full blur-[150px] bg-indigo-500/[0.05] dark:bg-indigo-500/10" />
+      </div>
+      <div className="w-full max-w-3xl bg-surface/70 border border-border backdrop-blur-xl rounded-3xl p-6 md:p-8 shadow-sm relative z-10">
         <div className="flex justify-center mb-8">
           <Link href="/" className="flex items-center gap-2">
-            <div className="w-9 h-9 rounded-xl bg-accent/20 border border-accent/35 flex items-center justify-center text-accent font-black text-xl">C</div>
-            <span className="font-extrabold text-sm tracking-widest uppercase">Interviewpad</span>
+            <div className="w-9 h-9 rounded-xl bg-accent/15 border border-accent/30 flex items-center justify-center text-accent font-black text-xl">C</div>
+            <span className="font-extrabold text-sm tracking-widest uppercase text-fg">Interviewpad</span>
           </Link>
         </div>
         {children}
@@ -151,7 +155,7 @@ export default async function TakeHomeSessionRunner({ params, searchParams }: Pr
         <h2 className="text-xl md:text-2xl font-black tracking-tight">{session.title}</h2>
         <p className="text-xs md:text-sm text-muted max-w-md mx-auto">
           Welcome{session.candidateName ? `, ${session.candidateName}` : ""}. This take-home from{" "}
-          <span className="text-[#F3F4F6] font-bold">{wsName}</span> has {totalQuestions} question{totalQuestions === 1 ? "" : "s"}, each separately timed. Complete them in any order.
+          <span className="text-fg font-bold">{wsName}</span> has {totalQuestions} question{totalQuestions === 1 ? "" : "s"}, each separately timed. Complete them in any order.
         </p>
       </div>
 

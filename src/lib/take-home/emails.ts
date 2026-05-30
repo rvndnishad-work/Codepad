@@ -144,6 +144,38 @@ export async function sendTakeHomeReminder(args: {
 }
 
 /**
+ * 24h reminder for a session-backed (multi-question) take-home (IP-89). Reuses
+ * the take-home-reminder template with the session title as the headline.
+ */
+export async function sendTakeHomeSessionReminder(args: {
+  candidateName: string;
+  candidateEmail: string;
+  title: string;
+  workspaceName: string;
+  token: string;
+  deadlineAt: Date;
+  hoursLeft: number;
+  workspaceId?: string;
+  sessionId: string;
+}) {
+  return sendEmail({
+    template: "take-home-reminder",
+    to: args.candidateEmail,
+    props: {
+      candidateName: args.candidateName,
+      challengeTitle: args.title,
+      workspaceName: args.workspaceName,
+      takeHomeUrl: takeHomeSessionUrl(args.token),
+      expiresAt: args.deadlineAt.toISOString(),
+      hoursLeft: args.hoursLeft,
+    },
+    workspaceId: args.workspaceId,
+    sessionId: args.sessionId,
+    idempotencyKey: `ths-reminder:${args.sessionId}`,
+  });
+}
+
+/**
  * On submit: confirm to the candidate + notify workspace recruiters
  * (OWNER/ADMIN/INTERVIEWER, same recipient rule as AI screening). Looks up
  * everything it needs from the takeHomeId so call sites stay tiny.

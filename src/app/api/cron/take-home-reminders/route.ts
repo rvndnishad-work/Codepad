@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { assertCronAuth } from "@/lib/cron-auth";
-import { sendTakeHomeReminder } from "@/lib/take-home/emails";
+import { sendTakeHomeReminder, sendTakeHomeSessionReminder } from "@/lib/take-home/emails";
 
 /**
  * IP-27 AC #3 — 24h take-home reminder email.
@@ -82,12 +82,59 @@ export async function POST(req: NextRequest) {
     }
   }
 
+  // ── Session-backed take-homes (IP-89) ──────────────────────────────────
+  // Same 24h window, idempotent via InterviewSession.reminderSentAt.
+  const dueSessions = await prisma.interviewSession.findMany({
+    where: {
+      type: "take-home",
+      status: { in: ["scheduled", "in_progress"] },
+      deadlineAt: { gt: now, lt: horizon },
+      reminderSentAt: null,
+    },
+    select: {
+      id: true, title: true, candidateName: true, deadlineAt: true, workspaceId: true,
+      candidateAccessToken: true,
+      candidate: { select: { email: true } },
+      workspace: { select: { name: true } },
+    },
+    take: MAX_BATCH,
+  });
+
+  let sessionsSent = 0;
+  let sessionsSkipped = 0;
+  for (const s of dueSessions) {
+    const email = s.candidate?.email ?? null;
+    if (!email || !s.deadlineAt || !s.workspace || !s.candidateAccessToken) { sessionsSkipped++; continue; }
+    const hoursLeft = Math.max(1, Math.ceil((s.deadlineAt.getTime() - now.getTime()) / 3_600_000));
+    const res = await sendTakeHomeSessionReminder({
+      candidateName: s.candidateName ?? "there",
+      candidateEmail: email,
+      title: s.title,
+      workspaceName: s.workspace.name,
+      token: s.candidateAccessToken,
+      deadlineAt: s.deadlineAt,
+      hoursLeft,
+      workspaceId: s.workspaceId ?? undefined,
+      sessionId: s.id,
+    });
+    if (res.sent || (!res.sent && /suppress/i.test(res.reason ?? ""))) {
+      await prisma.interviewSession.update({ where: { id: s.id }, data: { reminderSentAt: new Date() } });
+      sessionsSent++;
+    } else {
+      console.warn(`[take-home-reminder:session] ${email}: ${res.reason}`);
+      sessionsSkipped++;
+    }
+  }
+
   return NextResponse.json({
     ok: true,
     task: "take-home-reminders",
     scanned: due.length,
     sent,
     skipped,
+    sessionsScanned: dueSessions.length,
+    sessionsSent,
+    sessionsSkipped,
     horizon: horizon.toISOString(),
   });
 }

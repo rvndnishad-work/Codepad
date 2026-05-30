@@ -5,10 +5,9 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { toast } from "sonner";
 import {
-  ArrowLeft, Search, Plus, X, Clock, Layers, Beaker, Brain,
-  Users, Send, GripVertical, Trophy,
+  ArrowLeft, Plus, X, Clock, Users, Send, Layers, Beaker, Brain, Search, Trash2, ChevronDown,
 } from "lucide-react";
-import { bulkCreateTakeHomeSessions } from "../../candidates/actions";
+import { createTakeHomeGroups } from "../../candidates/actions";
 
 export type CurationChallenge = {
   id: string; slug: string; title: string;
@@ -24,15 +23,15 @@ export type CurationPlayground = { id: string; title: string; template: string; 
 export type PickCandidate = { id: string; name: string; email: string; stage: string };
 
 type Kind = "challenge" | "playground" | "prompt";
-type TimelineItem = { id: string; kind: Kind; title: string; minutes: number; meta?: string };
+type QItem = { key: string; kind: Kind; id: string; title: string; minutes: number };
+type Group = { id: string; questions: QItem[]; candidateIds: Set<string>; pasted: string; pickerOpen: boolean; candSearch: string };
 
 const DEFAULT_MIN = 30;
+let gid = 1;
+const newGroup = (): Group => ({ id: `g${gid++}`, questions: [], candidateIds: new Set(), pasted: "", pickerOpen: false, candSearch: "" });
 
-const diffBg: Record<string, string> = {
-  easy: "bg-emerald-500/10 border-emerald-500/20 text-emerald-600 dark:text-emerald-400",
-  medium: "bg-amber-500/10 border-amber-500/20 text-amber-600 dark:text-amber-400",
-  hard: "bg-rose-500/10 border-rose-500/20 text-rose-600 dark:text-rose-400",
-};
+const KIND_ICON = { challenge: Layers, playground: Beaker, prompt: Brain };
+const KIND_LABEL = { challenge: "DSA", playground: "Playground", prompt: "Prompt" };
 
 export default function TakeHomeBuilder({
   slug, workspaceName, challenges, prompts, playgrounds, candidates,
@@ -42,101 +41,105 @@ export default function TakeHomeBuilder({
   playgrounds: CurationPlayground[]; candidates: PickCandidate[];
 }) {
   const router = useRouter();
-  const [source, setSource] = useState<Kind>("challenge");
-  const [search, setSearch] = useState("");
-  const [timeline, setTimeline] = useState<TimelineItem[]>([]);
   const [title, setTitle] = useState("Take-home assessment");
   const [daysToExpire, setDaysToExpire] = useState(7);
-  const [picked, setPicked] = useState<Set<string>>(new Set());
-  const [pasted, setPasted] = useState("");
-  const [candSearch, setCandSearch] = useState("");
+  const [groups, setGroups] = useState<Group[]>([newGroup()]);
   const [creating, startCreating] = useTransition();
 
-  const inTimeline = useMemo(() => new Set(timeline.map((t) => `${t.kind}:${t.id}`)), [timeline]);
+  // Library of all questions, keyed by "kind:id" for lookups when adding.
+  const library = useMemo(() => {
+    const m = new Map<string, { kind: Kind; id: string; title: string; minutes: number }>();
+    for (const c of challenges) m.set(`challenge:${c.id}`, { kind: "challenge", id: c.id, title: c.title, minutes: c.estimatedMinutes || DEFAULT_MIN });
+    for (const p of playgrounds) m.set(`playground:${p.id}`, { kind: "playground", id: p.id, title: p.title, minutes: DEFAULT_MIN });
+    for (const p of prompts) m.set(`prompt:${p.id}`, { kind: "prompt", id: p.id, title: p.title, minutes: p.estimatedMinutes || DEFAULT_MIN });
+    return m;
+  }, [challenges, prompts, playgrounds]);
 
-  function add(kind: Kind, id: string, title: string, minutes: number, meta?: string) {
-    if (inTimeline.has(`${kind}:${id}`)) return;
-    setTimeline((p) => [...p, { id, kind, title, minutes: minutes || DEFAULT_MIN, meta }]);
-  }
-  function remove(kind: Kind, id: string) {
-    setTimeline((p) => p.filter((t) => !(t.kind === kind && t.id === id)));
-  }
-  function setMinutes(kind: Kind, id: string, minutes: number) {
-    setTimeline((p) => p.map((t) => (t.kind === kind && t.id === id ? { ...t, minutes } : t)));
-  }
+  // Which candidate is assigned to which group (one group each).
+  const assignedTo = useMemo(() => {
+    const m = new Map<string, string>(); // candidateId -> groupId
+    groups.forEach((g) => g.candidateIds.forEach((cid) => m.set(cid, g.id)));
+    return m;
+  }, [groups]);
+  const candById = useMemo(() => new Map(candidates.map((c) => [c.id, c])), [candidates]);
 
-  const q = search.trim().toLowerCase();
-  const availChallenges = challenges.filter((c) => !inTimeline.has(`challenge:${c.id}`) &&
-    (!q || c.title.toLowerCase().includes(q) || (c.category ?? "").toLowerCase().includes(q)));
-  const availPrompts = prompts.filter((p) => !inTimeline.has(`prompt:${p.id}`) &&
-    (!q || p.title.toLowerCase().includes(q) || p.category.toLowerCase().includes(q)));
-  const availPlaygrounds = playgrounds.filter((p) => !inTimeline.has(`playground:${p.id}`) &&
-    (!q || p.title.toLowerCase().includes(q) || p.template.toLowerCase().includes(q)));
+  function patch(id: string, fn: (g: Group) => Group) {
+    setGroups((gs) => gs.map((g) => (g.id === id ? fn(g) : g)));
+  }
+  function addGroup() { setGroups((gs) => [...gs, newGroup()]); }
+  function removeGroup(id: string) { setGroups((gs) => (gs.length <= 1 ? gs : gs.filter((g) => g.id !== id))); }
 
-  // ── Candidate picker ──
-  const visibleCands = useMemo(() => {
-    const s = candSearch.trim().toLowerCase();
-    if (!s) return candidates;
-    return candidates.filter((c) =>
-      c.name.toLowerCase().includes(s) || c.email.toLowerCase().includes(s) || c.stage.toLowerCase().includes(s));
-  }, [candidates, candSearch]);
-  const allVisiblePicked = visibleCands.length > 0 && visibleCands.every((c) => picked.has(c.id));
-  function toggleAllVisible() {
-    setPicked((prev) => {
-      const next = new Set(prev);
-      if (allVisiblePicked) visibleCands.forEach((c) => next.delete(c.id));
-      else visibleCands.forEach((c) => next.add(c.id));
-      return next;
+  function addQuestion(groupId: string, key: string) {
+    const lib = library.get(key);
+    if (!lib) return;
+    patch(groupId, (g) =>
+      g.questions.some((q) => q.key === key) ? g : { ...g, questions: [...g.questions, { key, kind: lib.kind, id: lib.id, title: lib.title, minutes: lib.minutes }] });
+  }
+  function removeQuestion(groupId: string, key: string) {
+    patch(groupId, (g) => ({ ...g, questions: g.questions.filter((q) => q.key !== key) }));
+  }
+  function setMinutes(groupId: string, key: string, minutes: number) {
+    patch(groupId, (g) => ({ ...g, questions: g.questions.map((q) => (q.key === key ? { ...q, minutes } : q)) }));
+  }
+  function toggleCand(groupId: string, cid: string) {
+    patch(groupId, (g) => {
+      const n = new Set(g.candidateIds);
+      n.has(cid) ? n.delete(cid) : n.add(cid);
+      return { ...g, candidateIds: n };
     });
   }
-  function toggleCand(id: string) {
-    setPicked((prev) => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n; });
-  }
 
-  const pastedRecipients = useMemo(() => {
+  function recipientsOf(g: Group): { name: string; email: string }[] {
+    const seen = new Set<string>();
     const out: { name: string; email: string }[] = [];
-    for (const line of pasted.split(/\r?\n/)) {
+    for (const cid of g.candidateIds) {
+      const c = candById.get(cid);
+      if (!c) continue;
+      const k = c.email.toLowerCase();
+      if (seen.has(k)) continue;
+      seen.add(k); out.push({ name: c.name, email: c.email });
+    }
+    for (const line of g.pasted.split(/\r?\n/)) {
       const s = line.trim(); if (!s) continue;
+      let name = "", email = "";
       const m1 = s.match(/^(.+?)\s*<\s*([^\s<>@]+@[^\s<>@]+\.[^\s<>@]+)\s*>$/);
-      if (m1) { out.push({ name: m1[1].trim().replace(/^["']|["']$/g, ""), email: m1[2] }); continue; }
       const m2 = s.match(/^(.+?)\s*,\s*([^\s,]+@[^\s,]+\.[^\s,]+)$/);
-      if (m2) { out.push({ name: m2[1].trim(), email: m2[2] }); continue; }
-      if (/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(s)) { out.push({ name: s.split("@")[0], email: s }); continue; }
-      out.push({ name: "", email: s });
+      if (m1) { name = m1[1].trim().replace(/^["']|["']$/g, ""); email = m1[2]; }
+      else if (m2) { name = m2[1].trim(); email = m2[2]; }
+      else if (/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(s)) { email = s; name = s.split("@")[0]; }
+      else continue;
+      const k = email.toLowerCase();
+      if (seen.has(k)) continue;
+      seen.add(k); out.push({ name: name || k.split("@")[0], email });
     }
     return out;
-  }, [pasted]);
+  }
 
-  const recipients = useMemo(() => {
-    const seen = new Set<string>(); const list: { name: string; email: string }[] = [];
-    for (const c of candidates) {
-      if (!picked.has(c.id)) continue;
-      const k = c.email.toLowerCase(); if (seen.has(k)) continue;
-      seen.add(k); list.push({ name: c.name, email: c.email });
-    }
-    for (const r of pastedRecipients) {
-      const k = (r.email ?? "").toLowerCase(); if (!k || seen.has(k)) continue;
-      seen.add(k); list.push({ name: r.name || k.split("@")[0], email: r.email });
-    }
-    return list;
-  }, [candidates, picked, pastedRecipients]);
-
-  const totalMin = timeline.reduce((s, t) => s + (t.minutes || 0), 0);
-  const canSend = timeline.length > 0 && recipients.length > 0 && !creating;
+  const groupStats = groups.map((g) => ({ id: g.id, questions: g.questions.length, recipients: recipientsOf(g).length }));
+  const totalSessions = groupStats.reduce((s, gs) => s + (gs.questions > 0 ? gs.recipients : 0), 0);
+  const validGroups = groupStats.filter((gs) => gs.questions > 0 && gs.recipients > 0).length;
+  const canSend = validGroups > 0 && !creating;
 
   function send() {
     if (!canSend) return;
     startCreating(async () => {
       try {
-        const curation = {
-          challengeIds: timeline.filter((t) => t.kind === "challenge").map((t) => t.id),
-          playgroundIds: timeline.filter((t) => t.kind === "playground").map((t) => t.id),
-          promptScenarioIds: timeline.filter((t) => t.kind === "prompt").map((t) => t.id),
-          perQuestionMinutes: Object.fromEntries(timeline.map((t) => [t.id, t.minutes])),
+        const payload = {
+          title,
+          daysToExpire,
+          groups: groups.map((g) => ({
+            curation: {
+              challengeIds: g.questions.filter((q) => q.kind === "challenge").map((q) => q.id),
+              playgroundIds: g.questions.filter((q) => q.kind === "playground").map((q) => q.id),
+              promptScenarioIds: g.questions.filter((q) => q.kind === "prompt").map((q) => q.id),
+              perQuestionMinutes: Object.fromEntries(g.questions.map((q) => [q.id, q.minutes])),
+            },
+            recipients: recipientsOf(g),
+          })),
         };
-        const res = await bulkCreateTakeHomeSessions(slug, { title, curation, recipients, daysToExpire });
+        const res = await createTakeHomeGroups(slug, payload);
         toast.success(
-          `Created ${res.created} take-home${res.created === 1 ? "" : "s"} — ${res.emailed} invite${res.emailed === 1 ? "" : "s"} emailed.`,
+          `Created ${res.created} take-home${res.created === 1 ? "" : "s"} across ${res.groups} group${res.groups === 1 ? "" : "s"} — ${res.emailed} emailed.`,
           { description: res.skipped || res.errored ? `${res.skipped} skipped, ${res.errored} errored.` : undefined },
         );
         router.push(`/w/${slug}?section=assessments&view=take-homes`);
@@ -155,178 +158,219 @@ export default function TakeHomeBuilder({
         </Link>
         <h1 className="text-2xl font-semibold text-fg tracking-tight mt-2">New take-home</h1>
         <p className="text-xs text-muted mt-1">
-          Curate a set of questions and send to selected candidates — each gets their own
-          tokenized link, with a separate timer per question.
+          Build one or more <span className="text-fg font-medium">assignment groups</span> — each pairs a set of
+          questions with a set of candidates, so different cohorts can get different questions. Each candidate
+          gets their own tokenized link, with a separate timer per question.
         </p>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-        {/* LEFT — question curation */}
-        <div className="lg:col-span-7 space-y-4">
-          <div className="rounded-xl border border-border bg-surface p-4 space-y-3">
-            <div className="flex items-center gap-1.5 bg-panel p-1 border border-border rounded-lg w-fit">
-              {([["challenge", "DSA", Layers], ["playground", "Playgrounds", Beaker], ["prompt", "Prompts", Brain]] as const).map(
-                ([k, label, Icon]) => (
-                  <button key={k} type="button" onClick={() => setSource(k)}
-                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-[10px] font-bold uppercase tracking-wider transition-colors ${
-                      source === k ? "bg-accent text-bg" : "text-muted hover:text-fg"}`}>
-                    <Icon className="w-3.5 h-3.5" /> {label}
-                  </button>
-                ))}
-            </div>
-            <div className="relative">
-              <Search className="w-3.5 h-3.5 text-muted absolute left-3 top-1/2 -translate-y-1/2" />
-              <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search questions…"
-                className="w-full pl-9 pr-3 py-2 rounded-md bg-panel border border-border text-xs text-fg outline-none focus:border-accent/40" />
-            </div>
-            <div className="max-h-[360px] overflow-y-auto space-y-2 pr-1">
-              {source === "challenge" && availChallenges.map((c) => (
-                <PoolRow key={c.id} title={c.title} workspaceOwned={c.workspaceOwned}
-                  badge={<span className={`text-[9px] font-bold uppercase px-1.5 py-0.5 rounded border ${diffBg[c.difficulty]}`}>{c.difficulty}</span>}
-                  sub={`${c.estimatedMinutes}m · ${c.category ?? "general"}`}
-                  onAdd={() => add("challenge", c.id, c.title, c.estimatedMinutes, c.category ?? undefined)} />
-              ))}
-              {source === "prompt" && availPrompts.map((p) => (
-                <PoolRow key={p.id} title={p.title} workspaceOwned={p.workspaceOwned}
-                  badge={<span className="text-[9px] font-bold uppercase px-1.5 py-0.5 rounded border border-indigo-500/30 text-indigo-500">{p.difficulty}</span>}
-                  sub={`${p.estimatedMinutes}m · ${p.category}`}
-                  onAdd={() => add("prompt", p.id, p.title, p.estimatedMinutes, p.category)} />
-              ))}
-              {source === "playground" && availPlaygrounds.map((p) => (
-                <PoolRow key={p.id} title={p.title}
-                  badge={<span className="text-[9px] font-bold uppercase px-1.5 py-0.5 rounded border border-border text-muted">{p.isTemplate ? "Template" : "Snippet"}</span>}
-                  sub={p.template}
-                  onAdd={() => add("playground", p.id, p.title, DEFAULT_MIN, p.template)} />
-              ))}
-              {((source === "challenge" && availChallenges.length === 0) ||
-                (source === "prompt" && availPrompts.length === 0) ||
-                (source === "playground" && availPlaygrounds.length === 0)) && (
-                <div className="text-center text-xs text-muted py-8">Nothing to add here.</div>
-              )}
-            </div>
-          </div>
+      {/* Global settings */}
+      <div className="rounded-xl border border-border bg-surface p-4 grid grid-cols-1 sm:grid-cols-3 gap-3">
+        <div className="space-y-1 sm:col-span-2">
+          <label className="text-[10px] font-bold uppercase tracking-wider text-muted">Title (shown to all candidates)</label>
+          <input value={title} onChange={(e) => setTitle(e.target.value)}
+            className="w-full px-3 py-2 rounded-md bg-panel border border-border text-xs text-fg outline-none focus:border-accent/40" />
         </div>
-
-        {/* RIGHT — timeline + settings + candidates */}
-        <div className="lg:col-span-5 space-y-4">
-          {/* Timeline */}
-          <div className="rounded-xl border border-border bg-surface p-4 space-y-3">
-            <div className="flex items-center justify-between">
-              <h3 className="text-xs font-bold uppercase tracking-wider text-fg flex items-center gap-1.5"><Trophy className="w-3.5 h-3.5 text-accent" /> Questions</h3>
-              <span className="text-[10px] text-muted tabular-nums">{timeline.length} · {totalMin}m total</span>
-            </div>
-            {timeline.length === 0 ? (
-              <div className="text-center text-xs text-muted py-6 border border-dashed border-border rounded-lg">Add questions from the left.</div>
-            ) : (
-              <ul className="space-y-2">
-                {timeline.map((t, i) => (
-                  <li key={`${t.kind}:${t.id}`} className="flex items-center gap-2 p-2 rounded-lg border border-border bg-panel/40">
-                    <GripVertical className="w-3.5 h-3.5 text-muted/50 shrink-0" />
-                    <span className="text-[10px] font-bold text-muted tabular-nums w-4">{i + 1}</span>
-                    <div className="min-w-0 flex-1">
-                      <div className="text-xs font-semibold text-fg truncate">{t.title}</div>
-                      <div className="text-[10px] text-muted uppercase tracking-wider">{t.kind}</div>
-                    </div>
-                    <div className="flex items-center gap-1 shrink-0">
-                      <input type="number" min={5} max={1440} value={t.minutes}
-                        onChange={(e) => setMinutes(t.kind, t.id, Math.max(5, Math.min(1440, Number(e.target.value) || DEFAULT_MIN)))}
-                        className="w-14 px-1.5 py-1 rounded bg-bg border border-border text-xs text-fg text-right outline-none focus:border-accent/40" />
-                      <Clock className="w-3 h-3 text-muted/50" />
-                    </div>
-                    <button type="button" onClick={() => remove(t.kind, t.id)} className="text-muted hover:text-rose-400 shrink-0"><X className="w-3.5 h-3.5" /></button>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </div>
-
-          {/* Settings */}
-          <div className="rounded-xl border border-border bg-surface p-4 space-y-3">
-            <div className="space-y-1">
-              <label className="text-[10px] font-bold uppercase tracking-wider text-muted">Title</label>
-              <input value={title} onChange={(e) => setTitle(e.target.value)}
-                className="w-full px-3 py-2 rounded-md bg-panel border border-border text-xs text-fg outline-none focus:border-accent/40" />
-            </div>
-            <div className="space-y-1">
-              <label className="text-[10px] font-bold uppercase tracking-wider text-muted">Candidates must start within</label>
-              <div className="flex items-center gap-2">
-                <input type="number" min={1} max={90} value={daysToExpire}
-                  onChange={(e) => setDaysToExpire(Math.max(1, Math.min(90, Number(e.target.value) || 7)))}
-                  className="w-20 px-3 py-2 rounded-md bg-panel border border-border text-xs text-fg outline-none focus:border-accent/40" />
-                <span className="text-xs text-muted">days</span>
-              </div>
-            </div>
-          </div>
-
-          {/* Candidate picker */}
-          <div className="rounded-xl border border-border bg-surface p-4 space-y-3">
-            <div className="flex items-center justify-between">
-              <h3 className="text-xs font-bold uppercase tracking-wider text-fg flex items-center gap-1.5"><Users className="w-3.5 h-3.5 text-indigo-500" /> Candidates</h3>
-              <span className="text-[10px] text-muted tabular-nums">{recipients.length} selected</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="relative flex-1">
-                <Search className="w-3.5 h-3.5 text-muted absolute left-3 top-1/2 -translate-y-1/2" />
-                <input value={candSearch} onChange={(e) => setCandSearch(e.target.value)} placeholder="Search candidates…"
-                  className="w-full pl-9 pr-3 py-2 rounded-md bg-panel border border-border text-xs text-fg outline-none focus:border-accent/40" />
-              </div>
-              {visibleCands.length > 0 && (
-                <button type="button" onClick={toggleAllVisible}
-                  className="px-2.5 py-2 rounded-md border border-border bg-panel/40 hover:bg-panel text-[10px] font-bold uppercase tracking-wider text-fg shrink-0">
-                  {allVisiblePicked ? "Clear" : `Select all (${visibleCands.length})`}
-                </button>
-              )}
-            </div>
-            <div className="max-h-[220px] overflow-y-auto space-y-1 pr-1">
-              {visibleCands.length === 0 ? (
-                <div className="text-center text-xs text-muted py-4">No candidates — paste emails below.</div>
-              ) : visibleCands.map((c) => (
-                <label key={c.id} className="flex items-center gap-2 p-1.5 rounded-md hover:bg-panel/40 cursor-pointer">
-                  <input type="checkbox" checked={picked.has(c.id)} onChange={() => toggleCand(c.id)} className="accent-accent" />
-                  <div className="min-w-0 flex-1">
-                    <div className="text-xs font-medium text-fg truncate">{c.name}</div>
-                    <div className="text-[10px] text-muted truncate">{c.email}</div>
-                  </div>
-                  <span className="text-[9px] font-bold uppercase tracking-wider text-muted/70 shrink-0">{c.stage}</span>
-                </label>
-              ))}
-            </div>
-            <div className="space-y-1">
-              <label className="text-[10px] font-bold uppercase tracking-wider text-muted">Or paste more (one per line)</label>
-              <textarea value={pasted} onChange={(e) => setPasted(e.target.value)} rows={3}
-                placeholder={"Name <email@co.com>\nemail@co.com"}
-                className="w-full px-3 py-2 rounded-md bg-panel border border-border text-xs text-fg outline-none focus:border-accent/40 font-mono" />
-            </div>
-          </div>
-
-          <button type="button" onClick={send} disabled={!canSend}
-            className="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-accent text-bg text-sm font-bold disabled:opacity-50 hover:opacity-90 transition-opacity">
-            <Send className="w-4 h-4" />
-            {creating ? "Sending…" : `Send to ${recipients.length} candidate${recipients.length === 1 ? "" : "s"}`}
-          </button>
+        <div className="space-y-1">
+          <label className="text-[10px] font-bold uppercase tracking-wider text-muted">Start within (days)</label>
+          <input type="number" min={1} max={90} value={daysToExpire}
+            onChange={(e) => setDaysToExpire(Math.max(1, Math.min(90, Number(e.target.value) || 7)))}
+            className="w-full px-3 py-2 rounded-md bg-panel border border-border text-xs text-fg outline-none focus:border-accent/40" />
         </div>
+      </div>
+
+      {/* Groups */}
+      <div className="space-y-4">
+        {groups.map((g, gi) => (
+          <GroupCard
+            key={g.id} group={g} index={gi} canRemove={groups.length > 1}
+            challenges={challenges} prompts={prompts} playgrounds={playgrounds} candidates={candidates}
+            assignedTo={assignedTo}
+            stats={groupStats.find((s) => s.id === g.id)!}
+            onPatch={(fn) => patch(g.id, fn)}
+            onRemove={() => removeGroup(g.id)}
+            onAddQuestion={(key) => addQuestion(g.id, key)}
+            onRemoveQuestion={(key) => removeQuestion(g.id, key)}
+            onSetMinutes={(key, m) => setMinutes(g.id, key, m)}
+            onToggleCand={(cid) => toggleCand(g.id, cid)}
+          />
+        ))}
+        <button type="button" onClick={addGroup}
+          className="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl border border-dashed border-border text-xs font-semibold text-muted hover:text-fg hover:border-fg/40 transition-colors">
+          <Plus className="w-4 h-4" /> Add another group
+        </button>
+      </div>
+
+      {/* Send */}
+      <div className="sticky bottom-4 flex items-center justify-between gap-4 rounded-xl border border-border bg-surface/95 backdrop-blur p-3 shadow-lg">
+        <div className="text-xs text-muted">
+          <span className="text-fg font-semibold tabular-nums">{validGroups}</span> group{validGroups === 1 ? "" : "s"} ·{" "}
+          <span className="text-fg font-semibold tabular-nums">{totalSessions}</span> take-home{totalSessions === 1 ? "" : "s"} will be sent
+        </div>
+        <button type="button" onClick={send} disabled={!canSend}
+          className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg bg-accent text-bg text-sm font-bold disabled:opacity-50 hover:opacity-90 transition-opacity">
+          <Send className="w-4 h-4" /> {creating ? "Sending…" : `Send ${totalSessions} take-home${totalSessions === 1 ? "" : "s"}`}
+        </button>
       </div>
     </div>
   );
 }
 
-function PoolRow({ title, badge, sub, onAdd, workspaceOwned }: {
-  title: string; badge: React.ReactNode; sub: string; onAdd: () => void; workspaceOwned?: boolean;
+function GroupCard({
+  group: g, index, canRemove, challenges, prompts, playgrounds, candidates, assignedTo, stats,
+  onPatch, onRemove, onAddQuestion, onRemoveQuestion, onSetMinutes, onToggleCand,
+}: {
+  group: Group; index: number; canRemove: boolean;
+  challenges: CurationChallenge[]; prompts: CurationPrompt[]; playgrounds: CurationPlayground[]; candidates: PickCandidate[];
+  assignedTo: Map<string, string>; stats: { questions: number; recipients: number };
+  onPatch: (fn: (g: Group) => Group) => void;
+  onRemove: () => void;
+  onAddQuestion: (key: string) => void;
+  onRemoveQuestion: (key: string) => void;
+  onSetMinutes: (key: string, m: number) => void;
+  onToggleCand: (cid: string) => void;
 }) {
+  const inGroup = new Set(g.questions.map((q) => q.key));
+
+  // Candidate availability: assigned to ANOTHER group → disabled.
+  const candFilter = g.candSearch.trim().toLowerCase();
+  const visibleCands = candidates.filter((c) =>
+    !candFilter || c.name.toLowerCase().includes(candFilter) || c.email.toLowerCase().includes(candFilter) || c.stage.toLowerCase().includes(candFilter));
+  const availableHere = visibleCands.filter((c) => { const a = assignedTo.get(c.id); return !a || a === g.id; });
+  const allAvailPicked = availableHere.length > 0 && availableHere.every((c) => g.candidateIds.has(c.id));
+
   return (
-    <div className="flex items-center justify-between gap-3 p-2.5 rounded-lg border border-border bg-panel/30 hover:bg-panel/60 transition-colors">
-      <div className="min-w-0 space-y-1">
-        <div className="flex items-center gap-1.5">
-          {workspaceOwned && <span className="text-[9px] font-bold uppercase px-1.5 py-0.5 rounded border border-violet-500/30 bg-violet-500/10 text-violet-600 dark:text-violet-400 tracking-wider">Workspace</span>}
-          {badge}
+    <div className="rounded-xl border border-border bg-surface p-4 space-y-4">
+      <div className="flex items-center justify-between gap-3">
+        <div className="flex items-center gap-2">
+          <span className="inline-flex items-center justify-center w-6 h-6 rounded-md bg-accent/10 text-accent text-xs font-bold">{index + 1}</span>
+          <h3 className="text-sm font-bold text-fg">Group {index + 1}</h3>
+          <span className="text-[11px] text-muted">{stats.questions}q × {stats.recipients} candidate{stats.recipients === 1 ? "" : "s"} = <span className="text-fg font-semibold">{stats.questions > 0 ? stats.recipients : 0}</span> take-home{stats.questions > 0 && stats.recipients === 1 ? "" : "s"}</span>
         </div>
-        <div className="text-xs font-semibold text-fg truncate">{title}</div>
-        <div className="text-[10px] text-muted truncate">{sub}</div>
+        {canRemove && (
+          <button type="button" onClick={onRemove} className="text-muted hover:text-rose-400" title="Remove group"><Trash2 className="w-4 h-4" /></button>
+        )}
       </div>
-      <button type="button" onClick={onAdd}
-        className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-md border border-border bg-bg hover:border-accent/40 text-[11px] font-semibold text-fg shrink-0">
-        <Plus className="w-3 h-3" /> Add
-      </button>
+
+      {/* Questions */}
+      <div className="space-y-2">
+        <div className="text-[10px] font-bold uppercase tracking-wider text-muted">Questions</div>
+        {g.questions.length > 0 && (
+          <ul className="space-y-1.5">
+            {g.questions.map((q) => {
+              const Icon = KIND_ICON[q.kind];
+              return (
+                <li key={q.key} className="flex items-center gap-2 p-2 rounded-lg border border-border bg-panel/40">
+                  <Icon className="w-3.5 h-3.5 text-accent shrink-0" />
+                  <span className="text-[9px] font-bold uppercase tracking-wider text-muted w-16 shrink-0">{KIND_LABEL[q.kind]}</span>
+                  <span className="text-xs font-medium text-fg truncate flex-1">{q.title}</span>
+                  <input type="number" min={5} max={1440} value={q.minutes}
+                    onChange={(e) => onSetMinutes(q.key, Math.max(5, Math.min(1440, Number(e.target.value) || DEFAULT_MIN)))}
+                    className="w-14 px-1.5 py-1 rounded bg-bg border border-border text-xs text-fg text-right outline-none focus:border-accent/40" />
+                  <Clock className="w-3 h-3 text-muted/50" />
+                  <button type="button" onClick={() => onRemoveQuestion(q.key)} className="text-muted hover:text-rose-400"><X className="w-3.5 h-3.5" /></button>
+                </li>
+              );
+            })}
+          </ul>
+        )}
+        {/* add-question select */}
+        <select
+          value=""
+          onChange={(e) => { if (e.target.value) onAddQuestion(e.target.value); }}
+          className="w-full px-3 py-2 rounded-md bg-panel border border-border text-xs text-muted outline-none focus:border-accent/40"
+        >
+          <option value="">+ Add a question…</option>
+          <optgroup label="DSA challenges">
+            {challenges.filter((c) => !inGroup.has(`challenge:${c.id}`)).map((c) => (
+              <option key={c.id} value={`challenge:${c.id}`}>{c.workspaceOwned ? "★ " : ""}{c.title} ({c.difficulty})</option>
+            ))}
+          </optgroup>
+          <optgroup label="Playgrounds">
+            {playgrounds.filter((p) => !inGroup.has(`playground:${p.id}`)).map((p) => (
+              <option key={p.id} value={`playground:${p.id}`}>{p.title}</option>
+            ))}
+          </optgroup>
+          <optgroup label="Prompt challenges">
+            {prompts.filter((p) => !inGroup.has(`prompt:${p.id}`)).map((p) => (
+              <option key={p.id} value={`prompt:${p.id}`}>{p.workspaceOwned ? "★ " : ""}{p.title} ({p.difficulty})</option>
+            ))}
+          </optgroup>
+        </select>
+      </div>
+
+      {/* Candidates */}
+      <div className="space-y-2">
+        <button type="button" onClick={() => onPatch((gr) => ({ ...gr, pickerOpen: !gr.pickerOpen }))}
+          className="w-full flex items-center justify-between text-[10px] font-bold uppercase tracking-wider text-muted hover:text-fg">
+          <span className="flex items-center gap-1.5"><Users className="w-3.5 h-3.5" /> Candidates ({g.candidateIds.size})</span>
+          <ChevronDown className={`w-3.5 h-3.5 transition-transform ${g.pickerOpen ? "rotate-180" : ""}`} />
+        </button>
+
+        {/* selected chips */}
+        {g.candidateIds.size > 0 && (
+          <div className="flex flex-wrap gap-1.5">
+            {[...g.candidateIds].map((cid) => {
+              const c = candidates.find((x) => x.id === cid);
+              if (!c) return null;
+              return (
+                <span key={cid} className="inline-flex items-center gap-1 pl-2 pr-1 py-0.5 rounded-full bg-indigo-500/10 border border-indigo-500/25 text-[11px] text-fg">
+                  {c.name}
+                  <button type="button" onClick={() => onToggleCand(cid)} className="text-muted hover:text-rose-400"><X className="w-3 h-3" /></button>
+                </span>
+              );
+            })}
+          </div>
+        )}
+
+        {g.pickerOpen && (
+          <div className="rounded-lg border border-border bg-panel/30 p-3 space-y-2">
+            <div className="flex items-center gap-2">
+              <div className="relative flex-1">
+                <Search className="w-3.5 h-3.5 text-muted absolute left-3 top-1/2 -translate-y-1/2" />
+                <input value={g.candSearch} onChange={(e) => onPatch((gr) => ({ ...gr, candSearch: e.target.value }))}
+                  placeholder="Search candidates…"
+                  className="w-full pl-9 pr-3 py-1.5 rounded-md bg-bg border border-border text-xs text-fg outline-none focus:border-accent/40" />
+              </div>
+              {availableHere.length > 0 && (
+                <button type="button"
+                  onClick={() => onPatch((gr) => {
+                    const n = new Set(gr.candidateIds);
+                    if (allAvailPicked) availableHere.forEach((c) => n.delete(c.id));
+                    else availableHere.forEach((c) => n.add(c.id));
+                    return { ...gr, candidateIds: n };
+                  })}
+                  className="px-2.5 py-1.5 rounded-md border border-border bg-bg hover:bg-panel text-[10px] font-bold uppercase tracking-wider text-fg shrink-0">
+                  {allAvailPicked ? "Clear" : `All (${availableHere.length})`}
+                </button>
+              )}
+            </div>
+            <div className="max-h-[200px] overflow-y-auto space-y-0.5">
+              {visibleCands.length === 0 ? (
+                <div className="text-center text-xs text-muted py-3">No candidates — paste below.</div>
+              ) : visibleCands.map((c) => {
+                const otherGroup = assignedTo.get(c.id);
+                const lockedElsewhere = !!otherGroup && otherGroup !== g.id;
+                return (
+                  <label key={c.id} className={`flex items-center gap-2 p-1.5 rounded-md ${lockedElsewhere ? "opacity-40 cursor-not-allowed" : "hover:bg-bg cursor-pointer"}`}>
+                    <input type="checkbox" disabled={lockedElsewhere} checked={g.candidateIds.has(c.id)} onChange={() => onToggleCand(c.id)} className="accent-accent" />
+                    <div className="min-w-0 flex-1">
+                      <div className="text-xs font-medium text-fg truncate">{c.name}</div>
+                      <div className="text-[10px] text-muted truncate">{c.email}</div>
+                    </div>
+                    {lockedElsewhere
+                      ? <span className="text-[9px] font-bold uppercase tracking-wider text-amber-500 shrink-0">in a group</span>
+                      : <span className="text-[9px] font-bold uppercase tracking-wider text-muted/70 shrink-0">{c.stage}</span>}
+                  </label>
+                );
+              })}
+            </div>
+            <textarea value={g.pasted} onChange={(e) => onPatch((gr) => ({ ...gr, pasted: e.target.value }))} rows={2}
+              placeholder={"Or paste emails (one per line)"}
+              className="w-full px-3 py-2 rounded-md bg-bg border border-border text-xs text-fg outline-none focus:border-accent/40 font-mono" />
+          </div>
+        )}
+      </div>
     </div>
   );
 }

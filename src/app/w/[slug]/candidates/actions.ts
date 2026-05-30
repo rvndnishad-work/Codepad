@@ -821,6 +821,63 @@ export async function bulkCreateTakeHomeSessions(
   return { created, emailed, skipped, errored, details };
 }
 
+/**
+ * Grouped take-home dispatch (IP-89). Each group pairs its own curated question
+ * set with its own candidate subset, so one send can assign different questions
+ * to different cohorts. Reuses bulkCreateTakeHomeSessions per group. Candidates
+ * are deduped ACROSS groups (one group each) — a candidate listed in two groups
+ * is kept in the first and skipped in later ones.
+ */
+export type TakeHomeGroupInput = {
+  curation: TakeHomeCuration;
+  recipients: BulkRecipient[];
+};
+
+export async function createTakeHomeGroups(
+  slug: string,
+  input: { title: string; daysToExpire: number; scenario?: string | null; groups: TakeHomeGroupInput[] },
+): Promise<{ created: number; emailed: number; skipped: number; errored: number; groups: number }> {
+  if (!Array.isArray(input.groups) || input.groups.length === 0) {
+    throw new Error("Add at least one assignment group.");
+  }
+  const agg = { created: 0, emailed: 0, skipped: 0, errored: 0 };
+  const seenAcross = new Set<string>();
+  let dispatchedGroups = 0;
+
+  for (const g of input.groups) {
+    const totalQ =
+      (g.curation.challengeIds?.length ?? 0) +
+      (g.curation.playgroundIds?.length ?? 0) +
+      (g.curation.promptScenarioIds?.length ?? 0);
+    // Drop candidates already assigned in an earlier group (one group each).
+    const recips = (g.recipients ?? []).filter((r) => {
+      const k = (r.email ?? "").toLowerCase().trim();
+      if (!k || seenAcross.has(k)) return false;
+      seenAcross.add(k);
+      return true;
+    });
+    if (totalQ === 0 || recips.length === 0) continue;
+
+    const res = await bulkCreateTakeHomeSessions(slug, {
+      title: input.title,
+      curation: g.curation,
+      recipients: recips,
+      daysToExpire: input.daysToExpire,
+      scenario: input.scenario ?? null,
+    });
+    agg.created += res.created;
+    agg.emailed += res.emailed;
+    agg.skipped += res.skipped;
+    agg.errored += res.errored;
+    dispatchedGroups++;
+  }
+
+  if (dispatchedGroups === 0) {
+    throw new Error("Every group needs at least one question and one candidate.");
+  }
+  return { ...agg, groups: dispatchedGroups };
+}
+
 /* ──────────────────────────────────────────────────────────────────────────
  * Leaderboard CSV export (IP-35)
  * ──────────────────────────────────────────────────────────────────────────

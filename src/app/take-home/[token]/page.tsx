@@ -211,7 +211,7 @@ export default async function TakeHomeLobbyPage({ params, searchParams }: Props)
 
               {/* Primary CTA — full-width, prominent (the page's main action). */}
               <div className="rounded-2xl border border-border bg-surface/70 backdrop-blur-xl p-5 shadow-sm">
-                <StartButton token={token} />
+                <StartButton token={token} timeLimitMin={assignment.timeLimitMin} />
               </div>
             </div>
           );

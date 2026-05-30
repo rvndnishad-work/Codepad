@@ -114,20 +114,22 @@ async function main() {
   ];
 
   const challenges = await Promise.all(
-    challengeBlueprints.map((b) =>
-      prisma.challenge.create({
+    challengeBlueprints.map(async (b) => {
+      // The runnable code/tests live on a ChallengeStep — every read path
+      // (attempt page, take-home start) assumes a position-0 step exists.
+      // See prisma/migrate-challenges-to-steps.ts for the same invariant.
+      const starterFiles = JSON.stringify({ "/index.ts": "// starter code\n" });
+      const testFiles = JSON.stringify({ "/index.test.ts": "// tests\n" });
+
+      const challenge = await prisma.challenge.create({
         data: {
           slug: b.slug,
           title: b.title,
           description: b.description,
           difficulty: b.difficulty,
           template: b.template,
-          starterFiles: JSON.stringify({
-            "/index.ts": "// starter code\n",
-          }),
-          testFiles: JSON.stringify({
-            "/index.test.ts": "// tests\n",
-          }),
+          starterFiles,
+          testFiles,
           tags: JSON.stringify(["seed"]),
           estimatedMinutes: b.estimatedMinutes,
           category: b.category,
@@ -136,10 +138,27 @@ async function main() {
           authorId: owner.userId,
           workspaceId: workspace.id,
         },
-      })
-    )
+      });
+
+      // Single-step mirror of the parent (position 0). Without this the
+      // challenge can't be started — the attempt page reads files off the
+      // step and 404s when none exists.
+      await prisma.challengeStep.create({
+        data: {
+          challengeId: challenge.id,
+          position: 0,
+          description: b.description,
+          template: b.template,
+          starterFiles,
+          testFiles,
+          estimatedMinutes: b.estimatedMinutes,
+        },
+      });
+
+      return challenge;
+    })
   );
-  console.log(`    ✓ ${challenges.length} challenges`);
+  console.log(`    ✓ ${challenges.length} challenges (+ position-0 steps)`);
 
   // 5. Create take-home assignments (mix of statuses)
   console.log(`  → creating take-home assignments…`);

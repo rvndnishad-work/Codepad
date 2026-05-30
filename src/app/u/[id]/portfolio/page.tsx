@@ -15,17 +15,16 @@ import {
   Users,
   CheckCircle2,
   Activity,
-  Printer,
   Code2,
   MapPin,
   Mail,
-  Link as LinkIcon,
   ExternalLink,
   User as UserIcon,
   Terminal,
   BookOpen,
 } from "lucide-react";
 import RelativeTime from "@/components/RelativeTime";
+import ShareButtons from "./ShareButtons";
 
 // Next.js 15 Route Props type
 type Props = {
@@ -143,26 +142,22 @@ export default async function PublicPortfolioPage({ params }: Props) {
 
       <div className="max-w-5xl mx-auto space-y-8">
         
-        {/* Print & Back Top Row (no-print) */}
-        <div className="flex justify-between items-center no-print">
+        {/* Share & Back Top Row (no-print) */}
+        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 no-print">
           <Link
             href="/dashboard"
             className="text-xs font-semibold text-muted hover:text-fg transition flex items-center gap-1"
           >
             ← Back to Dashboard
           </Link>
-          
-          <a
-            href="javascript:window.print()"
-            className="no-print inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-surface border border-border hover:bg-elevated hover:border-border-strong text-xs font-bold text-fg transition cursor-pointer shadow-md"
-          >
-            <Printer className="w-3.5 h-3.5" />
-            Print Portfolio (PDF)
-          </a>
-        </div>
 
-        {/* Client-Print trigger workaround */}
-        <PrintTrigger />
+          <ShareButtons
+            name={data.name ?? ""}
+            userId={data.userId}
+            badgeCount={data.badges.length}
+            challengeCount={data.stats.challengesSolved}
+          />
+        </div>
 
         {/* 1. Header Card */}
         <div className="print-card relative overflow-hidden rounded-[2rem] border border-border bg-gradient-to-br from-accent/5 via-surface to-bg p-8 md:p-10 shadow-xl">
@@ -559,22 +554,3 @@ function ProgressBar({
   );
 }
 
-// Client Side Print Trigger Helper to execute window.print() correctly
-function PrintTrigger() {
-  return (
-    <div
-      style={{ display: "none" }}
-      className="no-print"
-      dangerouslySetInnerHTML={{
-        __html: `
-          <script>
-            // Register a window helper so that inline custom actions trigger nicely
-            window.triggerPortfolioPrint = function() {
-              window.print();
-            };
-          </script>
-        `,
-      }}
-    />
-  );
-}

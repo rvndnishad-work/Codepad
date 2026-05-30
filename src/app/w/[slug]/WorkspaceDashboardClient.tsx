@@ -1175,14 +1175,15 @@ export default function WorkspaceDashboardClient({
                     </h3>
                     <p className="text-xs text-muted mt-0.5">Generate a secure expiring invitation link.</p>
                   </div>
-                  {/* Bulk entry point — the single form is one-at-a-time; the
-                      bulk dispatch (many candidates at once) lives in Pipeline. */}
+                  {/* Primary entry point — the multi-question take-home builder
+                      (curate a question set + send to many candidates). The
+                      single form below stays for quick one-off invites. */}
                   <Link
-                    href={`/w/${workspace.slug}?section=candidates&view=pipeline`}
-                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-border bg-panel/40 hover:bg-panel text-[11px] font-semibold text-fg shrink-0 transition-colors"
+                    href={`/w/${workspace.slug}/take-homes/new`}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-accent text-bg text-[11px] font-bold uppercase tracking-wider shrink-0 hover:opacity-90 transition-opacity"
                   >
-                    <Users className="w-3.5 h-3.5 text-indigo-500" />
-                    Send to many →
+                    <Users className="w-3.5 h-3.5" />
+                    New take-home →
                   </Link>
                 </div>
 

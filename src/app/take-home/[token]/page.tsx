@@ -62,7 +62,7 @@ export default async function TakeHomeLobbyPage({ params, searchParams }: Props)
         <div className="absolute bottom-[-120px] right-[-80px] w-[36rem] h-[36rem] rounded-full blur-[150px] bg-indigo-500/[0.05] dark:bg-indigo-500/10" />
       </div>
 
-      <div className={`w-full ${wide ? "max-w-5xl" : "max-w-xl"} relative z-10 space-y-6`}>
+      <div className={`w-full ${wide ? "max-w-6xl" : "max-w-xl"} relative z-10 space-y-6`}>
         {/* Brand */}
         <div className="flex justify-center">
           <Link href="/" className="flex items-center gap-2">
@@ -138,7 +138,7 @@ export default async function TakeHomeLobbyPage({ params, searchParams }: Props)
               {/* Header */}
               <div className="text-center space-y-2">
                 <h2 className="text-2xl md:text-3xl font-black tracking-tight">Technical assessment lobby</h2>
-                <p className="text-xs md:text-sm text-muted max-w-xl mx-auto leading-relaxed">
+                <p className="text-sm text-muted max-w-xl mx-auto leading-relaxed">
                   Welcome, <span className="text-fg font-bold">{assignment.candidateName}</span>. Review the details and rules below, then start when you&apos;re ready.
                 </p>
               </div>
@@ -150,43 +150,41 @@ export default async function TakeHomeLobbyPage({ params, searchParams }: Props)
                 <Stat icon={<Calendar className="w-3.5 h-3.5 text-accent" />} label="Expires" value={assignment.expiresAt.toLocaleDateString()} valueClass="text-amber-600 dark:text-amber-400" />
               </div>
 
-              {/* 2-column: details + start | rules */}
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 items-start">
-                {/* LEFT: what to expect + acknowledge/start */}
-                <div className="space-y-5">
-                <div className="rounded-2xl border border-border bg-surface/60 backdrop-blur-xl p-5 space-y-4">
-                  <h3 className="text-xs font-black uppercase tracking-wider flex items-center gap-1.5"><Sparkles className="w-4 h-4 text-accent" /> What to expect</h3>
-                  <div className="grid grid-cols-2 gap-4 text-xs">
-                    <Field label="Difficulty"><span className={`px-2 py-0.5 rounded border text-[10px] font-black uppercase tracking-wider ${diffCls}`}>{diff}</span></Field>
-                    <Field label="Allowed languages"><span className="text-fg font-bold">{allowedLanguages}</span></Field>
-                    <Field label="Expected duration"><span className="text-fg font-bold">{assignment.challenge.estimatedMinutes || assignment.timeLimitMin} mins</span></Field>
-                    <Field label="Grader test cases"><span className="text-fg font-bold">{testCasesCount > 0 ? `${testCasesCount} samples + hidden` : "Automated suite"}</span></Field>
+              {/* 2-column: details + start | rules. Stretch so both cards match
+                  height; switches to one column on tablets/phones (< md). */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-5 items-stretch">
+                {/* LEFT: what to expect + acknowledge/start (single card; start pinned to bottom) */}
+                <div className="rounded-2xl border border-border bg-surface/60 backdrop-blur-xl p-5 flex flex-col gap-4 h-full">
+                  <h3 className="text-sm font-black uppercase tracking-wider flex items-center gap-1.5"><Sparkles className="w-4 h-4 text-accent" /> What to expect</h3>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <Field label="Difficulty"><span className={`inline-block px-2 py-0.5 rounded border text-[11px] font-black uppercase tracking-wider ${diffCls}`}>{diff}</span></Field>
+                    <Field label="Allowed languages"><span className="text-sm text-fg font-bold">{allowedLanguages}</span></Field>
+                    <Field label="Expected duration"><span className="text-sm text-fg font-bold">{assignment.challenge.estimatedMinutes || assignment.timeLimitMin} mins</span></Field>
+                    <Field label="Grader test cases"><span className="text-sm text-fg font-bold">{testCasesCount > 0 ? `${testCasesCount} samples + hidden` : "Automated suite"}</span></Field>
                   </div>
                   {firstTestCase && (
                     <details className="group [&_summary::-webkit-details-marker]:hidden rounded-xl border border-border bg-panel/50 p-3.5">
-                      <summary className="flex items-center justify-between cursor-pointer text-[10px] font-black uppercase tracking-wider text-muted hover:text-fg">
+                      <summary className="flex items-center justify-between cursor-pointer text-[11px] font-black uppercase tracking-wider text-muted hover:text-fg">
                         View sample test case
                         <ChevronDown className="w-3.5 h-3.5 group-open:rotate-180 transition-transform" />
                       </summary>
-                      <div className="mt-3 pt-3 border-t border-border/50 space-y-2 font-mono text-[10px] text-muted">
-                        <div><span className="text-[9px] font-black uppercase tracking-widest text-muted/60">Test:</span> <span className="text-fg font-bold">{firstTestCase.name || "Sample"}</span></div>
+                      <div className="mt-3 pt-3 border-t border-border/50 space-y-2 font-mono text-[11px] text-muted">
+                        <div><span className="text-[10px] font-black uppercase tracking-widest text-muted/60">Test:</span> <span className="text-fg font-bold">{firstTestCase.name || "Sample"}</span></div>
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                          <div className="p-2 rounded bg-bg border border-border"><span className="text-[8px] font-black uppercase tracking-widest text-muted/60 block mb-1">Input</span><pre className="text-emerald-600 dark:text-emerald-400 whitespace-pre-wrap">{firstTestCase.input}</pre></div>
-                          <div className="p-2 rounded bg-bg border border-border"><span className="text-[8px] font-black uppercase tracking-widest text-muted/60 block mb-1">Expected</span><pre className="text-indigo-600 dark:text-indigo-400 whitespace-pre-wrap">{firstTestCase.expected}</pre></div>
+                          <div className="p-2 rounded bg-bg border border-border"><span className="text-[9px] font-black uppercase tracking-widest text-muted/60 block mb-1">Input</span><pre className="text-emerald-600 dark:text-emerald-400 whitespace-pre-wrap">{firstTestCase.input}</pre></div>
+                          <div className="p-2 rounded bg-bg border border-border"><span className="text-[9px] font-black uppercase tracking-widest text-muted/60 block mb-1">Expected</span><pre className="text-indigo-600 dark:text-indigo-400 whitespace-pre-wrap">{firstTestCase.expected}</pre></div>
                         </div>
                       </div>
                     </details>
                   )}
-                </div>
-
-                {/* Acknowledge + start — stays in the left column */}
-                <div className="rounded-2xl border border-border bg-surface/60 backdrop-blur-xl p-5">
-                  <StartButton token={token} />
-                </div>
+                  {/* Acknowledge + start, pinned to the bottom of the card. */}
+                  <div className="mt-auto pt-4 border-t border-border/50">
+                    <StartButton token={token} />
+                  </div>
                 </div>
 
                 {/* RIGHT: protocol & disclosures (accordion) */}
-                <div className="rounded-2xl border border-border bg-surface/60 backdrop-blur-xl p-5 space-y-3">
+                <div className="rounded-2xl border border-border bg-surface/60 backdrop-blur-xl p-5 space-y-3 h-full">
                   <h3 className="text-xs font-black uppercase tracking-wider flex items-center gap-1.5"><ShieldCheck className="w-4 h-4 text-accent" /> Protocol & disclosures</h3>
                   <Disclosure open name="lobby-disclosures" icon={<CheckCircle2 className="w-4 h-4" />} title="Privacy-aware AI proctoring" tone="indigo">
                     <p>The workspace captures session telemetry to keep evaluation fair:</p>
@@ -195,7 +193,7 @@ export default async function TakeHomeLobbyPage({ params, searchParams }: Props)
                       <li><strong>Tab-focus</strong> transitions when you navigate away.</li>
                       <li><strong>Keystroke rhythm</strong> to detect automated streaming.</li>
                     </ul>
-                    <div className="p-2.5 rounded-lg bg-indigo-500/10 border border-indigo-500/20 text-[10px] font-semibold text-indigo-600 dark:text-indigo-300">
+                    <div className="p-2.5 rounded-lg bg-indigo-500/10 border border-indigo-500/20 text-[11px] font-semibold text-indigo-600 dark:text-indigo-300">
                       🔒 Your actual keystrokes are masked at the browser boundary — we never log characters, passwords, or text.
                     </div>
                   </Disclosure>
@@ -235,8 +233,8 @@ function Row({ label, value, mono, valueClass }: { label: string; value: string 
 function Stat({ icon, label, value, valueClass }: { icon: React.ReactNode; label: string; value: string; valueClass?: string }) {
   return (
     <div className="p-4 rounded-2xl border border-border bg-surface/60 backdrop-blur-xl">
-      <span className="text-[9px] font-black uppercase tracking-widest text-muted flex items-center gap-1">{icon} {label}</span>
-      <div className={`text-sm font-bold mt-2 truncate ${valueClass ?? "text-fg"}`} title={value}>{value}</div>
+      <span className="text-[10px] font-black uppercase tracking-widest text-muted flex items-center gap-1.5">{icon} {label}</span>
+      <div className={`text-base font-bold mt-2 truncate ${valueClass ?? "text-fg"}`} title={value}>{value}</div>
     </div>
   );
 }
@@ -244,7 +242,7 @@ function Stat({ icon, label, value, valueClass }: { icon: React.ReactNode; label
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div className="space-y-1">
-      <span className="text-[9px] uppercase tracking-widest text-muted">{label}</span>
+      <span className="text-[10px] uppercase tracking-widest text-muted">{label}</span>
       <div>{children}</div>
     </div>
   );
@@ -261,7 +259,7 @@ function Disclosure({ title, icon, children, open, tone, name }: { title: string
         <span className="flex items-center gap-2">{icon} {title}</span>
         <ChevronDown className="w-3.5 h-3.5 group-open:rotate-180 transition-transform" />
       </summary>
-      <div className="mt-2.5 pt-2 border-t border-border/50 text-[11px] text-muted leading-relaxed space-y-2">{children}</div>
+      <div className="mt-2.5 pt-2 border-t border-border/50 text-xs text-muted leading-relaxed space-y-2">{children}</div>
     </details>
   );
 }

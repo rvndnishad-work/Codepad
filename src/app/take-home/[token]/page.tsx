@@ -150,9 +150,10 @@ export default async function TakeHomeLobbyPage({ params, searchParams }: Props)
                 <Stat icon={<Calendar className="w-3.5 h-3.5 text-accent" />} label="Expires" value={assignment.expiresAt.toLocaleDateString()} valueClass="text-amber-600 dark:text-amber-400" />
               </div>
 
-              {/* 2-column: details | rules */}
+              {/* 2-column: details + start | rules */}
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 items-start">
-                {/* What to expect */}
+                {/* LEFT: what to expect + acknowledge/start */}
+                <div className="space-y-5">
                 <div className="rounded-2xl border border-border bg-surface/60 backdrop-blur-xl p-5 space-y-4">
                   <h3 className="text-xs font-black uppercase tracking-wider flex items-center gap-1.5"><Sparkles className="w-4 h-4 text-accent" /> What to expect</h3>
                   <div className="grid grid-cols-2 gap-4 text-xs">
@@ -178,10 +179,16 @@ export default async function TakeHomeLobbyPage({ params, searchParams }: Props)
                   )}
                 </div>
 
-                {/* Protocol & disclosures */}
+                {/* Acknowledge + start — stays in the left column */}
+                <div className="rounded-2xl border border-border bg-surface/60 backdrop-blur-xl p-5">
+                  <StartButton token={token} />
+                </div>
+                </div>
+
+                {/* RIGHT: protocol & disclosures (accordion) */}
                 <div className="rounded-2xl border border-border bg-surface/60 backdrop-blur-xl p-5 space-y-3">
                   <h3 className="text-xs font-black uppercase tracking-wider flex items-center gap-1.5"><ShieldCheck className="w-4 h-4 text-accent" /> Protocol & disclosures</h3>
-                  <Disclosure open icon={<CheckCircle2 className="w-4 h-4" />} title="Privacy-aware AI proctoring" tone="indigo">
+                  <Disclosure open name="lobby-disclosures" icon={<CheckCircle2 className="w-4 h-4" />} title="Privacy-aware AI proctoring" tone="indigo">
                     <p>The workspace captures session telemetry to keep evaluation fair:</p>
                     <ul className="list-disc list-inside space-y-1 text-muted/80">
                       <li><strong>Copy-paste</strong> telemetry to flag pre-written blocks.</li>
@@ -192,14 +199,14 @@ export default async function TakeHomeLobbyPage({ params, searchParams }: Props)
                       🔒 Your actual keystrokes are masked at the browser boundary — we never log characters, passwords, or text.
                     </div>
                   </Disclosure>
-                  <Disclosure icon={<Clock className="w-4 h-4 text-accent" />} title="Countdown & auto-submit">
+                  <Disclosure name="lobby-disclosures" icon={<Clock className="w-4 h-4 text-accent" />} title="Countdown & auto-submit">
                     <ul className="list-disc list-inside space-y-1">
                       <li>The clock runs continuously for <strong>{assignment.timeLimitMin} minutes</strong> once started.</li>
                       <li>Closing the tab or losing connection <strong>won&apos;t pause the timer</strong>.</li>
                       <li>At zero, the workspace freezes and auto-submits your work.</li>
                     </ul>
                   </Disclosure>
-                  <Disclosure icon={<Sparkles className="w-4 h-4 text-accent" />} title="System checklist">
+                  <Disclosure name="lobby-disclosures" icon={<Sparkles className="w-4 h-4 text-accent" />} title="System checklist">
                     <ul className="list-disc list-inside space-y-1">
                       <li>Use a modern Chromium browser (Chrome / Edge / Brave).</li>
                       <li>Ensure a stable connection for real-time saving.</li>
@@ -207,11 +214,6 @@ export default async function TakeHomeLobbyPage({ params, searchParams }: Props)
                     </ul>
                   </Disclosure>
                 </div>
-              </div>
-
-              {/* Start */}
-              <div className="max-w-md mx-auto pt-1">
-                <StartButton token={token} />
               </div>
             </div>
           );
@@ -248,11 +250,13 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
   );
 }
 
-function Disclosure({ title, icon, children, open, tone }: { title: string; icon: React.ReactNode; children: React.ReactNode; open?: boolean; tone?: "indigo" }) {
+function Disclosure({ title, icon, children, open, tone, name }: { title: string; icon: React.ReactNode; children: React.ReactNode; open?: boolean; tone?: "indigo"; name?: string }) {
   const border = tone === "indigo" ? "border-indigo-500/20 bg-indigo-500/[0.04]" : "border-border bg-panel/40";
   const titleColor = tone === "indigo" ? "text-indigo-600 dark:text-indigo-400" : "text-fg";
+  // `name` makes sibling <details> an exclusive accordion (native HTML — opening
+  // one auto-closes the others sharing the same name).
   return (
-    <details open={open} className={`group [&_summary::-webkit-details-marker]:hidden rounded-xl border ${border} p-3.5`}>
+    <details open={open} name={name} className={`group [&_summary::-webkit-details-marker]:hidden rounded-xl border ${border} p-3.5`}>
       <summary className={`flex items-center justify-between cursor-pointer select-none text-xs font-black uppercase tracking-wider ${titleColor}`}>
         <span className="flex items-center gap-2">{icon} {title}</span>
         <ChevronDown className="w-3.5 h-3.5 group-open:rotate-180 transition-transform" />

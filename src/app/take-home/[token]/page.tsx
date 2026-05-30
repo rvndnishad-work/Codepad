@@ -150,11 +150,10 @@ export default async function TakeHomeLobbyPage({ params, searchParams }: Props)
                 <Stat icon={<Calendar className="w-3.5 h-3.5 text-accent" />} label="Expires" value={assignment.expiresAt.toLocaleDateString()} valueClass="text-amber-600 dark:text-amber-400" />
               </div>
 
-              {/* 2-column: details + start | rules. Stretch so both cards match
-                  height; switches to one column on tablets/phones (< md). */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-5 items-stretch">
-                {/* LEFT: what to expect + acknowledge/start (single card; start pinned to bottom) */}
-                <div className="rounded-2xl border border-border bg-surface/60 backdrop-blur-xl p-5 flex flex-col gap-4 h-full">
+              {/* Two info cards at natural heights (one column < md). */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-5 items-start">
+                {/* LEFT: what to expect */}
+                <div className="rounded-2xl border border-border bg-surface/60 backdrop-blur-xl p-5 space-y-4">
                   <h3 className="text-sm font-black uppercase tracking-wider flex items-center gap-1.5"><Sparkles className="w-4 h-4 text-accent" /> What to expect</h3>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <Field label="Difficulty"><span className={`inline-block px-2 py-0.5 rounded border text-[11px] font-black uppercase tracking-wider ${diffCls}`}>{diff}</span></Field>
@@ -177,14 +176,10 @@ export default async function TakeHomeLobbyPage({ params, searchParams }: Props)
                       </div>
                     </details>
                   )}
-                  {/* Acknowledge + start, pinned to the bottom of the card. */}
-                  <div className="mt-auto pt-4 border-t border-border/50">
-                    <StartButton token={token} />
-                  </div>
                 </div>
 
                 {/* RIGHT: protocol & disclosures (accordion) */}
-                <div className="rounded-2xl border border-border bg-surface/60 backdrop-blur-xl p-5 space-y-3 h-full">
+                <div className="rounded-2xl border border-border bg-surface/60 backdrop-blur-xl p-5 space-y-3">
                   <h3 className="text-xs font-black uppercase tracking-wider flex items-center gap-1.5"><ShieldCheck className="w-4 h-4 text-accent" /> Protocol & disclosures</h3>
                   <Disclosure open name="lobby-disclosures" icon={<CheckCircle2 className="w-4 h-4" />} title="Privacy-aware AI proctoring" tone="indigo">
                     <p>The workspace captures session telemetry to keep evaluation fair:</p>
@@ -212,6 +207,11 @@ export default async function TakeHomeLobbyPage({ params, searchParams }: Props)
                     </ul>
                   </Disclosure>
                 </div>
+              </div>
+
+              {/* Primary CTA — full-width, prominent (the page's main action). */}
+              <div className="rounded-2xl border border-border bg-surface/70 backdrop-blur-xl p-5 shadow-sm">
+                <StartButton token={token} />
               </div>
             </div>
           );

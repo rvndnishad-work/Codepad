@@ -53,6 +53,9 @@ export default async function WorkspaceDashboardPage({ params }: Props) {
         orderBy: { createdAt: "desc" },
       },
       sessions: {
+        // Take-home sessions (IP-88) are also InterviewSession rows; exclude
+        // them here so they don't show up under Interviews / Replays / counts.
+        where: { type: { not: "take-home" } },
         select: {
           id: true,
           title: true,
@@ -82,7 +85,7 @@ export default async function WorkspaceDashboardPage({ params }: Props) {
 
   if (!workspace) notFound();
 
-  const [promptScenarios, promptAttempts, globalChallenges] = await Promise.all([
+  const [promptScenarios, promptAttempts, globalChallenges, takeHomeSessionRows] = await Promise.all([
     prisma.promptScenario.findMany({
       where: {
         OR: [
@@ -114,7 +117,43 @@ export default async function WorkspaceDashboardPage({ params }: Props) {
       select: { id: true, title: true, difficulty: true },
       orderBy: { title: "asc" },
     }),
+    // Session-backed take-homes (IP-88/89) — the new multi-question model.
+    prisma.interviewSession.findMany({
+      where: { workspaceId: workspace.id, type: "take-home" },
+      select: {
+        id: true,
+        title: true,
+        candidateName: true,
+        status: true,
+        deadlineAt: true,
+        candidateAccessToken: true,
+        createdAt: true,
+        finishedAt: true,
+        challengeIds: true,
+        playgroundIds: true,
+        promptScenarioIds: true,
+        candidate: { select: { email: true } },
+      },
+      orderBy: { createdAt: "desc" },
+      take: 200,
+    }),
   ]);
+
+  const countIds = (raw: string | null | undefined): number => {
+    try { const a = JSON.parse(raw ?? "[]"); return Array.isArray(a) ? a.length : 0; } catch { return 0; }
+  };
+  const takeHomeSessions = takeHomeSessionRows.map((s) => ({
+    id: s.id,
+    title: s.title,
+    candidateName: s.candidateName,
+    candidateEmail: s.candidate?.email ?? null,
+    status: s.status,
+    deadlineAt: s.deadlineAt ? s.deadlineAt.toISOString() : null,
+    candidateAccessToken: s.candidateAccessToken,
+    questionCount: countIds(s.challengeIds) + countIds(s.playgroundIds) + countIds(s.promptScenarioIds),
+    createdAt: s.createdAt.toISOString(),
+    finishedAt: s.finishedAt ? s.finishedAt.toISOString() : null,
+  }));
 
   const formattedPromptAttempts = promptAttempts.map((a) => ({
     id: a.id,
@@ -250,6 +289,7 @@ export default async function WorkspaceDashboardPage({ params }: Props) {
         challenges={workspace.challenges}
         pipelineChallenges={globalChallenges}
         takeHomes={formattedTakeHomes}
+        takeHomeSessions={takeHomeSessions}
         members={formattedMembers}
         sessions={formattedSessions}
         candidates={formattedCandidates}

@@ -141,6 +141,19 @@ type PromptAttemptItem = {
   scenarioDifficulty: string;
 };
 
+type TakeHomeSession = {
+  id: string;
+  title: string;
+  candidateName: string | null;
+  candidateEmail: string | null;
+  status: string;
+  deadlineAt: string | null;
+  candidateAccessToken: string | null;
+  questionCount: number;
+  createdAt: string;
+  finishedAt: string | null;
+};
+
 type Props = {
   workspace: {
     id: string;
@@ -151,6 +164,7 @@ type Props = {
   challenges: Challenge[];
   pipelineChallenges?: any[];
   takeHomes: TakeHome[];
+  takeHomeSessions?: TakeHomeSession[];
   members: Member[];
   sessions: InterviewSessionItem[];
   candidates: CandidateItem[];
@@ -179,6 +193,7 @@ export default function WorkspaceDashboardClient({
   challenges,
   pipelineChallenges = [],
   takeHomes,
+  takeHomeSessions = [],
   members,
   sessions,
   candidates,
@@ -808,7 +823,7 @@ export default function WorkspaceDashboardClient({
               <Clock className="w-3.5 h-3.5" />
             </div>
           </div>
-          <div className="text-2xl font-semibold text-fg tabular-nums">{currentTakeHomes.length}</div>
+          <div className="text-2xl font-semibold text-fg tabular-nums">{currentTakeHomes.length + takeHomeSessions.length}</div>
         </div>
 
         <div className="p-4 rounded-xl border border-border bg-surface">
@@ -1233,6 +1248,82 @@ export default function WorkspaceDashboardClient({
                   </button>
                 </form>
               </div>
+
+              {/* Session-backed take-homes (IP-89) — output of the multi-question builder. */}
+              {takeHomeSessions.length > 0 && (
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-sm font-semibold text-fg flex items-center gap-1.5">
+                      <Sparkles className="w-4 h-4 text-indigo-500" /> Take-home assessments
+                    </h3>
+                    <span className="text-[11px] text-muted">{takeHomeSessions.length} sent</span>
+                  </div>
+                  <div className="rounded-xl border border-border bg-surface overflow-hidden">
+                    <table className="w-full text-left text-sm">
+                      <thead>
+                        <tr className="bg-elevated/60 border-b border-border text-muted uppercase text-[10px] tracking-[0.14em]">
+                          <th className="px-4 py-3 font-semibold">Candidate</th>
+                          <th className="px-4 py-3 font-semibold">Assessment</th>
+                          <th className="px-4 py-3 font-semibold">Status</th>
+                          <th className="px-4 py-3 font-semibold">Deadline</th>
+                          <th className="px-4 py-3 font-semibold text-right">Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-border">
+                        {takeHomeSessions.map((s) => {
+                          const deadline = s.deadlineAt ? new Date(s.deadlineAt) : null;
+                          const expired = !!deadline && Date.now() > deadline.getTime() && s.status !== "completed";
+                          const { label, cls } =
+                            s.status === "completed"
+                              ? { label: "Completed", cls: "text-emerald-600 dark:text-emerald-400 border-emerald-500/25 bg-emerald-500/[0.06]" }
+                              : expired
+                              ? { label: "Expired", cls: "text-rose-600 dark:text-rose-400 border-rose-500/25 bg-rose-500/[0.06]" }
+                              : s.status === "in_progress"
+                              ? { label: "In progress", cls: "text-indigo-600 dark:text-indigo-400 border-indigo-500/25 bg-indigo-500/[0.08]" }
+                              : { label: "Sent", cls: "text-amber-600 dark:text-amber-400 border-amber-500/25 bg-amber-500/[0.06]" };
+                          return (
+                            <tr key={s.id} className="hover:bg-panel/30 transition-colors">
+                              <td className="px-4 py-3 align-middle">
+                                <div className="text-xs font-semibold text-fg truncate">{s.candidateName || "—"}</div>
+                                <div className="text-[11px] text-muted font-mono truncate">{s.candidateEmail}</div>
+                              </td>
+                              <td className="px-4 py-3 align-middle">
+                                <div className="text-xs text-fg truncate max-w-[240px]">{s.title}</div>
+                                <div className="text-[10px] text-muted">{s.questionCount} question{s.questionCount === 1 ? "" : "s"}</div>
+                              </td>
+                              <td className="px-4 py-3 align-middle">
+                                <span className={`inline-flex items-center px-2 py-0.5 rounded-md border text-[10px] font-semibold uppercase tracking-wider ${cls}`}>{label}</span>
+                              </td>
+                              <td className="px-4 py-3 align-middle text-[11px] text-muted whitespace-nowrap">{deadline ? deadline.toLocaleDateString() : "—"}</td>
+                              <td className="px-4 py-3 align-middle text-right">
+                                <div className="inline-flex items-center gap-1.5">
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      if (!s.candidateAccessToken) return;
+                                      navigator.clipboard?.writeText(`${window.location.origin}/take-home/s/${s.candidateAccessToken}`);
+                                      toast.success("Candidate link copied");
+                                    }}
+                                    className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-panel/40 border border-border hover:border-accent/40 text-[11px] font-semibold text-muted hover:text-fg transition-colors"
+                                  >
+                                    <Link2 className="w-3 h-3" /> Copy link
+                                  </button>
+                                  <Link
+                                    href={`/interview/${s.id}`}
+                                    className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-accent/10 border border-accent/25 text-[11px] font-semibold text-accent hover:bg-accent/15 transition-colors"
+                                  >
+                                    <Eye className="w-3 h-3" /> Review
+                                  </Link>
+                                </div>
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
 
               {/* Pipeline */}
               <div className="space-y-2">

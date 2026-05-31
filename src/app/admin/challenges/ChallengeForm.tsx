@@ -562,15 +562,26 @@ export default function ChallengeForm({
               Unpublished challenges are visible only to you (and admins).
             </div>
             {form.published && surface.isAdmin && (
-              <label className="flex items-center gap-2 cursor-pointer text-sm mt-3 pt-3 border-t border-border">
-                <input
-                  type="checkbox"
-                  checked={form.featured}
-                  onChange={(e) => update("featured", e.target.checked)}
-                  className="w-4 h-4 accent-accent"
-                />
-                <span className="text-fg">Featured (Staff pick)</span>
-              </label>
+              <div className="flex flex-col gap-3 mt-3 pt-3 border-t border-border">
+                <label className="flex items-center gap-2 cursor-pointer text-sm">
+                  <input
+                    type="checkbox"
+                    checked={form.featured}
+                    onChange={(e) => update("featured", e.target.checked)}
+                    className="w-4 h-4 accent-accent"
+                  />
+                  <span className="text-fg">Featured (Staff pick)</span>
+                </label>
+                <label className="flex items-center gap-2 cursor-pointer text-sm">
+                  <input
+                    type="checkbox"
+                    checked={form.premium}
+                    onChange={(e) => update("premium", e.target.checked)}
+                    className="w-4 h-4 accent-accent"
+                  />
+                  <span className="text-fg">Premium (Paid Challenge)</span>
+                </label>
+              </div>
             )}
 
             {form.published && (

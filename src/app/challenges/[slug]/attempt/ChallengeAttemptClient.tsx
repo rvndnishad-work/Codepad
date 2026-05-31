@@ -6,10 +6,11 @@ import {
   SandpackProvider,
   SandpackCodeEditor,
   SandpackTests,
+  SandpackPreview,
+  SandpackConsole,
   useSandpack,
   type SandpackFiles,
 } from "@codesandbox/sandpack-react";
-import { cobalt2 } from "@codesandbox/sandpack-themes";
 import { javascript } from "@codemirror/lang-javascript";
 import * as Y from "yjs";
 import { WebrtcProvider } from "y-webrtc";
@@ -53,13 +54,22 @@ import {
   FlaskConical,
   Terminal,
   Play,
+  Monitor,
+  PanelBottom,
+  LogOut,
+  ChevronDown,
 } from "lucide-react";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import ChallengeDescription from "../../ChallengeDescription";
 import SessionTimer from "@/components/SessionTimer";
+import FileExplorer from "@/components/FileExplorer";
+import ThemeToggle from "@/components/ThemeToggle";
 import { getSignalingUrls } from "@/lib/signaling";
+import { challengeSurface } from "@/lib/templates";
+import { getSandpackTheme } from "@/lib/sandpack-theme";
+import { useResizable } from "@/hooks/useResizable";
+import { useResizableHeight } from "@/hooks/useResizableHeight";
 
 type Challenge = {
   id: string;
@@ -122,6 +132,146 @@ console.log(JSON.stringify(rev));`;
   return "";
 }
 
+function generateStarterCode(language: string, originalCode: string): string {
+  const isFizzBuzz = originalCode.includes("fizzBuzz");
+  const isTwoSum = originalCode.includes("twoSum");
+  const isDebounce = originalCode.includes("debounce");
+  const isFlatten = originalCode.includes("flatten");
+  const isReverseList = originalCode.includes("reverseList");
+
+  switch (language) {
+    case "python":
+      if (isTwoSum) {
+        return `def twoSum(nums, target):\n    # Write your Python solution here\n    # Example: return [0, 1]\n    pass\n\n# Test the solution\nprint(twoSum([2, 7, 11, 15], 9))\n`;
+      }
+      if (isFizzBuzz) {
+        return `def fizzBuzz(n):\n    # Write your Python solution here\n    # Return a list of strings\n    pass\n\n# Test the solution\nprint(fizzBuzz(15))\n`;
+      }
+      return `def solve():\n    # Write your Python solution here\n    print("Hello from Python solve!")\n\nsolve()\n`;
+
+    case "go":
+      if (isTwoSum) {
+        return `package main\n\nimport "fmt"\n\nfunc twoSum(nums []int, target int) []int {\n    // Write your Go solution here\n    return []int{0, 0}\n}\n\nfunc main() {\n    fmt.Println(twoSum([]int{2, 7, 11, 15}, 9))\n}\n`;
+      }
+      if (isFizzBuzz) {
+        return `package main\n\nimport "fmt"\n\nfunc fizzBuzz(n int) []string {\n    // Write your Go solution here\n    return nil\n}\n\nfunc main() {\n    fmt.Println(fizzBuzz(15))\n}\n`;
+      }
+      return `package main\n\nimport "fmt"\n\nfunc solve() {\n    fmt.Println("Hello from Go solve!")\n}\n\nfunc main() {\n    solve()\n}\n`;
+
+    case "java":
+      if (isTwoSum) {
+        return `import java.util.Arrays;\n\npublic class Main {\n    public static int[] twoSum(int[] nums, int target) {\n        // Write your Java solution here\n        return new int[]{0, 0};\n    }\n\n    public static void main(String[] args) {\n        System.out.println(Arrays.toString(twoSum(new int[]{2, 7, 11, 15}, 9)));\n    }\n}\n`;
+      }
+      if (isFizzBuzz) {
+        return `import java.util.List;\nimport java.util.ArrayList;\n\npublic class Main {\n    public static List<String> fizzBuzz(int n) {\n        // Write your Java solution here\n        return new ArrayList<>();\n    }\n\n    public static void main(String[] args) {\n        System.out.println(fizzBuzz(15));\n    }\n}\n`;
+      }
+      return `public class Main {\n    public static void solve() {\n        System.out.println("Hello from Java solve!");\n    }\n\n    public static void main(String[] args) {\n        solve();\n    }\n}\n`;
+
+    case "cpp":
+      if (isTwoSum) {
+        return `#include <iostream>\n#include <vector>\n\nstd::vector<int> twoSum(std::vector<int>& nums, int target) {\n    // Write your C++ solution here\n    return {0, 0};\n}\n\nint main() {\n    std::vector<int> nums = {2, 7, 11, 15};\n    auto res = twoSum(nums, 9);\n    std::cout << "[" << res[0] << ", " << res[1] << "]" << std::endl;\n    return 0;\n}\n`;
+      }
+      if (isFizzBuzz) {
+        return `#include <iostream>\n#include <vector>\n#include <string>\n\nstd::vector<std::string> fizzBuzz(int n) {\n    // Write your C++ solution here\n    return {};\n}\n\nint main() {\n    auto res = fizzBuzz(15);\n    for (const auto& s : res) {\n        std::cout << s << " ";\n    }\n    std::cout << std::endl;\n    return 0;\n}\n`;
+      }
+      return `#include <iostream>\n\nvoid solve() {\n    std::cout << "Hello from C++ solve!" << std::endl;\n}\n\nint main() {\n    solve();\n    return 0;\n}\n`;
+
+    case "rust":
+      if (isTwoSum) {
+        return `fn two_sum(nums: Vec<i32>, target: i32) -> Vec<i32> {\n    // Write your Rust solution here\n    vec![0, 0]\n}\n\nfn main() {\n    println!("{:?}", two_sum(vec![2, 7, 11, 15], 9));\n}\n`;
+      }
+      if (isFizzBuzz) {
+        return `fn fizz_buzz(n: i32) -> Vec<String> {\n    // Write your Rust solution here\n    vec![]\n}\n\nfn main() {\n    println!("{:?}", fizz_buzz(15));\n}\n`;
+      }
+      return `fn solve() {\n    println!("Hello from Rust solve!");\n}\n\nfn main() {\n    solve();\n}\n`;
+
+    default:
+      return originalCode;
+  }
+}
+
+function CompetitorLanguageSelector({
+  value,
+  onChange,
+}: {
+  value: string;
+  onChange: (v: string) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClick = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    };
+    window.addEventListener("mousedown", handleClick);
+    return () => window.removeEventListener("mousedown", handleClick);
+  }, []);
+
+  const options = [
+    { value: "typescript", label: "TypeScript", pct: "31%", avg: "96", color: "bg-blue-400" },
+    { value: "javascript", label: "JavaScript", pct: "42%", avg: "94", color: "bg-yellow-400" },
+    { value: "python", label: "Python", pct: "18%", avg: "91", color: "bg-indigo-400" },
+    { value: "go", label: "Go", pct: "5%", avg: "89", color: "bg-cyan-400" },
+    { value: "java", label: "Java", pct: "3%", avg: "87", color: "bg-orange-400" },
+    { value: "cpp", label: "C++", pct: "1%", avg: "95", color: "bg-indigo-500" },
+    { value: "rust", label: "Rust", pct: "0.5%", avg: "98", color: "bg-red-500" },
+  ];
+
+  const selected = options.find((o) => o.value === value) || options[0];
+
+  return (
+    <div className="relative shrink-0" ref={ref}>
+      <button
+        type="button"
+        onClick={() => setOpen(!open)}
+        className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-border bg-surface hover:bg-elevated text-xs font-bold text-fg transition shadow-sm"
+      >
+        <span className={`w-2 h-2 rounded-full ${selected.color}`} />
+        <span>Language: {selected.label}</span>
+        <span className="text-[10px] text-muted font-normal ml-1 hidden md:inline">({selected.pct} competitors)</span>
+        <ChevronDown className={`w-3.5 h-3.5 opacity-60 transition-transform ${open ? "rotate-180" : ""}`} />
+      </button>
+
+      {open && (
+        <div
+          className="absolute top-full right-0 mt-2 w-64 py-1.5 rounded-xl z-[100] animate-in fade-in slide-in-from-top-1 duration-150 border border-border shadow-2xl bg-panel"
+          style={{
+            boxShadow: "0 16px 48px rgba(0,0,0,0.15), 0 0 0 1px var(--border) inset"
+          }}
+        >
+          <div className="px-3 py-1 text-[10px] font-black uppercase tracking-wider text-muted/40 border-b border-border/60 mb-1.5 flex justify-between select-none">
+            <span>Competitor Support</span>
+            <span>Avg Score</span>
+          </div>
+          {options.map((opt) => (
+            <button
+              key={opt.value}
+              type="button"
+              onClick={() => {
+                onChange(opt.value);
+                setOpen(false);
+              }}
+              className={`w-full flex items-center justify-between px-3 py-2 text-[11px] transition-all duration-100 ${
+                opt.value === value
+                  ? "text-accent bg-accent/10"
+                  : "text-muted hover:text-fg hover:bg-elevated"
+              }`}
+            >
+              <div className="flex items-center gap-2">
+                <span className={`w-1.5 h-1.5 rounded-full ${opt.color}`} />
+                <span className="font-semibold">{opt.label}</span>
+                <span className="text-[9px] text-muted/60">({opt.pct})</span>
+              </div>
+              <span className="font-mono text-[10px] bg-surface border border-border px-1.5 py-0.5 rounded text-muted font-bold">{opt.avg}/100</span>
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function ChallengeAttemptClient({
   challenge,
   starterFiles,
@@ -156,6 +306,67 @@ export default function ChallengeAttemptClient({
   const isDark = resolvedTheme === "dark";
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
+
+  const [selectedLanguage, setSelectedLanguage] = useState<string>(() => {
+    if (challenge.template.includes("py") || challenge.template.includes("python")) return "python";
+    if (challenge.template.includes("go")) return "go";
+    if (challenge.template.includes("java")) return "java";
+    if (challenge.template.includes("cpp")) return "cpp";
+    if (challenge.template.includes("rust")) return "rust";
+    if (challenge.template.includes("js") || challenge.template.includes("javascript")) return "javascript";
+    return "typescript";
+  });
+
+  const currentTemplate = ["python", "go", "java", "cpp", "rust"].includes(selectedLanguage)
+    ? "vanilla"
+    : challenge.template;
+
+  // Which surface to render: "dsa" (Console + Tests, auto-graded) vs
+  // "frontend" (live Preview + file tree, submitted for manual review).
+  const isFrontend = challengeSurface(challenge.template) === "frontend";
+  // Frontend file tree can collapse to an icon-only rail to free up editor room.
+  const [fileTreeCollapsed, setFileTreeCollapsed] = useState(false);
+  // Drag-resizable panels (frontend surface): editor-area width + console height.
+  const { width: editorW, onPointerDown: onEditorDrag, setWidth: setEditorW } = useResizable(520, 280, 2000);
+  const { height: consoleH, onPointerDown: onConsoleDrag, setHeight: setConsoleH } = useResizableHeight(180, 80, 900);
+  // Output view: preview only / split / console only.
+  const [outputView, setOutputView] = useState<"preview" | "both" | "console">("both");
+  // Default the splits to code↔output = 50/50 and preview↔console = 70/30, and
+  // keep that ratio as the layout settles / the window resizes — until the user
+  // drags a handle, which locks in their chosen sizes (userResizedRef).
+  const splitRowRef = useRef<HTMLDivElement | null>(null);
+  const outputPaneRef = useRef<HTMLElement | null>(null);
+  const userResizedRef = useRef(false);
+  useEffect(() => {
+    if (!mounted || !isFrontend) return;
+    if (typeof window !== "undefined" && window.matchMedia("(max-width: 1023px)").matches) return;
+    const recompute = () => {
+      if (userResizedRef.current) return;
+      const splitW = splitRowRef.current?.clientWidth ?? 0;
+      const outH = outputPaneRef.current?.clientHeight ?? 0;
+      // Code editor = 60% of the post-description region (minus the ~6px handle).
+      if (splitW > 0) setEditorW(Math.round((splitW - 6) * 0.6));
+      // Console = 30% of the output area below its header (~40px) + handle (~6px).
+      if (outH > 0) setConsoleH(Math.max(80, Math.round((outH - 46) * 0.3)));
+    };
+    recompute();
+    const ro = new ResizeObserver(recompute);
+    if (splitRowRef.current) ro.observe(splitRowRef.current);
+    if (outputPaneRef.current) ro.observe(outputPaneRef.current);
+    return () => ro.disconnect();
+  }, [mounted, isFrontend, setEditorW, setConsoleH]);
+  // Exit-assessment flow.
+  const [exitConfirmOpen, setExitConfirmOpen] = useState(false);
+  function handleExit() {
+    if (isTakeHome) {
+      // Timer keeps running — confirm before leaving.
+      setExitConfirmOpen(true);
+    } else if (sessionId) {
+      window.location.href = `/interview/${sessionId}`;
+    } else {
+      window.location.href = `/challenges/${challenge.slug}`;
+    }
+  }
 
   // Custom Expression run state
   const initialCustomExpr = useMemo(() => {
@@ -307,7 +518,7 @@ export default function ChallengeAttemptClient({
   }, [testRun, sessionId, challenge.slug]);
 
   const [submitting, setSubmitting] = useState(false);
-  const [submittedStatus, setSubmittedStatus] = useState<"passed" | "failed" | null>(null);
+  const [submittedStatus, setSubmittedStatus] = useState<"passed" | "failed" | "submitted" | null>(null);
 
   // Tabbed sidebar state (Console or Tests)
   const [sidebarTab, setSidebarTab] = useState<"console" | "tests">(() => {
@@ -614,10 +825,30 @@ export default function ChallengeAttemptClient({
 
   // Compose Sandpack files: starter (editable) + tests (hidden)
   const files: SandpackFiles = useMemo(() => {
+    if (["python", "go", "java", "cpp", "rust"].includes(selectedLanguage)) {
+      const originalCode = starterFiles["/index.ts"] || starterFiles["/index.js"] || Object.values(starterFiles)[0] || "";
+      const starterCode = generateStarterCode(selectedLanguage, originalCode);
+      
+      let entryFile = "/index.py";
+      if (selectedLanguage === "go") entryFile = "/main.go";
+      else if (selectedLanguage === "java") entryFile = "/Main.java";
+      else if (selectedLanguage === "cpp") entryFile = "/main.cpp";
+      else if (selectedLanguage === "rust") entryFile = "/main.rs";
+      
+      return {
+        [entryFile]: { code: starterCode },
+        "/package.json": { code: JSON.stringify({ main: entryFile, dependencies: {} }), hidden: true },
+      };
+    }
+
     const out: SandpackFiles = {};
     for (const [path, code] of Object.entries(starterFiles)) {
       out[path] = { code };
     }
+
+    // Frontend/playground challenges have no hidden test suite — the candidate
+    // builds against a live preview and the work is kept for manual review.
+    if (isFrontend) return out;
 
     if (visualTestCases && visualTestCases.length > 0) {
       // Dynamic Jest test case compilation
@@ -656,13 +887,31 @@ export default function ChallengeAttemptClient({
       }
     }
     return out;
-  }, [starterFiles, testFiles, visualTestCases]);
+  }, [starterFiles, testFiles, visualTestCases, isFrontend, selectedLanguage]);
 
-  const visibleFiles = useMemo(() => Object.keys(starterFiles), [starterFiles]);
-  const activeFile = useMemo(
-    () => (starterFiles["/index.ts"] ? "/index.ts" : visibleFiles[0]),
-    [starterFiles, visibleFiles]
-  );
+  const visibleFiles = useMemo(() => {
+    if (selectedLanguage === "python") return ["/index.py"];
+    if (selectedLanguage === "go") return ["/main.go"];
+    if (selectedLanguage === "java") return ["/Main.java"];
+    if (selectedLanguage === "cpp") return ["/main.cpp"];
+    if (selectedLanguage === "rust") return ["/main.rs"];
+    return Object.keys(starterFiles);
+  }, [starterFiles, selectedLanguage]);
+
+  const activeFile = useMemo(() => {
+    if (selectedLanguage === "python") return "/index.py";
+    if (selectedLanguage === "go") return "/main.go";
+    if (selectedLanguage === "java") return "/Main.java";
+    if (selectedLanguage === "cpp") return "/main.cpp";
+    if (selectedLanguage === "rust") return "/main.rs";
+    return starterFiles["/index.ts"]
+      ? "/index.ts"
+      : starterFiles["/App.js"]
+        ? "/App.js"
+        : starterFiles["/App.tsx"]
+          ? "/App.tsx"
+          : visibleFiles[0];
+  }, [starterFiles, visibleFiles, selectedLanguage]);
 
   const filesRef = useRef<SandpackFiles>(files);
 
@@ -712,14 +961,77 @@ export default function ChallengeAttemptClient({
     );
   };
 
-  function runDebug(expr: string = customExpression) {
+  async function runDebug(expr: string = customExpression) {
     const bridge = sandpackBridgeRef.current;
-    const activeFile = bridge?.activeFile || "/index.ts";
+    
+    let entryFile = "/index.ts";
+    if (selectedLanguage === "python") entryFile = "/index.py";
+    else if (selectedLanguage === "go") entryFile = "/main.go";
+    else if (selectedLanguage === "java") entryFile = "/Main.java";
+    else if (selectedLanguage === "cpp") entryFile = "/main.cpp";
+    else if (selectedLanguage === "rust") entryFile = "/main.rs";
+
+    const activeFile = bridge?.activeFile || entryFile;
     const indexFile = bridge?.files[activeFile];
     const rawCode =
       typeof indexFile === "string"
         ? indexFile
         : (indexFile as { code: string } | undefined)?.code ?? "";
+
+    if (["python", "go", "java", "cpp", "rust"].includes(selectedLanguage)) {
+      // Clear console
+      window.postMessage({
+        type: "console",
+        codesandbox: true,
+        log: { method: "clear", data: [] }
+      }, "*");
+
+      // Calculate SHA-256 code hash
+      const encoder = new TextEncoder();
+      const data = encoder.encode(rawCode);
+      const hashBuffer = await crypto.subtle.digest("SHA-256", data);
+      const hashArray = Array.from(new Uint8Array(hashBuffer));
+      const hashHex = hashArray.map(b => b.toString(16).padStart(2, "0")).join("");
+
+      try {
+        const res = await fetch("/api/execute", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({
+            language: selectedLanguage,
+            code: rawCode,
+            speculative: false,
+            codeHash: hashHex,
+          }),
+        });
+
+        if (res.ok) {
+          const runResult = await res.json();
+          window.postMessage({
+            type: "console",
+            codesandbox: true,
+            log: {
+              method: runResult.exitCode === 0 ? "log" : "error",
+              data: [runResult.stdout || "Code executed successfully with zero output."],
+            }
+          }, "*");
+
+          if (runResult.exitCode !== 0 && runResult.stderr) {
+            window.postMessage({
+              type: "console",
+              codesandbox: true,
+              log: {
+                method: "error",
+                data: [runResult.stderr],
+              }
+            }, "*");
+          }
+        }
+      } catch (err) {
+        console.error("Backend sandbox run error:", err);
+      }
+      return;
+    }
 
     const baseCode = stripDebugBlock(rawCode);
     let codeToRun = baseCode;
@@ -898,6 +1210,53 @@ export default function ChallengeAttemptClient({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [testRun]);
 
+  // Frontend/playground challenges have no automated tests — snapshot the
+  // candidate's files and record the attempt for manual review (no test gate).
+  async function handleSubmitForReview() {
+    setSubmitting(true);
+    try {
+      const submittedFiles: Record<string, string> = {};
+      for (const [path, file] of Object.entries(filesRef.current)) {
+        if (testFiles[path]) continue;
+        submittedFiles[path] =
+          typeof file === "string" ? file : (file as { code: string }).code;
+      }
+      const token =
+        typeof window !== "undefined"
+          ? new URLSearchParams(window.location.search).get("token") || undefined
+          : undefined;
+      const res = await fetch(`/api/challenges/${challenge.slug}/attempt`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          files: submittedFiles,
+          testResults: { passed: 0, total: 0, tests: [] },
+          durationSec: elapsedSec,
+          sessionId,
+          stepId,
+          token,
+          gradingMode: "manual",
+        }),
+        cache: "no-store",
+      });
+      if (!res.ok) throw new Error((await res.text()) || `HTTP ${res.status}`);
+      const data = await res.json();
+      setSubmittedStatus(data.status ?? "submitted");
+      toast.success("Submitted for review", {
+        description: "Your solution was saved for the reviewer.",
+      });
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      toast.error("Submission failed", { description: msg });
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  // Treat both an auto-graded pass and a manual-review submission as "done".
+  const isSubmittedDone =
+    submittedStatus === "passed" || submittedStatus === "submitted";
+
   if (!mounted) {
     return (
       <div className="flex items-center justify-center h-screen">
@@ -908,14 +1267,16 @@ export default function ChallengeAttemptClient({
 
   return (
     <SandpackProvider
-      key={challenge.id}
-      template={challenge.template as any}
-      theme={isDark ? cobalt2 : "light"}
+      key={`${challenge.id}_${selectedLanguage}`}
+      template={currentTemplate as any}
+      theme={getSandpackTheme(isDark)}
       files={files}
       options={{
-        autorun: false,
-        autoReload: false,
-        initMode: "lazy",
+        // Frontend challenges need the bundler running for a live preview;
+        // DSA challenges stay lazy and only run on explicit Run/Run tests.
+        autorun: isFrontend,
+        autoReload: isFrontend,
+        initMode: isFrontend ? "immediate" : "lazy",
         recompileMode: "delayed",
         recompileDelay: 300,
         visibleFiles,
@@ -984,55 +1345,65 @@ export default function ChallengeAttemptClient({
 
       <div className="flex flex-col h-screen bg-bg overflow-hidden">
         {/* Top bar */}
-        <header className="flex items-center justify-between gap-4 px-4 py-3 border-b border-border bg-surface shrink-0">
-          <div className="flex items-center gap-3 min-w-0">
-            <Link
-              href={sessionId ? `/interview/${sessionId}` : `/challenges/${challenge.slug}`}
-              className="text-muted hover:text-fg transition shrink-0"
-              title="Back to session queue"
+        <header className="flex items-center justify-between gap-3 px-4 py-2.5 border-b border-border bg-surface shrink-0">
+          {/* Left: exit + title + difficulty */}
+          <div className="flex items-center gap-3 min-w-0 flex-1">
+            <button
+              type="button"
+              onClick={handleExit}
+              title="Exit the assessment"
+              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-border bg-bg hover:bg-elevated text-muted hover:text-fg text-xs font-bold transition shrink-0"
             >
-              <ArrowLeft className="w-4 h-4" />
-            </Link>
+              <ArrowLeft className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">Exit</span>
+            </button>
             <div className="min-w-0">
-              <h1 className="font-bold text-sm text-fg truncate">{challenge.title}</h1>
-              <div className="flex items-center gap-2 text-[10px] text-muted/70">
-                <span className={`uppercase font-bold tracking-wider ${difficultyColor[challenge.difficulty]}`}>
-                  {challenge.difficulty}
-                </span>
-                <span>·</span>
-                {isTakeHome ? (
-                  <span className={`flex items-center gap-1.5 px-2 py-0.5 rounded-md border font-mono tabular-nums ${
-                    remainingTakeHomeSec < 60
-                      ? "text-rose-500 border-rose-500/35 bg-rose-500/10 font-black animate-pulse"
-                      : remainingTakeHomeSec < 300
-                      ? "text-amber-400 border-amber-400/35 bg-amber-400/10 font-bold"
-                      : "text-emerald-400 border-emerald-400/35 bg-emerald-400/10"
-                  }`}>
-                    <Clock className="w-3 h-3 shrink-0" />
-                    <span>{formatDuration(remainingTakeHomeSec)}</span>
-                  </span>
-                ) : (
-                  <span className="flex items-center gap-1">
-                    <Clock className="w-2.5 h-2.5" />
-                    {formatDuration(elapsedSec)}
-                  </span>
-                )}
-              </div>
+              <h1 className="font-black text-[15px] leading-tight text-fg truncate">{challenge.title}</h1>
+              <span className={`text-[11px] uppercase font-black tracking-wider ${difficultyColor[challenge.difficulty]}`}>
+                {challenge.difficulty}
+              </span>
             </div>
           </div>
 
-          {/* Live Remaining Interview Timer */}
-          {sessionId && (
-            <SessionTimer
-              sessionId={sessionId}
-              shareToken={shareToken}
-              isInterviewer={isInterviewer}
-            />
-          )}
+          {/* Center: countdown (take-home) / session timer / elapsed — prominent */}
+          <div className="flex items-center justify-center shrink-0">
+            {isTakeHome ? (
+              <div
+                className={`flex items-center gap-2 px-3.5 py-1.5 rounded-xl border font-mono tabular-nums shadow-sm ${
+                  remainingTakeHomeSec < 60
+                    ? "text-rose-500 border-rose-500/40 bg-rose-500/10 animate-pulse"
+                    : remainingTakeHomeSec < 300
+                    ? "text-amber-500 border-amber-500/40 bg-amber-500/10"
+                    : "text-emerald-500 border-emerald-500/40 bg-emerald-500/10"
+                }`}
+                title="Time remaining"
+              >
+                <Clock className="w-4 h-4 shrink-0" />
+                <span className="text-lg font-bold leading-none">{formatDuration(remainingTakeHomeSec)}</span>
+              </div>
+            ) : sessionId ? (
+              <SessionTimer
+                sessionId={sessionId}
+                shareToken={shareToken}
+                isInterviewer={isInterviewer}
+              />
+            ) : (
+              <div
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-border bg-bg text-muted font-mono tabular-nums text-sm"
+                title="Elapsed time"
+              >
+                <Clock className="w-3.5 h-3.5 shrink-0" />
+                <span>{formatDuration(elapsedSec)}</span>
+              </div>
+            )}
+          </div>
 
           {/* Toolbar Center/Right buttons */}
-          <div className="flex items-center gap-3 shrink-0">
-            {testRun && (
+          <div className="flex items-center gap-2.5 shrink-0 flex-1 justify-end">
+            <CompetitorLanguageSelector value={selectedLanguage} onChange={setSelectedLanguage} />
+            <ThemeToggle />
+
+            {!isFrontend && testRun && (
               <div
                 className={`px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 ${
                   testRun.passed === testRun.total
@@ -1049,8 +1420,8 @@ export default function ChallengeAttemptClient({
               </div>
             )}
 
-            {/* Run Code trigger button in Toolbar */}
-            {submittedStatus !== "passed" && (
+            {/* Run Code trigger button in Toolbar — DSA challenges only */}
+            {!isFrontend && submittedStatus !== "passed" && (
               <button
                 onClick={() => {
                   setSidebarTab("console");
@@ -1064,7 +1435,7 @@ export default function ChallengeAttemptClient({
               </button>
             )}
 
-            {submittedStatus !== "passed" && (
+            {!isFrontend && submittedStatus !== "passed" && (
               <button
                 onClick={() => {
                   setSidebarTab("tests");
@@ -1079,20 +1450,30 @@ export default function ChallengeAttemptClient({
               </button>
             )}
 
-            {submittedStatus === "passed" ? (
+            {isSubmittedDone ? (
               <div className="px-4 py-2 rounded-lg bg-emerald-500/10 text-emerald-500 border border-emerald-500/30 text-xs font-bold flex items-center gap-1.5">
                 <CheckCircle2 className="w-3.5 h-3.5" />
                 Submitted
               </div>
             ) : (
               <button
-                onClick={handleSubmit}
+                onClick={isFrontend ? handleSubmitForReview : handleSubmit}
                 disabled={submitting}
                 className="px-4 py-2 rounded-lg bg-accent hover:bg-accent-soft text-bg text-xs font-bold flex items-center gap-1.5 transition disabled:opacity-50 disabled:cursor-not-allowed shadow-[0_0_16px_rgba(var(--accent-rgb),0.2)]"
-                title={!testRun ? "Tests will run first, then submit" : "Submit attempt"}
+                title={
+                  isFrontend
+                    ? "Submit your work for manual review"
+                    : !testRun
+                      ? "Tests will run first, then submit"
+                      : "Submit attempt"
+                }
               >
                 <Send className="w-3.5 h-3.5" />
-                {submitting ? "Submitting…" : "Submit Solution"}
+                {submitting
+                  ? "Submitting…"
+                  : isFrontend
+                    ? "Submit for review"
+                    : "Submit Solution"}
               </button>
             )}
 
@@ -1114,7 +1495,162 @@ export default function ChallengeAttemptClient({
           </div>
         </header>
 
-        {/* Body: Flat responsive layout grid — stretches 100% full height */}
+        {/* Body: layout depends on challenge type — frontend/playground gets a
+            file tree + editor + live preview; DSA gets editor + console/tests. */}
+        {isFrontend ? (
+        <div className="flex-1 flex flex-col lg:flex-row min-h-0 h-full overflow-hidden">
+          {/* Description */}
+          <aside className="w-full lg:w-[21rem] lg:shrink-0 overflow-y-auto border-b lg:border-b-0 lg:border-r border-border bg-bg p-5 lg:h-full max-h-[38vh] lg:max-h-none">
+            <ChallengeDescription markdown={challenge.description} />
+          </aside>
+
+          {/* Split region (editor | output) — measured on load so code/output
+              defaults to 50/50 of the space after the description. */}
+          <div
+            ref={splitRowRef}
+            className="flex-1 min-w-0 flex flex-col lg:flex-row min-h-0 lg:h-full overflow-hidden"
+          >
+
+          {/* File tree + editor — width is drag-resizable on desktop. Reuses the
+              same <FileExplorer> as the /play playground & interview rounds. */}
+          <div
+            className="w-full lg:w-[var(--ide-editor-w)] lg:shrink-0 min-h-[18rem] lg:min-h-0 flex border-b lg:border-b-0 border-border lg:h-full overflow-hidden"
+            style={{ "--ide-editor-w": `${editorW}px` } as React.CSSProperties}
+          >
+            <div className={`${fileTreeCollapsed ? "w-12" : "w-48"} shrink-0 hidden sm:block h-full transition-[width] duration-200`}>
+              <FileExplorer
+                readOnly={isInterviewer}
+                showDownload={false}
+                collapsed={fileTreeCollapsed}
+                onToggleCollapse={() => setFileTreeCollapsed((v) => !v)}
+                plainFolders
+              />
+            </div>
+            <div className="flex-1 min-w-0 min-h-0 h-full relative flex flex-col border-l border-border">
+              {multiplayer ? (
+                <SyncingEditor
+                  yDoc={yDoc}
+                  provider={webrtcProvider}
+                  starterFiles={starterFiles}
+                  isInterviewer={isInterviewer}
+                  isDark={isDark}
+                />
+              ) : (
+                <SandpackCodeEditor
+                  showLineNumbers
+                  showTabs
+                  closableTabs={false}
+                  wrapContent
+                  extensions={[javascript({ jsx: true, typescript: true })]}
+                  style={{ height: "100%", width: "100%" }}
+                />
+              )}
+            </div>
+          </div>
+
+          {/* Drag handle: code ↔ output (desktop). The hooks add a full-screen
+              overlay during drag so it works over the preview iframe. */}
+          <div
+            onPointerDown={(e) => {
+              userResizedRef.current = true;
+              onEditorDrag(e);
+            }}
+            title="Drag to resize"
+            role="separator"
+            aria-orientation="vertical"
+            className="hidden lg:block w-1.5 shrink-0 cursor-col-resize bg-border/40 hover:bg-accent/60 active:bg-accent/70 transition-colors"
+          />
+
+          {/* Output: preview + console with a view toggle (preview / split /
+              console) and a drag-resizable split. Both panes stay mounted
+              (toggled via display) so they don't reload/lose state on switch. */}
+          <aside
+            ref={outputPaneRef}
+            className="flex-1 min-w-0 flex flex-col min-h-[20rem] lg:min-h-0 bg-bg lg:h-full overflow-hidden"
+          >
+            <div className="h-10 shrink-0 flex items-center justify-between gap-2 px-3 border-b border-border bg-surface/30">
+              <span className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-wider text-fg">
+                <Monitor className="w-3 h-3 text-accent" />
+                Output
+              </span>
+              <div className="flex items-center gap-0.5 rounded-lg border border-border bg-bg p-0.5">
+                {([
+                  { key: "preview", title: "Preview only", icon: Monitor },
+                  { key: "both", title: "Split — preview + console", icon: PanelBottom },
+                  { key: "console", title: "Console only", icon: Terminal },
+                ] as const).map(({ key, title, icon: Icon }) => (
+                  <button
+                    key={key}
+                    type="button"
+                    onClick={() => setOutputView(key)}
+                    title={title}
+                    aria-pressed={outputView === key}
+                    className={`p-1 rounded-md transition ${
+                      outputView === key
+                        ? "bg-accent text-bg"
+                        : "text-muted hover:text-fg hover:bg-surface"
+                    }`}
+                  >
+                    <Icon className="w-3.5 h-3.5" />
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Preview (hidden in console-only mode) */}
+            <div
+              style={{
+                display: outputView === "console" ? "none" : "flex",
+                flex: "1 1 0",
+                minHeight: 0,
+                overflow: "hidden",
+              }}
+            >
+              <SandpackPreview
+                showNavigator={false}
+                showOpenInCodeSandbox={false}
+                showRefreshButton
+                style={{ height: "100%", width: "100%" }}
+              />
+            </div>
+
+            {/* Drag handle: preview ↔ console (split mode only) */}
+            <div
+              onPointerDown={(e) => {
+                userResizedRef.current = true;
+                onConsoleDrag(e);
+              }}
+              title="Drag to resize"
+              role="separator"
+              aria-orientation="horizontal"
+              style={{ display: outputView === "both" ? "block" : "none" }}
+              className="h-1.5 shrink-0 cursor-row-resize bg-border/40 hover:bg-accent/60 active:bg-accent/70 transition-colors"
+            />
+
+            {/* Console (hidden in preview-only mode; fixed resizable height when
+                split, full height when console-only) */}
+            <div
+              className="flex flex-col min-h-0 border-t border-border"
+              style={{
+                display: outputView === "preview" ? "none" : "flex",
+                minHeight: 0,
+                ...(outputView === "both"
+                  ? { flex: "0 0 auto", height: `${consoleH}px` }
+                  : { flex: "1 1 0" }),
+              }}
+            >
+              <div className="h-9 shrink-0 flex items-center gap-1.5 px-3 border-b border-border bg-surface/30 text-[10px] font-black uppercase tracking-wider text-muted">
+                <Terminal className="w-3 h-3 text-accent" />
+                Console
+              </div>
+              <div className="flex-1 min-h-0">
+                <SandpackConsole resetOnPreviewRestart style={{ height: "100%" }} />
+              </div>
+            </div>
+          </aside>
+          </div>
+        </div>
+        ) : (
         <div className="flex-1 grid grid-cols-12 min-h-0 h-full overflow-hidden">
           {/* Description Panel (3/12 columns on desktop) */}
           <aside className="col-span-12 md:col-span-4 lg:col-span-3 overflow-y-auto border-r border-border bg-bg p-5 h-full">
@@ -1227,6 +1763,49 @@ export default function ChallengeAttemptClient({
             </div>
           </aside>
         </div>
+        )}
+
+        {/* Exit confirmation — the take-home countdown keeps running. */}
+        {exitConfirmOpen && (
+          <div
+            className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in"
+            onClick={(e) => {
+              if (e.target === e.currentTarget) setExitConfirmOpen(false);
+            }}
+          >
+            <div className="w-full max-w-sm rounded-2xl border border-border bg-surface shadow-2xl overflow-hidden animate-scale-in">
+              <div className="px-6 pt-6 pb-4 text-center">
+                <div className="w-12 h-12 mx-auto rounded-2xl bg-rose-500/10 border border-rose-500/25 flex items-center justify-center text-rose-500">
+                  <LogOut className="w-6 h-6" />
+                </div>
+                <h2 className="mt-3 text-base font-black text-fg">Exit the assessment?</h2>
+                <p className="mt-1.5 text-sm text-muted leading-relaxed">
+                  Your countdown <strong className="text-fg font-bold">keeps running</strong> while
+                  you&apos;re away. You can return any time using your take-home link.
+                </p>
+              </div>
+              <div className="flex items-center gap-2.5 px-6 pb-5">
+                <button
+                  type="button"
+                  onClick={() => setExitConfirmOpen(false)}
+                  className="flex-1 px-4 py-2.5 rounded-xl border border-border bg-panel/50 text-sm font-bold text-muted hover:text-fg hover:bg-panel transition"
+                >
+                  Keep working
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    window.location.href = "/";
+                  }}
+                  className="flex-1 inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl bg-rose-500 hover:bg-rose-600 text-white text-sm font-black transition"
+                >
+                  <LogOut className="w-4 h-4" />
+                  Exit
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </SandpackProvider>
   );
@@ -1290,6 +1869,51 @@ function FilesTracker({
       }
     }
   }, [sandpack, sandpack.files, sandpack.activeFile, filesRef, bridgeRef, logTelemetryEvent, prevSnapshotFilesRef]);
+
+  // AuraSandbox Challenge Speculative Pre-compilation
+  useEffect(() => {
+    const activeFileExt = sandpack.activeFile.split(".").pop();
+    const extToLang: Record<string, string> = {
+      py: "python",
+      go: "go",
+      java: "java",
+      cpp: "cpp",
+      rs: "rust",
+    };
+    const inferredLang = activeFileExt ? extToLang[activeFileExt] : null;
+    if (!inferredLang) return;
+
+    const fileObj = sandpack.files[sandpack.activeFile];
+    const activeCode = typeof fileObj === "string" ? fileObj : fileObj?.code ?? "";
+    if (!activeCode || !activeCode.trim()) return;
+
+    const timer = setTimeout(async () => {
+      try {
+        const encoder = new TextEncoder();
+        const data = encoder.encode(activeCode);
+        const hashBuffer = await crypto.subtle.digest("SHA-256", data);
+        const hashArray = Array.from(new Uint8Array(hashBuffer));
+        const hashHex = hashArray.map(b => b.toString(16).padStart(2, "0")).join("");
+
+        await fetch("/api/execute", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({
+            language: inferredLang,
+            code: activeCode,
+            speculative: true,
+            codeHash: hashHex,
+          }),
+        });
+        console.info(`[AuraSandbox] Challenge Speculator queued (Language: ${inferredLang}, Hash: ${hashHex})`);
+      } catch (err) {
+        console.warn("[AuraSandbox] Challenge Speculator warning:", err);
+      }
+    }, 1200);
+
+    return () => clearTimeout(timer);
+  }, [sandpack.files, sandpack.activeFile]);
+
   return null;
 }
 
@@ -1770,7 +2394,7 @@ function CollabCodeMirror({
         EditorView.theme({
           "&": { height: "100%", background: "transparent" },
           ".cm-scroller": {
-            fontFamily: '"JetBrains Mono", "Fira Code", "Cascadia Code", monospace',
+            fontFamily: 'var(--font-mono), "Fira Code", "Cascadia Code", monospace',
             fontSize: "13px",
             lineHeight: "1.6",
           },

@@ -44,26 +44,26 @@ export default async function Header() {
   // client boundary — see NavDropdown.tsx ICON_MAP for the registry.
   const developerItems = [
     {
-      href: "/playgrounds",
+      href: "/candidate/playgrounds",
       label: "Playgrounds",
       description: "Whiteboard-style code sandboxes — no setup.",
       iconName: "Box" as const,
     },
     {
-      href: "/challenges",
+      href: "/candidate/challenges",
       label: "Challenges",
       description: "Browse the public challenge catalog.",
       iconName: "Target" as const,
     },
     {
-      href: "/interview/prompt-practice",
+      href: "/candidate/prompt-practice",
       label: "Prompt Arena",
       description: "Evaluate and practice prompt engineering quality.",
       iconName: "Sparkles" as const,
       badge: "New",
     },
     {
-      href: user ? "/interview?role=candidate" : "/login?next=/interview",
+      href: user ? "/candidate/interview" : "/login?next=/candidate/interview",
       label: "Interviews",
       description: user
         ? "Your upcoming and past sessions."

@@ -167,10 +167,18 @@ export default function TracksCarousel({
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
         {tracksWithProgress.map((track) => {
+          // Premium dynamic backgrounds for both light and dark modes matching their specific track identities
+          const trackCardStyles: Record<string, string> = {
+            "react-architect": "bg-gradient-to-br from-cyan-50/30 via-white to-white dark:bg-[#0c182c] dark:from-transparent hover:bg-cyan-50/60 hover:dark:bg-[#10233e] border border-cyan-100/70 dark:border-transparent shadow-[0_4px_20px_rgba(6,182,212,0.02)]",
+            "ts-performance": "bg-gradient-to-br from-indigo-50/30 via-white to-white dark:bg-[#16122d] dark:from-transparent hover:bg-indigo-50/60 hover:dark:bg-[#20193e] border border-indigo-100/70 dark:border-transparent shadow-[0_4px_20px_rgba(99,102,241,0.02)]",
+            "backend-system": "bg-gradient-to-br from-emerald-50/30 via-white to-white dark:bg-[#0b1c1e] dark:from-transparent hover:bg-emerald-50/60 hover:dark:bg-[#112d2d] border border-emerald-100/70 dark:border-transparent shadow-[0_4px_20px_rgba(16,185,129,0.02)]",
+          };
+          const cardClass = trackCardStyles[track.id] || "bg-slate-50 dark:bg-[#131522] border border-border dark:border-transparent";
+
           return (
             <div
               key={track.id}
-              className="group relative rounded-2xl border border-border/80 bg-surface/50 overflow-hidden flex flex-col justify-between hover:border-border-strong hover:shadow-soft transition-all duration-300"
+              className={`group relative rounded-2xl overflow-hidden flex flex-col justify-between hover:shadow-md hover:-translate-y-0.5 transition-all duration-300 ${cardClass}`}
             >
               {/* Background gradient washes */}
               <div className={`absolute inset-0 bg-gradient-to-b ${track.color} opacity-40 group-hover:opacity-75 transition-opacity duration-300 -z-10`} />
@@ -178,7 +186,7 @@ export default function TracksCarousel({
               <div className="p-5 space-y-3 flex-1">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <span className="w-1.5 h-4 rounded-full bg-accent" />
+                    <span className="w-1.5 h-4 rounded-full shrink-0" style={{ backgroundColor: track.accentColor }} />
                     <span className="text-[10px] font-black uppercase tracking-wider text-muted">
                       {track.tags[0]} path
                     </span>
@@ -201,14 +209,14 @@ export default function TracksCarousel({
               </div>
 
               {/* Progress & Actions Gutter */}
-              <div className="p-5 pt-0 border-t border-border/30 bg-surface/40">
+              <div className="p-5 pt-0 border-t border-border/30 dark:border-transparent bg-surface/40 dark:bg-black/10">
                 <div className="flex items-center justify-between text-[11px] font-bold text-muted mb-2">
                   <span>Track progress</span>
                   <span className="font-mono text-fg">{track.progress}%</span>
                 </div>
                 
                 {/* Progress bar */}
-                <div className="w-full h-1.5 rounded-full bg-border overflow-hidden">
+                <div className="w-full h-1.5 rounded-full bg-slate-200 dark:bg-[#202334] overflow-hidden">
                   <div
                     className={`h-full rounded-full transition-all duration-500 ${track.completed ? 'bg-emerald-500' : 'bg-accent'}`}
                     style={{ width: `${track.progress}%` }}
@@ -229,7 +237,7 @@ export default function TracksCarousel({
                       Claim Badge
                     </button>
                   ) : (
-                    <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-surface border border-border text-[9px] font-bold uppercase tracking-wider text-muted/60">
+                    <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-white dark:bg-black/30 border border-border dark:border-transparent text-[9px] font-bold uppercase tracking-wider text-muted/60">
                       Incomplete
                     </span>
                   )}

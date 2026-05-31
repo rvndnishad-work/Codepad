@@ -6,7 +6,7 @@ import { prisma } from "@/lib/prisma";
 
 const schema = z.object({
   ids: z.array(z.string().min(1)).min(1).max(200),
-  action: z.enum(["publish", "unpublish", "feature", "unfeature", "delete"]),
+  action: z.enum(["publish", "unpublish", "feature", "unfeature", "delete", "markPremium", "markFree"]),
 });
 
 export async function POST(req: Request) {
@@ -42,6 +42,12 @@ export async function POST(req: Request) {
         break;
       case "unfeature":
         data.featured = false;
+        break;
+      case "markPremium":
+        data.premium = true;
+        break;
+      case "markFree":
+        data.premium = false;
         break;
     }
 

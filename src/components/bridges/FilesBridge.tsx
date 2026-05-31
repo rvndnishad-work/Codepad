@@ -6,11 +6,13 @@ import { useSandpack, type SandpackFiles } from "@codesandbox/sandpack-react";
 export function FilesBridge({
   templateId,
   filesRef,
+  activeFileRef,
   onChange,
   templateFiles,
 }: {
   templateId?: string;
   filesRef: React.MutableRefObject<SandpackFiles>;
+  activeFileRef?: React.MutableRefObject<string>;
   onChange?: () => void;
   templateFiles: SandpackFiles;
 }) {
@@ -23,6 +25,10 @@ export function FilesBridge({
   }, [onChange]);
 
   useEffect(() => {
+    if (activeFileRef) {
+      activeFileRef.current = sandpack.activeFile;
+    }
+
     const map: SandpackFiles = {};
     let needsUpdate = false;
     const updatePayload: Record<string, any> = {};
@@ -56,7 +62,7 @@ export function FilesBridge({
     }
 
     onChangeRef.current?.();
-  }, [sandpack.files, sandpack.activeFile, filesRef, templateFiles, templateId]);
+  }, [sandpack.files, sandpack.activeFile, filesRef, activeFileRef, templateFiles, templateId]);
 
   return null;
 }

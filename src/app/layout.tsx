@@ -1,6 +1,6 @@
 import "./globals.css";
 import type { Metadata } from "next";
-import { Inter, JetBrains_Mono } from "next/font/google";
+import { Inter, Fira_Code } from "next/font/google";
 import ThemedToaster from "@/components/ThemedToaster";
 import Header from "@/components/Header";
 import HeaderShell from "@/components/HeaderShell";
@@ -19,9 +19,11 @@ const inter = Inter({
   display: "swap",
 });
 
-// JetBrains Mono stays for code surfaces; loading it via next/font replaces
-// the manual @import in globals.css and gets us preload + size hints for free.
-const jetbrainsMono = JetBrains_Mono({
+// Fira Code is the preferred coding font across every editor/playground — its
+// programming ligatures (=>, ===, !=, >=, …) read well in code. Loaded via
+// next/font and exposed as --font-mono, which Tailwind `font-mono` and every
+// editor's fontFamily resolve to.
+const firaCode = Fira_Code({
   subsets: ["latin"],
   variable: "--font-mono",
   display: "swap",
@@ -69,7 +71,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html
       lang="en"
-      className={`${inter.variable} ${jetbrainsMono.variable}`}
+      className={`${inter.variable} ${firaCode.variable}`}
       suppressHydrationWarning
     >
       <body

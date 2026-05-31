@@ -15,6 +15,11 @@ const LANG_LABEL: Record<string, string> = {
   xml: "Markup",
   css: "CSS",
   plaintext: "Text",
+  python: "Python",
+  go: "Go",
+  java: "Java",
+  cpp: "C++",
+  rust: "Rust",
 };
 
 function basename(path: string): string {
@@ -42,9 +47,11 @@ function hexToRgb(hex: string): string {
 export function CodePeekCard({
   t,
   variant = "standard",
+  compact = false,
 }: {
   t: TemplateDef;
   variant?: Variant;
+  compact?: boolean;
 }) {
   const showpiece = useMemo(() => pickShowpiece(t), [t]);
   // Always render 5 lines worth of room so cards in a row stay the same
@@ -85,70 +92,82 @@ export function CodePeekCard({
       className="group relative flex flex-col rounded-2xl border border-border bg-surface dark:bg-panel overflow-hidden transition-all duration-300 ease-out will-change-transform hover:scale-[1.02] hover:-translate-y-1 hover:border-border-strong hover:shadow-[0_12px_28px_-10px_rgba(0,0,0,0.12)] dark:hover:shadow-[0_12px_28px_-10px_rgba(0,0,0,0.45)]"
     >
       {/* Window chrome — dots left, file name centered, lang pill right */}
-      <div className="relative flex items-center px-4 py-2.5 bg-bg/40 border-b border-black/[0.06] dark:border-white/[0.06]">
-        <div className="flex items-center gap-1.5 shrink-0">
-          <span className="w-2.5 h-2.5 rounded-full bg-rose-500/60" />
-          <span className="w-2.5 h-2.5 rounded-full bg-amber-500/60" />
-          <span className="w-2.5 h-2.5 rounded-full bg-emerald-500/60" />
-        </div>
-        <span className="absolute left-1/2 -translate-x-1/2 text-[11px] font-mono text-muted truncate max-w-[140px]">
-          {showpiece ? basename(showpiece.path) : "sandbox"}
-        </span>
-        {showpiece && (
-          <span
-            className="ml-auto text-[9px] font-black px-2 py-0.5 rounded uppercase tracking-widest"
-            style={{
-              color: accent,
-              background: `rgba(${rgbAccent}, 0.15)`,
-            }}
-          >
-            {LANG_LABEL[showpiece.lang] ?? showpiece.lang}
+      {!compact && (
+        <div className="relative flex items-center px-4 py-2.5 bg-bg/40 border-b border-black/[0.06] dark:border-white/[0.06]">
+          <div className="flex items-center gap-1.5 shrink-0">
+            <span className="w-2.5 h-2.5 rounded-full bg-rose-500/60" />
+            <span className="w-2.5 h-2.5 rounded-full bg-amber-500/60" />
+            <span className="w-2.5 h-2.5 rounded-full bg-emerald-500/60" />
+          </div>
+          <span className="absolute left-1/2 -translate-x-1/2 text-[11px] font-mono text-muted truncate max-w-[140px]">
+            {showpiece ? basename(showpiece.path) : "sandbox"}
           </span>
-        )}
-      </div>
+          <div className="ml-auto flex items-center gap-1.5 z-10">
+            {t.group === "backend" && (
+              <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[8px] font-black uppercase tracking-wider bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 shadow-[0_0_10px_rgba(16,185,129,0.15)] animate-pulse">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                JIT 0ms
+              </span>
+            )}
+            {showpiece && (
+              <span
+                className="text-[9px] font-black px-2 py-0.5 rounded uppercase tracking-widest"
+                style={{
+                  color: accent,
+                  background: `rgba(${rgbAccent}, 0.15)`,
+                }}
+              >
+                {LANG_LABEL[showpiece.lang] ?? showpiece.lang}
+              </span>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Code body with line-number gutter and trailing cursor block */}
-      <div className="relative flex bg-[#07090e] dark:bg-[#07090e] overflow-hidden">
-        {/* Line gutter */}
-        <div
-          className={`shrink-0 select-none px-3 py-3 font-mono text-slate-700 leading-relaxed text-right ${
-            isFeatured ? "text-[11px]" : "text-[10px]"
-          }`}
-        >
-          {Array.from({ length: lineCount }, (_, i) => (
-            <div key={i}>{i + 1}</div>
-          ))}
-        </div>
-
-        {/* Code column */}
-        <div className="relative flex-1 min-w-0 py-3 pr-4">
-          {showpiece ? (
-            <pre
-              className={`code-peek font-mono leading-relaxed text-slate-300 m-0 whitespace-pre overflow-hidden ${
-                isFeatured ? "text-[12px]" : "text-[11px]"
-              }`}
-            >
-              <code dangerouslySetInnerHTML={{ __html: highlighted }} />
-            </pre>
-          ) : (
-            <pre className="font-mono leading-relaxed text-slate-600 italic text-[11px] m-0">
-              // empty sandbox
-            </pre>
-          )}
-
-          {/* Faux cursor block — sits at the first unused line so the card
-              feels like an open editor waiting for input. */}
-          <span
-            aria-hidden
-            className={`absolute left-0 inline-block bg-violet-500/80 ${
-              isFeatured ? "w-[7px] h-[14px]" : "w-[6px] h-[12px]"
+      {!compact && (
+        <div className="relative flex bg-[#07090e] dark:bg-[#07090e] overflow-hidden">
+          {/* Line gutter */}
+          <div
+            className={`shrink-0 select-none px-3 py-3 font-mono text-slate-700 leading-relaxed text-right ${
+              isFeatured ? "text-[11px]" : "text-[10px]"
             }`}
-            style={{
-              top: `calc(0.75rem + (${cursorRow - 1}) * ${isFeatured ? "1.65em" : "1.6em"})`,
-            }}
-          />
+          >
+            {Array.from({ length: lineCount }, (_, i) => (
+              <div key={i}>{i + 1}</div>
+            ))}
+          </div>
+
+          {/* Code column */}
+          <div className="relative flex-1 min-w-0 py-3 pr-4">
+            {showpiece ? (
+              <pre
+                className={`code-peek font-mono leading-relaxed text-slate-300 m-0 whitespace-pre overflow-hidden ${
+                  isFeatured ? "text-[12px]" : "text-[11px]"
+                }`}
+              >
+                <code dangerouslySetInnerHTML={{ __html: highlighted }} />
+              </pre>
+            ) : (
+              <pre className="font-mono leading-relaxed text-slate-600 italic text-[11px] m-0">
+                // empty sandbox
+              </pre>
+            )}
+
+            {/* Faux cursor block — sits at the first unused line so the card
+                feels like an open editor waiting for input. */}
+            <span
+              aria-hidden
+              className={`absolute left-0 inline-block bg-violet-500/80 ${
+                isFeatured ? "w-[7px] h-[14px]" : "w-[6px] h-[12px]"
+              }`}
+              style={{
+                top: `calc(0.75rem + (${cursorRow - 1}) * ${isFeatured ? "1.65em" : "1.6em"})`,
+              }}
+            />
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Accent-tinted hover glow */}
       <div
@@ -159,7 +178,7 @@ export function CodePeekCard({
       {/* Footer — mirrors the home-page TemplateCardShell card bottom:
           a blob-shaped icon stage whose accent color glows on hover, then
           the title row with an inline arrow and a subtitle below. */}
-      <div className="relative flex items-center gap-4 p-4 bg-surface/90 dark:bg-[#11131a]/95 border-t border-black/[0.06] dark:border-white/[0.06] z-10 group-hover:bg-elevated/40 transition-colors">
+      <div className={`relative flex items-center gap-4 p-4 bg-surface/90 dark:bg-[#11131a]/95 z-10 group-hover:bg-elevated/40 transition-colors ${compact ? "" : "border-t border-black/[0.06] dark:border-white/[0.06]"}`}>
         <div className="relative w-14 h-14 shrink-0 flex items-center justify-center">
           <div
             className="absolute inset-0 rounded-[30%_70%_70%_30%_/_30%_30%_70%_70%] opacity-20 group-hover:opacity-40 transition-opacity duration-500 blur-[1px]"
@@ -176,11 +195,6 @@ export function CodePeekCard({
               <span className="text-base font-black text-fg tracking-tight leading-tight truncate dark:group-hover:text-[rgba(var(--theme-accent-rgb),1)] transition-colors">
                 {t.title}
               </span>
-              {isFeatured && (
-                <span className="shrink-0 text-[8px] font-black px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-500 uppercase tracking-widest">
-                  Popular
-                </span>
-              )}
             </div>
             <ArrowUpRight className="w-3.5 h-3.5 text-muted/30 group-hover:text-fg group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-all shrink-0" />
           </div>

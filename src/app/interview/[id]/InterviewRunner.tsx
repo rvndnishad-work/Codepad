@@ -4,6 +4,9 @@ import { useEffect, useMemo, useState, useRef } from "react";
 import Link from "next/link";
 import dynamic from "next/dynamic";
 import PromptChallengeRunner from "./PromptChallengeRunner";
+import SubmissionPreview from "./SubmissionPreview";
+import SubmissionReviewModal from "./SubmissionReviewModal";
+import { challengeSurface } from "@/lib/templates";
 import {
   ArrowLeft,
   CheckCircle2,
@@ -37,6 +40,7 @@ import {
   Layers,
   Code,
   Terminal,
+  Maximize2,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -48,6 +52,8 @@ export type SessionChallenge = {
   title: string;
   difficulty: "easy" | "medium" | "hard";
   estimatedMinutes: number;
+  /** Sandpack template id — drives the review surface (frontend → live preview). */
+  template: string;
 };
 
 export type SessionPlayground = {
@@ -82,7 +88,7 @@ type Interview = {
 
 type Attempt = {
   challengeId: string;
-  status: "passed" | "failed" | "in_progress" | "abandoned";
+  status: "passed" | "failed" | "in_progress" | "abandoned" | "submitted";
   durationSec: number | null;
   files?: string | null;
   testResults?: string | null;
@@ -293,13 +299,19 @@ export default function InterviewRunner({
     if (promptScenarios.length > 0) return { id: promptScenarios[0].id, type: "prompt" };
     return null;
   });
-  const [activeReviewTab, setActiveReviewTab] = useState<"code" | "tests">("code");
+  const [activeReviewTab, setActiveReviewTab] = useState<"code" | "tests" | "preview">("code");
   const [activeFileKey, setActiveFileKey] = useState<string>("");
+  const [reviewModalOpen, setReviewModalOpen] = useState(false);
 
   const activeReviewChallenge = useMemo(() => {
     if (!selectedReview || selectedReview.type !== "challenge") return null;
     return challenges.find((c) => c.id === selectedReview.id) || null;
   }, [selectedReview, challenges]);
+
+  // Frontend/playground challenges (react, vanilla, …) get a live preview of the
+  // submitted work in review; DSA (test-*) challenges only show code + tests.
+  const reviewIsFrontend =
+    !!activeReviewChallenge && challengeSurface(activeReviewChallenge.template) === "frontend";
 
   const activeReviewPlayground = useMemo(() => {
     if (!selectedReview || selectedReview.type !== "playground") return null;
@@ -339,6 +351,14 @@ export default function InterviewRunner({
       setActiveFileKey("");
     }
   }, [reviewFileKeys]);
+
+  // Reset to the Code tab + close the full-editor modal whenever the reviewed
+  // item changes, so a "preview" tab on a frontend challenge doesn't carry onto
+  // a DSA one and the modal never shows another submission's files.
+  useEffect(() => {
+    setActiveReviewTab("code");
+    setReviewModalOpen(false);
+  }, [selectedReview]);
 
   const reviewTestResults = useMemo(() => {
     if (!activeReviewAttempt?.testResults) return null;
@@ -633,104 +653,100 @@ export default function InterviewRunner({
   const activeChallengeId = challenges.find((c) => attemptByChallenge.get(c.id) !== "passed")?.id;
 
   return (
-    <div className="min-h-[85vh] bg-bg relative overflow-hidden text-fg selection:bg-accent/30 selection:text-accent font-sans flex flex-col justify-center py-6 md:py-10">
+    <div className="min-h-screen bg-bg relative overflow-x-hidden text-fg selection:bg-accent/30 selection:text-accent font-sans flex flex-col z-10">
       {/* Single soft glow behind hero (matches /interview pattern) */}
       <div className="absolute top-[-10%] right-[-10%] w-[500px] h-[500px] rounded-full bg-accent/5 blur-[120px] pointer-events-none z-0" />
 
-      <div className="max-w-5xl w-full mx-auto px-6 relative z-10 space-y-5">
-        
-        {/* Navigation & Header Actions */}
-        <div className="flex items-center justify-between">
+      {/* Immersive Docking Telemetry Header Bar */}
+      <header className="border-b border-border bg-surface/80 backdrop-blur-md px-6 py-4 flex flex-col md:flex-row md:items-center justify-between gap-4 z-30 shrink-0 sticky top-0">
+        <div className="flex items-center gap-6">
           <Link
             href="/interview"
-            className="inline-flex items-center gap-2.5 text-xs font-medium tracking-wider text-muted hover:text-fg transition-all duration-300 group"
+            className="inline-flex items-center gap-2.5 text-xs font-medium tracking-wider text-muted hover:text-fg transition-all duration-300 group shrink-0"
           >
             <div className="p-1.5 rounded-full bg-surface border border-border group-hover:border-accent/40 group-hover:bg-elevated transition-all shadow-sm">
               <ArrowLeft className="w-3.5 h-3.5 group-hover:-translate-x-0.5 transition-transform text-muted group-hover:text-accent" />
             </div>
-            <span className="font-bold uppercase tracking-widest text-[10px]">Exit Arena</span>
+            <span className="font-bold uppercase tracking-wider text-xs">Exit Arena</span>
           </Link>
-          
-        </div>
-
-        {/* Dashboard Window */}
-        <div className="border border-border bg-surface rounded-2xl shadow-xl overflow-hidden animate-in fade-in zoom-in-98 duration-500">
-
-          {/* Dashboard Header Bar */}
-          <div className="border-b border-border bg-elevated px-6 py-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-            <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-xl bg-accent/5 border border-accent/20 flex items-center justify-center text-accent shadow-inner shrink-0 relative overflow-hidden">
-                <div className="absolute inset-0 bg-accent/5 animate-pulse" />
-                <Sparkles className="w-4 h-4 text-accent relative z-10" />
-              </div>
-              <div>
-                <h2 className="text-sm font-bold text-fg tracking-tight leading-none">{interview.title || "Interview Session"}</h2>
-                <div className="flex items-center gap-2.5 mt-1.5">
-                  {interview.candidateName && (
-                    <span className="text-[11px] text-muted flex items-center gap-1.5">
-                      <Users className="w-3.5 h-3.5 text-muted/65" /> Candidate: <span className="font-semibold text-fg/80">{interview.candidateName}</span>
-                    </span>
-                  )}
-                  {interview.type && (
-                    <>
-                      <span className="text-muted/30 text-xs leading-none">•</span>
-                      <span className="text-[9px] font-bold bg-bg/60 border border-border px-2 py-0.5 rounded-full text-muted uppercase tracking-wider">
-                        {interview.type}
-                      </span>
-                    </>
-                  )}
-                </div>
-              </div>
+          <div className="h-6 w-px bg-border hidden md:block" />
+          <div className="flex items-center gap-4">
+            <div className="w-10 h-10 rounded-xl bg-accent/5 border border-accent/25 flex items-center justify-center text-accent shadow-inner shrink-0 relative overflow-hidden">
+              <div className="absolute inset-0 bg-accent/5 animate-pulse" />
+              <Sparkles className="w-5 h-5 text-accent relative z-10" />
             </div>
-
-            <div className="flex items-center gap-3">
-              {/* Call Trigger Button */}
-              {status !== "completed" && status !== "abandoned" && (
-                <button
-                  onClick={() => setInCall(!inCall)}
-                  className={`px-3.5 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-wider transition-all duration-300 flex items-center gap-1.5 shadow-sm border active:scale-95 ${
-                    inCall 
-                      ? "bg-rose-500/10 border-rose-500/30 text-rose-500 hover:bg-rose-500/20" 
-                      : "bg-accent/10 border border-accent/20 text-accent hover:bg-accent/20"
-                  }`}
-                >
-                  {inCall ? (
-                    <>
-                      <PhoneOff className="w-3 h-3" />
-                      Leave Call
-                    </>
-                  ) : (
-                    <>
-                      <PhoneCall className="w-3 h-3" />
-                      Join Call
-                    </>
-                  )}
-                </button>
-              )}
-              
-              <span className={`text-[9px] font-bold px-2 py-0.5 rounded-md uppercase tracking-wider border shadow-sm ${
-                interviewerView 
-                  ? "bg-indigo-500/10 border-indigo-500/20 text-indigo-500 dark:text-indigo-400" 
-                  : "bg-amber-500/10 border-amber-500/20 text-amber-500 dark:text-amber-400"
-              }`}>
-                {interviewerView ? "Interviewer" : "Candidate"}
-              </span>
+            <div>
+              <h2 className="text-base md:text-lg font-black text-fg tracking-tight leading-tight">{interview.title || "Interview Session"}</h2>
+              <div className="flex items-center gap-3 mt-1.5">
+                {interview.candidateName && (
+                  <span className="text-xs md:text-sm text-muted flex items-center gap-1.5">
+                    <Users className="w-3.5 h-3.5 text-muted/65" /> Candidate: <span className="font-semibold text-fg/80">{interview.candidateName}</span>
+                  </span>
+                )}
+                {interview.type && (
+                  <>
+                    <span className="text-muted/30 text-xs leading-none">•</span>
+                    <span className="text-[10px] md:text-xs font-black bg-bg/60 border border-border px-3 py-1 rounded-full text-muted uppercase tracking-widest leading-none">
+                      {interview.type}
+                    </span>
+                  </>
+                )}
+              </div>
             </div>
           </div>
+        </div>
+
+        <div className="flex items-center justify-between md:justify-end gap-3.5">
+          {/* Call Trigger Button */}
+          {status !== "completed" && status !== "abandoned" && (
+            <button
+              onClick={() => setInCall(!inCall)}
+              className={`px-3.5 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider transition-all duration-300 flex items-center gap-1.5 shadow-sm border active:scale-95 shrink-0 ${
+                inCall 
+                  ? "bg-rose-500/10 border-rose-500/30 text-rose-500 hover:bg-rose-500/20" 
+                  : "bg-accent/10 border border-accent/20 text-accent hover:bg-accent/20"
+              }`}
+            >
+              {inCall ? (
+                <>
+                  <PhoneOff className="w-3 h-3" />
+                  Leave Call
+                </>
+              ) : (
+                <>
+                  <PhoneCall className="w-3 h-3" />
+                  Join Call
+                </>
+              )}
+            </button>
+          )}
+          
+          <span className={`text-xs font-bold px-2.5 py-0.5 rounded-md uppercase tracking-wider border shadow-sm shrink-0 ${
+            interviewerView 
+              ? "bg-indigo-500/10 border-indigo-500/20 text-indigo-500 dark:text-indigo-400" 
+              : "bg-amber-500/10 border-amber-500/20 text-amber-500 dark:text-amber-400"
+          }`}>
+            {interviewerView ? "Interviewer" : "Candidate"}
+          </span>
+        </div>
+      </header>
+
+      {/* Main Full-Screen Telemetry Body Window */}
+      <div className="flex-1 flex flex-col min-h-0 w-full relative z-10 px-6 py-5 md:px-8 md:py-6 space-y-6">
 
           {/* Multiplayer Video Calling Lobby Canvas */}
           {inCall && (
             <div className="border-b border-border bg-bg/40 p-6 space-y-5 animate-in slide-in-from-top-4 duration-300">
               <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 pb-4 border-b border-border">
                 <div>
-                  <div className="text-[10px] font-black uppercase tracking-[0.2em] text-accent flex items-center gap-2">
+                  <div className="text-xs font-black uppercase tracking-[0.2em] text-accent flex items-center gap-2">
                     <span className="relative flex h-2 w-2">
                       <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-accent opacity-75"></span>
                       <span className="relative inline-flex rounded-full h-2 w-2 bg-accent"></span>
                     </span>
                     Live Collaboration Active
                   </div>
-                  <h3 className="text-xs font-bold uppercase tracking-wider text-fg/90 mt-1">Multiplayer Live Space</h3>
+                  <h3 className="text-sm font-bold uppercase tracking-wider text-fg/90 mt-1">Multiplayer Live Space</h3>
                 </div>
 
                 {/* Calling Room Call Bar Buttons */}
@@ -766,8 +782,8 @@ export default function InterviewRunner({
                   <div className="h-5 w-[1px] bg-border/60 mx-1" />
                   
                   <button
-                    onClick={() => setSimColleague(!simColleague)}
-                    className={`px-3 py-1.5 rounded-full text-[9px] font-black uppercase tracking-wider transition-all duration-300 hover:scale-105 active:scale-95 ${
+                    onClick={() => setSimColleague(!micEnabled ? false : !simColleague)}
+                    className={`px-3.5 py-1.5 rounded-full text-xs font-black uppercase tracking-wider transition-all duration-300 hover:scale-105 active:scale-95 ${
                       simColleague 
                         ? "bg-accent/15 border border-accent/35 text-accent shadow-sm" 
                         : "bg-surface border border-border text-muted hover:text-fg"
@@ -825,9 +841,9 @@ export default function InterviewRunner({
                             </div>
                           </div>
                           <div>
-                            <div className="text-[10px] font-black uppercase tracking-wider text-fg/80">{interview.candidateName || "Candidate"}</div>
-                            <div className="text-[9px] text-muted flex items-center justify-center gap-1.5 mt-0.5">
-                              <Wifi className="w-3 h-3 text-emerald-500/80" />
+                            <div className="text-xs font-black uppercase tracking-wider text-fg/80">{interview.candidateName || "Candidate"}</div>
+                            <div className="text-xs text-muted flex items-center justify-center gap-1.5 mt-0.5">
+                              <Wifi className="w-3.5 h-3.5 text-emerald-500/80" />
                               18ms (Excellent)
                             </div>
                           </div>
@@ -848,14 +864,14 @@ export default function InterviewRunner({
                       <div className="absolute inset-0 flex flex-col items-center justify-center p-6 text-center text-muted gap-2">
                         <Users className="w-8 h-8 opacity-35" />
                         <div className="text-xs font-bold text-fg/60">Waiting for candidate...</div>
-                        <div className="text-[9px] text-muted max-w-[220px] leading-relaxed">Send the candidate invite link to allow them to join the room.</div>
+                        <div className="text-xs text-muted max-w-[220px] leading-relaxed">Send the candidate invite link to allow them to join the room.</div>
                       </div>
                     )
                   )}
 
                   {/* Status tag */}
                   {(!interviewerView || simColleague) && (
-                    <div className="absolute top-4 left-4 bg-black/40 backdrop-blur-sm text-white rounded-full px-2.5 py-1 text-[9px] font-mono flex items-center gap-1.5 border border-border">
+                    <div className="absolute top-4 left-4 bg-black/40 backdrop-blur-sm text-white rounded-full px-2.5 py-1 text-xs font-mono flex items-center gap-1.5 border border-border">
                       <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
                       {!interviewerView ? "You (Candidate)" : (interview.candidateName || "Candidate")}
                     </div>
@@ -906,9 +922,9 @@ export default function InterviewRunner({
                             </div>
                           </div>
                           <div>
-                            <div className="text-[10px] font-black uppercase tracking-wider text-fg/80">Arvind Nishad (Interviewer)</div>
-                            <div className="text-[9px] text-muted flex items-center justify-center gap-1.5 mt-0.5">
-                              <Wifi className="w-3 h-3 text-emerald-500/80" />
+                            <div className="text-xs font-black uppercase tracking-wider text-fg/80">Arvind Nishad (Interviewer)</div>
+                            <div className="text-xs text-muted flex items-center justify-center gap-1.5 mt-0.5">
+                              <Wifi className="w-3.5 h-3.5 text-emerald-500/80" />
                               12ms (Excellent)
                             </div>
                           </div>
@@ -929,14 +945,14 @@ export default function InterviewRunner({
                       <div className="absolute inset-0 flex flex-col items-center justify-center p-6 text-center text-muted gap-2">
                         <Users className="w-8 h-8 opacity-35" />
                         <div className="text-xs font-bold text-fg/60">Waiting for interviewer...</div>
-                        <div className="text-[9px] text-muted max-w-[220px] leading-relaxed">Waiting for the interviewer to join the call lobby.</div>
+                        <div className="text-xs text-muted max-w-[220px] leading-relaxed">Waiting for the interviewer to join the call lobby.</div>
                       </div>
                     )
                   )}
 
                   {/* Status tag */}
                   {(interviewerView || simColleague) && (
-                    <div className="absolute top-4 left-4 bg-black/40 backdrop-blur-sm text-white rounded-full px-2.5 py-1 text-[9px] font-mono flex items-center gap-1.5 border border-border">
+                    <div className="absolute top-4 left-4 bg-black/40 backdrop-blur-sm text-white rounded-full px-2.5 py-1 text-xs font-mono flex items-center gap-1.5 border border-border">
                       <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
                       {interviewerView ? "You (Interviewer)" : "Arvind (Interviewer)"}
                     </div>
@@ -958,7 +974,7 @@ export default function InterviewRunner({
                     <ArrowLeft className="w-3.5 h-3.5" />
                     Back to Central Lobby
                   </button>
-                  <span className="text-[10px] font-black uppercase tracking-wider text-muted">
+                  <span className="text-xs font-black uppercase tracking-wider text-muted">
                     Prompt Engineering Workspace
                   </span>
                 </div>
@@ -988,7 +1004,7 @@ export default function InterviewRunner({
               })()}
             </div>
           ) : status === "scheduled" ? (
-            <div className="w-full max-w-5xl mx-auto p-4 md:p-8 space-y-6 animate-fade-in pb-12">
+            <div className="w-full flex-1 max-w-6xl mx-auto p-4 md:p-6 space-y-6 animate-fade-in flex flex-col justify-center">
               <div className="text-center space-y-2 mb-8">
                 <h2 className="text-3xl font-black tracking-tight text-fg">Session Waiting Room</h2>
                 <p className="text-muted text-sm max-w-lg mx-auto">
@@ -998,10 +1014,10 @@ export default function InterviewRunner({
                 </p>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
                 
                 {/* LEFT COL: Start & Timer */}
-                <div className="md:col-span-5 space-y-6 flex flex-col">
+                <div className="lg:col-span-5 space-y-6 flex flex-col">
                   <div className="p-8 rounded-3xl border border-border bg-surface/50 shadow-sm flex flex-col justify-between items-center text-center h-full relative overflow-hidden group">
                     <div className="absolute inset-0 bg-gradient-to-b from-accent/5 to-transparent pointer-events-none" />
                     
@@ -1038,7 +1054,7 @@ export default function InterviewRunner({
                 </div>
 
                 {/* RIGHT COL: Invites & Rounds */}
-                <div className="md:col-span-7 space-y-6">
+                <div className="lg:col-span-7 space-y-6">
                   {isOwner && (
                     <div className="rounded-3xl border border-accent/20 bg-accent/5 overflow-hidden shadow-sm animate-in fade-in slide-in-from-bottom-4 duration-300">
                       <div className="flex flex-col md:flex-row md:items-center gap-6 p-6 md:p-8">
@@ -1058,10 +1074,10 @@ export default function InterviewRunner({
                               </span>
                               <div className="h-10 w-px bg-border mx-2" />
                               <div className="flex flex-col gap-1.5 shrink-0 pr-1">
-                                <button onClick={copyAccessCode} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-wider bg-bg border border-border hover:bg-elevated hover:border-accent/40 hover:text-accent text-muted transition active:scale-95">
+                                <button onClick={copyAccessCode} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wider bg-bg border border-border hover:bg-elevated hover:border-accent/40 hover:text-accent text-muted transition active:scale-95">
                                   {codeCopied ? <Check className="w-3 h-3 text-emerald-500" /> : <Copy className="w-3 h-3" />} Code
                                 </button>
-                                <button onClick={copyCandidateLink} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-wider bg-bg border border-border hover:bg-elevated hover:border-accent/40 hover:text-accent text-muted transition active:scale-95">
+                                <button onClick={copyCandidateLink} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wider bg-bg border border-border hover:bg-elevated hover:border-accent/40 hover:text-accent text-muted transition active:scale-95">
                                   <LinkIcon className="w-3 h-3" /> Link
                                 </button>
                               </div>
@@ -1072,7 +1088,7 @@ export default function InterviewRunner({
                         </div>
 
                         <div className="md:w-48 shrink-0 flex flex-col gap-2 border-t md:border-t-0 md:border-l border-accent/10 pt-5 md:pt-0 md:pl-6">
-                          <span className="text-[10px] font-black uppercase tracking-wider text-muted mb-1">Quick Share</span>
+                          <span className="text-xs font-black uppercase tracking-wider text-muted mb-1">Quick Share</span>
                           <button onClick={() => { window.open(`https://wa.me/?text=${encodeURIComponent(`Join my coding interview as the candidate!\nLink: ${candidateLink}`)}`, "_blank"); }} className="w-full px-4 py-2.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 hover:bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 text-xs font-bold transition flex items-center gap-2.5">
                             <MessageCircle className="w-4 h-4" /> WhatsApp
                           </button>
@@ -1085,7 +1101,7 @@ export default function InterviewRunner({
                       <div className="bg-surface/50 border-t border-accent/10 px-6 md:px-8 py-3.5 flex items-center justify-between gap-4">
                         <div className="flex items-center gap-2.5 min-w-0">
                           <Share2 className="w-4 h-4 text-violet-500 shrink-0" />
-                          <span className="text-[10px] font-black uppercase tracking-wider text-muted shrink-0">Observer Link:</span>
+                          <span className="text-xs font-black uppercase tracking-wider text-muted shrink-0">Observer Link:</span>
                           <input type="text" readOnly value={coInterviewerLink} className="bg-transparent border-none outline-none text-xs font-mono text-fg/70 w-full truncate" />
                         </div>
                         <div className="flex items-center gap-1.5 shrink-0">
@@ -1119,11 +1135,11 @@ export default function InterviewRunner({
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                         {challenges.map((c, i) => (
                           <div key={c.id} className="p-4 rounded-2xl border border-border bg-bg/50 flex items-center gap-4">
-                            <div className="w-8 h-8 rounded-xl bg-surface border border-border flex items-center justify-center text-[11px] font-black text-muted shrink-0">{i + 1}</div>
+                            <div className="w-8 h-8 rounded-xl bg-surface border border-border flex items-center justify-center text-xs font-black text-muted shrink-0">{i + 1}</div>
                             <div className="min-w-0 flex-1">
                               <div className="text-sm font-bold text-fg truncate">{c.title}</div>
-                              <div className="text-[10px] text-muted mt-1 flex items-center gap-2">
-                                <span className="uppercase px-1.5 py-[1px] bg-surface border border-border rounded text-[9px] font-black">{c.difficulty}</span>
+                              <div className="text-xs text-muted mt-1 flex items-center gap-2">
+                                <span className="uppercase px-1.5 py-[1px] bg-surface border border-border rounded text-xs font-semibold">{c.difficulty}</span>
                                 {c.estimatedMinutes} mins
                               </div>
                             </div>
@@ -1132,11 +1148,11 @@ export default function InterviewRunner({
                         ))}
                         {playgrounds.map((p, i) => (
                           <div key={p.id} className="p-4 rounded-2xl border border-border bg-bg/50 flex items-center gap-4">
-                            <div className="w-8 h-8 rounded-xl bg-surface border border-border flex items-center justify-center text-[11px] font-black text-muted shrink-0">{challenges.length + i + 1}</div>
+                            <div className="w-8 h-8 rounded-xl bg-surface border border-border flex items-center justify-center text-xs font-black text-muted shrink-0">{challenges.length + i + 1}</div>
                             <div className="min-w-0 flex-1">
                               <div className="text-sm font-bold text-fg truncate">{p.title}</div>
-                              <div className="text-[10px] text-muted mt-1 flex items-center gap-2">
-                                <span className="uppercase px-1.5 py-[1px] bg-surface border border-border rounded text-[9px] font-black">Sandbox</span>
+                              <div className="text-xs text-muted mt-1 flex items-center gap-2">
+                                <span className="uppercase px-1.5 py-[1px] bg-surface border border-border rounded text-xs font-semibold">Sandbox</span>
                                 {p.template}
                               </div>
                             </div>
@@ -1145,11 +1161,11 @@ export default function InterviewRunner({
                         ))}
                         {promptScenarios.map((ps, i) => (
                           <div key={ps.id} className="p-4 rounded-2xl border border-border bg-bg/50 flex items-center gap-4">
-                            <div className="w-8 h-8 rounded-xl bg-surface border border-border flex items-center justify-center text-[11px] font-black text-muted shrink-0">{challenges.length + playgrounds.length + i + 1}</div>
+                            <div className="w-8 h-8 rounded-xl bg-surface border border-border flex items-center justify-center text-xs font-black text-muted shrink-0">{challenges.length + playgrounds.length + i + 1}</div>
                             <div className="min-w-0 flex-1">
                               <div className="text-sm font-bold text-fg truncate">{ps.title}</div>
-                              <div className="text-[10px] text-muted mt-1 flex items-center gap-2">
-                                <span className="uppercase px-1.5 py-[1px] bg-surface border border-border rounded text-[9px] font-black">AI Prompt</span>
+                              <div className="text-xs text-muted mt-1 flex items-center gap-2">
+                                <span className="uppercase px-1.5 py-[1px] bg-surface border border-border rounded text-xs font-semibold">AI Prompt</span>
                                 {ps.difficulty}
                               </div>
                             </div>
@@ -1163,21 +1179,21 @@ export default function InterviewRunner({
               </div>
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-12 divide-y md:divide-y-0 md:divide-x divide-border bg-surface">
+            <div className="flex-1 grid grid-cols-1 lg:grid-cols-12 divide-y lg:divide-y-0 lg:divide-x divide-border bg-surface border border-border rounded-2xl shadow-xl overflow-hidden min-h-0">
             
             {/* LEFT COLUMN: Command Panel */}
-            <div className="md:col-span-5 p-5 space-y-6 flex flex-col">
+            <div className="lg:col-span-5 p-6 space-y-6 flex flex-col overflow-y-auto scrollbar-thin">
               
               {/* Status and Timer Box */}
               <div className="p-6 rounded-3xl border border-border bg-gradient-to-br from-panel/90 to-surface/40 backdrop-blur-md relative overflow-hidden group shadow-lg">
                 <div className="absolute top-[-50px] right-[-50px] w-32 h-32 bg-accent/10 rounded-full blur-[40px] pointer-events-none transition-all duration-500 group-hover:bg-accent/20" />
                 <div className="absolute bottom-[-30px] left-[-30px] w-24 h-24 bg-indigo-500/10 rounded-full blur-[30px] pointer-events-none" />
                 <div className="flex items-center justify-between mb-5 relative z-10">
-                  <span className="text-[10px] font-black uppercase tracking-[0.25em] text-muted flex items-center gap-2">
+                  <span className="text-xs font-black uppercase tracking-[0.25em] text-muted flex items-center gap-2">
                     <Clock className="w-3.5 h-3.5" />
                     Timer Status
                   </span>
-                  <span className={`text-[9px] font-extrabold px-3 py-1 rounded-full border uppercase tracking-wider shadow-sm ${
+                  <span className={`text-xs font-extrabold px-3 py-1 rounded-full border uppercase tracking-wider shadow-sm ${
                     status === "completed"
                       ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-500 dark:text-emerald-400"
                       : status === "abandoned"
@@ -1191,13 +1207,25 @@ export default function InterviewRunner({
                 </div>
 
                 <div className="space-y-2 relative z-10">
-                  <span className="text-[10px] font-black uppercase tracking-[0.2em] text-muted/70 flex items-center gap-1.5">
+                  <span className="text-xs font-black uppercase tracking-[0.2em] text-muted/70 flex items-center gap-1.5">
                      Time Remaining
                   </span>
                   <div className={`text-4xl md:text-5xl font-mono font-extrabold tracking-tight transition-colors duration-500 tabular-nums ${remainingSec < 60 && status === "in_progress" ? "text-rose-500 drop-shadow-[0_0_20px_rgba(244,63,94,0.35)] animate-pulse" : "text-fg"}`}>
                     {formatDuration(remainingSec)}
                   </div>
                 </div>
+
+                {interview.candidateName && (
+                  <div className="mt-5 pt-4 border-t border-border/60 relative z-10 flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-lg bg-accent/10 border border-accent/25 flex items-center justify-center text-accent shrink-0">
+                      <Users className="w-4 h-4 text-accent" />
+                    </div>
+                    <div>
+                      <div className="text-[9px] font-black uppercase tracking-[0.2em] text-muted">Candidate Name</div>
+                      <div className="text-xs font-bold text-fg">{interview.candidateName}</div>
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* Action triggers */}
@@ -1205,7 +1233,7 @@ export default function InterviewRunner({
                 {status === "in_progress" && (interviewerView || interview.type === "mock") && (
                   <button
                     onClick={() => setVerdictModalOpen(true)}
-                    className="w-full px-5 py-3 rounded-xl bg-gradient-to-r from-rose-500 to-pink-600 hover:from-rose-600 hover:to-pink-700 text-white font-extrabold uppercase tracking-widest text-[10px] transition-all duration-300 shadow-lg hover:shadow-rose-500/25 hover:-translate-y-0.5 active:scale-[0.98] flex items-center justify-between"
+                    className="w-full px-5 py-3 rounded-xl bg-gradient-to-r from-rose-500 to-pink-600 hover:from-rose-600 hover:to-pink-700 text-white font-extrabold uppercase tracking-widest text-xs transition-all duration-300 shadow-lg hover:shadow-rose-500/25 hover:-translate-y-0.5 active:scale-[0.98] flex items-center justify-between"
                   >
                     <span>Conclude round</span>
                     <CheckCircle2 className="w-4 h-4" />
@@ -1215,7 +1243,7 @@ export default function InterviewRunner({
                 {status === "in_progress" && !interviewerView && interview.type !== "mock" && (
                   <div className="p-4 rounded-xl border border-accent/30 bg-accent/10 text-center space-y-1.5 animate-pulse">
                     <div className="text-xs font-black uppercase tracking-wider text-accent">Session Active</div>
-                    <div className="text-[10px] text-muted">Proceed to the challenge roadmap on the right.</div>
+                    <div className="text-xs text-muted">Proceed to the challenge roadmap on the right.</div>
                   </div>
                 )}
 
@@ -1226,35 +1254,35 @@ export default function InterviewRunner({
                       <Sparkles className="w-4 h-4 text-indigo-400" />
                       <h4 className="text-xs font-bold uppercase tracking-wider text-indigo-400">Self-Practice Guide</h4>
                     </div>
-                    <ul className="space-y-3 text-[11px] text-muted leading-relaxed font-sans">
+                    <ul className="space-y-3 text-xs text-muted leading-relaxed font-sans">
                       <li className="flex items-start gap-2.5">
-                        <span className="w-4.5 h-4.5 rounded-full bg-indigo-500/10 text-indigo-400 flex items-center justify-center font-bold text-[9px] mt-0.5 border border-indigo-500/20 shrink-0">1</span>
+                        <span className="w-4.5 h-4.5 rounded-full bg-indigo-500/10 text-indigo-400 flex items-center justify-center font-bold text-[10px] mt-0.5 border border-indigo-500/20 shrink-0">1</span>
                         <div className="space-y-0.5">
                           <p className="text-fg font-semibold">Start &amp; Attempt Challenges</p>
-                          <p className="text-[10px] text-muted/70">Click &quot;Start Practice&quot; to begin, then solve challenges using the timeline on the right.</p>
+                          <p className="text-xs text-muted/70">Click &quot;Start Practice&quot; to begin, then solve challenges using the timeline on the right.</p>
                         </div>
                       </li>
                       <li className="flex items-start gap-2.5">
-                        <span className="w-4.5 h-4.5 rounded-full bg-indigo-500/10 text-indigo-400 flex items-center justify-center font-bold text-[9px] mt-0.5 border border-indigo-500/20 shrink-0">2</span>
+                        <span className="w-4.5 h-4.5 rounded-full bg-indigo-500/10 text-indigo-400 flex items-center justify-center font-bold text-[10px] mt-0.5 border border-indigo-500/20 shrink-0">2</span>
                         <div className="space-y-0.5">
                           <p className="text-fg font-semibold">Think Aloud &amp; Simulate</p>
-                          <p className="text-[10px] text-muted/70">Describe your logic out loud while writing code. It develops excellent muscle memory!</p>
+                          <p className="text-xs text-muted/70">Describe your logic out loud while writing code. It develops excellent muscle memory!</p>
                         </div>
                       </li>
                       <li className="flex items-start gap-2.5">
-                        <span className="w-4.5 h-4.5 rounded-full bg-indigo-500/10 text-indigo-400 flex items-center justify-center font-bold text-[9px] mt-0.5 border border-indigo-500/20 shrink-0">3</span>
+                        <span className="w-4.5 h-4.5 rounded-full bg-indigo-500/10 text-indigo-400 flex items-center justify-center font-bold text-[10px] mt-0.5 border border-indigo-500/20 shrink-0">3</span>
                         <div className="space-y-0.5">
                           <p className="text-fg font-semibold">Self-Evaluation Rubric</p>
-                          <p className="text-[10px] text-muted/70">When done, click &quot;Conclude round&quot; to score yourself on Code Quality, Problem Solving, and Communication.</p>
+                          <p className="text-xs text-muted/70">When done, click &quot;Conclude round&quot; to score yourself on Code Quality, Problem Solving, and Communication.</p>
                         </div>
                       </li>
                     </ul>
                     
                     <div className="pt-2.5 border-t border-indigo-500/10 space-y-2">
-                      <p className="text-[10px] text-muted leading-relaxed">Want peer feedback? Copy the link to invite a friend or mentor to act as your interviewer:</p>
+                      <p className="text-xs text-muted leading-relaxed">Want peer feedback? Copy the link to invite a friend or mentor to act as your interviewer:</p>
                       <button
                         onClick={copyCoInterviewerLink}
-                        className="w-full py-1.5 rounded-lg bg-bg border border-border text-[10px] font-bold text-fg hover:bg-elevated hover:border-indigo-500/30 hover:text-indigo-400 transition-all flex items-center justify-center gap-1.5 active:scale-[0.97]"
+                        className="w-full py-1.5 rounded-lg bg-bg border border-border text-xs font-bold text-fg hover:bg-elevated hover:border-indigo-500/30 hover:text-indigo-400 transition-all flex items-center justify-center gap-1.5 active:scale-[0.97]"
                       >
                         <Share2 className="w-3.5 h-3.5" />
                         Copy guest link
@@ -1271,9 +1299,9 @@ export default function InterviewRunner({
                         <Trophy className="w-5 h-5 text-emerald-500" />
                       </div>
                       <div className="relative z-10">
-                        <div className="text-[11px] font-black uppercase tracking-[0.2em] leading-none mb-1.5 text-emerald-500">Round Concluded</div>
+                        <div className="text-xs font-black uppercase tracking-[0.2em] leading-none mb-1.5 text-emerald-500">Round Concluded</div>
                         {verdict && (
-                          <div className="text-[10px] text-muted flex items-center gap-1.5">
+                          <div className="text-xs text-muted flex items-center gap-1.5">
                             Verdict: <span className="font-bold text-fg capitalize bg-bg/80 border border-border px-2 py-0.5 rounded-md shadow-sm">{verdict.replace(/_/g, ' ')}</span>
                           </div>
                         )}
@@ -1288,13 +1316,13 @@ export default function InterviewRunner({
                           <div className="w-6 h-6 rounded-md bg-indigo-500/10 flex items-center justify-center text-indigo-400 border border-indigo-500/20">
                             <Sparkles className="w-3.5 h-3.5" />
                           </div>
-                          <span className="text-[11px] font-black uppercase tracking-[0.2em] text-fg">Evaluation Rubric</span>
+                          <span className="text-xs font-black uppercase tracking-[0.2em] text-fg">Evaluation Rubric</span>
                         </div>
                         {interviewerView && (
                           <Link
                             href={`/interview/${interview.id}/report?token=${interview.shareToken}`}
                             target="_blank"
-                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-indigo-500/10 text-indigo-400 hover:bg-indigo-500/20 transition-colors text-[10px] font-bold tracking-wider"
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-indigo-500/10 text-indigo-400 hover:bg-indigo-500/20 transition-colors text-xs font-bold tracking-wider"
                           >
                             <FileText className="w-3.5 h-3.5" />
                             View PDF Report
@@ -1309,7 +1337,7 @@ export default function InterviewRunner({
                           { name: "Problem Solving", val: rubricProblemSolving, icon: Layers }
                         ].map((m) => (
                           <div key={m.name} className="space-y-2 group">
-                            <div className="flex items-center justify-between text-[11px]">
+                            <div className="flex items-center justify-between text-xs">
                               <span className="font-bold text-muted flex items-center gap-1.5 group-hover:text-fg transition-colors">
                                 <m.icon className="w-3.5 h-3.5 text-muted/60 group-hover:text-accent transition-colors" />
                                 {m.name}
@@ -1337,7 +1365,7 @@ export default function InterviewRunner({
 
                       {rubricNotes && (
                         <div className="space-y-2.5 pt-4 border-t border-border/50 relative z-10">
-                          <span className="text-[10px] font-black uppercase tracking-[0.2em] text-muted flex items-center gap-1.5">
+                          <span className="text-xs font-black uppercase tracking-[0.2em] text-muted flex items-center gap-1.5">
                             <FileText className="w-3 h-3 text-muted/60" /> Notes & Feedback
                           </span>
                           <div className="relative">
@@ -1355,7 +1383,7 @@ export default function InterviewRunner({
             </div>
 
             {/* RIGHT COLUMN: Concluded Evaluation Summary OR Live Round sequence */}
-            <div className="md:col-span-7 p-5 space-y-5 flex flex-col justify-between min-h-[480px]">
+            <div className="lg:col-span-7 p-6 space-y-6 flex flex-col overflow-y-auto scrollbar-thin min-h-[480px]">
 
               {status === "completed" || status === "abandoned" ? (
                 <div className="space-y-5 flex-1 flex flex-col min-h-0 p-6 rounded-3xl border border-border bg-surface/30 backdrop-blur-md shadow-2xl relative overflow-hidden animate-fade-in">
@@ -1371,13 +1399,13 @@ export default function InterviewRunner({
                       </div>
                       Post-Round Review Dashboard
                     </h3>
-                    <p className="text-[10px] text-muted tracking-wide mt-1 pl-8">
+                    <p className="text-xs text-muted tracking-wide mt-1 pl-8">
                       Review candidate's final submitted work across all curated steps. Select a round to inspect:
                     </p>
                   </div>
 
                   {/* Round Step Selectors */}
-                  <div className="flex flex-wrap gap-2.5 pb-2 relative z-10 animate-fade-in delay-75 max-h-[120px] overflow-y-auto pr-1 scrollbar-thin">
+                  <div className="flex flex-col gap-2.5 pb-2 relative z-10 animate-fade-in delay-75 max-h-[220px] overflow-y-auto pr-1 scrollbar-thin">
                     {/* DSA Challenges */}
                     {challenges.map((c, idx) => {
                       const attempt = attempts.find((a) => a.challengeId === c.id);
@@ -1399,16 +1427,18 @@ export default function InterviewRunner({
                         <button
                           key={c.id}
                           onClick={() => setSelectedReview({ id: c.id, type: "challenge" })}
-                          className={`flex items-center gap-2.5 px-3.5 py-2 rounded-xl border text-[10px] font-extrabold tracking-wide transition-all active:scale-95 duration-200 relative overflow-hidden ${
+                          className={`w-full flex items-center justify-between gap-4 px-4 py-3 rounded-xl border text-xs font-bold transition-all active:scale-[0.99] duration-200 relative overflow-hidden ${
                             isSelected
                               ? "bg-accent/10 border-accent/40 text-accent shadow-[0_0_15px_rgba(var(--accent-rgb),0.1)]"
                               : "bg-surface/50 border-border hover:bg-elevated hover:border-border-strong text-muted hover:text-fg"
                           }`}
                         >
-                          <span className="font-mono text-[9px] opacity-70">DSA Step {idx + 1}</span>
-                          <span className="w-1 h-1 rounded-full bg-border-strong" />
-                          <span className="truncate max-w-[120px]">{c.title}</span>
-                          <span className={`text-[8px] font-black uppercase px-2 py-0.5 rounded border ${statusBadgeColor}`}>
+                          <div className="flex items-center gap-3 min-w-0">
+                            <span className="font-mono text-xs opacity-70 shrink-0">DSA Step {idx + 1}</span>
+                            <span className="w-1 h-1 rounded-full bg-border-strong shrink-0" />
+                            <span className="font-extrabold text-fg truncate text-left">{c.title}</span>
+                          </div>
+                          <span className={`text-[10px] font-black uppercase px-2.5 py-0.5 rounded border shrink-0 ${statusBadgeColor}`}>
                             {statusBadgeLabel}
                           </span>
                         </button>
@@ -1423,16 +1453,18 @@ export default function InterviewRunner({
                         <button
                           key={p.id}
                           onClick={() => setSelectedReview({ id: p.id, type: "playground" })}
-                          className={`flex items-center gap-2.5 px-3.5 py-2 rounded-xl border text-[10px] font-extrabold tracking-wide transition-all active:scale-95 duration-200 relative overflow-hidden ${
+                          className={`w-full flex items-center justify-between gap-4 px-4 py-3 rounded-xl border text-xs font-bold transition-all active:scale-[0.99] duration-200 relative overflow-hidden ${
                             isSelected
                               ? "bg-indigo-500/10 border-indigo-500/40 text-indigo-500 shadow-[0_0_15px_rgba(99,102,241,0.1)]"
                               : "bg-surface/50 border-border hover:bg-elevated hover:border-border-strong text-muted hover:text-fg"
                           }`}
                         >
-                          <span className="font-mono text-[9px] opacity-70">Playground {idx + 1}</span>
-                          <span className="w-1 h-1 rounded-full bg-border-strong" />
-                          <span className="truncate max-w-[120px]">{p.title}</span>
-                          <span className="text-[8px] font-black uppercase px-2 py-0.5 rounded border text-muted bg-surface/50 border-border">
+                          <div className="flex items-center gap-3 min-w-0">
+                            <span className="font-mono text-xs opacity-70 shrink-0">Playground {idx + 1}</span>
+                            <span className="w-1 h-1 rounded-full bg-border-strong shrink-0" />
+                            <span className="font-extrabold text-fg truncate text-left">{p.title}</span>
+                          </div>
+                          <span className="text-[10px] font-black uppercase px-2.5 py-0.5 rounded border text-muted bg-surface/50 border-border shrink-0">
                             Manual
                           </span>
                         </button>
@@ -1455,16 +1487,18 @@ export default function InterviewRunner({
                         <button
                           key={ps.id}
                           onClick={() => setSelectedReview({ id: ps.id, type: "prompt" })}
-                          className={`flex items-center gap-2.5 px-3.5 py-2 rounded-xl border text-[10px] font-extrabold tracking-wide transition-all active:scale-95 duration-200 relative overflow-hidden ${
+                          className={`w-full flex items-center justify-between gap-4 px-4 py-3 rounded-xl border text-xs font-bold transition-all active:scale-[0.99] duration-200 relative overflow-hidden ${
                             isSelected
                               ? "bg-amber-500/10 border-amber-500/40 text-amber-500 shadow-[0_0_15px_rgba(245,158,11,0.1)]"
                               : "bg-surface/50 border-border hover:bg-elevated hover:border-border-strong text-muted hover:text-fg"
                           }`}
                         >
-                          <span className="font-mono text-[9px] opacity-70">Prompt {idx + 1}</span>
-                          <span className="w-1 h-1 rounded-full bg-border-strong" />
-                          <span className="truncate max-w-[120px]">{ps.title}</span>
-                          <span className={`text-[8px] font-black uppercase px-2 py-0.5 rounded border ${statusBadgeColor}`}>
+                          <div className="flex items-center gap-3 min-w-0">
+                            <span className="font-mono text-xs opacity-70 shrink-0">Prompt {idx + 1}</span>
+                            <span className="w-1 h-1 rounded-full bg-border-strong shrink-0" />
+                            <span className="font-extrabold text-fg truncate text-left">{ps.title}</span>
+                          </div>
+                          <span className={`text-[10px] font-black uppercase px-2.5 py-0.5 rounded border shrink-0 ${statusBadgeColor}`}>
                             {statusBadgeLabel}
                           </span>
                         </button>
@@ -1476,6 +1510,41 @@ export default function InterviewRunner({
                   {selectedReview ? (
                     <div className="flex-1 flex flex-col space-y-4 min-h-0 relative z-10 animate-fade-in delay-100">
                       
+                      {/* Active Selected Question / Round Banner */}
+                      {(() => {
+                        let title = "";
+                        let typeLabel = "";
+                        let iconColor = "text-accent bg-accent/10 border-accent/20";
+                        if (selectedReview.type === "challenge" && activeReviewChallenge) {
+                          title = activeReviewChallenge.title;
+                          typeLabel = "DSA Algorithmic Challenge";
+                          iconColor = "text-accent bg-accent/10 border-accent/25";
+                        } else if (selectedReview.type === "playground" && activeReviewPlayground) {
+                          title = activeReviewPlayground.title;
+                          typeLabel = "Collaborative Sandbox Room";
+                          iconColor = "text-indigo-500 bg-indigo-500/10 border-indigo-500/25";
+                        } else if (selectedReview.type === "prompt" && activeReviewPrompt) {
+                          title = activeReviewPrompt.title;
+                          typeLabel = "AI Prompt Engineering Scenario";
+                          iconColor = "text-amber-500 bg-amber-500/10 border-amber-500/25";
+                        }
+
+                        if (!title) return null;
+
+                        return (
+                          <div className="p-4 rounded-2xl border border-border bg-gradient-to-r from-panel/70 to-surface/30 backdrop-blur-sm relative overflow-hidden group shadow-sm flex items-center gap-4">
+                            <div className="absolute top-0 right-0 w-32 h-32 bg-accent/5 rounded-full blur-[40px] pointer-events-none" />
+                            <div className={`w-10 h-10 rounded-xl flex items-center justify-center border shrink-0 shadow-inner ${iconColor}`}>
+                              <Sparkles className="w-5 h-5 animate-pulse" />
+                            </div>
+                            <div className="min-w-0 flex-1">
+                              <div className="text-[9px] font-black uppercase tracking-[0.2em] text-muted">{typeLabel}</div>
+                              <h3 className="text-sm font-extrabold text-fg tracking-tight mt-1 leading-snug truncate">{title}</h3>
+                            </div>
+                          </div>
+                        );
+                      })()}
+                      
                       {selectedReview.type === "challenge" && activeReviewChallenge && (
                         <>
                           {activeReviewAttempt ? (
@@ -1484,32 +1553,42 @@ export default function InterviewRunner({
                               <div className="grid grid-cols-2 gap-3.5">
                                 <div className="p-3.5 rounded-2xl border border-border bg-bg/20 hover:bg-bg/30 transition-all duration-300 flex flex-col justify-between group shadow-sm">
                                   <div className="flex items-center justify-between">
-                                    <span className="text-[9px] font-extrabold uppercase tracking-widest text-muted">Solve Status</span>
+                                    <span className="text-xs font-extrabold uppercase tracking-widest text-muted">Solve Status</span>
                                     <div className={`w-1.5 h-1.5 rounded-full ${
                                       activeReviewAttempt.status === "passed"
                                         ? "bg-emerald-500 animate-ping"
-                                        : "bg-rose-500"
+                                        : activeReviewAttempt.status === "submitted"
+                                          ? "bg-amber-500"
+                                          : "bg-rose-500"
                                     }`} />
                                   </div>
                                   <span className={`text-xs font-black uppercase tracking-wide mt-2.5 flex items-center gap-1.5 ${
                                     activeReviewAttempt.status === "passed"
                                       ? "text-emerald-500"
-                                      : "text-rose-500"
+                                      : activeReviewAttempt.status === "submitted"
+                                        ? "text-amber-500"
+                                        : "text-rose-500"
                                   }`}>
-                                    {activeReviewAttempt.status === "passed" ? "Success (Passed)" : "Did Not Pass"}
+                                    {activeReviewAttempt.status === "passed"
+                                      ? "Success (Passed)"
+                                      : activeReviewAttempt.status === "submitted"
+                                        ? "Pending Review"
+                                        : "Did Not Pass"}
                                   </span>
                                 </div>
                                 <div className="p-3.5 rounded-2xl border border-border bg-bg/20 hover:bg-bg/30 transition-all duration-300 flex flex-col justify-between group shadow-sm">
                                   <div className="flex items-center justify-between">
-                                    <span className="text-[9px] font-extrabold uppercase tracking-widest text-muted">Result Grade</span>
-                                    <span className="text-[9px] font-mono text-muted">Score / Rating</span>
+                                    <span className="text-xs font-extrabold uppercase tracking-widest text-muted">Result Grade</span>
+                                    <span className="text-xs font-mono text-muted">Score / Rating</span>
                                   </div>
                                   <span className="text-xs font-mono font-black text-fg mt-2.5">
                                     {activeReviewAttempt.score != null
                                       ? `${activeReviewAttempt.score} %`
-                                      : reviewTestResults
-                                      ? `${reviewTestResults.passed} / ${reviewTestResults.total} passed`
-                                      : "0 / 0 passed"}
+                                      : activeReviewAttempt.status === "submitted"
+                                        ? "Manual review"
+                                        : reviewTestResults && reviewTestResults.total > 0
+                                          ? `${reviewTestResults.passed} / ${reviewTestResults.total} passed`
+                                          : "—"}
                                   </span>
                                 </div>
                               </div>
@@ -1526,7 +1605,7 @@ export default function InterviewRunner({
                                 >
                                   Code Submitted
                                 </button>
-                                {reviewTestResults && (
+                                {reviewTestResults && reviewTestResults.total > 0 && (
                                   <button
                                     onClick={() => setActiveReviewTab("tests")}
                                     className={`px-4 py-2 text-xs font-black uppercase tracking-wider transition-all border-b-2 -mb-[2px] ${
@@ -1538,11 +1617,41 @@ export default function InterviewRunner({
                                     Test Cases ({reviewTestResults.passed}/{reviewTestResults.total})
                                   </button>
                                 )}
+                                {reviewIsFrontend && reviewFileKeys.length > 0 && (
+                                  <button
+                                    onClick={() => setActiveReviewTab("preview")}
+                                    className={`px-4 py-2 text-xs font-black uppercase tracking-wider transition-all border-b-2 -mb-[2px] flex items-center gap-1.5 ${
+                                      activeReviewTab === "preview"
+                                        ? "border-accent text-accent"
+                                        : "border-transparent text-muted hover:text-fg hover:border-border-strong"
+                                    }`}
+                                  >
+                                    <Eye className="w-3.5 h-3.5" />
+                                    Live Preview
+                                  </button>
+                                )}
+                                {reviewFileKeys.length > 0 && (
+                                  <button
+                                    onClick={() => setReviewModalOpen(true)}
+                                    title="Open the submission in a full-screen read-only editor"
+                                    className="ml-auto mb-1 self-center px-3 py-1.5 rounded-lg border border-border bg-bg hover:bg-elevated text-xs font-bold text-muted hover:text-fg transition flex items-center gap-1.5"
+                                  >
+                                    <Maximize2 className="w-3.5 h-3.5 text-accent" />
+                                    Full editor
+                                  </button>
+                                )}
                               </div>
 
                               {/* Active Tab Screen Content */}
                               <div className="flex-1 flex flex-col min-h-0 animate-fade-in delay-150">
-                                {activeReviewTab === "code" ? (
+                                {activeReviewTab === "preview" && reviewIsFrontend ? (
+                                  <div className="flex-1 flex flex-col rounded-2xl border border-border bg-bg/10 overflow-hidden min-h-0 shadow-md">
+                                    <SubmissionPreview
+                                      template={activeReviewChallenge.template}
+                                      files={reviewFiles}
+                                    />
+                                  </div>
+                                ) : activeReviewTab === "code" ? (
                                   <div className="flex-1 flex flex-col rounded-2xl border border-border bg-bg/10 backdrop-blur-sm overflow-hidden min-h-0 shadow-md">
                                     {/* File Explorer Tab bar */}
                                     <div className="flex items-center overflow-x-auto border-b border-border bg-surface shrink-0 scrollbar-none">
@@ -1552,7 +1661,7 @@ export default function InterviewRunner({
                                           <button
                                             key={fk}
                                             onClick={() => setActiveFileKey(fk)}
-                                            className={`px-4 py-2.5 text-[10px] font-mono border-r border-border transition-all flex items-center gap-1.5 ${
+                                            className={`px-4 py-2.5 text-xs font-mono border-r border-border transition-all flex items-center gap-1.5 ${
                                               isSelected
                                                 ? "bg-bg/40 text-fg font-black border-b border-b-accent"
                                                 : "text-muted hover:text-fg hover:bg-bg/20"
@@ -1570,11 +1679,11 @@ export default function InterviewRunner({
 
                                     {/* Active File Header Info Bar */}
                                     {activeFileKey && (
-                                      <div className="px-4 py-2 border-b border-border bg-surface/20 flex items-center justify-between text-[9px] font-extrabold uppercase tracking-wider text-muted">
+                                      <div className="px-4 py-2 border-b border-border bg-surface/20 flex items-center justify-between text-xs font-extrabold uppercase tracking-wider text-muted">
                                         <span className="flex items-center gap-1.5 text-fg/80">
                                           <span className="text-accent">●</span> Active File: {activeFileKey}
                                         </span>
-                                        <span className="bg-bg/50 border border-border px-2 py-0.5 rounded-md font-mono text-[8px]">
+                                        <span className="bg-bg/50 border border-border px-2 py-0.5 rounded-md font-mono text-[10px]">
                                           {activeFileKey.split(".").pop() ?? "code"}
                                         </span>
                                       </div>
@@ -1598,7 +1707,8 @@ export default function InterviewRunner({
                                             readOnly: true,
                                             minimap: { enabled: false },
                                             fontSize: 12,
-                                            fontFamily: "'JetBrains Mono', monospace",
+                                            fontFamily: "var(--font-mono), 'Fira Code', monospace",
+                                            fontLigatures: true,
                                             automaticLayout: true,
                                             scrollBeyondLastLine: false,
                                             tabSize: 2,
@@ -1638,14 +1748,14 @@ export default function InterviewRunner({
                                                 {t.name || `Test Case #${tIdx + 1}`}
                                               </span>
                                             </div>
-                                            <span className={`text-[8px] font-black uppercase px-2 py-0.5 rounded border ${
+                                            <span className={`text-[10px] font-black uppercase px-2 py-0.5 rounded border ${
                                               isPass ? "bg-emerald-500/10 border-emerald-500/25" : "bg-rose-500/10 border-rose-500/25"
                                             }`}>
                                               {isPass ? "Pass" : "Fail"}
                                             </span>
                                           </div>
                                           {t.error && (
-                                            <div className="font-mono text-[9.5px] bg-black/40 border border-border rounded-xl p-3 overflow-x-auto text-muted whitespace-pre-wrap leading-relaxed">
+                                            <div className="font-mono text-xs bg-black/40 border border-border rounded-xl p-3 overflow-x-auto text-muted whitespace-pre-wrap leading-relaxed">
                                               {t.error}
                                             </div>
                                           )}
@@ -1665,11 +1775,19 @@ export default function InterviewRunner({
                             <div className="flex-1 flex flex-col items-center justify-center p-12 text-center border border-dashed border-border rounded-2xl bg-bg/30">
                               <FileText className="w-8 h-8 text-muted/40 mb-3" />
                               <div className="text-xs font-black uppercase text-fg/70">No Attempt Recorded</div>
-                              <p className="text-[10px] text-muted max-w-[280px] mt-1.5 leading-relaxed">
+                              <p className="text-xs text-muted max-w-[280px] mt-1.5 leading-relaxed">
                                 The candidate did not attempt or submit any code for this step during the session.
                               </p>
                             </div>
                           )}
+                          <SubmissionReviewModal
+                            open={reviewModalOpen}
+                            onClose={() => setReviewModalOpen(false)}
+                            title={activeReviewChallenge.title}
+                            candidateName={interview.candidateName}
+                            template={activeReviewChallenge.template}
+                            files={reviewFiles}
+                          />
                         </>
                       )}
 
@@ -1704,16 +1822,15 @@ export default function InterviewRunner({
                         <div className="flex-1 flex flex-col space-y-4 min-h-0">
                           {activeReviewPromptAttempt ? (
                             <div className="flex-1 flex flex-col space-y-4 min-h-0 overflow-y-auto pr-1 scrollbar-thin">
-                              {/* Attempt Metrics Banner */}
                               <div className="grid grid-cols-2 gap-3.5">
                                 <div className="p-3.5 rounded-2xl border border-border bg-bg/20 flex flex-col justify-between shadow-sm">
-                                  <span className="text-[9px] font-extrabold uppercase tracking-widest text-muted">Evaluation Status</span>
+                                  <span className="text-xs font-extrabold uppercase tracking-widest text-muted">Evaluation Status</span>
                                   <span className="text-xs font-black text-emerald-500 mt-2.5 uppercase">
                                     Graded ({activeReviewPromptAttempt.graderType === "ai" ? "Gemini AI" : "Local"})
                                   </span>
                                 </div>
                                 <div className="p-3.5 rounded-2xl border border-border bg-bg/20 flex flex-col justify-between shadow-sm">
-                                  <span className="text-[9px] font-extrabold uppercase tracking-widest text-muted">AI Grader Score</span>
+                                  <span className="text-xs font-extrabold uppercase tracking-widest text-muted">AI Grader Score</span>
                                   <span className="text-xs font-mono font-black text-fg mt-2.5">
                                     {activeReviewPromptAttempt.score}%
                                   </span>
@@ -1740,10 +1857,9 @@ export default function InterviewRunner({
                                           let barColor = "bg-accent";
                                           if (val < 50) barColor = "bg-rose-500";
                                           else if (val < 75) barColor = "bg-amber-500";
-
                                           return (
                                             <div key={item.key} className="space-y-1">
-                                              <div className="flex items-center justify-between text-[11px] font-bold">
+                                              <div className="flex items-center justify-between text-xs font-bold">
                                                 <span className="text-muted">{item.label}</span>
                                                 <span className="text-fg/80">{val}/100</span>
                                               </div>
@@ -1763,21 +1879,21 @@ export default function InterviewRunner({
                                   </div>
                                 </div>
                               )}
-
+                              
                               {/* Feedback text */}
                               {activeReviewPromptAttempt.feedback && (
                                 <div className="space-y-2">
-                                  <span className="text-[10px] font-black uppercase tracking-widest text-muted">Detailed Grader Feedback</span>
+                                  <span className="text-xs font-black uppercase tracking-widest text-muted">Detailed Grader Feedback</span>
                                   <div className="p-4 rounded-2xl border border-border bg-bg/20 text-xs leading-relaxed text-muted whitespace-pre-wrap">
                                     {activeReviewPromptAttempt.feedback}
                                   </div>
                                 </div>
                               )}
-
+ 
                               {/* Submitted Prompt */}
                               <div className="space-y-2">
-                                <span className="text-[10px] font-black uppercase tracking-widest text-muted">Submitted Prompt Text</span>
-                                <pre className="p-4 bg-panel border border-border rounded-2xl text-[10px] font-mono whitespace-pre-wrap overflow-x-auto text-fg/80 leading-relaxed shadow-inner">
+                                  <span className="text-xs font-black uppercase tracking-widest text-muted">Submitted Prompt Text</span>
+                                <pre className="p-4 bg-panel border border-border rounded-2xl text-xs font-mono whitespace-pre-wrap overflow-x-auto text-fg/80 leading-relaxed shadow-inner">
                                   {activeReviewPromptAttempt.promptText}
                                 </pre>
                               </div>
@@ -1786,7 +1902,7 @@ export default function InterviewRunner({
                             <div className="flex-1 flex flex-col items-center justify-center p-12 text-center border border-dashed border-border rounded-2xl bg-bg/30">
                               <FileText className="w-8 h-8 text-muted/40 mb-3" />
                               <div className="text-xs font-black uppercase text-fg/70">No Attempt Recorded</div>
-                              <p className="text-[10px] text-muted max-w-[280px] mt-1.5 leading-relaxed">
+                              <p className="text-xs text-muted max-w-[280px] mt-1.5 leading-relaxed">
                                 The candidate did not submit any prompt response for this step during the session.
                               </p>
                             </div>
@@ -2270,7 +2386,7 @@ export default function InterviewRunner({
         </div>
 
         {/* Quick Join Strip — code-first share for the candidate. Observer link tucked behind a disclosure. */}
-        {isOwner && status !== "scheduled" && (
+        {isOwner && status === "in_progress" && (
           <div className="rounded-2xl border border-border bg-surface shadow-sm overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-300">
             {/* Candidate row — access code is the hero */}
             <div className="flex flex-col md:flex-row md:items-center gap-4 md:gap-5 p-4 md:p-5">
@@ -2386,7 +2502,6 @@ export default function InterviewRunner({
           </div>
         )}
 
-      </div>
 
       {/* Verdict Selection Dialog */}
       {verdictModalOpen && (

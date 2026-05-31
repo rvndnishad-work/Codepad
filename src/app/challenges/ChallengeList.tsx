@@ -127,12 +127,12 @@ export default function ChallengeList({
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 placeholder="Search by title, tag, or category…"
-                className="w-full pl-11 pr-4 py-3 rounded-xl bg-surface border border-border focus:border-accent/40 focus:bg-elevated text-sm text-fg outline-none placeholder:text-muted transition-all duration-200"
+                className="w-full pl-11 pr-4 py-3 rounded-xl bg-surface dark:bg-[#131625] border border-border dark:border-transparent focus:border-accent/40 dark:focus:border-accent/40 focus:bg-elevated dark:focus:bg-[#1b1f32] text-sm text-fg outline-none placeholder:text-muted transition-all duration-200"
               />
             </div>
             
             {/* Grid/List Toggle Switcher */}
-            <div className="inline-flex items-center gap-1 rounded-xl bg-surface border border-border p-1">
+            <div className="inline-flex items-center gap-1 rounded-xl bg-surface dark:bg-[#131625] border border-border dark:border-transparent p-1">
               <button
                 type="button"
                 onClick={() => handleViewModeChange("grid")}
@@ -295,10 +295,10 @@ function ChallengeCard({ item: c }: { item: ChallengeListItem }) {
   return (
     <Link
       href={`/challenges/${c.slug}`}
-      className={`group relative flex flex-col h-full rounded-2xl border bg-surface hover:bg-elevated p-5 transition-colors ${
+      className={`group relative flex flex-col h-full rounded-2xl border p-5 transition-all duration-300 bg-surface dark:bg-[#131625] hover:bg-elevated hover:dark:bg-[#1b1f32] ${
         c.featured
-          ? "border-accent/40 hover:border-accent/60"
-          : "border-border hover:border-border-strong"
+          ? "border-accent/40 hover:border-accent/60 dark:border-accent/20 dark:hover:border-accent/40"
+          : "border-border dark:border-transparent hover:border-border-strong"
       }`}
     >
       {c.featured && (
@@ -377,10 +377,10 @@ function ChallengeListRow({ item: c }: { item: ChallengeListItem }) {
   return (
     <Link
       href={`/challenges/${c.slug}`}
-      className={`group relative flex flex-col sm:flex-row sm:items-center justify-between gap-4 rounded-xl border bg-surface hover:bg-elevated p-4 transition-all duration-300 ${
+      className={`group relative flex flex-col sm:flex-row sm:items-center justify-between gap-4 rounded-xl border p-4 transition-all duration-300 bg-surface dark:bg-[#131625] hover:bg-elevated hover:dark:bg-[#1b1f32] ${
         c.featured
-          ? "border-accent/40 hover:border-accent/60 shadow-[0_2px_12px_rgba(var(--accent-rgb),0.02)]"
-          : "border-border hover:border-border-strong"
+          ? "border-accent/40 hover:border-accent/60 dark:border-accent/20 dark:hover:border-accent/40 shadow-[0_2px_12px_rgba(var(--accent-rgb),0.02)]"
+          : "border-border dark:border-transparent hover:border-border-strong"
       }`}
     >
       <div className="flex items-center gap-3.5 min-w-0">
@@ -457,7 +457,7 @@ function Pillbar<T extends string>({
   onChange: (next: T) => void;
 }) {
   return (
-    <div className="inline-flex items-center gap-1 rounded-xl bg-surface border border-border p-1">
+    <div className="inline-flex items-center gap-1 rounded-xl bg-surface dark:bg-[#131625] border border-border dark:border-transparent p-1">
       <span className="px-2 text-[10px] font-black uppercase tracking-[0.15em] text-muted/60">
         {label}
       </span>

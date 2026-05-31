@@ -172,6 +172,36 @@ const templateColors: Record<string, { border: string; glow: string; text: strin
     text: "text-sky-600 dark:text-sky-400", 
     bg: "bg-sky-500/10 border-sky-500/20 dark:bg-sky-400/10 dark:border-sky-400/20" 
   },
+  "python": { 
+    border: "hover:border-blue-400 dark:hover:border-blue-400/60", 
+    glow: "hover:shadow-[0_0_20px_rgba(55,118,171,0.08)] dark:hover:shadow-[0_0_20px_rgba(55,118,171,0.15)]", 
+    text: "text-blue-600 dark:text-blue-400", 
+    bg: "bg-blue-500/10 border-blue-500/20 dark:bg-blue-400/10 dark:border-blue-400/20" 
+  },
+  "go": { 
+    border: "hover:border-cyan-400 dark:hover:border-cyan-400/60", 
+    glow: "hover:shadow-[0_0_20px_rgba(0,173,216,0.08)] dark:hover:shadow-[0_0_20px_rgba(0,173,216,0.15)]", 
+    text: "text-cyan-600 dark:text-cyan-400", 
+    bg: "bg-cyan-500/10 border-cyan-500/20 dark:bg-cyan-400/10 dark:border-cyan-400/20" 
+  },
+  "java": { 
+    border: "hover:border-orange-400 dark:hover:border-orange-400/60", 
+    glow: "hover:shadow-[0_0_20px_rgba(83,130,161,0.08)] dark:hover:shadow-[0_0_20px_rgba(83,130,161,0.15)]", 
+    text: "text-orange-600 dark:text-orange-400", 
+    bg: "bg-orange-500/10 border-orange-500/20 dark:bg-orange-400/10 dark:border-orange-400/20" 
+  },
+  "cpp": { 
+    border: "hover:border-indigo-400 dark:hover:border-indigo-400/60", 
+    glow: "hover:shadow-[0_0_20px_rgba(0,89,156,0.08)] dark:hover:shadow-[0_0_20px_rgba(0,89,156,0.15)]", 
+    text: "text-indigo-600 dark:text-indigo-400", 
+    bg: "bg-indigo-500/10 border-indigo-500/20 dark:bg-indigo-400/10 dark:border-indigo-400/20" 
+  },
+  "rust": { 
+    border: "hover:border-red-500 dark:hover:border-red-500/60", 
+    glow: "hover:shadow-[0_0_20px_rgba(228,55,22,0.08)] dark:hover:shadow-[0_0_20px_rgba(228,55,22,0.15)]", 
+    text: "text-red-600 dark:text-red-400", 
+    bg: "bg-red-500/10 border-red-500/20 dark:bg-red-400/10 dark:border-red-400/20" 
+  },
 };
 
 export default function InterviewBuilder({

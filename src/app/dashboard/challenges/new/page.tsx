@@ -28,6 +28,7 @@ export default async function NewUserChallengePage() {
           // Users can't self-feature; this stays false and the form hides
           // the toggle for non-admin surfaces (allowFeatured=false there).
           featured: false,
+          premium: false,
           steps: [blankStep()],
         }}
         surface={{

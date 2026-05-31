@@ -3,12 +3,22 @@ import javascript from "highlight.js/lib/languages/javascript";
 import typescript from "highlight.js/lib/languages/typescript";
 import xml from "highlight.js/lib/languages/xml";
 import css from "highlight.js/lib/languages/css";
+import python from "highlight.js/lib/languages/python";
+import go from "highlight.js/lib/languages/go";
+import java from "highlight.js/lib/languages/java";
+import cpp from "highlight.js/lib/languages/cpp";
+import rust from "highlight.js/lib/languages/rust";
 import type { TemplateDef } from "./templates";
 
 hljs.registerLanguage("javascript", javascript);
 hljs.registerLanguage("typescript", typescript);
 hljs.registerLanguage("xml", xml);
 hljs.registerLanguage("css", css);
+hljs.registerLanguage("python", python);
+hljs.registerLanguage("go", go);
+hljs.registerLanguage("java", java);
+hljs.registerLanguage("cpp", cpp);
+hljs.registerLanguage("rust", rust);
 
 export type Showpiece = {
   path: string;
@@ -17,6 +27,11 @@ export type Showpiece = {
 };
 
 const PREFERRED_PATHS = [
+  "/index.py",
+  "/main.go",
+  "/Main.java",
+  "/main.cpp",
+  "/main.rs",
   "/App.tsx",
   "/App.jsx",
   "/App.js",
@@ -48,6 +63,11 @@ const PREFERRED_PATHS = [
 function langFor(path: string): string {
   if (path.endsWith(".tsx") || path.endsWith(".ts")) return "typescript";
   if (path.endsWith(".jsx") || path.endsWith(".js")) return "javascript";
+  if (path.endsWith(".py")) return "python";
+  if (path.endsWith(".go")) return "go";
+  if (path.endsWith(".java")) return "java";
+  if (path.endsWith(".cpp") || path.endsWith(".h") || path.endsWith(".hpp")) return "cpp";
+  if (path.endsWith(".rs")) return "rust";
   if (
     path.endsWith(".vue") ||
     path.endsWith(".svelte") ||

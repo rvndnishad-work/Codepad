@@ -14,6 +14,7 @@ type Row = {
   difficulty: string;
   category: string | null;
   published: boolean;
+  premium: boolean;
   attempts: number;
 };
 
@@ -70,9 +71,30 @@ export default function AdminChallengeRow({ challenge }: { challenge: Row }) {
     }
   }
 
+  async function togglePremium() {
+    setBusy(true);
+    try {
+      const res = await fetch(`/api/admin/challenges/${challenge.id}`, {
+        method: "PATCH",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ premium: !challenge.premium }),
+        cache: "no-store",
+      });
+      if (!res.ok) throw new Error((await res.text()) || `HTTP ${res.status}`);
+      toast.success(challenge.premium ? "Marked as Free" : "Marked as Premium");
+      router.refresh();
+    } catch (err) {
+      toast.error("Update failed", {
+        description: err instanceof Error ? err.message : String(err),
+      });
+    } finally {
+      setBusy(false);
+    }
+  }
+
   return (
     <div 
-      className={`group transition-all duration-200 border-b border-border last:border-b-0 hover:bg-panel/5 p-5 lg:p-0 lg:grid lg:grid-cols-[40px_3fr_1.2fr_1.2fr_1fr_1.2fr_2.5fr] lg:items-center lg:px-6 lg:py-4`}
+      className={`group transition-all duration-200 border-b border-border last:border-b-0 hover:bg-panel/5 p-5 lg:p-0 lg:grid lg:grid-cols-[40px_3fr_1.2fr_1.2fr_1fr_1.2fr_1.2fr_2.5fr] lg:items-center lg:px-6 lg:py-4`}
     >
       {/* Column 1: Checkbox */}
       <div className="flex items-center lg:justify-center mb-3 lg:mb-0">
@@ -110,7 +132,23 @@ export default function AdminChallengeRow({ challenge }: { challenge: Row }) {
         <span className="text-xs font-mono text-muted lg:text-fg tabular-nums">{challenge.attempts}</span>
       </div>
 
-      {/* Column 6: Status */}
+      {/* Column 6: Monetization */}
+      <div className="mt-2 lg:mt-0 flex items-center lg:block">
+        <span className="lg:hidden text-[9px] uppercase tracking-wider font-bold text-muted w-24 mr-2 block">Monetization:</span>
+        <button
+          onClick={togglePremium}
+          disabled={busy}
+          className={`px-2 py-0.5 rounded-md border text-[10px] font-bold uppercase tracking-wider transition disabled:opacity-50 ${
+            challenge.premium
+              ? "text-amber-500 bg-amber-500/10 border-amber-500/30 hover:bg-amber-500/20 dark:text-amber-400 dark:bg-amber-500/20 dark:border-amber-500/40"
+              : "text-muted bg-surface border-border hover:bg-elevated"
+          }`}
+        >
+          {challenge.premium ? "Premium" : "Free"}
+        </button>
+      </div>
+
+      {/* Column 7: Status */}
       <div className="mt-2 lg:mt-0 flex items-center lg:block">
         <span className="lg:hidden text-[9px] uppercase tracking-wider font-bold text-muted w-24 mr-2 block">Status:</span>
         <button
@@ -126,7 +164,7 @@ export default function AdminChallengeRow({ challenge }: { challenge: Row }) {
         </button>
       </div>
 
-      {/* Column 7: Actions */}
+      {/* Column 8: Actions */}
       <div className="mt-4 lg:mt-0 flex items-center justify-end gap-2 border-t border-border pt-3 lg:border-none lg:pt-0">
         <Link
           href={`/challenges/${challenge.slug}`}
@@ -154,4 +192,5 @@ export default function AdminChallengeRow({ challenge }: { challenge: Row }) {
       </div>
     </div>
   );
+
 }

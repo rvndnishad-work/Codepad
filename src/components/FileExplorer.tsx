@@ -22,6 +22,8 @@ import {
   Download,
   ArrowDownAZ,
   ListOrdered,
+  PanelLeftClose,
+  PanelLeftOpen,
 } from "lucide-react";
 import { useFileSystem, FILE_TYPES, type TreeNode, parentDir } from "@/hooks/useFileSystem";
 import { toast } from "sonner";
@@ -169,21 +171,44 @@ const FOLDER_COLORS: Record<string, string> = {
   provider: "#ba68c8",
 };
 
-function folderColor(name: string): string {
+/** Classic Windows / OS file-explorer folder yellow. */
+const WINDOWS_FOLDER_YELLOW = "#EAB308";
+
+function folderColor(name: string, plain?: boolean): string {
+  if (plain) return WINDOWS_FOLDER_YELLOW;
   return FOLDER_COLORS[name.toLowerCase()] ?? "#fbbf24";
 }
 
-function FolderNodeIcon({ name, open }: { name: string; open: boolean }) {
-  const color = folderColor(name);
+function FolderNodeIcon({ name, open, plain }: { name: string; open: boolean; plain?: boolean }) {
+  const color = folderColor(name, plain);
   const FolderIcon = open ? FolderOpen : Folder;
   return <FolderIcon className="w-3.5 h-3.5 shrink-0" style={{ color }} />;
 }
 
 
 
-type Props = { readOnly?: boolean; onCollapse?: () => void };
+type Props = {
+  readOnly?: boolean;
+  onCollapse?: () => void;
+  /** Show the "Download ZIP" button (default true). */
+  showDownload?: boolean;
+  /** When set, renders a collapse toggle that shrinks the tree to an icon-only
+   *  rail. `collapsed` is the controlled state, `onToggleCollapse` flips it. */
+  collapsed?: boolean;
+  onToggleCollapse?: () => void;
+  /** Use a single Windows-style yellow for every folder instead of the
+   *  VS Code per-name folder colors. */
+  plainFolders?: boolean;
+};
 
-export default function FileExplorer({ readOnly = false, onCollapse }: Props) {
+export default function FileExplorer({
+  readOnly = false,
+  onCollapse,
+  showDownload = true,
+  collapsed = false,
+  onToggleCollapse,
+  plainFolders = false,
+}: Props) {
   const {
     expanded,
     setExpanded,
@@ -401,7 +426,7 @@ export default function FileExplorer({ readOnly = false, onCollapse }: Props) {
           <span className="w-3 shrink-0" />
         )}
         {node.isFolder ? (
-          <FolderNodeIcon name={node.name} open={isExpanded} />
+          <FolderNodeIcon name={node.name} open={isExpanded} plain={plainFolders} />
         ) : (
           <FileNodeIcon name={node.name} />
         )}
@@ -468,6 +493,43 @@ export default function FileExplorer({ readOnly = false, onCollapse }: Props) {
           onBlur={commitNew}
           className="flex-1 min-w-0 bg-panel border border-accent/40 rounded px-1.5 py-0.5 h-6 text-[13px] outline-none"
         />
+      </div>
+    );
+  }
+
+  // Collapsed: a narrow rail of file icons only. Click an icon to open the
+  // file; the toggle at the top expands back to the full tree.
+  if (collapsed) {
+    return (
+      <div className="h-full w-full border-r border-border bg-surface flex flex-col items-center gap-0.5 py-2 overflow-y-auto select-none">
+        {onToggleCollapse && (
+          <button
+            onClick={onToggleCollapse}
+            title="Expand files"
+            aria-label="Expand files"
+            className="p-1.5 mb-1 rounded hover:bg-elevated text-muted/60 hover:text-fg transition"
+          >
+            <PanelLeftOpen className="w-4 h-4" />
+          </button>
+        )}
+        {filePaths.map((p) => {
+          const isActive = activeFile === p;
+          const name = p.split("/").pop() || p;
+          return (
+            <button
+              key={p}
+              onClick={() => sandpack.openFile(p)}
+              title={p.replace(/^\//, "")}
+              className={`p-1.5 rounded transition ${
+                isActive
+                  ? "bg-accent/10 shadow-[inset_2px_0_0_0_var(--accent)]"
+                  : "hover:bg-elevated opacity-80 hover:opacity-100"
+              }`}
+            >
+              <FileNodeIcon name={name} />
+            </button>
+          );
+        })}
       </div>
     );
   }
@@ -572,17 +634,30 @@ export default function FileExplorer({ readOnly = false, onCollapse }: Props) {
               </button>
             </>
           )}
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              void downloadZip();
-            }}
-            title="Download ZIP"
-            className="p-1.5 hover:bg-elevated rounded transition text-muted/50 hover:text-fg"
-          >
-            <Download className="w-3.5 h-3.5" />
-          </button>
-          
+          {showDownload && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                void downloadZip();
+              }}
+              title="Download ZIP"
+              className="p-1.5 hover:bg-elevated rounded transition text-muted/50 hover:text-fg"
+            >
+              <Download className="w-3.5 h-3.5" />
+            </button>
+          )}
+
+          {onToggleCollapse && (
+            <button
+              onClick={onToggleCollapse}
+              title="Collapse to icons"
+              aria-label="Collapse file tree"
+              className="p-1.5 hover:bg-elevated rounded transition text-muted/50 hover:text-fg"
+            >
+              <PanelLeftClose className="w-3.5 h-3.5" />
+            </button>
+          )}
+
           {onCollapse && (
             <>
               <div className="w-px h-4 bg-border mx-1" />

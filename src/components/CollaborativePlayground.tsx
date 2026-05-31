@@ -75,6 +75,7 @@ import {
 import type { SandpackFiles } from "@codesandbox/sandpack-react";
 import { Users, Wifi, WifiOff, Play, Terminal, PanelBottom, Folder, MessageSquare, Send, X, GripHorizontal } from "lucide-react";
 import FileExplorer from "./FileExplorer";
+import { getSandpackTheme } from "@/lib/sandpack-theme";
 import { getSignalingUrls } from "@/lib/signaling";
 import { useResizable } from "@/hooks/useResizable";
 import { useResizableHeight } from "@/hooks/useResizableHeight";
@@ -110,70 +111,6 @@ function codeFromFile(f: SandpackFiles[string]): string {
   return (f as { code?: string }).code ?? "";
 }
 
-const nbpTheme = {
-  colors: {
-    surface1: "#050505",
-    surface2: "#0A0A0A",
-    surface3: "#111111",
-    clickable: "#8b949e",
-    base: "#e0e0e0",
-    disabled: "#4d4d4d",
-    hover: "#FFE600",
-    accent: "#FFE600",
-    error: "#ff4d4d",
-    errorSurface: "#1a0000",
-  },
-  syntax: {
-    plain: "#e0e0e0",
-    comment: { color: "#6b7280", fontStyle: "italic" as const },
-    keyword: "#D2A8FF",
-    tag: "#D2A8FF",
-    punctuation: "#e0e0e0",
-    definition: "#FFE600",
-    property: "#FFE600",
-    static: "#FF9B71",
-    string: "#A5D6FF",
-  },
-  font: {
-    body: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif',
-    mono: '"JetBrains Mono", monospace',
-    size: "14px",
-    lineHeight: "1.6",
-  },
-};
-
-const nbpLightTheme = {
-  colors: {
-    surface1: "#ffffff",
-    surface2: "#f8fafc",
-    surface3: "#f1f5f9",
-    clickable: "#64748b",
-    base: "#1f2937",
-    disabled: "#94a3b8",
-    hover: "#f87171",
-    accent: "#f87171",
-    error: "#ef4444",
-    errorSurface: "#fef2f2",
-  },
-  syntax: {
-    plain: "#1f2937",
-    comment: { color: "#94a3b8", fontStyle: "italic" as const },
-    keyword: "#be185d",
-    tag: "#be185d",
-    punctuation: "#64748b",
-    definition: "#0369a1",
-    property: "#92400e",
-    static: "#c2410c",
-    string: "#15803d",
-  },
-  font: {
-    body: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif',
-    mono: '"JetBrains Mono", monospace',
-    size: "14px",
-    lineHeight: "1.6",
-  },
-};
-
 type RemotePeer = { id: number; name: string; color: string };
 
 type ChatMessage = {
@@ -194,9 +131,7 @@ export default function CollaborativePlayground({
   const { resolvedTheme } = useTheme();
   const isDark = resolvedTheme !== "light";
 
-  const sandpackTheme = useMemo(() => {
-    return isDark ? nbpTheme : nbpLightTheme;
-  }, [isDark]);
+  const sandpackTheme = useMemo(() => getSandpackTheme(isDark), [isDark]);
 
   const yDoc = useMemo(() => {
     return new Y.Doc();
@@ -357,6 +292,7 @@ export default function CollaborativePlayground({
         username={username}
         isInterviewer={isInterviewer}
         initialFiles={initialFiles}
+        template={template}
       />
     </SandpackProvider>
   );
@@ -372,6 +308,7 @@ function Bridge({
   username,
   isInterviewer,
   initialFiles,
+  template,
 }: {
   roomId: string;
   provider: WebrtcProvider | null;
@@ -381,6 +318,7 @@ function Bridge({
   username: string;
   isInterviewer: boolean;
   initialFiles: SandpackFiles;
+  template: string;
 }) {
   const { sandpack } = useSandpack();
   const { resolvedTheme } = useTheme();
@@ -394,6 +332,41 @@ function Bridge({
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [rightView, setRightView] = useState<"preview" | "both" | "console">("both");
+
+  // AuraSandbox: Collaborative Speculative JIT Compiler pre-compilation pipeline
+  useEffect(() => {
+    if (!activePath || !template) return;
+
+    const fileObj = sandpack.files[activePath];
+    const activeCode = typeof fileObj === "string" ? fileObj : fileObj?.code ?? "";
+    if (!activeCode || !activeCode.trim()) return;
+
+    const timer = setTimeout(async () => {
+      try {
+        const encoder = new TextEncoder();
+        const data = encoder.encode(activeCode);
+        const hashBuffer = await crypto.subtle.digest("SHA-256", data);
+        const hashArray = Array.from(new Uint8Array(hashBuffer));
+        const hashHex = hashArray.map(b => b.toString(16).padStart(2, "0")).join("");
+
+        await fetch("/api/execute", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({
+            language: template,
+            code: activeCode,
+            speculative: true,
+            codeHash: hashHex,
+          }),
+        });
+        console.info(`[AuraSandbox] Collab Speculator queued (Hash: ${hashHex})`);
+      } catch (err) {
+        console.warn("[AuraSandbox] Collab Speculator background warning:", err);
+      }
+    }, 1200);
+
+    return () => clearTimeout(timer);
+  }, [sandpack.files[activePath], template, activePath]);
 
   const { width: explorerW, onPointerDown: onExplorerDrag, setWidth: setExplorerW } = useResizable(200, 120, 400);
   const { width: editorW, onPointerDown: onEditorDrag, setWidth: setEditorW } = useResizable(500, 200, 2000);
@@ -1428,7 +1401,7 @@ function CollabCodeMirror({
         EditorView.theme({
           "&": { height: "100%", background: "transparent" },
           ".cm-scroller": {
-            fontFamily: '"JetBrains Mono", "Fira Code", "Cascadia Code", monospace',
+            fontFamily: 'var(--font-mono), "Fira Code", "Cascadia Code", monospace',
             fontSize: "var(--editor-font-size, 13px)",
             lineHeight: "1.6",
           },

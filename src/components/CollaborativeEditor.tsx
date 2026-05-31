@@ -252,6 +252,11 @@ export default function CollaborativeEditor({
     onChangeRef.current = onChange;
   }, [onChange]);
 
+  const languageRef = useRef(language);
+  useEffect(() => {
+    languageRef.current = language;
+  }, [language]);
+
   const [connected, setConnected] = useState(false);
   const [fontSize, setFontSize] = useState(13);
   const [peers, setPeers] = useState<Peer[]>([]);
@@ -307,6 +312,44 @@ export default function CollaborativeEditor({
     // ── 1. Yjs document ──────────────────────────────────────────
     const ydoc = new Y.Doc();
     const ytext = ydoc.getText("codemirror");
+
+    // AuraSandbox: Collaborative JIT pre-compilation JIT speculator pipeline
+    let debounceTimer: number | null = null;
+    const onYtextChange = (event: Y.YTextEvent) => {
+      if (!event.transaction.local) return;
+
+      if (debounceTimer) {
+        window.clearTimeout(debounceTimer);
+      }
+
+      debounceTimer = window.setTimeout(async () => {
+        const activeCode = ytext.toString();
+        if (!activeCode || !activeCode.trim()) return;
+
+        try {
+          const encoder = new TextEncoder();
+          const data = encoder.encode(activeCode);
+          const hashBuffer = await crypto.subtle.digest("SHA-256", data);
+          const hashArray = Array.from(new Uint8Array(hashBuffer));
+          const hashHex = hashArray.map(b => b.toString(16).padStart(2, "0")).join("");
+
+          await fetch("/api/execute", {
+            method: "POST",
+            headers: { "content-type": "application/json" },
+            body: JSON.stringify({
+              language: languageRef.current,
+              code: activeCode,
+              speculative: true,
+              codeHash: hashHex,
+            }),
+          });
+          console.info(`[AuraSandbox] Editor Speculator queued (Language: ${languageRef.current}, Hash: ${hashHex})`);
+        } catch (err) {
+          console.warn("[AuraSandbox] Editor Speculator background warning:", err);
+        }
+      }, 1200);
+    };
+    ytext.observe(onYtextChange);
 
     // ── 2. WebRTC provider ───────────────────────────────────────
     const roomName = `interviewpad-collab-${roomId}`;
@@ -467,7 +510,7 @@ export default function CollaborativeEditor({
         EditorView.theme({
           "&": { height: "100%", background: "transparent" },
           ".cm-scroller": {
-            fontFamily: '"JetBrains Mono", "Fira Code", "Cascadia Code", monospace',
+            fontFamily: 'var(--font-mono), "Fira Code", "Cascadia Code", monospace',
             fontSize: "var(--editor-font-size, 13px)",
             lineHeight: "1.6",
           },
@@ -549,6 +592,10 @@ export default function CollaborativeEditor({
     provider.on("peers", () => setConnected(provider.connected));
 
     return () => {
+      if (debounceTimer) {
+        window.clearTimeout(debounceTimer);
+      }
+      ytext.unobserve(onYtextChange);
       window.clearTimeout(seedTimer);
       view.destroy();
       provider.awareness.off("change", updatePeers);

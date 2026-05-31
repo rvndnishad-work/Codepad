@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { Newspaper, Keyboard, Info, ExternalLink, MessageSquare, Building2, Plus, Sparkles, ArrowRight, Clock, CheckCircle2 } from "lucide-react";
+import JoinInterviewBox from "../interview/JoinInterviewBox";
 
 const NEWS = [
   { title: "Monaco Editor Intelligence Boost", date: "May 2", href: "#" },
@@ -30,6 +31,9 @@ export default function DashboardSidebar({
 }) {
   return (
     <div className="space-y-6">
+      {/* Join scheduled recruiter interview box */}
+      <JoinInterviewBox />
+
       {/* Take-Home Assignments */}
       {takeHomes.length > 0 && (
         <div className="rounded-3xl border border-border bg-gradient-to-br from-panel/90 to-surface/40 p-6 overflow-hidden shadow-sm relative">

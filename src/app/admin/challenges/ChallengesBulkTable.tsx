@@ -10,18 +10,22 @@ import {
   Trash2,
   Loader2,
   X,
+  DollarSign,
+  Sparkles,
 } from "lucide-react";
 
-type BulkAction = "publish" | "unpublish" | "feature" | "unfeature" | "delete";
+type BulkAction = "publish" | "unpublish" | "feature" | "unfeature" | "delete" | "markPremium" | "markFree";
 
 const ACTION_CONFIG: Record<
   BulkAction,
-  { label: string; icon: typeof CheckCircle2; tone: "default" | "danger" | "success" | "accent" }
+  { label: string; icon: any; tone: "default" | "danger" | "success" | "accent" | "premium" | "free" }
 > = {
   publish: { label: "Publish", icon: CheckCircle2, tone: "success" },
-  unpublish: { label: "Unpublish", icon: XCircle, tone: "default" },
+  unpublish: { label: "Draft", icon: XCircle, tone: "default" },
   feature: { label: "Feature", icon: Star, tone: "accent" },
   unfeature: { label: "Unfeature", icon: StarOff, tone: "default" },
+  markPremium: { label: "Premium", icon: DollarSign, tone: "premium" },
+  markFree: { label: "Free", icon: Sparkles, tone: "free" },
   delete: { label: "Delete", icon: Trash2, tone: "danger" },
 };
 
@@ -30,9 +34,11 @@ const TONE_CLASS: Record<string, string> = {
   success: "bg-emerald-500/10 border-emerald-500/30 text-emerald-500 hover:bg-emerald-500/15",
   danger: "bg-red-500/10 border-red-500/30 text-red-500 hover:bg-red-500/15",
   accent: "bg-accent/10 border-accent/30 text-accent hover:bg-accent/15",
+  premium: "bg-amber-500/10 border-amber-500/30 text-amber-500 hover:bg-amber-500/15 dark:bg-amber-500/20 dark:border-amber-500/40 dark:text-amber-400",
+  free: "bg-slate-500/10 border-slate-500/30 text-slate-500 hover:bg-slate-500/15 dark:bg-slate-500/20 dark:border-slate-500/40 dark:text-slate-400",
 };
 
-const BAR_ACTIONS: BulkAction[] = ["publish", "unpublish", "feature", "unfeature", "delete"];
+const BAR_ACTIONS: BulkAction[] = ["publish", "unpublish", "feature", "unfeature", "markPremium", "markFree", "delete"];
 
 type Ctx = {
   selected: Set<string>;
@@ -131,45 +137,77 @@ export default function ChallengesBulkTable({ children }: { children: ReactNode 
     }
   }
 
+  function renderButton(a: BulkAction) {
+    const conf = ACTION_CONFIG[a];
+    const Icon = conf.icon;
+    const isBusy = busy === a;
+    return (
+      <button
+        onClick={() => runAction(a)}
+        disabled={busy !== null}
+        className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-[10px] font-bold tracking-wide transition-all duration-200 disabled:opacity-50 shrink-0 ${TONE_CLASS[conf.tone]}`}
+      >
+        {isBusy ? <Loader2 className="w-3 h-3 animate-spin" /> : <Icon className="w-3.5 h-3.5" />}
+        {conf.label}
+      </button>
+    );
+  }
+
   return (
     <BulkCtx.Provider value={ctx}>
       {children}
 
       {selected.size > 0 && (
-        <div className="fixed inset-x-0 bottom-4 z-40 flex justify-center px-4 pointer-events-none">
-          <div className="pointer-events-auto bg-bg/95 backdrop-blur border border-border rounded-2xl shadow-2xl px-4 py-3 flex flex-wrap items-center gap-2 max-w-[920px]">
-            <div className="flex items-center gap-2 pr-3 border-r border-border">
-              <span className="inline-flex items-center justify-center w-7 h-7 rounded-full bg-accent text-bg text-xs font-black tabular-nums">
+        <div className="fixed inset-x-0 bottom-6 z-50 flex justify-center px-4 pointer-events-none">
+          <div className="pointer-events-auto bg-white/95 dark:bg-[#0c0d15]/95 backdrop-blur-md border border-slate-200 dark:border-[#1d2035] rounded-2xl shadow-2xl px-4 py-2.5 flex items-center gap-3.5 max-w-[95vw] sm:max-w-max select-none">
+            <div className="flex items-center gap-2 pr-3.5 border-r border-slate-200 dark:border-border/10 shrink-0">
+              <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-accent text-bg text-[11px] font-black font-mono tabular-nums shadow-sm">
                 {selected.size}
               </span>
-              <span className="text-xs font-bold text-fg">selected</span>
+              <span className="text-[10px] font-black uppercase tracking-wider text-fg">selected</span>
             </div>
 
-            {BAR_ACTIONS.map((a) => {
-              const conf = ACTION_CONFIG[a];
-              const Icon = conf.icon;
-              const isBusy = busy === a;
-              return (
-                <button
-                  key={a}
-                  onClick={() => runAction(a)}
-                  disabled={busy !== null}
-                  className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-[11px] font-bold transition disabled:opacity-50 ${TONE_CLASS[conf.tone]}`}
-                >
-                  {isBusy ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Icon className="w-3.5 h-3.5" />}
-                  {conf.label}
-                </button>
-              );
-            })}
+            <div className="flex items-center gap-3 overflow-x-auto no-scrollbar scroll-smooth py-0.5 px-0.5">
+              {/* Group 1: Status */}
+              <div className="flex items-center gap-1 shrink-0">
+                {renderButton("publish")}
+                {renderButton("unpublish")}
+              </div>
 
-            <button
-              onClick={() => setSelected(new Set())}
-              disabled={busy !== null}
-              className="ml-1 p-1.5 rounded-lg text-muted hover:text-fg hover:bg-elevated transition disabled:opacity-50"
-              title="Clear selection"
-            >
-              <X className="w-3.5 h-3.5" />
-            </button>
+              <div className="w-[1px] h-4 bg-slate-200 dark:bg-border/10 shrink-0" />
+
+              {/* Group 2: Accent */}
+              <div className="flex items-center gap-1 shrink-0">
+                {renderButton("feature")}
+                {renderButton("unfeature")}
+              </div>
+
+              <div className="w-[1px] h-4 bg-slate-200 dark:bg-border/10 shrink-0" />
+
+              {/* Group 3: Monetization */}
+              <div className="flex items-center gap-1 shrink-0">
+                {renderButton("markPremium")}
+                {renderButton("markFree")}
+              </div>
+
+              <div className="w-[1px] h-4 bg-slate-200 dark:bg-border/10 shrink-0" />
+
+              {/* Group 4: Destructive */}
+              <div className="shrink-0">
+                {renderButton("delete")}
+              </div>
+            </div>
+
+            <div className="pl-1 border-l border-slate-200 dark:border-border/10 shrink-0 flex items-center">
+              <button
+                onClick={() => setSelected(new Set())}
+                disabled={busy !== null}
+                className="p-1.5 rounded-xl text-muted hover:text-fg hover:bg-slate-100 dark:hover:bg-black/20 transition disabled:opacity-50"
+                title="Clear selection"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            </div>
           </div>
         </div>
       )}

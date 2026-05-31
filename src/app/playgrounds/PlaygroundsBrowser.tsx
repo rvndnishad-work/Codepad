@@ -10,6 +10,7 @@ import {
   Rocket,
   ChevronDown,
   User,
+  List,
 } from "lucide-react";
 import {
   templates,
@@ -27,7 +28,7 @@ type Welcome = {
   recent: { slug: string; title: string; template: string } | null;
 } | null;
 
-const FEATURED_IDS = ["react", "typescript", "javascript"] as const;
+const FEATURED_IDS = ["react", "python", "typescript", "empty-js"] as const;
 
 function WelcomeStrip({ w }: { w: NonNullable<Welcome> }) {
   const firstName = w.name?.split(" ")[0] ?? "Developer";
@@ -214,11 +215,13 @@ function GroupPanel({
   label,
   count,
   defaultOpen = true,
+  gridClassName = "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4",
   children,
 }: {
   label: string;
   count: number;
   defaultOpen?: boolean;
+  gridClassName?: string;
   children: React.ReactNode;
 }) {
   const [open, setOpen] = useState(defaultOpen);
@@ -245,7 +248,7 @@ function GroupPanel({
       </button>
       {open && (
         <div className="mt-4">
-          <SpotlightGrid gridClassName="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          <SpotlightGrid gridClassName={gridClassName}>
             {children}
           </SpotlightGrid>
         </div>
@@ -257,6 +260,7 @@ function GroupPanel({
 export default function PlaygroundsBrowser({ welcome }: { welcome: Welcome }) {
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState<string>("all");
+  const [viewMode, setViewMode] = useState<"card" | "compact">("compact");
 
   // ⌘K / Ctrl+K focuses the search box, matching the kbd hint in the hero.
   useEffect(() => {
@@ -319,6 +323,10 @@ export default function PlaygroundsBrowser({ welcome }: { welcome: Welcome }) {
     }));
   }, [featuredIds]);
 
+  const gridClasses = viewMode === "compact"
+    ? "grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3"
+    : "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4";
+
   return (
     <div className="bg-bg min-h-screen pb-32 relative overflow-hidden">
       {/* Ambient background — subtle dot grid + soft accent blobs, matches
@@ -341,8 +349,7 @@ export default function PlaygroundsBrowser({ welcome }: { welcome: Welcome }) {
           Playgrounds
         </h1>
         <p className="mt-5 text-muted text-base md:text-lg max-w-xl mx-auto leading-relaxed">
-          Pick a sandbox, start coding instantly. No setup, no config — just
-          you and the problem.
+          Pick a sandbox, start coding instantly. Experience zero-latency runs with our new <strong className="text-violet-400 font-extrabold bg-violet-400/10 dark:bg-violet-400/15 px-1.5 py-0.5 rounded border border-violet-500/20">AuraSandbox™ JIT Engine</strong> for backend systems.
         </p>
 
         {/* Pill search with ⌘K hint */}
@@ -380,30 +387,57 @@ export default function PlaygroundsBrowser({ welcome }: { welcome: Welcome }) {
         </div>
 
         {/* Category Filters Bar */}
-        <div className="mt-8 flex flex-wrap items-center justify-center gap-2.5">
-          <button
-            onClick={() => setFilter("all")}
-            className={`px-4 py-2 rounded-full text-xs font-bold transition-all duration-300 border ${
-              filter === "all"
-                ? "bg-violet-500 text-white border-violet-500 shadow-md shadow-violet-500/15"
-                : "bg-surface/40 hover:bg-surface/75 border-border text-muted hover:text-fg hover:border-border-strong backdrop-blur-sm"
-            }`}
-          >
-            All Sandboxes
-          </button>
-          {groups.map((g) => (
+        <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-4">
+          <div className="flex flex-wrap items-center justify-center gap-2.5">
             <button
-              key={g.key}
-              onClick={() => setFilter(g.key)}
+              onClick={() => setFilter("all")}
               className={`px-4 py-2 rounded-full text-xs font-bold transition-all duration-300 border ${
-                filter === g.key
+                filter === "all"
                   ? "bg-violet-500 text-white border-violet-500 shadow-md shadow-violet-500/15"
                   : "bg-surface/40 hover:bg-surface/75 border-border text-muted hover:text-fg hover:border-border-strong backdrop-blur-sm"
               }`}
             >
-              {g.label}
+              All Sandboxes
             </button>
-          ))}
+            {groups.map((g) => (
+              <button
+                key={g.key}
+                onClick={() => setFilter(g.key)}
+                className={`px-4 py-2 rounded-full text-xs font-bold transition-all duration-300 border ${
+                  filter === g.key
+                    ? "bg-violet-500 text-white border-violet-500 shadow-md shadow-violet-500/15"
+                    : "bg-surface/40 hover:bg-surface/75 border-border text-muted hover:text-fg hover:border-border-strong backdrop-blur-sm"
+                }`}
+              >
+                {g.label}
+              </button>
+            ))}
+          </div>
+
+          <div className="flex items-center bg-surface/40 p-1 rounded-full border border-border backdrop-blur-sm shadow-sm shrink-0">
+            <button
+              onClick={() => setViewMode("card")}
+              className={`p-1.5 rounded-full flex items-center gap-1.5 transition-all ${
+                viewMode === "card"
+                  ? "bg-bg text-fg shadow-sm border border-border"
+                  : "text-muted hover:text-fg hover:bg-surface"
+              }`}
+              title="Card View"
+            >
+              <LayoutGrid className="w-3.5 h-3.5" />
+            </button>
+            <button
+              onClick={() => setViewMode("compact")}
+              className={`p-1.5 rounded-full flex items-center gap-1.5 transition-all ${
+                viewMode === "compact"
+                  ? "bg-bg text-fg shadow-sm border border-border"
+                  : "text-muted hover:text-fg hover:bg-surface"
+              }`}
+              title="Compact View"
+            >
+              <List className="w-3.5 h-3.5" />
+            </button>
+          </div>
         </div>
 
         <div className="mt-10 text-left">
@@ -430,9 +464,9 @@ export default function PlaygroundsBrowser({ welcome }: { welcome: Welcome }) {
             </div>
             <span className="text-xs text-muted">Top picks</span>
           </div>
-          <SpotlightGrid gridClassName="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <SpotlightGrid gridClassName={gridClasses}>
             {featured.map((t) => (
-              <CodePeekCard key={t.id} t={t} variant="featured" />
+              <CodePeekCard key={t.id} t={t} variant="featured" compact={viewMode === "compact"} />
             ))}
           </SpotlightGrid>
         </section>
@@ -448,17 +482,18 @@ export default function PlaygroundsBrowser({ welcome }: { welcome: Welcome }) {
                 key={group.key}
                 label={group.label}
                 count={items.length}
+                gridClassName={gridClasses}
               >
                 {items.map((t) => (
-                  <CodePeekCard key={t.id} t={t} />
+                  <CodePeekCard key={t.id} t={t} compact={viewMode === "compact"} />
                 ))}
               </GroupPanel>
             );
           })
         ) : filtered.length > 0 ? (
-          <SpotlightGrid gridClassName="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          <SpotlightGrid gridClassName={gridClasses}>
             {filtered.map((t) => (
-              <CodePeekCard key={t.id} t={t} />
+              <CodePeekCard key={t.id} t={t} compact={viewMode === "compact"} />
             ))}
           </SpotlightGrid>
         ) : (

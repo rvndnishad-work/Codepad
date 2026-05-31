@@ -122,7 +122,7 @@ export default async function InterviewRunPage({
     challengeIds.length > 0
       ? prisma.challenge.findMany({
           where: { id: { in: challengeIds } },
-          select: { id: true, slug: true, title: true, difficulty: true, estimatedMinutes: true },
+          select: { id: true, slug: true, title: true, difficulty: true, estimatedMinutes: true, template: true },
         })
       : Promise.resolve([]),
     playgroundIds.length > 0
@@ -149,6 +149,7 @@ export default async function InterviewRunPage({
       title: c.title,
       difficulty: c.difficulty as "easy" | "medium" | "hard",
       estimatedMinutes: c.estimatedMinutes,
+      template: c.template,
     }));
 
   const playgroundById = new Map(snippetRows.map((s) => [s.id, s]));

@@ -41,6 +41,7 @@ const payloadSchema = z.object({
   published: z.boolean(),
   visibility: z.enum(["public", "private"]).optional(),
   featured: z.boolean().optional(),
+  premium: z.boolean().optional(),
   steps: z.array(stepSchema).min(1).max(20),
 });
 
@@ -80,6 +81,7 @@ export async function POST(req: Request) {
         published: data.published,
         visibility: data.visibility ?? "public",
         featured: data.featured ?? false,
+        premium: data.premium ?? false,
         // Legacy mirror
         template: first.template,
         starterFiles: JSON.stringify(first.starterFiles),

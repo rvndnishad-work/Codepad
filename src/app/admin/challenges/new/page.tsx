@@ -16,6 +16,7 @@ export default function NewChallengePage() {
         published: false,
         visibility: "public",
         featured: false,
+        premium: false,
         steps: [blankStep()],
       }}
       surface={{

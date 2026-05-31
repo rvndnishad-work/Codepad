@@ -11,6 +11,11 @@ import {
   SiMobx,
   SiFramer,
   SiMui,
+  SiPython,
+  SiGo,
+  SiRust,
+  SiCplusplus,
+  SiOpenjdk,
 } from "react-icons/si";
 
 export type IconFn = ComponentType<SVGProps<SVGSVGElement>>;
@@ -39,6 +44,11 @@ export const templateIcon: Record<
   mobx:           { Icon: SiMobx,       color: "#ff9955", bg: "rgba(255,153,85,0.10)" },
   "framer-motion":{ Icon: SiFramer,     color: "#e535ab", bg: "rgba(229,53,171,0.10)" },
   mui:            { Icon: SiMui,        color: "#007fff", bg: "rgba(0,127,255,0.10)" },
+  python:         { Icon: SiPython,     color: "#3776ab", bg: "rgba(55,118,171,0.10)" },
+  go:             { Icon: SiGo,         color: "#00add8", bg: "rgba(0,173,216,0.10)" },
+  java:           { Icon: SiOpenjdk,    color: "#5382a1", bg: "rgba(83,130,161,0.10)" },
+  cpp:            { Icon: SiCplusplus,  color: "#00599c", bg: "rgba(0,89,156,0.10)" },
+  rust:           { Icon: SiRust,       color: "#e43716", bg: "rgba(228,55,22,0.10)" },
 };
 
 export function TemplateLogo({

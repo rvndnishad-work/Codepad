@@ -76,7 +76,13 @@ export async function POST(
   });
 
   if (!attempt) {
-    return NextResponse.json({ error: "No active attempt in progress" }, { status: 400 });
+    // Telemetry is best-effort proctoring data. When there's no in-progress
+    // attempt to attach it to — e.g. a regular practice run (attempts are only
+    // persisted at submit time) or a take-home that hasn't been started — there
+    // is simply nothing to record. Acknowledge with a no-op instead of a 400 so
+    // the client's 10s flush loop doesn't surface an error badge and spam the
+    // console every tick.
+    return NextResponse.json({ ok: true, recorded: false }, { status: 200 });
   }
 
   const attemptId = attempt.id;

@@ -24,6 +24,10 @@ const submitSchema = z.object({
   sessionId: z.string().optional().nullable(),
   stepId: z.string().optional().nullable(),
   token: z.string().optional().nullable(),
+  // "manual" → frontend/playground challenge with no automated tests: record
+  // the submission for manual review instead of auto-grading (status
+  // "submitted", score null). Defaults to "auto".
+  gradingMode: z.enum(["auto", "manual"]).optional(),
 });
 
 export async function POST(
@@ -37,7 +41,8 @@ export async function POST(
     return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
   }
 
-  const { files, testResults, durationSec, sessionId, stepId, token } = parsed.data;
+  const { files, testResults, durationSec, sessionId, stepId, token, gradingMode } = parsed.data;
+  const isManualReview = gradingMode === "manual";
 
   const session = await auth();
   let candidateUserId = session?.user?.id;
@@ -107,8 +112,9 @@ export async function POST(
     return NextResponse.json({ error: "challenge not found" }, { status: 404 });
   }
 
-  const status =
-    testResults.total > 0 && testResults.passed === testResults.total
+  const status = isManualReview
+    ? "submitted"
+    : testResults.total > 0 && testResults.passed === testResults.total
       ? "passed"
       : "failed";
 
@@ -148,9 +154,10 @@ export async function POST(
     }
   }
 
-  // Calculate grading engine score
+  // Calculate grading engine score (skipped for manual-review submissions —
+  // frontend/playground challenges are scored by a human reviewer later).
   let score: number | null = null;
-  if (stepId) {
+  if (!isManualReview && stepId) {
     const step = await prisma.challengeStep.findUnique({
       where: { id: stepId },
       select: { testCasesJson: true },

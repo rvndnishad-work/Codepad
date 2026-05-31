@@ -11,6 +11,8 @@ function FooterShellInner({ children }: { children: ReactNode }) {
   if (pathname?.startsWith("/play")) return null;
   if (pathname?.startsWith("/admin")) return null;
   if (pathname?.startsWith("/w/")) return null;
+  // Full-screen coding IDE — the challenge attempt page manages its own layout.
+  if (pathname && /^\/challenges\/[^/]+\/attempt$/.test(pathname)) return null;
   if (params?.get("view") === "preview") return null;
   return <>{children}</>;
 }

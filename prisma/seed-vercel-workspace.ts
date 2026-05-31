@@ -8,6 +8,7 @@
  */
 import { PrismaClient } from "@prisma/client";
 import crypto from "node:crypto";
+import { VERCEL_SEED_CHALLENGES } from "./seed-data/vercel-challenges";
 
 const prisma = new PrismaClient();
 
@@ -72,54 +73,16 @@ async function main() {
     },
   });
 
-  // 4. Create workspace challenges
+  // 4. Create workspace challenges. Content (real starter files + tests +
+  //    descriptions) lives in the shared module so the backfill script and the
+  //    seed stay in sync — order here drives the take-home/session indexes below.
   console.log(`  → creating challenges…`);
-  const challengeBlueprints = [
-    {
-      slug: `${SEED_TAG}-react-pagination`,
-      title: "React: Build a paginated user list",
-      difficulty: "medium",
-      template: "react",
-      category: "Frontend",
-      estimatedMinutes: 45,
-      description: `[${SEED_TAG}] Build a paginated user list component using React hooks. Each page should show 10 users.`,
-    },
-    {
-      slug: `${SEED_TAG}-two-sum-ts`,
-      title: "Two Sum (TypeScript)",
-      difficulty: "easy",
-      template: "test-ts",
-      category: "Algorithms",
-      estimatedMinutes: 20,
-      description: `[${SEED_TAG}] Given an array of integers, return indices of the two numbers such that they add up to a specific target.`,
-    },
-    {
-      slug: `${SEED_TAG}-debounce-hook`,
-      title: "Implement a useDebounce hook",
-      difficulty: "medium",
-      template: "react",
-      category: "React",
-      estimatedMinutes: 30,
-      description: `[${SEED_TAG}] Implement a custom React hook \`useDebounce(value, delayMs)\` that returns the debounced value.`,
-    },
-    {
-      slug: `${SEED_TAG}-lru-cache`,
-      title: "LRU Cache",
-      difficulty: "hard",
-      template: "test-ts",
-      category: "Data Structures",
-      estimatedMinutes: 60,
-      description: `[${SEED_TAG}] Design and implement a data structure for Least Recently Used (LRU) cache with get/put in O(1).`,
-    },
-  ];
+  const challengeBlueprints = VERCEL_SEED_CHALLENGES;
 
   const challenges = await Promise.all(
     challengeBlueprints.map(async (b) => {
-      // The runnable code/tests live on a ChallengeStep — every read path
-      // (attempt page, take-home start) assumes a position-0 step exists.
-      // See prisma/migrate-challenges-to-steps.ts for the same invariant.
-      const starterFiles = JSON.stringify({ "/index.ts": "// starter code\n" });
-      const testFiles = JSON.stringify({ "/index.test.ts": "// tests\n" });
+      const starterFiles = JSON.stringify(b.starterFiles);
+      const testFiles = JSON.stringify(b.testFiles);
 
       const challenge = await prisma.challenge.create({
         data: {
@@ -130,7 +93,7 @@ async function main() {
           template: b.template,
           starterFiles,
           testFiles,
-          tags: JSON.stringify(["seed"]),
+          tags: JSON.stringify(b.tags),
           estimatedMinutes: b.estimatedMinutes,
           category: b.category,
           published: true,
@@ -143,6 +106,7 @@ async function main() {
       // Single-step mirror of the parent (position 0). Without this the
       // challenge can't be started — the attempt page reads files off the
       // step and 404s when none exists.
+      // See prisma/migrate-challenges-to-steps.ts for the same invariant.
       await prisma.challengeStep.create({
         data: {
           challengeId: challenge.id,

@@ -1,8 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import Link from "next/link";
-import { Plus, Edit3 } from "lucide-react";
-import AdminChallengeRow from "./AdminChallengeRow";
-import ChallengesBulkTable, { BulkHeaderCheckbox } from "./ChallengesBulkTable";
+import { Plus } from "lucide-react";
+import AdminChallengesList from "./AdminChallengesList";
 
 export default async function AdminChallengesPage() {
   const rows = await prisma.challenge.findMany({
@@ -14,11 +13,25 @@ export default async function AdminChallengesPage() {
       difficulty: true,
       category: true,
       published: true,
+      premium: true,
       estimatedMinutes: true,
       updatedAt: true,
       _count: { select: { attempts: true } },
     },
   });
+
+  const formattedRows = rows.map((c) => ({
+    id: c.id,
+    slug: c.slug,
+    title: c.title,
+    difficulty: c.difficulty,
+    category: c.category,
+    published: c.published,
+    premium: c.premium,
+    estimatedMinutes: c.estimatedMinutes,
+    updatedAt: c.updatedAt.toISOString(),
+    attempts: c._count.attempts,
+  }));
 
   return (
     <div>
@@ -50,37 +63,7 @@ export default async function AdminChallengesPage() {
           </Link>
         </div>
       ) : (
-        <ChallengesBulkTable>
-          <div className="rounded-2xl border border-border bg-surface overflow-hidden">
-            <div className="hidden lg:grid lg:grid-cols-[40px_3fr_1.2fr_1.2fr_1fr_1.2fr_2.5fr] lg:items-center lg:px-6 lg:py-4 bg-elevated/50 text-[10px] uppercase tracking-[0.15em] text-muted border-b border-border font-bold">
-              <div className="flex items-center justify-center">
-                <BulkHeaderCheckbox ids={rows.map((r) => r.id)} />
-              </div>
-              <div>Title</div>
-              <div>Difficulty</div>
-              <div>Category</div>
-              <div>Attempts</div>
-              <div>Status</div>
-              <div className="text-right">Actions</div>
-            </div>
-            <div className="divide-y divide-border">
-              {rows.map((c) => (
-                <AdminChallengeRow
-                  key={c.id}
-                  challenge={{
-                    id: c.id,
-                    slug: c.slug,
-                    title: c.title,
-                    difficulty: c.difficulty,
-                    category: c.category,
-                    published: c.published,
-                    attempts: c._count.attempts,
-                  }}
-                />
-              ))}
-            </div>
-          </div>
-        </ChallengesBulkTable>
+        <AdminChallengesList rows={formattedRows} />
       )}
     </div>
   );

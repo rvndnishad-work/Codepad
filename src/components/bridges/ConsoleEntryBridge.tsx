@@ -8,12 +8,12 @@ import { useSandpack } from "@codesandbox/sandpack-react";
  * This bridge listens for active file changes and updates the hidden 
  * index.html and package.json to point to the current file.
  */
-export function ConsoleEntryBridge({ active }: { active: boolean }) {
+export function ConsoleEntryBridge({ active, isBackend }: { active: boolean; isBackend?: boolean }) {
   const { sandpack } = useSandpack();
   const lastActiveRef = useRef<string>(sandpack.activeFile);
 
   useEffect(() => {
-    if (!active) return;
+    if (!active || isBackend) return;
     if (sandpack.activeFile === lastActiveRef.current) return;
     
     const file = sandpack.activeFile;

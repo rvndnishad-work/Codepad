@@ -66,6 +66,7 @@ export default async function EditChallengePage({ params }: Props) {
     visibility:
       challenge.visibility === "private" ? "private" : "public",
     featured: challenge.featured,
+    premium: challenge.premium,
     steps,
   };
 

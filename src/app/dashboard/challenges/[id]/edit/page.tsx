@@ -76,6 +76,7 @@ export default async function EditUserChallengePage({ params }: Params) {
     visibility:
       challenge.visibility === "private" ? "private" : "public",
     featured: challenge.featured,
+    premium: challenge.premium,
     steps,
   };
 

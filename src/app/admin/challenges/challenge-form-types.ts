@@ -38,6 +38,8 @@ export type ChallengeFormInput = {
   visibility: "public" | "private";
   /** Staff-pick flag — admin only. Authors can't self-feature. */
   featured: boolean;
+  /** Whether the challenge requires a paid premium subscription (admin only) */
+  premium: boolean;
   steps: ChallengeStepInput[];
 };
 

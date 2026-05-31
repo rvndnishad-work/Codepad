@@ -43,6 +43,7 @@ const fullSchema = z.object({
   published: z.boolean(),
   visibility: z.enum(["public", "private"]).optional(),
   featured: z.boolean().optional(),
+  premium: z.boolean().optional(),
   steps: z.array(stepSchema).min(1).max(20),
 });
 
@@ -50,6 +51,7 @@ const partialSchema = z.object({
   published: z.boolean().optional(),
   visibility: z.enum(["public", "private"]).optional(),
   featured: z.boolean().optional(),
+  premium: z.boolean().optional(),
 });
 
 type Params = { params: Promise<{ id: string }> };
@@ -96,6 +98,7 @@ async function applyUpdate(id: string, json: unknown) {
             published: data.published,
             visibility: data.visibility ?? "public",
             featured: data.featured ?? false,
+            premium: data.premium ?? false,
             // Legacy mirror — kept until Stage 2 drops these columns.
             template: first.template,
             starterFiles: JSON.stringify(first.starterFiles),
@@ -137,7 +140,8 @@ async function applyUpdate(id: string, json: unknown) {
   if (
     data.published === undefined &&
     data.visibility === undefined &&
-    data.featured === undefined
+    data.featured === undefined &&
+    data.premium === undefined
   ) {
     return NextResponse.json({ error: "No fields to update" }, { status: 400 });
   }
@@ -148,8 +152,9 @@ async function applyUpdate(id: string, json: unknown) {
         published: data.published,
         visibility: data.visibility,
         featured: data.featured,
+        premium: data.premium,
       },
-      select: { id: true, published: true, visibility: true, featured: true },
+      select: { id: true, published: true, visibility: true, featured: true, premium: true },
     });
     return NextResponse.json(updated);
   } catch {

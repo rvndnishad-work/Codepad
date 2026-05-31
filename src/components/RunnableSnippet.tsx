@@ -66,7 +66,7 @@ const nbpDarkTheme = {
   },
   font: {
     body: 'var(--font-sans), Inter, sans-serif',
-    mono: '"JetBrains Mono", monospace',
+    mono: 'var(--font-mono), "Fira Code", monospace',
     size: "13px",
     lineHeight: "1.6",
   },
@@ -98,7 +98,7 @@ const nbpLightTheme = {
   },
   font: {
     body: 'var(--font-sans), Inter, sans-serif',
-    mono: '"JetBrains Mono", monospace',
+    mono: 'var(--font-mono), "Fira Code", monospace',
     size: "13px",
     lineHeight: "1.6",
   },

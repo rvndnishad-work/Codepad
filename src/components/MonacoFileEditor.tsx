@@ -337,7 +337,7 @@ export default function MonacoFileEditor({
             options={{
               minimap: { enabled: false },
               fontSize: 13,
-              fontFamily: "'JetBrains Mono', monospace",
+              fontFamily: "var(--font-mono), 'Fira Code', monospace",
               fontLigatures: true,
               automaticLayout: true,
               scrollBeyondLastLine: false,

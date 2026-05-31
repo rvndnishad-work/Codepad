@@ -136,7 +136,7 @@ function simpleHash(str: string): string {
 }
 
 /** Languages that execute server-side via /api/execute */
-const BACKEND_LANGUAGES = new Set(["python", "go", "java", "cpp", "rust"]);
+const BACKEND_LANGUAGES = new Set(["python", "go", "java", "cpp", "rust", "node", "ts-node"]);
 
 function getLanguageFromPath(filePath: string, fallback: string): string {
   const ext = filePath.split(".").pop()?.toLowerCase() ?? "";
@@ -145,13 +145,15 @@ function getLanguageFromPath(filePath: string, fallback: string): string {
   if (ext === "java") return "java";
   if (ext === "cpp" || ext === "h" || ext === "hpp") return "cpp";
   if (ext === "rs") return "rust";
-  if (ext === "js" || ext === "jsx") return "javascript";
-  if (ext === "ts" || ext === "tsx") return "typescript";
+  if (ext === "js" || ext === "jsx") return fallback === "node" ? "node" : "javascript";
+  if (ext === "ts" || ext === "tsx") return fallback === "ts-node" ? "typescript" : "typescript";
   return fallback;
 }
 
-function isBackendLanguage(lang: string): boolean {
-  return BACKEND_LANGUAGES.has(lang.toLowerCase());
+function isBackendLanguage(lang: string, templateId?: string): boolean {
+  const l = lang.toLowerCase();
+  if (templateId === "ts-node" && l === "typescript") return true;
+  return BACKEND_LANGUAGES.has(l);
 }
 
 export default function Playground({
@@ -295,7 +297,7 @@ export default function Playground({
         const executionLanguage = getLanguageFromPath(activeFilePath, templateId);
 
         // Only pre-compile backend languages
-        if (!isBackendLanguage(executionLanguage)) return;
+        if (!isBackendLanguage(executionLanguage, templateId)) return;
 
         await fetch("/api/execute", {
           method: "POST",
@@ -327,7 +329,7 @@ export default function Playground({
       const executionLanguage = getLanguageFromPath(activeFilePath, templateId);
 
       // Backend languages (Python, Go, Java, C++, Rust) execute server-side
-      if (activeCode.trim() && isBackendLanguage(executionLanguage)) {
+      if (activeCode.trim() && isBackendLanguage(executionLanguage, templateId)) {
         const hashHex = simpleHash(activeCode);
 
         // Clear console before execution

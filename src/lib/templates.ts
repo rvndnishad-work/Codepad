@@ -475,6 +475,36 @@ body {
       "/package.json": { code: `{\n  "main": "main.rs",\n  "dependencies": {}\n}`, hidden: true },
     },
   },
+  {
+    id: "node",
+    title: "Node.js",
+    subtitle: "Node.js backend environment",
+    group: "backend",
+    category: "core",
+    base: "vanilla",
+    label: "NodeJS",
+    accent: "#339933",
+    mode: "console",
+    files: {
+      "/index.js": `console.log("Hello, Node.js!");\n`,
+      "/package.json": { code: `{\n  "main": "index.js",\n  "dependencies": {}\n}`, hidden: true },
+    },
+  },
+  {
+    id: "ts-node",
+    title: "TypeScript (Node)",
+    subtitle: "TypeScript backend environment",
+    group: "backend",
+    category: "core",
+    base: "vanilla",
+    label: "TS-Node",
+    accent: "#3178c6",
+    mode: "console",
+    files: {
+      "/index.ts": `const greet = (name: string): string => {\n  return \`Hello, \${name}! 👋\`;\n};\n\nconsole.log(greet("TypeScript on Node"));\n`,
+      "/package.json": { code: `{\n  "main": "index.ts",\n  "dependencies": {}\n}`, hidden: true },
+    },
+  },
 ];
 
 export const templatesById = Object.fromEntries(templates.map((t) => [t.id, t]));
@@ -495,7 +525,7 @@ export const templatesById = Object.fromEntries(templates.map((t) => [t.id, t]))
 export type ChallengeSurface = "dsa" | "frontend";
 
 export function challengeSurface(template: string): ChallengeSurface {
-  return /^test-/.test(template) || ["python", "go", "java", "cpp", "rust"].includes(template) ? "dsa" : "frontend";
+  return /^test-/.test(template) || ["python", "go", "java", "cpp", "rust", "node", "ts-node"].includes(template) ? "dsa" : "frontend";
 }
 
 export const groups: { key: string; label: string }[] = [

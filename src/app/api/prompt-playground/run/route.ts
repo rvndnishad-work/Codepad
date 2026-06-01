@@ -1,5 +1,6 @@
 import { NextRequest } from "next/server";
 import { auth } from "@/lib/auth";
+import { rateLimitDistributed } from "@/lib/rate-limit";
 
 /**
  * POST /api/prompt-playground/run
@@ -35,6 +36,22 @@ export async function POST(req: NextRequest) {
       status: 401,
       headers: { "content-type": "application/json" },
     });
+  }
+
+  // Each run streams a full Gemini completion — cap per-user throughput to keep
+  // the project's quota from being burned by a tight client loop.
+  const rl = await rateLimitDistributed(`prompt-run:${session.user.id}`, 15, 60_000);
+  if (!rl.ok) {
+    return new Response(
+      JSON.stringify({ error: "Too many runs. Please wait a moment and try again." }),
+      {
+        status: 429,
+        headers: {
+          "content-type": "application/json",
+          "retry-after": String(Math.ceil(rl.resetMs / 1000)),
+        },
+      },
+    );
   }
 
   const apiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY;
@@ -109,6 +126,11 @@ export async function POST(req: NextRequest) {
   const decoder = new TextDecoder();
   const encoder = new TextEncoder();
   let buffer = "";
+  // Gemini reports real token usage in usageMetadata (usually on the final
+  // event). We capture the latest seen and emit it after the text, framed by a
+  // record-separator the model's text never contains, so the client can show
+  // true counts instead of a chars/4 estimate.
+  const usageRef: { value: TokenUsage | null } = { value: null };
 
   const stream = new ReadableStream({
     async pull(controller) {
@@ -116,7 +138,11 @@ export async function POST(req: NextRequest) {
         const { done, value } = await reader.read();
         if (done) {
           // Flush any trailing event in the buffer.
-          if (buffer.trim()) flushEvent(buffer, controller, encoder);
+          if (buffer.trim()) flushEvent(buffer, controller, encoder, usageRef);
+          // Append the usage trailer (if any) for the client to parse + strip.
+          if (usageRef.value) {
+            controller.enqueue(encoder.encode(USAGE_MARKER + JSON.stringify(usageRef.value)));
+          }
           controller.close();
           return;
         }
@@ -128,7 +154,7 @@ export async function POST(req: NextRequest) {
         while (sepIdx !== -1) {
           const eventBlock = buffer.slice(0, sepIdx);
           buffer = buffer.slice(sepIdx + 2);
-          flushEvent(eventBlock, controller, encoder);
+          flushEvent(eventBlock, controller, encoder, usageRef);
           sepIdx = buffer.indexOf("\n\n");
         }
       } catch (err) {
@@ -150,12 +176,25 @@ export async function POST(req: NextRequest) {
   });
 }
 
+type TokenUsage = { in: number; out: number; total: number };
+
+// Record Separator (U+001E) — frames the trailing usage JSON. Model text never
+// contains it, so the client can split it off cleanly. Built via fromCharCode
+// to keep the source free of a raw control character.
+const USAGE_MARKER = String.fromCharCode(30);
+
 /**
  * Parse a single SSE event block (one or more `data: ...` lines) and write
- * any extracted text deltas to the response stream. Silent on malformed JSON
- * so a single bad chunk doesn't kill the whole stream.
+ * any extracted text deltas to the response stream. Also records the latest
+ * usageMetadata seen. Silent on malformed JSON so a single bad chunk doesn't
+ * kill the whole stream.
  */
-function flushEvent(block: string, controller: ReadableStreamDefaultController, encoder: TextEncoder) {
+function flushEvent(
+  block: string,
+  controller: ReadableStreamDefaultController,
+  encoder: TextEncoder,
+  usageRef: { value: TokenUsage | null },
+) {
   for (const line of block.split("\n")) {
     if (!line.startsWith("data:")) continue;
     const json = line.slice(5).trim();
@@ -169,6 +208,14 @@ function flushEvent(block: string, controller: ReadableStreamDefaultController, 
             controller.enqueue(encoder.encode(part.text));
           }
         }
+      }
+      const u = parsed?.usageMetadata;
+      if (u && typeof u.totalTokenCount === "number") {
+        usageRef.value = {
+          in: u.promptTokenCount ?? 0,
+          out: u.candidatesTokenCount ?? 0,
+          total: u.totalTokenCount ?? 0,
+        };
       }
     } catch {
       // Skip malformed event chunks; Gemini occasionally sends keep-alive

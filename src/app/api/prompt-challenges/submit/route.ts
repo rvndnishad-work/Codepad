@@ -1,17 +1,36 @@
 import { NextRequest, NextResponse } from "next/server";
+import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { rateLimitDistributed } from "@/lib/rate-limit";
 import { runRulesBasedGrader, callGeminiGrader, ScenarioDetails } from "@/lib/prompt-challenges/grader";
 
 // POST /api/prompt-challenges/submit
-// Grades a prompt submission using Gemini (if key available) or rules-based offline fallback
+// Grades a prompt submission using Gemini (if key available) or rules-based offline fallback.
+// Auth required — grading hits the Gemini quota, so the attempt is always
+// attributed to the authenticated user (never a client-supplied id).
 export async function POST(req: NextRequest) {
   try {
+    const session = await auth().catch(() => null);
+    const userId = session?.user?.id;
+    if (!userId) {
+      return NextResponse.json({ error: "Sign in required to grade a prompt." }, { status: 401 });
+    }
+
+    // Grading hits the Gemini quota — cap per-user throughput.
+    const rl = await rateLimitDistributed(`prompt-grade:${userId}`, 20, 60_000);
+    if (!rl.ok) {
+      return NextResponse.json(
+        { error: "You're grading too fast. Please wait a moment and try again." },
+        { status: 429, headers: { "retry-after": String(Math.ceil(rl.resetMs / 1000)) } },
+      );
+    }
+
     const body = await req.json().catch(() => null);
     if (!body) {
       return NextResponse.json({ error: "Missing body parameters" }, { status: 400 });
     }
 
-    const { scenarioId, promptText, sessionId, userId, durationSec } = body;
+    const { scenarioId, promptText, sessionId, durationSec } = body;
 
     if (!scenarioId || promptText === undefined) {
       return NextResponse.json({ error: "Missing required fields: scenarioId and promptText" }, { status: 400 });
@@ -79,7 +98,7 @@ export async function POST(req: NextRequest) {
         feedback: grading.feedback,
         graderType: grading.graderType,
         sessionId: sessionId || null,
-        userId: userId || null,
+        userId,
         durationSec: durationSec ? parseInt(durationSec, 10) : null,
       },
       include: {

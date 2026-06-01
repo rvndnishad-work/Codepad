@@ -999,6 +999,10 @@ model PromptScenario {
   workspaceId      String?
   rubricWeights    String           @default("{\"clarity\":20,\"specificity\":20,\"efficiency\":15,\"context\":15,\"constraints\":15,\"edgeCases\":15}")
   published        Boolean          @default(true)
+  /// Who authored this scenario. Null for built-in/seeded scenarios (only
+  /// admins may edit those). Platform-wide scenarios created by ordinary users
+  /// start unpublished and are editable/deletable by their author.
+  authorId         String?
   createdAt        DateTime         @default(now())
   updatedAt        DateTime         @updatedAt
   attempts         PromptAttempt[]
@@ -1007,6 +1011,7 @@ model PromptScenario {
 
   @@index([workspaceId, published])
   @@index([difficulty, category])
+  @@index([authorId])
 }
 
 /// A candidate's submitted prompt for a scenario.

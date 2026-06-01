@@ -8,6 +8,8 @@ import type { Scenario } from "./types";
 interface Props {
   onClose: () => void;
   onCreated: (s: Scenario) => void;
+  /** Optional seed for the background/context field (e.g. promoted from the playground). */
+  initialDescription?: string;
 }
 
 /**
@@ -15,13 +17,13 @@ interface Props {
  * existing /api/prompt-challenges POST endpoint. Kept as a separate file so
  * the main client component doesn't carry ~200 lines of form state.
  */
-export default function CreateScenarioModal({ onClose, onCreated }: Props) {
+export default function CreateScenarioModal({ onClose, onCreated, initialDescription }: Props) {
   const [submitting, setSubmitting] = useState(false);
   const [title, setTitle] = useState("");
   const [category, setCategory] = useState("code-generation");
   const [difficulty, setDifficulty] = useState("intermediate");
   const [estMinutes, setEstMinutes] = useState(10);
-  const [description, setDescription] = useState("");
+  const [description, setDescription] = useState(initialDescription ?? "");
   const [objective, setObjective] = useState("");
   const [keywords, setKeywords] = useState("");
   const [format, setFormat] = useState("");
@@ -57,7 +59,16 @@ export default function CreateScenarioModal({ onClose, onCreated }: Props) {
       const data = await res.json().catch(() => null);
       if (!res.ok) throw new Error(data?.error ?? `HTTP ${res.status}`);
 
-      toast.success("Scenario created");
+      // Platform scenarios from non-admins are created unpublished (pending
+      // review) — let the author know it won't be public yet, but they can
+      // still practice on it now.
+      if (data?.scenario && data.scenario.published === false) {
+        toast.success("Scenario saved as a draft", {
+          description: "It's visible only to you until an admin publishes it.",
+        });
+      } else {
+        toast.success("Scenario created");
+      }
       if (data?.scenario) {
         onCreated({
           id: data.scenario.id,

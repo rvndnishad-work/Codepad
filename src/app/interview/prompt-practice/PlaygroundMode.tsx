@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef } from "react";
-import { Play, RotateCcw, Copy, Sparkles, AlertTriangle } from "lucide-react";
+import { Play, RotateCcw, Copy, Sparkles, AlertTriangle, Beaker } from "lucide-react";
 import { toast } from "sonner";
 import PromptEditor from "./PromptEditor";
 import MarkdownRenderer from "@/components/MarkdownRenderer";
@@ -45,7 +45,11 @@ const MODELS = [
   { value: "gemini-2.0-flash", label: "Gemini 2.0 Flash" },
 ];
 
-export default function PlaygroundMode() {
+// Must match USAGE_MARKER in /api/prompt-playground/run — the record separator
+// (U+001E) that frames the trailing real-token-usage JSON after the response.
+const USAGE_MARKER = String.fromCharCode(30);
+
+export default function PlaygroundMode({ onPromote }: { onPromote?: (promptText: string) => void }) {
   const [model, setModel] = useState(MODELS[0].value);
   const [systemPrompt, setSystemPrompt] = useState("");
   const [prompt, setPrompt] = useState("");
@@ -103,20 +107,34 @@ export default function PlaygroundMode() {
         while (true) {
           const { done, value } = await reader.read();
           if (done) break;
-          const chunk = decoder.decode(value, { stream: true });
-          acc += chunk;
-          setResponse(acc);
+          acc += decoder.decode(value, { stream: true });
+          // Hide the usage trailer (everything from the marker onward) from the
+          // live view while streaming.
+          setResponse(acc.split(USAGE_MARKER)[0]);
         }
       }
+
+      // Separate the response text from the optional trailing usage JSON.
+      const [text, usageJson] = acc.split(USAGE_MARKER);
+      let usage: { in: number; out: number; total: number } | null = null;
+      if (usageJson) {
+        try {
+          usage = JSON.parse(usageJson);
+        } catch {
+          // ignore malformed trailer — fall back to estimates
+        }
+      }
+      setResponse(text);
 
       const durationMs = Date.now() - startedAtRef.current;
       const record: RunRecord = {
         id: `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
         prompt,
         systemPrompt,
-        response: acc,
-        tokensIn: tokenEstimate,
-        tokensOut: Math.ceil(acc.length / 4),
+        response: text,
+        // Prefer Gemini's real token counts; fall back to the chars/4 estimate.
+        tokensIn: usage?.in ?? tokenEstimate,
+        tokensOut: usage?.out ?? Math.ceil(text.length / 4),
         durationMs,
         model,
         error: null,
@@ -268,7 +286,20 @@ export default function PlaygroundMode() {
                 <RotateCcw className="w-3.5 h-3.5" />
                 Reset
               </button>
-              
+
+              {onPromote && (
+                <button
+                  type="button"
+                  onClick={() => onPromote(prompt)}
+                  disabled={running || charCount === 0}
+                  title="Turn this prompt into a graded practice scenario"
+                  className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border border-border bg-surface hover:bg-panel text-xs font-semibold text-muted hover:text-fg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <Beaker className="w-3.5 h-3.5" />
+                  Save as scenario
+                </button>
+              )}
+
               {hasOutput && !showDrawer && (
                 <button
                   type="button"

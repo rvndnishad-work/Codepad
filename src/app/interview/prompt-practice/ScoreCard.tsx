@@ -5,12 +5,30 @@ import { type Attempt, parseRubric, RUBRIC_LABELS } from "./types";
 
 interface Props {
   attempt: Attempt;
+  /** The user's previous attempt on this scenario, for an improvement diff. */
+  compareTo?: Attempt | null;
 }
 
-export default function ScoreCard({ attempt }: Props) {
+/** Signed delta chip: ▲+N (green), ▼-N (red), or ±0 (muted). */
+function Delta({ now, was }: { now: number; was: number }) {
+  const d = now - was;
+  if (d === 0) return <span className="text-muted/50 font-mono tabular-nums">±0</span>;
+  const up = d > 0;
+  return (
+    <span className={`font-mono tabular-nums ${up ? "text-emerald-400" : "text-rose-400"}`}>
+      {up ? "▲" : "▼"}
+      {Math.abs(d)}
+    </span>
+  );
+}
+
+export default function ScoreCard({ attempt, compareTo }: Props) {
   const rubric = parseRubric(attempt.rubricScores);
+  const prevRubric = compareTo ? parseRubric(compareTo.rubricScores) : null;
+  const prevScore = compareTo?.score ?? null;
   const score = attempt.score ?? 0;
-  
+  const isAi = attempt.graderType === "ai";
+
   // Calculate stroke-dashoffset for the circular progress (circumference = 2 * pi * r)
   const radius = 46;
   const circumference = 2 * Math.PI * radius;
@@ -29,13 +47,23 @@ export default function ScoreCard({ attempt }: Props) {
             <Target className="w-4 h-4" /> Overall Score
           </div>
           <div className="text-sm text-muted/80 max-w-xs text-center sm:text-left mt-2">
-            This prompt was evaluated across six dimensions by our AI grader.
+            {isAi
+              ? "Scored across six dimensions by the Gemini AI grader."
+              : "Scored across six dimensions by the offline rules-based grader."}
           </div>
-          
+
+          {compareTo && prevScore != null ? (
+            <div className="mt-3 inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-panel/50 border border-border text-xs font-medium text-muted">
+              <span>vs previous</span>
+              <Delta now={score} was={prevScore} />
+              <span className="text-muted/50">({prevScore} → {score})</span>
+            </div>
+          ) : null}
+
           <div className="flex flex-wrap gap-3 mt-4">
             <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-panel/50 border border-border text-xs text-muted font-medium">
               <Bot className="w-3.5 h-3.5 text-indigo-400" />
-              {attempt.graderType === "ai" ? "Gemini 1.5 Pro" : "Local rules"}
+              {attempt.graderType === "ai" ? "Gemini AI" : "Local rules"}
             </div>
             <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-panel/50 border border-border text-xs text-muted font-medium">
               <Zap className="w-3.5 h-3.5 text-amber-400" />
@@ -88,7 +116,10 @@ export default function ScoreCard({ attempt }: Props) {
               <div key={key} className="space-y-2 p-3 rounded-2xl bg-panel/30 border border-border/50 hover:bg-panel/50 transition-colors">
                 <div className="flex items-center justify-between text-xs font-medium">
                   <span className="text-fg/90">{label}</span>
-                  <span className="font-mono tabular-nums text-muted">{val}/100</span>
+                  <span className="flex items-center gap-1.5">
+                    {prevRubric ? <Delta now={val} was={prevRubric[key]} /> : null}
+                    <span className="font-mono tabular-nums text-muted">{val}/100</span>
+                  </span>
                 </div>
                 <div className="h-2 rounded-full bg-bg overflow-hidden border border-border/50">
                   <div className={`h-full ${tone} transition-all duration-1000 ease-out`} style={{ width: `${val}%` }} />

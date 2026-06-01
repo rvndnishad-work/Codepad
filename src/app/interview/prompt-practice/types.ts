@@ -41,6 +41,9 @@ export interface Attempt {
   shareTitle?: string | null;
   shareNote?: string | null;
   shareUpvotes?: number;
+  // Present only on community-feed attempts (other users' shared prompts).
+  authorName?: string | null;
+  authorImage?: string | null;
 }
 
 export interface RubricScores {

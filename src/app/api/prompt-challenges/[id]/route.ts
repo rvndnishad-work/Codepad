@@ -1,6 +1,52 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
+import { isAdmin } from "@/lib/admin";
+import type { Session } from "next-auth";
+
+/**
+ * Authorize a mutation (edit/delete) of a scenario for the current session.
+ * Returns null when allowed, or a NextResponse error to short-circuit with.
+ *
+ *  - Workspace-scoped scenarios: any workspace member (or an admin).
+ *  - Platform-wide scenarios authored by a user: that author (or an admin).
+ *  - Built-in/seeded platform scenarios (no authorId): admins only.
+ */
+async function authorizeScenarioMutation(
+  scenario: { workspaceId: string | null; authorId: string | null },
+  session: Session,
+  verb: "modify" | "delete",
+): Promise<NextResponse | null> {
+  const admin = isAdmin(session);
+  if (admin) return null;
+
+  const userId = session.user!.id;
+
+  if (scenario.workspaceId) {
+    const workspace = await prisma.workspace.findUnique({
+      where: { id: scenario.workspaceId },
+      include: { members: { select: { userId: true } } },
+    });
+    if (!workspace) {
+      return NextResponse.json({ error: "Workspace not found" }, { status: 404 });
+    }
+    if (!workspace.members.some((m) => m.userId === userId)) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+    return null;
+  }
+
+  // Platform-wide scenario.
+  if (scenario.authorId && scenario.authorId === userId) return null;
+  return NextResponse.json(
+    {
+      error: scenario.authorId
+        ? `Only the author or an admin can ${verb} this scenario.`
+        : `Cannot ${verb} built-in scenarios.`,
+    },
+    { status: 403 },
+  );
+}
 
 // GET /api/prompt-challenges/[id]
 export async function GET(
@@ -44,25 +90,8 @@ export async function PATCH(
       return NextResponse.json({ error: "Scenario not found" }, { status: 404 });
     }
 
-    // Only allow modification if it is a workspace-scoped scenario
-    if (!scenario.workspaceId) {
-      return NextResponse.json({ error: "Cannot modify built-in scenarios" }, { status: 403 });
-    }
-
-    // Verify workspace membership
-    const workspace = await prisma.workspace.findUnique({
-      where: { id: scenario.workspaceId },
-      include: { members: { select: { userId: true } } }
-    });
-
-    if (!workspace) {
-      return NextResponse.json({ error: "Workspace not found" }, { status: 404 });
-    }
-
-    const isMember = workspace.members.some((m) => m.userId === session.user!.id);
-    if (!isMember) {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-    }
+    const denied = await authorizeScenarioMutation(scenario, session, "modify");
+    if (denied) return denied;
 
     const body = await req.json();
     const {
@@ -123,24 +152,8 @@ export async function DELETE(
       return NextResponse.json({ error: "Scenario not found" }, { status: 404 });
     }
 
-    if (!scenario.workspaceId) {
-      return NextResponse.json({ error: "Cannot delete built-in scenarios" }, { status: 403 });
-    }
-
-    // Verify workspace membership
-    const workspace = await prisma.workspace.findUnique({
-      where: { id: scenario.workspaceId },
-      include: { members: { select: { userId: true } } }
-    });
-
-    if (!workspace) {
-      return NextResponse.json({ error: "Workspace not found" }, { status: 404 });
-    }
-
-    const isMember = workspace.members.some((m) => m.userId === session.user!.id);
-    if (!isMember) {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-    }
+    const denied = await authorizeScenarioMutation(scenario, session, "delete");
+    if (denied) return denied;
 
     await prisma.promptScenario.delete({
       where: { id },

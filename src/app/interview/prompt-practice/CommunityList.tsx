@@ -58,7 +58,9 @@ export default function CommunityList({
                   {p.shareTitle || p.scenarioTitle}
                 </div>
                 <div className="text-xs text-muted mt-0.5 line-clamp-1">
-                  {p.shareNote || "No note provided."}
+                  {p.authorName ? <span className="text-fg/70">{p.authorName}</span> : null}
+                  {p.authorName && p.shareNote ? <span className="mx-1">·</span> : null}
+                  {p.shareNote || (p.authorName ? null : "No note provided.")}
                 </div>
               </button>
               <div className="flex items-center gap-2 shrink-0">

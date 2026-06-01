@@ -19,6 +19,7 @@ import {
   Play,
   Terminal,
   Award,
+  RotateCcw,
 } from "lucide-react";
 
 import type { Scenario, Exemplar, Attempt } from "./types";
@@ -62,21 +63,26 @@ export default function PromptLabClient({
   initialAttempts,
   initialUpvotedIds,
 }: Props) {
-  const [mode, setMode] = useState<Mode>("landing");
+  // `mode` starts null so SSR and the first client render agree (no hydration
+  // mismatch). An effect resolves the persisted mode right after mount, and we
+  // render a skeleton until then — this avoids the old "flash of landing before
+  // snapping to the saved mode" on refresh.
+  const [mode, setMode] = useState<Mode | null>(null);
   const [scenarios, setScenarios] = useState(initialScenarios);
   const [attempts, setAttempts] = useState(initialAttempts);
   const [upvotedIds, setUpvotedIds] = useState<Set<string>>(new Set(initialUpvotedIds));
   const [activeScenario, setActiveScenario] = useState<Scenario | null>(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [createPrefill, setCreatePrefill] = useState<string | undefined>(undefined);
   const [shareTarget, setShareTarget] = useState<Attempt | null>(null);
 
   // Restore last-used mode from localStorage so a refresh keeps you where you were.
   useEffect(() => {
     const saved = typeof window !== "undefined" ? localStorage.getItem("promptLabMode") : null;
-    if (saved === "landing" || saved === "challenges" || saved === "playground") setMode(saved as Mode);
+    setMode(saved === "challenges" || saved === "playground" ? (saved as Mode) : "landing");
   }, []);
   useEffect(() => {
-    if (typeof window !== "undefined") localStorage.setItem("promptLabMode", mode);
+    if (mode && typeof window !== "undefined") localStorage.setItem("promptLabMode", mode);
   }, [mode]);
 
   return (
@@ -94,7 +100,7 @@ export default function PromptLabClient({
             </div>
             <div>
               <h1 className="text-3xl font-bold tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-fg to-muted">
-                Prompt Lab
+                Prompt Arena
               </h1>
               <p className="text-sm text-muted mt-1 font-medium">
                 Master prompt engineering against scenarios or experiment freely.
@@ -102,7 +108,7 @@ export default function PromptLabClient({
             </div>
           </div>
           <div className="relative flex items-center gap-4">
-            {mode !== "landing" && (
+            {mode && mode !== "landing" && (
               <button
                 onClick={() => setMode("landing")}
                 className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border border-border bg-bg hover:bg-panel text-sm font-semibold text-muted hover:text-fg transition-all hover:scale-105 active:scale-95"
@@ -120,7 +126,12 @@ export default function PromptLabClient({
           </div>
         </header>
 
-        {mode === "landing" ? (
+        {mode === null ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="h-72 rounded-3xl border border-border bg-surface/50 animate-pulse" />
+            <div className="h-72 rounded-3xl border border-border bg-surface/50 animate-pulse" />
+          </div>
+        ) : mode === "landing" ? (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 animate-in fade-in zoom-in-95 duration-500">
             <button
               onClick={() => setMode("challenges")}
@@ -145,7 +156,7 @@ export default function PromptLabClient({
               </div>
               <h2 className="text-3xl font-bold text-fg mb-3 group-hover:text-purple-400 transition-colors">Playground</h2>
               <p className="text-base text-muted leading-relaxed">
-                Experiment freely. Run any prompt against Gemini 1.5 Pro, tweak the system instructions, and iterate without grading constraints.
+                Experiment freely. Run any prompt against the latest Gemini models, tweak the system instructions, and iterate without grading constraints.
               </p>
             </button>
           </div>
@@ -157,52 +168,10 @@ export default function PromptLabClient({
               attempts={attempts}
               exemplars={allExemplars.filter((e) => e.scenarioId === activeScenario.id)}
               upvotedIds={upvotedIds}
+              setUpvotedIds={setUpvotedIds}
               onBack={() => setActiveScenario(null)}
               onAttemptSubmitted={(a) => setAttempts((prev) => [a, ...prev])}
               onShareClick={(a) => setShareTarget(a)}
-              onUpvoteToggle={async (attemptId, nextUpvoted) => {
-                // Optimistic update
-                setUpvotedIds((prev) => {
-                  const next = new Set(prev);
-                  if (nextUpvoted) next.add(attemptId);
-                  else next.delete(attemptId);
-                  return next;
-                });
-                setAttempts((prev) =>
-                  prev.map((a) =>
-                    a.id === attemptId
-                      ? { ...a, shareUpvotes: (a.shareUpvotes ?? 0) + (nextUpvoted ? 1 : -1) }
-                      : a,
-                  ),
-                );
-                try {
-                  const res = await fetch(`/api/prompt-attempts/${attemptId}/upvote`, {
-                    method: "POST",
-                    headers: { "content-type": "application/json" },
-                    body: JSON.stringify({ upvoted: nextUpvoted }),
-                  });
-                  if (!res.ok) {
-                    const e = await res.json().catch(() => ({}));
-                    throw new Error(e?.error ?? `HTTP ${res.status}`);
-                  }
-                  const data = await res.json();
-                  // Reconcile with server count in case of race.
-                  setAttempts((prev) =>
-                    prev.map((a) => (a.id === attemptId ? { ...a, shareUpvotes: data.count } : a)),
-                  );
-                } catch (err) {
-                  // Revert optimistic update
-                  setUpvotedIds((prev) => {
-                    const next = new Set(prev);
-                    if (nextUpvoted) next.delete(attemptId);
-                    else next.add(attemptId);
-                    return next;
-                  });
-                  toast.error("Couldn't update vote", {
-                    description: err instanceof Error ? err.message : String(err),
-                  });
-                }
-              }}
             />
           ) : (
             <PracticeLobby
@@ -214,16 +183,28 @@ export default function PromptLabClient({
             />
           )
         ) : (
-          <PlaygroundMode />
+          <PlaygroundMode
+            onPromote={(promptText) => {
+              setCreatePrefill(promptText);
+              setShowCreateModal(true);
+            }}
+          />
         )}
       </div>
 
       {showCreateModal ? (
         <CreateScenarioModal
-          onClose={() => setShowCreateModal(false)}
+          initialDescription={createPrefill}
+          onClose={() => {
+            setShowCreateModal(false);
+            setCreatePrefill(undefined);
+          }}
           onCreated={(s) => {
             setScenarios((prev) => [s, ...prev]);
             setActiveScenario(s);
+            // If promoted from the playground, jump into the new scenario runner.
+            setMode("challenges");
+            setCreatePrefill(undefined);
           }}
         />
       ) : null}
@@ -492,26 +473,32 @@ function PracticeRunner({
   attempts,
   exemplars,
   upvotedIds,
+  setUpvotedIds,
   onBack,
   onAttemptSubmitted,
   onShareClick,
-  onUpvoteToggle,
 }: {
   scenario: Scenario;
   userId: string | null;
   attempts: Attempt[];
   exemplars: Exemplar[];
   upvotedIds: Set<string>;
+  setUpvotedIds: React.Dispatch<React.SetStateAction<Set<string>>>;
   onBack: () => void;
   onAttemptSubmitted: (a: Attempt) => void;
   onShareClick: (a: Attempt) => void;
-  onUpvoteToggle: (attemptId: string, nextUpvoted: boolean) => void;
 }) {
   const [promptText, setPromptText] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [latest, setLatest] = useState<Attempt | null>(null);
   const [startedAt, setStartedAt] = useState<number>(() => Date.now());
   const [activeTab, setActiveTab] = useState<"exemplars" | "community">("exemplars");
+
+  // Community list = shared attempts on this scenario by *other* users.
+  // Fetched from the server (the page's own-attempts feed is self-scoped and
+  // can never include another developer's prompt).
+  const [community, setCommunity] = useState<Attempt[]>([]);
+  const [communityLoading, setCommunityLoading] = useState(true);
 
   // Per-scenario draft autosave so a refresh / accidental nav doesn't wipe
   // 20 minutes of careful prompt-writing.
@@ -524,11 +511,84 @@ function PracticeRunner({
     setStartedAt(Date.now());
   }, [scenario.id]);
 
-  // Community list = shared attempts on this scenario by *other* users.
-  const community = useMemo(
-    () => attempts.filter((a) => a.shared && a.scenarioId === scenario.id),
-    [attempts, scenario.id],
-  );
+  // Load the community feed for this scenario.
+  useEffect(() => {
+    let cancelled = false;
+    setCommunityLoading(true);
+    fetch(`/api/prompt-attempts?scenarioId=${encodeURIComponent(scenario.id)}`)
+      .then((r) => (r.ok ? r.json() : Promise.reject(new Error(`HTTP ${r.status}`))))
+      .then((data) => {
+        if (cancelled) return;
+        setCommunity(Array.isArray(data.attempts) ? data.attempts : []);
+        // Merge the server's view of which prompts this user already upvoted
+        // into the shared set so the toggle paints correctly.
+        if (Array.isArray(data.upvotedIds) && data.upvotedIds.length > 0) {
+          setUpvotedIds((prev) => new Set([...prev, ...data.upvotedIds]));
+        }
+      })
+      .catch(() => {
+        if (!cancelled) setCommunity([]);
+      })
+      .finally(() => {
+        if (!cancelled) setCommunityLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [scenario.id, setUpvotedIds]);
+
+  // Toggle an upvote on a community prompt. Optimistically updates both the
+  // shared upvoted-set and the local community count, reconciles against the
+  // server count, and reverts on failure.
+  async function handleUpvoteToggle(attemptId: string, nextUpvoted: boolean) {
+    setUpvotedIds((prev) => {
+      const next = new Set(prev);
+      if (nextUpvoted) next.add(attemptId);
+      else next.delete(attemptId);
+      return next;
+    });
+    setCommunity((prev) =>
+      prev.map((a) =>
+        a.id === attemptId
+          ? { ...a, shareUpvotes: (a.shareUpvotes ?? 0) + (nextUpvoted ? 1 : -1) }
+          : a,
+      ),
+    );
+    try {
+      const res = await fetch(`/api/prompt-attempts/${attemptId}/upvote`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ upvoted: nextUpvoted }),
+      });
+      if (!res.ok) {
+        const e = await res.json().catch(() => ({}));
+        throw new Error(e?.error ?? `HTTP ${res.status}`);
+      }
+      const data = await res.json();
+      // Reconcile with the authoritative server count in case of a race.
+      setCommunity((prev) =>
+        prev.map((a) => (a.id === attemptId ? { ...a, shareUpvotes: data.count } : a)),
+      );
+    } catch (err) {
+      // Revert both optimistic updates.
+      setUpvotedIds((prev) => {
+        const next = new Set(prev);
+        if (nextUpvoted) next.delete(attemptId);
+        else next.add(attemptId);
+        return next;
+      });
+      setCommunity((prev) =>
+        prev.map((a) =>
+          a.id === attemptId
+            ? { ...a, shareUpvotes: (a.shareUpvotes ?? 0) + (nextUpvoted ? -1 : 1) }
+            : a,
+        ),
+      );
+      toast.error("Couldn't update vote", {
+        description: err instanceof Error ? err.message : String(err),
+      });
+    }
+  }
 
   // The current user's latest attempt on this scenario, used to decide if
   // the "Share this prompt" button is offered after scoring.
@@ -553,7 +613,6 @@ function PracticeRunner({
         body: JSON.stringify({
           scenarioId: scenario.id,
           promptText,
-          userId,
           durationSec: Math.round((Date.now() - startedAt) / 1000),
         }),
       });
@@ -670,13 +729,18 @@ function PracticeRunner({
             <div className="min-h-[300px]">
               {activeTab === "exemplars" ? (
                 <ExemplarsList exemplars={exemplars} onLoadIntoEditor={setPromptText} />
+              ) : communityLoading ? (
+                <div className="flex items-center justify-center py-16 text-muted">
+                  <RefreshCw className="w-4 h-4 animate-spin mr-2" />
+                  <span className="text-xs">Loading community prompts…</span>
+                </div>
               ) : (
                 <CommunityList
                   prompts={community}
                   upvotedIds={upvotedIds}
                   currentUserId={userId}
                   onLoadIntoEditor={setPromptText}
-                  onUpvoteToggle={onUpvoteToggle}
+                  onUpvoteToggle={handleUpvoteToggle}
                 />
               )}
             </div>
@@ -687,17 +751,20 @@ function PracticeRunner({
         <div className="flex-1 w-full flex flex-col space-y-6 lg:sticky lg:top-6 min-h-[600px]">
           {latest ? (
             <div className="flex flex-col h-full animate-in fade-in slide-in-from-bottom-4 duration-500">
-              <ScoreCard attempt={latest} />
-              <div className="mt-6 flex items-center justify-between gap-4 p-4 rounded-2xl border border-border bg-surface/80 backdrop-blur-md shadow-sm">
+              <ScoreCard
+                attempt={latest}
+                compareTo={ownAttemptsOnScenario.find((a) => a.id !== latest.id) ?? null}
+              />
+              <div className="mt-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 rounded-2xl border border-border bg-surface/80 backdrop-blur-md shadow-sm">
                 <div className="flex flex-col">
                   <span className="text-sm font-bold text-fg">Want a higher score?</span>
-                  <span className="text-xs text-muted">Iterate and refine your prompt.</span>
+                  <span className="text-xs text-muted">Regrade the same prompt, or refine and try again.</span>
                 </div>
                 <div className="flex items-center gap-3">
                   {userId ? (
                     <button
                       onClick={() => onShareClick(latest)}
-                      disabled={latest.shared}
+                      disabled={latest.shared || submitting}
                       className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border border-border bg-bg hover:bg-panel text-sm font-semibold text-muted hover:text-fg transition-all disabled:opacity-50 disabled:cursor-not-allowed hover:shadow-sm"
                     >
                       {latest.shared ? (
@@ -712,11 +779,21 @@ function PracticeRunner({
                     </button>
                   ) : null}
                   <button
+                    onClick={handleSubmit}
+                    disabled={submitting}
+                    title="Re-score the same prompt (AI grading can vary run to run)"
+                    className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border border-border bg-bg hover:bg-panel text-sm font-semibold text-muted hover:text-fg transition-all disabled:opacity-50 disabled:cursor-not-allowed hover:shadow-sm"
+                  >
+                    <RotateCcw className={`w-4 h-4 ${submitting ? "animate-spin" : ""}`} />
+                    {submitting ? "Regrading…" : "Regrade"}
+                  </button>
+                  <button
                     onClick={() => {
                       setLatest(null);
                       setStartedAt(Date.now());
                     }}
-                    className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-sm font-semibold text-white transition-all shadow-md hover:shadow-indigo-500/25 active:scale-95"
+                    disabled={submitting}
+                    className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-sm font-semibold text-white transition-all shadow-md hover:shadow-indigo-500/25 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     <RefreshCw className="w-4 h-4" /> Try again
                   </button>

@@ -4,13 +4,16 @@ import { validatePageAccess } from "@/lib/settings";
 import PromptLabClient from "./PromptLabClient";
 
 export const metadata = {
-  title: "Prompt Lab — Interviewpad",
+  // Bare title — the root layout's title template appends "— Interviewpad".
+  title: "Prompt Arena",
   description: "Practice prompt engineering against scoring scenarios, then experiment freely in the live playground.",
 };
 
 export default async function PromptLabPage() {
   const session = await auth().catch(() => null);
-  await validatePageAccess("/interview/new", session);
+  // Gate on the Arena's own public path — not "/interview/new", which made
+  // visibility incorrectly inherit the Interviews nav link's status.
+  await validatePageAccess("/candidate/prompt-practice", session);
   const userId = session?.user?.id || null;
 
   // Fetch in parallel: scenarios + exemplars (all platform-wide) + the user's
@@ -18,7 +21,12 @@ export default async function PromptLabPage() {
   // tab's initial state).
   const [scenarios, exemplars, attempts, upvoted] = await Promise.all([
     prisma.promptScenario.findMany({
-      where: { published: true, workspaceId: null },
+      where: {
+        workspaceId: null,
+        // Public arena shows published scenarios; the author also sees their
+        // own drafts (unpublished platform scenarios awaiting moderation).
+        OR: [{ published: true }, ...(userId ? [{ authorId: userId }] : [])],
+      },
       orderBy: { estimatedMinutes: "asc" },
     }),
     prisma.promptExemplar.findMany({

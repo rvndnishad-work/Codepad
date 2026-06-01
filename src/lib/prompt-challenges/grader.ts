@@ -285,17 +285,54 @@ Output your response strictly as a JSON object containing precisely:
   if (!rawText) throw new Error("Empty grader result from Gemini API");
 
   const parsed = JSON.parse(rawText.trim());
+
+  // Gemini occasionally returns out-of-range, non-numeric, or missing values
+  // even with responseMimeType: application/json. Clamp every dimension to a
+  // valid 0–100 integer so we never persist NaN/null/garbage into the DB.
+  const clamp = (v: unknown): number => {
+    const n = Math.round(Number(v));
+    if (!Number.isFinite(n)) return 0;
+    return Math.min(100, Math.max(0, n));
+  };
+
+  const rubricScores: RubricScores = {
+    clarity: clamp(parsed.clarity),
+    specificity: clamp(parsed.specificity),
+    efficiency: clamp(parsed.efficiency),
+    context: clamp(parsed.context),
+    constraints: clamp(parsed.constraints),
+    edgeCases: clamp(parsed.edgeCases),
+  };
+
+  // Prefer the model's composite score, but fall back to a weighted average of
+  // the (validated) dimensions if it's missing or non-numeric.
+  let score: number;
+  if (Number.isFinite(Number(parsed.score))) {
+    score = clamp(parsed.score);
+  } else {
+    const w = scenario.rubricWeights;
+    const totalWeight =
+      w.clarity + w.specificity + w.efficiency + w.context + w.constraints + w.edgeCases || 1;
+    score = clamp(
+      (rubricScores.clarity * w.clarity +
+        rubricScores.specificity * w.specificity +
+        rubricScores.efficiency * w.efficiency +
+        rubricScores.context * w.context +
+        rubricScores.constraints * w.constraints +
+        rubricScores.edgeCases * w.edgeCases) /
+        totalWeight,
+    );
+  }
+
+  const feedback =
+    typeof parsed.feedback === "string" && parsed.feedback.trim()
+      ? parsed.feedback
+      : "### Evaluation Summary\n\nNo detailed feedback was returned by the grader.";
+
   return {
-    score: parsed.score,
-    rubricScores: {
-      clarity: parsed.clarity,
-      specificity: parsed.specificity,
-      efficiency: parsed.efficiency,
-      context: parsed.context,
-      constraints: parsed.constraints,
-      edgeCases: parsed.edgeCases
-    },
-    feedback: parsed.feedback,
-    graderType: "ai"
+    score,
+    rubricScores,
+    feedback,
+    graderType: "ai",
   };
 }

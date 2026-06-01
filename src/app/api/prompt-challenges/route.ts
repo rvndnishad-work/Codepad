@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
+import { isAdmin } from "@/lib/admin";
 
 // GET /api/prompt-challenges
 // Returns a list of all prompt scenarios (built-in + workspace-scoped if workspaceId is provided)
@@ -81,6 +82,12 @@ export async function POST(req: NextRequest) {
       ? expectedTraits 
       : JSON.stringify(expectedTraits || { keywords: [], format: "", constraints: [] });
 
+    // Moderation gate: platform-wide scenarios (no workspace) created by
+    // ordinary users start unpublished so they can't spam the public arena.
+    // Admins publish immediately; workspace-scoped scenarios stay published
+    // (visible only to that workspace's members anyway).
+    const published = workspaceId ? true : isAdmin(session);
+
     const newScenario = await prisma.promptScenario.create({
       data: {
         slug,
@@ -92,6 +99,8 @@ export async function POST(req: NextRequest) {
         category: category || "code-generation",
         estimatedMinutes: estimatedMinutes ? parseInt(estimatedMinutes, 10) : 10,
         workspaceId: workspaceId || null,
+        authorId: session.user.id,
+        published,
       }
     });
 

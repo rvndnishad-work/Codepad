@@ -1147,15 +1147,13 @@ export default function ChallengeAttemptClient({
     });
   }
 
-  const submitAfterTestsRef = useRef(false);
+  // Submit is graded SERVER-SIDE (authoritative): we send the candidate's
+  // editable files to /grade, which runs the hidden tests on Piston. The
+  // in-browser "Run tests" button stays for interactive feedback, but the
+  // client no longer reports pass/fail — the hidden tests live only on the
+  // server, so they can't be tampered with.
   async function handleSubmit() {
     setSidebarTab("tests");
-    if (!testRun) {
-      toast.info("Running tests before submission…");
-      submitAfterTestsRef.current = true;
-      runTests();
-      return;
-    }
     setSubmitting(true);
     try {
       const submittedFiles: Record<string, string> = {};
@@ -1165,12 +1163,11 @@ export default function ChallengeAttemptClient({
         submittedFiles[path] = path === "/index.ts" ? stripDebugBlock(code) : code;
       }
       const token = typeof window !== "undefined" ? new URLSearchParams(window.location.search).get("token") || undefined : undefined;
-      const res = await fetch(`/api/challenges/${challenge.slug}/attempt`, {
+      const res = await fetch(`/api/challenges/${challenge.slug}/grade`, {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({
           files: submittedFiles,
-          testResults: testRun,
           durationSec: elapsedSec,
           sessionId,
           stepId,
@@ -1178,13 +1175,29 @@ export default function ChallengeAttemptClient({
         }),
         cache: "no-store",
       });
-      if (!res.ok) throw new Error((await res.text()) || `HTTP ${res.status}`);
-      const data = await res.json();
+      const data = await res.json().catch(() => null);
+      if (!res.ok) throw new Error(data?.error ? JSON.stringify(data.error) : `HTTP ${res.status}`);
+
+      // Reflect the authoritative results in the tests panel.
+      if (Array.isArray(data.results)) {
+        setTestRun({
+          passed: data.passed,
+          total: data.total,
+          tests: data.results.map((r: { name: string; status: string; error?: string }) => ({
+            path: "",
+            name: r.name,
+            status: (r.status === "pass" ? "pass" : "fail") as FlatTest["status"],
+            error: r.error ?? null,
+          })),
+        });
+      }
       setSubmittedStatus(data.status);
-      if (data.status === "passed") {
-        toast.success("Challenge passed!", { description: `${testRun.passed}/${testRun.total} tests` });
+      if (data.compileError) {
+        toast.error("Compilation failed", { description: "Fix the errors and resubmit." });
+      } else if (data.status === "passed") {
+        toast.success("Challenge passed!", { description: `${data.passed}/${data.total} tests` });
       } else {
-        toast.error("Some tests failed", { description: `${testRun.passed}/${testRun.total} tests` });
+        toast.error("Some tests failed", { description: `${data.passed}/${data.total} tests` });
       }
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
@@ -1193,14 +1206,6 @@ export default function ChallengeAttemptClient({
       setSubmitting(false);
     }
   }
-
-  useEffect(() => {
-    if (submitAfterTestsRef.current && testRun) {
-      submitAfterTestsRef.current = false;
-      void handleSubmit();
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [testRun]);
 
   // Frontend/playground challenges have no automated tests — snapshot the
   // candidate's files and record the attempt for manual review (no test gate).

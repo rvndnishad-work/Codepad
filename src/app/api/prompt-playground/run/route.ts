@@ -19,7 +19,10 @@ export const runtime = "nodejs";
 const ALLOWED_MODELS = new Set([
   "gemini-2.5-flash",
   "gemini-2.5-pro",
+  "gemini-2.0-flash",
+  "gemini-2.0-pro-exp-02-05", // or gemini-1.5-pro
   "gemini-1.5-flash",
+  "gemini-1.5-pro",
 ]);
 
 const MAX_PROMPT_CHARS = 32_000; // ~8k tokens; comfortably under context limits
@@ -118,6 +121,7 @@ export async function POST(req: NextRequest) {
           return;
         }
         buffer += decoder.decode(value, { stream: true });
+        buffer = buffer.replace(/\r\n/g, "\n");
         // SSE events are separated by a blank line (\n\n). Split on that
         // and keep the trailing partial event in the buffer for next pull.
         let sepIdx = buffer.indexOf("\n\n");

@@ -10,13 +10,15 @@ import {
 } from "@codesandbox/sandpack-react";
 import { useTheme } from "next-themes";
 import { Play, RotateCw, X, Terminal } from "lucide-react";
+import MonacoEditor from "./MonacoEditor";
 
 interface RunnableSnippetProps {
   code: string;
   language: string;
+  autorun?: boolean;
 }
 
-type Template = "vanilla" | "vanilla-ts" | "react" | "react-ts";
+type Template = "vanilla" | "vanilla-ts" | "react" | "react-ts" | "static";
 
 function resolveTemplate(language: string): {
   template: Template;
@@ -30,6 +32,10 @@ function resolveTemplate(language: string): {
     case "react-ts":
     case "tsx":
       return { template: "react-ts", fileName: "App.tsx", kind: "preview" };
+    case "html":
+      return { template: "static", fileName: "index.html", kind: "preview" };
+    case "css":
+      return { template: "static", fileName: "styles.css", kind: "preview" };
     case "typescript":
     case "ts":
       return { template: "vanilla-ts", fileName: "index.ts", kind: "console" };
@@ -104,7 +110,7 @@ const nbpLightTheme = {
   },
 };
 
-export default function RunnableSnippet({ code, language }: RunnableSnippetProps) {
+export default function RunnableSnippet({ code, language, autorun = false }: RunnableSnippetProps) {
   const { resolvedTheme } = useTheme();
   const isDark = resolvedTheme === "dark";
   const [mounted, setMounted] = useState(false);
@@ -134,16 +140,20 @@ export default function RunnableSnippet({ code, language }: RunnableSnippetProps
       <SandpackProvider
         template={template}
         theme={isDark ? nbpDarkTheme : nbpLightTheme}
-        files={{ [`/${fileName}`]: code }}
+        files={{ 
+          [`/${fileName}`]: code,
+          ...(language === "html" || language === "css" ? { "/index.js": { code: "// HTML/CSS mode: disable default JS", hidden: true } } : {})
+        }}
         options={{
-          autorun: false,
+          activeFile: `/${fileName}`,
+          autorun: autorun,
           autoReload: true,
           initMode: "lazy",
           recompileMode: "delayed",
           recompileDelay: 300,
         }}
       >
-        <PlaygroundBody language={language} kind={kind} editorHeight={editorHeight} isDark={isDark} />
+        <PlaygroundBody language={language} kind={kind} editorHeight={editorHeight} isDark={isDark} autorun={autorun} />
       </SandpackProvider>
     </div>
   );
@@ -157,14 +167,16 @@ function PlaygroundBody({
   kind,
   editorHeight,
   isDark,
+  autorun,
 }: {
   language: string;
   kind: "console" | "preview";
   editorHeight: number;
   isDark: boolean;
+  autorun: boolean;
 }) {
   const { sandpack } = useSandpack();
-  const [running, setRunning] = useState(false);
+  const [running, setRunning] = useState(autorun);
 
   function handleRun() {
     sandpack.runSandpack();
@@ -236,17 +248,12 @@ function PlaygroundBody({
       {/* Editor + (optional) output */}
       <div className={`flex flex-col md:flex-row relative ${!isDark && "bg-surface/50"}`}>
         <div
-          className={`min-w-0 transition-all duration-700 ease-[cubic-bezier(0.23,1,0.32,1)] ${
+          className={`min-w-0 transition-all duration-700 ease-[cubic-bezier(0.23,1,0.32,1)] relative ${
             running ? "md:w-1/2 w-full" : "w-full"
           }`}
+          style={{ height: editorHeight }}
         >
-          <SandpackCodeEditor
-            showLineNumbers
-            showTabs={false}
-            showRunButton={false}
-            wrapContent
-            style={{ height: editorHeight, background: "transparent" }}
-          />
+          <MonacoEditor fontSize={13} readOnly={false} />
         </div>
 
         {running && (

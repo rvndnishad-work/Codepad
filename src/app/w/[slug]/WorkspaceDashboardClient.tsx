@@ -44,6 +44,7 @@ import {
   Bar,
   Cell
 } from "recharts";
+import { describeExecution } from "@/lib/exec-result";
 import AddCandidateDialog from "./AddCandidateDialog";
 import BulkAddCandidatesDialog from "./BulkAddCandidatesDialog";
 import CandidatePipelineClient from "./candidates/CandidatePipelineClient";
@@ -466,14 +467,9 @@ export default function WorkspaceDashboardClient({
       });
 
       const data = await res.json().catch(() => null);
-      if (!res.ok) throw new Error(data?.error ?? `HTTP ${res.status}`);
-
-      let output = "";
-      if (data.compileError) output += `[Compilation failed]\n`;
-      if (data.stdout) output += data.stdout;
-      if (data.stderr) output += `${data.stdout ? "\n" : ""}[Stderr Error]\n${data.stderr}`;
-      if (!data.stdout && !data.stderr) output += `[Process exited with code ${data.exitCode}]`;
-
+      const output = describeExecution(res.status, data)
+        .map((line) => (line.method === "error" ? `[stderr] ${line.text}` : line.text))
+        .join("\n");
       setSandboxOutput(output);
     } catch (err) {
       setSandboxOutput(`Sandbox execution error: ${err instanceof Error ? err.message : String(err)}`);

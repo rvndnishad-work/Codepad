@@ -16,6 +16,9 @@ import {
   Share2,
   Check,
   Users,
+  Play,
+  Terminal,
+  Award,
 } from "lucide-react";
 
 import type { Scenario, Exemplar, Attempt } from "./types";
@@ -29,7 +32,7 @@ import ShareModal from "./ShareModal";
 import PromptEditor from "./PromptEditor";
 import { useDraft } from "./useDraft";
 
-type Mode = "practice" | "playground";
+type Mode = "landing" | "challenges" | "playground";
 
 interface Props {
   userId: string | null;
@@ -59,7 +62,7 @@ export default function PromptLabClient({
   initialAttempts,
   initialUpvotedIds,
 }: Props) {
-  const [mode, setMode] = useState<Mode>("practice");
+  const [mode, setMode] = useState<Mode>("landing");
   const [scenarios, setScenarios] = useState(initialScenarios);
   const [attempts, setAttempts] = useState(initialAttempts);
   const [upvotedIds, setUpvotedIds] = useState<Set<string>>(new Set(initialUpvotedIds));
@@ -70,7 +73,7 @@ export default function PromptLabClient({
   // Restore last-used mode from localStorage so a refresh keeps you where you were.
   useEffect(() => {
     const saved = typeof window !== "undefined" ? localStorage.getItem("promptLabMode") : null;
-    if (saved === "practice" || saved === "playground") setMode(saved);
+    if (saved === "landing" || saved === "challenges" || saved === "playground") setMode(saved as Mode);
   }, []);
   useEffect(() => {
     if (typeof window !== "undefined") localStorage.setItem("promptLabMode", mode);
@@ -80,30 +83,73 @@ export default function PromptLabClient({
     <div className="min-h-screen bg-bg text-fg py-10 px-6 lg:px-8">
       <div className="mx-auto max-w-6xl space-y-6">
         {/* Header */}
-        <header className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-border">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400">
-              <Beaker className="w-5 h-5" />
+        <header className="relative flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8 p-6 rounded-3xl border border-border bg-surface/40 backdrop-blur-2xl shadow-sm overflow-hidden group">
+          <div className="absolute inset-0 bg-gradient-to-r from-indigo-500/10 via-transparent to-purple-500/5 opacity-50 pointer-events-none group-hover:opacity-100 transition-opacity duration-1000" />
+          
+          <div className="relative flex items-center gap-5">
+            <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-600 p-[1.5px] shadow-lg shadow-indigo-500/20">
+              <div className="w-full h-full rounded-[14px] bg-surface flex items-center justify-center text-indigo-400">
+                <Sparkles className="w-7 h-7" />
+              </div>
             </div>
             <div>
-              <h1 className="text-xl font-semibold tracking-tight text-fg">Prompt Lab</h1>
-              <p className="text-xs text-muted">
-                Practice prompt engineering against scored scenarios, or experiment freely against Gemini.
+              <h1 className="text-3xl font-bold tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-fg to-muted">
+                Prompt Lab
+              </h1>
+              <p className="text-sm text-muted mt-1 font-medium">
+                Master prompt engineering against scenarios or experiment freely.
               </p>
             </div>
           </div>
-          <div className="flex items-center gap-2">
-            <ModeToggle mode={mode} onChange={setMode} />
+          <div className="relative flex items-center gap-4">
+            {mode !== "landing" && (
+              <button
+                onClick={() => setMode("landing")}
+                className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border border-border bg-bg hover:bg-panel text-sm font-semibold text-muted hover:text-fg transition-all hover:scale-105 active:scale-95"
+              >
+                <ArrowLeft className="w-4 h-4" /> Switch Mode
+              </button>
+            )}
+            <div className="h-8 w-px bg-border hidden sm:block" />
             <Link
               href="/interview"
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-border bg-bg hover:bg-panel text-xs font-semibold text-muted hover:text-fg transition-colors"
+              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border border-border bg-bg hover:bg-panel text-sm font-semibold text-muted hover:text-fg transition-all hover:scale-105 active:scale-95"
             >
-              <ArrowLeft className="w-3.5 h-3.5" /> Back
+              Exit
             </Link>
           </div>
         </header>
 
-        {mode === "practice" ? (
+        {mode === "landing" ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 animate-in fade-in zoom-in-95 duration-500">
+            <button
+              onClick={() => setMode("challenges")}
+              className="group relative flex flex-col items-start p-8 sm:p-10 rounded-3xl border border-border bg-surface hover:border-indigo-500/40 transition-all duration-500 hover:-translate-y-1 hover:shadow-xl hover:shadow-indigo-500/10 overflow-hidden text-left"
+            >
+              <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/5 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+              <div className="w-16 h-16 rounded-2xl bg-indigo-500/10 flex items-center justify-center text-indigo-400 mb-6 group-hover:scale-110 transition-transform duration-500">
+                <Beaker className="w-8 h-8" />
+              </div>
+              <h2 className="text-3xl font-bold text-fg mb-3 group-hover:text-indigo-400 transition-colors">Challenges</h2>
+              <p className="text-base text-muted leading-relaxed">
+                Test your skills against scored scenarios. Follow specific constraints, formats, and objectives to achieve the highest rubric score.
+              </p>
+            </button>
+            <button
+              onClick={() => setMode("playground")}
+              className="group relative flex flex-col items-start p-8 sm:p-10 rounded-3xl border border-border bg-surface hover:border-purple-500/40 transition-all duration-500 hover:-translate-y-1 hover:shadow-xl hover:shadow-purple-500/10 overflow-hidden text-left"
+            >
+              <div className="absolute inset-0 bg-gradient-to-br from-purple-500/5 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+              <div className="w-16 h-16 rounded-2xl bg-purple-500/10 flex items-center justify-center text-purple-400 mb-6 group-hover:scale-110 transition-transform duration-500">
+                <Play className="w-8 h-8 ml-1" />
+              </div>
+              <h2 className="text-3xl font-bold text-fg mb-3 group-hover:text-purple-400 transition-colors">Playground</h2>
+              <p className="text-base text-muted leading-relaxed">
+                Experiment freely. Run any prompt against Gemini 1.5 Pro, tweak the system instructions, and iterate without grading constraints.
+              </p>
+            </button>
+          </div>
+        ) : mode === "challenges" ? (
           activeScenario ? (
             <PracticeRunner
               scenario={activeScenario}
@@ -203,25 +249,7 @@ export default function PromptLabClient({
   );
 }
 
-function ModeToggle({ mode, onChange }: { mode: Mode; onChange: (m: Mode) => void }) {
-  return (
-    <div role="tablist" aria-label="Lab mode" className="inline-flex items-center gap-1 bg-panel/40 border border-border rounded-lg p-0.5">
-      {(["practice", "playground"] as const).map((m) => (
-        <button
-          key={m}
-          role="tab"
-          aria-selected={mode === m}
-          onClick={() => onChange(m)}
-          className={`px-3 py-1.5 rounded-md text-[11px] font-semibold uppercase tracking-wide transition-colors ${
-            mode === m ? "bg-elevated text-fg shadow-sm" : "text-muted hover:text-fg"
-          }`}
-        >
-          {m}
-        </button>
-      ))}
-    </div>
-  );
-}
+
 
 // ──────────────────────────────────────────────────────────────────────────
 // Practice lobby — scenario library + history
@@ -271,23 +299,48 @@ function PracticeLobby({
   }, [attempts]);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-10">
+      {/* Hero section for featured scenario */}
+      {filtered.length > 0 && search === "" && category === "all" && difficulty === "all" && (
+        <div className="relative overflow-hidden rounded-3xl border border-border bg-surface p-8 sm:p-10 flex flex-col md:flex-row items-center gap-8 group hover:border-indigo-500/40 transition-colors">
+          <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/5 via-transparent to-purple-500/5 opacity-50 group-hover:opacity-100 transition-opacity duration-700" />
+          <div className="absolute -right-32 -top-32 w-96 h-96 bg-indigo-500/10 blur-[100px] rounded-full group-hover:bg-indigo-500/20 transition-colors duration-700" />
+          
+          <div className="relative flex-1 space-y-5">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 text-xs font-bold uppercase tracking-wide">
+              <Sparkles className="w-3.5 h-3.5" /> Featured Scenario
+            </div>
+            <h2 className="text-3xl sm:text-4xl font-bold text-fg tracking-tight">{filtered[0].title}</h2>
+            <p className="text-muted leading-relaxed max-w-2xl text-base">{filtered[0].description}</p>
+            <div className="flex items-center gap-6 pt-2">
+              <button onClick={() => onSelect(filtered[0])} className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-semibold transition-all hover:scale-105 active:scale-95 shadow-lg shadow-indigo-500/20">
+                Start Challenge <ChevronRight className="w-4 h-4" />
+              </button>
+              <div className="flex items-center gap-4 text-sm text-muted font-medium">
+                <span className="flex items-center gap-1.5"><Clock className="w-4 h-4 text-indigo-400/70" /> {filtered[0].estimatedMinutes} min</span>
+                <span className="flex items-center gap-1.5 capitalize"><Award className="w-4 h-4 text-emerald-400/70" /> {filtered[0].difficulty}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Filters bar */}
-      <div className="flex flex-wrap items-center gap-2 p-2 rounded-xl border border-border bg-panel/20">
-        <div className="relative flex-1 min-w-[220px]">
-          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted/60" />
+      <div className="flex flex-wrap items-center gap-3 p-3 rounded-2xl border border-border bg-surface/60 backdrop-blur-md shadow-sm">
+        <div className="relative flex-1 min-w-[240px]">
+          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted/60" />
           <input
             type="text"
             placeholder="Search scenarios…"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full pl-8 pr-3 py-1.5 rounded-md bg-bg border border-border text-xs text-fg placeholder:text-muted/50 focus:outline-none focus:border-indigo-500"
+            className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-bg border border-border text-sm text-fg placeholder:text-muted/50 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/50 transition-all"
           />
         </div>
         <select
           value={difficulty}
           onChange={(e) => setDifficulty(e.target.value)}
-          className="px-2.5 py-1.5 rounded-md bg-bg border border-border text-xs text-muted focus:outline-none focus:border-indigo-500"
+          className="px-4 py-2.5 rounded-xl bg-bg border border-border text-sm font-medium text-muted hover:text-fg focus:outline-none focus:border-indigo-500 transition-colors cursor-pointer"
         >
           <option value="all">All levels</option>
           <option value="beginner">Beginner</option>
@@ -297,7 +350,7 @@ function PracticeLobby({
         <select
           value={category}
           onChange={(e) => setCategory(e.target.value)}
-          className="px-2.5 py-1.5 rounded-md bg-bg border border-border text-xs text-muted focus:outline-none focus:border-indigo-500"
+          className="px-4 py-2.5 rounded-xl bg-bg border border-border text-sm font-medium text-muted hover:text-fg focus:outline-none focus:border-indigo-500 transition-colors cursor-pointer"
         >
           <option value="all">All categories</option>
           <option value="code-generation">Code generation</option>
@@ -309,9 +362,9 @@ function PracticeLobby({
         </select>
         <button
           onClick={onCreateClick}
-          className="ml-auto inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-indigo-600 hover:bg-indigo-500 text-xs font-semibold text-white transition-colors"
+          className="ml-auto inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-sm font-semibold text-white transition-all shadow-md hover:shadow-indigo-500/25 active:scale-95"
         >
-          <Sparkles className="w-3.5 h-3.5" />
+          <Sparkles className="w-4 h-4" />
           New scenario
         </button>
       </div>
@@ -327,39 +380,40 @@ function PracticeLobby({
               <button
                 key={s.id}
                 onClick={() => onSelect(s)}
-                className="group text-left rounded-xl border border-border bg-surface p-5 hover:border-indigo-500/40 hover:bg-panel/20 transition-colors flex flex-col"
+                className="group relative text-left rounded-2xl border border-border bg-surface p-6 hover:border-indigo-500/40 hover:bg-surface/80 transition-all duration-300 flex flex-col hover:-translate-y-1 hover:shadow-xl hover:shadow-indigo-500/5 overflow-hidden"
               >
-                <div className="flex items-center gap-1.5">
+                <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                <div className="relative flex items-center gap-2 mb-4">
                   <span
-                    className={`inline-flex items-center px-2 py-0.5 rounded-full border text-[11px] font-semibold uppercase tracking-wide ${
+                    className={`inline-flex items-center px-2.5 py-1 rounded-full border text-[10px] font-bold uppercase tracking-wider ${
                       DIFFICULTY_STYLES[s.difficulty] ?? DIFFICULTY_STYLES.intermediate
                     }`}
                   >
                     {s.difficulty}
                   </span>
-                  <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-panel border border-border text-[11px] font-semibold uppercase tracking-wide text-muted">
+                  <span className="inline-flex items-center px-2.5 py-1 rounded-full bg-panel/50 border border-border text-[10px] font-bold uppercase tracking-wider text-muted">
                     {s.category.replace("-", " ")}
                   </span>
                 </div>
 
-                <h3 className="text-sm font-semibold text-fg mt-3 group-hover:text-indigo-400 transition-colors">
+                <h3 className="relative text-base font-bold text-fg group-hover:text-indigo-400 transition-colors line-clamp-2">
                   {s.title}
                 </h3>
-                <p className="text-xs text-muted mt-1.5 leading-relaxed line-clamp-3 flex-1">
+                <p className="relative text-sm text-muted mt-2.5 leading-relaxed line-clamp-3 flex-1 group-hover:text-muted/90 transition-colors">
                   {s.description}
                 </p>
 
-                <div className="mt-4 pt-3 border-t border-border flex items-center justify-between text-[11px] text-muted">
-                  <span className="inline-flex items-center gap-1">
-                    <Clock className="w-3 h-3" /> {s.estimatedMinutes} min
+                <div className="relative mt-6 pt-4 border-t border-border/50 flex items-center justify-between text-xs text-muted font-medium">
+                  <span className="inline-flex items-center gap-1.5 group-hover:text-fg transition-colors">
+                    <Clock className="w-3.5 h-3.5 opacity-70" /> {s.estimatedMinutes} min
                   </span>
                   {stats ? (
-                    <span className="inline-flex items-center gap-1 font-mono tabular-nums text-emerald-400">
+                    <span className="inline-flex items-center gap-1.5 font-mono tabular-nums text-emerald-400 bg-emerald-400/10 px-2 py-1 rounded-md">
                       Best {stats.best}
                     </span>
                   ) : (
-                    <span className="inline-flex items-center gap-1 text-indigo-400 font-semibold">
-                      Start <ChevronRight className="w-3 h-3" />
+                    <span className="inline-flex items-center gap-1 text-indigo-400 font-semibold group-hover:translate-x-1 transition-transform">
+                      Start <ChevronRight className="w-3.5 h-3.5" />
                     </span>
                   )}
                 </div>
@@ -371,61 +425,56 @@ function PracticeLobby({
 
       {/* Recent attempts */}
       {userId && attempts.length > 0 ? (
-        <section className="space-y-3">
-          <div className="flex items-center gap-2">
-            <History className="w-3.5 h-3.5 text-muted" />
-            <h3 className="text-sm font-semibold uppercase tracking-wide text-muted">Recent attempts</h3>
-            <span className="text-[11px] text-muted/70">{attempts.length} total</span>
+        <section className="space-y-6 pt-4 border-t border-border/50">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 rounded-lg bg-panel flex items-center justify-center text-muted">
+                <History className="w-4 h-4" />
+              </div>
+              <div>
+                <h3 className="text-base font-bold text-fg">Your Recent Attempts</h3>
+                <p className="text-xs text-muted">{attempts.length} total attempts across all scenarios</p>
+              </div>
+            </div>
           </div>
-          <div className="rounded-xl border border-border bg-surface overflow-hidden">
-            <table className="w-full text-sm">
-              <thead className="bg-panel/30">
-                <tr className="text-[11px] font-semibold uppercase tracking-wide text-muted">
-                  <th className="text-left px-4 py-2.5">Scenario</th>
-                  <th className="text-left px-4 py-2.5">Difficulty</th>
-                  <th className="text-right px-4 py-2.5 tabular-nums">Score</th>
-                  <th className="text-right px-4 py-2.5 tabular-nums">Tokens</th>
-                  <th className="text-left px-4 py-2.5">When</th>
-                  <th className="text-left px-4 py-2.5">Shared</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-border">
-                {attempts.slice(0, 10).map((a) => {
-                  const score = a.score ?? 0;
-                  const tone =
-                    score >= 75 ? "text-emerald-400" : score >= 50 ? "text-amber-400" : "text-rose-400";
-                  return (
-                    <tr key={a.id} className="hover:bg-panel/20 transition-colors">
-                      <td className="px-4 py-2.5 font-semibold text-fg">{a.scenarioTitle}</td>
-                      <td className="px-4 py-2.5 text-xs text-muted capitalize">{a.scenarioDifficulty}</td>
-                      <td className={`px-4 py-2.5 text-right font-mono tabular-nums font-semibold ${tone}`}>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {attempts.slice(0, 6).map((a) => {
+              const score = a.score ?? 0;
+              const toneClass = score >= 75 ? "text-emerald-400 bg-emerald-400/10 border-emerald-400/20" : score >= 50 ? "text-amber-400 bg-amber-400/10 border-amber-400/20" : "text-rose-400 bg-rose-400/10 border-rose-400/20";
+              const progressColor = score >= 75 ? "bg-emerald-400" : score >= 50 ? "bg-amber-400" : "bg-rose-400";
+              return (
+                <div key={a.id} className="group rounded-2xl border border-border bg-surface p-5 hover:border-border-strong transition-colors flex flex-col justify-between">
+                  <div>
+                    <div className="flex items-start justify-between gap-2 mb-3">
+                      <h4 className="font-semibold text-sm text-fg line-clamp-1 flex-1">{a.scenarioTitle}</h4>
+                      {a.shared ? (
+                        <span className="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-indigo-400 bg-indigo-500/10 px-2 py-0.5 rounded-full shrink-0">
+                          <Share2 className="w-3 h-3" /> Shared
+                        </span>
+                      ) : null}
+                    </div>
+                    <div className="flex items-center gap-2 mb-4 text-xs text-muted">
+                      <span className="capitalize">{a.scenarioDifficulty}</span>
+                      <span>&bull;</span>
+                      <span className="font-mono">{a.tokenEstimate} tokens</span>
+                      <span>&bull;</span>
+                      <span>{new Date(a.createdAt).toLocaleDateString(undefined, { month: "short", day: "numeric" })}</span>
+                    </div>
+                  </div>
+                  <div className="space-y-2 mt-auto pt-4 border-t border-border/50">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-medium text-muted">Score</span>
+                      <span className={`text-sm font-mono font-bold px-2 py-0.5 rounded-md border ${toneClass}`}>
                         {a.score ?? "—"}
-                      </td>
-                      <td className="px-4 py-2.5 text-right font-mono tabular-nums text-muted">
-                        {a.tokenEstimate}
-                      </td>
-                      <td className="px-4 py-2.5 text-xs text-muted whitespace-nowrap">
-                        {new Date(a.createdAt).toLocaleDateString(undefined, {
-                          month: "short",
-                          day: "numeric",
-                          hour: "2-digit",
-                          minute: "2-digit",
-                        })}
-                      </td>
-                      <td className="px-4 py-2.5 text-xs">
-                        {a.shared ? (
-                          <span className="inline-flex items-center gap-1 text-indigo-400">
-                            <Check className="w-3 h-3" /> Yes
-                          </span>
-                        ) : (
-                          <span className="text-muted/60">No</span>
-                        )}
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+                      </span>
+                    </div>
+                    <div className="h-1.5 w-full bg-panel rounded-full overflow-hidden">
+                      <div className={`h-full rounded-full ${progressColor} transition-all duration-1000`} style={{ width: `${score}%` }} />
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
           </div>
         </section>
       ) : null}
@@ -543,96 +592,121 @@ function PracticeRunner({
   }
 
   return (
-    <div className="space-y-5">
-      <div className="flex items-center gap-3">
-        <button
-          onClick={onBack}
-          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-border bg-bg hover:bg-panel text-xs font-semibold text-muted hover:text-fg transition-colors"
-        >
-          <ArrowLeft className="w-3.5 h-3.5" /> All scenarios
-        </button>
-        <div className="flex items-center gap-2 text-xs text-muted">
-          <span
-            className={`inline-flex items-center px-2 py-0.5 rounded-full border text-[11px] font-semibold uppercase tracking-wide ${
-              DIFFICULTY_STYLES[scenario.difficulty] ?? DIFFICULTY_STYLES.intermediate
-            }`}
+    <div className="space-y-6">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 rounded-2xl border border-border bg-surface/50 backdrop-blur-md shadow-sm">
+        <div className="flex items-center gap-3">
+          <button
+            onClick={onBack}
+            className="inline-flex items-center justify-center w-8 h-8 rounded-lg border border-border bg-bg hover:bg-panel text-muted hover:text-fg transition-colors group"
+            aria-label="Back to scenarios"
           >
-            {scenario.difficulty}
-          </span>
-          <span className="text-fg font-semibold">{scenario.title}</span>
-          <span className="inline-flex items-center gap-1 text-muted">
-            <Clock className="w-3 h-3" /> {scenario.estimatedMinutes} min
-          </span>
+            <ArrowLeft className="w-4 h-4 group-hover:-translate-x-0.5 transition-transform" />
+          </button>
+          <div className="flex flex-col">
+            <span className="text-sm font-bold text-fg">{scenario.title}</span>
+            <div className="flex items-center gap-2 mt-0.5 text-[11px] text-muted font-medium">
+              <span className={`inline-flex items-center px-1.5 py-0.5 rounded border uppercase tracking-wider ${DIFFICULTY_STYLES[scenario.difficulty] ?? DIFFICULTY_STYLES.intermediate}`}>
+                {scenario.difficulty}
+              </span>
+              <span>&bull;</span>
+              <span className="flex items-center gap-1"><Clock className="w-3 h-3" /> {scenario.estimatedMinutes} min</span>
+            </div>
+          </div>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 items-start">
+      <div className="flex flex-col lg:flex-row gap-6 items-start h-full">
         {/* LEFT — brief + exemplars + community */}
-        <div className="space-y-4">
-          <div className="rounded-2xl border border-border bg-surface p-5 space-y-4">
-            <div>
-              <h2 className="text-[11px] font-semibold uppercase tracking-wide text-muted">Brief</h2>
-              <p className="mt-1.5 text-sm text-fg leading-relaxed whitespace-pre-wrap">
+        <div className="w-full lg:w-5/12 xl:w-1/3 space-y-6 flex-shrink-0">
+          <div className="rounded-3xl border border-border bg-surface overflow-hidden shadow-sm flex flex-col">
+            <div className="p-6 bg-panel/30 border-b border-border">
+              <div className="flex items-center gap-2 mb-3">
+                <div className="w-8 h-8 rounded-lg bg-indigo-500/10 flex items-center justify-center text-indigo-400">
+                  <Terminal className="w-4 h-4" />
+                </div>
+                <h2 className="text-sm font-bold uppercase tracking-widest text-muted">Scenario Brief</h2>
+              </div>
+              <p className="text-sm text-fg leading-relaxed whitespace-pre-wrap font-medium">
                 {scenario.description}
               </p>
             </div>
-            <div className="border-t border-border pt-4">
-              <h3 className="text-[11px] font-semibold uppercase tracking-wide text-indigo-400">Objective</h3>
-              <p className="mt-1.5 text-sm text-fg/90 leading-relaxed whitespace-pre-wrap">
+            <div className="p-6 bg-surface">
+              <div className="flex items-center gap-2 mb-3">
+                <div className="w-8 h-8 rounded-lg bg-emerald-500/10 flex items-center justify-center text-emerald-400">
+                  <Check className="w-4 h-4" />
+                </div>
+                <h3 className="text-sm font-bold uppercase tracking-widest text-emerald-400/80">Objective</h3>
+              </div>
+              <p className="text-sm text-fg/90 leading-relaxed whitespace-pre-wrap">
                 {scenario.objective}
               </p>
             </div>
           </div>
 
           {/* Exemplars / Community tabs */}
-          <div className="space-y-3">
-            <div className="flex items-center gap-1 border-b border-border">
-              <TabButton active={activeTab === "exemplars"} onClick={() => setActiveTab("exemplars")}>
+          <div className="space-y-4 rounded-3xl border border-border bg-surface p-4 shadow-sm">
+            <div className="flex items-center gap-2 p-1 bg-panel/50 rounded-xl">
+              <button
+                onClick={() => setActiveTab("exemplars")}
+                className={`flex-1 flex items-center justify-center gap-2 px-4 py-2 text-xs font-bold uppercase tracking-wider rounded-lg transition-all ${
+                  activeTab === "exemplars" ? "bg-surface text-indigo-400 shadow-sm" : "text-muted hover:text-fg"
+                }`}
+              >
                 <Sparkles className="w-3.5 h-3.5" />
                 Exemplars
                 <Count value={exemplars.length} />
-              </TabButton>
-              <TabButton active={activeTab === "community"} onClick={() => setActiveTab("community")}>
+              </button>
+              <button
+                onClick={() => setActiveTab("community")}
+                className={`flex-1 flex items-center justify-center gap-2 px-4 py-2 text-xs font-bold uppercase tracking-wider rounded-lg transition-all ${
+                  activeTab === "community" ? "bg-surface text-indigo-400 shadow-sm" : "text-muted hover:text-fg"
+                }`}
+              >
                 <Users className="w-3.5 h-3.5" />
                 Community
                 <Count value={community.length} />
-              </TabButton>
+              </button>
             </div>
-            {activeTab === "exemplars" ? (
-              <ExemplarsList exemplars={exemplars} onLoadIntoEditor={setPromptText} />
-            ) : (
-              <CommunityList
-                prompts={community}
-                upvotedIds={upvotedIds}
-                currentUserId={userId}
-                onLoadIntoEditor={setPromptText}
-                onUpvoteToggle={onUpvoteToggle}
-              />
-            )}
+            <div className="min-h-[300px]">
+              {activeTab === "exemplars" ? (
+                <ExemplarsList exemplars={exemplars} onLoadIntoEditor={setPromptText} />
+              ) : (
+                <CommunityList
+                  prompts={community}
+                  upvotedIds={upvotedIds}
+                  currentUserId={userId}
+                  onLoadIntoEditor={setPromptText}
+                  onUpvoteToggle={onUpvoteToggle}
+                />
+              )}
+            </div>
           </div>
         </div>
 
         {/* RIGHT — editor or scorecard */}
-        <div className="space-y-4 lg:sticky lg:top-6">
+        <div className="flex-1 w-full flex flex-col space-y-6 lg:sticky lg:top-6 min-h-[600px]">
           {latest ? (
-            <>
+            <div className="flex flex-col h-full animate-in fade-in slide-in-from-bottom-4 duration-500">
               <ScoreCard attempt={latest} />
-              <div className="flex items-center justify-between gap-2 rounded-xl border border-border bg-panel/20 p-3">
-                <div className="text-xs text-muted">Want a higher score?</div>
-                <div className="flex items-center gap-2">
+              <div className="mt-6 flex items-center justify-between gap-4 p-4 rounded-2xl border border-border bg-surface/80 backdrop-blur-md shadow-sm">
+                <div className="flex flex-col">
+                  <span className="text-sm font-bold text-fg">Want a higher score?</span>
+                  <span className="text-xs text-muted">Iterate and refine your prompt.</span>
+                </div>
+                <div className="flex items-center gap-3">
                   {userId ? (
                     <button
                       onClick={() => onShareClick(latest)}
                       disabled={latest.shared}
-                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-border bg-bg hover:bg-panel text-xs font-semibold text-muted hover:text-fg transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+                      className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border border-border bg-bg hover:bg-panel text-sm font-semibold text-muted hover:text-fg transition-all disabled:opacity-50 disabled:cursor-not-allowed hover:shadow-sm"
                     >
                       {latest.shared ? (
                         <>
-                          <Check className="w-3.5 h-3.5" /> Shared
+                          <Check className="w-4 h-4 text-emerald-400" /> Shared
                         </>
                       ) : (
                         <>
-                          <Share2 className="w-3.5 h-3.5" /> Share
+                          <Share2 className="w-4 h-4" /> Share
                         </>
                       )}
                     </button>
@@ -642,45 +716,64 @@ function PracticeRunner({
                       setLatest(null);
                       setStartedAt(Date.now());
                     }}
-                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-indigo-600 hover:bg-indigo-500 text-xs font-semibold text-white transition-colors"
+                    className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-sm font-semibold text-white transition-all shadow-md hover:shadow-indigo-500/25 active:scale-95"
                   >
-                    <RefreshCw className="w-3.5 h-3.5" /> Try again
+                    <RefreshCw className="w-4 h-4" /> Try again
                   </button>
                 </div>
               </div>
-            </>
+            </div>
           ) : (
-            <div className="rounded-2xl border border-border bg-surface p-5 space-y-3">
-              <div className="flex items-center justify-between">
-                <h2 className="text-[11px] font-semibold uppercase tracking-wide text-muted">Your prompt</h2>
-                <span className="text-[11px] font-mono tabular-nums text-muted">
-                  {charCount} chars · ~{tokenEstimate} tokens
-                </span>
-              </div>
-              <PromptEditor
-                value={promptText}
-                onChange={setPromptText}
-                disabled={submitting}
-                minRows={18}
-                placeholder="Write your prompt. Be specific about the role, format, and constraints. Address edge cases."
-              />
-              <div className="flex items-center justify-between text-[11px] text-muted">
-                {ownAttemptsOnScenario.length > 0 ? (
-                  <span>
-                    {ownAttemptsOnScenario.length} previous attempt
-                    {ownAttemptsOnScenario.length === 1 ? "" : "s"} on this scenario
-                  </span>
-                ) : (
-                  <span>First attempt</span>
-                )}
-                <button
-                  onClick={handleSubmit}
-                  disabled={submitting || charCount === 0}
-                  className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-md bg-indigo-600 hover:bg-indigo-500 text-xs font-semibold text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {submitting ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Send className="w-3.5 h-3.5" />}
-                  {submitting ? "Grading…" : "Submit & score"}
-                </button>
+            <div className="flex flex-col flex-1 rounded-3xl border border-border bg-surface p-1 focus-within:ring-2 focus-within:ring-indigo-500/50 focus-within:border-indigo-500/50 transition-all duration-300 shadow-sm hover:shadow-md">
+              <div className="flex-1 rounded-[1.4rem] bg-bg flex flex-col overflow-hidden">
+                <div className="flex items-center justify-between px-6 py-4 border-b border-border bg-panel/30">
+                  <div className="flex items-center gap-2">
+                    <div className="w-2 h-2 rounded-full bg-indigo-500 animate-pulse" />
+                    <h2 className="text-xs font-bold uppercase tracking-widest text-muted">Your Prompt Editor</h2>
+                  </div>
+                  <div className="flex items-center gap-3 text-[11px] font-mono font-medium text-muted/80 bg-surface px-3 py-1 rounded-full border border-border">
+                    <span>{charCount} chars</span>
+                    <span className="w-1 h-1 rounded-full bg-border" />
+                    <span className="text-fg/80">~{tokenEstimate} tokens</span>
+                  </div>
+                </div>
+                <div className="flex-1 p-6 relative">
+                  <PromptEditor
+                    value={promptText}
+                    onChange={setPromptText}
+                    disabled={submitting}
+                    minRows={20}
+                    placeholder="Write your prompt. Be specific about the role, format, and constraints. Address edge cases."
+                  />
+                  {submitting && (
+                    <div className="absolute inset-0 bg-bg/50 backdrop-blur-sm z-10 flex items-center justify-center rounded-[1.4rem]">
+                      <div className="flex flex-col items-center gap-3">
+                        <RefreshCw className="w-8 h-8 text-indigo-500 animate-spin" />
+                        <span className="text-sm font-bold text-fg animate-pulse">Grading against rubric...</span>
+                      </div>
+                    </div>
+                  )}
+                </div>
+                <div className="flex items-center justify-between px-6 py-4 border-t border-border bg-panel/30">
+                  <div className="text-xs font-medium text-muted">
+                    {ownAttemptsOnScenario.length > 0 ? (
+                      <span className="flex items-center gap-1.5">
+                        <History className="w-3.5 h-3.5" />
+                        {ownAttemptsOnScenario.length} previous attempt{ownAttemptsOnScenario.length === 1 ? "" : "s"}
+                      </span>
+                    ) : (
+                      <span>First attempt on this scenario</span>
+                    )}
+                  </div>
+                  <button
+                    onClick={handleSubmit}
+                    disabled={submitting || charCount === 0}
+                    className="inline-flex items-center gap-2 px-6 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-sm font-bold text-white transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-md hover:shadow-indigo-500/25 active:scale-95 group"
+                  >
+                    {submitting ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4 group-hover:translate-x-1 transition-transform" />}
+                    {submitting ? "Grading…" : "Submit & Score"}
+                  </button>
+                </div>
               </div>
             </div>
           )}
@@ -694,26 +787,7 @@ function PracticeRunner({
 // Tiny shared bits
 // ──────────────────────────────────────────────────────────────────────────
 
-function TabButton({
-  active,
-  onClick,
-  children,
-}: {
-  active: boolean;
-  onClick: () => void;
-  children: React.ReactNode;
-}) {
-  return (
-    <button
-      onClick={onClick}
-      className={`inline-flex items-center gap-1.5 px-3 py-2 text-[11px] font-semibold uppercase tracking-wide transition-colors border-b-2 -mb-px ${
-        active ? "border-indigo-500 text-indigo-400" : "border-transparent text-muted hover:text-fg"
-      }`}
-    >
-      {children}
-    </button>
-  );
-}
+
 
 function Count({ value }: { value: number }) {
   return (

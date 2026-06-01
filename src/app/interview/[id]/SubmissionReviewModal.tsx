@@ -101,7 +101,7 @@ export default function SubmissionReviewModal({
             <div className="flex min-h-0" style={{ height: bodyHeight }}>
               {/* File tree */}
               <div className="w-56 shrink-0 hidden md:block h-full">
-                <FileExplorer readOnly plainFolders />
+                <FileExplorer templateId={template} readOnly plainFolders />
               </div>
 
               {/* Read-only editor */}

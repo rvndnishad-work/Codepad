@@ -821,7 +821,7 @@ function Bridge({
           <>
             <div style={{ width: explorerW, minWidth: 0 }} className="h-full shrink-0 flex flex-col ide-panel border-r border-border bg-surface/30">
               <div className="flex-1 min-h-0 overflow-y-auto">
-                <FileExplorer readOnly={false} onCollapse={() => setExplorerCollapsed(true)} />
+                <FileExplorer templateId={template} readOnly={false} onCollapse={() => setExplorerCollapsed(true)} />
               </div>
             </div>
             <div className="ide-divider h-full w-px cursor-col-resize" onPointerDown={onExplorerDrag}>

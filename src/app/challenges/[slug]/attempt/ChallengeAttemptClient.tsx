@@ -68,6 +68,7 @@ import ThemeToggle from "@/components/ThemeToggle";
 import { getSignalingUrls } from "@/lib/signaling";
 import { challengeSurface } from "@/lib/templates";
 import { getSandpackTheme } from "@/lib/sandpack-theme";
+import { describeExecution } from "@/lib/exec-result";
 import { useResizable } from "@/hooks/useResizable";
 import { useResizableHeight } from "@/hooks/useResizableHeight";
 
@@ -1005,30 +1006,21 @@ export default function ChallengeAttemptClient({
           }),
         });
 
-        if (res.ok) {
-          const runResult = await res.json();
+        const runResult = await res.json().catch(() => null);
+        for (const line of describeExecution(res.status, runResult)) {
           window.postMessage({
             type: "console",
             codesandbox: true,
-            log: {
-              method: runResult.exitCode === 0 ? "log" : "error",
-              data: [runResult.stdout || "Code executed successfully with zero output."],
-            }
+            log: { method: line.method, data: [line.text] },
           }, "*");
-
-          if (runResult.exitCode !== 0 && runResult.stderr) {
-            window.postMessage({
-              type: "console",
-              codesandbox: true,
-              log: {
-                method: "error",
-                data: [runResult.stderr],
-              }
-            }, "*");
-          }
         }
       } catch (err) {
         console.error("Backend sandbox run error:", err);
+        window.postMessage({
+          type: "console",
+          codesandbox: true,
+          log: { method: "error", data: ["Could not reach the code execution service. Check your connection and try again."] },
+        }, "*");
       }
       return;
     }
@@ -1519,6 +1511,7 @@ export default function ChallengeAttemptClient({
           >
             <div className={`${fileTreeCollapsed ? "w-12" : "w-48"} shrink-0 hidden sm:block h-full transition-[width] duration-200`}>
               <FileExplorer
+                templateId={currentTemplate}
                 readOnly={isInterviewer}
                 showDownload={false}
                 collapsed={fileTreeCollapsed}

@@ -14,7 +14,7 @@
  */
 
 const PISTON_URL = (process.env.PISTON_URL ?? "http://localhost:2000").replace(/\/+$/, "");
-const RUN_TIMEOUT = Number(process.env.PISTON_RUN_TIMEOUT ?? 5000);
+const RUN_TIMEOUT = Number(process.env.PISTON_RUN_TIMEOUT ?? 3000);
 const COMPILE_TIMEOUT = Number(process.env.PISTON_COMPILE_TIMEOUT ?? 10000);
 const RUN_MEMORY = Number(process.env.PISTON_RUN_MEMORY ?? 256 * 1024 * 1024);
 

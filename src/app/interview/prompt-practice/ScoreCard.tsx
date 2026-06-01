@@ -1,59 +1,97 @@
 "use client";
 
-import { BarChart2, Sparkles } from "lucide-react";
+import { BarChart2, Sparkles, Target, Zap, Bot, MessageSquare } from "lucide-react";
 import { type Attempt, parseRubric, RUBRIC_LABELS } from "./types";
 
 interface Props {
   attempt: Attempt;
 }
 
-/**
- * Compact rubric breakdown shown next to the editor after a submission scores.
- * No marketing copy — just the numbers and the feedback.
- */
 export default function ScoreCard({ attempt }: Props) {
   const rubric = parseRubric(attempt.rubricScores);
   const score = attempt.score ?? 0;
+  
+  // Calculate stroke-dashoffset for the circular progress (circumference = 2 * pi * r)
+  const radius = 46;
+  const circumference = 2 * Math.PI * radius;
+  const strokeDashoffset = circumference - (score / 100) * circumference;
+  
+  const scoreTone = score >= 75 ? "text-emerald-400" : score >= 50 ? "text-amber-400" : "text-rose-400";
+  const scoreBg = score >= 75 ? "stroke-emerald-400" : score >= 50 ? "stroke-amber-400" : "stroke-rose-400";
 
   return (
-    <div className="rounded-2xl border border-border bg-surface p-6 space-y-6">
-      <header className="flex items-start justify-between gap-4">
-        <div>
-          <div className="text-[11px] font-semibold uppercase tracking-wide text-muted">Overall</div>
-          <div className="mt-1 flex items-baseline gap-1">
-            <span className="text-4xl font-black tabular-nums text-fg">{score}</span>
-            <span className="text-sm text-muted">/100</span>
+    <div className="rounded-3xl border border-border bg-surface p-6 sm:p-8 space-y-8 shadow-sm relative overflow-hidden group">
+      <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-500/5 blur-[80px] rounded-full pointer-events-none group-hover:bg-indigo-500/10 transition-colors duration-700" />
+      
+      <header className="relative flex flex-col sm:flex-row items-center justify-between gap-6">
+        <div className="flex flex-col items-center sm:items-start gap-1">
+          <div className="text-xs font-bold uppercase tracking-widest text-muted flex items-center gap-2">
+            <Target className="w-4 h-4" /> Overall Score
+          </div>
+          <div className="text-sm text-muted/80 max-w-xs text-center sm:text-left mt-2">
+            This prompt was evaluated across six dimensions by our AI grader.
+          </div>
+          
+          <div className="flex flex-wrap gap-3 mt-4">
+            <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-panel/50 border border-border text-xs text-muted font-medium">
+              <Bot className="w-3.5 h-3.5 text-indigo-400" />
+              {attempt.graderType === "ai" ? "Gemini 1.5 Pro" : "Local rules"}
+            </div>
+            <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-panel/50 border border-border text-xs text-muted font-medium">
+              <Zap className="w-3.5 h-3.5 text-amber-400" />
+              {attempt.tokenEstimate} tokens
+            </div>
           </div>
         </div>
-        <div className="text-right text-[11px] text-muted space-y-1">
-          <div className="inline-flex items-center gap-1.5 text-indigo-400">
-            <Sparkles className="w-3 h-3" />
-            {attempt.graderType === "ai" ? "Gemini" : "Local rules"}
+
+        {/* Circular Progress Indicator */}
+        <div className="relative flex items-center justify-center">
+          <svg className="w-32 h-32 transform -rotate-90">
+            {/* Background circle */}
+            <circle
+              cx="64"
+              cy="64"
+              r={radius}
+              className="stroke-panel fill-none"
+              strokeWidth="12"
+            />
+            {/* Progress circle */}
+            <circle
+              cx="64"
+              cy="64"
+              r={radius}
+              className={`fill-none ${scoreBg} transition-all duration-1000 ease-out`}
+              strokeWidth="12"
+              strokeLinecap="round"
+              strokeDasharray={circumference}
+              strokeDashoffset={strokeDashoffset}
+            />
+          </svg>
+          <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+            <span className={`text-4xl font-black tabular-nums ${scoreTone}`}>{score}</span>
           </div>
-          <div className="tabular-nums">{attempt.tokenEstimate} tokens</div>
-          {attempt.durationSec ? (
-            <div className="tabular-nums">{Math.round(attempt.durationSec / 60)}m written</div>
-          ) : null}
         </div>
       </header>
 
-      <section className="space-y-3">
-        <h4 className="text-[11px] font-semibold uppercase tracking-wide text-muted flex items-center gap-1.5">
-          <BarChart2 className="w-3.5 h-3.5" />
-          Rubric breakdown
+      <div className="h-px w-full bg-gradient-to-r from-transparent via-border to-transparent" />
+
+      <section className="relative space-y-5">
+        <h4 className="text-xs font-bold uppercase tracking-widest text-muted flex items-center gap-2">
+          <BarChart2 className="w-4 h-4 text-indigo-400" />
+          Dimension Breakdown
         </h4>
-        <div className="space-y-2.5">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-4">
           {RUBRIC_LABELS.map(({ key, label }) => {
             const val = rubric[key];
-            const tone = val >= 75 ? "bg-emerald-500" : val >= 50 ? "bg-amber-500" : "bg-rose-500";
+            const tone = val >= 75 ? "bg-emerald-400" : val >= 50 ? "bg-amber-400" : "bg-rose-400";
             return (
-              <div key={key} className="space-y-1">
-                <div className="flex items-center justify-between text-[11px]">
-                  <span className="text-muted">{label}</span>
-                  <span className="font-mono font-semibold tabular-nums text-fg">{val}</span>
+              <div key={key} className="space-y-2 p-3 rounded-2xl bg-panel/30 border border-border/50 hover:bg-panel/50 transition-colors">
+                <div className="flex items-center justify-between text-xs font-medium">
+                  <span className="text-fg/90">{label}</span>
+                  <span className="font-mono tabular-nums text-muted">{val}/100</span>
                 </div>
-                <div className="h-1.5 rounded-full bg-panel overflow-hidden">
-                  <div className={`h-full ${tone} transition-all duration-500`} style={{ width: `${val}%` }} />
+                <div className="h-2 rounded-full bg-bg overflow-hidden border border-border/50">
+                  <div className={`h-full ${tone} transition-all duration-1000 ease-out`} style={{ width: `${val}%` }} />
                 </div>
               </div>
             );
@@ -62,9 +100,12 @@ export default function ScoreCard({ attempt }: Props) {
       </section>
 
       {attempt.feedback ? (
-        <section className="space-y-2">
-          <h4 className="text-[11px] font-semibold uppercase tracking-wide text-muted">Feedback</h4>
-          <div className="p-3 rounded-lg bg-panel/40 border border-border text-xs text-fg leading-relaxed whitespace-pre-wrap max-h-[260px] overflow-y-auto">
+        <section className="relative space-y-4 pt-2">
+          <h4 className="text-xs font-bold uppercase tracking-widest text-muted flex items-center gap-2">
+            <MessageSquare className="w-4 h-4 text-indigo-400" />
+            AI Feedback
+          </h4>
+          <div className="p-5 rounded-2xl bg-indigo-500/5 border border-indigo-500/10 text-sm text-fg/90 leading-relaxed whitespace-pre-wrap max-h-[300px] overflow-y-auto">
             {attempt.feedback}
           </div>
         </section>

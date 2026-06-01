@@ -39,6 +39,11 @@ import {
   SiNpm,
   SiGit,
   SiMarkdown,
+  SiPython,
+  SiGo,
+  SiRust,
+  SiCplusplus,
+  SiOpenjdk,
 } from "react-icons/si";
 import { useNpmSearch } from "@/hooks/useNpmSearch";
 
@@ -91,6 +96,21 @@ function fileIconFor(name: string): FileIconInfo {
       return { Icon: SiMarkdown, color: "var(--muted)" };
     case "lock":
       return { Icon: Lock, color: "var(--muted)" };
+    case "py":
+      return { Icon: SiPython, color: "#3776ab" };
+    case "go":
+      return { Icon: SiGo, color: "#00add8" };
+    case "java":
+      return { Icon: SiOpenjdk, color: "#5382a1" };
+    case "rs":
+      return { Icon: SiRust, color: "#e43716" };
+    case "c":
+    case "cpp":
+    case "cc":
+    case "cxx":
+    case "h":
+    case "hpp":
+      return { Icon: SiCplusplus, color: "#00599c" };
     default:
       return { Icon: FileIcon, color: "var(--muted)" };
   }
@@ -199,6 +219,7 @@ type Props = {
   /** Use a single Windows-style yellow for every folder instead of the
    *  VS Code per-name folder colors. */
   plainFolders?: boolean;
+  templateId?: string;
 };
 
 export default function FileExplorer({
@@ -208,7 +229,35 @@ export default function FileExplorer({
   collapsed = false,
   onToggleCollapse,
   plainFolders = false,
+  templateId,
 }: Props) {
+  const contextFileTypes = useMemo(() => {
+    if (!templateId) return FILE_TYPES.filter(t => [".js", ".ts", ".jsx", ".tsx", ".css", ".html", ".json", ".md"].includes(t.ext));
+    
+    const id = templateId.toLowerCase();
+    if (id === "python") {
+      return FILE_TYPES.filter(t => [".py", ".json", ".md"].includes(t.ext));
+    }
+    if (id === "go") {
+      return FILE_TYPES.filter(t => [".go", ".json", ".md"].includes(t.ext));
+    }
+    if (id === "java") {
+      return FILE_TYPES.filter(t => [".java", ".json", ".md"].includes(t.ext));
+    }
+    if (id === "rust") {
+      return FILE_TYPES.filter(t => [".rs", ".toml", ".md"].includes(t.ext));
+    }
+    if (id === "cpp") {
+      return FILE_TYPES.filter(t => [".cpp", ".h", ".c", ".json", ".md"].includes(t.ext));
+    }
+    if (id === "node" || id === "ts-node" || id === "empty-js" || id === "empty-ts") {
+      return FILE_TYPES.filter(t => [".js", ".ts", ".json", ".md"].includes(t.ext));
+    }
+    
+    // Default frontend list
+    return FILE_TYPES.filter(t => [".js", ".ts", ".jsx", ".tsx", ".css", ".html", ".json", ".md"].includes(t.ext));
+  }, [templateId]);
+
   const {
     expanded,
     setExpanded,
@@ -839,7 +888,7 @@ export default function FileExplorer({
                 className="absolute pl-1 z-50"
               >
                 <div className="min-w-[180px] rounded-lg border border-border bg-panel shadow-soft py-1">
-                  {FILE_TYPES.map((t) => (
+                  {contextFileTypes.map((t) => (
                     <button
                       key={t.ext}
                       onClick={() => {

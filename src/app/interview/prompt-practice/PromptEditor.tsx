@@ -80,12 +80,14 @@ export default function PromptEditor({
           // Slot the editor into the app's surface palette. CodeMirror
           // ships its own dark background which clashes with our --surface
           // token — override it here.
-          "&": { backgroundColor: "var(--bg)", height: "100%" },
+          "&": { backgroundColor: "var(--bg)", height: "100%", display: "flex", flexDirection: "column" },
           ".cm-scroller": {
             fontFamily: "var(--font-mono), ui-monospace, monospace",
             fontSize: "12px",
             lineHeight: "1.6",
             minHeight: `${minRows * 1.6}em`,
+            flex: 1,
+            overflowY: "auto",
           },
           ".cm-gutters": {
             backgroundColor: "var(--bg)",
@@ -156,11 +158,11 @@ export default function PromptEditor({
   }, [disabled]);
 
   return (
-    <div className="rounded-md border border-border bg-bg overflow-hidden focus-within:border-indigo-500 transition-colors">
+    <div className="flex-1 flex flex-col h-full rounded-md border border-border bg-bg overflow-hidden focus-within:border-indigo-500 transition-colors">
       <div
         ref={hostRef}
         id={id}
-        className="w-full"
+        className="w-full flex-1 min-h-0 flex flex-col"
         // Placeholder behavior: CodeMirror has its own `placeholder()`
         // extension but it requires the doc to be empty AND focus-tracking.
         // For our minimal-chrome look, an absolutely-positioned overlay is

@@ -45,6 +45,7 @@ import {
 import { templatesById } from "@/lib/templates";
 import { getSandpackTheme } from "@/lib/sandpack-theme";
 import { TemplateLogo } from "@/lib/icons";
+import { describeExecution } from "@/lib/exec-result";
 import MonacoEditor from "./MonacoEditor";
 import ShortcutsModal from "./ShortcutsModal";
 import PlaygroundToolbar from "./PlaygroundToolbar";
@@ -204,8 +205,43 @@ export default function Playground({
   const [mounted, setMounted] = useState(false);
   const explorerCollapsedRef = useRef(false);
 
-  const initialFilesRef = useRef<SandpackFiles>(initialFiles ?? tpl.files);
-  const filesRef = useRef<SandpackFiles>(initialFiles ?? tpl.files);
+  const cleanFiles = useMemo(() => {
+    const files = initialFiles ?? tpl.files;
+    const isBackend = ["python", "go", "java", "cpp", "rust", "node", "ts-node"].includes(templateId);
+    if (isBackend) {
+      const next = { ...files };
+      // Always hide index.html and styles.css for backend
+      if (next["/index.html"]) {
+        next["/index.html"] = typeof next["/index.html"] === "string"
+          ? { code: next["/index.html"], hidden: true }
+          : { ...(next["/index.html"] as any), hidden: true };
+      } else {
+        next["/index.html"] = { code: "", hidden: true };
+      }
+      if (next["/styles.css"]) {
+        next["/styles.css"] = typeof next["/styles.css"] === "string"
+          ? { code: next["/styles.css"], hidden: true }
+          : { ...(next["/styles.css"] as any), hidden: true };
+      } else {
+        next["/styles.css"] = { code: "", hidden: true };
+      }
+      // Hide index.js for everything except node template
+      if (templateId !== "node") {
+        if (next["/index.js"]) {
+          next["/index.js"] = typeof next["/index.js"] === "string"
+            ? { code: next["/index.js"], hidden: true }
+            : { ...(next["/index.js"] as any), hidden: true };
+        } else {
+          next["/index.js"] = { code: "", hidden: true };
+        }
+      }
+      return next;
+    }
+    return files;
+  }, [initialFiles, templateId, tpl.files]);
+
+  const initialFilesRef = useRef<SandpackFiles>(cleanFiles);
+  const filesRef = useRef<SandpackFiles>(cleanFiles);
   const activeFileRef = useRef<string>("");
   const runRef = useRef<(() => void) | null>(null);
   const formatRef = useRef<(() => Promise<void>) | null>(null);
@@ -346,21 +382,13 @@ export default function Playground({
           }),
         });
 
-        if (res.ok) {
-          const runResult = await res.json();
-          if (runResult.exitCode === 0) {
-            setBackendLogs([{ method: "log", data: [runResult.stdout || "Code executed successfully with zero output."] }]);
-          } else {
-            setBackendLogs([{ method: "error", data: [runResult.stderr || runResult.stdout] }]);
-          }
-        } else {
-          let errMsg = `Execution failed with HTTP ${res.status}`;
-          try {
-            const errData = await res.json();
-            if (errData.error) errMsg = `Execution Error: ${errData.error}`;
-          } catch {}
-          setBackendLogs([{ method: "error", data: [errMsg] }]);
-        }
+        const runResult = await res.json().catch(() => null);
+        setBackendLogs(
+          describeExecution(res.status, runResult).map((line) => ({
+            method: line.method,
+            data: [line.text],
+          }))
+        );
       } else {
         // Frontend languages (JS, TS, React, etc.) — use Sandpack's in-browser bundler
         runRef.current?.();
@@ -754,7 +782,7 @@ export default function Playground({
                   <div className="fixed inset-0 z-[100] flex bg-black/60 backdrop-blur-sm">
                     <div className="w-4/5 max-w-sm h-full bg-panel border-r border-border shadow-2xl flex flex-col">
                       <div className="flex-1 min-h-0 overflow-y-auto">
-                        <FileExplorer readOnly={!editable} onCollapse={() => setMobileFilesOpen(false)} />
+                        <FileExplorer templateId={templateId} readOnly={!editable} onCollapse={() => setMobileFilesOpen(false)} />
                       </div>
                     </div>
                     <div className="flex-1" onClick={() => setMobileFilesOpen(false)} />
@@ -821,7 +849,7 @@ export default function Playground({
                         {!explorerCollapsed && (
                           <>
                             <div style={{ width: explorerW, minWidth: 0 }} className="h-full shrink-0 flex flex-col ide-panel">
-                              <FileExplorer readOnly={!editable} onCollapse={() => setExplorerCollapsed(true)} />
+                              <FileExplorer templateId={templateId} readOnly={!editable} onCollapse={() => setExplorerCollapsed(true)} />
                             </div>
                             <div className="ide-divider h-full w-px cursor-col-resize" onPointerDown={onExplorerDrag}>
                                <div className="absolute inset-y-0 -left-1.5 -right-1.5" />
@@ -903,7 +931,7 @@ export default function Playground({
                   </div>
                   {promptOpen && <PromptSidebar onClose={() => setPromptOpen(false)} />}
                 </div>
-                <FilesBridge templateId={templateId} filesRef={filesRef} activeFileRef={activeFileRef} templateFiles={tpl.files} onChange={() => { setDirty(true); codeChangedRef.current = true; }} />
+                <FilesBridge templateId={templateId} filesRef={filesRef} activeFileRef={activeFileRef} templateFiles={cleanFiles} onChange={() => { setDirty(true); codeChangedRef.current = true; }} />
                 <ErrorBridge onError={setBundlerError} />
                 <RunBridge runRef={runRef} onStatusChange={(s) => { if (s === "idle" || s === "done") setRunning(false); }} />
                 <ConsoleEntryBridge active={tpl.mode === "console"} isBackend={isBackend} />

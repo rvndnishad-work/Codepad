@@ -1,0 +1,42 @@
+# Piston code-execution backend for /api/execute.
+#
+# Untrusted playground/challenge code runs ONLY in this isolated container,
+# never on the Next.js app server. Bring it up alongside dev/prod and point the
+# app at it with PISTON_URL (default http://localhost:2000).
+#
+#   docker compose -f docker-compose.piston.yml up -d
+#   ./scripts/piston-install-langs.sh    # install the language packs (see below)
+#
+# Piston needs privileged mode to set up its per-job isolate sandboxes.
+services:
+  piston:
+    image: ghcr.io/engineer-man/piston:latest
+    container_name: codepad-piston
+    restart: unless-stopped
+    privileged: true
+    ports:
+      - "2000:2000"
+    volumes:
+      - piston-packages:/piston/packages
+    tmpfs:
+      # Per-run scratch space; keeps job I/O off the host disk.
+      - /piston/jobs:exec,size=512m
+    environment:
+      # Hard ceilings enforced by Piston itself (defence in depth on top of the
+      # per-request limits the app sends). Tune to your host capacity.
+      PISTON_MAX_CONCURRENT_JOBS: "16"
+      PISTON_RUN_TIMEOUT: "5000"
+      PISTON_COMPILE_TIMEOUT: "10000"
+      PISTON_OUTPUT_MAX_SIZE: "1048576"      # 1 MB captured output
+      PISTON_DISABLE_NETWORKING: "true"      # no network inside jobs
+      PISTON_MAX_PROCESS_COUNT: "128"
+      PISTON_RUN_MEMORY_LIMIT: "268435456"   # 256 MB
+    healthcheck:
+      test: ["CMD", "sh", "-c", "wget -qO- http://localhost:2000/api/v2/runtimes >/dev/null 2>&1 || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+
+volumes:
+  piston-packages:

@@ -28,6 +28,14 @@ export const FILE_TYPES: FileType[] = [
   },
   { ext: ".json", label: "JSON", template: "{\n}\n" },
   { ext: ".md", label: "Markdown", template: "# New\n" },
+  { ext: ".py", label: "Python", template: "# New Python file\n" },
+  { ext: ".go", label: "Go", template: "package main\n\nimport \"fmt\"\n\n" },
+  { ext: ".java", label: "Java", template: "public class NewClass {\n    \n}\n" },
+  { ext: ".rs", label: "Rust", template: "// New Rust source file\n" },
+  { ext: ".toml", label: "TOML", template: "[package]\nname = \"\"\nversion = \"0.1.0\"\n" },
+  { ext: ".cpp", label: "C++", template: "#include <iostream>\n\n" },
+  { ext: ".h", label: "Header", template: "#pragma once\n\n" },
+  { ext: ".c", label: "C", template: "#include <stdio.h>\n\n" },
 ];
 
 export type TreeNode = {

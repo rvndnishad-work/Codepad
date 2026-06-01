@@ -10,9 +10,19 @@ import RunnableSnippet from "./RunnableSnippet";
 interface MarkdownRendererProps {
   content: string;
   className?: string;
+  forceRunnable?: boolean;
 }
 
-export default function MarkdownRenderer({ content, className = "" }: MarkdownRendererProps) {
+export default function MarkdownRenderer({ content, className = "", forceRunnable = false }: MarkdownRendererProps) {
+  const extractText = (node: any): string => {
+    if (typeof node === 'string') return node;
+    if (Array.isArray(node)) return node.map(extractText).join('');
+    if (node && node.props && node.props.children) {
+      return extractText(node.props.children);
+    }
+    return '';
+  };
+
   return (
     <article className={`prose prose-invert max-w-none 
       prose-headings:text-fg prose-headings:font-black prose-headings:tracking-tight
@@ -34,15 +44,16 @@ export default function MarkdownRenderer({ content, className = "" }: MarkdownRe
             const meta = (node as any)?.data?.meta || "";
             const isRunnableByMeta = meta.split(" ").includes("run");
             const isRunnableByLang = rawLang.endsWith("-run");
-            const isRunnable = isRunnableByLang || isRunnableByMeta;
+            const isRunnable = isRunnableByLang || isRunnableByMeta || forceRunnable;
             const language = isRunnableByLang ? rawLang.slice(0, -"-run".length) : rawLang;
 
             if (!inline && isRunnable && language) {
               return (
                 <div className="not-prose">
                   <RunnableSnippet
-                    code={String(children).replace(/\n$/, "")}
+                    code={extractText(children).replace(/\n$/, "")}
                     language={language}
+                    autorun={forceRunnable}
                   />
                 </div>
               );

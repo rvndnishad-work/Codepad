@@ -5,6 +5,7 @@ import { notFound, redirect } from "next/navigation";
 import Link from "next/link";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import ChallengeAttemptClient from "./ChallengeAttemptClient";
+import HarnessAttemptClient from "./HarnessAttemptClient";
 import TrackHelpPanel, { type TrackHelpContext } from "./TrackHelpPanel";
 import { parseVideoUrl } from "@/lib/video";
 
@@ -196,6 +197,43 @@ export default async function ChallengeAttemptPage({
   const starterFiles = JSON.parse(activeStep.starterFiles) as Record<string, string>;
   const testFiles = JSON.parse(activeStep.testFiles) as Record<string, string>;
 
+  // ── Harness (multi-language) challenges: build SAFE props. We deliberately
+  // withhold reference solutions and hidden cases' expected values; the judge
+  // runs server-side, so the client never needs them. ──
+  const isHarness = activeStep.judgingMode === "harness";
+  const safeJsonParse = <T,>(raw: string | null | undefined, fallback: T): T => {
+    if (!raw) return fallback;
+    try {
+      return JSON.parse(raw) as T;
+    } catch {
+      return fallback;
+    }
+  };
+  const harnessProps = isHarness
+    ? (() => {
+        const sig = safeJsonParse<{ params: { name: string; type: string }[]; returnType: string }>(
+          activeStep.signatureJson,
+          { params: [], returnType: "void" }
+        );
+        const languages = safeJsonParse<string[]>(activeStep.languagesJson, []);
+        const starterCode = safeJsonParse<Record<string, string>>(activeStep.starterCodeJson, {});
+        type StoredCase = { id: string; name: string; argsJson: string; expectedJson: string; isHidden: boolean };
+        const allCases = safeJsonParse<StoredCase[]>(activeStep.harnessTestsJson, []);
+        const publicCases = allCases
+          .filter((c) => !c.isHidden)
+          .map((c) => ({ name: c.name, argsJson: c.argsJson, expectedJson: c.expectedJson }));
+        const hiddenCount = allCases.filter((c) => c.isHidden).length;
+        return {
+          functionName: activeStep.functionName ?? "solve",
+          signature: sig,
+          languages,
+          starterCode,
+          publicCases,
+          hiddenCount,
+        };
+      })()
+    : null;
+
   // ── Help panel: hint/video for the active step ────────────────────────
   // Surfaces per-step hint + video for both single-step and multi-step
   // challenges. Replaces the older track-context lookup — author content
@@ -260,6 +298,25 @@ export default async function ChallengeAttemptPage({
           <TrackHelpPanel context={helpContext} />
         </div>
       )}
+      {isHarness && harnessProps ? (
+        <HarnessAttemptClient
+          slug={challenge.slug}
+          stepId={activeStep.id}
+          title={
+            isMulti && activeStep.title ? `${challenge.title} · ${activeStep.title}` : challenge.title
+          }
+          description={activeStep.description}
+          difficulty={challenge.difficulty}
+          functionName={harnessProps.functionName}
+          signature={harnessProps.signature}
+          languages={harnessProps.languages}
+          starterCode={harnessProps.starterCode}
+          publicCases={harnessProps.publicCases}
+          hiddenCount={harnessProps.hiddenCount}
+          token={tokenParam ?? null}
+          sessionId={sessionIdParam ?? null}
+        />
+      ) : (
       <ChallengeAttemptClient
         challenge={{
           id: challenge.id,
@@ -287,6 +344,7 @@ export default async function ChallengeAttemptPage({
         shareToken={tokenParam ?? ""}
         username={username}
       />
+      )}
     </>
   );
 }

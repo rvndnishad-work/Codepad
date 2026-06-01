@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import ChallengeForm from "@/app/admin/challenges/ChallengeForm";
 import {
   blankStep,
+  stepInputFromDb,
   type ChallengeFormInput,
   type ChallengeStepInput,
 } from "@/app/admin/challenges/challenge-form-types";
@@ -42,17 +43,7 @@ export default async function EditUserChallengePage({ params }: Params) {
 
   const steps: ChallengeStepInput[] =
     challenge.steps.length > 0
-      ? challenge.steps.map((s) => ({
-          title: s.title ?? "",
-          description: s.description,
-          template: s.template,
-          starterFilesJson: prettyJson(s.starterFiles),
-          testFilesJson: prettyJson(s.testFiles),
-          estimatedMinutes: s.estimatedMinutes,
-          hint: s.hint ?? "",
-          videoUrl: s.videoUrl ?? "",
-          testCases: parseTestCases(s.testCasesJson),
-        }))
+      ? challenge.steps.map((s) => stepInputFromDb(s))
       : [
           {
             ...blankStep(),
@@ -101,14 +92,5 @@ function prettyJson(raw: string): string {
     return JSON.stringify(JSON.parse(raw), null, 2);
   } catch {
     return raw;
-  }
-}
-
-function parseTestCases(raw: string | null | undefined): any[] {
-  if (!raw) return [];
-  try {
-    return JSON.parse(raw);
-  } catch {
-    return [];
   }
 }

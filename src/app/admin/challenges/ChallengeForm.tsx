@@ -33,10 +33,13 @@ import {
 // import it directly rather than relying on the re-export alone.
 import {
   blankStep,
+  HARNESS_LANGUAGES,
   type ChallengeFormInput,
   type ChallengeFormSurface,
   type ChallengeStepInput,
+  type JudgingMode,
 } from "./challenge-form-types";
+import { allTypes } from "@/lib/judge/types";
 export {
   blankStep,
   type ChallengeFormInput,
@@ -244,6 +247,13 @@ export default function ChallengeForm({
       hint?: string;
       videoUrl?: string;
       testCases?: any[];
+      judgingMode?: string;
+      functionName?: string | null;
+      signatureJson?: string | null;
+      languagesJson?: string | null;
+      starterCodeJson?: string | null;
+      referenceSolutionsJson?: string | null;
+      harnessTestsJson?: string;
     }[] = [];
 
     for (const [i, step] of form.steps.entries()) {
@@ -252,18 +262,53 @@ export default function ChallengeForm({
         setExpandedStep(i);
         return;
       }
-      const starter = parseFiles(
-        `Question ${i + 1}: starter files`,
-        step.starterFilesJson
-      );
+
+      if (step.judgingMode === "harness") {
+        // Harness steps store the contract + generated assets; legacy file maps
+        // are sent empty. Block save until Validate has produced expected outputs.
+        if (!step.functionName.trim()) {
+          toast.error(`Question ${i + 1}: function name is required`);
+          setExpandedStep(i);
+          return;
+        }
+        if (step.languages.length === 0) {
+          toast.error(`Question ${i + 1}: enable at least one language`);
+          setExpandedStep(i);
+          return;
+        }
+        const missingExpected = step.harnessTests.filter((t) => !t.expectedJson);
+        if (step.harnessTests.length === 0 || missingExpected.length > 0) {
+          toast.error(`Question ${i + 1}: run Validate to generate expected outputs for all test cases`);
+          setExpandedStep(i);
+          return;
+        }
+        stepsPayload.push({
+          title: step.title.trim() || undefined,
+          description: step.description,
+          template: "node",
+          starterFiles: {},
+          testFiles: {},
+          estimatedMinutes: Number(step.estimatedMinutes) || 15,
+          hint: step.hint.trim() || undefined,
+          videoUrl: step.videoUrl.trim() || undefined,
+          judgingMode: "harness",
+          functionName: step.functionName.trim(),
+          signatureJson: JSON.stringify({ params: step.params, returnType: step.returnType }),
+          languagesJson: JSON.stringify(step.languages),
+          starterCodeJson: JSON.stringify(step.starterCode),
+          referenceSolutionsJson: JSON.stringify(step.referenceSolutions),
+          harnessTestsJson: JSON.stringify(step.harnessTests),
+        });
+        continue;
+      }
+
+      // Legacy unit-js / frontend steps.
+      const starter = parseFiles(`Question ${i + 1}: starter files`, step.starterFilesJson);
       if (!starter) {
         setExpandedStep(i);
         return;
       }
-      const tests = parseFiles(
-        `Question ${i + 1}: test files`,
-        step.testFilesJson
-      );
+      const tests = parseFiles(`Question ${i + 1}: test files`, step.testFilesJson);
       if (!tests) {
         setExpandedStep(i);
         return;
@@ -278,6 +323,7 @@ export default function ChallengeForm({
         hint: step.hint.trim() || undefined,
         videoUrl: step.videoUrl.trim() || undefined,
         testCases: step.testCases || [],
+        judgingMode: step.judgingMode,
       });
     }
 
@@ -827,6 +873,25 @@ function StepRow({
             />
           </Field>
 
+          {/* How this question is graded */}
+          <JudgingModeToggle
+            value={step.judgingMode}
+            onChange={(m) => onUpdate("judgingMode", m)}
+          />
+
+          <Field label="Video URL (optional)" hint="YouTube / Vimeo / Loom auto-embed">
+            <input
+              value={step.videoUrl}
+              onChange={(e) => onUpdate("videoUrl", e.target.value)}
+              placeholder="https://youtube.com/watch?v=…"
+              className={`${inputClass} font-mono text-xs`}
+            />
+          </Field>
+
+          {step.judgingMode === "harness" ? (
+            <HarnessEditor step={step} onUpdate={onUpdate} />
+          ) : (
+          <>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             <Field label="Sandpack template">
               <select
@@ -840,14 +905,6 @@ function StepRow({
                   </option>
                 ))}
               </select>
-            </Field>
-            <Field label="Video URL (optional)" hint="YouTube / Vimeo / Loom auto-embed">
-              <input
-                value={step.videoUrl}
-                onChange={(e) => onUpdate("videoUrl", e.target.value)}
-                placeholder="https://youtube.com/watch?v=…"
-                className={`${inputClass} font-mono text-xs`}
-              />
             </Field>
           </div>
 
@@ -1024,18 +1081,6 @@ function StepRow({
             )}
           </div>
 
-          <Field
-            label="Hint (optional, behind a toggle)"
-            hint="Participants tap 'Show hint' to reveal it."
-          >
-            <textarea
-              value={step.hint}
-              onChange={(e) => onUpdate("hint", e.target.value)}
-              rows={3}
-              className={`${inputClass} text-xs`}
-            />
-          </Field>
-
           <div className="flex items-center justify-between gap-3 pt-3 border-t border-border">
             <div className="text-[10px] text-muted/70 leading-relaxed max-w-md">
               Spin up a sandbox with this step&apos;s starter + test files.
@@ -1051,6 +1096,20 @@ function StepRow({
               Test this step
             </button>
           </div>
+          </>
+          )}
+
+          <Field
+            label="Hint (optional, behind a toggle)"
+            hint="Participants tap 'Show hint' to reveal it."
+          >
+            <textarea
+              value={step.hint}
+              onChange={(e) => onUpdate("hint", e.target.value)}
+              rows={3}
+              className={`${inputClass} text-xs`}
+            />
+          </Field>
         </div>
       )}
     </div>
@@ -1084,6 +1143,270 @@ function IconBtn({
     >
       {children}
     </button>
+  );
+}
+
+// ─── Harness authoring ──────────────────────────────────────────────────────
+
+const JUDGING_MODES: { value: JudgingMode; label: string; blurb: string }[] = [
+  { value: "harness", label: "Function judge", blurb: "Candidate implements a function; graded server-side in any enabled language." },
+  { value: "unit-js", label: "JS/TS unit tests", blurb: "Hidden Jest tests in the browser sandbox. JS/TS only (legacy)." },
+  { value: "frontend", label: "Frontend / manual", blurb: "UI challenge submitted for human review." },
+];
+
+const LANG_LABELS: Record<string, string> = {
+  python: "Python", javascript: "JavaScript", typescript: "TypeScript",
+  go: "Go", java: "Java", cpp: "C++", rust: "Rust",
+};
+
+function JudgingModeToggle({ value, onChange }: { value: JudgingMode; onChange: (m: JudgingMode) => void }) {
+  return (
+    <div>
+      <div className="text-[10px] font-bold uppercase tracking-[0.15em] text-muted mb-1.5">How it&apos;s graded</div>
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+        {JUDGING_MODES.map((m) => (
+          <button
+            key={m.value}
+            type="button"
+            onClick={() => onChange(m.value)}
+            className={`text-left rounded-lg border p-2.5 transition ${
+              value === m.value ? "border-accent bg-accent/10" : "border-border bg-surface hover:border-border-strong"
+            }`}
+          >
+            <div className="text-xs font-bold text-fg">{m.label}</div>
+            <div className="text-[10px] text-muted/70 mt-0.5 leading-snug">{m.blurb}</div>
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+type AgreementMap = Record<string, { ok: boolean; compileError?: boolean; stderr?: string; mismatches: { name: string }[] }>;
+
+function HarnessEditor({
+  step,
+  onUpdate,
+}: {
+  step: ChallengeStepInput;
+  onUpdate: <K extends keyof ChallengeStepInput>(key: K, value: ChallengeStepInput[K]) => void;
+}) {
+  const [validating, setValidating] = useState(false);
+  const [agreement, setAgreement] = useState<AgreementMap | null>(null);
+  const TYPES = allTypes();
+  const RETURN_TYPES = ["void", ...TYPES];
+
+  const setParam = (i: number, patch: Partial<{ name: string; type: string }>) =>
+    onUpdate("params", step.params.map((p, idx) => (idx === i ? { ...p, ...patch } : p)));
+  const addParam = () => onUpdate("params", [...step.params, { name: `arg${step.params.length + 1}`, type: "int" }]);
+  const removeParam = (i: number) => onUpdate("params", step.params.filter((_, idx) => idx !== i));
+  const toggleLang = (l: string) =>
+    onUpdate("languages", step.languages.includes(l) ? step.languages.filter((x) => x !== l) : [...step.languages, l]);
+  const setRef = (l: string, code: string) => onUpdate("referenceSolutions", { ...step.referenceSolutions, [l]: code });
+
+  const setTest = (i: number, patch: Partial<ChallengeStepInput["harnessTests"][number]>) => {
+    // Editing the arguments invalidates the previously generated expected value.
+    const cleared = "argsJson" in patch ? { expectedJson: "" } : {};
+    onUpdate("harnessTests", step.harnessTests.map((t, idx) => (idx === i ? { ...t, ...patch, ...cleared } : t)));
+  };
+  const addTest = () =>
+    onUpdate("harnessTests", [
+      ...step.harnessTests,
+      { id: Math.random().toString(36).slice(2, 9), name: `Case ${step.harnessTests.length + 1}`, argsJson: "", expectedJson: "", isHidden: false, weight: 10, compare: "exact" as const },
+    ]);
+  const removeTest = (i: number) => onUpdate("harnessTests", step.harnessTests.filter((_, idx) => idx !== i));
+
+  async function validate() {
+    if (!step.functionName.trim()) return toast.error("Set a function name first");
+    if (step.languages.length === 0) return toast.error("Enable at least one language");
+    if (step.harnessTests.length === 0) return toast.error("Add at least one test case");
+    setValidating(true);
+    try {
+      const res = await fetch("/api/admin/challenges/validate", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          functionName: step.functionName.trim(),
+          signature: { params: step.params, returnType: step.returnType },
+          languages: step.languages,
+          referenceSolutions: step.referenceSolutions,
+          tests: step.harnessTests.map((t) => ({ id: t.id, name: t.name, argsJson: t.argsJson, isHidden: t.isHidden, weight: t.weight, compare: t.compare })),
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        toast.error(data.error ?? "Validation failed", { description: (data.stderr ?? "").slice(0, 300) });
+        setAgreement(data.agreement ?? null);
+        return;
+      }
+      const expById = new Map<string, string>((data.expected as { id: string; expectedJson: string }[]).map((e) => [e.id, e.expectedJson]));
+      onUpdate("harnessTests", step.harnessTests.map((t) => ({ ...t, expectedJson: expById.get(t.id) ?? t.expectedJson })));
+      onUpdate("starterCode", data.stubs);
+      setAgreement(data.agreement);
+      if (data.ok) toast.success(`Validated via ${data.canonicalLang} — expected outputs generated`);
+      else toast.warning("Validated, but languages disagree — check the flagged references");
+    } catch (e) {
+      toast.error("Validation error", { description: e instanceof Error ? e.message : String(e) });
+    } finally {
+      setValidating(false);
+    }
+  }
+
+  const allValidated = step.harnessTests.length > 0 && step.harnessTests.every((t) => t.expectedJson);
+
+  return (
+    <div className="space-y-4">
+      {/* Contract */}
+      <div className="rounded-xl border border-border bg-surface/50 p-4 space-y-3">
+        <div className="text-[10px] font-black uppercase tracking-[0.15em] text-muted">Function contract</div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          <Field label="Function name" required>
+            <input value={step.functionName} onChange={(e) => onUpdate("functionName", e.target.value)} className={`${inputClass} font-mono`} placeholder="twoSum" />
+          </Field>
+          <Field label="Return type">
+            <select value={step.returnType} onChange={(e) => onUpdate("returnType", e.target.value)} className={`${inputClass} font-mono`}>
+              {RETURN_TYPES.map((t) => <option key={t} value={t}>{t}</option>)}
+            </select>
+          </Field>
+        </div>
+        <div>
+          <div className="text-[10px] font-bold uppercase tracking-[0.15em] text-muted mb-1.5">Parameters</div>
+          <div className="space-y-2">
+            {step.params.map((p, i) => (
+              <div key={i} className="flex items-center gap-2">
+                <input value={p.name} onChange={(e) => setParam(i, { name: e.target.value })} className={`${inputClass} font-mono flex-1`} placeholder="nums" />
+                <select value={p.type} onChange={(e) => setParam(i, { type: e.target.value })} className={`${inputClass} font-mono w-32`}>
+                  {TYPES.map((t) => <option key={t} value={t}>{t}</option>)}
+                </select>
+                <IconBtn title="Remove parameter" tone="danger" onClick={() => removeParam(i)} disabled={step.params.length === 1}>
+                  <X className="w-3.5 h-3.5" />
+                </IconBtn>
+              </div>
+            ))}
+          </div>
+          <button type="button" onClick={addParam} className="mt-2 inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-accent/10 border border-accent/30 text-accent text-[10px] font-black uppercase tracking-wider hover:bg-accent/20 transition">
+            <Plus className="w-3 h-3" /> Add parameter
+          </button>
+        </div>
+      </div>
+
+      {/* Languages */}
+      <div className="rounded-xl border border-border bg-surface/50 p-4 space-y-2">
+        <div className="text-[10px] font-black uppercase tracking-[0.15em] text-muted">Enabled languages</div>
+        <div className="flex flex-wrap gap-1.5">
+          {HARNESS_LANGUAGES.map((l) => (
+            <button key={l} type="button" onClick={() => toggleLang(l)}
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition border ${
+                step.languages.includes(l) ? "bg-accent text-bg border-accent" : "bg-surface text-muted border-border hover:text-fg"
+              }`}>
+              {LANG_LABELS[l] ?? l}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Reference solutions */}
+      <div className="rounded-xl border border-border bg-surface/50 p-4 space-y-3">
+        <div className="text-[10px] font-black uppercase tracking-[0.15em] text-muted">
+          Reference solutions <span className="text-muted/50 font-normal normal-case">— author-only, never shown to candidates</span>
+        </div>
+        <p className="text-[10px] text-muted/60 leading-relaxed">
+          Provide a reference in at least one enabled language. Validate runs it to generate the expected outputs and cross-checks any other references for agreement.
+        </p>
+        <div className="space-y-2">
+          {step.languages.map((l) => (
+            <details key={l} className="rounded-lg border border-border bg-elevated/40">
+              <summary className="px-3 py-2 text-xs font-bold text-fg cursor-pointer flex items-center gap-2">
+                {LANG_LABELS[l] ?? l}
+                {(step.referenceSolutions[l] ?? "").trim() && <span className="text-[9px] text-emerald-500 font-black uppercase">provided</span>}
+                {agreement?.[l]?.compileError && <span className="text-[9px] text-rose-500 font-black uppercase">compile error</span>}
+                {agreement?.[l] && !agreement[l].ok && !agreement[l].compileError && <span className="text-[9px] text-amber-500 font-black uppercase">{agreement[l].mismatches.length} mismatch(es)</span>}
+                {agreement?.[l]?.ok && <span className="text-[9px] text-emerald-500 font-black uppercase">agrees</span>}
+              </summary>
+              <textarea
+                value={step.referenceSolutions[l] ?? ""}
+                onChange={(e) => setRef(l, e.target.value)}
+                rows={8}
+                spellCheck={false}
+                className={`${inputClass} font-mono text-xs rounded-t-none border-t`}
+                placeholder={`Reference ${LANG_LABELS[l] ?? l} solution for ${step.functionName || "fn"}(...)`}
+              />
+            </details>
+          ))}
+        </div>
+      </div>
+
+      {/* Test cases */}
+      <div className="rounded-xl border border-border bg-surface/50 p-4 space-y-3">
+        <div className="flex items-center justify-between">
+          <div>
+            <div className="text-[10px] font-black uppercase tracking-[0.15em] text-muted inline-flex items-center gap-1.5">
+              <Award className="w-3.5 h-3.5 text-accent" /> Test cases
+            </div>
+            <p className="text-[10px] text-muted/60 mt-0.5 max-w-xl leading-relaxed">
+              Arguments as a JSON array (one per parameter, in order). Expected outputs are generated by Validate — you don&apos;t type them.
+            </p>
+          </div>
+          <button type="button" onClick={addTest} className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-accent text-bg text-[10px] font-black uppercase tracking-wider hover:bg-accent-soft transition">
+            <Plus className="w-3 h-3" /> Add case
+          </button>
+        </div>
+
+        {step.harnessTests.length === 0 ? (
+          <div className="rounded-lg border border-dashed border-border p-6 text-center text-[10px] text-muted/60">No test cases yet.</div>
+        ) : (
+          <div className="space-y-2.5">
+            {step.harnessTests.map((tc, i) => (
+              <div key={tc.id} className="rounded-lg border border-border bg-elevated/40 p-3 space-y-2">
+                <div className="flex items-center gap-2">
+                  <input value={tc.name} onChange={(e) => setTest(i, { name: e.target.value })} className="bg-transparent font-bold text-xs text-fg focus:outline-none border-b border-transparent focus:border-accent/40 flex-1 py-0.5" placeholder="Case name" />
+                  <button type="button" onClick={() => removeTest(i)} className="text-muted/60 hover:text-rose-500 transition p-1"><Trash2 className="w-3.5 h-3.5" /></button>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                  <div>
+                    <label className="block text-[9px] font-black uppercase tracking-wider text-muted/70 mb-1">Arguments (JSON array)</label>
+                    <input value={tc.argsJson} onChange={(e) => setTest(i, { argsJson: e.target.value })} className={`${inputClass} font-mono text-xs`} placeholder="[[2,7,11,15], 9]" />
+                  </div>
+                  <div>
+                    <label className="block text-[9px] font-black uppercase tracking-wider text-muted/70 mb-1">Expected (generated)</label>
+                    <input value={tc.expectedJson} readOnly className={`${inputClass} font-mono text-xs ${tc.expectedJson ? "text-emerald-500" : "text-muted/40"}`} placeholder="run Validate →" />
+                  </div>
+                </div>
+                <div className="flex flex-wrap items-center gap-3 text-[11px] text-muted">
+                  <label className="flex items-center gap-1.5 cursor-pointer select-none">
+                    <input type="checkbox" checked={tc.isHidden} onChange={(e) => setTest(i, { isHidden: e.target.checked })} className="w-3.5 h-3.5 accent-accent" />
+                    <span className="inline-flex items-center gap-1">{tc.isHidden ? <><EyeOff className="w-3 h-3 text-amber-500" /> Hidden</> : <><Eye className="w-3 h-3 text-emerald-500" /> Visible</>}</span>
+                  </label>
+                  <label className="flex items-center gap-1.5">
+                    <span className="text-[9px] font-black uppercase tracking-wider">Match</span>
+                    <select value={tc.compare} onChange={(e) => setTest(i, { compare: e.target.value as ChallengeStepInput["harnessTests"][number]["compare"] })} className={`${inputClass} w-28 py-0.5 font-mono`}>
+                      <option value="exact">exact</option>
+                      <option value="float">float (±1e-6)</option>
+                      <option value="unordered">unordered</option>
+                    </select>
+                  </label>
+                  <label className="flex items-center gap-1.5 ml-auto">
+                    <span className="text-[9px] font-black uppercase tracking-wider">Weight</span>
+                    <input type="number" min={1} max={100} value={tc.weight} onChange={(e) => setTest(i, { weight: Number(e.target.value) || 0 })} className={`${inputClass} w-16 py-0.5 text-center font-mono`} />
+                  </label>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        <div className="flex items-center justify-between gap-3 pt-2 border-t border-border">
+          <div className={`text-[10px] font-bold ${allValidated ? "text-emerald-500" : "text-amber-500"}`}>
+            {allValidated ? "✓ Expected outputs generated — ready to save" : "Run Validate to generate expected outputs before saving"}
+          </div>
+          <button type="button" onClick={validate} disabled={validating}
+            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-accent text-bg text-xs font-bold hover:bg-accent-soft transition disabled:opacity-50">
+            <Sparkles className="w-3.5 h-3.5" />
+            {validating ? "Validating…" : "Validate"}
+          </button>
+        </div>
+      </div>
+    </div>
   );
 }
 

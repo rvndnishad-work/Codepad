@@ -25,6 +25,14 @@ const stepSchema = z.object({
   hint: z.string().max(20_000).optional(),
   videoUrl: z.string().max(500).optional(),
   testCases: z.array(testCaseSchema).optional(),
+  // ── Function-harness authoring (pre-serialized JSON strings from the form) ──
+  judgingMode: z.enum(["harness", "unit-js", "frontend"]).optional(),
+  functionName: z.string().max(80).nullable().optional(),
+  signatureJson: z.string().max(4_000).nullable().optional(),
+  languagesJson: z.string().max(2_000).nullable().optional(),
+  starterCodeJson: z.string().max(256 * 1024).nullable().optional(),
+  referenceSolutionsJson: z.string().max(256 * 1024).nullable().optional(),
+  harnessTestsJson: z.string().max(256 * 1024).optional(),
 });
 
 const payloadSchema = z.object({
@@ -104,6 +112,13 @@ export async function POST(req: Request) {
         hint: s.hint || null,
         videoUrl: s.videoUrl || null,
         testCasesJson: JSON.stringify(s.testCases || []),
+        judgingMode: s.judgingMode ?? "unit-js",
+        functionName: s.functionName ?? null,
+        signatureJson: s.signatureJson ?? null,
+        languagesJson: s.languagesJson ?? null,
+        starterCodeJson: s.starterCodeJson ?? null,
+        referenceSolutionsJson: s.referenceSolutionsJson ?? null,
+        harnessTestsJson: s.harnessTestsJson ?? "[]",
       })),
     });
 

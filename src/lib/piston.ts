@@ -117,7 +117,12 @@ function compareSemver(a: string, b: string): number {
 export async function runOnPiston(
   language: string,
   code: string,
-  stdin: string
+  stdin: string,
+  /**
+   * Extra files placed alongside the entry file in the run directory (e.g. a
+   * batch `input.json` the judge driver reads). The entry file stays first.
+   */
+  extraFiles?: Array<{ name: string; content: string }>
 ): Promise<PistonResult> {
   const mapping = LANGUAGE_MAP[language.toLowerCase()];
   if (!mapping) throw new Error(`Language ${language} not supported.`);
@@ -127,7 +132,7 @@ export async function runOnPiston(
   const body = {
     language: mapping.piston,
     version,
-    files: [{ name: mapping.file, content: code }],
+    files: [{ name: mapping.file, content: code }, ...(extraFiles ?? [])],
     stdin: stdin ?? "",
     compile_timeout: COMPILE_TIMEOUT,
     run_timeout: RUN_TIMEOUT,

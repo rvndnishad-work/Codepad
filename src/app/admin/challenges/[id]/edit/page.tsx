@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import ChallengeForm from "../../ChallengeForm";
 import {
   blankStep,
+  stepInputFromDb,
   type ChallengeFormInput,
   type ChallengeStepInput,
 } from "../../challenge-form-types";
@@ -32,17 +33,7 @@ export default async function EditChallengePage({ params }: Props) {
   // the legacy columns so the form never opens empty.
   const steps: ChallengeStepInput[] =
     challenge.steps.length > 0
-      ? challenge.steps.map((s) => ({
-          title: s.title ?? "",
-          description: s.description,
-          template: s.template,
-          starterFilesJson: prettyJson(s.starterFiles),
-          testFilesJson: prettyJson(s.testFiles),
-          estimatedMinutes: s.estimatedMinutes,
-          hint: s.hint ?? "",
-          videoUrl: s.videoUrl ?? "",
-          testCases: parseTestCases(s.testCasesJson),
-        }))
+      ? challenge.steps.map((s) => stepInputFromDb(s))
       : [
           {
             ...blankStep(),
@@ -92,11 +83,3 @@ function prettyJson(raw: string): string {
   }
 }
 
-function parseTestCases(raw: string | null | undefined): any[] {
-  if (!raw) return [];
-  try {
-    return JSON.parse(raw);
-  } catch {
-    return [];
-  }
-}

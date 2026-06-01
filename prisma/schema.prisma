@@ -421,6 +421,26 @@ model ChallengeStep {
   videoUrl         String?
   /// JSON-encoded array of test cases: Array<{ id: string, name: string, input: string, expected: string, isHidden: boolean, weight: number }>
   testCasesJson    String             @default("[]")
+
+  // ── Multi-language function-harness judging (server-side via Piston) ──
+  /// "harness" = function-harness (multi-language, server-graded);
+  /// "unit-js" = legacy in-browser Jest; "frontend" = manual-review UI challenge.
+  judgingMode      String             @default("unit-js")
+  /// Harness: the function the candidate implements.
+  functionName     String?
+  /// Harness: JSON `{ params: [{name,type}], returnType }` (see src/lib/judge/types.ts).
+  signatureJson    String?
+  /// Harness: JSON string[] of enabled language ids (e.g. ["python","go"]).
+  languagesJson    String?
+  /// Harness: JSON map `{ lang: "starter stub" }` (generated, author-editable).
+  starterCodeJson  String?
+  /// Harness: JSON map `{ lang: "reference solution" }`. AUTHOR-ONLY — never
+  /// sent to candidates; used by Validate to generate expected outputs.
+  referenceSolutionsJson String?
+  /// Harness: JSON array of cases `[{ id, name, argsJson, expectedJson, isHidden, weight, compare }]`.
+  /// `expectedJson` is filled by the admin Validate step.
+  harnessTestsJson String             @default("[]")
+
   createdAt        DateTime           @default(now())
   updatedAt        DateTime           @updatedAt
   attempts         ChallengeAttempt[]

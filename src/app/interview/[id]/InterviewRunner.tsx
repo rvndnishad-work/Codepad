@@ -7,6 +7,7 @@ import PromptChallengeRunner from "./PromptChallengeRunner";
 import SubmissionPreview from "./SubmissionPreview";
 import SubmissionReviewModal from "./SubmissionReviewModal";
 import { challengeSurface } from "@/lib/templates";
+import { describeStack, type TechStack } from "@/lib/interview/stack";
 import {
   ArrowLeft,
   CheckCircle2,
@@ -78,6 +79,7 @@ type Interview = {
   finishedAtIso: string | null;
   sourceType: "challenge" | "playground" | "prompt" | "combined";
   scenario: string | null;
+  stackJson?: string | null;
   activePlaygroundId: string | null;
   userId?: string | null;
   rubric?: {
@@ -677,12 +679,24 @@ export default function InterviewRunner({
             </div>
             <div>
               <h2 className="text-base md:text-lg font-black text-fg tracking-tight leading-tight">{interview.title || "Interview Session"}</h2>
-              <div className="flex items-center gap-3 mt-1.5">
+              <div className="flex items-center gap-3 mt-1.5 flex-wrap">
                 {interview.candidateName && (
                   <span className="text-xs md:text-sm text-muted flex items-center gap-1.5">
                     <Users className="w-3.5 h-3.5 text-muted/65" /> Candidate: <span className="font-semibold text-fg/80">{interview.candidateName}</span>
                   </span>
                 )}
+                {interview.stackJson && (() => {
+                  try {
+                    const label = describeStack(JSON.parse(interview.stackJson) as TechStack);
+                    return label ? (
+                      <span className="text-[10px] md:text-xs font-bold bg-accent/10 border border-accent/25 text-accent px-2.5 py-1 rounded-full leading-none inline-flex items-center gap-1.5">
+                        <Layers className="w-3 h-3" /> {label}
+                      </span>
+                    ) : null;
+                  } catch {
+                    return null;
+                  }
+                })()}
                 {interview.type && (
                   <>
                     <span className="text-muted/30 text-xs leading-none">•</span>

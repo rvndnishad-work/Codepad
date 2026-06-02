@@ -32,6 +32,50 @@ let activeUtterances: SpeechSynthesisUtterance[] = [];
 // keep hitting it on every utterance.
 let cloudAvailable: boolean | null = null;
 
+let selectedVoiceName: string | null = null;
+let selectedSpeechRate: number = 0.97;
+
+if (typeof window !== "undefined") {
+  try {
+    selectedVoiceName = localStorage.getItem("jarvis_tts_voice");
+    const storedRate = localStorage.getItem("jarvis_tts_rate");
+    if (storedRate) {
+      const parsed = parseFloat(storedRate);
+      if (!isNaN(parsed)) selectedSpeechRate = parsed;
+    }
+  } catch { /* ignore */ }
+}
+
+export function getSpeechConfig() {
+  return {
+    voiceName: selectedVoiceName,
+    rate: selectedSpeechRate,
+  };
+}
+
+export function updateSpeechConfig(config: { voiceName?: string | null; rate?: number }) {
+  if (config.voiceName !== undefined) {
+    selectedVoiceName = config.voiceName;
+    if (typeof window !== "undefined") {
+      try {
+        if (selectedVoiceName) {
+          localStorage.setItem("jarvis_tts_voice", selectedVoiceName);
+        } else {
+          localStorage.removeItem("jarvis_tts_voice");
+        }
+      } catch { /* ignore */ }
+    }
+  }
+  if (config.rate !== undefined) {
+    selectedSpeechRate = config.rate;
+    if (typeof window !== "undefined") {
+      try {
+        localStorage.setItem("jarvis_tts_rate", String(selectedSpeechRate));
+      } catch { /* ignore */ }
+    }
+  }
+}
+
 /**
  * Quality-token scoring: voices whose `name` contains any of these are
  * dramatically better than the OS defaults. "Natural" is Microsoft's
@@ -220,7 +264,13 @@ export async function speakNaturally(text: string, callbacks: SpeakCallbacks = {
   }
 
   const voices = window.speechSynthesis.getVoices();
-  const voice = pickBestVoice(voices);
+  let voice: SpeechSynthesisVoice | null = null;
+  if (selectedVoiceName) {
+    voice = voices.find((v) => v.name === selectedVoiceName) ?? null;
+  }
+  if (!voice) {
+    voice = pickBestVoice(voices);
+  }
   const chunks = chunkSentences(clean);
   if (chunks.length === 0) {
     callbacks.onEnd?.();
@@ -232,10 +282,10 @@ export async function speakNaturally(text: string, callbacks: SpeakCallbacks = {
     const u = new SpeechSynthesisUtterance(chunk);
     if (voice) u.voice = voice;
     // Tuned for warmth + clarity:
-    //   rate < 1   = a hair slower than default for conversational pacing
+    //   rate       = user-selected speaking rate
     //   pitch < 1  = slightly lower than default for a less "perky" tone
     //   volume     = a touch under max to avoid clipping on bright voices
-    u.rate = 0.97;
+    u.rate = selectedSpeechRate;
     u.pitch = 0.95;
     u.volume = 0.92;
 

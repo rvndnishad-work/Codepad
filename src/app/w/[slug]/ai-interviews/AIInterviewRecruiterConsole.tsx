@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { createPortal } from "react-dom";
 import Link from "next/link";
 import {
   Sparkles,
@@ -16,7 +17,6 @@ import {
   ExternalLink,
   TrendingUp,
   Cpu,
-  Mail,
   FolderOpen,
   Coins,
   X,
@@ -24,10 +24,10 @@ import {
   Loader2,
   Plug,
   ShieldAlert,
+  Layers,
 } from "lucide-react";
 import { toast } from "sonner";
 import {
-  createAIInterviewSessionAction,
   deleteAIInterviewSessionAction,
   createCreditPackCheckoutAction,
   createCustomTemplateAction,
@@ -36,6 +36,7 @@ import {
   unbindExternalMcpFromTemplateAction,
 } from "./actions";
 import { AI_CREDIT_PACKS } from "@/lib/ai-interview/credits";
+import ScreeningWizard from "./ScreeningWizard";
 
 export interface TemplateChoice {
   id: string;
@@ -57,6 +58,19 @@ interface ChatMsg {
   text: string;
 }
 
+interface RoundSummary {
+  id: string;
+  order: number;
+  paradigm: string;
+  language: string | null;
+  frameworkLabel: string | null;
+  sourceKind: string;
+  score: number | null;
+  status: string;
+  ratings: { CodeQuality: number; ProblemSolving: number; Communication: number } | null;
+  filesJson: Record<string, string>;
+}
+
 interface RecruiterSession {
   id: string;
   inviteToken: string;
@@ -65,6 +79,9 @@ interface RecruiterSession {
   positionTitle: string;
   status: string;
   templateId: string;
+  /** Revamp: batch this session belongs to (null for legacy single invites). */
+  batchId: string | null;
+  batchTitle: string | null;
   score: number | null;
   aiSummary: string | null;
   aiSuspicionScore: number | null;
@@ -81,6 +98,8 @@ interface RecruiterSession {
     ProblemSolving: number;
     Communication: number;
   };
+  /** Per-round breakdown (empty for legacy single-round sessions). */
+  rounds: RoundSummary[];
 }
 
 export interface PaginationInfo {
@@ -90,9 +109,17 @@ export interface PaginationInfo {
   pageSize: number;
 }
 
+export interface CandidateOption {
+  id: string;
+  name: string;
+  email: string;
+  stage: string;
+}
+
 interface ConsoleProps {
   workspaceSlug: string;
   initialSessions: RecruiterSession[];
+  candidates: CandidateOption[];
   totalScreened: number;
   avgScore: number;
   credits: number;
@@ -107,6 +134,7 @@ interface ConsoleProps {
 export default function AIInterviewRecruiterConsole({
   workspaceSlug,
   initialSessions,
+  candidates,
   totalScreened,
   avgScore,
   credits,
@@ -134,18 +162,20 @@ export default function AIInterviewRecruiterConsole({
   // Search & Filter State
   const [search, setSearch] = useState("");
   const [filterStatus, setFilterStatus] = useState<string>("ALL");
+  const [filterBatch, setFilterBatch] = useState<string>("ALL");
 
-  // Create Invitation Invite Form state
-  const [showInviteForm, setShowInviteForm] = useState(false);
-  const [candidateName, setCandidateName] = useState("");
-  const [candidateEmail, setCandidateEmail] = useState("");
-  const [positionTitle, setPositionTitle] = useState("React Engineer");
-  const [templateId, setTemplateId] = useState(
-    templates[0]?.id ?? "react-todo-pagination"
+  // Distinct batches present in the loaded sessions (for the batch filter).
+  const batchOptions = Array.from(
+    new Map(
+      sessions
+        .filter((s) => s.batchId && s.batchTitle)
+        .map((s) => [s.batchId as string, s.batchTitle as string])
+    ).entries()
   );
-  const [createdInviteUrl, setCreatedInviteUrl] = useState<string | null>(null);
 
-  const [isPending, startTransition] = useTransition();
+  // Inline create-screening wizard (replaces the old popup + single-invite form).
+  const [view, setView] = useState<"list" | "create">("list");
+  const [wizardQuickAdd, setWizardQuickAdd] = useState(false);
 
   // Buy-credits modal state
   const [showBuyModal, setShowBuyModal] = useState(false);
@@ -163,8 +193,9 @@ export default function AIInterviewRecruiterConsole({
         s.candidateEmail.toLowerCase().includes(search.toLowerCase()) ||
         s.positionTitle.toLowerCase().includes(search.toLowerCase());
 
-      if (filterStatus === "ALL") return matchSearch;
-      return s.status === filterStatus && matchSearch;
+      const matchBatch = filterBatch === "ALL" || s.batchId === filterBatch;
+      const matchStatus = filterStatus === "ALL" || s.status === filterStatus;
+      return matchSearch && matchBatch && matchStatus;
     })
     .sort((a, b) => {
       if (a.status === "COMPLETED" && b.status !== "COMPLETED") return -1;
@@ -177,9 +208,20 @@ export default function AIInterviewRecruiterConsole({
     .filter((s) => s.status === "COMPLETED")
     .sort((a, b) => (b.score ?? 0) - (a.score ?? 0));
 
+  // Rank a candidate against peers IN THE SAME BATCH (compare-within-batch).
+  // Legacy/single sessions (no batch) fall back to the workspace-wide pool.
+  const rankPoolFor = (session: RecruiterSession) =>
+    [...sessions]
+      .filter(
+        (s) =>
+          s.status === "COMPLETED" &&
+          (session.batchId ? s.batchId === session.batchId : !s.batchId)
+      )
+      .sort((a, b) => (b.score ?? 0) - (a.score ?? 0));
+
   const getCandidateBadge = (session: RecruiterSession) => {
     if (session.status !== "COMPLETED") return null;
-    const rankIndex = completedSessionsSorted.findIndex((s) => s.id === session.id);
+    const rankIndex = rankPoolFor(session).findIndex((s) => s.id === session.id);
     if (rankIndex === 0) {
       return (
         <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-widest text-emerald-400 bg-emerald-500/10 border border-emerald-500/30 shadow-[0_0_15px_rgba(16,185,129,0.15)] animate-pulse">
@@ -203,60 +245,43 @@ export default function AIInterviewRecruiterConsole({
     );
   };
 
-  const handleCreateInvite = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!candidateName.trim() || !candidateEmail.trim()) {
-      toast.error("Please provide candidate name and email.");
-      return;
-    }
+  // Prepend freshly invited (PENDING) batch sessions to the pipeline list and
+  // return to the list view.
+  const handleBatchCreated = (
+    positionTitle: string,
+    newSessions: { id: string; inviteToken: string; candidateName: string }[]
+  ) => {
+    const mapped: RecruiterSession[] = newSessions.map((s) => ({
+      id: s.id,
+      inviteToken: s.inviteToken,
+      candidateName: s.candidateName,
+      candidateEmail: "",
+      positionTitle,
+      status: "PENDING",
+      templateId: "batch",
+      batchId: "new",
+      batchTitle: positionTitle,
+      score: null,
+      aiSummary: null,
+      aiSuspicionScore: null,
+      outboundCallCount: 0,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      startedAt: null,
+      finishedAt: null,
+      chatHistory: [],
+      filesJson: {},
+      ratings: { CodeQuality: 0, ProblemSolving: 0, Communication: 0 },
+      rounds: [],
+    }));
+    setSessions((prev) => [...mapped, ...prev]);
+    if (mapped.length > 0) setSelectedSessionId(mapped[0].id);
+    setView("list");
+  };
 
-    startTransition(async () => {
-      try {
-        const res = await createAIInterviewSessionAction(workspaceSlug, {
-          candidateName,
-          candidateEmail,
-          positionTitle,
-          templateId,
-        });
-
-        if (res.success && res.session) {
-          toast.success("AI invitation generated. Credit charged on first message.");
-
-          const newSession: RecruiterSession = {
-            id: res.session.id,
-            inviteToken: res.session.inviteToken,
-            candidateName: res.session.candidateName,
-            candidateEmail: res.session.candidateEmail,
-            positionTitle: res.session.positionTitle,
-            status: res.session.status,
-            templateId: res.session.templateId,
-            score: null,
-            aiSummary: null,
-            aiSuspicionScore: null,
-            outboundCallCount: 0,
-            createdAt: res.session.createdAt,
-            updatedAt: res.session.updatedAt,
-            startedAt: null,
-            finishedAt: null,
-            chatHistory: [],
-            filesJson: {},
-            ratings: { CodeQuality: 0, ProblemSolving: 0, Communication: 0 },
-          };
-
-          setSessions((prev) => [newSession, ...prev]);
-          setSelectedSessionId(res.session.id);
-
-          const origin = typeof window !== "undefined" ? window.location.origin : "";
-          const linkUrl = `${origin}/ai-interview/${res.session.inviteToken}`;
-          setCreatedInviteUrl(linkUrl);
-
-          setCandidateName("");
-          setCandidateEmail("");
-        }
-      } catch (err) {
-        toast.error(err instanceof Error ? err.message : "Failed to generate invite.");
-      }
-    });
+  const openWizard = (quickAdd: boolean) => {
+    setWizardQuickAdd(quickAdd);
+    setView("create");
   };
 
   const handleDeleteSession = async (id: string, e: React.MouseEvent) => {
@@ -301,6 +326,22 @@ export default function AIInterviewRecruiterConsole({
 
   const outOfCredits = credits <= 0;
 
+  // Inline full-takeover create flow — replaces the old single-invite form and
+  // batch-wizard popups with a single animated 3-step page.
+  if (view === "create") {
+    return (
+      <ScreeningWizard
+        workspaceSlug={workspaceSlug}
+        candidates={candidates}
+        templates={templateChoices}
+        credits={credits}
+        initialQuickAdd={wizardQuickAdd}
+        onClose={() => setView("list")}
+        onCreated={handleBatchCreated}
+      />
+    );
+  }
+
   return (
     <div className="space-y-8 font-sans">
       <div className="relative">
@@ -325,16 +366,22 @@ export default function AIInterviewRecruiterConsole({
                 <span className="hidden sm:inline">Templates</span>
               </button>
               <button
-                onClick={() => {
-                  setShowInviteForm(!showInviteForm);
-                  setCreatedInviteUrl(null);
-                }}
+                onClick={() => openWizard(true)}
                 disabled={outOfCredits}
-                className="flex items-center gap-1.5 px-5 py-3 rounded-xl bg-accent hover:bg-accent-soft text-bg text-xs font-black uppercase tracking-widest transition-all cursor-pointer shadow-md flex-1 md:flex-initial text-center justify-center disabled:opacity-40 disabled:cursor-not-allowed"
-                title={outOfCredits ? "Workspace is out of credits" : "Generate a new invite"}
+                className="flex items-center gap-1.5 px-4 py-3 rounded-xl border border-border bg-surface hover:bg-elevated text-fg text-xs font-bold uppercase tracking-wider transition shrink-0 disabled:opacity-40 disabled:cursor-not-allowed"
+                title={outOfCredits ? "Workspace is out of credits" : "Invite a single candidate"}
               >
                 <Plus className="w-4 h-4" />
-                <span>{outOfCredits ? "Out of credits" : "Generate Workpad Invite"}</span>
+                <span className="hidden sm:inline">Single invite</span>
+              </button>
+              <button
+                onClick={() => openWizard(false)}
+                disabled={outOfCredits}
+                className="flex items-center gap-1.5 px-5 py-3 rounded-xl bg-accent hover:bg-accent-soft text-bg text-xs font-black uppercase tracking-widest transition-all cursor-pointer shadow-md flex-1 md:flex-initial text-center justify-center disabled:opacity-40 disabled:cursor-not-allowed"
+                title={outOfCredits ? "Workspace is out of credits" : "Screen a batch of candidates"}
+              >
+                <Sparkles className="w-4 h-4" />
+                <span>{outOfCredits ? "Out of credits" : "New Screening"}</span>
               </button>
             </div>
           )}
@@ -377,98 +424,6 @@ export default function AIInterviewRecruiterConsole({
           onClose={() => setShowTemplatesModal(false)}
           onChange={setTemplateChoices}
         />
-      )}
-
-      {showInviteForm && canCreate && !outOfCredits && (
-        <div className="rounded-3xl border border-indigo-500/20 bg-surface/60 backdrop-blur-md p-6 shadow-2xl relative overflow-hidden transition-all">
-          <div className="absolute top-[-100px] right-[-100px] w-52 h-52 bg-accent/5 rounded-full blur-[96px] pointer-events-none" />
-
-          <h3 className="text-sm font-black text-fg uppercase tracking-widest mb-4 flex items-center gap-1.5">
-            <Mail className="w-4 h-4 text-accent" /> Invite Candidate to AI Workpad
-          </h3>
-
-          <form onSubmit={handleCreateInvite} className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
-            <div className="space-y-1.5">
-              <label className="text-[10px] font-black uppercase text-muted tracking-wider block">Candidate Name</label>
-              <input
-                value={candidateName}
-                onChange={(e) => setCandidateName(e.target.value)}
-                placeholder="e.g. Alice Vance"
-                className="w-full px-3 py-2 rounded-xl border border-border bg-bg text-xs text-fg focus:outline-none focus:border-accent"
-              />
-            </div>
-
-            <div className="space-y-1.5">
-              <label className="text-[10px] font-black uppercase text-muted tracking-wider block">Candidate Email</label>
-              <input
-                type="email"
-                value={candidateEmail}
-                onChange={(e) => setCandidateEmail(e.target.value)}
-                placeholder="e.g. alice@company.com"
-                className="w-full px-3 py-2 rounded-xl border border-border bg-bg text-xs text-fg focus:outline-none focus:border-accent"
-              />
-            </div>
-
-            <div className="space-y-1.5">
-              <label className="text-[10px] font-black uppercase text-muted tracking-wider block">Position Applied</label>
-              <input
-                value={positionTitle}
-                onChange={(e) => setPositionTitle(e.target.value)}
-                placeholder="e.g. Frontend Specialist"
-                className="w-full px-3 py-2 rounded-xl border border-border bg-bg text-xs text-fg focus:outline-none focus:border-accent"
-              />
-            </div>
-
-            <div className="space-y-1.5">
-              <label className="text-[10px] font-black uppercase text-muted tracking-wider block">Select Coding Scaffold</label>
-              <select
-                value={templateId}
-                onChange={(e) => setTemplateId(e.target.value)}
-                className="w-full px-3 py-2.5 rounded-xl border border-border bg-bg text-xs text-fg focus:outline-none focus:border-accent outline-none"
-              >
-                {templateChoices.map((t) => (
-                  <option key={t.id} value={t.id}>
-                    {t.title}{t.custom ? " (custom)" : ""}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div className="md:col-span-4 flex justify-end gap-3 mt-2">
-              <button
-                type="submit"
-                disabled={isPending}
-                className="px-5 py-2.5 rounded-xl bg-fg text-bg text-xs font-black uppercase tracking-wider hover:bg-fg/90 transition shadow active:scale-95 disabled:opacity-50"
-              >
-                {isPending ? "Generating Invite..." : "Generate Workspace Invitation Link"}
-              </button>
-            </div>
-          </form>
-
-          {createdInviteUrl && (
-            <div className="mt-5 p-4 rounded-2xl bg-bg border border-accent/25 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-              <div className="space-y-1">
-                <span className="text-[10px] font-black uppercase text-accent tracking-widest block">Workpad Link Generated</span>
-                <span className="text-xs font-mono text-muted break-all">{createdInviteUrl}</span>
-              </div>
-              <div className="flex gap-2 shrink-0 w-full sm:w-auto">
-                <button
-                  onClick={() => copyToClipboard(createdInviteUrl)}
-                  className="flex-1 sm:flex-initial flex items-center justify-center gap-1.5 px-4 py-2 rounded-lg bg-accent hover:bg-accent-soft text-bg text-xs font-bold transition"
-                >
-                  <Copy className="w-3.5 h-3.5" /> Copy
-                </button>
-                <Link
-                  href={createdInviteUrl.replace(typeof window !== "undefined" ? window.location.origin : "", "")}
-                  target="_blank"
-                  className="flex-1 sm:flex-initial flex items-center justify-center gap-1.5 px-4 py-2 rounded-lg border border-border hover:bg-surface text-xs font-bold transition text-fg"
-                >
-                  <ExternalLink className="w-3.5 h-3.5" /> Test Link
-                </Link>
-              </div>
-            </div>
-          )}
-        </div>
       )}
 
       {/* Stats row — credits, completed, avg score, top match */}
@@ -553,6 +508,22 @@ export default function AIInterviewRecruiterConsole({
                 </button>
               ))}
             </div>
+
+            {batchOptions.length > 0 && (
+              <select
+                value={filterBatch}
+                onChange={(e) => setFilterBatch(e.target.value)}
+                className="w-full px-3 py-2 rounded-lg border border-border bg-bg text-[11px] text-fg focus:outline-none focus:border-accent"
+                title="Filter by screening batch"
+              >
+                <option value="ALL">All batches</option>
+                {batchOptions.map(([id, title]) => (
+                  <option key={id} value={id}>
+                    {title}
+                  </option>
+                ))}
+              </select>
+            )}
           </div>
 
           <div className="space-y-3 max-h-[600px] overflow-y-auto pr-1">
@@ -622,7 +593,16 @@ export default function AIInterviewRecruiterConsole({
                       <div className="flex items-center gap-1.5 truncate">
                         <span className="font-bold text-fg shrink-0">{session.positionTitle}</span>
                         <span className="text-muted/30">•</span>
-                        <span className="truncate">{templateLabelById[session.templateId] || session.templateId}</span>
+                        <span className="truncate">
+                          {session.rounds.length > 0
+                            ? `${session.rounds.length} round${session.rounds.length === 1 ? "" : "s"}`
+                            : templateLabelById[session.templateId] || session.templateId}
+                        </span>
+                        {session.batchTitle && (
+                          <span className="px-1.5 py-0.5 rounded bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 text-[8px] font-black uppercase tracking-wider shrink-0">
+                            batch
+                          </span>
+                        )}
                       </div>
 
                       {canCreate && (
@@ -724,6 +704,10 @@ export default function AIInterviewRecruiterConsole({
                       />
                     </div>
                   </div>
+
+                  {activeSession.rounds.length > 0 && (
+                    <RoundBreakdown rounds={activeSession.rounds} />
+                  )}
 
                   {activeSession.aiSummary && (
                     <div className="space-y-3 bg-panel/40 border border-border p-5 rounded-2xl">
@@ -1003,6 +987,9 @@ function CustomTemplatesModal({
     `{\n  "/App.js": "// candidate starts here\\nexport default function App() { return null; }\\n"\n}`
   );
   const [testsCode, setTestsCode] = useState("");
+  const [kind, setKind] = useState<"frontend" | "backend" | "dsa">("frontend");
+  const [language, setLanguage] = useState("python");
+  const [frameworkLabel, setFrameworkLabel] = useState("");
 
   const customs = templates.filter((t) => t.custom);
   const builtins = templates.filter((t) => !t.custom);
@@ -1017,6 +1004,9 @@ function CustomTemplatesModal({
           estimatedMinutes: Number(estimatedMinutes),
           starterFilesJson,
           testsCode,
+          kind,
+          language: kind === "frontend" ? undefined : language,
+          frameworkLabel: frameworkLabel || undefined,
         });
         // Optimistic add — server returns new id.
         onChange([
@@ -1037,6 +1027,9 @@ function CustomTemplatesModal({
         setEstimatedMinutes("30");
         setStarterFilesJson(`{\n  "/App.js": "// candidate starts here\\nexport default function App() { return null; }\\n"\n}`);
         setTestsCode("");
+        setKind("frontend");
+        setLanguage("python");
+        setFrameworkLabel("");
         setMode("list");
       } catch (err) {
         toast.error(err instanceof Error ? err.message : "Failed to create template.");
@@ -1055,9 +1048,10 @@ function CustomTemplatesModal({
     }
   };
 
-  return (
+  if (typeof document === "undefined") return null;
+  return createPortal(
     <div
-      className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4"
+      className="fixed inset-0 z-[100] bg-black/70 backdrop-blur-sm flex items-center justify-center p-4"
       onClick={onClose}
     >
       <div
@@ -1194,7 +1188,48 @@ function CustomTemplatesModal({
                   className="w-full px-3 py-2 rounded-xl border border-border bg-bg text-xs text-fg tabular-nums focus:outline-none focus:border-accent"
                 />
               </div>
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-black uppercase text-muted tracking-wider block">Surface</label>
+                <select
+                  value={kind}
+                  onChange={(e) => setKind(e.target.value as "frontend" | "backend" | "dsa")}
+                  className="w-full px-3 py-2 rounded-xl border border-border bg-bg text-xs text-fg focus:outline-none focus:border-accent"
+                >
+                  <option value="frontend">Frontend (Sandpack)</option>
+                  <option value="backend">Backend (console)</option>
+                  <option value="dsa">DSA (console)</option>
+                </select>
+              </div>
             </div>
+
+            {kind !== "frontend" && (
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-black uppercase text-muted tracking-wider block">Language</label>
+                  <select
+                    value={language}
+                    onChange={(e) => setLanguage(e.target.value)}
+                    className="w-full px-3 py-2 rounded-xl border border-border bg-bg text-xs text-fg focus:outline-none focus:border-accent"
+                  >
+                    {["node", "typescript", "python", "go", "java", "cpp", "rust"].map((l) => (
+                      <option key={l} value={l}>{l}</option>
+                    ))}
+                  </select>
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-black uppercase text-muted tracking-wider block">
+                    Framework label <span className="font-normal normal-case text-muted/60">(optional, not executed)</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={frameworkLabel}
+                    onChange={(e) => setFrameworkLabel(e.target.value)}
+                    placeholder="e.g. Express, Django"
+                    className="w-full px-3 py-2 rounded-xl border border-border bg-bg text-xs text-fg focus:outline-none focus:border-accent"
+                  />
+                </div>
+              </div>
+            )}
 
             <div className="space-y-1.5">
               <label className="text-[10px] font-black uppercase text-muted tracking-wider block">
@@ -1243,7 +1278,8 @@ function CustomTemplatesModal({
           </form>
         )}
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
 
@@ -1340,6 +1376,84 @@ function RatingBar({
   );
 }
 
+/** Per-round scorecard breakdown shown in a completed multi-round session. */
+function RoundBreakdown({ rounds }: { rounds: RoundSummary[] }) {
+  const label = (r: RoundSummary) => {
+    const p = r.paradigm.charAt(0).toUpperCase() + r.paradigm.slice(1);
+    const tech = r.language || r.frameworkLabel;
+    return tech ? `${p} · ${tech}` : p;
+  };
+  return (
+    <div className="space-y-2">
+      <h3 className="text-xs font-black uppercase text-accent tracking-widest flex items-center gap-1.5">
+        <Layers className="w-4 h-4" /> Round breakdown ({rounds.length})
+      </h3>
+      <div className="space-y-1.5">
+        {rounds.map((r, i) => {
+          const fileCount = Object.keys(r.filesJson).length;
+          return (
+            <details key={r.id} className="rounded-xl border border-border bg-bg overflow-hidden group">
+              <summary className="px-4 py-2.5 cursor-pointer flex items-center gap-3 list-none hover:bg-elevated/30">
+                <span className="inline-flex items-center justify-center w-5 h-5 rounded-md bg-accent/10 text-accent text-[10px] font-black shrink-0">
+                  {i + 1}
+                </span>
+                <div className="min-w-0 flex-1">
+                  <div className="text-xs font-bold text-fg truncate">{label(r)}</div>
+                  <div className="text-[9px] uppercase tracking-wider text-muted/70">
+                    {r.status} · {fileCount} file{fileCount === 1 ? "" : "s"}
+                  </div>
+                </div>
+                {r.score != null && (
+                  <span
+                    className={`text-sm font-black ${
+                      r.score >= 80 ? "text-emerald-400" : r.score >= 60 ? "text-amber-400" : "text-rose-500"
+                    }`}
+                  >
+                    {r.score}%
+                  </span>
+                )}
+                <span className="text-[10px] text-muted group-open:rotate-90 transition shrink-0">❯</span>
+              </summary>
+              <div className="p-3 border-t border-border bg-surface space-y-3">
+                {r.ratings && (
+                  <div className="grid grid-cols-3 gap-2">
+                    <RoundStat label="Code" value={r.ratings.CodeQuality} />
+                    <RoundStat label="Problem" value={r.ratings.ProblemSolving} />
+                    <RoundStat label="Comm" value={r.ratings.Communication} />
+                  </div>
+                )}
+                {fileCount === 0 ? (
+                  <p className="text-[10px] text-muted/50">No files submitted for this round.</p>
+                ) : (
+                  Object.entries(r.filesJson).map(([path, code]) => (
+                    <div key={path} className="space-y-1">
+                      <div className="text-[10px] font-mono font-bold text-fg bg-bg px-2 py-1 rounded border border-border">
+                        {path}
+                      </div>
+                      <pre className="text-[10px] font-mono text-muted/90 bg-bg/80 p-2 overflow-x-auto leading-relaxed rounded max-h-[180px] border border-border/20">
+                        {code || "(empty)"}
+                      </pre>
+                    </div>
+                  ))
+                )}
+              </div>
+            </details>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+function RoundStat({ label, value }: { label: string; value: number }) {
+  return (
+    <div className="rounded-lg bg-bg border border-border px-2 py-1.5 text-center">
+      <div className="text-[8px] uppercase tracking-wider text-muted">{label}</div>
+      <div className="text-xs font-black text-fg">{value}/5</div>
+    </div>
+  );
+}
+
 function BuyCreditsModal({
   packs,
   purchasingPackId,
@@ -1351,9 +1465,10 @@ function BuyCreditsModal({
   onPick: (id: string) => void;
   onClose: () => void;
 }) {
-  return (
+  if (typeof document === "undefined") return null;
+  return createPortal(
     <div
-      className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4"
+      className="fixed inset-0 z-[100] bg-black/70 backdrop-blur-sm flex items-center justify-center p-4"
       onClick={onClose}
     >
       <div
@@ -1433,7 +1548,8 @@ function BuyCreditsModal({
           Secure checkout via Stripe. Only workspace owners and admins can purchase.
         </p>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
 

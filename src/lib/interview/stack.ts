@@ -232,6 +232,95 @@ export function curateRounds(
   };
 }
 
+// ── Structured round-spec curation (AI screening batch builder) ──────────────
+
+/**
+ * A single curated screening round derived from a chosen stack. Unlike
+ * `CurationResult` (flat id lists), each spec carries the paradigm + language +
+ * source so the AI-screening batch builder can persist one AIScreeningRoundSpec
+ * row per round. `sourceId` is a bare id (challenge id, or a playground catalog
+ * template id WITHOUT the `template:` prefix — P2 resolves content from it).
+ */
+export type RoundSpecDraft = {
+  paradigm: Paradigm;
+  /** Execution language (backend/dsa). Undefined for frontend. */
+  language?: string;
+  /** Frontend framework label, or joined backend framework focus. AI-only. */
+  frameworkLabel?: string;
+  sourceKind: "challenge" | "playground";
+  sourceId: string;
+  estimatedMinutes: number;
+};
+
+/**
+ * Map a chosen stack into ordered, structured screening rounds: one round per
+ * selected technology, in frontend → backend → DSA order.
+ *
+ * Frontend/backend rounds prefer the always-runnable catalog playground
+ * (framework Sandpack / language console) so the candidate surface is
+ * guaranteed; DSA rounds need a concrete problem, so they bind to a matching
+ * harness challenge and are skipped when the bank has none for that language.
+ * The recruiter can later override any round with a custom scaffold (the hybrid
+ * model) — that's applied on top of these drafts, not here.
+ */
+export function curateRoundSpecs(
+  stack: TechStack,
+  pool: { challenges: CuratableChallenge[] },
+  opts: { defaultMinutes?: number } = {},
+): RoundSpecDraft[] {
+  const minutes = opts.defaultMinutes ?? 30;
+  const specs: RoundSpecDraft[] = [];
+
+  // Frontend — one framework playground per requested framework.
+  for (const fw of stack.frontend?.frameworks ?? []) {
+    const def = FRONTEND_FRAMEWORKS.find((f) => f.id === fw);
+    if (!def) continue;
+    specs.push({
+      paradigm: "frontend",
+      frameworkLabel: def.label,
+      sourceKind: "playground",
+      sourceId: def.templateId,
+      estimatedMinutes: minutes,
+    });
+  }
+
+  // Backend — one language console per requested language. Framework focus
+  // (non-executable) is joined onto each backend round to steer AI questions.
+  const backendFw = stack.backend?.frameworkLabels?.length
+    ? stack.backend.frameworkLabels.join(", ")
+    : undefined;
+  for (const lang of stack.backend?.languages ?? []) {
+    const def = BACKEND_LANGUAGES.find((b) => b.id === lang);
+    if (!def) continue;
+    specs.push({
+      paradigm: "backend",
+      language: def.id,
+      frameworkLabel: backendFw,
+      sourceKind: "playground",
+      sourceId: def.templateId,
+      estimatedMinutes: minutes,
+    });
+  }
+
+  // DSA — bind each requested language to the first matching harness challenge.
+  for (const lang of stack.dsa?.languages ?? []) {
+    const want = lang.toLowerCase();
+    const match = pool.challenges.find(
+      (c) => c.paradigm === "dsa" && c.languages.map((l) => l.toLowerCase()).includes(want),
+    );
+    if (!match) continue; // no problem in the bank for this language — skip
+    specs.push({
+      paradigm: "dsa",
+      language: lang,
+      sourceKind: "challenge",
+      sourceId: match.id,
+      estimatedMinutes: minutes,
+    });
+  }
+
+  return specs;
+}
+
 /** Whether a stack selection has at least one concrete pick. */
 export function isStackEmpty(stack: TechStack): boolean {
   return (

@@ -24,9 +24,9 @@ export default function MarkdownRenderer({ content, className = "", forceRunnabl
   };
 
   return (
-    <article className={`prose prose-invert max-w-none 
+    <article className={`prose dark:prose-invert max-w-none 
       prose-headings:text-fg prose-headings:font-black prose-headings:tracking-tight
-      prose-p:text-muted prose-a:text-accent hover:prose-a:text-accent-glow prose-a:no-underline hover:prose-a:underline
+      prose-p:text-slate-700 dark:prose-p:text-slate-300 prose-a:text-accent hover:prose-a:text-accent-glow prose-a:no-underline hover:prose-a:underline
       prose-strong:text-fg prose-code:text-accent prose-code:bg-panel/50 prose-code:px-1 prose-code:py-0.5 prose-code:rounded prose-code:before:content-none prose-code:after:content-none
       ${className}`}>
       <ReactMarkdown

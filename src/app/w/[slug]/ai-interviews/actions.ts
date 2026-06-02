@@ -10,6 +10,7 @@ import {
 } from "@/lib/ai-interview/credits";
 import { sendInviteEmail } from "@/lib/ai-interview/invite-email";
 import { validateStarterFilesJson } from "@/lib/ai-interview/template-resolver";
+import type { RoundSpecInput } from "@/lib/ai-interview/rounds";
 import { getStripe } from "@/lib/stripe";
 
 type Member = { userId: string; role: string };
@@ -143,6 +144,225 @@ export async function createAIInterviewSessionAction(
 }
 
 /**
+ * Quick-add a single candidate to the CRM from inside the screening wizard,
+ * returning the persisted row so the client can drop it straight into the
+ * selected set. This is the "Single invite" / "invite someone new" path under
+ * the unified batch flow — the typed person becomes a real Candidate row (so
+ * they show up in the pipeline) and is then screened as a batch of one.
+ * Idempotent: re-adding an existing email keeps their current stage.
+ */
+export async function quickAddCandidateAction(
+  slug: string,
+  data: { name: string; email: string }
+) {
+  const { workspace } = await assertWorkspaceWriter(slug);
+
+  const name = data.name?.trim();
+  const email = data.email?.trim().toLowerCase();
+  if (!name) throw new Error("Candidate name is required.");
+  if (!email || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) {
+    throw new Error("A valid candidate email is required.");
+  }
+
+  const { upsertCandidateForWorkflow } = await import("@/lib/crm/auto-create");
+  const { candidateId } = await upsertCandidateForWorkflow({
+    workspaceId: workspace.id,
+    name,
+    email,
+    source: "ai-interview-create",
+    initialStage: "SCREENED",
+  });
+
+  const row = await prisma.candidate.findUnique({
+    where: { id: candidateId },
+    select: { id: true, name: true, email: true, stage: true },
+  });
+
+  revalidatePath(`/w/${slug}/ai-interviews`);
+  return {
+    success: true,
+    candidate: {
+      id: row?.id ?? candidateId,
+      name: row?.name ?? name,
+      email: row?.email ?? email,
+      stage: row?.stage ?? "SCREENED",
+    },
+  };
+}
+
+// ─── Screening batch (revamp: multi-candidate, multi-round) ──────────────────
+
+function sanitizeRoundSpec(r: RoundSpecInput, idx: number): RoundSpecInput {
+  const paradigm = r.paradigm;
+  if (!["frontend", "backend", "dsa"].includes(paradigm)) {
+    throw new Error(`Round ${idx + 1}: invalid paradigm "${paradigm}".`);
+  }
+  const sourceKind = r.sourceKind;
+  if (!["challenge", "playground", "scaffold"].includes(sourceKind)) {
+    throw new Error(`Round ${idx + 1}: invalid source kind "${sourceKind}".`);
+  }
+  if (sourceKind === "scaffold") {
+    if (!r.templateId?.trim()) throw new Error(`Round ${idx + 1}: scaffold round needs a templateId.`);
+  } else if (!r.sourceId?.trim()) {
+    throw new Error(`Round ${idx + 1}: ${sourceKind} round needs a sourceId.`);
+  }
+  const minutes = Number(r.estimatedMinutes ?? 30);
+  return {
+    paradigm,
+    language: r.language?.trim() || undefined,
+    frameworkLabel: r.frameworkLabel?.trim() || undefined,
+    sourceKind,
+    sourceId: r.sourceId?.trim() || undefined,
+    templateId: r.templateId?.trim() || undefined,
+    estimatedMinutes: Number.isFinite(minutes) ? Math.min(180, Math.max(5, minutes)) : 30,
+  };
+}
+
+/**
+ * Create a screening batch: one AIScreeningBatch + its shared round specs, then
+ * one AIInterviewSession per selected (CRM) candidate with its rounds
+ * materialized from the shared set (or a per-candidate override). Invite emails
+ * fire after the transaction commits. No credit is consumed here — the charge
+ * still happens on each candidate's first message.
+ */
+export async function createScreeningBatchAction(
+  slug: string,
+  data: {
+    positionTitle: string;
+    candidateIds: string[];
+    sharedRounds: RoundSpecInput[];
+    /** candidateId -> full replacement round list. Absent = use sharedRounds. */
+    overrides?: Record<string, RoundSpecInput[]>;
+  }
+) {
+  const { workspace, userId } = await assertWorkspaceWriter(slug);
+
+  const positionTitle = data.positionTitle?.trim();
+  if (!positionTitle) throw new Error("Position title is required.");
+
+  const candidateIds = [...new Set((data.candidateIds ?? []).filter(Boolean))];
+  if (candidateIds.length === 0) throw new Error("Select at least one candidate.");
+
+  const sharedRounds = (data.sharedRounds ?? []).map(sanitizeRoundSpec);
+  if (sharedRounds.length === 0) throw new Error("Add at least one round to the question set.");
+
+  // Resolve candidates and enforce they belong to THIS workspace + have email.
+  const candidates = await prisma.candidate.findMany({
+    where: { id: { in: candidateIds }, workspaceId: workspace.id },
+    select: { id: true, name: true, email: true },
+  });
+  if (candidates.length !== candidateIds.length) {
+    throw new Error("One or more selected candidates were not found in this workspace.");
+  }
+  const missingEmail = candidates.filter((c) => !c.email?.trim());
+  if (missingEmail.length > 0) {
+    throw new Error(
+      `These candidates have no email and can't be invited: ${missingEmail.map((c) => c.name).join(", ")}.`
+    );
+  }
+
+  // Sanitize any per-candidate overrides up front so a bad override fails the
+  // whole request before we write anything.
+  const overrides: Record<string, RoundSpecInput[]> = {};
+  for (const [cid, rounds] of Object.entries(data.overrides ?? {})) {
+    if (!candidateIds.includes(cid)) continue; // ignore stale ids
+    const sane = (rounds ?? []).map(sanitizeRoundSpec);
+    if (sane.length > 0) overrides[cid] = sane;
+  }
+
+  const result = await prisma.$transaction(async (tx) => {
+    const batch = await tx.aIScreeningBatch.create({
+      data: {
+        workspaceId: workspace.id,
+        positionTitle,
+        createdByUserId: userId,
+        status: "ACTIVE",
+        roundSpecs: {
+          create: sharedRounds.map((r, order) => ({
+            order,
+            paradigm: r.paradigm,
+            language: r.language,
+            frameworkLabel: r.frameworkLabel,
+            sourceKind: r.sourceKind,
+            sourceId: r.sourceId,
+            templateId: r.templateId,
+            estimatedMinutes: r.estimatedMinutes ?? 30,
+          })),
+        },
+      },
+    });
+
+    const created: { id: string; inviteToken: string; candidateName: string; candidateEmail: string }[] = [];
+    for (const c of candidates) {
+      const rounds = overrides[c.id] ?? sharedRounds;
+      // Legacy `templateId` column is non-null; point it at the first round's
+      // identifier so any code still reading it has something sensible.
+      const legacyTemplateId = rounds[0].templateId ?? rounds[0].sourceId ?? "batch";
+      const session = await tx.aIInterviewSession.create({
+        data: {
+          workspaceId: workspace.id,
+          batchId: batch.id,
+          candidateId: c.id,
+          candidateName: c.name,
+          candidateEmail: c.email!.trim().toLowerCase(),
+          positionTitle,
+          templateId: legacyTemplateId,
+          status: "PENDING",
+          chatHistory: "[]",
+          filesJson: "{}",
+          rounds: {
+            create: rounds.map((r, order) => ({
+              order,
+              paradigm: r.paradigm,
+              language: r.language,
+              frameworkLabel: r.frameworkLabel,
+              sourceKind: r.sourceKind,
+              sourceId: r.sourceId,
+              templateId: r.templateId,
+              estimatedMinutes: r.estimatedMinutes ?? 30,
+              filesJson: "{}",
+              status: "PENDING",
+            })),
+          },
+        },
+        select: { id: true, inviteToken: true, candidateName: true, candidateEmail: true },
+      });
+      created.push(session);
+    }
+    return { batchId: batch.id, sessions: created };
+  });
+
+  // Fire invite emails after commit — best effort, never blocks the response.
+  const origin = await resolveOrigin();
+  for (const s of result.sessions) {
+    const inviteUrl = `${origin}/ai-interview/${s.inviteToken}`;
+    void sendInviteEmail({
+      candidateName: s.candidateName,
+      candidateEmail: s.candidateEmail,
+      positionTitle,
+      workspaceName: workspace.name,
+      inviteUrl,
+      workspaceId: workspace.id,
+    }).then((res) => {
+      if (!res.sent) {
+        console.warn(`[ai-batch-invite] failed for ${s.candidateEmail}: ${res.reason}`);
+      }
+    });
+  }
+
+  revalidatePath(`/w/${slug}/ai-interviews`);
+  return {
+    success: true,
+    batchId: result.batchId,
+    sessions: result.sessions.map((s) => ({
+      id: s.id,
+      inviteToken: s.inviteToken,
+      candidateName: s.candidateName,
+    })),
+  };
+}
+
+/**
  * Create a Stripe Checkout session for a one-time credit-pack purchase.
  * Returns the redirect URL — the client navigates there. Webhook handler
  * credits the workspace on `checkout.session.completed`.
@@ -252,6 +472,12 @@ export type CustomTemplateInput = {
   starterFilesJson: string;
   testsCode: string;
   estimatedMinutes: number;
+  /** Coding surface: "frontend" (Sandpack) | "backend" | "dsa" (Monaco+Piston). */
+  kind?: string;
+  /** Execution language for backend/dsa (e.g. "node", "python"). */
+  language?: string;
+  /** Non-executable framework label (steers AI questions only). */
+  frameworkLabel?: string;
 };
 
 export async function createCustomTemplateAction(
@@ -270,6 +496,9 @@ export async function createCustomTemplateAction(
       starterFiles: data.starterFiles,
       testsCode: data.testsCode,
       estimatedMinutes: data.estimatedMinutes,
+      kind: data.kind,
+      language: data.language,
+      frameworkLabel: data.frameworkLabel,
     },
   });
 
@@ -389,7 +618,19 @@ function sanitizeTemplateInput(input: CustomTemplateInput) {
   // Throws with a helpful message if the JSON is wrong shape.
   const starterFiles = validateStarterFilesJson(input.starterFilesJson);
 
-  return { title, description, starterFiles, testsCode, estimatedMinutes };
+  // Stack metadata. Default to frontend; backend/dsa require a language.
+  const kindRaw = (input.kind ?? "frontend").trim().toLowerCase();
+  const kind = (["frontend", "backend", "dsa"].includes(kindRaw) ? kindRaw : "frontend") as
+    | "frontend"
+    | "backend"
+    | "dsa";
+  const language = input.language?.trim() || undefined;
+  const frameworkLabel = input.frameworkLabel?.trim() || undefined;
+  if ((kind === "backend" || kind === "dsa") && !language) {
+    throw new Error("Backend/DSA templates require an execution language (e.g. node, python).");
+  }
+
+  return { title, description, starterFiles, testsCode, estimatedMinutes, kind, language, frameworkLabel };
 }
 
 /**

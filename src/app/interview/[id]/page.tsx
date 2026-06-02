@@ -229,6 +229,7 @@ export default async function InterviewRunPage({
         finishedAtIso: interview.finishedAt ? interview.finishedAt.toISOString() : null,
         sourceType,
         scenario: interview.scenario,
+        stackJson: interview.stackJson,
         activePlaygroundId: interview.activePlaygroundId,
         userId: interview.userId,
         rubric: interview.rubric ? {

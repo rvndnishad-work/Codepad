@@ -76,12 +76,16 @@ export default async function WorkspaceAiInterviewsPage({ params, searchParams }
 
   const canCreate = member.role === "OWNER" || member.role === "ADMIN" || member.role === "INTERVIEWER";
 
-  const [rawSessions, totalSessions, credits, usedThisMonth, templates, externalMcpServers] = await Promise.all([
+  const [rawSessions, totalSessions, credits, usedThisMonth, templates, externalMcpServers, candidateRows] = await Promise.all([
     prisma.aIInterviewSession.findMany({
       where: { workspaceId: workspace.id },
       orderBy: { createdAt: "desc" },
       skip,
       take: PAGE_SIZE,
+      include: {
+        rounds: { orderBy: { order: "asc" } },
+        batch: { select: { id: true, positionTitle: true } },
+      },
     }),
     prisma.aIInterviewSession.count({ where: { workspaceId: workspace.id } }),
     getWorkspaceCredits(workspace.id),
@@ -104,6 +108,18 @@ export default async function WorkspaceAiInterviewsPage({ params, searchParams }
         templateBindings: { select: { templateId: true } },
       },
       orderBy: { name: "asc" },
+    }),
+    // CRM candidates available to invite into a screening batch. Exclude
+    // rejected/archived dispositions and anyone without an email (can't invite).
+    prisma.candidate.findMany({
+      where: {
+        workspaceId: workspace.id,
+        email: { not: null },
+        status: { notIn: ["rejected", "archived"] },
+      },
+      select: { id: true, name: true, email: true, stage: true },
+      orderBy: { name: "asc" },
+      take: 500,
     }),
   ]);
 
@@ -143,6 +159,37 @@ export default async function WorkspaceAiInterviewsPage({ params, searchParams }
       }
     }
 
+    // Per-round summaries (multi-round batches). Files parsed for the per-round
+    // viewer; everything else is display metadata kept off the heavy path.
+    const rounds = (s.rounds ?? []).map((r) => {
+      let roundFiles: Record<string, string> = {};
+      try {
+        roundFiles = JSON.parse(r.filesJson || "{}");
+      } catch {
+        roundFiles = {};
+      }
+      let roundRatings: { CodeQuality: number; ProblemSolving: number; Communication: number } | null = null;
+      if (r.ratings) {
+        try {
+          roundRatings = JSON.parse(r.ratings);
+        } catch {
+          roundRatings = null;
+        }
+      }
+      return {
+        id: r.id,
+        order: r.order,
+        paradigm: r.paradigm,
+        language: r.language,
+        frameworkLabel: r.frameworkLabel,
+        sourceKind: r.sourceKind,
+        score: r.score,
+        status: r.status,
+        ratings: roundRatings,
+        filesJson: roundFiles,
+      };
+    });
+
     return {
       id: s.id,
       inviteToken: s.inviteToken,
@@ -151,6 +198,8 @@ export default async function WorkspaceAiInterviewsPage({ params, searchParams }
       positionTitle: s.positionTitle,
       status: s.status,
       templateId: s.templateId,
+      batchId: s.batchId,
+      batchTitle: s.batch?.positionTitle ?? null,
       score: s.score,
       aiSummary: s.aiSummary,
       aiSuspicionScore: s.aiSuspicionScore,
@@ -162,6 +211,7 @@ export default async function WorkspaceAiInterviewsPage({ params, searchParams }
       chatHistory: parsedHistory as { role: "user" | "assistant"; text: string }[],
       filesJson: parsedFiles,
       ratings: parsedRatings,
+      rounds,
     };
   });
 
@@ -188,10 +238,18 @@ export default async function WorkspaceAiInterviewsPage({ params, searchParams }
     name: s.name,
   }));
 
+  const candidates = candidateRows.map((c) => ({
+    id: c.id,
+    name: c.name,
+    email: c.email ?? "",
+    stage: c.stage,
+  }));
+
   return (
     <AIInterviewRecruiterConsole
       workspaceSlug={slug}
       initialSessions={mappedSessions}
+      candidates={candidates}
       totalScreened={totalScreened}
       avgScore={avgScore}
       credits={credits}

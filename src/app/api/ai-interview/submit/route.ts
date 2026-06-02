@@ -4,6 +4,7 @@ import { analyzeTelemetry, type TelemetryEvent } from "@/lib/proctoring/ai-detec
 import { AI_INTERVIEW_GEMINI_MODEL } from "@/lib/ai-interview/scaffolds";
 import { sendRecruiterNotifyEmail } from "@/lib/ai-interview/submit-notify";
 import { checkFilesSize } from "@/lib/ai-interview/files-size";
+import { resolveSessionRounds, type SessionRound } from "@/lib/ai-interview/rounds";
 
 type GraderResult = {
   score: number;
@@ -173,12 +174,44 @@ function runRulesBasedGrader(
   };
 }
 
+/** Grade one round's (or a legacy whole-session) submission, with the static
+ *  rules-based grader as the no-key / failure fallback. */
+async function gradeSubmission(
+  apiKey: string | undefined,
+  label: string,
+  chatLog: string,
+  chatHistory: any[],
+  files: Record<string, string>,
+  templateId: string
+): Promise<GraderResult> {
+  if (apiKey) {
+    try {
+      return await callGeminiGrader(apiKey, label, chatLog, JSON.stringify(files));
+    } catch (err) {
+      console.error("Gemini grading failed, falling back to static:", err);
+    }
+  }
+  return runRulesBasedGrader(files, chatHistory, templateId);
+}
+
+function parseFilesMap(json: string | null | undefined): Record<string, string> {
+  if (!json) return {};
+  try {
+    const p = JSON.parse(json);
+    return p && typeof p === "object" && !Array.isArray(p) ? (p as Record<string, string>) : {};
+  } catch {
+    return {};
+  }
+}
+
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { inviteToken, files, telemetry } = body as {
+    const { inviteToken, files, roundFiles, telemetry } = body as {
       inviteToken: string;
       files: Record<string, string>;
+      /** Per-round files keyed by round id (multi-round screenings). */
+      roundFiles?: Record<string, Record<string, string>>;
       telemetry?: TelemetryEvent[];
     };
 
@@ -186,15 +219,18 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Missing inviteToken or files" }, { status: 400 });
     }
 
-    // Same cap as the message endpoint — a screening can't end with a bigger
-    // payload than the in-flight chat tolerates.
-    const sizeCheck = checkFilesSize(files);
-    if (!sizeCheck.ok) {
-      return NextResponse.json({ error: sizeCheck.reason }, { status: 413 });
+    // Cap each submitted file map — a screening can't end with a bigger payload
+    // than the in-flight chat tolerates.
+    for (const map of [files, ...Object.values(roundFiles ?? {})]) {
+      const sizeCheck = checkFilesSize(map);
+      if (!sizeCheck.ok) {
+        return NextResponse.json({ error: sizeCheck.reason }, { status: 413 });
+      }
     }
 
     const session = await prisma.aIInterviewSession.findUnique({
       where: { inviteToken },
+      include: { rounds: true },
     });
 
     if (!session) {
@@ -218,58 +254,102 @@ export async function POST(req: NextRequest) {
     }
 
     const apiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY;
-    let grading: GraderResult;
+    const sessionRounds = resolveSessionRounds(session);
+    const legacy = sessionRounds.length === 1 && sessionRounds[0].legacy;
 
-    if (apiKey) {
-      try {
-        grading = await callGeminiGrader(
+    // Files each round is graded on: prefer the submitted map, else the round's
+    // last-saved files (a legacy session uses the single `files` payload).
+    const filesForRound = (r: SessionRound): Record<string, string> =>
+      legacy ? files : roundFiles?.[r.id] ?? parseFilesMap(r.filesJson);
+
+    // Grade every round (one grade for a legacy session). The chat is shared, so
+    // each round is graded against the full conversation + that round's code.
+    const graded = await Promise.all(
+      sessionRounds.map(async (r) => {
+        const label =
+          sessionRounds.length > 1
+            ? `${session.positionTitle} — Round ${r.order + 1}`
+            : session.positionTitle;
+        const result = await gradeSubmission(
           apiKey,
-          session.positionTitle,
+          label,
           session.chatHistory,
-          JSON.stringify(files)
+          chatHistory,
+          filesForRound(r),
+          r.templateId ?? session.templateId
         );
-      } catch (err) {
-        console.error("Gemini grading failed, falling back to static:", err);
-        grading = runRulesBasedGrader(files, chatHistory, session.templateId);
-      }
-    } else {
-      grading = runRulesBasedGrader(files, chatHistory, session.templateId);
-    }
+        return { round: r, files: filesForRound(r), result };
+      })
+    );
 
+    // Aggregate per-round grades into the session composite.
+    const aggregateScore = Math.round(
+      graded.reduce((s, g) => s + g.result.score, 0) / graded.length
+    );
+    const avg = (sel: (g: GraderResult) => number) =>
+      Math.round((graded.reduce((s, g) => s + sel(g.result), 0) / graded.length) * 10) / 10;
     const ratingsPayload = {
-      CodeQuality: grading.codeQuality,
-      ProblemSolving: grading.problemSolving,
-      Communication: grading.communication,
+      CodeQuality: avg((g) => g.codeQuality),
+      ProblemSolving: avg((g) => g.problemSolving),
+      Communication: avg((g) => g.communication),
     };
+    const aiSummary =
+      graded.length > 1
+        ? graded
+            .map((g) => `Round ${g.round.order + 1} (${g.result.score}/100):\n${g.result.aiSummary}`)
+            .join("\n\n")
+        : graded[0].result.aiSummary;
 
-    // Compute integrity signal from candidate-side telemetry. We accept whatever
-    // arrived in the request — a malicious candidate could of course suppress
-    // events, in which case the score is 0 and recruiters see no red flags
-    // (better than a false positive, since this is heuristic anyway).
+    // Merge all round files into one snapshot for the session row (back-compat
+    // with the current recruiter console; P3 renders per-round).
+    const mergedFiles: Record<string, string> = {};
+    for (const g of graded) Object.assign(mergedFiles, g.files);
+
+    // Integrity signal from candidate-side telemetry over ALL submitted code.
     let aiSuspicionScore: number | null = null;
     if (Array.isArray(telemetry) && telemetry.length > 0) {
-      const totalCodeLen = Object.values(files).reduce(
+      const totalCodeLen = Object.values(mergedFiles).reduce(
         (acc, src) => acc + (typeof src === "string" ? src.length : 0),
         0
       );
-      const result = analyzeTelemetry(telemetry, totalCodeLen);
-      aiSuspicionScore = result.aiSuspicionScore;
+      aiSuspicionScore = analyzeTelemetry(telemetry, totalCodeLen).aiSuspicionScore;
     }
 
-    // Update session state in DB. Setting finishedAt is what locks the session
-    // — subsequent submit attempts will be rejected by the guard above.
-    const updated = await prisma.aIInterviewSession.update({
-      where: { id: session.id },
-      data: {
-        filesJson: JSON.stringify(files),
-        status: "COMPLETED",
-        score: grading.score,
-        ratings: JSON.stringify(ratingsPayload),
-        aiSummary: grading.aiSummary,
-        aiSuspicionScore,
-        finishedAt: new Date(),
-      },
-    });
+    // Persist the per-round grades (real rounds) + the session composite in one
+    // transaction. Setting finishedAt locks the session against re-grade.
+    const finishedAt = new Date();
+    const [updated] = await prisma.$transaction([
+      prisma.aIInterviewSession.update({
+        where: { id: session.id },
+        data: {
+          filesJson: JSON.stringify(legacy ? files : mergedFiles),
+          status: "COMPLETED",
+          score: aggregateScore,
+          ratings: JSON.stringify(ratingsPayload),
+          aiSummary,
+          aiSuspicionScore,
+          finishedAt,
+        },
+      }),
+      ...(legacy
+        ? []
+        : graded.map((g) =>
+            prisma.aIInterviewRound.update({
+              where: { id: g.round.id },
+              data: {
+                filesJson: JSON.stringify(g.files),
+                status: "COMPLETED",
+                score: g.result.score,
+                ratings: JSON.stringify({
+                  CodeQuality: g.result.codeQuality,
+                  ProblemSolving: g.result.problemSolving,
+                  Communication: g.result.communication,
+                }),
+                finishedAt,
+              },
+            })
+          )),
+    ]);
 
     // Notify all workspace members who can act on the result. Fire-and-forget:
     // the candidate response must not wait on SMTP/Resend round-trips, and
@@ -279,7 +359,7 @@ export async function POST(req: NextRequest) {
       sessionId: session.id,
       candidateName: session.candidateName,
       positionTitle: session.positionTitle,
-      score: grading.score,
+      score: aggregateScore,
       aiSuspicionScore,
       origin: req.headers.get("x-forwarded-host")
         ? `${req.headers.get("x-forwarded-proto") ?? "https"}://${req.headers.get("x-forwarded-host")}`

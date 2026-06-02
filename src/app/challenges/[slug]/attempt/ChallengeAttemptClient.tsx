@@ -673,15 +673,28 @@ export default function ChallengeAttemptClient({
   }, []);
 
   // B2B Take-Home Countdown Timer & Auto-Submit
+  const [extendedMinutes, setExtendedMinutes] = useState(0);
   const isTakeHome = !!takeHomeStartedAtIso && !!takeHomeTimeLimitMin;
   const takeHomeStartMs = useMemo(() => takeHomeStartedAtIso ? new Date(takeHomeStartedAtIso).getTime() : Date.now(), [takeHomeStartedAtIso]);
-  const takeHomeDurationMs = useMemo(() => (takeHomeTimeLimitMin || 60) * 60 * 1000, [takeHomeTimeLimitMin]);
+  const takeHomeDurationMs = useMemo(() => ((takeHomeTimeLimitMin || 60) + extendedMinutes) * 60 * 1000, [takeHomeTimeLimitMin, extendedMinutes]);
 
   const [remainingTakeHomeSec, setRemainingTakeHomeSec] = useState(() => {
     if (!isTakeHome) return 0;
     const elapsed = Date.now() - takeHomeStartMs;
     return Math.max(0, Math.floor((takeHomeDurationMs - elapsed) / 1000));
   });
+
+  const handleExtendTakeHomeTime = () => {
+    setExtendedMinutes((prev) => {
+      const next = prev + 15;
+      const newDurationMs = ((takeHomeTimeLimitMin || 60) + next) * 60 * 1000;
+      const elapsed = Date.now() - takeHomeStartMs;
+      const newRemaining = Math.max(0, Math.floor((newDurationMs - elapsed) / 1000));
+      setRemainingTakeHomeSec(newRemaining);
+      return next;
+    });
+    toast.success("Added 15 minutes to your take-home session!");
+  };
 
   async function handleAutoSubmitOnTimeExpiration() {
     toast.error("Time has expired!", {
@@ -1363,20 +1376,31 @@ export default function ChallengeAttemptClient({
           </div>
 
           {/* Center: countdown (take-home) / session timer / elapsed — prominent */}
-          <div className="flex items-center justify-center shrink-0">
+          <div className="flex items-center justify-center shrink-0 gap-2">
             {isTakeHome ? (
-              <div
-                className={`flex items-center gap-2 px-3.5 py-1.5 rounded-xl border font-mono tabular-nums shadow-sm ${
-                  remainingTakeHomeSec < 60
-                    ? "text-rose-500 border-rose-500/40 bg-rose-500/10 animate-pulse"
-                    : remainingTakeHomeSec < 300
-                    ? "text-amber-500 border-amber-500/40 bg-amber-500/10"
-                    : "text-emerald-500 border-emerald-500/40 bg-emerald-500/10"
-                }`}
-                title="Time remaining"
-              >
-                <Clock className="w-4 h-4 shrink-0" />
-                <span className="text-lg font-bold leading-none">{formatDuration(remainingTakeHomeSec)}</span>
+              <div className="flex items-center gap-2">
+                <div
+                  className={`flex items-center gap-2 px-3.5 py-1.5 rounded-xl border font-mono tabular-nums shadow-sm ${
+                    remainingTakeHomeSec < 60
+                      ? "text-rose-700 dark:text-rose-300 border-rose-500/35 bg-rose-500/15 animate-pulse"
+                      : remainingTakeHomeSec < 300
+                      ? "text-amber-700 dark:text-amber-300 border-amber-500/35 bg-amber-500/15"
+                      : "text-emerald-700 dark:text-emerald-300 border-emerald-500/35 bg-emerald-500/15"
+                  }`}
+                  title="Time remaining"
+                >
+                  <Clock className="w-4 h-4 shrink-0" />
+                  <span className="text-lg font-bold leading-none">{formatDuration(remainingTakeHomeSec)}</span>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={handleExtendTakeHomeTime}
+                  title="Extend timer by 15 minutes"
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-border bg-surface hover:bg-elevated text-slate-700 dark:text-slate-300 hover:text-fg text-xs font-black tracking-wider transition cursor-pointer shrink-0 active:scale-95 shadow-sm"
+                >
+                  +15m
+                </button>
               </div>
             ) : sessionId ? (
               <SessionTimer

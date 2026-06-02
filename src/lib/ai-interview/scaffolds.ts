@@ -27,7 +27,43 @@ export const AI_INTERVIEW_TEMPLATES: AIInterviewTemplateDef[] = [
   {
     id: "react-todo-pagination",
     title: "React Todo with Pagination",
-    description: "Build an interactive and responsive Todo List in React with paginated controls. State management should dynamically slice the list array based on active page index limits (limit to 3 items per page), manage input validation, and render disabled states for buttons when boundary limits are hit.",
+    description: `Build an interactive and responsive Todo List in React with paginated controls. State management should dynamically slice the list array based on active page index limits, manage input validation, and render disabled states for buttons when boundary limits are hit.
+
+### 📋 Core Requirements
+
+1. **Pagination State**
+   - Track \`currentPage\` (starts at \`1\`).
+   - Limit items per page (\`itemsPerPage = 3\`).
+
+2. **Filter Logic**
+   - Filter todos based on active selection: \`All\`, \`Active\`, or \`Completed\`.
+
+3. **Slice Logic**
+   - Slice the filtered list so that only a maximum of 3 items display for the active page index.
+
+4. **Input Validation**
+   - Prevent adding empty or whitespace-only todos.
+   - Clear the input field automatically upon successful addition.
+
+5. **Boundary Safeguards**
+   - Disable the **Prev** button when on Page 1.
+   - Disable the **Next** button when on the last page.
+
+---
+
+### 📂 File Structure
+- \`App.js\`: Contains the main component structure and state. **This is where you should write your pagination and filter implementation.**
+- \`styles.css\`: Glassmorphic premium dashboard styles. Do not modify unless tweaking visuals.
+
+---
+
+### 💡 Pro Tip
+To slice a list dynamically in React, you can compute:
+\`\`\`javascript
+const startIndex = (currentPage - 1) * itemsPerPage;
+const paginatedTodos = filteredTodos.slice(startIndex, startIndex + itemsPerPage);
+\`\`\`
+Ensure that if the filtered list becomes empty, the pagination index resets gracefully!`,
     estimatedMinutes: 30,
     testsCode: `// Automated checks for React Todo Pagination
 checkStateManagement() {
@@ -315,7 +351,33 @@ export default function App() {
   {
     id: "interactive-carousel",
     title: "Interactive Image Carousel",
-    description: "Build an interactive and responsive image carousel component in React. Requirements: render cyclic slideshow imagery with autoplay toggles, pause transitions on mouse hover, direct slide selection dots at the bottom of the card, and sliding state transitions.",
+    description: `Build an interactive and responsive image carousel component in React. You must implement cyclic slideshow transitions, hover-triggered auto-pausing, direct slide indicators, and slick visual states.
+
+### 📋 Core Requirements
+
+1. **Autoplay Mechanism**
+   - Set up an automatic cycle (\`setInterval\` timer) inside a \`useEffect\` hook.
+   - Increment the active slide index every \`3000ms\`.
+
+2. **Memory Leak Safeguards**
+   - Clean up active intervals on component unmount and when dependency states change to prevent memory leaks.
+
+3. **Pause on Hover**
+   - Pause autoplay dynamically when the candidate's pointer hovers over the main carousel card.
+   - Resume autoplay as soon as the mouse leaves the card boundary.
+
+4. **Cyclic Boundaries**
+   - Wrap indices gracefully: clicking "Next" on the last slide should loop back to the first; clicking "Previous" on the first should wrap to the last.
+
+5. **Direct Navigation Dots**
+   - Render slide indicator dots at the bottom.
+   - Clicking a dot must navigate the carousel directly to the selected slide.
+
+---
+
+### 📂 File Structure
+- \`App.js\`: Core carousel structure and states. **Implement your timer and hover hooks here.**
+- \`styles.css\`: Neon glow-themed responsive styling.`,
     estimatedMinutes: 30,
     testsCode: `// Automated checks for Interactive Carousel
 checkCarouselControls() {
@@ -581,7 +643,28 @@ export default function App() {
   {
     id: "valid-parentheses-stack",
     title: "Valid Parentheses Stack Parser",
-    description: "Given a string containing brackets '(', ')', '{', '}', '[' and ']', check if the input string is valid under O(N) time and space complexity. Open brackets must be closed by the same type of brackets and closed in the correct order. You must edit validate.js, and App.js will run a dynamic CLI terminal tests suite against your algorithm.",
+    description: `Given a string containing brackets '(', ')', '{', '}', '[' and ']' check if the input string is valid under O(N) time and space complexity. Open brackets must be closed by the same type of brackets and closed in the correct order.
+
+### 📋 Core Requirements
+
+1. **Balanced Brackets Evaluation**
+   - Ensure every open bracket is closed by a matching bracket of the exact same type.
+   - Ensure brackets are closed in the correct hierarchical order.
+
+2. **Algorithmic Complexity**
+   - **Time Complexity**: $O(N)$ where $N$ is the string length. Double-nested loops are unacceptable.
+   - **Space Complexity**: $O(N)$ auxiliary space for bracket tracking.
+
+3. **Stack-Based Architecture**
+   - Push open brackets onto a stack array.
+   - Pop the stack on encountering a closing bracket and verify matching correctness.
+   - Ensure the stack is completely empty at the end.
+
+---
+
+### 📂 File Structure
+- \`validate.js\`: **Implement your \`isValidParentheses(s)\` algorithm inside this file.**
+- \`App.js\`: Diagnostic CLI suite that evaluates your solution against our real-time unit tests.`,
     estimatedMinutes: 25,
     testsCode: `// Algorithmic validation checks
 checkStackImplementation() {
@@ -866,7 +949,26 @@ export default function App() {
   {
     id: "dynamic-fibonacci",
     title: "Dynamic Memoized Fibonacci",
-    description: "Write an optimized, memoized algorithm calculating the N-th Fibonacci element. Avoid simple recursion stack overflows for large input bounds (N = 50). Edit fibonacci.js; App.js will load a dynamic CPU-profiler rendering performance times and comparison graphs.",
+    description: `Write an optimized, memoized algorithm calculating the N-th Fibonacci element. Avoid simple recursion stack overflows for large input bounds (N = 50).
+
+### 📋 Core Requirements
+
+1. **Performance Bottleneck**
+   - Naive recursion runs in $O(2^N)$ complexity, which crashes browsers or times out for $N > 40$.
+   - You must optimize this calculation to run in linear $O(N)$ time.
+
+2. **Memoization / Dynamic Programming**
+   - Store previously calculated values in a memo object or cache array.
+   - Reuse cached results before repeating computations.
+
+3. **Depth Safeguard**
+   - Ensure your recursive calls pass the stateful memo object through correctly.
+
+---
+
+### 📂 File Structure
+- \`fibonacci.js\`: **Implement your memoized \`fibonacci(n, memo)\` solver inside this file.**
+- \`App.js\`: CPU benchmarking panel that profiles execution times and draws interactive performance charts.`,
     estimatedMinutes: 25,
     testsCode: `// Algorithmic checks for Dynamic Fibonacci
 checkFibonacciMemo() {
@@ -1123,8 +1225,25 @@ export default function App() {
   {
     id: "backend-node-rate-limiter",
     title: "Node.js: Sliding-Window Rate Limiter",
-    description:
-      "Implement a `RateLimiter` in Node.js that allows at most N requests per sliding time window per key. Expose `allow(key, nowMs)` returning a boolean. Demonstrate it from the script with a few calls and `console.log` the results. Discuss time/space complexity and how you'd make it distributed.",
+    description: `Implement a \`RateLimiter\` in Node.js that allows at most N requests per sliding time window per key.
+
+### 📋 Core Requirements
+
+1. **Sliding-Window Architecture**
+   - Track precise request timestamps per key.
+   - Avoid fixed-window boundary spikes (allow sliding request tracking).
+
+2. **State and Storage**
+   - Maintain historical request timestamps in memory.
+   - Filter out timestamps older than the active window dynamically.
+
+3. **Methods to Implement**
+   - \`allow(key, nowMs)\`: Returns \`true\` if permitted, \`false\` if the key has exceeded the limit.
+
+---
+
+### 📂 File Structure
+- \`index.js\`: **Implement your rate limiter class and test calls here.** Use the "Run Code" button to see terminal logs in real-time.`,
     estimatedMinutes: 30,
     kind: "backend",
     language: "node",
@@ -1162,8 +1281,24 @@ console.log(rl.allow("a", 1300));  // true (window slid)
   {
     id: "dsa-group-anagrams",
     title: "DSA: Group Anagrams",
-    description:
-      "Given an array of strings, group the anagrams together. Implement `groupAnagrams(words)` and print the grouped result. Aim for O(n·k log k) or better, and be ready to discuss the hashing key you chose.",
+    description: `Given an array of strings, group the anagrams together. Implement \`groupAnagrams(words)\` and print the grouped result.
+
+### 📋 Core Requirements
+
+1. **Grouping Correctness**
+   - Anagrams are words composed of the exact same characters in different orders (e.g. "eat", "tea", "ate").
+   - Group all related anagrams together in arrays.
+
+2. **Algorithmic Optimization**
+   - Target an optimal time complexity of $O(N \cdot K \log K)$ or $O(N \cdot K)$ where $K$ is the maximum word length.
+
+3. **HashMap Hashing Key**
+   - Create a reliable hashing key (e.g., sorted string characters or character count arrays).
+
+---
+
+### 📂 File Structure
+- \`solution.py\`: **Write your Python group-anagrams algorithm here.** Run it to verify outputs directly.`,
     estimatedMinutes: 30,
     kind: "dsa",
     language: "python",

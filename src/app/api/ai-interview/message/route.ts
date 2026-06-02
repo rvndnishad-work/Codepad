@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getTemplateById, AI_INTERVIEW_GEMINI_MODEL, computeDeadline } from "@/lib/ai-interview/scaffolds";
-import { resolveTemplate } from "@/lib/ai-interview/template-resolver";
+import { AI_INTERVIEW_GEMINI_MODEL } from "@/lib/ai-interview/scaffolds";
+import { resolveSessionRounds, type SessionRound } from "@/lib/ai-interview/rounds";
+import { resolveRoundsContent } from "@/lib/ai-interview/round-content";
 import {
   consumeCreditIfFirstTurn,
   InsufficientCreditsError,
@@ -433,10 +434,13 @@ You are ready to submit your scorecard. Click "Complete Assessment" at the top o
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { inviteToken, message, files } = body as {
+    const { inviteToken, roundId, message, files, lastRun } = body as {
       inviteToken: string;
+      /** Which round the candidate is on. Absent for legacy single-round flows. */
+      roundId?: string;
       message: string;
       files: Record<string, string>;
+      lastRun?: { stdout?: string; stderr?: string };
     };
 
     if (!inviteToken || !message) {
@@ -453,9 +457,11 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // Look up by inviteToken — the candidate never sees the session id.
+    // Look up by inviteToken — the candidate never sees the session id. Include
+    // rounds so multi-round screenings can scope the turn to the active round.
     const session = await prisma.aIInterviewSession.findUnique({
       where: { inviteToken },
+      include: { rounds: true },
     });
 
     if (!session) {
@@ -470,9 +476,17 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Hard deadline — once startedAt + estimatedMinutes elapses, no further
-    // chat turns. The client gets a clear signal so it can auto-submit.
-    const deadline = computeDeadline(session.startedAt, session.templateId);
+    // Normalize rounds and pick the active one (defaults to the first).
+    const sessionRounds = resolveSessionRounds(session);
+    const activeRound: SessionRound =
+      sessionRounds.find((r) => r.id === roundId) ?? sessionRounds[0];
+
+    // Hard deadline = startedAt + sum of round budgets (+30s grace). Once it
+    // elapses, no further chat turns; the client gets a clear signal to submit.
+    const totalMinutes = sessionRounds.reduce((s, r) => s + (r.estimatedMinutes || 0), 0) || 30;
+    const deadline = session.startedAt
+      ? new Date(new Date(session.startedAt).getTime() + totalMinutes * 60_000 + 30_000)
+      : null;
     if (deadline && Date.now() > deadline.getTime()) {
       return NextResponse.json(
         {
@@ -547,7 +561,9 @@ export async function POST(req: NextRequest) {
       try {
         const servers = await loadActiveExternalServers({
           workspaceId: session.workspaceId,
-          templateId: session.templateId,
+          // Bindings are per scaffold template — use the active round's scaffold
+          // if it has one, else the session's legacy template id.
+          templateId: activeRound.templateId ?? session.templateId,
         });
         if (servers.length > 0) {
           // Cache tools/list at session start so subsequent turns reuse.
@@ -579,28 +595,45 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // Resolve the task template so the interviewer knows the actual problem +
-    // tech stack (frontend framework / backend language / DSA) and tailors its
-    // questions accordingly instead of only knowing the template id.
-    const tpl = await resolveTemplate(session.templateId, session.workspaceId).catch(() => undefined);
-    const kind = tpl?.kind ?? "frontend";
+    // Resolve the ACTIVE round's content so the interviewer knows the real
+    // problem + tech stack and tailors questions to it (not the session id).
+    const roundContent = (
+      await resolveRoundsContent([activeRound], session.workspaceId).catch(() => [])
+    )[0];
+    const kind = roundContent?.kind ?? "frontend";
+    const roundLang = roundContent?.language;
+    const roundFw = roundContent?.frameworkLabel;
     const stackLine =
       kind === "backend"
-        ? `This is a BACKEND task in ${tpl?.language ?? "the chosen language"}${tpl?.frameworkLabel ? ` (framework focus: ${tpl.frameworkLabel})` : ""}. The candidate runs code server-side. Probe API/data-structure design, complexity, error handling, concurrency, and edge cases — not UI.`
+        ? `This is a BACKEND task in ${roundLang ?? "the chosen language"}${roundFw ? ` (framework focus: ${roundFw})` : ""}. The candidate runs code server-side. Probe API/data-structure design, complexity, error handling, concurrency, and edge cases — not UI.`
         : kind === "dsa"
-          ? `This is a DSA / algorithms task in ${tpl?.language ?? "the chosen language"}. Probe time/space complexity, edge cases, and alternative approaches; the candidate runs code against sample input.`
-          : `This is a FRONTEND task${tpl?.frameworkLabel ? ` using ${tpl.frameworkLabel}` : ""}. Probe component/state design, accessibility, and UX.`;
+          ? `This is a DSA / algorithms task in ${roundLang ?? "the chosen language"}. Probe time/space complexity, edge cases, and alternative approaches; the candidate runs code against sample input.`
+          : `This is a FRONTEND task${roundFw ? ` using ${roundFw}` : ""}. Probe component/state design, accessibility, and UX.`;
+
+    // When the screening has multiple rounds, tell the interviewer which one the
+    // candidate is on so it can frame the (continuous) conversation.
+    const roundLine =
+      sessionRounds.length > 1
+        ? `\nThis is round ${activeRound.order + 1} of ${sessionRounds.length}. Focus on THIS round's task; if the candidate just switched rounds, briefly acknowledge it.`
+        : "";
 
     let systemInstruction = `You are the Interviewpad AI Technical Interviewer conducting a live coding interview for the position of "${session.positionTitle}".
 
-Task: ${tpl?.title ?? session.templateId}
-${tpl?.description ? `Brief: ${tpl.description}\n` : ""}${stackLine}
+Task: ${roundContent?.title ?? session.positionTitle}
+${roundContent?.description ? `Brief: ${roundContent.description}\n` : ""}${stackLine}${roundLine}
 
 Guidelines:
 1. Be encouraging but professional and rigorous.
 2. Guide them using hints, but never write full solutions directly.
 3. If they describe code, check if their active files (${truncateFilesForPrompt(files)}) match their claims.
 4. Keep answers concise (around 100-150 words) and relevant to the task's stack.`;
+    // For backend/DSA rounds, give the interviewer the candidate's most recent
+    // execution output so it can evaluate real results, not just the code.
+    if ((kind === "backend" || kind === "dsa") && lastRun && (lastRun.stdout || lastRun.stderr)) {
+      const clip = (s: string | undefined) => (s ? s.slice(0, 1500) : "");
+      systemInstruction += `\n\nThe candidate's latest run produced:\nSTDOUT:\n${clip(lastRun.stdout) || "(empty)"}\nSTDERR:\n${clip(lastRun.stderr) || "(none)"}\nUse this actual output when assessing correctness.`;
+    }
+
     if (resolved) {
       // Append the wrapper-warning when external tools are in play. Without
       // this, the model has no signal that <reference_data> contents are
@@ -651,14 +684,34 @@ Guidelines:
         : aiResponse;
     history.push({ role: "assistant", text: assistantText });
 
-    await prisma.aIInterviewSession.update({
-      where: { id: session.id },
-      data: {
-        chatHistory: JSON.stringify(history),
-        filesJson: JSON.stringify(files),
-        status: "ACTIVE",
-      },
-    });
+    // Persist the shared (continuous) chat + the active round's files. For a
+    // legacy batch-less session the round is synthetic, so files live on the
+    // session row; for a real round they live on the AIInterviewRound.
+    if (activeRound.legacy) {
+      await prisma.aIInterviewSession.update({
+        where: { id: session.id },
+        data: {
+          chatHistory: JSON.stringify(history),
+          filesJson: JSON.stringify(files),
+          status: "ACTIVE",
+        },
+      });
+    } else {
+      await prisma.$transaction([
+        prisma.aIInterviewSession.update({
+          where: { id: session.id },
+          data: { chatHistory: JSON.stringify(history), status: "ACTIVE" },
+        }),
+        prisma.aIInterviewRound.update({
+          where: { id: activeRound.id },
+          data: {
+            filesJson: JSON.stringify(files),
+            status: "ACTIVE",
+            startedAt: activeRound.startedAt ?? new Date(),
+          },
+        }),
+      ]);
+    }
 
     return NextResponse.json({
       chatHistory: history,

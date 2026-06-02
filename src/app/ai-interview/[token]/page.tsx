@@ -1,7 +1,8 @@
 import { notFound } from "next/navigation";
 import { headers } from "next/headers";
 import { prisma } from "@/lib/prisma";
-import { resolveTemplate } from "@/lib/ai-interview/template-resolver";
+import { resolveSessionRounds } from "@/lib/ai-interview/rounds";
+import { resolveRoundsContent } from "@/lib/ai-interview/round-content";
 import AIInterviewWorkspace from "./AIInterviewWorkspace";
 import MobileLobby from "@/components/MobileLobby";
 import { shouldRenderMobileLobby } from "@/lib/device";
@@ -107,36 +108,60 @@ export default async function AIInterviewRunPage({ params, searchParams }: Props
   }
 
   // Look up by inviteToken — the internal session id is never exposed to the
-  // candidate's browser.
+  // candidate's browser. Include rounds so multi-round (batch) screenings load
+  // their per-round surfaces; legacy single-template sessions have none and
+  // resolveSessionRounds synthesizes one.
   const session = await prisma.aIInterviewSession.findUnique({
     where: { inviteToken: token },
+    include: { rounds: true },
   });
 
   if (!session) notFound();
 
-  // Resolve template — workspace customs take precedence over builtins.
-  const template = await resolveTemplate(session.templateId, session.workspaceId);
-  const starter = template ? template.starterFiles : DEFAULT_STARTER_FILES;
+  // Normalize to an ordered round list, then resolve each round's runnable
+  // content (title/surface/starter files) by source kind.
+  const sessionRounds = resolveSessionRounds(session);
+  const roundsContent = await resolveRoundsContent(sessionRounds, session.workspaceId);
 
-  // Load starter files or current state files
-  let initialFiles: Record<string, string> = starter;
-  if (session.filesJson) {
-    try {
-      initialFiles = JSON.parse(session.filesJson) as Record<string, string>;
-    } catch {
-      initialFiles = starter;
-    }
-  }
+  // Defensive fallback — if content resolution produced nothing usable, seed a
+  // single frontend round from the default starter so the page never crashes.
+  const rounds =
+    roundsContent.length > 0
+      ? roundsContent.map((r) => ({
+          roundId: r.roundId,
+          order: r.order,
+          title: r.title,
+          description: r.description,
+          kind: r.kind,
+          language: r.language,
+          estimatedMinutes: r.estimatedMinutes,
+          files: Object.keys(r.files).length > 0 ? r.files : DEFAULT_STARTER_FILES,
+          status: r.status,
+        }))
+      : [
+          {
+            roundId: `legacy:${session.id}`,
+            order: 0,
+            title: session.positionTitle,
+            description: "",
+            kind: "frontend" as const,
+            language: undefined,
+            estimatedMinutes: 30,
+            files: DEFAULT_STARTER_FILES,
+            status: session.status,
+          },
+        ];
 
-  // Parse chat history
-  let chatHistory: any[] = [];
+  // Whole-session timer = sum of round budgets (the locked single-timer model).
+  const estimatedMinutes = rounds.reduce((sum, r) => sum + (r.estimatedMinutes || 0), 0) || 30;
+
+  // Parse the shared (continuous) chat history.
+  let chatHistory: { role: "user" | "assistant"; text: string }[] = [];
   try {
     chatHistory = JSON.parse(session.chatHistory);
   } catch {
     chatHistory = [];
   }
-
-  const estimatedMinutes = template?.estimatedMinutes ?? 30;
 
   return (
     <AIInterviewWorkspace
@@ -149,10 +174,8 @@ export default async function AIInterviewRunPage({ params, searchParams }: Props
         startedAt: session.startedAt?.toISOString() ?? null,
         estimatedMinutes,
       }}
-      initialFiles={initialFiles}
+      rounds={rounds}
       initialChat={chatHistory}
-      kind={template?.kind ?? "frontend"}
-      language={template?.language}
     />
   );
 }

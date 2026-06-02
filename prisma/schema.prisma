@@ -743,6 +743,7 @@ model Workspace {
   aiCreditLedger       AIInterviewCreditLedger[]
   aiInterviewSessions  AIInterviewSession[]
   aiInterviewTemplates AIInterviewTemplate[]
+  aiScreeningBatches   AIScreeningBatch[]
   atsIntegration       AtsIntegration?
   candidates           Candidate[]
   challenges           Challenge[]
@@ -859,6 +860,10 @@ model AIInterviewSession {
   id               String                    @id @default(cuid())
   workspaceId      String
   candidateId      String?
+  /// Revamp: the screening batch this session belongs to. Null for legacy
+  /// single-template sessions created before the batch model (treated as an
+  /// implicit 1-round screening via the templateId below).
+  batchId          String?
   /// One-time token used in candidate-facing URL. Distinct from the session id
   /// so admin/internal ids are never leaked.
   inviteToken      String                    @unique @default(cuid())
@@ -897,10 +902,100 @@ model AIInterviewSession {
   ledgerEntries    AIInterviewCreditLedger[]
   candidate        Candidate?                @relation(fields: [candidateId], references: [id])
   workspace        Workspace                 @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  batch            AIScreeningBatch?         @relation(fields: [batchId], references: [id], onDelete: SetNull)
+  rounds           AIInterviewRound[]
 
   @@index([workspaceId, status])
   @@index([workspaceId, createdAt])
   @@index([candidateId])
+  @@index([batchId])
+}
+
+/// Revamp (2026-06): a screening campaign grouping multiple candidates under
+/// one position with a SHARED question set (AIScreeningRoundSpec rows). Each
+/// candidate gets one AIInterviewSession whose AIInterviewRound rows are
+/// materialized from the shared specs (+ per-candidate overrides) at invite.
+model AIScreeningBatch {
+  id              String   @id @default(cuid())
+  workspaceId     String
+  positionTitle   String
+  /// User id of the recruiter who created the batch.
+  createdByUserId String
+  /// "DRAFT" (being built, not yet invited) | "ACTIVE" | "CLOSED".
+  status          String   @default("ACTIVE")
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  workspace       Workspace              @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  roundSpecs      AIScreeningRoundSpec[]
+  sessions        AIInterviewSession[]
+
+  @@index([workspaceId, createdAt])
+  @@index([workspaceId, status])
+}
+
+/// The shared question-set blueprint for a batch. Each row is one round every
+/// candidate gets by default. "Fullstack" is expressed as multiple specs
+/// (e.g. a frontend spec + a backend spec), not a single paradigm value.
+model AIScreeningRoundSpec {
+  id               String  @id @default(cuid())
+  batchId          String
+  /// 0-based round order within the batch.
+  order            Int
+  /// "frontend" | "backend" | "dsa".
+  paradigm         String
+  /// Execution language for backend/dsa (e.g. "node", "python"). Null for frontend.
+  language         String?
+  /// Frontend framework id (react/vue/...) OR non-executable backend framework
+  /// label. Steers surface choice + AI questioning.
+  frameworkLabel   String?
+  /// Problem origin: "challenge" | "playground" | "scaffold" (hybrid model).
+  sourceKind       String
+  /// Challenge id or playground/template id when sourceKind is challenge/playground.
+  sourceId         String?
+  /// AIInterviewTemplate id when sourceKind is "scaffold" (per-round override).
+  templateId       String?
+  estimatedMinutes Int     @default(30)
+  batch            AIScreeningBatch @relation(fields: [batchId], references: [id], onDelete: Cascade)
+
+  @@index([batchId, order])
+}
+
+/// A single materialized round for ONE candidate's session. Cloned from a
+/// batch's AIScreeningRoundSpec at invite, then individually overridable. Each
+/// round owns its files + score + status. The conversation is shared at the
+/// session level (one continuous chat with round-boundary markers — the locked
+/// revamp default), so `chatHistory` here is reserved/nullable for a future
+/// per-round-reset option. Credit is still charged once per SESSION (on the
+/// first message of the first round), not per round.
+model AIInterviewRound {
+  id               String  @id @default(cuid())
+  sessionId        String
+  order            Int
+  paradigm         String
+  language         String?
+  frameworkLabel   String?
+  sourceKind       String
+  sourceId         String?
+  templateId       String?
+  estimatedMinutes Int     @default(30)
+  /// Per-round candidate file state (path -> code, JSON). Seeds from the
+  /// resolved starter files for this round's source.
+  filesJson        String    @default("{}")
+  /// Reserved for a future per-round chat-reset mode. Null = shared session chat.
+  chatHistory      String?
+  /// Per-round score 0..100 + rubric, set at grade time. Session composite
+  /// score aggregates these.
+  score            Int?
+  ratings          String?
+  /// "PENDING" | "ACTIVE" | "COMPLETED".
+  status           String  @default("PENDING")
+  startedAt        DateTime?
+  finishedAt       DateTime?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+  session          AIInterviewSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@index([sessionId, order])
 }
 
 /// Workspace-scoped custom screening templates. The default `scaffolds.ts`

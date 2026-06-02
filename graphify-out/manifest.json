@@ -39,6 +39,10 @@
     "mtime": 1778564696.1829774,
     "hash": "8d3f9cb56d38a04ac0f81bc366c02b3a"
   },
+  "C:\\Users\\arvin\\OneDrive\\Desktop\\claude\\code\\codepad\\prisma\\seed-interview-prep.ts": {
+    "mtime": 1780360099.5499938,
+    "hash": "b7dc059b221895bf26e81d65b70b1490"
+  },
   "C:\\Users\\arvin\\OneDrive\\Desktop\\claude\\code\\codepad\\prisma\\seed-prompt-exemplars.ts": {
     "mtime": 1779886883.2278607,
     "hash": "6091fde57a8d40f29a95be169cff1708"
@@ -51,9 +55,9 @@
     "mtime": 1780130777.3486605,
     "hash": "07076e1df4745d552e34ae883170b0d6"
   },
-  "C:\\Users\\arvin\\OneDrive\\Desktop\\claude\\code\\codepad\\prisma\\migrations\\20260511100558_add_challenges\\migration.sql": {
-    "mtime": 1778564696.1790922,
-    "hash": "607c948272eaae131f6b03b09eb86eb4"
+  "C:\\Users\\arvin\\OneDrive\\Desktop\\claude\\code\\codepad\\prisma\\migrations\\0_init\\migration.sql": {
+    "mtime": 1780373112.139588,
+    "hash": "6795c01077948a5a95b522264c4e4c77"
   },
   "C:\\Users\\arvin\\OneDrive\\Desktop\\claude\\code\\codepad\\prisma\\seed-data\\vercel-challenges.ts": {
     "mtime": 1780130738.7875743,
@@ -115,6 +119,10 @@
     "mtime": 1779808283.1180637,
     "hash": "998a8968e2c78207037cce856474b8e7"
   },
+  "C:\\Users\\arvin\\OneDrive\\Desktop\\claude\\code\\codepad\\scripts\\judge-verify.mjs": {
+    "mtime": 1780319685.752511,
+    "hash": "b5270dee111bb8fbfea6b9641c5b2811"
+  },
   "C:\\Users\\arvin\\OneDrive\\Desktop\\claude\\code\\codepad\\scripts\\list_admin_todos.js": {
     "mtime": 1779776330.4900217,
     "hash": "e795f432453728e98ac09912a55c5f0f"
@@ -174,6 +182,10 @@
   "C:\\Users\\arvin\\OneDrive\\Desktop\\claude\\code\\codepad\\scripts\\mint-takehome-epic.js": {
     "mtime": 1780084980.0189414,
     "hash": "c98ebee77ad526f5f2e5f8dc8490e91e"
+  },
+  "C:\\Users\\arvin\\OneDrive\\Desktop\\claude\\code\\codepad\\scripts\\piston-verify.ps1": {
+    "mtime": 1780307798.3253062,
+    "hash": "04f20bed22450cc31399fead0225c2b2"
   },
   "C:\\Users\\arvin\\OneDrive\\Desktop\\claude\\code\\codepad\\scripts\\seed-notifications.js": {
     "mtime": 1780005042.4097288,
@@ -392,16 +404,16 @@
     "hash": "5374264e99eea8ead479acc5dd6b22fb"
   },
   "C:\\Users\\arvin\\OneDrive\\Desktop\\claude\\code\\codepad\\src\\app\\admin\\challenges\\challenge-form-types.ts": {
-    "mtime": 1780255321.8902838,
-    "hash": "16c7bae012c0a6c9eb3f4eafe37aa35d"
+    "mtime": 1780322165.9576635,
+    "hash": "863362ae01f0440e92dc69e78f51307c"
   },
   "C:\\Users\\arvin\\OneDrive\\Desktop\\claude\\code\\codepad\\src\\app\\admin\\challenges\\challenge-templates.ts": {
     "mtime": 1779447589.1967096,
     "hash": "0971630b5953e45cb5a002869df10137"
   },
   "C:\\Users\\arvin\\OneDrive\\Desktop\\claude\\code\\codepad\\src\\app\\admin\\challenges\\ChallengeForm.tsx": {
-    "mtime": 1780255393.401591,
-    "hash": "d55c799b85e435cc0deaad875cb7d978"
+    "mtime": 1780322127.426461,
+    "hash": "51b8e0218d0073b3a6676d2f568df3bd"
   },
   "C:\\Users\\arvin\\OneDrive\\Desktop\\claude\\code\\codepad\\src\\app\\admin\\challenges\\ChallengePreview.tsx": {
     "mtime": 1778971173.3011234,
@@ -420,8 +432,8 @@
     "hash": "eb306c54908c4fa648ad4d6be3a740a5"
   },
   "C:\\Users\\arvin\\OneDrive\\Desktop\\claude\\code\\codepad\\src\\app\\admin\\challenges\\[id]\\edit\\page.tsx": {
-    "mtime": 1780255383.9559903,
-    "hash": "07c025fd289de1df9ab972ac3c30c57e"
+    "mtime": 1780322186.6828907,
+    "hash": "3b03eb8c54fc272f1aa524cd6b7578eb"
   },
   "C:\\Users\\arvin\\OneDrive\\Desktop\\claude\\code\\codepad\\src\\app\\admin\\comments\\AdminCommentRow.tsx": {
     "mtime": 1779048915.501806,
@@ -592,12 +604,12 @@
     "hash": "a98b656c5ad7867bc817927b283a9f5b"
   },
   "C:\\Users\\arvin\\OneDrive\\Desktop\\claude\\code\\codepad\\src\\app\\ai-interview\\[token]\\AIInterviewWorkspace.tsx": {
-    "mtime": 1779785626.6378329,
-    "hash": "9b6edf6ce9ce9ffaac7fed41c98395ed"
+    "mtime": 1780373006.794622,
+    "hash": "7f81b22e6a0bada7ce9dce251f53c83a"
   },
   "C:\\Users\\arvin\\OneDrive\\Desktop\\claude\\code\\codepad\\src\\app\\ai-interview\\[token]\\page.tsx": {
-    "mtime": 1779960577.0023482,
-    "hash": "2f8853b3652b8c268d2df22258a911bb"
+    "mtime": 1780361614.82319,
+    "hash": "b190154078e8380f315edfcbd86b335c"
   },
   "C:\\Users\\arvin\\OneDrive\\Desktop\\claude\\code\\codepad\\src\\app\\api\\admin\\attempts\\[id]\\route.ts": {
     "mtime": 1779048537.3540819,
@@ -612,16 +624,20 @@
     "hash": "49a5c22f0f13985ff34605fa52a54e37"
   },
   "C:\\Users\\arvin\\OneDrive\\Desktop\\claude\\code\\codepad\\src\\app\\api\\admin\\challenges\\route.ts": {
-    "mtime": 1780255332.3231504,
-    "hash": "b2a5203b18525e7b527b2f06899efbe8"
+    "mtime": 1780321889.527892,
+    "hash": "35d34a7803ca46cdfc663cc692f02507"
   },
   "C:\\Users\\arvin\\OneDrive\\Desktop\\claude\\code\\codepad\\src\\app\\api\\admin\\challenges\\bulk\\route.ts": {
     "mtime": 1780255357.4529753,
     "hash": "a5c4447ed4b046464a84b54d87004d04"
   },
+  "C:\\Users\\arvin\\OneDrive\\Desktop\\claude\\code\\codepad\\src\\app\\api\\admin\\challenges\\validate\\route.ts": {
+    "mtime": 1780321837.758821,
+    "hash": "4b22bac14b6e1a245325ee7de7594876"
+  },
   "C:\\Users\\arvin\\OneDrive\\Desktop\\claude\\code\\codepad\\src\\app\\api\\admin\\challenges\\[id]\\route.ts": {
-    "mtime": 1780255351.4105418,
-    "hash": "39053792b8013c7a09f973797d561d68"
+    "mtime": 1780321906.957226,
+    "hash": "e9efa0227d6c5188ea10f600f832999d"
   },
   "C:\\Users\\arvin\\OneDrive\\Desktop\\claude\\code\\codepad\\src\\app\\api\\admin\\copilot\\route.ts": {
     "mtime": 1779857240.197062,
@@ -652,8 +668,12 @@
     "hash": "451ad9518693a464f37543d650146d9d"
   },
   "C:\\Users\\arvin\\OneDrive\\Desktop\\claude\\code\\codepad\\src\\app\\api\\ai-interview\\message\\route.ts": {
-    "mtime": 1779788198.8602524,
-    "hash": "82ee17231b9212cea3b2562401e8abbb"
+    "mtime": 1780361469.4605558,
+    "hash": "cd443e67f1c0eaad11d4246c2b47c2e9"
+  },
+  "C:\\Users\\arvin\\OneDrive\\Desktop\\claude\\code\\codepad\\src\\app\\api\\ai-interview\\practice\\route.ts": {
+    "mtime": 1780372576.0529196,
+    "hash": "fb3b04de6dc543fcab471e165cac19bb"
   },
   "C:\\Users\\arvin\\OneDrive\\Desktop\\claude\\code\\codepad\\src\\app\\api\\ai-interview\\submit\\route.ts": {
     "mtime": 1780081997.3898895,
@@ -707,6 +727,10 @@
     "mtime": 1778925718.7379746,
     "hash": "667e9ddcd8ec0df9e7c9cd1322bc6356"
   },
+  "C:\\Users\\arvin\\OneDrive\\Desktop\\claude\\code\\codepad\\src\\app\\api\\challenges\\[slug]\\grade\\route.ts": {
+    "mtime": 1780326644.8488803,
+    "hash": "24905ef7fd1abc5a5d9dfe4b40bb09e4"
+  },
   "C:\\Users\\arvin\\OneDrive\\Desktop\\claude\\code\\codepad\\src\\app\\api\\challenges\\[slug]\\invites\\route.ts": {
     "mtime": 1778925683.8457024,
     "hash": "09e3362cbdf8f7476407a724f2620515"
@@ -756,8 +780,12 @@
     "hash": "76e2f6881d6338014b914e5dd56bf428"
   },
   "C:\\Users\\arvin\\OneDrive\\Desktop\\claude\\code\\codepad\\src\\app\\api\\interview\\route.ts": {
-    "mtime": 1780031519.737574,
-    "hash": "21e7c9a2dda8c3cf042f8fe0417daa72"
+    "mtime": 1780360677.7924328,
+    "hash": "b2297f5e87d32cc355a1e23f6b82bd07"
+  },
+  "C:\\Users\\arvin\\OneDrive\\Desktop\\claude\\code\\codepad\\src\\app\\api\\interview\\stack-pool\\route.ts": {
+    "mtime": 1780360480.9011426,
+    "hash": "50f25cab571939a790bf4a847b0205df"
   },
   "C:\\Users\\arvin\\OneDrive\\Desktop\\claude\\code\\codepad\\src\\app\\api\\interview\\[id]\\route.ts": {
     "mtime": 1780009426.5402637,
@@ -815,6 +843,10 @@
     "mtime": 1780035847.8079472,
     "hash": "6aba1ad95f5b1b7e540d0f95a03f25bc"
   },
+  "C:\\Users\\arvin\\OneDrive\\Desktop\\claude\\code\\codepad\\src\\app\\api\\prompt-attempts\\route.ts": {
+    "mtime": 1780358245.6628563,
+    "hash": "b13fd8434ef83b6af69f09fe8d0dc6e6"
+  },
   "C:\\Users\\arvin\\OneDrive\\Desktop\\claude\\code\\codepad\\src\\app\\api\\prompt-attempts\\[id]\\share\\route.ts": {
     "mtime": 1779887114.006264,
     "hash": "cc6e08bf9b121b70e6c9e5e383c3eb47"
@@ -824,20 +856,20 @@
     "hash": "202976ae28ca8127fb171a78bffdbf0f"
   },
   "C:\\Users\\arvin\\OneDrive\\Desktop\\claude\\code\\codepad\\src\\app\\api\\prompt-challenges\\route.ts": {
-    "mtime": 1779865388.8498535,
-    "hash": "998871fb70cf234774d7b9c47fbd8625"
+    "mtime": 1780358245.6650348,
+    "hash": "c9f3404851b1c447d8a1d4906a07054d"
   },
   "C:\\Users\\arvin\\OneDrive\\Desktop\\claude\\code\\codepad\\src\\app\\api\\prompt-challenges\\submit\\route.ts": {
-    "mtime": 1779725594.7236924,
-    "hash": "44d47e05816dfb1cf2885b658e37e9c4"
+    "mtime": 1780358245.6670542,
+    "hash": "6f42035d3b39d0e8c7529857d3b34921"
   },
   "C:\\Users\\arvin\\OneDrive\\Desktop\\claude\\code\\codepad\\src\\app\\api\\prompt-challenges\\[id]\\route.ts": {
-    "mtime": 1779725588.8463616,
-    "hash": "ff4ed50a4eaa2fdc8855daa031a2e056"
+    "mtime": 1780358245.6628563,
+    "hash": "2bdf415a2833c7e289943cc5b2a6a4eb"
   },
   "C:\\Users\\arvin\\OneDrive\\Desktop\\claude\\code\\codepad\\src\\app\\api\\prompt-playground\\run\\route.ts": {
-    "mtime": 1779887346.214233,
-    "hash": "5ee76ae50ed080e068192c121b32b930"
+    "mtime": 1780358245.6690793,
+    "hash": "227e8c0759aa70c623922465a51c5ace"
   },
   "C:\\Users\\arvin\\OneDrive\\Desktop\\claude\\code\\codepad\\src\\app\\api\\snippets\\route.ts": {
     "mtime": 1777013330.0396974,
@@ -960,12 +992,16 @@
     "hash": "c93deebbf1ac14638d86482b0f2d2942"
   },
   "C:\\Users\\arvin\\OneDrive\\Desktop\\claude\\code\\codepad\\src\\app\\challenges\\[slug]\\attempt\\ChallengeAttemptClient.tsx": {
-    "mtime": 1780284388.30874,
-    "hash": "2095bbd921b678a4d6e4c990ab755b31"
+    "mtime": 1780327423.3706326,
+    "hash": "00c83fb5158daa65ae66917473a79a89"
+  },
+  "C:\\Users\\arvin\\OneDrive\\Desktop\\claude\\code\\codepad\\src\\app\\challenges\\[slug]\\attempt\\HarnessAttemptClient.tsx": {
+    "mtime": 1780322806.6091857,
+    "hash": "797ab7fe6cf7acd5147eadec5b289246"
   },
   "C:\\Users\\arvin\\OneDrive\\Desktop\\claude\\code\\codepad\\src\\app\\challenges\\[slug]\\attempt\\page.tsx": {
-    "mtime": 1779556290.1178677,
-    "hash": "36342564b3bafd7ee819be79b924d511"
+    "mtime": 1780322843.3413143,
+    "hash": "8a294e9757da52928d7e29fe3876c548"
   },
   "C:\\Users\\arvin\\OneDrive\\Desktop\\claude\\code\\codepad\\src\\app\\challenges\\[slug]\\attempt\\TrackHelpPanel.tsx": {
     "mtime": 1778910130.19443,
@@ -1040,8 +1076,8 @@
     "hash": "679043efd38363b166f3a27124dfe187"
   },
   "C:\\Users\\arvin\\OneDrive\\Desktop\\claude\\code\\codepad\\src\\app\\dashboard\\challenges\\[id]\\edit\\page.tsx": {
-    "mtime": 1780255491.785699,
-    "hash": "8079ddfba43f513f51f93cbc465cdc5c"
+    "mtime": 1780322215.2802014,
+    "hash": "5ecfa92319ff5be67f709f58f39db510"
   },
   "C:\\Users\\arvin\\OneDrive\\Desktop\\claude\\code\\codepad\\src\\app\\docs\\mcp\\CopyButton.tsx": {
     "mtime": 1779767379.422804,
@@ -1067,9 +1103,13 @@
     "mtime": 1779556290.1218703,
     "hash": "493a65f426ff4b46cd48d05f41309cf3"
   },
+  "C:\\Users\\arvin\\OneDrive\\Desktop\\claude\\code\\codepad\\src\\app\\interview\\AIPracticeLauncher.tsx": {
+    "mtime": 1780372601.786403,
+    "hash": "4932bf8141bb3cea75f2dd8c80d36755"
+  },
   "C:\\Users\\arvin\\OneDrive\\Desktop\\claude\\code\\codepad\\src\\app\\interview\\CandidateCockpitClient.tsx": {
-    "mtime": 1780203289.3195825,
-    "hash": "f27514486f943afa2b8ac9818ea58786"
+    "mtime": 1780372631.5521643,
+    "hash": "19c373319f68f4fde8fe5cca8caff410"
   },
   "C:\\Users\\arvin\\OneDrive\\Desktop\\claude\\code\\codepad\\src\\app\\interview\\CandidateInterviewView.tsx": {
     "mtime": 1780201091.9298613,
@@ -1091,57 +1131,61 @@
     "mtime": 1780202892.552061,
     "hash": "e75893d49787843d2f9851df0e1195c0"
   },
+  "C:\\Users\\arvin\\OneDrive\\Desktop\\claude\\code\\codepad\\src\\app\\interview\\StackWizard.tsx": {
+    "mtime": 1780360549.200083,
+    "hash": "b04584553faf04e5dc23d7100666f98c"
+  },
   "C:\\Users\\arvin\\OneDrive\\Desktop\\claude\\code\\codepad\\src\\app\\interview\\UserTypeChooser.tsx": {
     "mtime": 1779596704.3576963,
     "hash": "7f6cb8f53322329f9016e6fd293e9f9c"
   },
   "C:\\Users\\arvin\\OneDrive\\Desktop\\claude\\code\\codepad\\src\\app\\interview\\new\\InterviewBuilder.tsx": {
-    "mtime": 1780166769.1730745,
-    "hash": "8f18399ba324239e0506eab851619a02"
+    "mtime": 1780360650.3283465,
+    "hash": "2da0b1e27f57a3e1e9b28b17b167f01d"
   },
   "C:\\Users\\arvin\\OneDrive\\Desktop\\claude\\code\\codepad\\src\\app\\interview\\new\\page.tsx": {
-    "mtime": 1780083187.5688744,
-    "hash": "ccee3192b038bda05ed78b50e54ec422"
+    "mtime": 1780360268.802235,
+    "hash": "80047756c6cbeddebe7a1b26588bc767"
   },
   "C:\\Users\\arvin\\OneDrive\\Desktop\\claude\\code\\codepad\\src\\app\\interview\\prompt-practice\\CommunityList.tsx": {
-    "mtime": 1780286929.530201,
-    "hash": "2240f5f47f7cc42891bd7ade603dcacf"
+    "mtime": 1780358245.6710334,
+    "hash": "907110a84a2c48e5f643fb592bd02b8c"
   },
   "C:\\Users\\arvin\\OneDrive\\Desktop\\claude\\code\\codepad\\src\\app\\interview\\prompt-practice\\CreateScenarioModal.tsx": {
-    "mtime": 1779887065.0071342,
-    "hash": "c1b87778e3c30954f30d1ff0953880f8"
+    "mtime": 1780358245.6710334,
+    "hash": "eda13ddaecdb403d32845ee851085f00"
   },
   "C:\\Users\\arvin\\OneDrive\\Desktop\\claude\\code\\codepad\\src\\app\\interview\\prompt-practice\\ExemplarsList.tsx": {
-    "mtime": 1780286922.5881283,
-    "hash": "6e32e00376f6120d6ed270474f22978e"
+    "mtime": 1780287387.5357704,
+    "hash": "4c500bd7bef8aa9154b9d223584d4d5c"
   },
   "C:\\Users\\arvin\\OneDrive\\Desktop\\claude\\code\\codepad\\src\\app\\interview\\prompt-practice\\page.tsx": {
-    "mtime": 1779887138.2296512,
-    "hash": "d8e438448ec5aef1a5695e0ed1af01fa"
+    "mtime": 1780358245.6798704,
+    "hash": "23baae16a4ced54250eb825e4bb5a03d"
   },
   "C:\\Users\\arvin\\OneDrive\\Desktop\\claude\\code\\codepad\\src\\app\\interview\\prompt-practice\\PlaygroundMode.tsx": {
-    "mtime": 1780286943.8230221,
-    "hash": "7e7cd59b6a0c5b33ab84808175c08403"
+    "mtime": 1780371602.9749198,
+    "hash": "cf66b54f3488eec7a47f3d016599ebbc"
   },
   "C:\\Users\\arvin\\OneDrive\\Desktop\\claude\\code\\codepad\\src\\app\\interview\\prompt-practice\\PromptEditor.tsx": {
-    "mtime": 1779892352.585034,
-    "hash": "66b9ed635a93031e113c67f2201cfe83"
+    "mtime": 1780288838.546106,
+    "hash": "b07467be8a58d281831d0dd68a43c146"
   },
   "C:\\Users\\arvin\\OneDrive\\Desktop\\claude\\code\\codepad\\src\\app\\interview\\prompt-practice\\PromptLabClient.tsx": {
-    "mtime": 1780287311.9127927,
-    "hash": "afad48a5d427ef49d47dfdba653d7428"
+    "mtime": 1780371585.0446582,
+    "hash": "8ed057f111cfa8c0aae52c95cd6b1031"
   },
   "C:\\Users\\arvin\\OneDrive\\Desktop\\claude\\code\\codepad\\src\\app\\interview\\prompt-practice\\ScoreCard.tsx": {
-    "mtime": 1780286910.1073253,
-    "hash": "430f550b5724d26220c45cb977ebb711"
+    "mtime": 1780358245.679433,
+    "hash": "ba6c3112d8e6c62f5264f01a8bcaf436"
   },
   "C:\\Users\\arvin\\OneDrive\\Desktop\\claude\\code\\codepad\\src\\app\\interview\\prompt-practice\\ShareModal.tsx": {
     "mtime": 1779887104.3796847,
     "hash": "536f315384306320082daca5c5cecdf6"
   },
   "C:\\Users\\arvin\\OneDrive\\Desktop\\claude\\code\\codepad\\src\\app\\interview\\prompt-practice\\types.ts": {
-    "mtime": 1779886941.8257911,
-    "hash": "fba4aa4bdfd81d44323e301d9bf2f3b0"
+    "mtime": 1780358245.6809628,
+    "hash": "b4c8cbe44823eec0546477492ca34803"
   },
   "C:\\Users\\arvin\\OneDrive\\Desktop\\claude\\code\\codepad\\src\\app\\interview\\prompt-practice\\useDraft.ts": {
     "mtime": 1779892316.4494913,
@@ -1332,8 +1376,8 @@
     "hash": "66898d8f743895ad8f71abd8202c07d3"
   },
   "C:\\Users\\arvin\\OneDrive\\Desktop\\claude\\code\\codepad\\src\\app\\w\\[slug]\\WorkspaceDashboardClient.tsx": {
-    "mtime": 1780212404.1691794,
-    "hash": "d550880e1ceafff4456e0817c2cbcfdd"
+    "mtime": 1780307167.6291354,
+    "hash": "0f679e1f326c8c3c2343820cac712147"
   },
   "C:\\Users\\arvin\\OneDrive\\Desktop\\claude\\code\\codepad\\src\\app\\w\\[slug]\\WorkspaceSidebarNav.tsx": {
     "mtime": 1780082060.9585576,
@@ -1572,8 +1616,8 @@
     "hash": "fbbfa74c627ff1ad1e4e1a270845ecf5"
   },
   "C:\\Users\\arvin\\OneDrive\\Desktop\\claude\\code\\codepad\\src\\components\\MarkdownRenderer.tsx": {
-    "mtime": 1778801964.4576921,
-    "hash": "c48bddcefb9b917dfbd8173f1127e144"
+    "mtime": 1780292755.4604096,
+    "hash": "93d313bd3fc5e1fca561ca4f91f016d8"
   },
   "C:\\Users\\arvin\\OneDrive\\Desktop\\claude\\code\\codepad\\src\\components\\MobileLobby.tsx": {
     "mtime": 1779960443.602332,
@@ -1604,8 +1648,8 @@
     "hash": "b867eb6c866fdafbf96aa8c6c7b80b78"
   },
   "C:\\Users\\arvin\\OneDrive\\Desktop\\claude\\code\\codepad\\src\\components\\Playground.tsx": {
-    "mtime": 1780284361.196031,
-    "hash": "13235916e229db03b228f28d7bf5fdd4"
+    "mtime": 1780307117.3091464,
+    "hash": "992ae5cf1576bccdef35b070a673a8dc"
   },
   "C:\\Users\\arvin\\OneDrive\\Desktop\\claude\\code\\codepad\\src\\components\\PlaygroundLoader.tsx": {
     "mtime": 1779451021.9099646,
@@ -1636,8 +1680,8 @@
     "hash": "fe347cf5e39f0495dd981ea4186644cc"
   },
   "C:\\Users\\arvin\\OneDrive\\Desktop\\claude\\code\\codepad\\src\\components\\RunnableSnippet.tsx": {
-    "mtime": 1780134842.121864,
-    "hash": "1c1e31fb7cf4735039e153c55d5fa87e"
+    "mtime": 1780294200.4740677,
+    "hash": "86cdc2bee89a17d8af457d702f497965"
   },
   "C:\\Users\\arvin\\OneDrive\\Desktop\\claude\\code\\codepad\\src\\components\\SafeImage.tsx": {
     "mtime": 1779012190.5486271,
@@ -1831,6 +1875,10 @@
     "mtime": 1780167040.2186596,
     "hash": "beae5a4f462063ebd0dd1ae05a6e1087"
   },
+  "C:\\Users\\arvin\\OneDrive\\Desktop\\claude\\code\\codepad\\src\\lib\\concurrency.ts": {
+    "mtime": 1780317440.0951414,
+    "hash": "41714e261f5554cbbcfe4702ec00083c"
+  },
   "C:\\Users\\arvin\\OneDrive\\Desktop\\claude\\code\\codepad\\src\\lib\\copilot-tts.ts": {
     "mtime": 1779806019.7309313,
     "hash": "395bc54b8bbfb22cf6f5f3db1066e83b"
@@ -1846,6 +1894,10 @@
   "C:\\Users\\arvin\\OneDrive\\Desktop\\claude\\code\\codepad\\src\\lib\\email.ts": {
     "mtime": 1780083951.3596997,
     "hash": "a8fef77a63cff5148dcfb45f03ba1680"
+  },
+  "C:\\Users\\arvin\\OneDrive\\Desktop\\claude\\code\\codepad\\src\\lib\\exec-result.ts": {
+    "mtime": 1780307101.588519,
+    "hash": "bb46a104a5077af3b6765e7f55754f58"
   },
   "C:\\Users\\arvin\\OneDrive\\Desktop\\claude\\code\\codepad\\src\\lib\\execute-cache.ts": {
     "mtime": 1780212364.3023317,
@@ -1864,8 +1916,8 @@
     "hash": "23c8928d436aa921271f3bc06a46aafe"
   },
   "C:\\Users\\arvin\\OneDrive\\Desktop\\claude\\code\\codepad\\src\\lib\\piston.ts": {
-    "mtime": 1780259857.5050895,
-    "hash": "f0d2516e171e09d443c282fcc27b9be7"
+    "mtime": 1780317430.4266672,
+    "hash": "6b5d15b86005353b9412fb51e4c56370"
   },
   "C:\\Users\\arvin\\OneDrive\\Desktop\\claude\\code\\codepad\\src\\lib\\portfolio-badges.ts": {
     "mtime": 1780035973.351746,
@@ -1908,8 +1960,8 @@
     "hash": "72c69fe9066fa1f4c54fc86b852c75c8"
   },
   "C:\\Users\\arvin\\OneDrive\\Desktop\\claude\\code\\codepad\\src\\lib\\templates.ts": {
-    "mtime": 1780258562.6914756,
-    "hash": "f802b21ab679bd3379e756408ca4c2c4"
+    "mtime": 1780361073.0441391,
+    "hash": "21d35bfdaeab32663fbef9acb62155a8"
   },
   "C:\\Users\\arvin\\OneDrive\\Desktop\\claude\\code\\codepad\\src\\lib\\totp-gate.ts": {
     "mtime": 1780055842.463941,
@@ -1928,8 +1980,8 @@
     "hash": "131fcd59fe5d07534d2f372b8f7b5cf6"
   },
   "C:\\Users\\arvin\\OneDrive\\Desktop\\claude\\code\\codepad\\src\\lib\\ai-interview\\credits.ts": {
-    "mtime": 1780031927.0588474,
-    "hash": "f5e9fcc29db51f83eac4ea1c62c7324b"
+    "mtime": 1780372550.8524842,
+    "hash": "9d0a055beb3c93e191db5bf3d3d84033"
   },
   "C:\\Users\\arvin\\OneDrive\\Desktop\\claude\\code\\codepad\\src\\lib\\ai-interview\\files-size.ts": {
     "mtime": 1779785514.6530118,
@@ -1940,16 +1992,16 @@
     "hash": "631b71f86810be33df37edac0ff6a460"
   },
   "C:\\Users\\arvin\\OneDrive\\Desktop\\claude\\code\\codepad\\src\\lib\\ai-interview\\scaffolds.ts": {
-    "mtime": 1779709685.511264,
-    "hash": "3829ebac71a66232fb95d988e8119e59"
+    "mtime": 1780361364.0332625,
+    "hash": "d7f76ef363ba5dbda6daef21de2a7a53"
   },
   "C:\\Users\\arvin\\OneDrive\\Desktop\\claude\\code\\codepad\\src\\lib\\ai-interview\\submit-notify.ts": {
     "mtime": 1780081968.234534,
     "hash": "bdaebbcb0acf516e7609ff99527b9d93"
   },
   "C:\\Users\\arvin\\OneDrive\\Desktop\\claude\\code\\codepad\\src\\lib\\ai-interview\\template-resolver.ts": {
-    "mtime": 1779711349.2892754,
-    "hash": "7d6789f9503719e6e71e320690da2c10"
+    "mtime": 1780361427.7097669,
+    "hash": "fbf02d8f924028be90fc683271842b99"
   },
   "C:\\Users\\arvin\\OneDrive\\Desktop\\claude\\code\\codepad\\src\\lib\\crm\\auto-create.ts": {
     "mtime": 1780024873.8869488,
@@ -1962,6 +2014,58 @@
   "C:\\Users\\arvin\\OneDrive\\Desktop\\claude\\code\\codepad\\src\\lib\\crypto\\at-rest.ts": {
     "mtime": 1779785666.1706822,
     "hash": "4fba1f81d29ed286d1e80e613be3ca20"
+  },
+  "C:\\Users\\arvin\\OneDrive\\Desktop\\claude\\code\\codepad\\src\\lib\\interview\\stack.ts": {
+    "mtime": 1780360001.5055416,
+    "hash": "6da6c9635ff2022af4369b72031b9a8f"
+  },
+  "C:\\Users\\arvin\\OneDrive\\Desktop\\claude\\code\\codepad\\src\\lib\\judge\\run.ts": {
+    "mtime": 1780326661.6169307,
+    "hash": "a638774781cb87b489aba61663108d2c"
+  },
+  "C:\\Users\\arvin\\OneDrive\\Desktop\\claude\\code\\codepad\\src\\lib\\judge\\types.ts": {
+    "mtime": 1780317478.806592,
+    "hash": "58a471d9cd289712be6b96e2075f0377"
+  },
+  "C:\\Users\\arvin\\OneDrive\\Desktop\\claude\\code\\codepad\\src\\lib\\judge\\unit-build.ts": {
+    "mtime": 1780326262.2948394,
+    "hash": "81776652bdb807589f43e853bd72d8c6"
+  },
+  "C:\\Users\\arvin\\OneDrive\\Desktop\\claude\\code\\codepad\\src\\lib\\judge\\unit-js.ts": {
+    "mtime": 1780326174.9818327,
+    "hash": "5f4e5ce5a78d1e5d61ca2d5985a16fe9"
+  },
+  "C:\\Users\\arvin\\OneDrive\\Desktop\\claude\\code\\codepad\\src\\lib\\judge\\harness\\cpp.ts": {
+    "mtime": 1780320074.4479847,
+    "hash": "6cd0b12fa35982a37e06ffcfff74ea4e"
+  },
+  "C:\\Users\\arvin\\OneDrive\\Desktop\\claude\\code\\codepad\\src\\lib\\judge\\harness\\go.ts": {
+    "mtime": 1780319814.2851694,
+    "hash": "f55830c8753768a845c799e614760960"
+  },
+  "C:\\Users\\arvin\\OneDrive\\Desktop\\claude\\code\\codepad\\src\\lib\\judge\\harness\\index.ts": {
+    "mtime": 1780320325.6586602,
+    "hash": "6d7cac5f5389f3a4b797c7ec2a8e4bd8"
+  },
+  "C:\\Users\\arvin\\OneDrive\\Desktop\\claude\\code\\codepad\\src\\lib\\judge\\harness\\java.ts": {
+    "mtime": 1780320314.41973,
+    "hash": "7bf2f33158f6e557714005864cbcd09f"
+  },
+  "C:\\Users\\arvin\\OneDrive\\Desktop\\claude\\code\\codepad\\src\\lib\\judge\\harness\\javascript.ts": {
+    "mtime": 1780317927.1517494,
+    "hash": "0f8e3986e6a6b1a2e44a42286fb03e0b"
+  },
+  "C:\\Users\\arvin\\OneDrive\\Desktop\\claude\\code\\codepad\\src\\lib\\judge\\harness\\python.ts": {
+    "mtime": 1780317920.9920158,
+    "hash": "5c313162c8035ef917a6af0add99b07a"
+  },
+  "C:\\Users\\arvin\\OneDrive\\Desktop\\claude\\code\\codepad\\src\\lib\\judge\\harness\\rust.ts": {
+    "mtime": 1780320237.6353467,
+    "hash": "c7f7e77a431ee391957e8b1ddb437c28"
+  },
+  "C:\\Users\\arvin\\OneDrive\\Desktop\\claude\\code\\codepad\\src\\lib\\judge\\harness\\typescript.ts": {
+    "mtime": 1780317932.3050568,
+    "hash": "6212ea17f7c91506a7d298b469422814"
   },
   "C:\\Users\\arvin\\OneDrive\\Desktop\\claude\\code\\codepad\\src\\lib\\mcp\\audit.ts": {
     "mtime": 1779723068.880403,
@@ -2016,8 +2120,8 @@
     "hash": "4df68bc3a0866bb3e20b989643a89d79"
   },
   "C:\\Users\\arvin\\OneDrive\\Desktop\\claude\\code\\codepad\\src\\lib\\prompt-challenges\\grader.ts": {
-    "mtime": 1779725577.8319516,
-    "hash": "4eebdb45b8813377e48bfd5821752e69"
+    "mtime": 1780358245.6818779,
+    "hash": "c6044c3123b2d33aa723f0d893ffe3d3"
   },
   "C:\\Users\\arvin\\OneDrive\\Desktop\\claude\\code\\codepad\\src\\lib\\prompt-challenges\\prompt-scenarios.ts": {
     "mtime": 1779729730.6107247,
@@ -2030,6 +2134,46 @@
   "C:\\Users\\arvin\\OneDrive\\Desktop\\claude\\code\\codepad\\src\\types\\next-auth.d.ts": {
     "mtime": 1777357661.919396,
     "hash": "fca43e9eaf445e7f581dd8fd8db5c6ae"
+  },
+  "C:\\Users\\arvin\\OneDrive\\Desktop\\claude\\code\\codepad\\tmp\\judgec\\types.js": {
+    "mtime": 1780320334.5280006,
+    "hash": "3e0757d4ef874a62e5f3a55c2cef2e66"
+  },
+  "C:\\Users\\arvin\\OneDrive\\Desktop\\claude\\code\\codepad\\tmp\\judgec\\unit-build.js": {
+    "mtime": 1780326271.5239658,
+    "hash": "7558eb22d64d7e2db5bdd2077d2e0c80"
+  },
+  "C:\\Users\\arvin\\OneDrive\\Desktop\\claude\\code\\codepad\\tmp\\judgec\\harness\\cpp.js": {
+    "mtime": 1780320334.5514448,
+    "hash": "2e573a6942f29abca97b22a4816b6158"
+  },
+  "C:\\Users\\arvin\\OneDrive\\Desktop\\claude\\code\\codepad\\tmp\\judgec\\harness\\go.js": {
+    "mtime": 1780320334.5343988,
+    "hash": "537f446062e92c0d3dd1e684514f10e2"
+  },
+  "C:\\Users\\arvin\\OneDrive\\Desktop\\claude\\code\\codepad\\tmp\\judgec\\harness\\index.js": {
+    "mtime": 1780320334.550423,
+    "hash": "4f443ac4685a5ddbeb3591d761e2fbf9"
+  },
+  "C:\\Users\\arvin\\OneDrive\\Desktop\\claude\\code\\codepad\\tmp\\judgec\\harness\\java.js": {
+    "mtime": 1780320334.5429013,
+    "hash": "5f48ddba06780661ab6853024b72e84c"
+  },
+  "C:\\Users\\arvin\\OneDrive\\Desktop\\claude\\code\\codepad\\tmp\\judgec\\harness\\javascript.js": {
+    "mtime": 1780320334.5280006,
+    "hash": "0a3966bb3d6c4d5fa485a7c7c94da238"
+  },
+  "C:\\Users\\arvin\\OneDrive\\Desktop\\claude\\code\\codepad\\tmp\\judgec\\harness\\python.js": {
+    "mtime": 1780320334.5280006,
+    "hash": "5c02c3087950cda2393103df0baafc86"
+  },
+  "C:\\Users\\arvin\\OneDrive\\Desktop\\claude\\code\\codepad\\tmp\\judgec\\harness\\rust.js": {
+    "mtime": 1780320334.5429013,
+    "hash": "1f855c408f7b56a36efe00db2b9b1d7d"
+  },
+  "C:\\Users\\arvin\\OneDrive\\Desktop\\claude\\code\\codepad\\tmp\\judgec\\harness\\typescript.js": {
+    "mtime": 1780320334.5343988,
+    "hash": "19759f9a3466a26a98816c136563492c"
   },
   "C:\\Users\\arvin\\OneDrive\\Desktop\\claude\\code\\codepad\\tmp\\piston\\packages\\go\\1.16.2\\test.go": {
     "mtime": 1625878010.0,
@@ -28394,6 +28538,10 @@
   "C:\\Users\\arvin\\OneDrive\\Desktop\\claude\\code\\codepad\\tmp\\piston\\packages\\typescript\\5.0.3\\share\\doc\\node\\lldb_commands.py": {
     "mtime": 1652698701.0,
     "hash": "bf24e136a4109f4b2c0fc45119de04db"
+  },
+  "C:\\Users\\arvin\\OneDrive\\Desktop\\claude\\code\\codepad\\docker-compose.piston.yml": {
+    "mtime": 1780305900.524248,
+    "hash": "2e608e4cb7ab10771c6a7e5754feb195"
   },
   "C:\\Users\\arvin\\OneDrive\\Desktop\\claude\\code\\codepad\\README.md": {
     "mtime": 1777437818.8216655,

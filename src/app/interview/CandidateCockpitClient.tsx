@@ -37,6 +37,8 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import DeleteSessionButton from "./DeleteSessionButton";
+import StackWizard from "./StackWizard";
+import AIPracticeLauncher from "./AIPracticeLauncher";
 
 type PracticeSession = {
   id: string;
@@ -72,6 +74,8 @@ export default function CandidateCockpitClient({
 }: Props) {
   const router = useRouter();
   const [visibleCount, setVisibleCount] = useState(5);
+  const [wizardOpen, setWizardOpen] = useState(false);
+  const [aiPracticeOpen, setAiPracticeOpen] = useState(false);
 
   const firstName = userName?.split(" ")[0] ?? "there";
 
@@ -159,6 +163,22 @@ export default function CandidateCockpitClient({
             <p className="text-sm text-muted/95 max-w-xl leading-relaxed">
               Solve algorithmic modules, deploy custom playgrounds, or undergo proctored interview simulations. Your private training cockpit is fully calibrated.
             </p>
+            <div className="flex flex-wrap items-center gap-2.5">
+              <button
+                onClick={() => setWizardOpen(true)}
+                className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 dark:from-indigo-500 dark:to-purple-500 hover:brightness-110 active:scale-95 text-white text-xs font-black uppercase tracking-widest transition-all shadow-md shadow-indigo-950/20"
+              >
+                <Layers className="w-3.5 h-3.5" />
+                Quick prep by tech stack
+              </button>
+              <button
+                onClick={() => setAiPracticeOpen(true)}
+                className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border border-border bg-surface hover:bg-panel active:scale-95 text-fg text-xs font-black uppercase tracking-widest transition-all"
+              >
+                <Sparkles className="w-3.5 h-3.5 text-accent" />
+                AI mock interview
+              </button>
+            </div>
           </div>
 
           {/* Quick HUD Meter */}
@@ -545,6 +565,8 @@ export default function CandidateCockpitClient({
         )}
       </div>
 
+      <StackWizard open={wizardOpen} onClose={() => setWizardOpen(false)} type="mock" creatorRole="candidate" />
+      <AIPracticeLauncher open={aiPracticeOpen} onClose={() => setAiPracticeOpen(false)} />
     </div>
   );
 }

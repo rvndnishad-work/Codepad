@@ -525,7 +525,7 @@ export const templatesById = Object.fromEntries(templates.map((t) => [t.id, t]))
 export type ChallengeSurface = "dsa" | "frontend";
 
 export function challengeSurface(template: string): ChallengeSurface {
-  return /^test-/.test(template) || ["python", "go", "java", "cpp", "rust", "node", "ts-node"].includes(template) ? "dsa" : "frontend";
+  return /^test-/.test(template) || ["python", "go", "java", "cpp", "rust", "node", "ts-node", "harness"].includes(template) ? "dsa" : "frontend";
 }
 
 export const groups: { key: string; label: string }[] = [

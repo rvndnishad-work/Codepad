@@ -88,43 +88,7 @@ export default function PromptLabClient({
   return (
     <div className="min-h-screen bg-bg text-fg py-10 px-6 lg:px-8">
       <div className="mx-auto max-w-6xl space-y-6">
-        {/* Header */}
-        <header className="relative flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8 p-6 rounded-3xl border border-border bg-surface/40 backdrop-blur-2xl shadow-sm overflow-hidden group">
-          <div className="absolute inset-0 bg-gradient-to-r from-indigo-500/10 via-transparent to-purple-500/5 opacity-50 pointer-events-none group-hover:opacity-100 transition-opacity duration-1000" />
-          
-          <div className="relative flex items-center gap-5">
-            <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-600 p-[1.5px] shadow-lg shadow-indigo-500/20">
-              <div className="w-full h-full rounded-[14px] bg-surface flex items-center justify-center text-indigo-400">
-                <Sparkles className="w-7 h-7" />
-              </div>
-            </div>
-            <div>
-              <h1 className="text-3xl font-bold tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-fg to-muted">
-                Prompt Arena
-              </h1>
-              <p className="text-sm text-muted mt-1 font-medium">
-                Master prompt engineering against scenarios or experiment freely.
-              </p>
-            </div>
-          </div>
-          <div className="relative flex items-center gap-4">
-            {mode && mode !== "landing" && (
-              <button
-                onClick={() => setMode("landing")}
-                className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border border-border bg-bg hover:bg-panel text-sm font-semibold text-muted hover:text-fg transition-all hover:scale-105 active:scale-95"
-              >
-                <ArrowLeft className="w-4 h-4" /> Switch Mode
-              </button>
-            )}
-            <div className="h-8 w-px bg-border hidden sm:block" />
-            <Link
-              href="/interview"
-              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border border-border bg-bg hover:bg-panel text-sm font-semibold text-muted hover:text-fg transition-all hover:scale-105 active:scale-95"
-            >
-              Exit
-            </Link>
-          </div>
-        </header>
+        {/* Header removed entirely */}
 
         {mode === null ? (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -132,33 +96,238 @@ export default function PromptLabClient({
             <div className="h-72 rounded-3xl border border-border bg-surface/50 animate-pulse" />
           </div>
         ) : mode === "landing" ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 animate-in fade-in zoom-in-95 duration-500">
-            <button
-              onClick={() => setMode("challenges")}
-              className="group relative flex flex-col items-start p-8 sm:p-10 rounded-3xl border border-border bg-surface hover:border-indigo-500/40 transition-all duration-500 hover:-translate-y-1 hover:shadow-xl hover:shadow-indigo-500/10 overflow-hidden text-left"
-            >
-              <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/5 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-              <div className="w-16 h-16 rounded-2xl bg-indigo-500/10 flex items-center justify-center text-indigo-400 mb-6 group-hover:scale-110 transition-transform duration-500">
-                <Beaker className="w-8 h-8" />
+          <div className="space-y-12 animate-in fade-in zoom-in-95 duration-500">
+            {/* Custom Styles Injection */}
+            <style>{`
+              @keyframes float-bubble {
+                0% {
+                  transform: translateY(0) scale(0.6);
+                  opacity: 0;
+                }
+                15% {
+                  opacity: 0.8;
+                }
+                85% {
+                  opacity: 0.8;
+                }
+                100% {
+                  transform: translateY(-38px) scale(1.2);
+                  opacity: 0;
+                }
+              }
+              @keyframes code-cursor {
+                0%, 100% { opacity: 0; }
+                50% { opacity: 1; }
+              }
+              @keyframes wave-pulse {
+                0%, 100% { transform: scaleY(0.4); }
+                50% { transform: scaleY(1); }
+              }
+              .animate-bubble-1 { animation: float-bubble 3.2s infinite ease-in-out; }
+              .animate-bubble-2 { animation: float-bubble 2.4s infinite ease-in-out; }
+              .animate-bubble-3 { animation: float-bubble 2.8s infinite ease-in-out; }
+              .animate-bubble-4 { animation: float-bubble 3.6s infinite ease-in-out; }
+              .animate-bubble-5 { animation: float-bubble 4.0s infinite ease-in-out; }
+            `}</style>
+
+            {/* Immersive Cosmic Hero Section */}
+            <div className="relative overflow-hidden rounded-[2.5rem] border border-border bg-gradient-to-b from-surface/80 via-surface/40 to-bg p-8 sm:p-14 text-center shadow-xl backdrop-blur-2xl">
+              {/* Background ambient glowing spheres */}
+              <div className="absolute top-0 left-1/4 w-96 h-96 bg-indigo-500/10 rounded-full blur-[120px] pointer-events-none animate-pulse" style={{ animationDuration: '8s' }} />
+              <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-purple-500/10 rounded-full blur-[120px] pointer-events-none animate-pulse" style={{ animationDuration: '10s' }} />
+              
+              {/* Thin futuristic grid lines overlay */}
+              <div className="absolute inset-0 bg-[linear-gradient(to_right,rgba(123,132,150,0.04)_1px,transparent_1px),linear-gradient(to_bottom,rgba(123,132,150,0.04)_1px,transparent_1px)] bg-[size:32px_32px] pointer-events-none" />
+
+              <div className="relative max-w-4xl mx-auto space-y-6">
+                <div className="inline-flex items-center gap-2.5 px-4 py-1.5 rounded-full bg-gradient-to-r from-indigo-500/10 to-purple-500/10 border border-indigo-500/20 text-indigo-400 text-xs font-bold uppercase tracking-widest shadow-inner">
+                  <Sparkles className="w-4 h-4 text-indigo-400 animate-spin" style={{ animationDuration: '6s' }} />
+                  Next-Gen AI Laboratory
+                </div>
+                
+                <h1 className="text-4xl sm:text-6xl font-extrabold tracking-tight leading-[1.1] text-transparent bg-clip-text bg-gradient-to-r from-fg via-indigo-500 via-[40%] to-purple-600 dark:via-indigo-400 dark:to-purple-400">
+                  Master the Art of <br className="hidden sm:block" /> Prompt Engineering
+                </h1>
+                
+                <p className="text-base sm:text-lg text-muted/90 max-w-2xl mx-auto leading-relaxed font-medium">
+                  In the era of large language models, the prompt is the new source code. 
+                  The Prompt Arena is your ultimate laboratory: test your skills against scored challenges or experiment in our unconstrained, live-streaming playground.
+                </p>
+                
+                <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 pt-4 text-xs font-semibold text-muted">
+                  <span className="flex items-center gap-1.5"><Check className="w-4 h-4 text-indigo-400" /> Multi-Dim Rubric Grading</span>
+                  <span className="text-border-strong hidden sm:inline">•</span>
+                  <span className="flex items-center gap-1.5"><Check className="w-4 h-4 text-purple-400" /> Advanced Model Tuning</span>
+                </div>
               </div>
-              <h2 className="text-3xl font-bold text-fg mb-3 group-hover:text-indigo-400 transition-colors">Challenges</h2>
-              <p className="text-base text-muted leading-relaxed">
-                Test your skills against scored scenarios. Follow specific constraints, formats, and objectives to achieve the highest rubric score.
-              </p>
-            </button>
-            <button
-              onClick={() => setMode("playground")}
-              className="group relative flex flex-col items-start p-8 sm:p-10 rounded-3xl border border-border bg-surface hover:border-purple-500/40 transition-all duration-500 hover:-translate-y-1 hover:shadow-xl hover:shadow-purple-500/10 overflow-hidden text-left"
-            >
-              <div className="absolute inset-0 bg-gradient-to-br from-purple-500/5 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-              <div className="w-16 h-16 rounded-2xl bg-purple-500/10 flex items-center justify-center text-purple-400 mb-6 group-hover:scale-110 transition-transform duration-500">
-                <Play className="w-8 h-8 ml-1" />
+            </div>
+
+            {/* Mode Selector Cards Redesign */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+              {/* Challenges Selector */}
+              <button
+                onClick={() => setMode("challenges")}
+                className="group relative flex flex-col items-start p-8 sm:p-10 rounded-[2rem] border border-border bg-gradient-to-br from-surface to-bg hover:border-indigo-500/40 hover:from-surface/85 hover:to-indigo-500/[0.02] transition-all duration-500 hover:-translate-y-1.5 hover:shadow-2xl hover:shadow-indigo-500/10 overflow-hidden text-left w-full"
+              >
+                <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/[0.03] via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                <div className="absolute -right-16 -top-16 w-48 h-48 bg-indigo-500/5 rounded-full blur-3xl pointer-events-none group-hover:bg-indigo-500/10 transition-colors" />
+
+                <div className="w-full flex items-center justify-between mb-8">
+                  <div className="w-16 h-16 rounded-2xl bg-indigo-500/10 flex items-center justify-center text-indigo-400 group-hover:scale-110 group-hover:bg-indigo-500/20 transition-all duration-500 shadow-md">
+                    <Beaker className="w-8 h-8" />
+                  </div>
+                  
+                  {/* Animated Beaker SVG */}
+                  <div className="opacity-85 group-hover:opacity-100 transition-opacity">
+                    <svg className="w-20 h-20 text-indigo-400 select-none drop-shadow-[0_0_8px_rgba(99,102,241,0.2)]" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M35 15H65M42 15V35L22 75C20 79 23 84 28 84H72C77 84 80 79 78 75L58 35V15H42Z" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+                      <path d="M26 65C38 61 62 69 74 65" stroke="url(#indigoGrad)" strokeWidth="1.5" strokeDasharray="3 3" strokeLinecap="round" />
+                      <path d="M27 67L24 73C23.5 74 24 75 25 75H75C76 75 76.5 74 76 73L73 67C61 71 39 63 27 67Z" fill="url(#indigoGrad)" opacity="0.25" />
+                      <circle cx="45" cy="70" r="3" fill="#818cf8" className="animate-bubble-1" style={{ transformOrigin: "center" }} />
+                      <circle cx="55" cy="74" r="2.5" fill="#818cf8" className="animate-bubble-2" style={{ transformOrigin: "center" }} />
+                      <circle cx="38" cy="72" r="2" fill="#a5b4fc" className="animate-bubble-3" style={{ transformOrigin: "center" }} />
+                      <circle cx="62" cy="71" r="3.5" fill="#c7d2fe" className="animate-bubble-4" style={{ transformOrigin: "center" }} />
+                      <circle cx="50" cy="68" r="2" fill="#818cf8" className="animate-bubble-5" style={{ transformOrigin: "center" }} />
+                      <defs>
+                        <linearGradient id="indigoGrad" x1="27" y1="67" x2="73" y2="75" gradientUnits="userSpaceOnUse">
+                          <stop offset="0%" stopColor="#6366f1" />
+                          <stop offset="100%" stopColor="#4f46e5" />
+                        </linearGradient>
+                      </defs>
+                    </svg>
+                  </div>
+                </div>
+
+                <h2 className="text-3xl font-extrabold text-fg mb-3 group-hover:text-indigo-400 transition-colors">Challenges</h2>
+                <p className="text-base text-muted leading-relaxed mb-6 font-medium">
+                  Test your skills against scored scenarios. Follow specific constraints, formats, and objectives to achieve the highest rubric score.
+                </p>
+
+                {/* Challenge Feature items */}
+                <div className="w-full space-y-3.5 border-t border-border/50 pt-5 mb-8">
+                  <div className="flex items-center gap-3 text-sm text-muted group-hover:text-fg transition-colors font-semibold">
+                    <div className="w-5 h-5 rounded-full bg-indigo-500/10 flex items-center justify-center text-indigo-400 text-xs">🏆</div>
+                    <span>6-Dimensional Rubric Grading</span>
+                  </div>
+                  <div className="flex items-center gap-3 text-sm text-muted group-hover:text-fg transition-colors font-semibold">
+                    <div className="w-5 h-5 rounded-full bg-indigo-500/10 flex items-center justify-center text-indigo-400 text-xs">💡</div>
+                    <span>Curated Expert Exemplars</span>
+                  </div>
+                  <div className="flex items-center gap-3 text-sm text-muted group-hover:text-fg transition-colors font-semibold">
+                    <div className="w-5 h-5 rounded-full bg-indigo-500/10 flex items-center justify-center text-indigo-400 text-xs">👥</div>
+                    <span>Community Leaderboard & Shares</span>
+                  </div>
+                </div>
+
+                <span className="mt-auto inline-flex items-center gap-2 px-5 py-3 rounded-xl bg-indigo-600 group-hover:bg-indigo-500 text-sm font-bold text-white transition-all shadow-md group-hover:shadow-indigo-500/30 group-hover:scale-105 active:scale-95">
+                  Enter Challenges <ChevronRight className="w-4 h-4" />
+                </span>
+              </button>
+
+              {/* Playground Selector */}
+              <button
+                onClick={() => setMode("playground")}
+                className="group relative flex flex-col items-start p-8 sm:p-10 rounded-[2rem] border border-border bg-gradient-to-br from-surface to-bg hover:border-purple-500/40 hover:from-surface/85 hover:to-purple-500/[0.02] transition-all duration-500 hover:-translate-y-1.5 hover:shadow-2xl hover:shadow-purple-500/10 overflow-hidden text-left w-full"
+              >
+                <div className="absolute inset-0 bg-gradient-to-br from-purple-500/[0.03] via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                <div className="absolute -right-16 -top-16 w-48 h-48 bg-purple-500/5 rounded-full blur-3xl pointer-events-none group-hover:bg-purple-500/10 transition-colors" />
+
+                <div className="w-full flex items-center justify-between mb-8">
+                  <div className="w-16 h-16 rounded-2xl bg-purple-500/10 flex items-center justify-center text-purple-400 group-hover:scale-110 group-hover:bg-purple-500/20 transition-all duration-500 shadow-md">
+                    <Play className="w-8 h-8 ml-1" />
+                  </div>
+                  
+                  {/* Animated Terminal SVG */}
+                  <div className="opacity-85 group-hover:opacity-100 transition-opacity">
+                    <svg className="w-20 h-20 text-purple-400 select-none drop-shadow-[0_0_8px_rgba(168,85,247,0.2)]" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <rect x="15" y="20" width="70" height="60" rx="6" stroke="currentColor" strokeWidth="2.5" />
+                      <circle cx="23" cy="27" r="2.5" fill="#f87171" />
+                      <circle cx="31" cy="27" r="2.5" fill="#fbbf24" />
+                      <circle cx="39" cy="27" r="2.5" fill="#34d399" />
+                      <path d="M22 42L28 47L22 52" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                      <rect x="32" y="49" width="10" height="2" fill="currentColor" style={{ animation: "code-cursor 1s infinite" }} />
+                      <rect x="52" y="44" width="3" height="24" rx="1.5" fill="url(#purpleGrad)" style={{ animation: "wave-pulse 1.2s infinite ease-in-out", animationDelay: "0s", transformOrigin: "bottom" }} />
+                      <rect x="59" y="38" width="3" height="30" rx="1.5" fill="url(#purpleGrad)" style={{ animation: "wave-pulse 1.2s infinite ease-in-out", animationDelay: "0.2s", transformOrigin: "bottom" }} />
+                      <rect x="66" y="48" width="3" height="20" rx="1.5" fill="url(#purpleGrad)" style={{ animation: "wave-pulse 1.2s infinite ease-in-out", animationDelay: "0.4s", transformOrigin: "bottom" }} />
+                      <rect x="73" y="41" width="3" height="27" rx="1.5" fill="url(#purpleGrad)" style={{ animation: "wave-pulse 1.2s infinite ease-in-out", animationDelay: "0.6s", transformOrigin: "bottom" }} />
+                      <defs>
+                        <linearGradient id="purpleGrad" x1="52" y1="38" x2="73" y2="68" gradientUnits="userSpaceOnUse">
+                          <stop offset="0%" stopColor="#c084fc" />
+                          <stop offset="100%" stopColor="#a855f7" />
+                        </linearGradient>
+                      </defs>
+                    </svg>
+                  </div>
+                </div>
+
+                <h2 className="text-3xl font-extrabold text-fg mb-3 group-hover:text-purple-400 transition-colors">Playground</h2>
+                <p className="text-base text-muted leading-relaxed mb-6 font-medium">
+                  Experiment freely. Run any prompt against the latest Gemini models, tweak the system instructions, and iterate without grading constraints.
+                </p>
+
+                {/* Playground Feature items */}
+                <div className="w-full space-y-3.5 border-t border-border/50 pt-5 mb-8">
+                  <div className="flex items-center gap-3 text-sm text-muted group-hover:text-fg transition-colors font-semibold">
+                    <div className="w-5 h-5 rounded-full bg-purple-500/10 flex items-center justify-center text-purple-400 text-xs">🎛️</div>
+                    <span>Advanced Hyper-Parameters Tuning</span>
+                  </div>
+                  <div className="flex items-center gap-3 text-sm text-muted group-hover:text-fg transition-colors font-semibold">
+                    <div className="w-5 h-5 rounded-full bg-purple-500/10 flex items-center justify-center text-purple-400 text-xs">🤖</div>
+                    <span>Latest Gemini 1.5 Pro & Flash Models</span>
+                  </div>
+                  <div className="flex items-center gap-3 text-sm text-muted group-hover:text-fg transition-colors font-semibold">
+                    <div className="w-5 h-5 rounded-full bg-purple-500/10 flex items-center justify-center text-purple-400 text-xs">⚡</div>
+                    <span>Real-Time Word/Token Generation Streaming</span>
+                  </div>
+                </div>
+
+                <span className="mt-auto inline-flex items-center gap-2 px-5 py-3 rounded-xl bg-purple-600 group-hover:bg-purple-500 text-sm font-bold text-white transition-all shadow-md group-hover:shadow-purple-500/30 group-hover:scale-105 active:scale-95">
+                  Launch Playground <Sparkles className="w-4 h-4 ml-0.5" />
+                </span>
+              </button>
+            </div>
+
+            {/* Why Prompt Arena section */}
+            <div className="pt-8 border-t border-border/50 space-y-8">
+              <div className="text-center space-y-2">
+                <h3 className="text-2xl sm:text-3xl font-extrabold text-fg tracking-tight">Elevate Your Engineering Workflow</h3>
+                <p className="text-sm text-muted font-medium max-w-lg mx-auto">
+                  Engineered with visual precision to help you optimize and perfect every AI interaction.
+                </p>
               </div>
-              <h2 className="text-3xl font-bold text-fg mb-3 group-hover:text-purple-400 transition-colors">Playground</h2>
-              <p className="text-base text-muted leading-relaxed">
-                Experiment freely. Run any prompt against the latest Gemini models, tweak the system instructions, and iterate without grading constraints.
-              </p>
-            </button>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div className="p-6 rounded-2xl border border-border bg-surface/30 backdrop-blur-md space-y-4 hover:border-border-strong transition-colors duration-300">
+                  <div className="w-10 h-10 rounded-xl bg-indigo-500/10 flex items-center justify-center text-indigo-400 text-lg font-bold">
+                    🎯
+                  </div>
+                  <h4 className="text-base font-bold text-fg">Precise Benchmarking</h4>
+                  <p className="text-xs sm:text-sm text-muted leading-relaxed font-medium">
+                    Test prompt stability and robustness. Real-time multi-dimensional scoring helps you identify exactly where instructions fail or succeed.
+                  </p>
+                </div>
+
+                <div className="p-6 rounded-2xl border border-border bg-surface/30 backdrop-blur-md space-y-4 hover:border-border-strong transition-colors duration-300">
+                  <div className="w-10 h-10 rounded-xl bg-purple-500/10 flex items-center justify-center text-purple-400 text-lg font-bold">
+                    🤝
+                  </div>
+                  <h4 className="text-base font-bold text-fg">Collaborative Learning</h4>
+                  <p className="text-xs sm:text-sm text-muted leading-relaxed font-medium">
+                    Share your highest scoring prompts, browse expert solutions, and learn new formatting and reasoning patterns from community builders.
+                  </p>
+                </div>
+
+                <div className="p-6 rounded-2xl border border-border bg-surface/30 backdrop-blur-md space-y-4 hover:border-border-strong transition-colors duration-300">
+                  <div className="w-10 h-10 rounded-xl bg-emerald-500/10 flex items-center justify-center text-emerald-400 text-lg font-bold">
+                    ⚙️
+                  </div>
+                  <h4 className="text-base font-bold text-fg">Iterative Fine-Tuning</h4>
+                  <p className="text-xs sm:text-sm text-muted leading-relaxed font-medium">
+                    Instantly load community or exemplar prompts, tweak model parameters and system instructions, and analyze response tokens in real-time.
+                  </p>
+                </div>
+              </div>
+            </div>
           </div>
         ) : mode === "challenges" ? (
           activeScenario ? (
@@ -180,10 +349,12 @@ export default function PromptLabClient({
               userId={userId}
               onSelect={(s) => setActiveScenario(s)}
               onCreateClick={() => setShowCreateModal(true)}
+              onBack={() => setMode("landing")}
             />
           )
         ) : (
           <PlaygroundMode
+            onBack={() => setMode("landing")}
             onPromote={(promptText) => {
               setCreatePrefill(promptText);
               setShowCreateModal(true);
@@ -242,12 +413,14 @@ function PracticeLobby({
   userId,
   onSelect,
   onCreateClick,
+  onBack,
 }: {
   scenarios: Scenario[];
   attempts: Attempt[];
   userId: string | null;
   onSelect: (s: Scenario) => void;
   onCreateClick: () => void;
+  onBack: () => void;
 }) {
   const [search, setSearch] = useState("");
   const [difficulty, setDifficulty] = useState("all");
@@ -280,7 +453,15 @@ function PracticeLobby({
   }, [attempts]);
 
   return (
-    <div className="space-y-10">
+    <div className="space-y-8">
+      <div className="flex items-center">
+        <button
+          onClick={onBack}
+          className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl border border-border bg-surface hover:bg-panel text-xs font-bold text-muted hover:text-fg transition-all active:scale-95 shadow-sm"
+        >
+          <ArrowLeft className="w-3.5 h-3.5" /> Back to Modes
+        </button>
+      </div>
       {/* Hero section for featured scenario */}
       {filtered.length > 0 && search === "" && category === "all" && difficulty === "all" && (
         <div className="relative overflow-hidden rounded-3xl border border-border bg-surface p-8 sm:p-10 flex flex-col md:flex-row items-center gap-8 group hover:border-indigo-500/40 transition-colors">

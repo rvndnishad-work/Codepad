@@ -596,6 +596,10 @@ model InterviewSession {
   /// Per-question time limits, JSON map { [sourceId]: minutes }. Drives the
   /// per-question countdown in the async runner.
   questionTimeLimitsJson String?
+  /// Chosen tech stack for prep sessions built via the Tech-Stack selector.
+  /// JSON of `TechStack` (see src/lib/interview/stack.ts). Null for sessions
+  /// assembled manually. Used for context/labels + AI question steering.
+  stackJson          String?
   createdAt          DateTime         @default(now())
   rubric             InterviewRubric?
   candidate          Candidate?       @relation(fields: [candidateId], references: [id])
@@ -862,6 +866,9 @@ model AIInterviewSession {
   candidateEmail   String
   positionTitle    String
   status           String                    @default("PENDING")
+  /// Candidate self-serve practice run (no recruiter, no credit charge). Hosted
+  /// under the reserved practice workspace; credit consumption is skipped.
+  practice         Boolean                   @default(false)
   chatHistory      String
   filesJson        String
   templateId       String
@@ -908,6 +915,13 @@ model AIInterviewTemplate {
   starterFiles     String
   testsCode        String
   estimatedMinutes Int        @default(30)
+  /// Coding-surface kind: "frontend" (Sandpack) | "backend" | "dsa" (Monaco +
+  /// Piston console). Null defaults to frontend.
+  kind             String?
+  /// Execution language for backend/dsa surfaces (e.g. "node", "python").
+  language         String?
+  /// Non-executable framework label (steers AI questions only).
+  frameworkLabel   String?
   createdAt        DateTime   @default(now())
   updatedAt        DateTime   @updatedAt
   workspace        Workspace? @relation(fields: [workspaceId], references: [id], onDelete: Cascade)

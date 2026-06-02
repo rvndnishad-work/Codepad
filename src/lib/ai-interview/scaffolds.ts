@@ -13,6 +13,14 @@ export interface AIInterviewTemplateDef {
   estimatedMinutes: number;
   starterFiles: Record<string, string>;
   testsCode: string;
+  /** Coding surface kind. Defaults to "frontend" (Sandpack/React) when unset.
+   *  "backend"/"dsa" render a Monaco + Run console surface (Piston). */
+  kind?: "frontend" | "backend" | "dsa";
+  /** Execution language for backend/dsa surfaces (/api/execute + Monaco). */
+  language?: string;
+  /** Non-executable framework label (e.g. "React", "Express") — steers AI
+   *  questions only. */
+  frameworkLabel?: string;
 }
 
 export const AI_INTERVIEW_TEMPLATES: AIInterviewTemplateDef[] = [
@@ -1110,7 +1118,70 @@ export default function App() {
 .time.fast { color: #34d399; font-weight: bold; }
 .time.slow { color: #f59e0b; }`
     }
+  },
+  // ── Backend (Node) — console surface, executed on Piston via /api/execute ──
+  {
+    id: "backend-node-rate-limiter",
+    title: "Node.js: Sliding-Window Rate Limiter",
+    description:
+      "Implement a `RateLimiter` in Node.js that allows at most N requests per sliding time window per key. Expose `allow(key, nowMs)` returning a boolean. Demonstrate it from the script with a few calls and `console.log` the results. Discuss time/space complexity and how you'd make it distributed.",
+    estimatedMinutes: 30,
+    kind: "backend",
+    language: "node",
+    frameworkLabel: "Express",
+    testsCode: `const hasClass = code.includes("class") || code.includes("function");
+const hasWindow = code.includes("now") || code.includes("Date") || code.includes("window");
+return hasClass && hasWindow;`,
+    starterFiles: {
+      "/index.js": `// Implement a sliding-window rate limiter.
+// allow(key, nowMs) -> boolean (true if the request is permitted)
+
+class RateLimiter {
+  constructor(limit, windowMs) {
+    this.limit = limit;
+    this.windowMs = windowMs;
+    // TODO: track timestamps per key
   }
+
+  allow(key, nowMs) {
+    // TODO: implement
+    return true;
+  }
+}
+
+// Demo — run with the Run button to see output:
+const rl = new RateLimiter(2, 1000);
+console.log(rl.allow("a", 0));     // true
+console.log(rl.allow("a", 100));   // true
+console.log(rl.allow("a", 200));   // false (limit reached)
+console.log(rl.allow("a", 1300));  // true (window slid)
+`,
+    },
+  },
+  // ── DSA — console surface; candidate writes a function + prints results ──
+  {
+    id: "dsa-group-anagrams",
+    title: "DSA: Group Anagrams",
+    description:
+      "Given an array of strings, group the anagrams together. Implement `groupAnagrams(words)` and print the grouped result. Aim for O(n·k log k) or better, and be ready to discuss the hashing key you chose.",
+    estimatedMinutes: 30,
+    kind: "dsa",
+    language: "python",
+    testsCode: `const hasDict = code.includes("{}") || code.includes("dict") || code.includes("defaultdict");
+const hasSort = code.includes("sorted") || code.includes("sort");
+return hasDict && hasSort;`,
+    starterFiles: {
+      "/solution.py": `from collections import defaultdict
+
+def groupAnagrams(words):
+    # TODO: implement — return a list of groups (lists of strings)
+    return []
+
+# Demo — run with the Run button to see output:
+print(groupAnagrams(["eat", "tea", "tan", "ate", "nat", "bat"]))
+`,
+    },
+  },
 ];
 
 export function getTemplateById(id: string): AIInterviewTemplateDef | undefined {

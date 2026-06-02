@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef } from "react";
-import { Play, RotateCcw, Copy, Sparkles, AlertTriangle, Beaker } from "lucide-react";
+import { Play, RotateCcw, Copy, Sparkles, AlertTriangle, Beaker, ArrowLeft } from "lucide-react";
 import { toast } from "sonner";
 import PromptEditor from "./PromptEditor";
 import MarkdownRenderer from "@/components/MarkdownRenderer";
@@ -49,7 +49,7 @@ const MODELS = [
 // (U+001E) that frames the trailing real-token-usage JSON after the response.
 const USAGE_MARKER = String.fromCharCode(30);
 
-export default function PlaygroundMode({ onPromote }: { onPromote?: (promptText: string) => void }) {
+export default function PlaygroundMode({ onBack, onPromote }: { onBack?: () => void; onPromote?: (promptText: string) => void }) {
   const [model, setModel] = useState(MODELS[0].value);
   const [systemPrompt, setSystemPrompt] = useState("");
   const [prompt, setPrompt] = useState("");
@@ -173,7 +173,18 @@ export default function PlaygroundMode({ onPromote }: { onPromote?: (promptText:
   const hasOutput = running || response || error;
 
   return (
-    <div className="flex flex-col lg:flex-row gap-6 items-stretch h-[calc(100vh-12rem)] min-h-[800px]">
+    <div className="space-y-4 w-full">
+      {onBack && (
+        <div className="flex items-center">
+          <button
+            onClick={onBack}
+            className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl border border-border bg-surface hover:bg-panel text-xs font-bold text-muted hover:text-fg transition-all active:scale-95 shadow-sm"
+          >
+            <ArrowLeft className="w-3.5 h-3.5" /> Back to Modes
+          </button>
+        </div>
+      )}
+      <div className="flex flex-col lg:flex-row gap-6 items-stretch h-[calc(100vh-12rem)] min-h-[800px]">
       {/* LEFT — settings & history */}
       <div className="w-full lg:w-[30%] space-y-6 flex flex-col overflow-y-auto pr-2 pb-6">
         {/* Model + system prompt */}
@@ -391,6 +402,7 @@ export default function PlaygroundMode({ onPromote }: { onPromote?: (promptText:
           ) : null}
         </div>
       </div>
+    </div>
     </div>
   );
 }

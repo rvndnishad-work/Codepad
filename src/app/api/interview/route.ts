@@ -21,6 +21,8 @@ const createSchema = z
     scenario: z.string().max(2000).nullable().optional(),
     totalSec: z.number().int().min(60).max(60 * 60 * 4), // 1 min – 4 hrs
     creatorRole: z.enum(["interviewer", "candidate"]).optional().default("candidate"),
+    /** JSON of the chosen TechStack (from the Tech-Stack selector). */
+    stackJson: z.string().max(2000).optional().nullable(),
   })
   .refine(
     (d) =>
@@ -246,6 +248,7 @@ export async function POST(req: Request) {
       shortCode,
       status: "scheduled",
       creatorRole: parsed.data.creatorRole,
+      stackJson: parsed.data.stackJson ?? null,
       workspaceId,
       candidateId,
     },

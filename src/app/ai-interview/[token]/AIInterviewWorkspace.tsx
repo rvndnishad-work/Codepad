@@ -32,7 +32,24 @@ import {
   SandpackPreview, 
   useSandpack 
 } from "@codesandbox/sandpack-react";
+import dynamic from "next/dynamic";
+import { useTheme } from "next-themes";
 import { toast } from "sonner";
+
+const MonacoEditor = dynamic(() => import("@monaco-editor/react"), { ssr: false });
+
+/** Map our execution language id → Monaco language + Piston (/api/execute) id. */
+const SURFACE_LANG: Record<string, { monaco: string; exec: string }> = {
+  node: { monaco: "javascript", exec: "javascript" },
+  javascript: { monaco: "javascript", exec: "javascript" },
+  "ts-node": { monaco: "typescript", exec: "typescript" },
+  typescript: { monaco: "typescript", exec: "typescript" },
+  python: { monaco: "python", exec: "python" },
+  go: { monaco: "go", exec: "go" },
+  java: { monaco: "java", exec: "java" },
+  cpp: { monaco: "cpp", exec: "cpp" },
+  rust: { monaco: "rust", exec: "rust" },
+};
 import {
   MAX_FILES_JSON_BYTES,
   FILES_JSON_WARN_BYTES,
@@ -55,12 +72,21 @@ type Props = {
   };
   initialFiles: Record<string, string>;
   initialChat: Message[];
+  /** Coding-surface kind. "frontend" → Sandpack/React; "backend"/"dsa" →
+   *  Monaco + Piston console. Defaults to frontend. */
+  kind?: "frontend" | "backend" | "dsa";
+  /** Execution language for backend/dsa surfaces (e.g. "node", "python"). */
+  language?: string;
 };
 
 export default function AIInterviewWorkspace(props: Props) {
+  const isFrontend = (props.kind ?? "frontend") === "frontend";
   return (
     <SandpackProvider
-      template="react"
+      // Backend/DSA files aren't bundled in-browser (they run on Piston), so use
+      // the minimal "vanilla" template to avoid the React bundler choking on
+      // non-JS sources; the provider just acts as the shared virtual FS.
+      template={isFrontend ? "react" : "vanilla"}
       files={props.initialFiles}
       options={{
         initMode: "immediate",
@@ -76,6 +102,8 @@ export default function AIInterviewWorkspace(props: Props) {
 function WorkspaceInner({
   session,
   initialChat,
+  kind = "frontend",
+  language,
 }: Props) {
   const { sandpack } = useSandpack();
   const [chat, setChat] = useState<Message[]>(initialChat);
@@ -642,38 +670,155 @@ function WorkspaceInner({
 
         </div>
 
-        {/* Right Pane: Sandpack Coding editor and live output preview (60% width) */}
+        {/* Right Pane: coding surface (60% width). Frontend → Sandpack editor +
+            live preview; Backend/DSA → Monaco + Piston console. */}
         <div className="flex-1 flex flex-col min-w-0">
-          <div className="flex-1 flex flex-col md:flex-row min-h-0">
-            {/* Editor Surface */}
-            <div className="flex-1 min-w-0 h-full flex flex-col border-r border-border bg-bg">
-              <div className="px-4 py-2 border-b border-border bg-panel/40 flex items-center justify-between shrink-0 h-9">
-                <span className="text-[10px] font-black uppercase text-muted tracking-wider">Monaco Workpad</span>
-                <span className="text-[10px] font-mono text-muted/40">App.js</span>
-              </div>
-              <div className="flex-1 min-h-0 relative">
-                <SandpackCodeEditor style={{ height: "100%", width: "100%" }} />
-              </div>
-            </div>
-
-            {/* Browser compiler output preview */}
-            <div className="w-full md:w-[48%] h-full flex flex-col bg-bg">
-              <div className="px-4 py-2 border-b border-border bg-panel/40 flex items-center justify-between shrink-0 h-9">
-                <div className="flex items-center gap-1.5">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
-                  <span className="text-[10px] font-black uppercase text-muted tracking-wider">Compiler Output</span>
+          {kind === "frontend" ? (
+            <div className="flex-1 flex flex-col md:flex-row min-h-0">
+              {/* Editor Surface */}
+              <div className="flex-1 min-w-0 h-full flex flex-col border-r border-border bg-bg">
+                <div className="px-4 py-2 border-b border-border bg-panel/40 flex items-center justify-between shrink-0 h-9">
+                  <span className="text-[10px] font-black uppercase text-muted tracking-wider">Monaco Workpad</span>
+                  <span className="text-[10px] font-mono text-muted/40">App.js</span>
                 </div>
-                <span className="text-[10px] font-mono text-muted/40">localhost:3000</span>
+                <div className="flex-1 min-h-0 relative">
+                  <SandpackCodeEditor style={{ height: "100%", width: "100%" }} />
+                </div>
               </div>
-              <div className="flex-1 min-h-0 relative">
-                <SandpackPreview showNavigator={false} showOpenInCodeSandbox={false} showRefreshButton={true} style={{ height: "100%", width: "100%" }} />
+
+              {/* Browser compiler output preview */}
+              <div className="w-full md:w-[48%] h-full flex flex-col bg-bg">
+                <div className="px-4 py-2 border-b border-border bg-panel/40 flex items-center justify-between shrink-0 h-9">
+                  <div className="flex items-center gap-1.5">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                    <span className="text-[10px] font-black uppercase text-muted tracking-wider">Compiler Output</span>
+                  </div>
+                  <span className="text-[10px] font-mono text-muted/40">localhost:3000</span>
+                </div>
+                <div className="flex-1 min-h-0 relative">
+                  <SandpackPreview showNavigator={false} showOpenInCodeSandbox={false} showRefreshButton={true} style={{ height: "100%", width: "100%" }} />
+                </div>
               </div>
             </div>
-          </div>
+          ) : (
+            <ConsoleSurface language={language ?? "node"} kind={kind} />
+          )}
         </div>
 
       </main>
 
+    </div>
+  );
+}
+
+/**
+ * Backend/DSA coding surface for the AI interview: a Monaco editor bound to the
+ * shared Sandpack virtual FS (so the chat still reads the candidate's files)
+ * plus a Run button that executes server-side on Piston via /api/execute.
+ */
+function ConsoleSurface({ language, kind }: { language: string; kind: "backend" | "dsa" }) {
+  const { sandpack } = useSandpack();
+  const { resolvedTheme } = useTheme();
+  const [running, setRunning] = useState(false);
+  const [output, setOutput] = useState<{ stdout?: string; stderr?: string; error?: string; timeMs?: number } | null>(null);
+
+  const lang = SURFACE_LANG[language] ?? { monaco: "plaintext", exec: language };
+
+  // Pick the candidate's source file by language extension. The "vanilla"
+  // Sandpack template injects its own scaffolding (/styles.css, /index.html…),
+  // so we must select OUR authored file rather than the first non-package file.
+  const SOURCE_EXT: Record<string, string[]> = {
+    javascript: [".js"],
+    typescript: [".ts"],
+    python: [".py"],
+    go: [".go"],
+    java: [".java"],
+    cpp: [".cpp", ".cc"],
+    rust: [".rs"],
+  };
+  const exts = SOURCE_EXT[lang.exec] ?? [];
+  const paths = Object.keys(sandpack.files);
+  const activePath =
+    paths.find((p) => exts.some((e) => p.endsWith(e))) ??
+    paths.find((p) => !p.endsWith("package.json") && !p.endsWith(".css") && !p.endsWith(".html")) ??
+    paths[0] ??
+    "/main";
+  const fileObj = sandpack.files[activePath];
+  const code = typeof fileObj === "string" ? fileObj : fileObj?.code ?? "";
+
+  async function run() {
+    if (!code.trim()) {
+      toast.error("Write some code first.");
+      return;
+    }
+    setRunning(true);
+    setOutput(null);
+    try {
+      const res = await fetch("/api/execute", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ language: lang.exec, code }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setOutput({ error: data?.error ?? `Run failed (HTTP ${res.status})` });
+        return;
+      }
+      setOutput({ stdout: data.stdout, stderr: data.stderr, timeMs: data.timeMs });
+    } catch (e) {
+      setOutput({ error: e instanceof Error ? e.message : String(e) });
+    } finally {
+      setRunning(false);
+    }
+  }
+
+  return (
+    <div className="flex-1 flex flex-col md:flex-row min-h-0">
+      {/* Editor */}
+      <div className="flex-1 min-w-0 h-full flex flex-col border-r border-border bg-bg">
+        <div className="px-4 py-2 border-b border-border bg-panel/40 flex items-center justify-between shrink-0 h-9">
+          <span className="text-[10px] font-black uppercase text-muted tracking-wider">
+            {kind === "dsa" ? "DSA Workpad" : "Backend Workpad"} · {language}
+          </span>
+          <button
+            onClick={run}
+            disabled={running}
+            className="inline-flex items-center gap-1.5 px-3 py-1 rounded-md bg-accent text-bg text-[10px] font-bold uppercase tracking-wider hover:bg-accent-soft transition disabled:opacity-50"
+          >
+            {running ? <Loader2 className="w-3 h-3 animate-spin" /> : <Play className="w-3 h-3" />}
+            Run
+          </button>
+        </div>
+        <div className="flex-1 min-h-0 relative">
+          <MonacoEditor
+            height="100%"
+            language={lang.monaco}
+            theme={resolvedTheme === "light" ? "light" : "vs-dark"}
+            value={code}
+            onChange={(v) => sandpack.updateFile(activePath, v ?? "")}
+            options={{ minimap: { enabled: false }, fontSize: 13, scrollBeyondLastLine: false, automaticLayout: true }}
+          />
+        </div>
+      </div>
+
+      {/* Console output */}
+      <div className="w-full md:w-[48%] h-full flex flex-col bg-bg">
+        <div className="px-4 py-2 border-b border-border bg-panel/40 flex items-center gap-1.5 shrink-0 h-9">
+          <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+          <span className="text-[10px] font-black uppercase text-muted tracking-wider">Console Output</span>
+          {output?.timeMs != null && <span className="ml-auto text-[10px] font-mono text-muted/40">{output.timeMs}ms</span>}
+        </div>
+        <div className="flex-1 min-h-0 overflow-y-auto p-3 font-mono text-[11px] leading-relaxed">
+          {!output && !running && <p className="text-muted/50">Click Run to execute your code on the server.</p>}
+          {running && <p className="text-muted/70 inline-flex items-center gap-1.5"><Loader2 className="w-3 h-3 animate-spin" /> Running…</p>}
+          {output?.error && <pre className="whitespace-pre-wrap text-rose-400">{output.error}</pre>}
+          {output?.stdout && <pre className="whitespace-pre-wrap text-fg/90">{output.stdout}</pre>}
+          {output?.stderr && <pre className="whitespace-pre-wrap text-amber-400 mt-2">{output.stderr}</pre>}
+          {output && !output.error && !output.stdout && !output.stderr && (
+            <p className="text-muted/50">(no output)</p>
+          )}
+        </div>
+      </div>
     </div>
   );
 }

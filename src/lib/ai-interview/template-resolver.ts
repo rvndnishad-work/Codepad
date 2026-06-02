@@ -26,6 +26,9 @@ export async function listTemplatesForWorkspace(
     estimatedMinutes: row.estimatedMinutes,
     starterFiles: safeParseStarterFiles(row.starterFiles),
     testsCode: row.testsCode,
+    kind: (row.kind as "frontend" | "backend" | "dsa" | null) ?? undefined,
+    language: row.language ?? undefined,
+    frameworkLabel: row.frameworkLabel ?? undefined,
     custom: true,
   }));
   const builtins: ResolvedTemplate[] = AI_INTERVIEW_TEMPLATES.map((t) => ({
@@ -57,6 +60,9 @@ export async function resolveTemplate(
         estimatedMinutes: row.estimatedMinutes,
         starterFiles: safeParseStarterFiles(row.starterFiles),
         testsCode: row.testsCode,
+        kind: (row.kind as "frontend" | "backend" | "dsa" | null) ?? undefined,
+        language: row.language ?? undefined,
+        frameworkLabel: row.frameworkLabel ?? undefined,
       };
     }
   }

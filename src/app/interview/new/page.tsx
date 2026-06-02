@@ -8,6 +8,18 @@ import InterviewBuilder, {
 
 import { validatePageAccess, getInterviewArenaSettings } from "@/lib/settings";
 import { templates } from "@/lib/templates";
+import { classifyChallenge, classifyTemplate } from "@/lib/interview/stack";
+
+/** Safe JSON.parse to string[] (Challenge.tags / step.languagesJson). */
+function parseStringArray(raw: string | null | undefined): string[] {
+  if (!raw) return [];
+  try {
+    const v = JSON.parse(raw);
+    return Array.isArray(v) ? v.filter((x): x is string => typeof x === "string") : [];
+  } catch {
+    return [];
+  }
+}
 
 export const metadata = {
   title: "New Interview Session — Interviewpad",
@@ -49,13 +61,19 @@ export default async function NewInterviewPage({
         ? prisma.challenge.findMany({
             where: { workspaceId: activeWorkspaceId },
             orderBy: [{ difficulty: "asc" }, { createdAt: "asc" }],
-            select: { id: true, slug: true, title: true, difficulty: true, estimatedMinutes: true, category: true },
+            select: {
+              id: true, slug: true, title: true, difficulty: true, estimatedMinutes: true, category: true, tags: true,
+              steps: { select: { judgingMode: true, languagesJson: true }, orderBy: { position: "asc" }, take: 1 },
+            },
           })
         : Promise.resolve([]),
       prisma.challenge.findMany({
         where: { published: true, workspaceId: null },
         orderBy: [{ difficulty: "asc" }, { createdAt: "asc" }],
-        select: { id: true, slug: true, title: true, difficulty: true, estimatedMinutes: true, category: true },
+        select: {
+          id: true, slug: true, title: true, difficulty: true, estimatedMinutes: true, category: true, tags: true,
+          steps: { select: { judgingMode: true, languagesJson: true }, orderBy: { position: "asc" }, take: 1 },
+        },
       }),
       prisma.snippet.findMany({
         where: { userId: session.user.id },
@@ -89,33 +107,57 @@ export default async function NewInterviewPage({
     ...globalPromptRows.map((p) => ({ ...p, workspaceOwned: false })),
   ];
 
-  const challenges: ChallengeOption[] = challengeRows.map((c) => ({
-    id: c.id,
-    slug: c.slug,
-    title: c.title,
-    difficulty: c.difficulty as "easy" | "medium" | "hard",
-    estimatedMinutes: c.estimatedMinutes,
-    category: c.category,
-    workspaceOwned: c.workspaceOwned,
-  }));
+  const challenges: ChallengeOption[] = challengeRows.map((c) => {
+    const step = c.steps?.[0];
+    const meta = classifyChallenge({
+      judgingMode: step?.judgingMode,
+      languages: parseStringArray(step?.languagesJson),
+      tags: parseStringArray(c.tags),
+      category: c.category,
+    });
+    return {
+      id: c.id,
+      slug: c.slug,
+      title: c.title,
+      difficulty: c.difficulty as "easy" | "medium" | "hard",
+      estimatedMinutes: c.estimatedMinutes,
+      category: c.category,
+      workspaceOwned: c.workspaceOwned,
+      paradigm: meta.paradigm,
+      languages: meta.languages,
+      frameworks: meta.frameworks,
+    };
+  });
 
   const playgrounds: PlaygroundOption[] = [
-    ...templates.map((t) => ({
-      id: `template:${t.id}`,
-      slug: t.id,
-      title: t.title,
-      template: t.id,
-      updatedAt: new Date().toISOString(),
-      isTemplate: true,
-    })),
-    ...snippetRows.map((s) => ({
-      id: s.id,
-      slug: s.slug,
-      title: s.title,
-      template: s.template,
-      updatedAt: s.updatedAt.toISOString(),
-      isTemplate: false,
-    })),
+    ...templates.map((t) => {
+      const meta = classifyTemplate(t.id);
+      return {
+        id: `template:${t.id}`,
+        slug: t.id,
+        title: t.title,
+        template: t.id,
+        updatedAt: new Date().toISOString(),
+        isTemplate: true,
+        paradigm: meta.paradigm,
+        languages: meta.languages,
+        frameworks: meta.frameworks,
+      };
+    }),
+    ...snippetRows.map((s) => {
+      const meta = classifyTemplate(s.template);
+      return {
+        id: s.id,
+        slug: s.slug,
+        title: s.title,
+        template: s.template,
+        updatedAt: s.updatedAt.toISOString(),
+        isTemplate: false,
+        paradigm: meta.paradigm,
+        languages: meta.languages,
+        frameworks: meta.frameworks,
+      };
+    }),
   ];
 
   const promptScenarios = promptScenarioRows.map((p) => ({

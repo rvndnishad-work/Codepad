@@ -25,7 +25,9 @@ import {
   Brain,
 } from "lucide-react";
 import { toast } from "sonner";
+import StackWizard from "../StackWizard";
 import { type InterviewArenaSettings } from "@/lib/settings";
+import { type Paradigm } from "@/lib/interview/stack";
 
 export type ChallengeOption = {
   id: string;
@@ -37,6 +39,10 @@ export type ChallengeOption = {
   /** True when this challenge belongs to the launching workspace (vs the
    *  global public bank). Workspace-owned items sort + render first. */
   workspaceOwned?: boolean;
+  /** Stack classification (see src/lib/interview/stack.ts). */
+  paradigm?: Paradigm;
+  languages?: string[];
+  frameworks?: string[];
 };
 
 export type PlaygroundOption = {
@@ -46,6 +52,9 @@ export type PlaygroundOption = {
   template: string;
   updatedAt: string;
   isTemplate?: boolean;
+  paradigm?: Paradigm;
+  languages?: string[];
+  frameworks?: string[];
 };
 
 export type PromptScenarioOption = {
@@ -279,14 +288,17 @@ export default function InterviewBuilder({
   const [scenario, setScenario] = useState("");
   const [minutes, setMinutes] = useState(60);
   const [creating, setCreating] = useState(false);
+  const [wizardOpen, setWizardOpen] = useState(false);
 
   // Search & Filter States
   const [searchQuery, setSearchQuery] = useState("");
   const [filterDifficulty, setFilterDifficulty] = useState<string>("all");
+  const [filterParadigm, setFilterParadigm] = useState<"all" | Paradigm>("all");
 
   useEffect(() => {
     setSearchQuery("");
     setFilterDifficulty("all");
+    setFilterParadigm("all");
   }, [sourceType]);
 
   const selectedChallenges = useMemo(
@@ -317,15 +329,17 @@ export default function InterviewBuilder({
         (c.category && c.category.toLowerCase().includes(searchQuery.toLowerCase()));
 
       const matchesDifficulty = filterDifficulty === "all" || c.difficulty === filterDifficulty;
+      const matchesParadigm = filterParadigm === "all" || c.paradigm === filterParadigm;
 
-      return matchesSearch && matchesDifficulty;
+      return matchesSearch && matchesDifficulty && matchesParadigm;
     });
-  }, [challenges, selectedTimeline, searchQuery, filterDifficulty]);
+  }, [challenges, selectedTimeline, searchQuery, filterDifficulty, filterParadigm]);
 
   const filteredPlaygrounds = useMemo(() => {
     return playgrounds.filter((p) => {
       const isSelected = selectedTimeline.some((item) => item.id === p.id && item.type === "playground");
       if (isSelected) return false;
+      if (filterParadigm !== "all" && p.paradigm !== filterParadigm) return false;
       const q = searchQuery.toLowerCase();
       if (!q) return true;
       return (
@@ -333,7 +347,7 @@ export default function InterviewBuilder({
         p.template.toLowerCase().includes(q)
       );
     });
-  }, [playgrounds, selectedTimeline, searchQuery]);
+  }, [playgrounds, selectedTimeline, searchQuery, filterParadigm]);
 
   const filteredPromptScenarios = useMemo(() => {
     return promptScenarios.filter((p) => {
@@ -478,11 +492,15 @@ export default function InterviewBuilder({
           </div>
           
           <div className="flex items-center gap-3 shrink-0">
-            <span className="flex h-2 w-2 relative">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-accent opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-2 w-2 bg-accent"></span>
-            </span>
-            <span className="text-[10px] font-mono tracking-widest text-accent uppercase font-bold bg-accent/10 border border-accent/20 px-2.5 py-1 rounded-full">
+            <button
+              type="button"
+              onClick={() => setWizardOpen(true)}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-accent/10 border border-accent/30 text-accent text-[10px] font-bold uppercase tracking-wider hover:bg-accent/15 transition"
+            >
+              <Layers className="w-3.5 h-3.5" />
+              Quick start by stack
+            </button>
+            <span className="text-[10px] font-mono tracking-widest text-accent uppercase font-bold bg-accent/10 border border-accent/20 px-2.5 py-1 rounded-full hidden sm:inline">
               Ready for Provisioning
             </span>
           </div>
@@ -833,6 +851,31 @@ export default function InterviewBuilder({
                     />
                   </div>
 
+                  {/* Tech-stack paradigm filter (challenges + playgrounds) */}
+                  {(sourceType === "challenge" || sourceType === "playground") && (
+                    <div className="flex items-center gap-1 overflow-x-auto scrollbar-none pt-1">
+                      {[
+                        { id: "all" as const, label: "All Stacks" },
+                        { id: "frontend" as const, label: "Frontend", active: "bg-sky-50 dark:bg-sky-500/10 border-sky-300 dark:border-sky-500/35 text-sky-600 dark:text-sky-400" },
+                        { id: "backend" as const, label: "Backend", active: "bg-emerald-50 dark:bg-emerald-500/10 border-emerald-300 dark:border-emerald-500/35 text-emerald-600 dark:text-emerald-400" },
+                        { id: "dsa" as const, label: "DSA", active: "bg-violet-50 dark:bg-violet-500/10 border-violet-300 dark:border-violet-500/35 text-violet-600 dark:text-violet-400" },
+                      ].map((btn) => (
+                        <button
+                          key={btn.id}
+                          type="button"
+                          onClick={() => setFilterParadigm(btn.id)}
+                          className={`px-3 py-1 rounded-full text-[9px] font-bold uppercase tracking-wider border transition-all shrink-0 ${
+                            filterParadigm === btn.id
+                              ? btn.active || "bg-accent/10 border-accent/35 text-accent"
+                              : "bg-transparent border-border hover:border-border-strong text-muted"
+                          }`}
+                        >
+                          {btn.label}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+
                   {/* Difficulty Filters only for challenges */}
                   {(sourceType === "challenge" || sourceType === "prompt") && (
                     <div className="flex items-center gap-1 overflow-x-auto scrollbar-none pt-1">
@@ -888,6 +931,15 @@ export default function InterviewBuilder({
                               )}
                             </div>
                             <h3 className="text-xs font-bold text-fg/90 group-hover:text-fg truncate">{c.title}</h3>
+                            {((c.frameworks?.length ?? 0) > 0 || (c.languages?.length ?? 0) > 0) && (
+                              <div className="flex flex-wrap items-center gap-1">
+                                {[...(c.frameworks ?? []), ...(c.languages ?? [])].slice(0, 4).map((tag) => (
+                                  <span key={tag} className="text-[8px] font-mono uppercase px-1.5 py-0.5 rounded bg-panel border border-border text-muted/80">
+                                    {tag}
+                                  </span>
+                                ))}
+                              </div>
+                            )}
                             <div className="flex items-center gap-1.5 text-[10px] text-muted">
                               <Clock className="w-3 h-3 text-muted/60" />
                               <span>{c.estimatedMinutes}m recommended</span>
@@ -932,6 +984,11 @@ export default function InterviewBuilder({
                                 <span className={`text-[9px] font-mono font-bold uppercase px-2 py-0.5 rounded border leading-none ${scheme.bg} ${scheme.text}`}>
                                   {p.template}
                                 </span>
+                                {p.paradigm === "backend" ? (
+                                  <span className="text-[9px] font-bold uppercase px-1.5 py-0.5 rounded border leading-none bg-emerald-500/10 border-emerald-500/25 text-emerald-600 dark:text-emerald-400">Backend</span>
+                                ) : p.paradigm === "frontend" ? (
+                                  <span className="text-[9px] font-bold uppercase px-1.5 py-0.5 rounded border leading-none bg-sky-500/10 border-sky-500/25 text-sky-600 dark:text-sky-400">Frontend</span>
+                                ) : null}
                                 {p.isTemplate ? (
                                   <span className="text-[9px] font-bold text-amber-600 dark:text-amber-400 uppercase tracking-widest bg-amber-500/10 border border-amber-500/20 px-1.5 py-0.5 rounded">
                                     Template
@@ -1147,6 +1204,7 @@ export default function InterviewBuilder({
 
       </div>
 
+      <StackWizard open={wizardOpen} onClose={() => setWizardOpen(false)} type={type} creatorRole={creatorRole} />
     </div>
   );
 }

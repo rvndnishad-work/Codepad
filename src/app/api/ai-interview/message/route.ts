@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getTemplateById, AI_INTERVIEW_GEMINI_MODEL, computeDeadline } from "@/lib/ai-interview/scaffolds";
+import { resolveTemplate } from "@/lib/ai-interview/template-resolver";
 import {
   consumeCreditIfFirstTurn,
   InsufficientCreditsError,
@@ -578,13 +579,28 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    let systemInstruction = `You are the Interviewpad AI Technical Interviewer. You are conducting a live coding interview for the position of "${session.positionTitle}".
-The candidate is working on the task: "${session.templateId}".
+    // Resolve the task template so the interviewer knows the actual problem +
+    // tech stack (frontend framework / backend language / DSA) and tailors its
+    // questions accordingly instead of only knowing the template id.
+    const tpl = await resolveTemplate(session.templateId, session.workspaceId).catch(() => undefined);
+    const kind = tpl?.kind ?? "frontend";
+    const stackLine =
+      kind === "backend"
+        ? `This is a BACKEND task in ${tpl?.language ?? "the chosen language"}${tpl?.frameworkLabel ? ` (framework focus: ${tpl.frameworkLabel})` : ""}. The candidate runs code server-side. Probe API/data-structure design, complexity, error handling, concurrency, and edge cases — not UI.`
+        : kind === "dsa"
+          ? `This is a DSA / algorithms task in ${tpl?.language ?? "the chosen language"}. Probe time/space complexity, edge cases, and alternative approaches; the candidate runs code against sample input.`
+          : `This is a FRONTEND task${tpl?.frameworkLabel ? ` using ${tpl.frameworkLabel}` : ""}. Probe component/state design, accessibility, and UX.`;
+
+    let systemInstruction = `You are the Interviewpad AI Technical Interviewer conducting a live coding interview for the position of "${session.positionTitle}".
+
+Task: ${tpl?.title ?? session.templateId}
+${tpl?.description ? `Brief: ${tpl.description}\n` : ""}${stackLine}
+
 Guidelines:
 1. Be encouraging but professional and rigorous.
 2. Guide them using hints, but never write full solutions directly.
 3. If they describe code, check if their active files (${truncateFilesForPrompt(files)}) match their claims.
-4. Keep answers concise, around 100-150 words.`;
+4. Keep answers concise (around 100-150 words) and relevant to the task's stack.`;
     if (resolved) {
       // Append the wrapper-warning when external tools are in play. Without
       // this, the model has no signal that <reference_data> contents are

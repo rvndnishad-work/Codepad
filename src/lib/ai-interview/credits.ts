@@ -108,12 +108,22 @@ export async function consumeCreditIfFirstTurn(
   return prisma.$transaction(async (tx) => {
     const session = await tx.aIInterviewSession.findUnique({
       where: { id: sessionId },
-      select: { id: true, workspaceId: true, startedAt: true },
+      select: { id: true, workspaceId: true, startedAt: true, practice: true },
     });
     if (!session) throw new Error("Session not found");
 
     // Fast path: already charged on a previous turn.
     if (session.startedAt) return { charged: false };
+
+    // Practice (candidate self-serve) sessions are free: claim startedAt/ACTIVE
+    // so the timer + flow start, but never touch the credit ledger.
+    if (session.practice) {
+      await tx.aIInterviewSession.updateMany({
+        where: { id: sessionId, startedAt: null },
+        data: { startedAt: new Date(), status: "ACTIVE" },
+      });
+      return { charged: false };
+    }
 
     // Check balance before attempting the claim. We re-check after the claim
     // succeeds to keep this transaction's view consistent.

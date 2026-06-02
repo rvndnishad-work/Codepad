@@ -151,6 +151,8 @@ export default async function AIInterviewRunPage({ params, searchParams }: Props
       }}
       initialFiles={initialFiles}
       initialChat={chatHistory}
+      kind={template?.kind ?? "frontend"}
+      language={template?.language}
     />
   );
 }

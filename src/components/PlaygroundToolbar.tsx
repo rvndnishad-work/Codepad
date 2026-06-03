@@ -1,16 +1,14 @@
 "use client";
 
 import React, { useState, useRef, useEffect } from "react";
-import { 
-  Pencil, 
-  Sparkles, 
-  Play, 
-  Save, 
-  ChevronDown, 
-  Zap, 
-  Rocket, 
-  Eye, 
-  Layout as LayoutIcon, 
+import {
+  Pencil,
+  Sparkles,
+  Play,
+  Save,
+  ChevronDown,
+  Eye,
+  Layout as LayoutIcon,
   Terminal,
   MoreHorizontal,
   Type,
@@ -182,6 +180,39 @@ const toolbarCSS = `
     box-shadow: 1px 0 0 rgba(255,255,255,0.04);
   }
 
+  /* Segmented tabs — used for the View Layout selector on lg+ screens */
+  .tb-tabs {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    box-shadow: inset 0 1px 2px rgba(0,0,0,0.03);
+  }
+  .dark .tb-tabs {
+    background: rgba(0,0,0,0.2);
+    border: 1px solid rgba(255,255,255,0.04);
+    box-shadow: inset 0 1px 3px rgba(0,0,0,0.3);
+  }
+  .tb-tab {
+    transition: all 0.12s ease;
+    color: var(--muted);
+  }
+  .tb-tab:hover {
+    color: var(--fg);
+  }
+  .tb-tab[data-active="true"] {
+    color: var(--fg);
+    background: var(--surface);
+    box-shadow: 0 1px 2px rgba(0,0,0,0.06);
+  }
+  .dark .tb-tab[data-active="true"] {
+    background: linear-gradient(180deg, rgba(255,255,255,0.06) 0%, rgba(255,255,255,0.02) 100%);
+    box-shadow:
+      inset 0 1px 0 rgba(255,255,255,0.06),
+      0 1px 2px rgba(0,0,0,0.2);
+  }
+  .tb-tab[data-active="true"] .tb-tab-icon {
+    color: var(--accent);
+  }
+
   /* Icon button — ghost style with 3D hover */
   .tb-icon-btn {
     transition: all 0.15s ease;
@@ -275,6 +306,77 @@ function ToolbarDropdown<T extends string>({
 }
 
 /* ────────────────────────────────────────────────────────────────
+   View Layout selector — segmented tabs on lg+, dropdown below.
+   The two variants share the same options list so behavior stays
+   identical across breakpoints.
+──────────────────────────────────────────────────────────────── */
+
+const VIEW_OPTIONS = [
+  { value: "preview" as const, label: "Preview", icon: Eye },
+  { value: "both" as const, label: "Split", icon: LayoutIcon },
+  { value: "console" as const, label: "Console", icon: Terminal },
+];
+
+type ViewValue = (typeof VIEW_OPTIONS)[number]["value"];
+
+function ViewLayoutControl({
+  value,
+  onChange,
+  disabled,
+}: {
+  value: ViewValue;
+  onChange: (v: ViewValue) => void;
+  disabled?: boolean;
+}) {
+  return (
+    <>
+      {/* Dropdown — shown below the lg breakpoint (< 1024px) */}
+      <div className="lg:hidden">
+        <ToolbarDropdown
+          label="View Layout"
+          value={value}
+          onChange={onChange}
+          disabled={disabled}
+          icon={
+            value === "preview" ? Eye : value === "both" ? LayoutIcon : Terminal
+          }
+          options={VIEW_OPTIONS}
+        />
+      </div>
+
+      {/* Segmented tabs — shown at lg and above (≥ 1024px) */}
+      <div
+        className={`hidden lg:flex tb-tabs items-center rounded-md h-7 p-0.5 gap-0.5 ${
+          disabled ? "opacity-30 pointer-events-none" : ""
+        }`}
+        role="tablist"
+        aria-label="View layout"
+      >
+        {VIEW_OPTIONS.map((opt) => {
+          const active = opt.value === value;
+          const Icon = opt.icon;
+          return (
+            <button
+              key={opt.value}
+              type="button"
+              role="tab"
+              aria-selected={active}
+              data-active={active}
+              onClick={() => onChange(opt.value)}
+              disabled={disabled}
+              className="tb-tab h-6 px-2.5 rounded-sm flex items-center gap-1.5 text-[11px] font-medium cursor-pointer"
+            >
+              <Icon className="tb-tab-icon w-3 h-3 opacity-70" />
+              <span>{opt.label}</span>
+            </button>
+          );
+        })}
+      </div>
+    </>
+  );
+}
+
+/* ────────────────────────────────────────────────────────────────
    Numeric Stepper — 3D inset
 ──────────────────────────────────────────────────────────────── */
 
@@ -319,7 +421,7 @@ function NumericStepper({
 
 export default function PlaygroundToolbar({
   templateId, tplTitle, title, setTitle, setDirty, dirty, saving, signedIn, isOwner, editable,
-  editor, setEditor, fontSize, setFontSize, view, setView,
+  fontSize, setFontSize, view, setView,
   visibility, setVisibility, snippet, snippetId, forking,
   handleSave, handleFork, handleShare, handleCopyEmbed, handlePopout,
   handleRun, running, onTogglePrompt, tplMode,
@@ -383,51 +485,38 @@ export default function PlaygroundToolbar({
           </button>
         </div>
 
-        {/* ── Center: Editor Config ── */}
-        <div className="hidden xl:flex items-center gap-1.5">
-          <ToolbarDropdown
-            label="Editor Engine"
-            value={editor}
-            onChange={setEditor}
-            icon={editor === "sandpack" ? Zap : Rocket}
-            options={[
-              { value: "sandpack", label: "Basic", icon: Zap },
-              { value: "monaco", label: "Monaco", icon: Rocket }
-            ]}
-          />
-
-          <div className="tb-sep" />
-
-          <NumericStepper
-            value={String(fontSize)}
-            onDecrease={() => setFontSize(Math.max(10, fontSize - 1))}
-            onIncrease={() => setFontSize(Math.min(32, fontSize + 1))}
-            suffix="px"
-          />
-
-          <div className="tb-sep" />
-
-          <ToolbarDropdown
-            label="View Layout"
+        {/* ── Center: Editor Config ──
+            View Layout is the only control visible at every breakpoint
+            (dropdown < lg, segmented tabs ≥ lg). Font size + UI scale are
+            secondary, so they stay gated to xl+ to keep narrower toolbars
+            uncluttered. The Editor Engine selector is gone — Monaco is the
+            sole editor now. */}
+        <div className="flex items-center gap-1.5">
+          <ViewLayoutControl
             value={view}
             onChange={setView}
             disabled={tplMode === "console"}
-            icon={view === "preview" ? Eye : view === "both" ? LayoutIcon : Terminal}
-            options={[
-              { value: "preview", label: "Preview", icon: Eye },
-              { value: "both", label: "Split", icon: LayoutIcon },
-              { value: "console", label: "Console", icon: Terminal }
-            ]}
           />
 
-          <div className="tb-sep" />
+          <div className="hidden xl:flex items-center gap-1.5">
+            <div className="tb-sep" />
 
-          <NumericStepper
-            value={`${Math.round(uiScale * 100)}%`}
-            onDecrease={() => setUiScale(Math.max(0.8, uiScale - 0.1))}
-            onIncrease={() => setUiScale(Math.min(1.5, uiScale + 0.1))}
-            icon={Type}
-          />
+            <NumericStepper
+              value={String(fontSize)}
+              onDecrease={() => setFontSize(Math.max(10, fontSize - 1))}
+              onIncrease={() => setFontSize(Math.min(32, fontSize + 1))}
+              suffix="px"
+            />
+
+            <div className="tb-sep" />
+
+            <NumericStepper
+              value={`${Math.round(uiScale * 100)}%`}
+              onDecrease={() => setUiScale(Math.max(0.8, uiScale - 0.1))}
+              onIncrease={() => setUiScale(Math.min(1.5, uiScale + 0.1))}
+              icon={Type}
+            />
+          </div>
         </div>
 
         {/* ── Right: Actions ── */}

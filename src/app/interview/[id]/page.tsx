@@ -1,7 +1,15 @@
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { notFound, redirect } from "next/navigation";
-import InterviewRunner, { type SessionChallenge } from "./InterviewRunner";
+import { headers } from "next/headers";
+import InterviewRunner, {
+  type SessionChallenge,
+  type SessionPlayground,
+} from "./InterviewRunner";
+import MobileLobby from "@/components/MobileLobby";
+import { shouldRenderMobileLobby } from "@/lib/device";
+
+import { validatePageAccess } from "@/lib/settings";
 
 export const metadata = {
   title: "Interview Session — Interviewpad",
@@ -12,13 +20,43 @@ export default async function InterviewRunPage({
   searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ token?: string }>;
+  searchParams: Promise<{ token?: string; lobby?: string; desktop?: string }>;
 }) {
   const { id } = await params;
-  const { token } = await searchParams;
+  const sp = await searchParams;
+  const { token, lobby } = sp;
+
+  // IP-38: mobile-handoff lobby. Run before any auth check so a candidate on
+  // a phone always gets the QR experience first; auth and access checks
+  // happen on the post-bypass request.
+  const hdrs = await headers();
+  const showLobby = shouldRenderMobileLobby({
+    userAgent: hdrs.get("user-agent"),
+    searchParams: sp,
+    cookieHeader: hdrs.get("cookie"),
+  });
+  if (showLobby) {
+    const host = hdrs.get("host") ?? "interviewpad.in";
+    const proto = hdrs.get("x-forwarded-proto") ?? "https";
+    const qs = token ? `?token=${encodeURIComponent(token)}` : "";
+    const fullUrl = `${proto}://${host}/interview/${id}${qs}`;
+    return (
+      <MobileLobby
+        url={fullUrl}
+        title="Open this interview on desktop"
+        subtitle="Live interviews need a desktop editor — scan to continue on your laptop."
+        tokenLabel="interview"
+        emailEnabled={!!process.env.RESEND_API_KEY}
+      />
+    );
+  }
 
   const session = await auth().catch(() => null);
-  const interview = await prisma.interviewSession.findUnique({ where: { id } });
+  await validatePageAccess("/interview/new", session);
+  const interview = await prisma.interviewSession.findUnique({
+    where: { id },
+    include: { rubric: true },
+  });
   if (!interview) notFound();
 
   // Access: owner OR holder of correct shareToken (read-only).
@@ -30,30 +68,80 @@ export default async function InterviewRunPage({
     }
     notFound();
   }
-  const interviewerView = !isOwner && hasShareToken;
+  // Resolving role alignment based on creator selection
+  let interviewerView = false;
+  if (interview.creatorRole === "interviewer") {
+    // If the creator chose "I am the Interviewer", then the Owner IS the Interviewer.
+    // Therefore, the Guest (who has the token) is the Candidate.
+    if (isOwner) interviewerView = true;
+    else if (hasShareToken) interviewerView = false;
+  } else {
+    // Default fallback: Creator is Candidate. Owner IS Candidate. Guest is Interviewer.
+    if (isOwner) interviewerView = false;
+    else if (hasShareToken) interviewerView = true;
+  }
 
-  const ids: string[] = (() => {
+  const sourceType = (interview.sourceType ?? "challenge") as "challenge" | "playground" | "prompt" | "combined";
+
+  // Auto-redirect guest to active challenge (challenge sessions only)
+  if (
+    sourceType === "challenge" &&
+    !isOwner &&
+    hasShareToken &&
+    interview.status === "in_progress" &&
+    interview.activeChallengeId &&
+    lobby !== "true"
+  ) {
+    const activeChallenge = await prisma.challenge.findUnique({
+      where: { id: interview.activeChallengeId },
+      select: { slug: true },
+    });
+    if (activeChallenge) {
+      redirect(
+        `/challenges/${activeChallenge.slug}/attempt?session=${interview.id}&multiplayer=true&token=${token}`
+      );
+    }
+  }
+
+  function parseIds(raw: string): string[] {
     try {
-      const parsed = JSON.parse(interview.challengeIds);
-      return Array.isArray(parsed) ? parsed.filter((x): x is string => typeof x === "string") : [];
+      const parsed = JSON.parse(raw);
+      return Array.isArray(parsed)
+        ? parsed.filter((x): x is string => typeof x === "string")
+        : [];
     } catch {
       return [];
     }
-  })();
+  }
 
-  const challenges = await prisma.challenge.findMany({
-    where: { id: { in: ids } },
-    select: {
-      id: true,
-      slug: true,
-      title: true,
-      difficulty: true,
-      estimatedMinutes: true,
-    },
-  });
-  const byId = new Map(challenges.map((c) => [c.id, c]));
-  const ordered: SessionChallenge[] = ids
-    .map((id) => byId.get(id))
+  const challengeIds = parseIds(interview.challengeIds);
+  const playgroundIds = parseIds(interview.playgroundIds);
+  const promptScenarioIds = parseIds(interview.promptScenarioIds);
+
+  const [challengeRows, snippetRows, promptScenarioRows] = await Promise.all([
+    challengeIds.length > 0
+      ? prisma.challenge.findMany({
+          where: { id: { in: challengeIds } },
+          select: { id: true, slug: true, title: true, difficulty: true, estimatedMinutes: true, template: true },
+        })
+      : Promise.resolve([]),
+    playgroundIds.length > 0
+      ? prisma.snippet.findMany({
+          where: { id: { in: playgroundIds }, userId: interview.userId },
+          select: { id: true, slug: true, title: true, template: true },
+        })
+      : Promise.resolve([]),
+    promptScenarioIds.length > 0
+      ? prisma.promptScenario.findMany({
+          where: { id: { in: promptScenarioIds } },
+          select: { id: true, slug: true, title: true, difficulty: true, estimatedMinutes: true, category: true, objective: true, description: true },
+        })
+      : Promise.resolve([]),
+  ]);
+
+  const challengeById = new Map(challengeRows.map((c) => [c.id, c]));
+  const ordered: SessionChallenge[] = challengeIds
+    .map((id) => challengeById.get(id))
     .filter((c): c is NonNullable<typeof c> => !!c)
     .map((c) => ({
       id: c.id,
@@ -61,39 +149,119 @@ export default async function InterviewRunPage({
       title: c.title,
       difficulty: c.difficulty as "easy" | "medium" | "hard",
       estimatedMinutes: c.estimatedMinutes,
+      template: c.template,
+    }));
+
+  const playgroundById = new Map(snippetRows.map((s) => [s.id, s]));
+  const orderedPlaygrounds: SessionPlayground[] = playgroundIds
+    .map((id) => playgroundById.get(id))
+    .filter((s): s is NonNullable<typeof s> => !!s)
+    .map((s) => ({
+      id: s.id,
+      slug: s.slug,
+      title: s.title,
+      template: s.template,
+    }));
+
+  const promptScenarioById = new Map(promptScenarioRows.map((p) => [p.id, p]));
+  const orderedPromptScenarios = promptScenarioIds
+    .map((id) => promptScenarioById.get(id))
+    .filter((p): p is NonNullable<typeof p> => !!p)
+    .map((p) => ({
+      id: p.id,
+      slug: p.slug,
+      title: p.title,
+      difficulty: p.difficulty,
+      estimatedMinutes: p.estimatedMinutes,
+      category: p.category,
+      objective: p.objective,
+      description: p.description,
     }));
 
   // Fetch attempts already made within this session.
-  const attempts = await prisma.challengeAttempt.findMany({
-    where: { sessionId: interview.id },
-    select: {
-      id: true,
-      challengeId: true,
-      status: true,
-      durationSec: true,
-      finishedAt: true,
-    },
-    orderBy: { startedAt: "asc" },
-  });
+  const [attempts, promptAttempts] = await Promise.all([
+    prisma.challengeAttempt.findMany({
+      where: { sessionId: interview.id },
+      select: {
+        id: true,
+        challengeId: true,
+        status: true,
+        durationSec: true,
+        finishedAt: true,
+        files: true,
+        testResults: true,
+        score: true,
+      },
+      orderBy: { startedAt: "asc" },
+    }),
+    prisma.promptAttempt.findMany({
+      where: { sessionId: interview.id },
+      select: {
+        id: true,
+        scenarioId: true,
+        promptText: true,
+        charCount: true,
+        tokenEstimate: true,
+        score: true,
+        rubricScores: true,
+        feedback: true,
+        graderType: true,
+        durationSec: true,
+      },
+      orderBy: { createdAt: "asc" },
+    }),
+  ]);
 
   return (
     <InterviewRunner
       interview={{
         id: interview.id,
         title: interview.title,
+        candidateName: interview.candidateName,
+        type: interview.type,
+        verdict: interview.verdict,
+        notes: interview.notes,
         totalSec: interview.totalSec,
         status: interview.status as "scheduled" | "in_progress" | "completed" | "abandoned",
         shareToken: interview.shareToken,
+        shortCode: interview.shortCode,
         startedAtIso: interview.startedAt ? interview.startedAt.toISOString() : null,
         finishedAtIso: interview.finishedAt ? interview.finishedAt.toISOString() : null,
+        sourceType,
+        scenario: interview.scenario,
+        stackJson: interview.stackJson,
+        activePlaygroundId: interview.activePlaygroundId,
+        userId: interview.userId,
+        rubric: interview.rubric ? {
+          ratings: interview.rubric.ratings,
+          notes: interview.rubric.notes,
+        } : null,
       }}
       challenges={ordered}
+      playgrounds={orderedPlaygrounds}
+      promptScenarios={orderedPromptScenarios}
       attempts={attempts.map((a) => ({
         challengeId: a.challengeId,
         status: a.status as "passed" | "failed" | "in_progress" | "abandoned",
         durationSec: a.durationSec ?? null,
+        files: a.files,
+        testResults: a.testResults,
+        score: a.score,
+      }))}
+      promptAttempts={promptAttempts.map((a) => ({
+        id: a.id,
+        scenarioId: a.scenarioId,
+        promptText: a.promptText,
+        charCount: a.charCount,
+        tokenEstimate: a.tokenEstimate,
+        score: a.score,
+        rubricScores: a.rubricScores,
+        feedback: a.feedback,
+        graderType: a.graderType,
+        durationSec: a.durationSec,
       }))}
       interviewerView={interviewerView}
+      isOwner={isOwner}
     />
   );
 }

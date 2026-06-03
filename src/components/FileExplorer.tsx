@@ -20,6 +20,10 @@ import {
   Pencil,
   Copy,
   Download,
+  ArrowDownAZ,
+  ListOrdered,
+  PanelLeftClose,
+  PanelLeftOpen,
 } from "lucide-react";
 import { useFileSystem, FILE_TYPES, type TreeNode, parentDir } from "@/hooks/useFileSystem";
 import { toast } from "sonner";
@@ -35,6 +39,11 @@ import {
   SiNpm,
   SiGit,
   SiMarkdown,
+  SiPython,
+  SiGo,
+  SiRust,
+  SiCplusplus,
+  SiOpenjdk,
 } from "react-icons/si";
 import { useNpmSearch } from "@/hooks/useNpmSearch";
 
@@ -87,6 +96,21 @@ function fileIconFor(name: string): FileIconInfo {
       return { Icon: SiMarkdown, color: "var(--muted)" };
     case "lock":
       return { Icon: Lock, color: "var(--muted)" };
+    case "py":
+      return { Icon: SiPython, color: "#3776ab" };
+    case "go":
+      return { Icon: SiGo, color: "#00add8" };
+    case "java":
+      return { Icon: SiOpenjdk, color: "#5382a1" };
+    case "rs":
+      return { Icon: SiRust, color: "#e43716" };
+    case "c":
+    case "cpp":
+    case "cc":
+    case "cxx":
+    case "h":
+    case "hpp":
+      return { Icon: SiCplusplus, color: "#00599c" };
     default:
       return { Icon: FileIcon, color: "var(--muted)" };
   }
@@ -167,21 +191,73 @@ const FOLDER_COLORS: Record<string, string> = {
   provider: "#ba68c8",
 };
 
-function folderColor(name: string): string {
+/** Classic Windows / OS file-explorer folder yellow. */
+const WINDOWS_FOLDER_YELLOW = "#EAB308";
+
+function folderColor(name: string, plain?: boolean): string {
+  if (plain) return WINDOWS_FOLDER_YELLOW;
   return FOLDER_COLORS[name.toLowerCase()] ?? "#fbbf24";
 }
 
-function FolderNodeIcon({ name, open }: { name: string; open: boolean }) {
-  const color = folderColor(name);
+function FolderNodeIcon({ name, open, plain }: { name: string; open: boolean; plain?: boolean }) {
+  const color = folderColor(name, plain);
   const FolderIcon = open ? FolderOpen : Folder;
   return <FolderIcon className="w-3.5 h-3.5 shrink-0" style={{ color }} />;
 }
 
 
 
-type Props = { readOnly?: boolean; onCollapse?: () => void };
+type Props = {
+  readOnly?: boolean;
+  onCollapse?: () => void;
+  /** Show the "Download ZIP" button (default true). */
+  showDownload?: boolean;
+  /** When set, renders a collapse toggle that shrinks the tree to an icon-only
+   *  rail. `collapsed` is the controlled state, `onToggleCollapse` flips it. */
+  collapsed?: boolean;
+  onToggleCollapse?: () => void;
+  /** Use a single Windows-style yellow for every folder instead of the
+   *  VS Code per-name folder colors. */
+  plainFolders?: boolean;
+  templateId?: string;
+};
 
-export default function FileExplorer({ readOnly = false, onCollapse }: Props) {
+export default function FileExplorer({
+  readOnly = false,
+  onCollapse,
+  showDownload = true,
+  collapsed = false,
+  onToggleCollapse,
+  plainFolders = false,
+  templateId,
+}: Props) {
+  const contextFileTypes = useMemo(() => {
+    if (!templateId) return FILE_TYPES.filter(t => [".js", ".ts", ".jsx", ".tsx", ".css", ".html", ".json", ".md"].includes(t.ext));
+    
+    const id = templateId.toLowerCase();
+    if (id === "python") {
+      return FILE_TYPES.filter(t => [".py", ".json", ".md"].includes(t.ext));
+    }
+    if (id === "go") {
+      return FILE_TYPES.filter(t => [".go", ".json", ".md"].includes(t.ext));
+    }
+    if (id === "java") {
+      return FILE_TYPES.filter(t => [".java", ".json", ".md"].includes(t.ext));
+    }
+    if (id === "rust") {
+      return FILE_TYPES.filter(t => [".rs", ".toml", ".md"].includes(t.ext));
+    }
+    if (id === "cpp") {
+      return FILE_TYPES.filter(t => [".cpp", ".h", ".c", ".json", ".md"].includes(t.ext));
+    }
+    if (id === "node" || id === "ts-node" || id === "empty-js" || id === "empty-ts") {
+      return FILE_TYPES.filter(t => [".js", ".ts", ".json", ".md"].includes(t.ext));
+    }
+    
+    // Default frontend list
+    return FILE_TYPES.filter(t => [".js", ".ts", ".jsx", ".tsx", ".css", ".html", ".json", ".md"].includes(t.ext));
+  }, [templateId]);
+
   const {
     expanded,
     setExpanded,
@@ -203,6 +279,9 @@ export default function FileExplorer({ readOnly = false, onCollapse }: Props) {
     setRenamingPath,
     renameValue,
     setRenameValue,
+    sortMode,
+    setSortMode,
+    reorderSibling,
     tree,
     filePaths,
     activeFile,
@@ -225,6 +304,11 @@ export default function FileExplorer({ readOnly = false, onCollapse }: Props) {
     () => filePaths.find((p) => p.endsWith("/package.json")) ?? "/package.json",
     [filePaths]
   );
+
+  // Where the dragged item would land if dropped right now. "before"/"after"
+  // produce a visible insertion line above/below the target row; "into"
+  // (folders only) highlights the entire row, matching the prior behavior.
+  const [dropPosition, setDropPosition] = useState<"before" | "after" | "into" | null>(null);
 
   const {
     dependencies,
@@ -260,41 +344,96 @@ export default function FileExplorer({ readOnly = false, onCollapse }: Props) {
         onDragEnd={() => {
           setDraggingPath(null);
           setDropTarget(null);
+          setDropPosition(null);
         }}
         onDragOver={(e) => {
-          if (readOnly || !node.isFolder) return;
+          if (readOnly) return;
           const hasExternal = e.dataTransfer.types.includes("Files");
           if (!draggingPath && !hasExternal) return;
+          // Can't drop a folder into itself or one of its descendants.
           if (
             draggingPath &&
             (draggingPath === node.path ||
               node.path.startsWith(draggingPath + "/"))
           )
             return;
+
+          // Detect drop zone within the row:
+          //   ≤ 25% from top  → insert BEFORE this sibling
+          //   ≥ 75% from top  → insert AFTER  this sibling
+          //   middle 50%      → drop INTO (folder only); for files, treated
+          //                     as "after" so reordering still feels natural.
+          const rect = e.currentTarget.getBoundingClientRect();
+          const ratio = (e.clientY - rect.top) / Math.max(1, rect.height);
+          let pos: "before" | "after" | "into";
+          if (node.isFolder && ratio > 0.25 && ratio < 0.75) {
+            pos = "into";
+          } else if (ratio < 0.5) {
+            pos = "before";
+          } else {
+            pos = "after";
+          }
+
+          // Reordering only works inside the same parent. Cross-parent drops
+          // with external files use "into" on folders; non-folder cross-parent
+          // drops are not actionable, so suppress the indicator.
+          if (pos !== "into") {
+            if (
+              draggingPath &&
+              parentDir(draggingPath) !== parentDir(node.path)
+            ) {
+              if (!hasExternal) return;
+              pos = node.isFolder ? "into" : "after";
+            }
+            // Dropping just above/below yourself is a no-op.
+            if (draggingPath === node.path) return;
+          }
+
           e.preventDefault();
           e.stopPropagation();
           e.dataTransfer.dropEffect = hasExternal ? "copy" : "move";
           setDropTarget(node.path);
+          setDropPosition(pos);
         }}
         onDragLeave={() => {
-          if (dropTarget === node.path) setDropTarget(null);
+          if (dropTarget === node.path) {
+            setDropTarget(null);
+            setDropPosition(null);
+          }
         }}
         onDrop={(e) => {
-          if (readOnly || !node.isFolder) return;
+          if (readOnly) return;
           e.preventDefault();
           e.stopPropagation();
           if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
-            void uploadFiles(e.dataTransfer.files, node.path);
-            setExpanded((prev) => new Set(prev).add(node.path));
+            // External file drop: drop into the folder (or its parent if a
+            // file row was the target). Keep prior behavior.
+            const targetFolder = node.isFolder ? node.path : parentDir(node.path);
+            void uploadFiles(e.dataTransfer.files, targetFolder);
+            setExpanded((prev) => new Set(prev).add(targetFolder));
           } else if (draggingPath) {
-            movePath(draggingPath, node.path);
+            if (dropPosition === "into" && node.isFolder) {
+              movePath(draggingPath, node.path);
+            } else if (
+              (dropPosition === "before" || dropPosition === "after") &&
+              parentDir(draggingPath) === parentDir(node.path)
+            ) {
+              reorderSibling(draggingPath, node.path, dropPosition);
+            } else if (node.isFolder) {
+              // Cross-parent fallback: move into the folder.
+              movePath(draggingPath, node.path);
+            }
           }
           setDraggingPath(null);
           setDropTarget(null);
+          setDropPosition(null);
         }}
         onClick={() => {
           if (node.isFolder) toggle(node.path);
-          else sandpack.setActiveFile(node.path);
+          // openFile both adds the path to the tab strip and makes it active.
+          // setActiveFile alone wouldn't open a tab for files we constrained
+          // out of the initial visibleFiles list.
+          else sandpack.openFile(node.path);
         }}
         onContextMenu={(e) => {
           if (readOnly) return;
@@ -307,13 +446,23 @@ export default function FileExplorer({ readOnly = false, onCollapse }: Props) {
             isFolder: node.isFolder,
           });
         }}
-        style={{ paddingLeft: 6 + depth * 12 }}
+        style={{
+          paddingLeft: 6 + depth * 12,
+          ...(isDropTarget && dropPosition === "before"
+            ? { boxShadow: "inset 0 2px 0 0 var(--accent)" }
+            : {}),
+          ...(isDropTarget && dropPosition === "after"
+            ? { boxShadow: "inset 0 -2px 0 0 var(--accent)" }
+            : {}),
+        }}
         className={`group flex items-center gap-1.5 pr-2 py-1 cursor-pointer text-[13px] select-none transition ${
           isActive
             ? "bg-accent/10 text-accent font-medium shadow-[inset_2px_0_0_0_currentColor]"
             : "text-fg/70 hover:bg-elevated hover:text-fg"
         } ${
-          isDropTarget ? "outline outline-1 outline-accent -outline-offset-1" : ""
+          isDropTarget && dropPosition === "into"
+            ? "outline outline-1 outline-accent -outline-offset-1"
+            : ""
         } ${isDragging ? "opacity-50" : ""}`}
       >
         {node.isFolder ? (
@@ -326,7 +475,7 @@ export default function FileExplorer({ readOnly = false, onCollapse }: Props) {
           <span className="w-3 shrink-0" />
         )}
         {node.isFolder ? (
-          <FolderNodeIcon name={node.name} open={isExpanded} />
+          <FolderNodeIcon name={node.name} open={isExpanded} plain={plainFolders} />
         ) : (
           <FileNodeIcon name={node.name} />
         )}
@@ -397,6 +546,43 @@ export default function FileExplorer({ readOnly = false, onCollapse }: Props) {
     );
   }
 
+  // Collapsed: a narrow rail of file icons only. Click an icon to open the
+  // file; the toggle at the top expands back to the full tree.
+  if (collapsed) {
+    return (
+      <div className="h-full w-full border-r border-border bg-surface flex flex-col items-center gap-0.5 py-2 overflow-y-auto select-none">
+        {onToggleCollapse && (
+          <button
+            onClick={onToggleCollapse}
+            title="Expand files"
+            aria-label="Expand files"
+            className="p-1.5 mb-1 rounded hover:bg-elevated text-muted/60 hover:text-fg transition"
+          >
+            <PanelLeftOpen className="w-4 h-4" />
+          </button>
+        )}
+        {filePaths.map((p) => {
+          const isActive = activeFile === p;
+          const name = p.split("/").pop() || p;
+          return (
+            <button
+              key={p}
+              onClick={() => sandpack.openFile(p)}
+              title={p.replace(/^\//, "")}
+              className={`p-1.5 rounded transition ${
+                isActive
+                  ? "bg-accent/10 shadow-[inset_2px_0_0_0_var(--accent)]"
+                  : "hover:bg-elevated opacity-80 hover:opacity-100"
+              }`}
+            >
+              <FileNodeIcon name={name} />
+            </button>
+          );
+        })}
+      </div>
+    );
+  }
+
   return (
     <div
       className="h-full w-full border-r border-border bg-surface text-xs overflow-y-auto select-none relative flex flex-col"
@@ -428,6 +614,7 @@ export default function FileExplorer({ readOnly = false, onCollapse }: Props) {
         }
         setDraggingPath(null);
         setDropTarget(null);
+        setDropPosition(null);
       }}
     >
       <div className="sticky top-0 z-10 flex items-center justify-between px-3 h-9 border-b border-border bg-transparent shrink-0">
@@ -472,19 +659,54 @@ export default function FileExplorer({ readOnly = false, onCollapse }: Props) {
               >
                 <Package className="w-3.5 h-3.5" />
               </button>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setSortMode(sortMode === "manual" ? "name" : "manual");
+                }}
+                title={
+                  sortMode === "manual"
+                    ? "Sort: manual (creation order). Click for A–Z."
+                    : "Sort: A–Z. Click for manual."
+                }
+                className={`p-1.5 rounded transition ${
+                  sortMode === "name"
+                    ? "bg-accent/20 text-accent"
+                    : "text-muted/50 hover:bg-elevated hover:text-fg"
+                }`}
+              >
+                {sortMode === "manual" ? (
+                  <ListOrdered className="w-3.5 h-3.5" />
+                ) : (
+                  <ArrowDownAZ className="w-3.5 h-3.5" />
+                )}
+              </button>
             </>
           )}
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              void downloadZip();
-            }}
-            title="Download ZIP"
-            className="p-1.5 hover:bg-elevated rounded transition text-muted/50 hover:text-fg"
-          >
-            <Download className="w-3.5 h-3.5" />
-          </button>
-          
+          {showDownload && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                void downloadZip();
+              }}
+              title="Download ZIP"
+              className="p-1.5 hover:bg-elevated rounded transition text-muted/50 hover:text-fg"
+            >
+              <Download className="w-3.5 h-3.5" />
+            </button>
+          )}
+
+          {onToggleCollapse && (
+            <button
+              onClick={onToggleCollapse}
+              title="Collapse to icons"
+              aria-label="Collapse file tree"
+              className="p-1.5 hover:bg-elevated rounded transition text-muted/50 hover:text-fg"
+            >
+              <PanelLeftClose className="w-3.5 h-3.5" />
+            </button>
+          )}
+
           {onCollapse && (
             <>
               <div className="w-px h-4 bg-border mx-1" />
@@ -666,7 +888,7 @@ export default function FileExplorer({ readOnly = false, onCollapse }: Props) {
                 className="absolute pl-1 z-50"
               >
                 <div className="min-w-[180px] rounded-lg border border-border bg-panel shadow-soft py-1">
-                  {FILE_TYPES.map((t) => (
+                  {contextFileTypes.map((t) => (
                     <button
                       key={t.ext}
                       onClick={() => {

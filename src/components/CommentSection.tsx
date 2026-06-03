@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import Link from "next/link";
 import { Send, Trash2, MessageSquare, User as UserIcon } from "lucide-react";
 import { toast } from "sonner";
@@ -32,6 +32,7 @@ export default function CommentSection({
   isAdmin: boolean;
 }) {
   const router = useRouter();
+  const pathname = usePathname();
   const [comments, setComments] = useState(initialComments);
   const [draft, setDraft] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -139,7 +140,7 @@ export default function CommentSection({
         <div className="rounded-2xl border border-border bg-surface p-6 mb-6 text-center">
           <p className="text-sm text-muted">
             <Link
-              href={`/login?next=${typeof window === "undefined" ? "" : encodeURIComponent(window.location.pathname)}`}
+              href={`/login?next=${encodeURIComponent(pathname ?? "/blog")}`}
               className="text-accent font-bold hover:underline"
             >
               Sign in

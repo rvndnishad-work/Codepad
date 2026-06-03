@@ -1,4 +1,5 @@
-@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,400;0,500;0,600;1,400;1,500;1,600&family=Outfit:wght@100;200;300;400;500;600;700;800;900&display=swap');
+/* Fonts are now loaded via next/font in layout.tsx (Inter + Fira Code).
+   That gives us preload, size hints, and avoids the FOUT a CSS @import causes. */
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -21,42 +22,65 @@
     --accent-glow: rgba(248, 113, 113, 0.1);
     
     --ui-scale: 1;
-    --base-font-size: clamp(16px, 1.2vw, 18px);
+    /* Fluid root type: every rem-based size (incl. the px→rem font sizes
+       produced by postcss-pxtorem) scales with the viewport. Floor 16.5px so
+       dense small text never shrinks below today's size; grows smoothly to
+       19.5px on wide screens. ~16.5px ≤480px → ~19.5px ≥1280px. */
+    --base-font-size: clamp(16.5px, calc(15px + 0.3vw), 19.5px);
     --accent-brightness: brightness(0.7);
   }
 
   .dark {
-    --bg: #0a0b10;
-    --bg-rgb: 10, 11, 16;
-    --surface: #11131a;
-    --panel: #181c26;
-    --elevated: #242936;
-    --border: rgba(255, 255, 255, 0.08);
-    --border-strong: rgba(255, 255, 255, 0.15);
-    --muted: #7b8496;
-    --subtle: #9aa3b5;
-    --fg: #e8ebf2;
+    --bg: #16181d;
+    --bg-rgb: 22, 24, 29;
+    --surface: #1e2229;
+    --panel: #282d36;
+    --elevated: #343b47;
+    --border: rgba(255, 255, 255, 0.12);
+    --border-strong: rgba(255, 255, 255, 0.22);
+    --muted: #9ca3af;
+    --subtle: #d1d5db;
+    --fg: #f9fafb;
     --accent: #FFE600;
     --accent-rgb: 255, 230, 0;
     --accent-soft: #FFD700;
-    --accent-glow: rgba(255, 230, 0, 0.1);
+    --accent-glow: rgba(255, 230, 0, 0.15);
     --accent-brightness: none;
+  }
+
+  /* Large external monitors (> 1920px wide): keep growing past the 18px cap so
+     type is comfortable at 1440p/4K. Continuous with the base clamp at 1920px
+     (~18px) → up to 22px on very wide screens. Everything ≤1920px is unchanged. */
+  @media (min-width: 1920px) {
+    :root {
+      --base-font-size: clamp(19.5px, calc(11px + 0.5vw), 25px);
+    }
   }
 
   html {
     font-size: var(--base-font-size);
     background: var(--bg);
     color: var(--fg);
-    font-family: 'Outfit', 'Inter', system-ui, -apple-system, sans-serif;
+    font-family: var(--font-sans), "Inter", system-ui, -apple-system, "Segoe UI", "Helvetica Neue", sans-serif;
     line-height: 1.6;
     -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
   }
 
   body {
     background: var(--bg);
     color: var(--fg);
-    font-feature-settings: "cv02", "cv03", "cv04", "ss01";
+    /* Inter character variants: single-storey a (cv11), open 4 (cv03),
+       open 6/9 (cv04), tabular figures off, alternate-1 (ss01).
+       These are no-ops on other fonts so they're safe to leave. */
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11", "ss01";
     -webkit-font-smoothing: antialiased;
+  }
+
+  code, pre, kbd, samp {
+    font-family: var(--font-mono), "Fira Code", ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-feature-settings: "calt" 1, "liga" 1; /* Fira Code programming ligatures */
   }
 
   /* Prettier focus ring */
@@ -76,6 +100,47 @@
     border-radius: 10px;
   }
   ::-webkit-scrollbar-thumb:hover { background: var(--subtle); }
+}
+
+/* ────────────────────────────────────────────────────────────────────────
+ * Chunkier horizontal scrollbar for long Kanban / pipeline surfaces.
+ * Scoped via `.kanban-scroll` so it doesn't bleed into other scroll
+ * containers. Bigger click target, persistent visibility, and an accent
+ * hover state so the affordance is discoverable + grabbable on long pipelines.
+ * Falls back to the base scrollbar on browsers that ignore these prefixes.
+ * ──────────────────────────────────────────────────────────────────────── */
+.kanban-scroll {
+  /* Firefox + modern Chromium */
+  scrollbar-width: auto;
+  scrollbar-color: var(--border-strong) transparent;
+  scroll-behavior: smooth;
+  /* Always show the bar so users notice they can scroll horizontally */
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+.kanban-scroll::-webkit-scrollbar {
+  height: 14px;
+}
+.kanban-scroll::-webkit-scrollbar-track {
+  background: var(--border);
+  border-radius: 10px;
+  margin-inline: 1rem;
+}
+.kanban-scroll::-webkit-scrollbar-thumb {
+  background: var(--border-strong);
+  border: 3px solid transparent;
+  background-clip: padding-box;
+  border-radius: 10px;
+  min-width: 60px; /* don't let the thumb shrink to a sliver on very long tracks */
+  transition: background-color 120ms ease;
+}
+.kanban-scroll::-webkit-scrollbar-thumb:hover {
+  background: var(--accent);
+  background-clip: padding-box;
+}
+.kanban-scroll::-webkit-scrollbar-thumb:active {
+  background: var(--accent-soft);
+  background-clip: padding-box;
 }
 
 /* Sandpack should fill available space */
@@ -111,11 +176,20 @@ portal-nextjs-toast,
 .sp-console {
   background: var(--surface) !important;
 }
+/* Fira Code programming ligatures inside the code editors (CodeMirror, which
+   also backs Sandpack's editor). Monaco enables ligatures via its own
+   fontLigatures option. */
+.cm-editor,
+.cm-content,
+.sp-code-editor {
+  font-feature-settings: "calt" 1, "liga" 1;
+}
+
 .sp-console-list {
   padding: 8px !important;
 }
 .sp-console-item {
-  font-family: 'JetBrains Mono', monospace !important;
+  font-family: var(--font-mono), 'Fira Code', monospace !important;
   font-size: 12px !important;
   border-bottom: 1px solid var(--border) !important;
   padding: 6px 10px !important;
@@ -184,3 +258,351 @@ portal-nextjs-toast,
    Run overlay in v2.20.x — no CSS backstop needed. (Earlier broad selectors
    like `.sp-wrapper button[title="Run"]` accidentally hid our own toolbar
    button, since RunnableSnippet renders inside the .sp-wrapper.) */
+
+/* 
+   Premium Theme Transition (Spreading/Shrinking Light) 
+   Powered by the View Transitions API.
+   Optimized for 60fps+ with hardware acceleration.
+*/
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation: none;
+  mix-blend-mode: normal;
+  display: block;
+  unicode-bidi: isolate;
+  will-change: clip-path;
+  contain: paint;
+  isolation: isolate;
+}
+
+::view-transition-old(root) {
+  z-index: 1;
+}
+::view-transition-new(root) {
+  z-index: 9999;
+}
+
+.dark::view-transition-old(root) {
+  z-index: 9999;
+}
+.dark::view-transition-new(root) {
+  z-index: 1;
+}
+
+@keyframes reveal-circular {
+  from {
+    clip-path: circle(0% at var(--x) var(--y));
+  }
+  to {
+    clip-path: circle(120% at var(--x) var(--y));
+  }
+}
+
+@keyframes hide-circular {
+  from {
+    clip-path: circle(120% at var(--x) var(--y));
+  }
+  to {
+    clip-path: circle(0% at var(--x) var(--y));
+  }
+}
+
+/* Light to Dark: Grow a new dark layer */
+::view-transition-new(root) {
+  animation: 500ms cubic-bezier(0.4, 0, 0.2, 1) both reveal-circular;
+}
+
+/* Dark to Light: Shrink the current dark layer to reveal light below */
+.dark::view-transition-old(root) {
+  animation: 500ms cubic-bezier(0.4, 0, 0.2, 1) both hide-circular;
+}
+
+/* 
+   Funky 'Blobby' Animation 
+   Creates an organic, morphing shape effect for template icons.
+*/
+@keyframes blobby {
+  0% {
+    border-radius: 30% 70% 70% 30% / 30% 30% 70% 70%;
+  }
+  25% {
+    border-radius: 58% 42% 75% 25% / 76% 46% 54% 24%;
+  }
+  50% {
+    border-radius: 50% 50% 33% 67% / 55% 27% 73% 45%;
+  }
+  75% {
+    border-radius: 33% 67% 58% 42% / 63% 68% 32% 37%;
+  }
+  100% {
+    border-radius: 30% 70% 70% 30% / 30% 30% 70% 70%;
+  }
+}
+
+/* ─────────────────────────────────────────────────────────────────
+   Blog editor — Tiptap writing surface
+   Targets the ProseMirror DOM under `.tiptap-prose`.
+   Themed via existing CSS vars so light/dark Just Work.
+   ──────────────────────────────────────────────────────────────── */
+.tiptap-prose {
+  font-size: 1.125rem;
+  line-height: 1.75;
+  color: var(--fg);
+  outline: none;
+  min-height: 320px;
+  padding: 0.5rem 0 6rem;
+}
+.tiptap-prose > * + * { margin-top: 1em; }
+
+.tiptap-prose h1,
+.tiptap-prose h2,
+.tiptap-prose h3 {
+  color: var(--fg);
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+  margin-top: 1.5em;
+}
+.tiptap-prose h1 { font-size: 2.25rem; }
+.tiptap-prose h2 { font-size: 1.75rem; }
+.tiptap-prose h3 { font-size: 1.375rem; }
+
+.tiptap-prose p { color: var(--fg); }
+.tiptap-prose strong { color: var(--fg); font-weight: 700; }
+.tiptap-prose em { font-style: italic; }
+.tiptap-prose s { text-decoration: line-through; opacity: 0.7; }
+.tiptap-prose u { text-decoration: underline; text-underline-offset: 3px; }
+
+.tiptap-prose a,
+.tiptap-prose .tiptap-link {
+  color: var(--accent);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  text-decoration-thickness: 1.5px;
+  cursor: text;
+}
+.tiptap-prose a:hover { color: var(--accent-soft); }
+
+.tiptap-prose mark {
+  background: rgba(var(--accent-rgb), 0.25);
+  color: inherit;
+  padding: 0 0.15em;
+  border-radius: 0.2em;
+}
+
+.tiptap-prose code:not(pre code) {
+  background: var(--panel);
+  color: var(--accent);
+  padding: 0.15em 0.4em;
+  border-radius: 0.4em;
+  font-size: 0.9em;
+  border: 1px solid var(--border);
+  font-family: var(--font-mono), 'Fira Code', ui-monospace, monospace;
+}
+
+.tiptap-prose blockquote {
+  border-left: 3px solid var(--accent);
+  padding: 0.25rem 0 0.25rem 1.25rem;
+  color: var(--muted);
+  font-style: italic;
+  font-size: 1.15em;
+  margin: 1.5em 0;
+}
+
+.tiptap-prose ul,
+.tiptap-prose ol {
+  padding-left: 1.5rem;
+  margin: 1em 0;
+}
+.tiptap-prose ul { list-style: disc; }
+.tiptap-prose ol { list-style: decimal; }
+.tiptap-prose li { margin: 0.25em 0; }
+.tiptap-prose li::marker { color: var(--muted); }
+.tiptap-prose li > p { margin: 0; }
+
+.tiptap-prose hr {
+  border: none;
+  border-top: 1px solid var(--border);
+  margin: 2.5em auto;
+  width: 60%;
+}
+
+.tiptap-prose .tiptap-image {
+  border-radius: 1rem;
+  border: 1px solid var(--border);
+  margin: 1.75em auto;
+  max-width: 100%;
+  display: block;
+  box-shadow: 0 8px 24px -10px rgba(0, 0, 0, 0.25);
+}
+
+.tiptap-prose pre,
+.tiptap-prose .tiptap-code-block {
+  background: var(--panel);
+  color: var(--fg);
+  border: 1px solid var(--border);
+  border-radius: 0.85rem;
+  padding: 1rem 1.1rem;
+  margin: 1.5em 0;
+  font-family: var(--font-mono), 'Fira Code', ui-monospace, monospace;
+  font-size: 0.9rem;
+  line-height: 1.55;
+  overflow-x: auto;
+}
+.tiptap-prose pre code,
+.tiptap-prose .tiptap-code-block code {
+  background: transparent;
+  color: inherit;
+  padding: 0;
+  border: 0;
+  font-size: inherit;
+}
+
+/* Lowlight syntax tokens (subset) */
+.tiptap-prose .hljs-comment,
+.tiptap-prose .hljs-quote { color: var(--muted); font-style: italic; }
+.tiptap-prose .hljs-keyword,
+.tiptap-prose .hljs-selector-tag,
+.tiptap-prose .hljs-literal { color: #c084fc; }
+.tiptap-prose .hljs-string,
+.tiptap-prose .hljs-attr { color: #34d399; }
+.tiptap-prose .hljs-number,
+.tiptap-prose .hljs-built_in { color: #fbbf24; }
+.tiptap-prose .hljs-title,
+.tiptap-prose .hljs-name,
+.tiptap-prose .hljs-section { color: #60a5fa; }
+.tiptap-prose .hljs-tag { color: var(--accent); }
+
+/* Code-peek tokens used by /playgrounds tiles. Same palette as tiptap so
+   inline snippets stay visually consistent across the app. */
+.code-peek .hljs-comment,
+.code-peek .hljs-quote { color: rgba(148, 163, 184, 0.6); font-style: italic; }
+.code-peek .hljs-keyword,
+.code-peek .hljs-selector-tag,
+.code-peek .hljs-literal { color: #c084fc; }
+.code-peek .hljs-string,
+.code-peek .hljs-attr { color: #6ee7b7; }
+.code-peek .hljs-number,
+.code-peek .hljs-built_in { color: #fbbf24; }
+.code-peek .hljs-title,
+.code-peek .hljs-title.function_,
+.code-peek .hljs-name,
+.code-peek .hljs-section { color: #60a5fa; }
+.code-peek .hljs-tag { color: #f87171; }
+.code-peek .hljs-tag .hljs-name { color: #f87171; }
+.code-peek .hljs-tag .hljs-attr { color: #fbbf24; }
+.code-peek .hljs-params { color: #e2e8f0; }
+.code-peek .hljs-variable,
+.code-peek .hljs-template-variable { color: #f0abfc; }
+
+/* Placeholder shown on empty paragraphs / headings via Tiptap Placeholder ext */
+.tiptap-prose p.is-editor-empty:first-child::before,
+.tiptap-prose h1.is-empty::before,
+.tiptap-prose h2.is-empty::before,
+.tiptap-prose h3.is-empty::before,
+.tiptap-prose p.is-empty::before {
+  content: attr(data-placeholder);
+  color: var(--fg);
+  opacity: 0.25;
+  float: left;
+  height: 0;
+  pointer-events: none;
+}
+
+/* Selection */
+.tiptap-prose ::selection {
+  background: rgba(var(--accent-rgb), 0.25);
+}
+
+.tiptap-editor-content { width: 100%; }
+
+/* ─────────────────────────────────────────────────────────────────
+   Collaborative CodeMirror 6 Peer Presence (y-codemirror.next)
+   ──────────────────────────────────────────────────────────────── */
+.cm-ySelection {
+  background-color: rgba(var(--accent-rgb), 0.15);
+  transition: background-color 0.2s ease-in-out;
+}
+
+.cm-yCursor {
+  position: relative;
+  border-left: 2px solid;
+  border-right: none;
+  margin-left: -1px;
+  margin-right: -1px;
+  box-sizing: border-box;
+  pointer-events: none;
+  display: inline-block;
+  height: 1.4em;
+  vertical-align: middle;
+}
+
+/* Collaborative peer tooltip label above cursor */
+.cm-yCursor-info {
+  position: absolute;
+  top: -1.5em;
+  left: -2px;
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1;
+  color: #ffffff;
+  padding: 3px 6px;
+  border-radius: 4px;
+  white-space: nowrap;
+  user-select: none;
+  pointer-events: none;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4), 0 2px 4px rgba(0, 0, 0, 0.2);
+  z-index: 50;
+  
+  /* Fade out label after 1.5s of inactivity */
+  animation: cm-cursor-label-fade 2s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+  animation-delay: 1.5s;
+}
+
+/* Beautiful dynamic arrow pointer beneath the label, matching the user's color */
+.cm-yCursor-info::after {
+  content: "";
+  position: absolute;
+  bottom: -3px;
+  left: 6px;
+  width: 6px;
+  height: 6px;
+  background-color: inherit;
+  transform: rotate(45deg);
+  z-index: -1;
+}
+
+@keyframes cm-cursor-label-fade {
+  0% { opacity: 1; }
+  75% { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+/* Keep cursor label visible on line hover or focus */
+.cm-editor:hover .cm-yCursor-info,
+.cm-yCursor:hover .cm-yCursor-info {
+  opacity: 1 !important;
+  animation: none;
+}
+
+/* ────────────────────────────────────────────────────────────────────────
+   Readability overrides for small text (bumps 10px text to 12px baseline, 
+   fluidly scaling with viewport via postcss-pxtorem to rem-base).
+   ──────────────────────────────────────────────────────────────────────── */
+.text-\[10px\] {
+  font-size: 12px !important;
+}
+
+/* ────────────────────────────────────────────────────────────────────────
+   Workspace content width expansion & transitions when sidebar collapses
+   ──────────────────────────────────────────────────────────────────────── */
+.workspace-content {
+  transition: max-width 300ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+body.sidebar-collapsed .workspace-content {
+  max-width: 80rem; /* expanded layout to show content more freely when sidebar is collapsed */
+}
+
+

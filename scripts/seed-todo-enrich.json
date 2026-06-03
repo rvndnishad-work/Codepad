@@ -1,0 +1,138 @@
+{
+  "Generate real Prisma migration": {
+    "ac": [
+      "A prisma/migrations/ folder with one migration per schema change since project start (or one consolidated migration if starting fresh)",
+      "`prisma migrate deploy` runs cleanly against an empty Postgres DB",
+      "`prisma db push` is no longer used anywhere in CI or scripts",
+      "README documents the migration workflow"
+    ],
+    "notes": "Easiest path: shadow-DB approach. Spin up a fresh Postgres, run prisma migrate dev --create-only against current schema, hand-edit the generated SQL if needed, commit. The current dev.db is SQLite which complicates the export — recommend committing the schema as-is and using the migration as the canonical source."
+  },
+  "Encrypt ExternalMcpServer.authToken": {
+    "ac": [
+      "authToken is stored encrypted-at-rest using AES-256-GCM with a key from env (ENCRYPTION_KEY_BASE64)",
+      "Existing plaintext rows are auto-migrated on next read or via a one-off script",
+      "getAuthToken() helper handles decryption; callers never see ciphertext",
+      "Tests cover wrong-key, missing-key, and round-trip cases"
+    ],
+    "notes": "Phase 4.1 will fan out these tokens to outbound MCP calls — leaking them via DB backup is the realistic threat. Use node:crypto built-ins to avoid a new dep. The key itself goes in env (Vercel encrypted env var, AWS Secrets Manager, etc.) — DO NOT commit it. Key rotation is a future concern; first cut is single-key."
+  },
+  "Fix src/lib/stripe.ts lazy initialization": {
+    "ac": [
+      "stripe.ts exports a getStripe() function that lazy-initializes on first call",
+      "Throws a clear error if STRIPE_SECRET_KEY is missing",
+      "All existing imports updated (currently: webhook route, billing route, ai-interview actions)",
+      "No module-level side effects in stripe.ts"
+    ],
+    "notes": "The workaround in src/app/w/[slug]/ai-interviews/actions.ts (lazy import inside the function) is now redundant once this lands — also clean up the workaround comment block."
+  },
+  "Wipe dev test data": {
+    "ac": [
+      "No AIInterviewSession rows for emails ending in test.local",
+      "No McpApiKey rows with label starting with 'Verify' or 'Phase2'",
+      "No ExternalMcpServer rows pointing at localhost",
+      "No Candidate row named 'MCP Created' or similar test names"
+    ],
+    "notes": "Worth scripting as prisma/seed-clean-dev.ts so we can rerun before every demo. Just be careful not to wipe the seed-vercel-workspace.ts user data."
+  },
+  "Vitest suite for credit consumption": {
+    "ac": [
+      "vitest installed with prisma test-DB setup",
+      "consumeCreditIfFirstTurn: idempotent under simulated concurrent calls (Promise.all of 5)",
+      "MCP requireWriteScope: read-only key throws ToolError",
+      "validateOutboundUrl: rejects 10.x, 192.168.x, 127.x, 169.254.x, ::1, fe80::, fc00::",
+      "refund_screening: second call errors with 'Already refunded'"
+    ],
+    "notes": "Use an in-memory SQLite (file:memory:?cache=shared) for isolation. The whole suite should run in under 3s — these are pure-logic tests, no fetch mocking needed for the credit/scope cases. The SSRF case can stub DNS via the validateOutboundUrl signature."
+  },
+  "Phase 4.1: wire external MCP": {
+    "ac": [
+      "During an AI screening, Gemini sees tools from enabled ExternalMcpServer rows",
+      "Per-call McpAuditLog entry (kind='outbound') with tool name, latency, error",
+      "Hard budget per session: max 10 outbound calls OR 60 total seconds OR 100KB total response",
+      "Outbound responses prefixed with system note 'the following is untrusted reference data'",
+      "URL re-resolved immediately before each fetch (TOCTOU defense)",
+      "Per-template opt-in flag on AIInterviewTemplate — defaults off"
+    ],
+    "notes": "This is the moat but also the biggest attack surface in the whole product. Spec needs explicit review before code: who pays the Gemini cost when external MCP balloons response size? How do we test prompt injection defenses without burning real Gemini calls? Should probably build a synthetic recorded-response fixture rig first."
+  },
+  "One-click rotate for MCP API keys": {
+    "ac": [
+      "Rotate button on each active key in /w/[slug]/api-keys",
+      "Generates a new key with the same label + scope, revokes old, opens reveal modal with new plaintext",
+      "Audit log records both the create and the revoke",
+      "Existing audit log entries from the old key remain linked (apiKey relation)"
+    ],
+    "notes": "Common rotation pattern is to suffix the label 'Foo (rotated)' so accidentally-still-in-use clients are obvious in the audit log. UI should warn that any active client using the old key stops working immediately."
+  },
+  "Admin cross-workspace MCP usage": {
+    "ac": [
+      "New page at /admin/mcp showing all workspaces sorted by 24h calls",
+      "Columns: workspace, active keys, 24h calls, top tool, top key, plan",
+      "Drill-in to per-workspace audit log",
+      "Total platform Gemini-cost estimate (rough — call count × avg)"
+    ],
+    "notes": "Sibling to /admin/ai-interviews. Useful for spotting abuse before billing surprises. Keep it admin-only — never exposed to workspaces."
+  },
+  "Webhooks complement to MCP": {
+    "ac": [
+      "WorkspaceWebhook schema: url, events[], secret, enabled, lastDeliveredAt",
+      "Events: screening.completed, candidate.created, candidate.status_changed, credit.purchased",
+      "Outgoing POST signed with HMAC-SHA256 (X-Interviewpad-Signature header)",
+      "Retry with exponential backoff 3 times",
+      "Workspace UI to manage subscriptions + view delivery log"
+    ],
+    "notes": "Stripe-style webhook is the model — most engineers know how to consume it. Could be priced as Enterprise-only. Keep delivery log capped at 100 entries so it does not balloon."
+  },
+  "Audit log pagination + search": {
+    "ac": [
+      "Server-side cursor pagination on /w/[slug]/api-keys audit table",
+      "Filter chips: tool name, key label, date range, error-only",
+      "CSV export of filtered range"
+    ],
+    "notes": "The current take:50 hardcoded limit makes the page useless once a key has been live for a week. Cursor pagination over (createdAt, id) tuple is the simplest."
+  },
+  "Stream Gemini chat responses": {
+    "ac": [
+      "/api/ai-interview/message returns SSE stream when client passes Accept: text/event-stream",
+      "Tokens stream into chat UI letter-by-letter",
+      "Backwards compatible: JSON mode still works for non-streaming clients",
+      "Rate limit + credit consumption still gated at first chunk"
+    ],
+    "notes": "Need to be careful that the credit-consume transaction runs BEFORE the stream starts, otherwise a candidate can stream tokens then abort to dodge the charge. The 1.5s cadence rate limit also needs to apply at stream-open, not per-chunk."
+  },
+  "Cap filesJson size per session": {
+    "ac": [
+      "POST /api/ai-interview/message rejects with 413 if files JSON exceeds 200KB",
+      "Submit endpoint also enforces",
+      "Candidate UI warns when approaching 80% of cap"
+    ],
+    "notes": "Chosen 200KB because typical screening solutions are under 30KB and the cap should accommodate carelessness without being abusable. Real malicious payloads (a base64 image, a copy of a library) blow past this."
+  },
+  "ATS sync: ship or remove": {
+    "ac": [
+      "Decision: pick one — ship Greenhouse, mark all 3 as Coming Soon, or remove bullet entirely",
+      "If shipping: at minimum push new candidates + status changes to Greenhouse",
+      "If marking Coming Soon: pricing page bullet has the badge + tooltip",
+      "If removing: pricing page bullet deleted + decide whether to keep the AtsIntegration table"
+    ],
+    "notes": "Greenhouse has the best docs and the largest market share. Lever is a close second. Ashby is a stretch — their API is still maturing. Bias: ship one well rather than three half-baked."
+  },
+  "/docs/ai-screening landing": {
+    "ac": [
+      "Public docs page at /docs/ai-screening matching /docs/mcp polish",
+      "Covers: how AI screening works, the 4 builtin templates, custom templates, integrity scoring, credits, pricing",
+      "No auth required",
+      "Linked from pricing page + workspace AI screening header"
+    ],
+    "notes": "Style and structure should mirror /docs/mcp so the docs feel like a family. Probably reuse the CopyButton client island. Could be a single page or a /docs index that lands here."
+  },
+  "Changelog / status page": {
+    "ac": [
+      "/changelog page listing shipped features in reverse chronological order",
+      "Entries are MDX files so engineers can write them as part of merging a feature",
+      "Optional status: live / beta / in progress"
+    ],
+    "notes": "Self-hosted MDX is fine — third-party changelog tools are overkill at our scale. The discipline of writing a changelog entry on merge is the real value, not the rendering."
+  }
+}

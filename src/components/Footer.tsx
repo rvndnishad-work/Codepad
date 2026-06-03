@@ -14,12 +14,12 @@ export default function Footer() {
           {/* Brand Column */}
           <div className="space-y-6">
             <Link href="/" className="flex items-center gap-3 group">
-              <div className="w-8 h-8 rounded-xl bg-accent grid place-items-center shadow-[0_0_20px_rgba(var(--accent-rgb),0.3)] transition-transform group-hover:scale-110">
-                 <LogoMark size={20} className="text-bg" />
-              </div>
+              <LogoMark size={32} className="drop-shadow-[0_0_8px_rgba(var(--accent-rgb),0.35)] transition-transform group-hover:scale-110" />
               <div className="flex flex-col leading-none">
-                 <span className="font-black text-lg tracking-tighter text-fg">Interviewpad</span>
-                 <span className="text-[9px] font-bold text-accent uppercase tracking-[0.3em]">Pro Sandbox</span>
+                 <span className="font-extrabold text-lg tracking-tight text-fg">
+                   Interview<span className="text-accent font-medium">pad</span>
+                 </span>
+                 <span className="text-[9px] font-bold text-accent uppercase tracking-[0.3em] mt-0.5">Pro Sandbox</span>
               </div>
             </Link>
             <p className="text-muted text-sm leading-relaxed max-w-xs">
@@ -42,7 +42,7 @@ export default function Footer() {
           <div>
             <h4 className="text-xs font-black uppercase tracking-[0.2em] text-accent mb-6">Product</h4>
             <ul className="space-y-4 text-sm font-bold">
-              <li><Link href="/" className="text-muted hover:text-fg transition-colors">Templates</Link></li>
+              <li><Link href="/playgrounds" className="text-muted hover:text-fg transition-colors">Playgrounds</Link></li>
               <li><Link href="/explore" className="text-muted hover:text-fg transition-colors">Explore</Link></li>
               <li><Link href="/play" className="text-muted hover:text-fg transition-colors">New Sandbox</Link></li>
               <li><Link href="/dashboard" className="text-muted hover:text-fg transition-colors">Dashboard</Link></li>
@@ -68,20 +68,20 @@ export default function Footer() {
             </ul>
           </div>
 
-          {/* Stats Column */}
-          <div className="bg-surface border border-border rounded-2xl p-6 flex flex-col justify-center gap-4">
+          {/* Compliance & Trust Column */}
+          <div className="bg-surface border border-border rounded-2xl p-6 flex flex-col justify-center gap-4 hover:border-emerald-500/20 transition-all">
              <div className="flex items-center gap-3">
-                <Zap className="w-5 h-5 text-accent" />
+                <ShieldCheck className="w-6 h-6 text-emerald-400" />
                 <div className="flex flex-col">
-                   <span className="text-2xl font-black text-fg leading-none">0ms</span>
-                   <span className="text-xs font-black uppercase tracking-widest text-muted/20">Cold Start</span>
+                   <span className="text-sm font-black text-fg leading-none">SOC2 Type II</span>
+                   <span className="text-[9px] font-bold uppercase tracking-widest text-muted/40">In Progress / Compliant</span>
                 </div>
              </div>
              <div className="flex items-center gap-3">
-                <Cpu className="w-5 h-5 text-accent" />
+                <Lock className="w-6 h-6 text-emerald-400" />
                 <div className="flex flex-col">
-                   <span className="text-2xl font-black text-fg leading-none">100%</span>
-                   <span className="text-xs font-black uppercase tracking-widest text-muted/20">V8 Performance</span>
+                   <span className="text-sm font-black text-fg leading-none">GDPR Compliant</span>
+                   <span className="text-[9px] font-bold uppercase tracking-widest text-muted/40">100% Data Protection</span>
                 </div>
              </div>
           </div>

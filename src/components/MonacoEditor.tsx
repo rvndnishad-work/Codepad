@@ -23,6 +23,13 @@ const EXT_LANG: Record<string, string> = {
   scss: "scss",
   svelte: "html",
   vue: "html",
+  py: "python",
+  go: "go",
+  java: "java",
+  cpp: "cpp",
+  h: "cpp",
+  hpp: "cpp",
+  rs: "rust",
 };
 
 const EXT_COLOR: Record<string, string> = {
@@ -36,6 +43,13 @@ const EXT_COLOR: Record<string, string> = {
   scss: "#CF649A",
   svelte: "#FF3E00",
   vue: "#42B883",
+  py: "#3776AB",
+  go: "#00ADD8",
+  java: "#007396",
+  cpp: "#00599C",
+  h: "#00599C",
+  hpp: "#00599C",
+  rs: "#CE412B",
 };
 
 function languageFor(path: string) {
@@ -295,6 +309,12 @@ export default function MonacoEditor({ fontSize, readOnly = false }: { fontSize:
   }, []);
 
   const handleEditorWillMount = useCallback((monaco: Monaco) => {
+    // Monaco's model registry is a global singleton that survives React
+    // unmounts. Without this, navigating from one playground to another with
+    // overlapping file paths (e.g. /index.js) makes the editor re-attach to
+    // the previous playground's cached model, showing stale code.
+    monaco.editor.getModels().forEach((m: any) => m.dispose());
+
     // Nano Banana Pro Theme Definition
     monaco.editor.defineTheme("nano-banana-pro", {
       base: "vs-dark",
@@ -522,7 +542,7 @@ export default function MonacoEditor({ fontSize, readOnly = false }: { fontSize:
             readOnly: readOnly,
             minimap: { enabled: false },
             fontSize: fontSize,
-            fontFamily: "'JetBrains Mono', monospace",
+            fontFamily: "var(--font-mono), 'Fira Code', monospace",
             fontLigatures: true,
             automaticLayout: true,
             mouseWheelZoom: false,

@@ -35,11 +35,11 @@ export default function NotFound() {
 
           <div className="mt-7 flex flex-col sm:flex-row gap-2 items-center justify-center">
             <Link
-              href="/"
+              href="/playgrounds"
               className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-accent hover:bg-accent-soft text-white text-sm font-medium shadow-soft transition"
             >
               <Home className="w-4 h-4" />
-              Browse templates
+              Browse playgrounds
               <ArrowRight className="w-4 h-4" />
             </Link>
             <Link

@@ -22,6 +22,12 @@ import {
   Code2,
 } from "lucide-react";
 import LandingDemo from "./LandingDemo";
+import {
+  TemplateCardShell,
+  CardTitleRow,
+  CardSubtitle,
+  CardChip,
+} from "./TemplateCardShell";
 
 type Welcome = {
   name: string | null;
@@ -48,103 +54,43 @@ const FEATURED_DESCRIPTIONS: Record<string, string> = {
   typescript: "Strict types out of the box, ready to break things safely.",
 };
 
-function Tile({ t }: { t: TemplateDef }) {
-  const meta = templateIcon[t.id];
-  const Icon = meta?.Icon;
-  const chips = tileChips(t);
+function Tile({ t, showGroupLabel = false }: { t: TemplateDef; showGroupLabel?: boolean }) {
+  // Only show the subtitle if it's actually informative — when the card is
+  // already nested under a group section header (e.g. "Frameworks"), the
+  // group label is redundant. `showGroupLabel` lets the search/filter view
+  // turn it back on when cards are mixed together.
+  const subtitle =
+    t.subtitle ?? (showGroupLabel ? groupLabel(t.group) : undefined);
+
   return (
-    <Link
-      href={`/play?template=${t.id}`}
-      className="group relative rounded-xl border border-border hover:border-border-strong transition shadow-tile hover:shadow-tile-hover p-4 flex flex-col gap-3"
-    >
-      <div
-        className="w-11 h-11 rounded-lg grid place-items-center border border-border"
-        style={{ 
-          background: meta?.bg ?? "rgba(var(--bg-rgb), 0.03)",
-          filter: "var(--accent-brightness, none)"
-        }}
-      >
-        {Icon ? (
-          <Icon width={22} height={22} style={{ color: meta?.color }} />
-        ) : (
-          <span className="text-xs font-semibold">{t.label}</span>
-        )}
+    <TemplateCardShell href={`/play?template=${t.id}`} templateId={t.id}>
+      <CardTitleRow>{t.title}</CardTitleRow>
+      {subtitle && <CardSubtitle>{subtitle}</CardSubtitle>}
+      <div className="flex flex-wrap gap-1 mt-1">
+        {tileChips(t).map((c) => (
+          <CardChip key={c}>{c}</CardChip>
+        ))}
       </div>
-      <div className="flex flex-col">
-        <span className="text-sm font-medium text-fg">{t.title}</span>
-        <span className="text-xs text-muted">
-          {t.subtitle ?? groupLabel(t.group)}
-        </span>
-      </div>
-      {chips.length > 0 && (
-        <div className="flex flex-wrap gap-1">
-          {chips.map((c) => (
-            <span
-              key={c}
-              className="inline-flex items-center px-1.5 py-0.5 rounded border border-border bg-panel text-xs text-subtle"
-            >
-              {c}
-            </span>
-          ))}
-        </div>
-      )}
-      <span
-        aria-hidden
-        className="absolute inset-0 rounded-xl pointer-events-none ring-0 group-hover:ring-1 ring-accent/30 transition"
-      />
-    </Link>
+    </TemplateCardShell>
   );
 }
 
 function FeaturedTile({ t }: { t: TemplateDef }) {
-  const meta = templateIcon[t.id];
-  const Icon = meta?.Icon;
   return (
-    <Link
-      href={`/play?template=${t.id}`}
-      className="group relative rounded-2xl border border-border hover:border-border-strong bg-panel/60 hover:bg-elevated p-5 flex flex-col gap-4 shadow-tile hover:shadow-tile-hover transition overflow-hidden"
-    >
-      <div
-        aria-hidden
-        className="absolute -right-14 -top-14 w-40 h-40 rounded-full blur-3xl opacity-30 group-hover:opacity-50 transition"
-        style={{ background: meta?.color ?? "transparent" }}
-      />
-      <div className="relative flex items-center justify-between">
-        <div
-          className="w-14 h-14 rounded-xl grid place-items-center border border-border"
-          style={{ 
-            background: meta?.bg ?? "rgba(255,255,255,0.04)",
-            filter: "var(--accent-brightness, none)"
-          }}
-        >
-          {Icon ? (
-            <Icon width={30} height={30} style={{ color: meta?.color }} />
-          ) : (
-            <span className="text-xs font-semibold">{t.label}</span>
-          )}
-        </div>
-        <ArrowUpRight className="w-4 h-4 text-muted group-hover:text-fg transition" />
-      </div>
-      <div className="relative">
-        <div className="text-base font-semibold text-fg">{t.title}</div>
-        <p className="text-xs text-muted mt-1 leading-relaxed">
-          {FEATURED_DESCRIPTIONS[t.id] ?? t.subtitle ?? groupLabel(t.group)}
-        </p>
-      </div>
-      <div className="relative flex items-center gap-1.5 mt-auto">
+    <TemplateCardShell href={`/play?template=${t.id}`} templateId={t.id}>
+      <CardTitleRow>{t.title}</CardTitleRow>
+      <CardSubtitle>
+        {FEATURED_DESCRIPTIONS[t.id] ?? t.subtitle ?? groupLabel(t.group)}
+      </CardSubtitle>
+      <div className="flex items-center gap-1.5 mt-1">
         {tileChips(t).map((c) => (
-          <span
-            key={c}
-            className="inline-flex items-center px-1.5 py-0.5 rounded border border-border bg-surface text-xs text-subtle"
-          >
-            {c}
-          </span>
+          <CardChip key={c}>{c}</CardChip>
         ))}
-        <span className="ml-auto text-xs text-accent font-black">
+        <span className="ml-auto text-[11px] text-accent font-black">
           Start →
         </span>
       </div>
-    </Link>
+    </TemplateCardShell>
   );
 }
 
@@ -386,69 +332,37 @@ export default function TemplatePicker({
                   Explore all →
                 </Link>
               </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                {featured.slice(0, 6).map((s) => {
-                  const tpl = templatesById[s.template];
-                  const meta = templateIcon[s.template];
-                  const accentColor = meta?.color ?? "var(--accent)";
-                  return (
-                    <Link
-                      key={s.id}
-                      href={`/play/${s.slug}`}
-                      className="group flex flex-col gap-2.5 rounded-xl border border-border hover:border-border-strong bg-panel/70 hover:bg-elevated p-4 transition"
-                    >
-                      <div className="flex items-center gap-3">
-                        <div 
-                          className="w-9 h-9 rounded-lg border border-border bg-surface grid place-items-center shrink-0"
-                          style={{ filter: "var(--accent-brightness, none)" }}
-                        >
-                          <TemplateLogo id={s.template} size={18} />
-                        </div>
-                        <div className="min-w-0 flex-1">
-                          <div className="text-sm font-medium truncate">
-                            {s.title}
-                          </div>
-                          <div 
-                            className="text-[11px] font-bold uppercase tracking-wider transition-colors"
-                            style={{ 
-                              color: accentColor.startsWith("var") ? accentColor : accentColor,
-                              filter: "var(--accent-brightness, none)"
-                            }}
-                          >
-                            {tpl?.title ?? s.template}
-                          </div>
-                        </div>
-                        <ArrowUpRight className="w-4 h-4 text-muted group-hover:text-fg transition" />
-                      </div>
-                      {s.tags.length > 0 && (
-                        <div className="flex flex-wrap gap-1">
-                          {s.tags.slice(0, 4).map((t) => (
-                            <span
-                              key={t}
-                              className="inline-flex items-center px-1.5 py-0.5 rounded border border-border bg-surface text-xs text-subtle"
-                            >
-                              #{t}
-                            </span>
-                          ))}
-                        </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                {featured.slice(0, 6).map((s) => (
+                  <TemplateCardShell
+                    key={s.id}
+                    href={`/play/${s.slug}`}
+                    templateId={s.template}
+                  >
+                    <CardTitleRow>{s.title}</CardTitleRow>
+                    <div className="flex items-center gap-1.5 text-[11px] text-muted truncate">
+                      {s.author?.image ? (
+                        <Image
+                          src={s.author.image}
+                          alt={s.author.name ?? ""}
+                          width={14}
+                          height={14}
+                          className="rounded-full border border-border shrink-0"
+                        />
+                      ) : (
+                        <div className="w-3.5 h-3.5 rounded-full bg-surface border border-border shrink-0" />
                       )}
-                      <div className="flex items-center gap-2 text-xs text-muted pt-1">
-                        {s.author?.image ? (
-                          <Image
-                            src={s.author.image}
-                            alt={s.author.name ?? ""}
-                            width={16}
-                            height={16}
-                            className="rounded-full border border-border shrink-0"
-                          />
-                        ) : (
-                          <div className="w-4 h-4 rounded-full bg-surface border border-border shrink-0" />
-                        )}
-                        <span className="truncate">{s.author?.name ?? "anonymous"}</span>
+                      <span className="truncate">{s.author?.name ?? "anonymous"}</span>
+                    </div>
+                    {s.tags.length > 0 && (
+                      <div className="flex flex-wrap gap-1 mt-1">
+                        {s.tags.slice(0, 2).map((tag) => (
+                          <CardChip key={tag}>#{tag}</CardChip>
+                        ))}
                       </div>
-                    </Link>
-                  );
-                })}
+                    )}
+                  </TemplateCardShell>
+                ))}
               </div>
             </section>
           )}
@@ -470,37 +384,37 @@ export default function TemplatePicker({
         </div>
 
         {/* Search inside the section */}
-        <div className="relative mb-3 max-w-md">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted" />
+        <div className="relative mb-4 group max-w-lg">
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted group-focus-within:text-accent transition-colors" />
           <input
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Search templates — try “react”, “svelte”, “mobx”…"
-            className="w-full pl-10 pr-4 py-2.5 rounded-lg bg-panel border border-border focus:border-accent/60 text-sm outline-none placeholder:text-muted"
+            className="w-full pl-12 pr-4 py-3.5 rounded-2xl bg-surface border border-border focus:border-accent/40 text-sm outline-none placeholder:text-muted/50 transition-all focus:shadow-[0_0_20px_rgba(var(--accent-rgb),0.05)]"
           />
         </div>
-
+ 
         {/* Filter chips */}
-        <div className="flex flex-wrap gap-2 items-center mb-6">
+        <div className="flex flex-wrap gap-2 items-center mb-10">
           {FILTERS.map((f) => {
             const active = filter === f.key;
             return (
               <button
                 key={f.key}
                 onClick={() => setFilter(f.key)}
-                className={`px-3 py-1.5 rounded-full text-xs font-medium border transition ${
+                className={`px-5 py-2 rounded-xl text-xs font-black uppercase tracking-widest border transition-all ${
                   active
-                    ? "bg-accent text-bg border-accent"
-                    : "bg-panel border-border text-subtle hover:text-fg hover:border-border-strong"
+                    ? "bg-accent text-bg border-accent shadow-[0_10px_20px_-5px_rgba(var(--accent-rgb),0.3)]"
+                    : "bg-surface border-border text-muted hover:text-fg hover:border-border-strong"
                 }`}
               >
                 {f.label}
               </button>
             );
           })}
-          <span className="ml-auto text-xs text-muted">
+          <span className="ml-auto text-[10px] font-black uppercase tracking-[0.2em] text-muted/50">
             {filtered.length}{" "}
-            {filtered.length === 1 ? "template" : "templates"}
+            {filtered.length === 1 ? "Result" : "Results"}
           </span>
         </div>
 
@@ -510,15 +424,19 @@ export default function TemplatePicker({
             const items = filtered.filter((t) => t.group === g.key);
             if (!items.length) return null;
             return (
-              <section key={g.key} className="mb-10">
-                <div className="flex items-center gap-3 mb-4">
-                  <h3 className="text-xs font-black tracking-widest text-muted uppercase">
-                    {g.label}
-                  </h3>
-                  <div className="flex-1 h-px bg-border" />
-                  <span className="text-xs text-muted">{items.length}</span>
+              <section key={g.key} className="mb-16 last:mb-0">
+                <div className="flex items-center gap-4 mb-8">
+                  <div className="flex flex-col">
+                    <h3 className="text-xl font-black text-fg tracking-tight">
+                      {g.label}
+                    </h3>
+                    <div className="text-[10px] font-black uppercase tracking-[0.2em] text-accent mt-0.5">
+                      {items.length} {items.length === 1 ? "Technology" : "Technologies"}
+                    </div>
+                  </div>
+                  <div className="flex-1 h-px bg-gradient-to-r from-border via-border/50 to-transparent" />
                 </div>
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                   {items.map((t) => (
                     <Tile key={t.id} t={t} />
                   ))}
@@ -527,9 +445,11 @@ export default function TemplatePicker({
             );
           })
         ) : (
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {filtered.map((t) => (
-              <Tile key={t.id} t={t} />
+              // Mixed across groups — show the group label so users still
+              // know what category each card belongs to.
+              <Tile key={t.id} t={t} showGroupLabel />
             ))}
           </div>
         )}

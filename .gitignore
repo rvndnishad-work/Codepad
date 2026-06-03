@@ -5,3 +5,12 @@ out
 *.db
 *.db-journal
 .DS_Store
+
+# graphify (knowledge-graph tool) local cache — do not track per-file AST blobs
+graphify-out/cache/
+
+# TS incremental build info
+tsconfig.tsbuildinfo
+
+# Local scratch
+tmp/

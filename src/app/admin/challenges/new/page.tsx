@@ -1,12 +1,5 @@
 import ChallengeForm from "../ChallengeForm";
-
-const STARTER_PLACEHOLDER = `{
-  "/index.ts": "export function solve() {\\n  // TODO: implement\\n  return null;\\n}\\n"
-}`;
-
-const TEST_PLACEHOLDER = `{
-  "/index.test.ts": "import { solve } from './index';\\n\\ndescribe('solve', () => {\\n  it('returns null', () => {\\n    expect(solve()).toBe(null);\\n  });\\n});\\n"
-}`;
+import { blankStep } from "../challenge-form-types";
 
 export default function NewChallengePage() {
   return (
@@ -15,15 +8,22 @@ export default function NewChallengePage() {
       initial={{
         slug: "",
         title: "",
-        description: "## Problem\n\nWrite a function that...\n",
+        description:
+          "## What is this?\n\nA short summary that appears above the questions.\n",
         difficulty: "easy",
-        template: "test-ts",
-        starterFilesJson: STARTER_PLACEHOLDER,
-        testFilesJson: TEST_PLACEHOLDER,
         tagsCsv: "",
-        estimatedMinutes: 15,
         category: "",
         published: false,
+        visibility: "public",
+        featured: false,
+        premium: false,
+        steps: [blankStep()],
+      }}
+      surface={{
+        redirectTo: "/admin/challenges",
+        createEndpoint: "/api/admin/challenges",
+        itemEndpoint: "/api/admin/challenges",
+        isAdmin: true,
       }}
     />
   );

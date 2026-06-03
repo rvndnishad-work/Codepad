@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import SafeImage from "./SafeImage";
 import { User, Calendar, BookOpen } from "lucide-react";
 import RelativeTime from "./RelativeTime";
 
@@ -26,11 +27,14 @@ export default function BlogCard({ blog }: BlogCardProps) {
       className="group relative flex flex-col rounded-3xl border border-border bg-surface overflow-hidden hover:border-border-strong transition-all shadow-xl hover:-translate-y-1"
     >
       {blog.coverImage ? (
-        <div className="aspect-[16/9] w-full overflow-hidden border-b border-border">
-          <img
+        <div className="relative aspect-[16/9] w-full overflow-hidden border-b border-border">
+          <SafeImage
             src={blog.coverImage}
             alt={blog.title}
-            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+            fill
+            sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
+            className="object-cover group-hover:scale-105 transition-transform duration-500"
+            unoptimized={blog.coverImage.startsWith("data:")}
           />
         </div>
       ) : (
@@ -56,9 +60,16 @@ export default function BlogCard({ blog }: BlogCardProps) {
         )}
 
         <div className="flex items-center gap-3 pt-4 border-t border-border mt-auto">
-          <div className="w-8 h-8 rounded-full bg-surface overflow-hidden ring-2 ring-bg border border-border">
+          <div className="relative w-8 h-8 rounded-full bg-surface overflow-hidden ring-2 ring-bg border border-border">
             {blog.user.image ? (
-              <img src={blog.user.image} alt="" className="w-full h-full object-cover" />
+              <SafeImage
+                src={blog.user.image}
+                alt=""
+                fill
+                sizes="32px"
+                className="object-cover"
+                unoptimized={blog.user.image.startsWith("data:")}
+              />
             ) : (
               <div className="w-full h-full bg-accent/20 flex items-center justify-center">
                 <User className="w-4 h-4 text-fg/40" />

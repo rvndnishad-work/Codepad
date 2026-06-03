@@ -52,23 +52,47 @@ export async function generateMetadata({
   const { slug } = await params;
   const blog = await prisma.blogPost.findUnique({
     where: { slug },
-    select: { title: true, excerpt: true, coverImage: true, published: true },
+    select: {
+      title: true,
+      excerpt: true,
+      coverImage: true,
+      published: true,
+      createdAt: true,
+      updatedAt: true,
+      tags: true,
+      user: { select: { name: true } },
+    },
   });
   if (!blog || !blog.published) return { title: "Story not found — Interviewpad" };
+  // next/metadata can't serialize a base64 data URL into OG image tags, so we
+  // only forward http(s) covers. Data-URL covers still render in-page but are
+  // omitted from social previews.
+  const ogImage =
+    blog.coverImage && !blog.coverImage.startsWith("data:")
+      ? [blog.coverImage]
+      : undefined;
+  const canonical = `/blog/${slug}`;
+  const authorName = blog.user?.name ?? "Interviewpad";
   return {
     title: `${blog.title} — Interviewpad`,
     description: blog.excerpt ?? `${blog.title} on Interviewpad.`,
+    alternates: { canonical },
+    authors: [{ name: authorName }],
     openGraph: {
       title: blog.title,
       description: blog.excerpt ?? undefined,
-      images: blog.coverImage ? [blog.coverImage] : undefined,
+      images: ogImage,
       type: "article",
+      url: canonical,
+      publishedTime: blog.createdAt.toISOString(),
+      modifiedTime: blog.updatedAt.toISOString(),
+      authors: [authorName],
     },
     twitter: {
-      card: blog.coverImage ? "summary_large_image" : "summary",
+      card: ogImage ? "summary_large_image" : "summary",
       title: blog.title,
       description: blog.excerpt ?? undefined,
-      images: blog.coverImage ? [blog.coverImage] : undefined,
+      images: ogImage,
     },
   };
 }
@@ -220,8 +244,44 @@ export default async function BlogPostPage({
 
   const minutes = readingMinutes(blog.content);
 
+  const siteUrl =
+    process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
+  const articleJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "BlogPosting",
+    headline: blog.title,
+    description: blog.excerpt ?? undefined,
+    image:
+      blog.coverImage && !blog.coverImage.startsWith("data:")
+        ? [blog.coverImage]
+        : undefined,
+    datePublished: blog.createdAt.toISOString(),
+    dateModified: blog.updatedAt.toISOString(),
+    author: {
+      "@type": "Person",
+      name: blog.user.name ?? "Anonymous",
+      url: `${siteUrl}/u/${blog.user.id}`,
+    },
+    publisher: {
+      "@type": "Organization",
+      name: "Interviewpad",
+      url: siteUrl,
+    },
+    mainEntityOfPage: {
+      "@type": "WebPage",
+      "@id": `${siteUrl}/blog/${blog.slug}`,
+    },
+    keywords: tags.length > 0 ? tags.join(", ") : undefined,
+    wordCount: blog.content.trim().split(/\s+/).length,
+    timeRequired: `PT${minutes}M`,
+  };
+
   return (
     <article className="bg-bg min-h-screen flex flex-col">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(articleJsonLd) }}
+      />
       <ReadingProgress />
 
       <div className="mx-auto w-full max-w-7xl px-4 pt-8 md:pt-10">
@@ -308,15 +368,21 @@ export default async function BlogPostPage({
               >
                 {blog.user.name ?? "Anonymous"}
               </Link>
-              <div className="flex items-center gap-2 text-[11px] text-muted">
-                <Calendar className="w-3 h-3" />
-                <RelativeTime iso={blog.createdAt.toISOString()} />
-                <span className="text-muted/40">·</span>
-                <BookOpen className="w-3 h-3" />
-                <span>{minutes} min read</span>
-                <span className="text-muted/40">·</span>
-                <Eye className="w-3 h-3" />
-                <span className="tabular-nums">{blog.viewCount}</span>
+              <div className="flex items-center gap-3 text-[11px] font-bold text-muted mt-0.5">
+                <span className="flex items-center gap-1.5 text-blue-500/80">
+                  <Calendar className="w-3.5 h-3.5" />
+                  <RelativeTime iso={blog.createdAt.toISOString()} />
+                </span>
+                <span className="text-muted/30">·</span>
+                <span className="flex items-center gap-1.5 text-emerald-500/80">
+                  <BookOpen className="w-3.5 h-3.5" />
+                  <span>{minutes}m read</span>
+                </span>
+                <span className="text-muted/30">·</span>
+                <span className="flex items-center gap-1.5 text-sky-500/80">
+                  <Eye className="w-3.5 h-3.5" />
+                  <span className="tabular-nums">{blog.viewCount} views</span>
+                </span>
               </div>
             </div>
             <div className="shrink-0 flex items-center gap-2">

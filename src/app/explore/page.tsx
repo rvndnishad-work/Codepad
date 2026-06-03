@@ -1,6 +1,9 @@
 import { prisma } from "@/lib/prisma";
 import ExploreList, { type ExploreItem } from "./ExploreList";
 
+import { auth } from "@/lib/auth";
+import { validatePageAccess } from "@/lib/settings";
+
 export const metadata = {
   title: "Explore — Interviewpad",
   description: "Browse public snippets shared by the Interviewpad community.",
@@ -9,6 +12,8 @@ export const metadata = {
 const PAGE_SIZE = 20;
 
 export default async function ExplorePage() {
+  const session = await auth().catch(() => null);
+  await validatePageAccess("/explore", session);
   const rows = await prisma.snippet.findMany({
     where: { visibility: "public" },
     orderBy: { updatedAt: "desc" },

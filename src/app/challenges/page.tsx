@@ -1,6 +1,12 @@
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import ChallengeList, { type ChallengeListItem } from "./ChallengeList";
+import ChallengesHero, { type ChallengesHeroStats } from "./ChallengesHero";
+import ContinueStrip from "./ContinueStrip";
+import FeaturedShelf from "./FeaturedShelf";
+import TracksCarousel from "./TracksCarousel";
+
+import { validatePageAccess } from "@/lib/settings";
 
 export const metadata = {
   title: "Challenges — Interviewpad",
@@ -10,11 +16,21 @@ export const metadata = {
 
 export default async function ChallengesPage() {
   const session = await auth().catch(() => null);
+  await validatePageAccess("/challenges", session);
   const userId = session?.user?.id;
 
   const rows = await prisma.challenge.findMany({
-    where: { published: true },
-    orderBy: [{ difficulty: "asc" }, { createdAt: "asc" }],
+    // Only public+published challenges show up in discovery. Private ones
+    // stay unlisted regardless of who's browsing — the magic-link / email
+    // match is what grants visibility.
+    where: { published: true, visibility: "public" },
+    // Featured first, then easier challenges, then newest — keeps the grid
+    // welcoming for first-time visitors while still rewarding curation.
+    orderBy: [
+      { featured: "desc" },
+      { difficulty: "asc" },
+      { createdAt: "asc" },
+    ],
     select: {
       id: true,
       slug: true,
@@ -23,6 +39,8 @@ export default async function ChallengesPage() {
       tags: true,
       category: true,
       estimatedMinutes: true,
+      featured: true,
+      _count: { select: { steps: true } },
     },
   });
 
@@ -53,10 +71,73 @@ export default async function ChallengesPage() {
     tags: parseTags(c.tags),
     category: c.category,
     estimatedMinutes: c.estimatedMinutes,
+    stepCount: c._count.steps,
+    featured: c.featured,
     userStatus: attemptsByChallenge[c.id] ?? null,
   }));
 
-  return <ChallengeList items={items} signedIn={!!userId} />;
+  // ── Hero stats ──────────────────────────────────────────────────────────
+  // Total challenges + their difficulty breakdown come straight from `items`
+  // so we don't pay for a second query. Interview-sessions count is a small
+  // separate query so the page still works when nobody is signed in.
+  const stats = computeStats(items);
+  const interviewsRun = await prisma.interviewSession.count().catch(() => 0);
+
+  const personal = userId
+    ? computePersonalStats(items)
+    : null;
+
+  const heroStats: ChallengesHeroStats = {
+    ...stats,
+    interviewsRun,
+    personal,
+  };
+
+  return (
+    <>
+      <ChallengesHero stats={heroStats} />
+      <ContinueStrip userId={userId ?? null} />
+      <FeaturedShelf />
+      <TracksCarousel items={items} signedIn={!!userId} />
+      <ChallengeList items={items} signedIn={!!userId} />
+    </>
+  );
+}
+
+function computeStats(items: ChallengeListItem[]) {
+  let easy = 0;
+  let medium = 0;
+  let hard = 0;
+  let totalMinutes = 0;
+  for (const c of items) {
+    totalMinutes += c.estimatedMinutes;
+    if (c.difficulty === "easy") easy += 1;
+    else if (c.difficulty === "medium") medium += 1;
+    else if (c.difficulty === "hard") hard += 1;
+  }
+  return {
+    totalChallenges: items.length,
+    easy,
+    medium,
+    hard,
+    totalMinutes,
+  };
+}
+
+function computePersonalStats(items: ChallengeListItem[]) {
+  let solved = 0;
+  const byDifficulty = { easy: 0, medium: 0, hard: 0 };
+  for (const c of items) {
+    if (c.userStatus === "passed") {
+      solved += 1;
+      byDifficulty[c.difficulty] += 1;
+    }
+  }
+  return {
+    solved,
+    total: items.length,
+    byDifficulty,
+  };
 }
 
 function parseTags(raw: string | null): string[] {

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import SafeImage from "./SafeImage";
 import { User as UserIcon } from "lucide-react";
 import FollowButton from "./FollowButton";
 import RelativeTime from "./RelativeTime";
@@ -38,11 +39,17 @@ export default function AuthorFooterCard({
       <div className="flex flex-col sm:flex-row sm:items-start gap-5">
         <Link
           href={`/u/${user.id}`}
-          className="w-16 h-16 rounded-full bg-surface overflow-hidden border border-border shrink-0"
+          className="relative w-16 h-16 rounded-full bg-surface overflow-hidden border border-border shrink-0"
         >
           {user.image ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={user.image} alt="" className="w-full h-full object-cover" />
+            <SafeImage
+              src={user.image}
+              alt=""
+              fill
+              sizes="64px"
+              className="object-cover"
+              unoptimized={user.image.startsWith("data:")}
+            />
           ) : (
             <div className="w-full h-full bg-accent/10 flex items-center justify-center">
               <UserIcon className="w-6 h-6 text-muted" />

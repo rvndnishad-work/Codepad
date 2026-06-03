@@ -31,7 +31,7 @@ export const templates: TemplateDef[] = [
     group: "empty",
     category: "empty",
     base: "vanilla",
-    label: "JS",
+    label: "Empty JS",
     accent: "#f7df1e",
     mode: "console",
     files: {
@@ -48,7 +48,7 @@ export const templates: TemplateDef[] = [
     group: "empty",
     category: "empty",
     base: "vanilla-ts",
-    label: "TS",
+    label: "Empty TS",
     accent: "#3178c6",
     mode: "console",
     files: {
@@ -65,7 +65,7 @@ export const templates: TemplateDef[] = [
     group: "empty",
     category: "empty",
     base: "react",
-    label: "React",
+    label: "Empty React",
     accent: "#61dafb",
     files: {
       "/App.js": `export default function App() {\n  return <h1>Hello, React!</h1>;\n}\n`,
@@ -399,13 +399,139 @@ body {
       "/components/CounterCard.js": `import { useState } from "react";\nimport { Button, Card, CardContent, Typography, Stack } from "@mui/material";\n\nexport default function CounterCard() {\n  const [count, setCount] = useState(0);\n  return (\n    <Card sx={{ p: 2 }}>\n      <CardContent sx={{ textAlign: "center" }}>\n        <Typography variant=\"h2\" sx={{ fontWeight: 700, mb: 2 }}>{count}</Typography>\n        <Stack direction=\"row\" spacing={1} justifyContent=\"center\">\n          <Button variant=\"outlined\" onClick={() => setCount(c => c - 1)}>\u2212</Button>\n          <Button variant=\"outlined\" onClick={() => setCount(0)}>Reset</Button>\n          <Button variant=\"contained\" onClick={() => setCount(c => c + 1)}>+</Button>\n        </Stack>\n      </CardContent>\n    </Card>\n  );\n}\n`,
     },
   },
+  /* ---------- Backend / Systems ---------- */
+  {
+    id: "python",
+    title: "Python",
+    subtitle: "Python 3 environment",
+    group: "backend",
+    category: "core",
+    base: "vanilla",
+    label: "Python",
+    accent: "#3776ab",
+    mode: "console",
+    files: {
+      "/index.py": `print("Hello, Python!")\n`,
+      "/package.json": { code: `{\n  "main": "index.py",\n  "dependencies": {}\n}`, hidden: true },
+    },
+  },
+  {
+    id: "go",
+    title: "Go",
+    subtitle: "Go workspace",
+    group: "backend",
+    category: "core",
+    base: "vanilla",
+    label: "Go",
+    accent: "#00add8",
+    mode: "console",
+    files: {
+      "/main.go": `package main\n\nimport "fmt"\n\nfunc main() {\n    fmt.Println("Hello, Go!")\n}\n`,
+      "/package.json": { code: `{\n  "main": "main.go",\n  "dependencies": {}\n}`, hidden: true },
+    },
+  },
+  {
+    id: "java",
+    title: "Java",
+    subtitle: "Java SE workspace",
+    group: "backend",
+    category: "core",
+    base: "vanilla",
+    label: "Java",
+    accent: "#5382a1",
+    mode: "console",
+    files: {
+      "/Main.java": `public class Main {\n    public static void main(String[] args) {\n        System.out.println("Hello, Java!");\n    }\n}\n`,
+      "/package.json": { code: `{\n  "main": "Main.java",\n  "dependencies": {}\n}`, hidden: true },
+    },
+  },
+  {
+    id: "cpp",
+    title: "C++",
+    subtitle: "C++ systems environment",
+    group: "backend",
+    category: "core",
+    base: "vanilla",
+    label: "C++",
+    accent: "#00599c",
+    mode: "console",
+    files: {
+      "/main.cpp": `#include <iostream>\n\nint main() {\n    std::cout << "Hello, C++!" << std::endl;\n    return 0;\n}\n`,
+      "/package.json": { code: `{\n  "main": "main.cpp",\n  "dependencies": {}\n}`, hidden: true },
+    },
+  },
+  {
+    id: "rust",
+    title: "Rust",
+    subtitle: "Rust systems environment",
+    group: "backend",
+    category: "core",
+    base: "vanilla",
+    label: "Rust",
+    accent: "#e43716",
+    mode: "console",
+    files: {
+      "/main.rs": `fn main() {\n    println!("Hello, Rust!");\n}\n`,
+      "/package.json": { code: `{\n  "main": "main.rs",\n  "dependencies": {}\n}`, hidden: true },
+    },
+  },
+  {
+    id: "node",
+    title: "Node.js",
+    subtitle: "Node.js backend environment",
+    group: "backend",
+    category: "core",
+    base: "vanilla",
+    label: "NodeJS",
+    accent: "#339933",
+    mode: "console",
+    files: {
+      "/index.js": `console.log("Hello, Node.js!");\n`,
+      "/package.json": { code: `{\n  "main": "index.js",\n  "dependencies": {}\n}`, hidden: true },
+    },
+  },
+  {
+    id: "ts-node",
+    title: "TypeScript (Node)",
+    subtitle: "TypeScript backend environment",
+    group: "backend",
+    category: "core",
+    base: "vanilla",
+    label: "TS-Node",
+    accent: "#3178c6",
+    mode: "console",
+    files: {
+      "/index.ts": `const greet = (name: string): string => {\n  return \`Hello, \${name}! 👋\`;\n};\n\nconsole.log(greet("TypeScript on Node"));\n`,
+      "/package.json": { code: `{\n  "main": "index.ts",\n  "dependencies": {}\n}`, hidden: true },
+    },
+  },
 ];
 
 export const templatesById = Object.fromEntries(templates.map((t) => [t.id, t]));
 
+/**
+ * Which workspace surface a challenge should render in, derived from its
+ * Sandpack `template`:
+ *   - "dsa"      → algorithm challenges authored with the jest test-runner
+ *                  templates ("test-ts" / "test-js"); rendered with a
+ *                  Console + Tests sidebar and auto-graded.
+ *   - "frontend" → everything else (react, vanilla, vue, svelte, …); these
+ *                  render a UI, so the candidate gets a live Preview + file
+ *                  tree and the submission is kept for manual review.
+ *
+ * Heuristic matches the seed/authoring convention (DSA uses `test-*`). If a
+ * non-test console-only challenge type appears later, refine here.
+ */
+export type ChallengeSurface = "dsa" | "frontend";
+
+export function challengeSurface(template: string): ChallengeSurface {
+  return /^test-/.test(template) || ["python", "go", "java", "cpp", "rust", "node", "ts-node", "harness"].includes(template) ? "dsa" : "frontend";
+}
+
 export const groups: { key: string; label: string }[] = [
-  { key: "empty", label: "Empty / Blank" },
-  { key: "core", label: "Core" },
-  { key: "framework", label: "Frameworks" },
-  { key: "react-ecosystem", label: "React" },
+  { key: "backend", label: "Backend & Systems (JIT 0ms)" },
+  { key: "framework", label: "Frontend Frameworks" },
+  { key: "core", label: "Core Languages" },
+  { key: "react-ecosystem", label: "React Ecosystem" },
+  { key: "empty", label: "Empty / Blank Templates" },
 ];

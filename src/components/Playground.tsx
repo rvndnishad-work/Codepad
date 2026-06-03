@@ -14,18 +14,11 @@ function useIsMobile(breakpoint = 768) {
 import {
   SandpackProvider,
   SandpackLayout,
-  SandpackCodeEditor,
   SandpackPreview,
   SandpackConsole,
   useSandpack,
   type SandpackFiles,
 } from "@codesandbox/sandpack-react";
-import { javascript, javascriptLanguage } from "@codemirror/lang-javascript";
-import { css } from "@codemirror/lang-css";
-import { html } from "@codemirror/lang-html";
-import { autocompletion, snippetCompletion } from "@codemirror/autocomplete";
-import { customSnippets } from "@/lib/snippets";
-import { colorPicker } from "@replit/codemirror-css-color-picker";
 import FileExplorer from "./FileExplorer";
 import { ErrorBridge, ErrorOverlay, type ErrorData } from "./ErrorOverlay";
 import PromptSidebar from "./PromptSidebar";
@@ -50,46 +43,17 @@ import {
   Ban,
 } from "lucide-react";
 import { templatesById } from "@/lib/templates";
+import { getSandpackTheme } from "@/lib/sandpack-theme";
 import { TemplateLogo } from "@/lib/icons";
+import { describeExecution } from "@/lib/exec-result";
 import MonacoEditor from "./MonacoEditor";
 import ShortcutsModal from "./ShortcutsModal";
 import PlaygroundToolbar from "./PlaygroundToolbar";
 import { FilesBridge } from "./bridges/FilesBridge";
 import { RunBridge } from "./bridges/RunBridge";
 import { ConsoleEntryBridge } from "./bridges/ConsoleEntryBridge";
+import { ConsoleClearBridge } from "./bridges/ConsoleClearBridge";
 import { FormatBridge } from "./bridges/FormatBridge";
-
-const nbpTheme = {
-  colors: {
-    surface1: "#050505",
-    surface2: "#0A0A0A",
-    surface3: "#111111",
-    clickable: "#8b949e",
-    base: "#e0e0e0",
-    disabled: "#4d4d4d",
-    hover: "#FFE600",
-    accent: "#FFE600",
-    error: "#ff4d4d",
-    errorSurface: "#1a0000",
-  },
-  syntax: {
-    plain: "#e0e0e0",
-    comment: { color: "#6b7280", fontStyle: "italic" as const },
-    keyword: "#D2A8FF",
-    tag: "#D2A8FF",
-    punctuation: "#e0e0e0",
-    definition: "#FFE600",
-    property: "#FFE600",
-    static: "#FF9B71",
-    string: "#A5D6FF",
-  },
-  font: {
-    body: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif',
-    mono: '"JetBrains Mono", monospace',
-    size: "14px",
-    lineHeight: "1.6",
-  },
-};
 
 export type Visibility = "private" | "public";
 
@@ -152,54 +116,6 @@ function ReadOnlyToolbar({ editable }: { editable: boolean }) {
   );
 }
 
-const customSnippetExtension = javascriptLanguage.data.of({
-  autocomplete: (context: any) => {
-    const word = context.matchBefore(/\w*/);
-    if (!word || (word.from === word.to && !context.explicit)) return null;
-    return {
-      from: word.from,
-      options: customSnippets.map((s) =>
-        snippetCompletion(s.cm6InsertText || s.insertText, {
-          label: s.label,
-          info: s.documentation,
-          type: "keyword",
-        })
-      ),
-    };
-  },
-});
-
-function BasicEditor({ editable }: { editable: boolean }) {
-  const { sandpack } = useSandpack();
-  const activeFile = sandpack.activeFile;
-  const ext = activeFile.split('.').pop()?.toLowerCase() || "";
-
-  const extensions = useMemo(() => {
-    const base = [autocompletion(), colorPicker];
-    if (["js", "jsx", "ts", "tsx"].includes(ext)) {
-      base.push(javascript({ jsx: true, typescript: true }));
-      base.push(customSnippetExtension);
-    } else if (["css", "scss"].includes(ext)) {
-      base.push(css());
-    } else if (ext === "html") {
-      base.push(html());
-    }
-    return base;
-  }, [ext]);
-
-  return (
-    <SandpackCodeEditor
-      extensions={extensions}
-      showLineNumbers
-      showTabs
-      closableTabs
-      wrapContent
-      readOnly={!editable}
-      style={{ height: "100%" }}
-    />
-  );
-}
-
 function StatusDot() {
   const { sandpack } = useSandpack();
   const status = sandpack.status;
@@ -210,6 +126,35 @@ function StatusDot() {
   if (error) color = "bg-red-500/80";
 
   return <div className={`w-1.5 h-1.5 rounded-full ${color} transition-colors duration-300`} />;
+}
+
+function simpleHash(str: string): string {
+  let hash = 5381;
+  for (let i = 0; i < str.length; i++) {
+    hash = (hash * 33) ^ str.charCodeAt(i);
+  }
+  return (hash >>> 0).toString(16);
+}
+
+/** Languages that execute server-side via /api/execute */
+const BACKEND_LANGUAGES = new Set(["python", "go", "java", "cpp", "rust", "node", "ts-node"]);
+
+function getLanguageFromPath(filePath: string, fallback: string): string {
+  const ext = filePath.split(".").pop()?.toLowerCase() ?? "";
+  if (ext === "py") return "python";
+  if (ext === "go") return "go";
+  if (ext === "java") return "java";
+  if (ext === "cpp" || ext === "h" || ext === "hpp") return "cpp";
+  if (ext === "rs") return "rust";
+  if (ext === "js" || ext === "jsx") return fallback === "node" ? "node" : "javascript";
+  if (ext === "ts" || ext === "tsx") return fallback === "ts-node" ? "typescript" : "typescript";
+  return fallback;
+}
+
+function isBackendLanguage(lang: string, templateId?: string): boolean {
+  const l = lang.toLowerCase();
+  if (templateId === "ts-node" && l === "typescript") return true;
+  return BACKEND_LANGUAGES.has(l);
 }
 
 export default function Playground({
@@ -225,40 +170,7 @@ export default function Playground({
   const { theme, resolvedTheme } = useTheme();
   const isDark = resolvedTheme === "dark";
 
-  const sandpackTheme = useMemo(() => {
-    if (isDark) return nbpTheme;
-    return {
-      colors: {
-        surface1: "#ffffff",
-        surface2: "#f8fafc",
-        surface3: "#f1f5f9",
-        clickable: "#64748b",
-        base: "#1f2937",
-        disabled: "#94a3b8",
-        hover: "#f87171",
-        accent: "#f87171",
-        error: "#ef4444",
-        errorSurface: "#fef2f2",
-      },
-      syntax: {
-        plain: "#1f2937",
-        comment: { color: "#94a3b8", fontStyle: "italic" as const },
-        keyword: "#be185d",
-        tag: "#be185d",
-        punctuation: "#64748b",
-        definition: "#0369a1",
-        property: "#92400e",
-        static: "#c2410c",
-        string: "#15803d",
-      },
-      font: {
-        body: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif',
-        mono: '"JetBrains Mono", monospace',
-        size: "14px",
-        lineHeight: "1.6",
-      },
-    };
-  }, [isDark]);
+  const sandpackTheme = useMemo(() => getSandpackTheme(isDark), [isDark]);
 
   const tpl = templatesById[templateId];
   if (!tpl) {
@@ -272,7 +184,6 @@ export default function Playground({
   const [view, setView] = useState<"preview" | "console" | "both">(
     tpl.mode === "console" ? "console" : "preview"
   );
-  const [editor, setEditor] = useState<"sandpack" | "monaco">("sandpack");
   const [fontSize, setFontSize] = useState(14);
   const [snippetId, setSnippetId] = useState<string | null>(snippet?.id ?? null);
   const [currentSlug, setCurrentSlug] = useState<string | null>(snippet?.slug ?? null);
@@ -283,6 +194,7 @@ export default function Playground({
   const [tags, setTags] = useState<string[]>(snippet?.tags ?? []);
   const [tagInput, setTagInput] = useState("");
   const [running, setRunning] = useState(false);
+  const [backendLogs, setBackendLogs] = useState<{ method: string; data: string[] }[]>([]);
   const [bundlerError, setBundlerError] = useState<ErrorData | null>(null);
   const [mobileFilesOpen, setMobileFilesOpen] = useState(false);
   const [promptOpen, setPromptOpen] = useState(false);
@@ -293,8 +205,44 @@ export default function Playground({
   const [mounted, setMounted] = useState(false);
   const explorerCollapsedRef = useRef(false);
 
-  const initialFilesRef = useRef<SandpackFiles>(initialFiles ?? tpl.files);
-  const filesRef = useRef<SandpackFiles>(initialFiles ?? tpl.files);
+  const cleanFiles = useMemo(() => {
+    const files = initialFiles ?? tpl.files;
+    const isBackend = ["python", "go", "java", "cpp", "rust", "node", "ts-node"].includes(templateId);
+    if (isBackend) {
+      const next = { ...files };
+      // Always hide index.html and styles.css for backend
+      if (next["/index.html"]) {
+        next["/index.html"] = typeof next["/index.html"] === "string"
+          ? { code: next["/index.html"], hidden: true }
+          : { ...(next["/index.html"] as any), hidden: true };
+      } else {
+        next["/index.html"] = { code: "", hidden: true };
+      }
+      if (next["/styles.css"]) {
+        next["/styles.css"] = typeof next["/styles.css"] === "string"
+          ? { code: next["/styles.css"], hidden: true }
+          : { ...(next["/styles.css"] as any), hidden: true };
+      } else {
+        next["/styles.css"] = { code: "", hidden: true };
+      }
+      // Hide index.js for everything except node template
+      if (templateId !== "node") {
+        if (next["/index.js"]) {
+          next["/index.js"] = typeof next["/index.js"] === "string"
+            ? { code: next["/index.js"], hidden: true }
+            : { ...(next["/index.js"] as any), hidden: true };
+        } else {
+          next["/index.js"] = { code: "", hidden: true };
+        }
+      }
+      return next;
+    }
+    return files;
+  }, [initialFiles, templateId, tpl.files]);
+
+  const initialFilesRef = useRef<SandpackFiles>(cleanFiles);
+  const filesRef = useRef<SandpackFiles>(cleanFiles);
+  const activeFileRef = useRef<string>("");
   const runRef = useRef<(() => void) | null>(null);
   const formatRef = useRef<(() => Promise<void>) | null>(null);
   const codeChangedRef = useRef(false);
@@ -302,17 +250,159 @@ export default function Playground({
     const setup: any = tpl.dependencies ? { dependencies: tpl.dependencies } : {};
     return setup;
   }, [tpl]);
+
+  // Initial tab strip is just the entry file. Other files appear as tabs only
+  // when the user clicks them in the explorer (which calls sandpack.openFile).
+  // Entry detection prefers package.json's "main" field, then falls back to
+  // common entry names, then the first non-hidden file.
+  const initialVisibleFiles = useMemo(() => {
+    const f = initialFilesRef.current;
+    const keys = Object.keys(f);
+    const isHidden = (k: string) => {
+      const v = f[k];
+      return typeof v === "object" && (v as { hidden?: boolean }).hidden === true;
+    };
+    // 1. package.json "main"
+    const pkgRaw = f["/package.json"];
+    if (pkgRaw) {
+      const code = typeof pkgRaw === "string" ? pkgRaw : (pkgRaw as { code: string }).code;
+      try {
+        const main = JSON.parse(code).main;
+        if (typeof main === "string") {
+          const normalized = main.startsWith("/") ? main : `/${main}`;
+          if (f[normalized] && !isHidden(normalized)) return [normalized];
+        }
+      } catch {
+        // fall through
+      }
+    }
+    // 2. Common entry names
+    const CANDIDATES = [
+      "/src/App.tsx", "/src/App.jsx", "/App.tsx", "/App.jsx",
+      "/src/index.tsx", "/src/index.jsx", "/src/index.ts", "/src/index.js",
+      "/index.tsx", "/index.jsx", "/index.ts", "/index.js",
+    ];
+    for (const c of CANDIDATES) {
+      if (f[c] && !isHidden(c)) return [c];
+    }
+    // 3. First non-hidden file
+    const firstVisible = keys.find((k) => !isHidden(k));
+    return firstVisible ? [firstVisible] : keys.slice(0, 1);
+  }, []);
+
+  useEffect(() => {
+    if (initialVisibleFiles && initialVisibleFiles[0]) {
+      activeFileRef.current = initialVisibleFiles[0];
+    }
+  }, [initialVisibleFiles]);
+
   const editable = isOwner || !snippet;
   const isMobile = useIsMobile(768);
   const { width: explorerW, onPointerDown: onExplorerDrag } = useResizable(200, 120, 400);
-  const { width: editorW, onPointerDown: onEditorDrag } = useResizable(500, 200, 1200);
+  const { width: editorW, onPointerDown: onEditorDrag, setWidth: setEditorW } = useResizable(500, 200, 2000);
 
-  function handleRun() {
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const explorerWidth = explorerCollapsed ? 40 : explorerW;
+      const remainingW = window.innerWidth - explorerWidth;
+      setEditorW(Math.max(200, Math.floor(remainingW * 0.5)));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Whether this template runs code server-side (Python, Go, Java, etc.)
+  const isBackend = useMemo(() => BACKEND_LANGUAGES.has(templateId), [templateId]);
+
+  const effectiveView = isBackend ? "console" : view;
+
+  // Speculative pre-compilation — only for backend languages
+  useEffect(() => {
+    if (!dirty || !templateId || !isBackend) return;
+
+    const timer = setTimeout(async () => {
+      try {
+        const activeFilePath = activeFileRef.current || (filesRef.current ? Object.keys(filesRef.current)[0] : "/index.ts");
+        const fileObj = filesRef.current?.[activeFilePath];
+        const activeCode = typeof fileObj === "string"
+          ? fileObj
+          : (fileObj as { code: string } | undefined)?.code ?? "";
+
+        if (!activeCode || !activeCode.trim()) return;
+
+        const hashHex = simpleHash(activeCode);
+        const executionLanguage = getLanguageFromPath(activeFilePath, templateId);
+
+        // Only pre-compile backend languages
+        if (!isBackendLanguage(executionLanguage, templateId)) return;
+
+        await fetch("/api/execute", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({
+            language: executionLanguage,
+            code: activeCode,
+            speculative: true,
+            codeHash: hashHex,
+          }),
+        });
+      } catch (err) {
+        console.warn("[Speculative] Pre-compilation background warning:", err);
+      }
+    }, 1200);
+
+    return () => clearTimeout(timer);
+  }, [dirty, templateId, isBackend]);
+
+  async function handleRun() {
     setRunning(true);
-    runRef.current?.();
-    // Failsafe: if the status listener never sees the bundler resolve,
-    // clear the spinner after 6s so the button isn't stuck spinning.
-    setTimeout(() => setRunning(false), 6000);
+    try {
+      const activeFilePath = activeFileRef.current || (filesRef.current ? Object.keys(filesRef.current)[0] : "/index.ts");
+      const fileObj = filesRef.current?.[activeFilePath];
+      const activeCode = typeof fileObj === "string"
+        ? fileObj
+        : (fileObj as { code: string } | undefined)?.code ?? "";
+
+      const executionLanguage = getLanguageFromPath(activeFilePath, templateId);
+
+      // Backend languages (Python, Go, Java, C++, Rust) execute server-side
+      if (activeCode.trim() && isBackendLanguage(executionLanguage, templateId)) {
+        const hashHex = simpleHash(activeCode);
+
+        // Clear console before execution
+        setBackendLogs([]);
+
+        const res = await fetch("/api/execute", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({
+            language: executionLanguage,
+            code: activeCode,
+            speculative: false,
+            codeHash: hashHex,
+          }),
+        });
+
+        const runResult = await res.json().catch(() => null);
+        setBackendLogs(
+          describeExecution(res.status, runResult).map((line) => ({
+            method: line.method,
+            data: [line.text],
+          }))
+        );
+      } else {
+        // Frontend languages (JS, TS, React, etc.) — use Sandpack's in-browser bundler
+        runRef.current?.();
+      }
+    } catch (err) {
+      console.error("Run execution error:", err);
+      window.postMessage({
+        type: "console",
+        codesandbox: true,
+        log: { method: "error", data: [String(err)] }
+      }, "*");
+    } finally {
+      setRunning(false);
+    }
   }
 
   async function handleSave(opts: { silent?: boolean } = {}) {
@@ -457,9 +547,6 @@ export default function Playground({
 
   // ── Persistence: Editor Settings ──
   useEffect(() => {
-    const savedEditor = localStorage.getItem("interviewpad_editor");
-    if (savedEditor === "sandpack" || savedEditor === "monaco") setEditor(savedEditor);
-
     const savedFontSize = localStorage.getItem("interviewpad_fontSize");
     if (savedFontSize) {
       const parsed = parseInt(savedFontSize, 10);
@@ -469,10 +556,6 @@ export default function Playground({
     const savedAutoRun = localStorage.getItem("interviewpad_autoRun");
     if (savedAutoRun !== null) setAutoRun(savedAutoRun === "true");
   }, []);
-
-  useEffect(() => {
-    localStorage.setItem("interviewpad_editor", editor);
-  }, [editor]);
 
   useEffect(() => {
     localStorage.setItem("interviewpad_fontSize", fontSize.toString());
@@ -644,7 +727,7 @@ export default function Playground({
             <PlaygroundToolbar
               templateId={templateId} tplTitle={tpl.title} title={title} setTitle={setTitle}
               dirty={dirty} setDirty={setDirty} editable={editable} signedIn={signedIn}
-              saving={saving} lastSavedAt={lastSavedAt} editor={editor} setEditor={setEditor}
+              saving={saving} lastSavedAt={lastSavedAt}
               fontSize={fontSize} setFontSize={setFontSize} view={view} setView={setView}
               snippetId={snippetId} visibility={visibility} setVisibility={setVisibility}
               snippet={snippet} isOwner={isOwner} forking={forking}
@@ -672,7 +755,7 @@ export default function Playground({
                   ...sandpackTheme,
                   font: {
                     ...sandpackTheme.font,
-                    mono: "'JetBrains Mono', monospace",
+                    mono: 'var(--font-mono), "Fira Code", monospace',
                     size: "14px",
                   }
                 }}
@@ -680,11 +763,16 @@ export default function Playground({
                 files={initialFilesRef.current}
                 customSetup={customSetup}
                 options={{
-                  autorun: autoRun,
-                  autoReload: autoRun,
+                  autorun: isBackend ? false : autoRun,
+                  autoReload: isBackend ? false : autoRun,
                   initMode: "immediate" as const,
-                  recompileMode: "delayed",
-                  recompileDelay: 300,
+                  recompileMode: isBackend ? "immediate" : "delayed",
+                  recompileDelay: isBackend ? 0 : 300,
+                  // Open just the entry file in the tab strip. Additional
+                  // files become tabs only when the user clicks them in the
+                  // explorer (via sandpack.openFile).
+                  visibleFiles: initialVisibleFiles,
+                  activeFile: initialVisibleFiles[0],
                   externalResources: [
                     "data:text/css,.react-error-overlay,#webpack-dev-server-client-overlay,.sp-overlay{display:none!important}#ignore.css"
                   ]
@@ -694,7 +782,7 @@ export default function Playground({
                   <div className="fixed inset-0 z-[100] flex bg-black/60 backdrop-blur-sm">
                     <div className="w-4/5 max-w-sm h-full bg-panel border-r border-border shadow-2xl flex flex-col">
                       <div className="flex-1 min-h-0 overflow-y-auto">
-                        <FileExplorer readOnly={!editable} onCollapse={() => setMobileFilesOpen(false)} />
+                        <FileExplorer templateId={templateId} readOnly={!editable} onCollapse={() => setMobileFilesOpen(false)} />
                       </div>
                     </div>
                     <div className="flex-1" onClick={() => setMobileFilesOpen(false)} />
@@ -712,43 +800,45 @@ export default function Playground({
                       <div className="flex flex-col h-full bg-bg">
                         <div className="flex-[0_0_55%] min-h-0 overflow-hidden flex flex-col ide-panel">
                           <div className="flex-1 min-h-0">
-                            {editor === "sandpack" ? (
-                              <BasicEditor editable={editable} />
-                            ) : (
-                              <MonacoEditor fontSize={fontSize} readOnly={!editable} />
-                            )}
+                            <MonacoEditor fontSize={fontSize} readOnly={!editable} />
                           </div>
                           <ReadOnlyToolbar editable={editable} />
                         </div>
                         <div className="flex-[0_0_45%] min-h-0 flex flex-col relative ide-panel border-t border-border">
                           <div style={{
-                            display: view === "console" ? "none" : "flex",
-                            flex: view === "both" ? "0 0 60%" : 1,
+                            display: effectiveView === "console" ? "none" : "flex",
+                            flex: effectiveView === "both" ? "0 0 60%" : 1,
                             minHeight: 0, overflow: "hidden",
                           }}>
                             <SandpackPreview showNavigator showOpenInCodeSandbox={false} showRefreshButton={false} style={{ height: "100%", width: "100%" }} />
                           </div>
                           <div style={{
-                            display: view === "preview" ? "none" : "flex",
-                            flex: view === "both" ? "0 0 40%" : 1,
+                            display: effectiveView === "preview" ? "none" : "flex",
+                            flex: effectiveView === "both" ? "0 0 40%" : 1,
                             minHeight: 0, overflow: "hidden",
                             flexDirection: "column",
-                            borderTop: view === "both" ? "1px solid var(--border)" : undefined,
+                            borderTop: effectiveView === "both" ? "1px solid var(--border)" : undefined,
                           }}>
-                            <div className="flex items-center justify-between px-3 h-9 bg-surface shrink-0 border-b border-border">
-                              <div className="flex items-center gap-2">
-                                <Terminal className="w-3 h-3 text-accent/60" />
-                                <span className="text-[11px] font-medium text-muted tracking-wide">Console</span>
+                            {effectiveView === "both" && (
+                              <div className="flex items-center justify-between px-3 h-9 bg-surface shrink-0 border-b border-border">
+                                <div className="flex items-center gap-2">
+                                  <Terminal className="w-3 h-3 text-accent/60" />
+                                  <span className="text-[11px] font-medium text-muted tracking-wide">Console</span>
+                                </div>
+                                <div className="flex items-center gap-1.5">
+                                  <button onClick={() => { setConsoleKey(k => k + 1); setBackendLogs([]); }} className="p-1 hover:bg-elevated rounded transition text-muted/50 hover:text-fg" title="Clear Console">
+                                    <Ban className="w-3 h-3" />
+                                  </button>
+                                  <div className="text-[10px] font-normal text-muted/30">Live</div>
+                                </div>
                               </div>
-                              <div className="flex items-center gap-1.5">
-                                <button onClick={() => setConsoleKey(k => k + 1)} className="p-1 hover:bg-elevated rounded transition text-muted/50 hover:text-fg" title="Clear Console">
-                                  <Ban className="w-3 h-3" />
-                                </button>
-                                <div className="text-[10px] font-normal text-muted/30">Live</div>
-                              </div>
-                            </div>
+                            )}
                             <div className="flex-1 min-h-0">
-                              <SandpackConsole key={consoleKey} style={{ height: "100%", width: "100%" }} />
+                              {isBackend ? (
+                                <BackendConsole logs={backendLogs} />
+                              ) : (
+                                <SandpackConsole key={consoleKey} style={{ height: "100%", width: "100%" }} />
+                              )}
                             </div>
                           </div>
                           <ErrorOverlay error={bundlerError} onDismiss={() => { setBundlerError(null); runRef.current?.(); }} />
@@ -759,7 +849,7 @@ export default function Playground({
                         {!explorerCollapsed && (
                           <>
                             <div style={{ width: explorerW, minWidth: 0 }} className="h-full shrink-0 flex flex-col ide-panel">
-                              <FileExplorer readOnly={!editable} onCollapse={() => setExplorerCollapsed(true)} />
+                              <FileExplorer templateId={templateId} readOnly={!editable} onCollapse={() => setExplorerCollapsed(true)} />
                             </div>
                             <div className="ide-divider h-full w-px cursor-col-resize" onPointerDown={onExplorerDrag}>
                                <div className="absolute inset-y-0 -left-1.5 -right-1.5" />
@@ -775,13 +865,9 @@ export default function Playground({
                         )}
                         <div style={{ width: editorW, minWidth: 0 }} className="h-full shrink-0 flex flex-col ide-panel">
                           <div className="flex-1 min-h-0">
-                            {editor === "sandpack" ? (
-                              <BasicEditor editable={editable} />
-                            ) : (
-                              <div className="h-full w-full min-w-0">
-                                <MonacoEditor fontSize={fontSize} readOnly={!editable} />
-                              </div>
-                            )}
+                            <div className="h-full w-full min-w-0">
+                              <MonacoEditor fontSize={fontSize} readOnly={!editable} />
+                            </div>
                           </div>
                           <ReadOnlyToolbar editable={editable} />
                         </div>
@@ -791,42 +877,50 @@ export default function Playground({
                         <div className="flex-1 min-w-0 h-full flex flex-col relative ide-panel">
                           <div className="flex items-center justify-between px-3 h-9 border-b border-border shrink-0">
                              <div className="flex items-center gap-2">
-                                <StatusDot />
-                               <span className="text-[11px] font-medium text-muted tracking-wide">Output</span>
+                                {isBackend ? <Terminal className="w-3 h-3 text-accent/60" /> : <StatusDot />}
+                               <span className="text-[11px] font-medium text-muted tracking-wide">{isBackend ? "Console" : "Output"}</span>
                               </div>
+                              {!isBackend && (
                               <div className="flex items-center gap-2">
                                 <div className="text-[10px] font-mono text-muted/30">localhost:3000</div>
                              </div>
+                              )}
                           </div>
                           <div className="flex-1 flex flex-col min-h-0">
                             <div style={{
-                              display: view === "console" ? "none" : "flex",
-                              flex: view === "both" ? "0 0 60%" : 1,
+                              display: effectiveView === "console" ? "none" : "flex",
+                              flex: effectiveView === "both" ? "0 0 60%" : 1,
                               minHeight: 0, overflow: "hidden",
                             }}>
                               <SandpackPreview showNavigator showOpenInCodeSandbox={false} showRefreshButton={false} style={{ height: "100%", width: "100%" }} />
                             </div>
                             <div style={{
-                               display: view === "preview" ? "none" : "flex",
-                               flex: view === "both" ? "0 0 40%" : 1,
+                               display: effectiveView === "preview" ? "none" : "flex",
+                               flex: effectiveView === "both" ? "0 0 40%" : 1,
                                minHeight: 0, overflow: "hidden",
                                flexDirection: "column",
-                               borderTop: view === "both" ? "1px solid var(--border)" : undefined,
+                               borderTop: effectiveView === "both" ? "1px solid var(--border)" : undefined,
                              }}>
-                               <div className="flex items-center justify-between px-3 h-9 bg-surface shrink-0 border-b border-border">
-                                 <div className="flex items-center gap-2">
-                                   <Terminal className="w-3 h-3 text-accent/60" />
-                                   <span className="text-[11px] font-medium text-muted tracking-wide">Console</span>
+                               {effectiveView === "both" && (
+                                 <div className="flex items-center justify-between px-3 h-9 bg-surface shrink-0 border-b border-border">
+                                   <div className="flex items-center gap-2">
+                                     <Terminal className="w-3 h-3 text-accent/60" />
+                                     <span className="text-[11px] font-medium text-muted tracking-wide">Console</span>
+                                   </div>
+                                   <div className="flex items-center gap-1.5">
+                                     <button onClick={() => { setConsoleKey(k => k + 1); setBackendLogs([]); }} className="p-1 hover:bg-elevated rounded transition text-muted/50 hover:text-fg" title="Clear Console">
+                                       <Ban className="w-3 h-3" />
+                                     </button>
+                                     <div className="text-[10px] font-normal text-muted/30">Live</div>
+                                   </div>
                                  </div>
-                                 <div className="flex items-center gap-1.5">
-                                   <button onClick={() => setConsoleKey(k => k + 1)} className="p-1 hover:bg-elevated rounded transition text-muted/50 hover:text-fg" title="Clear Console">
-                                     <Ban className="w-3 h-3" />
-                                   </button>
-                                   <div className="text-[10px] font-normal text-muted/30">Live</div>
-                                 </div>
-                               </div>
+                               )}
                                <div className="flex-1 min-h-0">
-                                <SandpackConsole key={consoleKey} style={{ height: "100%", width: "100%" }} />
+                                {isBackend ? (
+                                  <BackendConsole logs={backendLogs} />
+                                ) : (
+                                  <SandpackConsole key={consoleKey} style={{ height: "100%", width: "100%" }} />
+                                )}
                               </div>
                             </div>
                           </div>
@@ -837,10 +931,11 @@ export default function Playground({
                   </div>
                   {promptOpen && <PromptSidebar onClose={() => setPromptOpen(false)} />}
                 </div>
-                <FilesBridge templateId={templateId} filesRef={filesRef} templateFiles={tpl.files} onChange={() => { setDirty(true); codeChangedRef.current = true; }} />
+                <FilesBridge templateId={templateId} filesRef={filesRef} activeFileRef={activeFileRef} templateFiles={cleanFiles} onChange={() => { setDirty(true); codeChangedRef.current = true; }} />
                 <ErrorBridge onError={setBundlerError} />
                 <RunBridge runRef={runRef} onStatusChange={(s) => { if (s === "idle" || s === "done") setRunning(false); }} />
-                <ConsoleEntryBridge active={tpl.mode === "console"} />
+                <ConsoleEntryBridge active={tpl.mode === "console"} isBackend={isBackend} />
+                <ConsoleClearBridge onClear={() => setConsoleKey((k) => k + 1)} />
                 <FormatBridge formatRef={formatRef} />
               </SandpackProvider>
               )}
@@ -852,5 +947,21 @@ export default function Playground({
   );
 }
 
-
-
+function BackendConsole({ logs }: { logs: { method: string; data: string[] }[] }) {
+  if (logs.length === 0) {
+    return (
+      <div className="flex items-center justify-center h-full text-muted/50 text-[12px] font-medium">
+        Ready for execution
+      </div>
+    );
+  }
+  return (
+    <div className="flex-1 min-h-0 h-full overflow-y-auto bg-surface text-fg font-mono text-[13px] p-3 space-y-1">
+      {logs.map((log, i) => (
+        <div key={i} className={`whitespace-pre-wrap ${log.method === 'error' ? 'text-red-400' : 'text-fg/80'}`}>
+          {log.data.join(" ")}
+        </div>
+      ))}
+    </div>
+  );
+}

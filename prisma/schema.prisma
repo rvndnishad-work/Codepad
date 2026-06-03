@@ -8,38 +8,278 @@ datasource db {
 }
 
 model User {
-  id            String              @id @default(cuid())
-  name          String?
-  email         String?             @unique
-  emailVerified DateTime?
-  image         String?
+  id                   String                @id @default(cuid())
+  name                 String?
+  email                String?               @unique
+  emailVerified        DateTime?
+  image                String?
   /// bcrypt hash for credentials login. null when only OAuth is used.
-  passwordHash  String?
+  passwordHash         String?
   /// Optional public profile bio shown on /u/[id] portfolio page.
-  bio           String?
+  bio                  String?
   /// Optional "Hire Me" contact (email, URL, etc.) shown on portfolio.
-  hireMeUrl     String?
+  hireMeUrl            String?
   /// Whether the user wants their portfolio publicly visible.
-  portfolioPublic Boolean           @default(true)
-  accounts      Account[]
-  sessions      Session[]
-  snippets      Snippet[]
-  attempts      ChallengeAttempt[]
-  interviewSessions InterviewSession[]
-  followers     Follow[]            @relation("following")
-  following     Follow[]            @relation("follower")
-  blogs         BlogPost[]
-  blogReactions BlogReaction[]
-  blogComments  BlogComment[]
-  blogBookmarks BlogBookmark[]
-  createdAt     DateTime            @default(now())
+  portfolioPublic      Boolean               @default(false)
+  /// Whether the user is banned from the platform.
+  banned               Boolean               @default(false)
+  createdAt            DateTime              @default(now())
+  /// User type — "candidate" (job seeker), "recruiter" (hiring), or null
+  /// for legacy accounts that haven't been migrated to the new taxonomy.
+  /// Drives navbar, dashboard, and interview-route experience.
+  userType             String?
+
+  /// TOTP secret (RFC 6238), encrypted at rest with the AES-GCM helper
+  /// (`v1:iv:tag:ct` format, same as IP-2). Null when 2FA is not enrolled.
+  totpSecret           String?
+  /// Set when the user finishes the verify step. Until this is non-null the
+  /// `totpSecret` is a "pending" enrollment that shouldn't gate logins —
+  /// keeping the active-vs-pending distinction as one boolean check.
+  totpEnabledAt        DateTime?
+  /// JSON-encoded array of `{ hash: string, usedAt: string | null }`. Each
+  /// `hash` is a SHA-256 hex digest of a one-time backup code. Storing
+  /// hashes (not plaintext, not reversible-encrypted) means a DB leak still
+  /// can't reveal the codes.
+  totpBackupCodes      String?
+
+  accounts             Account[]
+  blogBookmarks        BlogBookmark[]
+  blogComments         BlogComment[]
+  blogs                BlogPost[]
+  blogReactions        BlogReaction[]
+  authoredChallenges   Challenge[]           @relation("AuthoredChallenges")
+  attempts             ChallengeAttempt[]
+  challengeEnrollments ChallengeEnrollment[]
+  sentChallengeInvites ChallengeInvitation[] @relation("ChallengeInvitedBy")
+  challengeInvitations ChallengeInvitation[] @relation("ChallengeInvitedUser")
+  followers            Follow[]              @relation("following")
+  following            Follow[]              @relation("follower")
+  interviewSessions    InterviewSession[]
+  sessions             Session[]
+  snippets             Snippet[]
+  workspaces           WorkspaceMember[]
+  securityEvents       SecurityAuditLog[]
+  notifications        Notification[]
+  notificationPreferences NotificationPreference[]
+}
+
+/// Admin-composed broadcast (IP-45). One row per admin send; the per-recipient
+/// fan-out rows live in Notification with broadcastId set. Recipient count is
+/// denormalised so the sent log can render without a per-row aggregate.
+model BroadcastNotification {
+  id              String   @id @default(cuid())
+  composedById    String
+  /// Audience selector: "ALL" | "ALL_CANDIDATES" | "ALL_RECRUITERS"
+  /// | "WORKSPACE" | "USER"
+  audienceType    String
+  /// Only set when audienceType is "WORKSPACE" or "USER" — the workspace id
+  /// or user id the broadcast targets. Null for the broad audiences.
+  audienceTarget  String?
+  title           String
+  body            String?
+  href            String?
+  recipientCount  Int      @default(0)
+  /// Set when the broadcast finishes fanning out. Null while in progress.
+  sentAt          DateTime?
+  createdAt       DateTime @default(now())
+  notifications   Notification[]
+
+  @@index([composedById, createdAt])
+}
+
+/// In-app notification (IP-40). One row per delivered notification per user.
+/// Cross-persona: candidates and recruiters both see the same shape; the
+/// `type` field discriminates rendering. `payload` is event-specific JSON —
+/// kept small (URLs + a couple of strings), not used to store anything
+/// sensitive.
+model Notification {
+  id        String    @id @default(cuid())
+  userId    String
+  /// Set when this row was fanned out from a BroadcastNotification (IP-45).
+  /// Null for event-driven rows (IP-44). Lets the admin sent log group
+  /// fanned-out rows + count read/dismiss rates.
+  broadcastId String?
+  broadcast BroadcastNotification? @relation(fields: [broadcastId], references: [id], onDelete: SetNull)
+  /// Stable type discriminator. Current values (extensible):
+  ///   INTERVIEW_SCHEDULED       — recruiter scheduled a session for this candidate
+  ///   INTERVIEW_REPLAY_READY    — replay finished processing, ready to review
+  ///   TAKE_HOME_EXPIRING        — < 24h remaining on a pending take-home
+  ///   TAKE_HOME_SUBMITTED       — candidate submitted; recruiter view
+  ///   SCORECARD_REQUESTED       — recruiter needs to finalize a scorecard
+  ///   PROMPT_UPVOTED            — community upvoted your prompt attempt
+  ///   AI_CREDITS_LOW            — workspace AI screening credits running low
+  ///   SECURITY_2FA_ENABLED      — self-notification on TOTP enrollment success
+  ///   SECURITY_2FA_DISABLED     — self-notification on TOTP disable
+  type      String
+  title     String
+  body      String?
+  /// Optional URL the row links to when clicked.
+  href      String?
+  /// Event-specific JSON for the renderer (e.g. candidate name, workspace
+  /// slug, deltas). Stored as a string for SQLite portability.
+  payload   String?
+  /// Null while unread. Mutated on first click / "Mark all read".
+  readAt    DateTime?
+  /// Set when the user explicitly dismisses (X button). Row stays for audit
+  /// but is hidden from the dropdown.
+  dismissedAt DateTime?
+  createdAt DateTime  @default(now())
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, dismissedAt, createdAt])
+  @@index([userId, readAt])
+}
+
+/// Per-user notification preferences (IP-47). One row per (userId, type)
+/// pair; absence means "use default" so a fresh account doesn't need to
+/// pre-populate every type.
+///
+/// Security types (SECURITY_2FA_*) and ADMIN_BROADCAST are forced ON in the
+/// helper layer regardless of any preference row — these aren't user-suppressible.
+model NotificationPreference {
+  id            String   @id @default(cuid())
+  userId        String
+  type          String
+  inAppEnabled  Boolean  @default(true)
+  emailEnabled  Boolean  @default(true)
+  updatedAt     DateTime @updatedAt
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, type])
+  @@index([userId])
+}
+
+/// User-scoped security audit trail (IP-42). Separate from McpAuditLog so
+/// MCP telemetry stays workspace-scoped and we have a clean per-user trail
+/// for compliance asks. Reusable for future events: password changes, sign-
+/// in from a new device, recovery-code use, etc.
+model SecurityAuditLog {
+  id        String   @id @default(cuid())
+  userId    String
+  /// Stable enum-ish string. Current values:
+  ///   TOTP_ENROLL_START   — user clicked "Set up 2FA", secret minted but unverified
+  ///   TOTP_ENROLL_VERIFY  — user successfully verified the first 6-digit code
+  ///   TOTP_DISABLE        — user disabled 2FA
+  ///   TOTP_VERIFY_FAILED  — bad code during enrollment verify (rate-limit signal)
+  ///   TOTP_BACKUP_REGEN   — backup codes regenerated
+  event     String
+  /// Approximate client IP (best-effort, from request headers).
+  ip        String?
+  /// User-agent string for the request.
+  userAgent String?
+  /// Event-specific JSON. Kept small — never store secrets here.
+  meta      String?
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+  @@index([event, createdAt])
+}
+
+/// Transactional email log (IP-25). One row per `sendEmail()` dispatch — the
+/// row is written *before* the Resend POST (status="queued") and updated to
+/// `sent` or `failed` immediately after. The Resend webhook (IP-25 AC #5)
+/// flips it to `delivered` / `bounced` / `complained` / `opened` / `clicked`.
+///
+/// `providerId` is the Resend message id — webhook events join on it.
+/// `template` is the registry key from src/emails/index.ts so we can roll up
+/// per-template delivery stats.
+model EmailLog {
+  id             String    @id @default(cuid())
+  template       String
+  recipientEmail String
+  /// Optional workspace context — set when the send was triggered by a
+  /// workspace-scoped action (invite, notify, etc.).
+  workspaceId    String?
+  /// Optional interview / take-home / generic session id for traceability.
+  sessionId      String?
+  /// Resend message id, when the provider accepted the request. Null while
+  /// queued and on failed sends.
+  providerId     String?
+  /// queued | sent | failed | delivered | bounced | complained | opened |
+  /// clicked | suppressed. `suppressed` is the short-circuit case when the
+  /// recipient is on the EmailSuppression list — we record the attempt
+  /// without contacting Resend.
+  status         String    @default("queued")
+  /// Set when status flips to `failed` or `bounced`. Carries the Resend
+  /// reason string truncated to a reasonable length.
+  errorReason    String?
+  createdAt      DateTime  @default(now())
+  /// Updated each time a webhook event lands so the admin view can sort by
+  /// most-recent activity.
+  lastEventAt    DateTime?
+
+  @@index([recipientEmail, createdAt])
+  @@index([providerId])
+  @@index([status, createdAt])
+  @@index([workspaceId, createdAt])
+}
+
+/// Outbound deliverability suppression list (IP-25). Once an address hard-
+/// bounces or files a complaint we never send to it again — Resend penalizes
+/// senders that keep mailing known-bad addresses. Stored canonical (lowercase
+/// trim) so lookups are exact-match.
+model EmailSuppression {
+  id        String   @id @default(cuid())
+  address   String   @unique
+  /// hard_bounce | complaint | unsubscribe | manual
+  reason    String
+  /// Optional human note (admin context).
+  note      String?
+  addedAt   DateTime @default(now())
+
+  @@index([reason, addedAt])
+}
+
+/// Workspace-scoped audit trail (IP-37). Separate from McpAuditLog (which is
+/// specialized for MCP telemetry — durationMs, errorCode, outboundUrl,
+/// apiKey relation) and from SecurityAuditLog (which is user-scoped).
+///
+/// One row per workspace-mutating action. The `action` column is a stable
+/// enum-ish string discriminator; `meta` carries event-specific JSON. We
+/// store an actorUserId snapshot (rather than only relying on the FK) so
+/// that user deletion still leaves a readable trail for compliance.
+///
+/// Coverage today (IP-37 MVP): pipeline stage transitions, bulk take-home
+/// dispatch, ATS connect/disconnect. Remaining writers tracked in IP-76.
+model WorkspaceAuditLog {
+  id           String    @id @default(cuid())
+  workspaceId  String
+  actorUserId  String?
+  /// Snapshot of actor email at write time — survives the actor's deletion
+  /// for compliance readability ("rvndnishad@..." stays after the row goes).
+  actorEmail   String?
+  /// Stable discriminator. Current values:
+  ///   PIPELINE_STAGE_CHANGED
+  ///   BULK_TAKE_HOME_DISPATCHED
+  ///   ATS_INTEGRATION_CONNECTED
+  ///   ATS_INTEGRATION_DISCONNECTED
+  ///   ATS_INTEGRATION_TEST_SENT
+  ///   (extensible — IP-76 wires more)
+  action       String
+  /// Optional polymorphic reference. e.g. "candidate" + candidate.id, or
+  /// "takeHomeAssignment" + assignment.id. Used by the UI to deep-link.
+  targetType   String?
+  targetId     String?
+  /// Event-specific JSON. Kept small; never store secrets.
+  meta         String?
+  /// Best-effort client IP from request headers (`x-forwarded-for` etc).
+  ip           String?
+  /// User-agent string.
+  userAgent    String?
+  createdAt    DateTime  @default(now())
+  workspace    Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@index([workspaceId, createdAt])
+  @@index([workspaceId, action, createdAt])
+  @@index([workspaceId, actorUserId, createdAt])
 }
 
 model Follow {
   followerId  String
   followingId String
-  follower    User   @relation("follower", fields: [followerId], references: [id], onDelete: Cascade)
   following   User   @relation("following", fields: [followingId], references: [id], onDelete: Cascade)
+  follower    User   @relation("follower", fields: [followerId], references: [id], onDelete: Cascade)
 
   @@id([followerId, followingId])
 }
@@ -91,9 +331,9 @@ model Snippet {
   pinned     Boolean  @default(false)
   viewCount  Int      @default(0)
   userId     String?
-  user       User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
+  user       User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
   @@index([visibility, updatedAt])
@@ -103,53 +343,189 @@ model Snippet {
 /// A coding challenge with starter code + hidden tests.
 /// Difficulty: "easy" | "medium" | "hard". Stored as string for SQLite portability.
 model Challenge {
-  id              String             @id @default(cuid())
-  slug            String             @unique
-  title           String
+  id                  String                @id @default(cuid())
+  slug                String                @unique
+  title               String
   /// Markdown description shown on the detail page.
-  description     String
+  description         String
   /// "easy" | "medium" | "hard"
-  difficulty      String             @default("easy")
+  difficulty          String                @default("easy")
   /// Sandpack template id (e.g. "test-ts", "react", "vanilla")
-  template        String
+  template            String
   /// JSON map of starter files visible/editable to the user.
-  starterFiles    String
+  starterFiles        String
   /// JSON map of hidden test files (run but not shown to user).
-  testFiles       String
+  testFiles           String
   /// JSON-encoded string[] of tag labels (e.g. "arrays", "react", "hooks").
-  tags            String?
+  tags                String?
   /// Estimated time to solve, in minutes. Used for the timer default.
-  estimatedMinutes Int               @default(15)
+  estimatedMinutes    Int                   @default(15)
   /// Optional human-readable category (e.g. "Algorithms", "Frontend").
-  category        String?
+  category            String?
   /// Published challenges show up in the list. Drafts are owner-only.
-  published       Boolean            @default(true)
-  attempts        ChallengeAttempt[]
-  createdAt       DateTime           @default(now())
-  updatedAt       DateTime           @updatedAt
+  published           Boolean               @default(true)
+  /// "public" | "private". Only meaningful when published=true; mirrors the
+  /// same field on ChallengeTrack (Track is being folded into Challenge in
+  /// Stage 2 — keeping the names aligned so the migration is mechanical).
+  visibility          String                @default("public")
+  /// Staff-pick flag — surfaces a star badge on /challenges and bumps the
+  /// challenge to the top of the grid. Admin-only.
+  featured            Boolean               @default(false)
+  /// Whether the challenge requires a premium/paid subscription to access.
+  premium             Boolean               @default(false)
+  /// Single null author = admin/curated; non-null = user-authored.
+  authorId            String?
+  workspaceId         String?
+  createdAt           DateTime              @default(now())
+  updatedAt           DateTime              @updatedAt
+  workspace           Workspace?            @relation(fields: [workspaceId], references: [id])
+  author              User?                 @relation("AuthoredChallenges", fields: [authorId], references: [id])
+  attempts            ChallengeAttempt[]
+  enrollments         ChallengeEnrollment[]
+  invitations         ChallengeInvitation[]
+  steps               ChallengeStep[]
+  takeHomeAssignments TakeHomeAssignment[]
 
-  @@index([published, difficulty])
+  @@index([published, featured, difficulty])
+  @@index([authorId])
 }
 
+/// One ordered step inside a Challenge. Stage 1 introduces this as the new
+/// home for the runnable code/tests; the parent Challenge still carries the
+/// legacy starterFiles/testFiles/template fields during the transition so
+/// no read path breaks before Stage 2 cleans them up.
+///
+/// Single-step challenges: one ChallengeStep row mirroring the parent.
+/// Multi-step challenges (Track replacements): N rows, position 0..N-1.
+model ChallengeStep {
+  id               String             @id @default(cuid())
+  challengeId      String
+  position         Int
+  /// Optional per-step title — for multi-step challenges this is "Step 1:
+  /// Two Sum". Single-step challenges just leave it null and reuse the
+  /// parent Challenge title.
+  title            String?
+  /// Markdown description for this step. Overrides the parent's description
+  /// when rendering the step's instructions.
+  description      String
+  /// Sandpack template id (e.g. "test-ts", "react", "vanilla").
+  template         String
+  /// JSON map of { "/path": "code" } — visible/editable to the user.
+  starterFiles     String
+  /// JSON map of { "/path": "code" } — hidden test files.
+  testFiles        String
+  estimatedMinutes Int                @default(15)
+  /// Optional hint, surfaced behind a "Show hint" toggle on the attempt page.
+  hint             String?
+  /// Optional walkthrough video. YouTube / Vimeo / Loom auto-embed.
+  videoUrl         String?
+  /// JSON-encoded array of test cases: Array<{ id: string, name: string, input: string, expected: string, isHidden: boolean, weight: number }>
+  testCasesJson    String             @default("[]")
+
+  // ── Multi-language function-harness judging (server-side via Piston) ──
+  /// "harness" = function-harness (multi-language, server-graded);
+  /// "unit-js" = legacy in-browser Jest; "frontend" = manual-review UI challenge.
+  judgingMode      String             @default("unit-js")
+  /// Harness: the function the candidate implements.
+  functionName     String?
+  /// Harness: JSON `{ params: [{name,type}], returnType }` (see src/lib/judge/types.ts).
+  signatureJson    String?
+  /// Harness: JSON string[] of enabled language ids (e.g. ["python","go"]).
+  languagesJson    String?
+  /// Harness: JSON map `{ lang: "starter stub" }` (generated, author-editable).
+  starterCodeJson  String?
+  /// Harness: JSON map `{ lang: "reference solution" }`. AUTHOR-ONLY — never
+  /// sent to candidates; used by Validate to generate expected outputs.
+  referenceSolutionsJson String?
+  /// Harness: JSON array of cases `[{ id, name, argsJson, expectedJson, isHidden, weight, compare }]`.
+  /// `expectedJson` is filled by the admin Validate step.
+  harnessTestsJson String             @default("[]")
+
+  createdAt        DateTime           @default(now())
+  updatedAt        DateTime           @updatedAt
+  attempts         ChallengeAttempt[]
+  challenge        Challenge          @relation(fields: [challengeId], references: [id], onDelete: Cascade)
+
+  @@unique([challengeId, position])
+  @@index([challengeId, position])
+}
+
+/// Stage 2 unified enrollment — replaces ChallengeTrackEnrollment once
+/// Tracks are folded into Challenges. Same shape, same status state machine.
+model ChallengeEnrollment {
+  id            String    @id @default(cuid())
+  userId        String
+  challengeId   String
+  /// "active" | "stashed" | "completed" | "abandoned"
+  status        String    @default("active")
+  startedAt     DateTime  @default(now())
+  lastVisitedAt DateTime  @default(now())
+  completedAt   DateTime?
+  challenge     Challenge @relation(fields: [challengeId], references: [id], onDelete: Cascade)
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, challengeId])
+  @@index([userId, status])
+  @@index([challengeId])
+}
+
+/// Stage 2 unified invitation — replaces TrackInvitation. Same magic-link
+/// model: opaque token, email-keyed, status state machine.
+/// status: "pending" | "accepted" | "revoked"
+model ChallengeInvitation {
+  id          String    @id @default(cuid())
+  challengeId String
+  email       String
+  userId      String?
+  token       String    @unique
+  invitedById String?
+  status      String    @default("pending")
+  acceptedAt  DateTime?
+  createdAt   DateTime  @default(now())
+  invitedBy   User?     @relation("ChallengeInvitedBy", fields: [invitedById], references: [id])
+  user        User?     @relation("ChallengeInvitedUser", fields: [userId], references: [id])
+  challenge   Challenge @relation(fields: [challengeId], references: [id], onDelete: Cascade)
+
+  @@unique([challengeId, email])
+  @@index([email])
+  @@index([userId])
+  @@index([challengeId, status])
+}
+
+/// A user's relationship to a track. One row per (user, track); state machine
+/// driven by user actions. Track progress is computed from ChallengeAttempt
+/// rows — we don't denormalise the "solved count" to avoid drift.
+/// status: "active" | "stashed" | "completed" | "abandoned"
 /// A user's attempt at a challenge.
 /// status: "in_progress" | "passed" | "failed" | "abandoned"
 model ChallengeAttempt {
-  id          String    @id @default(cuid())
-  userId      String
-  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  challengeId String
-  challenge   Challenge @relation(fields: [challengeId], references: [id], onDelete: Cascade)
-  status      String    @default("in_progress")
+  id                 String                    @id @default(cuid())
+  userId             String
+  challengeId        String
+  /// Which step inside the challenge this attempt is for. Nullable for
+  /// pre-migration rows; populated by the Stage 1 backfill script. New
+  /// attempts MUST set this.
+  stepId             String?
+  status             String                    @default("in_progress")
   /// JSON map of the user's final submitted files (excluding hidden tests).
-  files       String?
+  files              String?
   /// JSON-encoded test results: { tests: [{name, status, error?}], passed, total }
-  testResults String?
+  testResults        String?
   /// Total elapsed seconds at submission.
-  durationSec Int?
+  durationSec        Int?
   /// Optional reference to the parent interview session.
-  sessionId   String?
-  startedAt   DateTime  @default(now())
-  finishedAt  DateTime?
+  sessionId          String?
+  startedAt          DateTime                  @default(now())
+  finishedAt         DateTime?
+  /// Calculated overall score (e.g. 85 out of 100)
+  score              Int?
+  aiSuspicionScore   Float?
+  integrityReport    CandidateIntegrityReport?
+  step               ChallengeStep?            @relation(fields: [stepId], references: [id])
+  challenge          Challenge                 @relation(fields: [challengeId], references: [id], onDelete: Cascade)
+  user               User                      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  eventLog           SessionEventLog?
+  takeHomeAssignment TakeHomeAssignment?
 
   @@index([userId, status])
   @@index([challengeId])
@@ -159,44 +535,108 @@ model ChallengeAttempt {
 /// An interview session: a sequence of challenges with a hard time limit.
 /// status: "scheduled" | "in_progress" | "completed" | "abandoned"
 model InterviewSession {
-  id            String   @id @default(cuid())
-  userId        String
-  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  title         String   @default("Interview Session")
+  id                 String           @id @default(cuid())
+  userId             String
+  title              String           @default("Interview Session")
+  candidateName      String?
+  type               String           @default("mock")
+  verdict            String?
+  notes              String?
+  creatorRole        String           @default("candidate")
+  /// Set when a guest candidate requests the interviewer to start the session.
+  startRequestedAt   DateTime?
+  /// What kind of starter material drives this session.
+  /// "challenge" — DSA/algorithm-style round backed by Challenge.testFiles.
+  /// "playground" — open framework/scenario round backed by Snippet.files,
+  /// judged manually by the interviewer (no automated tests).
+  sourceType         String           @default("challenge")
   /// JSON-encoded string[] of challenge IDs, in order.
-  challengeIds  String
+  /// Used when sourceType = "challenge". May be "[]" otherwise.
+  challengeIds       String
+  /// Tracks the ID of the challenge currently being worked on.
+  activeChallengeId  String?
+  /// JSON-encoded string[] of Snippet IDs (playgrounds), in order.
+  /// Used when sourceType = "playground". May be "[]" otherwise.
+  playgroundIds      String           @default("[]")
+  /// JSON-encoded string[] of PromptScenario IDs, in order.
+  /// Used when sourceType = "prompt". May be "[]" otherwise.
+  promptScenarioIds  String           @default("[]")
+  /// Tracks the ID of the playground currently being worked on.
+  activePlaygroundId String?
+  /// Free-text scenario / prompt shown to the candidate during
+  /// playground rounds (e.g. "Add pagination to this list component").
+  /// Editable by the interviewer live; saved with the session.
+  scenario           String?
   /// Hard time limit for the whole session, in seconds.
-  totalSec      Int
-  status        String   @default("scheduled")
+  totalSec           Int
+  status             String           @default("scheduled")
   /// Random token used to grant read-only "interviewer view" access.
-  shareToken    String   @unique
-  startedAt     DateTime?
-  finishedAt    DateTime?
-  createdAt     DateTime @default(now())
+  shareToken         String           @unique
+  /// A friendly 4-digit access code (e.g., "4921")
+  shortCode          String?          @unique
+  startedAt          DateTime?
+  finishedAt         DateTime?
+  workspaceId        String?
+  /// Optional link to first-class Candidate entity (V2). When set, the
+  /// candidateName field above acts as a denormalized snapshot.
+  candidateId        String?
+  aiSuspicionScore   Float?
+  /// ── Async take-home mode (IP-88) ───────────────────────────────────────
+  /// When `type = "take-home"` this session is an async, candidate-self-serve
+  /// assessment rather than a live interview. The fields below only apply in
+  /// that mode; live/mock sessions leave them null.
+  ///
+  /// Tokenless candidate "do-the-assessment" link, distinct from `shareToken`
+  /// (which grants the interviewer read-only view).
+  candidateAccessToken  String?       @unique
+  /// Last moment the candidate may START the take-home (the invite expiry).
+  deadlineAt            DateTime?
+  /// Idempotency flag for the 24h reminder cron (mirrors TakeHomeAssignment).
+  reminderSentAt        DateTime?
+  /// Per-question time limits, JSON map { [sourceId]: minutes }. Drives the
+  /// per-question countdown in the async runner.
+  questionTimeLimitsJson String?
+  /// Chosen tech stack for prep sessions built via the Tech-Stack selector.
+  /// JSON of `TechStack` (see src/lib/interview/stack.ts). Null for sessions
+  /// assembled manually. Used for context/labels + AI question steering.
+  stackJson          String?
+  createdAt          DateTime         @default(now())
+  rubric             InterviewRubric?
+  candidate          Candidate?       @relation(fields: [candidateId], references: [id])
+  workspace          Workspace?       @relation(fields: [workspaceId], references: [id])
+  user               User             @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId, status])
+  @@index([candidateId])
+  @@index([workspaceId])
+  /// Listing take-home sessions per workspace (IP-88).
+  @@index([workspaceId, type])
 }
 
 model BlogPost {
-  id          String   @id @default(cuid())
-  slug        String   @unique
-  title       String
-  excerpt     String?
-  content     String   // Markdown content
-  coverImage  String?
-  published   Boolean  @default(false)
-  viewCount   Int      @default(0)
+  id         String         @id @default(cuid())
+  slug       String         @unique
+  title      String
+  excerpt    String?
+  content    String
+  coverImage String?
+  published  Boolean        @default(false)
+  viewCount  Int            @default(0)
   /// JSON-encoded string[] of tag labels (e.g. "react", "typescript", "ai").
-  tags        String?
+  tags       String?
+  /// "DRAFT" | "PENDING" | "PUBLISHED" | "REJECTED" | "NEEDS_CHANGES"
+  status     String         @default("DRAFT")
+  /// Feedback from admin if changes are needed or rejection reason.
+  adminNotes String?
   /// Admin-only flag for staff-picked / featured posts.
-  featured    Boolean  @default(false)
-  userId      String
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  reactions   BlogReaction[]
-  comments    BlogComment[]
-  bookmarks   BlogBookmark[]
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  featured   Boolean        @default(false)
+  userId     String
+  createdAt  DateTime       @default(now())
+  updatedAt  DateTime       @updatedAt
+  bookmarks  BlogBookmark[]
+  comments   BlogComment[]
+  user       User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  reactions  BlogReaction[]
 
   @@index([userId])
   @@index([published, createdAt])
@@ -208,12 +648,12 @@ model BlogPost {
 model BlogReaction {
   id        String   @id @default(cuid())
   postId    String
-  post      BlogPost @relation(fields: [postId], references: [id], onDelete: Cascade)
   userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   /// "clap" for v1. Future: "heart", "fire", "unicorn".
   type      String   @default("clap")
   createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  post      BlogPost @relation(fields: [postId], references: [id], onDelete: Cascade)
 
   @@unique([postId, userId, type])
   @@index([postId])
@@ -224,15 +664,15 @@ model BlogReaction {
 model BlogComment {
   id        String        @id @default(cuid())
   postId    String
-  post      BlogPost      @relation(fields: [postId], references: [id], onDelete: Cascade)
   userId    String
-  user      User          @relation(fields: [userId], references: [id], onDelete: Cascade)
   parentId  String?
-  parent    BlogComment?  @relation("CommentReplies", fields: [parentId], references: [id], onDelete: Cascade)
-  replies   BlogComment[] @relation("CommentReplies")
   content   String
   createdAt DateTime      @default(now())
   updatedAt DateTime      @updatedAt
+  parent    BlogComment?  @relation("CommentReplies", fields: [parentId], references: [id], onDelete: Cascade)
+  replies   BlogComment[] @relation("CommentReplies")
+  user      User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  post      BlogPost      @relation(fields: [postId], references: [id], onDelete: Cascade)
 
   @@index([postId, createdAt])
   @@index([userId])
@@ -241,11 +681,648 @@ model BlogComment {
 /// Saved-for-later bookmarks. Composite PK avoids duplicate saves.
 model BlogBookmark {
   postId    String
-  post      BlogPost @relation(fields: [postId], references: [id], onDelete: Cascade)
   userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  post      BlogPost @relation(fields: [postId], references: [id], onDelete: Cascade)
 
   @@id([postId, userId])
   @@index([userId, createdAt])
 }
+
+model SiteSetting {
+  key   String @id
+  value String
+}
+
+model TakeHomeAssignment {
+  id             String            @id @default(cuid())
+  challengeId    String
+  candidateName  String
+  candidateEmail String
+  token          String            @unique
+  status         String            @default("PENDING")
+  expiresAt      DateTime
+  timeLimitMin   Int               @default(60)
+  startedAt      DateTime?
+  submittedAt    DateTime?
+  /// Set when the 24h reminder email fired (IP-27). Guards the reminder cron
+  /// against double-sending on re-runs.
+  reminderSentAt DateTime?
+  attemptId      String?           @unique
+  workspaceId    String?
+  /// Optional link to the first-class Candidate entity. Backfilled by the
+  /// candidate seed/migration; candidateName/email above are retained as a
+  /// denormalized snapshot for back-compat and for guest invites.
+  candidateId    String?
+  createdAt      DateTime          @default(now())
+  candidate      Candidate?        @relation(fields: [candidateId], references: [id])
+  workspace      Workspace?        @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  attempt        ChallengeAttempt? @relation(fields: [attemptId], references: [id])
+  challenge      Challenge         @relation(fields: [challengeId], references: [id], onDelete: Cascade)
+
+  @@index([token])
+  @@index([candidateEmail])
+  @@index([candidateId])
+  @@index([workspaceId])
+}
+
+model Workspace {
+  id                   String                    @id @default(cuid())
+  name                 String
+  slug                 String                    @unique
+  stripeCustomerId     String?                   @unique
+  stripeSubscriptionId String?                   @unique
+  planName             String                    @default("FREE")
+  /// Phase 4.1 workspace-level kill-switch for outbound external MCP calls
+  /// during AI screenings. Even if individual templates have ExternalMcpServer
+  /// bindings, the wire is dead unless this flag is true. Defaults false so
+  /// nothing leaks while admins are still figuring out their setup.
+  allowExternalMcp     Boolean                   @default(false)
+  createdAt            DateTime                  @default(now())
+  aiCreditLedger       AIInterviewCreditLedger[]
+  aiInterviewSessions  AIInterviewSession[]
+  aiInterviewTemplates AIInterviewTemplate[]
+  aiScreeningBatches   AIScreeningBatch[]
+  atsIntegration       AtsIntegration?
+  candidates           Candidate[]
+  challenges           Challenge[]
+  sessions             InterviewSession[]
+  mcpApiKeys           McpApiKey[]
+  mcpAuditLogs         McpAuditLog[]
+  externalMcpServers   ExternalMcpServer[]
+  promptScenarios      PromptScenario[]
+  takeHomes            TakeHomeAssignment[]
+  members              WorkspaceMember[]
+  auditLogs            WorkspaceAuditLog[]
+}
+
+/// First-class candidate entity scoped to a workspace.
+/// Replaces the previous "implicit candidate" pattern where candidate info
+/// only lived inline on TakeHomeAssignment / InterviewSession rows.
+/// status: "active" | "hired" | "rejected" | "archived"
+model Candidate {
+  id                  String               @id @default(cuid())
+  workspaceId         String
+  name                String
+  email               String?
+  phone               String?
+  /// Where this candidate came from (e.g. "linkedin", "referral", "ats", "manual").
+  source              String?
+  /// Free-text notes — the recruiter's running journal on the candidate.
+  notes               String?
+  /// JSON-encoded string[] of tags (e.g. ["senior", "react", "remote-ok"]).
+  tags                String?
+  /// Disposition flag — semantically "what's the current bucket for this
+  /// person?" Historical values: active/future_hire/do_not_hire/hired/
+  /// rejected/archived. Coexists with `stage` (the pipeline position) — see
+  /// IP-34. Kept for backwards compat with existing queries.
+  status              String               @default("active")
+  /// IP-34: pipeline stage. One of:
+  ///   APPLIED → SCREENED → TAKE_HOME → ONSITE → OFFER → HIRED
+  ///                                                       ↘ REJECTED
+  /// REJECTED requires `rejectReason` set. Drag-drop on the Kanban moves
+  /// candidates between these.
+  stage               String               @default("APPLIED")
+  /// IP-34: when set, why this candidate was rejected.
+  ///   SKILL_GAP / CULTURE_FIT / COMP_MISMATCH / NO_RESPONSE / WITHDREW / OTHER
+  rejectReason        String?
+  /// Free-text expansion on rejectReason (e.g. "Salary expectation 30% over band").
+  rejectReasonNote    String?
+  /// Last time `stage` mutated — drives "time-in-stage" diagnostics.
+  stageChangedAt      DateTime?
+  createdAt           DateTime             @default(now())
+  updatedAt           DateTime             @updatedAt
+  aiInterviewSessions AIInterviewSession[]
+  workspace           Workspace            @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  sessions            InterviewSession[]
+  takeHomes           TakeHomeAssignment[]
+
+  @@unique([workspaceId, email])
+  @@index([workspaceId, status])
+  @@index([workspaceId, name])
+  @@index([workspaceId, stage])
+}
+
+model WorkspaceMember {
+  id          String    @id @default(cuid())
+  workspaceId String
+  userId      String
+  role        String    @default("INTERVIEWER")
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@unique([workspaceId, userId])
+}
+
+model SessionEventLog {
+  id         String           @id @default(cuid())
+  attemptId  String           @unique
+  eventsData String
+  createdAt  DateTime         @default(now())
+  attempt    ChallengeAttempt @relation(fields: [attemptId], references: [id], onDelete: Cascade)
+}
+
+model CandidateIntegrityReport {
+  id             String           @id @default(cuid())
+  attemptId      String           @unique
+  suspicionScore Int              @default(0)
+  totalBlurSec   Int              @default(0)
+  blurCount      Int              @default(0)
+  pasteCount     Int              @default(0)
+  pasteDetails   String
+  createdAt      DateTime         @default(now())
+  attempt        ChallengeAttempt @relation(fields: [attemptId], references: [id], onDelete: Cascade)
+}
+
+model InterviewRubric {
+  id            String           @id @default(cuid())
+  sessionId     String           @unique
+  ratings       String
+  notes         String?
+  interviewerId String
+  createdAt     DateTime         @default(now())
+  session       InterviewSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+}
+
+model AtsIntegration {
+  id            String    @id @default(cuid())
+  workspaceId   String    @unique
+  provider      String
+  apiKey        String
+  webhookSecret String?
+  settings      String    @default("{}")
+  createdAt     DateTime  @default(now())
+  workspace     Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+}
+
+model AIInterviewSession {
+  id               String                    @id @default(cuid())
+  workspaceId      String
+  candidateId      String?
+  /// Revamp: the screening batch this session belongs to. Null for legacy
+  /// single-template sessions created before the batch model (treated as an
+  /// implicit 1-round screening via the templateId below).
+  batchId          String?
+  /// One-time token used in candidate-facing URL. Distinct from the session id
+  /// so admin/internal ids are never leaked.
+  inviteToken      String                    @unique @default(cuid())
+  candidateName    String
+  candidateEmail   String
+  positionTitle    String
+  status           String                    @default("PENDING")
+  /// Candidate self-serve practice run (no recruiter, no credit charge). Hosted
+  /// under the reserved practice workspace; credit consumption is skipped.
+  practice         Boolean                   @default(false)
+  chatHistory      String
+  filesJson        String
+  templateId       String
+  score            Int?
+  ratings          String?
+  aiSummary        String?
+  /// Proctoring signal — 0..1, populated when integrity events are captured.
+  aiSuspicionScore Float?
+  /// Set atomically when the candidate sends their first message. Acts as the
+  /// "credit consumed" sentinel — `updateMany WHERE startedAt IS NULL` guards
+  /// against double-charge from concurrent first POSTs.
+  startedAt        DateTime?
+  finishedAt       DateTime?
+  /// Phase 4.1 outbound MCP budget counters. Each external-MCP call by the
+  /// AI interviewer bumps these; if any exceeds the per-session cap, Gemini
+  /// gets a tool error (not the screening — that continues).
+  outboundCallCount      Int     @default(0)
+  outboundResponseBytes  Int     @default(0)
+  outboundElapsedMs      Int     @default(0)
+  /// JSON snapshot of available external tools at session start. Cached so
+  /// every turn doesn't re-fetch tools/list from the customer's MCP server.
+  /// Shape: `{ servers: [{ id, label, tools: [...] }], cachedAt }`.
+  outboundToolsListCache String?
+  /// Live presence of the AI interviewer: "REACTIVE" (replies only when the
+  /// candidate messages — default/legacy), "OBSERVER" (sparing proactive
+  /// nudges) or "COACH" (actively present). Copied from the batch at invite so
+  /// runtime + credit charge read it without a join. Drives credit cost.
+  engagementLevel  String                    @default("REACTIVE")
+  /// Count of proactive (observer/coach) comments emitted this session. Used to
+  /// enforce the per-session hard cap on background AI interjections.
+  proactiveCount   Int                       @default(0)
+  createdAt        DateTime                  @default(now())
+  updatedAt        DateTime                  @updatedAt
+  ledgerEntries    AIInterviewCreditLedger[]
+  candidate        Candidate?                @relation(fields: [candidateId], references: [id])
+  workspace        Workspace                 @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  batch            AIScreeningBatch?         @relation(fields: [batchId], references: [id], onDelete: SetNull)
+  rounds           AIInterviewRound[]
+
+  @@index([workspaceId, status])
+  @@index([workspaceId, createdAt])
+  @@index([candidateId])
+  @@index([batchId])
+}
+
+/// Revamp (2026-06): a screening campaign grouping multiple candidates under
+/// one position with a SHARED question set (AIScreeningRoundSpec rows). Each
+/// candidate gets one AIInterviewSession whose AIInterviewRound rows are
+/// materialized from the shared specs (+ per-candidate overrides) at invite.
+model AIScreeningBatch {
+  id              String   @id @default(cuid())
+  workspaceId     String
+  positionTitle   String
+  /// User id of the recruiter who created the batch.
+  createdByUserId String
+  /// "DRAFT" (being built, not yet invited) | "ACTIVE" | "CLOSED".
+  status          String   @default("ACTIVE")
+  /// Live presence the recruiter chose for this screening: "REACTIVE" |
+  /// "OBSERVER" | "COACH". Copied onto each session at invite; sets credit cost.
+  engagementLevel String   @default("REACTIVE")
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  workspace       Workspace              @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  roundSpecs      AIScreeningRoundSpec[]
+  sessions        AIInterviewSession[]
+
+  @@index([workspaceId, createdAt])
+  @@index([workspaceId, status])
+}
+
+/// The shared question-set blueprint for a batch. Each row is one round every
+/// candidate gets by default. "Fullstack" is expressed as multiple specs
+/// (e.g. a frontend spec + a backend spec), not a single paradigm value.
+model AIScreeningRoundSpec {
+  id               String  @id @default(cuid())
+  batchId          String
+  /// 0-based round order within the batch.
+  order            Int
+  /// "frontend" | "backend" | "dsa".
+  paradigm         String
+  /// Execution language for backend/dsa (e.g. "node", "python"). Null for frontend.
+  language         String?
+  /// Frontend framework id (react/vue/...) OR non-executable backend framework
+  /// label. Steers surface choice + AI questioning.
+  frameworkLabel   String?
+  /// Problem origin: "challenge" | "playground" | "scaffold" (hybrid model).
+  sourceKind       String
+  /// Challenge id or playground/template id when sourceKind is challenge/playground.
+  sourceId         String?
+  /// AIInterviewTemplate id when sourceKind is "scaffold" (per-round override).
+  templateId       String?
+  estimatedMinutes Int     @default(30)
+  batch            AIScreeningBatch @relation(fields: [batchId], references: [id], onDelete: Cascade)
+
+  @@index([batchId, order])
+}
+
+/// A single materialized round for ONE candidate's session. Cloned from a
+/// batch's AIScreeningRoundSpec at invite, then individually overridable. Each
+/// round owns its files + score + status. The conversation is shared at the
+/// session level (one continuous chat with round-boundary markers — the locked
+/// revamp default), so `chatHistory` here is reserved/nullable for a future
+/// per-round-reset option. Credit is still charged once per SESSION (on the
+/// first message of the first round), not per round.
+model AIInterviewRound {
+  id               String  @id @default(cuid())
+  sessionId        String
+  order            Int
+  paradigm         String
+  language         String?
+  frameworkLabel   String?
+  sourceKind       String
+  sourceId         String?
+  templateId       String?
+  estimatedMinutes Int     @default(30)
+  /// Per-round candidate file state (path -> code, JSON). Seeds from the
+  /// resolved starter files for this round's source.
+  filesJson        String    @default("{}")
+  /// Reserved for a future per-round chat-reset mode. Null = shared session chat.
+  chatHistory      String?
+  /// Per-round score 0..100 + rubric, set at grade time. Session composite
+  /// score aggregates these.
+  score            Int?
+  ratings          String?
+  /// "PENDING" | "ACTIVE" | "COMPLETED".
+  status           String  @default("PENDING")
+  startedAt        DateTime?
+  finishedAt       DateTime?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+  session          AIInterviewSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@index([sessionId, order])
+}
+
+/// Workspace-scoped custom screening templates. The default `scaffolds.ts`
+/// catalog still ships as builtins; rows here layer on top and are merged at
+/// resolve time. NULL workspaceId is reserved for any future "global custom"
+/// templates an admin might seed.
+model AIInterviewTemplate {
+  id               String     @id @default(cuid())
+  workspaceId      String?
+  title            String
+  description      String
+  starterFiles     String
+  testsCode        String
+  estimatedMinutes Int        @default(30)
+  /// Coding-surface kind: "frontend" (Sandpack) | "backend" | "dsa" (Monaco +
+  /// Piston console). Null defaults to frontend.
+  kind             String?
+  /// Execution language for backend/dsa surfaces (e.g. "node", "python").
+  language         String?
+  /// Non-executable framework label (steers AI questions only).
+  frameworkLabel   String?
+  createdAt        DateTime   @default(now())
+  updatedAt        DateTime   @updatedAt
+  workspace        Workspace? @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  externalMcpBindings TemplateExternalMcp[]
+
+  @@index([workspaceId])
+}
+
+/// Append-only ledger of credit movements for a workspace. Balance is computed
+/// as SUM(amount). `amount` is signed: positive for PURCHASE/GRANT/REFUND,
+/// negative for CONSUMPTION.
+model AIInterviewCreditLedger {
+  id             String              @id @default(cuid())
+  workspaceId    String
+  kind           String
+  amount         Int
+  sessionId      String?
+  stripeChargeId String?
+  adminUserId    String?
+  note           String?
+  createdAt      DateTime            @default(now())
+  session        AIInterviewSession? @relation(fields: [sessionId], references: [id])
+  workspace      Workspace           @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@index([workspaceId, createdAt])
+  @@index([sessionId])
+}
+
+/// Workspace-scoped MCP API key. The full secret is shown ONCE at creation
+/// and only the SHA-256 hash is persisted. `keyPreview` is the first few
+/// characters of the plaintext, kept for UI display ("ip_live_a1b2…") so
+/// recruiters can identify which key to revoke without ever seeing the
+/// secret again.
+model McpApiKey {
+  id              String        @id @default(cuid())
+  workspaceId     String
+  label           String
+  keyHash         String        @unique
+  keyPreview      String
+  /// JSON-encoded string[] of scopes, e.g. `["read"]` or `["read","write"]`.
+  /// Phase 1 ships read-only; write tools arrive in Phase 2 and gate on this.
+  scopes          String        @default("[\"read\"]")
+  createdByUserId String?
+  lastUsedAt      DateTime?
+  revokedAt       DateTime?
+  createdAt       DateTime      @default(now())
+  workspace       Workspace     @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  auditLogs       McpAuditLog[]
+
+  @@index([workspaceId, revokedAt])
+}
+
+/// Append-only log of every MCP tool/resource invocation. Lets recruiters
+/// (and admins) audit which keys touched what data. Args are stored as
+/// truncated JSON because some tool params could be large.
+model McpAuditLog {
+  id            String     @id @default(cuid())
+  workspaceId   String
+  apiKeyId      String?
+  /// "tool" | "resource" (inbound, from a customer's API key) or "outbound"
+  /// (the AI interviewer calling into a customer-configured external MCP).
+  kind          String
+  name          String
+  argsJson      String?
+  resultSummary String?
+  errorCode     String?
+  durationMs    Int        @default(0)
+  /// Populated for kind="outbound" — the remote MCP URL the call hit.
+  outboundUrl   String?
+  createdAt     DateTime   @default(now())
+  apiKey        McpApiKey? @relation(fields: [apiKeyId], references: [id])
+  workspace     Workspace  @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@index([workspaceId, createdAt])
+  @@index([apiKeyId, createdAt])
+}
+
+/// A prompt engineering challenge scenario.
+model PromptScenario {
+  id               String           @id @default(cuid())
+  slug             String           @unique
+  title            String
+  description      String
+  objective        String
+  expectedTraits   String
+  difficulty       String           @default("intermediate")
+  category         String           @default("code-generation")
+  estimatedMinutes Int              @default(10)
+  workspaceId      String?
+  rubricWeights    String           @default("{\"clarity\":20,\"specificity\":20,\"efficiency\":15,\"context\":15,\"constraints\":15,\"edgeCases\":15}")
+  published        Boolean          @default(true)
+  /// Who authored this scenario. Null for built-in/seeded scenarios (only
+  /// admins may edit those). Platform-wide scenarios created by ordinary users
+  /// start unpublished and are editable/deletable by their author.
+  authorId         String?
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+  attempts         PromptAttempt[]
+  exemplars        PromptExemplar[]
+  workspace        Workspace?       @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@index([workspaceId, published])
+  @@index([difficulty, category])
+  @@index([authorId])
+}
+
+/// A candidate's submitted prompt for a scenario.
+///
+/// When `shared = true`, this attempt is also visible in the Community Prompts
+/// tab for its scenario. `shareUpvotes` is the denormalised upvote count used
+/// for sort order; the authoritative records live in PromptUpvote.
+model PromptAttempt {
+  id            String         @id @default(cuid())
+  scenarioId    String
+  promptText    String
+  charCount     Int
+  tokenEstimate Int
+  score         Int?
+  rubricScores  String?
+  feedback      String?
+  graderType    String?
+  sessionId     String?
+  userId        String?
+  durationSec   Int?
+  shared        Boolean        @default(false)
+  shareTitle    String?
+  shareNote     String?
+  shareUpvotes  Int            @default(0)
+  createdAt     DateTime       @default(now())
+  scenario      PromptScenario @relation(fields: [scenarioId], references: [id], onDelete: Cascade)
+  upvotes       PromptUpvote[]
+
+  @@index([scenarioId])
+  @@index([sessionId])
+  @@index([userId])
+  @@index([scenarioId, shared, shareUpvotes])
+}
+
+/// Admin-curated example prompts attached to a scenario. Shown in the
+/// "Exemplar Prompts" section of the Practice runner so developers can study
+/// well-scoring approaches before writing their own. `source` is "admin" by
+/// default; a future tool may promote high-upvote community shares to exemplars.
+model PromptExemplar {
+  id           String         @id @default(cuid())
+  scenarioId   String
+  title        String
+  promptText   String
+  summary      String
+  rubricScores String?
+  source       String         @default("admin")
+  authorId     String?
+  createdAt    DateTime       @default(now())
+  scenario     PromptScenario @relation(fields: [scenarioId], references: [id], onDelete: Cascade)
+
+  @@index([scenarioId])
+}
+
+/// One row per (attempt, user) upvote. Unique constraint enforces a single
+/// vote per user per shared attempt. PromptAttempt.shareUpvotes mirrors the
+/// count so the community list can sort without joining.
+model PromptUpvote {
+  id        String        @id @default(cuid())
+  attemptId String
+  userId    String
+  createdAt DateTime      @default(now())
+  attempt   PromptAttempt @relation(fields: [attemptId], references: [id], onDelete: Cascade)
+
+  @@unique([attemptId, userId])
+  @@index([attemptId])
+}
+
+/// Workspace-configured outbound MCP server. Used by the AI interviewer
+/// (Phase 4.1) to call into customer-specific context during a screening —
+/// internal docs, ATS, repo summaries, etc.
+///
+/// `authToken` is encrypted at rest (AES-256-GCM via src/lib/crypto/at-rest.ts).
+/// Never returned to the UI after creation; the page passes only
+/// `hasAuthToken: boolean` to the client.
+///
+/// `enabled` defaults to false so misconfigured servers can't accidentally
+/// start being called. Wiring also requires per-template binding (TemplateExternalMcp)
+/// AND the workspace-level `allowExternalMcp` kill-switch — three gates.
+model ExternalMcpServer {
+  id               String    @id @default(cuid())
+  workspaceId      String
+  workspace        Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  name             String    // human-readable label
+  url              String    // remote MCP endpoint URL
+  authToken        String?   // bearer token (encrypted at rest). NEVER returned via API.
+  enabled          Boolean   @default(false)
+  lastTestedAt     DateTime?
+  lastTestStatus   String?   // "ok" | "error" | null
+  lastTestSummary  String?   // short result text — tool count or error message
+  createdByUserId  String?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+  templateBindings TemplateExternalMcp[]
+
+  @@index([workspaceId])
+}
+
+/// Per-template binding for external MCP servers. The AI interviewer only
+/// surfaces a server's tools to Gemini if (a) the server is enabled, (b)
+/// it's bound here to the screening's template, and (c) the workspace has
+/// `allowExternalMcp = true`. Three gates, all must be true.
+model TemplateExternalMcp {
+  id                  String    @id @default(cuid())
+  templateId          String
+  externalMcpServerId String
+  createdAt           DateTime  @default(now())
+  template            AIInterviewTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
+  server              ExternalMcpServer   @relation(fields: [externalMcpServerId], references: [id], onDelete: Cascade)
+
+  @@unique([templateId, externalMcpServerId])
+  @@index([templateId])
+  @@index([externalMcpServerId])
+}
+
+/// Admin-only running scratchpad for the Interviewpad platform itself.
+/// Internal to the platform team; not shown to recruiters/candidates.
+/// `status` is a string for SQLite portability: BACKLOG | TODO | IN_PROGRESS | DONE.
+/// `priority` is a string for the same reason: LOW | MEDIUM | HIGH.
+/// `category` is free text so admins can group items however makes sense
+/// at the moment ("MCP", "AI Screening", "Marketing", "Bug fix", etc.).
+model AdminTodo {
+  id           String    @id @default(cuid())
+  /// Stable, human-readable ticket key like "IP-7" — the project-style identifier
+  /// admins can drop into commit messages or chat. Format: `IP-<ticketSeq>`.
+  /// Generated once at create time and never changes. Unique across the project.
+  ticketKey    String?   @unique
+  /// Monotonically increasing sequence number used to mint ticketKey. Stored
+  /// separately so future renaming/re-prefixing doesn't have to re-derive.
+  ticketSeq    Int?      @unique
+  title        String
+  body         String?
+  /// JSON-encoded array of `{ text: string, done: boolean }`. Stored as a
+  /// string for SQLite portability; the UI ticks checkboxes interactively.
+  acceptanceCriteria String?
+  /// Free-form scratchpad for the dev/product owner picking up the ticket —
+  /// edge cases noticed mid-spec, links, who to ask, design tradeoffs, etc.
+  ownerNotes   String?
+  status       String    @default("BACKLOG")
+  priority     String    @default("MEDIUM")
+  category     String?
+  /// Optional notes from the admin who added it — useful when someone else picks it up later.
+  addedByEmail String?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  completedAt  DateTime?
+
+  outgoingDeps AdminTodoDependency[] @relation("DepFrom")
+  incomingDeps AdminTodoDependency[] @relation("DepTo")
+
+  @@index([status, priority])
+}
+
+/// Jira-style ticket-to-ticket links so deferred follow-ups, blockers, and
+/// spawn relationships are queryable instead of buried in ownerNotes.
+///
+/// Directed edge: `(from, to, type)` reads "from {type} to":
+///   BLOCKS         — from must complete before to starts
+///   FOLLOWS_FROM   — from was spawned/deferred from to (parent → child trail)
+///   RELATES_TO     — informational, no ordering implied (symmetric in intent)
+///
+/// We store one row per directed edge (no auto-inverse). Read-side UI
+/// computes "Blocked by"/"Spawned by" by looking at incoming edges. Composite
+/// unique prevents accidental duplicate links.
+model AdminTodoDependency {
+  id        String    @id @default(cuid())
+  fromId    String
+  toId      String
+  type      String
+  createdAt DateTime  @default(now())
+  from      AdminTodo @relation("DepFrom", fields: [fromId], references: [id], onDelete: Cascade)
+  to        AdminTodo @relation("DepTo",   fields: [toId],   references: [id], onDelete: Cascade)
+
+  @@unique([fromId, toId, type])
+  @@index([toId, type])
+  @@index([fromId, type])
+}
+
+/// Tracks alerts generated by Gemma's RAG and monitoring engine
+model GemmaAlert {
+  id             String    @id @default(cuid())
+  type           String    // "INTEGRITY" | "MODERATION" | "SYSTEM_STALL" | "SECURITY"
+  title          String
+  body           String
+  severity       String    @default("MEDIUM") // "LOW" | "MEDIUM" | "HIGH" | "CRITICAL"
+  status         String    @default("UNRESOLVED") // "UNRESOLVED" | "DISMISSED" | "RESOLVED"
+  proposedAction String?   // JSON text of suggested action payload
+  targetId       String?   // Reference ID for polymorphic associations (user, post, attempt, etc.)
+  createdAt      DateTime  @default(now())
+  resolvedAt     DateTime?
+
+  @@index([status, severity])
+  @@index([type, status])
+}
+

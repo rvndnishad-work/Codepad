@@ -3,6 +3,8 @@
  * Fine for a single Node instance; swap the store for Redis in production.
  */
 
+import { getRedis } from "@/lib/redis";
+
 type Bucket = { hits: number[] };
 const buckets = new Map<string, Bucket>();
 
@@ -38,6 +40,54 @@ export function rateLimit(
     remaining: limit - bucket.hits.length,
     resetMs: windowMs,
   };
+}
+
+/**
+ * Distributed sliding-window rate limit. Uses Upstash Ratelimit (atomic,
+ * Redis-backed) when Redis is configured so limits hold across serverless
+ * instances; otherwise falls back to the in-memory `rateLimit` above (correct
+ * only on a single instance — fine for local dev).
+ *
+ * `windowMs` is rounded up to whole seconds for the Redis backend.
+ */
+let limiters: Map<string, import("@upstash/ratelimit").Ratelimit> | null = null;
+
+export async function rateLimitDistributed(
+  key: string,
+  limit: number,
+  windowMs: number
+): Promise<RateLimitResult> {
+  const redis = getRedis();
+  if (!redis) return rateLimit(key, limit, windowMs);
+
+  const { Ratelimit } = await import("@upstash/ratelimit");
+  // One Ratelimit instance per (limit, window) config; cheap to reuse.
+  const cfgKey = `${limit}:${windowMs}`;
+  if (!limiters) limiters = new Map();
+  let limiter = limiters.get(cfgKey);
+  if (!limiter) {
+    const windowSec = Math.max(1, Math.ceil(windowMs / 1000));
+    limiter = new Ratelimit({
+      redis,
+      limiter: Ratelimit.slidingWindow(limit, `${windowSec} s`),
+      prefix: "rl",
+      analytics: false,
+    });
+    limiters.set(cfgKey, limiter);
+  }
+
+  try {
+    const res = await limiter.limit(key);
+    return {
+      ok: res.success,
+      remaining: res.remaining,
+      resetMs: Math.max(0, res.reset - Date.now()),
+    };
+  } catch (err) {
+    // Never fail-closed on a Redis hiccup — degrade to in-memory.
+    console.error("rateLimitDistributed fell back to in-memory:", err);
+    return rateLimit(key, limit, windowMs);
+  }
 }
 
 /** Best-effort client identifier from request headers. */

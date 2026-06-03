@@ -1,7 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import Link from "next/link";
-import { Plus, Edit3 } from "lucide-react";
-import AdminChallengeRow from "./AdminChallengeRow";
+import { Plus } from "lucide-react";
+import AdminChallengesList from "./AdminChallengesList";
 
 export default async function AdminChallengesPage() {
   const rows = await prisma.challenge.findMany({
@@ -13,11 +13,25 @@ export default async function AdminChallengesPage() {
       difficulty: true,
       category: true,
       published: true,
+      premium: true,
       estimatedMinutes: true,
       updatedAt: true,
       _count: { select: { attempts: true } },
     },
   });
+
+  const formattedRows = rows.map((c) => ({
+    id: c.id,
+    slug: c.slug,
+    title: c.title,
+    difficulty: c.difficulty,
+    category: c.category,
+    published: c.published,
+    premium: c.premium,
+    estimatedMinutes: c.estimatedMinutes,
+    updatedAt: c.updatedAt.toISOString(),
+    attempts: c._count.attempts,
+  }));
 
   return (
     <div>
@@ -49,36 +63,7 @@ export default async function AdminChallengesPage() {
           </Link>
         </div>
       ) : (
-        <div className="rounded-2xl border border-border bg-surface overflow-hidden">
-          <table className="w-full text-sm">
-            <thead className="bg-elevated/50 text-[10px] uppercase tracking-[0.15em] text-muted">
-              <tr>
-                <th className="text-left px-4 py-3 font-bold">Title</th>
-                <th className="text-left px-4 py-3 font-bold">Difficulty</th>
-                <th className="text-left px-4 py-3 font-bold">Category</th>
-                <th className="text-left px-4 py-3 font-bold">Attempts</th>
-                <th className="text-left px-4 py-3 font-bold">Status</th>
-                <th className="text-right px-4 py-3 font-bold"></th>
-              </tr>
-            </thead>
-            <tbody>
-              {rows.map((c) => (
-                <AdminChallengeRow
-                  key={c.id}
-                  challenge={{
-                    id: c.id,
-                    slug: c.slug,
-                    title: c.title,
-                    difficulty: c.difficulty,
-                    category: c.category,
-                    published: c.published,
-                    attempts: c._count.attempts,
-                  }}
-                />
-              ))}
-            </tbody>
-          </table>
-        </div>
+        <AdminChallengesList rows={formattedRows} />
       )}
     </div>
   );

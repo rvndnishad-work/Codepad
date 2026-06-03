@@ -1,8 +1,11 @@
 import Link from "next/link";
-import { Flame, Sparkles, TrendingUp, Users, BookOpen, PenSquare, Hash } from "lucide-react";
+import { Flame, Sparkles, TrendingUp, Users, PenSquare, Hash } from "lucide-react";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import BlogFeedItem, { type BlogFeedEntry } from "@/components/BlogFeedItem";
+import { validatePageAccess } from "@/lib/settings";
+import { type BlogFeedEntry } from "@/components/BlogFeedItem";
+import BlogStoriesList from "@/components/BlogStoriesList";
+import FeaturedCarousel from "@/components/FeaturedCarousel";
 import FollowButton from "@/components/FollowButton";
 
 export const dynamic = "force-dynamic";
@@ -43,6 +46,7 @@ export default async function BlogListingPage({
 }) {
   const sp = await searchParams;
   const session = await auth().catch(() => null);
+  await validatePageAccess("/blog", session);
   const userId = session?.user?.id ?? null;
 
   const requestedTab = (sp.tab as Tab) || "latest";
@@ -50,7 +54,7 @@ export default async function BlogListingPage({
     requestedTab === "following" && !userId ? "latest" : requestedTab;
   const tag = sp.tag?.trim().toLowerCase() || null;
 
-  // Build the where clause based on the active tab.
+  // Build the where clause for the feed.
   let where: any = { published: true };
   let orderBy: any = { createdAt: "desc" as const };
 
@@ -67,22 +71,40 @@ export default async function BlogListingPage({
     };
   }
 
-  // Tag filter (server-side LIKE on the JSON string is good enough for SQLite).
   if (tag) {
     where = { ...where, tags: { contains: `"${tag}"` } };
   }
 
+  // Featured carousel runs only on the Latest tab with no tag filter — once the
+  // user has narrowed the view, a horizontal "pinned" rail just gets in the way.
+  const showFeatured = tab === "latest" && !tag;
+  const featuredRows = showFeatured
+    ? await prisma.blogPost.findMany({
+        where: { published: true, featured: true },
+        orderBy: { updatedAt: "desc" },
+        take: 8,
+        include: {
+          user: { select: { id: true, name: true, image: true } },
+          _count: { select: { reactions: true, comments: true } },
+        },
+      })
+    : [];
+
+  // Main feed — exclude carousel items so we don't show them twice, then fetch
+  // the first page. Lazy load tops this up via /api/blogs.
+  const mainWhere = showFeatured ? { ...where, featured: false } : where;
+
   const rows = await prisma.blogPost.findMany({
-    where,
+    where: mainWhere,
     orderBy,
-    take: 30,
+    take: 12,
     include: {
       user: { select: { id: true, name: true, image: true } },
       _count: { select: { reactions: true, comments: true } },
     },
   });
 
-  const items: BlogFeedEntry[] = rows.map((b) => ({
+  const toEntry = (b: typeof rows[number]): BlogFeedEntry => ({
     id: b.id,
     slug: b.slug,
     title: b.title,
@@ -95,7 +117,17 @@ export default async function BlogListingPage({
     reactionCount: b._count.reactions,
     commentCount: b._count.comments,
     user: { name: b.user.name, image: b.user.image },
-  }));
+  });
+
+  const featured: BlogFeedEntry[] = featuredRows.map(toEntry);
+  const featuredIds = featuredRows.map((r) => r.id);
+  const items: BlogFeedEntry[] = rows.map(toEntry);
+
+  // Cursor pagination on the latest tab uses createdAt; top/following can't
+  // lazy-load (their order isn't a stable createdAt scan), so we ship a finite
+  // first page. Empty cursor = nothing to lazy load.
+  const canLazyLoad = tab === "latest" && rows.length === 12;
+  const lazyCursor = canLazyLoad ? rows[rows.length - 1].createdAt.toISOString() : null;
 
   // Sidebar data — fetched in parallel.
   const [popularTagsRaw, suggestedUsers, mostRead] = await Promise.all([
@@ -160,8 +192,8 @@ export default async function BlogListingPage({
       {/* Hero strip (compact) */}
       <div className="border-b border-border bg-bg/50">
         <div className="mx-auto max-w-6xl px-4 py-10">
-          <div className="inline-flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.2em] text-accent mb-3 bg-accent/10 px-3 py-1 rounded-full">
-            <Flame className="w-3 h-3 fill-current" />
+          <div className="inline-flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.2em] text-accent mb-3 bg-accent/10 border border-accent/20 px-4 py-1.5 rounded-full shadow-[0_0_15px_rgba(var(--accent-rgb),0.1)]">
+            <Flame className="w-3 h-3 fill-current animate-pulse" />
             Insights & Engineering
           </div>
           <h1 className="text-3xl md:text-4xl font-black tracking-tight text-fg">
@@ -172,6 +204,12 @@ export default async function BlogListingPage({
           </p>
         </div>
       </div>
+
+      {featured.length > 0 && (
+        <div className="mx-auto max-w-6xl px-4 pt-8">
+          <FeaturedCarousel items={featured} />
+        </div>
+      )}
 
       <main className="mx-auto max-w-6xl px-4 py-8 grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-10">
         {/* MAIN COLUMN */}
@@ -212,7 +250,8 @@ export default async function BlogListingPage({
             </div>
           )}
 
-          {/* Feed */}
+          {/* Unified row feed. Lazy load runs on the Latest tab; Top and Following ship a single finite page. */}
+
           {items.length === 0 ? (
             <div className="rounded-2xl border border-border bg-surface p-12 text-center">
               {tab === "following" ? (
@@ -228,11 +267,13 @@ export default async function BlogListingPage({
               )}
             </div>
           ) : (
-            <div className="flex flex-col gap-3">
-              {items.map((b) => (
-                <BlogFeedItem key={b.id} blog={b} />
-              ))}
-            </div>
+            <BlogStoriesList
+              initialItems={items}
+              initialCursor={lazyCursor}
+              excludeIds={featuredIds}
+              tag={tag}
+              enableLazy={canLazyLoad}
+            />
           )}
         </div>
 
@@ -261,7 +302,7 @@ export default async function BlogListingPage({
           {suggestedUsers.length > 0 && (
             <div className="rounded-2xl border border-border bg-surface p-5">
               <div className="flex items-center gap-2 mb-4">
-                <Users className="w-4 h-4 text-accent" />
+                <Users className="w-4 h-4 text-violet-500" />
                 <h3 className="text-sm font-black tracking-tight text-fg">
                   Who to follow
                 </h3>
@@ -310,7 +351,7 @@ export default async function BlogListingPage({
           {mostRead.length > 0 && (
             <div className="rounded-2xl border border-border bg-surface p-5">
               <div className="flex items-center gap-2 mb-4">
-                <TrendingUp className="w-4 h-4 text-accent" />
+                <TrendingUp className="w-4 h-4 text-emerald-500" />
                 <h3 className="text-sm font-black tracking-tight text-fg">
                   Most read
                 </h3>
@@ -318,7 +359,7 @@ export default async function BlogListingPage({
               <ol className="flex flex-col gap-3">
                 {mostRead.map((p, i) => (
                   <li key={p.id} className="flex items-start gap-3">
-                    <span className="text-2xl font-black text-muted/30 leading-none tabular-nums shrink-0 w-6">
+                    <span className="text-2xl font-black text-emerald-500/20 leading-none tabular-nums shrink-0 w-6">
                       {(i + 1).toString().padStart(2, "0")}
                     </span>
                     <Link
@@ -342,7 +383,7 @@ export default async function BlogListingPage({
           {popularTags.length > 0 && (
             <div className="rounded-2xl border border-border bg-surface p-5">
               <div className="flex items-center gap-2 mb-4">
-                <Hash className="w-4 h-4 text-accent" />
+                <Hash className="w-4 h-4 text-blue-500" />
                 <h3 className="text-sm font-black tracking-tight text-fg">
                   Popular topics
                 </h3>

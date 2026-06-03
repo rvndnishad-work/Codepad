@@ -1,7 +1,7 @@
 import "./globals.css";
 import type { Metadata } from "next";
-import { Outfit } from "next/font/google";
-import { Toaster } from "sonner";
+import { Inter, Fira_Code } from "next/font/google";
+import ThemedToaster from "@/components/ThemedToaster";
 import Header from "@/components/Header";
 import HeaderShell from "@/components/HeaderShell";
 import Footer from "@/components/Footer";
@@ -9,9 +9,23 @@ import FooterShell from "@/components/FooterShell";
 
 import { ThemeProvider } from "@/components/ThemeProvider";
 
-const outfit = Outfit({
+// Inter is the de-facto UI font for premium dev tools (Vercel, Linear,
+// GitHub, Stripe). It also enables the OpenType character variants
+// (cv02/cv03/cv04, ss01) that globals.css already opts into via
+// font-feature-settings — those are no-ops on the previous font.
+const inter = Inter({
   subsets: ["latin"],
-  variable: "--font-outfit",
+  variable: "--font-sans",
+  display: "swap",
+});
+
+// Fira Code is the preferred coding font across every editor/playground — its
+// programming ligatures (=>, ===, !=, >=, …) read well in code. Loaded via
+// next/font and exposed as --font-mono, which Tailwind `font-mono` and every
+// editor's fontFamily resolve to.
+const firaCode = Fira_Code({
+  subsets: ["latin"],
+  variable: "--font-mono",
   display: "swap",
 });
 
@@ -55,23 +69,25 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className={outfit.variable} suppressHydrationWarning>
-      <body className="min-h-screen font-sans flex flex-col">
+    <html
+      lang="en"
+      className={`${inter.variable} ${firaCode.variable}`}
+      suppressHydrationWarning
+    >
+      <body
+        className="min-h-screen font-sans flex flex-col"
+        // Some browser extensions (e.g. ColorZilla) inject attributes like
+        // cz-shortcut-listen="true" onto <body> before React hydrates, which
+        // triggers a "server vs client HTML mismatch" warning. The injection
+        // is benign — suppress the warning for this element only. Doesn't
+        // cover our own components; they're still hydration-checked normally.
+        suppressHydrationWarning
+      >
         <ThemeProvider attribute="class" defaultTheme="dark" enableSystem={false}>
           <HeaderShell><Header /></HeaderShell>
           <main className="flex-1 flex flex-col">{children}</main>
           <FooterShell><Footer /></FooterShell>
-          <Toaster
-            theme="dark"
-            position="bottom-right"
-            toastOptions={{
-              style: {
-                background: "var(--surface)",
-                border: "1px solid var(--border)",
-                color: "var(--fg)",
-              },
-            }}
-          />
+          <ThemedToaster />
         </ThemeProvider>
       </body>
     </html>

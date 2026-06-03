@@ -27,15 +27,19 @@ export default async function EditBlogPage({ params }: { params: Promise<{ id: s
 
   return (
     <div className="bg-bg min-h-screen flex flex-col">
-      <main className="flex-1 mx-auto max-w-7xl w-full px-4 py-8">
-        <BlogEditorContainer initialData={{
-          ...blog,
-          excerpt: blog.excerpt ?? "",
-          coverImage: blog.coverImage ?? "",
-          tags,
-          createdAt: blog.createdAt.toISOString(),
-          updatedAt: blog.updatedAt.toISOString(),
-        }} />
+      <main className="flex-1 mx-auto max-w-7xl w-full px-4 py-6">
+        <BlogEditorContainer
+          initialData={{
+            id: blog.id,
+            slug: blog.slug,
+            title: blog.title,
+            content: blog.content,
+            excerpt: blog.excerpt ?? "",
+            coverImage: blog.coverImage ?? "",
+            published: blog.published,
+            tags,
+          }}
+        />
       </main>
     </div>
   );

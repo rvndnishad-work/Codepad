@@ -6,6 +6,35 @@ import { prisma } from "@/lib/prisma";
 
 const filesSchema = z.record(z.string(), z.string());
 
+const testCaseSchema = z.object({
+  id: z.string().min(1).max(100),
+  name: z.string().min(1).max(200),
+  input: z.string().max(20_000),
+  expected: z.string().max(20_000),
+  isHidden: z.boolean().default(false),
+  weight: z.number().int().min(1).max(100).default(10),
+});
+
+const stepSchema = z.object({
+  title: z.string().max(200).optional(),
+  description: z.string().min(1).max(20_000),
+  template: z.string().min(1).max(40),
+  starterFiles: filesSchema,
+  testFiles: filesSchema,
+  estimatedMinutes: z.number().int().min(1).max(300),
+  hint: z.string().max(20_000).optional(),
+  videoUrl: z.string().max(500).optional(),
+  testCases: z.array(testCaseSchema).optional(),
+  // ── Function-harness authoring (pre-serialized JSON strings from the form) ──
+  judgingMode: z.enum(["harness", "unit-js", "frontend"]).optional(),
+  functionName: z.string().max(80).nullable().optional(),
+  signatureJson: z.string().max(4_000).nullable().optional(),
+  languagesJson: z.string().max(2_000).nullable().optional(),
+  starterCodeJson: z.string().max(256 * 1024).nullable().optional(),
+  referenceSolutionsJson: z.string().max(256 * 1024).nullable().optional(),
+  harnessTestsJson: z.string().max(256 * 1024).optional(),
+});
+
 const payloadSchema = z.object({
   slug: z
     .string()
@@ -15,13 +44,13 @@ const payloadSchema = z.object({
   title: z.string().min(1).max(200),
   description: z.string().min(1).max(20_000),
   difficulty: z.enum(["easy", "medium", "hard"]),
-  template: z.string().min(1).max(40),
-  starterFiles: filesSchema,
-  testFiles: filesSchema,
   tags: z.array(z.string().max(40)).max(20),
-  estimatedMinutes: z.number().int().min(1).max(300),
   category: z.string().max(80).nullable(),
   published: z.boolean(),
+  visibility: z.enum(["public", "private"]).optional(),
+  featured: z.boolean().optional(),
+  premium: z.boolean().optional(),
+  steps: z.array(stepSchema).min(1).max(20),
 });
 
 export async function POST(req: Request) {
@@ -37,27 +66,64 @@ export async function POST(req: Request) {
   }
   const data = parsed.data;
 
-  const existing = await prisma.challenge.findUnique({ where: { slug: data.slug } });
+  const existing = await prisma.challenge.findUnique({
+    where: { slug: data.slug },
+  });
   if (existing) {
     return NextResponse.json({ error: "Slug already in use" }, { status: 409 });
   }
 
-  const challenge = await prisma.challenge.create({
-    data: {
-      slug: data.slug,
-      title: data.title,
-      description: data.description,
-      difficulty: data.difficulty,
-      template: data.template,
-      starterFiles: JSON.stringify(data.starterFiles),
-      testFiles: JSON.stringify(data.testFiles),
-      tags: JSON.stringify(data.tags),
-      estimatedMinutes: data.estimatedMinutes,
-      category: data.category,
-      published: data.published,
-    },
-    select: { id: true, slug: true },
+  // Step 1 backfill: legacy fields on Challenge mirror step[0] so unmigrated
+  // read paths keep working. Stage 2 will drop the legacy columns.
+  const first = data.steps[0];
+
+  const created = await prisma.$transaction(async (tx) => {
+    const challenge = await tx.challenge.create({
+      data: {
+        slug: data.slug,
+        title: data.title,
+        description: data.description,
+        difficulty: data.difficulty,
+        tags: JSON.stringify(data.tags),
+        category: data.category,
+        published: data.published,
+        visibility: data.visibility ?? "public",
+        featured: data.featured ?? false,
+        premium: data.premium ?? false,
+        // Legacy mirror
+        template: first.template,
+        starterFiles: JSON.stringify(first.starterFiles),
+        testFiles: JSON.stringify(first.testFiles),
+        estimatedMinutes: first.estimatedMinutes,
+      },
+      select: { id: true, slug: true },
+    });
+
+    await tx.challengeStep.createMany({
+      data: data.steps.map((s, i) => ({
+        challengeId: challenge.id,
+        position: i,
+        title: s.title || null,
+        description: s.description,
+        template: s.template,
+        starterFiles: JSON.stringify(s.starterFiles),
+        testFiles: JSON.stringify(s.testFiles),
+        estimatedMinutes: s.estimatedMinutes,
+        hint: s.hint || null,
+        videoUrl: s.videoUrl || null,
+        testCasesJson: JSON.stringify(s.testCases || []),
+        judgingMode: s.judgingMode ?? "unit-js",
+        functionName: s.functionName ?? null,
+        signatureJson: s.signatureJson ?? null,
+        languagesJson: s.languagesJson ?? null,
+        starterCodeJson: s.starterCodeJson ?? null,
+        referenceSolutionsJson: s.referenceSolutionsJson ?? null,
+        harnessTestsJson: s.harnessTestsJson ?? "[]",
+      })),
+    });
+
+    return challenge;
   });
 
-  return NextResponse.json(challenge, { status: 201 });
+  return NextResponse.json(created, { status: 201 });
 }

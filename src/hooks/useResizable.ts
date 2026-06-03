@@ -52,5 +52,5 @@ export function useResizable(initialWidth: number, minWidth = 80, maxWidth = 600
     [width, minWidth, maxWidth]
   );
 
-  return { width, onPointerDown };
+  return { width, onPointerDown, setWidth };
 }

@@ -1,4 +1,4 @@
-import Playground from "@/components/Playground";
+import PlaygroundLoader from "@/components/PlaygroundLoader";
 import { templatesById } from "@/lib/templates";
 import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
@@ -13,6 +13,7 @@ export default async function NewPlaygroundPage({
   if (!templatesById[templateId]) redirect("/");
   const session = await auth().catch(() => null);
   return (
-    <Playground templateId={templateId} signedIn={Boolean(session?.user)} />
+    <PlaygroundLoader templateId={templateId} signedIn={Boolean(session?.user)} />
   );
 }
+

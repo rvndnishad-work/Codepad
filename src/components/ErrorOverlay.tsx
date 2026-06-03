@@ -289,7 +289,7 @@ const overlayCSS = `
     border: 1px solid rgba(var(--accent-rgb), 0.20);
   }
   .error-location {
-    font-family: 'JetBrains Mono', monospace;
+    font-family: var(--font-mono), 'Fira Code', monospace;
     font-size: 11px;
     color: var(--subtle);
   }
@@ -299,7 +299,7 @@ const overlayCSS = `
   }
   .error-message-area {
     padding: 16px 18px;
-    font-family: 'JetBrains Mono', monospace;
+    font-family: var(--font-mono), 'Fira Code', monospace;
     font-size: 13px;
     line-height: 1.6;
     color: var(--fg);
@@ -333,7 +333,7 @@ const overlayCSS = `
     border-top: 1px solid var(--border);
     background: var(--panel);
     padding: 8px 0;
-    font-family: 'JetBrains Mono', monospace;
+    font-family: var(--font-mono), 'Fira Code', monospace;
     font-size: 12px;
     line-height: 1.5;
     overflow-x: auto;

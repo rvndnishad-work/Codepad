@@ -1,37 +1,42 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import BlogEditor from "@/components/BlogEditor";
-import { ArrowLeft, Trash2, ExternalLink } from "lucide-react";
 import Link from "next/link";
+import { ArrowLeft, ExternalLink, Trash2 } from "lucide-react";
 import { toast } from "sonner";
+import BlogEditor from "@/components/BlogEditor";
+import type {
+  BlogEditorData,
+  BlogEditorSavePayload,
+} from "@/components/blog-editor/types";
 
-export default function BlogEditorContainer({ initialData }: { initialData: any }) {
+interface ContainerProps {
+  initialData: BlogEditorData & { slug: string };
+}
+
+export default function BlogEditorContainer({ initialData }: ContainerProps) {
   const router = useRouter();
 
-  const handleSave = async (data: any) => {
+  const handleSave = async (data: BlogEditorSavePayload) => {
     const res = await fetch(`/api/blogs/${initialData.id}`, {
       method: "PATCH",
       body: JSON.stringify(data),
       headers: { "Content-Type": "application/json" },
     });
-
-    if (!res.ok) throw new Error("Failed to update blog");
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.error?.formErrors?.join?.(", ") || "Failed to update");
+    }
     router.refresh();
   };
 
   const handleDelete = async () => {
-    if (!confirm("Are you sure you want to delete this blog post?")) return;
-    
-    const res = await fetch(`/api/blogs/${initialData.id}`, {
-      method: "DELETE",
-    });
-
+    if (!confirm("Delete this blog post? This cannot be undone.")) return;
+    const res = await fetch(`/api/blogs/${initialData.id}`, { method: "DELETE" });
     if (!res.ok) {
       toast.error("Failed to delete blog post");
       return;
     }
-    
     toast.success("Blog post deleted");
     router.push("/dashboard");
     router.refresh();
@@ -39,36 +44,47 @@ export default function BlogEditorContainer({ initialData }: { initialData: any 
 
   return (
     <>
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
-        <div>
-          <Link href="/dashboard" className="inline-flex items-center gap-2 text-sm font-bold text-muted hover:text-fg transition-colors mb-4 group">
-            <ArrowLeft className="w-4 h-4 transition-transform group-hover:-translate-x-1" />
-            Back to Dashboard
-          </Link>
-          <h1 className="text-3xl font-black text-fg tracking-tight">Edit Blog Post</h1>
-          <p className="text-muted font-medium">Refining your insights.</p>
-        </div>
-        <div className="flex items-center gap-3">
+      <div className="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <Link
+          href="/dashboard"
+          className="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-muted hover:text-fg transition-colors group"
+        >
+          <ArrowLeft className="w-3.5 h-3.5 transition-transform group-hover:-translate-x-0.5" />
+          Back to dashboard
+        </Link>
+        <div className="flex items-center gap-2">
           {initialData.published && (
-            <Link 
+            <Link
               href={`/blog/${initialData.slug}`}
-              className="flex items-center gap-2 px-4 py-2 rounded-xl bg-surface border border-border text-fg text-sm font-bold hover:bg-elevated transition-all"
               target="_blank"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-border bg-surface hover:bg-elevated text-fg text-[11px] font-bold transition-colors"
             >
-              <ExternalLink className="w-4 h-4" />
-              View Live
+              <ExternalLink className="w-3 h-3" />
+              View live
             </Link>
           )}
-          <button 
+          <button
             onClick={handleDelete}
-            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-red-500/10 text-red-500 text-sm font-bold hover:bg-red-500 hover:text-white transition-all shadow-sm"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-red-500/30 bg-red-500/10 hover:bg-red-500 hover:text-white text-red-500 text-[11px] font-bold transition-colors"
           >
-            <Trash2 className="w-4 h-4" />
-            Delete Post
+            <Trash2 className="w-3 h-3" />
+            Delete
           </button>
         </div>
       </div>
-      <BlogEditor initialData={initialData} onSave={handleSave} />
+      <BlogEditor
+        initialData={{
+          id: initialData.id,
+          title: initialData.title,
+          content: initialData.content,
+          excerpt: initialData.excerpt,
+          coverImage: initialData.coverImage,
+          published: initialData.published,
+          tags: initialData.tags,
+        }}
+        onSave={handleSave}
+        autoSave
+      />
     </>
   );
 }

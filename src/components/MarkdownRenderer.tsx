@@ -1,5 +1,6 @@
 "use client";
 
+import React from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import rehypeHighlight from "rehype-highlight";
@@ -9,13 +10,23 @@ import RunnableSnippet from "./RunnableSnippet";
 interface MarkdownRendererProps {
   content: string;
   className?: string;
+  forceRunnable?: boolean;
 }
 
-export default function MarkdownRenderer({ content, className = "" }: MarkdownRendererProps) {
+export default function MarkdownRenderer({ content, className = "", forceRunnable = false }: MarkdownRendererProps) {
+  const extractText = (node: any): string => {
+    if (typeof node === 'string') return node;
+    if (Array.isArray(node)) return node.map(extractText).join('');
+    if (node && node.props && node.props.children) {
+      return extractText(node.props.children);
+    }
+    return '';
+  };
+
   return (
-    <article className={`prose prose-invert prose-pre:bg-panel/50 prose-pre:border prose-pre:border-border/50 prose-pre:rounded-xl max-w-none 
+    <article className={`prose dark:prose-invert max-w-none 
       prose-headings:text-fg prose-headings:font-black prose-headings:tracking-tight
-      prose-p:text-muted prose-a:text-accent hover:prose-a:text-accent-glow prose-a:no-underline hover:prose-a:underline
+      prose-p:text-slate-700 dark:prose-p:text-slate-300 prose-a:text-accent hover:prose-a:text-accent-glow prose-a:no-underline hover:prose-a:underline
       prose-strong:text-fg prose-code:text-accent prose-code:bg-panel/50 prose-code:px-1 prose-code:py-0.5 prose-code:rounded prose-code:before:content-none prose-code:after:content-none
       ${className}`}>
       <ReactMarkdown
@@ -24,7 +35,7 @@ export default function MarkdownRenderer({ content, className = "" }: MarkdownRe
         components={{
           code({ node, inline, className, children, ...props }: any) {
             // Match both `language-javascript` and `language-javascript-run`
-            // (the `-run` suffix is our runnable marker — see TiptapEditor for why).
+            // (the `-run` suffix is our runnable marker — see blog-editor/SlashMenu for why).
             const match = /language-([\w-]+)/.exec(className || "");
             const rawLang = match?.[1] ?? "";
 
@@ -33,15 +44,16 @@ export default function MarkdownRenderer({ content, className = "" }: MarkdownRe
             const meta = (node as any)?.data?.meta || "";
             const isRunnableByMeta = meta.split(" ").includes("run");
             const isRunnableByLang = rawLang.endsWith("-run");
-            const isRunnable = isRunnableByLang || isRunnableByMeta;
+            const isRunnable = isRunnableByLang || isRunnableByMeta || forceRunnable;
             const language = isRunnableByLang ? rawLang.slice(0, -"-run".length) : rawLang;
 
             if (!inline && isRunnable && language) {
               return (
                 <div className="not-prose">
                   <RunnableSnippet
-                    code={String(children).replace(/\n$/, "")}
+                    code={extractText(children).replace(/\n$/, "")}
                     language={language}
+                    autorun={forceRunnable}
                   />
                 </div>
               );
@@ -63,11 +75,27 @@ export default function MarkdownRenderer({ content, className = "" }: MarkdownRe
               )}
             </span>
           ),
-          pre: ({ children }) => (
-            <pre className="relative overflow-hidden group">
-              {children}
-            </pre>
-          ),
+          pre: ({ children }: any) => {
+            const childrenArray = React.Children.toArray(children);
+            // Check if any child is our runnable snippet or a code block that will become one
+            const hasRunnable = childrenArray.some((child: any) => {
+              const className = child?.props?.className || "";
+              const hasNotProse = className.includes("not-prose");
+              const isRunnableCode = className.includes("-run");
+              const innerHasNotProse = child?.props?.children?.props?.className?.includes("not-prose");
+              return hasNotProse || isRunnableCode || innerHasNotProse;
+            });
+
+            if (hasRunnable) {
+              return <>{children}</>;
+            }
+
+            return (
+              <pre className="relative overflow-hidden group border border-border/50 bg-panel/50 rounded-xl my-8">
+                {children}
+              </pre>
+            );
+          },
         }}
       >
         {content}

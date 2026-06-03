@@ -4,21 +4,15 @@ import { auth } from "@/lib/auth";
 import { isAdmin } from "@/lib/admin";
 import { prisma } from "@/lib/prisma";
 import { nanoid } from "nanoid";
-
-const TAG_RE = /^[a-z0-9][a-z0-9-]{0,29}$/;
+import { coverImageSchema, blogTagsSchema } from "@/lib/blog-schema";
 
 const createSchema = z.object({
   title: z.string().min(1).max(200),
   content: z.string().min(1),
   excerpt: z.string().max(500).optional(),
-  coverImage: z
-    .string()
-    .url()
-    .refine((u) => /^https?:/.test(u), "must be http(s) URL")
-    .optional()
-    .or(z.literal("")),
+  coverImage: coverImageSchema.optional(),
   published: z.boolean().optional(),
-  tags: z.array(z.string().regex(TAG_RE)).max(8).optional(),
+  tags: blogTagsSchema.optional(),
 });
 
 export async function POST(req: Request) {
@@ -62,6 +56,19 @@ export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
   const includeDrafts = searchParams.get("published") === "false";
   const userId = searchParams.get("userId");
+  const tag = searchParams.get("tag")?.trim().toLowerCase() || null;
+  const excludeFeatured = searchParams.get("excludeFeatured") === "true";
+
+  // Cursor pagination — `before` is the createdAt ISO of the last item the
+  // client already has; `limit` caps the batch size. Used by the homepage
+  // horizontal scroller and the /blog "More stories" list for lazy-loading.
+  const beforeRaw = searchParams.get("before");
+  const limitRaw = searchParams.get("limit");
+  const before = beforeRaw ? new Date(beforeRaw) : null;
+  const limit = Math.min(
+    Math.max(parseInt(limitRaw ?? "", 10) || 0, 0) || 50,
+    50,
+  );
 
   // Drafts are private. Only the owner (or an admin) may list them.
   if (includeDrafts) {
@@ -79,8 +86,16 @@ export async function GET(req: Request) {
       where: {
         ...(includeDrafts ? {} : { published: true }),
         ...(userId ? { userId } : {}),
+        ...(excludeFeatured ? { featured: false } : {}),
+        // SQLite doesn't have a native JSON-array filter, so we LIKE-match the
+        // tag as a quoted substring inside the JSON-encoded tags column.
+        ...(tag ? { tags: { contains: `"${tag}"` } } : {}),
+        ...(before && !Number.isNaN(before.getTime())
+          ? { createdAt: { lt: before } }
+          : {}),
       },
       orderBy: { createdAt: "desc" },
+      take: limit,
       include: {
         user: {
           select: {
@@ -88,6 +103,7 @@ export async function GET(req: Request) {
             image: true,
           },
         },
+        _count: { select: { reactions: true, comments: true } },
       },
     });
     return NextResponse.json(blogs);

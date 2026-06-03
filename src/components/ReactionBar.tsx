@@ -71,7 +71,7 @@ export default function ReactionBar({
         className={`group w-12 flex flex-col items-center gap-0.5 py-2 rounded-xl border transition-all disabled:opacity-60 ${
           reacted
             ? "border-rose-500/40 bg-rose-500/10 text-rose-500"
-            : "border-border bg-surface hover:bg-elevated text-fg/70 hover:text-fg"
+            : "border-border bg-surface hover:bg-rose-500/5 hover:border-rose-500/20 text-rose-500/60 hover:text-rose-500"
         }`}
       >
         <Heart
@@ -90,7 +90,7 @@ export default function ReactionBar({
       className={`flex items-center gap-2 px-4 py-2 rounded-xl border transition-all disabled:opacity-60 ${
         reacted
           ? "border-rose-500/40 bg-rose-500/10 text-rose-500"
-          : "border-border bg-surface hover:bg-elevated text-fg/70 hover:text-fg"
+          : "border-border bg-surface hover:bg-rose-500/5 hover:border-rose-500/20 text-rose-500/60 hover:text-rose-500"
       }`}
       title={reacted ? "Remove like" : "Like this post"}
     >

@@ -230,6 +230,9 @@ export default async function WorkspaceAiInterviewsPage({ params, searchParams }
     description: t.description,
     estimatedMinutes: t.estimatedMinutes,
     custom: t.custom,
+    kind: t.kind,
+    language: t.language,
+    frameworkLabel: t.frameworkLabel,
     boundExternalMcpServerIds: bindingsByTemplate[t.id] ?? [],
   }));
 

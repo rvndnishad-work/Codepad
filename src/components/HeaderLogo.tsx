@@ -10,12 +10,11 @@ export default function HeaderLogo() {
 
   return (
     <Link href={isAdminPage ? "/admin" : "/"} className="hidden md:flex items-center gap-2.5 group">
-      <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-accent to-accent-soft grid place-items-center shadow-[0_0_15px_rgba(var(--accent-rgb),0.18)] transition-transform group-hover:scale-105 shrink-0">
-        <LogoMark size={18} className="text-bg" />
-      </div>
+      <LogoMark size={32} className="drop-shadow-[0_0_8px_rgba(var(--accent-rgb),0.35)] transition-transform group-hover:scale-105" />
       <div className="flex flex-col leading-none">
-        <span className="font-bold text-lg tracking-tight text-fg group-hover:text-fg/90 transition-colors">
-          Interviewpad<span className="text-fg/30 font-normal">.in</span>
+        <span className="font-extrabold text-lg tracking-tight text-fg group-hover:text-fg/90 transition-colors">
+          Interview<span className="text-accent font-medium">pad</span>
+          <span className="text-fg/30 font-normal text-sm">.in</span>
         </span>
         {isAdminPage && (
           <span className="text-[9px] font-black tracking-widest text-accent uppercase mt-0.5">

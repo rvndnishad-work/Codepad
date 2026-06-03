@@ -17,45 +17,35 @@ export function LogoMark({
   className,
   idSuffix = "",
 }: SizeProps) {
-  const brand = `cp-brand${idSuffix}`;
-  const cursor = `cp-cursor${idSuffix}`;
-  const sheen = `cp-sheen${idSuffix}`;
   return (
     <svg
       width={size}
       height={size}
       viewBox="0 0 32 32"
       fill="none"
+      stroke="currentColor"
+      strokeWidth="2.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
       xmlns="http://www.w3.org/2000/svg"
       aria-hidden
-      className={className}
+      className={`text-accent shrink-0 ${className ?? ""}`}
     >
-      {/* Code lines */}
-      <rect
-        x="6"
-        y="9"
-        width="14"
-        height="3"
-        rx="1.5"
-        fill="currentColor"
-      />
-      <rect
-        x="6"
-        y="14.5"
-        width="10"
-        height="3"
-        rx="1.5"
-        fill="currentColor"
-        fillOpacity="0.6"
-      />
-      <rect
-        x="6"
-        y="20"
-        width="16"
-        height="3"
-        rx="1.5"
-        fill="currentColor"
-      />
+      <style>{`
+        @keyframes logo-cursor-blink {
+          0%, 100% { opacity: 1; }
+          50% { opacity: 0; }
+        }
+        .logo-cursor {
+          animation: logo-cursor-blink 1s step-end infinite;
+        }
+      `}</style>
+      {/* Speech bubble outline */}
+      <path d="M26 4H6a4 4 0 0 0-4 4v12a4 4 0 0 0 4 4h4v5l6-5h10a4 4 0 0 0 4-4V8a4 4 0 0 0-4-4z" />
+      {/* Code caret > */}
+      <path d="M9 10l4 4-4 4" />
+      {/* Cursor _ */}
+      <line x1="16" y1="18" x2="22" y2="18" className="logo-cursor" />
     </svg>
   );
 }
@@ -69,12 +59,12 @@ export function LogoWordmark({
 }) {
   return (
     <span className={`inline-flex items-center gap-3 ${className ?? ""}`}>
-      <div className="w-8 h-8 rounded-xl bg-accent grid place-items-center shadow-[0_0_20px_rgba(var(--accent-rgb),0.3)]">
-         <LogoMark size={20} className="text-bg" />
-      </div>
+      <LogoMark size={32} className="drop-shadow-[0_0_8px_rgba(var(--accent-rgb),0.35)]" />
       <div className="flex flex-col leading-none">
-        <span className="font-black text-lg tracking-tighter text-fg">Interviewpad</span>
-        <span className="text-[9px] font-bold text-muted/50 uppercase tracking-[0.3em]">Pro Sandbox</span>
+        <span className="font-extrabold text-lg tracking-tight text-fg">
+          Interview<span className="text-accent font-medium">pad</span>
+        </span>
+        <span className="text-[9px] font-bold text-muted/50 uppercase tracking-[0.3em] mt-0.5">Pro Sandbox</span>
       </div>
     </span>
   );

@@ -22,26 +22,39 @@
     --accent-glow: rgba(248, 113, 113, 0.1);
     
     --ui-scale: 1;
-    --base-font-size: clamp(16px, 1.2vw, 18px);
+    /* Fluid root type: every rem-based size (incl. the px→rem font sizes
+       produced by postcss-pxtorem) scales with the viewport. Floor 16.5px so
+       dense small text never shrinks below today's size; grows smoothly to
+       19.5px on wide screens. ~16.5px ≤480px → ~19.5px ≥1280px. */
+    --base-font-size: clamp(16.5px, calc(15px + 0.3vw), 19.5px);
     --accent-brightness: brightness(0.7);
   }
 
   .dark {
-    --bg: #0a0b10;
-    --bg-rgb: 10, 11, 16;
-    --surface: #11131a;
-    --panel: #181c26;
-    --elevated: #242936;
-    --border: rgba(123, 132, 150, 0.15);
-    --border-strong: rgba(123, 132, 150, 0.25);
-    --muted: #7b8496;
-    --subtle: #9aa3b5;
-    --fg: #e8ebf2;
+    --bg: #16181d;
+    --bg-rgb: 22, 24, 29;
+    --surface: #1e2229;
+    --panel: #282d36;
+    --elevated: #343b47;
+    --border: rgba(255, 255, 255, 0.12);
+    --border-strong: rgba(255, 255, 255, 0.22);
+    --muted: #9ca3af;
+    --subtle: #d1d5db;
+    --fg: #f9fafb;
     --accent: #FFE600;
     --accent-rgb: 255, 230, 0;
     --accent-soft: #FFD700;
-    --accent-glow: rgba(255, 230, 0, 0.1);
+    --accent-glow: rgba(255, 230, 0, 0.15);
     --accent-brightness: none;
+  }
+
+  /* Large external monitors (> 1920px wide): keep growing past the 18px cap so
+     type is comfortable at 1440p/4K. Continuous with the base clamp at 1920px
+     (~18px) → up to 22px on very wide screens. Everything ≤1920px is unchanged. */
+  @media (min-width: 1920px) {
+    :root {
+      --base-font-size: clamp(19.5px, calc(11px + 0.5vw), 25px);
+    }
   }
 
   html {
@@ -571,6 +584,25 @@ portal-nextjs-toast,
 .cm-yCursor:hover .cm-yCursor-info {
   opacity: 1 !important;
   animation: none;
+}
+
+/* ────────────────────────────────────────────────────────────────────────
+   Readability overrides for small text (bumps 10px text to 12px baseline, 
+   fluidly scaling with viewport via postcss-pxtorem to rem-base).
+   ──────────────────────────────────────────────────────────────────────── */
+.text-\[10px\] {
+  font-size: 12px !important;
+}
+
+/* ────────────────────────────────────────────────────────────────────────
+   Workspace content width expansion & transitions when sidebar collapses
+   ──────────────────────────────────────────────────────────────────────── */
+.workspace-content {
+  transition: max-width 300ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+body.sidebar-collapsed .workspace-content {
+  max-width: 80rem; /* expanded layout to show content more freely when sidebar is collapsed */
 }
 
 

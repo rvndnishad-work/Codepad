@@ -102,11 +102,10 @@ export default function MobileNav({
         aria-label={open ? "Close navigation" : "Open navigation"}
         className="md:hidden flex items-center gap-2.5 group rounded-lg -m-1 p-1 hover:bg-elevated/60 transition-colors"
       >
-        <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-accent to-accent-soft grid place-items-center shadow-[0_0_15px_rgba(var(--accent-rgb),0.18)]">
-          <LogoMark size={18} className="text-bg" />
-        </div>
-        <span className="font-bold text-lg tracking-tight text-fg leading-none">
-          Interviewpad<span className="text-fg/30 font-normal">.in</span>
+        <LogoMark size={32} className="drop-shadow-[0_0_8px_rgba(var(--accent-rgb),0.35)]" />
+        <span className="font-extrabold text-lg tracking-tight text-fg leading-none">
+          Interview<span className="text-accent font-medium">pad</span>
+          <span className="text-fg/30 font-normal text-sm">.in</span>
         </span>
         <ChevronDown
           className={`w-3.5 h-3.5 text-muted transition-transform ${open ? "rotate-180" : ""}`}

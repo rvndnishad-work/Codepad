@@ -27,6 +27,8 @@ export const AI_INTERVIEW_TEMPLATES: AIInterviewTemplateDef[] = [
   {
     id: "react-todo-pagination",
     title: "React Todo with Pagination",
+    kind: "frontend",
+    frameworkLabel: "React",
     description: `Build an interactive and responsive Todo List in React with paginated controls. State management should dynamically slice the list array based on active page index limits, manage input validation, and render disabled states for buttons when boundary limits are hit.
 
 ### 📋 Core Requirements
@@ -351,6 +353,8 @@ export default function App() {
   {
     id: "interactive-carousel",
     title: "Interactive Image Carousel",
+    kind: "frontend",
+    frameworkLabel: "React",
     description: `Build an interactive and responsive image carousel component in React. You must implement cyclic slideshow transitions, hover-triggered auto-pausing, direct slide indicators, and slick visual states.
 
 ### 📋 Core Requirements

@@ -14,12 +14,12 @@ export default function Footer() {
           {/* Brand Column */}
           <div className="space-y-6">
             <Link href="/" className="flex items-center gap-3 group">
-              <div className="w-8 h-8 rounded-xl bg-accent grid place-items-center shadow-[0_0_20px_rgba(var(--accent-rgb),0.3)] transition-transform group-hover:scale-110">
-                 <LogoMark size={20} className="text-bg" />
-              </div>
+              <LogoMark size={32} className="drop-shadow-[0_0_8px_rgba(var(--accent-rgb),0.35)] transition-transform group-hover:scale-110" />
               <div className="flex flex-col leading-none">
-                 <span className="font-black text-lg tracking-tighter text-fg">Interviewpad</span>
-                 <span className="text-[9px] font-bold text-accent uppercase tracking-[0.3em]">Pro Sandbox</span>
+                 <span className="font-extrabold text-lg tracking-tight text-fg">
+                   Interview<span className="text-accent font-medium">pad</span>
+                 </span>
+                 <span className="text-[9px] font-bold text-accent uppercase tracking-[0.3em] mt-0.5">Pro Sandbox</span>
               </div>
             </Link>
             <p className="text-muted text-sm leading-relaxed max-w-xs">

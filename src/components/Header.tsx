@@ -89,7 +89,7 @@ export default async function Header() {
   ];
 
   return (
-    <header className="sticky top-0 z-[100] bg-bg/80 backdrop-blur-xl border-b border-border relative">
+    <header className="sticky top-0 z-[100] bg-surface/80 backdrop-blur-xl border-b border-border relative">
       <div className="mx-auto max-w-7xl px-4 h-16 flex items-center justify-between gap-3">
         {/* Mobile: logo doubles as menu trigger (collapsed into MobileNav) */}
         <MobileNav

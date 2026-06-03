@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import Link from "next/link";
 import {
   motion,
@@ -35,6 +36,7 @@ import {
   Users,
   Layers,
   ChevronRight,
+  ChevronLeft,
   ArrowLeft,
   Check,
   Plus,
@@ -55,6 +57,7 @@ import {
   Eye,
   Radio,
   MessageSquare,
+  FileCog,
 } from "lucide-react";
 import { toast } from "sonner";
 import { createScreeningBatchAction, quickAddCandidateAction } from "./actions";
@@ -161,6 +164,15 @@ const COST_BY_LEVEL: Record<EngagementLevel, number> = {
   OBSERVER: 2,
   COACH: 3,
 };
+
+// Quick-pick building blocks for the position title. Recruiters can still type
+// anything; these just compose a common "{seniority} {discipline} Engineer".
+const SENIORITY_LEVELS = ["Junior", "Associate", "Senior", "Lead", "Manager"] as const;
+const DISCIPLINES = ["Frontend", "Backend", "Fullstack"] as const;
+
+function composePosition(seniority: string | null, discipline: string | null): string {
+  return [seniority, discipline, "Engineer"].filter(Boolean).join(" ");
+}
 
 const STEPS = [
   { n: 1 as const, label: "Candidates", hint: "Who are you screening?", icon: Users },
@@ -502,73 +514,79 @@ function NextButton({
 // ─── Stepper ─────────────────────────────────────────────────────────────────
 
 function Stepper({ step, onJump }: { step: Step; onJump: (n: Step) => void }) {
+  const progress = ((step - 1) / (STEPS.length - 1)) * 100;
   return (
-    <LayoutGroup>
-      <div className="relative flex items-center justify-between">
-        {/* Track */}
-        <div className="absolute left-0 right-0 top-5 h-0.5 bg-border -z-0" />
+    <div className="relative flex items-start justify-between">
+      {/* Connector track — inset to the node centers (left-5/right-5 = half a
+          40px node) so it never dangles past the first/last circle, and the
+          fill's 0/50/100% lands exactly on each node. */}
+      <div className="absolute left-5 right-5 top-5 h-[3px] -translate-y-1/2">
+        <div className="absolute inset-0 rounded-full bg-border" />
         <motion.div
-          className="absolute left-0 top-5 h-0.5 bg-accent -z-0"
+          className="absolute inset-y-0 left-0 rounded-full bg-accent"
           initial={false}
-          animate={{ width: `${((step - 1) / (STEPS.length - 1)) * 100}%` }}
-          transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
+          animate={{ width: `${progress}%` }}
+          transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
         />
-
-        {STEPS.map((s) => {
-          const done = step > s.n;
-          const active = step === s.n;
-          const Icon = s.icon;
-          return (
-            <button
-              key={s.n}
-              type="button"
-              onClick={() => onJump(s.n)}
-              disabled={s.n >= step}
-              className="relative z-10 flex flex-col items-center gap-2 group"
-            >
-              <motion.span
-                layout
-                className={`w-10 h-10 rounded-full flex items-center justify-center border-2 transition-colors ${
-                  active
-                    ? "bg-accent border-accent text-bg shadow-md shadow-accent/30"
-                    : done
-                    ? "bg-accent/15 border-accent/40 text-accent"
-                    : "bg-surface border-border text-muted"
-                } ${s.n < step ? "cursor-pointer hover:border-accent/60" : "cursor-default"}`}
-                whileHover={s.n < step ? { scale: 1.08 } : undefined}
-                whileTap={s.n < step ? { scale: 0.95 } : undefined}
-              >
-                <AnimatePresence mode="wait" initial={false}>
-                  {done ? (
-                    <motion.span
-                      key="check"
-                      initial={{ scale: 0, rotate: -90 }}
-                      animate={{ scale: 1, rotate: 0 }}
-                      exit={{ scale: 0 }}
-                    >
-                      <Check className="w-5 h-5" strokeWidth={3} />
-                    </motion.span>
-                  ) : (
-                    <motion.span key="icon" initial={{ scale: 0.6, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}>
-                      <Icon className="w-[18px] h-[18px]" />
-                    </motion.span>
-                  )}
-                </AnimatePresence>
-              </motion.span>
-              <div className="text-center">
-                <div
-                  className={`text-[11px] font-black uppercase tracking-wider ${
-                    active ? "text-fg" : done ? "text-accent/80" : "text-muted"
-                  }`}
-                >
-                  {s.label}
-                </div>
-              </div>
-            </button>
-          );
-        })}
       </div>
-    </LayoutGroup>
+
+      {STEPS.map((s) => {
+        const done = step > s.n;
+        const active = step === s.n;
+        const clickable = s.n < step;
+        const Icon = s.icon;
+        return (
+          <button
+            key={s.n}
+            type="button"
+            onClick={() => onJump(s.n)}
+            disabled={s.n >= step}
+            className={`relative z-10 flex flex-col items-center gap-2 ${clickable ? "cursor-pointer" : "cursor-default"}`}
+          >
+            <motion.span
+              // Solid accent for BOTH done + active so the connector flows into
+              // an unbroken yellow chain; the active node gets a glowing ring +
+              // a touch of scale to stand out as "you are here".
+              animate={{ scale: active ? 1.12 : 1 }}
+              transition={{ type: "spring", stiffness: 400, damping: 22 }}
+              whileHover={clickable ? { scale: 1.16 } : undefined}
+              whileTap={clickable ? { scale: 0.95 } : undefined}
+              className={`w-10 h-10 rounded-full flex items-center justify-center border-2 transition-colors ${
+                active
+                  ? "bg-accent border-accent text-bg shadow-lg shadow-accent/40 ring-4 ring-accent/20"
+                  : done
+                  ? "bg-accent border-accent text-bg"
+                  : "bg-surface border-border text-muted"
+              }`}
+            >
+              <AnimatePresence mode="wait" initial={false}>
+                {done ? (
+                  <motion.span
+                    key="check"
+                    initial={{ scale: 0, rotate: -90 }}
+                    animate={{ scale: 1, rotate: 0 }}
+                    exit={{ scale: 0 }}
+                  >
+                    <Check className="w-5 h-5" strokeWidth={3} />
+                  </motion.span>
+                ) : (
+                  <motion.span key="icon" initial={{ scale: 0.6, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}>
+                    <Icon className="w-[18px] h-[18px]" />
+                  </motion.span>
+                )}
+              </AnimatePresence>
+            </motion.span>
+            <div
+              className={`text-[11px] font-black uppercase tracking-wider transition-colors ${
+                active ? "text-fg" : done ? "text-accent/90" : "text-muted/70"
+              }`}
+            >
+              {s.label}
+            </div>
+          </button>
+        );
+      })}
+    </div>
   );
 }
 
@@ -595,6 +613,9 @@ function StepCandidates({
 }) {
   const [query, setQuery] = useState("");
   const [activeId, setActiveId] = useState<string | null>(null);
+  // Quick-pick seniority/discipline that compose into the position title.
+  const [seniority, setSeniority] = useState<string | null>(null);
+  const [discipline, setDiscipline] = useState<string | null>(null);
   const [quickOpen, setQuickOpen] = useState(!!initialQuickAdd);
   const [qName, setQName] = useState("");
   const [qEmail, setQEmail] = useState("");
@@ -650,16 +671,50 @@ function StepCandidates({
 
   const activeCandidate = activeId ? pool.find((c) => c.id === activeId) : null;
 
+  // Toggle a quick-pick chip and recompose the title. Clicking the active chip
+  // clears it. Manual typing in the field still wins (chips just prefill).
+  const pickSeniority = (s: string) => {
+    const next = seniority === s ? null : s;
+    setSeniority(next);
+    setPositionTitle(composePosition(next, discipline));
+  };
+  const pickDiscipline = (d: string) => {
+    const next = discipline === d ? null : d;
+    setDiscipline(next);
+    setPositionTitle(composePosition(seniority, next));
+  };
+
   return (
     <div className="space-y-5">
-      {/* Position title — floating accent field */}
-      <FloatingField
-        icon={<Briefcase className="w-4 h-4" />}
-        label="Position you're hiring for"
-        value={positionTitle}
-        onChange={setPositionTitle}
-        placeholder="e.g. Senior Frontend Engineer"
-      />
+      {/* Position title — floating accent field + quick-pick presets */}
+      <div className="space-y-2.5">
+        <FloatingField
+          icon={<Briefcase className="w-4 h-4" />}
+          label="Position you're hiring for"
+          value={positionTitle}
+          onChange={(v) => {
+            // Free typing detaches the chips so they don't fight the text.
+            setSeniority(null);
+            setDiscipline(null);
+            setPositionTitle(v);
+          }}
+          placeholder="e.g. Senior Frontend Engineer"
+        />
+        <div className="flex flex-wrap items-center gap-1.5 px-1">
+          <span className="text-[9px] font-black uppercase tracking-widest text-muted/60 mr-0.5">Quick pick</span>
+          {SENIORITY_LEVELS.map((s) => (
+            <PresetChip key={s} active={seniority === s} onClick={() => pickSeniority(s)}>
+              {s}
+            </PresetChip>
+          ))}
+          <span className="w-px h-3.5 bg-border mx-0.5" />
+          {DISCIPLINES.map((d) => (
+            <PresetChip key={d} active={discipline === d} onClick={() => pickDiscipline(d)}>
+              {d}
+            </PresetChip>
+          ))}
+        </div>
+      </div>
 
       <DndContext
         sensors={sensors}
@@ -1510,19 +1565,13 @@ function SortableRound({
       </div>
 
       {!compact && (
-        <select
-          value={isScaffold ? round.templateId : "__auto__"}
-          onChange={(e) => onScaffold(e.target.value === "__auto__" ? null : e.target.value)}
-          className="px-2 py-1 rounded-lg border border-border bg-surface text-[10px] text-fg focus:outline-none focus:border-accent max-w-[150px]"
-          title="Override this round with a custom scaffold"
-        >
-          <option value="__auto__">Auto (curated)</option>
-          {templates.map((t) => (
-            <option key={t.id} value={t.id}>
-              {t.title}
-            </option>
-          ))}
-        </select>
+        <QuestionPicker
+          value={isScaffold ? round.templateId ?? null : null}
+          onChange={onScaffold}
+          templates={templates}
+          round={round}
+          index={index}
+        />
       )}
 
       <button
@@ -1536,6 +1585,360 @@ function SortableRound({
     </div>
   );
 }
+
+// ─── Question picker (searchable command palette) ────────────────────────────
+
+/**
+ * Replaces the old <select> for a round's question. Built to scale to hundreds
+ * of questions: a searchable, keyboard-navigable command palette that ranks by
+ * relevance to the round's stack and defaults to showing only matching ones.
+ */
+function QuestionPicker({
+  value,
+  onChange,
+  templates,
+  round,
+  index,
+}: {
+  value: string | null;
+  onChange: (templateId: string | null) => void;
+  templates: TemplateChoice[];
+  round: RoundSpecInput;
+  index: number;
+}) {
+  const [open, setOpen] = useState(false);
+  const selected = value ? templates.find((t) => t.id === value) : null;
+
+  return (
+    <>
+      <button
+        type="button"
+        onClick={() => setOpen(true)}
+        title="Choose the question for this round"
+        className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border text-[11px] transition max-w-[180px] ${
+          selected
+            ? "border-accent/40 bg-accent/[0.06] text-fg"
+            : "border-border bg-surface text-muted hover:text-fg hover:border-accent/50"
+        }`}
+      >
+        {selected ? <FileCog className="w-3 h-3 shrink-0 text-accent" /> : <Sparkles className="w-3 h-3 shrink-0" />}
+        <span className="truncate">{selected ? selected.title : "Auto (curated)"}</span>
+        <ChevronRight className="w-3 h-3 shrink-0 opacity-50 rotate-90" />
+      </button>
+      {open && (
+        <QuestionPickerDrawer
+          value={value}
+          round={round}
+          index={index}
+          templates={templates}
+          onClose={() => setOpen(false)}
+          onChange={(v) => {
+            onChange(v);
+            setOpen(false);
+          }}
+        />
+      )}
+    </>
+  );
+}
+
+function templateMatchesRound(t: TemplateChoice, round: RoundSpecInput): boolean {
+  // Strict: a question "matches" only when it's explicitly tagged for this
+  // round's paradigm. Untagged/legacy questions surface when the filter is off.
+  return t.kind === round.paradigm;
+}
+
+function templateRelevance(t: TemplateChoice, round: RoundSpecInput): number {
+  let s = 0;
+  if (t.kind && t.kind === round.paradigm) s += 3;
+  if (round.language && t.language && t.language === round.language) s += 2;
+  if (
+    round.frameworkLabel &&
+    t.frameworkLabel &&
+    t.frameworkLabel.toLowerCase() === round.frameworkLabel.toLowerCase()
+  )
+    s += 2;
+  return s;
+}
+
+type QuestionFilterKey = "relevant" | "all" | "workspace" | "frontend" | "backend" | "dsa";
+
+const QUESTION_FILTERS: { key: QuestionFilterKey; label: string }[] = [
+  { key: "relevant", label: "Relevant" },
+  { key: "all", label: "All" },
+  { key: "workspace", label: "Workspace" },
+  { key: "frontend", label: "Frontend" },
+  { key: "backend", label: "Backend" },
+  { key: "dsa", label: "DSA" },
+];
+
+function questionPasses(t: TemplateChoice, filter: QuestionFilterKey, round: RoundSpecInput): boolean {
+  switch (filter) {
+    case "relevant":
+      return templateMatchesRound(t, round);
+    case "workspace":
+      return t.custom;
+    case "frontend":
+    case "backend":
+    case "dsa":
+      return t.kind === filter;
+    default:
+      return true;
+  }
+}
+
+const QUESTIONS_PER_PAGE = 7;
+
+/**
+ * Right-side drawer for picking a round's question. Built to scale to a large
+ * bank: searchable, category-filtered (relevant / all / workspace / FE / BE /
+ * DSA), and paginated. "Auto (curated)" stays pinned above the paged list.
+ */
+function QuestionPickerDrawer({
+  value,
+  onChange,
+  onClose,
+  templates,
+  round,
+  index,
+}: {
+  value: string | null;
+  onChange: (templateId: string | null) => void;
+  onClose: () => void;
+  templates: TemplateChoice[];
+  round: RoundSpecInput;
+  index: number;
+}) {
+  const [query, setQuery] = useState("");
+  const [filter, setFilter] = useState<QuestionFilterKey>("relevant");
+  const [page, setPage] = useState(0);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    inputRef.current?.focus();
+  }, []);
+  useEffect(() => {
+    setPage(0);
+  }, [query, filter]);
+
+  const meta = PARADIGM_META[round.paradigm];
+  const q = query.toLowerCase().trim();
+  const filtered = useMemo(() => {
+    let list = templates.filter((t) => questionPasses(t, filter, round));
+    if (q) {
+      list = list.filter(
+        (t) => t.title.toLowerCase().includes(q) || (t.description || "").toLowerCase().includes(q)
+      );
+    }
+    return [...list].sort(
+      (a, b) => templateRelevance(b, round) - templateRelevance(a, round) || a.title.localeCompare(b.title)
+    );
+  }, [templates, filter, q, round]);
+
+  const pages = Math.max(1, Math.ceil(filtered.length / QUESTIONS_PER_PAGE));
+  const safePage = Math.min(page, pages - 1);
+  const pageItems = filtered.slice(safePage * QUESTIONS_PER_PAGE, safePage * QUESTIONS_PER_PAGE + QUESTIONS_PER_PAGE);
+
+  const onKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === "Escape") {
+      e.preventDefault();
+      onClose();
+    }
+  };
+
+  if (typeof document === "undefined") return null;
+  return createPortal(
+    <div className="fixed inset-0 z-[120] flex justify-end" onKeyDown={onKeyDown}>
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+        onClick={onClose}
+      />
+      <motion.div
+        initial={{ x: "100%" }}
+        animate={{ x: 0 }}
+        transition={{ type: "spring", stiffness: 420, damping: 40 }}
+        className="relative w-full max-w-md h-full bg-surface border-l border-border shadow-2xl flex flex-col"
+      >
+        {/* Header + search + filters */}
+        <div className="p-4 border-b border-border space-y-3 shrink-0">
+          <div className="flex items-start justify-between">
+            <div>
+              <div className="text-[10px] font-black uppercase tracking-widest text-accent">Choose question</div>
+              <div className="text-xs text-muted flex items-center gap-1.5 mt-0.5">
+                <span className={meta?.tone}>{meta?.icon}</span>
+                Round {index + 1} · {meta?.label} · {roundTech(round)}
+              </div>
+            </div>
+            <button onClick={onClose} className="p-1 rounded-md text-muted hover:text-fg hover:bg-elevated transition">
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted" />
+            <input
+              ref={inputRef}
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Search questions…"
+              className="w-full pl-9 pr-3 py-2.5 rounded-xl border border-border bg-bg text-sm text-fg focus:outline-none focus:border-accent"
+            />
+          </div>
+
+          <div className="flex flex-wrap gap-1.5">
+            {QUESTION_FILTERS.map((f) => {
+              const on = filter === f.key;
+              return (
+                <button
+                  key={f.key}
+                  type="button"
+                  onClick={() => setFilter(f.key)}
+                  className={`px-2.5 py-1 rounded-full text-[10px] font-bold border transition-colors ${
+                    on
+                      ? "border-accent/50 bg-accent/15 text-accent"
+                      : "border-border bg-transparent text-muted hover:text-fg hover:border-border-strong"
+                  }`}
+                >
+                  {f.label}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Auto (curated) — pinned above the paged list */}
+        <div className="px-2 pt-2 shrink-0">
+          <PickerOption
+            active={false}
+            selected={value === null}
+            onMouseEnter={() => {}}
+            onClick={() => onChange(null)}
+            icon={<Sparkles className="w-3.5 h-3.5 text-accent" />}
+            title="Auto (curated)"
+            subtitle="Let Interviewpad pick a matching question from the bank"
+          />
+          <div className="h-px bg-border/60 mx-2 my-1.5" />
+        </div>
+
+        {/* Paged list */}
+        <div className="flex-1 overflow-y-auto px-2 pb-2">
+          {pageItems.map((t) => (
+            <PickerOption
+              key={t.id}
+              active={false}
+              selected={value === t.id}
+              onMouseEnter={() => {}}
+              onClick={() => onChange(t.id)}
+              icon={
+                <span className={PARADIGM_META[t.kind ?? ""]?.tone ?? "text-muted"}>
+                  {PARADIGM_META[t.kind ?? ""]?.icon ?? <FileCog className="w-3.5 h-3.5" />}
+                </span>
+              }
+              title={t.title}
+              subtitle={t.description}
+              meta={[
+                t.frameworkLabel || (t.language ? t.language : t.kind ? PARADIGM_META[t.kind]?.label : null),
+                `${t.estimatedMinutes}m`,
+                t.custom ? "custom" : null,
+              ].filter(Boolean) as string[]}
+            />
+          ))}
+          {filtered.length === 0 && (
+            <div className="px-3 py-10 text-center text-[11px] text-muted">
+              No questions found. Try another search or filter.
+            </div>
+          )}
+        </div>
+
+        {/* Pagination */}
+        <div className="p-3 border-t border-border flex items-center justify-between shrink-0">
+          <span className="text-[10px] text-muted/80 tabular-nums">
+            {filtered.length} question{filtered.length === 1 ? "" : "s"}
+          </span>
+          <div className="flex items-center gap-1.5">
+            <button
+              type="button"
+              disabled={safePage === 0}
+              onClick={() => setPage((p) => Math.max(0, p - 1))}
+              className="p-1.5 rounded-md border border-border text-muted hover:text-fg hover:bg-elevated disabled:opacity-30 disabled:cursor-not-allowed transition"
+            >
+              <ChevronLeft className="w-3.5 h-3.5" />
+            </button>
+            <span className="text-[10px] font-bold text-fg tabular-nums min-w-[52px] text-center">
+              {safePage + 1} / {pages}
+            </span>
+            <button
+              type="button"
+              disabled={safePage >= pages - 1}
+              onClick={() => setPage((p) => Math.min(pages - 1, p + 1))}
+              className="p-1.5 rounded-md border border-border text-muted hover:text-fg hover:bg-elevated disabled:opacity-30 disabled:cursor-not-allowed transition"
+            >
+              <ChevronRight className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        </div>
+      </motion.div>
+    </div>,
+    document.body
+  );
+}
+
+const PickerOption = ({
+  setRef,
+  active,
+  selected,
+  onClick,
+  onMouseEnter,
+  icon,
+  title,
+  subtitle,
+  meta,
+}: {
+  setRef?: (el: HTMLButtonElement | null) => void;
+  active: boolean;
+  selected: boolean;
+  onClick: () => void;
+  onMouseEnter: () => void;
+  icon: React.ReactNode;
+  title: string;
+  subtitle?: string;
+  meta?: string[];
+}) => {
+  return (
+    <button
+      ref={setRef}
+      type="button"
+      onClick={onClick}
+      onMouseEnter={onMouseEnter}
+      className={`w-full text-left flex items-start gap-2.5 px-2.5 py-2 rounded-xl transition-colors ${
+        active ? "bg-accent/[0.08]" : "hover:bg-elevated/40"
+      }`}
+    >
+      <span className="mt-0.5 shrink-0">{icon}</span>
+      <span className="min-w-0 flex-1">
+        <span className="flex items-center gap-2">
+          <span className="text-xs font-bold text-fg truncate">{title}</span>
+          {meta && meta.length > 0 && (
+            <span className="flex items-center gap-1 shrink-0">
+              {meta.map((m, i) => (
+                <span
+                  key={i}
+                  className="text-[8px] font-bold uppercase tracking-wider text-muted/70 bg-bg border border-border/60 rounded px-1 py-0.5"
+                >
+                  {m}
+                </span>
+              ))}
+            </span>
+          )}
+        </span>
+        {subtitle && <span className="block text-[10px] text-muted/80 truncate mt-0.5">{subtitle}</span>}
+      </span>
+      {selected && <Check className="w-3.5 h-3.5 text-accent shrink-0 mt-0.5" strokeWidth={3} />}
+    </button>
+  );
+};
 
 // ─── Live summary rail ───────────────────────────────────────────────────────
 
@@ -1741,5 +2144,30 @@ function EmptyHint({ children }: { children: React.ReactNode }) {
     <div className="rounded-xl border border-dashed border-border bg-bg/40 p-5 text-center text-[11px] text-muted leading-relaxed">
       {children}
     </div>
+  );
+}
+
+function PresetChip({
+  active,
+  onClick,
+  children,
+}: {
+  active: boolean;
+  onClick: () => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <motion.button
+      type="button"
+      onClick={onClick}
+      whileTap={{ scale: 0.92 }}
+      className={`rounded-full border px-2.5 py-0.5 text-[10px] font-bold transition-colors ${
+        active
+          ? "border-accent/50 bg-accent/15 text-accent"
+          : "border-border bg-transparent text-muted hover:border-border-strong hover:text-fg"
+      }`}
+    >
+      {children}
+    </motion.button>
   );
 }

@@ -44,6 +44,10 @@ export interface TemplateChoice {
   description: string;
   estimatedMinutes: number;
   custom: boolean;
+  /** Stack metadata — lets the question picker filter/rank by round paradigm. */
+  kind?: "frontend" | "backend" | "dsa";
+  language?: string;
+  frameworkLabel?: string;
   /** Phase 4.1: external MCP server ids bound to this template. */
   boundExternalMcpServerIds: string[];
 }

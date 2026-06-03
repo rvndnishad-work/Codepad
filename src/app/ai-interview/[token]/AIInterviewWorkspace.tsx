@@ -47,7 +47,7 @@ import dynamic from "next/dynamic";
 import { useTheme } from "next-themes";
 import { toast } from "sonner";
 import { getSandpackTheme } from "@/lib/sandpack-theme";
-import { speakNaturally, cancelSpeak, updateSpeechConfig, pickBestVoice } from "@/lib/copilot-tts";
+import { speakNaturally, cancelSpeak, updateSpeechConfig, pickBestVoice, configureCloudTTS } from "@/lib/copilot-tts";
 import ThemeToggle from "@/components/ThemeToggle";
 import FileExplorer from "@/components/FileExplorer";
 import { useResizable } from "@/hooks/useResizable";
@@ -102,6 +102,8 @@ type Props = {
     status: string;
     startedAt: string | null;
     estimatedMinutes: number;
+    /** Live interviewer presence: REACTIVE | OBSERVER | COACH. */
+    engagementLevel: string;
   };
   rounds: RoundView[];
   initialChat: Message[];
@@ -180,6 +182,17 @@ export default function AIInterviewWorkspace({ session, rounds, initialChat }: P
   useEffect(() => {
     setLastRun(null);
   }, [activeRoundId]);
+
+  // Route cloud TTS through this interview's token-scoped endpoint so the AI
+  // interviewer can speak in natural cloud voices (OpenAI / ElevenLabs) when a
+  // provider is configured. Falls back to browser TTS automatically otherwise.
+  useEffect(() => {
+    configureCloudTTS({
+      endpoint: "/api/ai-interview/tts",
+      body: { inviteToken: session.inviteToken },
+    });
+    return () => configureCloudTTS(null);
+  }, [session.inviteToken]);
 
   // Load available speech synthesis voices and rate settings on mount
   useEffect(() => {
@@ -404,6 +417,82 @@ export default function AIInterviewWorkspace({ session, rounds, initialChat }: P
       onError: () => setIsAISpeaking(false),
     });
   };
+
+  // ── Live "Observer" loop ───────────────────────────────────────────────────
+  // For OBSERVER/COACH screenings, the interviewer watches the candidate code
+  // and may interject on its own. We debounce on edit-then-pause, then ask the
+  // server (which decides whether to actually say anything). All cadence/caps
+  // are enforced server-side; the client just throttles requests.
+  const OBSERVE_IDLE_MS = 25_000;
+  const liveRef = useRef({ sending, isAISpeaking, roundFiles, activeRoundId, lastRun });
+  liveRef.current = { sending, isAISpeaking, roundFiles, activeRoundId, lastRun };
+  const lastObservedRef = useRef<Record<string, string>>({});
+  const lastProactiveAtRef = useRef(0);
+  const observeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Seed the per-round snapshots once so the first nudge only fires after the
+  // candidate actually edits (not on the untouched starter code).
+  useEffect(() => {
+    const seed: Record<string, string> = {};
+    for (const r of rounds) seed[r.roundId] = JSON.stringify(roundFiles[r.roundId] ?? {});
+    lastObservedRef.current = seed;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const runObserve = async () => {
+    const live = liveRef.current;
+    const level = session.engagementLevel;
+    if (level !== "OBSERVER" && level !== "COACH") return;
+    if (live.sending || live.isAISpeaking) return; // don't talk over an active turn
+    const cooldownMs = level === "COACH" ? 75_000 : 150_000;
+    if (Date.now() - lastProactiveAtRef.current < cooldownMs) return;
+
+    const rid = live.activeRoundId;
+    const cur = JSON.stringify(live.roundFiles[rid] ?? {});
+    const prev = lastObservedRef.current[rid] ?? "";
+    // Require a non-trivial change since we last looked.
+    if (cur === prev || Math.abs(cur.length - prev.length) < 40) return;
+    lastObservedRef.current[rid] = cur;
+
+    try {
+      const res = await fetch("/api/ai-interview/observe", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          inviteToken: session.inviteToken,
+          roundId: rid,
+          files: live.roundFiles[rid] ?? {},
+          lastRun: live.lastRun ?? undefined,
+        }),
+      });
+      if (!res.ok) return;
+      const data = (await res.json()) as { comment: string | null; chatHistory?: Message[] };
+      if (data.comment) {
+        lastProactiveAtRef.current = Date.now();
+        if (Array.isArray(data.chatHistory)) setChat(data.chatHistory);
+        else setChat((p) => [...p, { role: "assistant", text: data.comment as string }]);
+        speakResponse(data.comment);
+        if (!floatingChatOpen && !voiceMode) {
+          toast("The interviewer left you a note", { icon: "💬" });
+        }
+      }
+    } catch {
+      /* network hiccup — try again on the next pause */
+    }
+  };
+
+  // Debounced trigger: every edit resets the timer, so observe fires ~25s after
+  // the candidate STOPS typing. Reactive screenings never schedule it.
+  useEffect(() => {
+    if (session.engagementLevel === "REACTIVE") return;
+    if (completed) return;
+    if (observeTimerRef.current) clearTimeout(observeTimerRef.current);
+    observeTimerRef.current = setTimeout(() => void runObserve(), OBSERVE_IDLE_MS);
+    return () => {
+      if (observeTimerRef.current) clearTimeout(observeTimerRef.current);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [roundFiles, activeRoundId, session.engagementLevel, completed]);
 
   const handleSendText = async (text: string) => {
     if (!text.trim() || sending) return;
@@ -1126,10 +1215,26 @@ export default function AIInterviewWorkspace({ session, rounds, initialChat }: P
                   }`}>
                     {isAI ? <Bot className="w-3.5 h-3.5" /> : <User className="w-3.5 h-3.5" />}
                   </div>
-                  <div className={`p-3 rounded-2xl border text-xs leading-relaxed space-y-2 font-medium break-all sm:break-words [overflow-wrap:anywhere] max-w-full overflow-hidden ${
+                  <div className={`p-3 rounded-2xl border text-xs leading-relaxed font-medium break-words [overflow-wrap:anywhere] max-w-full overflow-hidden ${
                     isAI ? "bg-surface/80 border-border/80 text-fg" : "bg-surface border-border/40 text-muted"
                   }`}>
-                    <div className="whitespace-pre-line break-all sm:break-words [overflow-wrap:anywhere]">{msg.text}</div>
+                    {isAI ? (
+                      // Interviewer replies are markdown (bold, lists, inline code) —
+                      // render them properly instead of leaking raw ** and ` markers.
+                      <MarkdownRenderer
+                        content={msg.text}
+                        className="text-xs max-w-full break-words [overflow-wrap:anywhere]
+                          prose-p:my-1.5 prose-p:leading-relaxed prose-p:text-fg
+                          prose-headings:text-fg prose-headings:text-xs prose-headings:font-black prose-headings:tracking-wide prose-headings:my-2
+                          prose-ul:my-1.5 prose-ul:pl-4 prose-ul:list-disc prose-ol:my-1.5 prose-ol:pl-4
+                          prose-li:my-0.5 prose-li:text-fg
+                          prose-strong:text-fg prose-strong:font-bold
+                          prose-code:text-accent prose-code:text-[11px]
+                          prose-pre:my-2 prose-pre:text-[11px]"
+                      />
+                    ) : (
+                      <div className="whitespace-pre-line break-words [overflow-wrap:anywhere]">{msg.text}</div>
+                    )}
                   </div>
                 </div>
               );

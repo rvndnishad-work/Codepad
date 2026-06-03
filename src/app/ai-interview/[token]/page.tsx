@@ -173,6 +173,7 @@ export default async function AIInterviewRunPage({ params, searchParams }: Props
         status: session.status,
         startedAt: session.startedAt?.toISOString() ?? null,
         estimatedMinutes,
+        engagementLevel: session.engagementLevel,
       }}
       rounds={rounds}
       initialChat={chatHistory}

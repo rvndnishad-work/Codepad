@@ -897,6 +897,14 @@ model AIInterviewSession {
   /// every turn doesn't re-fetch tools/list from the customer's MCP server.
   /// Shape: `{ servers: [{ id, label, tools: [...] }], cachedAt }`.
   outboundToolsListCache String?
+  /// Live presence of the AI interviewer: "REACTIVE" (replies only when the
+  /// candidate messages — default/legacy), "OBSERVER" (sparing proactive
+  /// nudges) or "COACH" (actively present). Copied from the batch at invite so
+  /// runtime + credit charge read it without a join. Drives credit cost.
+  engagementLevel  String                    @default("REACTIVE")
+  /// Count of proactive (observer/coach) comments emitted this session. Used to
+  /// enforce the per-session hard cap on background AI interjections.
+  proactiveCount   Int                       @default(0)
   createdAt        DateTime                  @default(now())
   updatedAt        DateTime                  @updatedAt
   ledgerEntries    AIInterviewCreditLedger[]
@@ -923,6 +931,9 @@ model AIScreeningBatch {
   createdByUserId String
   /// "DRAFT" (being built, not yet invited) | "ACTIVE" | "CLOSED".
   status          String   @default("ACTIVE")
+  /// Live presence the recruiter chose for this screening: "REACTIVE" |
+  /// "OBSERVER" | "COACH". Copied onto each session at invite; sets credit cost.
+  engagementLevel String   @default("REACTIVE")
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
   workspace       Workspace              @relation(fields: [workspaceId], references: [id], onDelete: Cascade)

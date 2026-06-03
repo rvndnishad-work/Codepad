@@ -7,6 +7,7 @@ import { revalidatePath } from "next/cache";
 import {
   workspacePlanAllowsAiScreening,
   getAiCreditPack,
+  normalizeEngagementLevel,
 } from "@/lib/ai-interview/credits";
 import { sendInviteEmail } from "@/lib/ai-interview/invite-email";
 import { validateStarterFilesJson } from "@/lib/ai-interview/template-resolver";
@@ -233,12 +234,16 @@ export async function createScreeningBatchAction(
     sharedRounds: RoundSpecInput[];
     /** candidateId -> full replacement round list. Absent = use sharedRounds. */
     overrides?: Record<string, RoundSpecInput[]>;
+    /** Live interviewer presence — drives proactive behavior + credit cost. */
+    engagementLevel?: string;
   }
 ) {
   const { workspace, userId } = await assertWorkspaceWriter(slug);
 
   const positionTitle = data.positionTitle?.trim();
   if (!positionTitle) throw new Error("Position title is required.");
+
+  const engagementLevel = normalizeEngagementLevel(data.engagementLevel);
 
   const candidateIds = [...new Set((data.candidateIds ?? []).filter(Boolean))];
   if (candidateIds.length === 0) throw new Error("Select at least one candidate.");
@@ -277,6 +282,7 @@ export async function createScreeningBatchAction(
         positionTitle,
         createdByUserId: userId,
         status: "ACTIVE",
+        engagementLevel,
         roundSpecs: {
           create: sharedRounds.map((r, order) => ({
             order,
@@ -307,6 +313,7 @@ export async function createScreeningBatchAction(
           candidateEmail: c.email!.trim().toLowerCase(),
           positionTitle,
           templateId: legacyTemplateId,
+          engagementLevel,
           status: "PENDING",
           chatHistory: "[]",
           filesJson: "{}",

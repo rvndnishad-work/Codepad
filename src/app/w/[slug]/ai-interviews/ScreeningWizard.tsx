@@ -51,6 +51,10 @@ import {
   Briefcase,
   Sliders,
   CheckCircle2,
+  Gauge,
+  Eye,
+  Radio,
+  MessageSquare,
 } from "lucide-react";
 import { toast } from "sonner";
 import { createScreeningBatchAction, quickAddCandidateAction } from "./actions";
@@ -116,6 +120,48 @@ function initials(name: string): string {
     .join("");
 }
 
+// Live interviewer presence. Costs MIRROR the server source of truth in
+// `lib/ai-interview/credits.ts` (AI_ENGAGEMENT_CREDIT_COST) — keep in sync. We
+// can't import that module here (it pulls in prisma), so the values are
+// duplicated for display only; the server is authoritative when charging.
+type EngagementLevel = "REACTIVE" | "OBSERVER" | "COACH";
+
+const ENGAGEMENT_OPTIONS: {
+  id: EngagementLevel;
+  label: string;
+  desc: string;
+  cost: number;
+  icon: React.ReactNode;
+}[] = [
+  {
+    id: "REACTIVE",
+    label: "Reactive",
+    desc: "Replies only when the candidate messages it. Classic Q&A.",
+    cost: 1,
+    icon: <MessageSquare className="w-3.5 h-3.5" />,
+  },
+  {
+    id: "OBSERVER",
+    label: "Observer",
+    desc: "Watches quietly and nudges only when something's notable.",
+    cost: 2,
+    icon: <Eye className="w-3.5 h-3.5" />,
+  },
+  {
+    id: "COACH",
+    label: "Coach",
+    desc: "Actively present — reacts to progress in near real-time.",
+    cost: 3,
+    icon: <Radio className="w-3.5 h-3.5" />,
+  },
+];
+
+const COST_BY_LEVEL: Record<EngagementLevel, number> = {
+  REACTIVE: 1,
+  OBSERVER: 2,
+  COACH: 3,
+};
+
 const STEPS = [
   { n: 1 as const, label: "Candidates", hint: "Who are you screening?", icon: Users },
   { n: 2 as const, label: "Tech stack", hint: "What should they prove?", icon: Layers },
@@ -162,6 +208,9 @@ export default function ScreeningWizard({
   const [backendFw, setBackendFw] = useState<string[]>([]);
   const [dsaLangs, setDsaLangs] = useState<string[]>([]);
   const [minutes, setMinutes] = useState(30);
+
+  // Live interviewer presence (Step 3). Drives proactive behavior + credit cost.
+  const [engagementLevel, setEngagementLevel] = useState<EngagementLevel>("REACTIVE");
 
   // Curatable challenge pool, fetched once for DSA round binding.
   const [challengePool, setChallengePool] = useState<CuratableChallenge[] | null>(null);
@@ -238,6 +287,7 @@ export default function ScreeningWizard({
         candidateIds: selectedIds,
         sharedRounds,
         overrides,
+        engagementLevel,
       });
       if (res.success) {
         toast.success(`Screening batch created — ${res.sessions.length} invite(s) sent.`);
@@ -337,6 +387,8 @@ export default function ScreeningWizard({
                   selectedCandidates={selectedCandidates}
                   overrides={overrides}
                   setOverrides={setOverrides}
+                  engagementLevel={engagementLevel}
+                  setEngagementLevel={setEngagementLevel}
                 />
               )}
             </motion.div>
@@ -355,6 +407,8 @@ export default function ScreeningWizard({
             roundCount={estRoundCount}
             totalMinutes={estTotalMinutes}
             step={step}
+            creditPerCandidate={COST_BY_LEVEL[engagementLevel]}
+            engagementLabel={ENGAGEMENT_OPTIONS.find((o) => o.id === engagementLevel)?.label ?? "Reactive"}
           />
         </div>
       </div>
@@ -1133,6 +1187,8 @@ function StepRounds({
   selectedCandidates,
   overrides,
   setOverrides,
+  engagementLevel,
+  setEngagementLevel,
 }: {
   sharedRounds: RoundSpecInput[];
   setSharedRounds: React.Dispatch<React.SetStateAction<RoundSpecInput[]>>;
@@ -1140,10 +1196,50 @@ function StepRounds({
   selectedCandidates: CandidateOption[];
   overrides: Record<string, RoundSpecInput[]>;
   setOverrides: React.Dispatch<React.SetStateAction<Record<string, RoundSpecInput[]>>>;
+  engagementLevel: EngagementLevel;
+  setEngagementLevel: (l: EngagementLevel) => void;
 }) {
   const [advancedOpen, setAdvancedOpen] = useState(false);
   return (
     <div className="space-y-5">
+      {/* Interviewer presence — drives proactive behavior + credit cost. */}
+      <div>
+        <div className="text-[10px] font-black uppercase tracking-widest text-accent flex items-center gap-1.5 mb-1">
+          <Gauge className="w-3.5 h-3.5" /> Interviewer presence
+        </div>
+        <p className="text-[11px] text-muted mb-3">
+          How present the AI is while the candidate codes. More presence = richer signal, more credits per candidate.
+        </p>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+          {ENGAGEMENT_OPTIONS.map((o) => {
+            const on = engagementLevel === o.id;
+            return (
+              <motion.button
+                key={o.id}
+                type="button"
+                onClick={() => setEngagementLevel(o.id)}
+                whileTap={{ scale: 0.97 }}
+                className={`text-left rounded-xl border p-3 transition-colors ${
+                  on ? "border-accent bg-accent/[0.07]" : "border-border bg-bg hover:border-border-strong"
+                }`}
+              >
+                <div className="flex items-center justify-between mb-1.5">
+                  <span className={`inline-flex items-center gap-1.5 text-xs font-black ${on ? "text-fg" : "text-muted"}`}>
+                    <span className={on ? "text-accent" : "text-muted"}>{o.icon}</span>
+                    {o.label}
+                  </span>
+                  <span className="inline-flex items-center gap-0.5 text-[10px] font-black text-amber-500 tabular-nums">
+                    <Coins className="w-3 h-3" />
+                    {o.cost}
+                  </span>
+                </div>
+                <p className="text-[10px] text-muted leading-snug">{o.desc}</p>
+              </motion.button>
+            );
+          })}
+        </div>
+      </div>
+
       <div>
         <div className="text-[10px] font-black uppercase tracking-widest text-accent flex items-center gap-1.5 mb-1">
           <Layers className="w-3.5 h-3.5" /> Shared question set
@@ -1453,6 +1549,8 @@ function SummaryRail({
   roundCount,
   totalMinutes,
   step,
+  creditPerCandidate,
+  engagementLabel,
 }: {
   positionTitle: string;
   selectedCandidates: CandidateOption[];
@@ -1463,7 +1561,10 @@ function SummaryRail({
   roundCount: number;
   totalMinutes: number;
   step: Step;
+  creditPerCandidate: number;
+  engagementLabel: string;
 }) {
+  const totalCredits = selectedCandidates.length * creditPerCandidate;
   const stackChips: { label: string; tone: string }[] = [
     ...frontend.map((id) => ({
       label: FRONTEND_FRAMEWORKS.find((f) => f.id === id)?.label ?? id,
@@ -1545,12 +1646,19 @@ function SummaryRail({
         )}
       </SummaryBlock>
 
-      <div className="pt-4 border-t border-border flex items-center justify-between">
-        <span className="text-[10px] font-black uppercase tracking-widest text-muted">Credits on completion</span>
-        <span className="inline-flex items-center gap-1 text-sm font-black text-amber-500 tabular-nums">
-          <Coins className="w-3.5 h-3.5" />
-          {selectedCandidates.length}
-        </span>
+      <div className="pt-4 border-t border-border space-y-1.5">
+        <div className="flex items-center justify-between">
+          <span className="text-[10px] font-black uppercase tracking-widest text-muted">Credits on completion</span>
+          <span className="inline-flex items-center gap-1 text-sm font-black text-amber-500 tabular-nums">
+            <Coins className="w-3.5 h-3.5" />
+            {totalCredits}
+          </span>
+        </div>
+        {selectedCandidates.length > 0 && (
+          <div className="text-[10px] text-muted/70 tabular-nums text-right">
+            {selectedCandidates.length} × {creditPerCandidate} ({engagementLabel})
+          </div>
+        )}
       </div>
     </div>
   );

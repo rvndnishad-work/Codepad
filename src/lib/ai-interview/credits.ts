@@ -8,6 +8,33 @@ import type { Prisma } from "@prisma/client";
 export const AI_INTERVIEW_COST_PER_SESSION = 1;
 
 /**
+ * Live presence of the AI interviewer during a screening. Higher presence means
+ * more background Gemini calls, so it costs more credits per completed session.
+ */
+export type EngagementLevel = "REACTIVE" | "OBSERVER" | "COACH";
+
+/**
+ * Credits charged (once, on the candidate's first turn) per completed screening,
+ * scaled by the recruiter's chosen interviewer presence. REACTIVE === the legacy
+ * flat cost so existing screenings are unaffected.
+ */
+export const AI_ENGAGEMENT_CREDIT_COST: Record<EngagementLevel, number> = {
+  REACTIVE: AI_INTERVIEW_COST_PER_SESSION, // 1
+  OBSERVER: 2,
+  COACH: 3,
+};
+
+/** Coerce an arbitrary stored value to a valid level (defaults to REACTIVE). */
+export function normalizeEngagementLevel(v: string | null | undefined): EngagementLevel {
+  return v === "OBSERVER" || v === "COACH" ? v : "REACTIVE";
+}
+
+/** Credit cost for a level (defaults to the REACTIVE cost for unknown input). */
+export function creditCostForLevel(level: string | null | undefined): number {
+  return AI_ENGAGEMENT_CREDIT_COST[normalizeEngagementLevel(level)];
+}
+
+/**
  * Public-facing credit pack tiers. Prices are USD cents. Keep in sync with any
  * Stripe Product/Price catalog you decide to set up — the checkout flow uses
  * `price_data` so no Stripe-side IDs are required to start.
@@ -108,9 +135,13 @@ export async function consumeCreditIfFirstTurn(
   return prisma.$transaction(async (tx) => {
     const session = await tx.aIInterviewSession.findUnique({
       where: { id: sessionId },
-      select: { id: true, workspaceId: true, startedAt: true, practice: true },
+      select: { id: true, workspaceId: true, startedAt: true, practice: true, engagementLevel: true },
     });
     if (!session) throw new Error("Session not found");
+
+    // Credit cost scales with the interviewer's live presence (REACTIVE=1,
+    // OBSERVER=2, COACH=3) and is charged once, here, on the first turn.
+    const cost = creditCostForLevel(session.engagementLevel);
 
     // Fast path: already charged on a previous turn.
     if (session.startedAt) return { charged: false };
@@ -128,7 +159,7 @@ export async function consumeCreditIfFirstTurn(
     // Check balance before attempting the claim. We re-check after the claim
     // succeeds to keep this transaction's view consistent.
     const balance = await sumLedger(tx, session.workspaceId);
-    if (balance < AI_INTERVIEW_COST_PER_SESSION) {
+    if (balance < cost) {
       throw new InsufficientCreditsError(balance);
     }
 
@@ -147,7 +178,7 @@ export async function consumeCreditIfFirstTurn(
       data: {
         workspaceId: session.workspaceId,
         kind: "CONSUMPTION",
-        amount: -AI_INTERVIEW_COST_PER_SESSION,
+        amount: -cost,
         sessionId: session.id,
       },
     });

@@ -32,6 +32,34 @@ let activeUtterances: SpeechSynthesisUtterance[] = [];
 // keep hitting it on every utterance.
 let cloudAvailable: boolean | null = null;
 
+// Which server route synthesizes cloud audio, plus any extra POST fields it
+// needs for auth. Defaults to the admin Copilot route; the candidate interview
+// workspace points this at its token-scoped route via `configureCloudTTS`.
+let cloudEndpoint = "/api/admin/tts";
+let cloudExtraBody: Record<string, unknown> = {};
+
+/**
+ * Repoint cloud TTS at a different endpoint (and attach auth fields to every
+ * request body). Pass `null` to reset to the admin default. Resets the
+ * availability cache so the new endpoint is probed fresh.
+ *
+ * The candidate interview calls this on mount with
+ * `{ endpoint: "/api/ai-interview/tts", body: { inviteToken } }` so the AI
+ * interviewer speaks in cloud voices without needing an admin session.
+ */
+export function configureCloudTTS(
+  opts: { endpoint?: string; body?: Record<string, unknown> } | null
+): void {
+  if (!opts) {
+    cloudEndpoint = "/api/admin/tts";
+    cloudExtraBody = {};
+  } else {
+    if (opts.endpoint) cloudEndpoint = opts.endpoint;
+    if (opts.body) cloudExtraBody = opts.body;
+  }
+  cloudAvailable = null;
+}
+
 let selectedVoiceName: string | null = null;
 let selectedSpeechRate: number = 0.97;
 
@@ -200,18 +228,20 @@ interface SpeakCallbacks {
 async function tryCloudTTS(text: string): Promise<HTMLAudioElement | null> {
   if (cloudAvailable === false) return null;
   try {
-    const res = await fetch("/api/admin/tts", {
+    const res = await fetch(cloudEndpoint, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ text }),
+      body: JSON.stringify({ text, ...cloudExtraBody }),
     });
-    if (res.status === 503) {
-      // Permanent fall-through — no provider configured. Don't try again.
+    // Permanent fall-through for states that won't recover within this page
+    // life: no provider configured (503), or the request isn't/can't be
+    // authorized (401/403) or the session is gone (404/410). Stop retrying.
+    if ([401, 403, 404, 410, 503].includes(res.status)) {
       cloudAvailable = false;
       return null;
     }
     if (!res.ok) {
-      // Transient — don't poison cloudAvailable, just fall back this once.
+      // Transient (e.g. 429 / 5xx) — don't poison cloudAvailable, fall back once.
       return null;
     }
     cloudAvailable = true;

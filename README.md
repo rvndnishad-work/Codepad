@@ -32,7 +32,7 @@
 - **🛡️ Strong Isolation:** User code is executed inside a heavily sandboxed `<iframe>` (`allow-scripts`), ensuring complete security from the parent application.
 - **🎨 Professional Editor:** Integrated **Monaco Editor** (the engine behind VS Code) for a familiar, powerful coding experience.
 - **🔐 Authentication:** Secure login via GitHub OAuth utilizing **Auth.js (NextAuth v5)**.
-- **💾 Persistence:** Save, load, and manage snippets seamlessly with a **Prisma + SQLite** backend (easily swappable to PostgreSQL).
+- **💾 Persistence:** Save, load, and manage snippets seamlessly with a **Prisma + PostgreSQL** backend.
 - **🚀 Modern UI/UX:** Responsive, sleek, and dark-mode optimized design crafted with **Tailwind CSS**.
 
 ---
@@ -47,7 +47,7 @@ Codepad is architected to be highly performant and secure, relying on a monolith
 | **Frontend** | **React 19 & Tailwind CSS** | Component architecture and responsive styling. |
 | **Execution** | **Sandpack (`@codesandbox`)** | In-browser bundling and secure iframe execution. |
 | **Editor** | **Monaco Editor** | Syntax highlighting, code formatting, and editor feel. |
-| **Database** | **Prisma ORM + SQLite** | Relational data management for users and snippets. |
+| **Database** | **Prisma ORM + PostgreSQL** | Relational data management for users and snippets. |
 | **Auth** | **Auth.js v5** | Session management and GitHub OAuth integration. |
 
 ---
@@ -75,17 +75,34 @@ cp .env.example .env
 *(Optional)* To enable saving snippets, you will need to set up a GitHub OAuth app and provide `AUTH_GITHUB_ID` and `AUTH_GITHUB_SECRET`. Generate an `AUTH_SECRET` using `openssl rand -base64 32`.
 
 ### 4. Initialize the Database
-Push the Prisma schema to your local SQLite database:
+The app uses **PostgreSQL** (via Prisma). Point `DATABASE_URL` and `DIRECT_URL` in `.env`
+at a Postgres instance (a local Docker container or a hosted dev branch), then apply the
+migration history:
 ```bash
-npm run db:push
+npx prisma migrate deploy   # apply committed migrations (production-safe)
+# during local schema work use: npx prisma migrate dev --name <change>
+```
+> Schema changes go through `prisma/migrations/` now — do **not** use `prisma db push`
+> against any shared/production database.
+
+### 5. Code execution backend (Piston)
+Untrusted playground/challenge code runs only in **Piston**, never on the app server.
+For local dev, bring it up with Docker and point the app at it:
+```bash
+docker compose -f docker-compose.piston.yml up -d
+./scripts/piston-install-langs.sh
+# PISTON_URL defaults to http://localhost:2000
 ```
 
-### 5. Start the development server
+### 6. Start the development server
 ```bash
 npm run dev
 ```
 
 Open [http://localhost:3000](http://localhost:3000) in your browser to start coding!
+
+> **Deploying to production?** See **[DEPLOY.md](DEPLOY.md)** for the full Vercel + Fly.io
+> (Postgres + Piston) runbook.
 
 ---
 

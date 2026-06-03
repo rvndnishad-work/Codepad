@@ -6,7 +6,7 @@
     "dev": "next dev -p 3000",
     "dev:signal": "npx y-webrtc-signaling --port 4444",
     "dev:all": "concurrently \"npm run dev\" \"npm run dev:signal\"",
-    "build": "prisma generate && next build",
+    "build": "prisma generate && prisma migrate deploy && next build",
     "start": "next start -p 3000",
     "lint": "next lint",
     "db:push": "prisma db push",

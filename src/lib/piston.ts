@@ -17,6 +17,14 @@ const PISTON_URL = (process.env.PISTON_URL ?? "http://localhost:2000").replace(/
 const RUN_TIMEOUT = Number(process.env.PISTON_RUN_TIMEOUT ?? 3000);
 const COMPILE_TIMEOUT = Number(process.env.PISTON_COMPILE_TIMEOUT ?? 10000);
 const RUN_MEMORY = Number(process.env.PISTON_RUN_MEMORY ?? 256 * 1024 * 1024);
+// Optional shared bearer for a public Piston endpoint fronted by an auth proxy
+// (Piston itself has no auth). When unset (e.g. local docker), no header is sent.
+const AUTH_TOKEN = process.env.PISTON_AUTH_TOKEN ?? "";
+
+/** Auth header for the Piston proxy, merged into each request when configured. */
+function pistonAuthHeaders(): Record<string, string> {
+  return AUTH_TOKEN ? { authorization: `Bearer ${AUTH_TOKEN}` } : {};
+}
 
 /** Our language id -> Piston language id + source file name. */
 const LANGUAGE_MAP: Record<string, { piston: string; file: string }> = {
@@ -65,6 +73,7 @@ async function resolveVersion(pistonLang: string): Promise<string> {
     let res: Response;
     try {
       res = await fetch(`${PISTON_URL}/api/v2/runtimes`, {
+        headers: pistonAuthHeaders(),
         signal: AbortSignal.timeout(5000),
       });
     } catch (err) {
@@ -144,7 +153,7 @@ export async function runOnPiston(
   try {
     res = await fetch(`${PISTON_URL}/api/v2/execute`, {
       method: "POST",
-      headers: { "content-type": "application/json" },
+      headers: { "content-type": "application/json", ...pistonAuthHeaders() },
       body: JSON.stringify(body),
       // Generous client-side ceiling above compile+run budgets so a hung
       // Piston call can't pin our request forever.

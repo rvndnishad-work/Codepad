@@ -1,0 +1,21 @@
+# Public auth proxy for Piston on a droplet.
+#
+# Piston has no auth of its own, so Caddy is the only thing exposed to the
+# internet: it terminates TLS (auto Let's Encrypt for your subdomain) and
+# requires the shared bearer token before proxying to Piston on the internal
+# docker network. Set PISTON_DOMAIN + PISTON_AUTH_TOKEN in the compose env.
+{$PISTON_DOMAIN} {
+	# Unauthenticated liveness path (reveals nothing, never reaches Piston).
+	handle /healthz {
+		respond "ok" 200
+	}
+
+	# Everything else needs the exact bearer before it can reach Piston.
+	handle {
+		@unauthorized not header Authorization "Bearer {$PISTON_AUTH_TOKEN}"
+		respond @unauthorized "Unauthorized" 401 {
+			close
+		}
+		reverse_proxy piston:2000
+	}
+}

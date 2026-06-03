@@ -1,0 +1,56 @@
+# Piston + Caddy auth proxy for a DigitalOcean (or any) Ubuntu 22.04+ droplet.
+#
+# Ubuntu 22.04+ boots with PURE cgroup v2, so Piston's isolate sandbox works out
+# of the box — none of the cgroup trouble Fly Machines have. Piston is NOT
+# published to the host; only Caddy (80/443) is, and it enforces the bearer.
+#
+# Setup runbook: deploy/piston/DROPLET.md
+services:
+  piston:
+    image: ghcr.io/engineer-man/piston:latest
+    container_name: piston
+    restart: unless-stopped
+    privileged: true                 # needed for isolate sandboxes
+    expose:
+      - "2000"                       # internal-only; no host port mapping
+    volumes:
+      - piston-packages:/piston/packages
+    tmpfs:
+      - /piston/jobs:exec,size=512m
+    environment:
+      PISTON_MAX_CONCURRENT_JOBS: "16"
+      PISTON_RUN_TIMEOUT: "5000"
+      PISTON_COMPILE_TIMEOUT: "10000"
+      PISTON_OUTPUT_MAX_SIZE: "1048576"     # 1 MB captured output
+      PISTON_DISABLE_NETWORKING: "true"     # no network inside jobs
+      PISTON_MAX_PROCESS_COUNT: "128"
+      PISTON_RUN_MEMORY_LIMIT: "268435456"  # 256 MB
+    healthcheck:
+      test: ["CMD", "sh", "-c", "wget -qO- http://localhost:2000/api/v2/runtimes >/dev/null 2>&1 || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+
+  caddy:
+    image: caddy:2
+    container_name: piston-caddy
+    restart: unless-stopped
+    depends_on:
+      - piston
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      # Provided via the .env file next to this compose (see DROPLET.md).
+      PISTON_DOMAIN: "${PISTON_DOMAIN}"
+      PISTON_AUTH_TOKEN: "${PISTON_AUTH_TOKEN}"
+    volumes:
+      - ./Caddyfile.droplet:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+
+volumes:
+  piston-packages:
+  caddy-data:
+  caddy-config:

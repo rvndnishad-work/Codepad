@@ -1,24 +1,11 @@
 #!/usr/bin/env bash
-# Install the language packs used by /api/execute into the running Piston
-# container (see docker-compose.piston.yml). Idempotent — re-running only
-# installs what's missing.
+# Install the language packs used by /api/execute into a running Piston server.
+# Piston has no `ppman` CLI in the API image — packs install via its REST API.
+# This is a thin wrapper around scripts/piston-install-langs.mjs (idempotent).
 #
-# Usage: ./scripts/piston-install-langs.sh [container-name]
+# Local docker (default): ./scripts/piston-install-langs.sh
+# Remote (Fly proxy):     PISTON_URL=https://… PISTON_AUTH_TOKEN=… ./scripts/piston-install-langs.sh
 set -euo pipefail
 
-CONTAINER="${1:-codepad-piston}"
-
-# Piston package names. "gcc" provides C/C++; "node" provides JavaScript.
-LANGS=(python node typescript go java gcc rust)
-
-echo "Installing language packs into '$CONTAINER'..."
-for lang in "${LANGS[@]}"; do
-  echo ">> $lang"
-  docker exec "$CONTAINER" ppman install "$lang" || {
-    echo "   (failed or already installed: $lang)"
-  }
-done
-
-echo
-echo "Installed runtimes:"
-docker exec "$CONTAINER" ppman list || true
+DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+exec node "$DIR/piston-install-langs.mjs"

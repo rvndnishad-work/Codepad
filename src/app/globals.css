@@ -20,7 +20,7 @@
     --accent-rgb: 248, 113, 113;
     --accent-soft: #fca5a5;
     --accent-glow: rgba(248, 113, 113, 0.1);
-    
+
     --ui-scale: 1;
     /* Fluid root type: every rem-based size (incl. the px→rem font sizes
        produced by postcss-pxtorem) scales with the viewport. Floor 16.5px so
@@ -53,7 +53,7 @@
      (~18px) → up to 22px on very wide screens. Everything ≤1920px is unchanged. */
   @media (min-width: 1920px) {
     :root {
-      --base-font-size: clamp(19.5px, calc(11px + 0.5vw), 25px);
+      --base-font-size: clamp(18.5px, calc(14.2px + 0.3vw), 19.5px);
     }
   }
 
@@ -78,9 +78,13 @@
     -webkit-font-smoothing: antialiased;
   }
 
-  code, pre, kbd, samp {
+  code,
+  pre,
+  kbd,
+  samp {
     font-family: var(--font-mono), "Fira Code", ui-monospace, SFMono-Regular, Menlo, monospace;
-    font-feature-settings: "calt" 1, "liga" 1; /* Fira Code programming ligatures */
+    font-feature-settings: "calt" 1, "liga" 1;
+    /* Fira Code programming ligatures */
   }
 
   /* Prettier focus ring */
@@ -91,15 +95,25 @@
   }
 
   /* Scrollbar polish */
-  ::-webkit-scrollbar { width: 8px; height: 8px; }
-  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
   ::-webkit-scrollbar-thumb {
     background: var(--border-strong);
     border: 2px solid transparent;
     background-clip: padding-box;
     border-radius: 10px;
   }
-  ::-webkit-scrollbar-thumb:hover { background: var(--subtle); }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: var(--subtle);
+  }
 }
 
 /* ────────────────────────────────────────────────────────────────────────
@@ -118,26 +132,32 @@
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;
 }
+
 .kanban-scroll::-webkit-scrollbar {
   height: 14px;
 }
+
 .kanban-scroll::-webkit-scrollbar-track {
   background: var(--border);
   border-radius: 10px;
   margin-inline: 1rem;
 }
+
 .kanban-scroll::-webkit-scrollbar-thumb {
   background: var(--border-strong);
   border: 3px solid transparent;
   background-clip: padding-box;
   border-radius: 10px;
-  min-width: 60px; /* don't let the thumb shrink to a sliver on very long tracks */
+  min-width: 60px;
+  /* don't let the thumb shrink to a sliver on very long tracks */
   transition: background-color 120ms ease;
 }
+
 .kanban-scroll::-webkit-scrollbar-thumb:hover {
   background: var(--accent);
   background-clip: padding-box;
 }
+
 .kanban-scroll::-webkit-scrollbar-thumb:active {
   background: var(--accent-soft);
   background-clip: padding-box;
@@ -176,6 +196,7 @@ portal-nextjs-toast,
 .sp-console {
   background: var(--surface) !important;
 }
+
 /* Fira Code programming ligatures inside the code editors (CodeMirror, which
    also backs Sandpack's editor). Monaco enables ligatures via its own
    fontLigatures option. */
@@ -188,6 +209,7 @@ portal-nextjs-toast,
 .sp-console-list {
   padding: 8px !important;
 }
+
 .sp-console-item {
   font-family: var(--font-mono), 'Fira Code', monospace !important;
   font-size: 12px !important;
@@ -198,6 +220,7 @@ portal-nextjs-toast,
   overflow: hidden !important;
   line-height: 1.5 !important;
 }
+
 /* Error items in console — uses accent color, capped height */
 .sp-console-item[data-type="error"],
 .sp-console-item--error {
@@ -206,6 +229,7 @@ portal-nextjs-toast,
   padding-left: 10px !important;
   max-height: 80px !important;
 }
+
 .sp-console-item-method {
   font-weight: 600 !important;
   text-transform: uppercase !important;
@@ -221,18 +245,35 @@ portal-nextjs-toast,
 
 /* Nano Banana Pro: Animations */
 @keyframes grid-move {
-  0% { transform: translateY(0); }
-  100% { transform: translateY(40px); }
+  0% {
+    transform: translateY(0);
+  }
+
+  100% {
+    transform: translateY(40px);
+  }
 }
 
 @keyframes float {
-  0%, 100% { transform: translateY(0) rotate(0deg); }
-  50% { transform: translateY(-20px) rotate(1deg); }
+
+  0%,
+  100% {
+    transform: translateY(0) rotate(0deg);
+  }
+
+  50% {
+    transform: translateY(-20px) rotate(1deg);
+  }
 }
 
 @keyframes scanline {
-  0% { transform: translateY(-100%); }
-  100% { transform: translateY(100%); }
+  0% {
+    transform: translateY(-100%);
+  }
+
+  100% {
+    transform: translateY(100%);
+  }
 }
 
 .animate-grid-move {
@@ -278,6 +319,7 @@ portal-nextjs-toast,
 ::view-transition-old(root) {
   z-index: 1;
 }
+
 ::view-transition-new(root) {
   z-index: 9999;
 }
@@ -285,6 +327,7 @@ portal-nextjs-toast,
 .dark::view-transition-old(root) {
   z-index: 9999;
 }
+
 .dark::view-transition-new(root) {
   z-index: 1;
 }
@@ -293,6 +336,7 @@ portal-nextjs-toast,
   from {
     clip-path: circle(0% at var(--x) var(--y));
   }
+
   to {
     clip-path: circle(120% at var(--x) var(--y));
   }
@@ -302,6 +346,7 @@ portal-nextjs-toast,
   from {
     clip-path: circle(120% at var(--x) var(--y));
   }
+
   to {
     clip-path: circle(0% at var(--x) var(--y));
   }
@@ -325,15 +370,19 @@ portal-nextjs-toast,
   0% {
     border-radius: 30% 70% 70% 30% / 30% 30% 70% 70%;
   }
+
   25% {
     border-radius: 58% 42% 75% 25% / 76% 46% 54% 24%;
   }
+
   50% {
     border-radius: 50% 50% 33% 67% / 55% 27% 73% 45%;
   }
+
   75% {
     border-radius: 33% 67% 58% 42% / 63% 68% 32% 37%;
   }
+
   100% {
     border-radius: 30% 70% 70% 30% / 30% 30% 70% 70%;
   }
@@ -352,7 +401,10 @@ portal-nextjs-toast,
   min-height: 320px;
   padding: 0.5rem 0 6rem;
 }
-.tiptap-prose > * + * { margin-top: 1em; }
+
+.tiptap-prose>*+* {
+  margin-top: 1em;
+}
 
 .tiptap-prose h1,
 .tiptap-prose h2,
@@ -363,15 +415,41 @@ portal-nextjs-toast,
   line-height: 1.2;
   margin-top: 1.5em;
 }
-.tiptap-prose h1 { font-size: 2.25rem; }
-.tiptap-prose h2 { font-size: 1.75rem; }
-.tiptap-prose h3 { font-size: 1.375rem; }
 
-.tiptap-prose p { color: var(--fg); }
-.tiptap-prose strong { color: var(--fg); font-weight: 700; }
-.tiptap-prose em { font-style: italic; }
-.tiptap-prose s { text-decoration: line-through; opacity: 0.7; }
-.tiptap-prose u { text-decoration: underline; text-underline-offset: 3px; }
+.tiptap-prose h1 {
+  font-size: 2.25rem;
+}
+
+.tiptap-prose h2 {
+  font-size: 1.75rem;
+}
+
+.tiptap-prose h3 {
+  font-size: 1.375rem;
+}
+
+.tiptap-prose p {
+  color: var(--fg);
+}
+
+.tiptap-prose strong {
+  color: var(--fg);
+  font-weight: 700;
+}
+
+.tiptap-prose em {
+  font-style: italic;
+}
+
+.tiptap-prose s {
+  text-decoration: line-through;
+  opacity: 0.7;
+}
+
+.tiptap-prose u {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
 
 .tiptap-prose a,
 .tiptap-prose .tiptap-link {
@@ -381,7 +459,10 @@ portal-nextjs-toast,
   text-decoration-thickness: 1.5px;
   cursor: text;
 }
-.tiptap-prose a:hover { color: var(--accent-soft); }
+
+.tiptap-prose a:hover {
+  color: var(--accent-soft);
+}
 
 .tiptap-prose mark {
   background: rgba(var(--accent-rgb), 0.25);
@@ -414,11 +495,26 @@ portal-nextjs-toast,
   padding-left: 1.5rem;
   margin: 1em 0;
 }
-.tiptap-prose ul { list-style: disc; }
-.tiptap-prose ol { list-style: decimal; }
-.tiptap-prose li { margin: 0.25em 0; }
-.tiptap-prose li::marker { color: var(--muted); }
-.tiptap-prose li > p { margin: 0; }
+
+.tiptap-prose ul {
+  list-style: disc;
+}
+
+.tiptap-prose ol {
+  list-style: decimal;
+}
+
+.tiptap-prose li {
+  margin: 0.25em 0;
+}
+
+.tiptap-prose li::marker {
+  color: var(--muted);
+}
+
+.tiptap-prose li>p {
+  margin: 0;
+}
 
 .tiptap-prose hr {
   border: none;
@@ -449,6 +545,7 @@ portal-nextjs-toast,
   line-height: 1.55;
   overflow-x: auto;
 }
+
 .tiptap-prose pre code,
 .tiptap-prose .tiptap-code-block code {
   background: transparent;
@@ -460,40 +557,88 @@ portal-nextjs-toast,
 
 /* Lowlight syntax tokens (subset) */
 .tiptap-prose .hljs-comment,
-.tiptap-prose .hljs-quote { color: var(--muted); font-style: italic; }
+.tiptap-prose .hljs-quote {
+  color: var(--muted);
+  font-style: italic;
+}
+
 .tiptap-prose .hljs-keyword,
 .tiptap-prose .hljs-selector-tag,
-.tiptap-prose .hljs-literal { color: #c084fc; }
+.tiptap-prose .hljs-literal {
+  color: #c084fc;
+}
+
 .tiptap-prose .hljs-string,
-.tiptap-prose .hljs-attr { color: #34d399; }
+.tiptap-prose .hljs-attr {
+  color: #34d399;
+}
+
 .tiptap-prose .hljs-number,
-.tiptap-prose .hljs-built_in { color: #fbbf24; }
+.tiptap-prose .hljs-built_in {
+  color: #fbbf24;
+}
+
 .tiptap-prose .hljs-title,
 .tiptap-prose .hljs-name,
-.tiptap-prose .hljs-section { color: #60a5fa; }
-.tiptap-prose .hljs-tag { color: var(--accent); }
+.tiptap-prose .hljs-section {
+  color: #60a5fa;
+}
+
+.tiptap-prose .hljs-tag {
+  color: var(--accent);
+}
 
 /* Code-peek tokens used by /playgrounds tiles. Same palette as tiptap so
    inline snippets stay visually consistent across the app. */
 .code-peek .hljs-comment,
-.code-peek .hljs-quote { color: rgba(148, 163, 184, 0.6); font-style: italic; }
+.code-peek .hljs-quote {
+  color: rgba(148, 163, 184, 0.6);
+  font-style: italic;
+}
+
 .code-peek .hljs-keyword,
 .code-peek .hljs-selector-tag,
-.code-peek .hljs-literal { color: #c084fc; }
+.code-peek .hljs-literal {
+  color: #c084fc;
+}
+
 .code-peek .hljs-string,
-.code-peek .hljs-attr { color: #6ee7b7; }
+.code-peek .hljs-attr {
+  color: #6ee7b7;
+}
+
 .code-peek .hljs-number,
-.code-peek .hljs-built_in { color: #fbbf24; }
+.code-peek .hljs-built_in {
+  color: #fbbf24;
+}
+
 .code-peek .hljs-title,
 .code-peek .hljs-title.function_,
 .code-peek .hljs-name,
-.code-peek .hljs-section { color: #60a5fa; }
-.code-peek .hljs-tag { color: #f87171; }
-.code-peek .hljs-tag .hljs-name { color: #f87171; }
-.code-peek .hljs-tag .hljs-attr { color: #fbbf24; }
-.code-peek .hljs-params { color: #e2e8f0; }
+.code-peek .hljs-section {
+  color: #60a5fa;
+}
+
+.code-peek .hljs-tag {
+  color: #f87171;
+}
+
+.code-peek .hljs-tag .hljs-name {
+  color: #f87171;
+}
+
+.code-peek .hljs-tag .hljs-attr {
+  color: #fbbf24;
+}
+
+.code-peek .hljs-params {
+  color: #e2e8f0;
+}
+
 .code-peek .hljs-variable,
-.code-peek .hljs-template-variable { color: #f0abfc; }
+.code-peek .hljs-template-variable {
+  color: #f0abfc;
+}
 
 /* Placeholder shown on empty paragraphs / headings via Tiptap Placeholder ext */
 .tiptap-prose p.is-editor-empty:first-child::before,
@@ -514,7 +659,9 @@ portal-nextjs-toast,
   background: rgba(var(--accent-rgb), 0.25);
 }
 
-.tiptap-editor-content { width: 100%; }
+.tiptap-editor-content {
+  width: 100%;
+}
 
 /* ─────────────────────────────────────────────────────────────────
    Collaborative CodeMirror 6 Peer Presence (y-codemirror.next)
@@ -554,7 +701,7 @@ portal-nextjs-toast,
   pointer-events: none;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4), 0 2px 4px rgba(0, 0, 0, 0.2);
   z-index: 50;
-  
+
   /* Fade out label after 1.5s of inactivity */
   animation: cm-cursor-label-fade 2s cubic-bezier(0.4, 0, 0.2, 1) forwards;
   animation-delay: 1.5s;
@@ -574,9 +721,17 @@ portal-nextjs-toast,
 }
 
 @keyframes cm-cursor-label-fade {
-  0% { opacity: 1; }
-  75% { opacity: 1; }
-  100% { opacity: 0; }
+  0% {
+    opacity: 1;
+  }
+
+  75% {
+    opacity: 1;
+  }
+
+  100% {
+    opacity: 0;
+  }
 }
 
 /* Keep cursor label visible on line hover or focus */
@@ -602,7 +757,6 @@ portal-nextjs-toast,
 }
 
 body.sidebar-collapsed .workspace-content {
-  max-width: 80rem; /* expanded layout to show content more freely when sidebar is collapsed */
+  max-width: 80rem;
+  /* expanded layout to show content more freely when sidebar is collapsed */
 }
-
-

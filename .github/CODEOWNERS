@@ -1,0 +1,21 @@
+# Code owners — GitHub requests a review from these owners on matching paths.
+# Pair with branch protection ("Require review from Code Owners") so changes to
+# sensitive areas can't merge without the owner's approval.
+#
+# Replace @rvndnishad-work with your GitHub handle / team if it differs.
+
+# Default owner for everything.
+*                         @rvndnishad-work
+
+# Security- and infra-sensitive paths — always require owner review.
+/prisma/                  @rvndnishad-work
+/src/lib/auth.ts          @rvndnishad-work
+/src/lib/mcp/             @rvndnishad-work
+/src/lib/totp.ts          @rvndnishad-work
+/deploy/                  @rvndnishad-work
+/.github/                 @rvndnishad-work
+/next.config.ts           @rvndnishad-work
+/package.json             @rvndnishad-work
+/.env.example             @rvndnishad-work
+/DEPLOY.md                @rvndnishad-work
+/GUIDE.md                 @rvndnishad-work

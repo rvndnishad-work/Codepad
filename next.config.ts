@@ -2,6 +2,12 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   reactStrictMode: false,
+  // Pin the workspace root so Turbopack resolves modules from THIS project.
+  // Without it, a stray lockfile elsewhere (e.g. ~/package-lock.json) makes
+  // Next infer the wrong root, breaking page-module resolution at build time.
+  turbopack: {
+    root: import.meta.dirname,
+  },
   experimental: {
     serverActions: { bodySizeLimit: "2mb" },
   },

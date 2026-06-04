@@ -19,9 +19,17 @@ export async function timed<T>(label: string, fn: () => Promise<T>): Promise<T> 
  * Measures the raw DB round-trip with a trivial query. This isolates pure
  * network latency to the database from any query complexity — if this is
  * ~200ms+, the function and DB are in different regions.
+ *
+ * Never throws and never runs during the production build: a cold/unreachable
+ * DB at build time must not break the deploy. We only want the RUNTIME number.
  */
 export async function pingDb(
   prisma: { $queryRaw: (q: TemplateStringsArray) => Promise<unknown> },
 ): Promise<void> {
-  await timed("db:ping(SELECT 1)", () => prisma.$queryRaw`SELECT 1`);
+  if (process.env.NEXT_PHASE === "phase-production-build") return;
+  try {
+    await timed("db:ping(SELECT 1)", () => prisma.$queryRaw`SELECT 1`);
+  } catch (err) {
+    console.error("[timing] db:ping failed:", err);
+  }
 }

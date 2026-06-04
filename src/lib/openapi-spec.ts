@@ -19,12 +19,12 @@ info:
     ## Authentication
     - **session** — NextAuth session cookie (browser). Most app endpoints.
     - **admin** — session cookie whose email is in ADMIN_EMAILS. Admin endpoints.
-    - **apiKey** — \\\`Authorization: Bearer <workspace API key>\\\`. MCP endpoints only.
-    - **cronSecret** — \\\`Authorization: Bearer <CRON_SECRET>\\\`. Cron endpoints (called by Vercel Cron).
+    - **apiKey** — \`Authorization: Bearer <workspace API key>\`. MCP endpoints only.
+    - **cronSecret** — \`Authorization: Bearer <CRON_SECRET>\`. Cron endpoints (called by Vercel Cron).
     - **webhookSignature** — provider HMAC signature header (Stripe/Resend). No session.
     - **public** — no auth (still rate-limited).
 
-    Errors are JSON: \\\`{ "error": string | object }\\\`. Rate-limited endpoints return 429.
+    Errors are JSON: \`{ "error": string | object }\`. Rate-limited endpoints return 429.
 servers:
   - url: https://interviewpad.in
     description: Production
@@ -203,7 +203,7 @@ paths:
               type: object
               required: [language, code]
               properties:
-                language: { type: string, example: python, description: One of python, javascript/node, typescript, go, java, cpp, rust. }
+                language: { type: string, example: python, description: "One of python, javascript/node, typescript, go, java, cpp, rust." }
                 code: { type: string, description: Source (max 64KB). }
                 stdin: { type: string, description: Standard input (max 16KB). }
                 speculative: { type: boolean, description: Allow cached/speculative result. }
@@ -220,7 +220,7 @@ paths:
                   exitCode: { type: integer }
                   timeMs: { type: integer }
                   compileError: { type: boolean }
-                  signal: { type: string, nullable: true }
+                  signal: { type: [string, "null"] }
         "400": { $ref: "#/components/responses/BadRequest" }
         "429": { $ref: "#/components/responses/RateLimited" }
         "503": { description: Piston unavailable, content: { application/json: { schema: { $ref: "#/components/schemas/Error" } } } }
@@ -342,8 +342,8 @@ paths:
                 code: { type: string, description: Harness mode single-function source. }
                 files: { type: object, additionalProperties: { type: string }, description: unit-js mode source files. }
                 durationSec: { type: integer, minimum: 0 }
-                sessionId: { type: string, nullable: true }
-                token: { type: string, nullable: true }
+                sessionId: { type: [string, "null"] }
+                token: { type: [string, "null"] }
                 dryRun: { type: boolean, description: Run sample cases without persisting an attempt. }
       responses:
         "200":

@@ -28,13 +28,26 @@ function escapeXml(unsafe: string): string {
   });
 }
 
-export async function GET() {
-  const posts = await prisma.blogPost.findMany({
+function fetchFeedPosts() {
+  return prisma.blogPost.findMany({
     where: { published: true },
     orderBy: { createdAt: "desc" },
     take: 50,
     include: { user: { select: { name: true } } },
   });
+}
+
+export async function GET() {
+  // This route prerenders at build (revalidate=600), so a cold/unreachable DB
+  // at build time must NOT fail the whole deploy. On error we emit an empty
+  // feed; the next on-demand revalidation (≤10 min) fills it in once the DB is
+  // reachable. Runtime requests in-region are unaffected.
+  let posts: Awaited<ReturnType<typeof fetchFeedPosts>> = [];
+  try {
+    posts = await fetchFeedPosts();
+  } catch (err) {
+    console.error("[blog/feed.xml] DB unavailable, serving empty feed:", err);
+  }
 
   const lastBuildDate = (posts[0]?.updatedAt ?? new Date()).toUTCString();
 

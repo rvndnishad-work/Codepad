@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { auth } from "@/lib/auth";
 import { isAdmin } from "@/lib/admin";
-import { prisma } from "@/lib/prisma";
+import { getPrimaryWorkspaceSlug } from "@/lib/workspace-nav";
 import { BookOpen, CreditCard } from "lucide-react";
 import HeaderLogo from "./HeaderLogo";
 import NavDropdown from "./NavDropdown";
@@ -24,14 +24,10 @@ export default async function Header() {
   let workspaceHref = "/pricing";
   let aiScreeningHref = "/pricing";
   if (user?.id) {
-    const firstMembership = await prisma.workspaceMember.findFirst({
-      where: { userId: user.id },
-      orderBy: { workspace: { name: "asc" } },
-      select: { workspace: { select: { slug: true } } },
-    });
-    if (firstMembership?.workspace.slug) {
-      workspaceHref = `/w/${firstMembership.workspace.slug}`;
-      aiScreeningHref = `/w/${firstMembership.workspace.slug}/ai-interviews`;
+    const slug = await getPrimaryWorkspaceSlug(user.id);
+    if (slug) {
+      workspaceHref = `/w/${slug}`;
+      aiScreeningHref = `/w/${slug}/ai-interviews`;
     } else if (userType === "recruiter") {
       workspaceHref = "/w/create";
       aiScreeningHref = "/w/create";

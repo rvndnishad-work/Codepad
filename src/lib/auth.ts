@@ -1,3 +1,4 @@
+import { cache } from "react";
 import NextAuth, { type NextAuthConfig, CredentialsSignin } from "next-auth";
 import GitHub from "next-auth/providers/github";
 import Google from "next-auth/providers/google";
@@ -216,7 +217,13 @@ const credentialsEnabled = true; // always available; account just needs a passw
 
 const useJwt = credentialsEnabled;
 
-export const { handlers, auth, signIn, signOut } = NextAuth({
+export const {
+  handlers,
+  auth: uncachedAuth,
+  signIn,
+  signOut,
+  unstable_update: updateSession,
+} = NextAuth({
   adapter: PrismaAdapter(prisma),
   // NextAuth v5 requires JWT sessions when Credentials is used.
   session: { strategy: useJwt ? "jwt" : "database" },
@@ -234,13 +241,22 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       }
       return true;
     },
-    async jwt({ token, user }) {
-      if (user?.id) token.uid = user.id;
-      // Always refresh userType from DB so changes (e.g. via UserTypeChooser)
-      // land in the session on the very next page load — no client-side
-      // session.update() round-trip needed. Single-column read on the PK,
-      // cheap enough at session-rate.
-      if (token.uid) {
+    async jwt({ token, user, trigger }) {
+      // The jwt callback runs on EVERY auth() call (per-request, not per-
+      // session) under the JWT strategy. Reading the DB here unconditionally
+      // meant a `user.findUnique` on every page render — the dominant cost in
+      // navigation latency. Instead we read userType from the DB only when the
+      // token is first minted (sign-in) or explicitly refreshed via
+      // updateSession() (see /api/me/user-type after a UserTypeChooser change).
+      // Steady-state reads do zero DB work.
+      if (user?.id) {
+        token.uid = user.id;
+        const dbUser = await prisma.user.findUnique({
+          where: { id: user.id },
+          select: { userType: true },
+        });
+        token.userType = dbUser?.userType ?? null;
+      } else if (trigger === "update" && token.uid) {
         const dbUser = await prisma.user.findUnique({
           where: { id: token.uid as string },
           select: { userType: true },
@@ -261,3 +277,13 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     },
   },
 });
+
+/**
+ * Per-request-memoized `auth()`. A single page render calls `auth()` in
+ * several places (root-layout Header, the page itself, sometimes a nested
+ * layout). Without memoization each call re-decodes the session cookie and
+ * re-runs the `jwt` callback. React's `cache()` collapses all calls within one
+ * server request to a single evaluation. Safe here because `auth` is only ever
+ * invoked as `auth()` (no middleware/route-handler wrapper form is used).
+ */
+export const auth = cache(uncachedAuth);

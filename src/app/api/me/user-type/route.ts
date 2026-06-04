@@ -1,4 +1,4 @@
-import { auth } from "@/lib/auth";
+import { auth, updateSession } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { NextResponse } from "next/server";
 import { z } from "zod";
@@ -23,6 +23,12 @@ export async function POST(req: Request) {
     where: { id: session.user.id },
     data: { userType: parsed.data.userType },
   });
+
+  // The jwt callback no longer reads userType on every request, so we must
+  // explicitly refresh the token here — this fires the `trigger: "update"`
+  // branch which re-reads userType from the DB and rewrites the session
+  // cookie. The client then reloads to pick up the new nav/dashboard.
+  await updateSession({});
 
   return NextResponse.json({ ok: true });
 }

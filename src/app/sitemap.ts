@@ -20,21 +20,31 @@ export const revalidate = 3600;
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const now = new Date();
 
-  const [blogs, challenges, snippets] = await Promise.all([
-    prisma.blogPost.findMany({
-      where: { published: true },
-      select: { slug: true, updatedAt: true },
-    }),
-    prisma.challenge.findMany({
-      where: { published: true, visibility: "public" },
-      select: { slug: true, updatedAt: true },
-    }),
-    prisma.snippet.findMany({
-      where: { visibility: "public" },
-      select: { slug: true, updatedAt: true },
-      take: 5000,
-    }),
-  ]);
+  // Prerenders at build (revalidate=3600). A cold/unreachable DB at build must
+  // not fail the deploy — fall back to just the static routes and let the next
+  // revalidation pick up the dynamic URLs once the DB is reachable.
+  let blogs: { slug: string; updatedAt: Date }[] = [];
+  let challenges: { slug: string; updatedAt: Date }[] = [];
+  let snippets: { slug: string; updatedAt: Date }[] = [];
+  try {
+    [blogs, challenges, snippets] = await Promise.all([
+      prisma.blogPost.findMany({
+        where: { published: true },
+        select: { slug: true, updatedAt: true },
+      }),
+      prisma.challenge.findMany({
+        where: { published: true, visibility: "public" },
+        select: { slug: true, updatedAt: true },
+      }),
+      prisma.snippet.findMany({
+        where: { visibility: "public" },
+        select: { slug: true, updatedAt: true },
+        take: 5000,
+      }),
+    ]);
+  } catch (err) {
+    console.error("[sitemap] DB unavailable, emitting static routes only:", err);
+  }
 
   const staticEntries: MetadataRoute.Sitemap = STATIC_ROUTES.map((r) => ({
     url: `${SITE_URL}${r.path}`,

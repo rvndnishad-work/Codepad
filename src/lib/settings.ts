@@ -2,27 +2,17 @@
 
 import { prisma } from "./prisma";
 import { NavLinkConfig, DEFAULT_NAV_LINKS } from "./settings-constants";
+import { getNavLinksCached, NAV_LINKS_TAG } from "./nav-links-cache";
 
 import { auth } from "./auth";
 import { isAdmin } from "./admin";
+import { updateTag } from "next/cache";
 import { notFound, redirect } from "next/navigation";
 
 
 export async function getNavLinks(): Promise<NavLinkConfig[]> {
   try {
-    const setting = await prisma.siteSetting.findUnique({
-      where: { key: "nav_links" },
-    });
-
-    if (!setting) return DEFAULT_NAV_LINKS;
-
-    const savedLinks = JSON.parse(setting.value) as NavLinkConfig[];
-    
-    // Merge saved links with default links to handle new hardcoded links added in code
-    return DEFAULT_NAV_LINKS.map(def => {
-      const saved = savedLinks.find(s => s.href === def.href);
-      return saved ? { ...def, status: saved.status } : def;
-    });
+    return await getNavLinksCached();
   } catch (error) {
     console.error("Failed to fetch nav links:", error);
     return DEFAULT_NAV_LINKS;
@@ -34,11 +24,15 @@ export async function updateNavLinks(links: NavLinkConfig[]) {
   if (!isAdmin(session)) {
     throw new Error("Unauthorized: Platform administrator access required.");
   }
-  return prisma.siteSetting.upsert({
+  const result = await prisma.siteSetting.upsert({
     where: { key: "nav_links" },
     update: { value: JSON.stringify(links) },
     create: { key: "nav_links", value: JSON.stringify(links) },
   });
+  // Drop the Data Cache entry so the new nav config is live immediately
+  // (read-your-own-writes from this server action).
+  updateTag(NAV_LINKS_TAG);
+  return result;
 }
 
 /**

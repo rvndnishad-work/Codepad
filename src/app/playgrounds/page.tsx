@@ -1,6 +1,7 @@
 import { Metadata } from "next";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { timed, pingDb } from "@/lib/timing";
 import PlaygroundsBrowser from "./PlaygroundsBrowser";
 
 export const metadata: Metadata = {
@@ -10,7 +11,12 @@ export const metadata: Metadata = {
 };
 
 export default async function PlaygroundsPage() {
-  const session = await auth().catch(() => null);
+  // TEMP timing instrumentation — see src/lib/timing.ts. Remove once latency
+  // source is confirmed in Vercel logs.
+  const pageStart = performance.now();
+  await pingDb(prisma);
+
+  const session = await timed("playgrounds:auth", () => auth().catch(() => null));
   const userId = session?.user?.id;
 
   let welcome: {
@@ -21,14 +27,16 @@ export default async function PlaygroundsPage() {
   } | null = null;
 
   if (userId) {
-    const [count, recent] = await Promise.all([
-      prisma.snippet.count({ where: { userId } }),
-      prisma.snippet.findFirst({
-        where: { userId },
-        orderBy: { updatedAt: "desc" },
-        select: { slug: true, title: true, template: true },
-      }),
-    ]);
+    const [count, recent] = await timed("playgrounds:queries", () =>
+      Promise.all([
+        prisma.snippet.count({ where: { userId } }),
+        prisma.snippet.findFirst({
+          where: { userId },
+          orderBy: { updatedAt: "desc" },
+          select: { slug: true, title: true, template: true },
+        }),
+      ]),
+    );
     welcome = {
       name: session.user?.name ?? null,
       image: session.user?.image ?? null,
@@ -37,5 +45,8 @@ export default async function PlaygroundsPage() {
     };
   }
 
+  console.log(
+    `[timing] playgrounds:total ${Math.round(performance.now() - pageStart)}ms`,
+  );
   return <PlaygroundsBrowser welcome={welcome} />;
 }

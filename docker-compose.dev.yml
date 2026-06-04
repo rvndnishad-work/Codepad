@@ -1,0 +1,29 @@
+# Local development database (PostgreSQL).
+#
+# Brings up an isolated local Postgres for development — NEVER your production
+# (Neon) database. Pair it with the local Piston backend:
+#
+#   docker compose -f docker-compose.dev.yml -f docker-compose.piston.yml up -d
+#
+# Credentials here match the local defaults in .env.example.
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: codepad-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: codepad
+    ports:
+      - "5432:5432"
+    volumes:
+      - codepad-pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d codepad"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  codepad-pgdata:

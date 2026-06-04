@@ -54,6 +54,10 @@ Codepad is architected to be highly performant and secure, relying on a monolith
 
 ## 🚀 Getting Started
 
+> 📘 **New contributor?** Read **[GUIDE.md](GUIDE.md)** — full local setup (Docker Postgres +
+> Piston), workflow, environment isolation, and code-safety practices. The quick steps below
+> are the short version.
+
 Follow these steps to run Codepad locally on your machine.
 
 ### 1. Clone the repository

@@ -1,5 +1,0 @@
-import PageSkeleton from "@/components/PageSkeleton";
-
-export default function PlaygroundsLoading() {
-  return <PageSkeleton />;
-}

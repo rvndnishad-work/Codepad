@@ -1,7 +1,9 @@
 import "./globals.css";
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import { Inter, Fira_Code } from "next/font/google";
 import ThemedToaster from "@/components/ThemedToaster";
+import RouteProgress from "@/components/RouteProgress";
 import Header from "@/components/Header";
 import HeaderShell from "@/components/HeaderShell";
 import Footer from "@/components/Footer";
@@ -84,6 +86,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         suppressHydrationWarning
       >
         <ThemeProvider attribute="class" defaultTheme="dark" enableSystem={false}>
+          <Suspense fallback={null}>
+            <RouteProgress />
+          </Suspense>
           <HeaderShell><Header /></HeaderShell>
           <main className="flex-1 flex flex-col">{children}</main>
           <FooterShell><Footer /></FooterShell>

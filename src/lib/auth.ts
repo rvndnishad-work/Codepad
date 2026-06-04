@@ -228,6 +228,16 @@ export const {
   // NextAuth v5 requires JWT sessions when Credentials is used.
   session: { strategy: useJwt ? "jwt" : "database" },
   providers: [...oauthProviders, credentialsProvider],
+  logger: {
+    error(error) {
+      // A session cookie that can't be decrypted (stale cookie from a previous
+      // AUTH_SECRET, or one minted in another environment) is an expected,
+      // recoverable condition — `auth()` already treats it as logged-out. Don't
+      // spam the dev overlay / prod logs with it. Everything else logs normally.
+      if (error?.name === "JWTSessionError") return;
+      console.error(error);
+    },
+  },
   pages: { signIn: "/login" },
   callbacks: {
     async signIn({ user }) {

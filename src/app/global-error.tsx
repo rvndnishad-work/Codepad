@@ -4,7 +4,6 @@ import { useEffect } from "react";
 
 export default function GlobalError({
   error,
-  reset,
 }: {
   error: Error & { digest?: string };
   reset: () => void;
@@ -75,7 +74,11 @@ export default function GlobalError({
             </p>
           )}
           <button
-            onClick={reset}
+            // global-error replaces the whole document; Next's reset() rarely
+            // recovers a failed root render (the server component isn't
+            // re-fetched). A hard reload is what "Reload app" implies and is
+            // the only reliable recovery here.
+            onClick={() => window.location.reload()}
             style={{
               padding: "10px 20px",
               borderRadius: 12,

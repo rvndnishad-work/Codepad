@@ -15,7 +15,7 @@ import {
   Building2,
   Sparkles,
 } from "lucide-react";
-import { LogoMark } from "./Logo";
+import { LogoLockup } from "./Logo";
 
 /** Icon names are passed across the RSC boundary as strings. See NavDropdown for rationale. */
 const ICON_MAP: Record<string, React.ComponentType<{ className?: string }>> = {
@@ -100,13 +100,9 @@ export default function MobileNav({
         aria-haspopup="menu"
         aria-expanded={open}
         aria-label={open ? "Close navigation" : "Open navigation"}
-        className="md:hidden flex items-center gap-2.5 group rounded-lg -m-1 p-1 hover:bg-elevated/60 transition-colors"
+        className="md:hidden flex items-center gap-2 group rounded-lg -m-1 p-1 hover:bg-elevated/60 transition-colors shrink-0 overflow-visible min-w-0"
       >
-        <LogoMark size={32} className="drop-shadow-[0_0_8px_rgba(var(--accent-rgb),0.35)]" />
-        <span className="font-extrabold text-lg tracking-tight text-fg leading-none">
-          Interview<span className="text-accent font-medium">pad</span>
-          <span className="text-fg/30 font-normal text-sm">.in</span>
-        </span>
+        <LogoLockup height={48} className="drop-shadow-[0_0_8px_rgba(var(--accent-rgb),0.25)]" />
         <ChevronDown
           className={`w-3.5 h-3.5 text-muted transition-transform ${open ? "rotate-180" : ""}`}
         />
@@ -214,7 +210,7 @@ function MobileGroup({
             const active = matchesActive(pathname, item.href);
             return (
               <Link
-                key={item.href}
+                key={item.label}
                 href={item.href}
                 role="menuitem"
                 className={`flex items-start gap-3 px-3 py-2.5 rounded-lg transition-colors ${

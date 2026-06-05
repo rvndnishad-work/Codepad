@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { Compass, Home, ArrowRight } from "lucide-react";
-import { LogoMark } from "@/components/Logo";
+import { LogoLockup } from "@/components/Logo";
 
 export const metadata = {
   title: "Not found — Interviewpad",
@@ -17,7 +17,7 @@ export default function NotFound() {
         />
         <div className="relative">
           <div className="flex justify-center mb-6">
-            <LogoMark size={56} />
+            <LogoLockup height={56} />
           </div>
           <p className="text-[10px] font-semibold tracking-[0.18em] text-muted uppercase mb-2">
             404 · Not found

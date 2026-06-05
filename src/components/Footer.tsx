@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { Github, Twitter, Youtube, ShieldCheck, Cpu, Zap, Globe, Lock } from "lucide-react";
-import { LogoMark } from "./Logo";
+import { LogoLockup } from "./Logo";
 
 export default function Footer() {
   return (
@@ -13,14 +13,9 @@ export default function Footer() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12 mb-16">
           {/* Brand Column */}
           <div className="space-y-6">
-            <Link href="/" className="flex items-center gap-3 group">
-              <LogoMark size={32} className="drop-shadow-[0_0_8px_rgba(var(--accent-rgb),0.35)] transition-transform group-hover:scale-110" />
-              <div className="flex flex-col leading-none">
-                 <span className="font-extrabold text-lg tracking-tight text-fg">
-                   Interview<span className="text-accent font-medium">pad</span>
-                 </span>
-                 <span className="text-[9px] font-bold text-accent uppercase tracking-[0.3em] mt-0.5">Pro Sandbox</span>
-              </div>
+            <Link href="/" className="inline-flex flex-col items-start gap-1.5 group">
+              <LogoLockup height={40} className="drop-shadow-[0_0_8px_rgba(var(--accent-rgb),0.35)] transition-transform group-hover:scale-[1.03] origin-left" />
+              <span className="text-[9px] font-bold text-accent uppercase tracking-[0.3em] pl-1">Pro Sandbox</span>
             </Link>
             <p className="text-muted text-sm leading-relaxed max-w-xs">
               The next-generation JavaScript playground. Built for developers who demand speed, precision, and the ultimate "Pro" aesthetic.

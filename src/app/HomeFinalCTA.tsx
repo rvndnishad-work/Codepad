@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState, useEffect } from "react";
+import { Fragment, useState, useEffect } from "react";
 import { ArrowRight } from "lucide-react";
 import { motion, useReducedMotion, type Variants } from "framer-motion";
 import { EASE_EXPO_OUT } from "@/components/scroll/motion-config";
@@ -106,15 +106,17 @@ export default function HomeFinalCTA() {
             key={headline} // Forces re-render and animation run on persona change
           >
             {words.map((word, i) => (
-              <motion.span
-                key={i}
-                className="inline-block"
-                variants={wordVariants}
-                aria-hidden
-              >
-                {word}
-                {i < words.length - 1 && " "}
-              </motion.span>
+              <Fragment key={i}>
+                <motion.span
+                  className="inline-block"
+                  variants={wordVariants}
+                  aria-hidden
+                >
+                  {word}
+                </motion.span>
+                {/* Space lives outside the inline-block so it isn't trimmed. */}
+                {i < words.length - 1 ? " " : null}
+              </Fragment>
             ))}
           </motion.h2>
 

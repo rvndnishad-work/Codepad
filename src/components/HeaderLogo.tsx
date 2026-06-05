@@ -10,7 +10,7 @@ export default function HeaderLogo() {
 
   return (
     <Link href={isAdminPage ? "/admin" : "/"} className="hidden md:flex items-center gap-2.5 group shrink-0 overflow-visible">
-      <LogoLockup height={58} style={{ marginTop: "10px" } as React.CSSProperties} className="drop-shadow-[0_0_8px_rgba(var(--accent-rgb),0.25)] transition-transform group-hover:scale-105" />
+      <LogoLockup height={58} className="drop-shadow-[0_0_8px_rgba(var(--accent-rgb),0.25)] transition-transform group-hover:scale-105" />
       {isAdminPage && (
         <span className="text-[9px] font-black tracking-widest text-accent uppercase border-l border-border pl-2.5">
           Admin Portal

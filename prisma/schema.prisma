@@ -33,6 +33,9 @@ model User {
   /// for legacy accounts that haven't been migrated to the new taxonomy.
   /// Drives navbar, dashboard, and interview-route experience.
   userType             String?
+  companyName          String?
+  companySize          String?
+  jobTitle             String?
 
   /// TOTP secret (RFC 6238), encrypted at rest with the AES-GCM helper
   /// (`v1:iv:tag:ct` format, same as IP-2). Null when 2FA is not enrolled.

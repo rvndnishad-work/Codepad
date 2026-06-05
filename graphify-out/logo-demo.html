@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Interviewpad logo concepts</title>
+<style>
+  :root { --accent:#FFE600; --bg:#050505; --fg:#f5f5f5; --muted:#8a8a8a; }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--bg); color:var(--fg);
+         font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif; }
+  .wrap { max-width:1040px; margin:0 auto; padding:48px 32px 80px; }
+  h1 { font-weight:800; letter-spacing:-.02em; font-size:22px; margin:0 0 4px; }
+  .sub { color:var(--muted); font-size:13px; margin:0 0 40px; }
+  .grid { display:grid; grid-template-columns:1fr 1fr; gap:28px; }
+  .card { border:1px solid #1c1c1c; border-radius:18px; padding:30px 26px 24px;
+          background:linear-gradient(180deg,#0c0c0c,#070707); }
+  .card h2 { font-size:12px; font-weight:700; text-transform:uppercase;
+             letter-spacing:.18em; color:var(--accent); margin:0 0 6px; }
+  .card p { font-size:12.5px; color:var(--muted); margin:0 0 22px; line-height:1.5; }
+  .stage { display:flex; align-items:center; justify-content:center;
+           min-height:140px; gap:34px; flex-wrap:wrap; }
+  .scale { display:flex; align-items:center; gap:26px; margin-top:26px;
+           padding-top:20px; border-top:1px solid #161616; justify-content:center; }
+  .scale .lbl { color:var(--muted); font-size:11px; width:100%; text-align:center; margin-bottom:4px; }
+  /* blinking cursor */
+  @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
+  .cursor { animation:blink 1.05s step-end infinite; }
+  svg { display:block; }
+  .full { grid-column:1 / -1; }
+  .row { display:flex; align-items:center; gap:40px; justify-content:center; flex-wrap:wrap; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Interviewpad — logo concepts</h1>
+  <p class="sub">Text moved inside the bubble · two cursor placements · plus the existing text-free mark for tight spaces.</p>
+
+  <div class="grid">
+
+    <!-- ============ Lockup A: cursor AFTER d ============ -->
+    <div class="card">
+      <h2>A · Lockup — cursor after “d” <span style="color:var(--muted);font-weight:600">(recommended)</span></h2>
+      <p>Terminal-style caret. Strongest “live coding” signal.</p>
+      <div class="stage">
+        <svg width="360" height="120" viewBox="0 0 360 134" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <!-- bubble -->
+          <path d="M40 14 H320 a26 26 0 0 1 26 26 v34 a26 26 0 0 1 -26 26 H120 l-44 28 v-28 H40 a26 26 0 0 1 -26 -26 V40 a26 26 0 0 1 26 -26 Z"
+                fill="none" stroke="var(--accent)" stroke-width="4.5" stroke-linejoin="round"/>
+          <!-- caret > -->
+          <path d="M54 44 l16 13 -16 13" fill="none" stroke="var(--accent)" stroke-width="5"
+                stroke-linecap="round" stroke-linejoin="round"/>
+          <!-- text -->
+          <text x="86" y="68" font-family="ui-sans-serif,system-ui,Segoe UI,Roboto,Arial,sans-serif"
+                font-size="38" font-weight="700" letter-spacing="-1" fill="var(--fg)">interview<tspan fill="var(--accent)">pad</tspan></text>
+          <!-- cursor after d -->
+          <rect class="cursor" x="300" y="40" width="6" height="34" rx="2" fill="var(--accent)"/>
+        </svg>
+      </div>
+      <div class="scale">
+        <span class="lbl">renders down to ~180px wide</span>
+        <svg width="180" height="60" viewBox="0 0 360 134" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M40 14 H320 a26 26 0 0 1 26 26 v34 a26 26 0 0 1 -26 26 H120 l-44 28 v-28 H40 a26 26 0 0 1 -26 -26 V40 a26 26 0 0 1 26 -26 Z" fill="none" stroke="var(--accent)" stroke-width="4.5" stroke-linejoin="round"/>
+          <path d="M54 44 l16 13 -16 13" fill="none" stroke="var(--accent)" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+          <text x="86" y="68" font-family="ui-sans-serif,system-ui,Segoe UI,Roboto,Arial,sans-serif" font-size="38" font-weight="700" letter-spacing="-1" fill="var(--fg)">interview<tspan fill="var(--accent)">pad</tspan></text>
+          <rect class="cursor" x="300" y="40" width="6" height="34" rx="2" fill="var(--accent)"/>
+        </svg>
+      </div>
+    </div>
+
+    <!-- ============ Lockup B: cursor UNDER d ============ -->
+    <div class="card">
+      <h2>B · Lockup — cursor under “d”</h2>
+      <p>Subtler underline. Reads as wordmark polish more than a live caret.</p>
+      <div class="stage">
+        <svg width="360" height="120" viewBox="0 0 360 134" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M40 14 H320 a26 26 0 0 1 26 26 v34 a26 26 0 0 1 -26 26 H120 l-44 28 v-28 H40 a26 26 0 0 1 -26 -26 V40 a26 26 0 0 1 26 -26 Z" fill="none" stroke="var(--accent)" stroke-width="4.5" stroke-linejoin="round"/>
+          <path d="M54 44 l16 13 -16 13" fill="none" stroke="var(--accent)" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+          <text x="86" y="68" font-family="ui-sans-serif,system-ui,Segoe UI,Roboto,Arial,sans-serif" font-size="38" font-weight="700" letter-spacing="-1" fill="var(--fg)">interview<tspan fill="var(--accent)">pad</tspan></text>
+          <!-- cursor under d -->
+          <rect class="cursor" x="290" y="78" width="22" height="5" rx="2.5" fill="var(--accent)"/>
+        </svg>
+      </div>
+      <div class="scale">
+        <span class="lbl">renders down to ~180px wide</span>
+        <svg width="180" height="60" viewBox="0 0 360 134" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M40 14 H320 a26 26 0 0 1 26 26 v34 a26 26 0 0 1 -26 26 H120 l-44 28 v-28 H40 a26 26 0 0 1 -26 -26 V40 a26 26 0 0 1 26 -26 Z" fill="none" stroke="var(--accent)" stroke-width="4.5" stroke-linejoin="round"/>
+          <path d="M54 44 l16 13 -16 13" fill="none" stroke="var(--accent)" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+          <text x="86" y="68" font-family="ui-sans-serif,system-ui,Segoe UI,Roboto,Arial,sans-serif" font-size="38" font-weight="700" letter-spacing="-1" fill="var(--fg)">interview<tspan fill="var(--accent)">pad</tspan></text>
+          <rect class="cursor" x="290" y="78" width="22" height="5" rx="2.5" fill="var(--accent)"/>
+        </svg>
+      </div>
+    </div>
+
+    <!-- ============ Mark only ============ -->
+    <div class="card full">
+      <h2>C · Mark — no text (for header / favicon / app icon)</h2>
+      <p>The text-free bubble. This is what you already ship; shown here at the sizes it actually appears so you can see why the lockup can’t do this job.</p>
+      <div class="row">
+        <!-- 96px -->
+        <svg width="96" height="96" viewBox="0 0 32 32" fill="none" stroke="var(--accent)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
+          <path d="M26 4H6a4 4 0 0 0-4 4v12a4 4 0 0 0 4 4h4v5l6-5h10a4 4 0 0 0 4-4V8a4 4 0 0 0-4-4z"/>
+          <path d="M9 10l4 4-4 4"/>
+          <line class="cursor" x1="16" y1="18" x2="22" y2="18"/>
+        </svg>
+        <!-- 48px -->
+        <svg width="48" height="48" viewBox="0 0 32 32" fill="none" stroke="var(--accent)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
+          <path d="M26 4H6a4 4 0 0 0-4 4v12a4 4 0 0 0 4 4h4v5l6-5h10a4 4 0 0 0 4-4V8a4 4 0 0 0-4-4z"/>
+          <path d="M9 10l4 4-4 4"/>
+          <line class="cursor" x1="16" y1="18" x2="22" y2="18"/>
+        </svg>
+        <!-- 32px (header) -->
+        <svg width="32" height="32" viewBox="0 0 32 32" fill="none" stroke="var(--accent)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
+          <path d="M26 4H6a4 4 0 0 0-4 4v12a4 4 0 0 0 4 4h4v5l6-5h10a4 4 0 0 0 4-4V8a4 4 0 0 0-4-4z"/>
+          <path d="M9 10l4 4-4 4"/>
+          <line class="cursor" x1="16" y1="18" x2="22" y2="18"/>
+        </svg>
+      </div>
+    </div>
+
+  </div>
+</div>
+</body>
+</html>

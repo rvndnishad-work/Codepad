@@ -46,6 +46,11 @@ import {
   takeHomeSessionInviteText,
   type TakeHomeSessionInviteProps,
 } from "./TakeHomeSessionInvite";
+import {
+  OtpVerification,
+  otpVerificationText,
+  type OtpVerificationProps,
+} from "./OtpVerification";
 
 /**
  * Registry shape: each entry describes how to subject-line, render, and
@@ -104,6 +109,12 @@ export const TEMPLATES = {
     subject: (p) => `Your take-home from ${p.workspaceName}: ${p.title}`,
     text: takeHomeSessionInviteText,
   } satisfies TemplateDef<TakeHomeSessionInviteProps>,
+
+  "otp-verification": {
+    Component: OtpVerification,
+    subject: () => "Verify your Interviewpad account",
+    text: otpVerificationText,
+  } satisfies TemplateDef<OtpVerificationProps>,
 } as const;
 
 /** Allowed template names. */
@@ -118,4 +129,5 @@ export type TemplateProps = {
   "take-home-submitted-candidate": TakeHomeSubmittedCandidateProps;
   "take-home-submitted-recruiter": TakeHomeSubmittedRecruiterProps;
   "take-home-session-invite": TakeHomeSessionInviteProps;
+  "otp-verification": OtpVerificationProps;
 };

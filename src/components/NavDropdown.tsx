@@ -64,12 +64,20 @@ export default function NavDropdown({ label, items }: Props) {
   const closeTimerRef = useRef<number | null>(null);
   const wrapperRef = useRef<HTMLDivElement>(null);
 
+  // Hrefs that are generic redirects (not the item's true destination) should
+  // never trigger active highlighting — e.g. unauthenticated recruiters land
+  // on /pricing but that doesn't mean "Workspaces" is the active page.
+  const GENERIC_REDIRECTS = ["/pricing", "/login", "/w/create"];
+  const isRealDestination = (href: string) =>
+    !GENERIC_REDIRECTS.some((r) => href === r || href.startsWith(`${r}?`));
+
   // Whether one of the items in this group is currently the active route —
   // used to highlight the trigger button.
   const isGroupActive = items.some(
     (item) =>
-      item.href === pathname ||
-      (item.href !== "/" && pathname.startsWith(`${item.href}/`))
+      isRealDestination(item.href) &&
+      (item.href === pathname ||
+        (item.href !== "/" && pathname.startsWith(`${item.href}/`)))
   );
 
   // Close on route change (Link click) — pathname change is the cleanest signal.
@@ -145,11 +153,12 @@ export default function NavDropdown({ label, items }: Props) {
             {items.map((item) => {
               const Icon = ICON_MAP[item.iconName] ?? Code2;
               const active =
-                item.href === pathname ||
-                (item.href !== "/" && pathname.startsWith(`${item.href}/`));
+                isRealDestination(item.href) &&
+                (item.href === pathname ||
+                  (item.href !== "/" && pathname.startsWith(`${item.href}/`)));
               return (
                 <Link
-                  key={item.href}
+                  key={item.label}
                   href={item.href}
                   role="menuitem"
                   className={`flex items-start gap-3 px-3 py-2.5 rounded-xl transition-colors ${

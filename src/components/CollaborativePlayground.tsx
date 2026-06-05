@@ -142,7 +142,7 @@ export default function CollaborativePlayground({
 
   const initialActive = useMemo(() => {
     const entries = Object.entries(initialFiles);
-    
+
     // 1. Explicitly marked active file
     const explicit = entries.find(([, v]) =>
       typeof v === "object" && v !== null && "active" in v
@@ -368,7 +368,9 @@ function Bridge({
     return () => clearTimeout(timer);
   }, [sandpack.files[activePath], template, activePath]);
 
-  const { width: explorerW, onPointerDown: onExplorerDrag, setWidth: setExplorerW } = useResizable(200, 120, 400);
+  // Default wide enough for the "Files" label + all header buttons to show
+  // without clipping.
+  const { width: explorerW, onPointerDown: onExplorerDrag, setWidth: setExplorerW } = useResizable(255, 200, 400);
   const { width: editorW, onPointerDown: onEditorDrag, setWidth: setEditorW } = useResizable(500, 200, 2000);
   const { height: consoleH, onPointerDown: onConsoleDrag, setHeight: setConsoleH } = useResizableHeight(200, 80, 1200);
 
@@ -406,7 +408,7 @@ function Bridge({
       if (savedConsoleH !== null) {
         setConsoleH(parseInt(savedConsoleH, 10));
       }
-      
+
       const savedActivePath = sessionStorage.getItem(`${roomId}:active_path`);
       if (savedActivePath !== null) {
         // Delayed to make sure Sandpack has loaded its files
@@ -652,18 +654,18 @@ function Bridge({
           const audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
           const oscillator = audioCtx.createOscillator();
           const gainNode = audioCtx.createGain();
-          
+
           oscillator.connect(gainNode);
           gainNode.connect(audioCtx.destination);
-          
+
           oscillator.type = "sine";
           oscillator.frequency.setValueAtTime(880, audioCtx.currentTime); // Pleasant A5 chime pitch
           oscillator.frequency.exponentialRampToValueAtTime(440, audioCtx.currentTime + 0.15); // Glide to A4
-          
+
           gainNode.gain.setValueAtTime(0, audioCtx.currentTime);
           gainNode.gain.linearRampToValueAtTime(0.2, audioCtx.currentTime + 0.02); // 20ms attack
           gainNode.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.3); // Smooth 300ms decay
-          
+
           oscillator.start(audioCtx.currentTime);
           oscillator.stop(audioCtx.currentTime + 0.35);
         } catch (err) {
@@ -743,13 +745,13 @@ function Bridge({
   // file creations, deletions, and name changes in real-time across peers.
   useEffect(() => {
     const yFiles = yDoc.getMap<Y.Text>("files");
-    
+
     yDoc.transact(() => {
       // 1. Identify added or updated files
       for (const [path, file] of Object.entries(sandpack.files)) {
         if (!file || (typeof file === "object" && file.hidden)) continue;
         const code = typeof file === "string" ? file : file.code ?? "";
-        
+
         let yText = yFiles.get(path);
         if (!yText) {
           yText = new Y.Text();
@@ -763,7 +765,7 @@ function Bridge({
           }
         }
       }
-      
+
       // 2. Identify deleted files
       yFiles.forEach((_, path) => {
         const file = sandpack.files[path];
@@ -850,33 +852,30 @@ function Bridge({
               <div className="flex items-center gap-1 bg-surface border border-border rounded px-1 py-0.5 select-none shrink-0">
                 <button
                   onClick={() => setRightView("preview")}
-                  className={`px-2 py-0.5 rounded text-[10px] font-semibold transition-all duration-150 ${
-                    rightView === "preview"
+                  className={`px-2 py-0.5 rounded text-[10px] font-semibold transition-all duration-150 ${rightView === "preview"
                       ? "bg-accent text-bg shadow-sm"
                       : "text-muted hover:text-fg hover:bg-elevated"
-                  }`}
+                    }`}
                   title="Preview Only"
                 >
                   Preview
                 </button>
                 <button
                   onClick={() => setRightView("both")}
-                  className={`px-2 py-0.5 rounded text-[10px] font-semibold transition-all duration-150 ${
-                    rightView === "both"
+                  className={`px-2 py-0.5 rounded text-[10px] font-semibold transition-all duration-150 ${rightView === "both"
                       ? "bg-accent text-bg shadow-sm"
                       : "text-muted hover:text-fg hover:bg-elevated"
-                  }`}
+                    }`}
                   title="Split View"
                 >
                   Split
                 </button>
                 <button
                   onClick={() => setRightView("console")}
-                  className={`px-2 py-0.5 rounded text-[10px] font-semibold transition-all duration-150 ${
-                    rightView === "console"
+                  className={`px-2 py-0.5 rounded text-[10px] font-semibold transition-all duration-150 ${rightView === "console"
                       ? "bg-accent text-bg shadow-sm"
                       : "text-muted hover:text-fg hover:bg-elevated"
-                  }`}
+                    }`}
                   title="Console Only"
                 >
                   Console
@@ -947,7 +946,7 @@ function Bridge({
               </div>
             </div>
           )}
-          
+
           {rightView === "both" && (
             /* Horizontal Drag Handle */
             <div className="ide-divider-h w-full h-px cursor-row-resize" onPointerDown={onConsoleDrag}>
@@ -1147,9 +1146,8 @@ function PresenceDot({
   return (
     <span
       title={label}
-      className={`inline-flex items-center justify-center w-5 h-5 rounded-full text-[9px] font-bold text-white shadow-sm ${
-        self ? "ring-2 ring-bg" : ""
-      }`}
+      className={`inline-flex items-center justify-center w-5 h-5 rounded-full text-[9px] font-bold text-white shadow-sm ${self ? "ring-2 ring-bg" : ""
+        }`}
       style={{ backgroundColor: color }}
     >
       {label.charAt(0).toUpperCase()}
@@ -1264,11 +1262,11 @@ function jsCompletionSource(context: CompletionContext): CompletionResult | null
   const wordMatch = context.matchBefore(/[a-zA-Z_$][a-zA-Z0-9_$]*$/);
   if (wordMatch) {
     const allOptions = [...jsKeywords, ...jsGlobals, ...arrayPrototypeMethods, ...stringPrototypeMethods];
-    
+
     // Add local buffer word suggestions
     const bufferCompletions = completeAnyWord(context);
     const bufferOptions = (bufferCompletions && "options" in bufferCompletions) ? bufferCompletions.options : [];
-    
+
     const merged: Completion[] = [...allOptions];
     const seen = new Set(merged.map(o => o.label));
     for (const opt of bufferOptions) {
@@ -1559,7 +1557,7 @@ function CollabChat({
             let bgClass = "bg-panel";
             let alignClass = "justify-start";
             let style: React.CSSProperties = {};
-            
+
             if (isSelf) {
               bgClass = "bg-accent-glow";
               alignClass = "justify-end";

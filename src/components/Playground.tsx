@@ -15,8 +15,8 @@ import {
   SandpackProvider,
   SandpackLayout,
   SandpackPreview,
-  SandpackConsole,
   useSandpack,
+  useSandpackConsole,
   type SandpackFiles,
 } from "@codesandbox/sandpack-react";
 import FileExplorer from "./FileExplorer";
@@ -41,6 +41,10 @@ import {
   Tag,
   X as XIcon,
   Ban,
+  XCircle,
+  AlertTriangle,
+  Info,
+  ChevronRight,
 } from "lucide-react";
 import { templatesById } from "@/lib/templates";
 import { getSandpackTheme } from "@/lib/sandpack-theme";
@@ -821,11 +825,11 @@ export default function Playground({
                               flexDirection: "column",
                               borderTop: effectiveView === "both" ? "1px solid var(--border)" : undefined,
                             }}>
-                              {effectiveView === "both" && (
+                              {effectiveView !== "preview" && (
                                 <div className="flex items-center justify-between px-3 h-9 bg-surface shrink-0 border-b border-border">
                                   <div className="flex items-center gap-2">
                                     <Terminal className="w-3 h-3 text-accent/60" />
-                                    <span className="text-[11px] font-medium text-muted tracking-wide">Console</span>
+                                    <span className="text-[11px] font-semibold text-fg tracking-wide uppercase">Console</span>
                                   </div>
                                   <div className="flex items-center gap-1.5">
                                     <button onClick={() => { setConsoleKey(k => k + 1); setBackendLogs([]); }} className="p-1 hover:bg-elevated rounded transition text-muted/50 hover:text-fg" title="Clear Console">
@@ -839,7 +843,7 @@ export default function Playground({
                                 {isBackend ? (
                                   <BackendConsole logs={backendLogs} />
                                 ) : (
-                                  <SandpackConsole key={consoleKey} style={{ height: "100%", width: "100%" }} />
+                                  <JsConsole key={consoleKey} />
                                 )}
                               </div>
                             </div>
@@ -877,15 +881,44 @@ export default function Playground({
                             <div className="absolute inset-y-0 -left-2 -right-2" />
                           </div>
                           <div className="flex-1 min-w-0 h-full flex flex-col relative ide-panel">
-                            <div className="flex items-center justify-between px-3 h-9 border-b border-border shrink-0">
+                            <div className="flex items-center justify-between px-3 h-9 border-b border-border shrink-0 bg-surface/50">
                               <div className="flex items-center gap-2">
-                                {isBackend ? <Terminal className="w-3 h-3 text-accent/60" /> : <StatusDot />}
-                                <span className="text-[11px] font-medium text-muted tracking-wide">{isBackend ? "Console" : "Output"}</span>
+                                {effectiveView === "console" ? (
+                                  <Terminal className="w-3.5 h-3.5 text-accent animate-pulse" />
+                                ) : isBackend ? (
+                                  <Terminal className="w-3.5 h-3.5 text-accent/60" />
+                                ) : (
+                                  <StatusDot />
+                                )}
+                                <span className="text-[11px] font-semibold text-fg tracking-wide uppercase">
+                                  {effectiveView === "console" || isBackend ? "Console" : "Output"}
+                                </span>
                               </div>
-                              {!isBackend && (
+                              {effectiveView === "console" || isBackend ? (
                                 <div className="flex items-center gap-2">
-                                  <div className="text-[10px] font-mono text-muted/30">localhost:3000</div>
+                                  <button
+                                    onClick={() => {
+                                      setConsoleKey((k) => k + 1);
+                                      setBackendLogs([]);
+                                    }}
+                                    className="p-1 hover:bg-elevated rounded transition text-muted/50 hover:text-fg flex items-center gap-1"
+                                    title="Clear Console"
+                                  >
+                                    <Ban className="w-3 h-3" />
+                                    <span className="text-[10px] font-medium">Clear</span>
+                                  </button>
+                                  <div className="tb-sep h-3 my-0" />
+                                  <div className="text-[10px] font-normal text-muted/30 flex items-center gap-1">
+                                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400/80 animate-pulse" />
+                                    Live
+                                  </div>
                                 </div>
+                              ) : (
+                                !isBackend && (
+                                  <div className="flex items-center gap-2">
+                                    <div className="text-[10px] font-mono text-muted/30">localhost:3000</div>
+                                  </div>
+                                )
                               )}
                             </div>
                             <div className="flex-1 flex flex-col min-h-0">
@@ -921,7 +954,7 @@ export default function Playground({
                                   {isBackend ? (
                                     <BackendConsole logs={backendLogs} />
                                   ) : (
-                                    <SandpackConsole key={consoleKey} style={{ height: "100%", width: "100%" }} />
+                                    <JsConsole key={consoleKey} />
                                   )}
                                 </div>
                               </div>
@@ -949,21 +982,198 @@ export default function Playground({
   );
 }
 
-function BackendConsole({ logs }: { logs: { method: string; data: string[] }[] }) {
+/** Format a single console argument the way a real devtools console would:
+ *  top-level strings unquoted, objects/arrays as compact JSON. */
+function formatConsoleArg(arg: unknown): string {
+  if (typeof arg === "string") return arg;
+  if (arg === null) return "null";
+  if (arg === undefined) return "undefined";
+  if (typeof arg === "bigint") return `${arg}n`;
+  if (typeof arg === "object") {
+    try {
+      return JSON.stringify(arg, (_k, v) => (typeof v === "bigint" ? v.toString() : v));
+    } catch {
+      return String(arg);
+    }
+  }
+  return String(arg);
+}
+
+/** Devtools-style syntax colors for console values. */
+const CONSOLE_COLORS = {
+  number: "text-sky-400",
+  boolean: "text-purple-400",
+  nullish: "text-muted/60",
+  string: "text-emerald-400",
+  key: "text-sky-300",
+} as const;
+
+/** Colorize a compact JSON string into devtools-like tokens (keys, strings,
+ *  numbers, booleans, null each get their own color). */
+function highlightJson(json: string): React.ReactNode[] {
+  const out: React.ReactNode[] = [];
+  const re = /"(?:\\.|[^"\\])*"|\b(?:true|false|null)\b|-?\d+(?:\.\d+)?(?:[eE][+-]?\d+)?/g;
+  let last = 0;
+  let i = 0;
+  let m: RegExpExecArray | null;
+  while ((m = re.exec(json))) {
+    if (m.index > last) out.push(json.slice(last, m.index));
+    const tok = m[0];
+    let cls: string = CONSOLE_COLORS.number;
+    if (tok[0] === '"') {
+      cls = /^\s*:/.test(json.slice(re.lastIndex)) ? CONSOLE_COLORS.key : CONSOLE_COLORS.string;
+    } else if (tok === "true" || tok === "false") {
+      cls = CONSOLE_COLORS.boolean;
+    } else if (tok === "null") {
+      cls = CONSOLE_COLORS.nullish;
+    }
+    out.push(
+      <span key={i++} className={cls}>
+        {tok}
+      </span>
+    );
+    last = re.lastIndex;
+  }
+  if (last < json.length) out.push(json.slice(last));
+  return out;
+}
+
+/** Render one console argument with type-based coloring. Top-level strings show
+ *  plain (like Chrome devtools); objects/arrays are syntax-highlighted JSON. */
+function ConsoleArg({ value }: { value: unknown }): React.ReactNode {
+  if (typeof value === "string") return value;
+  if (typeof value === "number" || typeof value === "bigint")
+    return <span className={CONSOLE_COLORS.number}>{String(value)}</span>;
+  if (typeof value === "boolean")
+    return <span className={CONSOLE_COLORS.boolean}>{String(value)}</span>;
+  if (value === null) return <span className={CONSOLE_COLORS.nullish}>null</span>;
+  if (value === undefined) return <span className={CONSOLE_COLORS.nullish}>undefined</span>;
+  if (typeof value === "object") {
+    let json: string;
+    try {
+      json = JSON.stringify(value, (_k, v) => (typeof v === "bigint" ? v.toString() : v));
+    } catch {
+      return String(value);
+    }
+    return <>{highlightJson(json)}</>;
+  }
+  return String(value);
+}
+
+/** Console for browser/JS templates. Joins each console call's arguments on a
+ *  single line (Sandpack's built-in console splits them per argument) and
+ *  syntax-colors values + adds row dividers to feel like a real devtools console. */
+function JsConsole() {
+  const { logs } = useSandpackConsole({ resetOnPreviewRestart: true });
   if (logs.length === 0) {
     return (
-      <div className="flex items-center justify-center h-full text-muted/50 text-[12px] font-medium">
-        Ready for execution
+      <div className="flex flex-col h-full bg-[#0a0b0d]">
+        <div className="flex-1 flex items-center justify-center text-neutral-500 text-[12px] font-medium font-mono">
+          Ready for execution
+        </div>
+        <div className="flex items-center gap-1.5 px-3 py-2 border-t border-neutral-900/40 font-mono text-[11px] text-neutral-600 bg-black/20 select-none">
+          <span className="text-accent font-bold">›</span>
+          <span className="animate-pulse w-1 h-3 bg-accent/60" />
+          <span className="italic">Console active. Waiting for logs...</span>
+        </div>
       </div>
     );
   }
   return (
-    <div className="flex-1 min-h-0 h-full overflow-y-auto bg-surface text-fg font-mono text-[13px] p-3 space-y-1">
-      {logs.map((log, i) => (
-        <div key={i} className={`whitespace-pre-wrap ${log.method === 'error' ? 'text-red-400' : 'text-fg/80'}`}>
-          {log.data.join(" ")}
+    <div className="flex flex-col h-full bg-[#0a0b0d] text-[#e3e4e6] font-mono text-[13px] leading-relaxed">
+      <div className="flex-1 overflow-y-auto">
+        {logs.map((log) => {
+          const args = Array.isArray(log.data) ? log.data : [];
+          const isError = log.method === "error";
+          const isWarn = log.method === "warn";
+          const isInfo = log.method === "info" || log.method === "debug";
+
+          let borderClass = "border-l-[3px] border-transparent hover:bg-white/[0.02]";
+          let icon = <ChevronRight className="w-3 h-3 text-neutral-600 shrink-0 mt-0.5" />;
+          let rowBg = "";
+
+          if (isError) {
+            borderClass = "border-l-[3px] border-red-500 hover:bg-red-500/[0.04]";
+            rowBg = "bg-red-500/[0.02]";
+            icon = <XCircle className="w-3.5 h-3.5 text-red-400 shrink-0 mt-0.5" />;
+          } else if (isWarn) {
+            borderClass = "border-l-[3px] border-amber-500 hover:bg-amber-500/[0.04]";
+            rowBg = "bg-amber-500/[0.02]";
+            icon = <AlertTriangle className="w-3.5 h-3.5 text-amber-400 shrink-0 mt-0.5" />;
+          } else if (isInfo) {
+            borderClass = "border-l-[3px] border-sky-400 hover:bg-sky-400/[0.04]";
+            rowBg = "bg-sky-500/[0.02]";
+            icon = <Info className="w-3.5 h-3.5 text-sky-400 shrink-0 mt-0.5" />;
+          }
+
+          return (
+            <div
+              key={log.id}
+              className={`px-3 py-1.5 border-b border-neutral-900/40 whitespace-pre-wrap break-words transition-colors flex items-start gap-2.5 ${borderClass} ${rowBg}`}
+            >
+              {icon}
+              <div className="flex-1 min-w-0">
+                {isError || isWarn
+                  ? args.map(formatConsoleArg).join(" ")
+                  : args.map((arg, idx) => (
+                      <span key={idx}>
+                        {idx > 0 ? " " : ""}
+                        <ConsoleArg value={arg} />
+                      </span>
+                    ))}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+      <div className="flex items-center gap-1.5 px-3 py-2 border-t border-neutral-900/40 font-mono text-[11px] text-neutral-600 bg-black/20 select-none">
+        <span className="text-accent font-bold">›</span>
+        <span className="animate-pulse w-1 h-3 bg-accent/60" />
+        <span className="italic">Console active. Ready.</span>
+      </div>
+    </div>
+  );
+}
+
+function BackendConsole({ logs }: { logs: { method: string; data: string[] }[] }) {
+  if (logs.length === 0) {
+    return (
+      <div className="flex flex-col h-full bg-[#0a0b0d]">
+        <div className="flex-1 flex items-center justify-center text-neutral-500 text-[12px] font-medium font-mono">
+          Ready for execution
         </div>
-      ))}
+        <div className="flex items-center gap-1.5 px-3 py-2 border-t border-neutral-900/40 font-mono text-[11px] text-neutral-600 bg-black/20 select-none">
+          <span className="text-accent font-bold">›</span>
+          <span className="animate-pulse w-1 h-3 bg-accent/60" />
+          <span className="italic">Compiler ready. Waiting for run...</span>
+        </div>
+      </div>
+    );
+  }
+  return (
+    <div className="flex flex-col h-full bg-[#0a0b0d] text-[#e3e4e6] font-mono text-[13px] leading-relaxed">
+      <div className="flex-1 overflow-y-auto p-3 space-y-1.5">
+        {logs.map((log, i) => {
+          const isError = log.method === "error";
+          const borderClass = isError ? "border-l-[3px] border-red-500 pl-2.5 bg-red-500/[0.02]" : "pl-2.5 border-l-[3px] border-transparent";
+          const textClass = isError ? "text-red-400" : "text-[#e3e4e6]/90";
+          return (
+            <div key={i} className={`whitespace-pre-wrap flex items-start gap-2 ${borderClass} ${textClass}`}>
+              {isError ? (
+                <XCircle className="w-3.5 h-3.5 text-red-400 shrink-0 mt-0.5" />
+              ) : (
+                <ChevronRight className="w-3 h-3 text-neutral-600 shrink-0 mt-0.5" />
+              )}
+              <div className="flex-1 min-w-0">{log.data.join(" ")}</div>
+            </div>
+          );
+        })}
+      </div>
+      <div className="flex items-center gap-1.5 px-3 py-2 border-t border-neutral-900/40 font-mono text-[11px] text-neutral-600 bg-black/20 select-none">
+        <span className="text-accent font-bold">›</span>
+        <span className="animate-pulse w-1 h-3 bg-accent/60" />
+        <span className="italic">Execution complete.</span>
+      </div>
     </div>
   );
 }

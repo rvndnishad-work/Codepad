@@ -68,6 +68,18 @@ export default function MonacoEditor({ fontSize, readOnly = false }: { fontSize:
   const { activeFile, visibleFiles, setActiveFile } = sandpack;
   const { theme, resolvedTheme } = useTheme();
   const isDark = resolvedTheme === "dark";
+  const lastValueRef = useRef<string>("");
+  const pendingLocalValues = useRef<Set<string>>(new Set());
+  const sandpackRef = useRef(sandpack);
+  sandpackRef.current = sandpack;
+
+  // Sync lastValueRef and clear local updates on active file tab switch
+  useEffect(() => {
+    const file = sandpack.files[activeFile];
+    const fileCode = typeof file === "string" ? file : (file as { code: string } | undefined)?.code ?? "";
+    lastValueRef.current = fileCode;
+    pendingLocalValues.current.clear();
+  }, [activeFile]);
 
   const language = useMemo(() => languageFor(activeFile), [activeFile]);
 
@@ -90,10 +102,25 @@ export default function MonacoEditor({ fontSize, readOnly = false }: { fontSize:
       const uriStr = uri.toString();
 
       if (existingUris.has(uriStr)) {
-        // Update existing model if code differs (but skip active file — it's managed by the editor)
         const model = monacoInstance.editor.getModel(uri);
-        if (model && path !== activeFile && model.getValue() !== fileCode) {
-          model.setValue(fileCode);
+        if (model) {
+          if (path === activeFile) {
+            // Check if this update was triggered by our own local typing
+            if (pendingLocalValues.current.has(fileCode)) {
+              // Consumed: delete from the pending set
+              pendingLocalValues.current.delete(fileCode);
+            } else {
+              // Update active file model only if code changes externally (e.g. peer edits or formatting)
+              if (fileCode !== lastValueRef.current && model.getValue() !== fileCode) {
+                model.setValue(fileCode);
+                lastValueRef.current = fileCode;
+              }
+            }
+          } else {
+            if (model.getValue() !== fileCode) {
+              model.setValue(fileCode);
+            }
+          }
         }
       } else {
         // Create a new model for this file so cross-file IntelliSense works
@@ -163,6 +190,34 @@ export default function MonacoEditor({ fontSize, readOnly = false }: { fontSize:
   const handleEditorDidMount = useCallback((editor: any, monaco: Monaco) => {
     setMonacoInstance(monaco);
     editorRef.current = editor;
+
+    // ── Immediate model sync on mount ──
+    // The multi-file sync useEffect runs only after setMonacoInstance triggers
+    // a re-render, which means the editor shows an empty model for the first
+    // frame. Eagerly populate all visible Sandpack file models right now.
+    const sp = sandpackRef.current;
+    for (const [path, file] of Object.entries(sp.files)) {
+      if (typeof file !== "string" && (file as any).hidden) continue;
+      const fileCode = typeof file === "string" ? file : (file as { code: string }).code;
+      const lang = languageFor(path);
+      const uri = monaco.Uri.parse(`file://${path}`);
+      let model = monaco.editor.getModel(uri);
+      if (!model) {
+        model = monaco.editor.createModel(fileCode, lang, uri);
+      } else if (model.getValue() !== fileCode) {
+        model.setValue(fileCode);
+      }
+    }
+    // Point the editor at the correct model for the active file
+    const activeUri = monaco.Uri.parse(`file://${sp.activeFile}`);
+    const activeModel = monaco.editor.getModel(activeUri);
+    if (activeModel && editor.getModel() !== activeModel) {
+      editor.setModel(activeModel);
+    }
+    // Initialize lastValueRef so the sync effect knows the current value
+    if (activeModel) {
+      lastValueRef.current = activeModel.getValue();
+    }
 
     const compilerOptions: any = {
       target: monaco.languages.typescript.ScriptTarget.ESNext,
@@ -408,7 +463,11 @@ export default function MonacoEditor({ fontSize, readOnly = false }: { fontSize:
 
   const handleChange = useCallback(
     (value: string | undefined) => {
-      if (value !== undefined) updateCode(value);
+      if (value !== undefined) {
+        lastValueRef.current = value;
+        pendingLocalValues.current.add(value);
+        updateCode(value);
+      }
     },
     [updateCode]
   );
@@ -416,7 +475,8 @@ export default function MonacoEditor({ fontSize, readOnly = false }: { fontSize:
   return (
     <div className="flex flex-col h-full bg-bg">
       {/* Nano Banana Pro decoration CSS — applied via deltaDecorations engine */}
-      <style dangerouslySetInnerHTML={{ __html: `
+      <style dangerouslySetInnerHTML={{
+        __html: `
         /* Theme-aware decorations */
         .nbp-jsx-tag { color: var(--accent) !important; font-weight: 500; }
         .nbp-jsx-attr { color: #0ea5e9 !important; font-style: italic !important; }
@@ -439,7 +499,7 @@ export default function MonacoEditor({ fontSize, readOnly = false }: { fontSize:
           display: flex;
           align-items: stretch;
           gap: 0;
-          min-height: 36px;
+          min-height: 43.5px;
           padding: 0 8px;
           border-bottom: 1px solid var(--border);
           background: var(--surface);
@@ -513,10 +573,10 @@ export default function MonacoEditor({ fontSize, readOnly = false }: { fontSize:
           >
             <div className="tab-dot" style={{ background: extColorFor(f) }} />
             <span>{f.replace(/^\//, "")}</span>
-            <button 
-              onClick={(e) => { 
-                e.stopPropagation(); 
-                sandpack.closeFile(f); 
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                sandpack.closeFile(f);
               }}
               className="tab-close"
               title="Close file"
@@ -534,7 +594,7 @@ export default function MonacoEditor({ fontSize, readOnly = false }: { fontSize:
           theme={isDark ? "nano-banana-pro" : "nbp-light"}
           language={language}
           path={activeFile}
-          value={code}
+          defaultValue={code}
           onChange={handleChange}
           onMount={handleEditorDidMount}
           beforeMount={handleEditorWillMount}

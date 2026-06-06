@@ -15,8 +15,8 @@ import {
   SandpackProvider,
   SandpackLayout,
   SandpackPreview,
-  SandpackConsole,
   useSandpack,
+  useSandpackConsole,
   type SandpackFiles,
 } from "@codesandbox/sandpack-react";
 import FileExplorer from "./FileExplorer";
@@ -41,6 +41,10 @@ import {
   Tag,
   X as XIcon,
   Ban,
+  XCircle,
+  AlertTriangle,
+  Info,
+  ChevronRight,
 } from "lucide-react";
 import { templatesById } from "@/lib/templates";
 import { getSandpackTheme } from "@/lib/sandpack-theme";
@@ -94,8 +98,8 @@ function SegBtn({
       onClick={onClick}
       title={title}
       className={`inline-flex items-center gap-1.5 px-2.5 py-1 text-xs transition ${active
-          ? "bg-accent text-bg"
-          : "text-subtle hover:text-fg hover:bg-elevated"
+        ? "bg-accent text-bg"
+        : "text-subtle hover:text-fg hover:bg-elevated"
         }`}
     >
       {children}
@@ -298,7 +302,9 @@ export default function Playground({
 
   const editable = isOwner || !snippet;
   const isMobile = useIsMobile(768);
-  const { width: explorerW, onPointerDown: onExplorerDrag } = useResizable(200, 120, 400);
+  // Default wide enough for the "Files" label + all header buttons (new file,
+  // new folder, deps, sort, download, divider, close) to show without clipping.
+  const { width: explorerW, onPointerDown: onExplorerDrag } = useResizable(280, 200, 400);
   const { width: editorW, onPointerDown: onEditorDrag, setWidth: setEditorW } = useResizable(500, 200, 2000);
 
   useEffect(() => {
@@ -749,144 +755,62 @@ export default function Playground({
                   <div className="w-5 h-5 border-2 border-accent/30 border-t-accent rounded-full animate-spin" />
                 </div>
               ) : (
-              <SandpackProvider
-                key={templateId}
-                theme={{
-                  ...sandpackTheme,
-                  font: {
-                    ...sandpackTheme.font,
-                    mono: 'var(--font-mono), "Fira Code", monospace',
-                    size: "14px",
-                  }
-                }}
-                template={tpl.base}
-                files={initialFilesRef.current}
-                customSetup={customSetup}
-                options={{
-                  autorun: isBackend ? false : autoRun,
-                  autoReload: isBackend ? false : autoRun,
-                  initMode: "immediate" as const,
-                  recompileMode: isBackend ? "immediate" : "delayed",
-                  recompileDelay: isBackend ? 0 : 300,
-                  // Open just the entry file in the tab strip. Additional
-                  // files become tabs only when the user clicks them in the
-                  // explorer (via sandpack.openFile).
-                  visibleFiles: initialVisibleFiles,
-                  activeFile: initialVisibleFiles[0],
-                  externalResources: [
-                    "data:text/css,.react-error-overlay,#webpack-dev-server-client-overlay,.sp-overlay{display:none!important}#ignore.css"
-                  ]
-                }}
-              >
-                {isMobile && mobileFilesOpen && (
-                  <div className="fixed inset-0 z-[100] flex bg-black/60 backdrop-blur-sm">
-                    <div className="w-4/5 max-w-sm h-full bg-panel border-r border-border shadow-2xl flex flex-col">
-                      <div className="flex-1 min-h-0 overflow-y-auto">
-                        <FileExplorer templateId={templateId} readOnly={!editable} onCollapse={() => setMobileFilesOpen(false)} />
-                      </div>
-                    </div>
-                    <div className="flex-1" onClick={() => setMobileFilesOpen(false)} />
-                  </div>
-                )}
-
-                <div className="flex h-full w-full overflow-hidden relative">
-                  <div className="flex-1 min-w-0 h-full">
-                    {previewOnly ? (
-                      <div className="h-full w-full relative ide-panel">
-                        <SandpackPreview showNavigator showOpenInCodeSandbox={false} showRefreshButton={false} style={{ height: "100%", width: "100%" }} />
-                        <ErrorOverlay error={bundlerError} onDismiss={() => { setBundlerError(null); runRef.current?.(); }} />
-                      </div>
-                    ) : isMobile ? (
-                      <div className="flex flex-col h-full bg-bg">
-                        <div className="flex-[0_0_55%] min-h-0 overflow-hidden flex flex-col ide-panel">
-                          <div className="flex-1 min-h-0">
-                            <MonacoEditor fontSize={fontSize} readOnly={!editable} />
-                          </div>
-                          <ReadOnlyToolbar editable={editable} />
+                <SandpackProvider
+                  key={templateId}
+                  theme={{
+                    ...sandpackTheme,
+                    font: {
+                      ...sandpackTheme.font,
+                      mono: 'var(--font-mono), "Fira Code", monospace',
+                      size: "14px",
+                    }
+                  }}
+                  template={tpl.base}
+                  files={initialFilesRef.current}
+                  customSetup={customSetup}
+                  options={{
+                    autorun: isBackend ? false : autoRun,
+                    autoReload: isBackend ? false : autoRun,
+                    initMode: "immediate" as const,
+                    recompileMode: isBackend ? "immediate" : "delayed",
+                    recompileDelay: isBackend ? 0 : 300,
+                    // Open just the entry file in the tab strip. Additional
+                    // files become tabs only when the user clicks them in the
+                    // explorer (via sandpack.openFile).
+                    visibleFiles: initialVisibleFiles,
+                    activeFile: initialVisibleFiles[0],
+                    externalResources: [
+                      "data:text/css,.react-error-overlay,#webpack-dev-server-client-overlay,.sp-overlay{display:none!important}#ignore.css"
+                    ]
+                  }}
+                >
+                  {isMobile && mobileFilesOpen && (
+                    <div className="fixed inset-0 z-[100] flex bg-black/60 backdrop-blur-sm">
+                      <div className="w-4/5 max-w-sm h-full bg-panel border-r border-border shadow-2xl flex flex-col">
+                        <div className="flex-1 min-h-0 overflow-y-auto">
+                          <FileExplorer templateId={templateId} readOnly={!editable} onCollapse={() => setMobileFilesOpen(false)} />
                         </div>
-                        <div className="flex-[0_0_45%] min-h-0 flex flex-col relative ide-panel border-t border-border">
-                          <div style={{
-                            display: effectiveView === "console" ? "none" : "flex",
-                            flex: effectiveView === "both" ? "0 0 60%" : 1,
-                            minHeight: 0, overflow: "hidden",
-                          }}>
-                            <SandpackPreview showNavigator showOpenInCodeSandbox={false} showRefreshButton={false} style={{ height: "100%", width: "100%" }} />
-                          </div>
-                          <div style={{
-                            display: effectiveView === "preview" ? "none" : "flex",
-                            flex: effectiveView === "both" ? "0 0 40%" : 1,
-                            minHeight: 0, overflow: "hidden",
-                            flexDirection: "column",
-                            borderTop: effectiveView === "both" ? "1px solid var(--border)" : undefined,
-                          }}>
-                            {effectiveView === "both" && (
-                              <div className="flex items-center justify-between px-3 h-9 bg-surface shrink-0 border-b border-border">
-                                <div className="flex items-center gap-2">
-                                  <Terminal className="w-3 h-3 text-accent/60" />
-                                  <span className="text-[11px] font-medium text-muted tracking-wide">Console</span>
-                                </div>
-                                <div className="flex items-center gap-1.5">
-                                  <button onClick={() => { setConsoleKey(k => k + 1); setBackendLogs([]); }} className="p-1 hover:bg-elevated rounded transition text-muted/50 hover:text-fg" title="Clear Console">
-                                    <Ban className="w-3 h-3" />
-                                  </button>
-                                  <div className="text-[10px] font-normal text-muted/30">Live</div>
-                                </div>
-                              </div>
-                            )}
-                            <div className="flex-1 min-h-0">
-                              {isBackend ? (
-                                <BackendConsole logs={backendLogs} />
-                              ) : (
-                                <SandpackConsole key={consoleKey} style={{ height: "100%", width: "100%" }} />
-                              )}
-                            </div>
-                          </div>
+                      </div>
+                      <div className="flex-1" onClick={() => setMobileFilesOpen(false)} />
+                    </div>
+                  )}
+
+                  <div className="flex h-full w-full overflow-hidden relative">
+                    <div className="flex-1 min-w-0 h-full">
+                      {previewOnly ? (
+                        <div className="h-full w-full relative ide-panel">
+                          <SandpackPreview showNavigator showOpenInCodeSandbox={false} showRefreshButton={false} style={{ height: "100%", width: "100%" }} />
                           <ErrorOverlay error={bundlerError} onDismiss={() => { setBundlerError(null); runRef.current?.(); }} />
                         </div>
-                      </div>
-                    ) : (
-                      <div className="flex h-full w-full">
-                        {!explorerCollapsed && (
-                          <>
-                            <div style={{ width: explorerW, minWidth: 0 }} className="h-full shrink-0 flex flex-col ide-panel">
-                              <FileExplorer templateId={templateId} readOnly={!editable} onCollapse={() => setExplorerCollapsed(true)} />
-                            </div>
-                            <div className="ide-divider h-full w-px cursor-col-resize" onPointerDown={onExplorerDrag}>
-                               <div className="absolute inset-y-0 -left-1.5 -right-1.5" />
-                            </div>
-                          </>
-                        )}
-                        {explorerCollapsed && (
-                          <div className="h-full shrink-0 w-10 flex flex-col items-center py-4 bg-surface border-r border-border">
-                             <button onClick={() => setExplorerCollapsed(false)} className="p-2 rounded-xl bg-bg hover:bg-elevated text-muted transition" title="Expand Files">
-                                <PanelBottom className="w-4 h-4 rotate-90" />
-                             </button>
-                          </div>
-                        )}
-                        <div style={{ width: editorW, minWidth: 0 }} className="h-full shrink-0 flex flex-col ide-panel">
-                          <div className="flex-1 min-h-0">
-                            <div className="h-full w-full min-w-0">
+                      ) : isMobile ? (
+                        <div className="flex flex-col h-full bg-bg">
+                          <div className="flex-[0_0_55%] min-h-0 overflow-hidden flex flex-col ide-panel">
+                            <div className="flex-1 min-h-0">
                               <MonacoEditor fontSize={fontSize} readOnly={!editable} />
                             </div>
+                            <ReadOnlyToolbar editable={editable} />
                           </div>
-                          <ReadOnlyToolbar editable={editable} />
-                        </div>
-                        <div className="ide-divider h-full w-px cursor-col-resize" onPointerDown={onEditorDrag}>
-                           <div className="absolute inset-y-0 -left-2 -right-2" />
-                        </div>
-                        <div className="flex-1 min-w-0 h-full flex flex-col relative ide-panel">
-                          <div className="flex items-center justify-between px-3 h-9 border-b border-border shrink-0">
-                             <div className="flex items-center gap-2">
-                                {isBackend ? <Terminal className="w-3 h-3 text-accent/60" /> : <StatusDot />}
-                               <span className="text-[11px] font-medium text-muted tracking-wide">{isBackend ? "Console" : "Output"}</span>
-                              </div>
-                              {!isBackend && (
-                              <div className="flex items-center gap-2">
-                                <div className="text-[10px] font-mono text-muted/30">localhost:3000</div>
-                             </div>
-                              )}
-                          </div>
-                          <div className="flex-1 flex flex-col min-h-0">
+                          <div className="flex-[0_0_45%] min-h-0 flex flex-col relative ide-panel border-t border-border">
                             <div style={{
                               display: effectiveView === "console" ? "none" : "flex",
                               flex: effectiveView === "both" ? "0 0 60%" : 1,
@@ -895,49 +819,160 @@ export default function Playground({
                               <SandpackPreview showNavigator showOpenInCodeSandbox={false} showRefreshButton={false} style={{ height: "100%", width: "100%" }} />
                             </div>
                             <div style={{
-                               display: effectiveView === "preview" ? "none" : "flex",
-                               flex: effectiveView === "both" ? "0 0 40%" : 1,
-                               minHeight: 0, overflow: "hidden",
-                               flexDirection: "column",
-                               borderTop: effectiveView === "both" ? "1px solid var(--border)" : undefined,
-                             }}>
-                               {effectiveView === "both" && (
-                                 <div className="flex items-center justify-between px-3 h-9 bg-surface shrink-0 border-b border-border">
-                                   <div className="flex items-center gap-2">
-                                     <Terminal className="w-3 h-3 text-accent/60" />
-                                     <span className="text-[11px] font-medium text-muted tracking-wide">Console</span>
-                                   </div>
-                                   <div className="flex items-center gap-1.5">
-                                     <button onClick={() => { setConsoleKey(k => k + 1); setBackendLogs([]); }} className="p-1 hover:bg-elevated rounded transition text-muted/50 hover:text-fg" title="Clear Console">
-                                       <Ban className="w-3 h-3" />
-                                     </button>
-                                     <div className="text-[10px] font-normal text-muted/30">Live</div>
-                                   </div>
-                                 </div>
-                               )}
-                               <div className="flex-1 min-h-0">
+                              display: effectiveView === "preview" ? "none" : "flex",
+                              flex: effectiveView === "both" ? "0 0 40%" : 1,
+                              minHeight: 0, overflow: "hidden",
+                              flexDirection: "column",
+                              borderTop: effectiveView === "both" ? "1px solid var(--border)" : undefined,
+                            }}>
+                              {effectiveView !== "preview" && (
+                                <div className="flex items-center justify-between px-3 h-9 bg-surface shrink-0 border-b border-border">
+                                  <div className="flex items-center gap-2">
+                                    <Terminal className="w-3 h-3 text-accent/60" />
+                                    <span className="text-[11px] font-semibold text-fg tracking-wide uppercase">Console</span>
+                                  </div>
+                                  <div className="flex items-center gap-1.5">
+                                    <button onClick={() => { setConsoleKey(k => k + 1); setBackendLogs([]); }} className="p-1 hover:bg-elevated rounded transition text-muted/50 hover:text-fg" title="Clear Console">
+                                      <Ban className="w-3 h-3" />
+                                    </button>
+                                    <div className="text-[10px] font-normal text-muted/30">Live</div>
+                                  </div>
+                                </div>
+                              )}
+                              <div className="flex-1 min-h-0">
                                 {isBackend ? (
                                   <BackendConsole logs={backendLogs} />
                                 ) : (
-                                  <SandpackConsole key={consoleKey} style={{ height: "100%", width: "100%" }} />
+                                  <JsConsole key={consoleKey} />
                                 )}
                               </div>
                             </div>
+                            <ErrorOverlay error={bundlerError} onDismiss={() => { setBundlerError(null); runRef.current?.(); }} />
                           </div>
-                          <ErrorOverlay error={bundlerError} onDismiss={() => { setBundlerError(null); runRef.current?.(); }} />
                         </div>
-                      </div>
-                    )}
+                      ) : (
+                        <div className="flex h-full w-full">
+                          {!explorerCollapsed && (
+                            <>
+                              <div style={{ width: explorerW, minWidth: 0 }} className="h-full shrink-0 flex flex-col ide-panel">
+                                <FileExplorer templateId={templateId} readOnly={!editable} onCollapse={() => setExplorerCollapsed(true)} />
+                              </div>
+                              <div className="ide-divider h-full w-px cursor-col-resize" onPointerDown={onExplorerDrag}>
+                                <div className="absolute inset-y-0 -left-1.5 -right-1.5" />
+                              </div>
+                            </>
+                          )}
+                          {explorerCollapsed && (
+                            <div className="h-full shrink-0 w-10 flex flex-col items-center py-4 bg-surface border-r border-border">
+                              <button onClick={() => setExplorerCollapsed(false)} className="p-2 rounded-xl bg-bg hover:bg-elevated text-muted transition" title="Expand Files">
+                                <PanelBottom className="w-4 h-4 rotate-90" />
+                              </button>
+                            </div>
+                          )}
+                          <div style={{ width: editorW, minWidth: 0 }} className="h-full shrink-0 flex flex-col ide-panel">
+                            <div className="flex-1 min-h-0">
+                              <div className="h-full w-full min-w-0">
+                                <MonacoEditor fontSize={fontSize} readOnly={!editable} />
+                              </div>
+                            </div>
+                            <ReadOnlyToolbar editable={editable} />
+                          </div>
+                          <div className="ide-divider h-full w-px cursor-col-resize" onPointerDown={onEditorDrag}>
+                            <div className="absolute inset-y-0 -left-2 -right-2" />
+                          </div>
+                          <div className="flex-1 min-w-0 h-full flex flex-col relative ide-panel">
+                            <div className="flex items-center justify-between px-3 h-9 border-b border-border shrink-0 bg-surface/50">
+                              <div className="flex items-center gap-2">
+                                {effectiveView === "console" ? (
+                                  <Terminal className="w-3.5 h-3.5 text-accent animate-pulse" />
+                                ) : isBackend ? (
+                                  <Terminal className="w-3.5 h-3.5 text-accent/60" />
+                                ) : (
+                                  <StatusDot />
+                                )}
+                                <span className="text-[11px] font-semibold text-fg tracking-wide uppercase">
+                                  {effectiveView === "console" || isBackend ? "Console" : "Output"}
+                                </span>
+                              </div>
+                              {effectiveView === "console" || isBackend ? (
+                                <div className="flex items-center gap-2">
+                                  <button
+                                    onClick={() => {
+                                      setConsoleKey((k) => k + 1);
+                                      setBackendLogs([]);
+                                    }}
+                                    className="p-1 hover:bg-elevated rounded transition text-muted/50 hover:text-fg flex items-center gap-1"
+                                    title="Clear Console"
+                                  >
+                                    <Ban className="w-3 h-3" />
+                                    <span className="text-[10px] font-medium">Clear</span>
+                                  </button>
+                                  <div className="tb-sep h-3 my-0" />
+                                  <div className="text-[10px] font-normal text-muted/30 flex items-center gap-1">
+                                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400/80 animate-pulse" />
+                                    Live
+                                  </div>
+                                </div>
+                              ) : (
+                                !isBackend && (
+                                  <div className="flex items-center gap-2">
+                                    <div className="text-[10px] font-mono text-muted/30">localhost:3000</div>
+                                  </div>
+                                )
+                              )}
+                            </div>
+                            <div className="flex-1 flex flex-col min-h-0">
+                              <div style={{
+                                display: effectiveView === "console" ? "none" : "flex",
+                                flex: effectiveView === "both" ? "0 0 60%" : 1,
+                                minHeight: 0, overflow: "hidden",
+                              }}>
+                                <SandpackPreview showNavigator showOpenInCodeSandbox={false} showRefreshButton={false} style={{ height: "100%", width: "100%" }} />
+                              </div>
+                              <div style={{
+                                display: effectiveView === "preview" ? "none" : "flex",
+                                flex: effectiveView === "both" ? "0 0 40%" : 1,
+                                minHeight: 0, overflow: "hidden",
+                                flexDirection: "column",
+                                borderTop: effectiveView === "both" ? "1px solid var(--border)" : undefined,
+                              }}>
+                                {effectiveView === "both" && (
+                                  <div className="flex items-center justify-between px-3 h-9 bg-surface shrink-0 border-b border-border">
+                                    <div className="flex items-center gap-2">
+                                      <Terminal className="w-3 h-3 text-accent/60" />
+                                      <span className="text-[11px] font-medium text-muted tracking-wide">Console</span>
+                                    </div>
+                                    <div className="flex items-center gap-1.5">
+                                      <button onClick={() => { setConsoleKey(k => k + 1); setBackendLogs([]); }} className="p-1 hover:bg-elevated rounded transition text-muted/50 hover:text-fg" title="Clear Console">
+                                        <Ban className="w-3 h-3" />
+                                      </button>
+                                      <div className="text-[10px] font-normal text-muted/30">Live</div>
+                                    </div>
+                                  </div>
+                                )}
+                                <div className="flex-1 min-h-0">
+                                  {isBackend ? (
+                                    <BackendConsole logs={backendLogs} />
+                                  ) : (
+                                    <JsConsole key={consoleKey} />
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                            <ErrorOverlay error={bundlerError} onDismiss={() => { setBundlerError(null); runRef.current?.(); }} />
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                    {promptOpen && <PromptSidebar onClose={() => setPromptOpen(false)} />}
                   </div>
-                  {promptOpen && <PromptSidebar onClose={() => setPromptOpen(false)} />}
-                </div>
-                <FilesBridge templateId={templateId} filesRef={filesRef} activeFileRef={activeFileRef} templateFiles={cleanFiles} onChange={() => { setDirty(true); codeChangedRef.current = true; }} />
-                <ErrorBridge onError={setBundlerError} />
-                <RunBridge runRef={runRef} onStatusChange={(s) => { if (s === "idle" || s === "done") setRunning(false); }} />
-                <ConsoleEntryBridge active={tpl.mode === "console"} isBackend={isBackend} />
-                <ConsoleClearBridge onClear={() => setConsoleKey((k) => k + 1)} />
-                <FormatBridge formatRef={formatRef} />
-              </SandpackProvider>
+                  <FilesBridge templateId={templateId} filesRef={filesRef} activeFileRef={activeFileRef} templateFiles={cleanFiles} onChange={() => { setDirty(true); codeChangedRef.current = true; }} />
+                  <ErrorBridge onError={setBundlerError} />
+                  <RunBridge runRef={runRef} onStatusChange={(s) => { if (s === "idle" || s === "done") setRunning(false); }} />
+                  <ConsoleEntryBridge active={tpl.mode === "console"} isBackend={isBackend} />
+                  <ConsoleClearBridge onClear={() => setConsoleKey((k) => k + 1)} />
+                  <FormatBridge formatRef={formatRef} />
+                </SandpackProvider>
               )}
             </div>
           </div>
@@ -947,21 +982,198 @@ export default function Playground({
   );
 }
 
-function BackendConsole({ logs }: { logs: { method: string; data: string[] }[] }) {
+/** Format a single console argument the way a real devtools console would:
+ *  top-level strings unquoted, objects/arrays as compact JSON. */
+function formatConsoleArg(arg: unknown): string {
+  if (typeof arg === "string") return arg;
+  if (arg === null) return "null";
+  if (arg === undefined) return "undefined";
+  if (typeof arg === "bigint") return `${arg}n`;
+  if (typeof arg === "object") {
+    try {
+      return JSON.stringify(arg, (_k, v) => (typeof v === "bigint" ? v.toString() : v));
+    } catch {
+      return String(arg);
+    }
+  }
+  return String(arg);
+}
+
+/** Devtools-style syntax colors for console values. */
+const CONSOLE_COLORS = {
+  number: "text-sky-400",
+  boolean: "text-purple-400",
+  nullish: "text-muted/60",
+  string: "text-emerald-400",
+  key: "text-sky-300",
+} as const;
+
+/** Colorize a compact JSON string into devtools-like tokens (keys, strings,
+ *  numbers, booleans, null each get their own color). */
+function highlightJson(json: string): React.ReactNode[] {
+  const out: React.ReactNode[] = [];
+  const re = /"(?:\\.|[^"\\])*"|\b(?:true|false|null)\b|-?\d+(?:\.\d+)?(?:[eE][+-]?\d+)?/g;
+  let last = 0;
+  let i = 0;
+  let m: RegExpExecArray | null;
+  while ((m = re.exec(json))) {
+    if (m.index > last) out.push(json.slice(last, m.index));
+    const tok = m[0];
+    let cls: string = CONSOLE_COLORS.number;
+    if (tok[0] === '"') {
+      cls = /^\s*:/.test(json.slice(re.lastIndex)) ? CONSOLE_COLORS.key : CONSOLE_COLORS.string;
+    } else if (tok === "true" || tok === "false") {
+      cls = CONSOLE_COLORS.boolean;
+    } else if (tok === "null") {
+      cls = CONSOLE_COLORS.nullish;
+    }
+    out.push(
+      <span key={i++} className={cls}>
+        {tok}
+      </span>
+    );
+    last = re.lastIndex;
+  }
+  if (last < json.length) out.push(json.slice(last));
+  return out;
+}
+
+/** Render one console argument with type-based coloring. Top-level strings show
+ *  plain (like Chrome devtools); objects/arrays are syntax-highlighted JSON. */
+function ConsoleArg({ value }: { value: unknown }): React.ReactNode {
+  if (typeof value === "string") return value;
+  if (typeof value === "number" || typeof value === "bigint")
+    return <span className={CONSOLE_COLORS.number}>{String(value)}</span>;
+  if (typeof value === "boolean")
+    return <span className={CONSOLE_COLORS.boolean}>{String(value)}</span>;
+  if (value === null) return <span className={CONSOLE_COLORS.nullish}>null</span>;
+  if (value === undefined) return <span className={CONSOLE_COLORS.nullish}>undefined</span>;
+  if (typeof value === "object") {
+    let json: string;
+    try {
+      json = JSON.stringify(value, (_k, v) => (typeof v === "bigint" ? v.toString() : v));
+    } catch {
+      return String(value);
+    }
+    return <>{highlightJson(json)}</>;
+  }
+  return String(value);
+}
+
+/** Console for browser/JS templates. Joins each console call's arguments on a
+ *  single line (Sandpack's built-in console splits them per argument) and
+ *  syntax-colors values + adds row dividers to feel like a real devtools console. */
+function JsConsole() {
+  const { logs } = useSandpackConsole({ resetOnPreviewRestart: true });
   if (logs.length === 0) {
     return (
-      <div className="flex items-center justify-center h-full text-muted/50 text-[12px] font-medium">
-        Ready for execution
+      <div className="flex flex-col h-full bg-[#0a0b0d]">
+        <div className="flex-1 flex items-center justify-center text-neutral-500 text-[12px] font-medium font-mono">
+          Ready for execution
+        </div>
+        <div className="flex items-center gap-1.5 px-3 py-2 border-t border-neutral-900/40 font-mono text-[11px] text-neutral-600 bg-black/20 select-none">
+          <span className="text-accent font-bold">›</span>
+          <span className="animate-pulse w-1 h-3 bg-accent/60" />
+          <span className="italic">Console active. Waiting for logs...</span>
+        </div>
       </div>
     );
   }
   return (
-    <div className="flex-1 min-h-0 h-full overflow-y-auto bg-surface text-fg font-mono text-[13px] p-3 space-y-1">
-      {logs.map((log, i) => (
-        <div key={i} className={`whitespace-pre-wrap ${log.method === 'error' ? 'text-red-400' : 'text-fg/80'}`}>
-          {log.data.join(" ")}
+    <div className="flex flex-col h-full bg-[#0a0b0d] text-[#e3e4e6] font-mono text-[13px] leading-relaxed">
+      <div className="flex-1 overflow-y-auto">
+        {logs.map((log) => {
+          const args = Array.isArray(log.data) ? log.data : [];
+          const isError = log.method === "error";
+          const isWarn = log.method === "warn";
+          const isInfo = log.method === "info" || log.method === "debug";
+
+          let borderClass = "border-l-[3px] border-transparent hover:bg-white/[0.02]";
+          let icon = <ChevronRight className="w-3 h-3 text-neutral-600 shrink-0 mt-0.5" />;
+          let rowBg = "";
+
+          if (isError) {
+            borderClass = "border-l-[3px] border-red-500 hover:bg-red-500/[0.04]";
+            rowBg = "bg-red-500/[0.02]";
+            icon = <XCircle className="w-3.5 h-3.5 text-red-400 shrink-0 mt-0.5" />;
+          } else if (isWarn) {
+            borderClass = "border-l-[3px] border-amber-500 hover:bg-amber-500/[0.04]";
+            rowBg = "bg-amber-500/[0.02]";
+            icon = <AlertTriangle className="w-3.5 h-3.5 text-amber-400 shrink-0 mt-0.5" />;
+          } else if (isInfo) {
+            borderClass = "border-l-[3px] border-sky-400 hover:bg-sky-400/[0.04]";
+            rowBg = "bg-sky-500/[0.02]";
+            icon = <Info className="w-3.5 h-3.5 text-sky-400 shrink-0 mt-0.5" />;
+          }
+
+          return (
+            <div
+              key={log.id}
+              className={`px-3 py-1.5 border-b border-neutral-900/40 whitespace-pre-wrap break-words transition-colors flex items-start gap-2.5 ${borderClass} ${rowBg}`}
+            >
+              {icon}
+              <div className="flex-1 min-w-0">
+                {isError || isWarn
+                  ? args.map(formatConsoleArg).join(" ")
+                  : args.map((arg, idx) => (
+                      <span key={idx}>
+                        {idx > 0 ? " " : ""}
+                        <ConsoleArg value={arg} />
+                      </span>
+                    ))}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+      <div className="flex items-center gap-1.5 px-3 py-2 border-t border-neutral-900/40 font-mono text-[11px] text-neutral-600 bg-black/20 select-none">
+        <span className="text-accent font-bold">›</span>
+        <span className="animate-pulse w-1 h-3 bg-accent/60" />
+        <span className="italic">Console active. Ready.</span>
+      </div>
+    </div>
+  );
+}
+
+function BackendConsole({ logs }: { logs: { method: string; data: string[] }[] }) {
+  if (logs.length === 0) {
+    return (
+      <div className="flex flex-col h-full bg-[#0a0b0d]">
+        <div className="flex-1 flex items-center justify-center text-neutral-500 text-[12px] font-medium font-mono">
+          Ready for execution
         </div>
-      ))}
+        <div className="flex items-center gap-1.5 px-3 py-2 border-t border-neutral-900/40 font-mono text-[11px] text-neutral-600 bg-black/20 select-none">
+          <span className="text-accent font-bold">›</span>
+          <span className="animate-pulse w-1 h-3 bg-accent/60" />
+          <span className="italic">Compiler ready. Waiting for run...</span>
+        </div>
+      </div>
+    );
+  }
+  return (
+    <div className="flex flex-col h-full bg-[#0a0b0d] text-[#e3e4e6] font-mono text-[13px] leading-relaxed">
+      <div className="flex-1 overflow-y-auto p-3 space-y-1.5">
+        {logs.map((log, i) => {
+          const isError = log.method === "error";
+          const borderClass = isError ? "border-l-[3px] border-red-500 pl-2.5 bg-red-500/[0.02]" : "pl-2.5 border-l-[3px] border-transparent";
+          const textClass = isError ? "text-red-400" : "text-[#e3e4e6]/90";
+          return (
+            <div key={i} className={`whitespace-pre-wrap flex items-start gap-2 ${borderClass} ${textClass}`}>
+              {isError ? (
+                <XCircle className="w-3.5 h-3.5 text-red-400 shrink-0 mt-0.5" />
+              ) : (
+                <ChevronRight className="w-3 h-3 text-neutral-600 shrink-0 mt-0.5" />
+              )}
+              <div className="flex-1 min-w-0">{log.data.join(" ")}</div>
+            </div>
+          );
+        })}
+      </div>
+      <div className="flex items-center gap-1.5 px-3 py-2 border-t border-neutral-900/40 font-mono text-[11px] text-neutral-600 bg-black/20 select-none">
+        <span className="text-accent font-bold">›</span>
+        <span className="animate-pulse w-1 h-3 bg-accent/60" />
+        <span className="italic">Execution complete.</span>
+      </div>
     </div>
   );
 }

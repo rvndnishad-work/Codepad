@@ -258,6 +258,15 @@ export default function FileExplorer({
     return FILE_TYPES.filter(t => [".js", ".ts", ".jsx", ".tsx", ".css", ".html", ".json", ".md"].includes(t.ext));
   }, [templateId]);
 
+  // npm dependencies only do something for templates that execute through the
+  // in-browser JS bundler. Native runtimes (Python, Go, Java, C++, Rust) run
+  // elsewhere and have their own package managers, so the npm panel is a no-op
+  // there — hide it to avoid misleading users.
+  const supportsNpm = useMemo(() => {
+    const nativeRuntimes = new Set(["python", "go", "java", "cpp", "rust"]);
+    return !templateId || !nativeRuntimes.has(templateId.toLowerCase());
+  }, [templateId]);
+
   const {
     expanded,
     setExpanded,
@@ -647,18 +656,20 @@ export default function FileExplorer({
               >
                 <FolderPlus className="w-3.5 h-3.5" />
               </button>
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setShowDeps((v) => !v);
-                }}
-                title="Dependencies"
-                className={`p-1.5 rounded transition ${
-                  showDeps ? "bg-accent/20 text-accent" : "text-muted/50 hover:bg-elevated hover:text-fg"
-                }`}
-              >
-                <Package className="w-3.5 h-3.5" />
-              </button>
+              {supportsNpm && (
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setShowDeps((v) => !v);
+                  }}
+                  title="Dependencies"
+                  className={`p-1.5 rounded transition ${
+                    showDeps ? "bg-accent/20 text-accent" : "text-muted/50 hover:bg-elevated hover:text-fg"
+                  }`}
+                >
+                  <Package className="w-3.5 h-3.5" />
+                </button>
+              )}
               <button
                 onClick={(e) => {
                   e.stopPropagation();
@@ -722,7 +733,7 @@ export default function FileExplorer({
         </div>
       </div>
 
-      {showDeps && !readOnly && (
+      {showDeps && !readOnly && supportsNpm && (
         <div className="border-b border-border bg-panel/40 px-2 py-2 text-xs">
           <div className="flex items-center justify-between mb-2">
             <span className="text-[10px] uppercase tracking-wide text-muted">

@@ -22,16 +22,18 @@ export function ConsoleEntryBridge({ active, isBackend }: { active: boolean; isB
     
     lastActiveRef.current = file;
 
+    const entryPath = file.startsWith("/") ? `.${file}` : `./${file}`;
+
     // Update index.html (hidden) to point to the active file
     const htmlCode = `<!DOCTYPE html>
 <html>
 <head><meta charset="utf-8" /><title>Console Runner</title></head>
-<body><script src="${file.startsWith('/') ? file.slice(1) : file}" type="module"></script></body>
+<body><script src="${entryPath}" type="module"></script></body>
 </html>`;
 
     // Update package.json (hidden) to set the entry point
     const pkgCode = `{
-  "main": "${file.startsWith('/') ? file.slice(1) : file}",
+  "main": "${entryPath}",
   "dependencies": {}
 }`;
 

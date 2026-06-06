@@ -88,6 +88,12 @@ export const templates: TemplateDef[] = [
       "/src/utils/helpers.js": `export function greet(name) {\n  return \`Hello, \${name}! 👋\`;\n}\n\nexport function capitalize(str) {\n  return str.charAt(0).toUpperCase() + str.slice(1);\n}\n`,
       "/styles/main.css": `* { margin: 0; padding: 0; box-sizing: border-box; }\nbody { font-family: "Inter", system-ui, sans-serif; background: #0f172a; color: #e2e8f0; min-height: 100vh; display: flex; align-items: center; justify-content: center; }\n.container { text-align: center; }\n.container h1 { font-size: 2rem; margin-bottom: 0.5rem; background: linear-gradient(135deg,#f7df1e,#fbbf24); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }\n.container p { color: #94a3b8; }\n.container code { background: #1e293b; padding: 2px 6px; border-radius: 4px; font-size: 0.85em; color: #fbbf24; }\n`,
       "/index.html": `<!DOCTYPE html>\n<html lang="en">\n<head><meta charset="utf-8" /><title>JS Playground</title></head>\n<body><div id="app"></div><script src="src/index.js" type="module"></script></body>\n</html>\n`,
+      "/package.json": { code: `{\n  "main": "/src/index.js",\n  "dependencies": {}\n}`, hidden: true },
+      // The `vanilla` base template ships a root /index.js and /styles.css.
+      // Override them as hidden so they don't shadow /src/index.js as the entry
+      // or clutter the file tree.
+      "/index.js": { code: "", hidden: true },
+      "/styles.css": { code: "", hidden: true },
     },
   },
   {
@@ -103,6 +109,12 @@ export const templates: TemplateDef[] = [
       "/src/utils/helpers.ts": `export function greet(name: string): string {\n  return \`Hello, \${name}! 👋\`;\n}\n\nexport function capitalize(str: string): string {\n  return str.charAt(0).toUpperCase() + str.slice(1);\n}\n`,
       "/styles/main.css": `* { margin: 0; padding: 0; box-sizing: border-box; }\nbody { font-family: "Inter", system-ui, sans-serif; background: #0f172a; color: #e2e8f0; min-height: 100vh; display: flex; align-items: center; justify-content: center; }\n.container { text-align: center; }\n.container h1 { font-size: 2rem; margin-bottom: 0.5rem; background: linear-gradient(135deg,#3178c6,#60a5fa); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }\n.container p { color: #94a3b8; }\n.container code { background: #1e293b; padding: 2px 6px; border-radius: 4px; font-size: 0.85em; color: #60a5fa; }\n`,
       "/index.html": `<!DOCTYPE html>\n<html lang="en">\n<head><meta charset="utf-8" /><title>TS Playground</title></head>\n<body><div id="app"></div><script src="src/index.ts" type="module"></script></body>\n</html>\n`,
+      "/package.json": { code: `{\n  "main": "/src/index.ts",\n  "dependencies": {}\n}`, hidden: true },
+      // The `vanilla-ts` base template ships a root /index.ts and /styles.css.
+      // Override them as hidden so they don't shadow /src/index.ts as the entry
+      // or clutter the file tree.
+      "/index.ts": { code: "", hidden: true },
+      "/styles.css": { code: "", hidden: true },
     },
   },
 

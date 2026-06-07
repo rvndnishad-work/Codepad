@@ -2,6 +2,8 @@ import Link from "next/link";
 import { auth } from "@/lib/auth";
 import { isAdmin } from "@/lib/admin";
 import { getPrimaryWorkspaceSlug } from "@/lib/workspace-nav";
+import { getNavLinks } from "@/lib/settings";
+import type { NavDropdownItem } from "./NavDropdown";
 import { BookOpen, CreditCard } from "lucide-react";
 import HeaderLogo from "./HeaderLogo";
 import NavDropdown from "./NavDropdown";
@@ -68,7 +70,7 @@ export default async function Header() {
     },
   ];
 
-  const recruiterItems = [
+  const recruiterItems: NavDropdownItem[] = [
     {
       href: workspaceHref,
       label: "Workspaces",
@@ -84,6 +86,87 @@ export default async function Header() {
     },
   ];
 
+  // ── Apply admin visibility settings ──
+  // Admins always see everything. For regular users, hidden items are removed
+  // and coming_soon items get a visual badge + disabled state.
+  const navLinks = await getNavLinks();
+
+  /** Map nav-link hrefs → status, supporting prefix matching for recruiter
+   *  routes (e.g. "/w" matches "/w/some-slug" workspace links). */
+  const statusForHref = (href: string) => {
+    // Exact match first
+    const exact = navLinks.find((l) => l.href === href);
+    if (exact) return exact.status;
+    // Prefix match (e.g. workspace links /w/slug → /w setting)
+    const prefix = navLinks.find(
+      (l) => l.href !== "/" && href.startsWith(l.href)
+    );
+    return prefix?.status ?? "visible";
+  };
+
+  /** Recruiter-specific prefix map: the admin setting key → the actual
+   *  item label, since recruiter hrefs are dynamic (/w/[slug]/...). */
+  const RECRUITER_SETTING_MAP: Record<string, string> = {
+    "/w": "Workspaces",
+    "/w/ai-screening": "AI Screening",
+  };
+
+  function applyNavStatus(items: NavDropdownItem[], isRecruiter = false): NavDropdownItem[] {
+    return items
+      .map((item) => {
+        let status: string;
+        if (isRecruiter) {
+          // For recruiter items, look up by label → setting href
+          const settingKey = Object.entries(RECRUITER_SETTING_MAP).find(
+            ([, label]) => label === item.label
+          )?.[0];
+          status = settingKey
+            ? navLinks.find((l) => l.href === settingKey)?.status ?? "visible"
+            : "visible";
+        } else {
+          status = statusForHref(item.href);
+        }
+
+        if (showAdmin) {
+          if (status === "hidden") {
+            return {
+              ...item,
+              status: "visible" as const, // clickable for admin
+              badge: "Hidden",
+            };
+          }
+          if (status === "coming_soon") {
+            return {
+              ...item,
+              status: "visible" as const, // clickable for admin
+              badge: "Soon",
+            };
+          }
+          return { ...item, status: "visible" as const };
+        }
+
+        if (status === "hidden") return null;
+        if (status === "coming_soon") {
+          return {
+            ...item,
+            href: `/coming-soon?feature=${encodeURIComponent(item.label)}`,
+            status: "coming_soon" as const,
+            badge: undefined, // suppress "New" badge in favour of "Coming Soon"
+          };
+        }
+        return { ...item, status: "visible" as const };
+      })
+      .filter(Boolean) as NavDropdownItem[];
+  }
+
+  const blogStatus = statusForHref("/blog");
+  const pricingStatus = statusForHref("/pricing");
+  const devsMenuStatus = statusForHref("menu:developers");
+  const recruitersMenuStatus = statusForHref("menu:recruiters");
+
+  const filteredDeveloperItems = applyNavStatus(developerItems);
+  const filteredRecruiterItems = applyNavStatus(recruiterItems, true);
+
   return (
     <header className="sticky top-0 z-[100] bg-surface/80 backdrop-blur-xl border-b border-border relative">
       <div className="mx-auto max-w-7xl px-4 h-16 flex items-center justify-between gap-3">
@@ -91,8 +174,12 @@ export default async function Header() {
         <MobileNav
           signedIn={!!user}
           isAdmin={showAdmin}
-          developerItems={developerItems}
-          recruiterItems={recruiterItems}
+          developerItems={filteredDeveloperItems}
+          recruiterItems={filteredRecruiterItems}
+          blogStatus={blogStatus}
+          pricingStatus={pricingStatus}
+          devsMenuStatus={devsMenuStatus}
+          recruitersMenuStatus={recruitersMenuStatus}
         />
 
         {/* Desktop: logo links to home */}
@@ -102,28 +189,66 @@ export default async function Header() {
         <div className="flex items-center gap-4">
           <nav className="flex items-center">
             <div className="hidden md:flex items-center gap-6 text-sm font-medium mr-6 border-r border-border pr-6 h-16">
-              <NavDropdown label="For Developers" items={developerItems} />
-              <NavDropdown label="For Recruiters" items={recruiterItems} />
+              {(devsMenuStatus !== "hidden" || showAdmin) && (filteredDeveloperItems.length > 0 || showAdmin) && (
+                <NavDropdown
+                  label={devsMenuStatus === "hidden" && showAdmin ? "For Developers (Hidden)" : "For Developers"}
+                  items={filteredDeveloperItems}
+                />
+              )}
+              {(recruitersMenuStatus !== "hidden" || showAdmin) && (filteredRecruiterItems.length > 0 || showAdmin) && (
+                <NavDropdown
+                  label={recruitersMenuStatus === "hidden" && showAdmin ? "For Recruiters (Hidden)" : "For Recruiters"}
+                  items={filteredRecruiterItems}
+                />
+              )}
 
-              <Link
-                href="/blog"
-                className="transition-colors flex items-center h-full text-fg/50 hover:text-fg"
-              >
-                <span className="relative flex items-center gap-1.5">
-                  <BookOpen className="w-3.5 h-3.5" />
-                  Blog
-                </span>
-              </Link>
+              {(blogStatus !== "hidden" || showAdmin) && (
+                <Link
+                  href={blogStatus === "coming_soon" && !showAdmin ? "/coming-soon?feature=Blog" : "/blog"}
+                  className={`transition-colors flex items-center h-full text-fg/50 hover:text-fg ${
+                    blogStatus === "coming_soon" && !showAdmin ? "opacity-50 hover:text-amber-400" : ""
+                  } ${blogStatus === "hidden" && showAdmin ? "opacity-75 text-rose-400 hover:text-rose-300" : ""}`}
+                >
+                  <span className="relative flex items-center gap-1.5">
+                    <BookOpen className="w-3.5 h-3.5" />
+                    Blog
+                    {blogStatus === "coming_soon" && (
+                      <span className="text-[9px] px-1 py-0.2 rounded bg-amber-500/10 text-amber-500 border border-amber-500/20 font-black uppercase tracking-wider scale-90 animate-fade-in">
+                        Soon
+                      </span>
+                    )}
+                    {blogStatus === "hidden" && showAdmin && (
+                      <span className="text-[9px] px-1 py-0.2 rounded bg-rose-500/10 text-rose-400 border border-rose-500/20 font-black uppercase tracking-wider scale-90 animate-fade-in">
+                        Hidden
+                      </span>
+                    )}
+                  </span>
+                </Link>
+              )}
 
-              <Link
-                href="/pricing"
-                className="transition-colors flex items-center h-full text-fg/50 hover:text-fg"
-              >
-                <span className="relative flex items-center gap-1.5">
-                  <CreditCard className="w-3.5 h-3.5" />
-                  Pricing
-                </span>
-              </Link>
+              {(pricingStatus !== "hidden" || showAdmin) && (
+                <Link
+                  href={pricingStatus === "coming_soon" && !showAdmin ? "/coming-soon?feature=Pricing" : "/pricing"}
+                  className={`transition-colors flex items-center h-full text-fg/50 hover:text-fg ${
+                    pricingStatus === "coming_soon" && !showAdmin ? "opacity-50 hover:text-amber-400" : ""
+                  } ${pricingStatus === "hidden" && showAdmin ? "opacity-75 text-rose-400 hover:text-rose-300" : ""}`}
+                >
+                  <span className="relative flex items-center gap-1.5">
+                    <CreditCard className="w-3.5 h-3.5" />
+                    Pricing
+                    {pricingStatus === "coming_soon" && (
+                      <span className="text-[9px] px-1 py-0.2 rounded bg-amber-500/10 text-amber-500 border border-amber-500/20 font-black uppercase tracking-wider scale-90 animate-fade-in">
+                        Soon
+                      </span>
+                    )}
+                    {pricingStatus === "hidden" && showAdmin && (
+                      <span className="text-[9px] px-1 py-0.2 rounded bg-rose-500/10 text-rose-400 border border-rose-500/20 font-black uppercase tracking-wider scale-90 animate-fade-in">
+                        Hidden
+                      </span>
+                    )}
+                  </span>
+                </Link>
+              )}
             </div>
 
             <div className="flex items-center gap-4">

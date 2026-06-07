@@ -1,5 +1,6 @@
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { validatePageAccess } from "@/lib/settings";
 import HomeHero from "./HomeHero";
 import HomeBento from "./HomeBento";
 import HomeInfographic from "./HomeInfographic";
@@ -50,6 +51,7 @@ async function loadStats() {
 
 export default async function HomePage() {
   const session = await auth().catch(() => null);
+  await validatePageAccess("/", session);
   const userId = session?.user?.id;
   const stats = await loadStats();
 

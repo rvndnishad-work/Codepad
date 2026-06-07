@@ -1,5 +1,6 @@
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { validatePageAccess } from "@/lib/settings";
 import PricingClient from "./PricingClient";
 
 export const metadata = {
@@ -9,6 +10,7 @@ export const metadata = {
 
 export default async function PricingPage() {
   const session = await auth().catch(() => null);
+  await validatePageAccess("/pricing", session);
   const userId = session?.user?.id;
 
   // Fetch workspaces where the current user is an OWNER or ADMIN

@@ -6,7 +6,7 @@ import { getNavLinksCached, NAV_LINKS_TAG } from "./nav-links-cache";
 
 import { auth } from "./auth";
 import { isAdmin } from "./admin";
-import { updateTag } from "next/cache";
+import { revalidateTag } from "next/cache";
 import { notFound, redirect } from "next/navigation";
 
 
@@ -31,7 +31,7 @@ export async function updateNavLinks(links: NavLinkConfig[]) {
   });
   // Drop the Data Cache entry so the new nav config is live immediately
   // (read-your-own-writes from this server action).
-  updateTag(NAV_LINKS_TAG);
+  revalidateTag(NAV_LINKS_TAG);
   return result;
 }
 

@@ -1,6 +1,7 @@
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { notFound, redirect } from "next/navigation";
+import { validatePageAccess } from "@/lib/settings";
 import Link from "next/link";
 import { Lock, Sparkles } from "lucide-react";
 import {
@@ -28,6 +29,7 @@ export default async function WorkspaceAiInterviewsPage({ params, searchParams }
   const page = Math.max(1, Number(sp.page) || 1);
   const skip = (page - 1) * PAGE_SIZE;
   const session = await auth().catch(() => null);
+  await validatePageAccess("/w/ai-screening", session);
   if (!session?.user?.id) {
     redirect(`/login?next=${encodeURIComponent(`/w/${slug}/ai-interviews`)}`);
   }

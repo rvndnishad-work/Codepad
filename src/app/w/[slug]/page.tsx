@@ -1,5 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { notFound } from "next/navigation";
+import { auth } from "@/lib/auth";
+import { validatePageAccess } from "@/lib/settings";
 import WorkspaceDashboardClient from "./WorkspaceDashboardClient";
 import { Building2 } from "lucide-react";
 import { PIPELINE_STAGES, type PipelineStage } from "@/lib/crm/stages";
@@ -21,6 +23,10 @@ export async function generateMetadata({ params }: Props) {
 
 export default async function WorkspaceDashboardPage({ params }: Props) {
   const { slug } = await params;
+
+  // Gate workspace access based on admin visibility settings
+  const session = await auth().catch(() => null);
+  await validatePageAccess("/w", session);
 
   const workspace = await prisma.workspace.findUnique({
     where: { slug },

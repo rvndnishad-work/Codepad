@@ -39,6 +39,8 @@ export type NavDropdownItem = {
   iconName: IconKey;
   /** Optional small accent shown next to the label, e.g. "New" or "Beta". */
   badge?: string;
+  /** When set to "coming_soon", the item renders muted with a badge and is non-interactive. */
+  status?: "visible" | "coming_soon";
 };
 
 type Props = {
@@ -152,10 +154,63 @@ export default function NavDropdown({ label, items }: Props) {
           <div className="rounded-2xl border border-border bg-surface shadow-2xl backdrop-blur-md overflow-hidden p-1.5">
             {items.map((item) => {
               const Icon = ICON_MAP[item.iconName] ?? Code2;
+              const isComingSoon = item.status === "coming_soon";
               const active =
+                !isComingSoon &&
                 isRealDestination(item.href) &&
                 (item.href === pathname ||
                   (item.href !== "/" && pathname.startsWith(`${item.href}/`)));
+
+              const content = (
+                <>
+                  <div
+                    className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${
+                      isComingSoon
+                        ? "bg-amber-500/10 text-amber-400/60"
+                        : active
+                          ? "bg-accent/15 text-accent"
+                          : "bg-elevated/50 text-muted"
+                    }`}
+                  >
+                    <Icon className="w-4 h-4" />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-sm font-semibold">{item.label}</span>
+                      {isComingSoon ? (
+                        <span className="text-[9px] px-1.5 py-0.5 rounded-full uppercase tracking-wider font-black bg-amber-500/10 text-amber-400 border border-amber-500/20">
+                          Coming Soon
+                        </span>
+                      ) : item.badge ? (
+                        <span className={`text-[9px] px-1.5 py-0.5 rounded-full uppercase tracking-wider font-black border ${
+                          item.badge === "Hidden"
+                            ? "bg-rose-500/10 text-rose-400 border-rose-500/20"
+                            : "bg-amber-500/10 text-amber-400 border-amber-500/20"
+                        }`}>
+                          {item.badge}
+                        </span>
+                      ) : null}
+                    </div>
+                    {item.description && (
+                      <div className="text-[11px] text-muted/80 mt-0.5 leading-snug">
+                        {item.description}
+                      </div>
+                    )}
+                  </div>
+                </>
+              );
+
+              if (isComingSoon) {
+                return (
+                  <div
+                    key={item.label}
+                    className="flex items-start gap-3 px-3 py-2.5 rounded-xl opacity-50 cursor-not-allowed select-none"
+                  >
+                    {content}
+                  </div>
+                );
+              }
+
               return (
                 <Link
                   key={item.label}
@@ -167,30 +222,7 @@ export default function NavDropdown({ label, items }: Props) {
                       : "text-fg/80 hover:bg-elevated hover:text-fg"
                   }`}
                 >
-                  <div
-                    className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${
-                      active
-                        ? "bg-accent/15 text-accent"
-                        : "bg-elevated/50 text-muted"
-                    }`}
-                  >
-                    <Icon className="w-4 h-4" />
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-1.5">
-                      <span className="text-sm font-semibold">{item.label}</span>
-                      {item.badge && (
-                        <span className="text-[9px] px-1.5 py-0.5 rounded-full uppercase tracking-wider font-black bg-amber-500/10 text-amber-400 border border-amber-500/20">
-                          {item.badge}
-                        </span>
-                      )}
-                    </div>
-                    {item.description && (
-                      <div className="text-[11px] text-muted/80 mt-0.5 leading-snug">
-                        {item.description}
-                      </div>
-                    )}
-                  </div>
+                  {content}
                 </Link>
               );
             })}

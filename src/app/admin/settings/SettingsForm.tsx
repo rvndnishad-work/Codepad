@@ -27,6 +27,9 @@ import {
   Zap,
   Play,
   Brain,
+  Building2,
+  UserCircle2,
+  Globe,
 } from "lucide-react";
 
 export default function SettingsForm({
@@ -148,54 +151,58 @@ export default function SettingsForm({
 
       {/* Tab 1: Platform Navigation Control */}
       {activeTab === "nav" && (
-        <div className="rounded-2xl border border-border bg-surface p-6 animate-fade-in space-y-6">
+        <div className="rounded-2xl border border-border bg-surface p-6 animate-fade-in space-y-8">
           <div>
             <h3 className="text-xs font-black uppercase tracking-[0.2em] text-muted mb-1 flex items-center gap-2">
               Navigation Links
             </h3>
             <p className="text-xs text-muted leading-relaxed">
-              Enable, disable, or flag forthcoming features in candidate-facing views.
+              Enable, disable, or flag forthcoming features across all user-facing views.
             </p>
           </div>
 
+          {/* General / Site-wide Links */}
           <div className="space-y-4">
-            {links.map((link) => (
-              <div
-                key={link.href}
-                className="flex flex-col md:flex-row md:items-center justify-between p-4 rounded-xl border border-border bg-bg/50 gap-4"
-              >
-                <div>
-                  <div className="font-bold text-fg">{link.label}</div>
-                  <div className="text-xs text-muted font-mono">{link.href}</div>
-                </div>
-
-                <div className="flex items-center gap-2">
-                  <StatusButton
-                    active={link.status === "visible"}
-                    onClick={() => handleStatusChange(link.href, "visible")}
-                    icon={Eye}
-                    label="Visible"
-                    color="text-emerald-500"
-                    bg="bg-emerald-500/10"
-                  />
-                  <StatusButton
-                    active={link.status === "coming_soon"}
-                    onClick={() => handleStatusChange(link.href, "coming_soon")}
-                    icon={Clock}
-                    label="Soon"
-                    color="text-amber-500"
-                    bg="bg-amber-500/10"
-                  />
-                  <StatusButton
-                    active={link.status === "hidden"}
-                    onClick={() => handleStatusChange(link.href, "hidden")}
-                    icon={EyeOff}
-                    label="Hidden"
-                    color="text-rose-500"
-                    bg="bg-rose-500/10"
-                  />
-                </div>
+            <div className="flex items-center gap-2 pb-2 border-b border-border/50">
+              <div className="p-1.5 rounded-md bg-blue-500/10 text-blue-400">
+                <Globe className="w-3.5 h-3.5" />
               </div>
+              <span className="text-[10px] font-black uppercase tracking-widest text-muted">
+                General / Site-wide
+              </span>
+            </div>
+            {links.filter((l) => l.group === "general").map((link) => (
+              <NavLinkRow key={link.href} link={link} onStatusChange={handleStatusChange} />
+            ))}
+          </div>
+
+          {/* Candidate-facing Links */}
+          <div className="space-y-4">
+            <div className="flex items-center gap-2 pb-2 border-b border-border/50">
+              <div className="p-1.5 rounded-md bg-indigo-500/10 text-indigo-400">
+                <UserCircle2 className="w-3.5 h-3.5" />
+              </div>
+              <span className="text-[10px] font-black uppercase tracking-widest text-muted">
+                Candidate-Facing (For Developers)
+              </span>
+            </div>
+            {links.filter((l) => l.group === "candidate").map((link) => (
+              <NavLinkRow key={link.href} link={link} onStatusChange={handleStatusChange} />
+            ))}
+          </div>
+
+          {/* Recruiter-facing Links */}
+          <div className="space-y-4">
+            <div className="flex items-center gap-2 pb-2 border-b border-border/50">
+              <div className="p-1.5 rounded-md bg-emerald-500/10 text-emerald-400">
+                <Building2 className="w-3.5 h-3.5" />
+              </div>
+              <span className="text-[10px] font-black uppercase tracking-widest text-muted">
+                Recruiter-Facing (For Hiring Teams)
+              </span>
+            </div>
+            {links.filter((l) => l.group === "recruiter").map((link) => (
+              <NavLinkRow key={link.href} link={link} onStatusChange={handleStatusChange} />
             ))}
           </div>
         </div>
@@ -533,6 +540,50 @@ export default function SettingsForm({
           {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
           Save Changes
         </button>
+      </div>
+    </div>
+  );
+}
+
+function NavLinkRow({
+  link,
+  onStatusChange,
+}: {
+  link: NavLinkConfig;
+  onStatusChange: (href: string, status: NavStatus) => void;
+}) {
+  return (
+    <div className="flex flex-col md:flex-row md:items-center justify-between p-4 rounded-xl border border-border bg-bg/50 gap-4">
+      <div>
+        <div className="font-bold text-fg">{link.label}</div>
+        <div className="text-xs text-muted font-mono">{link.href}</div>
+      </div>
+
+      <div className="flex items-center gap-2">
+        <StatusButton
+          active={link.status === "visible"}
+          onClick={() => onStatusChange(link.href, "visible")}
+          icon={Eye}
+          label="Visible"
+          color="text-emerald-500"
+          bg="bg-emerald-500/10"
+        />
+        <StatusButton
+          active={link.status === "coming_soon"}
+          onClick={() => onStatusChange(link.href, "coming_soon")}
+          icon={Clock}
+          label="Soon"
+          color="text-amber-500"
+          bg="bg-amber-500/10"
+        />
+        <StatusButton
+          active={link.status === "hidden"}
+          onClick={() => onStatusChange(link.href, "hidden")}
+          icon={EyeOff}
+          label="Hidden"
+          color="text-rose-500"
+          bg="bg-rose-500/10"
+        />
       </div>
     </div>
   );

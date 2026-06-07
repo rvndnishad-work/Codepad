@@ -1,6 +1,7 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  distDir: process.env.NEXT_DIST_DIR || ".next",
   reactStrictMode: false,
   // Pin the workspace root so Turbopack resolves modules from THIS project.
   // Without it, a stray lockfile elsewhere (e.g. ~/package-lock.json) makes

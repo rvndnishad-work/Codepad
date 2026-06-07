@@ -11,7 +11,11 @@
     "lint": "eslint .",
     "db:push": "prisma db push",
     "db:studio": "prisma studio",
-    "postinstall": "prisma generate"
+    "postinstall": "prisma generate",
+    "test:unit": "vitest run",
+    "test:unit:watch": "vitest",
+    "test:e2e": "node scripts/run-e2e-tests.js",
+    "test:e2e:ui": "node scripts/run-e2e-tests.js --ui"
   },
   "dependencies": {
     "@auth/prisma-adapter": "^2.7.4",
@@ -91,20 +95,26 @@
     "zod": "^3.24.1"
   },
   "devDependencies": {
+    "@playwright/test": "^1.60.0",
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/react": "^16.3.2",
     "@types/bcryptjs": "^2.4.6",
     "@types/node": "^22.10.2",
     "@types/qrcode": "^1.5.6",
     "@types/randomcolor": "^0.5.9",
     "@types/react": "^19.0.2",
     "@types/react-dom": "^19.0.2",
+    "@vitejs/plugin-react": "^6.0.2",
     "autoprefixer": "^10.4.20",
     "concurrently": "^9.2.1",
     "eslint": "^9.17.0",
     "eslint-config-next": "16.2.7",
+    "jsdom": "^29.1.1",
     "postcss": "^8.4.49",
     "postcss-pxtorem": "^6.1.0",
     "prisma": "^5.22.0",
     "tailwindcss": "^3.4.17",
-    "typescript": "^5.7.2"
+    "typescript": "^5.7.2",
+    "vitest": "^4.1.8"
   }
 }

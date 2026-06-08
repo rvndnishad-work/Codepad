@@ -45,7 +45,6 @@ import {
   completionKeymap,
 } from "@codemirror/autocomplete";
 import {
-  ArrowLeft,
   CheckCircle2,
   XCircle,
   Send,
@@ -1361,9 +1360,9 @@ export default function ChallengeAttemptClient({
               type="button"
               onClick={handleExit}
               title="Exit the assessment"
-              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-border bg-bg hover:bg-elevated text-muted hover:text-fg text-xs font-bold transition shrink-0"
+              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-rose-500/30 bg-rose-500/5 hover:bg-rose-500/10 text-rose-500 hover:text-rose-400 text-xs font-bold transition shrink-0"
             >
-              <ArrowLeft className="w-3.5 h-3.5" />
+              <LogOut className="w-3.5 h-3.5" />
               <span className="hidden sm:inline">Exit</span>
             </button>
             <div className="min-w-0">

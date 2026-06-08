@@ -10,6 +10,34 @@ export interface NavLinkConfig {
   group: NavLinkGroup;
 }
 
+/** Site-wide maintenance switch. When `enabled`, every non-admin request is
+ *  served a 503 "we'll be back" page by the proxy (see src/proxy.ts), except
+ *  for an allowlist (login, auth, admin) so admins can sign in and toggle it
+ *  off. `message` is an optional admin note shown on the maintenance screen. */
+export type MaintenanceConfig = {
+  enabled: boolean;
+  message: string;
+};
+
+export const DEFAULT_MAINTENANCE: MaintenanceConfig = {
+  enabled: false,
+  message: "",
+};
+
+/**
+ * Routes that must always stay publicly reachable, regardless of admin nav
+ * settings. The home page is the site's front door — gating it would 404 /
+ * redirect the entire public site for every logged-out visitor (and admins
+ * can't see the breakage because they bypass the check). Both
+ * `validatePageAccess` (read path) and `updateNavLinks` (write path) enforce
+ * this, and the admin UI locks these rows to "visible".
+ */
+export const PROTECTED_ROUTES = new Set<string>(["/"]);
+
+export function isProtectedRoute(href: string): boolean {
+  return PROTECTED_ROUTES.has(href);
+}
+
 export const DEFAULT_NAV_LINKS: NavLinkConfig[] = [
   // ── General / Site-wide ──
   { href: "/", label: "Home", status: "visible", group: "general" },

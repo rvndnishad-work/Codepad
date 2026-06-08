@@ -229,8 +229,7 @@ function CompetitorLanguageSelector({
         className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-border bg-surface hover:bg-elevated text-xs font-bold text-fg transition shadow-sm"
       >
         <span className={`w-2 h-2 rounded-full ${selected.color}`} />
-        <span>Language: {selected.label}</span>
-        <span className="text-[10px] text-muted font-normal ml-1 hidden md:inline">({selected.pct} competitors)</span>
+        <span className="whitespace-nowrap">{selected.label}</span>
         <ChevronDown className={`w-3.5 h-3.5 opacity-60 transition-transform ${open ? "rotate-180" : ""}`} />
       </button>
 
@@ -1421,7 +1420,11 @@ export default function ChallengeAttemptClient({
 
           {/* Toolbar Center/Right buttons */}
           <div className="flex items-center gap-2.5 shrink-0 flex-1 justify-end">
-            <CompetitorLanguageSelector value={selectedLanguage} onChange={setSelectedLanguage} />
+            {/* Language picker is only meaningful for code challenges — a
+                React/UI challenge has no language choice. */}
+            {!isFrontend && (
+              <CompetitorLanguageSelector value={selectedLanguage} onChange={setSelectedLanguage} />
+            )}
             <ThemeToggle />
 
             {!isFrontend && testRun && (
@@ -1448,7 +1451,7 @@ export default function ChallengeAttemptClient({
                   setSidebarTab("console");
                   runDebug();
                 }}
-                className="px-3 py-2 rounded-lg border border-border bg-surface hover:bg-elevated text-xs font-bold text-fg flex items-center gap-1.5 transition shadow-sm"
+                className="px-3 py-2 rounded-lg border border-border bg-surface hover:bg-elevated text-xs font-bold text-fg flex items-center gap-1.5 transition shadow-sm whitespace-nowrap shrink-0"
                 title="Execute index.ts script immediately and view logs"
               >
                 <Play className="w-3.5 h-3.5 text-emerald-500 fill-current" />
@@ -1463,7 +1466,7 @@ export default function ChallengeAttemptClient({
                   runTests();
                 }}
                 disabled={runningTests}
-                className="px-3 py-2 rounded-lg border border-border bg-surface hover:bg-elevated text-xs font-bold text-fg flex items-center gap-1.5 transition disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
+                className="px-3 py-2 rounded-lg border border-border bg-surface hover:bg-elevated text-xs font-bold text-fg flex items-center gap-1.5 transition disabled:opacity-50 disabled:cursor-not-allowed shadow-sm whitespace-nowrap shrink-0"
                 title="Run the full test suite against your code"
               >
                 <FlaskConical className="w-3.5 h-3.5 text-accent" />
@@ -1472,7 +1475,7 @@ export default function ChallengeAttemptClient({
             )}
 
             {isSubmittedDone ? (
-              <div className="px-4 py-2 rounded-lg bg-emerald-500/10 text-emerald-500 border border-emerald-500/30 text-xs font-bold flex items-center gap-1.5">
+              <div className="px-4 py-2 rounded-lg bg-emerald-500/10 text-emerald-500 border border-emerald-500/30 text-xs font-bold flex items-center gap-1.5 whitespace-nowrap shrink-0">
                 <CheckCircle2 className="w-3.5 h-3.5" />
                 Submitted
               </div>
@@ -1480,7 +1483,7 @@ export default function ChallengeAttemptClient({
               <button
                 onClick={isFrontend ? handleSubmitForReview : handleSubmit}
                 disabled={submitting}
-                className="px-4 py-2 rounded-lg bg-accent hover:bg-accent-soft text-bg text-xs font-bold flex items-center gap-1.5 transition disabled:opacity-50 disabled:cursor-not-allowed shadow-[0_0_16px_rgba(var(--accent-rgb),0.2)]"
+                className="px-4 py-2 rounded-lg bg-accent hover:bg-accent-soft text-bg text-xs font-bold flex items-center gap-1.5 transition disabled:opacity-50 disabled:cursor-not-allowed shadow-[0_0_16px_rgba(var(--accent-rgb),0.2)] whitespace-nowrap shrink-0"
                 title={
                   isFrontend
                     ? "Submit your work for manual review"

@@ -50,6 +50,38 @@ const KINDS: { key: KindKey; label: string }[] = [
   { key: "series", label: "Multi-step" },
 ];
 
+/** Multi-language harness languages — used to derive the Language filter from
+ *  each challenge's tags. */
+const LANGS = ["python", "javascript", "typescript", "go", "java", "cpp", "rust"] as const;
+const LANG_LABEL: Record<string, string> = {
+  python: "Python",
+  javascript: "JS",
+  typescript: "TS",
+  go: "Go",
+  java: "Java",
+  cpp: "C++",
+  rust: "Rust",
+};
+
+type TypeKey = "all" | "algorithms" | "jsts" | "ui";
+const TYPE_LABEL: Record<Exclude<TypeKey, "all">, string> = {
+  algorithms: "Algorithms",
+  jsts: "JS/TS",
+  ui: "UI",
+};
+
+/** Classify a challenge into a high-level type for the Type filter, from its
+ *  category + tags. UI takes precedence (a React/Vue/Angular component), then
+ *  Algorithms (DSA), else a JS/TS utility. */
+function challengeType(c: ChallengeListItem): Exclude<TypeKey, "all"> {
+  const tags = c.tags.map((t) => t.toLowerCase());
+  if (tags.includes("ui") || tags.includes("react") || tags.includes("vue") || tags.includes("angular")) {
+    return "ui";
+  }
+  if ((c.category ?? "").toLowerCase() === "dsa" || tags.includes("dsa")) return "algorithms";
+  return "jsts";
+}
+
 const difficultyChip: Record<string, string> = {
   easy: "text-emerald-500 bg-emerald-500/10 border-emerald-500/30",
   medium: "text-amber-500 bg-amber-500/10 border-amber-500/30",
@@ -66,6 +98,8 @@ export default function ChallengeList({
   const [query, setQuery] = useState("");
   const [difficulty, setDifficulty] = useState<DiffKey>("all");
   const [kind, setKind] = useState<KindKey>("all");
+  const [typeFilter, setTypeFilter] = useState<TypeKey>("all");
+  const [langFilter, setLangFilter] = useState<string>("all");
   const [hideSolved, setHideSolved] = useState(false);
   
   // Pagination & Layout states
@@ -86,12 +120,32 @@ export default function ChallengeList({
     localStorage.setItem("ipad.challenges.viewMode", mode);
   };
 
+  // Only surface Type/Language options that actually exist in the catalog, so
+  // the filters never show a choice that yields zero results.
+  const availableTypes = useMemo(() => {
+    const present = new Set(items.map(challengeType));
+    return (["algorithms", "jsts", "ui"] as const).filter((t) => present.has(t));
+  }, [items]);
+
+  const availableLangs = useMemo(() => {
+    const present = new Set<string>();
+    for (const c of items) {
+      for (const t of c.tags) {
+        const lt = t.toLowerCase();
+        if ((LANGS as readonly string[]).includes(lt)) present.add(lt);
+      }
+    }
+    return LANGS.filter((l) => present.has(l));
+  }, [items]);
+
   const visible = useMemo(() => {
     const q = query.trim().toLowerCase();
     return items.filter((c) => {
       if (difficulty !== "all" && c.difficulty !== difficulty) return false;
       if (kind === "single" && c.stepCount > 1) return false;
       if (kind === "series" && c.stepCount <= 1) return false;
+      if (typeFilter !== "all" && challengeType(c) !== typeFilter) return false;
+      if (langFilter !== "all" && !c.tags.some((t) => t.toLowerCase() === langFilter)) return false;
       if (hideSolved && c.userStatus === "passed") return false;
       if (!q) return true;
       return (
@@ -100,12 +154,12 @@ export default function ChallengeList({
         (c.category?.toLowerCase().includes(q) ?? false)
       );
     });
-  }, [items, query, difficulty, kind, hideSolved]);
+  }, [items, query, difficulty, kind, typeFilter, langFilter, hideSolved]);
 
   // Reset page limit whenever search parameters change to prevent getting stuck on empty pages
   useEffect(() => {
     setCurrentPage(1);
-  }, [query, difficulty, kind, hideSolved]);
+  }, [query, difficulty, kind, typeFilter, langFilter, hideSolved]);
 
   const displayed = useMemo(() => {
     const startIdx = (currentPage - 1) * itemsPerPage;
@@ -171,7 +225,29 @@ export default function ChallengeList({
               value={difficulty}
               onChange={setDifficulty}
             />
-            <Pillbar
+            {availableTypes.length > 1 && (
+              <FilterSelect
+                label="Type"
+                options={[
+                  { key: "all" as TypeKey, label: "All types" },
+                  ...availableTypes.map((t) => ({ key: t as TypeKey, label: TYPE_LABEL[t] })),
+                ]}
+                value={typeFilter}
+                onChange={setTypeFilter}
+              />
+            )}
+            {availableLangs.length > 1 && (
+              <FilterSelect
+                label="Language"
+                options={[
+                  { key: "all", label: "All languages" },
+                  ...availableLangs.map((l) => ({ key: l, label: LANG_LABEL[l] })),
+                ]}
+                value={langFilter}
+                onChange={setLangFilter}
+              />
+            )}
+            <FilterSelect
               label="Kind"
               options={KINDS}
               value={kind}
@@ -441,6 +517,45 @@ function ChallengeListRow({ item: c }: { item: ChallengeListItem }) {
         </div>
       </div>
     </Link>
+  );
+}
+
+/* ─── COMPACT DROPDOWN FILTER ─── */
+function FilterSelect<T extends string>({
+  label,
+  options,
+  value,
+  onChange,
+}: {
+  label: string;
+  options: { key: T; label: string }[];
+  value: T;
+  onChange: (next: T) => void;
+}) {
+  const active = value !== "all";
+  return (
+    <label
+      className={`inline-flex items-center gap-2 rounded-xl border pl-3 pr-2 py-2 cursor-pointer transition ${
+        active
+          ? "border-accent/40 bg-accent/10"
+          : "border-border dark:border-transparent bg-surface dark:bg-[#131625]"
+      }`}
+    >
+      <span className="text-[10px] font-black uppercase tracking-[0.15em] text-muted/60">
+        {label}
+      </span>
+      <select
+        value={value}
+        onChange={(e) => onChange(e.target.value as T)}
+        className="bg-transparent text-[12px] font-bold text-fg outline-none cursor-pointer"
+      >
+        {options.map((o) => (
+          <option key={o.key} value={o.key} className="bg-surface text-fg">
+            {o.label}
+          </option>
+        ))}
+      </select>
+    </label>
   );
 }
 

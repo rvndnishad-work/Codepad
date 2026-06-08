@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import dynamic from "next/dynamic";
 import { useTheme } from "next-themes";
 import { toast } from "sonner";
-import { Play, Send, CheckCircle2, XCircle, Loader2, EyeOff, Clock, LogOut } from "lucide-react";
+import { Play, Send, CheckCircle2, XCircle, Loader2, EyeOff, Clock, LogOut, FileCode, Terminal } from "lucide-react";
 import MarkdownRenderer from "@/components/MarkdownRenderer";
 import ThemeToggle from "@/components/ThemeToggle";
 
@@ -22,6 +22,10 @@ const MONACO_LANG: Record<string, string> = {
 const LANG_LABELS: Record<string, string> = {
   python: "Python", javascript: "JavaScript", typescript: "TypeScript",
   go: "Go", java: "Java", cpp: "C++", rust: "Rust",
+};
+const LANG_EXT: Record<string, string> = {
+  python: "py", javascript: "js", typescript: "ts",
+  go: "go", java: "java", cpp: "cpp", rust: "rs",
 };
 
 const DIFFICULTY_CHIP: Record<string, string> = {
@@ -239,22 +243,59 @@ export default function HarnessAttemptClient({
             </div>
           </div>
         )}
-
-        {result && <ResultsPanel result={result} />}
       </div>
 
-      {/* ── Right: editor (actions live in the top toolbar) ── */}
+      {/* ── Right: editor + output (actions live in the top toolbar) ── */}
       <div className="space-y-3 min-w-0">
-        <div className="rounded-2xl border border-border overflow-hidden bg-[#1e1e1e]" style={{ height: "70vh" }}>
-          <Editor
-            height="100%"
-            language={MONACO_LANG[language] ?? "plaintext"}
-            theme={resolvedTheme === "light" ? "light" : "vs-dark"}
-            value={code}
-            onChange={(v) => setCodeByLang((m) => ({ ...m, [language]: v ?? "" }))}
-            options={{ minimap: { enabled: false }, fontSize: 13, scrollBeyondLastLine: false, automaticLayout: true }}
-          />
+        <div
+          className="rounded-2xl border border-border overflow-hidden bg-[#1e1e1e] flex flex-col shadow-sm"
+          style={{ height: "58vh" }}
+        >
+          {/* Editor file header — gives the panel an IDE feel. */}
+          <div className="flex items-center gap-2 px-3 py-1.5 border-b border-black/40 bg-[#252526] text-[11px] font-mono text-muted/80 shrink-0">
+            <FileCode className="w-3.5 h-3.5 text-accent/70" />
+            solution.{LANG_EXT[language] ?? "txt"}
+          </div>
+          <div className="flex-1 min-h-0">
+            <Editor
+              height="100%"
+              language={MONACO_LANG[language] ?? "plaintext"}
+              theme={resolvedTheme === "light" ? "light" : "vs-dark"}
+              value={code}
+              onChange={(v) => setCodeByLang((m) => ({ ...m, [language]: v ?? "" }))}
+              options={{
+                minimap: { enabled: false },
+                fontSize: 13.5,
+                lineHeight: 21,
+                scrollBeyondLastLine: false,
+                automaticLayout: true,
+                padding: { top: 14, bottom: 14 },
+                renderLineHighlight: "all",
+                smoothScrolling: true,
+                cursorBlinking: "smooth",
+                fontLigatures: true,
+                fontFamily: "ui-monospace, 'SF Mono', 'Cascadia Code', 'Fira Code', 'JetBrains Mono', monospace",
+                roundedSelection: true,
+                scrollbar: { verticalScrollbarSize: 9, horizontalScrollbarSize: 9 },
+                tabSize: 2,
+              }}
+            />
+          </div>
         </div>
+
+        {/* Output / results — appears right under the editor on Run/Submit. */}
+        {result ? (
+          <ResultsPanel result={result} />
+        ) : (
+          <div className="rounded-2xl border border-dashed border-border bg-surface/50 px-4 py-7 text-center">
+            <div className="inline-flex items-center gap-1.5 text-[10px] font-black uppercase tracking-[0.18em] text-muted/50">
+              <Terminal className="w-3.5 h-3.5" /> Output
+            </div>
+            <p className="mt-1.5 text-xs text-muted/50 font-mono">
+              Run your code to see test results here.
+            </p>
+          </div>
+        )}
       </div>
     </div>
     </>

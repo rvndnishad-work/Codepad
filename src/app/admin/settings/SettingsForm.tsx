@@ -7,8 +7,14 @@ import {
   B2bSettingsConfig,
   updateInterviewArenaSettings,
   InterviewArenaSettings,
+  updateMaintenanceSettings,
 } from "@/lib/settings";
-import { NavLinkConfig, NavStatus } from "@/lib/settings-constants";
+import {
+  NavLinkConfig,
+  NavStatus,
+  isProtectedRoute,
+  type MaintenanceConfig,
+} from "@/lib/settings-constants";
 import {
   Eye,
   EyeOff,
@@ -30,27 +36,34 @@ import {
   Building2,
   UserCircle2,
   Globe,
+  Lock,
+  AlertTriangle,
+  Wrench,
+  Power,
 } from "lucide-react";
 
 export default function SettingsForm({
   initialLinks,
   initialB2bSettings,
   initialArenaSettings,
+  initialMaintenance,
 }: {
   initialLinks: NavLinkConfig[];
   initialB2bSettings: B2bSettingsConfig;
   initialArenaSettings: InterviewArenaSettings;
+  initialMaintenance: MaintenanceConfig;
 }) {
   const [links, setLinks] = useState(initialLinks);
   const [b2bSettings, setB2bSettings] = useState<B2bSettingsConfig>(initialB2bSettings);
   const [arenaSettings, setArenaSettings] = useState<InterviewArenaSettings>(initialArenaSettings);
+  const [maintenance, setMaintenance] = useState<MaintenanceConfig>(initialMaintenance);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
 
   // Tabbed recruiter state. (ATS integrations moved to per-workspace UI at
   // /w/[slug]/integrations — see IP-32. Multi-tenant SaaS: each recruiting team
   // owns their own ATS account, so there's no useful platform-global tier.)
-  const [activeTab, setActiveTab] = useState<"nav" | "billing" | "proctoring" | "arena">("nav");
+  const [activeTab, setActiveTab] = useState<"nav" | "billing" | "proctoring" | "arena" | "maintenance">("nav");
 
   // Advanced Proctoring Heuristics Slider (Mock/UI State)
   const [sensitivity, setSensitivity] = useState(75);
@@ -69,6 +82,7 @@ export default function SettingsForm({
         updateNavLinks(links),
         updateB2bSettings(b2bSettings),
         updateInterviewArenaSettings(arenaSettings),
+        updateMaintenanceSettings(maintenance),
       ]);
 
       setMessage({ type: "success", text: "Settings saved successfully!" });
@@ -146,6 +160,23 @@ export default function SettingsForm({
         >
           <Brain className="w-3.5 h-3.5" />
           Interview Arena
+        </button>
+        <button
+          type="button"
+          onClick={() => setActiveTab("maintenance")}
+          className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-xs font-black uppercase tracking-wider transition ${
+            activeTab === "maintenance"
+              ? "bg-accent text-bg shadow-sm"
+              : maintenance.enabled
+              ? "text-rose-400 hover:text-rose-300 hover:bg-elevated"
+              : "text-muted hover:text-fg hover:bg-elevated"
+          }`}
+        >
+          <Wrench className="w-3.5 h-3.5" />
+          Maintenance
+          {maintenance.enabled && (
+            <span className="ml-1 inline-block w-1.5 h-1.5 rounded-full bg-rose-500 animate-pulse" />
+          )}
         </button>
       </div>
 
@@ -508,6 +539,116 @@ export default function SettingsForm({
         </div>
       )}
 
+      {/* Tab 5: Site-wide Maintenance Mode */}
+      {activeTab === "maintenance" && (
+        <div className="rounded-2xl border border-border bg-surface p-6 animate-fade-in space-y-6">
+          <div>
+            <h3 className="text-xs font-black uppercase tracking-[0.2em] text-muted mb-1 flex items-center gap-2">
+              Site-Wide Maintenance
+            </h3>
+            <p className="text-xs text-muted leading-relaxed">
+              Take the entire public site offline temporarily. Visitors get a
+              branded &ldquo;we&rsquo;ll be back&rdquo; page (HTTP 503); you and
+              other admins keep full access so you can verify and switch it off.
+            </p>
+          </div>
+
+          {/* The toggle — deliberately heavy-weight because the blast radius is
+              the whole site. Red when armed. */}
+          <div
+            className={`p-5 rounded-xl border flex items-center justify-between gap-4 transition-colors ${
+              maintenance.enabled
+                ? "border-rose-500/40 bg-rose-500/5"
+                : "border-border bg-bg/50"
+            }`}
+          >
+            <div className="flex gap-3">
+              <div
+                className={`p-2 rounded-lg shrink-0 h-10 w-10 flex items-center justify-center ${
+                  maintenance.enabled
+                    ? "bg-rose-500/15 text-rose-400"
+                    : "bg-emerald-500/10 text-emerald-400"
+                }`}
+              >
+                <Power className="w-4 h-4" />
+              </div>
+              <div>
+                <label className="text-sm font-bold text-fg block">
+                  {maintenance.enabled
+                    ? "Maintenance mode is ON — site is offline"
+                    : "Maintenance mode is OFF — site is live"}
+                </label>
+                <span className="text-[11px] text-muted leading-relaxed block mt-0.5 max-w-md">
+                  {maintenance.enabled
+                    ? "Logged-out visitors and candidates currently see the maintenance page. Don't forget to turn this off."
+                    : "Flip this on during deploys or incidents. Auth, /login and /admin stay reachable so you can get back in."}
+                </span>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={() => {
+                if (!maintenance.enabled) {
+                  const ok = window.confirm(
+                    "Take the ENTIRE public site offline?\n\nEveryone except logged-in admins will see the maintenance page until you turn this back off."
+                  );
+                  if (!ok) return;
+                }
+                setMaintenance((prev) => ({ ...prev, enabled: !prev.enabled }));
+              }}
+              className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+                maintenance.enabled ? "bg-rose-500" : "bg-border"
+              }`}
+              aria-pressed={maintenance.enabled}
+            >
+              <span
+                className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-surface shadow ring-0 transition duration-200 ease-in-out ${
+                  maintenance.enabled ? "translate-x-5" : "translate-x-0"
+                }`}
+              />
+            </button>
+          </div>
+
+          {/* Optional message shown on the maintenance screen. */}
+          <div className="p-5 rounded-xl border border-border bg-bg/50 space-y-2">
+            <label className="text-sm font-bold text-fg block">
+              Visitor message <span className="text-muted font-normal">(optional)</span>
+            </label>
+            <span className="text-[11px] text-muted leading-relaxed block">
+              Shown on the maintenance page — e.g. an ETA. Leave blank for the default copy.
+            </span>
+            <textarea
+              value={maintenance.message}
+              onChange={(e) =>
+                setMaintenance((prev) => ({
+                  ...prev,
+                  message: e.target.value.slice(0, 280),
+                }))
+              }
+              maxLength={280}
+              rows={3}
+              placeholder="Back by 3:00 PM UTC — upgrading our servers. Thanks for your patience!"
+              className="w-full px-3 py-2 bg-bg border border-border rounded-xl text-sm text-fg focus:outline-none focus:border-accent transition resize-none"
+            />
+            <div className="text-[10px] text-muted/60 text-right font-mono">
+              {maintenance.message.length}/280
+            </div>
+          </div>
+
+          {maintenance.enabled && (
+            <div className="rounded-xl border border-rose-500/30 bg-rose-500/5 p-4 flex gap-3 items-start">
+              <AlertTriangle className="w-4 h-4 text-rose-400 shrink-0 mt-0.5" />
+              <p className="text-xs text-rose-300/90 leading-relaxed">
+                <strong>Armed.</strong> Click <em>Save Changes</em> to apply. Once
+                saved, the public site returns 503 for everyone except admins
+                within ~10 seconds. The home page can&rsquo;t opt out of this —
+                that&rsquo;s intentional for real downtime.
+              </p>
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Admin Override Warning */}
       <div className="rounded-2xl border border-border bg-amber-500/5 p-4 flex gap-4 items-start">
         <div className="w-8 h-8 rounded-lg bg-amber-500/10 flex items-center justify-center text-amber-500 shrink-0">
@@ -516,9 +657,12 @@ export default function SettingsForm({
         <div>
           <h4 className="text-sm font-bold text-fg">Admin Override</h4>
           <p className="text-xs text-muted mt-1 leading-relaxed">
-            Admins always see all links and can visit pages regardless of these settings. 
-            "Hidden" links are only removed for regular users. "Soon" links are visible but 
-            disabled for regular users.
+            Admins always see all links and can visit every page regardless of these
+            settings — so you can&apos;t see the effect of gating a page yourself.
+            For regular users, <strong>&ldquo;Hidden&rdquo;</strong> and{" "}
+            <strong>&ldquo;Soon&rdquo;</strong> links are removed from the nav and the
+            page redirects to a friendly &ldquo;coming soon&rdquo; screen (no longer a
+            broken-looking 404). The home page is always reachable and can&apos;t be gated.
           </p>
         </div>
       </div>
@@ -552,39 +696,83 @@ function NavLinkRow({
   link: NavLinkConfig;
   onStatusChange: (href: string, status: NavStatus) => void;
 }) {
+  const protectedRoute = isProtectedRoute(link.href);
+  // Top-level site-wide pages are the ones a logged-out visitor reaches by
+  // typing the domain or following a shared link — gating those has the widest
+  // blast radius, so we surface an explicit warning to the admin (who is
+  // exempt from the gate and otherwise can't see the effect).
+  const topLevel =
+    link.href.startsWith("/") &&
+    (link.group === "general" || !link.href.includes("/", 1));
+  const gated = link.status === "hidden" || link.status === "coming_soon";
+
   return (
-    <div className="flex flex-col md:flex-row md:items-center justify-between p-4 rounded-xl border border-border bg-bg/50 gap-4">
-      <div>
-        <div className="font-bold text-fg">{link.label}</div>
-        <div className="text-xs text-muted font-mono">{link.href}</div>
+    <div className="flex flex-col p-4 rounded-xl border border-border bg-bg/50 gap-3">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <div className="font-bold text-fg flex items-center gap-2">
+            {link.label}
+            {protectedRoute && (
+              <span className="inline-flex items-center gap-1 text-[9px] font-black uppercase tracking-wider text-muted/70 bg-elevated border border-border px-1.5 py-0.5 rounded">
+                <Lock className="w-2.5 h-2.5" />
+                Always on
+              </span>
+            )}
+          </div>
+          <div className="text-xs text-muted font-mono">{link.href}</div>
+        </div>
+
+        <div className="flex items-center gap-2">
+          <StatusButton
+            active={link.status === "visible"}
+            onClick={() => onStatusChange(link.href, "visible")}
+            icon={Eye}
+            label="Visible"
+            color="text-emerald-500"
+            bg="bg-emerald-500/10"
+          />
+          <StatusButton
+            active={link.status === "coming_soon"}
+            onClick={() => onStatusChange(link.href, "coming_soon")}
+            icon={Clock}
+            label="Soon"
+            color="text-amber-500"
+            bg="bg-amber-500/10"
+            disabled={protectedRoute}
+            disabledHint="The home page can't be gated."
+          />
+          <StatusButton
+            active={link.status === "hidden"}
+            onClick={() => onStatusChange(link.href, "hidden")}
+            icon={EyeOff}
+            label="Hidden"
+            color="text-rose-500"
+            bg="bg-rose-500/10"
+            disabled={protectedRoute}
+            disabledHint="The home page can't be gated."
+          />
+        </div>
       </div>
 
-      <div className="flex items-center gap-2">
-        <StatusButton
-          active={link.status === "visible"}
-          onClick={() => onStatusChange(link.href, "visible")}
-          icon={Eye}
-          label="Visible"
-          color="text-emerald-500"
-          bg="bg-emerald-500/10"
-        />
-        <StatusButton
-          active={link.status === "coming_soon"}
-          onClick={() => onStatusChange(link.href, "coming_soon")}
-          icon={Clock}
-          label="Soon"
-          color="text-amber-500"
-          bg="bg-amber-500/10"
-        />
-        <StatusButton
-          active={link.status === "hidden"}
-          onClick={() => onStatusChange(link.href, "hidden")}
-          icon={EyeOff}
-          label="Hidden"
-          color="text-rose-500"
-          bg="bg-rose-500/10"
-        />
-      </div>
+      {protectedRoute ? (
+        <div className="flex items-start gap-2 text-[11px] text-muted/80 leading-relaxed">
+          <Lock className="w-3.5 h-3.5 shrink-0 mt-0.5 text-muted/60" />
+          <span>
+            This is your public front door, so it can&apos;t be hidden or gated —
+            doing so would lock out every logged-out visitor.
+          </span>
+        </div>
+      ) : gated && topLevel ? (
+        <div className="flex items-start gap-2 text-[11px] text-amber-500/90 leading-relaxed rounded-lg bg-amber-500/5 border border-amber-500/20 px-3 py-2">
+          <AlertTriangle className="w-3.5 h-3.5 shrink-0 mt-0.5" />
+          <span>
+            Heads up: logged-out visitors (and anyone you share this link with)
+            can&apos;t open this page — they&apos;ll be redirected to the
+            &ldquo;coming soon&rdquo; screen. You won&apos;t see this yourself
+            because admins bypass the gate.
+          </span>
+        </div>
+      ) : null}
     </div>
   );
 }
@@ -596,6 +784,8 @@ function StatusButton({
   label,
   color,
   bg,
+  disabled = false,
+  disabledHint,
 }: {
   active: boolean;
   onClick: () => void;
@@ -603,12 +793,19 @@ function StatusButton({
   label: string;
   color: string;
   bg: string;
+  disabled?: boolean;
+  disabledHint?: string;
 }) {
   return (
     <button
-      onClick={onClick}
+      type="button"
+      onClick={disabled ? undefined : onClick}
+      disabled={disabled}
+      title={disabled ? disabledHint : undefined}
       className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wider transition-all border ${
-        active
+        disabled
+          ? "text-muted/20 border-transparent cursor-not-allowed"
+          : active
           ? `${color} ${bg} border-current shadow-sm`
           : "text-muted/40 border-transparent hover:text-muted hover:bg-elevated"
       }`}

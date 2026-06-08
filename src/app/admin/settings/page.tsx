@@ -1,4 +1,9 @@
-import { getNavLinks, getB2bSettings, getInterviewArenaSettings } from "@/lib/settings";
+import {
+  getNavLinks,
+  getB2bSettings,
+  getInterviewArenaSettings,
+  getMaintenanceSettings,
+} from "@/lib/settings";
 import SettingsForm from "./SettingsForm";
 
 export const metadata = {
@@ -6,10 +11,11 @@ export const metadata = {
 };
 
 export default async function SettingsPage() {
-  const [links, b2bSettings, arenaSettings] = await Promise.all([
+  const [links, b2bSettings, arenaSettings, maintenance] = await Promise.all([
     getNavLinks(),
     getB2bSettings(),
     getInterviewArenaSettings(),
+    getMaintenanceSettings(),
   ]);
 
   return (
@@ -23,6 +29,7 @@ export default async function SettingsPage() {
         initialLinks={links}
         initialB2bSettings={b2bSettings}
         initialArenaSettings={arenaSettings}
+        initialMaintenance={maintenance}
       />
     </div>
   );

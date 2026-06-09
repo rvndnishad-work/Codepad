@@ -1,11 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import dynamic from "next/dynamic";
 import { useTheme } from "next-themes";
 import { toast } from "sonner";
-import { Play, Send, CheckCircle2, XCircle, Loader2, EyeOff } from "lucide-react";
+import { Play, Send, CheckCircle2, XCircle, Loader2, EyeOff, Clock, LogOut, FileCode, Terminal } from "lucide-react";
 import MarkdownRenderer from "@/components/MarkdownRenderer";
+import ThemeToggle from "@/components/ThemeToggle";
 
 const Editor = dynamic(() => import("@monaco-editor/react"), { ssr: false });
 
@@ -22,6 +23,22 @@ const LANG_LABELS: Record<string, string> = {
   python: "Python", javascript: "JavaScript", typescript: "TypeScript",
   go: "Go", java: "Java", cpp: "C++", rust: "Rust",
 };
+const LANG_EXT: Record<string, string> = {
+  python: "py", javascript: "js", typescript: "ts",
+  go: "go", java: "java", cpp: "cpp", rust: "rs",
+};
+
+const DIFFICULTY_CHIP: Record<string, string> = {
+  easy: "text-emerald-500 bg-emerald-500/10 border-emerald-500/30",
+  medium: "text-amber-500 bg-amber-500/10 border-amber-500/30",
+  hard: "text-rose-500 bg-rose-500/10 border-rose-500/30",
+};
+
+function formatDuration(total: number): string {
+  const m = Math.floor(total / 60);
+  const s = total % 60;
+  return `${m}:${String(s).padStart(2, "0")}`;
+}
 
 type Signature = { params: { name: string; type: string }[]; returnType: string };
 type PublicCase = { name: string; argsJson: string; expectedJson: string };
@@ -85,6 +102,18 @@ export default function HarnessAttemptClient({
   const [submitting, setSubmitting] = useState(false);
   const [result, setResult] = useState<GradeResponse | null>(null);
 
+  // Elapsed-time clock for the toolbar.
+  const [elapsedSec, setElapsedSec] = useState(0);
+  useEffect(() => {
+    const t = setInterval(() => setElapsedSec((s) => s + 1), 1000);
+    return () => clearInterval(t);
+  }, []);
+
+  function handleExit() {
+    if (sessionId) window.location.href = `/interview/${sessionId}`;
+    else window.location.href = `/challenges/${slug}`;
+  }
+
   const code = codeByLang[language] ?? "";
   const signatureStr = `${functionName}(${signature.params.map((p) => `${p.name}: ${p.type}`).join(", ")}) → ${signature.returnType}`;
 
@@ -117,7 +146,73 @@ export default function HarnessAttemptClient({
   }
 
   return (
-    <div className="mx-auto max-w-6xl px-4 py-6 grid grid-cols-1 lg:grid-cols-2 gap-4">
+    <>
+      {/* Top toolbar — consistent with the unit-js / frontend attempt surface. */}
+      <div className="sticky top-0 z-30 border-b border-border bg-bg/95 backdrop-blur supports-[backdrop-filter]:bg-bg/80">
+        <div className="mx-auto max-w-6xl px-4 py-2.5 flex items-center gap-3">
+          <button
+            type="button"
+            onClick={handleExit}
+            title="Exit the assessment"
+            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-rose-500/30 bg-rose-500/5 hover:bg-rose-500/10 text-rose-500 hover:text-rose-400 text-xs font-bold transition shrink-0"
+          >
+            <LogOut className="w-3.5 h-3.5" />
+            <span className="hidden sm:inline">Exit</span>
+          </button>
+
+          <div className="min-w-0 flex items-center gap-2">
+            <h2 className="font-black text-sm truncate">{title}</h2>
+            <span
+              className={`shrink-0 text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded border ${
+                DIFFICULTY_CHIP[difficulty] ?? DIFFICULTY_CHIP.easy
+              }`}
+            >
+              {difficulty}
+            </span>
+          </div>
+
+          <div className="ml-auto flex items-center gap-2.5 shrink-0">
+            <div
+              className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-border bg-bg text-muted font-mono tabular-nums text-sm"
+              title="Elapsed time"
+            >
+              <Clock className="w-3.5 h-3.5 shrink-0" />
+              <span>{formatDuration(elapsedSec)}</span>
+            </div>
+
+            <select
+              value={language}
+              onChange={(e) => setLanguage(e.target.value)}
+              className="bg-surface border border-border rounded-lg px-3 py-1.5 text-sm font-bold focus:outline-none focus:border-accent shrink-0"
+            >
+              {languages.map((l) => (
+                <option key={l} value={l}>{LANG_LABELS[l] ?? l}</option>
+              ))}
+            </select>
+
+            <ThemeToggle />
+
+            <button
+              onClick={() => run(true)}
+              disabled={running || submitting}
+              className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border border-border bg-surface text-fg text-xs font-bold hover:border-border-strong transition disabled:opacity-50 whitespace-nowrap shrink-0"
+            >
+              {running ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Play className="w-3.5 h-3.5 text-emerald-500 fill-current" />}
+              Run
+            </button>
+            <button
+              onClick={() => run(false)}
+              disabled={running || submitting}
+              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-accent text-bg text-xs font-bold hover:bg-accent-soft transition disabled:opacity-50 whitespace-nowrap shrink-0 shadow-[0_0_16px_rgba(var(--accent-rgb),0.2)]"
+            >
+              {submitting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Send className="w-3.5 h-3.5" />}
+              Submit
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div className="mx-auto max-w-6xl px-4 py-6 grid grid-cols-1 lg:grid-cols-2 gap-4">
       {/* ── Left: prompt + samples + results ── */}
       <div className="space-y-4 min-w-0">
         <div className="rounded-2xl border border-border bg-surface p-5">
@@ -148,52 +243,62 @@ export default function HarnessAttemptClient({
             </div>
           </div>
         )}
-
-        {result && <ResultsPanel result={result} />}
       </div>
 
-      {/* ── Right: editor + actions ── */}
+      {/* ── Right: editor + output (actions live in the top toolbar) ── */}
       <div className="space-y-3 min-w-0">
-        <div className="flex items-center gap-2 flex-wrap">
-          <select
-            value={language}
-            onChange={(e) => setLanguage(e.target.value)}
-            className="bg-surface border border-border rounded-lg px-3 py-1.5 text-sm font-bold focus:outline-none focus:border-accent"
-          >
-            {languages.map((l) => <option key={l} value={l}>{LANG_LABELS[l] ?? l}</option>)}
-          </select>
-          <div className="ml-auto flex items-center gap-2">
-            <button
-              onClick={() => run(true)}
-              disabled={running || submitting}
-              className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-lg border border-border bg-surface text-fg text-xs font-bold hover:border-border-strong transition disabled:opacity-50"
-            >
-              {running ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Play className="w-3.5 h-3.5" />}
-              Run
-            </button>
-            <button
-              onClick={() => run(false)}
-              disabled={running || submitting}
-              className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-lg bg-accent text-bg text-xs font-bold hover:bg-accent-soft transition disabled:opacity-50"
-            >
-              {submitting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Send className="w-3.5 h-3.5" />}
-              Submit
-            </button>
+        <div
+          className="rounded-2xl border border-border overflow-hidden bg-[#1e1e1e] flex flex-col shadow-sm"
+          style={{ height: "58vh" }}
+        >
+          {/* Editor file header — gives the panel an IDE feel. */}
+          <div className="flex items-center gap-2 px-3 py-1.5 border-b border-black/40 bg-[#252526] text-[11px] font-mono text-muted/80 shrink-0">
+            <FileCode className="w-3.5 h-3.5 text-accent/70" />
+            solution.{LANG_EXT[language] ?? "txt"}
+          </div>
+          <div className="flex-1 min-h-0">
+            <Editor
+              height="100%"
+              language={MONACO_LANG[language] ?? "plaintext"}
+              theme={resolvedTheme === "light" ? "light" : "vs-dark"}
+              value={code}
+              onChange={(v) => setCodeByLang((m) => ({ ...m, [language]: v ?? "" }))}
+              options={{
+                minimap: { enabled: false },
+                fontSize: 13.5,
+                lineHeight: 21,
+                scrollBeyondLastLine: false,
+                automaticLayout: true,
+                padding: { top: 14, bottom: 14 },
+                renderLineHighlight: "all",
+                smoothScrolling: true,
+                cursorBlinking: "smooth",
+                fontLigatures: true,
+                fontFamily: "ui-monospace, 'SF Mono', 'Cascadia Code', 'Fira Code', 'JetBrains Mono', monospace",
+                roundedSelection: true,
+                scrollbar: { verticalScrollbarSize: 9, horizontalScrollbarSize: 9 },
+                tabSize: 2,
+              }}
+            />
           </div>
         </div>
 
-        <div className="rounded-2xl border border-border overflow-hidden bg-[#1e1e1e]" style={{ height: "70vh" }}>
-          <Editor
-            height="100%"
-            language={MONACO_LANG[language] ?? "plaintext"}
-            theme={resolvedTheme === "light" ? "light" : "vs-dark"}
-            value={code}
-            onChange={(v) => setCodeByLang((m) => ({ ...m, [language]: v ?? "" }))}
-            options={{ minimap: { enabled: false }, fontSize: 13, scrollBeyondLastLine: false, automaticLayout: true }}
-          />
-        </div>
+        {/* Output / results — appears right under the editor on Run/Submit. */}
+        {result ? (
+          <ResultsPanel result={result} />
+        ) : (
+          <div className="rounded-2xl border border-dashed border-border bg-surface/50 px-4 py-7 text-center">
+            <div className="inline-flex items-center gap-1.5 text-[10px] font-black uppercase tracking-[0.18em] text-muted/50">
+              <Terminal className="w-3.5 h-3.5" /> Output
+            </div>
+            <p className="mt-1.5 text-xs text-muted/50 font-mono">
+              Run your code to see test results here.
+            </p>
+          </div>
+        )}
       </div>
     </div>
+    </>
   );
 }
 

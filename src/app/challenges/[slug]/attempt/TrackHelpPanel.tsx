@@ -16,7 +16,9 @@ import type { VideoEmbed } from "@/lib/video";
 export type TrackHelpContext = {
   trackSlug: string;
   trackTitle: string;
-  positionLabel: string; // e.g. "Step 2 of 3"
+  /** e.g. "Step 2 of 3" — only set for multi-step series. Null hides the
+   *  track breadcrumb row entirely (single-step challenges). */
+  positionLabel: string | null;
   authorNote: string | null;
   hint: string | null;
   video: VideoEmbed | null;
@@ -45,20 +47,22 @@ export default function TrackHelpPanel({ context }: { context: TrackHelpContext 
 
   return (
     <div className="rounded-2xl border border-accent/30 bg-accent/5 p-4 mb-4">
-      {/* Breadcrumb to the parent track */}
-      <div className="flex items-center justify-between gap-3 flex-wrap">
-        <Link
-          href={`/tracks/${context.trackSlug}`}
-          className="inline-flex items-center gap-2 text-xs font-bold text-accent hover:underline"
-        >
-          <ArrowLeft className="w-3.5 h-3.5" />
-          <span className="truncate max-w-[260px]">{context.trackTitle}</span>
-        </Link>
-        <span className="inline-flex items-center gap-1.5 text-[10px] font-black uppercase tracking-[0.18em] text-accent/70 bg-accent/10 px-2 py-0.5 rounded-full border border-accent/20">
-          <Sparkles className="w-3 h-3" />
-          {context.positionLabel}
-        </span>
-      </div>
+      {/* Breadcrumb to the parent series — multi-step challenges only. */}
+      {context.positionLabel && (
+        <div className="flex items-center justify-between gap-3 flex-wrap">
+          <Link
+            href={`/challenges/${context.trackSlug}`}
+            className="inline-flex items-center gap-2 text-xs font-bold text-accent hover:underline"
+          >
+            <ArrowLeft className="w-3.5 h-3.5" />
+            <span className="truncate max-w-[260px]">{context.trackTitle}</span>
+          </Link>
+          <span className="inline-flex items-center gap-1.5 text-[10px] font-black uppercase tracking-[0.18em] text-accent/70 bg-accent/10 px-2 py-0.5 rounded-full border border-accent/20">
+            <Sparkles className="w-3 h-3" />
+            {context.positionLabel}
+          </span>
+        </div>
+      )}
 
       {hasNote && (
         <p className="text-xs md:text-sm text-fg/80 italic mt-3 leading-relaxed border-l-2 border-accent/30 pl-3">

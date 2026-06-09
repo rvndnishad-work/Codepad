@@ -234,25 +234,25 @@ export default async function ChallengeAttemptPage({
       })()
     : null;
 
-  // ── Help panel: hint/video for the active step ────────────────────────
-  // Surfaces per-step hint + video for both single-step and multi-step
-  // challenges. Replaces the older track-context lookup — author content
-  // now lives on the step itself.
-  const stepHasHelp = !!(activeStep.hint || activeStep.videoUrl || activeStep.title);
+  const isMulti = steps.length > 1;
+
+  // ── Help panel: only when there's genuinely useful content ─────────────
+  // Show it for an author hint/video, or — on MULTI-step series — the per-step
+  // note + "Step X of Y" position. A single-step challenge's step title just
+  // duplicates the challenge title, so we never render a "Step 1 of 1" panel
+  // (that was redundant chrome cluttering the header on every standalone
+  // challenge).
+  const stepHasHelp = !!(activeStep.hint || activeStep.videoUrl || (isMulti && activeStep.title));
   const helpContext: TrackHelpContext | null = stepHasHelp
     ? {
-        // Reusing the existing TrackHelpPanel verbatim — the field names are
-        // generic enough that a "Challenge: Step 2 of 3" label fits cleanly.
         trackSlug: challenge.slug,
         trackTitle: challenge.title,
-        positionLabel: `Step ${stepIndex + 1} of ${steps.length}`,
-        authorNote: activeStep.title ?? null,
+        positionLabel: isMulti ? `Step ${stepIndex + 1} of ${steps.length}` : null,
+        authorNote: isMulti ? (activeStep.title ?? null) : null,
         hint: activeStep.hint,
         video: parseVideoUrl(activeStep.videoUrl),
       }
     : null;
-
-  const isMulti = steps.length > 1;
   
   // Preserve essential query parameters for peers navigating between steps
   const queryParams = new URLSearchParams();

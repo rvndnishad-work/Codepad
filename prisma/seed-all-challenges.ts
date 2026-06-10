@@ -20,8 +20,11 @@ const SCRIPTS = [
   "prisma/seed-interview-prep.ts", // base DSA (8 easy + 2 medium)
   "prisma/seed-dsa-hard.ts", //       12 hard DSA
   "prisma/seed-dsa-medium.ts", //     12 medium DSA
+  "prisma/seed-dsa-extra.ts", //      16 extra DSA (bringing total to 50+)
   "prisma/seed-frontend-utils.ts", // 26 JS/TS utilities
+  "prisma/seed-frontend-utils-extra.ts", // 24 extra JS/TS utilities (bringing total to 50+)
   "prisma/seed-frontend-ui.ts", //    22 UI / design
+  "prisma/seed-frontend-ui-extra.ts", // 28 extra UI / design (bringing total to 50+)
 ];
 
 function targetDb(): string {

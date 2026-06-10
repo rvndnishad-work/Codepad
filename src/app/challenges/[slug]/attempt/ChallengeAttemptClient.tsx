@@ -59,8 +59,11 @@ import {
   ChevronDown,
   Rows2,
   Columns2,
+  Sparkles,
+  Lock,
+  Loader2,
 } from "lucide-react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { toast } from "sonner";
 import ChallengeDescription from "../../ChallengeDescription";
 import SessionTimer from "@/components/SessionTimer";
@@ -350,7 +353,7 @@ export default function ChallengeAttemptClient({
   }, [outputSplit]);
   // Console width for the side-by-side split (the console sits right of its
   // handle, so its drag is inverted).
-  const { width: consoleW, onPointerDown: onConsoleWDrag, setWidth: setConsoleW } = useResizable(360, 220, 1200, true);
+  const { width: consoleW, onPointerDown: onConsoleWDrag, setWidth: setConsoleW } = useResizable(360, 160, 1200, true);
   // Default the splits to code↔output = 50/50 and preview↔console = 70/30, and
   // keep that ratio as the layout settles / the window resizes — until the user
   // drags a handle, which locks in their chosen sizes (userResizedRef).
@@ -370,7 +373,7 @@ export default function ChallengeAttemptClient({
       // Console = 30% of the output area below its header (~40px) + handle (~6px).
       if (outH > 0) setConsoleH(Math.max(80, Math.round((outH - 46) * 0.3)));
       // Side-by-side split: console = 40% of the output pane width.
-      if (outW > 0) setConsoleW(Math.max(220, Math.round((outW - 6) * 0.4)));
+      if (outW > 0) setConsoleW(Math.max(160, Math.round((outW - 6) * 0.4)));
     };
     recompute();
     const ro = new ResizeObserver(recompute);
@@ -540,8 +543,46 @@ export default function ChallengeAttemptClient({
     }
   }, [testRun, sessionId, challenge.slug]);
 
+  const searchParams = useSearchParams();
   const [submitting, setSubmitting] = useState(false);
   const [submittedStatus, setSubmittedStatus] = useState<"passed" | "failed" | "submitted" | null>(null);
+
+  // Reference Solution States
+  const [solutionModalOpen, setSolutionModalOpen] = useState(false);
+  const [solutionLoading, setSolutionLoading] = useState(false);
+  const [solutionData, setSolutionData] = useState<Record<string, string> | null>(null);
+  const [solutionError, setSolutionError] = useState<string | null>(null);
+  const [isPremiumUser, setIsPremiumUser] = useState(false);
+  const [activeSolutionFile, setActiveSolutionFile] = useState<string>("");
+
+  const handleViewSolution = useCallback(async () => {
+    setSolutionModalOpen(true);
+    setSolutionLoading(true);
+    setSolutionError(null);
+    try {
+      const stepIndex = searchParams.get("step") || "0";
+      const res = await fetch(`/api/challenges/${challenge.slug}/solution?step=${stepIndex}`);
+      if (res.status === 403) {
+        setIsPremiumUser(false);
+        setSolutionData(null);
+      } else if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        setSolutionError(errData.error || "Failed to load reference solution");
+      } else {
+        const data = await res.json();
+        setIsPremiumUser(true);
+        setSolutionData(data.solutions || {});
+        const files = Object.keys(data.solutions || {});
+        if (files.length > 0) {
+          setActiveSolutionFile(files[0]);
+        }
+      }
+    } catch (err) {
+      setSolutionError("A network error occurred while loading the solution.");
+    } finally {
+      setSolutionLoading(false);
+    }
+  }, [challenge.slug, searchParams]);
 
   // Tabbed sidebar state (Console or Tests)
   const [sidebarTab, setSidebarTab] = useState<"console" | "tests">(() => {
@@ -1450,6 +1491,15 @@ export default function ChallengeAttemptClient({
             )}
             <ThemeToggle />
 
+            <button
+              onClick={handleViewSolution}
+              className="px-3 py-2 rounded-lg border border-border bg-surface hover:bg-elevated text-xs font-bold text-fg flex items-center gap-1.5 transition shadow-sm whitespace-nowrap shrink-0"
+              title="View reference solution"
+            >
+              <Sparkles className="w-3.5 h-3.5 text-amber-500" />
+              View Solution
+            </button>
+
             {!isFrontend && testRun && (
               <div
                 className={`px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 ${
@@ -1925,6 +1975,105 @@ export default function ChallengeAttemptClient({
                   <LogOut className="w-4 h-4" />
                   Exit
                 </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Reference Solution Modal */}
+        {solutionModalOpen && (
+          <div
+            className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in"
+            onClick={(e) => {
+              if (e.target === e.currentTarget) setSolutionModalOpen(false);
+            }}
+          >
+            <div className="w-full max-w-2xl rounded-2xl border border-border bg-surface shadow-2xl overflow-hidden animate-scale-in">
+              {/* Header */}
+              <div className="px-6 py-4 border-b border-border flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Sparkles className="w-5 h-5 text-amber-500 animate-pulse" />
+                  <h2 className="text-base font-black text-fg font-sans">Reference Solution</h2>
+                </div>
+                <button
+                  onClick={() => setSolutionModalOpen(false)}
+                  className="text-xs text-muted hover:text-fg font-bold"
+                >
+                  ✕ Close
+                </button>
+              </div>
+
+              {/* Content */}
+              <div className="p-6">
+                {solutionLoading ? (
+                  <div className="flex flex-col items-center justify-center py-12 gap-3">
+                    <Loader2 className="w-8 h-8 text-accent animate-spin" />
+                    <span className="text-xs text-muted font-bold">Retrieving solution...</span>
+                  </div>
+                ) : solutionError ? (
+                  <div className="text-center py-8 text-rose-500 font-semibold">{solutionError}</div>
+                ) : !isPremiumUser ? (
+                  <div className="text-center py-6 space-y-4 max-w-md mx-auto">
+                    <div className="w-12 h-12 mx-auto rounded-2xl bg-amber-500/10 border border-amber-500/25 flex items-center justify-center text-amber-500">
+                      <Lock className="w-6 h-6" />
+                    </div>
+                    <h3 className="text-base font-black text-fg font-sans">Unlock Reference Solutions</h3>
+                    <p className="text-xs text-muted leading-relaxed">
+                      Reference solution blueprints are a paid workspace feature. Upgrade your plan to unlock full source code examples, architectural patterns, and verified guidelines for all exercises.
+                    </p>
+                    <div className="flex gap-3 pt-2">
+                      <button
+                        onClick={() => setSolutionModalOpen(false)}
+                        className="flex-1 px-4 py-2 rounded-lg border border-border bg-panel text-xs font-bold text-muted hover:text-fg transition"
+                      >
+                        Maybe later
+                      </button>
+                      <a
+                        href="/pricing"
+                        target="_blank"
+                        rel="noreferrer"
+                        className="flex-1 px-4 py-2 rounded-lg bg-accent text-bg text-xs font-black uppercase tracking-wider text-center transition hover:brightness-110"
+                      >
+                        Upgrade Plan
+                      </a>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {/* File selector tabs */}
+                    {solutionData && Object.keys(solutionData).length > 0 ? (
+                      <>
+                        <div className="flex gap-2 border-b border-border pb-2 overflow-x-auto">
+                          {Object.keys(solutionData).map((file) => (
+                            <button
+                              key={file}
+                              onClick={() => setActiveSolutionFile(file)}
+                              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition border ${
+                                activeSolutionFile === file
+                                  ? "bg-accent text-bg border-accent"
+                                  : "bg-surface text-muted border-border hover:text-fg"
+                              }`}
+                            >
+                              {file}
+                            </button>
+                          ))}
+                        </div>
+                        <div className="relative">
+                          <pre className="font-mono text-[11px] leading-relaxed p-4 bg-panel border border-border rounded-xl text-fg h-[360px] overflow-auto select-all">
+                            <code>{solutionData[activeSolutionFile]}</code>
+                          </pre>
+                          <span className="absolute bottom-2 right-2 text-[9px] text-muted bg-surface border border-border px-2 py-1 rounded">
+                            Double click to copy code
+                          </span>
+                        </div>
+                      </>
+                    ) : (
+                      <div className="text-center py-12 text-muted text-xs font-bold">
+                        No solution code available for this step.
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
             </div>
           </div>

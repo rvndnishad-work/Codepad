@@ -566,6 +566,7 @@ export default function InterviewBuilder({
                     value={candidateEmail}
                     onChange={(e) => setCandidateEmail(e.target.value)}
                     placeholder="e.g. alexis@company.com"
+                    suppressHydrationWarning={true}
                     className="w-full px-3.5 py-2.5 rounded-xl bg-panel border border-border focus:border-accent/50 focus:bg-panel text-xs text-fg placeholder:text-muted/60 dark:placeholder:text-muted/50 outline-none transition-all shadow-inner group-hover:border-border-strong"
                   />
                   <div className="absolute bottom-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-accent/30 to-transparent scale-x-0 group-focus-within:scale-x-100 transition-all duration-300" />

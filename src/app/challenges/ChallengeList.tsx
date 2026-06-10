@@ -8,7 +8,6 @@ import {
   Clock,
   CheckCircle2,
   XCircle,
-  Circle,
   Flame,
   Layers,
   Star,
@@ -591,77 +590,139 @@ function CategoryTab({
   );
 }
 
+/* ─── PER-TYPE CARD IDENTITY ───
+   Same sky/violet/amber identity as the catalog tabs & detail page, so a
+   card's type is recognisable before reading a word. */
+const KIND_CARD: Record<
+  Exclude<CategoryKey, "all">,
+  { label: string; icon: LucideIcon; iconBox: string; eyebrow: string; hoverBorder: string; glow: string }
+> = {
+  algorithms: {
+    label: "Algorithm",
+    icon: Binary,
+    iconBox: "bg-sky-500/10 border-sky-500/25 text-sky-500",
+    eyebrow: "text-sky-500",
+    hoverBorder: "hover:border-sky-500/40 dark:hover:border-sky-500/30",
+    glow: "bg-sky-500/10",
+  },
+  ui: {
+    label: "UI · Frontend",
+    icon: LayoutTemplate,
+    iconBox: "bg-violet-500/10 border-violet-500/25 text-violet-500",
+    eyebrow: "text-violet-500",
+    hoverBorder: "hover:border-violet-500/40 dark:hover:border-violet-500/30",
+    glow: "bg-violet-500/10",
+  },
+  js: {
+    label: "JavaScript",
+    icon: Braces,
+    iconBox: "bg-amber-500/10 border-amber-500/25 text-amber-500",
+    eyebrow: "text-amber-500",
+    hoverBorder: "hover:border-amber-500/40 dark:hover:border-amber-500/30",
+    glow: "bg-amber-500/10",
+  },
+};
+
+/** Labeled status pill — a solved challenge should be obvious from across
+ *  the room, not a 16px icon. Untouched challenges get no pill at all so
+ *  the unsolved ones read as the "to do" list. */
+function StatusBadge({ status }: { status: ChallengeListItem["userStatus"] }) {
+  if (status === "passed") {
+    return (
+      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-500/15 border border-emerald-500/40 text-[9px] font-black uppercase tracking-wider text-emerald-500 shrink-0">
+        <CheckCircle2 className="w-3 h-3" />
+        Solved
+      </span>
+    );
+  }
+  if (status === "in_progress") {
+    return (
+      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-500/15 border border-amber-500/40 text-[9px] font-black uppercase tracking-wider text-amber-500 shrink-0">
+        <Flame className="w-3 h-3" />
+        In progress
+      </span>
+    );
+  }
+  if (status === "failed") {
+    return (
+      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-rose-500/10 border border-rose-500/30 text-[9px] font-black uppercase tracking-wider text-rose-500/80 shrink-0">
+        <XCircle className="w-3 h-3" />
+        Attempted
+      </span>
+    );
+  }
+  return null;
+}
+
 /* ─── GRID CARD COMPONENT ─── */
 function ChallengeCard({ item: c }: { item: ChallengeListItem }) {
   const isMulti = c.stepCount > 1;
+  const isPassed = c.userStatus === "passed";
+  const t = KIND_CARD[challengeCategory(c)];
+  const Icon = t.icon;
   return (
     <Link
       href={`/challenges/${c.slug}`}
-      className={`group relative flex flex-col h-full rounded-2xl border p-5 transition-all duration-300 bg-surface dark:bg-[#131625] hover:bg-elevated hover:dark:bg-[#1b1f32] ${
-        c.featured
-          ? "border-accent/40 hover:border-accent/60 dark:border-accent/20 dark:hover:border-accent/40"
-          : "border-border dark:border-transparent hover:border-border-strong"
+      className={`group relative flex flex-col h-full rounded-2xl border p-5 overflow-hidden transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg ${
+        isPassed
+          ? "bg-emerald-500/[0.04] dark:bg-emerald-500/[0.06] border-emerald-500/40 dark:border-emerald-500/25 hover:border-emerald-500/60"
+          : c.featured
+            ? "bg-surface dark:bg-[#131625] border-accent/40 hover:border-accent/60 dark:border-accent/20 dark:hover:border-accent/40"
+            : `bg-surface dark:bg-[#131625] border-border dark:border-transparent ${t.hoverBorder}`
       }`}
     >
-      {c.featured && (
-        <span
-          className="absolute top-3 right-3 inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-accent/15 border border-accent/30 text-[9px] font-black uppercase tracking-wider text-accent"
-          aria-label="Staff pick"
-        >
-          <Star className="w-2.5 h-2.5 fill-current" />
-          Staff pick
-        </span>
-      )}
-      <div className="flex items-start justify-between gap-3 mb-3">
-        <div className="flex items-center gap-2 min-w-0">
-          {/* Status icon */}
-          {c.userStatus === "passed" ? (
-            <CheckCircle2 className="w-5 h-5 text-emerald-500 shrink-0" />
-          ) : c.userStatus === "failed" ? (
-            <XCircle className="w-5 h-5 text-rose-500/60 shrink-0" />
-          ) : c.userStatus === "in_progress" ? (
-            <Flame className="w-5 h-5 text-amber-500 shrink-0" />
-          ) : (
-            <Circle className="w-5 h-5 text-muted/30 shrink-0" />
-          )}
-          <div
-            className={`shrink-0 px-2 py-0.5 rounded-md border text-[10px] font-bold uppercase tracking-wider ${
-              difficultyChip[c.difficulty]
-            }`}
-          >
-            {c.difficulty}
+      {/* Corner glow — emerald once solved, type-tinted otherwise */}
+      <div
+        className={`absolute -top-14 -right-14 w-36 h-36 rounded-full ${isPassed ? "bg-emerald-500/10" : t.glow} blur-3xl pointer-events-none opacity-60 group-hover:opacity-100 transition-opacity`}
+        aria-hidden
+      />
+
+      {/* Diagonal "Solved" ribbon across the top-right corner */}
+      {isPassed && (
+        <div className="absolute top-0 right-0 w-[88px] h-[88px] overflow-hidden pointer-events-none z-10" aria-hidden>
+          <div className="absolute top-[16px] right-[-38px] w-[140px] rotate-45 bg-emerald-500 py-[3px] text-center text-[8px] font-black uppercase tracking-[0.2em] text-white shadow-[0_2px_8px_rgba(16,185,129,0.45)]">
+            Solved
           </div>
-          {isMulti && (
-            <div className="shrink-0 inline-flex items-center gap-1 px-2 py-0.5 rounded-md border border-accent/30 bg-accent/10 text-[10px] font-bold uppercase tracking-wider text-accent">
-              <Layers className="w-2.5 h-2.5" />
-              {c.stepCount}
-            </div>
-          )}
         </div>
-        <div className="shrink-0 inline-flex items-center gap-1.5 text-[10px] font-bold text-muted/60 tabular-nums">
-          <Clock className="w-3 h-3" />
-          {c.estimatedMinutes}m
+      )}
+
+      {/* Header: type icon tile · staff pick · status (ribbon replaces the
+          pills once solved) */}
+      <div className="relative flex items-start justify-between gap-3 mb-3.5">
+        <div className={`w-10 h-10 rounded-xl border grid place-items-center shrink-0 ${t.iconBox}`}>
+          <Icon className="w-4 h-4" />
         </div>
+        {!isPassed && (
+          <div className="flex items-center gap-2">
+            {c.featured && (
+              <span
+                className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-accent/15 border border-accent/30 text-[9px] font-black uppercase tracking-wider text-accent"
+                aria-label="Staff pick"
+              >
+                <Star className="w-2.5 h-2.5 fill-current" />
+                Pick
+              </span>
+            )}
+            <StatusBadge status={c.userStatus} />
+          </div>
+        )}
       </div>
 
-      <h3 className="font-black text-fg text-base leading-snug line-clamp-2 group-hover:text-fg mb-2">
+      <div className={`relative text-[9px] font-black uppercase tracking-[0.18em] mb-1 ${t.eyebrow}`}>
+        {t.label}
+      </div>
+      <h3 className={`relative font-black text-[15px] leading-snug line-clamp-2 ${isPassed ? "text-fg/70" : "text-fg"}`}>
         {c.title}
       </h3>
 
-      {c.category && (
-        <div className="text-[10px] font-bold uppercase tracking-[0.15em] text-muted/60 mb-3">
-          {c.category}
-        </div>
-      )}
-
       {c.tags.length > 0 && (
-        <div className="mt-auto pt-3 flex flex-wrap items-center gap-1.5">
-          {c.tags.slice(0, 3).map((t) => (
+        <div className="relative mt-2.5 flex flex-wrap items-center gap-1.5">
+          {c.tags.slice(0, 3).map((tag) => (
             <span
-              key={t}
+              key={tag}
               className="px-1.5 py-0.5 rounded bg-bg/40 border border-border text-[10px] text-muted group-hover:text-fg/70 transition-colors"
             >
-              #{t}
+              #{tag}
             </span>
           ))}
           {c.tags.length > 3 && (
@@ -669,6 +730,28 @@ function ChallengeCard({ item: c }: { item: ChallengeListItem }) {
           )}
         </div>
       )}
+
+      {/* Footer meta: difficulty · time · steps */}
+      <div className="relative mt-auto pt-4 flex items-center gap-2">
+        <span
+          className={`px-2 py-0.5 rounded-md border text-[10px] font-bold uppercase tracking-wider ${
+            difficultyChip[c.difficulty]
+          }`}
+        >
+          {c.difficulty}
+        </span>
+        <span className="inline-flex items-center gap-1 text-[10px] font-bold text-muted/60 tabular-nums">
+          <Clock className="w-3 h-3" />
+          {c.estimatedMinutes}m
+        </span>
+        {isMulti && (
+          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md border border-accent/30 bg-accent/10 text-[10px] font-bold uppercase tracking-wider text-accent">
+            <Layers className="w-2.5 h-2.5" />
+            {c.stepCount}
+          </span>
+        )}
+        <ArrowRight className="w-3.5 h-3.5 text-muted/30 group-hover:text-fg group-hover:translate-x-0.5 transition ml-auto" />
+      </div>
     </Link>
   );
 }
@@ -676,29 +759,31 @@ function ChallengeCard({ item: c }: { item: ChallengeListItem }) {
 /* ─── LIST ROW COMPONENT ─── */
 function ChallengeListRow({ item: c }: { item: ChallengeListItem }) {
   const isMulti = c.stepCount > 1;
+  const isPassed = c.userStatus === "passed";
+  const t = KIND_CARD[challengeCategory(c)];
+  const Icon = t.icon;
   return (
     <Link
       href={`/challenges/${c.slug}`}
-      className={`group relative flex flex-col sm:flex-row sm:items-center justify-between gap-4 rounded-xl border p-4 transition-all duration-300 bg-surface dark:bg-[#131625] hover:bg-elevated hover:dark:bg-[#1b1f32] ${
-        c.featured
-          ? "border-accent/40 hover:border-accent/60 dark:border-accent/20 dark:hover:border-accent/40 shadow-[0_2px_12px_rgba(var(--accent-rgb),0.02)]"
-          : "border-border dark:border-transparent hover:border-border-strong"
+      className={`group relative flex flex-col sm:flex-row sm:items-center justify-between gap-4 rounded-xl border p-4 transition-all duration-300 ${
+        isPassed
+          ? "bg-emerald-500/[0.04] dark:bg-emerald-500/[0.06] border-emerald-500/40 dark:border-emerald-500/25 hover:border-emerald-500/60"
+          : c.featured
+            ? "bg-surface dark:bg-[#131625] hover:bg-elevated hover:dark:bg-[#1b1f32] border-accent/40 hover:border-accent/60 dark:border-accent/20 dark:hover:border-accent/40 shadow-[0_2px_12px_rgba(var(--accent-rgb),0.02)]"
+            : `bg-surface dark:bg-[#131625] hover:bg-elevated hover:dark:bg-[#1b1f32] border-border dark:border-transparent ${t.hoverBorder}`
       }`}
     >
       <div className="flex items-center gap-3.5 min-w-0">
-        {/* Status icon */}
-        {c.userStatus === "passed" ? (
-          <CheckCircle2 className="w-5 h-5 text-emerald-500 shrink-0" />
-        ) : c.userStatus === "failed" ? (
-          <XCircle className="w-5 h-5 text-rose-500/60 shrink-0" />
-        ) : c.userStatus === "in_progress" ? (
-          <Flame className="w-5 h-5 text-amber-500 shrink-0" />
-        ) : (
-          <Circle className="w-5 h-5 text-muted/30 shrink-0" />
-        )}
+        {/* Type icon tile */}
+        <div className={`w-9 h-9 rounded-lg border grid place-items-center shrink-0 ${t.iconBox}`}>
+          <Icon className="w-4 h-4" />
+        </div>
         <div className="min-w-0">
-          <div className="flex items-center gap-2 mb-1 flex-wrap">
-            <h3 className="font-extrabold text-fg text-sm sm:text-base truncate group-hover:text-fg">
+          <div className={`text-[8px] font-black uppercase tracking-[0.18em] ${t.eyebrow}`}>
+            {t.label}
+          </div>
+          <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+            <h3 className={`font-extrabold text-sm sm:text-base truncate ${isPassed ? "text-fg/70" : "text-fg"}`}>
               {c.title}
             </h3>
             {c.featured && (
@@ -708,24 +793,19 @@ function ChallengeListRow({ item: c }: { item: ChallengeListItem }) {
               </span>
             )}
           </div>
-          {c.category && (
-            <div className="text-[9px] font-bold uppercase tracking-[0.12em] text-muted/50">
-              {c.category}
-            </div>
-          )}
         </div>
       </div>
 
       <div className="flex items-center gap-3 shrink-0 flex-wrap sm:flex-nowrap">
-        {c.tags.slice(0, 2).map((t) => (
+        {c.tags.slice(0, 2).map((tag) => (
           <span
-            key={t}
+            key={tag}
             className="hidden md:inline px-1.5 py-0.5 rounded bg-bg/40 border border-border text-[9px] text-muted"
           >
-            #{t}
+            #{tag}
           </span>
         ))}
-        
+
         {isMulti && (
           <div className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md border border-accent/25 bg-accent/5 text-[9px] font-bold uppercase tracking-wider text-accent shrink-0">
             <Layers className="w-2.5 h-2.5" />
@@ -741,6 +821,8 @@ function ChallengeListRow({ item: c }: { item: ChallengeListItem }) {
           <Clock className="w-3 h-3" />
           {c.estimatedMinutes}m
         </div>
+
+        <StatusBadge status={c.userStatus} />
       </div>
     </Link>
   );

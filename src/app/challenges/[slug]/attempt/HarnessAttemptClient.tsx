@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import dynamic from "next/dynamic";
 import { useTheme } from "next-themes";
 import { toast } from "sonner";
-import { Play, Send, CheckCircle2, XCircle, Loader2, EyeOff, Clock, LogOut, FileCode, Terminal } from "lucide-react";
+import { Play, Send, CheckCircle2, XCircle, Loader2, EyeOff, Clock, LogOut, FileCode, Terminal, Rows2, Columns2 } from "lucide-react";
 import MarkdownRenderer from "@/components/MarkdownRenderer";
 import ThemeToggle from "@/components/ThemeToggle";
 import { useResizable } from "@/hooks/useResizable";
@@ -111,9 +111,26 @@ export default function HarnessAttemptClient({
     return () => clearInterval(t);
   }, []);
 
-  // Drag-resizable panels (desktop): problem-statement width + output height.
+  // Editor ↔ output split orientation: "row" (output below editor) or
+  // "column" (output beside editor) — mirrors the frontend playground.
+  const [outputLayout, setOutputLayout] = useState<"row" | "column">(() => {
+    if (typeof window !== "undefined") {
+      const saved = window.localStorage.getItem("ipad.harness.outputLayout");
+      if (saved === "row" || saved === "column") return saved;
+    }
+    return "row";
+  });
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    localStorage.setItem("ipad.harness.outputLayout", outputLayout);
+  }, [outputLayout]);
+
+  // Drag-resizable panels (desktop): problem-statement width, plus the output
+  // pane's height (row layout) or width (column layout). The column handle is
+  // inverted because the output sits to the right of it.
   const { width: descW, onPointerDown: onDescDrag } = useResizable(420, 300, 760);
   const { height: outputH, onPointerDown: onOutputDrag } = useResizableHeight(230, 120, 640);
+  const { width: outputW, onPointerDown: onOutputWDrag } = useResizable(420, 260, 1100, true);
 
   function handleExit() {
     if (sessionId) window.location.href = `/interview/${sessionId}`;
@@ -195,6 +212,30 @@ export default function HarnessAttemptClient({
               ))}
             </select>
 
+            {/* Output layout toggle — row (below) vs column (beside). Desktop
+                only, since the panes always stack on small screens. */}
+            <div className="hidden lg:flex items-center gap-0.5 rounded-lg border border-border bg-bg p-0.5 shrink-0">
+              {([
+                { key: "row", title: "Output below editor", icon: Rows2 },
+                { key: "column", title: "Output beside editor", icon: Columns2 },
+              ] as const).map(({ key, title, icon: Icon }) => (
+                <button
+                  key={key}
+                  type="button"
+                  onClick={() => setOutputLayout(key)}
+                  title={title}
+                  aria-pressed={outputLayout === key}
+                  className={`p-1.5 rounded-md transition ${
+                    outputLayout === key
+                      ? "bg-accent text-bg"
+                      : "text-muted hover:text-fg hover:bg-surface"
+                  }`}
+                >
+                  <Icon className="w-3.5 h-3.5" />
+                </button>
+              ))}
+            </div>
+
             <ThemeToggle />
 
             <button
@@ -264,9 +305,13 @@ export default function HarnessAttemptClient({
           className="hidden lg:block w-1.5 shrink-0 cursor-col-resize bg-border/40 hover:bg-accent/60 active:bg-accent/70 transition-colors"
         />
 
-        {/* ── Right: editor on top, output docked below ── */}
-        <div className="flex-1 min-w-0 flex flex-col min-h-0 overflow-hidden">
-          <div className="flex-1 min-h-[18rem] lg:min-h-0 flex flex-col overflow-hidden">
+        {/* ── Right: editor + output, docked below (row) or beside (column) ── */}
+        <div
+          className={`flex-1 min-w-0 flex min-h-0 overflow-hidden flex-col ${
+            outputLayout === "column" ? "lg:flex-row" : ""
+          }`}
+        >
+          <div className="flex-1 min-w-0 min-h-[18rem] lg:min-h-0 flex flex-col overflow-hidden">
             {/* Editor file header — gives the panel an IDE feel. */}
             <div className="flex items-center gap-2 px-3 py-1.5 border-b border-border bg-surface text-[11px] font-mono text-muted shrink-0">
               <FileCode className="w-3.5 h-3.5 text-accent/70" />
@@ -299,19 +344,40 @@ export default function HarnessAttemptClient({
             </div>
           </div>
 
-          {/* Drag handle: editor ↔ output (desktop) */}
-          <div
-            onPointerDown={onOutputDrag}
-            title="Drag to resize"
-            role="separator"
-            aria-orientation="horizontal"
-            className="hidden lg:block h-1.5 shrink-0 cursor-row-resize bg-border/40 hover:bg-accent/60 active:bg-accent/70 transition-colors"
-          />
+          {/* Drag handle: editor ↔ output (desktop) — vertical in column
+              layout, horizontal in row layout. */}
+          {outputLayout === "column" ? (
+            <div
+              onPointerDown={onOutputWDrag}
+              title="Drag to resize"
+              role="separator"
+              aria-orientation="vertical"
+              className="hidden lg:block w-1.5 shrink-0 cursor-col-resize bg-border/40 hover:bg-accent/60 active:bg-accent/70 transition-colors"
+            />
+          ) : (
+            <div
+              onPointerDown={onOutputDrag}
+              title="Drag to resize"
+              role="separator"
+              aria-orientation="horizontal"
+              className="hidden lg:block h-1.5 shrink-0 cursor-row-resize bg-border/40 hover:bg-accent/60 active:bg-accent/70 transition-colors"
+            />
+          )}
 
-          {/* Output / results — fixed resizable height, scrolls internally. */}
+          {/* Output / results — resizable height (row) or width (column),
+              scrolls internally. */}
           <section
-            className="shrink-0 flex flex-col min-h-0 border-t border-border lg:border-t-0 bg-bg h-56 lg:h-[var(--harness-out-h)]"
-            style={{ "--harness-out-h": `${outputH}px` } as React.CSSProperties}
+            className={`shrink-0 flex flex-col min-h-0 min-w-0 border-border bg-bg h-56 ${
+              outputLayout === "column"
+                ? "lg:h-full lg:w-[var(--harness-out-w)] border-t lg:border-t-0 lg:border-l"
+                : "lg:h-[var(--harness-out-h)] border-t lg:border-t-0"
+            }`}
+            style={
+              {
+                "--harness-out-h": `${outputH}px`,
+                "--harness-out-w": `${outputW}px`,
+              } as React.CSSProperties
+            }
           >
             <div className="h-10 shrink-0 flex items-center justify-between gap-2 px-3 border-b border-border bg-surface/30">
               <span className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-wider text-fg">

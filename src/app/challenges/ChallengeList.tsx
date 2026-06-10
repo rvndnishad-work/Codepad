@@ -16,6 +16,11 @@ import {
   ChevronRight,
   Grid,
   List,
+  Binary,
+  Braces,
+  LayoutTemplate,
+  ArrowRight,
+  type LucideIcon,
 } from "lucide-react";
 
 export type ChallengeListItem = {
@@ -25,6 +30,9 @@ export type ChallengeListItem = {
   difficulty: "easy" | "medium" | "hard";
   tags: string[];
   category: string | null;
+  /** Sandpack/judging template ("harness", "test-ts", "react", …) — drives the
+   *  Algorithms / UI / JavaScript category split. */
+  template: string;
   estimatedMinutes: number;
   /** 1 for a classic single-step challenge; >1 for a multi-step series
    *  (formerly Tracks). Drives the "X questions" pill on the card. */
@@ -63,24 +71,75 @@ const LANG_LABEL: Record<string, string> = {
   rust: "Rust",
 };
 
-type TypeKey = "all" | "algorithms" | "jsts" | "ui";
-const TYPE_LABEL: Record<Exclude<TypeKey, "all">, string> = {
-  algorithms: "Algorithms",
-  jsts: "JS/TS",
-  ui: "UI",
+type CategoryKey = "all" | "algorithms" | "ui" | "js";
+
+/** The three top-level shelves of the catalog. Order here is the display
+ *  order of the shelves on the "All" tab. */
+const CATEGORY_META: {
+  key: Exclude<CategoryKey, "all">;
+  label: string;
+  icon: LucideIcon;
+  tabHint: string;
+  blurb: string;
+}[] = [
+  {
+    key: "algorithms",
+    label: "Algorithms",
+    icon: Binary,
+    tabHint: "Solve in any language",
+    blurb: "Classic DSA problems — solve in Python, JavaScript, TypeScript, Go, Java, C++ or Rust.",
+  },
+  {
+    key: "ui",
+    label: "UI & Frontend",
+    icon: LayoutTemplate,
+    tabHint: "React · Vue · Angular · HTML",
+    blurb: "Build working components against a live preview in your framework of choice.",
+  },
+  {
+    key: "js",
+    label: "JavaScript",
+    icon: Braces,
+    tabHint: "JS/TS utilities · unit tests",
+    blurb: "Language-level JavaScript & TypeScript exercises graded by hidden unit tests.",
+  },
+];
+
+/** Classify a challenge from its judging template — mirrors challengeSurface()
+ *  in lib/templates: "harness" is the multi-language algorithm judge, the
+ *  test-runner / console templates are JS questions, everything else renders
+ *  a UI. Template is authoritative; tags are just decoration. */
+function challengeCategory(c: ChallengeListItem): Exclude<CategoryKey, "all"> {
+  const t = c.template;
+  if (t === "harness") return "algorithms";
+  if (/^test-/.test(t) || ["python", "go", "java", "cpp", "rust", "node", "ts-node"].includes(t)) return "js";
+  return "ui";
+}
+
+/** UI-framework facets, derived from template + tags so the Framework filter
+ *  lights up automatically as Vue/Angular/Solid/Svelte challenges are added. */
+const FRAMEWORKS = ["react", "vue", "angular", "solid", "svelte", "html"] as const;
+const FRAMEWORK_LABEL: Record<(typeof FRAMEWORKS)[number], string> = {
+  react: "React",
+  vue: "Vue",
+  angular: "Angular",
+  solid: "SolidJS",
+  svelte: "Svelte",
+  html: "HTML/CSS",
 };
 
-/** Classify a challenge into a high-level type for the Type filter, from its
- *  category + tags. UI takes precedence (a React/Vue/Angular component), then
- *  Algorithms (DSA), else a JS/TS utility. */
-function challengeType(c: ChallengeListItem): Exclude<TypeKey, "all"> {
+function challengeFrameworks(c: ChallengeListItem): string[] {
   const tags = c.tags.map((t) => t.toLowerCase());
-  if (tags.includes("ui") || tags.includes("react") || tags.includes("vue") || tags.includes("angular")) {
-    return "ui";
+  const out = new Set<string>();
+  for (const f of FRAMEWORKS) {
+    if (tags.includes(f) || c.template.startsWith(f)) out.add(f);
   }
-  if ((c.category ?? "").toLowerCase() === "dsa" || tags.includes("dsa")) return "algorithms";
-  return "jsts";
+  if (c.template === "static" || tags.includes("html") || tags.includes("css")) out.add("html");
+  return [...out];
 }
+
+/** How many cards each shelf shows on the "All" tab before "View all". */
+const SHELF_SIZE = 6;
 
 const difficultyChip: Record<string, string> = {
   easy: "text-emerald-500 bg-emerald-500/10 border-emerald-500/30",
@@ -98,8 +157,9 @@ export default function ChallengeList({
   const [query, setQuery] = useState("");
   const [difficulty, setDifficulty] = useState<DiffKey>("all");
   const [kind, setKind] = useState<KindKey>("all");
-  const [typeFilter, setTypeFilter] = useState<TypeKey>("all");
+  const [category, setCategory] = useState<CategoryKey>("all");
   const [langFilter, setLangFilter] = useState<string>("all");
+  const [fwFilter, setFwFilter] = useState<string>("all");
   const [hideSolved, setHideSolved] = useState(false);
   
   // Pagination & Layout states
@@ -120,16 +180,12 @@ export default function ChallengeList({
     localStorage.setItem("ipad.challenges.viewMode", mode);
   };
 
-  // Only surface Type/Language options that actually exist in the catalog, so
-  // the filters never show a choice that yields zero results.
-  const availableTypes = useMemo(() => {
-    const present = new Set(items.map(challengeType));
-    return (["algorithms", "jsts", "ui"] as const).filter((t) => present.has(t));
-  }, [items]);
-
+  // Only surface Language/Framework options that actually exist in their
+  // category, so the filters never show a choice that yields zero results.
   const availableLangs = useMemo(() => {
     const present = new Set<string>();
     for (const c of items) {
+      if (challengeCategory(c) !== "algorithms") continue;
       for (const t of c.tags) {
         const lt = t.toLowerCase();
         if ((LANGS as readonly string[]).includes(lt)) present.add(lt);
@@ -138,14 +194,24 @@ export default function ChallengeList({
     return LANGS.filter((l) => present.has(l));
   }, [items]);
 
-  const visible = useMemo(() => {
+  const availableFrameworks = useMemo(() => {
+    const present = new Set<string>();
+    for (const c of items) {
+      if (challengeCategory(c) !== "ui") continue;
+      for (const f of challengeFrameworks(c)) present.add(f);
+    }
+    return FRAMEWORKS.filter((f) => present.has(f));
+  }, [items]);
+
+  // Everything except the category split — used both for the per-tab counts
+  // (so the tabs reflect the active search/difficulty filters) and as the
+  // base of the visible list.
+  const baseVisible = useMemo(() => {
     const q = query.trim().toLowerCase();
     return items.filter((c) => {
       if (difficulty !== "all" && c.difficulty !== difficulty) return false;
       if (kind === "single" && c.stepCount > 1) return false;
       if (kind === "series" && c.stepCount <= 1) return false;
-      if (typeFilter !== "all" && challengeType(c) !== typeFilter) return false;
-      if (langFilter !== "all" && !c.tags.some((t) => t.toLowerCase() === langFilter)) return false;
       if (hideSolved && c.userStatus === "passed") return false;
       if (!q) return true;
       return (
@@ -154,12 +220,35 @@ export default function ChallengeList({
         (c.category?.toLowerCase().includes(q) ?? false)
       );
     });
-  }, [items, query, difficulty, kind, typeFilter, langFilter, hideSolved]);
+  }, [items, query, difficulty, kind, hideSolved]);
+
+  const categoryCounts = useMemo(() => {
+    const counts: Record<CategoryKey, number> = { all: baseVisible.length, algorithms: 0, ui: 0, js: 0 };
+    for (const c of baseVisible) counts[challengeCategory(c)] += 1;
+    return counts;
+  }, [baseVisible]);
+
+  const visible = useMemo(() => {
+    return baseVisible.filter((c) => {
+      if (category !== "all" && challengeCategory(c) !== category) return false;
+      // Sub-filters only apply inside their own tab.
+      if (category === "algorithms" && langFilter !== "all" && !c.tags.some((t) => t.toLowerCase() === langFilter)) return false;
+      if (category === "ui" && fwFilter !== "all" && !challengeFrameworks(c).includes(fwFilter)) return false;
+      return true;
+    });
+  }, [baseVisible, category, langFilter, fwFilter]);
 
   // Reset page limit whenever search parameters change to prevent getting stuck on empty pages
   useEffect(() => {
     setCurrentPage(1);
-  }, [query, difficulty, kind, typeFilter, langFilter, hideSolved]);
+  }, [query, difficulty, kind, category, langFilter, fwFilter, hideSolved]);
+
+  // Each category has its own sub-filter; clear them when the tab changes so
+  // a stale Python/React selection can't silently empty another tab.
+  useEffect(() => {
+    setLangFilter("all");
+    setFwFilter("all");
+  }, [category]);
 
   const displayed = useMemo(() => {
     const startIdx = (currentPage - 1) * itemsPerPage;
@@ -171,6 +260,29 @@ export default function ChallengeList({
   return (
     <div className="relative">
       <div className="mx-auto max-w-6xl px-6 py-10">
+        {/* Category tabs — the primary way the catalog is split */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 mb-7">
+          <CategoryTab
+            icon={Layers}
+            label="All"
+            hint="The full catalog"
+            count={categoryCounts.all}
+            active={category === "all"}
+            onClick={() => setCategory("all")}
+          />
+          {CATEGORY_META.map((m) => (
+            <CategoryTab
+              key={m.key}
+              icon={m.icon}
+              label={m.label}
+              hint={m.tabHint}
+              count={categoryCounts[m.key]}
+              active={category === m.key}
+              onClick={() => setCategory(m.key)}
+            />
+          ))}
+        </div>
+
         {/* Toolbar */}
         <div className="flex flex-col gap-4 mb-8">
           <div className="flex flex-wrap items-center gap-3">
@@ -214,7 +326,9 @@ export default function ChallengeList({
             </div>
 
             <span className="text-xs text-muted font-mono ml-auto tabular-nums">
-              Showing {displayed.length > 0 ? (currentPage - 1) * itemsPerPage + 1 : 0} - {Math.min(currentPage * itemsPerPage, visible.length)} of {visible.length} {visible.length === 1 ? "challenge" : "challenges"}
+              {category === "all"
+                ? `${visible.length} ${visible.length === 1 ? "challenge" : "challenges"}`
+                : `Showing ${displayed.length > 0 ? (currentPage - 1) * itemsPerPage + 1 : 0} - ${Math.min(currentPage * itemsPerPage, visible.length)} of ${visible.length} ${visible.length === 1 ? "challenge" : "challenges"}`}
             </span>
           </div>
 
@@ -225,18 +339,7 @@ export default function ChallengeList({
               value={difficulty}
               onChange={setDifficulty}
             />
-            {availableTypes.length > 1 && (
-              <FilterSelect
-                label="Type"
-                options={[
-                  { key: "all" as TypeKey, label: "All types" },
-                  ...availableTypes.map((t) => ({ key: t as TypeKey, label: TYPE_LABEL[t] })),
-                ]}
-                value={typeFilter}
-                onChange={setTypeFilter}
-              />
-            )}
-            {availableLangs.length > 1 && (
+            {category === "algorithms" && availableLangs.length > 1 && (
               <FilterSelect
                 label="Language"
                 options={[
@@ -245,6 +348,17 @@ export default function ChallengeList({
                 ]}
                 value={langFilter}
                 onChange={setLangFilter}
+              />
+            )}
+            {category === "ui" && availableFrameworks.length > 1 && (
+              <FilterSelect
+                label="Framework"
+                options={[
+                  { key: "all", label: "All frameworks" },
+                  ...availableFrameworks.map((f) => ({ key: f, label: FRAMEWORK_LABEL[f] })),
+                ]}
+                value={fwFilter}
+                onChange={setFwFilter}
               />
             )}
             <FilterSelect
@@ -278,6 +392,63 @@ export default function ChallengeList({
               Try clearing your filters or search query.
             </p>
           </div>
+        ) : category === "all" ? (
+          /* ALL TAB — one labeled shelf per category, separation at a glance */
+          <div className="space-y-12">
+            {CATEGORY_META.map((meta) => {
+              const group = visible.filter((c) => challengeCategory(c) === meta.key);
+              if (group.length === 0) return null;
+              const preview = group.slice(0, SHELF_SIZE);
+              const Icon = meta.icon;
+              return (
+                <section key={meta.key}>
+                  <div className="flex items-end justify-between gap-3 mb-4">
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className="w-10 h-10 rounded-xl bg-accent/10 border border-accent/20 grid place-items-center shrink-0">
+                        <Icon className="w-4 h-4 text-accent" />
+                      </div>
+                      <div className="min-w-0">
+                        <h2 className="font-black text-fg text-lg leading-tight flex items-center gap-2">
+                          {meta.label}
+                          <span className="text-[10px] font-black text-muted bg-surface border border-border rounded-full px-2 py-0.5 tabular-nums">
+                            {group.length}
+                          </span>
+                        </h2>
+                        <p className="text-xs text-muted truncate">{meta.blurb}</p>
+                      </div>
+                    </div>
+                    {group.length > preview.length && (
+                      <button
+                        type="button"
+                        onClick={() => setCategory(meta.key)}
+                        className="shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-border bg-surface hover:bg-elevated hover:border-border-strong text-xs font-bold text-muted hover:text-fg transition cursor-pointer whitespace-nowrap"
+                      >
+                        View all {group.length}
+                        <ArrowRight className="w-3.5 h-3.5" />
+                      </button>
+                    )}
+                  </div>
+                  {viewMode === "grid" ? (
+                    <ul className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                      {preview.map((c) => (
+                        <li key={c.id}>
+                          <ChallengeCard item={c} />
+                        </li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <ul className="space-y-3">
+                      {preview.map((c) => (
+                        <li key={c.id}>
+                          <ChallengeListRow item={c} />
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </section>
+              );
+            })}
+          </div>
         ) : viewMode === "grid" ? (
           /* GRID VIEW */
           <ul className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -299,7 +470,7 @@ export default function ChallengeList({
         )}
 
         {/* Numbered Pagination Section */}
-        {totalPages > 1 && (
+        {category !== "all" && totalPages > 1 && (
           <div className="mt-12 flex flex-col sm:flex-row items-center justify-between gap-4 border-t border-border/30 pt-8">
             <span className="text-[10px] text-muted font-bold uppercase tracking-widest">
               Showing {(currentPage - 1) * itemsPerPage + 1} - {Math.min(currentPage * itemsPerPage, visible.length)} of {visible.length} challenges
@@ -362,6 +533,61 @@ export default function ChallengeList({
         )}
       </div>
     </div>
+  );
+}
+
+/* ─── CATEGORY TAB COMPONENT ─── */
+function CategoryTab({
+  icon: Icon,
+  label,
+  hint,
+  count,
+  active,
+  onClick,
+}: {
+  icon: LucideIcon;
+  label: string;
+  hint: string;
+  count: number;
+  active: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-pressed={active}
+      className={`group flex items-center gap-3 rounded-2xl border p-3.5 text-left transition-all duration-200 cursor-pointer ${
+        active
+          ? "border-accent/50 bg-accent/10 shadow-[0_0_20px_rgba(var(--accent-rgb),0.08)]"
+          : "border-border dark:border-transparent bg-surface dark:bg-[#131625] hover:bg-elevated hover:dark:bg-[#1b1f32] hover:border-border-strong"
+      }`}
+    >
+      <span
+        className={`w-9 h-9 rounded-xl grid place-items-center shrink-0 border transition ${
+          active
+            ? "bg-accent text-bg border-accent"
+            : "bg-bg/40 border-border text-muted group-hover:text-fg"
+        }`}
+      >
+        <Icon className="w-4 h-4" />
+      </span>
+      <span className="min-w-0">
+        <span className="flex items-center gap-2 text-sm font-black leading-tight text-fg">
+          <span className="truncate">{label}</span>
+          <span
+            className={`shrink-0 text-[10px] font-black tabular-nums px-1.5 py-0.5 rounded-full border ${
+              active
+                ? "bg-accent/15 text-accent border-accent/30"
+                : "bg-bg/40 text-muted border-border"
+            }`}
+          >
+            {count}
+          </span>
+        </span>
+        <span className="block text-[10px] text-muted truncate mt-0.5">{hint}</span>
+      </span>
+    </button>
   );
 }
 

@@ -57,6 +57,8 @@ import {
   PanelBottom,
   LogOut,
   ChevronDown,
+  Rows2,
+  Columns2,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
@@ -328,8 +330,27 @@ export default function ChallengeAttemptClient({
   // Drag-resizable panels (frontend surface): editor-area width + console height.
   const { width: editorW, onPointerDown: onEditorDrag, setWidth: setEditorW } = useResizable(520, 280, 2000);
   const { height: consoleH, onPointerDown: onConsoleDrag, setHeight: setConsoleH } = useResizableHeight(180, 80, 900);
+  // Drag-resizable panels (DSA surface): description width + console/tests sidebar
+  // width (the sidebar sits right of its handle, so its drag is inverted).
+  const { width: dsaDescW, onPointerDown: onDsaDescDrag } = useResizable(340, 260, 640);
+  const { width: dsaSideW, onPointerDown: onDsaSideDrag } = useResizable(380, 300, 720, true);
   // Output view: preview only / split / console only.
   const [outputView, setOutputView] = useState<"preview" | "both" | "console">("both");
+  // Split orientation: preview above console (stack) or beside it (side).
+  const [outputSplit, setOutputSplit] = useState<"stack" | "side">(() => {
+    if (typeof window !== "undefined") {
+      const saved = window.localStorage.getItem("ipad.attempt.outputSplit");
+      if (saved === "stack" || saved === "side") return saved;
+    }
+    return "stack";
+  });
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    localStorage.setItem("ipad.attempt.outputSplit", outputSplit);
+  }, [outputSplit]);
+  // Console width for the side-by-side split (the console sits right of its
+  // handle, so its drag is inverted).
+  const { width: consoleW, onPointerDown: onConsoleWDrag, setWidth: setConsoleW } = useResizable(360, 220, 1200, true);
   // Default the splits to code↔output = 50/50 and preview↔console = 70/30, and
   // keep that ratio as the layout settles / the window resizes — until the user
   // drags a handle, which locks in their chosen sizes (userResizedRef).
@@ -343,17 +364,20 @@ export default function ChallengeAttemptClient({
       if (userResizedRef.current) return;
       const splitW = splitRowRef.current?.clientWidth ?? 0;
       const outH = outputPaneRef.current?.clientHeight ?? 0;
+      const outW = outputPaneRef.current?.clientWidth ?? 0;
       // Code editor = 60% of the post-description region (minus the ~6px handle).
       if (splitW > 0) setEditorW(Math.round((splitW - 6) * 0.6));
       // Console = 30% of the output area below its header (~40px) + handle (~6px).
       if (outH > 0) setConsoleH(Math.max(80, Math.round((outH - 46) * 0.3)));
+      // Side-by-side split: console = 40% of the output pane width.
+      if (outW > 0) setConsoleW(Math.max(220, Math.round((outW - 6) * 0.4)));
     };
     recompute();
     const ro = new ResizeObserver(recompute);
     if (splitRowRef.current) ro.observe(splitRowRef.current);
     if (outputPaneRef.current) ro.observe(outputPaneRef.current);
     return () => ro.disconnect();
-  }, [mounted, isFrontend, setEditorW, setConsoleH]);
+  }, [mounted, isFrontend, setEditorW, setConsoleH, setConsoleW]);
   // Exit-assessment flow.
   const [exitConfirmOpen, setExitConfirmOpen] = useState(false);
   function handleExit() {
@@ -1597,7 +1621,32 @@ export default function ChallengeAttemptClient({
                 <Monitor className="w-3 h-3 text-accent" />
                 Output
               </span>
-              <div className="flex items-center gap-0.5 rounded-lg border border-border bg-bg p-0.5">
+              <div className="flex items-center gap-1.5">
+                {/* Stack / side-by-side orientation — only relevant in split view */}
+                {outputView === "both" && (
+                  <div className="flex items-center gap-0.5 rounded-lg border border-border bg-bg p-0.5">
+                    {([
+                      { key: "stack", title: "Console below preview", icon: Rows2 },
+                      { key: "side", title: "Console beside preview (2 columns)", icon: Columns2 },
+                    ] as const).map(({ key, title, icon: Icon }) => (
+                      <button
+                        key={key}
+                        type="button"
+                        onClick={() => setOutputSplit(key)}
+                        title={title}
+                        aria-pressed={outputSplit === key}
+                        className={`p-1 rounded-md transition ${
+                          outputSplit === key
+                            ? "bg-accent text-bg"
+                            : "text-muted hover:text-fg hover:bg-surface"
+                        }`}
+                      >
+                        <Icon className="w-3.5 h-3.5" />
+                      </button>
+                    ))}
+                  </div>
+                )}
+                <div className="flex items-center gap-0.5 rounded-lg border border-border bg-bg p-0.5">
                 {([
                   { key: "preview", title: "Preview only", icon: Monitor },
                   { key: "both", title: "Split — preview + console", icon: PanelBottom },
@@ -1618,15 +1667,23 @@ export default function ChallengeAttemptClient({
                     <Icon className="w-3.5 h-3.5" />
                   </button>
                 ))}
+                </div>
               </div>
             </div>
 
+            {/* Output body — preview + console, stacked or side-by-side */}
+            <div
+              className={`flex-1 min-h-0 flex overflow-hidden ${
+                outputView === "both" && outputSplit === "side" ? "flex-row" : "flex-col"
+              }`}
+            >
             {/* Preview (hidden in console-only mode) */}
             <div
               style={{
                 display: outputView === "console" ? "none" : "flex",
                 flex: "1 1 0",
                 minHeight: 0,
+                minWidth: 0,
                 overflow: "hidden",
               }}
             >
@@ -1639,27 +1696,44 @@ export default function ChallengeAttemptClient({
             </div>
 
             {/* Drag handle: preview ↔ console (split mode only) */}
-            <div
-              onPointerDown={(e) => {
-                userResizedRef.current = true;
-                onConsoleDrag(e);
-              }}
-              title="Drag to resize"
-              role="separator"
-              aria-orientation="horizontal"
-              style={{ display: outputView === "both" ? "block" : "none" }}
-              className="h-1.5 shrink-0 cursor-row-resize bg-border/40 hover:bg-accent/60 active:bg-accent/70 transition-colors"
-            />
+            {outputView === "both" && outputSplit === "side" ? (
+              <div
+                onPointerDown={(e) => {
+                  userResizedRef.current = true;
+                  onConsoleWDrag(e);
+                }}
+                title="Drag to resize"
+                role="separator"
+                aria-orientation="vertical"
+                className="w-1.5 shrink-0 cursor-col-resize bg-border/40 hover:bg-accent/60 active:bg-accent/70 transition-colors"
+              />
+            ) : (
+              <div
+                onPointerDown={(e) => {
+                  userResizedRef.current = true;
+                  onConsoleDrag(e);
+                }}
+                title="Drag to resize"
+                role="separator"
+                aria-orientation="horizontal"
+                style={{ display: outputView === "both" ? "block" : "none" }}
+                className="h-1.5 shrink-0 cursor-row-resize bg-border/40 hover:bg-accent/60 active:bg-accent/70 transition-colors"
+              />
+            )}
 
-            {/* Console (hidden in preview-only mode; fixed resizable height when
-                split, full height when console-only) */}
+            {/* Console (hidden in preview-only mode; resizable height when
+                stacked / width when side-by-side, full pane when console-only) */}
             <div
-              className="flex flex-col min-h-0 border-t border-border"
+              className={`flex flex-col min-h-0 min-w-0 border-border ${
+                outputView === "both" && outputSplit === "side" ? "border-l" : "border-t"
+              }`}
               style={{
                 display: outputView === "preview" ? "none" : "flex",
                 minHeight: 0,
                 ...(outputView === "both"
-                  ? { flex: "0 0 auto", height: `${consoleH}px` }
+                  ? outputSplit === "side"
+                    ? { flex: "0 0 auto", width: `${consoleW}px` }
+                    : { flex: "0 0 auto", height: `${consoleH}px` }
                   : { flex: "1 1 0" }),
               }}
             >
@@ -1671,18 +1745,31 @@ export default function ChallengeAttemptClient({
                 <SandpackConsole resetOnPreviewRestart style={{ height: "100%" }} />
               </div>
             </div>
-          </aside>
           </div>
+        </aside>
         </div>
+      </div>
         ) : (
-        <div className="flex-1 grid grid-cols-12 min-h-0 h-full overflow-hidden">
-          {/* Description Panel (3/12 columns on desktop) */}
-          <aside className="col-span-12 md:col-span-4 lg:col-span-3 overflow-y-auto border-r border-border bg-bg p-5 h-full">
+        <div className="flex-1 flex flex-col lg:flex-row min-h-0 h-full overflow-hidden">
+          {/* Description Panel — drag-resizable width on desktop */}
+          <aside
+            className="w-full lg:w-[var(--dsa-desc-w)] lg:shrink-0 overflow-y-auto border-b lg:border-b-0 border-border bg-bg p-5 max-h-[35vh] lg:max-h-none lg:h-full"
+            style={{ "--dsa-desc-w": `${dsaDescW}px` } as React.CSSProperties}
+          >
             <ChallengeDescription markdown={challenge.description} />
           </aside>
 
-          {/* Center Editor Panel (6/12 columns on desktop) — stretches 100% full height */}
-          <div className="col-span-12 md:col-span-8 lg:col-span-6 min-h-0 flex flex-col border-r border-border h-full overflow-hidden">
+          {/* Drag handle: description ↔ editor (desktop) */}
+          <div
+            onPointerDown={onDsaDescDrag}
+            title="Drag to resize"
+            role="separator"
+            aria-orientation="vertical"
+            className="hidden lg:block w-1.5 shrink-0 cursor-col-resize bg-border/40 hover:bg-accent/60 active:bg-accent/70 transition-colors"
+          />
+
+          {/* Center Editor Panel — takes the remaining space */}
+          <div className="flex-1 min-w-0 min-h-[18rem] lg:min-h-0 flex flex-col border-b lg:border-b-0 border-border lg:h-full overflow-hidden">
             <div className="flex-1 min-h-0 h-full relative flex flex-col">
               {multiplayer ? (
                 <SyncingEditor
@@ -1705,8 +1792,20 @@ export default function ChallengeAttemptClient({
             </div>
           </div>
 
-          {/* Desktop & Mobile Split Sidebar: Console and Tests Tabs (3/12 columns on desktop) — stretches 100% full height */}
-          <aside className="col-span-12 lg:col-span-3 flex flex-col min-h-0 bg-bg border-l border-border h-full overflow-hidden">
+          {/* Drag handle: editor ↔ console/tests sidebar (desktop) */}
+          <div
+            onPointerDown={onDsaSideDrag}
+            title="Drag to resize"
+            role="separator"
+            aria-orientation="vertical"
+            className="hidden lg:block w-1.5 shrink-0 cursor-col-resize bg-border/40 hover:bg-accent/60 active:bg-accent/70 transition-colors"
+          />
+
+          {/* Console and Tests sidebar — drag-resizable width on desktop */}
+          <aside
+            className="w-full lg:w-[var(--dsa-side-w)] lg:shrink-0 flex flex-col min-h-[16rem] lg:min-h-0 bg-bg lg:h-full overflow-hidden"
+            style={{ "--dsa-side-w": `${dsaSideW}px` } as React.CSSProperties}
+          >
             {/* Tab Switcher Header */}
             <div className="h-10 shrink-0 flex items-center justify-between px-3 border-b border-border bg-surface/30">
               <div className="flex items-center gap-1.5">

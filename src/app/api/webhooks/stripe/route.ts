@@ -12,12 +12,19 @@ export async function POST(req: Request) {
 
   try {
     const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
-    if (webhookSecret && signature) {
+    if (webhookSecret) {
+      // Signature verification is mandatory whenever a secret is configured —
+      // a missing/invalid stripe-signature header fails here and 400s below.
       event = getStripe().webhooks.constructEvent(body, signature, webhookSecret);
-    } else {
-      // Graceful fallback for local development without active webhook tunnels
-      console.warn("Stripe webhook: No STRIPE_WEBHOOK_SECRET or stripe-signature header found. Parsing raw body directly for development.");
+    } else if (process.env.NODE_ENV !== "production") {
+      // Local-dev-only fallback for working without a webhook tunnel. NEVER
+      // active in production: an unsigned payload could otherwise mint AI
+      // credits or upgrade plans for free.
+      console.warn("Stripe webhook: STRIPE_WEBHOOK_SECRET not set. Parsing raw body directly (dev only).");
       event = JSON.parse(body);
+    } else {
+      console.error("Stripe webhook rejected: STRIPE_WEBHOOK_SECRET is not configured in production.");
+      return NextResponse.json({ error: "Webhook not configured" }, { status: 503 });
     }
   } catch (err) {
     console.error("Stripe webhook signature validation failed:", err);

@@ -2,7 +2,8 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { clientKey, rateLimit } from "@/lib/rate-limit";
+import { clientKey, rateLimitDistributed } from "@/lib/rate-limit";
+import { resolveCandidateFromToken } from "@/lib/take-home/candidate";
 import { judge, type JudgeCase } from "@/lib/judge/run";
 import { hasHarness } from "@/lib/judge/harness";
 import { runUnitJs } from "@/lib/judge/unit-js";
@@ -71,24 +72,17 @@ export async function POST(req: Request, { params }: { params: Promise<{ slug: s
   let candidateUserId = session?.user?.id;
   let assignmentTokenMatched = false;
   if (!candidateUserId && token) {
-    const assignment = await prisma.takeHomeAssignment.findUnique({
-      where: { token },
-      select: { candidateEmail: true },
-    });
-    if (assignment) {
-      assignmentTokenMatched = true;
-      const u = await prisma.user.findFirst({
-        where: { email: { equals: assignment.candidateEmail } },
-        select: { id: true },
-      });
-      if (u) candidateUserId = u.id;
+    const candidate = await resolveCandidateFromToken(token);
+    if (candidate) {
+      candidateUserId = candidate.userId;
+      assignmentTokenMatched = candidate.kind === "assignment";
     }
   }
   if (!candidateUserId) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }
 
-  const rl = rateLimit(`grade:${clientKey(req, candidateUserId)}`, 30, 60_000);
+  const rl = await rateLimitDistributed(`grade:${clientKey(req, candidateUserId)}`, 30, 60_000);
   if (!rl.ok) {
     return NextResponse.json({ error: "Too many submissions. Please wait a moment." }, { status: 429 });
   }

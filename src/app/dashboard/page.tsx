@@ -17,89 +17,151 @@ export default async function DashboardPage() {
   if (!session?.user?.id) redirect("/login");
   const userId = session.user.id;
 
-  const me = await prisma.user.findUnique({
-    where: { id: userId },
-    select: { email: true },
-  });
+  const feedUserSelect = {
+    id: true,
+    slug: true,
+    title: true,
+    template: true,
+    updatedAt: true,
+    viewCount: true,
+    user: { select: { name: true, image: true } },
+  } as const;
 
-  const myTakeHomes = me?.email
-    ? await prisma.takeHomeAssignment.findMany({
-        where: { candidateEmail: me.email.toLowerCase() },
-        orderBy: { createdAt: "desc" },
-        take: 10,
-        include: {
-          challenge: { select: { title: true } },
-          workspace: { select: { name: true } },
-          attempt: { select: { score: true } },
-        },
-      })
-    : [];
+  const myTakeHomesPromise = prisma.user
+    .findUnique({ where: { id: userId }, select: { email: true } })
+    .then((me) =>
+      me?.email
+        ? prisma.takeHomeAssignment.findMany({
+            where: { candidateEmail: me.email.toLowerCase() },
+            orderBy: { createdAt: "desc" },
+            take: 10,
+            select: {
+              id: true,
+              token: true,
+              status: true,
+              expiresAt: true,
+              challenge: { select: { title: true } },
+              workspace: { select: { name: true } },
+            },
+          })
+        : [],
+    );
 
-  const mySnippets = await prisma.snippet.findMany({
-    where: { userId },
-    orderBy: [{ pinned: "desc" }, { updatedAt: "desc" }],
-    select: {
-      id: true,
-      slug: true,
-      title: true,
-      template: true,
-      updatedAt: true,
-      visibility: true,
-      tags: true,
-      pinned: true,
-      viewCount: true,
-    },
-  });
+  const feedSnippetsPromise = prisma.follow
+    .findMany({
+      where: { followerId: userId },
+      select: { followingId: true },
+    })
+    .then((following) =>
+      following.length === 0
+        ? []
+        : prisma.snippet.findMany({
+            where: {
+              userId: { in: following.map((f) => f.followingId) },
+              visibility: "public",
+            },
+            orderBy: { updatedAt: "desc" },
+            take: 6,
+            select: feedUserSelect,
+          }),
+    );
 
-  const following = await prisma.follow.findMany({
-    where: { followerId: userId },
-    select: { followingId: true },
-  });
-  const followingIds = following.map((f) => f.followingId);
-
-  const feedSnippets = await prisma.snippet.findMany({
-    where: { userId: { in: followingIds }, visibility: "public" },
-    orderBy: { updatedAt: "desc" },
-    take: 6,
-    include: { user: { select: { name: true, image: true } } },
-  });
-
-  const trendingSnippets = await prisma.snippet.findMany({
-    where: { visibility: "public" },
-    orderBy: { viewCount: "desc" },
-    take: 6,
-    include: { user: { select: { name: true, image: true } } },
-  });
-
-  const myBlogs = await prisma.blogPost.findMany({
-    where: { userId },
-    orderBy: { createdAt: "desc" },
-  });
-
-  const myChallenges = await prisma.challenge.findMany({
-    where: { authorId: userId },
-    orderBy: { updatedAt: "desc" },
-    include: { _count: { select: { steps: true, attempts: true } } },
-  });
-
-  const myWorkspaces = await prisma.workspaceMember.findMany({
-    where: { userId },
-    include: {
-      workspace: {
-        select: { name: true, slug: true, planName: true },
+  const [
+    myTakeHomes,
+    mySnippets,
+    feedSnippets,
+    trendingSnippets,
+    myBlogs,
+    myChallenges,
+    myWorkspaces,
+    snippetGroups,
+    pinnedCount,
+    blogsCount,
+    challengesCount,
+  ] = await Promise.all([
+    myTakeHomesPromise,
+    prisma.snippet.findMany({
+      where: { userId },
+      orderBy: [{ pinned: "desc" }, { updatedAt: "desc" }],
+      take: 100,
+      select: {
+        id: true,
+        slug: true,
+        title: true,
+        template: true,
+        updatedAt: true,
+        visibility: true,
+        tags: true,
+        pinned: true,
+        viewCount: true,
       },
-    },
-    orderBy: { role: "asc" },
-  });
+    }),
+    feedSnippetsPromise,
+    prisma.snippet.findMany({
+      where: { visibility: "public" },
+      orderBy: { viewCount: "desc" },
+      take: 6,
+      select: feedUserSelect,
+    }),
+    prisma.blogPost.findMany({
+      where: { userId },
+      orderBy: { createdAt: "desc" },
+      take: 50,
+      select: {
+        id: true,
+        title: true,
+        published: true,
+        createdAt: true,
+        viewCount: true,
+      },
+    }),
+    prisma.challenge.findMany({
+      where: { authorId: userId },
+      orderBy: { updatedAt: "desc" },
+      take: 50,
+      select: {
+        id: true,
+        slug: true,
+        title: true,
+        published: true,
+        difficulty: true,
+        updatedAt: true,
+        _count: { select: { steps: true, attempts: true } },
+      },
+    }),
+    prisma.workspaceMember.findMany({
+      where: { userId },
+      include: {
+        workspace: {
+          select: { name: true, slug: true, planName: true },
+        },
+      },
+      orderBy: { role: "asc" },
+    }),
+    prisma.snippet.groupBy({
+      by: ["visibility"],
+      where: { userId },
+      _count: { _all: true },
+      _sum: { viewCount: true },
+    }),
+    prisma.snippet.count({ where: { userId, pinned: true } }),
+    prisma.blogPost.count({ where: { userId } }),
+    prisma.challenge.count({ where: { authorId: userId } }),
+  ]);
 
   const stats = {
-    total: mySnippets.length,
-    publicCount: mySnippets.filter((s) => s.visibility === "public").length,
-    privateCount: mySnippets.filter((s) => s.visibility === "private").length,
-    totalViews: mySnippets.reduce((acc, s) => acc + s.viewCount, 0),
-    pinnedCount: mySnippets.filter((s) => s.pinned).length,
-    blogsCount: myBlogs.length,
-    challengesCount: myChallenges.length,
+    total: snippetGroups.reduce((acc, g) => acc + g._count._all, 0),
+    publicCount:
+      snippetGroups.find((g) => g.visibility === "public")?._count._all ?? 0,
+    privateCount:
+      snippetGroups.find((g) => g.visibility === "private")?._count._all ?? 0,
+    totalViews: snippetGroups.reduce(
+      (acc, g) => acc + (g._sum.viewCount ?? 0),
+      0,
+    ),
+    pinnedCount,
+    blogsCount,
+    challengesCount,
   };
 
   const snippets: SnippetItem[] = mySnippets.map((s) => ({

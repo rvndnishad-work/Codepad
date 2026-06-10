@@ -5,8 +5,11 @@ import { useCallback, useRef, useState } from "react";
 /**
  * Lightweight resize hook — returns a drag handle's onMouseDown / onTouchStart
  * that adjusts a width (in px) by watching pointer movement.
+ *
+ * Pass `invert: true` for panels anchored to the RIGHT of their drag handle
+ * (dragging left should then grow the panel instead of shrinking it).
  */
-export function useResizable(initialWidth: number, minWidth = 80, maxWidth = 600) {
+export function useResizable(initialWidth: number, minWidth = 80, maxWidth = 600, invert = false) {
   const [width, setWidth] = useState(initialWidth);
   const dragging = useRef(false);
   const startX = useRef(0);
@@ -22,7 +25,8 @@ export function useResizable(initialWidth: number, minWidth = 80, maxWidth = 600
       const onPointerMove = (ev: PointerEvent) => {
         if (!dragging.current) return;
         const dx = ev.clientX - startX.current;
-        setWidth(Math.min(maxWidth, Math.max(minWidth, startW.current + dx)));
+        const delta = invert ? -dx : dx;
+        setWidth(Math.min(maxWidth, Math.max(minWidth, startW.current + delta)));
       };
 
       const onPointerUp = () => {
@@ -49,7 +53,7 @@ export function useResizable(initialWidth: number, minWidth = 80, maxWidth = 600
         "position:fixed;inset:0;z-index:9999;cursor:col-resize;";
       document.body.appendChild(overlay);
     },
-    [width, minWidth, maxWidth]
+    [width, minWidth, maxWidth, invert]
   );
 
   return { width, onPointerDown, setWidth };

@@ -7,6 +7,8 @@ import { toast } from "sonner";
 import { Play, Send, CheckCircle2, XCircle, Loader2, EyeOff, Clock, LogOut, FileCode, Terminal } from "lucide-react";
 import MarkdownRenderer from "@/components/MarkdownRenderer";
 import ThemeToggle from "@/components/ThemeToggle";
+import { useResizable } from "@/hooks/useResizable";
+import { useResizableHeight } from "@/hooks/useResizableHeight";
 
 const Editor = dynamic(() => import("@monaco-editor/react"), { ssr: false });
 
@@ -109,6 +111,10 @@ export default function HarnessAttemptClient({
     return () => clearInterval(t);
   }, []);
 
+  // Drag-resizable panels (desktop): problem-statement width + output height.
+  const { width: descW, onPointerDown: onDescDrag } = useResizable(420, 300, 760);
+  const { height: outputH, onPointerDown: onOutputDrag } = useResizableHeight(230, 120, 640);
+
   function handleExit() {
     if (sessionId) window.location.href = `/interview/${sessionId}`;
     else window.location.href = `/challenges/${slug}`;
@@ -146,10 +152,9 @@ export default function HarnessAttemptClient({
   }
 
   return (
-    <>
+    <div className="flex flex-col h-screen bg-bg overflow-hidden">
       {/* Top toolbar — consistent with the unit-js / frontend attempt surface. */}
-      <div className="sticky top-0 z-30 border-b border-border bg-bg/95 backdrop-blur supports-[backdrop-filter]:bg-bg/80">
-        <div className="mx-auto max-w-6xl px-4 py-2.5 flex items-center gap-3">
+      <header className="flex items-center gap-3 px-4 py-2.5 border-b border-border bg-surface shrink-0">
           <button
             type="button"
             onClick={handleExit}
@@ -209,117 +214,163 @@ export default function HarnessAttemptClient({
               Submit
             </button>
           </div>
-        </div>
-      </div>
+      </header>
 
-      <div className="mx-auto max-w-6xl px-4 py-6 grid grid-cols-1 lg:grid-cols-2 gap-4">
-      {/* ── Left: prompt + samples + results ── */}
-      <div className="space-y-4 min-w-0">
-        <div className="rounded-2xl border border-border bg-surface p-5">
-          <div className="flex items-center gap-2 mb-2">
-            <span className="text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded bg-accent/10 text-accent border border-accent/30">{difficulty}</span>
-            <code className="text-[11px] font-mono text-muted">{signatureStr}</code>
-          </div>
-          <h1 className="text-xl font-black tracking-tight mb-3">{title}</h1>
-          <MarkdownRenderer content={description} />
-        </div>
+      {/* Body: problem statement | editor + output — IDE-style full-height
+          split, drag-resizable on desktop, stacked on mobile. */}
+      <div className="flex-1 flex flex-col lg:flex-row min-h-0 overflow-hidden">
+        {/* ── Left: problem statement + sample cases ── */}
+        <aside
+          className="w-full lg:w-[var(--harness-desc-w)] lg:shrink-0 overflow-y-auto border-b lg:border-b-0 border-border bg-bg max-h-[38vh] lg:max-h-none lg:h-full"
+          style={{ "--harness-desc-w": `${descW}px` } as React.CSSProperties}
+        >
+          <div className="p-5">
+            <h1 className="text-lg font-black tracking-tight">{title}</h1>
+            <code className="mt-2 inline-block max-w-full overflow-x-auto rounded-md border border-border bg-surface px-2 py-1 text-[11px] font-mono text-muted whitespace-nowrap">
+              {signatureStr}
+            </code>
+            <div className="mt-4">
+              <MarkdownRenderer content={description} />
+            </div>
 
-        {publicCases.length > 0 && (
-          <div className="rounded-2xl border border-border bg-surface p-4">
-            <div className="text-[10px] font-black uppercase tracking-[0.15em] text-muted mb-2">Sample cases</div>
-            <div className="space-y-2">
-              {publicCases.map((c, i) => (
-                <div key={i} className="rounded-lg border border-border bg-elevated/40 p-2.5 text-xs font-mono">
-                  <div className="text-muted/70">{c.name}</div>
-                  <div className="mt-1"><span className="text-muted/50">in </span>{c.argsJson}</div>
-                  <div><span className="text-muted/50">out </span><span className="text-emerald-500">{c.expectedJson}</span></div>
+            {publicCases.length > 0 && (
+              <div className="mt-6">
+                <div className="text-[10px] font-black uppercase tracking-[0.15em] text-muted mb-2">Sample cases</div>
+                <div className="space-y-2">
+                  {publicCases.map((c, i) => (
+                    <div key={i} className="rounded-lg border border-border bg-surface p-2.5 text-xs font-mono">
+                      <div className="text-muted/70">{c.name}</div>
+                      <div className="mt-1"><span className="text-muted/50">in </span>{c.argsJson}</div>
+                      <div><span className="text-muted/50">out </span><span className="text-emerald-500">{c.expectedJson}</span></div>
+                    </div>
+                  ))}
+                  {hiddenCount > 0 && (
+                    <div className="text-[11px] text-muted/60 inline-flex items-center gap-1.5">
+                      <EyeOff className="w-3 h-3" /> + {hiddenCount} hidden case{hiddenCount === 1 ? "" : "s"}
+                    </div>
+                  )}
                 </div>
-              ))}
-              {hiddenCount > 0 && (
-                <div className="text-[11px] text-muted/60 inline-flex items-center gap-1.5">
-                  <EyeOff className="w-3 h-3" /> + {hiddenCount} hidden case{hiddenCount === 1 ? "" : "s"}
+              </div>
+            )}
+          </div>
+        </aside>
+
+        {/* Drag handle: description ↔ editor (desktop) */}
+        <div
+          onPointerDown={onDescDrag}
+          title="Drag to resize"
+          role="separator"
+          aria-orientation="vertical"
+          className="hidden lg:block w-1.5 shrink-0 cursor-col-resize bg-border/40 hover:bg-accent/60 active:bg-accent/70 transition-colors"
+        />
+
+        {/* ── Right: editor on top, output docked below ── */}
+        <div className="flex-1 min-w-0 flex flex-col min-h-0 overflow-hidden">
+          <div className="flex-1 min-h-[18rem] lg:min-h-0 flex flex-col overflow-hidden">
+            {/* Editor file header — gives the panel an IDE feel. */}
+            <div className="flex items-center gap-2 px-3 py-1.5 border-b border-border bg-surface text-[11px] font-mono text-muted shrink-0">
+              <FileCode className="w-3.5 h-3.5 text-accent/70" />
+              solution.{LANG_EXT[language] ?? "txt"}
+            </div>
+            <div className="flex-1 min-h-0">
+              <Editor
+                height="100%"
+                language={MONACO_LANG[language] ?? "plaintext"}
+                theme={resolvedTheme === "light" ? "light" : "vs-dark"}
+                value={code}
+                onChange={(v) => setCodeByLang((m) => ({ ...m, [language]: v ?? "" }))}
+                options={{
+                  minimap: { enabled: false },
+                  fontSize: 13.5,
+                  lineHeight: 21,
+                  scrollBeyondLastLine: false,
+                  automaticLayout: true,
+                  padding: { top: 14, bottom: 14 },
+                  renderLineHighlight: "all",
+                  smoothScrolling: true,
+                  cursorBlinking: "smooth",
+                  fontLigatures: true,
+                  fontFamily: "ui-monospace, 'SF Mono', 'Cascadia Code', 'Fira Code', 'JetBrains Mono', monospace",
+                  roundedSelection: true,
+                  scrollbar: { verticalScrollbarSize: 9, horizontalScrollbarSize: 9 },
+                  tabSize: 2,
+                }}
+              />
+            </div>
+          </div>
+
+          {/* Drag handle: editor ↔ output (desktop) */}
+          <div
+            onPointerDown={onOutputDrag}
+            title="Drag to resize"
+            role="separator"
+            aria-orientation="horizontal"
+            className="hidden lg:block h-1.5 shrink-0 cursor-row-resize bg-border/40 hover:bg-accent/60 active:bg-accent/70 transition-colors"
+          />
+
+          {/* Output / results — fixed resizable height, scrolls internally. */}
+          <section
+            className="shrink-0 flex flex-col min-h-0 border-t border-border lg:border-t-0 bg-bg h-56 lg:h-[var(--harness-out-h)]"
+            style={{ "--harness-out-h": `${outputH}px` } as React.CSSProperties}
+          >
+            <div className="h-10 shrink-0 flex items-center justify-between gap-2 px-3 border-b border-border bg-surface/30">
+              <span className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-wider text-fg">
+                <Terminal className="w-3 h-3 text-accent" />
+                Output
+              </span>
+              {result && !result.compileError && (
+                <div className="flex items-center gap-3">
+                  <span
+                    className={`text-xs font-black ${
+                      result.passed === result.total && result.total > 0 ? "text-emerald-500" : "text-amber-500"
+                    }`}
+                  >
+                    {result.passed}/{result.total} passed
+                  </span>
+                  <span className="text-xs font-bold text-muted">
+                    Score: <span className="text-fg">{result.score}</span>
+                  </span>
                 </div>
               )}
             </div>
-          </div>
-        )}
-      </div>
-
-      {/* ── Right: editor + output (actions live in the top toolbar) ── */}
-      <div className="space-y-3 min-w-0">
-        <div
-          className="rounded-2xl border border-border overflow-hidden bg-[#1e1e1e] flex flex-col shadow-sm"
-          style={{ height: "58vh" }}
-        >
-          {/* Editor file header — gives the panel an IDE feel. */}
-          <div className="flex items-center gap-2 px-3 py-1.5 border-b border-black/40 bg-[#252526] text-[11px] font-mono text-muted/80 shrink-0">
-            <FileCode className="w-3.5 h-3.5 text-accent/70" />
-            solution.{LANG_EXT[language] ?? "txt"}
-          </div>
-          <div className="flex-1 min-h-0">
-            <Editor
-              height="100%"
-              language={MONACO_LANG[language] ?? "plaintext"}
-              theme={resolvedTheme === "light" ? "light" : "vs-dark"}
-              value={code}
-              onChange={(v) => setCodeByLang((m) => ({ ...m, [language]: v ?? "" }))}
-              options={{
-                minimap: { enabled: false },
-                fontSize: 13.5,
-                lineHeight: 21,
-                scrollBeyondLastLine: false,
-                automaticLayout: true,
-                padding: { top: 14, bottom: 14 },
-                renderLineHighlight: "all",
-                smoothScrolling: true,
-                cursorBlinking: "smooth",
-                fontLigatures: true,
-                fontFamily: "ui-monospace, 'SF Mono', 'Cascadia Code', 'Fira Code', 'JetBrains Mono', monospace",
-                roundedSelection: true,
-                scrollbar: { verticalScrollbarSize: 9, horizontalScrollbarSize: 9 },
-                tabSize: 2,
-              }}
-            />
-          </div>
-        </div>
-
-        {/* Output / results — appears right under the editor on Run/Submit. */}
-        {result ? (
-          <ResultsPanel result={result} />
-        ) : (
-          <div className="rounded-2xl border border-dashed border-border bg-surface/50 px-4 py-7 text-center">
-            <div className="inline-flex items-center gap-1.5 text-[10px] font-black uppercase tracking-[0.18em] text-muted/50">
-              <Terminal className="w-3.5 h-3.5" /> Output
+            <div className="flex-1 min-h-0 overflow-y-auto">
+              <OutputBody result={result} busy={running || submitting} />
             </div>
-            <p className="mt-1.5 text-xs text-muted/50 font-mono">
-              Run your code to see test results here.
-            </p>
-          </div>
-        )}
+          </section>
+        </div>
       </div>
     </div>
-    </>
   );
 }
 
-function ResultsPanel({ result }: { result: GradeResponse }) {
-  if (result.compileError) {
+function OutputBody({ result, busy }: { result: GradeResponse | null; busy: boolean }) {
+  if (busy) {
     return (
-      <div className="rounded-2xl border border-rose-500/30 bg-rose-500/5 p-4">
-        <div className="text-sm font-bold text-rose-500 mb-2">Compilation failed</div>
-        <pre className="text-[11px] font-mono text-muted whitespace-pre-wrap overflow-x-auto max-h-60">{result.stderr || "See compiler output."}</pre>
+      <div className="h-full grid place-items-center">
+        <div className="inline-flex items-center gap-2 text-xs text-muted font-mono">
+          <Loader2 className="w-4 h-4 animate-spin text-accent" />
+          Running tests…
+        </div>
       </div>
     );
   }
-  const allPass = result.passed === result.total && result.total > 0;
-  return (
-    <div className="rounded-2xl border border-border bg-surface p-4">
-      <div className="flex items-center justify-between mb-3">
-        <div className="text-sm font-black">
-          {allPass ? <span className="text-emerald-500">All tests passed</span> : <span className="text-amber-500">{result.passed}/{result.total} passed</span>}
-        </div>
-        <div className="text-xs font-bold text-muted">Score: <span className="text-fg">{result.score}</span></div>
+  if (!result) {
+    return (
+      <div className="h-full grid place-items-center px-4 text-center">
+        <p className="text-xs text-muted/50 font-mono">Run your code to see test results here.</p>
       </div>
+    );
+  }
+  if (result.compileError) {
+    return (
+      <div className="p-4">
+        <div className="text-sm font-bold text-rose-500 mb-2">Compilation failed</div>
+        <pre className="text-[11px] font-mono text-muted whitespace-pre-wrap overflow-x-auto">{result.stderr || "See compiler output."}</pre>
+      </div>
+    );
+  }
+  return (
+    <div className="p-3">
       <div className="space-y-1.5">
         {result.results.map((r, i) => (
           <div key={i} className="rounded-lg border border-border bg-elevated/40 p-2 text-xs">

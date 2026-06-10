@@ -304,8 +304,10 @@ export default function WorkspaceDashboardClient({
       const data = await res.json().catch(() => null);
       if (res.ok && data?.atsIntegration) {
         setAtsProvider(data.atsIntegration.provider);
-        setAtsApiKey("••••••••••••••••••••••••"); // Obfuscated on load for safety
-        setAtsWebhookSecret(data.atsIntegration.webhookSecret || "");
+        // Secrets are write-only on the API; the disabled inputs show a
+        // masked placeholder while connected.
+        setAtsApiKey("");
+        setAtsWebhookSecret("");
         setAtsActive(true);
         if (typeof window !== "undefined") {
           setAtsSavedUrl(`${window.location.origin}/api/integrations/webhooks/${data.atsIntegration.provider.toLowerCase()}?workspaceId=${data.workspaceId}`);

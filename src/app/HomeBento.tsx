@@ -1,12 +1,9 @@
 "use client";
 
-import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Zap, ShieldCheck, Share2, Code2, ArrowUpRight, Monitor, Laptop, Globe, Cpu, Play, RotateCcw, Loader2, Brain, Workflow, FileText, Calendar, Users, Briefcase, Activity, Check, AlertTriangle, Sparkles, X } from "lucide-react";
-import { TemplateLogo, templateIcon } from "@/lib/icons";
+import { Zap, ShieldCheck, Share2, Code2, Monitor, Laptop, Globe, Cpu, Play, RotateCcw, Loader2 } from "lucide-react";
 import RevealOnScroll, { RevealItem } from "@/components/scroll/RevealOnScroll";
 import { SpotlightGroup, SpotlightCard } from "@/components/scroll/SpotlightGroup";
-import HomeRecruiterFeatures from "./HomeRecruiterFeatures";
 import {
   TemplateCardShell,
   CardTitleRow,
@@ -322,57 +319,11 @@ const FEATURES = [
   }
 ];
 
-const RECRUITER_FEATURES = [
-  {
-    icon: Brain,
-    title: "AI Proctoring & Anti-Cheat",
-    body: "Detect instant block copy-pastes, tab blurs, and browser switches. Reconstruct candidate sessions via step-by-step keystroke playbacks.",
-    color: "#FF3D00"
-  },
-  {
-    icon: Cpu,
-    title: "Model Context Protocol (MCP)",
-    body: "Connect your private LLM prompt engineering, grading files, and customized evaluations. Execute bespoke developer screening agents natively.",
-    color: "#FFE600"
-  },
-  {
-    icon: Users,
-    title: "Multiplayer Live Coding Panels",
-    body: "Host high-performance whiteboard sessions with audio and video integration, zero-latency WebRTC synchronization, and real-time candidate active logs.",
-    color: "#60A5FA"
-  },
-  {
-    icon: Workflow,
-    title: "Automated Grading Runtimes",
-    body: "Establish structured test case matrices with weighted scoring models (JUnit, Jest, PyTest) that execute automatically upon candidate submission.",
-    color: "#E040FB"
-  },
-  {
-    icon: FileText,
-    title: "Structured Rubrics & Dossiers",
-    body: "Standardize post-interview evaluations across multiple dimensions (Code Quality, Architecture, Security, Speed) and export professional PDF reviews.",
-    color: "#00E5FF"
-  },
-  {
-    icon: ShieldCheck,
-    title: "Credit-Based Enterprise Economy",
-    body: "Scalable per-screening billing model designed for growing organizations. Control seat bounds, allocate workspace limits, and purchase custom credit packages.",
-    color: "#9DFF00"
-  }
-];
-
 const QUICK_STARTS = [
   { id: "react", label: "React", desc: "Hooks, JSX, Fast Refresh" },
   { id: "typescript", label: "TypeScript", desc: "Strict Types, TS Config" },
   { id: "javascript", label: "JavaScript", desc: "Modern ES Modules" },
   { id: "vue", label: "Vue 3", desc: "SFC, Composition API" },
-];
-
-const RECRUITER_QUICK_STARTS = [
-  { id: "react-architect", label: "React Frontend Campaign", desc: "Hooks, state management, layouts" },
-  { id: "system-design", label: "System Architecture Live", desc: "Collaborative mock whiteboards" },
-  { id: "python-backend", label: "Python Automation Screening", desc: "Algorithms, parsing, auto-grading" },
-  { id: "sql-performance", label: "Database Performance Grader", desc: "SQL schemas, optimization, indexing" },
 ];
 
 const TYPING_STEPS = [
@@ -384,7 +335,8 @@ const TYPING_STEPS = [
   { line: 8, text: "}", author: "Adam" as const },
 ];
 
-function RecruiterDemoCard() {
+/** Exported for the /hire page — a believable live-interview workspace mock. */
+export function RecruiterDemoCard() {
   const [phase, setPhase] = useState<"typing" | "ready" | "running" | "done">("typing");
   const [stepIndex, setStepIndex] = useState(0);
   const [charOffset, setCharOffset] = useState(0);
@@ -872,62 +824,25 @@ function RecruiterDemoCard() {
 }
 
 export default function HomeBento() {
-  const [persona, setPersona] = useState<"candidate" | "recruiter" | null>(null);
-
-  useEffect(() => {
-    // Initial load
-    const saved = localStorage.getItem("ipad.persona");
-    if (saved === "candidate" || saved === "recruiter") {
-      setPersona(saved as "candidate" | "recruiter");
-    }
-
-    // Event listener for changes
-    const handlePersonaChange = (e: Event) => {
-      setPersona((e as CustomEvent).detail);
-    };
-    window.addEventListener("ipad-persona-change", handlePersonaChange);
-    return () => window.removeEventListener("ipad-persona-change", handlePersonaChange);
-  }, []);
-
-  const currentFeatures = persona === "recruiter" ? RECRUITER_FEATURES : FEATURES;
-  const currentQuickStarts = persona === "recruiter" ? RECRUITER_QUICK_STARTS : QUICK_STARTS;
-  const isRecruiter = persona === "recruiter";
-
   return (
     <section className="mx-auto max-w-6xl px-4 py-20">
       <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
-        
-        {/* Main Feature: Live Preview Lookalike / Recruiter Mock Workspace */}
-        {isRecruiter ? <RecruiterDemoCard /> : <CodeDemoCard />}
+
+        {/* Main Feature: Live Preview Lookalike */}
+        <CodeDemoCard />
 
         {/* Side Bento: Stats/Highlight */}
         <RevealOnScroll className="md:col-span-4 grid grid-cols-1 gap-4" stagger={0.12}>
           <RevealItem>
-            <div className={`rounded-3xl border p-6 flex flex-col justify-between group overflow-hidden relative h-full ${
-              isRecruiter ? "border-indigo-500/20 bg-indigo-500/5" : "border-accent/20 bg-accent/5"
-            }`}>
+            <div className="rounded-3xl border border-accent/20 bg-accent/5 p-6 flex flex-col justify-between group overflow-hidden relative h-full">
               <div className="absolute -right-4 -bottom-4 opacity-[0.05] transition-transform group-hover:scale-110">
-                <Cpu className={`w-32 h-32 ${isRecruiter ? "text-indigo-400" : "text-accent"}`} />
+                <Cpu className="w-32 h-32 text-accent" />
               </div>
-              <h3 className={`font-black uppercase tracking-widest text-xs mb-2 ${
-                isRecruiter ? "text-indigo-400" : "text-accent"
-              }`}>
-                {isRecruiter ? "Billing & Scale" : "Engine"}
-              </h3>
+              <h3 className="font-black uppercase tracking-widest text-xs mb-2 text-accent">Engine</h3>
               <p className="text-fg text-xl md:text-2xl font-black leading-tight relative z-10">
-                {isRecruiter ? (
-                  <>
-                    Workspace Plan: <br />
-                    <span className="text-indigo-400">Enterprise</span> <br />
-                    <span className="text-xs text-muted font-bold block mt-1 uppercase">75/100 Screening Credits Free</span>
-                  </>
-                ) : (
-                  <>
-                    Powered by the <br />
-                    <span className="text-accent">Sandpack v2</span> <br />
-                    Runtime.
-                  </>
-                )}
+                Powered by the <br />
+                <span className="text-accent">Sandpack v2</span> <br />
+                Runtime.
               </p>
             </div>
           </RevealItem>
@@ -935,56 +850,45 @@ export default function HomeBento() {
             <div className="rounded-3xl border border-border bg-panel p-6 flex flex-col justify-between group hover:border-border-strong transition-colors h-full">
               <div className="flex items-center justify-between mb-2">
                 <div className="w-10 h-10 rounded-xl bg-surface border border-border flex items-center justify-center">
-                  {isRecruiter ? <Briefcase className="w-5 h-5 text-indigo-400" /> : <Monitor className="w-5 h-5 text-muted" />}
+                  <Monitor className="w-5 h-5 text-muted" />
                 </div>
-                <div className="text-[10px] font-bold text-muted bg-surface px-2 py-0.5 rounded-full uppercase">
-                  {isRecruiter ? "Active" : "Stable"}
-                </div>
+                <div className="text-[10px] font-bold text-muted bg-surface px-2 py-0.5 rounded-full uppercase">Stable</div>
               </div>
               <div>
-                <div className={`text-2xl font-black text-fg italic ${isRecruiter ? "text-indigo-400" : ""}`}>
-                  {isRecruiter ? "ATS SYNC" : "PRO"}
-                </div>
-                <div className="text-xs text-muted">
-                  {isRecruiter ? "Greenhouse, Ashby & Lever" : "Desktop Optimized Editor"}
-                </div>
+                <div className="text-2xl font-black text-fg italic">PRO</div>
+                <div className="text-xs text-muted">Desktop Optimized Editor</div>
               </div>
             </div>
           </RevealItem>
         </RevealOnScroll>
 
-        {/* Feature Matrix — recruiter gets full animated showcase sections,
-            candidates get the spotlight card grid */}
-        {isRecruiter ? (
-          <HomeRecruiterFeatures />
-        ) : (
-          <SpotlightGroup className="md:col-span-12">
-            <RevealOnScroll
-              className="grid grid-cols-1 md:grid-cols-3 gap-4"
-              stagger={0.08}
-            >
-              {currentFeatures.map((f, i) => (
-                <RevealItem key={i}>
-                  <SpotlightCard className="rounded-3xl h-full">
-                    <div className="rounded-3xl border border-border bg-panel p-6 hover:bg-elevated hover:border-border-strong transition-colors group h-full">
-                      <div className="w-12 h-12 rounded-2xl bg-panel border border-border flex items-center justify-center mb-6 group-hover:scale-110 transition-transform" style={{ borderColor: `${f.color}33` }}>
-                        <f.icon className="w-6 h-6" style={{ color: f.color }} />
-                      </div>
-                      <h4 className="text-fg font-black text-xl mb-2">{f.title}</h4>
-                      <p className="text-muted text-sm md:text-base leading-relaxed">{f.body}</p>
+        {/* Feature Matrix */}
+        <SpotlightGroup className="md:col-span-12">
+          <RevealOnScroll
+            className="grid grid-cols-1 md:grid-cols-3 gap-4"
+            stagger={0.08}
+          >
+            {FEATURES.map((f, i) => (
+              <RevealItem key={i}>
+                <SpotlightCard className="rounded-3xl h-full">
+                  <div className="rounded-3xl border border-border bg-panel p-6 hover:bg-elevated hover:border-border-strong transition-colors group h-full">
+                    <div className="w-12 h-12 rounded-2xl bg-panel border border-border flex items-center justify-center mb-6 group-hover:scale-110 transition-transform" style={{ borderColor: `${f.color}33` }}>
+                      <f.icon className="w-6 h-6" style={{ color: f.color }} />
                     </div>
-                  </SpotlightCard>
-                </RevealItem>
-              ))}
-            </RevealOnScroll>
-          </SpotlightGroup>
-        )}
+                    <h4 className="text-fg font-black text-xl mb-2">{f.title}</h4>
+                    <p className="text-muted text-sm md:text-base leading-relaxed">{f.body}</p>
+                  </div>
+                </SpotlightCard>
+              </RevealItem>
+            ))}
+          </RevealOnScroll>
+        </SpotlightGroup>
 
         {/* Quick Starts Title */}
         <RevealOnScroll className="md:col-span-12 mt-12 mb-6">
           <h2 className="text-2xl md:text-3xl font-black text-fg tracking-tight flex items-center gap-3">
-            <div className={`w-1.5 h-8 rounded-full ${isRecruiter ? "bg-indigo-500" : "bg-accent"}`} />
-            {isRecruiter ? "Assessment Templates" : "Popular Starters"}
+            <div className="w-1.5 h-8 rounded-full bg-accent" />
+            Popular Starters
           </h2>
         </RevealOnScroll>
 
@@ -993,11 +897,11 @@ export default function HomeBento() {
           className="md:col-span-12 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4"
           stagger={0.06}
         >
-          {currentQuickStarts.map((q) => (
+          {QUICK_STARTS.map((q) => (
             <RevealItem key={q.id}>
               <TemplateCardShell
-                href={isRecruiter ? `/dashboard` : `/play?template=${q.id}`}
-                templateId={isRecruiter ? "react" : q.id}
+                href={`/play?template=${q.id}`}
+                templateId={q.id}
               >
                 <CardTitleRow>{q.label}</CardTitleRow>
                 <CardSubtitle>{q.desc}</CardSubtitle>

@@ -1,8 +1,9 @@
 import { NextResponse } from "next/server";
+import { randomInt } from "crypto";
 import { z } from "zod";
 import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
-import { clientKey, rateLimit } from "@/lib/rate-limit";
+import { clientKey, rateLimitDistributed } from "@/lib/rate-limit";
 import { sendEmail } from "@/lib/email";
 
 const schema = z.object({
@@ -17,9 +18,10 @@ const schema = z.object({
 });
 
 export async function POST(req: Request) {
-  // 5 attempts per 5 min per IP — sign-up abuse guard (production only)
+  // 5 attempts per 5 min per IP — sign-up + OTP-guess abuse guard (production
+  // only). Distributed so the cap holds across serverless instances.
   if (process.env.NODE_ENV === "production") {
-    const rl = rateLimit("register:" + clientKey(req), 5, 5 * 60_000);
+    const rl = await rateLimitDistributed("register:" + clientKey(req), 5, 5 * 60_000);
     if (!rl.ok) {
       return NextResponse.json(
         { error: "Too many sign-ups from this address. Try again later." },
@@ -101,7 +103,9 @@ export async function POST(req: Request) {
 
     // 1. Send OTP if not provided
     if (!otp) {
-      const generatedOtp = Math.floor(100000 + Math.random() * 900000).toString();
+      // crypto-secure — Math.random() is predictable enough to matter for an
+      // email-verification code.
+      const generatedOtp = randomInt(100000, 1000000).toString();
 
       // Overwrite any existing tokens for this email
       await prisma.verificationToken.deleteMany({
@@ -195,8 +199,9 @@ export async function POST(req: Request) {
     return NextResponse.json({ ok: true });
   } catch (err) {
     console.error("[register API error]:", err);
+    // Never echo internal error details (messages/stacks) to the client.
     return NextResponse.json(
-      { error: err instanceof Error ? err.message : String(err), stack: err instanceof Error ? err.stack : undefined },
+      { error: "Registration failed. Please try again." },
       { status: 500 }
     );
   }

@@ -36,14 +36,15 @@ export async function GET(
 
   const existing = await prisma.interviewSession.findUnique({
     where: { id },
-    select: { status: true, startRequestedAt: true, shareToken: true, totalSec: true, startedAt: true },
+    select: { userId: true, status: true, startRequestedAt: true, shareToken: true, totalSec: true, startedAt: true },
   });
   if (!existing) return NextResponse.json({ error: "not found" }, { status: 404 });
 
-  // Allow owner (any logged-in user matching) or valid token holder
+  // Allow the session owner or a valid share-token holder — being logged in
+  // as some OTHER user must not grant access to arbitrary session ids.
   const session = await auth().catch(() => null);
   const isValidToken = !!token && token === existing.shareToken;
-  const isOwner = !!session?.user?.id;
+  const isOwner = !!session?.user?.id && session.user.id === existing.userId;
   if (!isOwner && !isValidToken) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }

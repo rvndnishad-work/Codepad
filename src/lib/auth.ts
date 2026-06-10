@@ -13,7 +13,7 @@ import {
   decryptTotpSecret,
   verifyTotpCode,
 } from "@/lib/totp";
-import { rateLimit } from "@/lib/rate-limit";
+import { rateLimitDistributed } from "@/lib/rate-limit";
 
 /**
  * IP-42 P5: credentials login enforces TOTP when the user has it enabled.
@@ -152,8 +152,10 @@ const credentialsProvider = Credentials({
       }
       // IP-55: brute-force protection. Gate the verify path per account before
       // checking the code. The first password-only submit (TotpRequired above)
-      // doesn't consume budget — only actual code submissions do.
-      const rl = rateLimit(`totp:${user.id}`, TOTP_MAX_ATTEMPTS, TOTP_ATTEMPT_WINDOW_MS);
+      // doesn't consume budget — only actual code submissions do. Distributed
+      // (Redis-backed) so the cap holds across serverless instances; an
+      // in-memory counter could be spread-and-bypassed.
+      const rl = await rateLimitDistributed(`totp:${user.id}`, TOTP_MAX_ATTEMPTS, TOTP_ATTEMPT_WINDOW_MS);
       if (!rl.ok) {
         await logSecurityEvent(
           user.id,

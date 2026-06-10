@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { findOrCreateUserByEmail } from "@/lib/take-home/candidate";
 
 export async function POST(
   req: Request,
@@ -49,25 +50,17 @@ export async function POST(
       );
     }
 
-    // Upsert candidate User by email so attempts belong to a valid record
-    let candidateUser = await prisma.user.findFirst({
-      where: { email: { equals: assignment.candidateEmail } },
-    });
-
-    if (!candidateUser) {
-      candidateUser = await prisma.user.create({
-        data: {
-          name: assignment.candidateName,
-          email: assignment.candidateEmail.toLowerCase(),
-          portfolioPublic: false,
-        },
-      });
-    }
+    // Find-or-create the candidate User by email (case-insensitive, race-safe)
+    // so attempts belong to a valid record.
+    const candidateUserId = await findOrCreateUserByEmail(
+      assignment.candidateEmail,
+      assignment.candidateName
+    );
 
     // Auto-create ChallengeAttempt
     const attempt = await prisma.challengeAttempt.create({
       data: {
-        userId: candidateUser.id,
+        userId: candidateUserId,
         challengeId: assignment.challengeId,
         stepId: firstStep.id,
         status: "in_progress",

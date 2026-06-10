@@ -1,11 +1,14 @@
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { encryptAtRest } from "@/lib/crypto/at-rest";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 
 const integrationSchema = z.object({
   provider: z.enum(["GREENHOUSE", "LEVER", "ASHBY"]),
-  apiKey: z.string().min(1, "API Key is required"),
+  // Optional on update — omitted/empty means "keep the existing key".
+  // Required when connecting for the first time (checked in the handler).
+  apiKey: z.string().optional().nullable(),
   webhookSecret: z.string().nullable().optional(),
   settings: z.string().optional(),
 });
@@ -31,7 +34,7 @@ export async function GET(
             webhookSecret: true,
             settings: true,
             createdAt: true,
-            // Exclude API key for security reasons on standard reads
+            // apiKey deliberately excluded — secrets are write-only.
           },
         },
         members: true,
@@ -47,11 +50,21 @@ export async function GET(
       return NextResponse.json({ error: "forbidden" }, { status: 403 });
     }
 
+    // Secrets are write-only: expose presence booleans, never the values.
+    const row = workspace.atsIntegration;
     return NextResponse.json({
-      atsIntegration: workspace.atsIntegration,
+      atsIntegration: row
+        ? {
+            id: row.id,
+            provider: row.provider,
+            settings: row.settings,
+            createdAt: row.createdAt,
+            hasWebhookSecret: !!row.webhookSecret,
+          }
+        : null,
       workspaceId: workspace.id,
     });
-  } catch (err: any) {
+  } catch (err) {
     console.error("Failed to read integration configuration:", err);
     return NextResponse.json({ error: "Failed to read integrations" }, { status: 500 });
   }
@@ -72,6 +85,7 @@ export async function POST(
       where: { slug },
       include: {
         members: true,
+        atsIntegration: { select: { id: true } },
       },
     });
 
@@ -93,20 +107,38 @@ export async function POST(
 
     const { provider, apiKey, webhookSecret, settings = "{}" } = parsed.data;
 
-    // Encrypt or obfuscate API key before saving (in a real production app we'd use a crypto util, here we store it securely)
+    // Secrets are AES-GCM-encrypted at rest (same helper as External MCP /
+    // TOTP). On update an omitted key keeps the stored one.
+    const trimmedKey = apiKey?.trim() ?? "";
+    if (!workspace.atsIntegration && !trimmedKey) {
+      return NextResponse.json(
+        { error: "API key is required when connecting an ATS for the first time." },
+        { status: 400 }
+      );
+    }
+    const encryptedKey = trimmedKey ? encryptAtRest(trimmedKey) : undefined;
+    const encryptedWebhookSecret =
+      webhookSecret === undefined
+        ? undefined // keep existing
+        : webhookSecret
+          ? encryptAtRest(webhookSecret)
+          : null; // explicit clear
+
     const integration = await prisma.atsIntegration.upsert({
       where: { workspaceId: workspace.id },
       create: {
         workspaceId: workspace.id,
         provider,
-        apiKey,
-        webhookSecret: webhookSecret || null,
+        apiKey: encryptedKey!, // present on create — checked above
+        webhookSecret: encryptedWebhookSecret ?? null,
         settings,
       },
       update: {
         provider,
-        apiKey,
-        webhookSecret: webhookSecret || null,
+        ...(encryptedKey !== undefined ? { apiKey: encryptedKey } : {}),
+        ...(encryptedWebhookSecret !== undefined
+          ? { webhookSecret: encryptedWebhookSecret }
+          : {}),
         settings,
       },
     });
@@ -116,12 +148,12 @@ export async function POST(
       integration: {
         id: integration.id,
         provider: integration.provider,
-        webhookSecret: integration.webhookSecret,
         settings: integration.settings,
+        hasWebhookSecret: !!integration.webhookSecret,
       },
     });
 
-  } catch (err: any) {
+  } catch (err) {
     console.error("Failed to upsert integrations:", err);
     return NextResponse.json({ error: "Failed to save integration details" }, { status: 500 });
   }
@@ -159,7 +191,7 @@ export async function DELETE(
     }).catch(() => null);
 
     return NextResponse.json({ ok: true });
-  } catch (err: any) {
+  } catch (err) {
     console.error("Failed to disconnect integrations:", err);
     return NextResponse.json({ error: "Failed to disconnect integration" }, { status: 500 });
   }

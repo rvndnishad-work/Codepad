@@ -1,30 +1,17 @@
 "use client";
 
 import Link from "next/link";
-import { Fragment, useState, useEffect } from "react";
+import { Fragment } from "react";
 import { ArrowRight } from "lucide-react";
 import { motion, useReducedMotion, type Variants } from "framer-motion";
 import { EASE_EXPO_OUT } from "@/components/scroll/motion-config";
 
-export default function HomeFinalCTA() {
+export default function HomeFinalCTA({
+  persona = "candidate",
+}: {
+  persona?: "candidate" | "recruiter";
+}) {
   const reduced = useReducedMotion();
-  const [persona, setPersona] = useState<"candidate" | "recruiter" | null>(null);
-
-  useEffect(() => {
-    // Initial load
-    const saved = localStorage.getItem("ipad.persona");
-    if (saved === "candidate" || saved === "recruiter") {
-      setPersona(saved as "candidate" | "recruiter");
-    }
-
-    // Event listener for changes
-    const handlePersonaChange = (e: Event) => {
-      setPersona((e as CustomEvent).detail);
-    };
-    window.addEventListener("ipad-persona-change", handlePersonaChange);
-    return () => window.removeEventListener("ipad-persona-change", handlePersonaChange);
-  }, []);
-
   const isRecruiter = persona === "recruiter";
 
   const headline = isRecruiter ? "Hire your next elite engineer." : "Bring your ideas to life.";

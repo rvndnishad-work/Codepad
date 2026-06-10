@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import React, { useState, useRef, useEffect } from "react";
 import {
@@ -24,9 +24,9 @@ import { TemplateLogo } from "@/lib/icons";
 import ChallengeTimer from "./ChallengeTimer";
 import type { Snippet, Visibility } from "./Playground";
 
-/* ────────────────────────────────────────────────────────────────
-   3D Toolbar Styles — injected once
-──────────────────────────────────────────────────────────────── */
+/* â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+   3D Toolbar Styles â€” injected once
+â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 
 const toolbarCSS = `
   .toolbar-3d {
@@ -92,7 +92,7 @@ const toolbarCSS = `
     transform: translateY(0.5px);
   }
 
-  /* 3D Run button — glowing raised, uses accent across themes */
+  /* 3D Run button â€” glowing raised, uses accent across themes */
   .tb-run {
     background: linear-gradient(180deg, var(--accent) 0%, var(--accent-soft) 100%);
     box-shadow:
@@ -114,7 +114,7 @@ const toolbarCSS = `
     transform: translateY(1px);
   }
 
-  /* AI button 3D — uses accent across themes */
+  /* AI button 3D â€” uses accent across themes */
   .tb-ai {
     background: linear-gradient(180deg, rgba(var(--accent-rgb),0.12) 0%, rgba(var(--accent-rgb),0.06) 100%);
     box-shadow:
@@ -162,7 +162,7 @@ const toolbarCSS = `
     box-shadow: inset 0 1px 2px rgba(0,0,0,0.2);
   }
 
-  /* 3D separator — subtle groove */
+  /* 3D separator â€” subtle groove */
   .tb-sep {
     width: 1px;
     height: 20px;
@@ -180,7 +180,7 @@ const toolbarCSS = `
     box-shadow: 1px 0 0 rgba(255,255,255,0.04);
   }
 
-  /* Segmented tabs — used for the View Layout selector on lg+ screens */
+  /* Segmented tabs â€” used for the View Layout selector on lg+ screens */
   .tb-tabs {
     background: var(--bg);
     border: 1px solid var(--border);
@@ -213,7 +213,7 @@ const toolbarCSS = `
     color: var(--accent);
   }
 
-  /* Icon button — ghost style with 3D hover */
+  /* Icon button â€” ghost style with 3D hover */
   .tb-icon-btn {
     transition: all 0.15s ease;
     color: var(--muted);
@@ -230,15 +230,15 @@ const toolbarCSS = `
   }
 `;
 
-/* ────────────────────────────────────────────────────────────────
-   Toolbar Dropdown — 3D elevated
-──────────────────────────────────────────────────────────────── */
+/* â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+   Toolbar Dropdown â€” 3D elevated
+â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 
 type ToolbarDropdownProps<T extends string> = {
   value: T;
-  options: { value: T; label: string; icon?: React.ElementType }[];
+  options: { value: T; label: string; icon?: React.ComponentType<{ className?: string; style?: React.CSSProperties }> }[];
   onChange: (v: T) => void;
-  icon: React.ElementType;
+  icon: React.ComponentType<{ className?: string; style?: React.CSSProperties }>;
   disabled?: boolean;
   label?: string;
 };
@@ -305,11 +305,11 @@ function ToolbarDropdown<T extends string>({
   );
 }
 
-/* ────────────────────────────────────────────────────────────────
-   View Layout selector — segmented tabs on lg+, dropdown below.
+/* â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+   View Layout selector â€” segmented tabs on lg+, dropdown below.
    The two variants share the same options list so behavior stays
    identical across breakpoints.
-──────────────────────────────────────────────────────────────── */
+â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 
 const VIEW_OPTIONS = [
   { value: "preview" as const, label: "Preview", icon: Eye },
@@ -330,7 +330,7 @@ function ViewLayoutControl({
 }) {
   return (
     <>
-      {/* Dropdown — shown below the lg breakpoint (< 1024px) */}
+      {/* Dropdown â€” shown below the lg breakpoint (< 1024px) */}
       <div className="lg:hidden">
         <ToolbarDropdown
           label="View Layout"
@@ -344,7 +344,7 @@ function ViewLayoutControl({
         />
       </div>
 
-      {/* Segmented tabs — shown at lg and above (≥ 1024px) */}
+      {/* Segmented tabs â€” shown at lg and above (â‰¥ 1024px) */}
       <div
         className={`hidden lg:flex tb-tabs items-center rounded-md h-7 p-0.5 gap-0.5 ${
           disabled ? "opacity-30 pointer-events-none" : ""
@@ -376,9 +376,9 @@ function ViewLayoutControl({
   );
 }
 
-/* ────────────────────────────────────────────────────────────────
-   Numeric Stepper — 3D inset
-──────────────────────────────────────────────────────────────── */
+/* â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+   Numeric Stepper â€” 3D inset
+â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 
 function NumericStepper({ 
   value, 
@@ -391,7 +391,7 @@ function NumericStepper({
   onDecrease: () => void;
   onIncrease: () => void;
   suffix?: string;
-  icon?: React.ElementType;
+  icon?: React.ComponentType<{ className?: string; style?: React.CSSProperties }>;
 }) {
   return (
     <div className="tb-stepper flex items-center gap-0.5 rounded-md h-7">
@@ -415,9 +415,9 @@ function NumericStepper({
   );
 }
 
-/* ────────────────────────────────────────────────────────────────
-   Main Toolbar — 3D elevated surface
-──────────────────────────────────────────────────────────────── */
+/* â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+   Main Toolbar â€” 3D elevated surface
+â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 
 export default function PlaygroundToolbar({
   templateId, tplTitle, title, setTitle, setDirty, dirty, saving, signedIn, isOwner, editable,
@@ -445,7 +445,7 @@ export default function PlaygroundToolbar({
     <>
       <style dangerouslySetInnerHTML={{ __html: toolbarCSS }} />
       <div className="toolbar-3d h-14 px-4 flex items-center justify-between">
-        {/* ── Left: Identity + Run ── */}
+        {/* â”€â”€ Left: Identity + Run â”€â”€ */}
         <div className="flex items-center gap-3">
           {/* Project Identity */}
           <div className="flex items-center gap-2 group/meta">
@@ -460,13 +460,13 @@ export default function PlaygroundToolbar({
             />
             {editable && <Pencil className="w-2.5 h-2.5 text-muted/10 group-hover/meta:text-muted/25 transition-colors flex-shrink-0" />}
             <div className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${saving ? "bg-muted/20 animate-pulse" : dirty ? "bg-amber-400/70" : "bg-emerald-400/50"}`}
-              title={saving ? "Saving…" : dirty ? "Unsaved" : "Saved"}
+              title={saving ? "Savingâ€¦" : dirty ? "Unsaved" : "Saved"}
             />
           </div>
 
           <div className="tb-sep" />
 
-          {/* Run Button — 3D raised */}
+          {/* Run Button â€” 3D raised */}
           <button
             onClick={handleRun}
             disabled={running}
@@ -485,11 +485,11 @@ export default function PlaygroundToolbar({
           </button>
         </div>
 
-        {/* ── Center: Editor Config ──
+        {/* â”€â”€ Center: Editor Config â”€â”€
             View Layout is the only control visible at every breakpoint
-            (dropdown < lg, segmented tabs ≥ lg). Font size + UI scale are
+            (dropdown < lg, segmented tabs â‰¥ lg). Font size + UI scale are
             secondary, so they stay gated to xl+ to keep narrower toolbars
-            uncluttered. The Editor Engine selector is gone — Monaco is the
+            uncluttered. The Editor Engine selector is gone â€” Monaco is the
             sole editor now. */}
         <div className="flex items-center gap-1.5">
           <ViewLayoutControl
@@ -519,9 +519,9 @@ export default function PlaygroundToolbar({
           </div>
         </div>
 
-        {/* ── Right: Actions ── */}
+        {/* â”€â”€ Right: Actions â”€â”€ */}
         <div className="flex items-center gap-2">
-          {/* AI Assist — uses accent */}
+          {/* AI Assist â€” uses accent */}
           <button
             onClick={onTogglePrompt}
             className="tb-ai h-8 px-3 rounded-lg flex items-center gap-1.5 text-accent group/ai"
@@ -537,7 +537,7 @@ export default function PlaygroundToolbar({
 
           <div className="tb-sep" />
 
-          {/* Save + More — ghost with 3D hover */}
+          {/* Save + More â€” ghost with 3D hover */}
           <div className="flex items-center gap-1">
             {editable && signedIn && (
               <button 

@@ -1,3 +1,5 @@
+import type { Metadata } from "next";
+import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { validatePageAccess } from "@/lib/settings";
@@ -8,13 +10,12 @@ import HomeExplore from "./HomeExplore";
 import HomeChallenges from "./HomeChallenges";
 import HomeFinalCTA from "./HomeFinalCTA";
 import Link from "next/link";
-import { ArrowRight, BookOpen, TrendingUp, Hash, PenSquare } from "lucide-react";
+import { ArrowRight, BookOpen, TrendingUp, PenSquare } from "lucide-react";
 import { type BlogFeedEntry } from "@/components/BlogFeedItem";
 import BlogCardHero from "@/components/BlogCardHero";
 import BlogLazyFeed from "@/components/BlogLazyFeed";
 import FeaturedCarousel from "@/components/FeaturedCarousel";
 import BlogPopularRow from "@/components/BlogPopularRow";
-import TemplatePicker from "@/components/TemplatePicker";
 
 async function loadStats() {
   try {
@@ -49,9 +50,22 @@ async function loadStats() {
   }
 }
 
+export const metadata: Metadata = {
+  title: "Interviewpad — Practice Coding Challenges & Build Your Developer Portfolio",
+  description:
+    "Solve curated coding challenges in eight languages, build in a zero-setup sandbox with real code execution, and turn your work into a shareable developer portfolio.",
+  alternates: { canonical: "/" },
+};
+
 export default async function HomePage() {
   const session = await auth().catch(() => null);
   await validatePageAccess("/", session);
+
+  // Recruiters get the hiring-focused homepage. The hero toggle on /hire
+  // links straight back here, so this is a default — not a wall.
+  const userType = (session?.user as { userType?: string | null } | undefined)?.userType;
+  if (userType === "recruiter") redirect("/hire");
+
   const userId = session?.user?.id;
   const stats = await loadStats();
 
@@ -223,10 +237,10 @@ export default async function HomePage() {
   return (
     <div className="bg-bg min-h-screen">
       <HomeHero
+        persona="candidate"
         sessionName={welcomeData?.name}
         snippetCount={welcomeData?.snippetCount ?? 0}
         recentSnippet={welcomeData?.recent}
-        userType={session?.user ? (session.user as any).userType ?? null : null}
       />
 
       <HomeBento />

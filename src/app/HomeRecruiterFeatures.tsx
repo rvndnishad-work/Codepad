@@ -37,7 +37,7 @@ function ReplayBtn({ onClick }: { onClick: () => void }) {
 
 type SectionShellProps = {
   index: number;
-  icon: React.ElementType;
+  icon: React.ComponentType<{ className?: string; style?: React.CSSProperties }>;
   accent: string;
   title: string;
   titleAccent: string;

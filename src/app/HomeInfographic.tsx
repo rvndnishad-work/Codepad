@@ -20,6 +20,7 @@ import {
 } from "lucide-react";
 import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 import RevealOnScroll, { RevealItem } from "@/components/scroll/RevealOnScroll";
+import Lazy3D from "@/components/home/Lazy3D";
 
 type Stage = "vfs" | "yjs" | "sandbox" | "telemetry" | "mcp" | "ats" | "antiCheat" | "dossier";
 
@@ -36,34 +37,34 @@ const STAGES: StageInfo[] = [
   {
     id: "vfs",
     number: "01",
-    tag: "Isolation",
+    tag: "Workspace",
     title: "Virtual Workspace (VFS)",
     desc: "Every sandbox starts in a virtualized in-memory file system. Your directories, configurations, and files are managed client-side without physical disk read/write delays.",
-    metrics: ["In-Memory VFS", "Zero disk-write lag", "Monaco direct mapping"]
+    metrics: ["In-memory VFS", "Zero disk-write lag", "Monaco direct mapping"]
   },
   {
     id: "yjs",
     number: "02",
-    tag: "Synchronization",
+    tag: "Collaboration",
     title: "Real-Time Yjs Protocol",
-    desc: "Code updates are serialized into conflict-free replicated data types (CRDTs). Delta changes broadcast instantly peer-to-peer via WebRTC room signaling.",
-    metrics: ["Peer delta sync", "< 15ms broadcast latency", "CRDT conflict-free"]
+    desc: "In live interviews, code updates are serialized into conflict-free replicated data types (CRDTs) and broadcast peer-to-peer over WebRTC — both sides type into the same buffer.",
+    metrics: ["Peer delta sync", "WebRTC signaling", "CRDT conflict-free"]
   },
   {
     id: "sandbox",
     number: "03",
-    tag: "Sandboxing",
-    title: "Strict Browser Sandbox",
-    desc: "Compilation executes inside an origin-separated iframe. Configured with strict sandboxing attributes and CSP to block unauthorized cookies, cookies access, and network requests.",
-    metrics: ["Blank origin isolation", "Blocked parent context access", "Strict Content Security Policy"]
+    tag: "Isolation",
+    title: "Two-Layer Sandboxing",
+    desc: "Frontend previews run in an origin-separated iframe with strict sandbox attributes. Multi-language code (Python, Go, Java, C++, Rust…) executes on an isolated, network-disabled runner with CPU and memory limits — never on the app server.",
+    metrics: ["Origin-isolated previews", "Network-disabled runner jail", "CPU / memory / output caps"]
   },
   {
     id: "telemetry",
     number: "04",
-    tag: "Telemetry",
-    title: "Space-Time Telemetry",
-    desc: "The browser thread profiles performance during compilation, calculating execution time in microseconds and polling heap metrics to measure memory foot-print.",
-    metrics: ["V8 Heap heap-size polling", "performance.now() micro-timers", "Estimated footprint diagnostics"]
+    tag: "Integrity",
+    title: "Attempt Telemetry & Replay",
+    desc: "Focus changes, paste events, and keystroke timing are captured during graded attempts, powering session replays and integrity signals reviewers can actually trust.",
+    metrics: ["Keystroke timeline", "Paste & blur signals", "Full session replay"]
   }
 ];
 
@@ -371,31 +372,16 @@ function DossierSimulator() {
   );
 }
 
-export default function HomeInfographic() {
-  const [persona, setPersona] = useState<"candidate" | "recruiter" | null>(null);
-  const [activeStage, setActiveStage] = useState<string>("vfs");
+export default function HomeInfographic({
+  persona = "candidate",
+}: {
+  persona?: "candidate" | "recruiter";
+}) {
+  const isRecruiter = persona === "recruiter";
+  const [activeStage, setActiveStage] = useState<string>(isRecruiter ? "mcp" : "vfs");
   const reducedMotion = useReducedMotion();
 
-  useEffect(() => {
-    // Initial load
-    const saved = localStorage.getItem("ipad.persona");
-    if (saved === "candidate" || saved === "recruiter") {
-      setPersona(saved as "candidate" | "recruiter");
-      setActiveStage(saved === "recruiter" ? "mcp" : "vfs");
-    }
-
-    // Event listener for changes
-    const handlePersonaChange = (e: Event) => {
-      const targetPersona = (e as CustomEvent).detail;
-      setPersona(targetPersona);
-      setActiveStage(targetPersona === "recruiter" ? "mcp" : "vfs");
-    };
-    window.addEventListener("ipad-persona-change", handlePersonaChange);
-    return () => window.removeEventListener("ipad-persona-change", handlePersonaChange);
-  }, []);
-
-  const currentStages = persona === "recruiter" ? RECRUITER_STAGES : STAGES;
-  const isRecruiter = persona === "recruiter";
+  const currentStages = isRecruiter ? RECRUITER_STAGES : STAGES;
 
   return (
     <section className="mx-auto max-w-6xl px-4 py-24 relative overflow-hidden">
@@ -422,7 +408,7 @@ export default function HomeInfographic() {
                 </>
               ) : (
                 <>
-                  How it works: <span className="text-transparent bg-clip-text bg-gradient-to-br from-accent to-accent-soft">zero cloud cost.</span>
+                  From keystroke <span className="text-transparent bg-clip-text bg-gradient-to-br from-accent to-accent-soft">to verdict.</span>
                 </>
               )}
             </h2>
@@ -432,11 +418,28 @@ export default function HomeInfographic() {
               {isRecruiter ? (
                 "Author campaigns, sync ATS webhooks, monitor anti-cheat signals, and export premium AI radar scorecards instantly from a single dashboard."
               ) : (
-                "Interviewpad builds, executes, synchronizes, and profiles code entirely inside the browser thread. Zero server setup. Perfect privacy. Infinite scale."
+                "Frontend previews build instantly in your browser; multi-language submissions run in an isolated sandbox and are graded server-side — so a pass actually means a pass."
               )}
             </p>
           </RevealItem>
         </RevealOnScroll>
+
+        {/* Signature 3D moment (candidate page): code → sandbox → verdict.
+            Lazily mounted; reduced-motion and mobile get the static poster. */}
+        {!isRecruiter && (
+          <div className="mb-14">
+            <Lazy3D
+              scene="pipeline"
+              className="h-[260px] md:h-[320px] w-full"
+              poster={<PipelinePoster />}
+            />
+            <div className="mt-2 flex flex-wrap justify-center gap-x-6 gap-y-1 text-[10px] font-mono uppercase tracking-wider text-muted/70">
+              <span>Your code</span>
+              <span>→ Isolated sandbox</span>
+              <span className="text-emerald-500">→ Server-graded verdict</span>
+            </div>
+          </div>
+        )}
 
         {/* Infographic Main Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-stretch">
@@ -974,5 +977,28 @@ function TelemetrySimulator() {
         </div>
       </div>
     </motion.div>
+  );
+}
+
+/* ─────────────────────────────────────────────────────────────────
+   Static poster for the 3D pipeline (reduced-motion / mobile / loading)
+   ──────────────────────────────────────────────────────────────── */
+function PipelinePoster() {
+  return (
+    <div className="h-full w-full flex items-center justify-center gap-6 md:gap-10" aria-hidden>
+      <div className="w-24 h-28 rounded-xl border border-border bg-surface/60 p-3 space-y-2">
+        {[70, 50, 85, 40, 60].map((w, i) => (
+          <div key={i} className="h-1.5 rounded bg-muted/30" style={{ width: `${w}%` }} />
+        ))}
+      </div>
+      <div className="text-muted/50 font-mono">→</div>
+      <div className="w-20 h-20 rotate-12 rounded-lg border-2 border-accent/60 bg-accent/5" />
+      <div className="text-muted/50 font-mono">→</div>
+      <div className="grid grid-cols-4 gap-1.5">
+        {Array.from({ length: 12 }).map((_, i) => (
+          <div key={i} className={`w-4 h-4 rounded-sm ${i % 3 === 0 ? "bg-emerald-500/60" : "bg-muted/25"}`} />
+        ))}
+      </div>
+    </div>
   );
 }

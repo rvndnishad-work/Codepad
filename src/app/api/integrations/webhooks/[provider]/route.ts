@@ -1,6 +1,20 @@
 import { prisma } from "@/lib/prisma";
+import { decryptAtRest } from "@/lib/crypto/at-rest";
 import { NextResponse } from "next/server";
 import * as crypto from "crypto";
+
+/**
+ * Verify an inbound webhook signature: hex HMAC-SHA256 of the raw body keyed
+ * by the workspace's configured secret. Accepts an optional "sha256=" prefix
+ * (GitHub/Greenhouse idiom). Constant-time compare.
+ */
+function verifyWebhookSignature(rawBody: string, header: string, secret: string): boolean {
+  const provided = header.replace(/^sha256=/i, "").trim();
+  const expected = crypto.createHmac("sha256", secret).update(rawBody, "utf8").digest("hex");
+  const a = Buffer.from(provided.toLowerCase(), "utf8");
+  const b = Buffer.from(expected, "utf8");
+  return a.length === b.length && crypto.timingSafeEqual(a, b);
+}
 
 export async function POST(
   req: Request,
@@ -26,15 +40,27 @@ export async function POST(
       return NextResponse.json({ error: "Workspace not found" }, { status: 404 });
     }
 
-    // Verify signatures if webhookSecret is configured for safety
+    // Read the raw body first — HMAC verification must run over the exact
+    // bytes that were signed, not a re-serialized object.
+    const rawBody = await req.text();
+
+    // Verify the signature when a webhookSecret is configured. The previous
+    // check only required the header to be PRESENT (any value passed) — now
+    // the header must be a valid HMAC-SHA256 of the body.
     if (workspace.atsIntegration?.webhookSecret) {
       const signature = req.headers.get("x-signature") || "";
-      if (!signature) {
+      const secret = decryptAtRest(workspace.atsIntegration.webhookSecret);
+      if (!signature || !secret || !verifyWebhookSignature(rawBody, signature, secret)) {
         return NextResponse.json({ error: "Unauthorized webhook payload" }, { status: 401 });
       }
     }
 
-    const body = await req.json().catch(() => null);
+    let body: any = null;
+    try {
+      body = JSON.parse(rawBody);
+    } catch {
+      body = null;
+    }
     if (!body) {
       return NextResponse.json({ error: "Empty payload body" }, { status: 400 });
     }

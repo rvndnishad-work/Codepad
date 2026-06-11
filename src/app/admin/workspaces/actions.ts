@@ -1,7 +1,7 @@
 "use server";
 
 import { auth } from "@/lib/auth";
-import { isAdmin } from "@/lib/admin";
+import { staffCan } from "@/lib/permissions/staff";
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 
@@ -10,7 +10,7 @@ import { revalidatePath } from "next/cache";
  */
 export async function updateWorkspacePlanAction(workspaceId: string, planName: string) {
   const session = await auth().catch(() => null);
-  if (!isAdmin(session)) {
+  if (!(await staffCan(session, "platform:admin"))) {
     throw new Error("Unauthorized: Platform administrator access required.");
   }
 
@@ -32,7 +32,7 @@ export async function updateWorkspacePlanAction(workspaceId: string, planName: s
  */
 export async function deleteWorkspaceAction(workspaceId: string) {
   const session = await auth().catch(() => null);
-  if (!isAdmin(session)) {
+  if (!(await staffCan(session, "platform:admin"))) {
     throw new Error("Unauthorized: Platform administrator access required.");
   }
 

@@ -9,8 +9,9 @@ import {
   validateOutboundUrl,
 } from "@/lib/mcp/outbound";
 import { encryptAtRest, decryptAtRest } from "@/lib/crypto/at-rest";
+import { canMember } from "@/lib/permissions";
 
-type Member = { userId: string; role: string };
+type Member = { userId: string; role: string; permissions?: unknown };
 
 /**
  * Same role gate as MCP API keys: only OWNER/ADMIN can manage outbound MCP
@@ -28,7 +29,7 @@ async function assertWorkspaceAdmin(slug: string) {
       slug: true,
       name: true,
       planName: true,
-      members: { select: { userId: true, role: true } },
+      members: { select: { userId: true, role: true, permissions: true } },
     },
   });
   if (!workspace) throw new Error("Workspace not found");
@@ -39,7 +40,7 @@ async function assertWorkspaceAdmin(slug: string) {
   if (!workspacePlanAllowsAiScreening(workspace.planName)) {
     throw new Error("This workspace plan does not include external MCP.");
   }
-  if (member.role !== "OWNER" && member.role !== "ADMIN") {
+  if (!(await canMember(member, "integration:manage"))) {
     throw new Error("Only workspace owners/admins can manage external MCP servers.");
   }
 

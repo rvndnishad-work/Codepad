@@ -1,5 +1,5 @@
 import { auth } from "@/lib/auth";
-import { isAdmin } from "@/lib/admin";
+import { staffCan } from "@/lib/permissions/staff";
 import { prisma } from "@/lib/prisma";
 import { notFound, redirect } from "next/navigation";
 import Link from "next/link";
@@ -178,7 +178,7 @@ export default async function ChallengeDetailPage({ params, searchParams }: Prop
   // ── Access control ───────────────────────────────────────────────────
   // Mirrors the gating on /tracks/[slug] before Tracks were folded in.
   const isOwner = !!userId && challenge.authorId === userId;
-  const callerIsAdmin = isAdmin(session);
+  const callerIsAdmin = await staffCan(session, "content:curate");
   let canView = isOwner || callerIsAdmin;
 
   if (!canView) {

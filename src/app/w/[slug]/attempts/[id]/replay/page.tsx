@@ -1,7 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { notFound, redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
-import { isAdmin } from "@/lib/admin";
+import { staffCan } from "@/lib/permissions/staff";
 import ReplayPlayerClient from "@/app/admin/attempts/[id]/replay/ReplayPlayerClient";
 
 type Props = {
@@ -54,7 +54,7 @@ export default async function WorkspaceSessionReplayPage({ params }: Props) {
     attempt.challenge.workspaceId === workspace.id || 
     attempt.takeHomeAssignment?.workspaceId === workspace.id;
 
-  const showAdmin = isAdmin(session);
+  const showAdmin = await staffCan(session, "platform:admin");
 
   // Secure: Return 404 on cross-tenant attempts unless logged in as a site administrator
   if (!belongsToWorkspace && !showAdmin) {

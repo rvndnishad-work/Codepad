@@ -5,6 +5,11 @@ import { validatePageAccess } from "@/lib/settings";
 import WorkspaceDashboardClient from "./WorkspaceDashboardClient";
 import { Building2 } from "lucide-react";
 import { PIPELINE_STAGES, type PipelineStage } from "@/lib/crm/stages";
+import {
+  loadRolePermissions,
+  expandRolePermissions,
+  WORKSPACE_PERMISSIONS,
+} from "@/lib/permissions";
 
 type Props = {
   params: Promise<{ slug: string }>;
@@ -204,13 +209,30 @@ export default async function WorkspaceDashboardPage({ params }: Props) {
   // Map workspace members
   const formattedMembers = workspace.members.map((m) => ({
     id: m.id,
+    userId: m.userId,
     role: m.role,
+    permissions: m.permissions ?? null,
     user: {
       name: m.user.name,
       email: m.user.email,
       image: m.user.image,
     },
   }));
+
+  // Role → concrete workspace-permission base map, so the members UI can resolve
+  // effective permissions (role base ± per-member overrides) client-side. Each
+  // role's stored grants are expanded (wildcards) and filtered to workspace
+  // permissions — global permissions never apply inside a workspace.
+  const roleMap = await loadRolePermissions();
+  const workspacePermSet = new Set<string>(WORKSPACE_PERMISSIONS);
+  const roleBasePermissions: Record<string, string[]> = {};
+  for (const [key, perms] of roleMap) {
+    roleBasePermissions[key] = [...expandRolePermissions(perms)].filter((p) =>
+      workspacePermSet.has(p),
+    );
+  }
+
+  const currentUserId = session?.user?.id ?? null;
 
   // Map workspace interview sessions
   const formattedSessions = workspace.sessions.map((s) => ({
@@ -297,6 +319,8 @@ export default async function WorkspaceDashboardPage({ params }: Props) {
         takeHomes={formattedTakeHomes}
         takeHomeSessions={takeHomeSessions}
         members={formattedMembers}
+        currentUserId={currentUserId}
+        roleBasePermissions={roleBasePermissions}
         sessions={formattedSessions}
         candidates={formattedCandidates}
         initialBuckets={buckets as any}

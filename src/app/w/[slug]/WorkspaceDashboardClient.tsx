@@ -4,6 +4,10 @@ import { useState, useMemo } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { toast } from "sonner";
 import Link from "next/link";
+// Pure permission helpers only (no server-only imports) so this client
+// component can resolve a member's effective permissions locally.
+import { resolveEffective, asOverrides } from "@/lib/permissions/resolve";
+import { WORKSPACE_PERMISSIONS } from "@/lib/permissions/permissions";
 import {
   Trophy,
   Users,
@@ -82,13 +86,67 @@ type TakeHome = {
 
 type Member = {
   id: string;
+  userId: string;
   role: string;
+  /** Per-member permission override delta (Json from the DB), or null. */
+  permissions?: unknown;
   user: {
     name: string | null;
     email: string | null;
     image: string | null;
   };
 };
+
+/** Workspace roles assignable from the members UI, in privilege order. */
+const WORKSPACE_ROLE_OPTIONS: { value: string; label: string }[] = [
+  { value: "OWNER", label: "Owner" },
+  { value: "ADMIN", label: "Admin" },
+  { value: "RECRUITER", label: "Recruiter" },
+  { value: "INTERVIEWER", label: "Interviewer" },
+  { value: "VIEWER", label: "Viewer" },
+];
+
+/** Human-readable labels for each workspace permission, grouped by resource,
+ *  for the per-member override editor. */
+const PERMISSION_LABELS: Record<string, string> = {
+  "candidate:read": "View candidates",
+  "candidate:write": "Edit candidates",
+  "candidate:delete": "Delete candidates",
+  "candidate:manage_pipeline": "Manage pipeline",
+  "challenge:read": "View challenges",
+  "challenge:write": "Edit challenges",
+  "takehome:read": "View take-homes",
+  "takehome:create": "Create take-homes",
+  "interview:read": "View interviews",
+  "interview:conduct": "Conduct interviews",
+  "interview:manage": "Manage interviews",
+  "member:read": "View members",
+  "member:invite": "Invite members",
+  "member:remove": "Remove members",
+  "member:set_role": "Change member roles",
+  "billing:read": "View billing",
+  "billing:manage": "Manage billing",
+  "integration:read": "View integrations",
+  "integration:manage": "Manage integrations",
+  "email:read": "View email log",
+  "audit:read": "View audit log",
+  "workspace:manage": "Manage workspace",
+};
+
+function roleBadgeClass(role: string): string {
+  switch (role) {
+    case "OWNER":
+      return "text-violet-600 dark:text-violet-400 border-violet-500/25 bg-violet-500/[0.08]";
+    case "ADMIN":
+      return "text-indigo-600 dark:text-indigo-400 border-indigo-500/25 bg-indigo-500/[0.08]";
+    case "RECRUITER":
+      return "text-cyan-600 dark:text-cyan-400 border-cyan-500/25 bg-cyan-500/[0.08]";
+    case "VIEWER":
+      return "text-slate-500 dark:text-slate-400 border-slate-500/25 bg-slate-500/[0.06]";
+    default: // INTERVIEWER + any custom role
+      return "text-muted border-border bg-panel/50";
+  }
+}
 
 type InterviewSessionItem = {
   id: string;
@@ -179,6 +237,10 @@ type Props = {
   takeHomes: TakeHome[];
   takeHomeSessions?: TakeHomeSession[];
   members: Member[];
+  currentUserId: string | null;
+  /** Role key → its concrete workspace permissions (wildcards pre-expanded),
+   *  used to resolve effective permissions for the members UI. */
+  roleBasePermissions: Record<string, string[]>;
   sessions: InterviewSessionItem[];
   candidates: CandidateItem[];
   initialBuckets?: any;
@@ -208,6 +270,8 @@ export default function WorkspaceDashboardClient({
   takeHomes,
   takeHomeSessions = [],
   members,
+  currentUserId,
+  roleBasePermissions,
   sessions,
   candidates,
   initialBuckets,
@@ -254,6 +318,28 @@ export default function WorkspaceDashboardClient({
   // Lists data in state so client can append newly created ones instantly
   const [currentTakeHomes, setCurrentTakeHomes] = useState<TakeHome[]>(takeHomes);
   const [currentMembers, setCurrentMembers] = useState<Member[]>(members);
+  // Which member's "Advanced permissions" panel is expanded (id) or null.
+  const [expandedMemberId, setExpandedMemberId] = useState<string | null>(null);
+  const [savingMemberId, setSavingMemberId] = useState<string | null>(null);
+
+  // Resolve a member's effective workspace permissions (role base ± overrides).
+  function memberEffective(m: Member): Set<string> {
+    return resolveEffective(
+      [roleBasePermissions[m.role] ?? []],
+      asOverrides(m.permissions),
+    );
+  }
+
+  // The caller's own effective permissions drive what member controls show.
+  const myEffective = useMemo(() => {
+    const me = currentMembers.find((m) => m.userId === currentUserId);
+    return me ? memberEffective(me) : new Set<string>();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentMembers, currentUserId, roleBasePermissions]);
+  const canSetRoles = myEffective.has("member:set_role");
+  const canRemoveMembers = myEffective.has("member:remove");
+  const iAmOwner =
+    currentMembers.find((m) => m.userId === currentUserId)?.role === "OWNER";
   
   // Generating Take-Home state
   const [candidateName, setCandidateName] = useState("");
@@ -523,6 +609,63 @@ export default function WorkspaceDashboardClient({
       toast.error("Failed to remove teammate", {
         description: err instanceof Error ? err.message : String(err),
       });
+    }
+  }
+
+  // PATCH a member's role and/or permission overrides, then sync local state
+  // from the server's authoritative response.
+  async function patchMember(
+    memberId: string,
+    body: { role?: string; permissions?: Record<string, boolean> | null },
+  ) {
+    setSavingMemberId(memberId);
+    try {
+      const res = await fetch(`/api/w/${workspace.slug}/members`, {
+        method: "PATCH",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ memberId, ...body }),
+      });
+      const data = await res.json().catch(() => null);
+      if (!res.ok) throw new Error(data?.error ?? `HTTP ${res.status}`);
+      setCurrentMembers((prev) =>
+        prev.map((m) =>
+          m.id === memberId
+            ? { ...m, role: data.member.role, permissions: data.member.permissions ?? null }
+            : m,
+        ),
+      );
+      return true;
+    } catch (err) {
+      toast.error("Failed to update teammate", {
+        description: err instanceof Error ? err.message : String(err),
+      });
+      return false;
+    } finally {
+      setSavingMemberId(null);
+    }
+  }
+
+  async function handleChangeRole(memberId: string, role: string) {
+    if (await patchMember(memberId, { role })) {
+      toast.success("Role updated.");
+    }
+  }
+
+  // Toggle one permission override for a member. We store a *delta*: if the new
+  // value matches the role's default we drop the key (back to pure role), else
+  // we record the grant/revoke. Sending null when empty clears the column.
+  async function handleToggleOverride(m: Member, permission: string, nextValue: boolean) {
+    const base = new Set(roleBasePermissions[m.role] ?? []);
+    const current = asOverrides(m.permissions) ?? {};
+    const next: Record<string, boolean> = { ...current };
+    if (base.has(permission) === nextValue) {
+      delete next[permission]; // matches role default → no override needed
+    } else {
+      next[permission] = nextValue;
+    }
+    const payload = Object.keys(next).length ? next : null;
+    if (await patchMember(m.id, { permissions: payload })) {
+      toast.success("Permissions updated.");
     }
   }
 
@@ -2016,8 +2159,10 @@ export default function WorkspaceDashboardClient({
                       onChange={(e) => setTeammateRole(e.target.value)}
                       className="w-full px-3 py-2 rounded-md border border-border bg-bg text-fg text-xs focus:outline-none focus:border-accent/40"
                     >
-                      <option value="INTERVIEWER">Interviewer</option>
                       <option value="ADMIN">Admin</option>
+                      <option value="RECRUITER">Recruiter</option>
+                      <option value="INTERVIEWER">Interviewer</option>
+                      <option value="VIEWER">Viewer</option>
                     </select>
                   </div>
                   <button
@@ -2035,55 +2180,137 @@ export default function WorkspaceDashboardClient({
                 <h3 className="text-sm font-semibold text-fg">Teammates ({currentMembers.length})</h3>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  {currentMembers.map((m) => (
+                  {currentMembers.map((m) => {
+                    const isExpanded = expandedMemberId === m.id;
+                    const saving = savingMemberId === m.id;
+                    const effective = isExpanded ? memberEffective(m) : null;
+                    const base = isExpanded
+                      ? new Set(roleBasePermissions[m.role] ?? [])
+                      : null;
+                    return (
                     <div
                       key={m.id}
-                      className="rounded-xl border border-border bg-surface p-3.5 flex items-center justify-between gap-3"
+                      className="rounded-xl border border-border bg-surface p-3.5 flex flex-col gap-3"
                     >
-                      <div className="flex items-center gap-3 min-w-0">
-                        {m.user.image ? (
-                          <img
-                            src={m.user.image}
-                            alt={m.user.name || "Member"}
-                            className="w-9 h-9 rounded-lg border border-border bg-bg shrink-0"
-                          />
-                        ) : (
-                          <div className="w-9 h-9 rounded-lg bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-600 dark:text-indigo-300 text-xs font-semibold shrink-0">
-                            {m.user.name?.substring(0, 1).toUpperCase() || "U"}
+                      <div className="flex items-center justify-between gap-3">
+                        <div className="flex items-center gap-3 min-w-0">
+                          {m.user.image ? (
+                            <img
+                              src={m.user.image}
+                              alt={m.user.name || "Member"}
+                              className="w-9 h-9 rounded-lg border border-border bg-bg shrink-0"
+                            />
+                          ) : (
+                            <div className="w-9 h-9 rounded-lg bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-600 dark:text-indigo-300 text-xs font-semibold shrink-0">
+                              {m.user.name?.substring(0, 1).toUpperCase() || "U"}
+                            </div>
+                          )}
+                          <div className="min-w-0">
+                            <div className="text-sm font-semibold text-fg truncate">
+                              {m.user.name || "Pending invite"}
+                            </div>
+                            <div className="text-[11px] text-muted truncate font-mono mt-0.5">{m.user.email}</div>
                           </div>
-                        )}
-                        <div className="min-w-0">
-                          <div className="text-sm font-semibold text-fg truncate">
-                            {m.user.name || "Pending invite"}
-                          </div>
-                          <div className="text-[11px] text-muted truncate font-mono mt-0.5">{m.user.email}</div>
+                        </div>
+                        <div className="flex items-center gap-2 shrink-0">
+                          {canSetRoles ? (
+                            <select
+                              value={m.role}
+                              disabled={saving}
+                              onChange={(e) => handleChangeRole(m.id, e.target.value)}
+                              className="px-2 py-1 rounded-md border border-border bg-bg text-fg text-[11px] focus:outline-none focus:border-accent/40 disabled:opacity-50"
+                              title="Change role"
+                            >
+                              {WORKSPACE_ROLE_OPTIONS.map((opt) => (
+                                <option
+                                  key={opt.value}
+                                  value={opt.value}
+                                  disabled={
+                                    opt.value === "OWNER" && !iAmOwner && m.role !== "OWNER"
+                                  }
+                                >
+                                  {opt.label}
+                                </option>
+                              ))}
+                            </select>
+                          ) : (
+                            <span
+                              className={`inline-flex items-center px-2 py-0.5 rounded-md border text-[10px] font-semibold uppercase tracking-wider ${roleBadgeClass(m.role)}`}
+                            >
+                              {m.role}
+                            </span>
+                          )}
+                          {canSetRoles && (
+                            <button
+                              type="button"
+                              onClick={() => setExpandedMemberId(isExpanded ? null : m.id)}
+                              className={`w-7 h-7 rounded-md transition-colors cursor-pointer flex items-center justify-center ${
+                                isExpanded
+                                  ? "text-accent bg-accent/10"
+                                  : "text-muted hover:text-fg hover:bg-panel"
+                              }`}
+                              title="Advanced permissions"
+                            >
+                              <ChevronRight
+                                className={`w-3.5 h-3.5 transition-transform ${isExpanded ? "rotate-90" : ""}`}
+                              />
+                            </button>
+                          )}
+                          {canRemoveMembers && m.role !== "OWNER" && (
+                            <button
+                              type="button"
+                              onClick={() => handleRemoveTeammate(m.id)}
+                              className="w-7 h-7 rounded-md text-muted hover:text-rose-500 hover:bg-rose-500/10 transition-colors cursor-pointer flex items-center justify-center"
+                              title="Remove teammate"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          )}
                         </div>
                       </div>
-                      <div className="flex items-center gap-2 shrink-0">
-                        <span
-                          className={`inline-flex items-center px-2 py-0.5 rounded-md border text-[10px] font-semibold uppercase tracking-wider ${
-                            m.role === "OWNER"
-                              ? "text-violet-600 dark:text-violet-400 border-violet-500/25 bg-violet-500/[0.08]"
-                              : m.role === "ADMIN"
-                              ? "text-indigo-600 dark:text-indigo-400 border-indigo-500/25 bg-indigo-500/[0.08]"
-                              : "text-muted border-border bg-panel/50"
-                          }`}
-                        >
-                          {m.role}
-                        </span>
-                        {m.role !== "OWNER" && (
-                          <button
-                            type="button"
-                            onClick={() => handleRemoveTeammate(m.id)}
-                            className="w-7 h-7 rounded-md text-muted hover:text-rose-500 hover:bg-rose-500/10 transition-colors cursor-pointer flex items-center justify-center"
-                            title="Remove teammate"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
-                        )}
-                      </div>
+
+                      {isExpanded && effective && base && (
+                        <div className="border-t border-border pt-3">
+                          <div className="flex items-center justify-between mb-2">
+                            <span className="text-[10px] font-semibold uppercase tracking-wider text-muted">
+                              Permissions
+                            </span>
+                            <span className="text-[10px] text-muted">
+                              Overrides the <span className="font-semibold text-fg">{m.role}</span> defaults
+                            </span>
+                          </div>
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1.5">
+                            {WORKSPACE_PERMISSIONS.map((perm) => {
+                              const checked = effective.has(perm);
+                              const overridden = checked !== base.has(perm);
+                              return (
+                                <label
+                                  key={perm}
+                                  className="flex items-center gap-2 text-[11px] text-fg cursor-pointer select-none"
+                                  title={perm}
+                                >
+                                  <input
+                                    type="checkbox"
+                                    checked={checked}
+                                    disabled={saving}
+                                    onChange={(e) => handleToggleOverride(m, perm, e.target.checked)}
+                                    className="accent-accent w-3.5 h-3.5 disabled:opacity-50"
+                                  />
+                                  <span className={overridden ? "font-semibold text-accent" : ""}>
+                                    {PERMISSION_LABELS[perm] ?? perm}
+                                  </span>
+                                  {overridden && (
+                                    <span className="text-[9px] text-accent" title="Differs from role default">●</span>
+                                  )}
+                                </label>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      )}
                     </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </div>
             </div>

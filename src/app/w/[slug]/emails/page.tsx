@@ -7,6 +7,7 @@
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { notFound, redirect } from "next/navigation";
+import { canMember } from "@/lib/permissions";
 import { Mail } from "lucide-react";
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }) {
@@ -64,15 +65,15 @@ export default async function WorkspaceEmailsPage({
     select: {
       id: true,
       name: true,
-      members: { select: { userId: true, role: true } },
+      members: { select: { userId: true, role: true, permissions: true } },
     },
   });
   if (!workspace) notFound();
 
   const member = workspace.members.find((m) => m.userId === session.user.id);
   if (!member) redirect("/dashboard");
-  // Same compliance gating as the audit log — OWNER/ADMIN only.
-  if (member.role !== "OWNER" && member.role !== "ADMIN") {
+  // Same compliance gating as the audit log.
+  if (!(await canMember(member, "email:read"))) {
     redirect(`/w/${slug}`);
   }
 

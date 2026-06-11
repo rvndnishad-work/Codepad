@@ -1,6 +1,12 @@
 import { prisma } from "@/lib/prisma";
 import { getStripe } from "@/lib/stripe";
 import { recordPurchase } from "@/lib/ai-interview/credits";
+import {
+  fulfillContentPurchase,
+  fulfillSubscriptionCheckout,
+  syncCreatorSubscriptionStatus,
+} from "@/lib/marketplace/fulfillment";
+import { syncConnectAccountFromStripe } from "@/lib/marketplace/connect";
 import { NextResponse } from "next/server";
 import type Stripe from "stripe";
 
@@ -63,6 +69,18 @@ export async function POST(req: Request) {
           break;
         }
 
+        // Marketplace one-time content purchase → entitlement + earnings.
+        if (session.metadata?.kind === "CONTENT_PURCHASE") {
+          await fulfillContentPurchase(session);
+          break;
+        }
+
+        // Marketplace creator subscription → CreatorSubscription + earnings.
+        if (session.metadata?.kind === "CREATOR_SUBSCRIPTION") {
+          await fulfillSubscriptionCheckout(session);
+          break;
+        }
+
         // Subscription upgrade path (pre-existing behavior).
         const stripeSubscriptionId = session.subscription as string;
         const stripeCustomerId = session.customer as string;
@@ -91,7 +109,9 @@ export async function POST(req: Request) {
             planName: "FREE",
           },
         });
-        console.log(`Workspace subscription ${sub.id} canceled. Resetting to FREE plan.`);
+        // Mirror onto creator subscriptions (no-op for workspace subs).
+        await syncCreatorSubscriptionStatus(sub.id, "canceled", null);
+        console.log(`Subscription ${sub.id} canceled.`);
         break;
       }
 
@@ -106,7 +126,22 @@ export async function POST(req: Request) {
             planName,
           },
         });
-        console.log(`Workspace subscription ${sub.id} status modified. Plan synchronization completed: ${planName}`);
+        // Mirror status onto creator subscriptions (no-op for workspace subs).
+        const cpe = (sub as unknown as { current_period_end?: number }).current_period_end;
+        await syncCreatorSubscriptionStatus(
+          sub.id,
+          sub.status,
+          cpe ? new Date(cpe * 1000) : null,
+        );
+        console.log(`Subscription ${sub.id} status → ${sub.status}.`);
+        break;
+      }
+
+      // Connect: keep our cached charges/payouts flags in sync.
+      case "account.updated": {
+        const account = event.data.object as Stripe.Account;
+        await syncConnectAccountFromStripe(account.id);
+        console.log(`Connect account ${account.id} synced.`);
         break;
       }
 

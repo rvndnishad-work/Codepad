@@ -2,6 +2,7 @@
 
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { canMember } from "@/lib/permissions";
 
 /**
  * CSV export for the workspace audit log (IP-37).
@@ -21,13 +22,13 @@ async function assertOwnerOrAdmin(slug: string) {
     where: { slug },
     select: {
       id: true,
-      members: { select: { userId: true, role: true } },
+      members: { select: { userId: true, role: true, permissions: true } },
     },
   });
   if (!workspace) throw new Error("Workspace not found");
   const member = workspace.members.find((m) => m.userId === session.user.id);
   if (!member) throw new Error("Not a member of this workspace");
-  if (member.role !== "OWNER" && member.role !== "ADMIN") {
+  if (!(await canMember(member, "audit:read"))) {
     throw new Error("Only workspace owners/admins can export the audit log.");
   }
   return { workspaceId: workspace.id };

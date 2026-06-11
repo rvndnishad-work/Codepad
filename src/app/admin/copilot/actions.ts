@@ -1,14 +1,14 @@
 "use server";
 
 import { auth } from "@/lib/auth";
-import { isAdmin } from "@/lib/admin";
+import { staffCan } from "@/lib/permissions/staff";
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 import { ensureSystemAdminWorkspace } from "@/lib/admin-system-workspace";
 
 async function assertAdmin(): Promise<string> {
   const session = await auth().catch(() => null);
-  if (!isAdmin(session)) {
+  if (!(await staffCan(session, "platform:admin"))) {
     throw new Error("Unauthorized: Platform administrator rights required.");
   }
   return session?.user?.email || "admin@interviewpad.in";

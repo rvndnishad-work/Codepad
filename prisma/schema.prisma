@@ -50,7 +50,13 @@ model User {
   /// can't reveal the codes.
   totpBackupCodes      String?
 
+  /// Per-user delta over the union of this user's GLOBAL roles. JSON object
+  /// `{ "<permission>": boolean }` — true grants, false revokes. null = pure
+  /// role union. Resolved by src/lib/permissions (resolveEffective).
+  permissionOverrides  Json?
+
   accounts             Account[]
+  roles                UserRole[]
   blogBookmarks        BlogBookmark[]
   blogComments         BlogComment[]
   blogs                BlogPost[]
@@ -816,11 +822,66 @@ model WorkspaceMember {
   id          String    @id @default(cuid())
   workspaceId String
   userId      String
+  /// References Role.key for a WORKSPACE-scoped role (OWNER/ADMIN/RECRUITER/
+  /// INTERVIEWER/VIEWER). Kept as a plain string (not an FK) so existing rows
+  /// stay valid and the seeded role keys are the contract.
   role        String    @default("INTERVIEWER")
+  /// Per-member delta over the role's base permissions. JSON object
+  /// `{ "<permission>": boolean }` — true grants, false revokes. null = pure
+  /// role defaults. Resolved by src/lib/permissions (resolveEffective).
+  permissions Json?
   user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
 
   @@unique([workspaceId, userId])
+}
+
+/// DB-defined role: a named bundle of code-defined permissions. Roles can be
+/// created/recomposed at runtime (admin role editor) without a deploy; the
+/// permissions they reference must exist in src/lib/permissions (validated at
+/// write time via isPermission). `scope` partitions GLOBAL roles (held via
+/// UserRole) from WORKSPACE roles (referenced by WorkspaceMember.role.key).
+model Role {
+  id          String           @id @default(cuid())
+  key         String           @unique
+  label       String
+  /// "GLOBAL" | "WORKSPACE"
+  scope       String
+  description String?
+  /// Seeded system roles — protected from deletion in the role editor.
+  isSystem    Boolean          @default(false)
+  createdAt   DateTime         @default(now())
+  permissions RolePermission[]
+  userRoles   UserRole[]
+
+  @@index([scope])
+}
+
+/// One permission string granted to a Role. The string is a member of the
+/// Permission union in src/lib/permissions/permissions.ts (or a "*" /
+/// "resource:*" wildcard), validated before insert.
+model RolePermission {
+  id         String @id @default(cuid())
+  roleId     String
+  permission String
+  role       Role   @relation(fields: [roleId], references: [id], onDelete: Cascade)
+
+  @@unique([roleId, permission])
+}
+
+/// Assignment of a GLOBAL Role to a User (many-to-many — a user may hold
+/// several roles, e.g. CREATOR + MODERATOR). Workspace roles are NOT assigned
+/// here; they live on WorkspaceMember.role.
+model UserRole {
+  id        String   @id @default(cuid())
+  userId    String
+  roleId    String
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role      Role     @relation(fields: [roleId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, roleId])
+  @@index([roleId])
 }
 
 model SessionEventLog {
@@ -1332,5 +1393,102 @@ model GemmaAlert {
 
   @@index([status, severity])
   @@index([type, status])
+}
+
+// ── Phase 4: creator marketplace ─────────────────────────────────────────────
+// Creators (CREATOR role) sell exclusive content — challenges, blog posts,
+// snippets — one-time or by subscription, paid through Stripe Connect with a
+// platform fee. Access is gated by Entitlement rows (see src/lib/marketplace).
+
+/// A creator's Stripe Connect (Express) account. `chargesEnabled` gates the
+/// ability to publish products — a half-onboarded creator can't list yet.
+model CreatorAccount {
+  id              String    @id @default(cuid())
+  userId          String    @unique
+  stripeAccountId String?   @unique
+  chargesEnabled  Boolean   @default(false)
+  payoutsEnabled  Boolean   @default(false)
+  onboardedAt     DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+}
+
+/// A sellable product over one piece of owned content. (contentType, contentId)
+/// is a polymorphic reference into Challenge/BlogPost/Snippet. `kind`
+/// distinguishes a one-time unlock from inclusion in the creator's subscription.
+/// platformFeeBps is the platform's cut in basis points (2000 = 20%).
+model Product {
+  id              String   @id @default(cuid())
+  creatorId       String
+  /// "ONE_TIME" | "SUBSCRIPTION"
+  kind            String
+  /// "CHALLENGE" | "BLOG_POST" | "SNIPPET"
+  contentType     String
+  contentId       String
+  priceCents      Int
+  currency        String   @default("usd")
+  platformFeeBps  Int      @default(2000)
+  stripeProductId String?
+  stripePriceId   String?
+  published       Boolean  @default(false)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@unique([contentType, contentId, kind])
+  @@index([creatorId])
+}
+
+/// Per-user access grant to a piece of content. `source` records why it was
+/// granted (a one-time purchase, an active subscription sync, or an admin grant).
+model Entitlement {
+  id          String    @id @default(cuid())
+  userId      String
+  contentType String
+  contentId   String
+  /// "PURCHASE" | "SUBSCRIPTION" | "GRANT"
+  source      String
+  productId   String?
+  expiresAt   DateTime?
+  createdAt   DateTime  @default(now())
+
+  @@unique([userId, contentType, contentId])
+  @@index([userId])
+}
+
+/// Recurring subscription: a buyer subscribes to a creator and gets their whole
+/// exclusive catalogue while `status` is active.
+model CreatorSubscription {
+  id                   String    @id @default(cuid())
+  subscriberId         String
+  creatorId            String
+  stripeSubscriptionId String    @unique
+  /// Stripe subscription status: "active" | "canceled" | "past_due" | ...
+  status               String
+  currentPeriodEnd     DateTime?
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
+
+  @@unique([subscriberId, creatorId])
+  @@index([creatorId])
+  @@index([subscriberId, status])
+}
+
+/// Idempotent ledger of creator earnings — one row per paid sale, split into
+/// gross / platform fee / net. Unique on stripeChargeId so webhook redelivery
+/// can't double-record (same pattern as recordPurchase in ai-interview/credits).
+model CreatorEarning {
+  id             String   @id @default(cuid())
+  creatorId      String
+  productId      String?
+  buyerId        String?
+  grossCents     Int
+  feeCents       Int
+  netCents       Int
+  currency       String   @default("usd")
+  stripeChargeId String   @unique
+  status         String   @default("paid")
+  createdAt      DateTime @default(now())
+
+  @@index([creatorId])
 }
 

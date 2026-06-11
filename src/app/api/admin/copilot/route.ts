@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
-import { isAdmin } from "@/lib/admin";
+import { staffCan } from "@/lib/permissions/staff";
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 import { ensureSystemAdminWorkspace } from "@/lib/admin-system-workspace";
@@ -530,7 +530,7 @@ export async function POST(req: NextRequest) {
   try {
     // Authenticate Admin Session
     const session = await auth().catch(() => null);
-    if (!isAdmin(session)) {
+    if (!(await staffCan(session, "platform:admin"))) {
       return NextResponse.json({ error: "Unauthorized: Admin privileges required." }, { status: 401 });
     }
     const adminEmail = session?.user?.email || "admin@interviewpad.in";

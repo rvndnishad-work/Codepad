@@ -17,6 +17,7 @@ import {
   Play
 } from "lucide-react";
 import AIRubricDraft from "./AIRubricDraft";
+import { requireAdminAccess } from "@/lib/permissions/staff";
 
 interface AdminAttemptDetailPageProps {
   params: Promise<{ id: string }>;
@@ -81,6 +82,7 @@ function formatDuration(sec: number | null | undefined): string {
 }
 
 export default async function AdminAttemptDetailPage({ params }: AdminAttemptDetailPageProps) {
+  await requireAdminAccess();
   const { id } = await params;
 
   const attempt = await prisma.challengeAttempt.findUnique({

@@ -11,6 +11,7 @@
  */
 import { prisma } from "@/lib/prisma";
 import { Mail, AlertTriangle, ShieldOff } from "lucide-react";
+import { requireAdminAccess } from "@/lib/permissions/staff";
 
 export const metadata = {
   title: "Emails — Interviewpad Admin",
@@ -40,6 +41,7 @@ function timeAgo(d: Date | string | null | undefined): string {
 }
 
 export default async function AdminEmailsPage() {
+  await requireAdminAccess();
   const [logs, statusCounts, suppressions, suppressionTotal] = await Promise.all([
     prisma.emailLog.findMany({
       orderBy: { createdAt: "desc" },

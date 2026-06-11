@@ -1,7 +1,9 @@
 import ChallengeForm from "../ChallengeForm";
 import { blankStep } from "../challenge-form-types";
+import { requireAdminAccess } from "@/lib/permissions/staff";
 
-export default function NewChallengePage() {
+export default async function NewChallengePage() {
+  await requireAdminAccess("content:curate");
   return (
     <ChallengeForm
       mode="create"

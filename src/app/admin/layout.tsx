@@ -1,5 +1,5 @@
 import { auth } from "@/lib/auth";
-import { isAdmin } from "@/lib/admin";
+import { isStaff } from "@/lib/permissions/staff";
 import { ensureTotpEnrolledOrRedirect } from "@/lib/totp-gate";
 import { notFound } from "next/navigation";
 import AdminSidebar from "./AdminSidebar";
@@ -13,7 +13,10 @@ export const metadata = {
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   const session = await auth().catch(() => null);
-  if (!isAdmin(session)) notFound();
+  // Entry gate: any platform-scope role (admin, moderator, content manager…)
+  // may enter the console. Each sub-page enforces its own specific permission
+  // (requireAdminAccess) so a moderator can't reach full-admin surfaces.
+  if (!(await isStaff(session))) notFound();
 
   // IP-42 AC #6: admins must carry a second factor before reaching the console.
   if (session?.user?.id) {

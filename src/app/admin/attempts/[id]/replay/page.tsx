@@ -1,7 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { notFound, redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
-import { isAdmin } from "@/lib/admin";
+import { staffCan } from "@/lib/permissions/staff";
 import ReplayPlayerClient from "./ReplayPlayerClient";
 import Link from "next/link";
 import { ArrowLeft, Play } from "lucide-react";
@@ -26,8 +26,7 @@ export default async function AdminSessionReplayPage({ params }: Props) {
   
   // Authorize: Only administrator review panels can audit session replays
   const session = await auth().catch(() => null);
-  const showAdmin = isAdmin(session);
-  if (!showAdmin) {
+  if (!(await staffCan(session, "platform:admin"))) {
     redirect("/login?next=" + encodeURIComponent(`/admin/attempts/${id}/replay`));
   }
 

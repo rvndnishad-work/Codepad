@@ -2,6 +2,7 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { notFound, redirect } from "next/navigation";
 import { listWorkspaceAudit } from "@/lib/workspace-audit";
+import { canMember } from "@/lib/permissions";
 import WorkspaceAuditClient from "./WorkspaceAuditClient";
 
 type Props = {
@@ -41,6 +42,7 @@ export default async function WorkspaceAuditPage({ params, searchParams }: Props
         select: {
           userId: true,
           role: true,
+          permissions: true,
           user: { select: { id: true, email: true, name: true } },
         },
       },
@@ -50,8 +52,8 @@ export default async function WorkspaceAuditPage({ params, searchParams }: Props
 
   const member = workspace.members.find((m) => m.userId === session.user.id);
   if (!member) redirect("/dashboard");
-  // Audit log is OWNER/ADMIN only — compliance surface, not for everyone.
-  if (member.role !== "OWNER" && member.role !== "ADMIN") {
+  // Audit log is a compliance surface, not for everyone.
+  if (!(await canMember(member, "audit:read"))) {
     redirect(`/w/${slug}`);
   }
 

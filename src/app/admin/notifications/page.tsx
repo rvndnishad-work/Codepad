@@ -1,5 +1,5 @@
 import { auth } from "@/lib/auth";
-import { isAdmin } from "@/lib/admin";
+import { staffCan } from "@/lib/permissions/staff";
 import { prisma } from "@/lib/prisma";
 import { redirect } from "next/navigation";
 import AdminBroadcastConsole from "./AdminBroadcastConsole";
@@ -12,7 +12,7 @@ export const metadata = {
 
 export default async function AdminNotificationsPage() {
   const session = await auth().catch(() => null);
-  if (!isAdmin(session)) redirect("/");
+  if (!(await staffCan(session, "platform:admin"))) redirect("/");
 
   // Pre-load the sent log + workspace list (for the WORKSPACE audience picker)
   // server-side so the first paint is complete.

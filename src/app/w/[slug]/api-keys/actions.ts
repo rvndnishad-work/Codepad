@@ -5,8 +5,9 @@ import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 import { workspacePlanAllowsAiScreening } from "@/lib/ai-interview/credits";
 import { generateApiKey } from "@/lib/mcp/auth";
+import { canMember } from "@/lib/permissions";
 
-type Member = { userId: string; role: string };
+type Member = { userId: string; role: string; permissions?: unknown };
 
 /**
  * Stricter than the AI Screening write check — only OWNER/ADMIN can mint or
@@ -24,7 +25,7 @@ async function assertWorkspaceKeyAdmin(slug: string) {
       slug: true,
       name: true,
       planName: true,
-      members: { select: { userId: true, role: true } },
+      members: { select: { userId: true, role: true, permissions: true } },
     },
   });
   if (!workspace) throw new Error("Workspace not found");
@@ -35,7 +36,7 @@ async function assertWorkspaceKeyAdmin(slug: string) {
   if (!workspacePlanAllowsAiScreening(workspace.planName)) {
     throw new Error("This workspace plan does not include the MCP API.");
   }
-  if (member.role !== "OWNER" && member.role !== "ADMIN") {
+  if (!(await canMember(member, "integration:manage"))) {
     throw new Error("Only workspace owners/admins can manage API keys.");
   }
 

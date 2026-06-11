@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
-import { isAdmin } from "@/lib/admin";
+import { staffCan } from "@/lib/permissions/staff";
+import { hasEntitlement } from "@/lib/marketplace/entitlements";
 import { prisma } from "@/lib/prisma";
 
 type Params = { params: Promise<{ slug: string }> };
@@ -38,7 +39,7 @@ export async function GET(req: Request, { params }: Params) {
   }
 
   // 3. Perform premium subscription check
-  const callerIsAdmin = isAdmin(session);
+  const callerIsAdmin = await staffCan(session, "content:curate");
   let isPremium = callerIsAdmin;
 
   if (!isPremium) {
@@ -56,6 +57,13 @@ export async function GET(req: Request, { params }: Params) {
     });
     // Check if the user is a member of any workspace that is not on a FREE plan
     isPremium = userWorkspaces.some((w) => w.planName !== "FREE");
+  }
+
+  // Marketplace: a buyer who purchased this challenge (or subscribes to its
+  // creator) is entitled to its reference solutions — supersedes the legacy
+  // paid-workspace heuristic for sold content.
+  if (!isPremium) {
+    isPremium = await hasEntitlement(userId, "CHALLENGE", challenge.id);
   }
 
   if (!isPremium) {

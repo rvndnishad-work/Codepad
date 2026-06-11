@@ -10,6 +10,7 @@ import {
   ChevronRight,
 } from "lucide-react";
 import AdminAttemptRow from "./AdminAttemptRow";
+import { requireAdminAccess } from "@/lib/permissions/staff";
 
 interface AdminAttemptsPageProps {
   searchParams: Promise<{ q?: string; status?: string; page?: string }>;
@@ -31,6 +32,7 @@ function parseTestResults(raw: string | null): { passed: number; total: number }
 }
 
 export default async function AdminAttemptsPage({ searchParams }: AdminAttemptsPageProps) {
+  await requireAdminAccess();
   const { q, status, page: pageRaw } = await searchParams;
   const page = Math.max(1, parseInt(pageRaw ?? "1", 10) || 1);
 

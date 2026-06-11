@@ -1,14 +1,16 @@
 "use server";
 
 import { auth } from "@/lib/auth";
-import { isAdmin } from "@/lib/admin";
+import { staffCan } from "@/lib/permissions/staff";
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 
+// These actions curate the public content catalogue (featured flags, pins), so
+// they require content:curate — held by CONTENT_MANAGER and PLATFORM_ADMIN.
 async function assertAdmin() {
   const session = await auth().catch(() => null);
-  if (!isAdmin(session)) {
-    throw new Error("Unauthorized: Admin privilege required.");
+  if (!(await staffCan(session, "content:curate"))) {
+    throw new Error("Unauthorized: content curation privilege required.");
   }
 }
 

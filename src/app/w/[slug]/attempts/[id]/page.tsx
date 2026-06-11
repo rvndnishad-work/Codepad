@@ -2,7 +2,7 @@ import { prisma } from "@/lib/prisma";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
-import { isAdmin } from "@/lib/admin";
+import { staffCan } from "@/lib/permissions/staff";
 import {
   ArrowLeft,
   Clock,
@@ -119,7 +119,7 @@ export default async function WorkspaceAttemptDetailPage({ params }: WorkspaceAt
     attempt.challenge.workspaceId === workspace.id || 
     attempt.takeHomeAssignment?.workspaceId === workspace.id;
 
-  const showAdmin = isAdmin(session);
+  const showAdmin = await staffCan(session, "platform:admin");
 
   // Secure: Return 404 on cross-tenant attempts unless logged in as a site administrator
   if (!belongsToWorkspace && !showAdmin) {

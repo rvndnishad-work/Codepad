@@ -12,6 +12,7 @@
     "db:push": "prisma db push",
     "db:studio": "prisma studio",
     "seed:challenges": "npx tsx prisma/seed-all-challenges.ts",
+    "seed:roles": "npx tsx prisma/seed-roles.ts",
     "postinstall": "prisma generate",
     "test:unit": "vitest run",
     "test:unit:watch": "vitest",

@@ -88,6 +88,7 @@ export default function AdminSidebar({ session, persona }: AdminSidebarProps) {
       <AdminLink href="/admin/todos" icon="ClipboardList" label="Todos" />
       <AdminLink href="/admin/notifications" icon="Megaphone" label="Notifications" />
       <AdminLink href="/admin/emails" icon="Mail" label="Emails" />
+      <AdminLink href="/admin/roles" icon="ShieldCheck" label="Roles" />
       <AdminLink href="/admin/settings" icon="Settings" label="Settings" />
     </nav>
   );

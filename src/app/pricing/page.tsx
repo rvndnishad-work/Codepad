@@ -1,6 +1,7 @@
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { validatePageAccess } from "@/lib/settings";
+import { MANAGER_ROLES } from "@/lib/permissions/role-groups";
 import PricingClient from "./PricingClient";
 
 export const metadata = {
@@ -20,7 +21,7 @@ export default async function PricingPage() {
           members: {
             some: {
               userId,
-              role: { in: ["OWNER", "ADMIN"] },
+              role: { in: [...MANAGER_ROLES] },
             },
           },
         },

@@ -9,6 +9,7 @@ import {
   workspacePlanAllowsAiScreening,
 } from "@/lib/ai-interview/credits";
 import { listTemplatesForWorkspace } from "@/lib/ai-interview/template-resolver";
+import { canMember } from "@/lib/permissions";
 import AIInterviewRecruiterConsole from "./AIInterviewRecruiterConsole";
 
 type Props = {
@@ -42,7 +43,7 @@ export default async function WorkspaceAiInterviewsPage({ params, searchParams }
       slug: true,
       planName: true,
       allowExternalMcp: true,
-      members: { select: { userId: true, role: true } },
+      members: { select: { userId: true, role: true, permissions: true } },
     },
   });
   if (!workspace) notFound();
@@ -76,7 +77,7 @@ export default async function WorkspaceAiInterviewsPage({ params, searchParams }
     );
   }
 
-  const canCreate = member.role === "OWNER" || member.role === "ADMIN" || member.role === "INTERVIEWER";
+  const canCreate = await canMember(member, "interview:conduct");
 
   const [rawSessions, totalSessions, credits, usedThisMonth, templates, externalMcpServers, candidateRows] = await Promise.all([
     prisma.aIInterviewSession.findMany({

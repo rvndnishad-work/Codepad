@@ -13,8 +13,9 @@ import { sendInviteEmail } from "@/lib/ai-interview/invite-email";
 import { validateStarterFilesJson } from "@/lib/ai-interview/template-resolver";
 import type { RoundSpecInput } from "@/lib/ai-interview/rounds";
 import { getStripe } from "@/lib/stripe";
+import { canMember } from "@/lib/permissions";
 
-type Member = { userId: string; role: string };
+type Member = { userId: string; role: string; permissions?: unknown };
 
 /**
  * Resolve the caller's workspace membership and enforce:
@@ -39,7 +40,7 @@ async function assertWorkspaceWriter(slug: string) {
       name: true,
       slug: true,
       planName: true,
-      members: { select: { userId: true, role: true } },
+      members: { select: { userId: true, role: true, permissions: true } },
     },
   });
   if (!workspace) throw new Error("Workspace not found");
@@ -51,11 +52,7 @@ async function assertWorkspaceWriter(slug: string) {
     throw new Error("This workspace plan does not include AI Screening");
   }
 
-  if (
-    member.role !== "OWNER" &&
-    member.role !== "ADMIN" &&
-    member.role !== "INTERVIEWER"
-  ) {
+  if (!(await canMember(member, "interview:conduct"))) {
     throw new Error("You do not have permission to manage AI screenings");
   }
 
@@ -382,7 +379,7 @@ export async function createCreditPackCheckoutAction(
   packId: string
 ) {
   const { workspace, member } = await assertWorkspaceWriter(slug);
-  if (member.role !== "OWNER" && member.role !== "ADMIN") {
+  if (!(await canMember(member, "billing:manage"))) {
     throw new Error("Only workspace owners/admins can purchase credits.");
   }
 

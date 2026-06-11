@@ -8,6 +8,7 @@
  */
 import { sendEmail, sendTemplatedBatch, type BatchSendResult } from "@/lib/email";
 import { prisma } from "@/lib/prisma";
+import { STAFF_ROLES } from "@/lib/permissions/role-groups";
 
 /** Base URL for candidate/recruiter links — matches the AI-screening helper. */
 export function appBaseUrl(): string {
@@ -196,7 +197,7 @@ export async function sendTakeHomeSubmissionEmails(args: {
           name: true,
           slug: true,
           members: {
-            where: { role: { in: ["OWNER", "ADMIN", "INTERVIEWER"] } },
+            where: { role: { in: [...STAFF_ROLES] } },
             select: { user: { select: { email: true, name: true } } },
           },
         },

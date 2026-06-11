@@ -1,5 +1,5 @@
 import { auth } from "@/lib/auth";
-import { isAdmin } from "@/lib/admin";
+import { staffCan } from "@/lib/permissions/staff";
 import { prisma } from "@/lib/prisma";
 import { notFound, redirect } from "next/navigation";
 import Link from "next/link";
@@ -107,7 +107,7 @@ export default async function ChallengeAttemptPage({
   //   accepted invitation.
   // - Anything else → 404 (non-enumerable, like /tracks did).
   const isOwner = challenge.authorId === userId;
-  const callerIsAdmin = isAdmin(session);
+  const callerIsAdmin = await staffCan(session, "content:curate");
   let canView = isCollabPeer || isOwner || callerIsAdmin;
 
   if (isTakeHomeValid && takeHomeAssignment) {

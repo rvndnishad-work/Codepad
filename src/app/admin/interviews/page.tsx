@@ -2,6 +2,7 @@ import { prisma } from "@/lib/prisma";
 import Link from "next/link";
 import { Briefcase, Search, Clock, CheckCircle2, AlertCircle, XCircle } from "lucide-react";
 import AdminInterviewRow from "./AdminInterviewRow";
+import { requireAdminAccess } from "@/lib/permissions/staff";
 
 interface AdminInterviewsPageProps {
   searchParams: Promise<{ q?: string; status?: string }>;
@@ -17,6 +18,7 @@ function safeChallengeCount(raw: string): number {
 }
 
 export default async function AdminInterviewsPage({ searchParams }: AdminInterviewsPageProps) {
+  await requireAdminAccess();
   const { q, status } = await searchParams;
 
   const sessions = await prisma.interviewSession.findMany({

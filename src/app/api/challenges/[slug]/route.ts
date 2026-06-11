@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
-import { isAdmin } from "@/lib/admin";
+import { staffCan } from "@/lib/permissions/staff";
 import { prisma } from "@/lib/prisma";
 
 type Params = { params: Promise<{ slug: string }> };
@@ -29,7 +29,7 @@ export async function PATCH(req: Request, { params }: Params) {
   if (!challenge) {
     return NextResponse.json({ error: "Challenge not found" }, { status: 404 });
   }
-  const callerIsAdmin = isAdmin(session);
+  const callerIsAdmin = await staffCan(session, "content:curate");
   if (challenge.authorId !== userId && !callerIsAdmin) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
@@ -162,7 +162,7 @@ export async function DELETE(_req: Request, { params }: Params) {
   if (!challenge) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
-  if (challenge.authorId !== userId && !isAdmin(session)) {
+  if (challenge.authorId !== userId && !(await staffCan(session, "content:curate"))) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
   try {

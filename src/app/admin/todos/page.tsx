@@ -1,5 +1,5 @@
 import { auth } from "@/lib/auth";
-import { isAdmin } from "@/lib/admin";
+import { staffCan } from "@/lib/permissions/staff";
 import { prisma } from "@/lib/prisma";
 import { redirect } from "next/navigation";
 import AdminTodosConsole from "./AdminTodosConsole";
@@ -11,7 +11,7 @@ export const metadata = {
 
 export default async function AdminTodosPage() {
   const session = await auth().catch(() => null);
-  if (!isAdmin(session)) redirect("/");
+  if (!(await staffCan(session, "platform:admin"))) redirect("/");
 
   // Pull all todos and let the client component bucket them by status column.
   // We sort by priority then createdAt so high-priority items float to the top

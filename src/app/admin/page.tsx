@@ -14,6 +14,7 @@ import {
   Plus
 } from "lucide-react";
 import DashboardFeedHub from "./DashboardFeedHub";
+import { requireAdminAccess } from "@/lib/permissions/staff";
 
 // Simple relative time formatter helper for live feeds
 function formatRelativeTime(date: Date): string {
@@ -66,6 +67,7 @@ function renderSparkline(data: number[], strokeColor: string, gradId: string) {
 }
 
 export default async function AdminDashboardPage() {
+  await requireAdminAccess();
   const now = new Date();
   
   // Calculate 7 days ago window

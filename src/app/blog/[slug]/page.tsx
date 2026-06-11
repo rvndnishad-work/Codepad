@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
-import { isAdmin } from "@/lib/admin";
+import { staffCan } from "@/lib/permissions/staff";
 import MarkdownRenderer from "@/components/MarkdownRenderer";
 import { notFound } from "next/navigation";
 import {
@@ -120,7 +120,7 @@ export default async function BlogPostPage({
 
   const session = await auth().catch(() => null);
   const viewerId = session?.user?.id ?? null;
-  const viewerIsAdmin = isAdmin(session);
+  const viewerIsAdmin = await staffCan(session, "content:moderate");
   const isAuthor = viewerId === blog.user.id;
 
   // Fire-and-forget view increment; skip author's own views.

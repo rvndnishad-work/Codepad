@@ -65,10 +65,24 @@ export const CREATOR_PERMISSIONS = [
   "creator:page", // manage own creator page
 ] as const;
 
+/**
+ * Permissions over a user's OWN content (personal snippets, posts, prompt
+ * scenarios). Granted to no role by default — the ownership rule in `can()`
+ * grants the owner, and a `content:moderate` holder gets a staff override. They
+ * exist in the catalogue so checks are type-safe and validatable.
+ */
+export const OWNED_CONTENT_PERMISSIONS = [
+  "snippet:write",
+  "snippet:delete",
+  "blogpost:write",
+  "blogpost:delete",
+] as const;
+
 export const PERMISSIONS = [
   ...WORKSPACE_PERMISSIONS,
   ...PLATFORM_PERMISSIONS,
   ...CREATOR_PERMISSIONS,
+  ...OWNED_CONTENT_PERMISSIONS,
 ] as const;
 
 export type Permission = (typeof PERMISSIONS)[number];
@@ -100,5 +114,11 @@ export function isPermissionGrant(value: unknown): boolean {
  * The content types that can be owned/sold and gated by an entitlement. The
  * ownership rule in resolve.ts maps each to the field that holds its owner.
  */
-export const OWNABLE_CONTENT_TYPES = ["CHALLENGE", "BLOG_POST", "SNIPPET"] as const;
+export const OWNABLE_CONTENT_TYPES = [
+  "CHALLENGE",
+  "BLOG_POST",
+  "SNIPPET",
+  "TUTORIAL",
+  "INTERVIEW_QA",
+] as const;
 export type OwnableContentType = (typeof OWNABLE_CONTENT_TYPES)[number];

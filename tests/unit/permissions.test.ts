@@ -133,6 +133,33 @@ describe("can() — permission and ownership rule", () => {
     ).toBe(true);
   });
 
+  it("content:moderate is a staff override on someone else's owned content", () => {
+    const moderator: Subject = {
+      userId: "mod",
+      permissions: new Set<Permission>(["content:moderate"]),
+    };
+    // Not the owner, lacks snippet:write outright — passes via the override.
+    expect(
+      can(moderator, "snippet:write", { contentType: "SNIPPET", userId: "someone-else" }),
+    ).toBe(true);
+    expect(
+      can(moderator, "blogpost:delete", { contentType: "BLOG_POST", userId: "someone-else" }),
+    ).toBe(true);
+  });
+
+  it("a plain user cannot mutate someone else's owned content", () => {
+    const stranger: Subject = { userId: "x", permissions: new Set<Permission>() };
+    expect(
+      can(stranger, "snippet:write", { contentType: "SNIPPET", userId: "owner" }),
+    ).toBe(false);
+  });
+
+  it("the snippet owner can write/delete their own snippet", () => {
+    const owner: Subject = { userId: "owner", permissions: new Set<Permission>() };
+    expect(can(owner, "snippet:write", { contentType: "SNIPPET", userId: "owner" })).toBe(true);
+    expect(can(owner, "snippet:delete", { contentType: "SNIPPET", userId: "owner" })).toBe(true);
+  });
+
   it("ownership does NOT help on someone else's resource", () => {
     const author: Subject = { userId: "u1", permissions: new Set<Permission>() };
     expect(

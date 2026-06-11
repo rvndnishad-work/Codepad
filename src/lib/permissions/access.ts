@@ -48,33 +48,42 @@ export const loadRolePermissions = cache(
   },
 );
 
-/** Effective GLOBAL permission set for a user: union of all their global
- *  roles' permissions, then their personal delta overrides. */
-export const loadUserPermissions = cache(
-  async (userId: string): Promise<Set<Permission>> => {
-    const user = await prisma.user.findUnique({
-      where: { id: userId },
-      select: {
-        permissionOverrides: true,
-        roles: {
-          select: {
-            role: {
-              select: {
-                scope: true,
-                permissions: { select: { permission: true } },
-              },
+/**
+ * Effective GLOBAL permission set for a user: union of all their global roles'
+ * permissions, then their personal delta overrides. NOT memoized — safe to call
+ * outside an RSC render (e.g. from the Proxy / src/proxy.ts, where React
+ * `cache()` has no request scope). Inside server components prefer
+ * {@link loadUserPermissions}, which dedupes per request.
+ */
+export async function resolveUserPermissionsUncached(
+  userId: string,
+): Promise<Set<Permission>> {
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: {
+      permissionOverrides: true,
+      roles: {
+        select: {
+          role: {
+            select: {
+              scope: true,
+              permissions: { select: { permission: true } },
             },
           },
         },
       },
-    });
-    if (!user) return new Set<Permission>();
-    const lists = user.roles
-      .filter((ur) => ur.role.scope === "GLOBAL")
-      .map((ur) => ur.role.permissions.map((p) => p.permission));
-    return resolveEffective(lists, asOverrides(user.permissionOverrides));
-  },
-);
+    },
+  });
+  if (!user) return new Set<Permission>();
+  const lists = user.roles
+    .filter((ur) => ur.role.scope === "GLOBAL")
+    .map((ur) => ur.role.permissions.map((p) => p.permission));
+  return resolveEffective(lists, asOverrides(user.permissionOverrides));
+}
+
+/** Per-request-memoized variant of {@link resolveUserPermissionsUncached} for
+ *  use inside server components / route handlers. */
+export const loadUserPermissions = cache(resolveUserPermissionsUncached);
 
 /** Build a global Subject for `can()`. Anonymous users get an empty set. */
 export async function getGlobalSubject(

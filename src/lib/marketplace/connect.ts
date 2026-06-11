@@ -79,90 +79,139 @@ export async function syncConnectAccountFromStripe(
   });
 }
 
-/** Lazily create the Stripe Product + Price for one of our Product rows and
- *  cache the ids. One-time products get a one-off price; subscription products
- *  get a monthly recurring price. */
-async function ensureStripePrice(productId: string) {
-  const product = await prisma.product.findUnique({ where: { id: productId } });
-  if (!product) throw new Error("Product not found.");
-  if (product.stripePriceId) return product;
+/** The space owner's Connect account — must have charges enabled to sell. */
+async function requireSellableAccount(spaceId: string) {
+  const space = await prisma.creatorSpace.findUnique({
+    where: { id: spaceId },
+    select: { ownerId: true },
+  });
+  if (!space) throw new Error("Space not found.");
+  const account = await prisma.creatorAccount.findUnique({
+    where: { userId: space.ownerId },
+  });
+  if (!account?.stripeAccountId || !account.chargesEnabled) {
+    throw new Error("This creator can't accept payments yet.");
+  }
+  return { creatorId: space.ownerId, stripeAccountId: account.stripeAccountId };
+}
 
+/** Lazily create + cache the recurring Stripe price for a membership tier. */
+async function ensureTierPrice(tierId: string) {
+  const tier = await prisma.spaceTier.findUnique({ where: { id: tierId } });
+  if (!tier) throw new Error("Tier not found.");
+  if (tier.stripePriceId) return tier;
   const stripe = getStripe();
-  const stripeProduct = await stripe.products.create({
-    name: `${product.contentType.toLowerCase()} ${product.contentId}`,
-    metadata: { productId: product.id, creatorId: product.creatorId },
+  const product = await stripe.products.create({
+    name: `Membership: ${tier.name}`,
+    metadata: { tierId: tier.id, spaceId: tier.spaceId },
   });
   const price = await stripe.prices.create({
-    product: stripeProduct.id,
-    unit_amount: product.priceCents,
-    currency: product.currency,
-    ...(product.kind === "SUBSCRIPTION"
-      ? { recurring: { interval: "month" as const } }
-      : {}),
+    product: product.id,
+    unit_amount: tier.priceCents,
+    currency: tier.currency,
+    recurring: { interval: "month" },
   });
-  return prisma.product.update({
-    where: { id: product.id },
-    data: { stripeProductId: stripeProduct.id, stripePriceId: price.id },
+  return prisma.spaceTier.update({
+    where: { id: tier.id },
+    data: { stripeProductId: product.id, stripePriceId: price.id },
   });
 }
 
-/**
- * Create a Checkout Session for a product. One-time → payment mode with an
- * application fee + transfer to the creator; subscription → subscription mode
- * with an application-fee percent. Returns the redirect URL.
- */
-export async function createCheckoutSession(params: {
-  productId: string;
+/** Lazily create + cache the one-off Stripe price for a purchasable item. */
+async function ensureContentPrice(spaceContentId: string) {
+  const sc = await prisma.spaceContent.findUnique({ where: { id: spaceContentId } });
+  if (!sc) throw new Error("Item not found.");
+  if (sc.purchasePriceCents == null) throw new Error("This item isn't sold individually.");
+  if (sc.stripePriceId) return sc;
+  const stripe = getStripe();
+  const product = await stripe.products.create({
+    name: `${sc.contentType.toLowerCase()} ${sc.contentId}`,
+    metadata: { spaceContentId: sc.id, spaceId: sc.spaceId },
+  });
+  const price = await stripe.prices.create({
+    product: product.id,
+    unit_amount: sc.purchasePriceCents,
+    currency: sc.currency,
+  });
+  return prisma.spaceContent.update({
+    where: { id: sc.id },
+    data: { stripeProductId: product.id, stripePriceId: price.id },
+  });
+}
+
+const RETURN_SUCCESS = (origin: string) => `${origin}/purchase/complete?status=success`;
+const RETURN_CANCEL = (origin: string) => `${origin}/purchase/complete?status=cancel`;
+
+/** Subscribe a buyer to a membership tier (recurring). Returns the checkout URL. */
+export async function createTierCheckout(params: {
+  tierId: string;
   buyerId: string;
   origin: string;
 }): Promise<string> {
-  const product = await ensureStripePrice(params.productId);
-  if (!product.published) throw new Error("This product isn't available.");
+  const tier = await ensureTierPrice(params.tierId);
+  if (!tier.published) throw new Error("This tier isn't available.");
+  const { creatorId, stripeAccountId } = await requireSellableAccount(tier.spaceId);
 
-  const creatorAccount = await prisma.creatorAccount.findUnique({
-    where: { userId: product.creatorId },
-  });
-  if (!creatorAccount?.stripeAccountId || !creatorAccount.chargesEnabled) {
-    throw new Error("This creator can't accept payments yet.");
-  }
-
-  const stripe = getStripe();
-  const isSub = product.kind === "SUBSCRIPTION";
   const metadata = {
-    kind: isSub ? "CREATOR_SUBSCRIPTION" : "CONTENT_PURCHASE",
-    productId: product.id,
+    kind: "SPACE_MEMBERSHIP",
+    spaceId: tier.spaceId,
+    tierId: tier.id,
+    tierRank: String(tier.rank),
     buyerId: params.buyerId,
-    creatorId: product.creatorId,
-    contentType: product.contentType,
-    contentId: product.contentId,
+    creatorId,
   };
-
+  const stripe = getStripe();
   const session = await stripe.checkout.sessions.create({
-    mode: isSub ? "subscription" : "payment",
-    line_items: [{ price: product.stripePriceId!, quantity: 1 }],
-    success_url: `${params.origin}/creator/purchased?status=success`,
-    cancel_url: `${params.origin}/creator/purchased?status=cancel`,
+    mode: "subscription",
+    line_items: [{ price: tier.stripePriceId!, quantity: 1 }],
+    success_url: RETURN_SUCCESS(params.origin),
+    cancel_url: RETURN_CANCEL(params.origin),
     client_reference_id: params.buyerId,
     metadata,
-    ...(isSub
-      ? {
-          subscription_data: {
-            application_fee_percent: product.platformFeeBps / 100,
-            transfer_data: { destination: creatorAccount.stripeAccountId },
-            metadata,
-          },
-        }
-      : {
-          payment_intent_data: {
-            application_fee_amount: Math.floor(
-              (product.priceCents * product.platformFeeBps) / 10000,
-            ),
-            transfer_data: { destination: creatorAccount.stripeAccountId },
-            metadata,
-          },
-        }),
+    subscription_data: {
+      application_fee_percent: tier.platformFeeBps / 100,
+      transfer_data: { destination: stripeAccountId },
+      metadata,
+    },
   });
+  if (!session.url) throw new Error("Stripe did not return a checkout URL.");
+  return session.url;
+}
 
+/** One-time purchase of an individually-sold item. Returns the checkout URL. */
+export async function createContentCheckout(params: {
+  spaceContentId: string;
+  buyerId: string;
+  origin: string;
+}): Promise<string> {
+  const sc = await ensureContentPrice(params.spaceContentId);
+  const { creatorId, stripeAccountId } = await requireSellableAccount(sc.spaceId);
+
+  const metadata = {
+    kind: "CONTENT_PURCHASE",
+    spaceId: sc.spaceId,
+    spaceContentId: sc.id,
+    contentType: sc.contentType,
+    contentId: sc.contentId,
+    buyerId: params.buyerId,
+    creatorId,
+  };
+  const stripe = getStripe();
+  const session = await stripe.checkout.sessions.create({
+    mode: "payment",
+    line_items: [{ price: sc.stripePriceId!, quantity: 1 }],
+    success_url: RETURN_SUCCESS(params.origin),
+    cancel_url: RETURN_CANCEL(params.origin),
+    client_reference_id: params.buyerId,
+    metadata,
+    payment_intent_data: {
+      application_fee_amount: Math.floor(
+        ((sc.purchasePriceCents ?? 0) * sc.platformFeeBps) / 10000,
+      ),
+      transfer_data: { destination: stripeAccountId },
+      metadata,
+    },
+  });
   if (!session.url) throw new Error("Stripe did not return a checkout URL.");
   return session.url;
 }

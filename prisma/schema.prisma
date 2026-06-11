@@ -1413,41 +1413,58 @@ model CreatorAccount {
   updatedAt       DateTime  @updatedAt
 }
 
-/// A sellable product over one piece of owned content. (contentType, contentId)
-/// is a polymorphic reference into Challenge/BlogPost/Snippet. `kind`
-/// distinguishes a one-time unlock from inclusion in the creator's subscription.
+/// A creator's branded space — a workspace-like hub published at /c/[handle].
+/// One space per creator (v1). Holds tiers, content, and memberships.
+model CreatorSpace {
+  id          String   @id @default(cuid())
+  ownerId     String   @unique
+  /// Vanity slug → /c/[handle].
+  handle      String   @unique
+  name        String
+  tagline     String?
+  /// Markdown "about" section.
+  description String?
+  avatarUrl   String?
+  coverUrl    String?
+  published   Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+/// A ranked membership tier within a space. Higher `rank` = more access: an
+/// active subscriber sees SpaceContent with accessTierRank ≤ their tier's rank.
 /// platformFeeBps is the platform's cut in basis points (2000 = 20%).
-model Product {
-  id              String   @id @default(cuid())
-  creatorId       String
-  /// "ONE_TIME" | "SUBSCRIPTION"
-  kind            String
-  /// "CHALLENGE" | "BLOG_POST" | "SNIPPET"
-  contentType     String
-  contentId       String
+model SpaceTier {
+  id              String  @id @default(cuid())
+  spaceId         String
+  name            String
+  rank            Int
   priceCents      Int
-  currency        String   @default("usd")
-  platformFeeBps  Int      @default(2000)
+  currency        String  @default("usd")
+  platformFeeBps  Int     @default(2000)
   stripeProductId String?
+  /// Recurring (monthly) Stripe price id.
   stripePriceId   String?
-  published       Boolean  @default(false)
+  published       Boolean @default(false)
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 
-  @@unique([contentType, contentId, kind])
-  @@index([creatorId])
+  @@unique([spaceId, rank])
+  @@index([spaceId])
 }
 
-/// Per-user access grant to a piece of content. `source` records why it was
-/// granted (a one-time purchase, an active subscription sync, or an admin grant).
+/// Per-user one-time access grant to a piece of content. `source` records why
+/// (a one-time purchase or an admin grant). Subscription access is resolved live
+/// from SpaceMembership, not stored here.
 model Entitlement {
   id          String    @id @default(cuid())
   userId      String
   contentType String
   contentId   String
-  /// "PURCHASE" | "SUBSCRIPTION" | "GRANT"
+  /// "PURCHASE" | "GRANT"
   source      String
-  productId   String?
+  /// The SpaceContent row this purchase was for (informational).
+  spaceContentId String?
   expiresAt   DateTime?
   createdAt   DateTime  @default(now())
 
@@ -1455,12 +1472,14 @@ model Entitlement {
   @@index([userId])
 }
 
-/// Recurring subscription: a buyer subscribes to a creator and gets their whole
-/// exclusive catalogue while `status` is active.
-model CreatorSubscription {
+/// A buyer's active subscription to a space at a given tier rank. While
+/// `status` is active they reach all SpaceContent with accessTierRank ≤ tierRank.
+model SpaceMembership {
   id                   String    @id @default(cuid())
   subscriberId         String
-  creatorId            String
+  spaceId              String
+  /// Snapshot of the subscribed tier's rank (drives access).
+  tierRank             Int
   stripeSubscriptionId String    @unique
   /// Stripe subscription status: "active" | "canceled" | "past_due" | ...
   status               String
@@ -1468,8 +1487,8 @@ model CreatorSubscription {
   createdAt            DateTime  @default(now())
   updatedAt            DateTime  @updatedAt
 
-  @@unique([subscriberId, creatorId])
-  @@index([creatorId])
+  @@unique([subscriberId, spaceId])
+  @@index([spaceId])
   @@index([subscriberId, status])
 }
 
@@ -1479,7 +1498,10 @@ model CreatorSubscription {
 model CreatorEarning {
   id             String   @id @default(cuid())
   creatorId      String
-  productId      String?
+  /// "TIER" | "CONTENT" — what produced this earning.
+  sourceKind     String?
+  /// SpaceTier.id or SpaceContent.id depending on sourceKind (informational).
+  sourceId       String?
   buyerId        String?
   grossCents     Int
   feeCents       Int
@@ -1490,5 +1512,92 @@ model CreatorEarning {
   createdAt      DateTime @default(now())
 
   @@index([creatorId])
+}
+
+/// First-class tutorial — a multi-section lesson authored in a space.
+model Tutorial {
+  id         String            @id @default(cuid())
+  spaceId    String
+  authorId   String
+  slug       String
+  title      String
+  summary    String?
+  coverImage String?
+  published  Boolean           @default(false)
+  createdAt  DateTime          @default(now())
+  updatedAt  DateTime          @updatedAt
+  sections   TutorialSection[]
+
+  @@unique([spaceId, slug])
+  @@index([spaceId])
+}
+
+/// One ordered section of a tutorial. May embed an existing snippet/challenge.
+model TutorialSection {
+  id          String   @id @default(cuid())
+  tutorialId  String
+  position    Int
+  title       String?
+  /// Markdown body.
+  body        String
+  snippetId   String?
+  challengeId String?
+  tutorial    Tutorial @relation(fields: [tutorialId], references: [id], onDelete: Cascade)
+
+  @@index([tutorialId])
+}
+
+/// First-class interview Q&A page — a titled collection of question/answer items.
+model InterviewQA {
+  id        String              @id @default(cuid())
+  spaceId   String
+  authorId  String
+  slug      String
+  title     String
+  summary   String?
+  category  String?
+  published Boolean             @default(false)
+  createdAt DateTime            @default(now())
+  updatedAt DateTime            @updatedAt
+  questions InterviewQuestion[]
+
+  @@unique([spaceId, slug])
+  @@index([spaceId])
+}
+
+model InterviewQuestion {
+  id         String      @id @default(cuid())
+  qaId       String
+  position   Int
+  question   String
+  /// Markdown answer.
+  answer     String
+  difficulty String?
+  qa         InterviewQA @relation(fields: [qaId], references: [id], onDelete: Cascade)
+
+  @@index([qaId])
+}
+
+/// Polymorphic access index: ties any content type to a space + its access
+/// policy. Replaces the flat Phase-4 Product. `accessTierRank` null = free;
+/// otherwise the minimum membership tier rank. `purchasePriceCents` (when set)
+/// also allows a one-time buy that grants a permanent Entitlement.
+model SpaceContent {
+  id                 String   @id @default(cuid())
+  spaceId            String
+  /// CHALLENGE | SNIPPET | BLOG_POST | TUTORIAL | INTERVIEW_QA
+  contentType        String
+  contentId          String
+  accessTierRank     Int?
+  purchasePriceCents Int?
+  currency           String   @default("usd")
+  platformFeeBps     Int      @default(2000)
+  stripeProductId    String?
+  stripePriceId      String?
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  @@unique([contentType, contentId])
+  @@index([spaceId])
 }
 

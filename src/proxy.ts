@@ -2,6 +2,9 @@ import { NextResponse, type NextRequest } from "next/server";
 import { getToken } from "next-auth/jwt";
 import { getMaintenanceConfig, maintenanceHtml } from "@/lib/maintenance";
 import { isAdminEmail } from "@/lib/admin";
+import { guardFor, STAFF_SENTINEL } from "@/lib/permissions/route-guards";
+import { resolveUserPermissionsUncached } from "@/lib/permissions/access";
+import { PLATFORM_PERMISSIONS } from "@/lib/permissions/permissions";
 
 // Next.js 16 "Proxy" (formerly Middleware) — runs on the Node.js runtime by
 // default, so Prisma + next-auth JWT decoding work here directly.
@@ -33,10 +36,59 @@ function isAllowlisted(pathname: string): boolean {
   return /\.[a-z0-9]+$/i.test(pathname);
 }
 
+/**
+ * Centralized authorization for GLOBAL-scope routes (admin/creator/platform
+ * APIs). Resolves the caller's permissions from the DB (Node runtime → Prisma
+ * works here, always fresh — no JWT staleness) and enforces the declarative
+ * ROUTE_GUARDS map. Per-page guards remain as defense-in-depth; this is the
+ * primary front door. Returns a response to short-circuit, or null to continue.
+ */
+async function enforceRouteGuard(req: NextRequest): Promise<NextResponse | null> {
+  const { pathname } = req.nextUrl;
+  const guard = guardFor(pathname);
+  if (!guard) return null;
+
+  const isApi = pathname.startsWith("/api");
+  let userId: string | undefined;
+  try {
+    const token = await getToken({
+      req,
+      secret: process.env.AUTH_SECRET,
+      secureCookie: req.nextUrl.protocol === "https:",
+    });
+    userId = typeof token?.uid === "string" ? token.uid : undefined;
+  } catch {
+    userId = undefined;
+  }
+
+  if (!userId) {
+    if (isApi) {
+      return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+    }
+    const url = req.nextUrl.clone();
+    url.pathname = "/login";
+    url.search = `?next=${encodeURIComponent(pathname)}`;
+    return NextResponse.redirect(url);
+  }
+
+  const perms = await resolveUserPermissionsUncached(userId);
+  const ok =
+    guard.permission === STAFF_SENTINEL
+      ? PLATFORM_PERMISSIONS.some((p) => perms.has(p))
+      : perms.has(guard.permission);
+  if (ok) return null;
+
+  // Forbidden. APIs get a clean 403; pages get a 404 (non-enumerable — same
+  // posture as the per-page notFound() guards).
+  return isApi
+    ? NextResponse.json({ error: "forbidden" }, { status: 403 })
+    : new NextResponse("Not Found", { status: 404 });
+}
+
 export async function proxy(req: NextRequest) {
   try {
     const cfg = await getMaintenanceConfig();
-    if (!cfg.enabled) return NextResponse.next();
+    if (!cfg.enabled) return (await enforceRouteGuard(req)) ?? NextResponse.next();
 
     const { pathname } = req.nextUrl;
     if (isAllowlisted(pathname)) return NextResponse.next();

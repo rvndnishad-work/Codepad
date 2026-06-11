@@ -1,6 +1,6 @@
 /**
- * Webhook fulfillment for marketplace purchases. Called from the Stripe webhook
- * (checkout.session.completed + customer.subscription.* ). Every write is
+ * Webhook fulfillment for creator-space purchases. Called from the Stripe
+ * webhook (checkout.session.completed + customer.subscription.*). Every write is
  * idempotent so redelivery is safe.
  */
 import type Stripe from "stripe";
@@ -14,8 +14,8 @@ const FALLBACK_FEE_BPS = 2000;
 /** One-time content purchase → grant a permanent entitlement + record earnings. */
 export async function fulfillContentPurchase(session: Stripe.Checkout.Session) {
   const m = session.metadata ?? {};
-  const { productId, buyerId, creatorId, contentType, contentId } = m;
-  if (!productId || !buyerId || !creatorId || !contentType || !contentId) {
+  const { spaceContentId, buyerId, creatorId, contentType, contentId } = m;
+  if (!spaceContentId || !buyerId || !creatorId || !contentType || !contentId) {
     console.warn("CONTENT_PURCHASE checkout missing metadata", session.id);
     return;
   }
@@ -25,49 +25,50 @@ export async function fulfillContentPurchase(session: Stripe.Checkout.Session) {
     contentType: contentType as OwnableContentType,
     contentId,
     source: "PURCHASE",
-    productId,
+    spaceContentId,
   });
 
-  const product = await prisma.product.findUnique({
-    where: { id: productId },
+  const sc = await prisma.spaceContent.findUnique({
+    where: { id: spaceContentId },
     select: { platformFeeBps: true },
   });
-  const chargeId = (session.payment_intent as string) || session.id;
   const res = await recordCreatorEarning({
     creatorId,
-    stripeChargeId: chargeId,
+    stripeChargeId: (session.payment_intent as string) || session.id,
     grossCents: session.amount_total ?? 0,
-    platformFeeBps: product?.platformFeeBps ?? FALLBACK_FEE_BPS,
+    platformFeeBps: sc?.platformFeeBps ?? FALLBACK_FEE_BPS,
     currency: session.currency ?? "usd",
-    productId,
+    sourceKind: "CONTENT",
+    sourceId: spaceContentId,
     buyerId,
   });
   console.log(
-    `CONTENT_PURCHASE ${productId} for ${buyerId}: entitlement granted, earning ${res.recorded ? "recorded" : "already recorded"}`,
+    `CONTENT_PURCHASE ${spaceContentId} for ${buyerId}: entitlement granted, earning ${res.recorded ? "recorded" : "already recorded"}`,
   );
 }
 
-/** Subscription checkout → upsert the CreatorSubscription (catalogue access is
- *  resolved live via hasEntitlement) + record the first payment. */
-export async function fulfillSubscriptionCheckout(session: Stripe.Checkout.Session) {
+/** Membership checkout → upsert the SpaceMembership + record the first payment.
+ *  Catalogue access is resolved live from the membership (see access.ts). */
+export async function fulfillMembershipCheckout(session: Stripe.Checkout.Session) {
   const m = session.metadata ?? {};
-  const { buyerId, creatorId, productId } = m;
+  const { buyerId, creatorId, spaceId, tierId } = m;
+  const tierRank = Number(m.tierRank);
   const stripeSubscriptionId = session.subscription as string | null;
-  if (!buyerId || !creatorId || !stripeSubscriptionId) {
-    console.warn("CREATOR_SUBSCRIPTION checkout missing metadata", session.id);
+  if (!buyerId || !spaceId || !stripeSubscriptionId || !Number.isFinite(tierRank)) {
+    console.warn("SPACE_MEMBERSHIP checkout missing metadata", session.id);
     return;
   }
 
-  await prisma.creatorSubscription.upsert({
-    where: { stripeSubscriptionId },
-    update: { status: "active" },
-    create: { subscriberId: buyerId, creatorId, stripeSubscriptionId, status: "active" },
+  await prisma.spaceMembership.upsert({
+    where: { subscriberId_spaceId: { subscriberId: buyerId, spaceId } },
+    update: { tierRank, status: "active", stripeSubscriptionId },
+    create: { subscriberId: buyerId, spaceId, tierRank, status: "active", stripeSubscriptionId },
   });
 
-  if (session.amount_total) {
-    const product = productId
-      ? await prisma.product.findUnique({
-          where: { id: productId },
+  if (session.amount_total && creatorId) {
+    const tier = tierId
+      ? await prisma.spaceTier.findUnique({
+          where: { id: tierId },
           select: { platformFeeBps: true },
         })
       : null;
@@ -75,26 +76,24 @@ export async function fulfillSubscriptionCheckout(session: Stripe.Checkout.Sessi
       creatorId,
       stripeChargeId: (session.payment_intent as string) || `sub:${session.id}`,
       grossCents: session.amount_total,
-      platformFeeBps: product?.platformFeeBps ?? FALLBACK_FEE_BPS,
+      platformFeeBps: tier?.platformFeeBps ?? FALLBACK_FEE_BPS,
       currency: session.currency ?? "usd",
-      productId: productId ?? null,
+      sourceKind: "TIER",
+      sourceId: tierId ?? null,
       buyerId,
     });
   }
 }
 
-/** Mirror a Stripe subscription's status onto our CreatorSubscription rows.
- *  No-ops for workspace subscriptions (no matching row). */
-export async function syncCreatorSubscriptionStatus(
+/** Mirror a Stripe subscription's status onto SpaceMembership rows. No-ops for
+ *  workspace subscriptions (no matching row). */
+export async function syncMembershipStatus(
   stripeSubscriptionId: string,
   status: string,
   currentPeriodEnd: Date | null,
 ) {
-  await prisma.creatorSubscription.updateMany({
+  await prisma.spaceMembership.updateMany({
     where: { stripeSubscriptionId },
-    data: {
-      status,
-      ...(currentPeriodEnd ? { currentPeriodEnd } : {}),
-    },
+    data: { status, ...(currentPeriodEnd ? { currentPeriodEnd } : {}) },
   });
 }

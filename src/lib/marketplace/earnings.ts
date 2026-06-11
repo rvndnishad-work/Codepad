@@ -28,7 +28,9 @@ export async function recordCreatorEarning(params: {
   grossCents: number;
   platformFeeBps: number;
   currency?: string;
-  productId?: string | null;
+  /** "TIER" | "CONTENT" — what produced this earning. */
+  sourceKind?: "TIER" | "CONTENT" | null;
+  sourceId?: string | null;
   buyerId?: string | null;
 }): Promise<{ recorded: boolean }> {
   const existing = await prisma.creatorEarning.findUnique({
@@ -41,7 +43,8 @@ export async function recordCreatorEarning(params: {
   await prisma.creatorEarning.create({
     data: {
       creatorId: params.creatorId,
-      productId: params.productId ?? null,
+      sourceKind: params.sourceKind ?? null,
+      sourceId: params.sourceId ?? null,
       buyerId: params.buyerId ?? null,
       grossCents: params.grossCents,
       feeCents,

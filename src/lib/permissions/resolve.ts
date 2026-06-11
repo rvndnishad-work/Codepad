@@ -94,6 +94,8 @@ const OWNER_FIELD: Record<OwnableContentType, "authorId" | "userId"> = {
   CHALLENGE: "authorId", // Challenge.authorId
   BLOG_POST: "userId", // BlogPost.userId
   SNIPPET: "userId", // Snippet.userId
+  TUTORIAL: "authorId", // Tutorial.authorId
+  INTERVIEW_QA: "authorId", // InterviewQA.authorId
 };
 
 /** A resource an ownership-sensitive check can be made against. */
@@ -127,9 +129,15 @@ export function can(
   resource?: OwnedResource,
 ): boolean {
   if (subject.permissions.has(permission)) return true;
-  if (resource && subject.userId) {
-    const ownerId = resource[OWNER_FIELD[resource.contentType]];
-    if (ownerId && ownerId === subject.userId) return true;
+  if (resource) {
+    // Ownership: the owner of a piece of content passes content checks on it.
+    if (subject.userId) {
+      const ownerId = resource[OWNER_FIELD[resource.contentType]];
+      if (ownerId && ownerId === subject.userId) return true;
+    }
+    // Staff moderation override: a content:moderate holder may act on any
+    // owned content (edit/remove reported items) regardless of ownership.
+    if (subject.permissions.has("content:moderate")) return true;
   }
   return false;
 }

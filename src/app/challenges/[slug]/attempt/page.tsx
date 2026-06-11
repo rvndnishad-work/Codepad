@@ -1,5 +1,6 @@
 import { auth } from "@/lib/auth";
 import { staffCan } from "@/lib/permissions/staff";
+import { hasAccess } from "@/lib/marketplace/access";
 import { prisma } from "@/lib/prisma";
 import { notFound, redirect } from "next/navigation";
 import Link from "next/link";
@@ -180,6 +181,20 @@ export default async function ChallengeAttemptPage({
   }
 
   if (!canView) notFound();
+
+  // ── Marketplace paywall ───────────────────────────────────────────────
+  // A sold challenge requires an entitlement to attempt. Take-home, collab,
+  // owner and curator contexts bypass (legitimate non-purchase access); a plain
+  // viewer without an entitlement is bounced to the paywall on the detail page.
+  if (
+    !isOwner &&
+    !callerIsAdmin &&
+    !isCollabPeer &&
+    !isTakeHomeValid &&
+    !(await hasAccess(userId, "CHALLENGE", challenge.id))
+  ) {
+    redirect(`/challenges/${slug}`);
+  }
 
   // ── Resolve active step ───────────────────────────────────────────────
   const steps = challenge.steps;

@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { staffCan } from "@/lib/permissions/staff";
-import { hasEntitlement } from "@/lib/marketplace/entitlements";
+import { hasAccess } from "@/lib/marketplace/access";
 import { prisma } from "@/lib/prisma";
 
 type Params = { params: Promise<{ slug: string }> };
@@ -63,7 +63,7 @@ export async function GET(req: Request, { params }: Params) {
   // creator) is entitled to its reference solutions — supersedes the legacy
   // paid-workspace heuristic for sold content.
   if (!isPremium) {
-    isPremium = await hasEntitlement(userId, "CHALLENGE", challenge.id);
+    isPremium = await hasAccess(userId, "CHALLENGE", challenge.id);
   }
 
   if (!isPremium) {

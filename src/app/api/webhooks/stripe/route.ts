@@ -3,8 +3,8 @@ import { getStripe } from "@/lib/stripe";
 import { recordPurchase } from "@/lib/ai-interview/credits";
 import {
   fulfillContentPurchase,
-  fulfillSubscriptionCheckout,
-  syncCreatorSubscriptionStatus,
+  fulfillMembershipCheckout,
+  syncMembershipStatus,
 } from "@/lib/marketplace/fulfillment";
 import { syncConnectAccountFromStripe } from "@/lib/marketplace/connect";
 import { NextResponse } from "next/server";
@@ -75,9 +75,9 @@ export async function POST(req: Request) {
           break;
         }
 
-        // Marketplace creator subscription → CreatorSubscription + earnings.
-        if (session.metadata?.kind === "CREATOR_SUBSCRIPTION") {
-          await fulfillSubscriptionCheckout(session);
+        // Creator-space membership → SpaceMembership + earnings.
+        if (session.metadata?.kind === "SPACE_MEMBERSHIP") {
+          await fulfillMembershipCheckout(session);
           break;
         }
 
@@ -109,8 +109,8 @@ export async function POST(req: Request) {
             planName: "FREE",
           },
         });
-        // Mirror onto creator subscriptions (no-op for workspace subs).
-        await syncCreatorSubscriptionStatus(sub.id, "canceled", null);
+        // Mirror onto space memberships (no-op for workspace subs).
+        await syncMembershipStatus(sub.id, "canceled", null);
         console.log(`Subscription ${sub.id} canceled.`);
         break;
       }
@@ -128,7 +128,7 @@ export async function POST(req: Request) {
         });
         // Mirror status onto creator subscriptions (no-op for workspace subs).
         const cpe = (sub as unknown as { current_period_end?: number }).current_period_end;
-        await syncCreatorSubscriptionStatus(
+        await syncMembershipStatus(
           sub.id,
           sub.status,
           cpe ? new Date(cpe * 1000) : null,

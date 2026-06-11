@@ -1,40 +1,7 @@
 import { describe, it, expect } from "vitest";
-import { resolveAccess } from "../../src/lib/marketplace/entitlements";
 import { feeSplit } from "../../src/lib/marketplace/earnings";
 
-describe("resolveAccess — entitlement decision", () => {
-  const base = {
-    viewerId: "viewer1",
-    ownerId: "creator1",
-    viewerCanModerate: false,
-    hasEntitlementRow: false,
-    hasActiveSubscription: false,
-  };
-
-  it("denies anonymous viewers", () => {
-    expect(resolveAccess({ ...base, viewerId: null })).toBe(false);
-  });
-
-  it("grants the content owner", () => {
-    expect(resolveAccess({ ...base, viewerId: "creator1" })).toBe(true);
-  });
-
-  it("grants a content moderator", () => {
-    expect(resolveAccess({ ...base, viewerCanModerate: true })).toBe(true);
-  });
-
-  it("grants a one-time purchaser (entitlement row)", () => {
-    expect(resolveAccess({ ...base, hasEntitlementRow: true })).toBe(true);
-  });
-
-  it("grants an active subscriber", () => {
-    expect(resolveAccess({ ...base, hasActiveSubscription: true })).toBe(true);
-  });
-
-  it("denies a viewer with none of the above", () => {
-    expect(resolveAccess(base)).toBe(false);
-  });
-});
+// Access-decision tests live in space-access.test.ts (resolveSpaceAccess).
 
 describe("feeSplit — platform fee math", () => {
   it("splits 20% (2000 bps) of $10.00", () => {

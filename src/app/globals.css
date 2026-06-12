@@ -26,7 +26,7 @@
        produced by postcss-pxtorem) scales with the viewport. Floor 16.5px so
        dense small text never shrinks below today's size; grows smoothly to
        19.5px on wide screens. ~16.5px ≤480px → ~19.5px ≥1280px. */
-    --base-font-size: clamp(16.5px, calc(15px + 0.3vw), 19.5px);
+    --base-font-size: clamp(16.5px, calc(13px + 0.3vw), 19.5px);
     --accent-brightness: brightness(0.7);
   }
 
@@ -771,6 +771,7 @@ body.sidebar-collapsed .workspace-content {
 .theme-glassmorphism {
   background: radial-gradient(circle at top, rgba(124, 58, 237, 0.08) 0%, rgba(15, 23, 42, 0.05) 50%, transparent 100%), var(--bg);
 }
+
 .theme-glassmorphism .theme-card {
   background: rgba(255, 255, 255, 0.03);
   backdrop-filter: blur(12px);
@@ -778,6 +779,7 @@ body.sidebar-collapsed .workspace-content {
   border: 1px solid rgba(255, 255, 255, 0.08);
   box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.2);
 }
+
 .theme-glassmorphism .theme-card-membership {
   background: rgba(248, 113, 113, 0.05);
   backdrop-filter: blur(12px);
@@ -785,6 +787,7 @@ body.sidebar-collapsed .workspace-content {
   border: 1px solid rgba(248, 113, 113, 0.2);
   box-shadow: 0 8px 32px 0 rgba(248, 113, 113, 0.05);
 }
+
 .theme-glassmorphism .theme-accent-text {
   color: var(--accent);
   text-shadow: 0 0 8px rgba(248, 113, 113, 0.3);
@@ -795,22 +798,26 @@ body.sidebar-collapsed .workspace-content {
   background-color: #0b0c10;
   background-image: linear-gradient(180deg, rgba(31, 40, 51, 0.3) 0%, #0b0c10 100%);
 }
+
 .theme-neon .theme-card {
   background: #1f2833;
   border: 1px solid #45f3ff;
   box-shadow: 0 0 10px rgba(69, 243, 255, 0.2);
   border-radius: 8px;
 }
+
 .theme-neon .theme-card-membership {
   background: #1f2833;
   border: 1px solid #ff007f;
   box-shadow: 0 0 15px rgba(255, 0, 127, 0.3);
   border-radius: 8px;
 }
+
 .theme-neon .theme-accent-text {
   color: #ff007f;
   text-shadow: 0 0 10px rgba(255, 0, 127, 0.6);
 }
+
 .theme-neon .text-fg {
   color: #45f3ff;
   text-shadow: 0 0 5px rgba(69, 243, 255, 0.3);
@@ -820,6 +827,7 @@ body.sidebar-collapsed .workspace-content {
 .theme-minimalist {
   background-color: #0d0d0d;
 }
+
 .theme-minimalist .theme-card {
   background: transparent;
   border: none;
@@ -829,12 +837,14 @@ body.sidebar-collapsed .workspace-content {
   padding-left: 0;
   padding-right: 0;
 }
+
 .theme-minimalist .theme-card-membership {
   background: transparent;
   border: 1px solid var(--border);
   border-radius: 0px;
   box-shadow: none;
 }
+
 .theme-minimalist .theme-accent-text {
   color: var(--fg);
   text-decoration: underline;

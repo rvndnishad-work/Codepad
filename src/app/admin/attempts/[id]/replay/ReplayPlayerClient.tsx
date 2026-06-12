@@ -275,7 +275,7 @@ export default function ReplayPlayerClient({ attempt, events, integrity, backUrl
                         <div
                           key={idx}
                           style={{ left: `${leftPercent}%` }}
-                          className="absolute inset-y-0 w-[3px] bg-amber-400 shadow-[0_0_8px_#fbbf24]"
+                          className="absolute inset-y-0 w-[3px] -translate-x-1/2 bg-amber-400 shadow-[0_0_8px_#fbbf24]"
                           title={`Paste event: ${formattedTime(pasteEv.t)}`}
                         />
                       );
@@ -303,6 +303,34 @@ export default function ReplayPlayerClient({ attempt, events, integrity, backUrl
                   style={{ left: `calc(${(playheadMs / maxElapsedMs) * 100}% - 6px)` }}
                   className="absolute w-3.5 h-3.5 rounded-full bg-accent border-2 border-[#0B0F19] pointer-events-none z-20 shadow-md group-hover/timeline:scale-125 transition-transform"
                 />
+
+                {/* YouTube-style paste bookmarks pinned on the track */}
+                {events
+                  .filter((ev) => ev.type === "paste")
+                  .map((pasteEv, idx) => {
+                    const leftPercent = (pasteEv.t / maxElapsedMs) * 100;
+                    const chars = Number(pasteEv.payload?.length) || 0;
+                    return (
+                      <button
+                        key={idx}
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setPlayheadMs(pasteEv.t);
+                        }}
+                        style={{ left: `${leftPercent}%` }}
+                        className="absolute top-1/2 z-30 -translate-x-1/2 -translate-y-1/2 p-0.5 pointer-events-auto group/mark cursor-pointer"
+                        aria-label={`Jump to paste at ${formattedTime(pasteEv.t)}`}
+                      >
+                        {/* Bookmark pin */}
+                        <span className="block w-2.5 h-2.5 rotate-45 rounded-[2px] bg-amber-400 border border-amber-200 shadow-[0_0_8px_#fbbf24] transition-transform group-hover/mark:scale-150" />
+                        {/* Hover tooltip */}
+                        <span className="absolute bottom-full left-1/2 mb-2 -translate-x-1/2 hidden group-hover/mark:flex items-center gap-1 whitespace-nowrap rounded-lg border border-amber-500/30 bg-[#0B0F19] px-2 py-1 text-[9px] font-mono font-bold text-amber-300 shadow-xl">
+                          <Clipboard className="w-2.5 h-2.5" /> Paste · {chars.toLocaleString()} chars · {formattedTime(pasteEv.t)}
+                        </span>
+                      </button>
+                    );
+                  })}
               </div>
 
               <span className="text-[10px] font-mono tabular-nums text-muted shrink-0 w-8">
@@ -371,36 +399,47 @@ export default function ReplayPlayerClient({ attempt, events, integrity, backUrl
                 </div>
                 <div className="p-3.5 rounded-2xl border border-border bg-[#0B0F19]/40 flex flex-col justify-between col-span-2">
                   <span className="text-[9px] uppercase font-black tracking-widest text-muted flex items-center gap-1">
-                    <Clipboard className="w-3.5 h-3.5 text-amber-400" /> Block Pastes
+                    <Clipboard className="w-3.5 h-3.5 text-amber-400" /> Pastes Captured
                   </span>
-                  <span className="text-xs font-bold text-fg mt-2">{integrity.pasteCount} pastes detected</span>
+                  <span className="text-xs font-bold text-fg mt-2">{integrity.pasteCount} pastes logged</span>
                 </div>
               </div>
             </div>
           )}
 
-          {/* Paste History Events Feed */}
+          {/* Paste History Events Feed — full captured content for review */}
           {integrity && integrity.pasteDetails.length > 0 && (
-            <div className="rounded-3xl border border-border bg-[#161B2E]/40 p-5 space-y-3.5 max-h-80 overflow-y-auto">
+            <div className="rounded-3xl border border-border bg-[#161B2E]/40 p-5 space-y-3.5 max-h-[28rem] overflow-y-auto">
               <h3 className="text-xs font-black uppercase tracking-widest text-muted">Copy-Paste Logs</h3>
+              <p className="text-[10px] text-muted leading-relaxed">
+                Captured paste content — review to tell external/AI code from the candidate relocating their own work. Click an entry to jump the replay to that moment.
+              </p>
               <div className="space-y-3">
-                {integrity.pasteDetails.map((p, idx) => (
-                  <div
-                    key={idx}
-                    onClick={() => setPlayheadMs(p.t)}
-                    className="p-3 rounded-xl border border-border bg-[#0B0F19]/40 text-[10px] space-y-1.5 hover:border-accent/30 cursor-pointer hover:bg-[#0B0F19]/60 transition"
-                  >
-                    <div className="flex justify-between items-center text-muted">
-                      <span className="font-mono text-amber-400 font-bold flex items-center gap-1">
-                        <Clipboard className="w-3 h-3" /> Pasted {p.length} chars
-                      </span>
-                      <span className="font-mono">{formattedTime(p.t)}</span>
+                {integrity.pasteDetails.map((p, idx) => {
+                  const truncated = p.length > p.snippet.length;
+                  return (
+                    <div
+                      key={idx}
+                      onClick={() => setPlayheadMs(p.t)}
+                      className="p-3 rounded-xl border border-border bg-[#0B0F19]/40 text-[10px] space-y-1.5 hover:border-accent/30 cursor-pointer hover:bg-[#0B0F19]/60 transition"
+                    >
+                      <div className="flex justify-between items-center text-muted">
+                        <span className="font-mono text-amber-400 font-bold flex items-center gap-1">
+                          <Clipboard className="w-3 h-3" /> Pasted {p.length} chars
+                        </span>
+                        <span className="font-mono">{formattedTime(p.t)}</span>
+                      </div>
+                      <pre className="p-2 rounded bg-bg text-fg/80 border border-border whitespace-pre-wrap break-words max-h-48 overflow-y-auto max-w-full font-mono leading-relaxed">
+                        {p.snippet || "(empty)"}
+                      </pre>
+                      {truncated && (
+                        <div className="text-[9px] text-muted/70 font-mono">
+                          Showing first {p.snippet.length.toLocaleString()} of {p.length.toLocaleString()} chars
+                        </div>
+                      )}
                     </div>
-                    <pre className="p-2 rounded bg-bg text-fg/80 border border-border truncate max-w-full font-mono">
-                      {p.snippet || "..."}
-                    </pre>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
           )}

@@ -827,11 +827,15 @@ export default function ChallengeAttemptClient({
       logTelemetryEvent("focus", { timestamp: Date.now() });
     };
     const handlePaste = (e: ClipboardEvent) => {
+      // Paste is intentionally allowed — we record (never block) so recruiters
+      // can review what was pasted and judge cheating vs. moving genuine code.
+      // `length` is the true paste size; `snippet` keeps up to 2000 chars so a
+      // meaningful code block is reviewable in the session replay.
       const text = e.clipboardData?.getData("text") || "";
       logTelemetryEvent("paste", {
         timestamp: Date.now(),
         length: text.length,
-        snippet: text.substring(0, 100),
+        snippet: text.substring(0, 2000),
       });
     };
     const handleKeyDown = (e: KeyboardEvent) => {

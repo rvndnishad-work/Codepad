@@ -228,7 +228,7 @@ export default async function AdminAttemptDetailPage({ params }: AdminAttemptDet
                 </span>
               </p>
               <p className="text-xs text-muted leading-relaxed">
-                We tracked <span className="text-[#F3F4F6] font-bold">{attempt.integrityReport.blurCount} browser tab blurs</span> (candidate left screen for <span className="text-[#F3F4F6] font-bold">{attempt.integrityReport.totalBlurSec} seconds</span>) and <span className="text-[#F3F4F6] font-bold">{attempt.integrityReport.pasteCount} keyboard block pastes</span>. Large copy-pastes or high-speed typing bursts indicate external AI code generation.
+                We tracked <span className="text-[#F3F4F6] font-bold">{attempt.integrityReport.blurCount} browser tab blurs</span> (candidate left screen for <span className="text-[#F3F4F6] font-bold">{attempt.integrityReport.totalBlurSec} seconds</span>) and <span className="text-[#F3F4F6] font-bold">{attempt.integrityReport.pasteCount} clipboard pastes captured</span>. Paste is allowed and logged — open the replay to review pasted content and tell external AI code from the candidate moving their own work. Large copy-pastes or high-speed typing bursts indicate external AI code generation.
               </p>
             </div>
 

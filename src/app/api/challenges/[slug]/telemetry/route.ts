@@ -136,7 +136,9 @@ export async function POST(
     } else if (ev.type === "paste") {
       pasteCount++;
       const length = Number(ev.payload?.length) || 0;
-      const snippet = String(ev.payload?.snippet || "").substring(0, 100);
+      // Keep up to 2000 chars of the pasted content so recruiters can review it
+      // in the replay (cheating vs. relocating the candidate's own code).
+      const snippet = String(ev.payload?.snippet || "").substring(0, 2000);
       pasteDetails.push({ t: ev.t, length, snippet });
     }
   });

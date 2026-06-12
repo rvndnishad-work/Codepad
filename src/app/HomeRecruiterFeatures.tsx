@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import {
   Brain, Cpu, Users, Workflow, FileText, ShieldCheck,
-  RotateCcw, Eye, Shield, ChevronRight, Check, X,
+  RotateCcw, Eye, Shield, ChevronRight, Check, X, Clipboard,
   AlertTriangle, Zap, Clock, BarChart3, CreditCard, TrendingUp, Activity,
 } from "lucide-react";
 import RevealOnScroll from "@/components/scroll/RevealOnScroll";
@@ -100,7 +100,7 @@ function SectionShell({ index, icon: Icon, accent, title, titleAccent, desc, bul
 const PROCTOR_EVENTS = [
   { text: "Session started", severity: "green", icon: Check },
   { text: "Tab blur detected → flagged", severity: "amber", icon: AlertTriangle },
-  { text: "Clipboard paste blocked", severity: "red", icon: X },
+  { text: "Clipboard paste captured + logged", severity: "amber", icon: Clipboard },
   { text: "Focus restored", severity: "green", icon: Eye },
   { text: "Browser DevTools detected", severity: "red", icon: AlertTriangle },
   { text: "Keystroke anomaly: burst typing", severity: "amber", icon: Zap },

@@ -1,5 +1,7 @@
 import { auth } from "@/lib/auth";
-import { isAdmin } from "@/lib/admin";
+import { staffCan } from "@/lib/permissions/staff";
+import { hasAccess, getPaywallOptions } from "@/lib/marketplace/access";
+import ChallengePaywall from "./ChallengePaywall";
 import { prisma } from "@/lib/prisma";
 import { notFound, redirect } from "next/navigation";
 import Link from "next/link";
@@ -178,7 +180,7 @@ export default async function ChallengeDetailPage({ params, searchParams }: Prop
   // ── Access control ───────────────────────────────────────────────────
   // Mirrors the gating on /tracks/[slug] before Tracks were folded in.
   const isOwner = !!userId && challenge.authorId === userId;
-  const callerIsAdmin = isAdmin(session);
+  const callerIsAdmin = await staffCan(session, "content:curate");
   let canView = isOwner || callerIsAdmin;
 
   if (!canView) {
@@ -235,6 +237,23 @@ export default async function ChallengeDetailPage({ params, searchParams }: Prop
     }
   }
   if (!canView) notFound();
+
+  // ── Creator-space paywall ────────────────────────────────────────────
+  // If this challenge is gated by a space (SpaceContent), non-owner / non-
+  // curator viewers without access (purchase or sufficient-tier membership)
+  // see a paywall instead of the runnable challenge.
+  if (!isOwner && !callerIsAdmin && !(await hasAccess(userId, "CHALLENGE", challenge.id))) {
+    const options = await getPaywallOptions("CHALLENGE", challenge.id);
+    if (options) {
+      return (
+        <ChallengePaywall
+          title={challenge.title}
+          description={challenge.description}
+          options={options}
+        />
+      );
+    }
+  }
 
   const attempts = userId
     ? await prisma.challengeAttempt.findMany({

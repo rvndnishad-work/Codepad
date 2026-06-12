@@ -1,7 +1,7 @@
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { notFound, redirect } from "next/navigation";
-import { isAdmin } from "@/lib/admin";
+import { isStaff } from "@/lib/permissions/staff";
 import {
   ensureTotpEnrolledOrRedirect,
   PAID_PLANS,
@@ -67,7 +67,7 @@ export default async function WorkspaceLayout({ children, params }: Props) {
     },
   });
 
-  const showAdmin = isAdmin(session);
+  const showAdmin = await isStaff(session);
 
   return (
     <div className="bg-bg text-fg flex flex-col md:flex-row relative font-sans h-[calc(100vh-64px)] overflow-hidden">

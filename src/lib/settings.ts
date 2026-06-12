@@ -15,7 +15,7 @@ import {
 } from "./maintenance";
 
 import { auth } from "./auth";
-import { isAdmin } from "./admin";
+import { staffCan } from "./permissions/staff";
 import { updateTag } from "next/cache";
 import { redirect } from "next/navigation";
 
@@ -31,7 +31,7 @@ export async function getNavLinks(): Promise<NavLinkConfig[]> {
 
 export async function updateNavLinks(links: NavLinkConfig[]) {
   const session = await auth().catch(() => null);
-  if (!isAdmin(session)) {
+  if (!(await staffCan(session, "platform:admin"))) {
     throw new Error("Unauthorized: Platform administrator access required.");
   }
   // Defense in depth: protected routes (the home page) can never be gated, no
@@ -56,7 +56,7 @@ export async function updateNavLinks(links: NavLinkConfig[]) {
  * based on navigation settings. Admins are always allowed.
  */
 export async function validatePageAccess(pathname: string, session: any) {
-  if (isAdmin(session)) return;
+  if (await staffCan(session, "platform:admin")) return;
 
   const links = await getNavLinks();
 
@@ -91,7 +91,7 @@ export async function getMaintenanceSettings(): Promise<MaintenanceConfig> {
 /** Toggle / update the site-wide maintenance switch. Admin-only. */
 export async function updateMaintenanceSettings(config: MaintenanceConfig) {
   const session = await auth().catch(() => null);
-  if (!isAdmin(session)) {
+  if (!(await staffCan(session, "platform:admin"))) {
     throw new Error("Unauthorized: Platform administrator access required.");
   }
   const clean: MaintenanceConfig = {
@@ -138,7 +138,7 @@ export async function getB2bSettings(): Promise<B2bSettingsConfig> {
 
 export async function updateB2bSettings(config: B2bSettingsConfig) {
   const session = await auth().catch(() => null);
-  if (!isAdmin(session)) {
+  if (!(await staffCan(session, "platform:admin"))) {
     throw new Error("Unauthorized: Platform administrator access required.");
   }
   return prisma.siteSetting.upsert({
@@ -179,7 +179,7 @@ export async function getInterviewArenaSettings(): Promise<InterviewArenaSetting
 
 export async function updateInterviewArenaSettings(config: InterviewArenaSettings) {
   const session = await auth().catch(() => null);
-  if (!isAdmin(session)) {
+  if (!(await staffCan(session, "platform:admin"))) {
     throw new Error("Unauthorized: Platform administrator access required.");
   }
   return prisma.siteSetting.upsert({

@@ -5,12 +5,14 @@ import {
   getMaintenanceSettings,
 } from "@/lib/settings";
 import SettingsForm from "./SettingsForm";
+import { requireAdminAccess } from "@/lib/permissions/staff";
 
 export const metadata = {
   title: "Settings — Admin",
 };
 
 export default async function SettingsPage() {
+  await requireAdminAccess();
   const [links, b2bSettings, arenaSettings, maintenance] = await Promise.all([
     getNavLinks(),
     getB2bSettings(),

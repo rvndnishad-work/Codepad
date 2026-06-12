@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { randomBytes } from "crypto";
 import { auth } from "@/lib/auth";
-import { isAdmin } from "@/lib/admin";
+import { staffCan } from "@/lib/permissions/staff";
 import { prisma } from "@/lib/prisma";
 
 type Params = { params: Promise<{ slug: string }> };
@@ -62,7 +62,7 @@ export async function GET(_req: Request, { params }: Params) {
     return NextResponse.json({ error: "Sign in required" }, { status: 401 });
   }
   const { slug } = await params;
-  const result = await authorise(slug, userId, isAdmin(session));
+  const result = await authorise(slug, userId, await staffCan(session, "content:curate"));
   if (result.kind === "error") return result.response;
 
   const invitations = await prisma.challengeInvitation.findMany({
@@ -91,7 +91,7 @@ export async function POST(req: Request, { params }: Params) {
     return NextResponse.json({ error: "Sign in required" }, { status: 401 });
   }
   const { slug } = await params;
-  const result = await authorise(slug, userId, isAdmin(session));
+  const result = await authorise(slug, userId, await staffCan(session, "content:curate"));
   if (result.kind === "error") return result.response;
 
   const body = (await req.json().catch(() => null)) as { emails?: unknown } | null;

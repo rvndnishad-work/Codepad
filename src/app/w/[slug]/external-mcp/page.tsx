@@ -4,6 +4,7 @@ import { notFound, redirect } from "next/navigation";
 import Link from "next/link";
 import { Lock, Plug } from "lucide-react";
 import { workspacePlanAllowsAiScreening } from "@/lib/ai-interview/credits";
+import { canMember } from "@/lib/permissions";
 import ExternalMcpConsole from "./ExternalMcpConsole";
 
 type Props = {
@@ -30,7 +31,7 @@ export default async function WorkspaceExternalMcpPage({ params }: Props) {
       slug: true,
       planName: true,
       allowExternalMcp: true,
-      members: { select: { userId: true, role: true } },
+      members: { select: { userId: true, role: true, permissions: true } },
     },
   });
   if (!workspace) notFound();
@@ -62,7 +63,7 @@ export default async function WorkspaceExternalMcpPage({ params }: Props) {
     );
   }
 
-  const canManage = member.role === "OWNER" || member.role === "ADMIN";
+  const canManage = await canMember(member, "integration:manage");
 
   const servers = await prisma.externalMcpServer.findMany({
     where: { workspaceId: workspace.id },

@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { LayoutDashboard, User as UserIcon, LogOut, Shield, Bell, ShieldCheck } from "lucide-react";
+import { LayoutDashboard, User as UserIcon, LogOut, Shield, Bell, ShieldCheck, Store } from "lucide-react";
 import { handleSignOut } from "@/app/actions";
 
 type UserShape = {
@@ -15,9 +15,11 @@ type UserShape = {
 export default function UserMenu({
   user,
   isAdmin,
+  isCreator = false,
 }: {
   user: UserShape;
   isAdmin: boolean;
+  isCreator?: boolean;
 }) {
   const [open, setOpen] = useState(false);
   const wrapperRef = useRef<HTMLDivElement>(null);
@@ -105,6 +107,13 @@ export default function UserMenu({
               href="/profile/security"
               icon={ShieldCheck}
               label="Security"
+              onClick={() => setOpen(false)}
+            />
+            <MenuLink
+              href={isCreator ? "/creator" : "/become-creator"}
+              icon={Store}
+              label={isCreator ? "Creator Studio" : "Become a Creator"}
+              accent
               onClick={() => setOpen(false)}
             />
             {isAdmin && (

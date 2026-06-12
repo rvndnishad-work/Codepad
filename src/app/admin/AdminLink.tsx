@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, Target, Users, FileText, Settings, Pin, Briefcase, Code2, MessageCircle, Inbox, Building2, Sparkles, Coins, ClipboardList, GraduationCap, HelpCircle, Activity, Megaphone, Mail } from "lucide-react";
+import { LayoutDashboard, Target, Users, FileText, Settings, Pin, Briefcase, Code2, MessageCircle, Inbox, Building2, Sparkles, Coins, ClipboardList, GraduationCap, HelpCircle, Activity, Megaphone, Mail, ShieldCheck } from "lucide-react";
 import type { ComponentType } from "react";
 import GemmaMark from "./copilot/GemmaMark";
 
@@ -30,6 +30,7 @@ const iconsMap: Record<string, NavIcon> = {
   Activity,
   Megaphone,
   Mail,
+  ShieldCheck,
   // Custom brand glyph — used for the Gemma Copilot row.
   GemmaMark,
 };

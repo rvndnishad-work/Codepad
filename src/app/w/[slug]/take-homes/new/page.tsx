@@ -2,6 +2,7 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { notFound, redirect } from "next/navigation";
 import { templates } from "@/lib/templates";
+import { canMember } from "@/lib/permissions";
 import TakeHomeBuilder, {
   type CurationChallenge,
   type CurationPlayground,
@@ -30,15 +31,15 @@ export default async function NewTakeHomePage({
     select: {
       id: true,
       name: true,
-      members: { select: { userId: true, role: true } },
+      members: { select: { userId: true, role: true, permissions: true } },
     },
   });
   if (!workspace) notFound();
   const member = workspace.members.find((m) => m.userId === session.user.id);
   if (!member) redirect("/dashboard");
-  // Authoring take-homes is an OWNER/ADMIN/INTERVIEWER action (same set that
-  // can dispatch). Plain members get bounced to the workspace home.
-  if (!["OWNER", "ADMIN", "INTERVIEWER"].includes(member.role)) {
+  // Authoring take-homes is a takehome:create action. Read-only members get
+  // bounced to the workspace home.
+  if (!(await canMember(member, "takehome:create"))) {
     redirect(`/w/${slug}`);
   }
 

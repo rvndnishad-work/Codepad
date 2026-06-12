@@ -4,6 +4,7 @@ import { notFound, redirect } from "next/navigation";
 import Link from "next/link";
 import { Lock, KeyRound } from "lucide-react";
 import { workspacePlanAllowsAiScreening } from "@/lib/ai-interview/credits";
+import { canMember } from "@/lib/permissions";
 import ApiKeysConsole from "./ApiKeysConsole";
 
 type Props = {
@@ -44,7 +45,7 @@ export default async function WorkspaceApiKeysPage({ params, searchParams }: Pro
       name: true,
       slug: true,
       planName: true,
-      members: { select: { userId: true, role: true } },
+      members: { select: { userId: true, role: true, permissions: true } },
     },
   });
   if (!workspace) notFound();
@@ -76,7 +77,7 @@ export default async function WorkspaceApiKeysPage({ params, searchParams }: Pro
     );
   }
 
-  const canManage = member.role === "OWNER" || member.role === "ADMIN";
+  const canManage = await canMember(member, "integration:manage");
 
   const last24h = new Date(Date.now() - 24 * 60 * 60 * 1000);
 

@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { auth } from "@/lib/auth";
-import { isAdmin } from "@/lib/admin";
+import { staffCan } from "@/lib/permissions/staff";
 import { prisma } from "@/lib/prisma";
 import { nanoid } from "nanoid";
 import { coverImageSchema, blogTagsSchema } from "@/lib/blog-schema";
@@ -76,7 +76,7 @@ export async function GET(req: Request) {
     if (!session?.user?.id) {
       return NextResponse.json({ error: "unauthorized" }, { status: 401 });
     }
-    if (!isAdmin(session) && userId !== session.user.id) {
+    if (!(await staffCan(session, "content:curate")) && userId !== session.user.id) {
       return NextResponse.json({ error: "forbidden" }, { status: 403 });
     }
   }

@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { auth } from "@/lib/auth";
-import { isAdmin } from "@/lib/admin";
+import { staffCan } from "@/lib/permissions/staff";
 import { executeBatch } from "@/lib/judge/run";
 import { genStub, hasHarness } from "@/lib/judge/harness";
 import { isValidType, compareValues, type Contract, type CompareMode } from "@/lib/judge/types";
@@ -42,7 +42,7 @@ const schema = z.object({
 
 export async function POST(req: Request) {
   const session = await auth().catch(() => null);
-  if (!isAdmin(session)) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  if (!(await staffCan(session, "content:curate"))) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
   const parsed = schema.safeParse(await req.json().catch(() => null));
   if (!parsed.success) return NextResponse.json({ error: parsed.error.message }, { status: 400 });

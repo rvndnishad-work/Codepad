@@ -1,7 +1,7 @@
 "use server";
 
 import { auth } from "@/lib/auth";
-import { isAdmin } from "@/lib/admin";
+import { staffCan } from "@/lib/permissions/staff";
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 
@@ -15,7 +15,7 @@ const STATUSES: readonly TodoStatus[] = ["BACKLOG", "TODO", "IN_PROGRESS", "DONE
 
 async function assertAdminUser(): Promise<{ email: string | null }> {
   const session = await auth().catch(() => null);
-  if (!isAdmin(session)) {
+  if (!(await staffCan(session, "platform:admin"))) {
     throw new Error("Unauthorized: Admin privilege required.");
   }
   return { email: session?.user?.email ?? null };

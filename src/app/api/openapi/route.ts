@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
-import { isAdmin } from "@/lib/admin";
+import { staffCan } from "@/lib/permissions/staff";
 import { openapiYaml } from "@/lib/openapi-spec";
 
 // Admin-gated: the spec maps the full admin/internal surface, so it is not
@@ -10,7 +10,7 @@ export const dynamic = "force-dynamic";
 
 export async function GET() {
   const session = await auth().catch(() => null);
-  if (!isAdmin(session)) {
+  if (!(await staffCan(session, "platform:admin"))) {
     return NextResponse.json({ error: "forbidden" }, { status: 403 });
   }
   return new NextResponse(openapiYaml, {

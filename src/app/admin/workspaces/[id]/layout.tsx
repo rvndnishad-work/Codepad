@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
-import { isAdmin } from "@/lib/admin";
+import { staffCan } from "@/lib/permissions/staff";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, Building2 } from "lucide-react";
@@ -20,7 +20,7 @@ const PLAN_BADGES: Record<string, string> = {
 
 export default async function WorkspaceDetailLayout({ params, children }: Props) {
   const session = await auth().catch(() => null);
-  if (!isAdmin(session)) notFound();
+  if (!(await staffCan(session, "platform:admin"))) notFound();
 
   const { id } = await params;
 

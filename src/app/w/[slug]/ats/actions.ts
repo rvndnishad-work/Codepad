@@ -10,6 +10,7 @@ import {
   writeWorkspaceAuditEntry,
   WORKSPACE_AUDIT_ACTIONS,
 } from "@/lib/workspace-audit";
+import { canMember } from "@/lib/permissions";
 
 /**
  * Per-workspace ATS integration (IP-32). Each workspace owns its own
@@ -25,7 +26,7 @@ import {
 const VALID_PROVIDERS = new Set(["lever", "greenhouse", "ashby"] as const);
 export type AtsProvider = "lever" | "greenhouse" | "ashby";
 
-type Member = { userId: string; role: string };
+type Member = { userId: string; role: string; permissions?: unknown };
 
 async function assertWorkspaceAdmin(slug: string) {
   const session = await auth().catch(() => null);
@@ -38,7 +39,7 @@ async function assertWorkspaceAdmin(slug: string) {
       slug: true,
       name: true,
       planName: true,
-      members: { select: { userId: true, role: true } },
+      members: { select: { userId: true, role: true, permissions: true } },
     },
   });
   if (!workspace) throw new Error("Workspace not found");
@@ -51,7 +52,7 @@ async function assertWorkspaceAdmin(slug: string) {
     // (see pricing page).
     throw new Error("This workspace plan does not include ATS integrations.");
   }
-  if (member.role !== "OWNER" && member.role !== "ADMIN") {
+  if (!(await canMember(member, "integration:manage"))) {
     throw new Error("Only workspace owners/admins can manage ATS integrations.");
   }
 

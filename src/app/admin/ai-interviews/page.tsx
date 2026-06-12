@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
-import { isAdmin } from "@/lib/admin";
+import { staffCan } from "@/lib/permissions/staff";
 import { redirect } from "next/navigation";
 import AdminAiInterviewsConsole from "./AdminAiInterviewsConsole";
 
@@ -11,7 +11,7 @@ export const metadata = {
 
 export default async function AdminAiInterviewsPage() {
   const session = await auth().catch(() => null);
-  if (!isAdmin(session)) {
+  if (!(await staffCan(session, "platform:admin"))) {
     redirect("/");
   }
 

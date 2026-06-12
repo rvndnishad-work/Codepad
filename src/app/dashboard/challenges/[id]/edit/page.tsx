@@ -1,6 +1,6 @@
 import { notFound, redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
-import { isAdmin } from "@/lib/admin";
+import { staffCan } from "@/lib/permissions/staff";
 import { prisma } from "@/lib/prisma";
 import ChallengeForm from "@/app/admin/challenges/ChallengeForm";
 import {
@@ -27,7 +27,7 @@ export default async function EditUserChallengePage({ params }: Params) {
   // Ownership check — author or admin only. Admins should normally edit at
   // /admin/challenges/[id]/edit, but allowing the dashboard path too means
   // a moderator can deep-link from a user report later.
-  if (challenge.authorId !== userId && !isAdmin(session)) {
+  if (challenge.authorId !== userId && !(await staffCan(session, "content:curate"))) {
     notFound();
   }
 

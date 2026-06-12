@@ -4,6 +4,7 @@ import { notFound, redirect } from "next/navigation";
 import AtsIntegrationClient from "./AtsIntegrationClient";
 import { getAtsIntegrationView } from "./actions";
 import { workspacePlanAllowsAiScreening } from "@/lib/ai-interview/credits";
+import { canMember } from "@/lib/permissions";
 
 type Props = { params: Promise<{ slug: string }> };
 
@@ -26,7 +27,7 @@ export default async function AtsIntegrationPage({ params }: Props) {
       id: true,
       name: true,
       planName: true,
-      members: { select: { userId: true, role: true } },
+      members: { select: { userId: true, role: true, permissions: true } },
     },
   });
   if (!workspace) notFound();
@@ -34,7 +35,7 @@ export default async function AtsIntegrationPage({ params }: Props) {
   const member = workspace.members.find((m) => m.userId === session.user.id);
   if (!member) redirect("/dashboard");
 
-  const isAdmin = member.role === "OWNER" || member.role === "ADMIN";
+  const isAdmin = await canMember(member, "integration:manage");
   const planAllowed = workspacePlanAllowsAiScreening(workspace.planName);
   const view = await getAtsIntegrationView(slug);
 

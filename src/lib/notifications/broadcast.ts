@@ -25,7 +25,7 @@
 
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
-import { isAdmin } from "@/lib/admin";
+import { staffCan } from "@/lib/permissions/staff";
 import { rateLimit } from "@/lib/rate-limit";
 import {
   AUDIENCE_TYPES,
@@ -42,7 +42,7 @@ const MAX_HREF = 2048;
 
 async function assertAdmin() {
   const session = await auth().catch(() => null);
-  if (!isAdmin(session)) {
+  if (!(await staffCan(session, "platform:admin"))) {
     throw new Error("Unauthorized: Platform administrator access required.");
   }
   return { userId: session!.user!.id! };

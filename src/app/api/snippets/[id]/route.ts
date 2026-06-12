@@ -3,6 +3,7 @@ import { z } from "zod";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { clientKey, rateLimit } from "@/lib/rate-limit";
+import { can, getGlobalSubject } from "@/lib/permissions";
 
 const MAX_FILES_BYTES = 500_000;
 
@@ -16,10 +17,18 @@ const patchSchema = z.object({
   pinned: z.boolean().optional(),
 });
 
-async function requireOwner(id: string, userId: string) {
+// Owner OR a content:moderate holder may mutate a snippet — resolved through
+// the engine's ownership rule + moderation override (src/lib/permissions).
+async function requireOwner(
+  id: string,
+  userId: string,
+  action: "snippet:write" | "snippet:delete" = "snippet:write",
+) {
   const snippet = await prisma.snippet.findUnique({ where: { id } });
   if (!snippet) return { error: "not found", status: 404 as const };
-  if (snippet.userId !== userId) return { error: "forbidden", status: 403 as const };
+  const subject = await getGlobalSubject(userId);
+  const ok = can(subject, action, { contentType: "SNIPPET", userId: snippet.userId });
+  if (!ok) return { error: "forbidden", status: 403 as const };
   return { snippet };
 }
 
@@ -58,7 +67,7 @@ export async function PATCH(
     );
   }
 
-  const guard = await requireOwner(id, session.user.id);
+  const guard = await requireOwner(id, session.user.id, "snippet:write");
   if ("error" in guard) {
     return NextResponse.json({ error: guard.error }, { status: guard.status });
   }
@@ -99,7 +108,7 @@ export async function DELETE(
   if (!session?.user?.id) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }
-  const guard = await requireOwner(id, session.user.id);
+  const guard = await requireOwner(id, session.user.id, "snippet:delete");
   if ("error" in guard) {
     return NextResponse.json({ error: guard.error }, { status: guard.status });
   }

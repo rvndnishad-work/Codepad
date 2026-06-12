@@ -11,6 +11,7 @@ import {
   AlertCircle,
 } from "lucide-react";
 import AdminInterviewActions from "./AdminInterviewActions";
+import { requireAdminAccess } from "@/lib/permissions/staff";
 
 interface AdminInterviewDetailPageProps {
   params: Promise<{ id: string }>;
@@ -50,6 +51,7 @@ function formatDuration(sec: number | null | undefined): string {
 }
 
 export default async function AdminInterviewDetailPage({ params }: AdminInterviewDetailPageProps) {
+  await requireAdminAccess();
   const { id } = await params;
 
   const session = await prisma.interviewSession.findUnique({

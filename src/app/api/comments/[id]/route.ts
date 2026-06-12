@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
-import { isAdmin } from "@/lib/admin";
+import { staffCan } from "@/lib/permissions/staff";
 import { prisma } from "@/lib/prisma";
 
 type Ctx = { params: Promise<{ id: string }> };
@@ -18,7 +18,9 @@ export async function DELETE(_req: Request, { params }: Ctx) {
   });
   if (!comment) return NextResponse.json({ error: "not found" }, { status: 404 });
 
-  const allowed = comment.userId === session.user.id || isAdmin(session);
+  const allowed =
+    comment.userId === session.user.id ||
+    (await staffCan(session, "comment:moderate"));
   if (!allowed) {
     return NextResponse.json({ error: "forbidden" }, { status: 403 });
   }

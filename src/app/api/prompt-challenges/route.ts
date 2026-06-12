@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
-import { isAdmin } from "@/lib/admin";
+import { staffCan } from "@/lib/permissions/staff";
 
 // GET /api/prompt-challenges
 // Returns a list of all prompt scenarios (built-in + workspace-scoped if workspaceId is provided)
@@ -86,7 +86,7 @@ export async function POST(req: NextRequest) {
     // ordinary users start unpublished so they can't spam the public arena.
     // Admins publish immediately; workspace-scoped scenarios stay published
     // (visible only to that workspace's members anyway).
-    const published = workspaceId ? true : isAdmin(session);
+    const published = workspaceId ? true : await staffCan(session, "content:curate");
 
     const newScenario = await prisma.promptScenario.create({
       data: {

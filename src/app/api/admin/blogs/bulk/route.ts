@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { auth } from "@/lib/auth";
-import { isAdmin } from "@/lib/admin";
+import { staffCan } from "@/lib/permissions/staff";
 import { prisma } from "@/lib/prisma";
 
 const schema = z.object({
@@ -20,7 +20,7 @@ const schema = z.object({
 
 export async function POST(req: Request) {
   const session = await auth().catch(() => null);
-  if (!isAdmin(session)) {
+  if (!(await staffCan(session, "content:curate"))) {
     return NextResponse.json({ error: "forbidden" }, { status: 403 });
   }
 

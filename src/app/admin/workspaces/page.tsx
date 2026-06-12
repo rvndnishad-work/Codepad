@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
-import { isAdmin } from "@/lib/admin";
+import { staffCan } from "@/lib/permissions/staff";
 import { notFound, redirect } from "next/navigation";
 import { 
   Building2, 
@@ -28,7 +28,7 @@ export const metadata = {
 
 export default async function AdminWorkspacesPage() {
   const session = await auth().catch(() => null);
-  if (!isAdmin(session)) notFound();
+  if (!(await staffCan(session, "platform:admin"))) notFound();
 
   // 1. Fetch all workspaces globally with counts & relationships
   const workspaces = await prisma.workspace.findMany({

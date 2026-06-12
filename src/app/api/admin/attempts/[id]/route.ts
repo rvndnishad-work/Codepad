@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
-import { isAdmin } from "@/lib/admin";
+import { staffCan } from "@/lib/permissions/staff";
 import { prisma } from "@/lib/prisma";
 
 async function ensureAdmin() {
@@ -8,7 +8,7 @@ async function ensureAdmin() {
   if (!session?.user?.id) {
     return { error: "unauthorized" as const, status: 401 };
   }
-  if (!isAdmin(session)) {
+  if (!(await staffCan(session, "platform:admin"))) {
     return { error: "forbidden" as const, status: 403 };
   }
   return { ok: true as const };

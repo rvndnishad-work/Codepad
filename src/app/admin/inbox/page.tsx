@@ -10,6 +10,7 @@ import {
   Inbox,
   AlertTriangle,
 } from "lucide-react";
+import { requireAdminAccess } from "@/lib/permissions/staff";
 
 const STALE_SESSION_HOURS = 6;
 
@@ -25,6 +26,7 @@ function relativeTime(date: Date): string {
 }
 
 export default async function AdminInboxPage() {
+  await requireAdminAccess();
   const staleCutoff = new Date(Date.now() - STALE_SESSION_HOURS * 60 * 60 * 1000);
 
   const [pendingBlogs, communityDraftChallenges, staleSessions, needsChangesBlogs] =

@@ -5,6 +5,7 @@ import { AI_INTERVIEW_GEMINI_MODEL } from "@/lib/ai-interview/scaffolds";
 import { sendRecruiterNotifyEmail } from "@/lib/ai-interview/submit-notify";
 import { checkFilesSize } from "@/lib/ai-interview/files-size";
 import { resolveSessionRounds, type SessionRound } from "@/lib/ai-interview/rounds";
+import { STAFF_ROLES } from "@/lib/permissions/role-groups";
 
 type GraderResult = {
   score: number;
@@ -397,7 +398,7 @@ async function notifyWorkspaceRecruiters(params: {
       name: true,
       slug: true,
       members: {
-        where: { role: { in: ["OWNER", "ADMIN", "INTERVIEWER"] } },
+        where: { role: { in: [...STAFF_ROLES] } },
         select: { user: { select: { email: true, name: true } } },
       },
     },

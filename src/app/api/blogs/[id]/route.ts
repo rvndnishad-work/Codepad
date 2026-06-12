@@ -3,6 +3,7 @@ import { z } from "zod";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { coverImageSchema, blogTagsSchema } from "@/lib/blog-schema";
+import { can, getGlobalSubject } from "@/lib/permissions";
 
 const patchSchema = z.object({
   title: z.string().min(1).max(200).optional(),
@@ -13,10 +14,18 @@ const patchSchema = z.object({
   tags: blogTagsSchema.optional(),
 });
 
-async function requireOwner(id: string, userId: string) {
+// Owner OR a content:moderate holder may mutate a post — resolved through the
+// engine's ownership rule + moderation override (src/lib/permissions).
+async function requireOwner(
+  id: string,
+  userId: string,
+  action: "blogpost:write" | "blogpost:delete" = "blogpost:write",
+) {
   const blog = await prisma.blogPost.findUnique({ where: { id } });
   if (!blog) return { error: "not found", status: 404 as const };
-  if (blog.userId !== userId) return { error: "forbidden", status: 403 as const };
+  const subject = await getGlobalSubject(userId);
+  const ok = can(subject, action, { contentType: "BLOG_POST", userId: blog.userId });
+  if (!ok) return { error: "forbidden", status: 403 as const };
   return { blog };
 }
 
@@ -59,7 +68,7 @@ export async function PATCH(
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }
 
-  const guard = await requireOwner(id, session.user.id);
+  const guard = await requireOwner(id, session.user.id, "blogpost:write");
   if ("error" in guard) {
     return NextResponse.json({ error: guard.error }, { status: guard.status });
   }
@@ -99,7 +108,7 @@ export async function DELETE(
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }
 
-  const guard = await requireOwner(id, session.user.id);
+  const guard = await requireOwner(id, session.user.id, "blogpost:delete");
   if ("error" in guard) {
     return NextResponse.json({ error: guard.error }, { status: guard.status });
   }

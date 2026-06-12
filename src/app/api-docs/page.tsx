@@ -1,5 +1,5 @@
 import { auth } from "@/lib/auth";
-import { isAdmin } from "@/lib/admin";
+import { staffCan } from "@/lib/permissions/staff";
 import { notFound } from "next/navigation";
 import SwaggerView from "./SwaggerView";
 
@@ -10,6 +10,6 @@ export const metadata = { title: "API Docs — Interviewpad" };
 
 export default async function ApiDocsPage() {
   const session = await auth().catch(() => null);
-  if (!isAdmin(session)) notFound();
+  if (!(await staffCan(session, "platform:admin"))) notFound();
   return <SwaggerView />;
 }

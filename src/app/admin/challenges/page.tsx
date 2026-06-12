@@ -2,8 +2,10 @@ import { prisma } from "@/lib/prisma";
 import Link from "next/link";
 import { Plus } from "lucide-react";
 import AdminChallengesList from "./AdminChallengesList";
+import { requireAdminAccess } from "@/lib/permissions/staff";
 
 export default async function AdminChallengesPage() {
+  await requireAdminAccess("content:curate");
   const rows = await prisma.challenge.findMany({
     orderBy: [{ updatedAt: "desc" }],
     select: {

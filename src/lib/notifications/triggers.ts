@@ -17,6 +17,7 @@
  */
 import { prisma } from "@/lib/prisma";
 import { createNotification, NOTIFICATION_TYPES } from "@/lib/notifications";
+import { MANAGER_ROLES } from "@/lib/permissions/role-groups";
 
 function logErr(event: string, err: unknown) {
   console.error(`[notify] ${event} failed:`, err);
@@ -35,7 +36,7 @@ export async function notifyTakeHomeSubmitted(args: {
 }) {
   try {
     const admins = await prisma.workspaceMember.findMany({
-      where: { workspaceId: args.workspaceId, role: { in: ["OWNER", "ADMIN"] } },
+      where: { workspaceId: args.workspaceId, role: { in: [...MANAGER_ROLES] } },
       select: { userId: true },
     });
     const href = args.candidateId
@@ -211,7 +212,7 @@ export async function notifyAiCreditsLowIfNeeded(args: {
       select: {
         slug: true,
         members: {
-          where: { role: { in: ["OWNER", "ADMIN"] } },
+          where: { role: { in: [...MANAGER_ROLES] } },
           select: { userId: true },
         },
       },
@@ -286,7 +287,7 @@ export async function notifyTakeHomeExpiringForAssignment(args: {
     // resolves to a User account). Stable userId order so dedup checks
     // batch nicely.
     const admins = await prisma.workspaceMember.findMany({
-      where: { workspaceId: args.workspaceId, role: { in: ["OWNER", "ADMIN"] } },
+      where: { workspaceId: args.workspaceId, role: { in: [...MANAGER_ROLES] } },
       select: { userId: true },
     });
     const recipientIds = new Set<string>(admins.map((a) => a.userId));

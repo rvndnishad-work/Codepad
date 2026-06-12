@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
-import { isAdmin } from "@/lib/admin";
+import { staffCan } from "@/lib/permissions/staff";
 import { synthesizeSpeech, TTS_MAX_CHARS } from "@/lib/ai-interview/tts-provider";
 
 /**
@@ -16,7 +16,7 @@ import { synthesizeSpeech, TTS_MAX_CHARS } from "@/lib/ai-interview/tts-provider
  */
 export async function POST(req: NextRequest) {
   const session = await auth().catch(() => null);
-  if (!isAdmin(session)) {
+  if (!(await staffCan(session, "platform:admin"))) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 

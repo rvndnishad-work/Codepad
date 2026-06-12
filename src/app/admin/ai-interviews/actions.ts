@@ -1,14 +1,14 @@
 "use server";
 
 import { auth } from "@/lib/auth";
-import { isAdmin } from "@/lib/admin";
+import { staffCan } from "@/lib/permissions/staff";
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 import { grantCredits, refundCredit } from "@/lib/ai-interview/credits";
 
 async function assertAdminUser(): Promise<string> {
   const session = await auth().catch(() => null);
-  if (!isAdmin(session) || !session?.user?.id) {
+  if (!session?.user?.id || !(await staffCan(session, "platform:admin"))) {
     throw new Error("Unauthorized: Admin privilege required.");
   }
   return session.user.id;

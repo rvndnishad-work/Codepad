@@ -1,5 +1,5 @@
 import { auth } from "@/lib/auth";
-import { isAdmin } from "@/lib/admin";
+import { staffCan } from "@/lib/permissions/staff";
 import { prisma } from "@/lib/prisma";
 import { redirect } from "next/navigation";
 import GemmaConsole from "./GemmaConsole";
@@ -11,7 +11,7 @@ export const metadata = {
 
 export default async function GemmaCopilotPage() {
   const session = await auth().catch(() => null);
-  if (!isAdmin(session)) redirect("/");
+  if (!(await staffCan(session, "platform:admin"))) redirect("/");
 
   // Fetch unresolved Gemma alerts sorted by severity (CRITICAL/HIGH first) then recency
   const unresolvedAlerts = await prisma.gemmaAlert.findMany({

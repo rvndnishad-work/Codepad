@@ -1,6 +1,7 @@
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { getStripe } from "@/lib/stripe";
+import { canMember } from "@/lib/permissions";
 import { NextResponse } from "next/server";
 
 export async function POST(
@@ -27,7 +28,7 @@ export async function POST(
     }
 
     const callerMember = workspace.members.find((m) => m.userId === session.user.id);
-    if (!callerMember || (callerMember.role !== "OWNER" && callerMember.role !== "ADMIN")) {
+    if (!callerMember || !(await canMember(callerMember, "billing:manage"))) {
       return NextResponse.json({ error: "forbidden" }, { status: 403 });
     }
 

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
-import { isAdmin } from "@/lib/admin";
+import { staffCan } from "@/lib/permissions/staff";
 import type { Session } from "next-auth";
 
 /**
@@ -17,8 +17,7 @@ async function authorizeScenarioMutation(
   session: Session,
   verb: "modify" | "delete",
 ): Promise<NextResponse | null> {
-  const admin = isAdmin(session);
-  if (admin) return null;
+  if (await staffCan(session, "content:curate")) return null;
 
   const userId = session.user!.id;
 

@@ -6,12 +6,14 @@ import Link from "next/link";
 
 import Pagination from "../Pagination";
 import SortSelect from "./SortSelect";
+import { requireAdminAccess } from "@/lib/permissions/staff";
 
 interface AdminBlogsPageProps {
   searchParams: Promise<{ q?: string; status?: string; page?: string; sortBy?: string }>;
 }
 
 export default async function AdminBlogsPage({ searchParams }: AdminBlogsPageProps) {
+  await requireAdminAccess("content:curate");
   const { q, status, page, sortBy } = await searchParams;
   const currentPage = Math.max(1, parseInt(page || "1", 10));
   const ITEMS_PER_PAGE = 10;

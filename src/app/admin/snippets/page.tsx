@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import Link from "next/link";
 import { AlertCircle, Pin, Search, Sparkles } from "lucide-react";
+import { requireAdminAccess } from "@/lib/permissions/staff";
 import AdminSnippetRow from "./AdminSnippetRow";
 
 interface AdminSnippetsPageProps {
@@ -12,6 +13,7 @@ interface AdminSnippetsPageProps {
 const HOMEPAGE_SLOTS = 6;
 
 export default async function AdminSnippetsPage({ searchParams }: AdminSnippetsPageProps) {
+  await requireAdminAccess("content:curate");
   const { q, filter } = await searchParams;
 
   const where: {

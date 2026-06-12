@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { auth } from "@/lib/auth";
-import { isAdmin } from "@/lib/admin";
+import { isStaff } from "@/lib/permissions/staff";
+import { userCan } from "@/lib/permissions/access";
 import { getPrimaryWorkspaceSlug } from "@/lib/workspace-nav";
 import { getNavLinks } from "@/lib/settings";
 import type { NavDropdownItem } from "./NavDropdown";
@@ -17,7 +18,8 @@ export default async function Header() {
   const session = await auth().catch(() => null);
   const user = session?.user;
   const userType = (user as { userType?: string | null } | undefined)?.userType ?? null;
-  const showAdmin = isAdmin(session);
+  const showAdmin = await isStaff(session);
+  const showCreator = user?.id ? await userCan(user.id, "content:author") : false;
 
   // Resolve the recruiter's "best" workspace landing. Signed-in recruiters with
   // a workspace deep-link straight into it; otherwise we send them to the
@@ -263,6 +265,7 @@ export default async function Header() {
                   <UserMenu
                     user={{ name: user.name, email: user.email, image: user.image }}
                     isAdmin={showAdmin}
+                    isCreator={showCreator}
                   />
                 ) : (
                   <Link

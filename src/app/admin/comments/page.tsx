@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import Link from "next/link";
 import { MessageCircle, Search, ChevronLeft, ChevronRight, CornerDownRight } from "lucide-react";
+import { requireAdminAccess } from "@/lib/permissions/staff";
 import AdminCommentRow from "./AdminCommentRow";
 
 interface AdminCommentsPageProps {
@@ -10,6 +11,7 @@ interface AdminCommentsPageProps {
 const PAGE_SIZE = 25;
 
 export default async function AdminCommentsPage({ searchParams }: AdminCommentsPageProps) {
+  await requireAdminAccess("comment:moderate");
   const { q, filter, page: pageRaw } = await searchParams;
   const page = Math.max(1, parseInt(pageRaw ?? "1", 10) || 1);
 

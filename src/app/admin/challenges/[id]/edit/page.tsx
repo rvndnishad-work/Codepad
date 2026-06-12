@@ -7,10 +7,12 @@ import {
   type ChallengeFormInput,
   type ChallengeStepInput,
 } from "../../challenge-form-types";
+import { requireAdminAccess } from "@/lib/permissions/staff";
 
 type Props = { params: Promise<{ id: string }> };
 
 export default async function EditChallengePage({ params }: Props) {
+  await requireAdminAccess("content:curate");
   const { id } = await params;
   const challenge = await prisma.challenge.findUnique({
     where: { id },

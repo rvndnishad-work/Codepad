@@ -1,6 +1,7 @@
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { encryptAtRest } from "@/lib/crypto/at-rest";
+import { canMember } from "@/lib/permissions";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 
@@ -93,9 +94,9 @@ export async function POST(
       return NextResponse.json({ error: "Workspace not found" }, { status: 404 });
     }
 
-    // Only OWNER or ADMIN members can configure integrations
+    // Only members who can manage integrations may configure them.
     const member = workspace.members.find((m) => m.userId === session.user.id);
-    if (!member || (member.role !== "OWNER" && member.role !== "ADMIN")) {
+    if (!member || !(await canMember(member, "integration:manage"))) {
       return NextResponse.json({ error: "forbidden" }, { status: 403 });
     }
 
@@ -182,7 +183,7 @@ export async function DELETE(
     }
 
     const member = workspace.members.find((m) => m.userId === session.user.id);
-    if (!member || (member.role !== "OWNER" && member.role !== "ADMIN")) {
+    if (!member || !(await canMember(member, "integration:manage"))) {
       return NextResponse.json({ error: "forbidden" }, { status: 403 });
     }
 

@@ -11,7 +11,7 @@ export default async function LegacyCreatorStorefront({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const space = await prisma.creatorSpace.findUnique({
+  const space = await prisma.creatorSpace.findFirst({
     where: { ownerId: id },
     select: { handle: true, published: true },
   });

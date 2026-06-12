@@ -21,6 +21,7 @@ import { NOTIFICATION_TYPES, type NotificationType } from "@/lib/notifications";
 export const FORCED_ON = new Set<string>([
   NOTIFICATION_TYPES.SECURITY_2FA_ENABLED,
   NOTIFICATION_TYPES.SECURITY_2FA_DISABLED,
+  NOTIFICATION_TYPES.CREATOR_STATUS,
   "ADMIN_BROADCAST",
 ]);
 

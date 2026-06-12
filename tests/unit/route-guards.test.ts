@@ -8,6 +8,7 @@ describe("guardFor — centralized route → permission map", () => {
     expect(perm("/admin/roles")).toBe("platform:admin");
     expect(perm("/admin/roles/anything")).toBe("platform:admin");
     expect(perm("/admin/users")).toBe("user:manage");
+    expect(perm("/admin/creators")).toBe("creator:review");
     expect(perm("/admin/users/recruiters")).toBe("user:manage");
     expect(perm("/admin/comments")).toBe("comment:moderate");
     expect(perm("/admin/blogs")).toBe("content:curate");

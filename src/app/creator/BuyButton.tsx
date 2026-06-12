@@ -28,10 +28,12 @@ export function BuyContentButton({
   spaceContentId,
   priceCents,
   currency = "usd",
+  showPrice = true,
 }: {
   spaceContentId: string;
   priceCents: number;
   currency?: string;
+  showPrice?: boolean;
 }) {
   const [busy, setBusy] = useState(false);
   return (
@@ -41,10 +43,10 @@ export function BuyContentButton({
         go(() => buyContentAction(spaceContentId), () => setBusy(false));
       }}
       disabled={busy}
-      className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-accent hover:bg-accent-soft text-bg text-sm font-bold transition-colors disabled:opacity-60"
+      className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg bg-accent hover:bg-accent-soft text-bg text-xs font-bold transition-colors disabled:opacity-60 h-8 whitespace-nowrap"
     >
-      {busy ? <Loader2 className="w-4 h-4 animate-spin" /> : <Lock className="w-4 h-4" />}
-      Buy · {money(priceCents, currency)}
+      {busy ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Lock className="w-3.5 h-3.5" />}
+      {showPrice ? `Buy · ${money(priceCents, currency)}` : "Buy"}
     </button>
   );
 }

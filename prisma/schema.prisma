@@ -1417,7 +1417,7 @@ model CreatorAccount {
 /// One space per creator (v1). Holds tiers, content, and memberships.
 model CreatorSpace {
   id          String   @id @default(cuid())
-  ownerId     String   @unique
+  ownerId     String
   /// Vanity slug → /c/[handle].
   handle      String   @unique
   name        String
@@ -1426,6 +1426,9 @@ model CreatorSpace {
   description String?
   avatarUrl   String?
   coverUrl    String?
+  /// Public-page layout: hero style + ordered section visibility. Shape:
+  /// { heroStyle: "banner"|"minimal", sections: [{ key, visible }] }.
+  layout      Json?
   published   Boolean  @default(false)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
@@ -1578,6 +1581,32 @@ model InterviewQuestion {
   @@index([qaId])
 }
 
+/// First-class interview experience — a narrative writeup of a real interview
+/// (company / role / outcome + a markdown story). Authored in a space, gated
+/// via SpaceContent like any other ownable content type.
+model InterviewExperience {
+  id         String   @id @default(cuid())
+  spaceId    String
+  authorId   String
+  slug       String
+  title      String
+  company    String?
+  role       String?
+  /// "offer" | "rejected" | "pending" | "withdrew"
+  outcome    String?
+  /// "easy" | "medium" | "hard"
+  difficulty String?
+  summary    String?
+  /// Markdown body — the full experience writeup.
+  body       String
+  published  Boolean  @default(false)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@unique([spaceId, slug])
+  @@index([spaceId])
+}
+
 /// Polymorphic access index: ties any content type to a space + its access
 /// policy. Replaces the flat Phase-4 Product. `accessTierRank` null = free;
 /// otherwise the minimum membership tier rank. `purchasePriceCents` (when set)
@@ -1599,5 +1628,29 @@ model SpaceContent {
 
   @@unique([contentType, contentId])
   @@index([spaceId])
+}
+
+/// A user's request to become a creator. Gated on a follower threshold
+/// (1000+ on YouTube/LinkedIn), verified manually by a reviewer holding the
+/// `creator:review` permission. Approval grants the CREATOR role. One row per
+/// user — a rejected applicant can resubmit (the row flips back to PENDING).
+model CreatorApplication {
+  id            String    @id @default(cuid())
+  userId        String    @unique
+  /// "youtube" | "linkedin"
+  platform      String
+  profileUrl    String
+  /// Self-reported follower/subscriber count (reviewer verifies the link).
+  followerCount Int
+  note          String?
+  /// "PENDING" | "APPROVED" | "REJECTED"
+  status        String    @default("PENDING")
+  reviewerId    String?
+  reviewNote    String?
+  createdAt     DateTime  @default(now())
+  reviewedAt    DateTime?
+  updatedAt     DateTime  @updatedAt
+
+  @@index([status])
 }
 

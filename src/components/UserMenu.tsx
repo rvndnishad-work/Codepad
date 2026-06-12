@@ -109,15 +109,13 @@ export default function UserMenu({
               label="Security"
               onClick={() => setOpen(false)}
             />
-            {isCreator && (
-              <MenuLink
-                href="/creator"
-                icon={Store}
-                label="Creator Studio"
-                accent
-                onClick={() => setOpen(false)}
-              />
-            )}
+            <MenuLink
+              href={isCreator ? "/creator" : "/become-creator"}
+              icon={Store}
+              label={isCreator ? "Creator Studio" : "Become a Creator"}
+              accent
+              onClick={() => setOpen(false)}
+            />
             {isAdmin && (
               <MenuLink
                 href="/admin"

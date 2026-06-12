@@ -6,18 +6,23 @@ import TutorialEditor from "./TutorialEditor";
 
 export const metadata = { robots: { index: false, follow: false } };
 
+type PageProps = {
+  params: Promise<{ id: string }>;
+  searchParams: Promise<{ spaceId?: string }>;
+};
+
 export default async function TutorialEditorPage({
   params,
-}: {
-  params: Promise<{ id: string }>;
-}) {
+  searchParams,
+}: PageProps) {
   const { id } = await params;
+  const { spaceId } = await searchParams;
   const session = await auth().catch(() => null);
   const userId = session?.user?.id;
   if (!userId) redirect("/login?next=/creator");
   if (!(await userCan(userId, "content:author"))) redirect("/dashboard");
 
-  if (id === "new") return <TutorialEditor initial={null} />;
+  if (id === "new") return <TutorialEditor initial={null} spaceId={spaceId} />;
 
   const t = await prisma.tutorial.findUnique({
     where: { id },
@@ -34,6 +39,7 @@ export default async function TutorialEditorPage({
         published: t.published,
         sections: t.sections.map((s) => ({ title: s.title ?? "", body: s.body })),
       }}
+      spaceId={t.spaceId}
     />
   );
 }

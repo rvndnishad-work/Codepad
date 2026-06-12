@@ -96,6 +96,7 @@ const OWNER_FIELD: Record<OwnableContentType, "authorId" | "userId"> = {
   SNIPPET: "userId", // Snippet.userId
   TUTORIAL: "authorId", // Tutorial.authorId
   INTERVIEW_QA: "authorId", // InterviewQA.authorId
+  INTERVIEW_EXPERIENCE: "authorId", // InterviewExperience.authorId
 };
 
 /** A resource an ownership-sensitive check can be made against. */

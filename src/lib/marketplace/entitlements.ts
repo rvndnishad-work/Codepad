@@ -46,6 +46,13 @@ export async function getContentOwnerId(
       });
       return q?.authorId ?? null;
     }
+    case "INTERVIEW_EXPERIENCE": {
+      const e = await prisma.interviewExperience.findUnique({
+        where: { id: contentId },
+        select: { authorId: true },
+      });
+      return e?.authorId ?? null;
+    }
   }
 }
 

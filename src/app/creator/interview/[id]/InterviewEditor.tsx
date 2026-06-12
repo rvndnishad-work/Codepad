@@ -17,7 +17,13 @@ type Initial = {
   questions: QA[];
 } | null;
 
-export default function InterviewEditor({ initial }: { initial: Initial }) {
+export default function InterviewEditor({
+  initial,
+  spaceId,
+}: {
+  initial: Initial;
+  spaceId?: string;
+}) {
   const router = useRouter();
   const [title, setTitle] = useState(initial?.title ?? "");
   const [summary, setSummary] = useState(initial?.summary ?? "");
@@ -38,6 +44,7 @@ export default function InterviewEditor({ initial }: { initial: Initial }) {
     try {
       await saveInterviewQAAction({
         id: initial?.id,
+        spaceId,
         title,
         summary: summary || undefined,
         category: category || undefined,

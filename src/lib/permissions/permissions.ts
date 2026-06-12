@@ -55,6 +55,7 @@ export const PLATFORM_PERMISSIONS = [
   "content:moderate", // hide/remove any post/snippet/challenge
   "content:curate", // feature/publish others' content, manage categories
   "user:manage", // ban/edit users
+  "creator:review", // review creator applications, grant the CREATOR role
   "platform:admin", // staff superset (implies all platform surfaces)
 ] as const;
 
@@ -120,5 +121,6 @@ export const OWNABLE_CONTENT_TYPES = [
   "SNIPPET",
   "TUTORIAL",
   "INTERVIEW_QA",
+  "INTERVIEW_EXPERIENCE",
 ] as const;
 export type OwnableContentType = (typeof OWNABLE_CONTENT_TYPES)[number];

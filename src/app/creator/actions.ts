@@ -8,6 +8,8 @@ import { z } from "zod";
 import { userCan } from "@/lib/permissions/access";
 import { OWNABLE_CONTENT_TYPES, type OwnableContentType } from "@/lib/permissions/permissions";
 import { getContentOwnerId } from "@/lib/marketplace/entitlements";
+import { coverImageSchema } from "@/lib/blog-schema";
+import { normalizeLayout, SECTION_KEYS } from "@/lib/creator/layout";
 import {
   getOrCreateConnectAccount,
   createOnboardingLink,
@@ -25,11 +27,12 @@ async function requireCreator() {
   return userId;
 }
 
-/** Resolve the caller's space, creating an empty draft on first use is NOT done
- *  here — the space is created explicitly via createSpaceAction. */
-async function requireMySpace(userId: string) {
-  const space = await prisma.creatorSpace.findUnique({ where: { ownerId: userId } });
-  if (!space) throw new Error("Create your space first.");
+/** Resolve the caller's space by spaceId and userId, verifying ownership. */
+async function requireMySpace(spaceId: string, userId: string) {
+  const space = await prisma.creatorSpace.findFirst({
+    where: { id: spaceId, ownerId: userId },
+  });
+  if (!space) throw new Error("Space not found or unauthorized.");
   return space;
 }
 
@@ -69,13 +72,12 @@ export async function createSpaceAction(input: {
   if (!handleRe.test(handle)) {
     throw new Error("Handle must be 3–40 chars: lowercase letters, numbers, hyphens.");
   }
-  if (await prisma.creatorSpace.findUnique({ where: { ownerId: userId } })) {
-    throw new Error("You already have a space.");
-  }
-  if (await prisma.creatorSpace.findUnique({ where: { handle } })) {
+  // Check globally if handle is taken
+  const existingHandle = await prisma.creatorSpace.findUnique({ where: { handle } });
+  if (existingHandle) {
     throw new Error(`Handle "${handle}" is taken.`);
   }
-  await prisma.creatorSpace.create({
+  const space = await prisma.creatorSpace.create({
     data: {
       ownerId: userId,
       handle,
@@ -85,16 +87,20 @@ export async function createSpaceAction(input: {
     },
   });
   revalidatePath("/creator");
+  return space;
 }
 
-export async function updateSpaceAction(input: {
-  name?: string;
-  tagline?: string;
-  description?: string;
-  published?: boolean;
-}) {
+export async function updateSpaceAction(
+  spaceId: string,
+  input: {
+    name?: string;
+    tagline?: string;
+    description?: string;
+    published?: boolean;
+  }
+) {
   const userId = await requireCreator();
-  const space = await requireMySpace(userId);
+  const space = await requireMySpace(spaceId, userId);
   await prisma.creatorSpace.update({
     where: { id: space.id },
     data: {
@@ -107,6 +113,57 @@ export async function updateSpaceAction(input: {
     },
   });
   revalidatePath("/creator");
+  revalidatePath(`/creator/${space.handle}`);
+}
+
+// ── Public-page layout (hero images + section order/visibility) ───────────────
+const layoutSchema = z.object({
+  avatarUrl: coverImageSchema.optional(),
+  coverUrl: coverImageSchema.optional(),
+  heroStyle: z.enum(["banner", "minimal"]).optional(),
+  alignment: z.enum(["left", "center", "right"]).optional(),
+  theme: z.enum(["slate", "glassmorphism", "neon", "minimalist"]).optional(),
+  sections: z
+    .array(z.object({ key: z.enum(SECTION_KEYS), visible: z.boolean(), cols: z.number().int().min(1).max(12) }))
+    .max(SECTION_KEYS.length)
+    .optional(),
+});
+
+export async function updateSpaceLayoutAction(
+  spaceId: string,
+  input: {
+    avatarUrl?: string;
+    coverUrl?: string;
+    heroStyle?: "banner" | "minimal";
+    alignment?: "left" | "center" | "right";
+    theme?: "slate" | "glassmorphism" | "neon" | "minimalist";
+    sections?: { key: (typeof SECTION_KEYS)[number]; visible: boolean; cols: number }[];
+  }
+) {
+  const userId = await requireCreator();
+  const space = await requireMySpace(spaceId, userId);
+  const data = layoutSchema.parse(input);
+
+  const currentLayout = normalizeLayout(space.layout);
+
+  const layout = normalizeLayout({
+    heroStyle: data.heroStyle !== undefined ? data.heroStyle : currentLayout.heroStyle,
+    alignment: data.alignment !== undefined ? data.alignment : currentLayout.alignment,
+    theme: data.theme !== undefined ? data.theme : currentLayout.theme,
+    sections: data.sections !== undefined ? data.sections : currentLayout.sections,
+  });
+
+  await prisma.creatorSpace.update({
+    where: { id: space.id },
+    data: {
+      ...(data.avatarUrl !== undefined ? { avatarUrl: data.avatarUrl || null } : {}),
+      ...(data.coverUrl !== undefined ? { coverUrl: data.coverUrl || null } : {}),
+      layout,
+    },
+  });
+  revalidatePath("/creator");
+  revalidatePath(`/creator/${space.handle}`);
+  revalidatePath(`/c/${space.handle}`);
 }
 
 // ── Tiers ────────────────────────────────────────────────────────────────────
@@ -116,13 +173,16 @@ const tierSchema = z.object({
   priceCents: z.number().int().min(50).max(1_000_000),
 });
 
-export async function createTierAction(input: {
-  name: string;
-  rank: number;
-  priceCents: number;
-}) {
+export async function createTierAction(
+  spaceId: string,
+  input: {
+    name: string;
+    rank: number;
+    priceCents: number;
+  }
+) {
   const userId = await requireCreator();
-  const space = await requireMySpace(userId);
+  const space = await requireMySpace(spaceId, userId);
   const data = tierSchema.parse(input);
   const clash = await prisma.spaceTier.findUnique({
     where: { spaceId_rank: { spaceId: space.id, rank: data.rank } },
@@ -132,24 +192,27 @@ export async function createTierAction(input: {
     data: { spaceId: space.id, name: data.name.trim(), rank: data.rank, priceCents: data.priceCents },
   });
   revalidatePath("/creator");
+  revalidatePath(`/creator/${space.handle}`);
 }
 
-export async function setTierPublishedAction(tierId: string, published: boolean) {
+export async function setTierPublishedAction(spaceId: string, tierId: string, published: boolean) {
   const userId = await requireCreator();
-  const space = await requireMySpace(userId);
+  const space = await requireMySpace(spaceId, userId);
   const tier = await prisma.spaceTier.findUnique({ where: { id: tierId }, select: { spaceId: true } });
   if (!tier || tier.spaceId !== space.id) throw new Error("Tier not found.");
   await prisma.spaceTier.update({ where: { id: tierId }, data: { published } });
   revalidatePath("/creator");
+  revalidatePath(`/creator/${space.handle}`);
 }
 
-export async function deleteTierAction(tierId: string) {
+export async function deleteTierAction(spaceId: string, tierId: string) {
   const userId = await requireCreator();
-  const space = await requireMySpace(userId);
+  const space = await requireMySpace(spaceId, userId);
   const tier = await prisma.spaceTier.findUnique({ where: { id: tierId }, select: { spaceId: true } });
   if (!tier || tier.spaceId !== space.id) throw new Error("Tier not found.");
   await prisma.spaceTier.delete({ where: { id: tierId } });
   revalidatePath("/creator");
+  revalidatePath(`/creator/${space.handle}`);
 }
 
 // ── Content access policy (SpaceContent) ─────────────────────────────────────
@@ -161,14 +224,17 @@ const policySchema = z.object({
 });
 
 /** Add content to the space (or update its access policy). Validates ownership. */
-export async function setSpaceContentAction(input: {
-  contentType: OwnableContentType;
-  contentId: string;
-  accessTierRank: number | null;
-  purchasePriceCents: number | null;
-}) {
+export async function setSpaceContentAction(
+  spaceId: string,
+  input: {
+    contentType: OwnableContentType;
+    contentId: string;
+    accessTierRank: number | null;
+    purchasePriceCents: number | null;
+  }
+) {
   const userId = await requireCreator();
-  const space = await requireMySpace(userId);
+  const space = await requireMySpace(spaceId, userId);
   const data = policySchema.parse(input);
 
   const ownerId = await getContentOwnerId(data.contentType, data.contentId);
@@ -190,11 +256,12 @@ export async function setSpaceContentAction(input: {
     },
   });
   revalidatePath("/creator");
+  revalidatePath(`/creator/${space.handle}`);
 }
 
-export async function removeSpaceContentAction(spaceContentId: string) {
+export async function removeSpaceContentAction(spaceId: string, spaceContentId: string) {
   const userId = await requireCreator();
-  const space = await requireMySpace(userId);
+  const space = await requireMySpace(spaceId, userId);
   const sc = await prisma.spaceContent.findUnique({
     where: { id: spaceContentId },
     select: { spaceId: true },
@@ -202,11 +269,13 @@ export async function removeSpaceContentAction(spaceContentId: string) {
   if (!sc || sc.spaceId !== space.id) throw new Error("Not found.");
   await prisma.spaceContent.delete({ where: { id: spaceContentId } });
   revalidatePath("/creator");
+  revalidatePath(`/creator/${space.handle}`);
 }
 
 // ── Tutorial authoring (replace-all sections) ────────────────────────────────
 const tutorialSchema = z.object({
   id: z.string().optional(),
+  spaceId: z.string().optional(),
   title: z.string().min(2).max(160),
   summary: z.string().max(500).optional(),
   published: z.boolean().optional(),
@@ -221,8 +290,9 @@ function slugify(s: string) {
 
 export async function saveTutorialAction(input: z.infer<typeof tutorialSchema>) {
   const userId = await requireCreator();
-  const space = await requireMySpace(userId);
   const data = tutorialSchema.parse(input);
+
+  let targetSpaceId: string;
 
   if (data.id) {
     const existing = await prisma.tutorial.findUnique({
@@ -230,6 +300,7 @@ export async function saveTutorialAction(input: z.infer<typeof tutorialSchema>) 
       select: { authorId: true, spaceId: true },
     });
     if (!existing || existing.authorId !== userId) throw new Error("Tutorial not found.");
+    targetSpaceId = existing.spaceId;
     await prisma.$transaction([
       prisma.tutorialSection.deleteMany({ where: { tutorialId: data.id } }),
       prisma.tutorial.update({
@@ -248,37 +319,45 @@ export async function saveTutorialAction(input: z.infer<typeof tutorialSchema>) 
         },
       }),
     ]);
-    revalidatePath("/creator");
-    return;
+  } else {
+    if (!data.spaceId) throw new Error("spaceId is required to create a tutorial.");
+    const space = await requireMySpace(data.spaceId, userId);
+    targetSpaceId = space.id;
+
+    // create — unique slug within the space
+    let slug = slugify(data.title) || "tutorial";
+    if (await prisma.tutorial.findUnique({ where: { spaceId_slug: { spaceId: space.id, slug } } })) {
+      slug = `${slug}-${Date.now().toString(36)}`;
+    }
+    await prisma.tutorial.create({
+      data: {
+        spaceId: space.id,
+        authorId: userId,
+        slug,
+        title: data.title.trim(),
+        summary: data.summary?.trim() || null,
+        sections: {
+          create: data.sections.map((s, i) => ({
+            position: i,
+            title: s.title?.trim() || null,
+            body: s.body,
+          })),
+        },
+      },
+    });
   }
 
-  // create — unique slug within the space
-  let slug = slugify(data.title) || "tutorial";
-  if (await prisma.tutorial.findUnique({ where: { spaceId_slug: { spaceId: space.id, slug } } })) {
-    slug = `${slug}-${Date.now().toString(36)}`;
-  }
-  await prisma.tutorial.create({
-    data: {
-      spaceId: space.id,
-      authorId: userId,
-      slug,
-      title: data.title.trim(),
-      summary: data.summary?.trim() || null,
-      sections: {
-        create: data.sections.map((s, i) => ({
-          position: i,
-          title: s.title?.trim() || null,
-          body: s.body,
-        })),
-      },
-    },
-  });
+  const space = await prisma.creatorSpace.findUnique({ where: { id: targetSpaceId } });
   revalidatePath("/creator");
+  if (space) {
+    revalidatePath(`/creator/${space.handle}`);
+  }
 }
 
 // ── Interview Q&A authoring (replace-all questions) ──────────────────────────
 const qaSchema = z.object({
   id: z.string().optional(),
+  spaceId: z.string().optional(),
   title: z.string().min(2).max(160),
   summary: z.string().max(500).optional(),
   category: z.string().max(60).optional(),
@@ -296,8 +375,9 @@ const qaSchema = z.object({
 
 export async function saveInterviewQAAction(input: z.infer<typeof qaSchema>) {
   const userId = await requireCreator();
-  const space = await requireMySpace(userId);
   const data = qaSchema.parse(input);
+
+  let targetSpaceId: string;
 
   const makeQuestions = () =>
     data.questions.map((q, i) => ({
@@ -310,9 +390,10 @@ export async function saveInterviewQAAction(input: z.infer<typeof qaSchema>) {
   if (data.id) {
     const existing = await prisma.interviewQA.findUnique({
       where: { id: data.id },
-      select: { authorId: true },
+      select: { authorId: true, spaceId: true },
     });
     if (!existing || existing.authorId !== userId) throw new Error("Page not found.");
+    targetSpaceId = existing.spaceId;
     await prisma.$transaction([
       prisma.interviewQuestion.deleteMany({ where: { qaId: data.id } }),
       prisma.interviewQA.update({
@@ -326,26 +407,105 @@ export async function saveInterviewQAAction(input: z.infer<typeof qaSchema>) {
         },
       }),
     ]);
-    revalidatePath("/creator");
-    return;
+  } else {
+    if (!data.spaceId) throw new Error("spaceId is required to create a Q&A page.");
+    const space = await requireMySpace(data.spaceId, userId);
+    targetSpaceId = space.id;
+
+    let slug = slugify(data.title) || "interview";
+    if (await prisma.interviewQA.findUnique({ where: { spaceId_slug: { spaceId: space.id, slug } } })) {
+      slug = `${slug}-${Date.now().toString(36)}`;
+    }
+    await prisma.interviewQA.create({
+      data: {
+        spaceId: space.id,
+        authorId: userId,
+        slug,
+        title: data.title.trim(),
+        summary: data.summary?.trim() || null,
+        category: data.category?.trim() || null,
+        questions: { create: makeQuestions() },
+      },
+    });
   }
 
-  let slug = slugify(data.title) || "interview";
-  if (await prisma.interviewQA.findUnique({ where: { spaceId_slug: { spaceId: space.id, slug } } })) {
-    slug = `${slug}-${Date.now().toString(36)}`;
-  }
-  await prisma.interviewQA.create({
-    data: {
-      spaceId: space.id,
-      authorId: userId,
-      slug,
-      title: data.title.trim(),
-      summary: data.summary?.trim() || null,
-      category: data.category?.trim() || null,
-      questions: { create: makeQuestions() },
-    },
-  });
+  const space = await prisma.creatorSpace.findUnique({ where: { id: targetSpaceId } });
   revalidatePath("/creator");
+  if (space) {
+    revalidatePath(`/creator/${space.handle}`);
+  }
+}
+
+// ── Interview Experience authoring ───────────────────────────────────────────
+const experienceSchema = z.object({
+  id: z.string().optional(),
+  spaceId: z.string().optional(),
+  title: z.string().min(2).max(160),
+  company: z.string().max(120).optional(),
+  role: z.string().max(120).optional(),
+  outcome: z.enum(["offer", "rejected", "pending", "withdrew"]).optional(),
+  difficulty: z.enum(["easy", "medium", "hard"]).optional(),
+  summary: z.string().max(500).optional(),
+  body: z.string().min(1).max(50_000),
+  published: z.boolean().optional(),
+});
+
+export async function saveInterviewExperienceAction(input: z.infer<typeof experienceSchema>) {
+  const userId = await requireCreator();
+  const data = experienceSchema.parse(input);
+
+  const fields = {
+    title: data.title.trim(),
+    company: data.company?.trim() || null,
+    role: data.role?.trim() || null,
+    outcome: data.outcome ?? null,
+    difficulty: data.difficulty ?? null,
+    summary: data.summary?.trim() || null,
+    body: data.body,
+  };
+
+  let targetSpaceId: string;
+
+  if (data.id) {
+    const existing = await prisma.interviewExperience.findUnique({
+      where: { id: data.id },
+      select: { authorId: true, spaceId: true },
+    });
+    if (!existing || existing.authorId !== userId) throw new Error("Experience not found.");
+    targetSpaceId = existing.spaceId;
+    await prisma.interviewExperience.update({
+      where: { id: data.id },
+      data: {
+        ...fields,
+        ...(data.published !== undefined ? { published: data.published } : {}),
+      },
+    });
+  } else {
+    if (!data.spaceId) throw new Error("spaceId is required to create an experience.");
+    const space = await requireMySpace(data.spaceId, userId);
+    targetSpaceId = space.id;
+
+    let slug = slugify(data.title) || "experience";
+    if (await prisma.interviewExperience.findUnique({ where: { spaceId_slug: { spaceId: space.id, slug } } })) {
+      slug = `${slug}-${Date.now().toString(36)}`;
+    }
+    await prisma.interviewExperience.create({
+      data: {
+        spaceId: space.id,
+        authorId: userId,
+        slug,
+        ...fields,
+        ...(data.published !== undefined ? { published: data.published } : {}),
+      },
+    });
+  }
+
+  const space = await prisma.creatorSpace.findUnique({ where: { id: targetSpaceId } });
+  revalidatePath("/creator");
+  if (space) {
+    revalidatePath(`/creator/${space.handle}`);
+    revalidatePath(`/c/${space.handle}`);
+  }
 }
 
 // ── Buyer checkout ───────────────────────────────────────────────────────────

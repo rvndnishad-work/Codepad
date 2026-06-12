@@ -6,18 +6,23 @@ import InterviewEditor from "./InterviewEditor";
 
 export const metadata = { robots: { index: false, follow: false } };
 
+type PageProps = {
+  params: Promise<{ id: string }>;
+  searchParams: Promise<{ spaceId?: string }>;
+};
+
 export default async function InterviewEditorPage({
   params,
-}: {
-  params: Promise<{ id: string }>;
-}) {
+  searchParams,
+}: PageProps) {
   const { id } = await params;
+  const { spaceId } = await searchParams;
   const session = await auth().catch(() => null);
   const userId = session?.user?.id;
   if (!userId) redirect("/login?next=/creator");
   if (!(await userCan(userId, "content:author"))) redirect("/dashboard");
 
-  if (id === "new") return <InterviewEditor initial={null} />;
+  if (id === "new") return <InterviewEditor initial={null} spaceId={spaceId} />;
 
   const qa = await prisma.interviewQA.findUnique({
     where: { id },
@@ -39,6 +44,7 @@ export default async function InterviewEditorPage({
           difficulty: (q.difficulty as "easy" | "medium" | "hard" | null) ?? "",
         })),
       }}
+      spaceId={qa.spaceId}
     />
   );
 }

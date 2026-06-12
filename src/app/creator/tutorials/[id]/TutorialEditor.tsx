@@ -16,7 +16,13 @@ type Initial = {
   sections: Section[];
 } | null;
 
-export default function TutorialEditor({ initial }: { initial: Initial }) {
+export default function TutorialEditor({
+  initial,
+  spaceId,
+}: {
+  initial: Initial;
+  spaceId?: string;
+}) {
   const router = useRouter();
   const [title, setTitle] = useState(initial?.title ?? "");
   const [summary, setSummary] = useState(initial?.summary ?? "");
@@ -36,6 +42,7 @@ export default function TutorialEditor({ initial }: { initial: Initial }) {
     try {
       await saveTutorialAction({
         id: initial?.id,
+        spaceId,
         title,
         summary: summary || undefined,
         published,

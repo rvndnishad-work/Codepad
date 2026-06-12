@@ -31,6 +31,7 @@ export type RouteGuard = { prefix: string; permission: GuardPermission };
 export const ROUTE_GUARDS: readonly RouteGuard[] = [
   // Admin content/moderation surfaces — specific permissions.
   { prefix: "/admin/roles", permission: "platform:admin" },
+  { prefix: "/admin/creators", permission: "creator:review" },
   { prefix: "/admin/users", permission: "user:manage" },
   { prefix: "/admin/comments", permission: "comment:moderate" },
   { prefix: "/admin/blogs", permission: "content:curate" },

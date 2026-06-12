@@ -71,6 +71,7 @@ export default function AdminSidebar({ session, persona }: AdminSidebarProps) {
           <AdminLink href="/admin/comments" icon="MessageCircle" label="Comments" />
           <AdminLink href="/admin/challenges" icon="Target" label="Challenges" />
           <AdminLink href="/admin/attempts" icon="Code2" label="Attempts" />
+          <AdminLink href="/admin/creators" icon="Sparkles" label="Creators" />
         </>
       ) : (
         <>

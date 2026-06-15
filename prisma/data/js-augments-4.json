@@ -1,0 +1,156 @@
+[
+  {
+    "title": "What is event bubbling and capturing?",
+    "answer": "When an event fires, it travels in three phases: **capturing** (document → target, top-down), the **target** itself, then **bubbling** (target → document, bottom-up). Most handlers run during bubbling; pass `{ capture: true }` to listen during capture.\n\n`stopPropagation()` halts further travel; `stopImmediatePropagation()` also stops other handlers on the same element.\n\n**Interview tip:** bubbling is what makes **event delegation** possible.",
+    "examples": [
+      { "label": "phases on nested elements (DOM)", "runnable": false, "code": "outer.addEventListener('click', () => console.log('outer (bubble)'));\ninner.addEventListener('click', () => console.log('inner (target)'));\nouter.addEventListener('click', () => console.log('outer (capture)'), true);\n\n// Clicking #inner logs:\n//   'outer (capture)'  -> capturing phase, top-down\n//   'inner (target)'\n//   'outer (bubble)'   -> bubbling phase, bottom-up" }
+    ]
+  },
+  {
+    "title": "What is event delegation?",
+    "answer": "**Event delegation** puts one listener on a shared ancestor and uses `event.target.closest(selector)` to identify which descendant was acted on, leveraging bubbling.\n\nBenefits: a single listener instead of many (less memory), and it handles **dynamically added** elements automatically.\n\n**Interview tip:** use `closest()` to match the right element even when you click a child of it, and be mindful of events that don't bubble.",
+    "examples": [
+      { "label": "delegate clicks for a dynamic list (DOM)", "runnable": false, "code": "list.addEventListener('click', (e) => {\n  const btn = e.target.closest('button[data-action]');\n  if (!btn) return;\n  console.log('action:', btn.dataset.action, 'on', btn.dataset.id);\n});\n// New buttons added to `list` later are handled without rebinding." }
+    ]
+  },
+  {
+    "title": "What is globalThis?",
+    "answer": "**`globalThis`** is the standard, portable reference to the global object across all environments — `window` in browsers, `global` in Node, `self` in Web Workers. It lets you access globals without environment sniffing.\n\n**Interview tip:** before `globalThis`, code used fragile checks like `typeof window !== 'undefined' ? window : global`; `globalThis` replaces them.",
+    "examples": [
+      { "label": "portable global access", "code": "globalThis.appConfig = { env: 'demo' };\nconsole.log(globalThis.appConfig.env); // 'demo'\nconsole.log(typeof globalThis);        // 'object' (works everywhere)" }
+    ]
+  },
+  {
+    "title": "What is lexical scoping and the scope chain?",
+    "answer": "**Lexical (static) scoping** means a function's accessible variables are determined by **where it is written**, not where it's called. At runtime, variable lookups follow the **scope chain** — from the innermost scope outward to the global scope — until the name is found.\n\nThis is exactly what enables closures: an inner function keeps its outer scope alive.\n\n**Interview tip:** contrast with dynamic scoping (based on call stack), which JS does *not* use.",
+    "examples": [
+      { "label": "lookup walks outward", "code": "const g = 'global';\nfunction outer() {\n  const o = 'outer';\n  function inner() {\n    const i = 'inner';\n    console.log(i, o, g); // resolves i -> o -> g via the chain\n  }\n  inner();\n}\nouter(); // 'inner outer global'" }
+    ]
+  },
+  {
+    "title": "What is short-circuit evaluation?",
+    "answer": "Logical operators stop evaluating as soon as the result is known. **`&&`** returns the first **falsy** operand (or the last if all truthy); **`||`** returns the first **truthy** operand. They don't always return booleans — they return one of the operands.\n\nThis powers guards (`obj && obj.prop`), defaults (`x || fallback`), and conditional execution (`cond && doThing()`).\n\n**Interview tip:** prefer `??` over `||` for defaults when `0`/`''`/`false` are valid values.",
+    "examples": [
+      { "label": "guards, defaults, side effects", "code": "const user = null;\nconsole.log(user && user.name);   // null (short-circuits, no error)\nconsole.log('' || 'default');     // 'default'\nconsole.log(0 || 'default');      // 'default' (0 is falsy!)\nlet ran = false;\ntrue && (ran = true);\nconsole.log(ran);                 // true" }
+    ]
+  },
+  {
+    "title": "What is the Reflect API?",
+    "answer": "**`Reflect`** is a built-in object with methods mirroring fundamental object operations — `Reflect.get`, `set`, `has`, `deleteProperty`, `ownKeys`, `apply`, `construct`. They provide the *default* behavior in a function form and return booleans instead of throwing.\n\nIt pairs naturally with **Proxy** traps: a trap calls the matching `Reflect` method to perform the standard operation cleanly.\n\n**Interview tip:** mention that `Reflect` makes proxy handlers correct and forwards the right `receiver` for getters/setters.",
+    "examples": [
+      { "label": "reflect operations", "code": "const obj = { a: 1 };\nconsole.log(Reflect.has(obj, 'a'));     // true\nReflect.set(obj, 'b', 2);\nconsole.log(Reflect.get(obj, 'b'));     // 2\nconsole.log(Reflect.ownKeys(obj));      // ['a','b']\nconsole.log(Reflect.apply(Math.max, null, [3, 7, 2])); // 7" }
+    ]
+  },
+  {
+    "title": "What is the difference between ES modules and CommonJS?",
+    "answer": "- **CommonJS** (Node's legacy): `require()`/`module.exports`, **synchronous**, loaded at runtime, dynamic.\n- **ES Modules** (the standard): `import`/`export`, **static** (analyzable at build time → tree-shaking), support top-level `await`, and run in strict mode. Imports are live read-only bindings.\n\n**Interview tip:** ESM is static (imports must be top-level), works in browsers and modern Node, and enables tree-shaking; CJS is dynamic and synchronous.",
+    "examples": [
+      { "label": "syntax side by side", "runnable": false, "code": "// CommonJS\nconst fs = require('fs');\nmodule.exports = { add: (a, b) => a + b };\n\n// ES Modules\nimport fs from 'node:fs';\nexport const add = (a, b) => a + b;\nexport default function () {}\n// ESM also allows: const mod = await import('./x.js');" }
+    ]
+  },
+  {
+    "title": "What is the difference between Object.freeze and const?",
+    "answer": "`const` prevents **reassigning the variable binding** — but the object it points to can still be mutated. **`Object.freeze(obj)`** prevents adding, removing, or changing the object's own properties (shallowly).\n\nThey're orthogonal: combine them for an immutable binding to an immutable object. Note `freeze` is **shallow** — nested objects stay mutable unless you deep-freeze.\n\n**Interview tip:** `const arr = []` still allows `arr.push(1)`; `Object.freeze(arr)` blocks it.",
+    "examples": [
+      { "label": "binding vs contents", "code": "const arr = [1, 2];\narr.push(3);                 // allowed (const = binding only)\nconsole.log(arr);            // [1,2,3]\n\nconst frozen = Object.freeze({ a: 1 });\nfrozen.a = 99;               // silently ignored (throws in strict)\nconsole.log(frozen.a);       // 1\nconsole.log(Object.isFrozen(frozen)); // true" }
+    ]
+  },
+  {
+    "title": "What is the difference between Object.freeze, seal, and preventExtensions?",
+    "answer": "Three levels of locking down an object (all **shallow**):\n- **`preventExtensions`** — can't **add** new properties (existing ones still editable/deletable).\n- **`seal`** — also can't **delete** or reconfigure properties, but you can still **change** existing values.\n- **`freeze`** — the strongest: no add, delete, reconfigure, or **change** of values.\n\n**Interview tip:** check state with `isExtensible`/`isSealed`/`isFrozen`, and remember all three are shallow.",
+    "examples": [
+      { "label": "the three levels", "code": "const a = Object.preventExtensions({ x: 1 });\na.x = 2; a.y = 3;            // change ok, add ignored\nconsole.log(a);             // { x: 2 }\n\nconst b = Object.seal({ x: 1 });\nb.x = 5; delete b.x;        // change ok, delete ignored\nconsole.log(b);             // { x: 5 }\n\nconst c = Object.freeze({ x: 1 });\nc.x = 9;                    // ignored\nconsole.log(c.x, Object.isFrozen(c)); // 1 true" }
+    ]
+  },
+  {
+    "title": "What is the difference between `==` and `===`?",
+    "answer": "**`===`** (strict) compares type **and** value with no coercion. **`==`** (loose) coerces operands to a common type first, which produces surprising truths like `0 == ''`, `'0' == 0`, and `[] == ''`.\n\nKnow the special cases: `null == undefined` is `true` (but `===` is false), and `NaN` equals nothing.\n\n**Interview tip:** always use `===`, except the idiomatic `x == null` to catch both `null` and `undefined`.",
+    "examples": [
+      { "label": "coercion vs strict", "code": "console.log(1 == '1');        // true (coerced)\nconsole.log(1 === '1');       // false\nconsole.log(0 == false);      // true\nconsole.log(null == undefined);  // true\nconsole.log(null === undefined); // false\nconsole.log([] == ![]);       // true (famous gotcha)" }
+    ]
+  },
+  {
+    "title": "What is the difference between `null` and `undefined`?",
+    "answer": "**`undefined`** = *not assigned*: uninitialized variables, missing properties/args, and no-`return` functions. **`null`** = an *intentional* empty value you assign. `typeof undefined` is `'undefined'`; `typeof null` is `'object'` (a historic quirk).\n\n`null == undefined` is `true`; `null === undefined` is `false`.\n\n**Interview tip:** use `x == null` to test for both, and `??` to default only on null/undefined (keeping valid `0`/`''`).",
+    "examples": [
+      { "label": "origins and checks", "code": "let a;                       // undefined (unassigned)\nconst b = null;              // intentional empty\nconst obj = {};\nconsole.log(a, obj.missing); // undefined undefined\nconsole.log(typeof a, typeof b); // 'undefined' 'object'\nconsole.log(a == b, a === b);    // true false\nconsole.log(b ?? 'default');     // 'default'" }
+    ]
+  },
+  {
+    "title": "What is the difference between arrow and regular functions?",
+    "answer": "Arrow functions differ from regular ones in several ways: they have **no own `this`** (inherit it lexically), **no `arguments`** object, **can't be used with `new`** (no `[[Construct]]`), and have **no `prototype`**. They're also always anonymous expressions.\n\n**Interview tip:** use arrows for callbacks where you want the enclosing `this` (e.g., inside class methods); use regular functions for methods, constructors, and when you need dynamic `this`/`arguments`.",
+    "examples": [
+      { "label": "this + arguments + new", "code": "const obj = {\n  vals: [1, 2, 3],\n  sumRegular() { return this.vals.reduce((s, n) => s + n, 0); },\n};\nconsole.log(obj.sumRegular());     // 6 (arrow keeps obj's `this`)\n\nconst Arrow = () => {};\ntry { new Arrow(); } catch (e) { console.log(e.name); } // TypeError\nconsole.log(Arrow.prototype);      // undefined" }
+    ]
+  },
+  {
+    "title": "What is the difference between client-side and server-side rendering?",
+    "answer": "**Server-side rendering (SSR)** generates HTML on the server per request, so the browser shows content fast and crawlers see full markup (good SEO) — then JS **hydrates** it for interactivity. **Client-side rendering (CSR)** ships a mostly-empty page plus JS that builds the UI in the browser — great for app-like interactivity but slower first paint and weaker SEO without extra work.\n\n**Interview tip:** mention hybrids — SSG (build-time), ISR, streaming SSR, and hydration cost.",
+    "examples": [
+      { "label": "the trade-off (conceptual)", "runnable": false, "code": "// CSR: browser receives ~empty HTML, JS renders everything\n//   <div id=\"root\"></div> + bundle.js -> UI built client-side\n//   + interactive SPA, - slow first paint, - SEO needs work\n\n// SSR: server returns full HTML, then JS hydrates\n//   <div id=\"root\"><h1>Posts</h1>...</div> + bundle.js\n//   + fast first paint + SEO, - server cost, - hydration work" }
+    ]
+  },
+  {
+    "title": "What is the difference between find and filter?",
+    "answer": "**`find(predicate)`** returns the **first** element that matches (or `undefined`) and **stops early**. **`filter(predicate)`** returns a **new array of all** matches.\n\nUse `find`/`findIndex` for a single item, `filter` for a subset.\n\n**Interview tip:** `find` returns the element itself (handy), while `filter` always returns an array (possibly empty) — easy to confuse their return types.",
+    "examples": [
+      { "label": "first match vs all matches", "code": "const users = [{ id: 1, active: true }, { id: 2, active: false }, { id: 3, active: true }];\nconsole.log(users.find(u => u.active));   // { id: 1, active: true }\nconsole.log(users.filter(u => u.active)); // [{id:1...},{id:3...}]\nconsole.log(users.find(u => u.id === 9)); // undefined\nconsole.log(users.filter(u => u.id === 9)); // []" }
+    ]
+  },
+  {
+    "title": "What is the difference between localStorage, sessionStorage, and cookies?",
+    "answer": "- **localStorage** — persists until cleared, ~5MB, string-only, not sent to the server.\n- **sessionStorage** — same API but scoped to the tab session (cleared on close).\n- **cookies** — small (~4KB), **sent with every HTTP request** (good for auth/session), with expiry and security flags (`HttpOnly`, `Secure`, `SameSite`).\n\n**Interview tip:** use cookies for server-read auth (ideally `HttpOnly`), web storage for client-only data; never store secrets in JS-readable storage.",
+    "examples": [
+      { "label": "client storage APIs (browser)", "runnable": false, "code": "localStorage.setItem('theme', 'dark');        // persists\nconsole.log(localStorage.getItem('theme'));   // 'dark'\nsessionStorage.setItem('step', '2');          // until tab closes\ndocument.cookie = 'token=abc; Max-Age=3600; Secure; SameSite=Strict'; // sent to server" }
+    ]
+  },
+  {
+    "title": "What is the difference between preventDefault and stopPropagation?",
+    "answer": "They do unrelated things: **`preventDefault()`** cancels the browser's **default action** for the event (form submit, link navigation, checkbox toggle). **`stopPropagation()`** stops the event from **traveling** further through capture/bubble to other handlers.\n\nThey're independent — you might call one, both, or neither. `stopImmediatePropagation()` also blocks other handlers on the same element.\n\n**Interview tip:** returning `false` from a jQuery handler does both, but in plain DOM you call them explicitly.",
+    "examples": [
+      { "label": "independent effects (DOM)", "runnable": false, "code": "link.addEventListener('click', (e) => {\n  e.preventDefault();      // don't navigate\n  e.stopPropagation();     // don't let parent handlers run\n  console.log('handled without navigating or bubbling');\n});" }
+    ]
+  },
+  {
+    "title": "What is the difference between synchronous and asynchronous code?",
+    "answer": "**Synchronous** code runs line by line, each statement **blocking** until it finishes. **Asynchronous** code schedules work (timers, I/O, network, promises) to complete **later**, so the single thread stays free to do other things; results arrive via callbacks/promises/await.\n\n**Interview tip:** stress that JS is single-threaded — async doesn't add threads, it defers work to the event loop so the main thread isn't blocked.",
+    "examples": [
+      { "label": "blocking vs deferred order", "code": "console.log('A (sync)');\nsetTimeout(() => console.log('C (async, later)'), 0);\nconsole.log('B (sync)');\n// Sync runs first: A, B; then the async callback: C" }
+    ]
+  },
+  {
+    "title": "What is the event loop?",
+    "answer": "The **event loop** is the mechanism that lets single-threaded JS handle concurrency. It continuously checks: if the **call stack** is empty, it takes the next callback from the queues and runs it. After each task it **drains all microtasks** (promises), then runs one **macrotask** (timers, I/O, events).\n\n**Interview tip:** be able to explain stack → microtask queue → macrotask queue, and predict log ordering (microtasks beat `setTimeout`).",
+    "examples": [
+      { "label": "queues in action", "code": "console.log('1');\nsetTimeout(() => console.log('5 macrotask'), 0);\nPromise.resolve()\n  .then(() => console.log('3 microtask'))\n  .then(() => console.log('4 microtask'));\nconsole.log('2');\n// 1, 2, 3, 4, 5" }
+    ]
+  },
+  {
+    "title": "What is the purpose of the `bind`, `call`, and `apply` methods?",
+    "answer": "All three explicitly set a function's **`this`**:\n- **`call(thisArg, a, b)`** — invoke now with comma args.\n- **`apply(thisArg, [a, b])`** — invoke now with an args array.\n- **`bind(thisArg, ...partial)`** — return a **new function** with `this` (and optional leading args) permanently fixed, to call later.\n\n**Interview tip:** `bind` is for deferred calls (callbacks, `setTimeout`) and partial application; `call`/`apply` are immediate, and spread (`fn(...arr)`) has reduced the need for `apply`.",
+    "examples": [
+      { "label": "borrow a method + bind", "code": "function describe(prefix) { return prefix + ' ' + this.role; }\nconst obj = { role: 'admin' };\nconsole.log(describe.call(obj, 'User:'));   // 'User: admin'\nconsole.log(describe.apply(obj, ['Role:'])); // 'Role: admin'\nconst boundDescribe = describe.bind(obj, 'Hi');\nsetTimeout(() => console.log(boundDescribe()), 10); // 'Hi admin'" }
+    ]
+  },
+  {
+    "title": "What is the temporal dead zone?",
+    "answer": "The **temporal dead zone (TDZ)** is the span from entering a scope to the line where a `let`/`const` is declared. The variable exists (it's hoisted) but accessing it in that window throws a **`ReferenceError`** — unlike `var`, which would read as `undefined`.\n\n**Interview tip:** the TDZ is *why* `let`/`const` feel safer than `var` — it turns 'use before declaration' bugs into immediate errors.",
+    "examples": [
+      { "label": "access before declaration", "code": "console.log(typeof varX); // 'undefined' (var hoisted + initialized)\nvar varX = 1;\n\ntry {\n  console.log(letY);       // ReferenceError (in TDZ)\n  let letY = 2;\n} catch (e) {\n  console.log(e.name);     // 'ReferenceError'\n}" }
+    ]
+  },
+  {
+    "title": "Why is 0.1 + 0.2 not exactly 0.3?",
+    "answer": "JavaScript numbers are **IEEE-754 double-precision floats**, which represent values in binary. Decimals like `0.1` and `0.2` have no exact binary representation, so tiny rounding errors accumulate: `0.1 + 0.2` is `0.30000000000000004`.\n\n**Fixes:** compare with a small epsilon, round to fixed decimals, or use integer units (cents) / a decimal library for money.\n\n**Interview tip:** this affects all floating-point languages, not just JS.",
+    "examples": [
+      { "label": "the error and an epsilon check", "code": "console.log(0.1 + 0.2);                 // 0.30000000000000004\nconsole.log(0.1 + 0.2 === 0.3);         // false\nconsole.log(Math.abs((0.1 + 0.2) - 0.3) < Number.EPSILON); // true\nconsole.log((0.1 + 0.2).toFixed(2));    // '0.30'" }
+    ]
+  },
+  {
+    "title": "Why must you pass the same function reference to removeEventListener?",
+    "answer": "**`removeEventListener`** only removes a handler if you pass the **exact same function reference** (and matching capture flag) used in `addEventListener`. A fresh inline/arrow function — even with identical code — is a different object, so the removal silently does nothing.\n\n**Interview tip:** store the handler in a variable (or use an `AbortController` signal) so you can remove it; this is a common source of leaked listeners.",
+    "examples": [
+      { "label": "store the reference (DOM)", "runnable": false, "code": "const onClick = () => console.log('clicked');\nbtn.addEventListener('click', onClick);\nbtn.removeEventListener('click', onClick); // works (same reference)\n\n// This does NOT remove anything (new function each time):\nbtn.addEventListener('click', () => console.log('x'));\nbtn.removeEventListener('click', () => console.log('x')); // no-op\n\n// Modern alternative: AbortController\n// const ac = new AbortController();\n// btn.addEventListener('click', onClick, { signal: ac.signal });\n// ac.abort(); // removes it" }
+    ]
+  }
+]

@@ -1,0 +1,9 @@
+# Rust build artifacts
+target/
+**/*.rs.bk
+# NB: Cargo.lock IS committed — it pins alloc-no-stdlib to 2.0.4 to work around
+# the brotli 8.0.3 dependency skew (see README "Build gotchas").
+
+# Tauri generated schemas + source icon scratch
+proctor-app/gen/
+proctor-app/icon-src.png

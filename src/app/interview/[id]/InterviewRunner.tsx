@@ -6,6 +6,8 @@ import dynamic from "next/dynamic";
 import PromptChallengeRunner from "./PromptChallengeRunner";
 import SubmissionPreview from "./SubmissionPreview";
 import SubmissionReviewModal from "./SubmissionReviewModal";
+import ProctorLiveBadge from "./ProctorLiveBadge";
+import ProctorSetup from "./ProctorSetup";
 import { challengeSurface } from "@/lib/templates";
 import { describeStack, type TechStack } from "@/lib/interview/stack";
 import {
@@ -1259,6 +1261,20 @@ export default function InterviewRunner({
                     <div className="text-xs font-black uppercase tracking-wider text-accent">Session Active</div>
                     <div className="text-xs text-muted">Proceed to the challenge roadmap on the right.</div>
                   </div>
+                )}
+
+                {/* Recruiter-only: provision the native screen-proctor agent for the candidate. */}
+                {interviewerView && isOwner && interview.type !== "mock" &&
+                  status !== "completed" && status !== "abandoned" && (
+                    <ProctorSetup interviewId={interview.id} />
+                  )}
+
+                {/* Interviewer-only live screen-proctor risk (native overlay detection). */}
+                {interviewerView && status === "in_progress" && interview.type !== "mock" && (
+                  <ProctorLiveBadge
+                    interviewId={interview.id}
+                    token={isOwner ? undefined : interview.shareToken}
+                  />
                 )}
 
 

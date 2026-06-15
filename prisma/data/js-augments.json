@@ -1,0 +1,212 @@
+[
+  {
+    "title": "What is hoisting in JavaScript?",
+    "answer": "**Hoisting** is JavaScript moving declarations to the top of their scope during the compile phase, before any code runs.\n\n- **`var`** declarations are hoisted and initialized to `undefined`, so reading one before its line gives `undefined` (not an error).\n- **Function declarations** are hoisted *entirely* (name + body), so you can call them before they appear.\n- **`let`/`const`** are hoisted too, but stay in the **temporal dead zone** until their line executes — accessing them early throws a `ReferenceError`.\n- **Function expressions / arrow functions** assigned to `var`/`let` are *not* fully hoisted — only the variable is.\n\n**Interview tip:** the nuance interviewers want is that hoisting affects *declarations*, not *initializations/assignments*, and that `let`/`const` are hoisted but not usable (TDZ).",
+    "examples": [
+      { "label": "var vs function vs let", "code": "console.log(typeof greet);   // 'function' (fully hoisted)\nconsole.log(x);              // undefined (declaration hoisted, not value)\nvar x = 10;\nconsole.log(x);              // 10\n\nfunction greet() { return 'hi'; }\n\ntry {\n  console.log(y);            // ReferenceError (TDZ)\n  let y = 5;\n} catch (e) {\n  console.log(e.name);       // 'ReferenceError'\n}" }
+    ]
+  },
+  {
+    "title": "What is the difference between var, let, and const?",
+    "answer": "- **`var`**: function-scoped, hoisted (initialized `undefined`), can be redeclared, and attaches to the global object at top level. Its lack of block scope causes classic loop bugs.\n- **`let`**: block-scoped, in the temporal dead zone until declared, reassignable, no redeclaration in the same scope.\n- **`const`**: same as `let` but the **binding** can't be reassigned. Note the object/array it points to is still mutable — `const` is about the variable, not deep immutability.\n\n**Interview tip:** default to `const`, use `let` when you must reassign, avoid `var`. Be ready to explain the loop-closure difference between `var` and `let`.",
+    "examples": [
+      { "label": "block scope + loop closures", "code": "// var leaks out of the block and is shared across iterations\nfor (var i = 0; i < 3; i++) {}\nconsole.log('var after loop:', i);   // 3\n\nconst withVar = [];\nfor (var a = 0; a < 3; a++) withVar.push(() => a);\nconsole.log('var closures:', withVar.map(f => f())); // [3,3,3]\n\nconst withLet = [];\nfor (let b = 0; b < 3; b++) withLet.push(() => b);\nconsole.log('let closures:', withLet.map(f => f())); // [0,1,2]" }
+    ]
+  },
+  {
+    "title": "How does the 'this' keyword work?",
+    "answer": "`this` is decided by **how a function is called**, not where it's defined:\n\n1. **Method call** `obj.fn()` → `this` is `obj`.\n2. **Plain call** `fn()` → `this` is `undefined` in strict mode (the global object in sloppy mode).\n3. **`new` call** → `this` is the brand-new instance.\n4. **Explicit** `fn.call/apply/bind(obj)` → `this` is what you pass.\n5. **Arrow functions** have no own `this` — they capture it lexically from the enclosing scope, which is why they're great for callbacks.\n\n**Interview tip:** the common gotcha is losing `this` when passing a method as a callback (`setTimeout(obj.fn)`), fixed with `bind` or an arrow wrapper.",
+    "examples": [
+      { "label": "call-site determines this", "code": "const user = {\n  name: 'Ada',\n  regular() { return this && this.name; },\n  arrow: () => (typeof self !== 'undefined' ? 'lexical(no own this)' : 'n/a'),\n};\n\nconsole.log(user.regular());        // 'Ada' (method call)\nconst detached = user.regular;\nconsole.log(detached());            // undefined (plain call, strict)\nconsole.log(user.regular.call({ name: 'Grace' })); // 'Grace'" }
+    ]
+  },
+  {
+    "title": "What is the prototype chain?",
+    "answer": "Every object has an internal link (`[[Prototype]]`, exposed as `__proto__`) to another object. When you read a property, JS looks on the object, then walks up this **prototype chain** until it finds the property or reaches `null`.\n\nThis is JavaScript's inheritance mechanism: instances delegate to their constructor's `.prototype`, which delegates to `Object.prototype`. `class` syntax is sugar over exactly this.\n\n**Interview tip:** know that method lookups are dynamic (delegation, not copying), that `Object.create(proto)` sets the prototype directly, and that adding to a prototype affects all existing instances.",
+    "examples": [
+      { "label": "delegation up the chain", "code": "const animal = { speak() { return this.sound; } };\nconst dog = Object.create(animal);\ndog.sound = 'woof';\n\nconsole.log(dog.speak());                       // 'woof' (found on animal)\nconsole.log(dog.hasOwnProperty('speak'));       // false (inherited)\nconsole.log(Object.getPrototypeOf(dog) === animal); // true\n\nanimal.speak = function () { return 'overridden:' + this.sound; };\nconsole.log(dog.speak());                       // 'overridden:woof'" }
+    ]
+  },
+  {
+    "title": "What is a Promise and what are its states?",
+    "answer": "A **Promise** is an object representing an eventual async result. It has three states: **pending** → either **fulfilled** (with a value) or **rejected** (with a reason). Once settled it never changes.\n\nConsume with `.then(onFulfilled)`, `.catch(onRejected)`, and `.finally()`. Promises chain — each `.then` returns a new promise, and returning a value/promise inside flows to the next. A thrown error or rejection skips to the nearest `.catch`.\n\n**Interview tip:** mention that callbacks run as **microtasks** (after the current sync code), and that combinators (`all`, `allSettled`, `race`, `any`) coordinate multiple promises.",
+    "examples": [
+      { "label": "chaining + error skip", "code": "Promise.resolve(2)\n  .then(n => n * 3)\n  .then(n => { if (n > 5) throw new Error('too big'); return n; })\n  .then(n => console.log('value:', n))      // skipped\n  .catch(e => console.log('caught:', e.message))\n  .finally(() => console.log('done'));\n\nconsole.log('sync runs first');" }
+    ]
+  },
+  {
+    "title": "How does async/await work?",
+    "answer": "`async` functions always return a **Promise**. Inside, `await` pauses execution until the awaited promise settles, then resumes with its value — letting asynchronous code read like synchronous code. Errors are handled with normal `try/catch`.\n\nUnder the hood it's built on promises and the microtask queue; `await` doesn't block the thread, it yields so other work runs.\n\n**Interview tip:** key nuances — sequential `await`s run one after another (use `Promise.all` to parallelize independent work), and an unhandled rejection in an async function becomes a rejected promise.",
+    "examples": [
+      { "label": "sequential vs parallel", "code": "const wait = (ms, v) => new Promise(r => setTimeout(() => r(v), ms));\n\nasync function run() {\n  const start = Date.now();\n  // parallel: both timers run together\n  const [a, b] = await Promise.all([wait(50, 'A'), wait(50, 'B')]);\n  console.log(a, b, 'in ~', Date.now() - start, 'ms');\n}\nrun();" }
+    ]
+  },
+  {
+    "title": "What is the difference between == and ===?",
+    "answer": "**`===`** (strict equality) requires the same type *and* value — no coercion. **`==`** (loose equality) coerces operands to a common type first, which yields surprising results.\n\nKnow the special cases: `null == undefined` is `true` (but `null === undefined` is false), `NaN` is never equal to anything, and `'' == 0`, `'0' == 0`, `[] == ''` are all `true` due to coercion.\n\n**Interview tip:** always use `===` except the idiomatic `x == null` to check for both `null` and `undefined` in one go.",
+    "examples": [
+      { "label": "coercion surprises", "code": "console.log(0 == '');        // true  (both coerce)\nconsole.log(0 == '0');       // true\nconsole.log('' == '0');      // false (string vs string)\nconsole.log(null == undefined); // true\nconsole.log(null === undefined); // false\nconsole.log([] == 0);        // true  ([] -> '' -> 0)\nconsole.log(NaN === NaN);    // false" }
+    ]
+  },
+  {
+    "title": "What is currying?",
+    "answer": "**Currying** transforms a function that takes multiple arguments into a chain of functions that each take one: `f(a, b, c)` → `f(a)(b)(c)`. Each call returns a new function (a closure remembering earlier args) until all arguments are supplied.\n\nIt enables **partial application** — fixing some arguments to create specialized functions — and clean function composition/point-free style.\n\n**Interview tip:** be ready to write a generic `curry` helper and explain how closures retain the collected arguments.",
+    "examples": [
+      { "label": "manual curry + helper", "code": "const add = a => b => c => a + b + c;\nconsole.log(add(1)(2)(3)); // 6\n\nfunction curry(fn) {\n  return function curried(...args) {\n    return args.length >= fn.length\n      ? fn(...args)\n      : (...more) => curried(...args, ...more);\n  };\n}\nconst sum = curry((a, b, c) => a + b + c);\nconsole.log(sum(1, 2)(3)); // 6\nconsole.log(sum(1)(2, 3)); // 6" }
+    ]
+  },
+  {
+    "title": "What is the difference between null and undefined?",
+    "answer": "**`undefined`** means *not assigned*: uninitialized variables, missing object properties, missing function arguments, and functions with no `return`. **`null`** is an *intentional* 'no value' that you assign deliberately.\n\nQuirks: `typeof undefined` is `'undefined'` but `typeof null` is `'object'` (a long-standing bug). `null == undefined` is `true`; `null === undefined` is `false`.\n\n**Interview tip:** use `x == null` to test for both, and prefer `??` (nullish coalescing) over `||` when `0`/`''` are valid values.",
+    "examples": [
+      { "label": "where each appears", "code": "let a;\nconsole.log(a);                 // undefined (declared, unassigned)\nconst obj = {};\nconsole.log(obj.missing);        // undefined\nconst b = null;                  // intentional empty\nconsole.log(typeof a, typeof b); // 'undefined' 'object'\nconsole.log(a == b, a === b);    // true false\nconsole.log(0 ?? 'fallback');    // 0 (?? only catches null/undefined)\nconsole.log(0 || 'fallback');    // 'fallback'" }
+    ]
+  },
+  {
+    "title": "What are the spread and rest operators?",
+    "answer": "Both use `...` but do opposite things by context:\n\n- **Spread** *expands* an iterable/object into individual elements: copy/merge arrays (`[...a, ...b]`), shallow-clone/merge objects (`{...a, ...b}`), or pass array items as args (`fn(...args)`).\n- **Rest** *collects* the remaining items into an array/object: variadic params (`function(...args)`) or in destructuring (`const [first, ...others] = arr`).\n\n**Interview tip:** stress that spread/object-spread make **shallow** copies (nested objects are shared), and that object spread is a clean immutable-update pattern.",
+    "examples": [
+      { "label": "spread copies, rest collects", "code": "const a = [1, 2], b = [3, 4];\nconsole.log([...a, ...b]);              // [1,2,3,4]\nconsole.log(Math.max(...[5, 9, 2]));   // 9\n\nconst merged = { x: 1, ...{ y: 2, x: 9 } };\nconsole.log(merged);                   // { x: 9, y: 2 }\n\nfunction sum(first, ...rest) {\n  return first + rest.reduce((s, n) => s + n, 0);\n}\nconsole.log(sum(1, 2, 3, 4));          // 10" }
+    ]
+  },
+  {
+    "title": "What is destructuring?",
+    "answer": "**Destructuring** unpacks values from arrays or properties from objects into variables in one expression. It supports **defaults** (`const { x = 1 } = obj`), **renaming** (`const { a: b } = obj`), **nested** patterns, and **rest** (`const [head, ...tail] = arr`).\n\nIt's heavily used in function parameters (named options objects), imports, React props/state, and swapping variables.\n\n**Interview tip:** know parameter destructuring with defaults, and that array destructuring works on any iterable.",
+    "examples": [
+      { "label": "object, array, nested, defaults", "code": "const user = { id: 1, name: 'Ada', addr: { city: 'London' } };\nconst { name, role = 'guest', addr: { city } } = user;\nconsole.log(name, role, city);   // Ada guest London\n\nconst [first, , third = 0, ...rest] = [10, 20];\nconsole.log(first, third, rest); // 10 0 []\n\nlet x = 1, y = 2;\n[x, y] = [y, x];\nconsole.log(x, y);               // 2 1" }
+    ]
+  },
+  {
+    "title": "What is a generator function?",
+    "answer": "A **generator** (`function*`) can pause and resume. Calling it returns an **iterator**; each `next()` runs until the next `yield`, returning `{ value, done }`. State is preserved between calls, so generators produce values lazily.\n\nUses: custom iteration, infinite/large sequences without building them in memory, and `yield*` to delegate to another generator.\n\n**Interview tip:** mention laziness (values computed on demand) and that generators are iterable, so they work with `for...of` and spread.",
+    "examples": [
+      { "label": "lazy + infinite sequence", "code": "function* naturals() {\n  let n = 1;\n  while (true) yield n++;        // infinite, but lazy\n}\nconst it = naturals();\nconsole.log(it.next().value, it.next().value); // 1 2\n\nfunction* take(gen, k) {\n  for (const v of gen) { if (k-- <= 0) return; yield v; }\n}\nconsole.log([...take(naturals(), 5)]); // [1,2,3,4,5]" }
+    ]
+  },
+  {
+    "title": "What is memoization?",
+    "answer": "**Memoization** caches a function's results keyed by its arguments, so repeated calls with the same inputs return instantly instead of recomputing. It trades memory for speed and only works for **pure** functions (same input → same output, no side effects).\n\nClassic uses: expensive computations and recursive algorithms (memoized Fibonacci turns exponential into linear).\n\n**Interview tip:** know how to build a generic memoizer with a `Map`, and the caveats — cache key serialization and unbounded memory growth (consider an LRU/size limit).",
+    "examples": [
+      { "label": "memoize a slow function", "code": "function memoize(fn) {\n  const cache = new Map();\n  return (...args) => {\n    const key = JSON.stringify(args);\n    if (cache.has(key)) { console.log('hit', key); return cache.get(key); }\n    const val = fn(...args);\n    cache.set(key, val);\n    return val;\n  };\n}\nconst slowSquare = memoize(n => n * n);\nconsole.log(slowSquare(8)); // 64 (computed)\nconsole.log(slowSquare(8)); // hit [8] -> 64 (cached)" }
+    ]
+  },
+  {
+    "title": "What is the difference between map and forEach?",
+    "answer": "**`map`** returns a **new array** of transformed values, is chainable, and doesn't mutate the source — use it when you need the result of transforming each element. **`forEach`** returns `undefined` and is used purely for **side effects** (logging, mutating external state).\n\n**Interview tip:** `map` expresses intent ('transform into a new array') and is chainable with `filter`/`reduce`; `forEach` can't be `break`-ed out of (use `for...of`/`some` if you need early exit).",
+    "examples": [
+      { "label": "transform vs side-effect", "code": "const nums = [1, 2, 3];\nconst doubled = nums.map(n => n * 2);\nconsole.log(doubled);   // [2,4,6]\nconsole.log(nums);      // [1,2,3] (unchanged)\n\nlet total = 0;\nnums.forEach(n => { total += n; });   // side effect\nconsole.log('forEach returns:', nums.forEach(() => {})); // undefined\nconsole.log('total:', total);          // 6" }
+    ]
+  },
+  {
+    "title": "What is the difference between slice and splice?",
+    "answer": "**`slice(start, end)`** returns a shallow copy of a portion **without mutating** the original (`end` exclusive; supports negative indices). **`splice(start, deleteCount, ...items)`** **mutates** the array — removing and/or inserting elements in place — and returns the removed elements.\n\n**Interview tip:** the one-word memory aid: *slice = copy (safe), splice = surgery (mutates)*. Easy to mix up, so interviewers love this one.",
+    "examples": [
+      { "label": "copy vs mutate", "code": "const a = [1, 2, 3, 4, 5];\nconsole.log(a.slice(1, 3)); // [2,3]\nconsole.log(a);             // [1,2,3,4,5] (unchanged)\n\nconst b = [1, 2, 3, 4, 5];\nconst removed = b.splice(1, 2, 'x', 'y'); // remove 2, insert 2\nconsole.log(removed);       // [2,3]\nconsole.log(b);             // [1,'x','y',4,5] (mutated)" }
+    ]
+  },
+  {
+    "title": "What is the difference between call, apply, and bind?",
+    "answer": "All three set `this`:\n\n- **`call(thisArg, a, b)`** invokes the function immediately with comma-separated args.\n- **`apply(thisArg, [a, b])`** invokes immediately with args as an array.\n- **`bind(thisArg, ...partial)`** returns a **new function** with `this` (and optionally leading args) permanently fixed, to call later.\n\n**Interview tip:** `bind` is for deferred calls (event handlers, `setTimeout`) and partial application; `call`/`apply` are immediate. With spread, `apply` is less needed (`fn(...args)`).",
+    "examples": [
+      { "label": "all three", "code": "function intro(greeting, punc) {\n  return greeting + ', ' + this.name + punc;\n}\nconst person = { name: 'Ada' };\n\nconsole.log(intro.call(person, 'Hi', '!'));   // 'Hi, Ada!'\nconsole.log(intro.apply(person, ['Hey', '.'])); // 'Hey, Ada.'\n\nconst boundHi = intro.bind(person, 'Hello');\nconsole.log(boundHi('?'));                     // 'Hello, Ada?'" }
+    ]
+  },
+  {
+    "title": "What are optional chaining and nullish coalescing?",
+    "answer": "**Optional chaining** `a?.b?.c` safely accesses deep properties — if any link is `null`/`undefined` it short-circuits to `undefined` instead of throwing. It also works for calls (`fn?.()`) and indexes (`arr?.[i]`).\n\n**Nullish coalescing** `x ?? y` returns `y` only when `x` is `null`/`undefined` — unlike `||`, which also falls back on falsy `0`, `''`, and `false`.\n\n**Interview tip:** the key distinction is `??` vs `||` for values like `0` or empty string that are valid but falsy.",
+    "examples": [
+      { "label": "safe access + correct defaults", "code": "const data = { user: { settings: null } };\nconsole.log(data.user?.settings?.theme); // undefined (no throw)\nconsole.log(data.account?.id ?? 'none'); // 'none'\n\nconst count = 0;\nconsole.log(count ?? 10);  // 0  (?? keeps 0)\nconsole.log(count || 10);  // 10 (|| treats 0 as falsy)" }
+    ]
+  },
+  {
+    "title": "How does Array.reduce work?",
+    "answer": "**`reduce(callback, initialValue)`** folds an array into a single accumulated value. The callback receives `(accumulator, current, index, array)` and returns the next accumulator. With an `initialValue`, iteration starts at index 0; without it, the first element seeds the accumulator.\n\nIt's the most general array method — you can build sums, group/index objects, flatten, or even reimplement `map`/`filter`.\n\n**Interview tip:** always pass an initial value (avoids errors on empty arrays), and be ready to use reduce to build an object (e.g., group by a key).",
+    "examples": [
+      { "label": "sum + group by", "code": "const nums = [1, 2, 3, 4];\nconsole.log(nums.reduce((s, n) => s + n, 0)); // 10\n\nconst people = [{ team: 'a', n: 'Ada' }, { team: 'b', n: 'Lin' }, { team: 'a', n: 'Bo' }];\nconst byTeam = people.reduce((acc, p) => {\n  (acc[p.team] ||= []).push(p.n);\n  return acc;\n}, {});\nconsole.log(byTeam); // { a: ['Ada','Bo'], b: ['Lin'] }" }
+    ]
+  },
+  {
+    "title": "What do Array.some and Array.every do?",
+    "answer": "**`some(pred)`** returns `true` if **at least one** element passes the predicate, short-circuiting on the first `true`. **`every(pred)`** returns `true` only if **all** elements pass, short-circuiting on the first `false`.\n\nThey express existential ('any match?') and universal ('all match?') checks far more clearly than manual loops, and short-circuit for efficiency.\n\n**Interview tip:** `every` on an empty array is `true` (vacuous truth) and `some` on an empty array is `false` — a subtle edge case.",
+    "examples": [
+      { "label": "any vs all (+ empty edge case)", "code": "const nums = [2, 4, 6];\nconsole.log(nums.some(n => n > 5));   // true\nconsole.log(nums.every(n => n % 2 === 0)); // true\nconsole.log(nums.every(n => n > 5));  // false\n\nconsole.log([].every(x => x));        // true  (vacuous)\nconsole.log([].some(x => x));         // false" }
+    ]
+  },
+  {
+    "title": "When should you use Map and Set over objects and arrays?",
+    "answer": "**`Map`** is a keyed collection where keys can be **any type** (including objects/functions), preserves **insertion order**, exposes `.size`, and is optimized for frequent additions/removals. Plain objects only have string/symbol keys and carry prototype keys.\n\n**`Set`** stores **unique** values with O(1) membership tests — perfect for dedup and 'have I seen this?' checks, which arrays do in O(n).\n\n**Interview tip:** reach for `Map` when keys aren't strings or order/size matters, and `Set` for uniqueness/fast lookup.",
+    "examples": [
+      { "label": "object keys + dedup", "code": "const k1 = {}, k2 = {};\nconst m = new Map();\nm.set(k1, 'a').set(k2, 'b');\nconsole.log(m.get(k1), m.size);  // 'a' 2  (object keys!)\n\nconst dups = [1, 2, 2, 3, 3, 3];\nconsole.log([...new Set(dups)]); // [1,2,3]\nconsole.log(new Set(dups).has(2)); // true (O(1))" }
+    ]
+  },
+  {
+    "title": "What is the difference between for...of and for...in?",
+    "answer": "**`for...of`** iterates the **values** of an iterable (arrays, strings, Maps, Sets, generators). **`for...in`** iterates the **enumerable keys** of an object — *including inherited ones* — and returns array indices as strings.\n\n**Interview tip:** use `for...of` (or array methods) for arrays, and `for...in` only for plain objects (ideally guarded with `hasOwnProperty`). Using `for...in` on arrays is a common bug because of order and inherited keys.",
+    "examples": [
+      { "label": "values vs keys", "code": "const arr = ['a', 'b', 'c'];\nfor (const v of arr) console.log('of:', v);   // a, b, c (values)\nfor (const k in arr) console.log('in:', k);   // 0,1,2 (keys as strings)\n\nconst obj = { x: 1, y: 2 };\nfor (const k of Object.keys(obj)) console.log(k, obj[k]); // x 1, y 2" }
+    ]
+  },
+  {
+    "title": "What is the difference between Promise.all, allSettled, race, and any?",
+    "answer": "All take an iterable of promises:\n\n- **`all`** — resolves with an array of all values once **all** fulfill; **rejects on the first rejection** (fail-fast).\n- **`allSettled`** — never rejects; resolves with `{ status, value | reason }` for **each**.\n- **`race`** — settles with the **first to settle**, whether fulfill or reject.\n- **`any`** — resolves with the **first fulfillment**; rejects only if **all** reject (with an `AggregateError`).\n\n**Interview tip:** pick `all` for 'need everything', `allSettled` for 'want every outcome', `race` for timeouts, `any` for 'first success wins'.",
+    "examples": [
+      { "label": "all vs allSettled", "code": "const ok = Promise.resolve('ok');\nconst bad = Promise.reject('boom');\n\nPromise.allSettled([ok, bad]).then(r => console.log('allSettled:', r));\nPromise.all([ok, bad]).then(\n  v => console.log('all:', v),\n  e => console.log('all rejected with:', e)\n);" }
+    ]
+  },
+  {
+    "title": "What is the difference between microtasks and macrotasks?",
+    "answer": "After each synchronous run, the event loop drains the **microtask** queue completely, then runs **one macrotask**, then drains microtasks again, and so on.\n\n- **Microtasks**: promise callbacks (`.then`/`await`), `queueMicrotask`, `MutationObserver`. They run *before* the next render or timer.\n- **Macrotasks**: `setTimeout`/`setInterval`, I/O, UI events.\n\n**Interview tip:** the classic result — a resolved promise's `.then` runs **before** a `setTimeout(0)`, because all microtasks drain before the next macrotask. Be ready to predict log order.",
+    "examples": [
+      { "label": "ordering", "code": "console.log('1: sync');\nsetTimeout(() => console.log('4: setTimeout (macrotask)'), 0);\nPromise.resolve().then(() => console.log('3: promise (microtask)'));\nconsole.log('2: sync');\n// Order: 1, 2, 3, 4" }
+    ]
+  },
+  {
+    "title": "What are the logical assignment operators?",
+    "answer": "Introduced in ES2021, they combine a logical operator with assignment and **short-circuit**:\n\n- **`a ||= b`** — assign `b` only if `a` is falsy.\n- **`a &&= b`** — assign `b` only if `a` is truthy.\n- **`a ??= b`** — assign `b` only if `a` is `null`/`undefined`.\n\nThey only evaluate/assign the right side when needed (so getters/side effects don't run unnecessarily).\n\n**Interview tip:** `??=` is the safe 'set a default if missing' that respects valid falsy values like `0` and `''`.",
+    "examples": [
+      { "label": "defaults the right way", "code": "const cfg = { retries: 0, name: '' };\ncfg.retries ??= 3;   // stays 0 (already defined)\ncfg.name ||= 'anon'; // becomes 'anon' ('' is falsy)\ncfg.host ??= 'localhost';\nconsole.log(cfg);    // { retries: 0, name: 'anon', host: 'localhost' }" }
+    ]
+  },
+  {
+    "title": "What is a Proxy in JavaScript?",
+    "answer": "A **Proxy** wraps a target object and intercepts fundamental operations via **trap** handlers — `get`, `set`, `has`, `deleteProperty`, `apply`, and more. The handler can validate, log, transform, or compute results before (or instead of) the default behavior.\n\nIt powers reactive frameworks (Vue 3's reactivity), validation layers, default values, and virtual/observable objects.\n\n**Interview tip:** mention that traps should usually fall back to `Reflect` (e.g., `Reflect.get(target, key)`) to preserve correct default semantics.",
+    "examples": [
+      { "label": "validation + defaults", "code": "const safe = new Proxy({}, {\n  get: (t, k) => (k in t ? t[k] : `<missing:${String(k)}>`),\n  set: (t, k, v) => {\n    if (k === 'age' && typeof v !== 'number') throw new TypeError('age must be a number');\n    t[k] = v; return true;\n  },\n});\nsafe.name = 'Ada';\nconsole.log(safe.name, safe.unknown); // 'Ada' '<missing:unknown>'\ntry { safe.age = 'x'; } catch (e) { console.log(e.message); }" }
+    ]
+  },
+  {
+    "title": "What does the 'new' keyword do?",
+    "answer": "`new Fn(args)` does four things: (1) creates a fresh empty object, (2) sets its prototype to `Fn.prototype`, (3) runs `Fn` with `this` bound to the new object, and (4) returns that object — unless the constructor explicitly returns its own (non-primitive) object.\n\n**Interview tip:** be able to implement `new` manually (a `myNew` helper) and explain why forgetting `new` in sloppy mode would leak properties onto the global object.",
+    "examples": [
+      { "label": "implement new yourself", "code": "function Point(x, y) { this.x = x; this.y = y; }\nPoint.prototype.sum = function () { return this.x + this.y; };\n\nfunction myNew(Ctor, ...args) {\n  const obj = Object.create(Ctor.prototype);\n  const ret = Ctor.apply(obj, args);\n  return (ret && typeof ret === 'object') ? ret : obj;\n}\nconst p = myNew(Point, 3, 4);\nconsole.log(p.x, p.y, p.sum());          // 3 4 7\nconsole.log(p instanceof Point);          // true" }
+    ]
+  },
+  {
+    "title": "How do you correctly check for NaN?",
+    "answer": "`NaN` is the only value not equal to itself, so `NaN === NaN` is `false` — you can't compare directly. Use **`Number.isNaN(x)`**, which checks for the actual `NaN` value without coercion.\n\nAvoid the global **`isNaN`**, which coerces its argument first, so `isNaN('foo')` is `true` even though `'foo'` isn't `NaN`.\n\n**Interview tip:** the self-inequality trick (`x !== x` is `true` only for `NaN`) is how `Number.isNaN` is conceptually implemented.",
+    "examples": [
+      { "label": "the reliable check", "code": "const x = 0 / 0; // NaN\nconsole.log(x === x);            // false (NaN self-inequality)\nconsole.log(Number.isNaN(x));   // true\nconsole.log(Number.isNaN('foo'));// false (no coercion)\nconsole.log(isNaN('foo'));      // true  (misleading global)" }
+    ]
+  },
+  {
+    "title": "What are function composition and pipe?",
+    "answer": "**Composition** builds a new function by chaining others so each output feeds the next. `compose(f, g)(x)` = `f(g(x))` (runs **right-to-left**); **`pipe`** is the same but **left-to-right**, which often reads more naturally.\n\nThey let you assemble complex transformations from small, reusable, testable functions (point-free style).\n\n**Interview tip:** implement `pipe`/`compose` with `reduce` and explain that the functions should be unary for clean chaining.",
+    "examples": [
+      { "label": "pipe with reduce", "code": "const pipe = (...fns) => x => fns.reduce((acc, fn) => fn(acc), x);\n\nconst double = n => n * 2;\nconst inc = n => n + 1;\nconst toStr = n => `#${n}`;\n\nconst transform = pipe(double, inc, toStr);\nconsole.log(transform(5)); // double->10, inc->11, '#11'" }
+    ]
+  },
+  {
+    "title": "In what order do console.log, setTimeout, and Promise.then run?",
+    "answer": "Synchronous code runs first, top to bottom. Then the event loop **drains all microtasks** (promise `.then`/`await`, `queueMicrotask`), and only afterward runs the next **macrotask** (`setTimeout`, even with delay 0).\n\nSo for `log A; setTimeout(C); Promise.then(B); log D` the order is **A, D, B, C**: both sync logs, then the microtask, then the timer.\n\n**Interview tip:** this is a favorite trap — explain *why* (microtasks before macrotasks), not just the answer.",
+    "examples": [
+      { "label": "predict the output", "code": "console.log('A');\nsetTimeout(() => console.log('C (timeout)'), 0);\nPromise.resolve().then(() => console.log('B (promise)'));\nconsole.log('D');\n// A, D, B, C" }
+    ]
+  },
+  {
+    "title": "What is the difference between includes and indexOf?",
+    "answer": "**`includes(value)`** returns a boolean for membership and correctly finds **`NaN`**. **`indexOf(value)`** returns the **index** (or `-1`) and uses strict equality, so it can't find `NaN`.\n\nUse `includes` for readable presence checks; use `indexOf`/`findIndex` when you actually need the position.\n\n**Interview tip:** the `NaN` difference is the gotcha — `[NaN].indexOf(NaN)` is `-1`, but `[NaN].includes(NaN)` is `true`.",
+    "examples": [
+      { "label": "membership + the NaN case", "code": "const arr = [1, 2, NaN];\nconsole.log(arr.includes(2));     // true\nconsole.log(arr.indexOf(2));      // 1\nconsole.log(arr.includes(NaN));   // true\nconsole.log(arr.indexOf(NaN));    // -1 (can't find NaN)" }
+    ]
+  }
+]

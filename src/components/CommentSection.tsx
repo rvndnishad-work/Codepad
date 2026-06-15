@@ -24,13 +24,24 @@ export default function CommentSection({
   signedIn,
   currentUserId,
   isAdmin,
+  postUrl,
+  deleteUrlBase = "/api/comments",
+  heading = "Responses",
+  placeholder = "What are your thoughts?",
 }: {
   postId: string;
   initialComments: CommentNode[];
   signedIn: boolean;
   currentUserId: string | null;
   isAdmin: boolean;
+  /** POST endpoint for new comments. Defaults to the blog endpoint. */
+  postUrl?: string;
+  /** Base for DELETE `${deleteUrlBase}/${commentId}`. Defaults to /api/comments. */
+  deleteUrlBase?: string;
+  heading?: string;
+  placeholder?: string;
 }) {
+  const createUrl = postUrl ?? `/api/blogs/${postId}/comments`;
   const router = useRouter();
   const pathname = usePathname();
   const [comments, setComments] = useState(initialComments);
@@ -43,7 +54,7 @@ export default function CommentSection({
     if (!draft.trim()) return;
     setSubmitting(true);
     try {
-      const res = await fetch(`/api/blogs/${postId}/comments`, {
+      const res = await fetch(createUrl, {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ content: draft.trim() }),
@@ -81,7 +92,7 @@ export default function CommentSection({
   async function handleDelete(commentId: string) {
     if (!confirm("Delete this comment?")) return;
     try {
-      const res = await fetch(`/api/comments/${commentId}`, {
+      const res = await fetch(`${deleteUrlBase}/${commentId}`, {
         method: "DELETE",
         cache: "no-store",
       });
@@ -100,7 +111,7 @@ export default function CommentSection({
       <div className="flex items-center gap-2 mb-6">
         <MessageSquare className="w-5 h-5 text-accent" />
         <h2 className="text-xl font-black tracking-tight text-fg">
-          Responses{" "}
+          {heading}{" "}
           <span className="text-muted/50 font-bold text-base tabular-nums">
             ({comments.length})
           </span>
@@ -116,7 +127,7 @@ export default function CommentSection({
           <textarea
             value={draft}
             onChange={(e) => setDraft(e.target.value)}
-            placeholder="What are your thoughts?"
+            placeholder={placeholder}
             rows={3}
             maxLength={5000}
             className="w-full bg-transparent border-none outline-none text-sm text-fg placeholder:text-muted resize-none"

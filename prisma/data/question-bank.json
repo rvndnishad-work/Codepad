@@ -1,0 +1,2730 @@
+{
+  "reactjs": [
+    {
+      "title": "What is React and its main features?",
+      "description": "This is a foundational question to gauge understanding of React's core purpose and capabilities.",
+      "answer": "React is an open-source JavaScript library for building user interfaces, particularly single-page applications where data changes over time. Its main features include a declarative paradigm, a component-based architecture for reusable UI elements, and the use of a virtual DOM for efficient UI updates. It also emphasizes a 'learn once, write anywhere' philosophy, allowing development for web and mobile (React Native).",
+      "difficulty": "easy",
+      "round": "Phone Screen",
+      "tags": [
+        "react basics",
+        "library",
+        "declarative",
+        "virtual dom"
+      ],
+      "technology": "reactjs"
+    },
+    {
+      "title": "Explain the Virtual DOM in React.",
+      "description": "Understand how React optimizes UI updates and its difference from the browser's DOM.",
+      "answer": "The Virtual DOM is a lightweight copy of the actual DOM, represented as a JavaScript object. When component state changes, React first updates this virtual DOM. It then compares the updated virtual DOM with the previous version using a diffing algorithm. Only the minimal set of changes needed to reflect the new state are then applied to the real browser DOM, which is more performant than directly manipulating the browser DOM on every change.",
+      "difficulty": "medium",
+      "round": "Frontend",
+      "tags": [
+        "virtual dom",
+        "performance",
+        "reconciliation",
+        "dom"
+      ],
+      "technology": "reactjs"
+    },
+    {
+      "title": "What are React Components?",
+      "description": "A fundamental concept, crucial for building any React application.",
+      "answer": "React components are independent, reusable pieces of UI. They allow you to split the UI into independent, reusable parts, making the application easier to build and maintain. Components can be either class components (ES6 classes extending `React.Component`) or functional components (JavaScript functions that return JSX). Functional components are now more common due to Hooks.",
+      "difficulty": "easy",
+      "round": "Phone Screen",
+      "tags": [
+        "components",
+        "reusability",
+        "ui",
+        "functional components"
+      ],
+      "technology": "reactjs"
+    },
+    {
+      "title": "Differentiate between controlled and uncontrolled components.",
+      "description": "Tests understanding of how React handles form inputs and state management.",
+      "answer": "In React, controlled components are form elements whose values are entirely managed by React state. Every state mutation has an associated handler function, making the data flow predictable. Uncontrolled components, on the other hand, manage their own state internally, typically using a `ref` to get their current value directly from the DOM when needed. Controlled components are generally preferred for better control and validation.",
+      "difficulty": "medium",
+      "round": "Frontend",
+      "tags": [
+        "forms",
+        "state management",
+        "refs",
+        "controlled components"
+      ],
+      "technology": "reactjs"
+    },
+    {
+      "title": "What are React Hooks? Name a few common ones.",
+      "description": "Assess knowledge of modern React development practices using functional components.",
+      "answer": "React Hooks are functions that let you 'hook into' React state and lifecycle features from functional components. They were introduced in React 16.8 to allow using state and other React features without writing a class. Common hooks include `useState` for adding state to functional components, `useEffect` for performing side effects, `useContext` for consuming context, and `useReducer` for more complex state logic.",
+      "difficulty": "easy",
+      "round": "Frontend",
+      "tags": [
+        "hooks",
+        "functional components",
+        "state",
+        "side effects"
+      ],
+      "technology": "reactjs"
+    },
+    {
+      "title": "Explain the purpose of `useEffect`.",
+      "description": "A deep dive into one of the most critical and often misunderstood React Hooks.",
+      "answer": "`useEffect` is a Hook that lets you perform side effects in functional components. Side effects include data fetching, subscriptions, manually changing the DOM, and setting up event listeners. It runs after every render by default, but you can control when it runs by providing a dependency array. An empty dependency array (`[]`) makes it run only once after the initial render, mimicking `componentDidMount`.",
+      "difficulty": "medium",
+      "round": "Frontend",
+      "tags": [
+        "useEffect",
+        "side effects",
+        "lifecycle",
+        "hooks"
+      ],
+      "technology": "reactjs"
+    },
+    {
+      "title": "How do you pass data between components in React?",
+      "description": "Fundamental concept of data flow in a component-based architecture.",
+      "answer": "Data is primarily passed between components using props (properties). Parent components pass data down to child components via props. For sibling or unrelated components, a common parent component can lift the state up and pass it down as props. For more global data or deeply nested components, Context API or a state management library like Redux can be used to avoid 'prop drilling'.",
+      "difficulty": "easy",
+      "round": "Phone Screen",
+      "tags": [
+        "props",
+        "data flow",
+        "component communication",
+        "context api"
+      ],
+      "technology": "reactjs"
+    },
+    {
+      "title": "What is 'prop drilling' and how can it be avoided?",
+      "description": "Identifies an anti-pattern and knowledge of solutions for state management.",
+      "answer": "Prop drilling (or 'prop threading') refers to the process of passing data from a parent component down to deeply nested child components through intermediate components that don't actually need the data themselves. It makes code harder to read, maintain, and refactor. It can be avoided by using React Context API for global state, or by employing state management libraries like Redux, Zustand, or Jotai for more complex application-wide state.",
+      "difficulty": "medium",
+      "round": "Frontend",
+      "tags": [
+        "prop drilling",
+        "context api",
+        "state management",
+        "performance"
+      ],
+      "technology": "reactjs"
+    },
+    {
+      "title": "When would you use `useMemo` or `useCallback`?",
+      "description": "Tests understanding of performance optimizations and memoization in React.",
+      "answer": "`useMemo` and `useCallback` are Hooks used for performance optimization by memoizing values and functions, respectively. `useMemo` caches the result of an expensive calculation and only re-calculates it if its dependencies change. `useCallback` memoizes a function definition and only recreates the function if its dependencies change, preventing unnecessary re-renders of child components that receive the function as a prop, especially when used with `React.memo`.",
+      "difficulty": "hard",
+      "round": "Frontend",
+      "tags": [
+        "performance",
+        "memoization",
+        "useMemo",
+        "useCallback"
+      ],
+      "technology": "reactjs"
+    },
+    {
+      "title": "Explain the concept of 'lifting state up'.",
+      "description": "A common pattern for sharing state between sibling components.",
+      "answer": "Lifting state up is a pattern where if several components need to reflect the same changing data, the shared state is moved up to their closest common ancestor. The parent component then passes that state down to its children via props. This ensures a single source of truth for that piece of state and keeps the UI consistent across components.",
+      "difficulty": "medium",
+      "round": "Frontend",
+      "tags": [
+        "state management",
+        "data flow",
+        "component communication",
+        "props"
+      ],
+      "technology": "reactjs"
+    },
+    {
+      "title": "What is JSX?",
+      "description": "Basic syntax understanding is essential for writing React applications.",
+      "answer": "JSX stands for JavaScript XML. It is a syntax extension for JavaScript that allows you to write HTML-like code directly within your JavaScript files. JSX is not required to write React applications, but it makes component creation more intuitive and readable by letting you define UI structure alongside the rendering logic. Browsers cannot understand JSX directly, so it must be transpiled into regular JavaScript using tools like Babel.",
+      "difficulty": "easy",
+      "round": "Phone Screen",
+      "tags": [
+        "jsx",
+        "syntax",
+        "transpilation",
+        "react basics"
+      ],
+      "technology": "reactjs"
+    },
+    {
+      "title": "How do you handle routing in React applications?",
+      "description": "Common requirement for multi-page (SPA) applications.",
+      "answer": "Routing in React applications, particularly single-page applications, is typically handled using a library like React Router. React Router provides components like `BrowserRouter`, `Routes`, `Route`, and `Link` to declare routes and navigate between different views without full page reloads. It maps URLs to specific components, allowing for a dynamic and interactive user experience.",
+      "difficulty": "medium",
+      "round": "Frontend",
+      "tags": [
+        "routing",
+        "react router",
+        "spa",
+        "navigation"
+      ],
+      "technology": "reactjs"
+    },
+    {
+      "title": "What are keys in React lists?",
+      "description": "Important for performance and correctness when rendering dynamic lists.",
+      "answer": "Keys are a special string attribute that you need to include when creating lists of elements in React. They help React identify which items have changed, are added, or are removed. Keys should be unique among siblings and stable (not changing between re-renders) to ensure proper component identity and optimal performance during reconciliation. Using index as a key is generally discouraged unless the list items are static and will never be reordered or filtered.",
+      "difficulty": "medium",
+      "round": "Frontend",
+      "tags": [
+        "keys",
+        "lists",
+        "reconciliation",
+        "performance"
+      ],
+      "technology": "reactjs"
+    },
+    {
+      "title": "Explain the difference between `useState` and `useReducer`.",
+      "description": "Knowing when to choose the right state management Hook.",
+      "answer": "`useState` is a basic Hook for managing simple state values in functional components. It takes an initial state and returns the current state and a setter function. `useReducer` is an alternative to `useState` for more complex state logic, especially when state transitions involve multiple sub-values or the next state depends on the previous one. It takes a reducer function and an initial state, returning the current state and a dispatch function to trigger state updates.",
+      "difficulty": "hard",
+      "round": "Frontend",
+      "tags": [
+        "useState",
+        "useReducer",
+        "hooks",
+        "state management"
+      ],
+      "technology": "reactjs"
+    },
+    {
+      "title": "How do you optimize React component rendering?",
+      "description": "Demonstrates an understanding of performance best practices.",
+      "answer": "Optimizing React rendering involves several strategies. Using `React.memo` for functional components and `PureComponent` for class components prevents re-renders if props or state haven't changed. `useMemo` and `useCallback` memoize values and functions. Virtualization/windowing libraries like `react-window` or `react-virtualized` are crucial for rendering large lists. Avoiding unnecessary state updates, using keys effectively in lists, and code splitting also contribute to better performance.",
+      "difficulty": "hard",
+      "round": "Frontend",
+      "tags": [
+        "performance",
+        "optimization",
+        "memoization",
+        "react.memo"
+      ],
+      "technology": "reactjs"
+    },
+    {
+      "title": "What is the Context API in React?",
+      "description": "Essential for managing global state without prop drilling.",
+      "answer": "The React Context API provides a way to pass data through the component tree without having to pass props down manually at every level (prop drilling). It's designed to share 'global' data, such as authenticated user, theme, or preferred language, to a tree of React components. It consists of `React.createContext`, a `Provider` component to supply the context value, and a `Consumer` component or `useContext` hook to consume the value.",
+      "difficulty": "medium",
+      "round": "Frontend",
+      "tags": [
+        "context api",
+        "state management",
+        "prop drilling",
+        "global state"
+      ],
+      "technology": "reactjs"
+    },
+    {
+      "title": "Describe the React component lifecycle.",
+      "description": "Crucial for understanding how components behave over time, especially with class components or `useEffect`.",
+      "answer": "The React component lifecycle refers to the various stages a component goes through from its creation to its destruction. Key phases include mounting (component is being created and inserted into the DOM), updating (component is being re-rendered due to changes in props or state), and unmounting (component is being removed from the DOM). Lifecycle methods (for class components) or `useEffect` hook (for functional components) allow you to run code at specific points in these phases.",
+      "difficulty": "medium",
+      "round": "Frontend",
+      "tags": [
+        "lifecycle",
+        "mounting",
+        "updating",
+        "unmounting"
+      ],
+      "technology": "reactjs"
+    },
+    {
+      "title": "How do you fetch data in React?",
+      "description": "A very common task in modern web applications.",
+      "answer": "Data fetching in React is typically done using the `useEffect` Hook in functional components or lifecycle methods like `componentDidMount` in class components. Inside `useEffect`, you'd use browser APIs like `fetch` or a third-party library like Axios to make HTTP requests. It's crucial to handle loading states, errors, and clean up subscriptions or pending requests to prevent memory leaks and ensure a good user experience.",
+      "difficulty": "medium",
+      "round": "Frontend",
+      "tags": [
+        "data fetching",
+        "useEffect",
+        "api",
+        "asynchronous"
+      ],
+      "technology": "reactjs"
+    },
+    {
+      "title": "What is server-side rendering (SSR) and when would you use it with React?",
+      "description": "Explores advanced rendering techniques and their benefits.",
+      "answer": "Server-side rendering (SSR) is a technique where the initial render of a React application happens on the server, sending fully rendered HTML to the client. The client-side JavaScript then 'hydrates' this static HTML to become a fully interactive React app. You'd use SSR to improve initial page load performance, especially on slower networks or devices, and for better SEO because search engine crawlers can easily parse the pre-rendered HTML content.",
+      "difficulty": "hard",
+      "round": "Frontend",
+      "tags": [
+        "ssr",
+        "performance",
+        "seo",
+        "next.js"
+      ],
+      "technology": "reactjs"
+    },
+    {
+      "title": "What are fragments in React?",
+      "description": "A simple yet useful feature for cleaner component structure.",
+      "answer": "React Fragments allow you to group multiple elements without adding an extra node to the DOM. Before fragments, if you wanted to return multiple elements from a component's render method or a functional component, you had to wrap them in a redundant `div` or similar container element. Fragments solve this by allowing you to return a list of children without creating unnecessary DOM elements, leading to a flatter and more efficient DOM structure. They can be written as `<React.Fragment>` or the shorthand `<>`.</>",
+      "difficulty": "easy",
+      "round": "Frontend",
+      "tags": [
+        "fragments",
+        "dom",
+        "jsx",
+        "rendering"
+      ],
+      "technology": "reactjs"
+    },
+    {
+      "title": "What is the significance of the `deps` array in `useEffect`?",
+      "description": "Elaborate on how the dependency array in the `useEffect` hook controls when the effect function re-runs, and its importance for performance and preventing infinite loops.",
+      "answer": "The `deps` array (dependency array) in `useEffect` determines when the effect function will re-run. If the array is empty `[]`, the effect runs only once after the initial render. If omitted, the effect runs after every render. When dependencies are provided, the effect re-runs only if any value in the `deps` array has changed between renders. This mechanism is crucial for optimizing performance by avoiding unnecessary re-runs and preventing infinite loops when effects interact with state or props.",
+      "difficulty": "medium",
+      "round": "Frontend",
+      "tags": [
+        "hooks",
+        "lifecycle",
+        "performance",
+        "useeffect"
+      ],
+      "technology": "reactjs"
+    },
+    {
+      "title": "How do you handle forms in React?",
+      "description": "Discuss common strategies for managing form input, state, and submissions in React applications.",
+      "answer": "Forms in React are typically handled using controlled components, where form input elements are bound to React state. The state is updated via `onChange` event handlers, making the React component the single source of truth for the input's value. Upon form submission, the `onSubmit` event handler prevents the default browser behavior and processes the data held in the component's state. Uncontrolled components can also be used, often with `useRef` for direct DOM access, but controlled components are generally preferred for most scenarios.",
+      "difficulty": "medium",
+      "round": "Frontend",
+      "tags": [
+        "forms",
+        "state management",
+        "events",
+        "controlled components"
+      ],
+      "technology": "reactjs"
+    },
+    {
+      "title": "Explain the concept of Higher-Order Components (HOCs) in React.",
+      "description": "Define HOCs, explain their purpose, and provide an example of when you might use one.",
+      "answer": "A Higher-Order Component (HOC) is an advanced technique in React for reusing component logic. HOCs are functions that take a component as an argument and return a new component with enhanced props or behavior, without modifying the original component. They are commonly used for concerns like authentication, data fetching, logging, or state management. For example, a `withAuth` HOC could add authentication logic to a component, rendering it only if the user is logged in. HOCs follow the decorator pattern.",
+      "difficulty": "medium",
+      "round": "Frontend",
+      "tags": [
+        "hoc",
+        "reusability",
+        "patterns",
+        "higher-order components"
+      ],
+      "technology": "reactjs"
+    },
+    {
+      "title": "What are Error Boundaries in React?",
+      "description": "Describe what Error Boundaries are, how they work, and their utility in React applications.",
+      "answer": "Error Boundaries are React components that catch JavaScript errors anywhere in their child component tree, log those errors, and display a fallback UI instead of the crashed component tree. They are a way to gracefully handle errors without breaking the entire application. An Error Boundary is a class component that implements either `static getDerivedStateFromError()` or `componentDidCatch()`. They only catch errors in the render, lifecycle methods, and constructors of their children.",
+      "difficulty": "medium",
+      "round": "Frontend",
+      "tags": [
+        "error handling",
+        "error boundaries",
+        "ux",
+        "lifecycle"
+      ],
+      "technology": "reactjs"
+    },
+    {
+      "title": "How do you manage component-level state without `useState` or `useReducer`?",
+      "description": "Discuss alternative patterns for managing state within a single component, particularly in class components.",
+      "answer": "In class components, component-level state is managed directly using `this.state` and updated with `this.setState()`. `this.setState()` merges the provided object into the current state and triggers a re-render. It can also accept a function to ensure updates are based on the previous state. While `useState` and `useReducer` are the modern functional component approaches, `this.state` remains the fundamental way to manage state in class-based React components.",
+      "difficulty": "easy",
+      "round": "Frontend",
+      "tags": [
+        "state management",
+        "class components",
+        "legacy",
+        "setstate"
+      ],
+      "technology": "reactjs"
+    },
+    {
+      "title": "What is Strict Mode in React?",
+      "description": "Explain the purpose of React's Strict Mode and what benefits it provides during development.",
+      "answer": "Strict Mode is a development tool in React that helps identify potential problems in an application. It does not render any visible UI. Instead, it activates additional checks and warnings for its descendants. For example, it helps detect deprecated lifecycle methods, side effects, and unexpected side effects. By running effects twice in development, it helps ensure that effects are properly cleaned up. Strict Mode is incredibly useful for writing robust and future-proof React code.",
+      "difficulty": "easy",
+      "round": "Frontend",
+      "tags": [
+        "development",
+        "debugging",
+        "strict mode",
+        "tools"
+      ],
+      "technology": "reactjs"
+    },
+    {
+      "title": "When would you choose a class component over a functional component with hooks?",
+      "description": "Although functional components with hooks are preferred, identify scenarios where a class component might still be necessary or advantageous.",
+      "answer": "While functional components with hooks are the modern standard, class components might still be chosen for specific reasons. The primary reason is often legacy codebases where converting existing class components to functional components isn't feasible or necessary. Additionally, for error boundaries, which require `componentDidCatch` or `getDerivedStateFromError`, class components are still mandatory, as these specific lifecycle methods are not available as hooks. Otherwise, hooks cover most functionalities previously exclusive to class components.",
+      "difficulty": "medium",
+      "round": "Frontend",
+      "tags": [
+        "class components",
+        "functional components",
+        "hooks",
+        "legacy"
+      ],
+      "technology": "reactjs"
+    },
+    {
+      "title": "Describe the `useRef` hook and its typical use cases.",
+      "description": "Explain what `useRef` does and provide examples of common situations where it is applied.",
+      "answer": "`useRef` returns a mutable ref object whose `.current` property is initialized to the passed argument. The returned object will persist for the full lifetime of the component. It is primarily used for direct interaction with the DOM (e.g., focusing an input), storing mutable values that don't trigger a re-render when changed, and accessing instance variables that are needed across renders without causing re-renders. Unlike state, updating a ref does not re-render the component.",
+      "difficulty": "medium",
+      "round": "Frontend",
+      "tags": [
+        "hooks",
+        "useref",
+        "dom manipulation",
+        "performance"
+      ],
+      "technology": "reactjs"
+    },
+    {
+      "title": "How do you handle side effects in functional components?",
+      "description": "Discuss the primary hook used for managing side effects and its capabilities.",
+      "answer": "Side effects in functional components are primarily handled using the `useEffect` hook. `useEffect` allows you to perform side effects such as data fetching, subscriptions, or manually changing the DOM, after every render of the component. It takes a function that contains the side effect logic and an optional dependency array. The hook also provides a cleanup mechanism by returning a function from the effect, which runs before the component unmounts or before the effect re-runs due to changed dependencies.",
+      "difficulty": "easy",
+      "round": "Frontend",
+      "tags": [
+        "hooks",
+        "useeffect",
+        "side effects",
+        "data fetching"
+      ],
+      "technology": "reactjs"
+    },
+    {
+      "title": "What is the purpose of `React.memo`?",
+      "description": "Explain how `React.memo` helps optimize functional components by preventing unnecessary re-renders.",
+      "answer": "`React.memo` is a Higher-Order Component that optimizes functional components by memoizing their rendering. It prevents a component from re-rendering if its props have not changed. It performs a shallow comparison of props by default. If the previous props are shallowly equal to the new props, React skips rendering the component and reuses the last rendered result. This can significantly improve performance for pure functional components that render frequently with the same props.",
+      "difficulty": "medium",
+      "round": "Frontend",
+      "tags": [
+        "performance",
+        "optimization",
+        "react.memo",
+        "hoc"
+      ],
+      "technology": "reactjs"
+    },
+    {
+      "title": "Explain how to debug React applications.",
+      "description": "Outline common tools and techniques used for debugging issues in React components and applications.",
+      "answer": "Debugging React applications typically involves several tools and techniques. The primary tool is the React Developer Tools browser extension, which allows inspection of component trees, props, state, and hooks. Standard browser developer tools (console, network, debugger) are also essential. `console.log` is a quick way to inspect values. React's Strict Mode helps identify potential problems during development. Error Boundaries catch and display errors gracefully, and source maps aid in debugging transpiled code.",
+      "difficulty": "easy",
+      "round": "Frontend",
+      "tags": [
+        "debugging",
+        "developer tools",
+        "troubleshooting",
+        "tools"
+      ],
+      "technology": "reactjs"
+    },
+    {
+      "title": "What is `create-react-app` and when would you use it?",
+      "description": "Describe `create-react-app`'s function and its utility for starting new React projects.",
+      "answer": "`create-react-app` is an officially supported global command-line utility for quickly setting up a new single-page React application. It provides a modern build setup with no configuration required, including features like Webpack, Babel, ESLint, and testing utilities out-of-the-box. It's ideal for beginners and for quickly bootstrapping new projects without spending time on complex build configurations. For more custom or advanced setups, alternatives like Next.js or Vite might be preferred.",
+      "difficulty": "easy",
+      "round": "Frontend",
+      "tags": [
+        "tooling",
+        "setup",
+        "create-react-app",
+        "starter kit"
+      ],
+      "technology": "reactjs"
+    },
+    {
+      "title": "How do you test React components?",
+      "description": "Discuss common testing methodologies and tools used for unit and integration testing of React components.",
+      "answer": "React components are typically tested using a combination of unit and integration tests. Jest is a popular test runner, often paired with React Testing Library (RTL) for simulating user interactions and asserting on the rendered DOM. RTL encourages testing components as users would interact with them, focusing on accessibility and output rather than internal implementation details. Snapshot testing with Jest can also be used to track UI changes. End-to-end testing with tools like Cypress or Playwright covers full user flows.",
+      "difficulty": "medium",
+      "round": "Frontend",
+      "tags": [
+        "testing",
+        "jest",
+        "react testing library",
+        "tdd"
+      ],
+      "technology": "reactjs"
+    },
+    {
+      "title": "What is the purpose of `key` prop when rendering lists in React?",
+      "description": "Explain why the `key` prop is important for list rendering and the issues it solves.",
+      "answer": "The `key` prop is crucial when rendering lists of elements in React. It helps React identify which items have changed, are added, or are removed. Keys should be unique among siblings and stable across re-renders. Without proper keys, React's reconciliation algorithm can become inefficient, leading to performance issues and potential bugs, especially when list items are reordered, filtered, or added/removed. The `key` should ideally be a stable ID from the data itself, not an array index.",
+      "difficulty": "easy",
+      "round": "Frontend",
+      "tags": [
+        "lists",
+        "keys",
+        "performance",
+        "reconciliation"
+      ],
+      "technology": "reactjs"
+    },
+    {
+      "title": "What is `PropTypes` and when would you use it?",
+      "description": "Describe the role of `PropTypes` in React for type-checking component props.",
+      "answer": "`PropTypes` is a library used for type-checking props passed to React components. It allows you to define the expected data types and whether props are required for a component. While not enforcing types at compile-time like TypeScript, `PropTypes` provides helpful warnings in the browser's console during development if props don't match the specified types. It aids in debugging and ensuring components are used correctly, improving component reusability and maintainability. It's primarily used in JavaScript projects.",
+      "difficulty": "easy",
+      "round": "Frontend",
+      "tags": [
+        "prop-types",
+        "type checking",
+        "validation",
+        "development"
+      ],
+      "technology": "reactjs"
+    },
+    {
+      "title": "How do you interact with external APIs in React?",
+      "description": "Discuss common patterns and tools for fetching data from and sending data to backend services in React applications.",
+      "answer": "Interacting with external APIs in React is typically done within the `useEffect` hook to manage the side effect of data fetching. The `fetch` API is the built-in browser standard for making network requests. Libraries like Axios are also popular, offering more features like automatic JSON parsing, request/response interceptors, and better error handling. Data is usually fetched on component mount, stored in component state using `useState`, and then displayed. Cleanup functions in `useEffect` can be used to abort requests if the component unmounts.",
+      "difficulty": "medium",
+      "round": "Frontend",
+      "tags": [
+        "api",
+        "data fetching",
+        "useeffect",
+        "axios"
+      ],
+      "technology": "reactjs"
+    },
+    {
+      "title": "Explain the concept of 'uncontrolled components'.",
+      "description": "Define uncontrolled components and when they might be a suitable choice compared to controlled components.",
+      "answer": "Uncontrolled components are form components where the form data is handled by the DOM itself, rather than by React state. To get their values, you typically use a ref to access the DOM element directly, similar to traditional HTML forms. They are simpler to implement for very basic forms or when integrating with non-React code. However, they offer less control and flexibility for validation and instant feedback compared to controlled components, where React state is the single source of truth.",
+      "difficulty": "medium",
+      "round": "Frontend",
+      "tags": [
+        "forms",
+        "uncontrolled components",
+        "dom",
+        "useref"
+      ],
+      "technology": "reactjs"
+    },
+    {
+      "title": "What are Portals in React and when would you use them?",
+      "description": "Describe React Portals and identify scenarios where they are particularly useful.",
+      "answer": "React Portals provide a way to render children into a DOM node that exists outside the DOM hierarchy of the parent component. This means you can render a component into a different part of the DOM tree, even if it's logically part of a parent component. Portals are particularly useful for scenarios like modals, tooltips, dialogs, or dropdowns, where the child component needs to break out of its parent's `overflow: hidden` or `z-index` styling contexts to ensure proper visual display.",
+      "difficulty": "hard",
+      "round": "Frontend",
+      "tags": [
+        "portals",
+        "dom",
+        "ui",
+        "advanced"
+      ],
+      "technology": "reactjs"
+    },
+    {
+      "title": "Describe the benefits of using TypeScript with React.",
+      "description": "Discuss how integrating TypeScript enhances React development, maintainability, and error prevention.",
+      "answer": "Using TypeScript with React brings significant benefits, primarily type safety. It allows defining types for props, state, and event handlers, catching type-related errors during development rather than at runtime. This leads to fewer bugs, improved code quality, and better maintainability, especially in large codebases or teams. TypeScript also offers enhanced developer experience through better autocompletion, refactoring tools, and clearer API contracts, making components easier to understand and use correctly.",
+      "difficulty": "medium",
+      "round": "Frontend",
+      "tags": [
+        "typescript",
+        "type safety",
+        "development",
+        "tooling"
+      ],
+      "technology": "reactjs"
+    },
+    {
+      "title": "What is the difference between client-side rendering (CSR) and server-side rendering (SSR) in React?",
+      "description": "Compare and contrast CSR and SSR, highlighting their respective advantages and disadvantages for React applications.",
+      "answer": "Client-Side Rendering (CSR) means the browser downloads a minimal HTML file and JavaScript bundle, then React renders the entire UI on the client. Advantages include rich interactivity and easier development. Disadvantages are slower initial load times and poor SEO. Server-Side Rendering (SSR), used with frameworks like Next.js, renders the React components to HTML on the server, sending a fully formed page to the browser. This offers faster initial page loads and better SEO, but can increase server load and complexity. Hydration on the client then makes the SSR-rendered page interactive.",
+      "difficulty": "hard",
+      "round": "System Design",
+      "tags": [
+        "ssr",
+        "csr",
+        "performance",
+        "seo"
+      ],
+      "technology": "reactjs"
+    },
+    {
+      "title": "What is the difference between state and props?",
+      "description": "This question assesses a candidate's fundamental understanding of how data flows and changes within React components.",
+      "answer": "Props (short for properties) are used to pass data from a parent component to a child component. They are immutable within the child component. State, on the other hand, is data that is managed within a component and can change over time. When state changes, the component re-renders. Props enable one-way data flow, while state allows components to be dynamic and interactive.",
+      "difficulty": "easy",
+      "round": "Frontend",
+      "tags": [
+        "state",
+        "props",
+        "components",
+        "data flow"
+      ],
+      "technology": "reactjs"
+    },
+    {
+      "title": "Explain the concept of immutability in React state management.",
+      "description": "This question checks if a candidate understands best practices for modifying state and preventing common bugs.",
+      "answer": "Immutability in React means that you should never directly modify state objects or arrays. Instead, always create new copies of the state and then update those copies. This ensures predictable state changes, helps React detect when re-renders are necessary (via shallow comparison), and prevents tricky side effects. For example, to update an array, you'd use `map` or `filter` to create a new array, rather than `push` or `splice` on the original.",
+      "difficulty": "medium",
+      "round": "Frontend",
+      "tags": [
+        "state",
+        "immutability",
+        "best practices",
+        "performance"
+      ],
+      "technology": "reactjs"
+    },
+    {
+      "title": "How do you optimize performance in a React application?",
+      "description": "This question delves into practical strategies for improving the speed and responsiveness of React apps.",
+      "answer": "Performance in React can be optimized through several techniques. Key strategies include using `React.memo` for functional components and `PureComponent` for class components to prevent unnecessary re-renders when props haven't changed. Employing `useMemo` and `useCallback` hooks helps to memoize expensive computations and functions. Virtualization or windowing libraries can optimize rendering large lists, and lazy loading components with `React.lazy` and `Suspense` can reduce initial bundle size.",
+      "difficulty": "medium",
+      "round": "Frontend",
+      "tags": [
+        "performance",
+        "optimization",
+        "memoization",
+        "rendering"
+      ],
+      "technology": "reactjs"
+    },
+    {
+      "title": "What is the role of a bundler like Webpack in a React project?",
+      "description": "This question assesses understanding of the build process and tools essential for modern React development.",
+      "answer": "A bundler like Webpack is crucial in a React project for compiling and packaging all assets (JavaScript, CSS, images, etc.) into a production-ready build. It processes modules, resolves dependencies, transpiles modern JavaScript (ES6+) into browser-compatible code using Babel, and often optimizes assets through minification and tree-shaking. This results in optimized, smaller bundles that load faster in the browser, making the development and deployment process efficient.",
+      "difficulty": "easy",
+      "round": "Frontend",
+      "tags": [
+        "webpack",
+        "bundler",
+        "build process",
+        "javascript"
+      ],
+      "technology": "reactjs"
+    },
+    {
+      "title": "Explain the concept of reconciliation in React.",
+      "description": "This question checks the candidate's understanding of React's core algorithm for updating the UI efficiently.",
+      "answer": "Reconciliation is the process by which React updates the actual DOM to match the desired UI state described by your components. When a component's state or props change, React builds a new tree of React elements (the Virtual DOM) and then compares it to the previous one. This comparison, called 'diffing', identifies the minimal set of changes needed. React then applies these changes to the real DOM, optimizing performance by minimizing direct DOM manipulations.",
+      "difficulty": "medium",
+      "round": "Frontend",
+      "tags": [
+        "virtual dom",
+        "reconciliation",
+        "diffing",
+        "rendering"
+      ],
+      "technology": "reactjs"
+    },
+    {
+      "title": "How do you handle asynchronous operations in React functional components?",
+      "description": "This question evaluates knowledge of managing side effects and data fetching in modern React.",
+      "answer": "Asynchronous operations in functional components are primarily handled using the `useEffect` hook. You can place your async logic (like `fetch` requests, `axios` calls, or `setTimeout`) inside `useEffect`. Remember to handle cleanup to prevent memory leaks, especially with subscriptions or timers. For more complex async flows, custom hooks or libraries like `React Query` or `SWR` can be used to manage fetching, caching, and synchronization of server state.",
+      "difficulty": "medium",
+      "round": "Frontend",
+      "tags": [
+        "async",
+        "useEffect",
+        "data fetching",
+        "hooks"
+      ],
+      "technology": "reactjs"
+    },
+    {
+      "title": "What are the advantages of using React over plain JavaScript?",
+      "description": "This question aims to understand why a candidate chooses React and recognizes its benefits.",
+      "answer": "React offers several advantages over plain JavaScript for building user interfaces. It provides a declarative way to describe UI, making code more predictable and easier to debug. Its component-based architecture promotes reususability and modularity. The Virtual DOM and reconciliation process significantly optimize performance by minimizing direct DOM manipulations. React also benefits from a large, active community and a rich ecosystem of tools and libraries, accelerating development.",
+      "difficulty": "easy",
+      "round": "Frontend",
+      "tags": [
+        "benefits",
+        "declarative",
+        "components",
+        "virtual dom"
+      ],
+      "technology": "reactjs"
+    },
+    {
+      "title": "Explain the concept of 'composition' in React components.",
+      "description": "This question assesses understanding of a fundamental design pattern for building flexible React applications.",
+      "answer": "Composition in React refers to building complex components by combining simpler, smaller components. Instead of relying heavily on inheritance, React promotes composition, where components receive other components as props or render them directly within their JSX. This allows for greater flexibility, reusability, and maintainability, enabling developers to create powerful and adaptable UIs by composing existing building blocks rather than creating monolithic components.",
+      "difficulty": "medium",
+      "round": "Frontend",
+      "tags": [
+        "composition",
+        "components",
+        "design patterns",
+        "reusability"
+      ],
+      "technology": "reactjs"
+    },
+    {
+      "title": "What are custom hooks and why would you create one?",
+      "description": "This question checks knowledge of advanced hook usage for sharing stateful logic.",
+      "answer": "Custom hooks are JavaScript functions whose names start with `use` and can call other hooks. Their primary purpose is to extract and reuse stateful logic or side effects across multiple functional components without duplicating code. For example, a custom hook could encapsulate logic for fetching data, managing form inputs, or handling local storage. They promote better organization, readability, and testability of complex component logic.",
+      "difficulty": "medium",
+      "round": "Frontend",
+      "tags": [
+        "hooks",
+        "custom hooks",
+        "reusability",
+        "stateful logic"
+      ],
+      "technology": "reactjs"
+    },
+    {
+      "title": "How do you prevent re-renders in functional components?",
+      "description": "This question is a practical test of optimization techniques in modern React.",
+      "answer": "To prevent unnecessary re-renders in functional components, the primary tool is `React.memo`. When a component is wrapped with `React.memo`, it will only re-render if its props have shallowly changed. For functions passed as props, `useCallback` can be used to memoize the function itself, preventing its re-creation on every render. Similarly, `useMemo` can memoize expensive computations or objects, ensuring they are only recalculated when their dependencies change.",
+      "difficulty": "medium",
+      "round": "Frontend",
+      "tags": [
+        "performance",
+        "memoization",
+        "React.memo",
+        "useCallback"
+      ],
+      "technology": "reactjs"
+    },
+    {
+      "title": "Describe the concept of unidirectional data flow in React.",
+      "description": "This question evaluates understanding of React's fundamental data management principle.",
+      "answer": "Unidirectional data flow, also known as one-way data binding, is a core principle in React where data primarily flows down from parent components to child components via props. State changes in a child component typically trigger an event that bubbles up to the parent, which then updates its state, causing data to flow down again. This predictable, one-way flow makes it easier to understand how data changes, simplifies debugging, and improves the overall stability of the application.",
+      "difficulty": "easy",
+      "round": "Frontend",
+      "tags": [
+        "data flow",
+        "props",
+        "state",
+        "architecture"
+      ],
+      "technology": "reactjs"
+    },
+    {
+      "title": "What are React Developer Tools?",
+      "description": "This question assesses familiarity with essential debugging and inspection tools for React applications.",
+      "answer": "React Developer Tools are a browser extension (available for Chrome, Firefox, etc.) that allows developers to inspect and debug React component hierarchies. They provide insight into a component's props, state, hooks, and context. You can modify state and props on the fly to test different scenarios, profile component render times, and visualize the component tree, making it an invaluable tool for understanding and troubleshooting React applications.",
+      "difficulty": "easy",
+      "round": "Frontend",
+      "tags": [
+        "debugging",
+        "developer tools",
+        "inspection",
+        "browser extension"
+      ],
+      "technology": "reactjs"
+    },
+    {
+      "title": "When would you use `useLayoutEffect` instead of `useEffect`?",
+      "description": "This question probes a deeper understanding of React's rendering lifecycle and specific hook behaviors.",
+      "answer": "`useLayoutEffect` is similar to `useEffect` but fires synchronously after all DOM mutations are performed, but before the browser has a chance to paint. You would use `useLayoutEffect` when you need to perform DOM measurements or make synchronous DOM updates that might affect the layout, such as reading scroll position or modifying styles, to prevent visual inconsistencies or 'flickering.' For most side effects that don't directly interact with the DOM's layout, `useEffect` is preferred.",
+      "difficulty": "hard",
+      "round": "Frontend",
+      "tags": [
+        "hooks",
+        "useLayoutEffect",
+        "useEffect",
+        "dom"
+      ],
+      "technology": "reactjs"
+    },
+    {
+      "title": "How do you handle global state management in a large React application?",
+      "description": "This question explores strategies for managing state across many components beyond simple prop drilling or context.",
+      "answer": "For large React applications, global state management often goes beyond the Context API due to potential re-rendering issues or complexity. Popular solutions include Redux (with `react-redux` and Redux Toolkit), MobX, or Zustand. These libraries provide centralized stores for application state, along with predictable patterns for updating it. They offer powerful tools for organizing, debugging, and scaling state management across complex applications, often integrating with middleware for asynchronous actions.",
+      "difficulty": "medium",
+      "round": "Frontend",
+      "tags": [
+        "state management",
+        "redux",
+        "global state",
+        "architecture"
+      ],
+      "technology": "reactjs"
+    },
+    {
+      "title": "What is the role of `react-dom`?",
+      "description": "This question clarifies the distinction between React's core logic and its platform-specific rendering.",
+      "answer": "`react-dom` is a package that provides DOM-specific methods to React. It acts as the bridge between React's component logic and the actual browser DOM. Its primary role is to render React elements into the browser's DOM, handle DOM updates efficiently (via reconciliation), and provide methods like `ReactDOM.render()` (for older React) or `ReactDOM.createRoot().render()` (for React 18+). It separates React's core rendering logic from the environment it's rendering into, allowing React Native to use `react-native` for mobile platforms.",
+      "difficulty": "easy",
+      "round": "Frontend",
+      "tags": [
+        "react-dom",
+        "dom",
+        "rendering",
+        "architecture"
+      ],
+      "technology": "reactjs"
+    },
+    {
+      "title": "Explain how event handling works in React.",
+      "description": "This question assesses understanding of how user interactions are managed and processed in React.",
+      "answer": "React's event handling system is a wrapper around the browser's native event system. Events are named using camelCase (e.g., `onClick` instead of `onclick`). React uses a synthetic event system, which normalizes events across different browsers, ensuring consistent behavior. Events are delegated to the document root, meaning React attaches a single event listener at the root and then dispatches events to the correct component based on the event target. This improves performance and simplifies cross-browser compatibility.",
+      "difficulty": "medium",
+      "round": "Frontend",
+      "tags": [
+        "events",
+        "event handling",
+        "synthetic events",
+        "dom"
+      ],
+      "technology": "reactjs"
+    },
+    {
+      "title": "How would you structure a large React application?",
+      "description": "This question evaluates the candidate's architectural thinking for maintainable and scalable React projects.",
+      "answer": "Structuring a large React application often involves organizing files by feature or domain, rather than by type. A common approach is to have a `src` directory with subdirectories for `components`, `pages` (or `views`), `hooks`, `utils`, `services`, and `store` (for state management). Within `components` or `pages`, further organize into domain-specific folders like `users`, `products`, each containing its related components, hooks, and styles. This modular approach enhances maintainability, scalability, and developer experience.",
+      "difficulty": "medium",
+      "round": "Low-Level Design",
+      "tags": [
+        "project structure",
+        "architecture",
+        "scalability",
+        "organization"
+      ],
+      "technology": "reactjs"
+    },
+    {
+      "title": "What is dependency array in `useEffect` and `useCallback`?",
+      "description": "This question tests the understanding of a crucial concept for correct hook behavior and performance optimization.",
+      "answer": "The dependency array (or `deps` array) in `useEffect` and `useCallback` is an optional second argument that lists all values from the component scope that the effect or memoized function relies on. React uses this array to determine if the effect or function needs to be re-run or re-created. If a value in the dependency array changes between renders, the effect will re-run, or the function will be re-created. Omitting the dependency array causes the effect/function to run/re-create on every render, while an empty array `[]` means it runs/creates only once on mount.",
+      "difficulty": "easy",
+      "round": "Frontend",
+      "tags": [
+        "hooks",
+        "useEffect",
+        "useCallback",
+        "dependencies"
+      ],
+      "technology": "reactjs"
+    },
+    {
+      "title": "What are React's design principles?",
+      "description": "This question aims to understand if the candidate grasps the core philosophy behind React.",
+      "answer": "React is designed around several key principles: declarative UI (you describe 'what' the UI should look like, not 'how' to change it), component-based architecture (building UIs from isolated, reusable pieces), learn once, write anywhere (React can render to different targets like web, mobile, VR), and unidirectional data flow (data flows predictably in one direction). These principles together aim to make UI development more efficient, predictable, and scalable.",
+      "difficulty": "medium",
+      "round": "Frontend",
+      "tags": [
+        "design principles",
+        "declarative",
+        "components",
+        "architecture"
+      ],
+      "technology": "reactjs"
+    },
+    {
+      "title": "How does React handle security concerns like XSS?",
+      "description": "This question evaluates knowledge of security best practices in React applications.",
+      "answer": "React, by default, provides good protection against Cross-Site Scripting (XSS) attacks. When rendering JSX, React automatically escapes any values embedded within curly braces `{}` before injecting them into the DOM. This means user-provided input, if rendered directly, will be treated as plain text rather than executable HTML or script. However, developers must be cautious when using `dangerouslySetInnerHTML` as it bypasses React's escaping mechanisms and requires careful sanitization of input.",
+      "difficulty": "medium",
+      "round": "Frontend",
+      "tags": [
+        "security",
+        "xss",
+        "jsx",
+        "best practices"
+      ],
+      "technology": "reactjs"
+    },
+    {
+      "title": "What is the role of a 'key' prop when rendering lists in React?",
+      "description": "Keys help React identify which items have changed, are added, or are removed. They give a stable identity to elements in a list.",
+      "answer": "Keys are crucial when rendering lists of elements in React. They provide a stable identity to each item in the list, allowing React to efficiently update, reorder, and remove items without unnecessarily re-rendering the entire list. Without unique keys, React's reconciliation algorithm may struggle to identify changes, leading to performance issues and potential bugs, especially with mutable list operations. Keys should be unique among siblings and stable over time, often derived from item IDs if available.",
+      "difficulty": "easy",
+      "round": "Frontend",
+      "tags": [
+        "lists",
+        "keys",
+        "performance",
+        "reconciliation"
+      ],
+      "technology": "reactjs"
+    },
+    {
+      "title": "Explain the concept of 'prop drilling' and how can it be avoided?",
+      "description": "Prop drilling refers to the process of passing props down multiple levels of nested components, even if intermediate components don't directly use them.",
+      "answer": "Prop drilling occurs when data is passed through several layers of components that don't need the data themselves, solely to reach a deeply nested child component. This makes code harder to maintain and refactor. To avoid it, solutions like React's Context API can be used for global or semi-global state, allowing components to subscribe directly to the data they need. State management libraries like Redux or Zustand are also common for more complex applications, centralizing state and providing explicit ways to access it.",
+      "difficulty": "medium",
+      "round": "Frontend",
+      "tags": [
+        "state management",
+        "props",
+        "context api",
+        "architecture"
+      ],
+      "technology": "reactjs"
+    },
+    {
+      "title": "What is the Context API in React and when would you use it?",
+      "description": "The Context API provides a way to pass data through the component tree without having to pass props down manually at every level.",
+      "answer": "The React Context API allows components to share state and functions without explicit prop drilling. It consists of a `Provider` component that makes a value available to all its descendant `Consumer` components (or components using `useContext`). It's ideal for 'global' data that many components across different levels of the tree need, such as themes, user authentication status, or locale settings. While useful, it's not a replacement for full-fledged state management libraries in very complex scenarios, as it can lead to re-renders for all consuming components when context changes.",
+      "difficulty": "medium",
+      "round": "Frontend",
+      "tags": [
+        "state management",
+        "context api",
+        "props",
+        "global state"
+      ],
+      "technology": "reactjs"
+    },
+    {
+      "title": "What is the difference between `useState` and `useReducer`?",
+      "description": "`useState` is for simple state management, while `useReducer` is for more complex state logic, often involving multiple sub-values or next state depending on the previous one.",
+      "answer": "`useState` is used for managing simple state values within a functional component, returning the current state and a function to update it. `useReducer` is an alternative that's better suited for complex state logic, especially when the state updates depend on the previous state or involve multiple related sub-values. It takes a reducer function and an initial state, returning the current state and a `dispatch` function. `useReducer` often leads to more predictable state transitions and is easier to test, similar to Redux.",
+      "difficulty": "medium",
+      "round": "Frontend",
+      "tags": [
+        "hooks",
+        "state management",
+        "useState",
+        "useReducer"
+      ],
+      "technology": "reactjs"
+    },
+    {
+      "title": "What is `React.memo` and when would you use it?",
+      "description": "`React.memo` is a higher-order component that memoizes a functional component, preventing re-renders if its props haven't changed.",
+      "answer": "`React.memo` is a Higher-Order Component (HOC) used for performance optimization. It memoizes a functional component, meaning React will skip rendering the component if its props are the same as the previous render. It performs a shallow comparison of props. You would use `React.memo` when a component renders frequently with the same props, and its rendering logic is computationally expensive. It helps prevent unnecessary re-renders of child components, especially when paired with `useCallback` or `useMemo` for stable prop references.",
+      "difficulty": "medium",
+      "round": "Frontend",
+      "tags": [
+        "performance",
+        "optimization",
+        "hoc",
+        "memoization"
+      ],
+      "technology": "reactjs"
+    },
+    {
+      "title": "Explain the concept of 'lifting state up' in React.",
+      "description": "'Lifting state up' is a pattern where the state is moved from a child component to its closest common ancestor component.",
+      "answer": "'Lifting state up' is a React pattern where if two or more sibling components need to share or react to the same state, that state should be moved to their closest common parent component. The parent component then manages the state and passes it down to its children via props. If children need to update the state, the parent passes down callback functions as props. This ensures a single source of truth for the shared state and facilitates easier data flow and synchronization between related components.",
+      "difficulty": "easy",
+      "round": "Frontend",
+      "tags": [
+        "state management",
+        "data flow",
+        "props",
+        "component communication"
+      ],
+      "technology": "reactjs"
+    },
+    {
+      "title": "What is the purpose of the `deps` array in `useEffect`?",
+      "description": "The `deps` (dependencies) array in `useEffect` controls when the effect function will re-run, optimizing performance.",
+      "answer": "The `deps` array in `useEffect` is crucial for controlling when the effect function re-executes. React will re-run the effect only if any value in the `deps` array has changed between renders. An empty `deps` array (`[]`) means the effect runs only once after the initial render and cleanup happens on unmount. Omitting the `deps` array means the effect runs after every render. Including all values from the component scope that the effect uses ensures the effect always sees the latest values and avoids stale closures, though it can also lead to infinite loops if not managed carefully.",
+      "difficulty": "easy",
+      "round": "Frontend",
+      "tags": [
+        "hooks",
+        "useEffect",
+        "dependencies",
+        "side effects"
+      ],
+      "technology": "reactjs"
+    },
+    {
+      "title": "What is the purpose of `React.StrictMode`?",
+      "description": "`React.StrictMode` is a tool for highlighting potential problems in an application, helping to identify unsafe lifecycles, legacy API usage, and side effects.",
+      "answer": "`React.StrictMode` is a development tool that helps identify potential issues in a React application. It doesn't render any visible UI but activates additional checks and warnings for its descendants. Its purpose is to prepare components for future React versions, detect deprecated features, and highlight unintended side effects. For example, it intentionally double-invokes methods like `render` or `useEffect` callbacks to expose side effects, ensuring components are resilient to re-renders and don't rely on single-execution assumptions. It only runs in development mode and has no impact on production builds.",
+      "difficulty": "easy",
+      "round": "Frontend",
+      "tags": [
+        "development",
+        "debugging",
+        "best practices",
+        "strictmode"
+      ],
+      "technology": "reactjs"
+    },
+    {
+      "title": "What are the core principles behind React's design?",
+      "description": "This question probes understanding of React's fundamental philosophy and its impact on application development.",
+      "answer": "React is built on principles like declarative programming, where you describe the desired UI state, and React figures out how to update the DOM. It uses a component-based architecture for reusability and maintainability. Unidirectional data flow, typically from parent to child via props, simplifies debugging. The Virtual DOM optimizes updates by minimizing direct DOM manipulations, enhancing performance.",
+      "difficulty": "medium",
+      "round": "Frontend",
+      "tags": [
+        "principles",
+        "architecture",
+        "virtual dom",
+        "declarative"
+      ],
+      "technology": "reactjs"
+    },
+    {
+      "title": "How do you prevent unnecessary re-renders in functional components?",
+      "description": "This question focuses on performance optimization techniques specific to functional components.",
+      "answer": "To prevent unnecessary re-renders in functional components, you can use `React.memo` for memoizing the component itself, which prevents re-rendering if its props haven't changed. For memoizing specific values or functions used within a component, `useMemo` and `useCallback` hooks are used respectively. Ensuring stable dependencies in `useEffect` and `useCallback` is also crucial. Additionally, optimizing state updates to avoid creating new object/array references unless truly necessary helps.",
+      "difficulty": "medium",
+      "round": "Frontend",
+      "tags": [
+        "performance",
+        "optimization",
+        "react.memo",
+        "hooks"
+      ],
+      "technology": "reactjs"
+    },
+    {
+      "title": "What are React Developer Tools and how do you use them?",
+      "description": "This question checks familiarity with essential debugging and inspection utilities.",
+      "answer": "React Developer Tools are browser extensions (for Chrome, Firefox, Edge) that allow you to inspect the React component hierarchy, view and edit component props and state, and trace component updates. They provide a powerful way to understand how components are rendering, why they are re-rendering, and to debug state-related issues by directly manipulating state and props in the browser.",
+      "difficulty": "easy",
+      "round": "Frontend",
+      "tags": [
+        "debugging",
+        "tools",
+        "developer experience",
+        "performance"
+      ],
+      "technology": "reactjs"
+    },
+    {
+      "title": "What is the significance of the `key` prop when rendering lists in React?",
+      "description": "This question assesses understanding of how React efficiently updates dynamic lists of components.",
+      "answer": "The `key` prop is a special string attribute that you need to include when creating lists of elements. Keys help React identify which items have changed, are added, or are removed. Without stable keys, React's reconciliation process can be inefficient, leading to performance issues and potential bugs when list items are reordered or filtered. Keys should be unique among siblings.",
+      "difficulty": "easy",
+      "round": "Frontend",
+      "tags": [
+        "lists",
+        "keys",
+        "performance",
+        "reconciliation"
+      ],
+      "technology": "reactjs"
+    },
+    {
+      "title": "Explain 'prop drilling' and how to mitigate it.",
+      "description": "This question probes understanding of a common anti-pattern in React and solutions for managing state.",
+      "answer": "Prop drilling refers to the process of passing data down through multiple nested components, even if intermediate components don't directly use the data. This makes code harder to maintain and refactor. To mitigate prop drilling, you can use React Context API for global or shared state, component composition to pass children directly, or state management libraries like Redux or Zustand for complex applications.",
+      "difficulty": "medium",
+      "round": "Frontend",
+      "tags": [
+        "props",
+        "state management",
+        "context api",
+        "architecture"
+      ],
+      "technology": "reactjs"
+    },
+    {
+      "title": "Differentiate between `useState` and `useReducer` hooks.",
+      "description": "Examines understanding of state management options in functional components and when to choose each.",
+      "answer": "`useState` is a basic hook for managing simple state values, suitable for independent pieces of state like a counter or a boolean toggle. `useReducer` is generally preferred for more complex state logic, especially when state transitions involve multiple sub-values or when the next state depends on the previous one in intricate ways. It provides a more predictable state management pattern, similar to Redux.",
+      "difficulty": "medium",
+      "round": "Frontend",
+      "tags": [
+        "hooks",
+        "state management",
+        "usestate",
+        "usereducer"
+      ],
+      "technology": "reactjs"
+    },
+    {
+      "title": "What is the concept of immutability in React state management?",
+      "description": "Probes understanding of a fundamental principle for predictable state updates.",
+      "answer": "Immutability in React state management means that once an object or array is created, it cannot be changed. Instead of modifying existing state directly, you create a new copy with the desired changes. React relies on shallow comparisons to detect state changes and trigger re-renders; mutating state directly bypasses this, leading to unpredictable behavior or missed updates. Immutability ensures predictable state changes and helps optimize rendering performance.",
+      "difficulty": "medium",
+      "round": "Frontend",
+      "tags": [
+        "state management",
+        "immutability",
+        "performance",
+        "best practices"
+      ],
+      "technology": "reactjs"
+    },
+    {
+      "title": "What is the Virtual DOM in React?",
+      "description": "Explain the concept of the Virtual DOM and its role in React's performance optimization.",
+      "answer": "The Virtual DOM is a lightweight, in-memory representation of the actual DOM. When state changes in a React component, React first updates this Virtual DOM. It then efficiently compares the new Virtual DOM with the previous one (a process called 'diffing') to identify only the changed parts. Finally, it updates only those specific changed parts in the real DOM, minimizing direct manipulation of the browser's expensive DOM operations and improving performance.",
+      "difficulty": "easy",
+      "round": "Frontend",
+      "tags": [
+        "virtual dom",
+        "performance",
+        "reconciliation",
+        "dom"
+      ],
+      "technology": "reactjs"
+    },
+    {
+      "title": "Explain how React handles events.",
+      "description": "Describe React's synthetic event system and how it differs from native browser events.",
+      "answer": "React implements its own 'Synthetic Event System' which wraps the browser's native events. This system provides a consistent cross-browser API for events, normalizing their behavior. Events are delegated to the document root, meaning React attaches a single event listener to the document, and events bubble up to it. This improves performance by reducing the number of event listeners attached to individual DOM nodes. When an event fires, React dispatches it through its internal event system.",
+      "difficulty": "medium",
+      "round": "Frontend",
+      "tags": [
+        "events",
+        "synthetic events",
+        "event handling",
+        "dom"
+      ],
+      "technology": "reactjs"
+    },
+    {
+      "title": "What is the difference between controlled and uncontrolled components?",
+      "description": "Differentiate between controlled and uncontrolled components in React forms and discuss their use cases.",
+      "answer": "A **controlled component** is a form element whose value is controlled by React state. Every state mutation will have an associated handler function, making the input's value always driven by React state. An **uncontrolled component**, on the other hand, lets the DOM handle its own state. You typically use a `useRef` to get its current value when needed, bypassing React's state management for that specific input. Controlled components are generally preferred for predictable behavior and easier validation, while uncontrolled components can be simpler for very basic forms or integrating with third-party libraries.",
+      "difficulty": "medium",
+      "round": "Frontend",
+      "tags": [
+        "forms",
+        "controlled components",
+        "uncontrolled components",
+        "state"
+      ],
+      "technology": "reactjs"
+    },
+    {
+      "title": "How do you manage global state in a large React application?",
+      "description": "Discuss common strategies and libraries for managing global state in more complex React applications.",
+      "answer": "For global state management in large React applications, several strategies are employed. The built-in React Context API can be used for simpler global states, avoiding prop drilling for data that's needed by many components. For more complex scenarios, dedicated state management libraries like Redux (often with Redux Toolkit for simplified usage) or Zustand are popular choices. These libraries offer predictable state containers, middleware for side effects, and tools for debugging, making state changes easier to track and manage across an entire application.",
+      "difficulty": "medium",
+      "round": "Frontend",
+      "tags": [
+        "state management",
+        "context api",
+        "redux",
+        "global state"
+      ],
+      "technology": "reactjs"
+    },
+    {
+      "title": "How do you debug React applications?",
+      "description": "Describe common tools and techniques for debugging React applications effectively.",
+      "answer": "Debugging React applications typically involves several tools and techniques. **React Developer Tools**, a browser extension, is indispensable for inspecting component hierarchies, props, state, and performance. Standard browser developer tools (console, network, debugger) are also critical. For more complex issues, using `console.log` statements strategically can help trace execution. React's `StrictMode` can highlight potential problems. For state management libraries like Redux, their respective dev tools (e.g., Redux DevTools) provide powerful debugging capabilities. Error Boundaries help catch and display errors gracefully in production.",
+      "difficulty": "easy",
+      "round": "Frontend",
+      "tags": [
+        "debugging",
+        "dev tools",
+        "error handling",
+        "strictmode"
+      ],
+      "technology": "reactjs"
+    },
+    {
+      "title": "What are Higher-Order Components (HOCs) in React?",
+      "description": "Define Higher-Order Components, explain their structure, and their use cases.",
+      "answer": "A Higher-Order Component (HOC) is an advanced technique in React for reusing component logic. HOCs are functions that take a component as an argument and return a new component with enhanced props or behavior. They are not components themselves, but rather functions that wrap components. Common use cases include code reuse, logic abstraction, cross-cutting concerns like authentication, logging, or data subscriptions. While still valid, with the advent of hooks, many patterns previously solved with HOCs can now be implemented more simply using custom hooks.",
+      "difficulty": "medium",
+      "round": "Frontend",
+      "tags": [
+        "hoc",
+        "reusability",
+        "composition",
+        "design patterns"
+      ],
+      "technology": "reactjs"
+    },
+    {
+      "title": "Explain the concept of 'unidirectional data flow' in React.",
+      "description": "Describe what unidirectional data flow means in React and its implications for application architecture.",
+      "answer": "Unidirectional data flow, also known as one-way data binding, means that data in a React application flows in a single direction. Parent components pass data down to child components via props, but children cannot directly modify the parent's state. If a child needs to update parent data, it must call a callback function passed down as a prop by the parent, which then triggers a state update in the parent. This predictable flow makes debugging easier, ensures data consistency, and simplifies reasoning about how changes in one part of the application affect others, leading to more stable and maintainable codebases.",
+      "difficulty": "easy",
+      "round": "Frontend",
+      "tags": [
+        "data flow",
+        "state management",
+        "architecture",
+        "props"
+      ],
+      "technology": "reactjs"
+    },
+    {
+      "title": "What is the difference between a controlled and an uncontrolled component?",
+      "description": "Elaborate on the two main approaches to managing form inputs in React.",
+      "answer": "A controlled component is a form input whose value is controlled by React state. The input's value is always driven by the state, and any changes are handled via an `onChange` event handler that updates the state. An uncontrolled component, on the other hand, lets the DOM handle its own state. You access its value directly from the DOM, typically using a `useRef` hook, rather than through React state.",
+      "difficulty": "medium",
+      "round": "Frontend",
+      "tags": [
+        "forms",
+        "controlled components",
+        "uncontrolled components"
+      ],
+      "technology": "reactjs"
+    },
+    {
+      "title": "How does React handle events?",
+      "description": "Explain React's synthetic event system and how it differs from native DOM events.",
+      "answer": "React implements its own synthetic event system, which wraps the browser's native events. This provides a consistent, cross-browser event system. Event handlers in React are typically attached directly to JSX elements. React uses event delegation, attaching a single event listener to the root of the application (e.g., the `document` or `root` element) and then dispatches synthetic events to the correct component, normalizing event object properties across different browsers.",
+      "difficulty": "medium",
+      "round": "Frontend",
+      "tags": [
+        "events",
+        "synthetic events",
+        "dom"
+      ],
+      "technology": "reactjs"
+    },
+    {
+      "title": "What is the purpose of the `key` prop when rendering lists in React?",
+      "description": "This covers a critical concept for efficient list rendering and avoiding bugs.",
+      "answer": "The `key` prop is a special string attribute that you need to include when creating lists of elements in React. Keys help React identify which items have changed, are added, or are removed. They enable React to efficiently re-render lists by matching components in the original and updated lists, ensuring correct component instance and state preservation across re-renders. Keys must be unique among siblings.",
+      "difficulty": "easy",
+      "round": "Frontend",
+      "tags": [
+        "lists",
+        "keys",
+        "performance",
+        "reconciliation"
+      ],
+      "technology": "reactjs"
+    },
+    {
+      "title": "What is the purpose of the `deps` array in `useEffect` and `useCallback`?",
+      "description": "This fundamental question covers a core concept for controlling hook execution and preventing stale closures.",
+      "answer": "The `deps` (dependencies) array in `useEffect` and `useCallback` is crucial for controlling when these hooks re-run or re-create their memoized values. For `useEffect`, it specifies values from the component scope that the effect depends on; the effect re-runs only if any of these values change. For `useCallback`, it dictates when the memoized callback function itself should be re-created. Omitting it leads to running on every render, while an empty array `[]` means it runs/creates only once on mount.",
+      "difficulty": "medium",
+      "round": "Frontend",
+      "tags": [
+        "hooks",
+        "usestate",
+        "usecallback",
+        "dependencies"
+      ],
+      "technology": "reactjs"
+    },
+    {
+      "title": "Explain the concept of 'prop drilling' and how to mitigate it.",
+      "description": "This question tests understanding of a common React anti-pattern and knowledge of solutions for passing data deeply.",
+      "answer": "Prop drilling refers to the process of passing data from a higher-level component down to a deeply nested child component through multiple intermediate components that don't actually need the data themselves. This can make code harder to maintain and refactor. It can be mitigated using React's Context API, which allows data to be passed directly to any component in the tree, or by using state management libraries like Redux for more complex global state.",
+      "difficulty": "medium",
+      "round": "Frontend",
+      "tags": [
+        "props",
+        "state management",
+        "context api"
+      ],
+      "technology": "reactjs"
+    },
+    {
+      "title": "What is the difference between shadow DOM and virtual DOM?",
+      "description": "Candidates often confuse these two concepts because they both involve a representation of the DOM.",
+      "answer": "The Virtual DOM is a React-specific concept where a lightweight, in-memory representation of the real DOM is kept and synced via reconciliation. In contrast, the Shadow DOM is a browser-specific technology designed for scoping variables and CSS in Web Components. While the Virtual DOM optimizes rendering performance, the Shadow DOM provides style and DOM isolation.",
+      "difficulty": "medium",
+      "round": "Frontend",
+      "tags": [
+        "dom",
+        "architecture",
+        "concepts"
+      ],
+      "technology": "reactjs"
+    },
+    {
+      "title": "What is the difference between useMemo and useCallback?",
+      "description": "Both hooks are used for memoization, but they target different types of values.",
+      "answer": "`useMemo` memoizes the *result* of a function calculation, returning a cached value. `useCallback` memoizes the *function definition* itself, preventing it from being recreated on every render. Use `useMemo` for expensive computations, and `useCallback` when passing callbacks to optimized child components to prevent unnecessary renders.\n\n```javascript\nconst value = useMemo(() => computeValue(a), [a]);\nconst handler = useCallback(() => doSomething(b), [b]);\n```",
+      "difficulty": "medium",
+      "round": "Frontend",
+      "tags": [
+        "hooks",
+        "performance",
+        "optimization"
+      ],
+      "technology": "reactjs"
+    },
+    {
+      "title": "What are React synthetic events?",
+      "description": "Explaining how React achieves cross-browser consistency for event handling.",
+      "answer": "React wraps the browser's native events in a cross-browser wrapper called `SyntheticEvent` to ensure consistent behavior across different browsers. It implements event delegation by attaching a single event listener to the root element rather than individual elements, optimizing memory usage. You can still access the native browser event using `event.nativeEvent` if required.",
+      "difficulty": "easy",
+      "round": "Phone Screen",
+      "tags": [
+        "events",
+        "architecture"
+      ],
+      "technology": "reactjs"
+    },
+    {
+      "title": "What is the purpose of the cleanup function in useEffect?",
+      "description": "Understanding how to manage resource leaks in functional components.",
+      "answer": "The cleanup function is returned inside a `useEffect` callback and runs before the component unmounts or before the effect runs again. It is crucial for preventing memory leaks by clearing subscriptions, canceling active API requests, or resetting timers. For example, returning `() => clearInterval(id)` cleans up a set interval.",
+      "difficulty": "easy",
+      "round": "Phone Screen",
+      "tags": [
+        "hooks",
+        "lifecycle"
+      ],
+      "technology": "reactjs"
+    },
+    {
+      "title": "How does React's Batching work?",
+      "description": "Explaining state updates consolidation for performance, especially in React 18.",
+      "answer": "Batching is when React groups multiple state updates into a single re-render for better performance. In React 18, 'Automatic Batching' was introduced, which automatically batches updates inside promises, timeouts, and native event handlers, whereas older versions only batched inside React event handlers. This reduces the number of paint operations the browser has to perform.",
+      "difficulty": "medium",
+      "round": "Frontend",
+      "tags": [
+        "state",
+        "performance",
+        "rendering"
+      ],
+      "technology": "reactjs"
+    },
+    {
+      "title": "What is hydration in React?",
+      "description": "A core concept when building server-side rendered (SSR) React applications.",
+      "answer": "Hydration is the process where React client-side JavaScript takes over static HTML that was pre-rendered on the server. During hydration, React attaches event listeners to the existing server-rendered HTML nodes to make the page interactive. It avoids recreating the DOM nodes from scratch, optimizing initial page load times.",
+      "difficulty": "hard",
+      "round": "System Design",
+      "tags": [
+        "ssr",
+        "hydration",
+        "performance"
+      ],
+      "technology": "reactjs"
+    },
+    {
+      "title": "Why should we not update state directly?",
+      "description": "The reasoning behind treating React state as immutable.",
+      "answer": "Updating state directly (e.g., `this.state.count = 1` or modifying an array directly) does not trigger a component re-render, leaving the UI out of sync. React relies on shallow comparisons of state to detect changes and trigger updates. Immutability ensures that React can accurately track changes and run its reconciliation algorithm correctly.",
+      "difficulty": "easy",
+      "round": "Phone Screen",
+      "tags": [
+        "state",
+        "immutability"
+      ],
+      "technology": "reactjs"
+    },
+    {
+      "title": "What are React custom hooks and when should you use them?",
+      "description": "Creating reusable logic across functional components.",
+      "answer": "A custom hook is a JavaScript function whose name starts with 'use' and can call other React hooks. They are used to extract and share component logic (like fetching data, form handling, or tracking window dimensions) without duplicating code. Unlike HOCs or render props, they offer a cleaner syntax and avoid adding unnecessary nesting to the DOM tree.",
+      "difficulty": "medium",
+      "round": "Frontend",
+      "tags": [
+        "hooks",
+        "reusability"
+      ],
+      "technology": "reactjs"
+    },
+    {
+      "title": "What is the difference between element and component in React?",
+      "description": "Distinguishing the template definition from the actual instanced visual node.",
+      "answer": "A React element is a plain JavaScript object describing what you want to see on the screen in terms of DOM nodes or other components (e.g., `const el = <div />`). A React component is a reusable function or class that optionally accepts input (props) and returns a React element tree. Components generate elements, which React then uses to build the Virtual DOM.",
+      "difficulty": "easy",
+      "round": "Phone Screen",
+      "tags": [
+        "concepts",
+        "architecture"
+      ],
+      "technology": "reactjs"
+    },
+    {
+      "title": "Explain React Suspense and its use cases.",
+      "description": "Managing loading states declaratively for async operations.",
+      "answer": "React Suspense is a built-in component that lets you declaratively specify a loading indicator (fallback UI) while waiting for some asynchronous operation to finish. Initially used strictly for code-splitting with `React.lazy`, it now supports data fetching frameworks in React 18. It pauses the rendering of child components until the required resource is resolved.",
+      "difficulty": "medium",
+      "round": "Frontend",
+      "tags": [
+        "suspense",
+        "async",
+        "performance"
+      ],
+      "technology": "reactjs"
+    },
+    {
+      "title": "What are render props and how do they work?",
+      "description": "An older but powerful pattern for sharing code between React components.",
+      "answer": "A render prop is a pattern where a component receives a function as a prop and calls it to render its UI. This dynamic enables sharing stateful logic without duplicating code by letting the consumer decide how to render the data. Although custom hooks have largely replaced this pattern, it is still common in legacy libraries.",
+      "difficulty": "medium",
+      "round": "Frontend",
+      "tags": [
+        "patterns",
+        "reusability"
+      ],
+      "technology": "reactjs"
+    },
+    {
+      "title": "How does React Fiber work?",
+      "description": "Deep dive into React's internal reconciliation engine rewrite.",
+      "answer": "React Fiber is the reconciliation engine rewrite introduced in React 16 to enable incremental rendering. Instead of a synchronous, blocking 'stack' reconciliation, Fiber splits rendering work into small chunks (fibers) that can be paused, prioritized, or aborted. This allows the main thread to remain responsive to user inputs and animations during heavy UI updates.",
+      "difficulty": "hard",
+      "round": "System Design",
+      "tags": [
+        "fiber",
+        "architecture",
+        "reconciliation"
+      ],
+      "technology": "reactjs"
+    },
+    {
+      "title": "How do you handle memory leaks in React?",
+      "description": "Identifying and resolving common memory leak vectors in single-page apps.",
+      "answer": "Memory leaks in React usually occur when event listeners, timeouts, or network subscriptions are not cleaned up when a component unmounts. To fix this, cancel API requests using `AbortController`, clear timeouts inside `useEffect` return statements, and clean up global event listeners. Failing to do so keeps references to unmounted components in memory, degrading app performance.",
+      "difficulty": "medium",
+      "round": "Frontend",
+      "tags": [
+        "performance",
+        "hooks",
+        "debugging"
+      ],
+      "technology": "reactjs"
+    }
+  ],
+  "nodejs": [
+    {
+      "title": "What is Node.js and why is it popular?",
+      "description": "This foundational question assesses a candidate's basic understanding of Node.js.",
+      "answer": "Node.js is an open-source, cross-platform JavaScript runtime environment that executes JavaScript code outside a web browser. It uses Google Chrome's V8 JavaScript engine. Its popularity stems from its non-blocking, event-driven architecture, making it highly efficient for I/O-bound operations and real-time applications. It allows full-stack JavaScript development, unifying language across frontend and backend.",
+      "difficulty": "easy",
+      "round": "Phone Screen",
+      "tags": [
+        "basics",
+        "runtime",
+        "javascript",
+        "architecture"
+      ],
+      "technology": "nodejs"
+    },
+    {
+      "title": "Explain the Node.js event loop.",
+      "description": "A core concept in Node.js, this question tests understanding of its asynchronous nature.",
+      "answer": "The Node.js event loop is a crucial part of its non-blocking I/O model. It's a continuous loop that checks the call stack for tasks, and if empty, processes callbacks from the event queue. When asynchronous operations complete (like file I/O or network requests), their callbacks are placed in the event queue to be picked up by the event loop. This allows Node.js to handle many concurrent operations without creating a thread for each, making it very efficient.",
+      "difficulty": "medium",
+      "round": "DSA",
+      "tags": [
+        "event loop",
+        "asynchronous",
+        "concurrency",
+        "architecture"
+      ],
+      "technology": "nodejs"
+    },
+    {
+      "title": "What is the difference between blocking and non-blocking I/O in Node.js?",
+      "description": "This question delves into the core I/O model of Node.js.",
+      "answer": "Blocking I/O operations halt the execution of the entire program until the operation completes, preventing other code from running. Non-blocking I/O operations, on the other hand, allow the program to continue executing other code while the I/O operation runs in the background. Node.js primarily uses a non-blocking, asynchronous I/O model, leveraging the event loop and callback functions to handle operations without pausing the main thread, leading to higher scalability and responsiveness.",
+      "difficulty": "easy",
+      "round": "DSA",
+      "tags": [
+        "i/o",
+        "blocking",
+        "non-blocking",
+        "asynchronous"
+      ],
+      "technology": "nodejs"
+    },
+    {
+      "title": "How do you handle errors in Node.js applications?",
+      "description": "Error handling is critical for robust applications; this checks practical knowledge.",
+      "answer": "Error handling in Node.js typically involves `try...catch` blocks for synchronous code and callbacks with an `err` argument, Promises with `.catch()`, or `async/await` with `try...catch` for asynchronous operations. For unhandled promise rejections or uncaught exceptions, global event listeners like `process.on('uncaughtException')` and `process.on('unhandledRejection')` are used to prevent application crashes and perform graceful shutdowns. Middleware in frameworks like Express also facilitates centralized error handling.",
+      "difficulty": "medium",
+      "round": "Low-Level Design",
+      "tags": [
+        "error handling",
+        "asynchronous",
+        "promises",
+        "best practices"
+      ],
+      "technology": "nodejs"
+    },
+    {
+      "title": "Explain what 'callback hell' is and how to avoid it.",
+      "description": "A common issue in async programming, understanding its solution is key.",
+      "answer": "Callback hell, also known as the pyramid of doom, occurs when multiple asynchronous operations are nested deeply within each other using callbacks, leading to code that is difficult to read, maintain, and debug. It looks like a triangle of closing curly braces. It can be avoided by using named functions for callbacks, modularizing code, and most effectively, by adopting modern asynchronous patterns like Promises, `async/await`, or event emitters, which flatten the structure and improve readability.",
+      "difficulty": "medium",
+      "round": "DSA",
+      "tags": [
+        "callbacks",
+        "asynchronous",
+        "promises",
+        "async/await"
+      ],
+      "technology": "nodejs"
+    },
+    {
+      "title": "What are Promises in Node.js and how do they improve async code?",
+      "description": "Tests knowledge of modern async patterns.",
+      "answer": "Promises in Node.js are objects representing the eventual completion or failure of an asynchronous operation and its resulting value. A Promise can be in one of three states: pending, fulfilled, or rejected. They improve async code by providing a cleaner, more readable way to handle asynchronous operations compared to nested callbacks. Promises allow chaining operations with `.then()` and handling errors centrally with `.catch()`, avoiding callback hell and making complex async flows more manageable.",
+      "difficulty": "medium",
+      "round": "DSA",
+      "tags": [
+        "promises",
+        "asynchronous",
+        "error handling",
+        "es6"
+      ],
+      "technology": "nodejs"
+    },
+    {
+      "title": "How does `async/await` work and what are its benefits?",
+      "description": "Assesses understanding of the most recent async pattern.",
+      "answer": "`async/await` is a modern JavaScript feature built on Promises that allows writing asynchronous code in a synchronous-looking style. An `async` function implicitly returns a Promise, and the `await` keyword can only be used inside an `async` function to pause execution until a Promise settles (resolves or rejects). Its benefits include significantly improved readability and maintainability of asynchronous code, easier error handling with `try...catch` blocks, and a simpler mental model compared to raw Promises or callbacks, reducing complexity.",
+      "difficulty": "medium",
+      "round": "DSA",
+      "tags": [
+        "async/await",
+        "promises",
+        "asynchronous",
+        "readability"
+      ],
+      "technology": "nodejs"
+    },
+    {
+      "title": "Explain the purpose of `package.json` and `npm`.",
+      "description": "Fundamental to any Node.js project, this checks basic tooling knowledge.",
+      "answer": "`package.json` is a manifest file for a Node.js project. It stores metadata like the project's name, version, description, main entry point, scripts, and crucially, its dependencies. `npm` (Node Package Manager) is the default package manager for Node.js. It's used to install, manage, and share packages (libraries or modules) from the npm registry. `npm` reads `package.json` to understand project dependencies and scripts, enabling easy project setup and collaboration.",
+      "difficulty": "easy",
+      "round": "Phone Screen",
+      "tags": [
+        "npm",
+        "package.json",
+        "dependencies",
+        "tooling"
+      ],
+      "technology": "nodejs"
+    },
+    {
+      "title": "What are Node.js Streams and when would you use them?",
+      "description": "Tests knowledge of efficient data handling in Node.js.",
+      "answer": "Node.js Streams are abstract interfaces for working with streaming data. They are instances of `EventEmitter` and can be readable, writable, duplex (both readable and writable), or transform (duplex that modifies data). You'd use them for handling large amounts of data efficiently, such as reading/writing large files, processing network requests, or data transformations, without loading the entire dataset into memory. This significantly reduces memory footprint and improves performance.",
+      "difficulty": "medium",
+      "round": "Low-Level Design",
+      "tags": [
+        "streams",
+        "i/o",
+        "performance",
+        "data handling"
+      ],
+      "technology": "nodejs"
+    },
+    {
+      "title": "How do you achieve concurrency in Node.js since it's single-threaded?",
+      "description": "A common misconception about Node.js; this checks a deeper understanding.",
+      "answer": "While Node.js is single-threaded for its JavaScript execution, it achieves concurrency through its non-blocking I/O model, event loop, and underlying C++ thread pool (libuv) for expensive tasks like file I/O or DNS lookups. For CPU-bound operations, concurrency can be achieved using the `child_process` module to spawn new processes or the `worker_threads` module (introduced in Node.js v10.5.0) to run multiple JavaScript threads. These allow parallel execution without blocking the main event loop.",
+      "difficulty": "hard",
+      "round": "System Design",
+      "tags": [
+        "concurrency",
+        "single-threaded",
+        "event loop",
+        "worker threads"
+      ],
+      "technology": "nodejs"
+    },
+    {
+      "title": "What is the role of `libuv` in Node.js?",
+      "description": "Probes knowledge of Node.js's underlying architecture.",
+      "answer": "`libuv` is a multi-platform C library that provides asynchronous I/O and concurrency primitives for Node.js. It acts as an abstraction layer for the operating system's features. It's responsible for managing the event loop, thread pool (for operations like file system access, DNS, cryptography), and other low-level asynchronous operations. Essentially, `libuv` allows Node.js to perform non-blocking I/O operations and handle system events efficiently, despite JavaScript being single-threaded.",
+      "difficulty": "hard",
+      "round": "System Design",
+      "tags": [
+        "libuv",
+        "architecture",
+        "event loop",
+        "i/o"
+      ],
+      "technology": "nodejs"
+    },
+    {
+      "title": "When would you choose Node.js over other backend technologies?",
+      "description": "Tests understanding of Node.js's strengths and suitable use cases.",
+      "answer": "Node.js is a strong choice for applications requiring high scalability, real-time capabilities, and efficient handling of many concurrent connections with frequent I/O operations. Ideal use cases include single-page applications (SPAs), real-time chat applications, streaming services, APIs, and microservices. Its full-stack JavaScript ecosystem (MEAN/MERN) also allows developers to use one language across frontend and backend, streamlining development and improving team efficiency, especially when dealing with JSON data.",
+      "difficulty": "medium",
+      "round": "System Design",
+      "tags": [
+        "use cases",
+        "scalability",
+        "real-time",
+        "architecture"
+      ],
+      "technology": "nodejs"
+    },
+    {
+      "title": "What are `EventEmitter`s in Node.js?",
+      "description": "A fundamental pattern for event-driven programming.",
+      "answer": "`EventEmitter` is a core Node.js class that allows objects to emit named events that cause registered `Function` objects to be called. It forms the basis of Node.js's event-driven architecture, where many core modules (like Streams, HTTP, File System) inherit from it. You use `emitter.on('event', listener)` to register listeners and `emitter.emit('event', [arg1], [...])` to trigger events, enabling loose coupling between different parts of an application.",
+      "difficulty": "medium",
+      "round": "Low-Level Design",
+      "tags": [
+        "event emitter",
+        "events",
+        "architecture",
+        "design patterns"
+      ],
+      "technology": "nodejs"
+    },
+    {
+      "title": "Explain how modules work in Node.js.",
+      "description": "Tests understanding of Node.js's modular system.",
+      "answer": "Node.js uses a CommonJS module system (though ES Modules are also supported). Each file is treated as a separate module. To export functionality, you assign properties to `module.exports` or `exports`. To import functionality from another module, you use the `require()` function, which returns the `module.exports` object of the target module. This modularity helps organize code, prevent global namespace pollution, and promote reusability.",
+      "difficulty": "easy",
+      "round": "Phone Screen",
+      "tags": [
+        "modules",
+        "commonjs",
+        "es modules",
+        "imports"
+      ],
+      "technology": "nodejs"
+    },
+    {
+      "title": "What is `process.nextTick()` and `setImmediate()` and when to use them?",
+      "description": "Advanced event loop concepts; crucial for controlling execution order.",
+      "answer": "`process.nextTick()` schedules a callback function to be executed at the end of the current operation, before the event loop continues to the next phase. This means it always runs before any `setImmediate()` or I/O callbacks. `setImmediate()` schedules a callback to be executed in the 'check' phase of the next event loop iteration. Use `process.nextTick()` for deferring execution to prevent starvation or to break up CPU-intensive synchronous operations. Use `setImmediate()` when you want to execute code after the current I/O events, but before timers, and want it to run as soon as possible in the subsequent loop iteration.",
+      "difficulty": "hard",
+      "round": "DSA",
+      "tags": [
+        "event loop",
+        "scheduling",
+        "asynchronous",
+        "performance"
+      ],
+      "technology": "nodejs"
+    },
+    {
+      "title": "How can you debug a Node.js application?",
+      "description": "Practical skill for any developer.",
+      "answer": "Node.js applications can be debugged using several methods. The built-in debugger can be accessed by running `node inspect your_app.js` and connecting a client. More commonly, developers use integrated debuggers in IDEs like VS Code, which offers excellent out-of-the-box debugging support by setting breakpoints and inspecting variables. Alternatively, Chrome DevTools can be used by starting Node.js with the `--inspect` flag, `node --inspect your_app.js`, and then navigating to `chrome://inspect` in the browser to connect to the Node.js process.",
+      "difficulty": "medium",
+      "round": "Low-Level Design",
+      "tags": [
+        "debugging",
+        "tools",
+        "vscode",
+        "development"
+      ],
+      "technology": "nodejs"
+    },
+    {
+      "title": "Describe the Node.js architecture.",
+      "description": "A high-level view of how Node.js is structured.",
+      "answer": "Node.js architecture is built around Google Chrome's V8 JavaScript engine for executing JavaScript code, `libuv` for handling asynchronous I/O operations and the event loop, and an internal C++ binding layer. It features a single-threaded event loop that dispatches tasks to an underlying thread pool for blocking operations, allowing it to maintain non-blocking behavior. This event-driven, non-blocking model makes Node.js highly efficient for concurrent operations, contrasting with traditional multi-threaded server architectures.",
+      "difficulty": "hard",
+      "round": "System Design",
+      "tags": [
+        "architecture",
+        "v8",
+        "libuv",
+        "event loop"
+      ],
+      "technology": "nodejs"
+    },
+    {
+      "title": "What are some common security best practices in Node.js applications?",
+      "description": "Crucial for building robust and secure production applications.",
+      "answer": "Common security best practices include input validation and sanitization to prevent XSS and SQL injection, using secure authentication (e.g., JWT, OAuth) and authorization mechanisms, hashing and salting passwords, and implementing HTTPS. Regularly updating dependencies to patch vulnerabilities is essential. Other practices involve setting appropriate HTTP security headers (CSP, HSTS), protecting against CSRF, rate limiting requests, using environment variables for sensitive data, and logging security-related events.",
+      "difficulty": "medium",
+      "round": "System Design",
+      "tags": [
+        "security",
+        "best practices",
+        "authentication",
+        "vulnerabilities"
+      ],
+      "technology": "nodejs"
+    },
+    {
+      "title": "How do you manage configuration in a Node.js application for different environments?",
+      "description": "Practical application design for deployable software.",
+      "answer": "Configuration management for different environments (development, staging, production) is typically done using environment variables. Libraries like `dotenv` can load environment variables from a `.env` file during local development. For production, these variables are usually set directly in the deployment environment (e.g., Docker, Kubernetes, cloud provider settings). This keeps sensitive information out of source control and allows flexible configuration changes without code modification. Sometimes, configuration files like `config.json` or dedicated configuration modules are used, conditional on `process.env.NODE_ENV`.",
+      "difficulty": "medium",
+      "round": "Low-Level Design",
+      "tags": [
+        "configuration",
+        "environment variables",
+        "deployment",
+        "best practices"
+      ],
+      "technology": "nodejs"
+    },
+    {
+      "title": "Explain the concept of 'middleware' in Express.js.",
+      "description": "A fundamental concept for web development with Node.js and Express.",
+      "answer": "Middleware functions in Express.js are functions that have access to the request object (`req`), the response object (`res`), and the `next` middleware function in the application's request-response cycle. They can execute any code, make changes to the request and response objects, end the request-response cycle, or call the next middleware in the stack. Middleware is used for tasks like parsing request bodies, authentication, logging, error handling, and adding custom headers, providing a powerful way to organize and extend server functionality.",
+      "difficulty": "easy",
+      "round": "Frontend",
+      "tags": [
+        "express.js",
+        "middleware",
+        "web development",
+        "http"
+      ],
+      "technology": "nodejs"
+    },
+    {
+      "title": "What is `npm` and what are its core functionalities?",
+      "description": "This question assesses the candidate's basic understanding of Node.js's package manager and its primary uses.",
+      "answer": "npm stands for Node Package Manager. It is the default package manager for Node.js and is used for installing, sharing, and managing project dependencies. Its core functionalities include installing packages from the npm registry, managing project metadata in `package.json`, running scripts defined in `package.json`, and publishing your own packages to the registry. It's crucial for building and maintaining Node.js applications efficiently.",
+      "difficulty": "easy",
+      "round": "Phone Screen",
+      "tags": [
+        "npm",
+        "package manager",
+        "dependencies"
+      ],
+      "technology": "nodejs"
+    },
+    {
+      "title": "How do you handle environment variables in Node.js?",
+      "description": "This question checks how candidates manage configuration for different deployment environments.",
+      "answer": "Environment variables are a standard way to externalize configuration from your code, making applications more flexible and secure. In Node.js, they are accessed via `process.env`. For local development, a common practice is to use a `.env` file with a library like `dotenv` to load these variables into `process.env`. In production, they are usually set directly in the deployment environment (e.g., Heroku config vars, Kubernetes secrets).",
+      "difficulty": "easy",
+      "round": "Phone Screen",
+      "tags": [
+        "environment variables",
+        "configuration",
+        "security"
+      ],
+      "technology": "nodejs"
+    },
+    {
+      "title": "What are Worker Threads in Node.js and when would you use them?",
+      "description": "This question explores understanding of Node.js's approach to CPU-bound tasks and parallelism.",
+      "answer": "Worker Threads are a feature in Node.js that allows for running CPU-intensive JavaScript operations in parallel, offloading them from the main event loop. This prevents the main thread from blocking, ensuring the application remains responsive. You would use them for tasks like complex calculations, data compression, or heavy cryptographic operations that are CPU-bound rather than I/O-bound. They communicate with the main thread via message passing.",
+      "difficulty": "medium",
+      "round": "System Design",
+      "tags": [
+        "worker threads",
+        "concurrency",
+        "performance",
+        "cpu-bound"
+      ],
+      "technology": "nodejs"
+    },
+    {
+      "title": "Describe the `Buffer` class in Node.js and its use cases.",
+      "description": "This question assesses knowledge of how Node.js handles binary data, which is essential for low-level operations.",
+      "answer": "The `Buffer` class in Node.js is a global object used to handle raw binary data. It represents a fixed-size chunk of memory (outside the V8 heap) that cannot be resized. Buffers are commonly used when interacting with streams, file systems, network protocols, or any operation involving binary data directly, such as reading images, audio, or encoding/decoding data. They are crucial for efficiency when dealing with non-UTF8 encoded data.",
+      "difficulty": "medium",
+      "round": "Low-Level Design",
+      "tags": [
+        "buffer",
+        "binary data",
+        "streams",
+        "performance"
+      ],
+      "technology": "nodejs"
+    },
+    {
+      "title": "How do you secure your Node.js API endpoints?",
+      "description": "This question checks understanding of common security practices for web APIs built with Node.js.",
+      "answer": "Securing Node.js API endpoints involves several strategies. This typically includes implementing authentication (e.g., JWT, OAuth) and authorization to control access, using HTTPS to encrypt communication, validating and sanitizing all user input to prevent injection attacks (XSS, SQLi), rate limiting to prevent brute-force attacks, and setting appropriate HTTP security headers (e.g., Helmet.js). Regularly updating dependencies is also critical.",
+      "difficulty": "hard",
+      "round": "System Design",
+      "tags": [
+        "security",
+        "api",
+        "authentication",
+        "authorization"
+      ],
+      "technology": "nodejs"
+    },
+    {
+      "title": "Explain the concept of 'event-driven architecture' in Node.js.",
+      "description": "This question explores a core architectural paradigm that Node.js heavily relies on.",
+      "answer": "Node.js embraces an event-driven architecture, where an application listens for and reacts to events. Instead of traditional synchronous request-response models, operations are initiated, and when they complete (an 'event'), a predefined 'listener' function is triggered. This non-blocking nature, powered by the Event Loop, allows Node.js to handle many concurrent connections efficiently without creating a new thread for each, making it highly scalable for I/O-bound applications.",
+      "difficulty": "medium",
+      "round": "System Design",
+      "tags": [
+        "event-driven",
+        "architecture",
+        "event loop",
+        "scalability"
+      ],
+      "technology": "nodejs"
+    },
+    {
+      "title": "What is the purpose of `package-lock.json`?",
+      "description": "This question tests knowledge of dependency management specifics, crucial for reproducible builds.",
+      "answer": "`package-lock.json` is automatically generated by npm (or yarn.lock by Yarn) and records the exact version tree of `node_modules` at the time it was generated. Its primary purpose is to ensure that subsequent installations of the project by anyone will result in the exact same `node_modules` directory structure, regardless of minor version updates in package dependencies. This guarantees consistent and reproducible builds across different environments and team members.",
+      "difficulty": "easy",
+      "round": "Phone Screen",
+      "tags": [
+        "npm",
+        "dependencies",
+        "package-lock.json",
+        "versioning"
+      ],
+      "technology": "nodejs"
+    },
+    {
+      "title": "How do you manage sessions and authentication in a Node.js web application?",
+      "description": "This question assesses practical knowledge of common web development concerns with Node.js.",
+      "answer": "Session management and authentication in Node.js typically involve storing session data server-side (e.g., in a database like Redis) and sending a session ID (often via a cookie) to the client. Libraries like `express-session` simplify this. For stateless authentication, JSON Web Tokens (JWTs) are common, where a token is issued upon successful login and sent with each subsequent request, verified on the server without storing session data on the server itself. Middleware is used to protect routes.",
+      "difficulty": "medium",
+      "round": "Frontend",
+      "tags": [
+        "authentication",
+        "sessions",
+        "jwt",
+        "security"
+      ],
+      "technology": "nodejs"
+    },
+    {
+      "title": "When would you use `child_process` module in Node.js?",
+      "description": "This question delves into understanding how Node.js can interact with the operating system and execute external programs.",
+      "answer": "The `child_process` module allows Node.js to spawn new processes that can run arbitrary shell commands or external programs. You would use it when you need to execute system commands, interact with legacy applications, or run CPU-bound tasks in a separate process that Node.js itself isn't well-suited for (e.g., complex image processing, invoking a Python script). It offers methods like `exec`, `spawn`, `fork`, and `execFile` for different use cases and interaction patterns.",
+      "difficulty": "hard",
+      "round": "System Design",
+      "tags": [
+        "child_process",
+        "system calls",
+        "concurrency",
+        "performance"
+      ],
+      "technology": "nodejs"
+    },
+    {
+      "title": "What are some common ways to improve performance in a Node.js application?",
+      "description": "This question evaluates understanding of optimization techniques specific to Node.js applications.",
+      "answer": "Improving Node.js performance involves several strategies: optimizing database queries and using caching (e.g., Redis), leveraging Worker Threads for CPU-bound tasks, using efficient asynchronous patterns (async/await), implementing proper error handling, utilizing HTTP/2, using a reverse proxy (like Nginx), and load balancing across multiple Node.js instances. Profiling and monitoring the application to identify bottlenecks is also crucial. Keeping the event loop unblocked is paramount.",
+      "difficulty": "hard",
+      "round": "System Design",
+      "tags": [
+        "performance",
+        "optimization",
+        "caching",
+        "scalability"
+      ],
+      "technology": "nodejs"
+    },
+    {
+      "title": "Describe the Node.js module system. What are CommonJS and ES Modules?",
+      "description": "This question covers a foundational aspect of Node.js application structure and dependency management.",
+      "answer": "Node.js uses a module system to organize code into reusable units. Historically, it primarily used CommonJS, where modules are loaded synchronously using `require()` and expose functionality via `module.exports` or `exports`. With newer Node.js versions, ES Modules (ESM) are also supported, using `import` and `export` keywords. ESM offers features like static analysis and tree-shaking, and is the standard for modern JavaScript. Node.js can run both, but ESM requires specific file extensions (`.mjs`) or `type: 'module'` in `package.json`.",
+      "difficulty": "medium",
+      "round": "Phone Screen",
+      "tags": [
+        "modules",
+        "commonjs",
+        "es modules",
+        "dependencies"
+      ],
+      "technology": "nodejs"
+    },
+    {
+      "title": "How do you handle graceful shutdown in a Node.js application?",
+      "description": "This question assesses knowledge of how to properly terminate a Node.js application without data loss or service disruption.",
+      "answer": "Graceful shutdown ensures that a Node.js application can terminate cleanly without losing data or active requests. This typically involves listening for termination signals (like `SIGTERM` or `SIGINT`). Upon receiving such a signal, the application should stop accepting new connections, finish processing existing requests, close database connections, release other resources, and then exit. Libraries like `http-shutdown` or custom logic can facilitate this process.",
+      "difficulty": "hard",
+      "round": "System Design",
+      "tags": [
+        "deployment",
+        "reliability",
+        "error handling",
+        "best practices"
+      ],
+      "technology": "nodejs"
+    },
+    {
+      "title": "What is the purpose of `__dirname` and `__filename` in Node.js?",
+      "description": "This question checks understanding of common global variables used for path resolution in Node.js.",
+      "answer": "`__dirname` is a global variable that holds the absolute path to the directory containing the currently executing script. `__filename` is a global variable that holds the absolute path to the currently executing file, including its filename. They are useful for constructing file paths that are relative to the script's location, ensuring portability across different environments. With ES Modules, these are not directly available and often require `import.meta.url` combined with `path` and `url` modules.",
+      "difficulty": "easy",
+      "round": "Phone Screen",
+      "tags": [
+        "global variables",
+        "paths",
+        "modules",
+        "commonjs"
+      ],
+      "technology": "nodejs"
+    },
+    {
+      "title": "Explain how clustering works in Node.js.",
+      "description": "This question assesses understanding of how Node.js leverages multi-core CPUs despite its single-threaded nature.",
+      "answer": "Node.js `cluster` module allows you to create child processes (workers) that share the same server port. This enables a single Node.js application to take advantage of multi-core systems by distributing incoming requests across multiple worker processes. Each worker runs on its own event loop and can handle requests independently, effectively scaling the application horizontally on a single machine. The master process manages the workers, restarting them if they crash.",
+      "difficulty": "medium",
+      "round": "System Design",
+      "tags": [
+        "clustering",
+        "scalability",
+        "concurrency",
+        "performance"
+      ],
+      "technology": "nodejs"
+    },
+    {
+      "title": "What is the role of the V8 JavaScript engine in Node.js?",
+      "description": "This question delves into the underlying technology powering Node.js execution.",
+      "answer": "The V8 JavaScript engine, developed by Google, is the core component that executes JavaScript code in Node.js. It compiles JavaScript directly to machine code, providing high performance. V8 also handles memory management (garbage collection) and call stack management. Node.js bundles V8, along with `libuv` (for I/O operations) and other libraries, to create its runtime environment. This allows Node.js to execute server-side JavaScript efficiently.",
+      "difficulty": "easy",
+      "round": "Phone Screen",
+      "tags": [
+        "v8",
+        "javascript",
+        "runtime",
+        "engine"
+      ],
+      "technology": "nodejs"
+    },
+    {
+      "title": "How do you handle CORS (Cross-Origin Resource Sharing) in Node.js?",
+      "description": "This question checks practical knowledge of a common web security feature and its implementation.",
+      "answer": "CORS is a security mechanism that allows or restricts web applications running at one domain to make requests to a resource at another domain. In Node.js, particularly with Express.js, CORS is commonly handled by setting appropriate HTTP headers on the server. The `cors` npm package is a popular middleware that simplifies this. It allows you to configure which origins, methods, and headers are permitted, enabling controlled cross-origin requests while maintaining security.",
+      "difficulty": "easy",
+      "round": "Frontend",
+      "tags": [
+        "cors",
+        "security",
+        "express.js",
+        "web development"
+      ],
+      "technology": "nodejs"
+    },
+    {
+      "title": "What are some best practices for structuring a Node.js project?",
+      "description": "This question explores understanding of project organization and maintainability.",
+      "answer": "Good project structure promotes maintainability and scalability. Common best practices include: organizing code by feature or module, separating concerns (e.g., controllers, services, models), using an `src` directory for source code, defining clear API routes, and using environment variables for configuration. Additionally, having separate folders for tests, using a linter (ESLint) and formatter (Prettier), and clear documentation are beneficial. Avoid monolithic files and use a consistent naming convention.",
+      "difficulty": "medium",
+      "round": "System Design",
+      "tags": [
+        "best practices",
+        "project structure",
+        "architecture",
+        "maintainability"
+      ],
+      "technology": "nodejs"
+    },
+    {
+      "title": "Explain 'dependency injection' and how it can be used in Node.js.",
+      "description": "This question assesses knowledge of a fundamental software design pattern for modularity and testability.",
+      "answer": "Dependency Injection (DI) is a design pattern where components receive their dependencies from an external source rather than creating them internally. In Node.js, this means passing dependencies (like database connections, service modules, or configuration objects) as arguments to functions or constructors. This promotes loose coupling, making code more modular, testable (through mocking dependencies), and easier to maintain. While there are DI containers, it's often done manually with plain JavaScript.",
+      "difficulty": "hard",
+      "round": "Low-Level Design",
+      "tags": [
+        "design patterns",
+        "dependency injection",
+        "testing",
+        "modularity"
+      ],
+      "technology": "nodejs"
+    },
+    {
+      "title": "How would you implement caching in a Node.js application?",
+      "description": "This question probes into strategies for improving application responsiveness and reducing database load.",
+      "answer": "Caching in Node.js can be implemented at various levels. For in-memory caching, libraries like `node-cache` or simple JavaScript objects can store frequently accessed data. For distributed caching across multiple instances, external stores like Redis or Memcached are ideal. You would typically cache data that changes infrequently, or the results of expensive computations/database queries. Middleware can be used to check the cache before hitting the database, significantly improving response times and reducing server load.",
+      "difficulty": "medium",
+      "round": "System Design",
+      "tags": [
+        "caching",
+        "performance",
+        "redis",
+        "optimization"
+      ],
+      "technology": "nodejs"
+    },
+    {
+      "title": "What is the difference between readFile and createReadStream in Node.js?",
+      "description": "Explain how these two file reading approaches handle system memory and data processing differently.",
+      "answer": "`fs.readFile` reads the entire file into memory buffer asynchronously before invoking its callback, making it unsuitable for very large files. On the other hand, `fs.createReadStream` reads the file in small, manageable chunks (default 64KB) using streams, allowing you to process data sequentially as it arrives. Using streams prevents high memory consumption and avoids potential application crashes when dealing with large datasets.",
+      "difficulty": "easy",
+      "round": "Phone Screen",
+      "tags": [
+        "file-system",
+        "streams",
+        "memory"
+      ],
+      "technology": "nodejs"
+    },
+    {
+      "title": "How does the thread pool work in Node.js?",
+      "description": "Describe how Node.js executes blocking operations that cannot be handled by the single-threaded event loop.",
+      "answer": "While JavaScript execution is single-threaded, Node.js offloads heavy, blocking I/O operations (like cryptographic, compression, and file system tasks) to a thread pool managed by `libuv`. By default, this thread pool size is four, but it can be adjusted using the `UV_THREADPOOL_SIZE` environment variable. Once a worker thread completes its assigned task, it signals the main thread to run the associated callback in the event loop.",
+      "difficulty": "medium",
+      "round": "Low-Level Design",
+      "tags": [
+        "libuv",
+        "multithreading",
+        "event-loop"
+      ],
+      "technology": "nodejs"
+    },
+    {
+      "title": "Explain the difference between require() and import in Node.js.",
+      "description": "Contrast the CommonJS module system with the modern ES modules system in Node.js runtime environments.",
+      "answer": "`require()` is the synchronous, runtime loading mechanism used by the CommonJS module system, while `import` is the static, compile-time loading mechanism used by ECMAScript Modules (ESM). Because `require()` is dynamic, it can be called conditionally inside `if` statements, whereas standard `import` statements must reside at the top-level of the file. To use `import` in Node.js, you must either use the `.mjs` extension or set `\"type\": \"module\"` in `package.json`.",
+      "difficulty": "easy",
+      "round": "Phone Screen",
+      "tags": [
+        "modules",
+        "commonjs",
+        "esm"
+      ],
+      "technology": "nodejs"
+    },
+    {
+      "title": "What is the purpose of the cluster module and how does it utilize multi-core CPUs?",
+      "description": "Explain how to scale a Node.js application vertically to take full advantage of multi-core servers.",
+      "answer": "The `cluster` module allows you to spawn a network of child processes (workers) that all share the exact same server ports. The master process uses a round-robin load balancing strategy by default to distribute incoming HTTP requests among the active worker instances. This allows single-threaded Node.js applications to utilize all available CPU cores of the host machine, significantly increasing overall throughput.",
+      "difficulty": "medium",
+      "round": "System Design",
+      "tags": [
+        "clustering",
+        "scaling",
+        "multiprocess"
+      ],
+      "technology": "nodejs"
+    },
+    {
+      "title": "How do you handle uncaught exceptions and unhandled promise rejections in Node.js?",
+      "description": "Detail the global event listeners used to catch unexpected application-level errors and prevent silent failures.",
+      "answer": "You can listen to global process events using `process.on('uncaughtException', callback)` and `process.on('unhandledRejection', callback)`. When an uncaught exception occurs, the application is in an undefined state, so it is best practice to log the error and perform a graceful shutdown using `process.exit(1)`. For unhandled promise rejections, Node.js will automatically terminate the process in modern versions unless handled explicitly.",
+      "difficulty": "medium",
+      "round": "Low-Level Design",
+      "tags": [
+        "errors",
+        "process",
+        "best-practices"
+      ],
+      "technology": "nodejs"
+    },
+    {
+      "title": "What is backpressure in Node.js streams and how do you handle it?",
+      "description": "Explain the scenario where data production outpaces data consumption and how to resolve it.",
+      "answer": "Backpressure occurs when a readable stream produces data faster than the writable stream can consume it, causing data to accumulate in the memory buffer. To handle this, writable streams return `false` from `.write()` when their internal buffer limits are exceeded, signaling the readable stream to pause. Using `.pipe()` automatically manages this coordination underneath, pausing and resuming the stream flow to prevent memory exhaustion.",
+      "difficulty": "hard",
+      "round": "Low-Level Design",
+      "tags": [
+        "streams",
+        "memory",
+        "backpressure"
+      ],
+      "technology": "nodejs"
+    },
+    {
+      "title": "What are memory leaks in Node.js and how do you detect them?",
+      "description": "Explain common sources of memory leaks in long-running Node.js processes and how to troubleshoot them.",
+      "answer": "Memory leaks in Node.js happen when garbage collection cannot reclaim unused memory, often caused by global variables, active event listeners that aren't removed, or forgotten closures. You can detect them by running Node.js with the `--inspect` flag and capturing heap snapshots over time using Chrome DevTools. Analyzing these snapshots helps identify which objects are continuously growing in size without being freed.",
+      "difficulty": "hard",
+      "round": "Low-Level Design",
+      "tags": [
+        "memory",
+        "debugging",
+        "v8"
+      ],
+      "technology": "nodejs"
+    },
+    {
+      "title": "Explain how the EventEmitter class works under the hood.",
+      "description": "Describe the implementation structure and logic of the Observer pattern implemented by EventEmitter.",
+      "answer": "Under the hood, an `EventEmitter` maintains an internal dictionary object where keys are event names and values are arrays of registered callback functions. When `.on('eventName', callback)` is called, the function is pushed into the array for that event key. When `.emit('eventName', data)` is invoked, the emitter iterates synchronously through the array of callbacks and executes each one with the provided arguments.",
+      "difficulty": "medium",
+      "round": "Low-Level Design",
+      "tags": [
+        "eventemitter",
+        "patterns",
+        "events"
+      ],
+      "technology": "nodejs"
+    },
+    {
+      "title": "What is the purpose of the util.promisify function in Node.js?",
+      "description": "Explain how to convert older callback-style APIs into modern promise-based APIs.",
+      "answer": "`util.promisify` is a utility function that takes a standard Node.js callback-style function (where the callback is the last argument and expects `(err, value)`) and returns a new function that returns a Promise. This allows developers to easily modernize older legacy APIs to work seamlessly with `async/await` syntax. For example, `const fsPromises = util.promisify(fs.readFile)` allows you to await file reads directly.",
+      "difficulty": "easy",
+      "round": "Phone Screen",
+      "tags": [
+        "utilities",
+        "promises",
+        "async"
+      ],
+      "technology": "nodejs"
+    },
+    {
+      "title": "What is the role of the path module and why is it preferred over manual string concatenation?",
+      "description": "Explain how the path module resolves cross-platform file pathing inconsistencies.",
+      "answer": "The `path` module provides utilities for working with file and directory paths across different operating systems, which use different separators (e.g., `/` on Unix vs `\\` on Windows). Using `path.join()` or `path.resolve()` ensures that your application remains platform-independent by automatically choosing the correct separator. It also cleans up redundant slashes and relative path segments like `.` and `..` automatically.",
+      "difficulty": "easy",
+      "round": "Phone Screen",
+      "tags": [
+        "path",
+        "file-system",
+        "cross-platform"
+      ],
+      "technology": "nodejs"
+    },
+    {
+      "title": "Explain the differences between fork(), spawn(), and exec() in the child_process module.",
+      "description": "Contrast the three primary ways to spawn child processes in Node.js.",
+      "answer": "`spawn` launches a process asynchronously and streams its output in real-time, making it ideal for large amounts of data. `exec` spawns a shell and buffers the entire output in memory before passing it to a callback, which is best for running short CLI commands. `fork` is a specialized version of `spawn` designed specifically for running Node.js modules, establishing an IPC communication channel between the parent and child.",
+      "difficulty": "medium",
+      "round": "Low-Level Design",
+      "tags": [
+        "child-process",
+        "concurrency",
+        "performance"
+      ],
+      "technology": "nodejs"
+    },
+    {
+      "title": "How do you protect a Node.js API against Denial of Service (DoS) and brute-force attacks?",
+      "description": "Discuss architectural and middleware strategies for rate-limiting incoming API requests.",
+      "answer": "To prevent DoS and brute-force attacks, you should implement rate-limiting middleware such as `express-rate-limit` or use a distributed token-bucket strategy with Redis. Additionally, you should limit request body sizes using body-parsing middleware settings to prevent clients from sending massive payloads. On a system level, deploying a reverse proxy like NGINX or Cloudflare in front of your Node.js application provides robust rate-limiting and DDoS mitigation.",
+      "difficulty": "medium",
+      "round": "System Design",
+      "tags": [
+        "security",
+        "api",
+        "middleware"
+      ],
+      "technology": "nodejs"
+    },
+    {
+      "title": "What is the difference between dependencies, devDependencies, and peerDependencies?",
+      "description": "Distinguish between the different dependency classifications in a package.json file.",
+      "answer": "`dependencies` are required for the application to run in production (e.g., Express). `devDependencies` are only needed during local development and testing (e.g., Jest, ESLint). `peerDependencies` specify that your package requires a specific version of a host tool or library to be installed by the consuming project itself, which is common when writing plugins for libraries like React.",
+      "difficulty": "easy",
+      "round": "Phone Screen",
+      "tags": [
+        "npm",
+        "package",
+        "architecture"
+      ],
+      "technology": "nodejs"
+    },
+    {
+      "title": "How does Node.js handle crypto operations efficiently without blocking the event loop?",
+      "description": "Explain how cryptographic operations utilize lower-level resources for high performance.",
+      "answer": "Cryptographic operations like hashing or key derivation are highly CPU-intensive and would block a single-threaded event loop if executed synchronously. To prevent this, Node.js's native `crypto` module offers asynchronous alternatives (like `crypto.pbkdf2`) that offload the work to the libuv thread pool. These asynchronous functions run concurrently in C++ background threads, returning the final result via callback or promise without halting main thread execution.",
+      "difficulty": "medium",
+      "round": "Low-Level Design",
+      "tags": [
+        "crypto",
+        "security",
+        "libuv"
+      ],
+      "technology": "nodejs"
+    },
+    {
+      "title": "Explain the concept of 'Event Loop Pollution' and how to avoid it.",
+      "description": "Detail the negative impacts of blocking the event loop with synchronous computation.",
+      "answer": "Event Loop Pollution (or event loop blocking) occurs when synchronous, CPU-bound code runs on the main thread for a prolonged period, preventing other microtasks, macrotasks, and I/O callbacks from executing. This leads to high response latency and application-wide freezing. You can avoid it by breaking up heavy tasks with `setImmediate()`, offloading computations to Worker Threads, or delegation to external queue-based worker processes.",
+      "difficulty": "hard",
+      "round": "Low-Level Design",
+      "tags": [
+        "event-loop",
+        "performance",
+        "asynchronous"
+      ],
+      "technology": "nodejs"
+    },
+    {
+      "title": "How can you securely store and verify passwords in a Node.js application?",
+      "description": "Outline the standard cryptographic flow for user password management.",
+      "answer": "You should never store passwords in plain text; instead, use a strong hashing algorithm like `bcrypt` or `argon2` that includes built-in salting. Salting ensures that identical passwords result in different hashes, protecting against rainbow table attacks. When a user logs in, use the library's verification function (e.g., `bcrypt.compare`) which performs a constant-time comparison to protect against timing attacks.",
+      "difficulty": "easy",
+      "round": "Phone Screen",
+      "tags": [
+        "security",
+        "crypto",
+        "auth"
+      ],
+      "technology": "nodejs"
+    },
+    {
+      "title": "What are stream piping and the .pipe() method in Node.js?",
+      "description": "Explain the concept of chaining readable and writable streams.",
+      "answer": "Piping is a mechanism that connects the output of a Readable stream directly to the input of a Writable stream using the `.pipe()` method. This allows data to flow seamlessly from source to destination without loading the entire dataset into application memory. It also automatically handles backpressure management, pausing and resuming the readable source as the destination buffer fills and empties.",
+      "difficulty": "easy",
+      "round": "Phone Screen",
+      "tags": [
+        "streams",
+        "file-system",
+        "pipes"
+      ],
+      "technology": "nodejs"
+    },
+    {
+      "title": "What is the purpose of the AbortController in modern Node.js?",
+      "description": "Explain how to cancel ongoing asynchronous tasks such as fetch requests or event listeners.",
+      "answer": "`AbortController` is a web-standard API integrated into Node.js that allows you to cancel asynchronous operations like HTTP fetch requests, file reads, or timeouts on demand. It provides an `AbortSignal` object which you pass to the async operation. When you call `controller.abort()`, the signal triggers an abort event, causing the associated promise to reject with an `AbortError` and immediately free up system resources.",
+      "difficulty": "medium",
+      "round": "Low-Level Design",
+      "tags": [
+        "async",
+        "abortcontroller",
+        "promises"
+      ],
+      "technology": "nodejs"
+    },
+    {
+      "title": "How do you handle database connection pooling in a Node.js application?",
+      "description": "Explain how connection pooling optimizes communication with databases under heavy loads.",
+      "answer": "Instead of opening and closing a new database connection for every single incoming request—which is resource-intensive and slow—you use connection pooling. A pool maintains a cache of active, open connections that are reused by incoming queries. Libraries like `pg` (PostgreSQL) or `mongoose` (MongoDB) handle this automatically; you configure a maximum pool size, and the driver manages distributing queries across available connections.",
+      "difficulty": "medium",
+      "round": "System Design",
+      "tags": [
+        "database",
+        "performance",
+        "architecture"
+      ],
+      "technology": "nodejs"
+    },
+    {
+      "title": "Explain how memory management and Garbage Collection work in the V8 engine.",
+      "description": "Describe the generational strategy V8 uses to free up heap memory.",
+      "answer": "The V8 engine divides heap memory into two main spaces: the Young Generation (New Space) and the Old Generation (Old Space). The Young Generation is small and optimized for short-lived allocations, employing a fast 'Scavenge' algorithm to collect memory. Objects that survive multiple garbage collection cycles are promoted to the Old Generation, which is managed using slower but more comprehensive 'Mark-Sweep' and 'Mark-Compact' algorithms.",
+      "difficulty": "hard",
+      "round": "Low-Level Design",
+      "tags": [
+        "v8",
+        "memory",
+        "garbage-collection"
+      ],
+      "technology": "nodejs"
+    },
+    {
+      "title": "What is the difference between spawn() and exec() in Node.js?",
+      "description": "Candidates are frequently asked to compare these two child_process methods to evaluate their understanding of stream-based vs buffer-based processes.",
+      "answer": "The main difference is that `spawn` runs a process and streams its output in real-time, making it ideal for large volumes of data or long-running processes. Conversely, `exec` runs a command in a shell and buffers the entire stdout/stderr output before returning it in a callback, which can fail if the buffer size exceeds its limit (default 1024KB). Use `spawn` for streaming data and `exec` for running simple commands with small execution outputs.",
+      "difficulty": "medium",
+      "round": "Phone Screen",
+      "tags": [
+        "child-process",
+        "streams",
+        "v8"
+      ],
+      "technology": "nodejs"
+    },
+    {
+      "title": "How do you implement rate limiting in a Node.js Express application?",
+      "description": "Interviewers want to see how you protect APIs from abuse or brute-force attacks at the application level.",
+      "answer": "Rate limiting is typically implemented using middleware like `express-rate-limit` which tracks incoming IP requests. For distributed systems, a fast, memory-based store like Redis is used to maintain request counts across multiple application instances. When a client exceeds their limit, the middleware intercepts the request and returns a `429 Too Many Requests` HTTP status code.",
+      "difficulty": "medium",
+      "round": "System Design",
+      "tags": [
+        "security",
+        "express",
+        "middleware"
+      ],
+      "technology": "nodejs"
+    },
+    {
+      "title": "Explain the concept of REPL in Node.js",
+      "description": "A fundamental question about the Node.js interactive environment often asked in early screening rounds.",
+      "answer": "REPL stands for Read, Eval, Print, and Loop. It represents a simple, interactive computer programming environment that takes single user inputs, evaluates them, and returns the result to the user. You can start the Node.js REPL simply by typing `node` in your terminal, making it highly useful for testing quick JavaScript snippets and debugging code.",
+      "difficulty": "easy",
+      "round": "Phone Screen",
+      "tags": [
+        "fundamentals",
+        "repl",
+        "cli"
+      ],
+      "technology": "nodejs"
+    },
+    {
+      "title": "What is the purpose of the assert module in Node.js?",
+      "description": "This assesses the candidate's understanding of native testing and assertion mechanisms within Node.js.",
+      "answer": "The native `assert` module provides a set of assertion functions for verifying invariants and writing basic unit tests without external frameworks. If an assertion fails, it throws an `AssertionError` which halts execution or is caught by a test runner. For example, `assert.strictEqual(1, 1)` verifies value and type equality, ensuring code behaves as expected.",
+      "difficulty": "easy",
+      "round": "Phone Screen",
+      "tags": [
+        "testing",
+        "modules",
+        "assert"
+      ],
+      "technology": "nodejs"
+    },
+    {
+      "title": "How does the Node.js 'dns' module differ from browser-based DNS resolution?",
+      "description": "Tests deep understanding of Node's networking capabilities and how it resolves domain names.",
+      "answer": "The `dns` module in Node.js provides actual network DNS resolution capabilities, whereas browsers rely entirely on the operating system's underlying resolution. It offers two categories of functions: those that use the underlying OS facilities (like `dns.lookup`), and those that perform actual DNS queries over the network without thread-pool blocks (like `dns.resolve`). This allows Node.js servers to perform advanced DNS operations like MX or TXT record lookups dynamically.",
+      "difficulty": "hard",
+      "round": "Low-Level Design",
+      "tags": [
+        "dns",
+        "networking",
+        "modules"
+      ],
+      "technology": "nodejs"
+    },
+    {
+      "title": "What are 'Event Emitting' patterns and how does error-first callback convention relate to them?",
+      "description": "Asks the candidate to compare two fundamental asynchronous patterns in Node.js.",
+      "answer": "Event Emitting patterns decouple the producer from consumers using an event channel where multiple listeners can react to an event independently. In contrast, the error-first callback convention is a 1-to-1 asynchronous pattern where a single callback function handles the immediate result or failure of an operation, with the error object passed as the first argument. While callbacks are great for single async results, EventEmitters are better suited for handling streams of multiple events over time.",
+      "difficulty": "medium",
+      "round": "Low-Level Design",
+      "tags": [
+        "async",
+        "patterns",
+        "events"
+      ],
+      "technology": "nodejs"
+    },
+    {
+      "title": "How do you handle circular dependencies in Node.js?",
+      "description": "Tests structural coding knowledge and understanding of how CommonJS loads modules.",
+      "answer": "In CommonJS, when a circular dependency occurs, a module might receive an unfinished, partially filled copy of the exported object from the module it depends on to prevent infinite loops. To resolve this, you can restructure your code to extract the shared dependency into a third module, or defer access to the exported module's properties by requiring them inside functions instead of at the top-level of the file.",
+      "difficulty": "hard",
+      "round": "Low-Level Design",
+      "tags": [
+        "modules",
+        "commonjs",
+        "architecture"
+      ],
+      "technology": "nodejs"
+    },
+    {
+      "title": "What is the use of the 'os' module in Node.js?",
+      "description": "Tests familiarity with Node's built-in modules for interacting with the host system.",
+      "answer": "The `os` module provides operating system-related utility methods and properties. It allows developers to query system architecture, available memory, CPU cores, and network interfaces. This module is vital when optimizing applications, such as determining how many child workers to spawn based on the available CPU cores using `os.cpus().length`.",
+      "difficulty": "easy",
+      "round": "Phone Screen",
+      "tags": [
+        "os",
+        "modules",
+        "performance"
+      ],
+      "technology": "nodejs"
+    },
+    {
+      "title": "Explain how to read and write large files using streams in Node.js",
+      "description": "Asks for a practical coding/architectural explanation of stream usage for file operations.",
+      "answer": "To read and write large files efficiently without exhausting system memory, you should use `fs.createReadStream()` and `fs.createWriteStream()`. This processes the file in small, sequential chunks (typically 64KB) instead of loading the entire file into RAM. You can connect them using the `.pipe()` method, which automatically manages the flow speed (backpressure) between the reader and writer.",
+      "difficulty": "medium",
+      "round": "Low-Level Design",
+      "tags": [
+        "fs",
+        "streams",
+        "io"
+      ],
+      "technology": "nodejs"
+    },
+    {
+      "title": "What is the difference between string concatenation and path.join/path.resolve?",
+      "description": "Tests knowledge of cross-platform compatibility and absolute vs relative path resolution.",
+      "answer": "Manual string concatenation can cause errors across different operating systems because Windows uses backslashes (`\\`) while POSIX systems use forward slashes (`/`). `path.join()` joins path segments using the platform-specific separator. `path.resolve()` goes a step further by always returning an absolute path, resolving relative segments against the current working directory (`process.cwd()`).",
+      "difficulty": "easy",
+      "round": "Phone Screen",
+      "tags": [
+        "path",
+        "fs",
+        "cross-platform"
+      ],
+      "technology": "nodejs"
+    },
+    {
+      "title": "What is the purpose of the 'zlib' module in Node.js?",
+      "description": "Tests knowledge of native compression tools to reduce network payloads.",
+      "answer": "The `zlib` module provides compression and decompression functionalities using Gzip, Deflate, and Brotli algorithms. It is commonly used in HTTP servers to compress outgoing response bodies on the fly, reducing network transfer sizes and improving load times. Because it is stream-based, it can compress and decompress large files with minimal memory overhead.",
+      "difficulty": "medium",
+      "round": "Low-Level Design",
+      "tags": [
+        "zlib",
+        "compression",
+        "performance"
+      ],
+      "technology": "nodejs"
+    },
+    {
+      "title": "How does Node.js handle multi-threading behind the scenes if JavaScript is single-threaded?",
+      "description": "Clarifies the distinction between JS execution and the underlying platform architecture.",
+      "answer": "While the JavaScript execution engine (V8) runs on a single thread, Node.js offloads heavy asynchronous operations to C++ APIs and libuv. Libuv maintains a thread pool (default size of 4) to execute blocking tasks like cryptography, compression, and file system I/O in parallel. Once a background thread finishes a task, it notifies the main thread to execute its callback via the event loop queue.",
+      "difficulty": "medium",
+      "round": "System Design",
+      "tags": [
+        "libuv",
+        "multi-threading",
+        "event-loop"
+      ],
+      "technology": "nodejs"
+    },
+    {
+      "title": "What is the purpose of the HTTP Agent in Node.js?",
+      "description": "Evaluates knowledge of connection persistence and HTTP pooling on the client-side.",
+      "answer": "The `http.Agent` class manages connection persistence and reuse for HTTP clients in Node.js. By default, it pools TCP connections to speed up multiple consecutive requests to the same host by reusing existing sockets (Keep-Alive). This avoids the overhead of establishing a new TCP handshake for every outgoing request, significantly boosting client performance.",
+      "difficulty": "hard",
+      "round": "System Design",
+      "tags": [
+        "http",
+        "networking",
+        "agent"
+      ],
+      "technology": "nodejs"
+    },
+    {
+      "title": "What are the main security risks of using the 'eval()' function in Node.js?",
+      "description": "Tests security awareness regarding dynamic code execution.",
+      "answer": "Using `eval()` poses severe security risks because it executes arbitrary strings as JavaScript code with the privileges of the running process. If user input is passed into `eval()`, an attacker can perform Remote Code Execution (RCE), access environment variables, manipulate the file system, or shut down the server. To run dynamic code safely, use the built-in `vm` (Virtual Machine) module to execute scripts in a sandboxed context.",
+      "difficulty": "easy",
+      "round": "Phone Screen",
+      "tags": [
+        "security",
+        "best-practices",
+        "eval"
+      ],
+      "technology": "nodejs"
+    },
+    {
+      "title": "How do you monitor a Node.js application's memory usage in production?",
+      "description": "Tests production readiness, DevOps skills, and knowledge of monitoring tools.",
+      "answer": "You can monitor memory usage programmatically using `process.memoryUsage()`, which outputs heap total, heap used, external memory, and RSS (Resident Set Size). For production monitoring, APM tools like New Relic, Datadog, or PM2 are preferred to track these metrics over time. Additionally, taking heap snapshots using the `--inspect` flag or the `heapdump` package helps diagnose memory leaks using Chrome DevTools.",
+      "difficulty": "medium",
+      "round": "System Design",
+      "tags": [
+        "monitoring",
+        "memory",
+        "production"
+      ],
+      "technology": "nodejs"
+    },
+    {
+      "title": "Explain how the 'crypto' module secures sensitive data in Node.js",
+      "description": "An introduction to cryptographic principles and hashing within Node.",
+      "answer": "The `crypto` module provides cryptographic functionality, including wrappers for OpenSSL's hash, HMAC, cipher, decipher, sign, and verify methods. For sensitive data like passwords, you should use slow hashing algorithms like `pbkdf2` or external libraries like `bcrypt`. For data transit encryption, the module allows you to create secure symmetric (AES) and asymmetric (RSA) encryption schemes.",
+      "difficulty": "medium",
+      "round": "Low-Level Design",
+      "tags": [
+        "crypto",
+        "security",
+        "hashing"
+      ],
+      "technology": "nodejs"
+    },
+    {
+      "title": "What is the 'vm' (Virtual Machine) module and when would you use it?",
+      "description": "Tests advanced knowledge of sandboxed code execution in Node.",
+      "answer": "The `vm` module enables compiling and running JavaScript code within V8 Virtual Machine contexts. This is useful when you need to execute untrusted scripts or plugins in a separate, isolated sandbox environment to prevent them from accessing global state or the filesystem. However, it is important to note that the `vm` module is not a fully secure sandbox against malicious code, and additional isolation like processes or containers is recommended for extreme security.",
+      "difficulty": "hard",
+      "round": "Low-Level Design",
+      "tags": [
+        "vm",
+        "security",
+        "v8"
+      ],
+      "technology": "nodejs"
+    },
+    {
+      "title": "How do you implement microservices communication in Node.js?",
+      "description": "Evaluates architectural patterns for building distributed Node.js systems.",
+      "answer": "Node.js microservices typically communicate via synchronous HTTP/gRPC APIs, or asynchronously using message brokers like RabbitMQ, Apache Kafka, or Redis Pub/Sub. gRPC is preferred for high-performance, low-latency communication because it uses Protocol Buffers over HTTP/2. For decoupled systems, message-driven communication using events ensures high reliability and availability even if some services are temporarily down.",
+      "difficulty": "hard",
+      "round": "System Design",
+      "tags": [
+        "microservices",
+        "grpc",
+        "architecture"
+      ],
+      "technology": "nodejs"
+    },
+    {
+      "title": "What are 'unhandledRejections' and how do they differ from 'uncaughtExceptions'?",
+      "description": "Tests error propagation knowledge in asynchronous vs synchronous execution flow.",
+      "answer": "An `uncaughtException` occurs when an error is thrown in synchronous code but is never caught by a `try-catch` block, immediately crashing the process if not handled. An `unhandledRejection` occurs when a Promise is rejected, but no `.catch()` block or try-catch handles it. In modern Node.js, unhandled promise rejections will also terminate the process with a non-zero exit code to prevent state corruption.",
+      "difficulty": "medium",
+      "round": "Phone Screen",
+      "tags": [
+        "errors",
+        "promises",
+        "async"
+      ],
+      "technology": "nodejs"
+    },
+    {
+      "title": "How do you run Node.js processes as a background service?",
+      "description": "Tests operational knowledge on keeping Node.js apps alive permanently.",
+      "answer": "To run Node.js in the background and ensure it automatically restarts on crashes or system reboots, process managers like `PM2` are standard. Alternatively, you can configure your application as a system service using `systemd` on Linux hosts. These tools handle logging, clustering, and resource monitoring, abstracting process management away from manual terminal execution.",
+      "difficulty": "easy",
+      "round": "Phone Screen",
+      "tags": [
+        "pm2",
+        "deployment",
+        "devops"
+      ],
+      "technology": "nodejs"
+    }
+  ],
+  "javascript": [
+    {
+      "title": "Explain 'this' keyword in JavaScript.",
+      "description": "'this' is a common source of confusion. Candidates should be able to explain its context-dependent nature.",
+      "answer": "The `this` keyword in JavaScript refers to the context in which the function is executed. Its value is determined by how a function is called, not where it's declared. In a method, `this` refers to the object itself; in a simple function call, it refers to the global object (window in browsers, undefined in strict mode). Arrow functions lexically bind `this`, meaning they inherit it from their parent scope.",
+      "difficulty": "medium",
+      "round": "Frontend",
+      "tags": [
+        "this",
+        "context",
+        "functions",
+        "scope"
+      ],
+      "technology": "javascript"
+    },
+    {
+      "title": "What is the difference between `==` and `===`?",
+      "description": "A fundamental question to check understanding of type coercion and strict equality.",
+      "answer": "The `==` (loose equality) operator compares two values after converting them to a common type. This means it performs type coercion. The `===` (strict equality) operator compares two values without type conversion. If the values have different types, they are considered unequal. It's generally recommended to use `===` to avoid unexpected type coercion behavior.",
+      "difficulty": "easy",
+      "round": "Phone Screen",
+      "tags": [
+        "equality",
+        "comparison",
+        "type coercion",
+        "operators"
+      ],
+      "technology": "javascript"
+    },
+    {
+      "title": "What are closures in JavaScript?",
+      "description": "Closures are a core concept demonstrating deeper understanding of scope and function execution.",
+      "answer": "A closure is the combination of a function bundled together (enclosed) with references to its surrounding state (the lexical environment). In simpler terms, a closure gives you access to an outer function's scope from an inner function. Even after the outer function has finished executing, the inner function can still access variables from its parent scope. This allows for data encapsulation and maintaining state.",
+      "difficulty": "medium",
+      "round": "Frontend",
+      "tags": [
+        "closures",
+        "scope",
+        "functions",
+        "lexical environment"
+      ],
+      "technology": "javascript"
+    },
+    {
+      "title": "Explain event delegation.",
+      "description": "Candidates should understand how to optimize event handling, especially in large DOM structures.",
+      "answer": "Event delegation is a technique where you attach a single event listener to a parent element, instead of attaching individual listeners to multiple child elements. When an event fires on a child element, it bubbles up to the parent, where the single listener catches it. This improves performance and memory usage, especially for dynamic lists, as you don't need to re-attach listeners for new elements.",
+      "difficulty": "medium",
+      "round": "Frontend",
+      "tags": [
+        "events",
+        "dom",
+        "performance",
+        "event bubbling"
+      ],
+      "technology": "javascript"
+    },
+    {
+      "title": "What is hoisting in JavaScript?",
+      "description": "Understanding hoisting is key to predicting behavior of variable and function declarations.",
+      "answer": "Hoisting is a JavaScript mechanism where variable and function declarations are moved to the top of their containing scope during the compilation phase, before code execution. This means you can use a variable or call a function before it has been declared in the code. However, only declarations are hoisted, not initializations. `let` and `const` declarations are hoisted but are in a 'temporal dead zone' until initialized.",
+      "difficulty": "easy",
+      "round": "Phone Screen",
+      "tags": [
+        "hoisting",
+        "scope",
+        "variables",
+        "functions"
+      ],
+      "technology": "javascript"
+    },
+    {
+      "title": "How do you handle asynchronous operations in JavaScript?",
+      "description": "Assesses knowledge of modern async patterns beyond just callbacks.",
+      "answer": "JavaScript handles asynchronous operations primarily using Promises, Async/Await, and to a lesser extent, callbacks. Callbacks are functions passed as arguments to be executed later. Promises provide a cleaner way to handle asynchronous results, representing a value that may be available now, or in the future. Async/Await is syntactic sugar built on Promises, making asynchronous code look and behave more like synchronous code, improving readability and error handling.",
+      "difficulty": "medium",
+      "round": "Frontend",
+      "tags": [
+        "async",
+        "promises",
+        "async/await",
+        "callbacks"
+      ],
+      "technology": "javascript"
+    },
+    {
+      "title": "What is the event loop?",
+      "description": "A deeper dive into JavaScript's concurrency model, crucial for understanding non-blocking I/O.",
+      "answer": "The event loop is a core part of JavaScript's concurrency model, which allows JavaScript to perform non-blocking I/O operations despite being single-threaded. It continuously checks if the call stack is empty. If it is, it takes the first message from the message queue (task queue) and pushes it onto the call stack for execution. This mechanism ensures that long-running operations don't block the main thread.",
+      "difficulty": "hard",
+      "round": "Frontend",
+      "tags": [
+        "event loop",
+        "concurrency",
+        "single-thread",
+        "async"
+      ],
+      "technology": "javascript"
+    },
+    {
+      "title": "Explain prototypal inheritance.",
+      "description": "A fundamental concept for understanding how objects inherit properties and methods in JavaScript.",
+      "answer": "Prototypal inheritance is the mechanism by which JavaScript objects inherit properties and methods from other objects. Every JavaScript object has an internal `[[Prototype]]` property, which points to another object (its prototype). When you try to access a property on an object, if it's not found on the object itself, JavaScript looks up the prototype chain until it finds the property or reaches the end of the chain (null).",
+      "difficulty": "medium",
+      "round": "Frontend",
+      "tags": [
+        "prototypes",
+        "inheritance",
+        "objects",
+        "oop"
+      ],
+      "technology": "javascript"
+    },
+    {
+      "title": "What are `let`, `const`, and `var`? What are their differences?",
+      "description": "A very common and essential question about modern JavaScript variable declarations.",
+      "answer": "`var` declarations are function-scoped and are hoisted to the top of their function or global scope. They can be re-declared and re-assigned. `let` declarations are block-scoped, meaning they are limited to the block (e.g., if statement, loop) in which they are declared. They are hoisted but not initialized, leading to a 'temporal dead zone', and cannot be re-declared but can be re-assigned. `const` declarations are also block-scoped, hoisted into a temporal dead zone, cannot be re-declared, and cannot be re-assigned after initial assignment. They are used for values that should not change.",
+      "difficulty": "easy",
+      "round": "Phone Screen",
+      "tags": [
+        "variables",
+        "scope",
+        "es6",
+        "hoisting"
+      ],
+      "technology": "javascript"
+    },
+    {
+      "title": "What is the purpose of the `bind`, `call`, and `apply` methods?",
+      "description": "Tests understanding of explicit function context manipulation.",
+      "answer": "The `call`, `apply`, and `bind` methods are used to explicitly set the `this` context for a function. `call()` invokes the function immediately with a specified `this` value and arguments passed individually. `apply()` also invokes the function immediately with a specified `this` value, but arguments are passed as an array. `bind()` returns a *new* function with `this` permanently bound to a specified value, without executing it immediately.",
+      "difficulty": "medium",
+      "round": "Frontend",
+      "tags": [
+        "this",
+        "functions",
+        "context",
+        "bind"
+      ],
+      "technology": "javascript"
+    },
+    {
+      "title": "Explain the concept of 'pure functions'.",
+      "description": "Important for functional programming paradigms and predictable code.",
+      "answer": "A pure function is a function that, given the same inputs, will always return the same output, and produces no side effects. This means it doesn't modify any external state or global variables. Pure functions are easier to test, debug, and reason about because their behavior is entirely predictable and they don't introduce unexpected changes elsewhere in the program. Immutability is a common principle associated with pure functions.",
+      "difficulty": "medium",
+      "round": "Frontend",
+      "tags": [
+        "functional programming",
+        "pure functions",
+        "immutability",
+        "side effects"
+      ],
+      "technology": "javascript"
+    },
+    {
+      "title": "What is JSON and why is it commonly used?",
+      "description": "A basic but essential question about data interchange formats.",
+      "answer": "JSON (JavaScript Object Notation) is a lightweight data-interchange format. It is human-readable and easy for machines to parse and generate. JSON is built on two structures: a collection of name/value pairs (like a JavaScript object) and an ordered list of values (like a JavaScript array). It's widely used for transmitting data between a server and web application, serving as an open standard data format.",
+      "difficulty": "easy",
+      "round": "Phone Screen",
+      "tags": [
+        "json",
+        "data format",
+        "api",
+        "web"
+      ],
+      "technology": "javascript"
+    },
+    {
+      "title": "What is the difference between `null` and `undefined`?",
+      "description": "Another common check on basic JavaScript value types.",
+      "answer": "`undefined` means a variable has been declared but has not yet been assigned a value. It's also the default return value for functions that don't explicitly return anything. `null` is an assignment value, meaning it can be assigned to a variable as a representation of no value. It explicitly indicates the absence of any object value. Both are primitive values, but `typeof null` returns 'object', which is a historical bug.",
+      "difficulty": "easy",
+      "round": "Phone Screen",
+      "tags": [
+        "null",
+        "undefined",
+        "data types",
+        "primitives"
+      ],
+      "technology": "javascript"
+    },
+    {
+      "title": "How does `try...catch` work in JavaScript?",
+      "description": "Essential for robust error handling in synchronous and some asynchronous code.",
+      "answer": "The `try...catch` statement is used to handle exceptions (errors) in JavaScript. Code that might throw an error is placed inside the `try` block. If an error occurs within the `try` block, the execution of the `try` block is stopped, and control is transferred to the `catch` block. The `catch` block receives the error object as an argument, allowing you to gracefully handle the error and prevent the program from crashing. An optional `finally` block will execute regardless of whether an error occurred.",
+      "difficulty": "easy",
+      "round": "Frontend",
+      "tags": [
+        "error handling",
+        "try/catch",
+        "exceptions",
+        "control flow"
+      ],
+      "technology": "javascript"
+    },
+    {
+      "title": "What is debouncing and throttling?",
+      "description": "Important optimization techniques for improving performance on frequently triggered events.",
+      "answer": "Debouncing and throttling are techniques used to limit the rate at which a function is called, primarily for performance optimization. Debouncing ensures that a function is only executed after a certain period of inactivity (e.g., resize events, search input). Throttling limits the execution of a function to at most once in a given time frame (e.g., scroll events, button clicks). Both help prevent performance issues caused by excessive function calls.",
+      "difficulty": "hard",
+      "round": "Frontend",
+      "tags": [
+        "performance",
+        "optimization",
+        "debouncing",
+        "throttling"
+      ],
+      "technology": "javascript"
+    },
+    {
+      "title": "What is the difference between client-side and server-side rendering?",
+      "description": "Addresses architectural understanding in modern web development.",
+      "answer": "Client-side rendering (CSR) means the browser receives a minimal HTML file, then JavaScript takes over to fetch data and build the DOM in the user's browser. Server-side rendering (SSR) means the server processes the request, fetches data, renders the full HTML page, and sends it to the browser. CSR offers better interactivity and faster subsequent page loads, while SSR provides faster initial load times and better SEO, as content is available immediately.",
+      "difficulty": "medium",
+      "round": "Frontend",
+      "tags": [
+        "rendering",
+        "ssr",
+        "csr",
+        "web architecture"
+      ],
+      "technology": "javascript"
+    },
+    {
+      "title": "Describe the concept of 'scope' in JavaScript.",
+      "description": "Fundamental for understanding variable accessibility and function execution.",
+      "answer": "Scope in JavaScript determines the accessibility of variables, functions, and objects in some particular part of your code. It dictates where these items can be accessed and used. JavaScript primarily has three types of scope: Global scope (accessible anywhere), Function scope (variables declared inside a function are only accessible within that function), and Block scope (variables declared with `let` or `const` inside a block, like an `if` statement or `for` loop, are only accessible within that block).",
+      "difficulty": "easy",
+      "round": "Phone Screen",
+      "tags": [
+        "scope",
+        "variables",
+        "functions",
+        "global"
+      ],
+      "technology": "javascript"
+    },
+    {
+      "title": "What are modules in JavaScript?",
+      "description": "Assesses knowledge of modern JavaScript's approach to code organization and reusability.",
+      "answer": "JavaScript modules are a way to organize code into separate, reusable files. They allow developers to break down large programs into smaller, manageable pieces, enhancing maintainability, readability, and preventing global namespace pollution. Modules use `export` to expose specific variables, functions, or classes, and `import` to use them in other files. This system enables better dependency management and code sharing.",
+      "difficulty": "medium",
+      "round": "Frontend",
+      "tags": [
+        "modules",
+        "es modules",
+        "code organization",
+        "reusability"
+      ],
+      "technology": "javascript"
+    },
+    {
+      "title": "How do you make an AJAX request?",
+      "description": "Fundamental for understanding how web applications communicate with servers.",
+      "answer": "AJAX (Asynchronous JavaScript and XML) allows web pages to update asynchronously by exchanging data with a web server behind the scenes. Traditionally, `XMLHttpRequest` (XHR) objects were used to make AJAX requests. Modern JavaScript often uses the `fetch` API, which is a promise-based mechanism to make network requests. `fetch` provides a more powerful and flexible feature set for making web requests and handling responses, typically returning a Promise that resolves to the `Response` object.",
+      "difficulty": "medium",
+      "round": "Frontend",
+      "tags": [
+        "ajax",
+        "fetch",
+        "xmlhttprequest",
+        "api"
+      ],
+      "technology": "javascript"
+    },
+    {
+      "title": "Explain how prototypal inheritance differs from classical inheritance.",
+      "description": "Tests a deeper understanding of JavaScript's object model compared to other languages.",
+      "answer": "Classical inheritance, common in languages like Java or C++, is class-based, where objects are instances of classes, and classes inherit from other classes. Prototypal inheritance, native to JavaScript, is object-based. Instead of classes, objects inherit directly from other objects (their prototypes). There are no 'classes' in the traditional sense; an object can serve as a prototype for another object, allowing it to inherit its properties and methods. ES6 classes are syntactic sugar over JavaScript's existing prototypal inheritance.",
+      "difficulty": "hard",
+      "round": "Frontend",
+      "tags": [
+        "prototypes",
+        "inheritance",
+        "oop",
+        "classes"
+      ],
+      "technology": "javascript"
+    }
+  ]
+}

@@ -147,11 +147,19 @@ export default function NavDropdown({ label, items }: Props) {
       {open && (
         <div
           role="menu"
-          className="absolute top-full left-0 pt-2 z-50 min-w-[280px]"
+          className={`absolute top-full left-0 pt-2 z-50 ${
+            items.length >= 4 ? "w-[540px]" : "min-w-[280px]"
+          }`}
           // The wrapper pads itself above so there's no dead gap between the
           // button and the panel — hover bridge.
         >
-          <div className="rounded-2xl border border-border bg-surface shadow-2xl backdrop-blur-md overflow-hidden p-1.5">
+          {/* Longer menus (4+ items) flow into two columns so the panel stays
+              compact instead of a tall single column. */}
+          <div
+            className={`rounded-2xl border border-border bg-surface shadow-2xl backdrop-blur-md overflow-hidden p-1.5 ${
+              items.length >= 4 ? "grid grid-cols-2 gap-0.5" : ""
+            }`}
+          >
             {items.map((item) => {
               const Icon = ICON_MAP[item.iconName] ?? Code2;
               const isComingSoon = item.status === "coming_soon";

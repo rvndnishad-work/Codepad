@@ -1,5 +1,6 @@
 import type { MetadataRoute } from "next";
 import { prisma } from "@/lib/prisma";
+import { TECHNOLOGIES } from "@/lib/interview-questions/shared";
 
 const SITE_URL =
   process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
@@ -11,6 +12,7 @@ const STATIC_ROUTES: { path: string; changeFrequency: MetadataRoute.Sitemap[numb
   { path: "/playgrounds", changeFrequency: "weekly", priority: 0.9 },
   { path: "/challenges", changeFrequency: "daily", priority: 0.9 },
   { path: "/blog", changeFrequency: "daily", priority: 0.9 },
+  { path: "/interview-questions", changeFrequency: "daily", priority: 0.9 },
   { path: "/explore", changeFrequency: "daily", priority: 0.8 },
   { path: "/login", changeFrequency: "yearly", priority: 0.2 },
   { path: "/privacy", changeFrequency: "yearly", priority: 0.3 },
@@ -28,8 +30,10 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   let blogs: { slug: string; updatedAt: Date }[] = [];
   let challenges: { slug: string; updatedAt: Date }[] = [];
   let snippets: { slug: string; updatedAt: Date }[] = [];
+  let companies: { slug: string; updatedAt: Date }[] = [];
+  let questions: { slug: string; updatedAt: Date }[] = [];
   try {
-    [blogs, challenges, snippets] = await Promise.all([
+    [blogs, challenges, snippets, companies, questions] = await Promise.all([
       prisma.blogPost.findMany({
         where: { published: true },
         select: { slug: true, updatedAt: true },
@@ -42,6 +46,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         where: { visibility: "public" },
         select: { slug: true, updatedAt: true },
         take: 5000,
+      }),
+      prisma.company.findMany({ select: { slug: true, updatedAt: true } }),
+      prisma.prepQuestion.findMany({
+        where: { status: "published" },
+        select: { slug: true, updatedAt: true },
+        take: 10000,
       }),
     ]);
   } catch (err) {
@@ -76,5 +86,34 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.5,
   }));
 
-  return [...staticEntries, ...blogEntries, ...challengeEntries, ...snippetEntries];
+  const techEntries: MetadataRoute.Sitemap = TECHNOLOGIES.map((t) => ({
+    url: `${SITE_URL}/interview-questions/${t.slug}`,
+    lastModified: now,
+    changeFrequency: "weekly",
+    priority: 0.8,
+  }));
+
+  const companyEntries: MetadataRoute.Sitemap = companies.map((c) => ({
+    url: `${SITE_URL}/interview-questions/company/${c.slug}`,
+    lastModified: c.updatedAt,
+    changeFrequency: "weekly",
+    priority: 0.7,
+  }));
+
+  const questionEntries: MetadataRoute.Sitemap = questions.map((q) => ({
+    url: `${SITE_URL}/interview-question/${q.slug}`,
+    lastModified: q.updatedAt,
+    changeFrequency: "monthly",
+    priority: 0.6,
+  }));
+
+  return [
+    ...staticEntries,
+    ...blogEntries,
+    ...challengeEntries,
+    ...snippetEntries,
+    ...techEntries,
+    ...companyEntries,
+    ...questionEntries,
+  ];
 }

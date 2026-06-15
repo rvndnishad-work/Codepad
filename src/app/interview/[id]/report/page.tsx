@@ -2,18 +2,20 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { notFound, redirect } from "next/navigation";
 import Link from "next/link";
-import { 
+import PrintReportButton from "./PrintReportButton";
+import {
   Trophy, 
   User, 
   Clock, 
   ShieldAlert, 
   FileText, 
   Star, 
-  ArrowLeft, 
-  Printer, 
-  CheckCircle2, 
-  XCircle, 
-  AlertTriangle 
+  ArrowLeft,
+  CheckCircle2,
+  XCircle,
+  AlertTriangle,
+  MonitorSmartphone,
+  ScanEye,
 } from "lucide-react";
 
 export const metadata = {
@@ -35,6 +37,7 @@ export default async function CandidateReportPage({
     where: { id },
     include: {
       rubric: true,
+      proctorReport: true,
     },
   });
 
@@ -127,6 +130,30 @@ export default async function CandidateReportPage({
     ? Math.round((interview.finishedAt.getTime() - interview.startedAt.getTime()) / 60000)
     : 0;
 
+  // Native proctor agent detections (OS-level overlay / capture-excluded windows
+  // the browser cannot see). Empty when no agent ran for this session.
+  type ProctorSignal = {
+    kind: string;
+    severity: string;
+    window_title: string;
+    process_name: string;
+    detail: string;
+    weight: number;
+  };
+  const proctor = interview.proctorReport;
+  let proctorSignals: ProctorSignal[] = [];
+  if (proctor) {
+    try {
+      const parsed = JSON.parse(proctor.signalsData);
+      if (Array.isArray(parsed)) proctorSignals = parsed as ProctorSignal[];
+    } catch {
+      proctorSignals = [];
+    }
+  }
+  // Severity ordering so the most serious detections surface first.
+  const sevRank: Record<string, number> = { critical: 4, high: 3, medium: 2, low: 1, info: 0 };
+  proctorSignals.sort((a, b) => (sevRank[b.severity] ?? 0) - (sevRank[a.severity] ?? 0));
+
   return (
     <div className="min-h-screen bg-[#09090b] text-[#f4f4f5] p-6 sm:p-12 font-sans select-none print:bg-white print:text-black print:p-0">
       
@@ -165,17 +192,7 @@ export default async function CandidateReportPage({
           <ArrowLeft className="w-4 h-4" />
           Back to Lobby
         </Link>
-        <button
-          onClick={() => {
-            if (typeof window !== "undefined") {
-              window.print();
-            }
-          }}
-          className="flex items-center gap-2 px-4 py-2 rounded-xl bg-accent hover:bg-accent-soft text-bg text-xs font-black uppercase tracking-wider transition-all duration-300 shadow-md hover:-translate-y-0.5 active:scale-95"
-        >
-          <Printer className="w-4 h-4" />
-          Print / PDF Export
-        </button>
+        <PrintReportButton />
       </div>
 
       {/* EXECUTIVE REPORT WRAPPER */}
@@ -347,6 +364,95 @@ export default async function CandidateReportPage({
               </div>
             )}
           </div>
+
+          {/* SECTION 2b: Native Screen Proctor Agent (OS-level detections) */}
+          {proctor && (
+            <div className="space-y-4">
+              <h2 className="text-xs font-black uppercase tracking-[0.2em] text-accent print:text-zinc-700 flex items-center gap-2">
+                <MonitorSmartphone className="w-4 h-4" />
+                Screen Proctor Agent — Overlay & AI-Tool Detection
+              </h2>
+
+              <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
+                <div className="p-4 rounded-2xl border border-[#27272a] bg-[#121214]/30 print:bg-zinc-50 print:border-zinc-200 flex flex-col justify-between">
+                  <span className="text-[9px] font-black uppercase tracking-widest text-muted print:text-zinc-500">Peak Overlay Risk</span>
+                  <div className="mt-3.5 flex items-baseline gap-1">
+                    <span className={`text-2xl font-black ${
+                      proctor.peakSuspicion > 60 ? "text-rose-500" : proctor.peakSuspicion > 30 ? "text-amber-500" : "text-emerald-500"
+                    }`}>
+                      {proctor.peakSuspicion}
+                    </span>
+                    <span className="text-[10px] text-muted">/ 100</span>
+                  </div>
+                </div>
+                <div className="p-4 rounded-2xl border border-[#27272a] bg-[#121214]/30 print:bg-zinc-50 print:border-zinc-200 flex flex-col justify-between">
+                  <span className="text-[9px] font-black uppercase tracking-widest text-muted print:text-zinc-500">Detections</span>
+                  <div className="mt-3.5 flex items-baseline gap-1">
+                    <span className="text-2xl font-black text-fg print:text-zinc-900">{proctorSignals.length}</span>
+                    <span className="text-[10px] text-muted">flagged</span>
+                  </div>
+                </div>
+                <div className="p-4 rounded-2xl border border-[#27272a] bg-[#121214]/30 print:bg-zinc-50 print:border-zinc-200 flex flex-col justify-between">
+                  <span className="text-[9px] font-black uppercase tracking-widest text-muted print:text-zinc-500">Windows Scanned</span>
+                  <div className="mt-3.5 flex items-baseline gap-1">
+                    <span className="text-2xl font-black text-fg print:text-zinc-900">{proctor.scannedWindows}</span>
+                    <span className="text-[10px] text-muted">windows</span>
+                  </div>
+                </div>
+                <div className="p-4 rounded-2xl border border-[#27272a] bg-[#121214]/30 print:bg-zinc-50 print:border-zinc-200 flex flex-col justify-between">
+                  <span className="text-[9px] font-black uppercase tracking-widest text-muted print:text-zinc-500">Agent Reports</span>
+                  <div className="mt-3.5 flex items-baseline gap-1">
+                    <span className="text-2xl font-black text-fg print:text-zinc-900">{proctor.reportCount}</span>
+                    <span className="text-[10px] text-muted">received</span>
+                  </div>
+                </div>
+              </div>
+
+              {proctorSignals.length > 0 ? (
+                <div className="space-y-2.5">
+                  {proctorSignals.map((sig, idx) => {
+                    const critical = sig.severity === "critical" || sig.severity === "high";
+                    return (
+                      <div
+                        key={idx}
+                        className={`p-4 rounded-2xl border flex items-start gap-3 print:bg-zinc-50 print:border-zinc-200 ${
+                          critical
+                            ? "border-rose-500/25 bg-rose-500/5"
+                            : "border-amber-500/20 bg-amber-500/5"
+                        }`}
+                      >
+                        <ScanEye className={`w-5 h-5 shrink-0 mt-0.5 ${critical ? "text-rose-500" : "text-amber-500"} print:text-zinc-500`} />
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className={`text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-md ${
+                              critical ? "bg-rose-500/15 text-rose-400" : "bg-amber-500/15 text-amber-400"
+                            } print:bg-zinc-100 print:text-zinc-700`}>
+                              {sig.severity}
+                            </span>
+                            <span className="text-[10px] font-mono text-muted truncate print:text-zinc-500">
+                              {sig.process_name || "unknown process"}
+                              {sig.window_title ? ` — ${sig.window_title}` : ""}
+                            </span>
+                          </div>
+                          <p className="text-[11px] text-fg/80 mt-1.5 leading-relaxed print:text-zinc-700">
+                            {sig.detail}
+                          </p>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div className="p-4 rounded-2xl border border-emerald-500/20 bg-emerald-500/5 print:bg-zinc-50 print:border-zinc-200 flex items-center gap-3">
+                  <CheckCircle2 className="w-5 h-5 shrink-0 text-emerald-500" />
+                  <p className="text-[11px] text-muted print:text-zinc-700">
+                    The screen proctor agent ran and detected no overlay or capture-excluded
+                    assist windows during this session.
+                  </p>
+                </div>
+              )}
+            </div>
+          )}
 
           {/* SECTION 3: Step-by-Step Challenge Performance */}
           <div className="space-y-4">

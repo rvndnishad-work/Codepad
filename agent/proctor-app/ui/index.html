@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>InterviewPad Screen Proctor</title>
+<style>
+  :root {
+    --bg: #09090b; --surface: #18181b; --border: #27272a;
+    --fg: #f4f4f5; --muted: #a1a1aa; --accent: #facc15;
+    --rose: #f43f5e; --amber: #f59e0b; --emerald: #10b981;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+    background: var(--bg); color: var(--fg); padding: 24px;
+    -webkit-user-select: none; user-select: none;
+  }
+  .screen { display: none; }
+  .screen.active { display: block; animation: fade .25s ease; }
+  @keyframes fade { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+
+  .brand { display: flex; align-items: center; gap: 8px; margin-bottom: 20px; }
+  .brand .logo {
+    background: var(--accent); color: #000; font-weight: 900; font-size: 12px;
+    padding: 4px 8px; border-radius: 6px; letter-spacing: -.02em;
+  }
+  .brand .sub { font-size: 11px; color: var(--muted); font-weight: 700; text-transform: uppercase; letter-spacing: .15em; }
+
+  h1 { font-size: 20px; font-weight: 800; letter-spacing: -.02em; margin-bottom: 6px; }
+  .lede { font-size: 13px; color: var(--muted); line-height: 1.6; margin-bottom: 18px; }
+
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 18px; margin-bottom: 14px; }
+  .card h2 { font-size: 11px; font-weight: 900; text-transform: uppercase; letter-spacing: .12em; color: var(--accent); margin-bottom: 12px; }
+
+  ul.list { list-style: none; display: flex; flex-direction: column; gap: 10px; }
+  ul.list li { display: flex; gap: 10px; font-size: 12.5px; line-height: 1.5; color: var(--fg); }
+  ul.list li b { color: var(--fg); }
+  ul.list li .ic { flex: 0 0 16px; margin-top: 2px; }
+  ul.list.dont li { color: var(--muted); }
+
+  .row { display: flex; gap: 12px; margin-top: 18px; }
+  button {
+    flex: 1; font-family: inherit; font-weight: 800; font-size: 13px; cursor: pointer;
+    padding: 13px; border-radius: 12px; border: 1px solid var(--border);
+    transition: transform .12s ease, background .2s ease; text-transform: uppercase; letter-spacing: .04em;
+  }
+  button:active { transform: scale(.97); }
+  .btn-primary { background: var(--accent); color: #000; border-color: var(--accent); }
+  .btn-primary:hover { background: #fde047; }
+  .btn-ghost { background: transparent; color: var(--muted); }
+  .btn-ghost:hover { color: var(--fg); border-color: var(--muted); }
+
+  .consent-note { font-size: 11px; color: var(--muted); margin-top: 14px; line-height: 1.5; text-align: center; }
+
+  /* status */
+  .gauge { display: flex; align-items: baseline; gap: 8px; }
+  .gauge .num { font-size: 44px; font-weight: 900; line-height: 1; }
+  .gauge .den { font-size: 13px; color: var(--muted); }
+  .pill { display: inline-flex; align-items: center; gap: 6px; font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: .1em; padding: 4px 9px; border-radius: 999px; }
+  .pill .dot { width: 8px; height: 8px; border-radius: 999px; background: currentColor; }
+  .pulse { animation: pulse 1.4s ease-in-out infinite; }
+  @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: .35; } }
+  .meta { font-size: 11px; color: var(--muted); margin-top: 10px; }
+
+  .signal { display: flex; gap: 10px; padding: 11px 12px; border-radius: 10px; border: 1px solid var(--border); margin-top: 8px; font-size: 12px; }
+  .signal.crit { border-color: rgba(244,63,94,.3); background: rgba(244,63,94,.07); }
+  .signal.med  { border-color: rgba(245,158,11,.25); background: rgba(245,158,11,.07); }
+  .signal .sev { font-size: 9px; font-weight: 900; text-transform: uppercase; letter-spacing: .08em; padding: 2px 6px; border-radius: 5px; height: fit-content; }
+  .signal.crit .sev { background: rgba(244,63,94,.2); color: #fb7185; }
+  .signal.med .sev  { background: rgba(245,158,11,.2); color: #fbbf24; }
+  .signal .body { min-width: 0; }
+  .signal .proc { font-family: ui-monospace, monospace; font-size: 11px; color: var(--muted); }
+  .signal .detail { margin-top: 3px; line-height: 1.45; }
+  .clean { display: flex; gap: 8px; align-items: center; font-size: 12px; color: var(--muted); margin-top: 8px; }
+
+  .center { text-align: center; padding-top: 40px; }
+  .center .big { font-size: 40px; margin-bottom: 12px; }
+</style>
+</head>
+<body>
+  <div class="brand">
+    <span class="logo">&gt; proctor</span>
+    <span class="sub">InterviewPad</span>
+  </div>
+
+  <!-- CONSENT SCREEN -->
+  <section id="consent" class="screen active">
+    <h1>Screen integrity check</h1>
+    <p class="lede">
+      Before your interview begins, this app checks that no hidden AI-assist or
+      answer-overlay tools are running on your screen. Please review and consent.
+    </p>
+
+    <div class="card">
+      <h2>What this checks</h2>
+      <ul class="list">
+        <li><span class="ic">🔎</span><span><b>Open windows</b> that hide themselves from screen sharing (the trick AI-cheat overlays use).</span></li>
+        <li><span class="ic">🪟</span><span><b>Always-on-top transparent overlays</b> sitting over your screen.</span></li>
+        <li><span class="ic">🏷️</span><span><b>Known assist-tool app names</b> from a published list.</span></li>
+      </ul>
+    </div>
+
+    <div class="card">
+      <h2>What it never does</h2>
+      <ul class="list dont">
+        <li><span class="ic">🚫</span><span>It does <b>not</b> capture screenshots, keystrokes, files, or your personal content.</span></li>
+        <li><span class="ic">🚫</span><span>It sends only a <b>risk score and flagged window names</b> — nothing else.</span></li>
+        <li><span class="ic">🧹</span><span>It <b>removes itself</b> automatically when the interview ends.</span></li>
+      </ul>
+    </div>
+
+    <div id="sessionMeta" class="meta"></div>
+
+    <div class="row">
+      <button class="btn-ghost" id="declineBtn">Decline &amp; exit</button>
+      <button class="btn-primary" id="consentBtn">I consent &amp; start</button>
+    </div>
+    <p class="consent-note">By starting, you agree to this screen check for the duration of your interview.</p>
+  </section>
+
+  <!-- STATUS SCREEN -->
+  <section id="status" class="screen">
+    <h1>Screen check active</h1>
+    <p class="lede">You can leave this window open in the background during your interview.</p>
+
+    <div class="card">
+      <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+        <div>
+          <div style="font-size:9px;font-weight:900;text-transform:uppercase;letter-spacing:.12em;color:var(--muted);margin-bottom:6px;">Overlay risk</div>
+          <div class="gauge"><span class="num" id="score">0</span><span class="den">/ 100</span></div>
+        </div>
+        <span class="pill" id="livePill"><span class="dot pulse"></span><span id="liveText">STARTING</span></span>
+      </div>
+      <div class="meta" id="statusMeta">Scanning…</div>
+    </div>
+
+    <div class="card">
+      <h2>Detections</h2>
+      <div id="signals"></div>
+    </div>
+  </section>
+
+  <!-- ENDED SCREEN -->
+  <section id="ended" class="screen">
+    <div class="center">
+      <div class="big">✓</div>
+      <h1 id="endedTitle">Session ended</h1>
+      <p class="lede" id="endedMsg" style="margin-top:8px;">Removing the proctor agent from your machine…</p>
+    </div>
+  </section>
+
+<script>
+  const { invoke } = window.__TAURI__.core;
+  const { listen } = window.__TAURI__.event;
+  const $ = (id) => document.getElementById(id);
+  const show = (id) => {
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    $(id).classList.add('active');
+  };
+
+  // Populate session meta on the consent screen.
+  invoke('session_info').then((info) => {
+    if (info.backend_configured && info.session_id) {
+      $('sessionMeta').textContent = 'Session: ' + info.session_id;
+    } else {
+      $('sessionMeta').textContent = 'No interview session linked — running a local detection demo.';
+    }
+  }).catch(() => {});
+
+  $('consentBtn').addEventListener('click', async () => {
+    const mode = await invoke('start_proctoring');
+    show('status');
+    if (mode === 'demo') {
+      $('liveText').textContent = 'LOCAL DEMO';
+      $('livePill').style.color = 'var(--amber)';
+    }
+    // Tuck the window away so the candidate can focus on the interview. It keeps
+    // scanning in the background; they can restore it from the taskbar anytime.
+    setTimeout(() => invoke('minimize_window'), 1500);
+  });
+
+  $('declineBtn').addEventListener('click', () => invoke('decline'));
+
+  function severityClass(sev) {
+    return (sev === 'critical' || sev === 'high') ? 'crit' : 'med';
+  }
+
+  listen('proctor:status', (e) => {
+    const s = e.payload;
+    const score = $('score');
+    score.textContent = s.suspicion;
+    score.style.color = s.suspicion > 60 ? 'var(--rose)' : s.suspicion > 30 ? 'var(--amber)' : 'var(--emerald)';
+
+    if (s.mode === 'live') {
+      $('liveText').textContent = s.connected ? 'LIVE' : 'CONNECTING';
+      $('livePill').style.color = s.connected ? 'var(--emerald)' : 'var(--muted)';
+    }
+
+    $('statusMeta').textContent = s.scanned_windows + ' windows scanned · scan #' + s.seq;
+
+    const box = $('signals');
+    if (!s.signals.length) {
+      box.innerHTML = '<div class="clean">🛡️ No overlay or capture-excluded windows detected.</div>';
+      return;
+    }
+    box.innerHTML = s.signals.map(sig => `
+      <div class="signal ${severityClass(sig.severity)}">
+        <span class="sev">${sig.severity}</span>
+        <div class="body">
+          <div class="proc">${sig.process_name || 'unknown'}${sig.window_title ? ' — ' + sig.window_title : ''}</div>
+          <div class="detail">${sig.detail}</div>
+        </div>
+      </div>`).join('');
+  });
+
+  listen('proctor:ended', (e) => {
+    const reason = e.payload.reason;
+    show('ended');
+    if (reason === 'declined') {
+      $('endedTitle').textContent = 'Declined';
+      $('endedMsg').textContent = 'You declined the screen check. Removing the agent…';
+    } else if (reason === 'revoked') {
+      $('endedTitle').textContent = 'Disconnected';
+      $('endedMsg').textContent = 'The session is no longer active. Removing the agent…';
+    } else {
+      $('endedTitle').textContent = 'Interview complete';
+      $('endedMsg').textContent = 'Thanks. Removing the proctor agent from your machine…';
+    }
+  });
+</script>
+</body>
+</html>

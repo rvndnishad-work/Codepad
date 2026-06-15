@@ -63,11 +63,18 @@ export default async function Header() {
       badge: "New",
     },
     {
+      href: "/interview-questions",
+      label: "Interview Questions",
+      description: "Company & tech questions with answers.",
+      iconName: "BookOpen" as const,
+      badge: "New",
+    },
+    {
       href: user ? "/candidate/interview" : "/login?next=/candidate/interview",
-      label: "Interviews",
+      label: "Mock Interviews",
       description: user
-        ? "Your upcoming and past sessions."
-        : "Sign in to view your interviews.",
+        ? "Practice realistic mock interviews and review past sessions."
+        : "Sign in to practice realistic mock interviews.",
       iconName: "Briefcase" as const,
     },
   ];

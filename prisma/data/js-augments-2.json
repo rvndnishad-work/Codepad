@@ -1,0 +1,163 @@
+[
+  {
+    "title": "Closures in JavaScript — what and why",
+    "answer": "A **closure** is a function bundled with references to its surrounding lexical scope, so it keeps access to those variables even after the outer function has returned.\n\n**Why they matter:** closures enable data privacy (variables no one else can touch), stateful functions (counters, once), function factories, currying/partial application, and capturing values in callbacks.\n\n**Interview tip:** explain that the inner function holds a live reference (not a copy) to outer variables — the classic `var` loop bug and its `let`/IIFE fixes come straight from this.",
+    "examples": [
+      { "label": "private state via closure", "code": "function makeCounter() {\n  let count = 0;                 // private — only the closure sees it\n  return {\n    inc: () => ++count,\n    get: () => count,\n  };\n}\nconst c = makeCounter();\nc.inc(); c.inc();\nconsole.log(c.get());            // 2\nconsole.log(typeof c.count);     // undefined (truly private)" }
+    ]
+  },
+  {
+    "title": "Debounce vs throttle — implement debounce",
+    "answer": "Both limit how often a function runs:\n\n- **Debounce** waits until activity **stops** for a delay, then runs once — ideal for search-as-you-type or resize-end.\n- **Throttle** runs at most once per interval **during** activity — ideal for scroll handlers.\n\n**Implementing debounce:** keep a timer; every call clears and restarts it, so the function only fires after the calls go quiet.\n\n**Interview tip:** mention preserving `this`/arguments, and optional leading/trailing edges.",
+    "examples": [
+      { "label": "debounce in action", "code": "function debounce(fn, ms) {\n  let t;\n  return (...args) => {\n    clearTimeout(t);\n    t = setTimeout(() => fn(...args), ms);\n  };\n}\nconst log = debounce(v => console.log('ran with:', v), 100);\nlog('a'); log('b'); log('c');   // only the last call survives\n// => 'ran with: c'" }
+    ]
+  },
+  {
+    "title": "Describe the concept of 'scope' in JavaScript.",
+    "answer": "**Scope** is where a variable is accessible. JavaScript has **global**, **function**, and (since ES6) **block** scope. Inner scopes can read outer variables (the **scope chain**), but not vice-versa.\n\n`var` is function-scoped; `let`/`const` are block-scoped. Scope is **lexical** — determined by where code is written, not where it's called, which is what makes closures possible.\n\n**Interview tip:** be ready to contrast block vs function scope and explain the scope chain lookup.",
+    "examples": [
+      { "label": "block vs function scope", "code": "function demo() {\n  var fnScoped = 'function';\n  if (true) {\n    let blockScoped = 'block';\n    console.log(blockScoped, fnScoped); // both visible here\n  }\n  console.log(fnScoped);                // 'function'\n  try { console.log(blockScoped); }     // ReferenceError\n  catch (e) { console.log(e.name); }    // 'ReferenceError'\n}\ndemo();" }
+    ]
+  },
+  {
+    "title": "Explain 'this' keyword in JavaScript.",
+    "answer": "`this` is set by **how a function is called**: the object before the dot for methods, `undefined` (strict) for plain calls, the new instance with `new`, and an explicit value via `call`/`apply`/`bind`. **Arrow functions** capture `this` lexically and ignore the call site.\n\n**Interview tip:** the common bug is a method losing `this` when passed as a callback — fix with `bind` or an arrow wrapper.",
+    "examples": [
+      { "label": "method vs detached call", "code": "const counter = {\n  n: 0,\n  inc() { this.n++; return this.n; },\n};\nconsole.log(counter.inc());        // 1 (this = counter)\nconst f = counter.inc;\ntry { f(); } catch (e) { console.log(e.name); } // TypeError (this undefined)\nconsole.log(counter.inc.call({ n: 41 }));        // 42" }
+    ]
+  },
+  {
+    "title": "Explain event delegation.",
+    "answer": "**Event delegation** attaches a single listener to a common ancestor and uses `event.target` to figure out which child triggered it, relying on event **bubbling**.\n\n**Why:** one listener instead of many (better performance/memory), and it automatically handles **dynamically added** children without re-binding.\n\n**Interview tip:** mention using `closest()` to match the intended element and `stopPropagation` caveats.",
+    "examples": [
+      { "label": "one listener for a whole list (DOM)", "runnable": false, "code": "// Delegation: listen on the parent, not each <li>\ndocument.querySelector('#list').addEventListener('click', (e) => {\n  const li = e.target.closest('li');\n  if (li) console.log('clicked item:', li.dataset.id);\n});\n\n// Works even for <li> added later — no rebinding needed." }
+    ]
+  },
+  {
+    "title": "Explain how prototypal inheritance differs from classical inheritance.",
+    "answer": "**Classical** inheritance (Java/C++) copies structure from classes to instances via a rigid class hierarchy. **Prototypal** inheritance links objects to other objects: an object **delegates** missing properties to its prototype at lookup time.\n\nJavaScript is prototypal — `class` syntax is sugar over prototypes. Delegation is dynamic (change a prototype and all linked objects see it) and more flexible than fixed class trees.\n\n**Interview tip:** stress *delegation, not copying*, and that methods live once on the prototype.",
+    "examples": [
+      { "label": "delegation, shared once", "code": "const base = { hello() { return 'hi ' + this.name; } };\nconst a = Object.create(base); a.name = 'A';\nconst b = Object.create(base); b.name = 'B';\nconsole.log(a.hello(), b.hello());          // 'hi A' 'hi B'\nconsole.log(a.hello === b.hello);           // true (one shared method)\nbase.hello = () => 'changed';\nconsole.log(a.hello());                     // 'changed' (live link)" }
+    ]
+  },
+  {
+    "title": "Explain prototypal inheritance.",
+    "answer": "Every object has a hidden link to a **prototype** object. Property lookups that miss on the object walk up this **prototype chain** until found or `null`. Objects thus **inherit by delegation** rather than copying.\n\nYou set prototypes with `Object.create`, constructor `.prototype`, or `class`. Adding to a prototype instantly affects all instances.\n\n**Interview tip:** know `Object.getPrototypeOf`, that `hasOwnProperty` distinguishes own vs inherited, and how `class` maps onto this.",
+    "examples": [
+      { "label": "walking the chain", "code": "function Animal(sound) { this.sound = sound; }\nAnimal.prototype.speak = function () { return this.sound + '!'; };\n\nconst dog = new Animal('woof');\nconsole.log(dog.speak());                    // 'woof!'\nconsole.log(dog.hasOwnProperty('speak'));    // false (on prototype)\nconsole.log(Object.getPrototypeOf(dog) === Animal.prototype); // true" }
+    ]
+  },
+  {
+    "title": "Explain the concept of 'pure functions'.",
+    "answer": "A **pure function** (1) always returns the same output for the same input and (2) has **no side effects** — it doesn't mutate external state, do I/O, or depend on anything outside its arguments.\n\nPurity makes code predictable, trivially testable, cacheable (memoization), and safe to parallelize. Impurity (mutation, randomness, time, network) should be pushed to the edges.\n\n**Interview tip:** be able to spot/refactor an impure function (e.g., mutating its argument) into a pure one.",
+    "examples": [
+      { "label": "pure vs impure", "code": "// impure: mutates input (side effect)\nconst addImpure = (arr, x) => { arr.push(x); return arr; };\n// pure: returns a new array\nconst addPure = (arr, x) => [...arr, x];\n\nconst a = [1, 2];\nconsole.log(addPure(a, 3)); // [1,2,3]\nconsole.log(a);             // [1,2] (unchanged)\nconsole.log(addPure(a, 3)); // same input -> same output" }
+    ]
+  },
+  {
+    "title": "Explain the event loop, call stack, and task queues.",
+    "answer": "JavaScript runs on a single-threaded **call stack**. Async work (timers, I/O, promises) is handed off and its callbacks wait in queues. The **event loop** pushes a callback onto the stack only when the stack is empty.\n\nIt drains **all microtasks** (promise jobs) after each task, then runs one **macrotask** (`setTimeout`, events), and repeats.\n\n**Interview tip:** be ready to predict ordering — microtasks always run before the next macrotask.",
+    "examples": [
+      { "label": "stack, microtask, macrotask", "code": "console.log('1 (sync)');\nsetTimeout(() => console.log('4 (macrotask)'), 0);\nPromise.resolve().then(() => console.log('3 (microtask)'));\nconsole.log('2 (sync)');\n// Order: 1, 2, 3, 4" }
+    ]
+  },
+  {
+    "title": "How do getters and setters work?",
+    "answer": "**Getters/setters** are accessor properties defined with `get`/`set` that run a function when you read or write a property — used like normal property access (`obj.x`, `obj.x = 5`).\n\nThey enable computed properties, validation, logging, and encapsulation. Define them in object literals, classes, or via `Object.defineProperty`.\n\n**Interview tip:** note they look like plain properties (no parentheses) and that a getter without a setter makes a read-only property.",
+    "examples": [
+      { "label": "computed + validated", "code": "const user = {\n  first: 'Ada', last: 'Lovelace',\n  get full() { return this.first + ' ' + this.last; },\n  set full(v) { [this.first, this.last] = v.split(' '); },\n};\nconsole.log(user.full);      // 'Ada Lovelace'\nuser.full = 'Grace Hopper';\nconsole.log(user.first);     // 'Grace'" }
+    ]
+  },
+  {
+    "title": "How do iterators and the iterable protocol work?",
+    "answer": "An object is **iterable** if it has a `[Symbol.iterator]()` method returning an **iterator** — an object with a `next()` that yields `{ value, done }`. This protocol powers `for...of`, spread, and destructuring.\n\nArrays, strings, Maps, and Sets are built-in iterables; you can make custom objects iterable by implementing it (often with a generator).\n\n**Interview tip:** know that generators are iterators, and that `for...of` calls `next()` until `done`.",
+    "examples": [
+      { "label": "custom iterable range", "code": "const range = {\n  from: 1, to: 4,\n  [Symbol.iterator]() {\n    let n = this.from; const end = this.to;\n    return { next: () => n <= end ? { value: n++, done: false } : { value: undefined, done: true } };\n  },\n};\nconsole.log([...range]);          // [1,2,3,4]\nfor (const x of range) console.log('x =', x);" }
+    ]
+  },
+  {
+    "title": "How do you convert a callback-based function to a Promise?",
+    "answer": "Wrap the callback API in a `new Promise`, resolving on success and rejecting on error. For Node's error-first convention (`(err, data) => ...`), call `reject(err)` when `err` is truthy, else `resolve(data)`.\n\nNode also offers `util.promisify` for this exact pattern.\n\n**Interview tip:** mention that promisifying lets you use `await` and compose with `Promise.all`, replacing nested 'callback hell'.",
+    "examples": [
+      { "label": "promisify a callback API", "code": "function getDataCb(ok, cb) {\n  setTimeout(() => (ok ? cb(null, 'data') : cb(new Error('failed'))), 50);\n}\nconst getData = (ok) => new Promise((resolve, reject) =>\n  getDataCb(ok, (err, data) => (err ? reject(err) : resolve(data))));\n\ngetData(true).then(d => console.log('ok:', d));\ngetData(false).catch(e => console.log('caught:', e.message));" }
+    ]
+  },
+  {
+    "title": "How do you deep clone an object in JavaScript?",
+    "answer": "Options, by depth:\n- **Shallow**: spread `{...obj}` / `Object.assign` (nested objects still shared).\n- **Deep, modern**: `structuredClone(obj)` — handles nested objects, arrays, Maps, Sets, Dates, and cycles.\n- **Deep, quick-and-dirty**: `JSON.parse(JSON.stringify(obj))` — simple but drops functions/`undefined`, mangles `Date`, and throws on cycles.\n\n**Interview tip:** call out the JSON method's limitations; reach for `structuredClone` when available.",
+    "examples": [
+      { "label": "shallow vs deep", "code": "const orig = { a: 1, nested: { x: 1 } };\nconst shallow = { ...orig };\nshallow.nested.x = 99;\nconsole.log(orig.nested.x);     // 99 (shared!)\n\nconst deep = structuredClone({ a: 1, nested: { x: 1 } });\ndeep.nested.x = 99;\nconsole.log('deep keeps orig safe');" }
+    ]
+  },
+  {
+    "title": "How do you handle asynchronous operations in JavaScript?",
+    "answer": "Three generations: **callbacks** (simple but nest into 'callback hell'), **Promises** (chainable, composable with `all`/`race`), and **async/await** (promises that read synchronously, with `try/catch` for errors).\n\nModern code prefers `async/await`, parallelizing independent work with `Promise.all` and handling rejections explicitly.\n\n**Interview tip:** explain that async work is non-blocking — it schedules callbacks on the event loop rather than pausing the thread.",
+    "examples": [
+      { "label": "async/await + parallel", "code": "const wait = (ms, v) => new Promise(r => setTimeout(() => r(v), ms));\n\nasync function load() {\n  try {\n    const [a, b] = await Promise.all([wait(40, 1), wait(40, 2)]);\n    console.log('both:', a + b);  // 3, in ~40ms (parallel)\n  } catch (e) {\n    console.log('error:', e);\n  }\n}\nload();" }
+    ]
+  },
+  {
+    "title": "How do you implement a throttle function?",
+    "answer": "**Throttle** ensures a function runs at most once per interval. Track the last run time; ignore calls until `interval` has elapsed (timestamp approach), or use a timer flag.\n\nUnlike debounce (which waits for inactivity), throttle guarantees periodic execution during continuous activity — ideal for scroll/resize/mousemove.\n\n**Interview tip:** mention leading vs trailing invocation and preserving the latest args.",
+    "examples": [
+      { "label": "throttle by timestamp", "code": "function throttle(fn, ms) {\n  let last = 0;\n  return (...args) => {\n    const now = Date.now();\n    if (now - last >= ms) { last = now; fn(...args); }\n  };\n}\nconst log = throttle(v => console.log('fired:', v, Date.now() % 100000), 100);\nlog('a'); log('b');           // only 'a' fires (within the same window)\nsetTimeout(() => log('c'), 120); // 'c' fires after the window" }
+    ]
+  },
+  {
+    "title": "How do you make an AJAX request?",
+    "answer": "**AJAX** means fetching data asynchronously without a full page reload. The modern way is the **`fetch`** API (promise-based); the legacy way is **`XMLHttpRequest`**. Libraries like axios wrap these with extras.\n\nWith `fetch` you get a `Response`; call `.json()`/`.text()` to read the body, and check `response.ok` since fetch only rejects on network errors, not HTTP error statuses.\n\n**Interview tip:** contrast `fetch` (clean, promises) vs `XHR` (older, event-based) and mention error handling.",
+    "examples": [
+      { "label": "fetch (browser)", "runnable": false, "code": "async function getUser(id) {\n  const res = await fetch(`/api/users/${id}`);\n  if (!res.ok) throw new Error(`HTTP ${res.status}`);\n  return res.json();\n}\ngetUser(1).then(u => console.log(u)).catch(console.error);" }
+    ]
+  },
+  {
+    "title": "How does `try...catch` work in JavaScript?",
+    "answer": "`try` runs code that might throw; if an exception occurs, control jumps to **`catch (err)`**; **`finally`** always runs (cleanup), even after a return or throw.\n\nIt only catches **synchronous** throws and rejected `await`s — not errors inside async callbacks (e.g., `setTimeout`), which need their own handling.\n\n**Interview tip:** mention catching specific cases (rethrow what you can't handle), optional catch binding (`catch {}`), and that `finally` can override a return.",
+    "examples": [
+      { "label": "try / catch / finally", "code": "function parse(json) {\n  try {\n    return JSON.parse(json);\n  } catch (e) {\n    console.log('invalid JSON:', e.name);\n    return null;\n  } finally {\n    console.log('done parsing');\n  }\n}\nconsole.log(parse('{\"a\":1}')); // {a:1}, 'done parsing'\nconsole.log(parse('nope'));    // 'invalid JSON', 'done parsing', null" }
+    ]
+  },
+  {
+    "title": "How does instanceof work?",
+    "answer": "**`obj instanceof Ctor`** returns `true` if `Ctor.prototype` appears anywhere in `obj`'s prototype chain — i.e., it tests inheritance, not just direct construction.\n\nIt can be fooled across realms (iframes) and by changing prototypes; `Array.isArray` is preferred for arrays.\n\n**Interview tip:** know it walks the prototype chain (so subclasses pass their parent's `instanceof`) and how it differs from `typeof`.",
+    "examples": [
+      { "label": "chain-based check", "code": "class Animal {}\nclass Dog extends Animal {}\nconst d = new Dog();\nconsole.log(d instanceof Dog);    // true\nconsole.log(d instanceof Animal); // true (inherited)\nconsole.log(d instanceof Object); // true\nconsole.log([] instanceof Array, Array.isArray([])); // true true" }
+    ]
+  },
+  {
+    "title": "How does the fetch API work?",
+    "answer": "**`fetch(url, options)`** returns a Promise resolving to a `Response`. The body is read with `.json()`/`.text()`/`.blob()` (also promises). Important gotcha: fetch **only rejects on network failure** — HTTP errors like 404/500 still resolve, so you must check `response.ok`/`status`.\n\nOptions cover method, headers, body, credentials, and an `AbortController` signal for cancellation.\n\n**Interview tip:** mention `response.ok`, streaming bodies, and abort/timeout handling.",
+    "examples": [
+      { "label": "fetch with error check (browser)", "runnable": false, "code": "const res = await fetch('/api/data', {\n  method: 'POST',\n  headers: { 'Content-Type': 'application/json' },\n  body: JSON.stringify({ q: 'hello' }),\n});\nif (!res.ok) throw new Error('Request failed: ' + res.status);\nconst data = await res.json();\nconsole.log(data);" }
+    ]
+  },
+  {
+    "title": "What are Symbols and what are they used for?",
+    "answer": "A **Symbol** is a unique, immutable primitive (`Symbol('desc')`). Every symbol is distinct, so symbol-keyed properties never collide and are hidden from normal enumeration (`for...in`, `Object.keys`).\n\nUses: non-colliding 'private-ish' keys, metadata, and **well-known symbols** that hook into language behavior (`Symbol.iterator`, `Symbol.asyncIterator`, `Symbol.toPrimitive`).\n\n**Interview tip:** know `Symbol.for` (global registry) and that symbols aren't auto-converted to strings.",
+    "examples": [
+      { "label": "unique keys + iterator hook", "code": "const id = Symbol('id');\nconst user = { name: 'Ada', [id]: 123 };\nconsole.log(Object.keys(user));   // ['name'] (symbol hidden)\nconsole.log(user[id]);            // 123\nconsole.log(Symbol('x') === Symbol('x')); // false (always unique)" }
+    ]
+  },
+  {
+    "title": "What are WeakMap and WeakSet?",
+    "answer": "**WeakMap**/**WeakSet** hold their keys/values **weakly** — if an object key has no other references, it's eligible for garbage collection, and the entry disappears automatically. This prevents memory leaks for object-keyed metadata.\n\nTrade-offs: keys must be objects, and they're **not iterable** and have no `size` (because contents can vanish at any time).\n\n**Interview tip:** typical use is caching/metadata keyed by an object (e.g., DOM node → data) without keeping it alive.",
+    "examples": [
+      { "label": "object-keyed metadata", "code": "const meta = new WeakMap();\nlet obj = { id: 1 };\nmeta.set(obj, { lastSeen: Date.now() });\nconsole.log(meta.has(obj));    // true\nconsole.log(meta.get(obj).lastSeen > 0); // true\n// When `obj` is no longer referenced, the entry is GC'd automatically." }
+    ]
+  },
+  {
+    "title": "What are `let`, `const`, and `var`? What are their differences?",
+    "answer": "- **`var`**: function-scoped, hoisted (initialized `undefined`), redeclarable, attaches to the global object at top level.\n- **`let`**: block-scoped, in the temporal dead zone until declared, reassignable.\n- **`const`**: like `let` but the binding can't be reassigned (the referenced object is still mutable).\n\n**Interview tip:** default to `const`, use `let` when reassigning, avoid `var`. Be ready to explain the `var`-vs-`let` loop-closure difference.",
+    "examples": [
+      { "label": "scope + reassignment rules", "code": "if (true) { var v = 'leaks'; let l = 'block'; }\nconsole.log(v);                 // 'leaks' (function-scoped)\ntry { console.log(l); } catch (e) { console.log(e.name); } // ReferenceError\n\nconst obj = { n: 1 };\nobj.n = 2;                      // OK (mutating)\nconsole.log(obj.n);             // 2\ntry { /* obj = {} */ } catch (e) {}" }
+    ]
+  },
+  {
+    "title": "What are async iterators and for await...of?",
+    "answer": "An **async iterator** has `[Symbol.asyncIterator]` and a `next()` that returns a **Promise** of `{ value, done }`. **`for await...of`** consumes it, awaiting each value in turn.\n\nThey model asynchronous streams — paginated APIs, readable streams, message queues — where each item arrives over time. Async generators (`async function*`) are the easy way to create them.\n\n**Interview tip:** contrast with sync iteration and note that `for await` can iterate arrays of promises too.",
+    "examples": [
+      { "label": "async generator stream", "code": "async function* pages() {\n  for (let p = 1; p <= 3; p++) {\n    await new Promise(r => setTimeout(r, 20));   // simulate fetch\n    yield `page ${p}`;\n  }\n}\n(async () => {\n  for await (const page of pages()) console.log(page);\n})();" }
+    ]
+  }
+]

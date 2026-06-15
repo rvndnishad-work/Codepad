@@ -75,6 +75,7 @@ model User {
   securityEvents       SecurityAuditLog[]
   notifications        Notification[]
   notificationPreferences NotificationPreference[]
+  prepQuestionComments PrepQuestionComment[]
 }
 
 /// Admin-composed broadcast (IP-45). One row per admin send; the per-recipient
@@ -614,8 +615,16 @@ model InterviewSession {
   /// JSON of `TechStack` (see src/lib/interview/stack.ts). Null for sessions
   /// assembled manually. Used for context/labels + AI question steering.
   stackJson          String?
+  /// ── Native proctor agent (overlay/AI-tool detection) ──────────────────────
+  /// One-time bearer token the desktop agent presents on every report. Issued
+  /// per session; rotating/clearing it revokes the agent (it self-uninstalls).
+  proctorToken       String?          @unique
+  /// Per-session secret used to HMAC-sign agent report bodies. Never sent to
+  /// the browser; only embedded in the agent launcher env.
+  proctorSecret      String?
   createdAt          DateTime         @default(now())
   rubric             InterviewRubric?
+  proctorReport      ProctorAgentReport?
   candidate          Candidate?       @relation(fields: [candidateId], references: [id])
   workspace          Workspace?       @relation(fields: [workspaceId], references: [id])
   user               User             @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -912,6 +921,32 @@ model InterviewRubric {
   interviewerId String
   createdAt     DateTime         @default(now())
   session       InterviewSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+}
+
+/// Latest state reported by the native proctor agent for one interview session.
+/// Unlike CandidateIntegrityReport (browser telemetry, keyed to ChallengeAttempt)
+/// this captures OS-level overlay / capture-excluded-window detections the
+/// browser cannot see. One row per session, upserted on each agent report.
+model ProctorAgentReport {
+  id             String           @id @default(cuid())
+  sessionId      String           @unique
+  /// Highest report sequence number accepted so far (replay/gap detection).
+  lastSeq        Int              @default(0)
+  /// Latest native suspicion score from the agent (0..=100).
+  suspicionScore Int              @default(0)
+  /// Highest suspicion seen across the whole session.
+  peakSuspicion  Int              @default(0)
+  scannedWindows Int              @default(0)
+  /// JSON-encoded array of the latest scan's DetectionSignal objects.
+  signalsData    String           @default("[]")
+  reportCount    Int              @default(0)
+  agentVersion   String?
+  agentConnected Boolean          @default(true)
+  firstSeenAt    DateTime         @default(now())
+  lastSeenAt     DateTime         @default(now())
+  session        InterviewSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@index([sessionId])
 }
 
 model AtsIntegration {
@@ -1605,6 +1640,124 @@ model InterviewExperience {
 
   @@unique([spaceId, slug])
   @@index([spaceId])
+}
+
+/// ── Interview Questions module (public/SEO question bank) ──────────────────
+/// Distinct from the creator-space InterviewQA/InterviewQuestion/Interview-
+/// Experience models above: these are a centralized, admin-curated, company-
+/// indexed repository powering /interview-questions and its SEO pages. "Prep"
+/// namespace avoids the name collision with the creator-space models.
+
+/// A hiring company that questions and experiences are indexed under.
+model Company {
+  id          String           @id @default(cuid())
+  name        String
+  slug        String           @unique
+  logo        String?
+  description String?
+  website     String?
+  industry    String?
+  /// JSON string[] of frequently-asked roles, e.g. ["SDE","Frontend"].
+  hiringRoles String           @default("[]")
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+  questions   PrepQuestion[]
+  experiences PrepExperience[]
+
+  @@index([slug])
+}
+
+/// One interview-prep question. May be tied to a company and/or a technology.
+model PrepQuestion {
+  id              String   @id @default(cuid())
+  title           String
+  slug            String   @unique
+  /// The question body / prompt (markdown).
+  description     String?
+  /// Markdown answer / explanation.
+  answer          String?
+  companyId       String?
+  /// Slug-like tech tag the technology pages key off, e.g. "reactjs".
+  technology      String?
+  role            String?
+  /// "easy" | "medium" | "hard"
+  difficulty      String   @default("medium")
+  /// Interview round, e.g. "DSA" | "System Design" | "HR".
+  round           String?
+  /// "fresher" | "mid" | "senior"
+  experienceLevel String?
+  /// JSON string[] of free-form tags.
+  tags            String   @default("[]")
+  /// JSON number[] of years the question was reportedly asked.
+  yearsAsked      String   @default("[]")
+  views           Int      @default(0)
+  likes           Int      @default(0)
+  /// "draft" | "published" | "archived"
+  status          String   @default("draft")
+  seoTitle        String?
+  seoDescription  String?
+  /// Cached AI-generated hint (nudge, not the full answer). Generated lazily on
+  /// first request and reused thereafter to bound LLM cost.
+  aiHint          String?
+  /// JSON array of runnable code examples: [{ label, code }]. Rendered as
+  /// interactive playgrounds on the question page (currently JS-executable).
+  examplesData    String?
+  createdById     String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  company         Company?              @relation(fields: [companyId], references: [id], onDelete: SetNull)
+  comments        PrepQuestionComment[]
+
+  @@index([companyId])
+  @@index([technology, status])
+  @@index([status])
+  @@index([slug])
+}
+
+/// A user discussion comment on an interview-prep question.
+model PrepQuestionComment {
+  id         String       @id @default(cuid())
+  questionId String
+  userId     String
+  content    String
+  createdAt  DateTime     @default(now())
+  question   PrepQuestion @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  user       User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([questionId])
+  @@index([userId])
+}
+
+/// A real interview experience writeup, optionally moderated before publishing.
+model PrepExperience {
+  id              String   @id @default(cuid())
+  companyId       String?
+  /// Denormalized company name for display when no company row is linked.
+  companyName     String?
+  role            String?
+  experienceLevel String?
+  location        String?
+  year            Int?
+  /// Markdown overview of the interview process.
+  process         String?
+  /// Markdown / freeform description of the rounds.
+  rounds          String?
+  /// JSON string[] of questions asked (titles or PrepQuestion slugs).
+  questionsAsked  String   @default("[]")
+  /// "selected" | "rejected" | "pending"
+  result          String?
+  /// Markdown tips for future candidates.
+  tips            String?
+  difficulty      String?
+  /// "pending" | "approved" | "published" | "rejected"
+  status          String   @default("pending")
+  authorId        String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  company         Company? @relation(fields: [companyId], references: [id], onDelete: SetNull)
+
+  @@index([companyId])
+  @@index([status])
 }
 
 /// Polymorphic access index: ties any content type to a space + its access

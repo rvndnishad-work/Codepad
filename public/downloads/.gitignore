@@ -1,0 +1,2 @@
+# Built proctor agent binary (copied from agent/target/release; not source)
+*.exe

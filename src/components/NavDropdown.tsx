@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
@@ -29,6 +29,11 @@ const ICON_MAP: Record<string, React.ComponentType<{ className?: string }>> = {
   BookOpen,
   CreditCard,
 };
+
+// useLayoutEffect warns during SSR; this client component is still
+// server-rendered by Next, so fall back to useEffect on the server.
+const useIsomorphicLayoutEffect =
+  typeof window !== "undefined" ? useLayoutEffect : useEffect;
 
 export type IconKey = keyof typeof ICON_MAP;
 
@@ -65,6 +70,7 @@ export default function NavDropdown({ label, items }: Props) {
   const pathname = usePathname();
   const closeTimerRef = useRef<number | null>(null);
   const wrapperRef = useRef<HTMLDivElement>(null);
+  const panelRef = useRef<HTMLDivElement>(null);
 
   // Hrefs that are generic redirects (not the item's true destination) should
   // never trigger active highlighting — e.g. unauthenticated recruiters land
@@ -86,6 +92,40 @@ export default function NavDropdown({ label, items }: Props) {
   useEffect(() => {
     setOpen(false);
   }, [pathname]);
+
+  // Keep the panel within the viewport. The trigger lives on the right side of
+  // the header, so a left-aligned fixed-width panel would overflow off-screen
+  // and get clipped. On open (and on resize) we measure the panel's natural
+  // width against the available space, clamp the width, then shift it left so
+  // its right edge never crosses the viewport edge.
+  useIsomorphicLayoutEffect(() => {
+    if (!open) return;
+    const reposition = () => {
+      const wrapper = wrapperRef.current;
+      const panel = panelRef.current;
+      if (!wrapper || !panel) return;
+      const margin = 8; // breathing room from the viewport edge
+      const vw = document.documentElement.clientWidth;
+      // Clear any previous clamp so we read the panel's natural width.
+      panel.style.maxWidth = "";
+      const naturalWidth = panel.offsetWidth;
+      const width = Math.min(naturalWidth, vw - margin * 2);
+      const wrapperLeft = wrapper.getBoundingClientRect().left;
+      // Left-align to the trigger by default, then pull left if we'd overflow.
+      let left = 0;
+      if (wrapperLeft + width > vw - margin) {
+        left = vw - margin - width - wrapperLeft;
+      }
+      // Never push past the left viewport edge.
+      const minLeft = margin - wrapperLeft;
+      if (left < minLeft) left = minLeft;
+      panel.style.maxWidth = `${width}px`;
+      panel.style.left = `${left}px`;
+    };
+    reposition();
+    window.addEventListener("resize", reposition);
+    return () => window.removeEventListener("resize", reposition);
+  }, [open]);
 
   // Outside click + Escape.
   useEffect(() => {
@@ -146,7 +186,10 @@ export default function NavDropdown({ label, items }: Props) {
 
       {open && (
         <div
+          ref={panelRef}
           role="menu"
+          // `left` is set imperatively by the reposition effect; left-0 is the
+          // pre-measure default so there's no flash before it runs.
           className={`absolute top-full left-0 pt-2 z-50 ${
             items.length >= 4 ? "w-[540px]" : "min-w-[280px]"
           }`}

@@ -135,7 +135,7 @@ export default function JsPlayground({ code, label }: { code: string; label?: st
       {/* Output console */}
       {hasRun && (
         <div className="border-t border-border bg-bg/60">
-          <div className="flex items-center justify-between px-3.5 py-1.5 border-b border-border/60">
+          <div className="flex items-center justify-between px-3.5 py-1.5 border-b border-border">
             <span className="flex items-center gap-1 text-[10px] font-black uppercase tracking-wider text-muted">
               <ChevronRight className="w-3 h-3" /> Console
             </span>

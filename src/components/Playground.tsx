@@ -47,6 +47,7 @@ import {
   ChevronRight,
 } from "lucide-react";
 import { templatesById } from "@/lib/templates";
+import { decodePlaygroundCode } from "@/lib/playground-handoff";
 import { getSandpackTheme } from "@/lib/sandpack-theme";
 import { TemplateLogo } from "@/lib/icons";
 import { describeExecution } from "@/lib/exec-result";
@@ -209,8 +210,25 @@ export default function Playground({
   const [mounted, setMounted] = useState(false);
   const explorerCollapsedRef = useRef(false);
 
+  // One-shot code handoff from an "Open in Playground" link (#code=… in the
+  // URL hash). Read once on mount; the hash is then cleared (effect below) so a
+  // save/fork/refresh doesn't keep re-injecting it.
+  const prefillCode = useMemo(
+    () => (typeof window === "undefined" ? null : decodePlaygroundCode(window.location.hash)),
+    [],
+  );
+
   const cleanFiles = useMemo(() => {
-    const files = initialFiles ?? tpl.files;
+    let files = initialFiles ?? tpl.files;
+    // Drop the handed-off code into the template's entry (first non-hidden) file.
+    if (prefillCode) {
+      const entry =
+        Object.keys(files).find((k) => {
+          const v = files[k];
+          return !(typeof v === "object" && (v as { hidden?: boolean }).hidden === true);
+        }) ?? Object.keys(files)[0];
+      if (entry) files = { ...files, [entry]: prefillCode };
+    }
     const isBackend = ["python", "go", "java", "cpp", "rust", "node", "ts-node"].includes(templateId);
     if (isBackend) {
       const next = { ...files };
@@ -242,7 +260,7 @@ export default function Playground({
       return next;
     }
     return files;
-  }, [initialFiles, templateId, tpl.files]);
+  }, [initialFiles, templateId, tpl.files, prefillCode]);
 
   const initialFilesRef = useRef<SandpackFiles>(cleanFiles);
   const filesRef = useRef<SandpackFiles>(cleanFiles);
@@ -550,6 +568,14 @@ export default function Playground({
   }
 
   useEffect(() => { setMounted(true); }, []);
+
+  // Strip the one-shot #code= handoff from the URL once it's been applied, so a
+  // refresh, save, or fork doesn't re-inject it and the address bar stays clean.
+  useEffect(() => {
+    if (typeof window !== "undefined" && /[#&]code=/.test(window.location.hash)) {
+      window.history.replaceState(null, "", window.location.pathname + window.location.search);
+    }
+  }, []);
 
   // ── Persistence: Editor Settings ──
   useEffect(() => {

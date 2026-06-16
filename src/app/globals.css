@@ -640,6 +640,154 @@ portal-nextjs-toast,
   color: #f0abfc;
 }
 
+/* Interview-question code snippets — syntax tokens that follow the light/dark
+   theme. Light defaults are high-contrast on a light surface; the .dark
+   overrides reuse the pastel palette tuned for a dark surface. */
+.iq-hl .hljs-comment,
+.iq-hl .hljs-quote {
+  color: #64748b;
+  font-style: italic;
+}
+.iq-hl .hljs-keyword,
+.iq-hl .hljs-selector-tag,
+.iq-hl .hljs-literal {
+  color: #be185d;
+}
+.iq-hl .hljs-string,
+.iq-hl .hljs-attr {
+  color: #15803d;
+}
+.iq-hl .hljs-number,
+.iq-hl .hljs-built_in {
+  color: #c2410c;
+}
+.iq-hl .hljs-title,
+.iq-hl .hljs-title.function_,
+.iq-hl .hljs-name,
+.iq-hl .hljs-section {
+  color: #0369a1;
+}
+.iq-hl .hljs-tag {
+  color: #be185d;
+}
+.iq-hl .hljs-tag .hljs-name {
+  color: #be185d;
+}
+.iq-hl .hljs-tag .hljs-attr {
+  color: #92400e;
+}
+.iq-hl .hljs-params {
+  color: #1e293b;
+}
+.iq-hl .hljs-variable,
+.iq-hl .hljs-template-variable {
+  color: #a21caf;
+}
+
+.dark .iq-hl .hljs-comment,
+.dark .iq-hl .hljs-quote {
+  color: rgba(148, 163, 184, 0.6);
+}
+.dark .iq-hl .hljs-keyword,
+.dark .iq-hl .hljs-selector-tag,
+.dark .iq-hl .hljs-literal {
+  color: #c084fc;
+}
+.dark .iq-hl .hljs-string,
+.dark .iq-hl .hljs-attr {
+  color: #6ee7b7;
+}
+.dark .iq-hl .hljs-number,
+.dark .iq-hl .hljs-built_in {
+  color: #fbbf24;
+}
+.dark .iq-hl .hljs-title,
+.dark .iq-hl .hljs-title.function_,
+.dark .iq-hl .hljs-name,
+.dark .iq-hl .hljs-section {
+  color: #60a5fa;
+}
+.dark .iq-hl .hljs-tag {
+  color: #f87171;
+}
+.dark .iq-hl .hljs-tag .hljs-name {
+  color: #f87171;
+}
+.dark .iq-hl .hljs-tag .hljs-attr {
+  color: #fbbf24;
+}
+.dark .iq-hl .hljs-params {
+  color: #e2e8f0;
+}
+.dark .iq-hl .hljs-variable,
+.dark .iq-hl .hljs-template-variable {
+  color: #f0abfc;
+}
+
+/* Hand-authored inline SVG diagrams embedded in interview-question answers.
+   A single SVG works in light + dark by referencing theme CSS vars through
+   these classes (so authors don't repeat colors). Use class="iq-diagram" on
+   the <svg>, then d-* classes on shapes/text. */
+.iq-diagram {
+  display: block;
+  width: 100%;
+  height: auto;
+  margin: 1.5rem 0;
+  overflow: visible;
+}
+.iq-diagram .d-box {
+  fill: var(--surface);
+  stroke: var(--border-strong);
+  stroke-width: 1.5;
+}
+.iq-diagram .d-box-accent {
+  fill: rgba(var(--accent-rgb), 0.12);
+  stroke: var(--accent);
+  stroke-width: 1.5;
+}
+.iq-diagram .d-box-muted {
+  fill: var(--panel);
+  stroke: var(--border-strong);
+  stroke-width: 1.5;
+}
+.iq-diagram .d-text {
+  fill: var(--fg);
+  font-family: ui-sans-serif, system-ui, -apple-system, sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+}
+.iq-diagram .d-sub {
+  fill: var(--muted);
+  font-family: ui-sans-serif, system-ui, -apple-system, sans-serif;
+  font-size: 11px;
+  font-weight: 500;
+}
+.iq-diagram .d-accent {
+  fill: var(--accent);
+}
+.iq-diagram .d-edge {
+  stroke: var(--muted);
+  stroke-width: 1.5;
+  fill: none;
+}
+.iq-diagram .d-edge-accent {
+  stroke: var(--accent);
+  stroke-width: 2;
+  fill: none;
+}
+.iq-diagram .d-edge-dashed {
+  stroke: var(--muted);
+  stroke-width: 1.5;
+  fill: none;
+  stroke-dasharray: 5 4;
+}
+.iq-diagram .d-arrow {
+  fill: var(--muted);
+}
+.iq-diagram .d-fill-bg {
+  fill: var(--bg);
+}
+
 /* Placeholder shown on empty paragraphs / headings via Tiptap Placeholder ext */
 .tiptap-prose p.is-editor-empty:first-child::before,
 .tiptap-prose h1.is-empty::before,

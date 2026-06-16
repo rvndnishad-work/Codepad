@@ -30,7 +30,7 @@ export default async function InterviewQuestionsPage() {
       _count: true,
     }),
     prisma.prepQuestion.groupBy({
-      by: ["technology"],
+      by: ["technology", "difficulty"],
       where: { status: "published", technology: { not: null } },
       _count: true,
     }),
@@ -47,8 +47,19 @@ export default async function InterviewQuestionsPage() {
     prisma.prepQuestion.count({ where: { status: "published" } }),
   ]);
 
-  const techCounts: Record<string, number> = {};
-  for (const g of techGroups) if (g.technology) techCounts[g.technology] = g._count;
+  const techStats: Record<string, { easy: number; medium: number; hard: number; total: number }> = {};
+  for (const t of TECHNOLOGIES) {
+    techStats[t.slug] = { easy: 0, medium: 0, hard: 0, total: 0 };
+  }
+  for (const g of techGroups) {
+    if (g.technology && techStats[g.technology]) {
+      const count = g._count;
+      if (g.difficulty === "easy") techStats[g.technology].easy += count;
+      else if (g.difficulty === "hard") techStats[g.technology].hard += count;
+      else techStats[g.technology].medium += count;
+      techStats[g.technology].total += count;
+    }
+  }
 
   const expCount = new Map<string, number>();
   for (const g of eGroups) if (g.companyId) expCount.set(g.companyId, g._count);
@@ -113,7 +124,7 @@ export default async function InterviewQuestionsPage() {
               <Bookmark className="w-3.5 h-3.5" /> Saved
             </Link>
           </div>
-          <TechCards counts={techCounts} />
+          <TechCards stats={techStats} />
         </section>
 
         {/* Most-asked questions — surface real questions upfront */}

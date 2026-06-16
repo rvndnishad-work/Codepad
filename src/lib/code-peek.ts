@@ -8,6 +8,7 @@ import go from "highlight.js/lib/languages/go";
 import java from "highlight.js/lib/languages/java";
 import cpp from "highlight.js/lib/languages/cpp";
 import rust from "highlight.js/lib/languages/rust";
+import sql from "highlight.js/lib/languages/sql";
 import type { TemplateDef } from "./templates";
 
 hljs.registerLanguage("javascript", javascript);
@@ -19,6 +20,7 @@ hljs.registerLanguage("go", go);
 hljs.registerLanguage("java", java);
 hljs.registerLanguage("cpp", cpp);
 hljs.registerLanguage("rust", rust);
+hljs.registerLanguage("sql", sql);
 
 export type Showpiece = {
   path: string;

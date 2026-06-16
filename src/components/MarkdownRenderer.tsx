@@ -4,6 +4,7 @@ import React from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import rehypeHighlight from "rehype-highlight";
+import rehypeRaw from "rehype-raw";
 import "highlight.js/styles/github-dark.css";
 import RunnableSnippet from "./RunnableSnippet";
 
@@ -11,9 +12,16 @@ interface MarkdownRendererProps {
   content: string;
   className?: string;
   forceRunnable?: boolean;
+  /**
+   * Allow raw HTML/SVG in the markdown (via rehype-raw). OFF by default — only
+   * enable for TRUSTED, admin-curated content (e.g. interview-question answers
+   * that embed hand-authored inline SVG diagrams). Never enable for
+   * user-generated content: raw HTML here is a stored-XSS vector.
+   */
+  allowHtml?: boolean;
 }
 
-export default function MarkdownRenderer({ content, className = "", forceRunnable = false }: MarkdownRendererProps) {
+export default function MarkdownRenderer({ content, className = "", forceRunnable = false, allowHtml = false }: MarkdownRendererProps) {
   const extractText = (node: any): string => {
     if (typeof node === 'string') return node;
     if (Array.isArray(node)) return node.map(extractText).join('');
@@ -31,7 +39,9 @@ export default function MarkdownRenderer({ content, className = "", forceRunnabl
       ${className}`}>
       <ReactMarkdown
         remarkPlugins={[remarkGfm]}
-        rehypePlugins={[rehypeHighlight]}
+        // rehypeRaw must run before rehypeHighlight so raw HTML/SVG is parsed
+        // into the tree first. Only added when the caller opts in (trusted content).
+        rehypePlugins={allowHtml ? [rehypeRaw, rehypeHighlight] : [rehypeHighlight]}
         components={{
           code({ node, inline, className, children, ...props }: any) {
             // Match both `language-javascript` and `language-javascript-run`

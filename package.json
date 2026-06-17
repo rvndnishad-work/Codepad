@@ -21,6 +21,7 @@
     "augment:js": "npx tsx prisma/augment-js-examples.ts",
     "augment:react": "npx tsx prisma/augment-react-examples.ts",
     "augment:sd": "npx tsx prisma/augment-system-design.ts",
+    "augment:ng": "npx tsx prisma/augment-angular.ts",
     "postinstall": "prisma generate",
     "test:unit": "vitest run",
     "test:unit:watch": "vitest",

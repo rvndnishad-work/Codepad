@@ -1702,6 +1702,11 @@ model PrepQuestion {
   /// JSON array of runnable code examples: [{ label, code }]. Rendered as
   /// interactive playgrounds on the question page (currently JS-executable).
   examplesData    String?
+  /// JSON map of per-framework tutorial bundles for machine-coding questions:
+  /// { react|vue|angular: { answer, files } }. When present, the detail page
+  /// shows a framework selector that swaps both the tutorial and the runnable
+  /// solution. `answer`/`examplesData` hold the default (React) for SSR/SEO.
+  frameworksData  String?
   createdById     String?
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt

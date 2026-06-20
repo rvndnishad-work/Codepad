@@ -1,0 +1,205 @@
+[build-a-traffic-light] react: Gemini HTTP 503: {
+  "error": {
+    "code": 503,
+    "message": "This  — retry 1/3 in 8s
+[build-a-traffic-light] react: ok (2 files)
+[build-a-traffic-light] vue: ok (2 files)
+[build-a-traffic-light] angular: Gemini HTTP 503: {
+  "error": {
+    "code": 503,
+    "message": "This  — retry 1/3 in 8s
+[build-a-traffic-light] angular: ok (1 files)
+[build-a-temperature-converter] react: Gemini HTTP 503: {
+  "error": {
+    "code": 503,
+    "message": "This  — retry 1/3 in 8s
+[build-a-temperature-converter] react: ok (2 files)
+[build-a-temperature-converter] vue: Bad control character in string literal in JSON at position 4330 (line — retry 1/3 in 8s
+[build-a-temperature-converter] vue: ok (2 files)
+[build-a-temperature-converter] angular: ok (1 files)
+[build-a-dropdown-menu] react: ok (2 files)
+[build-a-dropdown-menu] vue: rate-limited (1); waiting 35s
+[build-a-dropdown-menu] vue: rate-limited (2); waiting 35s
+[build-a-dropdown-menu] vue: Gemini HTTP 503: {
+  "error": {
+    "code": 503,
+    "message": "This  — retry 1/3 in 8s
+[build-a-dropdown-menu] vue: rate-limited (3); waiting 35s
+[build-a-dropdown-menu] vue: rate-limited (4); waiting 35s
+[build-a-dropdown-menu] vue: rate-limited (5); waiting 35s
+[build-a-dropdown-menu] vue: rate-limited (6); waiting 35s
+[build-a-dropdown-menu] vue: ok (2 files)
+[build-a-dropdown-menu] angular: rate-limited (1); waiting 35s
+[build-a-dropdown-menu] angular: rate-limited (2); waiting 35s
+[build-a-dropdown-menu] angular: rate-limited (3); waiting 35s
+[build-a-dropdown-menu] angular: rate-limited (4); waiting 35s
+[build-a-dropdown-menu] angular: rate-limited (5); waiting 35s
+[build-a-dropdown-menu] angular: rate-limited (6); waiting 35s
+[build-a-dropdown-menu] angular: rate-limited (7); waiting 35s
+[build-a-dropdown-menu] angular: rate-limited (8); waiting 35s
+[build-a-dropdown-menu] angular: rate-limited (9); waiting 35s
+[build-a-dropdown-menu] angular: rate-limited (10); waiting 35s
+Too many rate limits; stopping. Re-run later (resumable).
+Backend: gemini (gemini-2.5-flash)
+[build-a-segmented-control] react: Bad control character in string literal in JSON at position 83297 (lin — retry 1/3 in 8s
+[build-a-segmented-control] react: ok (2 files)
+[build-a-segmented-control] vue: ok (2 files)
+[build-a-segmented-control] angular: Gemini HTTP 503: {
+  "error": {
+    "code": 503,
+    "message": "This  — retry 1/3 in 8s
+[build-a-segmented-control] angular: Gemini HTTP 503: {
+  "error": {
+    "code": 503,
+    "message": "This  — retry 2/3 in 8s
+[build-a-segmented-control] angular: Gemini HTTP 503: {
+  "error": {
+    "code": 503,
+    "message": "This  — retry 3/3 in 8s
+[build-a-segmented-control] angular: gave up after 4 tries (Gemini HTTP 503: {
+  "error": {
+    "code": 503,
+    "messag)
+[build-a-digital-clock] react: Gemini HTTP 503: {
+  "error": {
+    "code": 503,
+    "message": "This  — retry 1/3 in 8s
+[build-a-digital-clock] react: ok (2 files)
+[build-a-digital-clock] vue: Gemini HTTP 503: {
+  "error": {
+    "code": 503,
+    "message": "This  — retry 1/3 in 8s
+[build-a-digital-clock] vue: ok (2 files)
+[build-a-digital-clock] angular: Gemini HTTP 503: {
+  "error": {
+    "code": 503,
+    "message": "This  — retry 1/3 in 8s
+[build-a-digital-clock] angular: ok (1 files)
+[build-a-toggle-switch] react: ok (2 files)
+[build-a-toggle-switch] vue: Gemini HTTP 503: {
+  "error": {
+    "code": 503,
+    "message": "This  — retry 1/3 in 8s
+[build-a-toggle-switch] vue: Gemini HTTP 503: {
+  "error": {
+    "code": 503,
+    "message": "This  — retry 2/3 in 8s
+[build-a-toggle-switch] vue: Gemini HTTP 503: {
+  "error": {
+    "code": 503,
+    "message": "This  — retry 3/3 in 8s
+[build-a-toggle-switch] vue: gave up after 4 tries (Gemini HTTP 503: {
+  "error": {
+    "code": 503,
+    "messag)
+[build-a-toggle-switch] angular: Gemini HTTP 503: {
+  "error": {
+    "code": 503,
+    "message": "This  — retry 1/3 in 8s
+[build-a-toggle-switch] angular: ok (1 files)
+[build-an-accordion-component] react: Gemini HTTP 503: {
+  "error": {
+    "code": 503,
+    "message": "This  — retry 1/3 in 8s
+[build-an-accordion-component] react: Gemini HTTP 503: {
+  "error": {
+    "code": 503,
+    "message": "This  — retry 2/3 in 8s
+[build-an-accordion-component] react: rate-limited (1); waiting 35s
+[build-an-accordion-component] react: rate-limited (2); waiting 35s
+[build-an-accordion-component] react: rate-limited (3); waiting 35s
+[build-an-accordion-component] react: rate-limited (4); waiting 35s
+[build-an-accordion-component] react: rate-limited (5); waiting 35s
+[build-an-accordion-component] react: rate-limited (6); waiting 35s
+[build-an-accordion-component] react: rate-limited (7); waiting 35s
+[build-an-accordion-component] react: rate-limited (8); waiting 35s
+[build-an-accordion-component] react: rate-limited (9); waiting 35s
+[build-an-accordion-component] react: rate-limited (10); waiting 35s
+Too many rate limits; stopping. Re-run later (resumable).
+Backend: gemini (gemini-2.5-flash)
+[build-a-like-button] react: Gemini HTTP 403: {
+  "error": {
+    "code": 403,
+    "message": "Your  — retry 1/3 in 8s
+[build-a-like-button] react: Gemini HTTP 403: {
+  "error": {
+    "code": 403,
+    "message": "Your  — retry 2/3 in 8s
+[build-a-like-button] react: Gemini HTTP 403: {
+  "error": {
+    "code": 403,
+    "message": "Your  — retry 3/3 in 8s
+[build-a-like-button] react: gave up after 4 tries (Gemini HTTP 403: {
+  "error": {
+    "code": 403,
+    "messag)
+[build-a-like-button] vue: Gemini HTTP 403: {
+  "error": {
+    "code": 403,
+    "message": "Your  — retry 1/3 in 8s
+[build-a-like-button] vue: Gemini HTTP 403: {
+  "error": {
+    "code": 403,
+    "message": "Your  — retry 2/3 in 8s
+[build-a-like-button] vue: Gemini HTTP 403: {
+  "error": {
+    "code": 403,
+    "message": "Your  — retry 3/3 in 8s
+[build-a-like-button] vue: rate-limited (1); waiting 35s
+[build-a-like-button] vue: gave up after 4 tries (Gemini HTTP 403: {
+  "error": {
+    "code": 403,
+    "messag)
+[build-a-like-button] angular: Gemini HTTP 403: {
+  "error": {
+    "code": 403,
+    "message": "Your  — retry 1/3 in 8s
+[build-a-like-button] angular: Gemini HTTP 403: {
+  "error": {
+    "code": 403,
+    "message": "Your  — retry 2/3 in 8s
+[build-a-like-button] angular: Gemini HTTP 403: {
+  "error": {
+    "code": 403,
+    "message": "Your  — retry 3/3 in 8s
+[build-a-like-button] angular: gave up after 4 tries (Gemini HTTP 403: {
+  "error": {
+    "code": 403,
+    "messag)
+[build-an-avatar-group] react: Gemini HTTP 403: {
+  "error": {
+    "code": 403,
+    "message": "Your  — retry 1/3 in 8s
+[build-an-avatar-group] react: Gemini HTTP 403: {
+  "error": {
+    "code": 403,
+    "message": "Your  — retry 2/3 in 8s
+[build-an-avatar-group] react: Gemini HTTP 403: {
+  "error": {
+    "code": 403,
+    "message": "Your  — retry 3/3 in 8s
+[build-an-avatar-group] react: gave up after 4 tries (Gemini HTTP 403: {
+  "error": {
+    "code": 403,
+    "messag)
+[build-an-avatar-group] vue: Gemini HTTP 403: {
+  "error": {
+    "code": 403,
+    "message": "Your  — retry 1/3 in 8s
+[build-an-avatar-group] vue: rate-limited (2); waiting 35s
+[build-an-avatar-group] vue: Gemini HTTP 403: {
+  "error": {
+    "code": 403,
+    "message": "Your  — retry 2/3 in 8s
+[build-an-avatar-group] vue: Gemini HTTP 403: {
+  "error": {
+    "code": 403,
+    "message": "Your  — retry 3/3 in 8s
+[build-an-avatar-group] vue: rate-limited (3); waiting 35s
+[build-an-avatar-group] vue: gave up after 4 tries (Gemini HTTP 403: {
+  "error": {
+    "code": 403,
+    "messag)
+[build-an-avatar-group] angular: rate-limited (4); waiting 35s
+[build-an-avatar-group] angular: rate-limited (5); waiting 35s
+[build-an-avatar-group] angular: rate-limited (6); waiting 35s

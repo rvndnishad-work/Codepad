@@ -1,0 +1,93 @@
+[build-a-dropdown-menu] angular: Gemini HTTP 503: {
+  "error": {
+    "code": 503,
+    "message": "This  — retry 1/3 in 8s
+[build-a-dropdown-menu] angular: Gemini HTTP 503: {
+  "error": {
+    "code": 503,
+    "message": "This  — retry 2/3 in 8s
+[build-a-dropdown-menu] angular: Gemini HTTP 503: {
+  "error": {
+    "code": 503,
+    "message": "This  — retry 3/3 in 8s
+[build-a-dropdown-menu] angular: gave up after 4 tries (Gemini HTTP 503: {
+  "error": {
+    "code": 503,
+    "messag)
+[build-a-dark-mode-toggle] react: Gemini HTTP 503: {
+  "error": {
+    "code": 503,
+    "message": "This  — retry 1/3 in 8s
+[build-a-dark-mode-toggle] react: Gemini HTTP 503: {
+  "error": {
+    "code": 503,
+    "message": "This  — retry 2/3 in 8s
+[build-a-dark-mode-toggle] react: rate-limited (1); waiting 35s
+[build-a-dark-mode-toggle] react: Gemini HTTP 503: {
+  "error": {
+    "code": 503,
+    "message": "This  — retry 3/3 in 8s
+[build-a-dark-mode-toggle] react: gave up after 4 tries (Gemini HTTP 503: {
+  "error": {
+    "code": 503,
+    "messag)
+[build-a-dark-mode-toggle] vue: Gemini HTTP 503: {
+  "error": {
+    "code": 503,
+    "message": "This  — retry 1/3 in 8s
+[build-a-dark-mode-toggle] vue: Gemini HTTP 503: {
+  "error": {
+    "code": 503,
+    "message": "This  — retry 2/3 in 8s
+[build-a-dark-mode-toggle] vue: Gemini HTTP 503: {
+  "error": {
+    "code": 503,
+    "message": "This  — retry 3/3 in 8s
+[build-a-dark-mode-toggle] vue: ok (2 files)
+[build-a-dark-mode-toggle] angular: Gemini HTTP 503: {
+  "error": {
+    "code": 503,
+    "message": "This  — retry 1/3 in 8s
+[build-a-dark-mode-toggle] angular: Gemini HTTP 503: {
+  "error": {
+    "code": 503,
+    "message": "This  — retry 2/3 in 8s
+[build-a-dark-mode-toggle] angular: Gemini HTTP 503: {
+  "error": {
+    "code": 503,
+    "message": "This  — retry 3/3 in 8s
+[build-a-dark-mode-toggle] angular: gave up after 4 tries (Gemini HTTP 503: {
+  "error": {
+    "code": 503,
+    "messag)
+[build-a-digital-clock] react: Gemini HTTP 503: {
+  "error": {
+    "code": 503,
+    "message": "This  — retry 1/3 in 8s
+[build-a-digital-clock] react: Gemini HTTP 503: {
+  "error": {
+    "code": 503,
+    "message": "This  — retry 2/3 in 8s
+[build-a-digital-clock] react: Gemini HTTP 503: {
+  "error": {
+    "code": 503,
+    "message": "This  — retry 3/3 in 8s
+[build-a-digital-clock] react: gave up after 4 tries (Gemini HTTP 503: {
+  "error": {
+    "code": 503,
+    "messag)
+[build-a-digital-clock] vue: Gemini HTTP 503: {
+  "error": {
+    "code": 503,
+    "message": "This  — retry 1/3 in 8s
+[build-a-digital-clock] vue: rate-limited (1); waiting 35s
+[build-a-digital-clock] vue: rate-limited (2); waiting 35s
+[build-a-digital-clock] vue: rate-limited (3); waiting 35s
+[build-a-digital-clock] vue: rate-limited (4); waiting 35s
+[build-a-digital-clock] vue: rate-limited (5); waiting 35s
+[build-a-digital-clock] vue: rate-limited (6); waiting 35s
+[build-a-digital-clock] vue: rate-limited (7); waiting 35s
+[build-a-digital-clock] vue: rate-limited (8); waiting 35s
+[build-a-digital-clock] vue: rate-limited (9); waiting 35s
+[build-a-digital-clock] vue: rate-limited (10); waiting 35s
+Too many rate limits; stopping. Re-run later (resumable).

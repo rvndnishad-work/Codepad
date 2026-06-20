@@ -56,6 +56,17 @@ const META: Record<string, TechMeta> = {
     tagline: "Closures, async & the core",
     concepts: ["Closures", "Async/Await", "Promises", "ES6+"],
   },
+  "machine-coding": {
+    bg: "bg-gradient-to-br from-indigo-500/5 via-surface to-surface dark:from-indigo-950/15 dark:via-surface/10 dark:to-surface/5",
+    border: "border-indigo-500/15 dark:border-indigo-500/10",
+    hoverBg: "hover:from-indigo-500/10 dark:hover:from-indigo-950/25",
+    hoverBorder: "hover:border-indigo-500/40 dark:hover:border-indigo-500/30",
+    hoverShadow: "hover:shadow-[0_8px_30px_rgba(99,102,241,0.06)]",
+    iconBg: "bg-indigo-500/10 dark:bg-indigo-500/20",
+    glowColor: "bg-indigo-500/5",
+    tagline: "Build live UI components & widgets",
+    concepts: ["Components", "State", "Events", "Live Build"],
+  },
   angular: {
     bg: "bg-gradient-to-br from-red-500/5 via-surface to-surface dark:from-red-950/15 dark:via-surface/10 dark:to-surface/5",
     border: "border-red-500/15 dark:border-red-500/10",

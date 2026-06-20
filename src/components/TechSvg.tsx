@@ -113,6 +113,25 @@ export function SqlSvg({ className = "w-10 h-10" }: { className?: string }) {
   );
 }
 
+export function MachineCodingSvg({ className = "w-10 h-10" }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 100 100" className={`${className} text-indigo-600 dark:text-indigo-400`}>
+      {/* browser frame */}
+      <rect x="18" y="22" width="64" height="50" rx="6" fill="none" stroke="currentColor" strokeWidth="2.5" />
+      <line x1="18" y1="34" x2="82" y2="34" stroke="currentColor" strokeWidth="2" />
+      <circle cx="25" cy="28" r="2" fill="currentColor" />
+      <circle cx="32" cy="28" r="2" fill="currentColor" className="opacity-70" />
+      {/* assembling blocks */}
+      <rect x="25" y="42" width="16" height="10" rx="2" fill="currentColor" className="opacity-80 animate-pulse" />
+      <rect x="45" y="42" width="30" height="6" rx="2" fill="none" stroke="currentColor" strokeWidth="2" className="opacity-60" />
+      <rect x="45" y="54" width="22" height="6" rx="2" fill="none" stroke="currentColor" strokeWidth="2" className="opacity-50" />
+      <rect x="25" y="56" width="16" height="8" rx="2" fill="none" stroke="currentColor" strokeWidth="2" className="opacity-60" />
+      {/* cursor */}
+      <path d="M 70 60 L 70 76 L 74 72 L 77 79 L 80 77 L 77 70 L 82 70 Z" fill="currentColor" className="opacity-90" />
+    </svg>
+  );
+}
+
 export function FallbackSvg({ className = "w-10 h-10" }: { className?: string }) {
   return (
     <svg viewBox="0 0 100 100" className={`${className} text-accent`}>
@@ -144,6 +163,8 @@ export default function TechSvg({ tech, className = "w-10 h-10" }: { tech: strin
       return <PythonSvg className={className} />;
     case "sql":
       return <SqlSvg className={className} />;
+    case "machine-coding":
+      return <MachineCodingSvg className={className} />;
     default:
       return <FallbackSvg className={className} />;
   }

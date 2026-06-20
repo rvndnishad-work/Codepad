@@ -18,8 +18,10 @@ import {
   GitFork,
   Link as LinkIcon,
   Code2,
-  ExternalLink
+  ExternalLink,
+  ArrowLeft
 } from "lucide-react";
+import Link from "next/link";
 import { TemplateLogo } from "@/lib/icons";
 import ChallengeTimer from "./ChallengeTimer";
 import type { Snippet, Visibility } from "./Playground";
@@ -425,7 +427,7 @@ export default function PlaygroundToolbar({
   visibility, setVisibility, snippet, snippetId, forking,
   handleSave, handleFork, handleShare, handleCopyEmbed, handlePopout,
   handleRun, running, onTogglePrompt, tplMode,
-  uiScale, setUiScale
+  uiScale, setUiScale, backHref
 }: any) {
   const [actionsOpen, setActionsOpen] = useState(false);
   const actionsRef = useRef<HTMLDivElement>(null);
@@ -447,6 +449,21 @@ export default function PlaygroundToolbar({
       <div className="toolbar-3d h-14 px-4 flex items-center justify-between">
         {/* â”€â”€ Left: Identity + Run â”€â”€ */}
         <div className="flex items-center gap-3">
+          {/* Back to the originating question (only when arrived from there) */}
+          {backHref && (
+            <>
+              <Link
+                href={backHref}
+                className="h-8 pl-2 pr-2.5 rounded-lg flex items-center gap-1.5 text-[12px] font-medium text-fg/70 hover:text-fg hover:bg-fg/5 transition-colors flex-shrink-0"
+                title="Back to question"
+              >
+                <ArrowLeft className="w-4 h-4" />
+                <span className="hidden sm:inline">Back to question</span>
+              </Link>
+              <div className="tb-sep" />
+            </>
+          )}
+
           {/* Project Identity */}
           <div className="flex items-center gap-2 group/meta">
             <div className="w-6 h-6 rounded grid place-items-center flex-shrink-0 opacity-60">

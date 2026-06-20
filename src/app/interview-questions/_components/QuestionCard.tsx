@@ -196,15 +196,15 @@ export default function QuestionCard({ q, showCompany = true }: { q: QuestionCar
             </span>
           )}
           {showCompany && q.company && (
-            <span className="inline-flex items-center gap-1.5 bg-surface border border-border px-2 py-0.5 rounded-md font-semibold text-fg/70">
-              <Building2 className="w-3.5 h-3.5 text-muted/50" />
+            <span className="inline-flex items-center gap-1.5 bg-surface border border-border px-2 py-0.5 rounded-md font-semibold text-fg">
+              <Building2 className="w-3.5 h-3.5 text-muted" />
               {q.company.name}
             </span>
           )}
-          {q.round && <span className="text-muted/65 font-medium">· {q.round}</span>}
+          {q.round && <span className="text-muted font-medium">· {q.round}</span>}
           {years.length > 0 && (
-            <span className="inline-flex items-center gap-1 text-muted/60 font-medium">
-              <Calendar className="w-3.5 h-3.5 text-muted/40" />
+            <span className="inline-flex items-center gap-1 text-muted font-medium">
+              <Calendar className="w-3.5 h-3.5" />
               {years.slice(0, 3).join(", ")}
             </span>
           )}
@@ -212,19 +212,19 @@ export default function QuestionCard({ q, showCompany = true }: { q: QuestionCar
 
         {/* Title */}
         <h3
-          className={`mt-1.5 font-black text-[15px] sm:text-[17px] tracking-tight leading-snug text-fg/90 ${theme.textAccent} transition-colors duration-200 line-clamp-2`}
+          className={`mt-1.5 font-extrabold text-[15px] sm:text-[17px] tracking-tight leading-snug text-fg ${theme.textAccent} transition-colors duration-200 line-clamp-2`}
         >
           {q.title}
         </h3>
 
         {/* Inline engagement stats */}
-        <div className="mt-2 flex items-center gap-3.5 text-[11px] font-semibold text-muted/55 group-hover:text-muted/80 transition-colors duration-300">
+        <div className="mt-2 flex items-center gap-3.5 text-[11px] font-semibold text-muted">
           <span className="inline-flex items-center gap-1">
-            <Eye className="w-3.5 h-3.5 text-muted/40" />
+            <Eye className="w-3.5 h-3.5" />
             {compactNumber(q.views)}
           </span>
-          <span className="inline-flex items-center gap-1">
-            <Heart className="w-3.5 h-3.5 text-muted/40 group-hover:text-rose-500/70 transition-colors" />
+          <span className="inline-flex items-center gap-1 group-hover:text-rose-500 transition-colors">
+            <Heart className="w-3.5 h-3.5" />
             {compactNumber(q.likes)}
           </span>
         </div>
@@ -239,7 +239,7 @@ export default function QuestionCard({ q, showCompany = true }: { q: QuestionCar
         >
           {q.difficulty}
         </span>
-        <ArrowUpRight className="w-4 h-4 text-muted/30 group-hover:text-accent group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-all duration-300" />
+        <ArrowUpRight className="w-4 h-4 text-muted group-hover:text-accent group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-all duration-300" />
       </div>
     </Link>
   );

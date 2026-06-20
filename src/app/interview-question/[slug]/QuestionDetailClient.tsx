@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -19,7 +19,8 @@ import {
 } from "lucide-react";
 // ExternalLink removed: per-example "Open in Playground" now lives in CodeExample.
 import MarkdownRenderer from "@/components/MarkdownRenderer";
-import CodeExample, { type ExampleData } from "./CodeExample";
+import CodeExample, { MultiFileExample, type ExampleData } from "./CodeExample";
+import { CODE_VARIANTS } from "@/lib/interview-questions/code-variants";
 import CommentSection, { type CommentNode } from "@/components/CommentSection";
 import {
   difficultyClasses,
@@ -50,6 +51,7 @@ interface QuestionData {
   views: number;
   likes: number;
   examplesData: string | null;
+  frameworksData: string | null;
   company: { name: string; slug: string } | null;
 }
 
@@ -130,6 +132,13 @@ const TECH_THEMES: Record<string, { bg: string; border: string; hoverBorder: str
     text: "text-sky-600 dark:text-sky-400",
     bgGlow: "bg-sky-500/5"
   },
+  "machine-coding": {
+    bg: "bg-gradient-to-br from-indigo-500/5 via-surface to-surface dark:from-indigo-950/15 dark:via-surface/10 dark:to-surface/5",
+    border: "border-indigo-500/15 dark:border-indigo-500/10",
+    hoverBorder: "hover:border-indigo-500/40 dark:hover:border-indigo-500/30",
+    text: "text-indigo-600 dark:text-indigo-400",
+    bgGlow: "bg-indigo-500/5"
+  },
 };
 
 const FALLBACK_THEME = {
@@ -168,11 +177,61 @@ export default function QuestionDetailClient({
     (e) =>
       e &&
       ((typeof e.code === "string" && e.code.trim()) ||
-        (Array.isArray(e.variants) && e.variants.length > 0)),
+        (Array.isArray(e.variants) && e.variants.length > 0) ||
+        (e.files && Object.keys(e.files).length > 0)),
   );
 
   const isRunnable = q.technology === "javascript";
-  const isReact = q.technology === "reactjs";
+  // Machine-coding solutions are React components — render examples the same way
+  // (highlighted code + "Open in Playground" into the empty-react template).
+  const isReact = q.technology === "reactjs" || q.technology === "machine-coding";
+
+  // Per-framework tutorial bundles (machine-coding): a selector swaps BOTH the
+  // tutorial answer and the runnable solution between React / Vue / Angular.
+  const frameworks = useMemo<Record<string, { answer: string; files: Record<string, string> }>>(() => {
+    if (!q.frameworksData) return {};
+    try {
+      const o = JSON.parse(q.frameworksData);
+      return o && typeof o === "object" && !Array.isArray(o) ? o : {};
+    } catch {
+      return {};
+    }
+  }, [q.frameworksData]);
+  const frameworkKeys = useMemo(() => Object.keys(frameworks), [frameworks]);
+  const hasFrameworks = frameworkKeys.length > 0;
+
+  const [framework, setFramework] = useState<string>("react");
+  // Restore the saved preference once mounted (kept in sync with the listing).
+  useEffect(() => {
+    if (!hasFrameworks) return;
+    const saved = typeof window !== "undefined" ? localStorage.getItem("mc-framework") : null;
+    setFramework(
+      saved && frameworkKeys.includes(saved)
+        ? saved
+        : frameworkKeys.includes("react")
+          ? "react"
+          : frameworkKeys[0],
+    );
+  }, [hasFrameworks, frameworkKeys]);
+
+  function selectFramework(fw: string) {
+    setFramework(fw);
+    try {
+      localStorage.setItem("mc-framework", fw);
+    } catch {
+      /* ignore */
+    }
+  }
+
+  const activeFw = hasFrameworks ? (frameworks[framework] ? framework : frameworkKeys[0]) : null;
+  const fwBundle = activeFw ? frameworks[activeFw] : null;
+  const fwTemplate = activeFw ? CODE_VARIANTS[activeFw]?.template || "empty-react" : "empty-react";
+
+  // What actually renders: the framework bundle wins when present.
+  const answerContent = fwBundle ? fwBundle.answer : q.answer;
+  const displayExamples: ExampleData[] = fwBundle
+    ? [{ label: "Complete solution", files: fwBundle.files }]
+    : rawExamples;
 
   const theme = TECH_THEMES[q.technology ?? ""] ?? FALLBACK_THEME;
 
@@ -276,8 +335,37 @@ export default function QuestionDetailClient({
               </div>
             </motion.div>
 
+            {/* Framework selector — swaps the tutorial + solution (machine-coding). */}
+            {hasFrameworks && (
+              <motion.div
+                initial="hidden"
+                animate="visible"
+                variants={fadeInVariants}
+                className="flex flex-wrap items-center gap-2 p-3 rounded-2xl border border-border bg-surface/85 dark:bg-surface/25 shadow-sm"
+              >
+                <span className="text-[11px] font-black uppercase tracking-wider text-muted px-1.5">
+                  Solve in
+                </span>
+                <div className="flex flex-wrap gap-1.5">
+                  {frameworkKeys.map((fw) => (
+                    <button
+                      key={fw}
+                      onClick={() => selectFramework(fw)}
+                      className={`px-3.5 py-1.5 rounded-xl text-xs font-bold border transition ${
+                        fw === activeFw
+                          ? "bg-accent text-bg border-accent shadow-sm"
+                          : "bg-bg border-border text-muted hover:text-fg hover:border-accent/40"
+                      }`}
+                    >
+                      {CODE_VARIANTS[fw]?.label ?? fw}
+                    </button>
+                  ))}
+                </div>
+              </motion.div>
+            )}
+
             {/* 3. Collapsible Answer & Explanation Card */}
-            {q.answer && (
+            {answerContent && (
               <motion.div
                 initial="hidden"
                 animate="visible"
@@ -320,7 +408,7 @@ export default function QuestionDetailClient({
                       <div className="px-6 pb-6 pt-2 border-t border-border prose dark:prose-invert max-w-none text-sm text-fg/90 leading-relaxed">
                         {/* allowHtml: answers are admin-curated and may embed
                             hand-authored inline SVG diagrams. */}
-                        <MarkdownRenderer content={q.answer} allowHtml />
+                        <MarkdownRenderer content={answerContent} allowHtml />
                       </div>
                     </motion.div>
                   ) : (
@@ -351,7 +439,7 @@ export default function QuestionDetailClient({
             )}
 
             {/* 4. Runnable Code Playgrounds / Examples */}
-            {rawExamples.length > 0 && (
+            {displayExamples.length > 0 && (
               <motion.div
                 initial="hidden"
                 animate="visible"
@@ -361,16 +449,30 @@ export default function QuestionDetailClient({
                 <div className="flex items-center gap-2">
                   <span className="w-1.5 h-6 rounded-full bg-accent" />
                   <h2 className="text-sm font-black uppercase tracking-wider text-fg">
-                    {rawExamples.some((e) => isRunnable && e.runnable !== false)
+                    {activeFw
+                      ? `${CODE_VARIANTS[activeFw]?.label ?? activeFw} Solution`
+                      : displayExamples.some((e) => isRunnable && e.runnable !== false)
                       ? "Executable Playgrounds"
-                      : isReact && rawExamples.some((e) => e.runnable !== false)
+                      : isReact && displayExamples.some((e) => e.runnable !== false)
                       ? "React Playground Snippets"
                       : "Code Snippets"}
                   </h2>
                 </div>
 
                 <div className="space-y-4">
-                  {rawExamples.map((ex, i) => {
+                  {displayExamples.map((ex, i) => {
+                    // Multi-file (component-wise) solution: file tabs + a single
+                    // "Run Playground" that opens every file in the workspace.
+                    if (ex.files && Object.keys(ex.files).length > 0) {
+                      return (
+                        <MultiFileExample
+                          key={`${activeFw ?? "f"}-${i}`}
+                          label={ex.label}
+                          files={ex.files}
+                          template={fwTemplate}
+                        />
+                      );
+                    }
                     // In-page runner for plain JavaScript single-variant examples.
                     if (isRunnable && ex.runnable !== false && !ex.variants) {
                       return <JsPlayground key={i} code={ex.code ?? ""} label={ex.label} />;

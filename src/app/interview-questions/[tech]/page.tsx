@@ -6,6 +6,7 @@ import { TECHNOLOGIES, RESERVED_TECH_SLUGS, techLabel, parseJsonArray, compactNu
 import QuestionCard from "../_components/QuestionCard";
 import JsonLd, { breadcrumb, faqPage } from "../_components/JsonLd";
 import TechFilters from "./TechFilters";
+import FrameworkPreference from "./FrameworkPreference";
 import TechSvg from "@/components/TechSvg";
 import type { Prisma } from "@prisma/client";
 
@@ -104,6 +105,15 @@ const TECH_THEMES: Record<string, { bg: string; border: string; hoverBorder: str
     bgGlow: "bg-sky-500/5",
     tagline: "Index architectures, table joins & analytical queries",
   },
+  "machine-coding": {
+    bg: "bg-gradient-to-br from-indigo-500/5 via-surface to-surface dark:from-indigo-950/15 dark:via-surface/10 dark:to-surface/5",
+    border: "border-indigo-500/15 dark:border-indigo-500/10",
+    hoverBorder: "hover:border-indigo-500/40 dark:hover:border-indigo-500/30",
+    glow: "hover:shadow-[0_8px_30px_rgba(99,102,241,0.06)]",
+    text: "text-indigo-600 dark:text-indigo-400",
+    bgGlow: "bg-indigo-500/5",
+    tagline: "Build live UI components & widgets from scratch in the browser",
+  },
 };
 
 const FALLBACK_THEME = {
@@ -149,7 +159,10 @@ export default async function TechnologyPage({
     ];
   }
 
-  const [questions, total, companiesInTech, roundsRaw, difficultyGroups, statsAggregate] = await Promise.all([
+  // Every technology track is ordered easy -> hard (then by popularity) so a
+  // learner can work through it progressively. Difficulty is a string, so the
+  // rank is applied in JS below; the take covers the whole set per tech.
+  const [questionsRaw, total, companiesInTech, roundsRaw, difficultyGroups, statsAggregate] = await Promise.all([
     prisma.prepQuestion.findMany({
       where,
       orderBy: [{ views: "desc" }],
@@ -158,7 +171,7 @@ export default async function TechnologyPage({
         views: true, likes: true, yearsAsked: true, answer: true, tags: true,
         company: { select: { name: true, slug: true } },
       },
-      take: 60,
+      take: 200,
     }),
     prisma.prepQuestion.count({ where: { technology: tech, status: "published" } }),
     prisma.company.findMany({
@@ -183,6 +196,13 @@ export default async function TechnologyPage({
   ]);
 
   if (total === 0 && !isKnownTech(tech)) notFound();
+
+  const DIFF_RANK: Record<string, number> = { easy: 0, medium: 1, hard: 2 };
+  const questions = [...questionsRaw].sort(
+    (a, b) =>
+      (DIFF_RANK[a.difficulty ?? "medium"] ?? 1) - (DIFF_RANK[b.difficulty ?? "medium"] ?? 1) ||
+      b.views - a.views,
+  );
 
   const rounds = roundsRaw.map((r) => r.round!).filter(Boolean);
   const label = techLabel(tech);
@@ -290,6 +310,7 @@ export default async function TechnologyPage({
               </div>
               <h1 className="text-3xl sm:text-4xl font-black tracking-tight">{label} Interview Library</h1>
               <p className="text-sm text-muted mt-2 max-w-2xl leading-relaxed">{theme.tagline}</p>
+              {tech === "machine-coding" && <FrameworkPreference />}
             </div>
 
             {/* Stats row */}

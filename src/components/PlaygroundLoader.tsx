@@ -25,6 +25,7 @@ type Props = {
   isOwner?: boolean;
   embed?: boolean;
   previewOnly?: boolean;
+  backHref?: string;
 };
 
 const Playground = dynamic(() => import("./Playground"), {

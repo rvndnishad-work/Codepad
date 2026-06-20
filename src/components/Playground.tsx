@@ -47,7 +47,7 @@ import {
   ChevronRight,
 } from "lucide-react";
 import { templatesById } from "@/lib/templates";
-import { decodePlaygroundCode } from "@/lib/playground-handoff";
+import { decodePlaygroundCode, decodePlaygroundFiles } from "@/lib/playground-handoff";
 import { getSandpackTheme } from "@/lib/sandpack-theme";
 import { TemplateLogo } from "@/lib/icons";
 import { describeExecution } from "@/lib/exec-result";
@@ -81,6 +81,7 @@ type Props = {
   isOwner?: boolean;
   embed?: boolean;
   previewOnly?: boolean;
+  backHref?: string;
 };
 
 function SegBtn({
@@ -171,6 +172,7 @@ export default function Playground({
   isOwner = !snippet,
   embed = false,
   previewOnly = false,
+  backHref,
 }: Props) {
   const { theme, resolvedTheme } = useTheme();
   const isDark = resolvedTheme === "dark";
@@ -217,11 +219,20 @@ export default function Playground({
     () => (typeof window === "undefined" ? null : decodePlaygroundCode(window.location.hash)),
     [],
   );
+  // Multi-file handoff (#files=…): a path -> source map merged over the template,
+  // so a solution can be split component-wise (e.g. /App.js + /src/Otp.js).
+  const prefillFiles = useMemo(
+    () => (typeof window === "undefined" ? null : decodePlaygroundFiles(window.location.hash)),
+    [],
+  );
 
   const cleanFiles = useMemo(() => {
     let files = initialFiles ?? tpl.files;
-    // Drop the handed-off code into the template's entry (first non-hidden) file.
-    if (prefillCode) {
+    // Multi-file handoff wins: merge the supplied files over the template ones
+    // (overrides /App.js, adds /src/* which then show in the file explorer).
+    if (prefillFiles && Object.keys(prefillFiles).length > 0) {
+      files = { ...files, ...prefillFiles };
+    } else if (prefillCode) {
       const entry =
         Object.keys(files).find((k) => {
           const v = files[k];
@@ -260,7 +271,7 @@ export default function Playground({
       return next;
     }
     return files;
-  }, [initialFiles, templateId, tpl.files, prefillCode]);
+  }, [initialFiles, templateId, tpl.files, prefillCode, prefillFiles]);
 
   const initialFilesRef = useRef<SandpackFiles>(cleanFiles);
   const filesRef = useRef<SandpackFiles>(cleanFiles);
@@ -572,7 +583,7 @@ export default function Playground({
   // Strip the one-shot #code= handoff from the URL once it's been applied, so a
   // refresh, save, or fork doesn't re-inject it and the address bar stays clean.
   useEffect(() => {
-    if (typeof window !== "undefined" && /[#&]code=/.test(window.location.hash)) {
+    if (typeof window !== "undefined" && /[#&](code|files)=/.test(window.location.hash)) {
       window.history.replaceState(null, "", window.location.pathname + window.location.search);
     }
   }, []);
@@ -757,6 +768,7 @@ export default function Playground({
         <div className="flex-1 playground-container flex flex-col relative overflow-hidden">
           {!embed && !previewOnly && (
             <PlaygroundToolbar
+              backHref={backHref}
               templateId={templateId} tplTitle={tpl.title} title={title} setTitle={setTitle}
               dirty={dirty} setDirty={setDirty} editable={editable} signedIn={signedIn}
               saving={saving} lastSavedAt={lastSavedAt}

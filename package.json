@@ -23,6 +23,7 @@
     "augment:sd": "npx tsx prisma/augment-system-design.ts",
     "augment:ng": "npx tsx prisma/augment-angular.ts",
     "augment:py": "npx tsx prisma/augment-python.ts",
+    "augment:dsa": "npx tsx prisma/augment-dsa.ts",
     "augment:mc": "npx tsx prisma/augment-machine-coding.ts",
     "generate:mc": "npx tsx prisma/generate-mc-answers.ts",
     "seed:mc-generated": "npx tsx prisma/seed-mc-generated.ts",

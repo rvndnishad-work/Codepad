@@ -1,0 +1,437 @@
+[
+  {
+    "difficulty": "hard",
+    "round": "Frontend",
+    "technology": "reactjs",
+    "title": "What do `startTransition` and `useTransition` actually do under the hood?",
+    "description": "Explain concurrent transitions and how they keep the UI responsive.",
+    "tags": [
+      "react",
+      "concurrent",
+      "performance"
+    ],
+    "answer": "They mark a state update as a **non-urgent transition** so React can render it in an *interruptible, lower-priority* pass instead of blocking the main thread. Urgent updates (typing, clicks) can preempt an in-progress transition render, keeping input responsive while a heavy re-render happens in the background.\n\nUnder the hood this relies on **concurrent rendering**: React prepares the new tree in memory and can pause, abandon, or restart that work if a higher-priority update arrives. `useTransition` additionally returns an `isPending` flag so you can show a subtle indicator.\n\n```jsx\nconst [isPending, startTransition] = useTransition();\nfunction onChange(e) {\n  setQuery(e.target.value);            // urgent: keep the input snappy\n  startTransition(() => {\n    setResults(filter(e.target.value)); // non-urgent: can be interrupted\n  });\n}\n```\n\nKey nuance: transitions don't make code *faster* — they change *scheduling priority* so an expensive render never blocks user input."
+  },
+  {
+    "difficulty": "hard",
+    "round": "Frontend",
+    "technology": "reactjs",
+    "title": "What is `useDeferredValue` and how does it differ from debouncing?",
+    "description": "Compare adaptive deferral with fixed-time debounce/throttle.",
+    "tags": [
+      "react",
+      "concurrent",
+      "performance"
+    ],
+    "answer": "`useDeferredValue` returns a copy of a value that is allowed to *lag behind* during urgent work. React renders the stale value immediately and schedules a re-render with the fresh value at lower priority, so an input stays responsive while an expensive list re-renders off the deferred value.\n\nUnlike **debouncing** — which waits a *fixed* amount of time regardless of the device — `useDeferredValue` is **adaptive and interruptible**: on a fast device it updates almost immediately; on a slow device it degrades gracefully, resolving as soon as React is idle, with no arbitrary timeout to tune.\n\n```jsx\nconst deferredQuery = useDeferredValue(query);\nconst list = useMemo(() => <Results query={deferredQuery} />, [deferredQuery]);\n```\n\nDebounce throws away intermediate values on a timer; `useDeferredValue` keeps the UI consistent and lets React decide when to catch up."
+  },
+  {
+    "difficulty": "hard",
+    "round": "Frontend",
+    "technology": "reactjs",
+    "title": "How does automatic batching work in React 18, and how do you opt out?",
+    "description": "Explain batching across async boundaries and flushSync.",
+    "tags": [
+      "react",
+      "react-18",
+      "rendering"
+    ],
+    "answer": "React 18 **automatically batches** every state update that happens in the same tick — including updates inside promises, `setTimeout`, and native event handlers — into a single re-render. (React 17 only batched updates originating inside React event handlers; updates in async callbacks each triggered their own render.)\n\nBatching means multiple `setState` calls produce one commit, avoiding redundant renders and intermediate UI states.\n\nTo force a **synchronous, un-batched** commit — for example to read updated layout from the DOM immediately after a state change — wrap it in `flushSync`:\n\n```jsx\nflushSync(() => setExpanded(true));\nnode.scrollIntoView();   // DOM already reflects the update\n```\n\n`flushSync` is an escape hatch with a real performance cost (it forces a synchronous render + commit), so reach for it only when you truly need the DOM updated before the next line runs."
+  },
+  {
+    "difficulty": "hard",
+    "round": "Frontend",
+    "technology": "reactjs",
+    "title": "What problem does `useSyncExternalStore` solve?",
+    "description": "Subscribing to external stores safely under concurrent rendering.",
+    "tags": [
+      "react",
+      "concurrent",
+      "state-management"
+    ],
+    "answer": "It's the official hook for subscribing a component to an **external (non-React) store** so reads stay consistent under concurrent rendering. You give it `subscribe`, `getSnapshot`, and optionally `getServerSnapshot` for SSR.\n\nBefore it existed, reading a mutable external store during render could **tear**: because concurrent React can pause and resume a render, two components in the same commit might read different versions of the store. `useSyncExternalStore` forces a synchronous, consistent snapshot and wires up re-subscription correctly, so all consumers in a commit agree.\n\n```jsx\nconst value = useSyncExternalStore(store.subscribe, store.getSnapshot);\n```\n\nState libraries like Redux and Zustand use it internally so they remain correct in React 18's concurrent model."
+  },
+  {
+    "difficulty": "hard",
+    "round": "Frontend",
+    "technology": "reactjs",
+    "title": "What is \"tearing\" in concurrent React?",
+    "description": "Define visual inconsistency from interrupted renders over mutable state.",
+    "tags": [
+      "react",
+      "concurrent",
+      "state-management"
+    ],
+    "answer": "**Tearing** is when a single committed render shows UI reflecting *two different versions* of the same external state — some components rendered with the old value, others with the new — producing a visually inconsistent screen.\n\nIt can happen in concurrent React because a render can be **interrupted and resumed**; if an external mutable store changes between the time the first and last components read it, they disagree. React's own state cannot tear because it is snapshotted per render, but external mutable stores can.\n\nThe fix is `useSyncExternalStore`, which guarantees every consumer in a commit reads one consistent snapshot, eliminating the inconsistency."
+  },
+  {
+    "difficulty": "hard",
+    "round": "Frontend",
+    "technology": "reactjs",
+    "title": "React Server Components vs SSR — what is the real difference?",
+    "description": "Clarify the boundary between server rendering and server-only components.",
+    "tags": [
+      "react",
+      "rsc",
+      "ssr"
+    ],
+    "answer": "**SSR** runs your ordinary client components on the server to produce HTML, then ships their JavaScript to the browser to **hydrate** them — the components still execute on the client and count toward the bundle.\n\n**React Server Components** *never* run on the client and ship **zero JS for themselves**. They render on the server into a serialized description that the client merges into the React tree. They can directly use server resources (database, filesystem, secrets) and shrink the bundle, but cannot use state, effects, or browser APIs.\n\nThe two compose: RSCs render the static/data parts, and `\"use client\"` components handle interactivity (and can be SSR'd + hydrated). In short: **SSR is about *where the first HTML is produced*; RSC is about *which components exist only on the server* and never hydrate.**"
+  },
+  {
+    "difficulty": "hard",
+    "round": "Frontend",
+    "technology": "reactjs",
+    "title": "What does the `use()` hook do, and why is it special?",
+    "description": "Reading promises and context during render with Suspense integration.",
+    "tags": [
+      "react",
+      "suspense",
+      "data-fetching"
+    ],
+    "answer": "`use()` reads the value of a resource — a **Promise** or a **Context** — during render. Unlike every other hook, it may be called **conditionally** and inside loops or `if` blocks.\n\nGiven a pending Promise, `use()` **suspends** the component, integrating with the nearest `<Suspense>` boundary; when the promise resolves React re-renders with the value. It's the primitive behind first-class data fetching in the Suspense/RSC model.\n\n```jsx\nfunction Comment({ commentPromise }) {\n  const comment = use(commentPromise);  // suspends until resolved\n  return <p>{comment.text}</p>;\n}\n```\n\nFor context, `use(MyContext)` behaves like `useContext` but without the call-position restriction."
+  },
+  {
+    "difficulty": "hard",
+    "round": "Frontend",
+    "technology": "reactjs",
+    "title": "How do Suspense data-fetching waterfalls happen, and how do you avoid them?",
+    "description": "Diagnose sequential fetches and apply render-as-you-fetch.",
+    "tags": [
+      "react",
+      "suspense",
+      "performance"
+    ],
+    "answer": "A **waterfall** is when requests run *sequentially* because each only starts when its component renders (**fetch-on-render**): the parent fetches, renders, the child mounts, the child fetches, and so on. Each round trip is serialized, multiplying latency.\n\nThe fix is **render-as-you-fetch**: start every request as early as possible — at the route/loader level or in the event that triggers navigation — then pass the promises down so independent data loads in **parallel**.\n\nConcretely: hoist fetches out of leaf components, parallelize with `Promise.all`, preload on hover/navigation, and let `<Suspense>` reveal each part as its data arrives instead of blocking on the slowest one."
+  },
+  {
+    "difficulty": "hard",
+    "round": "Frontend",
+    "technology": "reactjs",
+    "title": "What are Effect Events (`useEffectEvent`) and what problem do they solve?",
+    "description": "Separating reactive dependencies from non-reactive reads in effects.",
+    "tags": [
+      "react",
+      "hooks",
+      "effects"
+    ],
+    "answer": "An **Effect Event** lets you extract the *non-reactive* part of an Effect so it can read the **latest** props/state without becoming a dependency that re-triggers the Effect.\n\nA normal Effect re-runs whenever any value it reads changes. Sometimes you want to read the freshest value but *not* re-run — e.g., when a chat connects, log the *current* room, but don't reconnect just because an unrelated `theme` changed.\n\n```jsx\nconst onConnected = useEffectEvent(() => {\n  showToast('Connected to ' + roomId, theme); // always reads latest theme\n});\nuseEffect(() => {\n  const conn = createConnection(roomId);\n  conn.on('connected', onConnected);\n  return () => conn.close();\n}, [roomId]); // theme is NOT a dependency\n```\n\nIt cleanly splits *reactive* values (in the deps array) from *non-reactive* reads. (Still experimental as of React 18/19 canaries.)"
+  },
+  {
+    "difficulty": "hard",
+    "round": "Frontend",
+    "technology": "reactjs",
+    "title": "What causes stale closures in React hooks, and how do you fix them correctly?",
+    "description": "Root cause of captured values and the right remedies.",
+    "tags": [
+      "react",
+      "hooks",
+      "closures"
+    ],
+    "answer": "Every render creates fresh closures (event handlers, effects, timers) that **capture that render's** props and state. If an async callback or interval set up in one render runs later, it reads the *captured* (old) values — a **stale closure**.\n\nThere are three correct fixes, depending on intent:\n\n- Add the value to the Effect's **dependency array** so the effect re-subscribes with fresh values.\n- Use the **functional updater** `setX(prev => prev + 1)` so you never read stale state.\n- Store the latest value in a **ref** (`ref.current = value`) and read `ref.current` inside the long-lived callback when you specifically want the newest value without re-subscribing.\n\n```jsx\nuseEffect(() => {\n  const id = setInterval(() => setCount(c => c + 1), 1000); // no stale read\n  return () => clearInterval(id);\n}, []);\n```\n\nThe bug is always about *which render's closure is still alive* — pick the fix that matches whether you want to re-run or just read fresh."
+  },
+  {
+    "difficulty": "hard",
+    "round": "Frontend",
+    "technology": "reactjs",
+    "title": "Why does React 18 StrictMode double-invoke your components and effects?",
+    "description": "Surfacing impure renders and missing effect cleanup.",
+    "tags": [
+      "react",
+      "strict-mode",
+      "effects"
+    ],
+    "answer": "In **development only**, StrictMode intentionally renders components twice and, for each mounted component, runs the effect lifecycle **setup → cleanup → setup**. The goal is to surface bugs from **non-idempotent effects, missing cleanup, and impure renders** before they bite you in concurrent React.\n\nConcurrent React may mount, unmount, and re-mount components or render them multiple times; an effect that subscribes without cleaning up, or a render that mutates external state, will misbehave. The double-invoke makes those defects visible immediately.\n\nIt never happens in production. If something breaks *only* under StrictMode, that's a real bug to fix (usually a missing cleanup or a side effect during render), not a React quirk to suppress."
+  },
+  {
+    "difficulty": "hard",
+    "round": "Frontend",
+    "technology": "reactjs",
+    "title": "Why does updating Context re-render all its consumers, and how do you fix it?",
+    "description": "Context lacks selectors; strategies to avoid wide re-renders.",
+    "tags": [
+      "react",
+      "context",
+      "performance"
+    ],
+    "answer": "Every component calling `useContext` re-renders whenever the context **value changes by reference**. Context has no built-in selector, so even a consumer that reads a single field re-renders on any value change — and if you create a new value object each render, *all* consumers re-render every time.\n\nFixes, roughly in order of reach:\n\n- **Memoize the value** so its reference is stable when the underlying data hasn't changed.\n- **Split** one broad context into several narrow ones (e.g., separate *data* from *dispatch/setters*) so readers of stable setters don't re-render on data changes.\n- Use an **external store with selectors** (`useSyncExternalStore`, Zustand, Redux) so components subscribe to *slices* and re-render only when their slice changes.\n\n```jsx\nconst value = useMemo(() => ({ user, logout }), [user]);\nreturn <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;\n```"
+  },
+  {
+    "difficulty": "hard",
+    "round": "Frontend",
+    "technology": "reactjs",
+    "title": "What can and can't an Error Boundary catch?",
+    "description": "The precise scope of error boundaries and how to cover the gaps.",
+    "tags": [
+      "react",
+      "error-handling",
+      "lifecycle"
+    ],
+    "answer": "An **Error Boundary** catches errors thrown during **rendering**, in **lifecycle methods**, and in **constructors** of the components *below* it, letting you show a fallback UI.\n\nIt does **not** catch:\n\n- Errors in **event handlers** (use a normal `try/catch`).\n- Errors in **asynchronous** code (`setTimeout`, promises, `async` callbacks).\n- Errors during **server-side rendering**.\n- Errors thrown in the **boundary component itself**.\n\nBoundaries must be **class components** implementing `getDerivedStateFromError` (to render fallback) and/or `componentDidCatch` (to log). For the uncovered cases, catch the error manually and, if you want a fallback, set error state yourself."
+  },
+  {
+    "difficulty": "hard",
+    "round": "Frontend",
+    "technology": "reactjs",
+    "title": "How does streaming SSR with selective hydration work?",
+    "description": "renderToPipeableStream, Suspense streaming, and prioritized hydration.",
+    "tags": [
+      "react",
+      "ssr",
+      "suspense"
+    ],
+    "answer": "`renderToPipeableStream` **streams HTML in chunks** as it's produced, so the browser can paint content before the whole page is ready. Anything wrapped in `<Suspense>` can stream its fallback first and its real content later when the data resolves.\n\n**Selective hydration** then hydrates ready chunks **independently**, and **prioritizes** the regions the user interacts with: if a user clicks an un-hydrated part, React hydrates *that* subtree first, ahead of the others.\n\nThe effect is that HTML streaming and JS hydration are **decoupled** — slow data in one boundary no longer blocks displaying or hydrating the rest of the page, dramatically improving time-to-interactive on large pages."
+  },
+  {
+    "difficulty": "hard",
+    "round": "Frontend",
+    "technology": "reactjs",
+    "title": "What causes hydration mismatches, and how do you handle them?",
+    "description": "Server/client first-render divergence and correct remedies.",
+    "tags": [
+      "react",
+      "ssr",
+      "hydration"
+    ],
+    "answer": "A **hydration mismatch** occurs when the HTML React rendered on the **server** differs from what the **client** produces on its first render pass. Common causes: `Date.now()`/`Math.random()`, reading `window`/`localStorage`, locale or timezone differences, or invalid HTML nesting (e.g., a `<div>` inside a `<p>`).\n\nReact warns and may **discard** the server HTML for the mismatched subtree, hurting performance and sometimes flashing content.\n\nFixes:\n\n- Make the first render **deterministic** (don't read client-only values during it).\n- Gate browser-only output behind a **mounted flag**, rendering it only after the first client render.\n- Use `suppressHydrationWarning` for intentionally divergent content such as timestamps.\n\n```jsx\nconst [mounted, setMounted] = useState(false);\nuseEffect(() => setMounted(true), []);\nreturn <span>{mounted ? new Date().toLocaleTimeString() : null}</span>;\n```"
+  },
+  {
+    "difficulty": "hard",
+    "round": "Frontend",
+    "technology": "reactjs",
+    "title": "When and why do you use `forwardRef` with `useImperativeHandle`?",
+    "description": "Exposing a curated imperative API from a component.",
+    "tags": [
+      "react",
+      "refs",
+      "patterns"
+    ],
+    "answer": "`forwardRef` lets a parent pass a ref through to a child's DOM node or instance. `useImperativeHandle` **customizes what that ref exposes** — instead of the raw DOM, you expose a curated imperative API.\n\n```jsx\nconst TextInput = forwardRef(function TextInput(props, ref) {\n  const inputRef = useRef(null);\n  useImperativeHandle(ref, () => ({\n    focus: () => inputRef.current.focus(),\n    clear: () => { inputRef.current.value = ''; },\n  }));\n  return <input ref={inputRef} {...props} />;\n});\n```\n\nUse it **sparingly** — imperative handles break the declarative model — but they're the right tool for focus management, animations, media controls, scroll control, or wrapping an imperative third-party library, where there's no clean declarative prop to express the action."
+  },
+  {
+    "difficulty": "hard",
+    "round": "Frontend",
+    "technology": "reactjs",
+    "title": "How can the `key` prop be used to deliberately reset component state?",
+    "description": "Remounting via key changes instead of syncing props to state.",
+    "tags": [
+      "react",
+      "reconciliation",
+      "state"
+    ],
+    "answer": "React identifies a component by its **position and `key`**. Changing the `key` makes React treat it as a *different* component: it **unmounts** the old instance (running cleanup) and **mounts a fresh one**, discarding all state and effects.\n\nThis is the idiomatic way to **reset** a subtree. For example, give a form a key tied to the entity it edits:\n\n```jsx\n<UserForm key={userId} userId={userId} />\n```\n\nEach `userId` gets a clean form with no leftover state — more reliable than copying props into state inside an effect. The flip side is the classic bug: an **unstable key** (like an array index that reorders) causes *unwanted* remounts and state loss, so keys must be stable and identity-based."
+  },
+  {
+    "difficulty": "hard",
+    "round": "Frontend",
+    "technology": "reactjs",
+    "title": "When does `React.memo` do nothing — or actually hurt performance?",
+    "description": "The limits and costs of memoizing components.",
+    "tags": [
+      "react",
+      "performance",
+      "memoization"
+    ],
+    "answer": "`React.memo` skips a re-render only when the new props are **shallowly equal** to the previous ones. It's **useless** when a parent passes fresh object/array/function props each render — referential inequality defeats the comparison — so you must also stabilize those props with `useMemo`/`useCallback`.\n\nIt can **hurt** when:\n\n- The component is cheap to render, so the prop-comparison cost outweighs any savings.\n- Props almost always change, adding overhead for no benefit.\n\nIt also can't prevent re-renders caused by **context** changes or the component's own **state**. Memoize deliberately and **after profiling** — not by default."
+  },
+  {
+    "difficulty": "hard",
+    "round": "Frontend",
+    "technology": "reactjs",
+    "title": "What underlying mechanism makes the Rules of Hooks mandatory?",
+    "description": "Why hook call order must be stable across renders.",
+    "tags": [
+      "react",
+      "hooks",
+      "internals"
+    ],
+    "answer": "React stores a component's hook state as an **ordered list** (a linked list on the component's fiber) and matches each hook *call* to its slot by **call order**, not by name or key. There is no identifier tying a `useState` to its value other than the position in the call sequence.\n\nThat's why hooks must be called in the **same order every render** — you can't call them conditionally, in loops, or after an early `return`. If the order shifts between renders, hook slots misalign and one hook reads another's state, corrupting the component.\n\nThis single invariant is what allows many `useState`/`useEffect` calls to coexist without you having to label each one."
+  },
+  {
+    "difficulty": "hard",
+    "round": "Frontend",
+    "technology": "reactjs",
+    "title": "Compare render-as-you-fetch, fetch-on-render, and fetch-then-render.",
+    "description": "Trade-offs of the three data-loading strategies.",
+    "tags": [
+      "react",
+      "data-fetching",
+      "suspense"
+    ],
+    "answer": "- **Fetch-on-render:** start fetching *inside* the component after it renders (e.g., in `useEffect`). Simplest, but it produces **waterfalls** because children can't fetch until their parents have rendered.\n- **Fetch-then-render:** fetch *all* data first and render only once it's ready. No waterfall, but the UI is **blocked** until the slowest request finishes — nothing shows in the meantime.\n- **Render-as-you-fetch:** start fetching **as early as possible** (route entry, loader, or the event that triggers navigation) and render immediately, letting `<Suspense>` show fallbacks for the parts still loading.\n\nRender-as-you-fetch gives the best UX: requests run in **parallel** and the UI **reveals progressively**. It's the model that Suspense and modern routers/loaders are designed around."
+  },
+  {
+    "difficulty": "hard",
+    "round": "Frontend",
+    "technology": "reactjs",
+    "title": "How do you avoid re-renders with composition instead of memoization?",
+    "description": "Using the children prop to isolate frequently-changing state.",
+    "tags": [
+      "react",
+      "performance",
+      "composition"
+    ],
+    "answer": "When a stateful component re-renders, it re-renders the JSX *it* creates — but elements passed **into** it as props (notably `children`) were created by its *parent* and don't re-render just because the stateful component's state changed. Their reference is stable across that component's updates.\n\nSo you can isolate frequent state changes by **lifting the expensive subtree up** and passing it as `children`:\n\n```jsx\nfunction Toggle({ children }) {\n  const [open, setOpen] = useState(false);   // changes often\n  return <div onClick={() => setOpen(o => !o)}>{open && <Panel/>}{children}</div>;\n}\n// <Toggle><ExpensiveTree/></Toggle>  -> ExpensiveTree does NOT re-render on toggle\n```\n\nThis often replaces a `React.memo` wrapper entirely — composition is a cheaper, structural fix than memoization."
+  },
+  {
+    "difficulty": "hard",
+    "round": "Frontend",
+    "technology": "reactjs",
+    "title": "How do you safely handle async work and race conditions inside effects?",
+    "description": "Preventing stale updates and leaks from out-of-order async results.",
+    "tags": [
+      "react",
+      "effects",
+      "async"
+    ],
+    "answer": "Async effects can resolve **out of order** or **after unmount**, causing stale UI or memory leaks. Guard them with an **ignore flag** or an **`AbortController`**, applied in the effect's cleanup:\n\n```jsx\nuseEffect(() => {\n  let active = true;\n  fetchResults(query).then(data => {\n    if (active) setResults(data);   // ignore superseded responses\n  });\n  return () => { active = false; }; // cleanup on re-run / unmount\n}, [query]);\n```\n\nEach time `query` changes, the previous effect's cleanup flips `active = false`, so an older, slower request can't overwrite newer data. For real cancellation use `AbortController` and `controller.abort()` in cleanup. Always return a cleanup function from effects that start async work or subscriptions."
+  },
+  {
+    "difficulty": "hard",
+    "round": "Frontend",
+    "technology": "reactjs",
+    "title": "Why must React state updates be immutable?",
+    "description": "How reference equality drives bailouts and concurrent correctness.",
+    "tags": [
+      "react",
+      "state",
+      "immutability"
+    ],
+    "answer": "React decides whether to skip or apply work using **reference comparison** (`Object.is`) — for the state **bailout**, for `React.memo`/`useMemo`, and for dependency arrays. If you **mutate** an object or array in place, its reference is unchanged, so React may conclude nothing changed and **skip the re-render**, or render inconsistent results.\n\nConcurrent rendering also reads state potentially multiple times and expects each render to see a stable **snapshot**; in-place mutation breaks that assumption.\n\nProducing a **new reference** on every change (spread, `map`, etc.) is what enables correct bailouts, time-slicing, and predictable memoization:\n\n```jsx\nsetItems(prev => [...prev, newItem]);          // new array reference\nsetUser(prev => ({ ...prev, name: 'Ada' }));   // new object reference\n```"
+  },
+  {
+    "difficulty": "hard",
+    "round": "Frontend",
+    "technology": "reactjs",
+    "title": "How do you keep the UI responsive during an expensive update without a Suspense fallback flash?",
+    "description": "Using transitions to avoid the content-spinner-content flicker.",
+    "tags": [
+      "react",
+      "concurrent",
+      "suspense"
+    ],
+    "answer": "Wrap the expensive update in a **transition** (`startTransition` / `useTransition`). During a transition React keeps showing the **current** committed UI while it renders the next state in the background — so a `<Suspense>` boundary that has *already* shown content won't drop back to its fallback spinner if the new content re-suspends.\n\nUse the `isPending` flag to show a subtle inline indicator instead of a jarring **content → spinner → content** flash:\n\n```jsx\nconst [isPending, startTransition] = useTransition();\nfunction navigate(tab) {\n  startTransition(() => setTab(tab)); // old tab stays visible until new one is ready\n}\n```\n\nPair it with `useDeferredValue` when the expensive part is a *derived* view of a fast-changing value."
+  },
+  {
+    "difficulty": "hard",
+    "round": "Frontend",
+    "technology": "reactjs",
+    "title": "What are Actions in React 19, and how do they change form handling?",
+    "description": "Async transitions wired into forms with built-in pending, error, and optimistic state.",
+    "tags": [
+      "react",
+      "react-19",
+      "actions",
+      "forms"
+    ],
+    "answer": "**Actions** are React 19's first-class way to run async work inside a transition. An async function passed to `startTransition` — or directly to a `<form action={fn}>` — automatically gets managed **pending state, error handling, optimistic updates, and ordering**, so you stop hand-rolling `useState` for loading/error flags.\n\nA form's `action` receives the `FormData` and runs as a transition; React keeps the UI responsive, tracks `isPending`, and resets the form on success:\n\n```jsx\nfunction ChangeName() {\n  const [error, submitAction, isPending] = useActionState(\n    async (prevState, formData) => {\n      const err = await updateName(formData.get('name'));\n      if (err) return err;       // returned value becomes the next state\n      redirect('/profile');\n      return null;\n    },\n    null,\n  );\n  return (\n    <form action={submitAction}>\n      <input name=\"name\" />\n      <button disabled={isPending}>Save</button>\n      {error && <p>{error}</p>}\n    </form>\n  );\n}\n```\n\nActions also enable **progressive enhancement** — a form with an action can submit before JS hydrates."
+  },
+  {
+    "difficulty": "hard",
+    "round": "Frontend",
+    "technology": "reactjs",
+    "title": "What does the `useActionState` hook do in React 19?",
+    "description": "Managing form-action state, result, and pending status in one hook.",
+    "tags": [
+      "react",
+      "react-19",
+      "hooks",
+      "forms"
+    ],
+    "answer": "`useActionState` wraps an action function and centralizes its state. It returns `[state, formAction, isPending]`: you pass `formAction` to a `<form action>` (or a button's `formAction`), and the wrapped function receives `(previousState, formData)` and returns the next state.\n\n```jsx\nconst [state, formAction, isPending] = useActionState(action, initialState);\n```\n\nIt removes the usual `useState` boilerplate for a submission's **result/error** plus a separate **loading** flag — both are derived from the action. (It was called `useFormState` in the canary releases and was renamed; the React 19 version additionally returns `isPending`.)\n\nBecause the action runs as a transition, the form stays responsive and supports progressive enhancement."
+  },
+  {
+    "difficulty": "hard",
+    "round": "Frontend",
+    "technology": "reactjs",
+    "title": "What is `useFormStatus` in React 19, and why does it exist?",
+    "description": "Reading the parent form's submission status from a child without prop drilling.",
+    "tags": [
+      "react",
+      "react-19",
+      "hooks",
+      "forms"
+    ],
+    "answer": "`useFormStatus` lets a component read the submission status of the **nearest parent `<form>`** — `{ pending, data, method, action }` — without the form passing props down. It exists for **design-system components** that need to react to submission state but live deep inside a form.\n\nThe canonical use is a reusable submit button that disables itself while the form is submitting:\n\n```jsx\nimport { useFormStatus } from 'react-dom';\nfunction SubmitButton() {\n  const { pending } = useFormStatus();\n  return <button disabled={pending}>{pending ? 'Saving…' : 'Save'}</button>;\n}\n```\n\nIt must be called from a component rendered *inside* the `<form>` (it reads the form context), not from the component that renders the form itself."
+  },
+  {
+    "difficulty": "hard",
+    "round": "Frontend",
+    "technology": "reactjs",
+    "title": "How does `useOptimistic` enable optimistic UI in React 19?",
+    "description": "Showing an expected result instantly while an async action is in flight.",
+    "tags": [
+      "react",
+      "react-19",
+      "hooks",
+      "optimistic"
+    ],
+    "answer": "`useOptimistic` renders an **optimistic** version of state immediately while an async action runs, then automatically reconciles to the real state when the action settles (and reverts cleanly if it fails). It's ideal for likes, sending a message, or toggles where you don't want to wait for the server.\n\n```jsx\nconst [optimisticMsgs, addOptimistic] = useOptimistic(\n  messages,\n  (current, newMsg) => [...current, { ...newMsg, sending: true }],\n);\nasync function send(formData) {\n  addOptimistic({ text: formData.get('text') }); // shows instantly\n  await sendMessage(formData);                    // real state catches up\n}\n```\n\nReact discards the optimistic value once the underlying state updates, so you never manually roll back — the base state becomes the source of truth again."
+  },
+  {
+    "difficulty": "hard",
+    "round": "Frontend",
+    "technology": "reactjs",
+    "title": "How did ref handling change in React 19 (ref as a prop, forwardRef, ref cleanup)?",
+    "description": "Function components receive ref directly; ref callbacks can return cleanup.",
+    "tags": [
+      "react",
+      "react-19",
+      "refs"
+    ],
+    "answer": "In React 19, **function components can accept `ref` as an ordinary prop** — `forwardRef` is no longer required and is deprecated for future removal. You just destructure `ref` like any other prop:\n\n```jsx\nfunction MyInput({ ref, ...props }) {\n  return <input ref={ref} {...props} />;\n}\n// <MyInput ref={inputRef} />\n```\n\nReact 19 also lets a **ref callback return a cleanup function**, which runs when the element unmounts — instead of the callback being invoked again with `null`:\n\n```jsx\n<div ref={(node) => {\n  const observer = observe(node);\n  return () => observer.disconnect(); // cleanup on unmount\n}} />\n```\n\nTogether these simplify ref-forwarding components and make imperative setup/teardown symmetric."
+  },
+  {
+    "difficulty": "hard",
+    "round": "Frontend",
+    "technology": "reactjs",
+    "title": "How does React 19 handle document metadata like `<title>` and `<meta>`?",
+    "description": "Native hoisting of title/meta/link tags into the document head.",
+    "tags": [
+      "react",
+      "react-19",
+      "metadata",
+      "seo"
+    ],
+    "answer": "React 19 natively supports rendering `<title>`, `<meta>`, and `<link>` tags **anywhere** in your component tree; React automatically **hoists** them into the document `<head>`. This removes the need for libraries like react-helmet for basic per-page metadata.\n\n```jsx\nfunction BlogPost({ post }) {\n  return (\n    <article>\n      <title>{post.title}</title>\n      <meta name=\"description\" content={post.excerpt} />\n      <link rel=\"canonical\" href={post.url} />\n      <h1>{post.title}</h1>\n    </article>\n  );\n}\n```\n\nIt works with SSR and streaming, so per-page titles and SEO tags are emitted in the right place without extra dependencies."
+  },
+  {
+    "difficulty": "hard",
+    "round": "Frontend",
+    "technology": "reactjs",
+    "title": "What are the resource preloading APIs in React 19 (`preload`, `preinit`, etc.)?",
+    "description": "Hinting the browser to load resources early from react-dom.",
+    "tags": [
+      "react",
+      "react-19",
+      "performance"
+    ],
+    "answer": "React 19 exposes resource hints from `react-dom` so you can tell the browser to fetch things early and improve load performance. React dedupes calls and emits the corresponding `<link>` tags in the right order:\n\n- `preload(href, { as })` — download a resource (font, stylesheet, image) you'll need soon.\n- `preinit(href, { as })` — download **and** evaluate it (e.g., eagerly load + run a stylesheet or script).\n- `prefetchDNS(href)` — resolve a domain's DNS ahead of time.\n- `preconnect(href)` — open a connection to an origin before requesting from it.\n\n```jsx\nimport { preinit, preload, preconnect } from 'react-dom';\npreconnect('https://cdn.example.com');\npreload('/fonts/inter.woff2', { as: 'font' });\npreinit('/theme.css', { as: 'style' });\n```\n\nCalling them during render (or in an event) lets React schedule the hints optimally instead of you hand-writing `<link rel>` tags."
+  },
+  {
+    "difficulty": "hard",
+    "round": "Frontend",
+    "technology": "reactjs",
+    "title": "What are Server Actions and the `\"use server\"` directive in React 19?",
+    "description": "Server functions callable from the client, integrated with forms.",
+    "tags": [
+      "react",
+      "react-19",
+      "rsc",
+      "server-actions"
+    ],
+    "answer": "**Server Actions** are async functions marked with the `\"use server\"` directive that execute on the **server** but can be **called from client components** or passed to a form's `action`. React handles the RPC — serializing the arguments, invoking the function on the server, and returning the result — so you can do mutations (DB writes, revalidation) without hand-writing an API route.\n\n```jsx\n// actions.js\n'use server';\nexport async function addTodo(formData) {\n  await db.todo.create({ text: formData.get('text') });\n}\n```\n```jsx\n// a client component\nimport { addTodo } from './actions';\n<form action={addTodo}><input name=\"text\" /></form>\n```\n\nThey're distinct from **Server Components** (which *render* on the server): a Server Action is a *callable* function. Combined with Actions/`useActionState`, they give forms pending state, errors, and progressive enhancement."
+  },
+  {
+    "difficulty": "hard",
+    "round": "Frontend",
+    "technology": "reactjs",
+    "title": "What changed with Context in React 19 (`<Context>` as a provider)?",
+    "description": "Rendering Context directly as a provider and reading it with use().",
+    "tags": [
+      "react",
+      "react-19",
+      "context"
+    ],
+    "answer": "React 19 lets you render a context **directly** as its provider — `<Context value={...}>` — instead of `<Context.Provider value={...}>`. The `.Provider` form still works but is deprecated and will be removed in a future version.\n\n```jsx\nconst Theme = createContext('light');\n// React 19:\n<Theme value=\"dark\">{children}</Theme>\n```\n\nPair this with the new `use(Context)` API, which reads context like `useContext` but **can be called conditionally** (inside an `if` or loop). Together they cut boilerplate and make context more flexible, though the underlying re-render-on-value-change behavior is unchanged."
+  }
+]

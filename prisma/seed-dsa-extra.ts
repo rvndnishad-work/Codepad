@@ -369,6 +369,478 @@ const PROBLEMS: Problem[] = [
       { name: "invalid", args: ["(]"] },
     ],
   },
+  {
+    slug: "algo-extra-best-time-stock",
+    title: "Best Time to Buy and Sell Stock",
+    difficulty: "easy",
+    topics: ["arrays", "greedy"],
+    estimatedMinutes: 15,
+    description:
+      "Given an array `prices` where `prices[i]` is the price of a stock on day i, return the maximum profit from buying on one day and selling on a later day. If no profit is possible, return `0`.\n\n```\nprices = [7,1,5,3,6,4]  =>  5   (buy at 1, sell at 6)\n```",
+    functionName: "maxProfit",
+    params: [{ name: "prices", type: "int[]" }],
+    returnType: "int",
+    ref: (prices: number[]) => {
+      let minPrice = Infinity, best = 0;
+      for (const p of prices) {
+        minPrice = Math.min(minPrice, p);
+        best = Math.max(best, p - minPrice);
+      }
+      return best;
+    },
+    cases: [
+      { name: "profit", args: [[7, 1, 5, 3, 6, 4]] },
+      { name: "no-profit", args: [[7, 6, 4, 3, 1]] },
+      { name: "single", args: [[5]] },
+    ],
+  },
+  {
+    slug: "algo-extra-product-except-self",
+    title: "Product of Array Except Self",
+    difficulty: "medium",
+    topics: ["arrays", "prefix-product"],
+    estimatedMinutes: 20,
+    description:
+      "Given an integer array `nums`, return an array `out` where `out[i]` is the product of all elements except `nums[i]`. Solve without division.\n\n```\nnums = [1,2,3,4]  =>  [24,12,8,6]\n```",
+    functionName: "productExceptSelf",
+    params: [{ name: "nums", type: "int[]" }],
+    returnType: "int[]",
+    ref: (nums: number[]) => {
+      const n = nums.length;
+      const out = new Array(n).fill(1);
+      let pre = 1;
+      for (let i = 0; i < n; i++) { out[i] = pre; pre *= nums[i]; }
+      let suf = 1;
+      for (let i = n - 1; i >= 0; i--) { out[i] *= suf; suf *= nums[i]; }
+      return out;
+    },
+    cases: [
+      { name: "classic", args: [[1, 2, 3, 4]] },
+      { name: "with-zero", args: [[0, 4, 0]] },
+    ],
+  },
+  {
+    slug: "algo-extra-container-most-water",
+    title: "Container With Most Water",
+    difficulty: "medium",
+    topics: ["arrays", "two-pointers"],
+    estimatedMinutes: 20,
+    description:
+      "Given an array `height` of n non-negative integers, find two lines that together with the x-axis form a container holding the most water. Return the maximum area.\n\n```\nheight = [1,8,6,2,5,4,8,3,7]  =>  49\n```",
+    functionName: "maxArea",
+    params: [{ name: "height", type: "int[]" }],
+    returnType: "int",
+    ref: (height: number[]) => {
+      let l = 0, r = height.length - 1, best = 0;
+      while (l < r) {
+        best = Math.max(best, Math.min(height[l], height[r]) * (r - l));
+        if (height[l] < height[r]) l++; else r--;
+      }
+      return best;
+    },
+    cases: [
+      { name: "classic", args: [[1, 8, 6, 2, 5, 4, 8, 3, 7]] },
+      { name: "flat", args: [[1, 1]] },
+    ],
+  },
+  {
+    slug: "algo-extra-trapping-rain-water",
+    title: "Trapping Rain Water",
+    difficulty: "hard",
+    topics: ["arrays", "two-pointers"],
+    estimatedMinutes: 25,
+    description:
+      "Given `height` representing an elevation map where each bar's width is 1, compute how much water can be trapped after raining.\n\n```\nheight = [0,1,0,2,1,0,1,3,2,1,2,1]  =>  6\n```",
+    functionName: "trap",
+    params: [{ name: "height", type: "int[]" }],
+    returnType: "int",
+    ref: (height: number[]) => {
+      let l = 0, r = height.length - 1, lMax = 0, rMax = 0, total = 0;
+      while (l < r) {
+        if (height[l] < height[r]) {
+          lMax = Math.max(lMax, height[l]);
+          total += lMax - height[l];
+          l++;
+        } else {
+          rMax = Math.max(rMax, height[r]);
+          total += rMax - height[r];
+          r--;
+        }
+      }
+      return total;
+    },
+    cases: [
+      { name: "classic", args: [[0, 1, 0, 2, 1, 0, 1, 3, 2, 1, 2, 1]] },
+      { name: "none", args: [[3, 2, 1]] },
+    ],
+  },
+  {
+    slug: "algo-extra-two-sum",
+    title: "Two Sum",
+    difficulty: "easy",
+    topics: ["arrays", "hashing"],
+    estimatedMinutes: 15,
+    description:
+      "Given an array `nums` and an integer `target`, return the indices `[i, j]` (i < j) of the two numbers that add up to `target`. Exactly one solution exists.\n\n```\nnums = [2,7,11,15], target = 9  =>  [0,1]\n```",
+    functionName: "twoSum",
+    params: [
+      { name: "nums", type: "int[]" },
+      { name: "target", type: "int" },
+    ],
+    returnType: "int[]",
+    ref: (nums: number[], target: number) => {
+      const seen = new Map<number, number>();
+      for (let i = 0; i < nums.length; i++) {
+        const need = target - nums[i];
+        if (seen.has(need)) return [seen.get(need)!, i];
+        seen.set(nums[i], i);
+      }
+      return [];
+    },
+    cases: [
+      { name: "classic", args: [[2, 7, 11, 15], 9] },
+      { name: "middle", args: [[3, 2, 4], 6] },
+    ],
+  },
+  {
+    slug: "algo-extra-move-zeroes",
+    title: "Move Zeroes",
+    difficulty: "easy",
+    topics: ["arrays", "two-pointers"],
+    estimatedMinutes: 15,
+    description:
+      "Move all `0`s to the end of `nums` while keeping the relative order of the non-zero elements. Return the resulting array.\n\n```\nnums = [0,1,0,3,12]  =>  [1,3,12,0,0]\n```",
+    functionName: "moveZeroes",
+    params: [{ name: "nums", type: "int[]" }],
+    returnType: "int[]",
+    ref: (nums: number[]) => {
+      const out = nums.filter((x) => x !== 0);
+      while (out.length < nums.length) out.push(0);
+      return out;
+    },
+    cases: [
+      { name: "classic", args: [[0, 1, 0, 3, 12]] },
+      { name: "no-zeros", args: [[1, 2, 3]] },
+    ],
+  },
+  {
+    slug: "algo-extra-rotate-array",
+    title: "Rotate Array",
+    difficulty: "medium",
+    topics: ["arrays"],
+    estimatedMinutes: 15,
+    description:
+      "Rotate the array `nums` to the right by `k` steps and return it.\n\n```\nnums = [1,2,3,4,5,6,7], k = 3  =>  [5,6,7,1,2,3,4]\n```",
+    functionName: "rotate",
+    params: [
+      { name: "nums", type: "int[]" },
+      { name: "k", type: "int" },
+    ],
+    returnType: "int[]",
+    ref: (nums: number[], k: number) => {
+      const n = nums.length;
+      if (n === 0) return [];
+      const s = ((k % n) + n) % n;
+      return [...nums.slice(n - s), ...nums.slice(0, n - s)];
+    },
+    cases: [
+      { name: "classic", args: [[1, 2, 3, 4, 5, 6, 7], 3] },
+      { name: "k-bigger", args: [[1, 2], 3] },
+    ],
+  },
+  {
+    slug: "algo-extra-single-number",
+    title: "Single Number",
+    difficulty: "easy",
+    topics: ["arrays", "bit-manipulation"],
+    estimatedMinutes: 10,
+    description:
+      "Every element appears twice except for one. Find that single element.\n\n```\nnums = [4,1,2,1,2]  =>  4\n```",
+    functionName: "singleNumber",
+    params: [{ name: "nums", type: "int[]" }],
+    returnType: "int",
+    ref: (nums: number[]) => nums.reduce((a, b) => a ^ b, 0),
+    cases: [
+      { name: "classic", args: [[4, 1, 2, 1, 2]] },
+      { name: "single", args: [[7]] },
+    ],
+  },
+  {
+    slug: "algo-extra-majority-element",
+    title: "Majority Element",
+    difficulty: "easy",
+    topics: ["arrays", "boyer-moore"],
+    estimatedMinutes: 12,
+    description:
+      "Return the element that appears more than ⌊n/2⌋ times. You may assume it always exists.\n\n```\nnums = [2,2,1,1,1,2,2]  =>  2\n```",
+    functionName: "majorityElement",
+    params: [{ name: "nums", type: "int[]" }],
+    returnType: "int",
+    ref: (nums: number[]) => {
+      let count = 0, candidate = 0;
+      for (const n of nums) {
+        if (count === 0) candidate = n;
+        count += n === candidate ? 1 : -1;
+      }
+      return candidate;
+    },
+    cases: [
+      { name: "classic", args: [[2, 2, 1, 1, 1, 2, 2]] },
+      { name: "simple", args: [[3, 3, 4]] },
+    ],
+  },
+  {
+    slug: "algo-extra-missing-number",
+    title: "Missing Number",
+    difficulty: "easy",
+    topics: ["arrays", "math"],
+    estimatedMinutes: 12,
+    description:
+      "Given an array containing n distinct numbers in the range `[0, n]`, return the one number that is missing.\n\n```\nnums = [3,0,1]  =>  2\n```",
+    functionName: "missingNumber",
+    params: [{ name: "nums", type: "int[]" }],
+    returnType: "int",
+    ref: (nums: number[]) => {
+      const n = nums.length;
+      const expected = (n * (n + 1)) / 2;
+      return expected - nums.reduce((a, b) => a + b, 0);
+    },
+    cases: [
+      { name: "classic", args: [[3, 0, 1]] },
+      { name: "missing-last", args: [[0, 1, 2]] },
+    ],
+  },
+  {
+    slug: "algo-extra-search-rotated",
+    title: "Search in Rotated Sorted Array",
+    difficulty: "medium",
+    topics: ["binary-search", "arrays"],
+    estimatedMinutes: 25,
+    description:
+      "A sorted array was rotated at an unknown pivot. Given `nums` and a `target`, return its index, or `-1` if absent.\n\n```\nnums = [4,5,6,7,0,1,2], target = 0  =>  4\n```",
+    functionName: "search",
+    params: [
+      { name: "nums", type: "int[]" },
+      { name: "target", type: "int" },
+    ],
+    returnType: "int",
+    ref: (nums: number[], target: number) => {
+      let lo = 0, hi = nums.length - 1;
+      while (lo <= hi) {
+        const mid = (lo + hi) >> 1;
+        if (nums[mid] === target) return mid;
+        if (nums[lo] <= nums[mid]) {
+          if (nums[lo] <= target && target < nums[mid]) hi = mid - 1; else lo = mid + 1;
+        } else {
+          if (nums[mid] < target && target <= nums[hi]) lo = mid + 1; else hi = mid - 1;
+        }
+      }
+      return -1;
+    },
+    cases: [
+      { name: "found", args: [[4, 5, 6, 7, 0, 1, 2], 0] },
+      { name: "missing", args: [[4, 5, 6, 7, 0, 1, 2], 3] },
+    ],
+  },
+  {
+    slug: "algo-extra-subarray-sum-k",
+    title: "Subarray Sum Equals K",
+    difficulty: "medium",
+    topics: ["arrays", "prefix-sum", "hashing"],
+    estimatedMinutes: 20,
+    description:
+      "Return the total number of contiguous subarrays whose elements sum to `k`.\n\n```\nnums = [1,1,1], k = 2  =>  2\n```",
+    functionName: "subarraySum",
+    params: [
+      { name: "nums", type: "int[]" },
+      { name: "k", type: "int" },
+    ],
+    returnType: "int",
+    ref: (nums: number[], k: number) => {
+      const counts = new Map<number, number>([[0, 1]]);
+      let sum = 0, total = 0;
+      for (const n of nums) {
+        sum += n;
+        total += counts.get(sum - k) ?? 0;
+        counts.set(sum, (counts.get(sum) ?? 0) + 1);
+      }
+      return total;
+    },
+    cases: [
+      { name: "classic", args: [[1, 1, 1], 2] },
+      { name: "with-negatives", args: [[1, -1, 0], 0] },
+    ],
+  },
+  {
+    slug: "algo-extra-house-robber",
+    title: "House Robber",
+    difficulty: "medium",
+    topics: ["dynamic-programming"],
+    estimatedMinutes: 20,
+    description:
+      "You cannot rob two adjacent houses. Given `nums` (money in each house), return the maximum amount you can rob.\n\n```\nnums = [2,7,9,3,1]  =>  12   (2 + 9 + 1)\n```",
+    functionName: "rob",
+    params: [{ name: "nums", type: "int[]" }],
+    returnType: "int",
+    ref: (nums: number[]) => {
+      let prev = 0, curr = 0;
+      for (const n of nums) {
+        const next = Math.max(curr, prev + n);
+        prev = curr;
+        curr = next;
+      }
+      return curr;
+    },
+    cases: [
+      { name: "classic", args: [[2, 7, 9, 3, 1]] },
+      { name: "two", args: [[1, 2]] },
+    ],
+  },
+  {
+    slug: "algo-extra-longest-increasing-subsequence",
+    title: "Longest Increasing Subsequence",
+    difficulty: "medium",
+    topics: ["dynamic-programming", "binary-search"],
+    estimatedMinutes: 25,
+    description:
+      "Return the length of the longest strictly increasing subsequence of `nums`.\n\n```\nnums = [10,9,2,5,3,7,101,18]  =>  4   ([2,3,7,101])\n```",
+    functionName: "lengthOfLIS",
+    params: [{ name: "nums", type: "int[]" }],
+    returnType: "int",
+    ref: (nums: number[]) => {
+      const tails: number[] = [];
+      for (const n of nums) {
+        let lo = 0, hi = tails.length;
+        while (lo < hi) {
+          const mid = (lo + hi) >> 1;
+          if (tails[mid] < n) lo = mid + 1; else hi = mid;
+        }
+        tails[lo] = n;
+      }
+      return tails.length;
+    },
+    cases: [
+      { name: "classic", args: [[10, 9, 2, 5, 3, 7, 101, 18]] },
+      { name: "decreasing", args: [[5, 4, 3, 2, 1]] },
+    ],
+  },
+  {
+    slug: "algo-extra-coin-change",
+    title: "Coin Change",
+    difficulty: "medium",
+    topics: ["dynamic-programming"],
+    estimatedMinutes: 25,
+    description:
+      "Given coin denominations `coins` and an `amount`, return the fewest coins needed to make the amount, or `-1` if it cannot be made.\n\n```\ncoins = [1,2,5], amount = 11  =>  3   (5+5+1)\n```",
+    functionName: "coinChange",
+    params: [
+      { name: "coins", type: "int[]" },
+      { name: "amount", type: "int" },
+    ],
+    returnType: "int",
+    ref: (coins: number[], amount: number) => {
+      const dp = new Array(amount + 1).fill(Infinity);
+      dp[0] = 0;
+      for (let a = 1; a <= amount; a++) {
+        for (const c of coins) {
+          if (c <= a) dp[a] = Math.min(dp[a], dp[a - c] + 1);
+        }
+      }
+      return dp[amount] === Infinity ? -1 : dp[amount];
+    },
+    cases: [
+      { name: "classic", args: [[1, 2, 5], 11] },
+      { name: "impossible", args: [[2], 3] },
+    ],
+  },
+  {
+    slug: "algo-extra-max-product-subarray",
+    title: "Maximum Product Subarray",
+    difficulty: "medium",
+    topics: ["arrays", "dynamic-programming"],
+    estimatedMinutes: 20,
+    description:
+      "Find the contiguous subarray with the largest product and return that product.\n\n```\nnums = [2,3,-2,4]  =>  6   ([2,3])\n```",
+    functionName: "maxProduct",
+    params: [{ name: "nums", type: "int[]" }],
+    returnType: "int",
+    ref: (nums: number[]) => {
+      let best = nums[0], curMax = nums[0], curMin = nums[0];
+      for (let i = 1; i < nums.length; i++) {
+        const n = nums[i];
+        const a = curMax * n, b = curMin * n;
+        curMax = Math.max(n, a, b);
+        curMin = Math.min(n, a, b);
+        best = Math.max(best, curMax);
+      }
+      return best;
+    },
+    cases: [
+      { name: "classic", args: [[2, 3, -2, 4]] },
+      { name: "with-zero", args: [[-2, 0, -1]] },
+    ],
+  },
+  {
+    slug: "algo-extra-sort-colors",
+    title: "Sort Colors (Dutch Flag)",
+    difficulty: "medium",
+    topics: ["arrays", "sorting", "two-pointers"],
+    estimatedMinutes: 20,
+    description:
+      "Given an array `nums` of 0s, 1s, and 2s, sort them in place so equal colors are adjacent and ordered 0,1,2. Return the array.\n\n```\nnums = [2,0,2,1,1,0]  =>  [0,0,1,1,2,2]\n```",
+    functionName: "sortColors",
+    params: [{ name: "nums", type: "int[]" }],
+    returnType: "int[]",
+    ref: (nums: number[]) => [...nums].sort((a, b) => a - b),
+    cases: [
+      { name: "classic", args: [[2, 0, 2, 1, 1, 0]] },
+      { name: "two", args: [[2, 0, 1]] },
+    ],
+  },
+  {
+    slug: "algo-extra-plus-one",
+    title: "Plus One",
+    difficulty: "easy",
+    topics: ["arrays", "math"],
+    estimatedMinutes: 12,
+    description:
+      "Given a non-negative integer represented as a digit array `digits` (most significant first), increment it by one and return the resulting digits.\n\n```\ndigits = [1,2,9]  =>  [1,3,0]\n```",
+    functionName: "plusOne",
+    params: [{ name: "digits", type: "int[]" }],
+    returnType: "int[]",
+    ref: (digits: number[]) => {
+      const out = [...digits];
+      for (let i = out.length - 1; i >= 0; i--) {
+        if (out[i] < 9) { out[i]++; return out; }
+        out[i] = 0;
+      }
+      return [1, ...out];
+    },
+    cases: [
+      { name: "no-carry", args: [[1, 2, 9]] },
+      { name: "all-nines", args: [[9, 9, 9]] },
+    ],
+  },
+  {
+    slug: "algo-extra-kth-largest",
+    title: "Kth Largest Element in an Array",
+    difficulty: "medium",
+    topics: ["heap", "quickselect", "arrays"],
+    estimatedMinutes: 20,
+    description:
+      "Return the kth largest element in `nums` (the kth largest in sorted order, not the kth distinct element).\n\n```\nnums = [3,2,1,5,6,4], k = 2  =>  5\n```",
+    functionName: "findKthLargest",
+    params: [
+      { name: "nums", type: "int[]" },
+      { name: "k", type: "int" },
+    ],
+    returnType: "int",
+    ref: (nums: number[], k: number) => [...nums].sort((a, b) => b - a)[k - 1],
+    cases: [
+      { name: "classic", args: [[3, 2, 1, 5, 6, 4], 2] },
+      { name: "with-dupes", args: [[3, 2, 3, 1, 2, 4, 5, 5, 6], 4] },
+    ],
+  },
 ];
 
 async function main() {

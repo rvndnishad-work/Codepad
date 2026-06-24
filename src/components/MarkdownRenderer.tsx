@@ -5,6 +5,7 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import rehypeHighlight from "rehype-highlight";
 import rehypeRaw from "rehype-raw";
+import { toHtml } from "hast-util-to-html";
 import "highlight.js/styles/github-dark.css";
 import RunnableSnippet from "./RunnableSnippet";
 
@@ -71,6 +72,18 @@ export default function MarkdownRenderer({ content, className = "", forceRunnabl
 
             return <code className={className} {...props}>{children}</code>;
           },
+          // Render hand-authored inline SVG via the browser's native parser
+          // (dangerouslySetInnerHTML) rather than through React element creation.
+          // Otherwise react-markdown passes SVG presentation attributes as
+          // kebab-case props (font-size, text-anchor) and renders <text> outside
+          // the SVG namespace, which trips React DOM warnings in the browser.
+          // Trusted content only — this path is reached solely via allowHtml.
+          svg: ({ node }: any) => (
+            <span
+              className="not-prose"
+              dangerouslySetInnerHTML={{ __html: toHtml(node, { space: "svg" }) }}
+            />
+          ),
           img: ({ ...props }) => (
             <span className="block my-8">
               <img 

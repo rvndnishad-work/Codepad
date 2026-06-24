@@ -191,7 +191,7 @@ export default function NavDropdown({ label, items }: Props) {
           // `left` is set imperatively by the reposition effect; left-0 is the
           // pre-measure default so there's no flash before it runs.
           className={`absolute top-full left-0 pt-2 z-50 ${
-            items.length >= 4 ? "w-[540px]" : "min-w-[280px]"
+            items.length >= 4 ? "w-[640px]" : "min-w-[300px]"
           }`}
           // The wrapper pads itself above so there's no dead gap between the
           // button and the panel — hover bridge.
@@ -199,8 +199,8 @@ export default function NavDropdown({ label, items }: Props) {
           {/* Longer menus (4+ items) flow into two columns so the panel stays
               compact instead of a tall single column. */}
           <div
-            className={`rounded-2xl border border-border bg-surface shadow-2xl backdrop-blur-md overflow-hidden p-1.5 ${
-              items.length >= 4 ? "grid grid-cols-2 gap-0.5" : ""
+            className={`rounded-2xl border border-border bg-surface shadow-2xl backdrop-blur-md overflow-hidden p-2 ${
+              items.length >= 4 ? "grid grid-cols-2 gap-1" : ""
             }`}
           >
             {items.map((item) => {
@@ -243,7 +243,7 @@ export default function NavDropdown({ label, items }: Props) {
                       ) : null}
                     </div>
                     {item.description && (
-                      <div className="text-[11px] text-muted/80 mt-0.5 leading-snug">
+                      <div className="text-[11.5px] text-muted/80 mt-1 leading-relaxed">
                         {item.description}
                       </div>
                     )}
@@ -255,7 +255,7 @@ export default function NavDropdown({ label, items }: Props) {
                 return (
                   <div
                     key={item.label}
-                    className="flex items-start gap-3 px-3 py-2.5 rounded-xl opacity-50 cursor-not-allowed select-none"
+                    className="flex items-start gap-3 px-3.5 py-3 rounded-xl opacity-50 cursor-not-allowed select-none"
                   >
                     {content}
                   </div>
@@ -267,7 +267,7 @@ export default function NavDropdown({ label, items }: Props) {
                   key={item.label}
                   href={item.href}
                   role="menuitem"
-                  className={`flex items-start gap-3 px-3 py-2.5 rounded-xl transition-colors ${
+                  className={`flex items-start gap-3 px-3.5 py-3 rounded-xl transition-colors ${
                     active
                       ? "bg-elevated text-fg"
                       : "text-fg/80 hover:bg-elevated hover:text-fg"

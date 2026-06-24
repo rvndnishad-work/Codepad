@@ -507,16 +507,45 @@ console.log(moveZeroes([0, 1, 0, 3, 12])); // [1, 3, 12, 0, 0]`
     difficulty: "medium",
     tags: ["object", "recursion"],
     description: "Write a function `deepClone(obj)` that recursively clones an object, resolving child references.",
-    answer: "**Algorithm:** Handle primitives and nulls immediately. If a Date, return a new Date instance. If an Array, map over its elements recursively. If an Object, loop over keys recursively. Keep a cache Map to handle circular references safely.",
+    answer: "**Algorithm:** Handle primitives and nulls immediately. If a Date, return a new Date instance. If a RegExp, return a new RegExp copy. If a Set or Map, construct new instances and recursively clone their contents. Use a WeakMap cache to resolve circular references and perform recursive walks on Arrays and plain Objects.",
     examples: [
       {
         label: "Cloning objects recursively",
         runnable: true,
         code: `function deepClone(obj, cache = new WeakMap()) {
+  // 1. Primitive datatypes and functions
   if (obj === null || typeof obj !== 'object') return obj;
+  
+  // 2. Date object
   if (obj instanceof Date) return new Date(obj.getTime());
+  
+  // 3. Regular Expression
+  if (obj instanceof RegExp) return new RegExp(obj.source, obj.flags);
+  
+  // 4. Circular Reference cache checking
   if (cache.has(obj)) return cache.get(obj);
+  
+  // 5. Set object
+  if (obj instanceof Set) {
+    const cloneSet = new Set();
+    cache.set(obj, cloneSet);
+    for (const val of obj) {
+      cloneSet.add(deepClone(val, cache));
+    }
+    return cloneSet;
+  }
+  
+  // 6. Map object
+  if (obj instanceof Map) {
+    const cloneMap = new Map();
+    cache.set(obj, cloneMap);
+    for (const [key, val] of obj) {
+      cloneMap.set(deepClone(key, cache), deepClone(val, cache));
+    }
+    return cloneMap;
+  }
 
+  // 7. Arrays or Plain Objects
   const clone = Array.isArray(obj) ? [] : {};
   cache.set(obj, clone);
 
@@ -526,10 +555,28 @@ console.log(moveZeroes([0, 1, 0, 3, 12])); // [1, 3, 12, 0, 0]`
   return clone;
 }
 
-const original = { a: 1, b: { c: 2 }, d: new Date() };
+const map = new Map([['key1', { value: 10 }]]);
+const set = new Set([{ val: 20 }]);
+const original = {
+  num: 1,
+  str: 'hello',
+  date: new Date(),
+  regex: /test/gi,
+  map: map,
+  set: set,
+  arr: [1, 2, { a: 3 }]
+};
+original.self = original; // circular reference
+
 const copied = deepClone(original);
-copied.b.c = 99;
-console.log(original.b.c); // 2`
+
+console.log(copied.num); // 1
+console.log(copied.str); // 'hello'
+console.log(copied.date !== original.date); // true
+console.log(copied.regex !== original.regex); // true
+console.log(copied.map.get('key1') !== map.get('key1')); // true
+console.log(copied.arr[2] !== original.arr[2]); // true
+console.log(copied.self === copied); // true`
       }
     ]
   },

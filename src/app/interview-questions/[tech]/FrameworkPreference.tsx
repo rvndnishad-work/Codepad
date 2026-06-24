@@ -18,9 +18,10 @@ export default function FrameworkPreference() {
 
   useEffect(() => {
     try {
-      setFw(localStorage.getItem("mc-framework") || "react");
+      const saved = localStorage.getItem("mc-framework") || "react";
+      setTimeout(() => setFw(saved), 0);
     } catch {
-      setFw("react");
+      setTimeout(() => setFw("react"), 0);
     }
   }, []);
 

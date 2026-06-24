@@ -22,14 +22,21 @@ export default function GlobalSearch() {
   const [open, setOpen] = useState(false);
   const boxRef = useRef<HTMLDivElement>(null);
 
+  const updateQuery = (val: string) => {
+    setQ(val);
+    if (val.trim().length < 2) {
+      setRes(EMPTY);
+      setLoading(false);
+    } else {
+      setLoading(true);
+    }
+  };
+
   useEffect(() => {
     const needle = q.trim();
     if (needle.length < 2) {
-      setRes(EMPTY);
-      setLoading(false);
       return;
     }
-    setLoading(true);
     const t = setTimeout(async () => {
       try {
         const r = await fetch(`/api/interview-questions/search?q=${encodeURIComponent(needle)}`);
@@ -60,7 +67,7 @@ export default function GlobalSearch() {
         {loading && <Loader2 className="w-4 h-4 absolute right-3.5 top-1/2 -translate-y-1/2 text-muted animate-spin" />}
         <input
           value={q}
-          onChange={(e) => setQ(e.target.value)}
+          onChange={(e) => updateQuery(e.target.value)}
           onFocus={() => setOpen(true)}
           placeholder="Search questions, companies, technologies…"
           className="w-full pl-10 pr-10 py-3 rounded-xl border border-border bg-surface text-sm focus:outline-none focus:border-accent/50 shadow-sm"
@@ -76,7 +83,7 @@ export default function GlobalSearch() {
                 {TRENDING.map((t) => (
                   <button
                     key={t}
-                    onClick={() => setQ(t)}
+                    onClick={() => updateQuery(t)}
                     className="px-2.5 py-1 rounded-lg border border-border text-xs font-bold text-muted hover:text-accent hover:border-accent/40 transition"
                   >
                     {t}

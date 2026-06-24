@@ -148,6 +148,7 @@ export default function TechSvg({ tech, className = "w-10 h-10" }: { tech: strin
     case "nodejs":
       return <NodeSvg className={className} />;
     case "javascript":
+    case "javascript-coding":
       return <JavaScriptSvg className={className} />;
     case "angular":
       return <AngularSvg className={className} />;

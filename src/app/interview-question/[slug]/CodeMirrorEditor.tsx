@@ -82,9 +82,15 @@ export default function CodeMirrorEditor({
   const hostRef = useRef<HTMLDivElement>(null);
   const viewRef = useRef<EditorView | null>(null);
   const onChangeRef = useRef(onChange);
-  onChangeRef.current = onChange;
   const valueRef = useRef(value);
-  valueRef.current = value;
+
+  useEffect(() => {
+    onChangeRef.current = onChange;
+  }, [onChange]);
+
+  useEffect(() => {
+    valueRef.current = value;
+  }, [value]);
 
   useEffect(() => {
     if (!hostRef.current) return;
@@ -132,7 +138,6 @@ export default function CodeMirrorEditor({
     const view = new EditorView({ state, parent: hostRef.current });
     viewRef.current = view;
     return () => view.destroy();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isDark]);
 
   // Sync external value changes (e.g. Reset) into the editor.

@@ -9,7 +9,8 @@ export default function SaveButton({ question }: { question: Omit<SavedQuestion,
   const [saved, setSaved] = useState(false);
 
   useEffect(() => {
-    setSaved(isSaved(question.slug));
+    const check = isSaved(question.slug);
+    setTimeout(() => setSaved(check), 0);
   }, [question.slug]);
 
   return (

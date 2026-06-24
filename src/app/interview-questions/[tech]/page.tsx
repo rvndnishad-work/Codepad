@@ -42,6 +42,15 @@ const TECH_THEMES: Record<string, { bg: string; border: string; hoverBorder: str
     bgGlow: "bg-yellow-500/5",
     tagline: "Closures, async programming & the engine core",
   },
+  "javascript-coding": {
+    bg: "bg-gradient-to-br from-amber-500/5 via-surface to-surface dark:from-amber-950/15 dark:via-surface/10 dark:to-surface/5",
+    border: "border-amber-500/15 dark:border-amber-500/10",
+    hoverBorder: "hover:border-amber-500/40 dark:hover:border-amber-500/30",
+    glow: "hover:shadow-[0_8px_30px_rgba(245,158,11,0.06)]",
+    text: "text-amber-600 dark:text-amber-400",
+    bgGlow: "bg-amber-500/5",
+    tagline: "Implement polyfills, array algorithms, nested objects & async queue utilities",
+  },
   angular: {
     bg: "bg-gradient-to-br from-red-500/5 via-surface to-surface dark:from-red-950/15 dark:via-surface/10 dark:to-surface/5",
     border: "border-red-500/15 dark:border-red-500/10",
@@ -245,6 +254,7 @@ export default async function TechnologyPage({
     reactjs: "Focus on React 19 updates, Server Components/Actions lifecycle, hooks internals, Concurrent Mode rendering, and performance tuning (memo, transitions).",
     nodejs: "Master the Event Loop lifecycle, asynchronous primitives (Worker Threads, child processes), streaming pipelines, and backpressure management.",
     javascript: "Study prototypical inheritance, memory leaks in closures, V8 compilation stages, event loop task queues, and advanced asynchronous patterns.",
+    "javascript-coding": "Practice array/object deep transformations, Promise.all/allSettled polyfills, debounce/throttle variants, and custom Event Emitter class systems.",
     typescript: "Practice advanced mapped/conditional types, utility implementations, type assertion guards, and strict configuration parameters.",
     vuejs: "Understand Vue 3 reactivity tracking (Proxy handlers), Composition API patterns, Pinia stores state management, and server-side rendering strategies.",
     angular: "Study change detection zones (OnPush), standalone component structures, direct RxJS pipe pipelines, and dependency injection hierarchy.",

@@ -83,6 +83,13 @@ const TECH_THEMES: Record<string, { bg: string; border: string; hoverBorder: str
     text: "text-amber-500 dark:text-yellow-400",
     bgGlow: "bg-yellow-500/5"
   },
+  "javascript-coding": {
+    bg: "bg-gradient-to-br from-amber-500/5 via-surface to-surface dark:from-amber-950/15 dark:via-surface/10 dark:to-surface/5",
+    border: "border-amber-500/15 dark:border-amber-500/10",
+    hoverBorder: "hover:border-amber-500/40 dark:hover:border-amber-500/30",
+    text: "text-amber-600 dark:text-amber-400",
+    bgGlow: "bg-amber-500/5"
+  },
   angular: {
     bg: "bg-gradient-to-br from-red-500/5 via-surface to-surface dark:from-red-950/15 dark:via-surface/10 dark:to-surface/5",
     border: "border-red-500/15 dark:border-red-500/10",
@@ -181,7 +188,7 @@ export default function QuestionDetailClient({
         (e.files && Object.keys(e.files).length > 0)),
   );
 
-  const isRunnable = q.technology === "javascript";
+  const isRunnable = q.technology === "javascript" || q.technology === "javascript-coding";
   // Machine-coding solutions are React components — render examples the same way
   // (highlighted code + "Open in Playground" into the empty-react template).
   const isReact = q.technology === "reactjs" || q.technology === "machine-coding";
@@ -205,13 +212,14 @@ export default function QuestionDetailClient({
   useEffect(() => {
     if (!hasFrameworks) return;
     const saved = typeof window !== "undefined" ? localStorage.getItem("mc-framework") : null;
-    setFramework(
-      saved && frameworkKeys.includes(saved)
-        ? saved
-        : frameworkKeys.includes("react")
-          ? "react"
-          : frameworkKeys[0],
-    );
+    const nextFw = saved && frameworkKeys.includes(saved)
+      ? saved
+      : frameworkKeys.includes("react")
+        ? "react"
+        : frameworkKeys[0];
+    setTimeout(() => {
+      setFramework(nextFw);
+    }, 0);
   }, [hasFrameworks, frameworkKeys]);
 
   function selectFramework(fw: string) {

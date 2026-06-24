@@ -15,6 +15,7 @@
     "seed:roles": "npx tsx prisma/seed-roles.ts",
     "seed:creator": "npx tsx prisma/seed-creator-space.ts",
     "seed:iq": "npx tsx prisma/seed-interview-questions.ts",
+    "seed:js-coding": "npx tsx scripts/generate-js-coding-data.ts && npx tsx prisma/seed-js-coding.ts",
     "generate:questions": "npx tsx prisma/generate-question-bank.ts",
     "seed:question-bank": "npx tsx prisma/seed-question-bank.ts",
     "seed:curated": "npx tsx prisma/seed-curated-questions.ts",

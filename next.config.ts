@@ -48,6 +48,27 @@ const nextConfig: NextConfig = {
         destination: "/join/:code",
         permanent: true,
       },
+      // Merged duplicate interview questions → canonical pages (JS answer review).
+      {
+        source: "/interview-question/javascript-closures",
+        destination: "/interview-question/what-are-closures-in-javascript",
+        permanent: true,
+      },
+      {
+        source: "/interview-question/explain-the-concept-of-pure-functions",
+        destination: "/interview-question/what-is-a-pure-function",
+        permanent: true,
+      },
+      {
+        source: "/interview-question/what-is-the-difference-between-and-2",
+        destination: "/interview-question/what-is-the-difference-between-and",
+        permanent: true,
+      },
+      {
+        source: "/interview-question/what-is-the-difference-between-null-and-undefined-2",
+        destination: "/interview-question/what-is-the-difference-between-null-and-undefined",
+        permanent: true,
+      },
     ];
   },
 };

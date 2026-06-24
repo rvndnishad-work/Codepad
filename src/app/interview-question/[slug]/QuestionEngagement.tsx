@@ -14,7 +14,9 @@ export default function QuestionEngagement({ slug, initialLikes }: { slug: strin
     fetch(`/api/interview-questions/${slug}/view`, { method: "POST" }).catch(() => {});
     // Reflect prior like state from this browser.
     try {
-      if (localStorage.getItem(`iq-like-${slug}`) === "1") setLiked(true);
+      if (localStorage.getItem(`iq-like-${slug}`) === "1") {
+        setTimeout(() => setLiked(true), 0);
+      }
     } catch {}
   }, [slug]);
 

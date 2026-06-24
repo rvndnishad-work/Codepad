@@ -807,6 +807,11 @@ export default function Playground({
                   files={initialFilesRef.current}
                   customSetup={customSetup}
                   options={{
+                    // The version-pinned default bundler (2-19-8-sandpack…) ships
+                    // an old parser that throws "Unexpected token" on ES2020
+                    // syntax (nullish coalescing ??, optional chaining ?.). Point
+                    // at the evergreen v2 (esbuild) bundler, which parses modern JS.
+                    bundlerURL: "https://sandpack-bundler.codesandbox.io",
                     autorun: isBackend ? false : autoRun,
                     autoReload: isBackend ? false : autoRun,
                     initMode: "immediate" as const,
@@ -1103,7 +1108,17 @@ function ConsoleArg({ value }: { value: unknown }): React.ReactNode {
  *  syntax-colors values + adds row dividers to feel like a real devtools console. */
 function JsConsole() {
   const { logs } = useSandpackConsole({ resetOnPreviewRestart: true });
-  if (logs.length === 0) {
+  // The evergreen Sandpack bundler doesn't recognize the vanilla "parcel" preset
+  // and emits "Unknown preset parcel, falling back to React". That fallback is
+  // harmless — it's exactly what gives us modern-JS (ES2020 ??/?.) support — but
+  // it's noise in a candidate-facing JS console, so hide just that one warning.
+  const visibleLogs = logs.filter((log) => {
+    const text = Array.isArray(log.data)
+      ? log.data.map((d) => (typeof d === "string" ? d : "")).join(" ")
+      : "";
+    return !/unknown preset\b.*falling back/i.test(text);
+  });
+  if (visibleLogs.length === 0) {
     return (
       <div className="flex flex-col h-full bg-[#0a0b0d]">
         <div className="flex-1 flex items-center justify-center text-neutral-500 text-[12px] font-medium font-mono">
@@ -1120,7 +1135,7 @@ function JsConsole() {
   return (
     <div className="flex flex-col h-full bg-[#0a0b0d] text-[#e3e4e6] font-mono text-[13px] leading-relaxed">
       <div className="flex-1 overflow-y-auto">
-        {logs.map((log) => {
+        {visibleLogs.map((log) => {
           const args = Array.isArray(log.data) ? log.data : [];
           const isError = log.method === "error";
           const isWarn = log.method === "warn";

@@ -127,8 +127,8 @@ export default function JsPlayground({ code, label }: { code: string; label?: st
         </div>
       </div>
 
-      {/* Editor */}
-      <div className="bg-bg/30">
+      {/* Editor — surface + theme match CodeExample's static .iq-hl block */}
+      <div>
         <CodeMirrorEditor value={src} onChange={setSrc} />
       </div>
 

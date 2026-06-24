@@ -3,175 +3,252 @@
     "title": "What are closures in JavaScript?",
     "answer": "A **closure** is the combination of a function and the lexical environment it was created in. The inner function retains live access to its outer scope's variables even after that outer function has returned.\n\nClosures power data privacy, stateful helpers, function factories, memoization, and value capture in loops/callbacks.\n\n**Interview tip:** explain it's a *reference* to the scope (not a snapshot) and tie it to the `var`/`let` loop behavior.",
     "examples": [
-      { "label": "function factory", "code": "function multiplier(factor) {\n  return n => n * factor;   // closes over `factor`\n}\nconst double = multiplier(2);\nconst triple = multiplier(3);\nconsole.log(double(5), triple(5)); // 10 15" }
+      {
+        "label": "function factory",
+        "code": "function multiplier(factor) {\n  return n => n * factor;   // closes over `factor`\n}\nconst double = multiplier(2);\nconst triple = multiplier(3);\nconsole.log(double(5), triple(5)); // 10 15"
+      }
     ]
   },
   {
     "title": "What are computed property names?",
     "answer": "**Computed property names** let you use an expression as an object key in a literal: `{ [expr]: value }`. The expression is evaluated and its result becomes the key.\n\nThey're handy for dynamic keys, building objects from variables, and using symbols as keys.\n\n**Interview tip:** note they work in object literals, class members, and destructuring patterns.",
     "examples": [
-      { "label": "dynamic keys", "code": "const key = 'role';\nconst id = 7;\nconst obj = { [key]: 'admin', [`user_${id}`]: true };\nconsole.log(obj); // { role: 'admin', user_7: true }" }
+      {
+        "label": "dynamic keys",
+        "code": "const key = 'role';\nconst id = 7;\nconst obj = { [key]: 'admin', [`user_${id}`]: true };\nconsole.log(obj); // { role: 'admin', user_7: true }"
+      }
     ]
   },
   {
     "title": "What are modules in JavaScript?",
     "answer": "**Modules** split code into files with explicit `import`/`export`, each with its own scope (no global pollution). **ES Modules** (ESM) are the standard — static, tree-shakeable, with top-level `await`; **CommonJS** (`require`/`module.exports`) is Node's older synchronous system.\n\n**Interview tip:** mention named vs default exports, that ESM is static (analyzable at build time), and dynamic `import()` for lazy loading.",
     "examples": [
-      { "label": "ES module syntax", "runnable": false, "code": "// math.js\nexport const add = (a, b) => a + b;\nexport default function mul(a, b) { return a * b; }\n\n// app.js\nimport mul, { add } from './math.js';\nconsole.log(add(2, 3), mul(2, 3)); // 5 6\n\n// lazy / dynamic import\nconst { add: add2 } = await import('./math.js');" }
+      {
+        "label": "ES module syntax",
+        "runnable": false,
+        "code": "// math.js\nexport const add = (a, b) => a + b;\nexport default function mul(a, b) { return a * b; }\n\n// app.js\nimport mul, { add } from './math.js';\nconsole.log(add(2, 3), mul(2, 3)); // 5 6\n\n// lazy / dynamic import\nconst { add: add2 } = await import('./math.js');"
+      }
     ]
   },
   {
     "title": "What are private class fields?",
     "answer": "Fields prefixed with **`#`** are **truly private** — accessible only inside the class body, enforced by the engine (not a naming convention like `_x`). Private methods and static private members are also supported.\n\nAccessing a `#field` from outside is a **syntax error**, and `#x in obj` can test for brand membership.\n\n**Interview tip:** contrast with the old `_underscore` convention (only soft privacy) and with closures-based privacy.",
     "examples": [
-      { "label": "real privacy", "code": "class Account {\n  #balance = 0;\n  deposit(n) { this.#balance += n; return this; }\n  get balance() { return this.#balance; }\n}\nconst a = new Account();\na.deposit(100).deposit(50);\nconsole.log(a.balance);          // 150\nconsole.log(Object.keys(a));     // [] (#balance hidden)" }
+      {
+        "label": "real privacy",
+        "code": "class Account {\n  #balance = 0;\n  deposit(n) { this.#balance += n; return this; }\n  get balance() { return this.#balance; }\n}\nconst a = new Account();\na.deposit(100).deposit(50);\nconsole.log(a.balance);          // 150\nconsole.log(Object.keys(a));     // [] (#balance hidden)"
+      }
     ]
   },
   {
     "title": "What are static methods and properties?",
     "answer": "**`static`** members belong to the **class itself**, not instances, and are accessed as `ClassName.member`. They're used for factory methods, constants, and utilities related to the class but not to a specific instance.\n\nStatic methods can't access instance `this`; `this` inside a static method refers to the class.\n\n**Interview tip:** common examples are `Array.from`, `Object.keys`, `Math.max`, and custom factory constructors.",
     "examples": [
-      { "label": "factory + counter", "code": "class User {\n  static count = 0;\n  constructor(name) { this.name = name; User.count++; }\n  static of(name) { return new User(name); }   // factory\n}\nUser.of('Ada'); new User('Lin');\nconsole.log(User.count);   // 2\nconsole.log(User.of('Bo').name); // 'Bo'" }
+      {
+        "label": "factory + counter",
+        "code": "class User {\n  static count = 0;\n  constructor(name) { this.name = name; User.count++; }\n  static of(name) { return new User(name); }   // factory\n}\nUser.of('Ada'); new User('Lin');\nconsole.log(User.count);   // 2\nconsole.log(User.of('Bo').name); // 'Bo'"
+      }
     ]
   },
   {
     "title": "What are tagged template literals?",
     "answer": "A **tagged template** calls a function with a template literal's parts: the array of string chunks plus the interpolated values. The tag can transform or escape the output instead of just concatenating.\n\nUses: safe HTML/SQL escaping, i18n, and DSLs like styled-components and GraphQL's `gql`.\n\n**Interview tip:** know the tag signature `tag(strings, ...values)` and that `strings.raw` gives un-escaped text.",
     "examples": [
-      { "label": "a custom tag", "code": "function upper(strings, ...values) {\n  return strings.reduce((out, s, i) =>\n    out + s + (i < values.length ? String(values[i]).toUpperCase() : ''), '');\n}\nconst name = 'ada';\nconsole.log(upper`hello ${name}, welcome`); // 'hello ADA, welcome'" }
+      {
+        "label": "a custom tag",
+        "code": "function upper(strings, ...values) {\n  return strings.reduce((out, s, i) =>\n    out + s + (i < values.length ? String(values[i]).toUpperCase() : ''), '');\n}\nconst name = 'ada';\nconsole.log(upper`hello ${name}, welcome`); // 'hello ADA, welcome'"
+      }
     ]
   },
   {
     "title": "What are template literals?",
     "answer": "**Template literals** use backticks and support **interpolation** `${expr}`, **multi-line** strings, and **tagged** templates. They replace clumsy string concatenation.\n\n**Interview tip:** mention they can embed any expression, span lines without `\\n`, and that tagged templates enable safe escaping/DSLs.",
     "examples": [
-      { "label": "interpolation + multiline", "code": "const user = { name: 'Ada', score: 95 };\nconst msg = `Hi ${user.name},\nyour score is ${user.score} (${user.score >= 90 ? 'A' : 'B'}).`;\nconsole.log(msg);" }
+      {
+        "label": "interpolation + multiline",
+        "code": "const user = { name: 'Ada', score: 95 };\nconst msg = `Hi ${user.name},\nyour score is ${user.score} (${user.score >= 90 ? 'A' : 'B'}).`;\nconsole.log(msg);"
+      }
     ]
   },
   {
     "title": "What are the basics of regular expressions in JavaScript?",
     "answer": "A **RegExp** (`/pattern/flags`) matches text patterns. Common flags: `g` (global), `i` (case-insensitive), `m` (multiline), `s` (dotall). Use `test()` for a boolean; on strings, `match`/`matchAll`/`replace`/`split`.\n\n**Capture groups** `()` extract parts; named groups `(?<name>...)`; character classes `[a-z]`, quantifiers `*`/`+`/`{n,m}`, anchors `^`/`$`.\n\n**Interview tip:** mention greedy vs lazy quantifiers and backreferences as common follow-ups.",
     "examples": [
-      { "label": "test, capture, replace", "code": "const re = /(\\d{4})-(\\d{2})-(\\d{2})/;\nconsole.log(re.test('2026-06-15'));        // true\nconst [, y, m, d] = '2026-06-15'.match(re);\nconsole.log(y, m, d);                      // 2026 06 15\nconsole.log('a1b2c3'.replace(/\\d/g, '#')); // 'a#b#c#'" }
+      {
+        "label": "test, capture, replace",
+        "code": "const re = /(\\d{4})-(\\d{2})-(\\d{2})/;\nconsole.log(re.test('2026-06-15'));        // true\nconst [, y, m, d] = '2026-06-15'.match(re);\nconsole.log(y, m, d);                      // 2026 06 15\nconsole.log('a1b2c3'.replace(/\\d/g, '#')); // 'a#b#c#'"
+      }
     ]
   },
   {
     "title": "What are the quirks of the typeof operator?",
     "answer": "`typeof` returns a type string but has well-known quirks: `typeof null` is `'object'` (a historic bug), `typeof []` and `typeof {}` are both `'object'` (use `Array.isArray`), `typeof function(){}` is `'function'`, and `typeof NaN` is `'number'`. Crucially, `typeof undeclaredVar` safely returns `'undefined'` (no error).\n\n**Interview tip:** use `Array.isArray`, `value === null`, and `Number.isNaN` rather than relying on `typeof` for those cases.",
     "examples": [
-      { "label": "the surprising ones", "code": "console.log(typeof null);       // 'object' (quirk)\nconsole.log(typeof []);         // 'object'\nconsole.log(typeof function(){}); // 'function'\nconsole.log(typeof NaN);        // 'number'\nconsole.log(typeof nope);       // 'undefined' (no ReferenceError)" }
+      {
+        "label": "the surprising ones",
+        "code": "console.log(typeof null);       // 'object' (quirk)\nconsole.log(typeof []);         // 'object'\nconsole.log(typeof function(){}); // 'function'\nconsole.log(typeof NaN);        // 'number'\nconsole.log(typeof nope);       // 'undefined' (no ReferenceError)"
+      }
     ]
   },
   {
     "title": "What do Array.from and Array.of do?",
     "answer": "**`Array.from(src, mapFn?)`** builds a real array from anything **iterable or array-like** (NodeLists, strings, Sets, `arguments`), optionally mapping each item. **`Array.of(...items)`** creates an array from its arguments — avoiding the `new Array(3)` ambiguity (which makes a length-3 empty array, not `[3]`).\n\n**Interview tip:** `Array.from({length: n}, (_, i) => i)` is a neat way to build a numeric range.",
     "examples": [
-      { "label": "from iterables + ranges", "code": "console.log(Array.from('abc'));            // ['a','b','c']\nconsole.log(Array.from(new Set([1,1,2]))); // [1,2]\nconsole.log(Array.from({length: 4}, (_, i) => i * i)); // [0,1,4,9]\nconsole.log(Array.of(3));                  // [3]\nconsole.log(new Array(3).length);          // 3 (empty!)" }
+      {
+        "label": "from iterables + ranges",
+        "code": "console.log(Array.from('abc'));            // ['a','b','c']\nconsole.log(Array.from(new Set([1,1,2]))); // [1,2]\nconsole.log(Array.from({length: 4}, (_, i) => i * i)); // [0,1,4,9]\nconsole.log(Array.of(3));                  // [3]\nconsole.log(new Array(3).length);          // 3 (empty!)"
+      }
     ]
   },
   {
     "title": "What do Object.keys, values, and entries return?",
     "answer": "All operate on an object's **own enumerable** string-keyed properties: **`keys`** → array of keys, **`values`** → array of values, **`entries`** → array of `[key, value]` pairs. `Object.fromEntries` reverses entries back into an object.\n\n**Interview tip:** `entries` pairs nicely with `for...of`/`map`, and `keys`/`values` exclude inherited and symbol keys (unlike `for...in`).",
     "examples": [
-      { "label": "iterate + transform", "code": "const scores = { ada: 95, lin: 88 };\nconsole.log(Object.keys(scores));    // ['ada','lin']\nconsole.log(Object.values(scores));  // [95, 88]\nfor (const [k, v] of Object.entries(scores)) console.log(k, '=>', v);\nconst doubled = Object.fromEntries(\n  Object.entries(scores).map(([k, v]) => [k, v * 2]));\nconsole.log(doubled);                // { ada:190, lin:176 }" }
+      {
+        "label": "iterate + transform",
+        "code": "const scores = { ada: 95, lin: 88 };\nconsole.log(Object.keys(scores));    // ['ada','lin']\nconsole.log(Object.values(scores));  // [95, 88]\nfor (const [k, v] of Object.entries(scores)) console.log(k, '=>', v);\nconst doubled = Object.fromEntries(\n  Object.entries(scores).map(([k, v]) => [k, v * 2]));\nconsole.log(doubled);                // { ada:190, lin:176 }"
+      }
     ]
   },
   {
     "title": "What do flat and flatMap do?",
     "answer": "**`flat(depth = 1)`** flattens nested arrays by the given depth (`Infinity` for fully flat). **`flatMap(fn)`** maps each element then flattens the result one level — efficient for expanding each item into zero or more values.\n\n**Interview tip:** `flatMap` is `map().flat(1)` in one pass; returning `[]` from the callback drops an item, returning multiple expands it.",
     "examples": [
-      { "label": "flatten + expand", "code": "console.log([1, [2, [3, [4]]]].flat(2)); // [1,2,3,[4]]\nconsole.log([1, [2, [3]]].flat(Infinity)); // [1,2,3]\n\nconst words = ['hi there', 'a b c'];\nconsole.log(words.flatMap(s => s.split(' '))); // ['hi','there','a','b','c']\nconsole.log([1,2,3].flatMap(n => n % 2 ? [n] : [])); // [1,3] (filter+map)" }
+      {
+        "label": "flatten + expand",
+        "code": "console.log([1, [2, [3, [4]]]].flat(2)); // [1,2,3,[4]]\nconsole.log([1, [2, [3]]].flat(Infinity)); // [1,2,3]\n\nconst words = ['hi there', 'a b c'];\nconsole.log(words.flatMap(s => s.split(' '))); // ['hi','there','a','b','c']\nconsole.log([1,2,3].flatMap(n => n % 2 ? [n] : [])); // [1,3] (filter+map)"
+      }
     ]
   },
   {
     "title": "What does 'use strict' do?",
     "answer": "**Strict mode** opts into a safer JavaScript variant. It throws on assignments to undeclared variables, makes `this` `undefined` in plain function calls (instead of the global object), forbids duplicate parameter names and `with`, and disallows writes to read-only/non-writable properties.\n\nES **modules** and **class** bodies are strict automatically.\n\n**Interview tip:** it converts many silent mistakes into thrown errors — catching bugs earlier.",
     "examples": [
-      { "label": "silent error becomes thrown", "code": "function sloppy() { undeclared = 1; return 'ok'; }      // would leak a global\nfunction strict() { 'use strict'; try { undeclared2 = 1; } catch (e) { return e.name; } }\nconsole.log(strict()); // 'ReferenceError' (strict catches it)" }
+      {
+        "label": "silent error becomes thrown",
+        "code": "function sloppy() { undeclared = 1; return 'ok'; }      // would leak a global\nfunction strict() { 'use strict'; try { undeclared2 = 1; } catch (e) { return e.name; } }\nconsole.log(strict()); // 'ReferenceError' (strict catches it)"
+      }
     ]
   },
   {
     "title": "What does Array.filter do?",
     "answer": "**`filter(predicate)`** returns a **new array** with only the elements for which the predicate returns truthy. It doesn't mutate the source and is chainable with `map`/`reduce`.\n\n**Interview tip:** it always returns an array (possibly empty); use `find` when you only need the first match.",
     "examples": [
-      { "label": "keep matching items", "code": "const nums = [1, 2, 3, 4, 5, 6];\nconsole.log(nums.filter(n => n % 2 === 0)); // [2,4,6]\nconsole.log(nums.filter(n => n > 10));      // []\nconst users = [{n:'A',active:true},{n:'B',active:false}];\nconsole.log(users.filter(u => u.active).map(u => u.n)); // ['A']" }
+      {
+        "label": "keep matching items",
+        "code": "const nums = [1, 2, 3, 4, 5, 6];\nconsole.log(nums.filter(n => n % 2 === 0)); // [2,4,6]\nconsole.log(nums.filter(n => n > 10));      // []\nconst users = [{n:'A',active:true},{n:'B',active:false}];\nconsole.log(users.filter(u => u.active).map(u => u.n)); // ['A']"
+      }
     ]
   },
   {
     "title": "What does Object.create do?",
     "answer": "**`Object.create(proto, props?)`** creates a new object with `proto` as its prototype (and optional property descriptors). It's the most direct way to set up prototypal inheritance/delegation.\n\n`Object.create(null)` makes a **prototype-less** object — a clean dictionary with no inherited keys like `toString`, useful as a safe map.\n\n**Interview tip:** contrast it with `new` (which also runs a constructor) and with class syntax.",
     "examples": [
-      { "label": "delegation + null proto", "code": "const proto = { greet() { return 'hi ' + this.name; } };\nconst o = Object.create(proto);\no.name = 'Ada';\nconsole.log(o.greet());                 // 'hi Ada'\n\nconst dict = Object.create(null);\ndict.key = 1;\nconsole.log('toString' in dict);        // false (no prototype)" }
+      {
+        "label": "delegation + null proto",
+        "code": "const proto = { greet() { return 'hi ' + this.name; } };\nconst o = Object.create(proto);\no.name = 'Ada';\nconsole.log(o.greet());                 // 'hi Ada'\n\nconst dict = Object.create(null);\ndict.key = 1;\nconsole.log('toString' in dict);        // false (no prototype)"
+      }
     ]
   },
   {
     "title": "What does setTimeout with 0 delay actually do?",
     "answer": "`setTimeout(fn, 0)` does **not** run `fn` immediately — it queues `fn` as a **macrotask** to run after the current synchronous code finishes *and* after all pending **microtasks** (promise callbacks) drain. Browsers also clamp nested timers to a ~4ms minimum.\n\n**Interview tip:** it's used to 'yield to the event loop' / defer work to the next tick, and it always runs after a resolved promise's `.then`.",
     "examples": [
-      { "label": "deferred, after microtasks", "code": "console.log('start');\nsetTimeout(() => console.log('timeout (macrotask)'), 0);\nPromise.resolve().then(() => console.log('promise (microtask)'));\nconsole.log('end');\n// start, end, promise, timeout" }
+      {
+        "label": "deferred, after microtasks",
+        "code": "console.log('start');\nsetTimeout(() => console.log('timeout (macrotask)'), 0);\nPromise.resolve().then(() => console.log('promise (microtask)'));\nconsole.log('end');\n// start, end, promise, timeout"
+      }
     ]
   },
   {
     "title": "What does the delete operator do?",
     "answer": "**`delete obj.prop`** removes an own property from an object and returns `true`. On arrays it removes the element but **leaves a hole** (doesn't reindex or change `length`) — use `splice` instead. It can't delete variables or non-configurable properties.\n\n**Interview tip:** mention that deleting can deoptimize objects, so setting to `undefined` is sometimes preferred, and `delete` on arrays is a common bug.",
     "examples": [
-      { "label": "objects vs arrays", "code": "const obj = { a: 1, b: 2 };\ndelete obj.a;\nconsole.log(obj);            // { b: 2 }\n\nconst arr = [1, 2, 3];\ndelete arr[1];\nconsole.log(arr, arr.length); // [1, <empty>, 3] 3  (hole!)" }
+      {
+        "label": "objects vs arrays",
+        "code": "const obj = { a: 1, b: 2 };\ndelete obj.a;\nconsole.log(obj);            // { b: 2 }\n\nconst arr = [1, 2, 3];\ndelete arr[1];\nconsole.log(arr, arr.length); // [1, <empty>, 3] 3  (hole!)"
+      }
     ]
   },
   {
     "title": "What does yield* do in a generator?",
     "answer": "**`yield*`** delegates iteration to another iterable/generator, yielding all of its values as if they were inline. It also forwards the inner generator's return value.\n\nIt's used to **compose** generators — flattening, chaining, or building one sequence from sub-sequences.\n\n**Interview tip:** contrast `yield x` (yields one value) with `yield* iterable` (yields each value of the iterable).",
     "examples": [
-      { "label": "compose generators", "code": "function* letters() { yield 'a'; yield 'b'; }\nfunction* nums() { yield 1; yield 2; }\nfunction* both() {\n  yield* letters();\n  yield* nums();\n  yield 'done';\n}\nconsole.log([...both()]); // ['a','b',1,2,'done']" }
+      {
+        "label": "compose generators",
+        "code": "function* letters() { yield 'a'; yield 'b'; }\nfunction* nums() { yield 1; yield 2; }\nfunction* both() {\n  yield* letters();\n  yield* nums();\n  yield 'done';\n}\nconsole.log([...both()]); // ['a','b',1,2,'done']"
+      }
     ]
   },
   {
     "title": "What is BigInt?",
     "answer": "**BigInt** represents integers of arbitrary size, beyond `Number.MAX_SAFE_INTEGER` (2^53−1). Write a literal with an `n` suffix (`123n`) or `BigInt(x)`.\n\nYou **can't mix** BigInt and Number in arithmetic without explicit conversion, and BigInt doesn't support fractions. Useful for large IDs, timestamps, and precise integer math (e.g., cryptography).\n\n**Interview tip:** mention the safe-integer limit and why floats lose precision for big integers.",
     "examples": [
-      { "label": "beyond safe integers", "code": "console.log(Number.MAX_SAFE_INTEGER);       // 9007199254740991\nconsole.log(9007199254740993 === 9007199254740992); // true (precision lost!)\nconst big = 9007199254740993n;\nconsole.log(big + 1n);                       // 9007199254740994n (exact)\nconsole.log(typeof big);                     // 'bigint'" }
+      {
+        "label": "beyond safe integers",
+        "code": "console.log(Number.MAX_SAFE_INTEGER);       // 9007199254740991\nconsole.log(9007199254740993 === 9007199254740992); // true (precision lost!)\nconst big = 9007199254740993n;\nconsole.log(big + 1n);                       // 9007199254740994n (exact)\nconsole.log(typeof big);                     // 'bigint'"
+      }
     ]
   },
   {
     "title": "What is CORS?",
     "answer": "**CORS** (Cross-Origin Resource Sharing) is a browser security feature that blocks cross-origin requests unless the server opts in with `Access-Control-Allow-Origin` (and related) headers. 'Non-simple' requests trigger a **preflight** `OPTIONS` request first.\n\nIt's enforced by the **browser**, not the server — so server-to-server calls aren't subject to it.\n\n**Interview tip:** know it protects users (same-origin policy), the preflight mechanism, and that credentials require `Allow-Credentials` + a specific origin.",
     "examples": [
-      { "label": "server opts in (response headers)", "runnable": false, "code": "// Server response that allows a cross-origin browser request:\n// Access-Control-Allow-Origin: https://app.example.com\n// Access-Control-Allow-Methods: GET, POST\n// Access-Control-Allow-Headers: Content-Type\n// Access-Control-Allow-Credentials: true\n\n// Browser preflight (automatic) for a non-simple request:\n// OPTIONS /api  ->  server must answer with the headers above" }
+      {
+        "label": "server opts in (response headers)",
+        "runnable": false,
+        "code": "// Server response that allows a cross-origin browser request:\n// Access-Control-Allow-Origin: https://app.example.com\n// Access-Control-Allow-Methods: GET, POST\n// Access-Control-Allow-Headers: Content-Type\n// Access-Control-Allow-Credentials: true\n\n// Browser preflight (automatic) for a non-simple request:\n// OPTIONS /api  ->  server must answer with the headers above"
+      }
     ]
   },
   {
     "title": "What is JSON and why is it commonly used?",
     "answer": "**JSON** (JavaScript Object Notation) is a lightweight, language-independent text format for structured data — objects, arrays, strings, numbers, booleans, and `null`. It's human-readable and maps cleanly to most languages' data structures.\n\nIt's the de-facto format for APIs and config. In JS: `JSON.stringify` (serialize) and `JSON.parse` (deserialize), with optional replacer/reviver functions.\n\n**Interview tip:** note JSON limits — no functions, `undefined`, comments, or `Date` objects (dates become strings).",
     "examples": [
-      { "label": "stringify / parse", "code": "const obj = { name: 'Ada', tags: ['js', 'cs'], active: true };\nconst json = JSON.stringify(obj);\nconsole.log(json);                  // '{\"name\":\"Ada\",...}'\nconst back = JSON.parse(json);\nconsole.log(back.tags[0]);          // 'js'\nconsole.log(JSON.stringify({ f: () => 1, u: undefined })); // '{}' (dropped)" }
+      {
+        "label": "stringify / parse",
+        "code": "const obj = { name: 'Ada', tags: ['js', 'cs'], active: true };\nconst json = JSON.stringify(obj);\nconsole.log(json);                  // '{\"name\":\"Ada\",...}'\nconst back = JSON.parse(json);\nconsole.log(back.tags[0]);          // 'js'\nconsole.log(JSON.stringify({ f: () => 1, u: undefined })); // '{}' (dropped)"
+      }
     ]
   },
   {
     "title": "What is a higher-order function?",
     "answer": "A **higher-order function** takes one or more functions as arguments and/or returns a function. Examples: `map`/`filter`/`reduce`, `setTimeout`, and function factories.\n\nThey enable abstraction, composition, and reuse — the backbone of functional programming in JS.\n\n**Interview tip:** be ready to write one that returns a function (a closure), e.g., a logger/decorator wrapper.",
     "examples": [
-      { "label": "takes & returns functions", "code": "const withLog = fn => (...args) => {\n  console.log('calling with', args);\n  const r = fn(...args);\n  console.log('=>', r);\n  return r;\n};\nconst add = (a, b) => a + b;\nconst loggedAdd = withLog(add);\nloggedAdd(2, 3); // logs args, then 5" }
+      {
+        "label": "takes & returns functions",
+        "code": "const withLog = fn => (...args) => {\n  console.log('calling with', args);\n  const r = fn(...args);\n  console.log('=>', r);\n  return r;\n};\nconst add = (a, b) => a + b;\nconst loggedAdd = withLog(add);\nloggedAdd(2, 3); // logs args, then 5"
+      }
     ]
   },
   {
     "title": "What is a pure function?",
     "answer": "A **pure function** returns the same output for the same input and produces **no side effects** (no mutation of external state, I/O, randomness, or time). Given its inputs, its result is fully determined.\n\nPurity makes code predictable, easy to test, memoizable, and safe to reorder/parallelize.\n\n**Interview tip:** identify impurities (mutating arguments, reading globals, `Date.now`) and refactor them out or push them to the edges.",
     "examples": [
-      { "label": "deterministic + no side effects", "code": "const pure = (a, b) => a + b;          // pure\nlet calls = 0;\nconst impure = (a, b) => { calls++; return a + b; }; // side effect\n\nconsole.log(pure(2, 3), pure(2, 3));   // 5 5 (always)\nimpure(1, 1); impure(1, 1);\nconsole.log('hidden state:', calls);   // 2 (not pure)" }
+      {
+        "label": "deterministic + no side effects",
+        "code": "const pure = (a, b) => a + b;          // pure\nlet calls = 0;\nconst impure = (a, b) => { calls++; return a + b; }; // side effect\n\nconsole.log(pure(2, 3), pure(2, 3));   // 5 5 (always)\nimpure(1, 1); impure(1, 1);\nconsole.log('hidden state:', calls);   // 2 (not pure)"
+      }
     ]
   },
   {
     "title": "What is an IIFE?",
     "answer": "An **IIFE** (Immediately Invoked Function Expression) is a function defined and called at once: `(function(){ ... })()` or `(() => { ... })()`. It creates a private scope, avoiding global pollution and name clashes.\n\nBefore ES modules and block scoping, IIFEs were the standard module pattern and a way to capture loop variables.\n\n**Interview tip:** mention it can return a public API (the module pattern) while keeping internals private.",
     "examples": [
-      { "label": "private scope + module pattern", "code": "const counter = (function () {\n  let count = 0;                 // private\n  return { inc: () => ++count, value: () => count };\n})();\ncounter.inc(); counter.inc();\nconsole.log(counter.value());    // 2\nconsole.log(typeof count);       // 'undefined' (not leaked)" }
+      {
+        "label": "private scope + module pattern",
+        "code": "const counter = (function () {\n  let count = 0;                 // private\n  return { inc: () => ++count, value: () => count };\n})();\ncounter.inc(); counter.inc();\nconsole.log(counter.value());    // 2\nconsole.log(typeof count);       // 'undefined' (not leaked)"
+      }
     ]
   },
   {
     "title": "What is debouncing and throttling?",
-    "answer": "Both control how often a function runs in response to rapid events:\n\n- **Debounce** delays execution until activity **stops** for a set delay, running once at the end — great for search input and resize-end.\n- **Throttle** runs at most once per interval **during** activity — great for scroll/mousemove.\n\n**Interview tip:** debounce = 'wait until quiet', throttle = 'at a steady rate'. Be ready to implement both with `setTimeout`/timestamps.",
+    "answer": "**Core Concept (TL;DR)**\nDebouncing and throttling are optimization techniques used to limit the execution rate of a function responding to high-frequency events. Debouncing delays execution until a quiet period occurs, while throttling limits execution to once per time interval.\n\n<div style=\"margin:1.25rem auto;max-width:540px;border:1px solid rgba(139,92,246,0.25);border-radius:14px;padding:14px;background:rgba(139,92,246,0.04)\">\n<svg viewBox=\"0 0 520 180\" style=\"width:100%;display:block\" xmlns=\"http://www.w3.org/2000/svg\" font-family=\"ui-sans-serif,system-ui\">\n  <text x=\"14\" y=\"22\" fill=\"currentColor\" font-size=\"12\" font-weight=\"700\">Debouncing waits for pause, Throttling limits rates</text>\n  <line x1=\"30\" y1=\"110\" x2=\"480\" y2=\"110\" stroke=\"currentColor\" stroke-width=\"2\" marker-end=\"url(#time-arrow)\"/>\n  <circle cx=\"60\" cy=\"110\" r=\"6\" fill=\"#ef4444\" />\n  <circle cx=\"100\" cy=\"110\" r=\"6\" fill=\"#ef4444\" />\n  <circle cx=\"140\" cy=\"110\" r=\"6\" fill=\"#ef4444\" />\n  <text x=\"100\" y=\"96\" fill=\"#ef4444\" font-size=\"9\" text-anchor=\"middle\">events fired</text>\n\n  \n  <rect x=\"140\" y=\"55\" width=\"120\" height=\"30\" rx=\"4\" fill=\"#3b82f6\" fill-opacity=\"0.15\" stroke=\"#3b82f6\" stroke-dasharray=\"4\"/>\n  <text x=\"200\" y=\"73\" fill=\"#3b82f6\" font-size=\"10\" text-anchor=\"middle\">debounce wait</text>\n  <circle cx=\"260\" cy=\"110\" r=\"8\" fill=\"#22c55e\"/>\n  <text x=\"260\" y=\"134\" fill=\"#22c55e\" font-size=\"10\" font-weight=\"700\" text-anchor=\"middle\">Execution</text>\n  \n  <defs>\n    <marker id=\"time-arrow\" markerWidth=\"6\" markerHeight=\"6\" refX=\"4\" refY=\"3\" orient=\"auto\">\n      <path d=\"M0,0 L6,3 L0,6 Z\" fill=\"currentColor\"/>\n    </marker>\n  </defs>\n</svg>\n</div>\n\n**Under-the-Hood Mechanics**\n- **Debounce**:\n  - Starts a timer on each event trigger.\n  - If a new event fires before the timer completes, the previous timer is cancelled, and a new one starts.\n  - The function only executes once the timer completes.\n  - Excellent for input validation, search inputs, and auto-save fields.\n- **Throttle**:\n  - Sets a block window once executed.\n  - Ignores or buffers intermediate event triggers until the block window expires.\n  - Guarantees execution at a regular interval.\n  - Excellent for scroll event trackers, resize layouts, and drag-and-drop handles.\n\n**Tricky Code Scenarios & Gotchas**\n- **Losing Closure State**:\n  Debounce/throttle wrappers rely on closures to maintain timer states (`timeoutId` or `lastRunTime`).\n  ```javascript\n  // Bug: Instantiating the wrapper inside a React functional component render loop creates a new closure on every render!\n  // Fix: Wrap the debounced function in a hook (e.g., useCallback or useRef) to persist the closure.\n  ```\n\n**Architectural Rationale**\nThese optimization strategies reduce execution pressure on CPU, memory, and networking pipelines, preventing application lag and eliminating server-side rate limit errors (like HTTP 429).\n\n**Pro-Level Interview Tip**\nIllustrate how debouncing helps search auto-suggest fields, and how throttling prevents performance lags on layout scroll event listeners.",
     "examples": [
-      { "label": "debounce vs throttle behavior", "code": "function debounce(fn, ms) { let t; return (...a) => { clearTimeout(t); t = setTimeout(() => fn(...a), ms); }; }\nfunction throttle(fn, ms) { let last = 0; return (...a) => { const n = Date.now(); if (n - last >= ms) { last = n; fn(...a); } }; }\n\nconst d = debounce(() => console.log('debounced'), 50);\nconst t = throttle(() => console.log('throttled'), 50);\nd(); d(); d();   // 'debounced' once (after it goes quiet)\nt(); t(); t();   // 'throttled' once (immediately, rest ignored)" }
+      {
+        "label": "debounce vs throttle behavior",
+        "code": "function debounce(fn, ms) { let t; return (...a) => { clearTimeout(t); t = setTimeout(() => fn(...a), ms); }; }\nfunction throttle(fn, ms) { let last = 0; return (...a) => { const n = Date.now(); if (n - last >= ms) { last = n; fn(...a); } }; }\n\nconst d = debounce(() => console.log('debounced'), 50);\nconst t = throttle(() => console.log('throttled'), 50);\nd(); d(); d();   // 'debounced' once (after it goes quiet)\nt(); t(); t();   // 'throttled' once (immediately, rest ignored)"
+      }
     ]
   }
 ]

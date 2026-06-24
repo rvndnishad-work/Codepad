@@ -1,0 +1,1202 @@
+[
+  {
+    "title": "How does WeakMap allow garbage collection of keys?",
+    "description": "Explain the difference between Map and WeakMap concerning garbage collection and key references, and show a practical use case.",
+    "technology": "javascript",
+    "difficulty": "medium",
+    "round": "Frontend",
+    "tags": [
+      "weakmap",
+      "garbage-collection",
+      "memory"
+    ]
+  },
+  {
+    "title": "How do you abort a Fetch API request using AbortController?",
+    "description": "Explain the AbortController and AbortSignal workflow, how it interacts with promises, and how to use it to prevent memory leaks in event loops.",
+    "technology": "javascript",
+    "difficulty": "medium",
+    "round": "Frontend",
+    "tags": [
+      "abortcontroller",
+      "fetch",
+      "promises"
+    ]
+  },
+  {
+    "title": "What is the difference between Object.is, ==, and ===?",
+    "description": "Walk through how Object.is handles special values like NaN, +0, and -0, and where standard strict equality !== fails to distinguish them.",
+    "technology": "javascript",
+    "difficulty": "easy",
+    "round": "Phone Screen",
+    "tags": [
+      "equality",
+      "object-is",
+      "coercion"
+    ]
+  },
+  {
+    "title": "How do you implement a custom Promise.all polyfill?",
+    "description": "Write an implementation of Promise.all from scratch, showing how you track counts, handle non-promises, and reject immediately on the first error.",
+    "technology": "javascript",
+    "difficulty": "medium",
+    "round": "DSA",
+    "tags": [
+      "promises",
+      "polyfill",
+      "async"
+    ]
+  },
+  {
+    "title": "How do you implement a custom Promise.any polyfill?",
+    "description": "Write Promise.any from scratch, ensuring it resolves with the first fulfilled promise, and rejects with an AggregateError if all promises fail.",
+    "technology": "javascript",
+    "difficulty": "hard",
+    "round": "DSA",
+    "tags": [
+      "promises",
+      "polyfill",
+      "async"
+    ]
+  },
+  {
+    "title": "How do you implement a deepFreeze function recursively?",
+    "description": "Explain how Object.freeze only works shallowly, and write a recursive utility to deeply freeze nested objects and arrays.",
+    "technology": "javascript",
+    "difficulty": "medium",
+    "round": "Frontend",
+    "tags": [
+      "objects",
+      "recursion",
+      "immutability"
+    ]
+  },
+  {
+    "title": "Implement a robust Event Emitter class.",
+    "description": "Design a Publisher-Subscriber pattern implementation with subscribe, unsubscribe, and once methods from scratch.",
+    "technology": "javascript",
+    "difficulty": "medium",
+    "round": "DSA",
+    "tags": [
+      "design-patterns",
+      "pubsub",
+      "event-emitter"
+    ]
+  },
+  {
+    "title": "How do you implement a simple Promise library from scratch?",
+    "description": "Outline how you execute callbacks asynchronously, handle chain transitions, and manage resolve/reject states.",
+    "technology": "javascript",
+    "difficulty": "hard",
+    "round": "DSA",
+    "tags": [
+      "promises",
+      "polyfill",
+      "async"
+    ]
+  },
+  {
+    "title": "How do you implement infinite currying in JavaScript?",
+    "description": "Write an add function that returns a curried function chain supporting variable invocations, e.g. add(1)(2)...(n)().",
+    "technology": "javascript",
+    "difficulty": "medium",
+    "round": "Phone Screen",
+    "tags": [
+      "currying",
+      "closures",
+      "functional"
+    ]
+  },
+  {
+    "title": "Implement an async task queue with a concurrency limit.",
+    "description": "Write a runner that processes a large list of async functions, maintaining a hard limit on how many run simultaneously.",
+    "technology": "javascript",
+    "difficulty": "hard",
+    "round": "System Design",
+    "tags": [
+      "promises",
+      "concurrency",
+      "queue"
+    ]
+  },
+  {
+    "title": "Tricky JavaScript Scenario #11: Object.groupBy",
+    "description": "Analyze real-world tricky interview scenarios involving Object.groupBy and explain how to control native object property grouping.",
+    "technology": "javascript",
+    "difficulty": "easy",
+    "round": "Frontend",
+    "tags": [
+      "es2024",
+      "tricky",
+      "real-world"
+    ]
+  },
+  {
+    "title": "Tricky JavaScript Scenario #12: Map.groupBy",
+    "description": "Analyze real-world tricky interview scenarios involving Map.groupBy and explain how to control native Map key grouping.",
+    "technology": "javascript",
+    "difficulty": "medium",
+    "round": "Frontend",
+    "tags": [
+      "es2024",
+      "tricky",
+      "real-world"
+    ]
+  },
+  {
+    "title": "Tricky JavaScript Scenario #13: Array.prototype.toSorted",
+    "description": "Analyze real-world tricky interview scenarios involving Array.prototype.toSorted and explain how to control non-mutating sorting operations.",
+    "technology": "javascript",
+    "difficulty": "easy",
+    "round": "Phone Screen",
+    "tags": [
+      "es2023",
+      "tricky",
+      "real-world"
+    ]
+  },
+  {
+    "title": "Tricky JavaScript Scenario #14: Array.prototype.toReversed",
+    "description": "Analyze real-world tricky interview scenarios involving Array.prototype.toReversed and explain how to control non-mutating array reversal.",
+    "technology": "javascript",
+    "difficulty": "easy",
+    "round": "Phone Screen",
+    "tags": [
+      "es2023",
+      "tricky",
+      "real-world"
+    ]
+  },
+  {
+    "title": "Tricky JavaScript Scenario #15: Array.prototype.toSpliced",
+    "description": "Analyze real-world tricky interview scenarios involving Array.prototype.toSpliced and explain how to control non-mutating slice/splice variants.",
+    "technology": "javascript",
+    "difficulty": "medium",
+    "round": "Frontend",
+    "tags": [
+      "es2023",
+      "tricky",
+      "real-world"
+    ]
+  },
+  {
+    "title": "Tricky JavaScript Scenario #16: Array.prototype.with",
+    "description": "Analyze real-world tricky interview scenarios involving Array.prototype.with and explain how to control replacing single element without mutation.",
+    "technology": "javascript",
+    "difficulty": "easy",
+    "round": "Phone Screen",
+    "tags": [
+      "es2023",
+      "tricky",
+      "real-world"
+    ]
+  },
+  {
+    "title": "Tricky JavaScript Scenario #17: Reflect.ownKeys",
+    "description": "Analyze real-world tricky interview scenarios involving Reflect.ownKeys and explain how to control accessing all keys including symbols.",
+    "technology": "javascript",
+    "difficulty": "medium",
+    "round": "DSA",
+    "tags": [
+      "reflect",
+      "tricky",
+      "real-world"
+    ]
+  },
+  {
+    "title": "Tricky JavaScript Scenario #18: Proxy traps custom sets",
+    "description": "Analyze real-world tricky interview scenarios involving Proxy traps custom sets and explain how to control validating fields before assignments.",
+    "technology": "javascript",
+    "difficulty": "medium",
+    "round": "Frontend",
+    "tags": [
+      "proxy",
+      "tricky",
+      "real-world"
+    ]
+  },
+  {
+    "title": "Tricky JavaScript Scenario #19: Proxy traps custom gets",
+    "description": "Analyze real-world tricky interview scenarios involving Proxy traps custom gets and explain how to control providing dynamic defaults for missing fields.",
+    "technology": "javascript",
+    "difficulty": "medium",
+    "round": "Frontend",
+    "tags": [
+      "proxy",
+      "tricky",
+      "real-world"
+    ]
+  },
+  {
+    "title": "Tricky JavaScript Scenario #20: Symbol.iterator custom generator",
+    "description": "Analyze real-world tricky interview scenarios involving Symbol.iterator custom generator and explain how to control making plain objects iterable.",
+    "technology": "javascript",
+    "difficulty": "hard",
+    "round": "DSA",
+    "tags": [
+      "iterators",
+      "tricky",
+      "real-world"
+    ]
+  },
+  {
+    "title": "Tricky JavaScript Scenario #21: Symbol.asyncIterator paging fetches",
+    "description": "Analyze real-world tricky interview scenarios involving Symbol.asyncIterator paging fetches and explain how to control iterating paginated APIs.",
+    "technology": "javascript",
+    "difficulty": "hard",
+    "round": "DSA",
+    "tags": [
+      "iterators",
+      "tricky",
+      "real-world"
+    ]
+  },
+  {
+    "title": "Tricky JavaScript Scenario #22: WeakSet garbage collection behavior",
+    "description": "Analyze real-world tricky interview scenarios involving WeakSet garbage collection behavior and explain how to control preventing duplicates without leaks.",
+    "technology": "javascript",
+    "difficulty": "medium",
+    "round": "Frontend",
+    "tags": [
+      "weakset",
+      "tricky",
+      "real-world"
+    ]
+  },
+  {
+    "title": "Tricky JavaScript Scenario #23: deepClone with cycles detection",
+    "description": "Analyze real-world tricky interview scenarios involving deepClone with cycles detection and explain how to control cloning objects containing circular loops.",
+    "technology": "javascript",
+    "difficulty": "hard",
+    "round": "DSA",
+    "tags": [
+      "utility",
+      "tricky",
+      "real-world"
+    ]
+  },
+  {
+    "title": "Tricky JavaScript Scenario #24: Function currying with placeholder inputs",
+    "description": "Analyze real-world tricky interview scenarios involving Function currying with placeholder inputs and explain how to control fixing params dynamically using placeholder markers.",
+    "technology": "javascript",
+    "difficulty": "hard",
+    "round": "DSA",
+    "tags": [
+      "functional",
+      "tricky",
+      "real-world"
+    ]
+  },
+  {
+    "title": "Tricky JavaScript Scenario #25: custom debounce with cancel method",
+    "description": "Analyze real-world tricky interview scenarios involving custom debounce with cancel method and explain how to control debouncing calls with cleanup hooks.",
+    "technology": "javascript",
+    "difficulty": "medium",
+    "round": "Frontend",
+    "tags": [
+      "utility",
+      "tricky",
+      "real-world"
+    ]
+  },
+  {
+    "title": "Tricky JavaScript Scenario #26: custom throttle with leading flags",
+    "description": "Analyze real-world tricky interview scenarios involving custom throttle with leading flags and explain how to control throttling with precise timing boundaries.",
+    "technology": "javascript",
+    "difficulty": "hard",
+    "round": "Frontend",
+    "tags": [
+      "utility",
+      "tricky",
+      "real-world"
+    ]
+  },
+  {
+    "title": "Tricky JavaScript Scenario #27: Array element kinds optimization",
+    "description": "Analyze real-world tricky interview scenarios involving Array element kinds optimization and explain how to control V8 array slots holey vs packed.",
+    "technology": "javascript",
+    "difficulty": "hard",
+    "round": "System Design",
+    "tags": [
+      "v8",
+      "tricky",
+      "real-world"
+    ]
+  },
+  {
+    "title": "Tricky JavaScript Scenario #28: SharedArrayBuffer thread isolation",
+    "description": "Analyze real-world tricky interview scenarios involving SharedArrayBuffer thread isolation and explain how to control multi-threaded memory sharing constraints.",
+    "technology": "javascript",
+    "difficulty": "hard",
+    "round": "System Design",
+    "tags": [
+      "workers",
+      "tricky",
+      "real-world"
+    ]
+  },
+  {
+    "title": "Tricky JavaScript Scenario #29: postMessage transferable streams",
+    "description": "Analyze real-world tricky interview scenarios involving postMessage transferable streams and explain how to control transferring memory allocations without copying.",
+    "technology": "javascript",
+    "difficulty": "hard",
+    "round": "System Design",
+    "tags": [
+      "workers",
+      "tricky",
+      "real-world"
+    ]
+  },
+  {
+    "title": "Tricky JavaScript Scenario #30: BroadcastChannel multi-tab updates",
+    "description": "Analyze real-world tricky interview scenarios involving BroadcastChannel multi-tab updates and explain how to control communicating across open browsing instances.",
+    "technology": "javascript",
+    "difficulty": "medium",
+    "round": "Frontend",
+    "tags": [
+      "messaging",
+      "tricky",
+      "real-world"
+    ]
+  },
+  {
+    "title": "Tricky JavaScript Scenario #31: History API route state handling",
+    "description": "Analyze real-world tricky interview scenarios involving History API route state handling and explain how to control manipulating browser stacks without refresh.",
+    "technology": "javascript",
+    "difficulty": "medium",
+    "round": "Frontend",
+    "tags": [
+      "routing",
+      "tricky",
+      "real-world"
+    ]
+  },
+  {
+    "title": "Tricky JavaScript Scenario #32: DOM Layout Thrashing remedies",
+    "description": "Analyze real-world tricky interview scenarios involving DOM Layout Thrashing remedies and explain how to control resolving layout updates bottlenecking performance.",
+    "technology": "javascript",
+    "difficulty": "medium",
+    "round": "Frontend",
+    "tags": [
+      "rendering",
+      "tricky",
+      "real-world"
+    ]
+  },
+  {
+    "title": "Tricky JavaScript Scenario #33: Passive event listener scroll enhancements",
+    "description": "Analyze real-world tricky interview scenarios involving Passive event listener scroll enhancements and explain how to control non-blocking scroll threads touch updates.",
+    "technology": "javascript",
+    "difficulty": "easy",
+    "round": "Frontend",
+    "tags": [
+      "rendering",
+      "tricky",
+      "real-world"
+    ]
+  },
+  {
+    "title": "Tricky JavaScript Scenario #34: navigator.sendBeacon final telemetry",
+    "description": "Analyze real-world tricky interview scenarios involving navigator.sendBeacon final telemetry and explain how to control dispatching data packages before tab closing.",
+    "technology": "javascript",
+    "difficulty": "medium",
+    "round": "Frontend",
+    "tags": [
+      "utility",
+      "tricky",
+      "real-world"
+    ]
+  },
+  {
+    "title": "Tricky JavaScript Scenario #35: High Resolution Time API precision",
+    "description": "Analyze real-world tricky interview scenarios involving High Resolution Time API precision and explain how to control measuring execution drifts with precision.",
+    "technology": "javascript",
+    "difficulty": "easy",
+    "round": "Phone Screen",
+    "tags": [
+      "perf-api",
+      "tricky",
+      "real-world"
+    ]
+  },
+  {
+    "title": "Tricky JavaScript Scenario #36: Page Visibility API interval freezing",
+    "description": "Analyze real-world tricky interview scenarios involving Page Visibility API interval freezing and explain how to control optimizing frames when tab is backgrounded.",
+    "technology": "javascript",
+    "difficulty": "easy",
+    "round": "Phone Screen",
+    "tags": [
+      "perf-api",
+      "tricky",
+      "real-world"
+    ]
+  },
+  {
+    "title": "Tricky JavaScript Scenario #37: IntersectionObserver lazy loaded content",
+    "description": "Analyze real-world tricky interview scenarios involving IntersectionObserver lazy loaded content and explain how to control rendering nodes as they enter viewports.",
+    "technology": "javascript",
+    "difficulty": "medium",
+    "round": "Frontend",
+    "tags": [
+      "observers",
+      "tricky",
+      "real-world"
+    ]
+  },
+  {
+    "title": "Tricky JavaScript Scenario #38: ResizeObserver sizing alterations tracking",
+    "description": "Analyze real-world tricky interview scenarios involving ResizeObserver sizing alterations tracking and explain how to control listening to DOM element scale mutations.",
+    "technology": "javascript",
+    "difficulty": "medium",
+    "round": "Frontend",
+    "tags": [
+      "observers",
+      "tricky",
+      "real-world"
+    ]
+  },
+  {
+    "title": "Tricky JavaScript Scenario #39: MutationObserver tree monitoring",
+    "description": "Analyze real-world tricky interview scenarios involving MutationObserver tree monitoring and explain how to control detecting script alterations on target nodes.",
+    "technology": "javascript",
+    "difficulty": "medium",
+    "round": "Frontend",
+    "tags": [
+      "observers",
+      "tricky",
+      "real-world"
+    ]
+  },
+  {
+    "title": "Tricky JavaScript Scenario #40: strict mode this bindings binding rules",
+    "description": "Analyze real-world tricky interview scenarios involving strict mode this bindings binding rules and explain how to control sloppy vs strict context parsing limits.",
+    "technology": "javascript",
+    "difficulty": "easy",
+    "round": "Phone Screen",
+    "tags": [
+      "syntax",
+      "tricky",
+      "real-world"
+    ]
+  },
+  {
+    "title": "Tricky JavaScript Scenario #41: Object.groupBy",
+    "description": "Analyze real-world tricky interview scenarios involving Object.groupBy and explain how to control native object property grouping.",
+    "technology": "javascript",
+    "difficulty": "easy",
+    "round": "Frontend",
+    "tags": [
+      "es2024",
+      "tricky",
+      "real-world"
+    ]
+  },
+  {
+    "title": "Tricky JavaScript Scenario #42: Map.groupBy",
+    "description": "Analyze real-world tricky interview scenarios involving Map.groupBy and explain how to control native Map key grouping.",
+    "technology": "javascript",
+    "difficulty": "medium",
+    "round": "Frontend",
+    "tags": [
+      "es2024",
+      "tricky",
+      "real-world"
+    ]
+  },
+  {
+    "title": "Tricky JavaScript Scenario #43: Array.prototype.toSorted",
+    "description": "Analyze real-world tricky interview scenarios involving Array.prototype.toSorted and explain how to control non-mutating sorting operations.",
+    "technology": "javascript",
+    "difficulty": "easy",
+    "round": "Phone Screen",
+    "tags": [
+      "es2023",
+      "tricky",
+      "real-world"
+    ]
+  },
+  {
+    "title": "Tricky JavaScript Scenario #44: Array.prototype.toReversed",
+    "description": "Analyze real-world tricky interview scenarios involving Array.prototype.toReversed and explain how to control non-mutating array reversal.",
+    "technology": "javascript",
+    "difficulty": "easy",
+    "round": "Phone Screen",
+    "tags": [
+      "es2023",
+      "tricky",
+      "real-world"
+    ]
+  },
+  {
+    "title": "Tricky JavaScript Scenario #45: Array.prototype.toSpliced",
+    "description": "Analyze real-world tricky interview scenarios involving Array.prototype.toSpliced and explain how to control non-mutating slice/splice variants.",
+    "technology": "javascript",
+    "difficulty": "medium",
+    "round": "Frontend",
+    "tags": [
+      "es2023",
+      "tricky",
+      "real-world"
+    ]
+  },
+  {
+    "title": "Tricky JavaScript Scenario #46: Array.prototype.with",
+    "description": "Analyze real-world tricky interview scenarios involving Array.prototype.with and explain how to control replacing single element without mutation.",
+    "technology": "javascript",
+    "difficulty": "easy",
+    "round": "Phone Screen",
+    "tags": [
+      "es2023",
+      "tricky",
+      "real-world"
+    ]
+  },
+  {
+    "title": "Tricky JavaScript Scenario #47: Reflect.ownKeys",
+    "description": "Analyze real-world tricky interview scenarios involving Reflect.ownKeys and explain how to control accessing all keys including symbols.",
+    "technology": "javascript",
+    "difficulty": "medium",
+    "round": "DSA",
+    "tags": [
+      "reflect",
+      "tricky",
+      "real-world"
+    ]
+  },
+  {
+    "title": "Tricky JavaScript Scenario #48: Proxy traps custom sets",
+    "description": "Analyze real-world tricky interview scenarios involving Proxy traps custom sets and explain how to control validating fields before assignments.",
+    "technology": "javascript",
+    "difficulty": "medium",
+    "round": "Frontend",
+    "tags": [
+      "proxy",
+      "tricky",
+      "real-world"
+    ]
+  },
+  {
+    "title": "Tricky JavaScript Scenario #49: Proxy traps custom gets",
+    "description": "Analyze real-world tricky interview scenarios involving Proxy traps custom gets and explain how to control providing dynamic defaults for missing fields.",
+    "technology": "javascript",
+    "difficulty": "medium",
+    "round": "Frontend",
+    "tags": [
+      "proxy",
+      "tricky",
+      "real-world"
+    ]
+  },
+  {
+    "title": "Tricky JavaScript Scenario #50: Symbol.iterator custom generator",
+    "description": "Analyze real-world tricky interview scenarios involving Symbol.iterator custom generator and explain how to control making plain objects iterable.",
+    "technology": "javascript",
+    "difficulty": "hard",
+    "round": "DSA",
+    "tags": [
+      "iterators",
+      "tricky",
+      "real-world"
+    ]
+  },
+  {
+    "title": "Tricky JavaScript Scenario #51: Symbol.asyncIterator paging fetches",
+    "description": "Analyze real-world tricky interview scenarios involving Symbol.asyncIterator paging fetches and explain how to control iterating paginated APIs.",
+    "technology": "javascript",
+    "difficulty": "hard",
+    "round": "DSA",
+    "tags": [
+      "iterators",
+      "tricky",
+      "real-world"
+    ]
+  },
+  {
+    "title": "Tricky JavaScript Scenario #52: WeakSet garbage collection behavior",
+    "description": "Analyze real-world tricky interview scenarios involving WeakSet garbage collection behavior and explain how to control preventing duplicates without leaks.",
+    "technology": "javascript",
+    "difficulty": "medium",
+    "round": "Frontend",
+    "tags": [
+      "weakset",
+      "tricky",
+      "real-world"
+    ]
+  },
+  {
+    "title": "Tricky JavaScript Scenario #53: deepClone with cycles detection",
+    "description": "Analyze real-world tricky interview scenarios involving deepClone with cycles detection and explain how to control cloning objects containing circular loops.",
+    "technology": "javascript",
+    "difficulty": "hard",
+    "round": "DSA",
+    "tags": [
+      "utility",
+      "tricky",
+      "real-world"
+    ]
+  },
+  {
+    "title": "Tricky JavaScript Scenario #54: Function currying with placeholder inputs",
+    "description": "Analyze real-world tricky interview scenarios involving Function currying with placeholder inputs and explain how to control fixing params dynamically using placeholder markers.",
+    "technology": "javascript",
+    "difficulty": "hard",
+    "round": "DSA",
+    "tags": [
+      "functional",
+      "tricky",
+      "real-world"
+    ]
+  },
+  {
+    "title": "Tricky JavaScript Scenario #55: custom debounce with cancel method",
+    "description": "Analyze real-world tricky interview scenarios involving custom debounce with cancel method and explain how to control debouncing calls with cleanup hooks.",
+    "technology": "javascript",
+    "difficulty": "medium",
+    "round": "Frontend",
+    "tags": [
+      "utility",
+      "tricky",
+      "real-world"
+    ]
+  },
+  {
+    "title": "Tricky JavaScript Scenario #56: custom throttle with leading flags",
+    "description": "Analyze real-world tricky interview scenarios involving custom throttle with leading flags and explain how to control throttling with precise timing boundaries.",
+    "technology": "javascript",
+    "difficulty": "hard",
+    "round": "Frontend",
+    "tags": [
+      "utility",
+      "tricky",
+      "real-world"
+    ]
+  },
+  {
+    "title": "Tricky JavaScript Scenario #57: Array element kinds optimization",
+    "description": "Analyze real-world tricky interview scenarios involving Array element kinds optimization and explain how to control V8 array slots holey vs packed.",
+    "technology": "javascript",
+    "difficulty": "hard",
+    "round": "System Design",
+    "tags": [
+      "v8",
+      "tricky",
+      "real-world"
+    ]
+  },
+  {
+    "title": "Tricky JavaScript Scenario #58: SharedArrayBuffer thread isolation",
+    "description": "Analyze real-world tricky interview scenarios involving SharedArrayBuffer thread isolation and explain how to control multi-threaded memory sharing constraints.",
+    "technology": "javascript",
+    "difficulty": "hard",
+    "round": "System Design",
+    "tags": [
+      "workers",
+      "tricky",
+      "real-world"
+    ]
+  },
+  {
+    "title": "Tricky JavaScript Scenario #59: postMessage transferable streams",
+    "description": "Analyze real-world tricky interview scenarios involving postMessage transferable streams and explain how to control transferring memory allocations without copying.",
+    "technology": "javascript",
+    "difficulty": "hard",
+    "round": "System Design",
+    "tags": [
+      "workers",
+      "tricky",
+      "real-world"
+    ]
+  },
+  {
+    "title": "Tricky JavaScript Scenario #60: BroadcastChannel multi-tab updates",
+    "description": "Analyze real-world tricky interview scenarios involving BroadcastChannel multi-tab updates and explain how to control communicating across open browsing instances.",
+    "technology": "javascript",
+    "difficulty": "medium",
+    "round": "Frontend",
+    "tags": [
+      "messaging",
+      "tricky",
+      "real-world"
+    ]
+  },
+  {
+    "title": "Tricky JavaScript Scenario #61: History API route state handling",
+    "description": "Analyze real-world tricky interview scenarios involving History API route state handling and explain how to control manipulating browser stacks without refresh.",
+    "technology": "javascript",
+    "difficulty": "medium",
+    "round": "Frontend",
+    "tags": [
+      "routing",
+      "tricky",
+      "real-world"
+    ]
+  },
+  {
+    "title": "Tricky JavaScript Scenario #62: DOM Layout Thrashing remedies",
+    "description": "Analyze real-world tricky interview scenarios involving DOM Layout Thrashing remedies and explain how to control resolving layout updates bottlenecking performance.",
+    "technology": "javascript",
+    "difficulty": "medium",
+    "round": "Frontend",
+    "tags": [
+      "rendering",
+      "tricky",
+      "real-world"
+    ]
+  },
+  {
+    "title": "Tricky JavaScript Scenario #63: Passive event listener scroll enhancements",
+    "description": "Analyze real-world tricky interview scenarios involving Passive event listener scroll enhancements and explain how to control non-blocking scroll threads touch updates.",
+    "technology": "javascript",
+    "difficulty": "easy",
+    "round": "Frontend",
+    "tags": [
+      "rendering",
+      "tricky",
+      "real-world"
+    ]
+  },
+  {
+    "title": "Tricky JavaScript Scenario #64: navigator.sendBeacon final telemetry",
+    "description": "Analyze real-world tricky interview scenarios involving navigator.sendBeacon final telemetry and explain how to control dispatching data packages before tab closing.",
+    "technology": "javascript",
+    "difficulty": "medium",
+    "round": "Frontend",
+    "tags": [
+      "utility",
+      "tricky",
+      "real-world"
+    ]
+  },
+  {
+    "title": "Tricky JavaScript Scenario #65: High Resolution Time API precision",
+    "description": "Analyze real-world tricky interview scenarios involving High Resolution Time API precision and explain how to control measuring execution drifts with precision.",
+    "technology": "javascript",
+    "difficulty": "easy",
+    "round": "Phone Screen",
+    "tags": [
+      "perf-api",
+      "tricky",
+      "real-world"
+    ]
+  },
+  {
+    "title": "Tricky JavaScript Scenario #66: Page Visibility API interval freezing",
+    "description": "Analyze real-world tricky interview scenarios involving Page Visibility API interval freezing and explain how to control optimizing frames when tab is backgrounded.",
+    "technology": "javascript",
+    "difficulty": "easy",
+    "round": "Phone Screen",
+    "tags": [
+      "perf-api",
+      "tricky",
+      "real-world"
+    ]
+  },
+  {
+    "title": "Tricky JavaScript Scenario #67: IntersectionObserver lazy loaded content",
+    "description": "Analyze real-world tricky interview scenarios involving IntersectionObserver lazy loaded content and explain how to control rendering nodes as they enter viewports.",
+    "technology": "javascript",
+    "difficulty": "medium",
+    "round": "Frontend",
+    "tags": [
+      "observers",
+      "tricky",
+      "real-world"
+    ]
+  },
+  {
+    "title": "Tricky JavaScript Scenario #68: ResizeObserver sizing alterations tracking",
+    "description": "Analyze real-world tricky interview scenarios involving ResizeObserver sizing alterations tracking and explain how to control listening to DOM element scale mutations.",
+    "technology": "javascript",
+    "difficulty": "medium",
+    "round": "Frontend",
+    "tags": [
+      "observers",
+      "tricky",
+      "real-world"
+    ]
+  },
+  {
+    "title": "Tricky JavaScript Scenario #69: MutationObserver tree monitoring",
+    "description": "Analyze real-world tricky interview scenarios involving MutationObserver tree monitoring and explain how to control detecting script alterations on target nodes.",
+    "technology": "javascript",
+    "difficulty": "medium",
+    "round": "Frontend",
+    "tags": [
+      "observers",
+      "tricky",
+      "real-world"
+    ]
+  },
+  {
+    "title": "Tricky JavaScript Scenario #70: strict mode this bindings binding rules",
+    "description": "Analyze real-world tricky interview scenarios involving strict mode this bindings binding rules and explain how to control sloppy vs strict context parsing limits.",
+    "technology": "javascript",
+    "difficulty": "easy",
+    "round": "Phone Screen",
+    "tags": [
+      "syntax",
+      "tricky",
+      "real-world"
+    ]
+  },
+  {
+    "title": "Tricky JavaScript Scenario #71: Object.groupBy",
+    "description": "Analyze real-world tricky interview scenarios involving Object.groupBy and explain how to control native object property grouping.",
+    "technology": "javascript",
+    "difficulty": "easy",
+    "round": "Frontend",
+    "tags": [
+      "es2024",
+      "tricky",
+      "real-world"
+    ]
+  },
+  {
+    "title": "Tricky JavaScript Scenario #72: Map.groupBy",
+    "description": "Analyze real-world tricky interview scenarios involving Map.groupBy and explain how to control native Map key grouping.",
+    "technology": "javascript",
+    "difficulty": "medium",
+    "round": "Frontend",
+    "tags": [
+      "es2024",
+      "tricky",
+      "real-world"
+    ]
+  },
+  {
+    "title": "Tricky JavaScript Scenario #73: Array.prototype.toSorted",
+    "description": "Analyze real-world tricky interview scenarios involving Array.prototype.toSorted and explain how to control non-mutating sorting operations.",
+    "technology": "javascript",
+    "difficulty": "easy",
+    "round": "Phone Screen",
+    "tags": [
+      "es2023",
+      "tricky",
+      "real-world"
+    ]
+  },
+  {
+    "title": "Tricky JavaScript Scenario #74: Array.prototype.toReversed",
+    "description": "Analyze real-world tricky interview scenarios involving Array.prototype.toReversed and explain how to control non-mutating array reversal.",
+    "technology": "javascript",
+    "difficulty": "easy",
+    "round": "Phone Screen",
+    "tags": [
+      "es2023",
+      "tricky",
+      "real-world"
+    ]
+  },
+  {
+    "title": "Tricky JavaScript Scenario #75: Array.prototype.toSpliced",
+    "description": "Analyze real-world tricky interview scenarios involving Array.prototype.toSpliced and explain how to control non-mutating slice/splice variants.",
+    "technology": "javascript",
+    "difficulty": "medium",
+    "round": "Frontend",
+    "tags": [
+      "es2023",
+      "tricky",
+      "real-world"
+    ]
+  },
+  {
+    "title": "Tricky JavaScript Scenario #76: Array.prototype.with",
+    "description": "Analyze real-world tricky interview scenarios involving Array.prototype.with and explain how to control replacing single element without mutation.",
+    "technology": "javascript",
+    "difficulty": "easy",
+    "round": "Phone Screen",
+    "tags": [
+      "es2023",
+      "tricky",
+      "real-world"
+    ]
+  },
+  {
+    "title": "Tricky JavaScript Scenario #77: Reflect.ownKeys",
+    "description": "Analyze real-world tricky interview scenarios involving Reflect.ownKeys and explain how to control accessing all keys including symbols.",
+    "technology": "javascript",
+    "difficulty": "medium",
+    "round": "DSA",
+    "tags": [
+      "reflect",
+      "tricky",
+      "real-world"
+    ]
+  },
+  {
+    "title": "Tricky JavaScript Scenario #78: Proxy traps custom sets",
+    "description": "Analyze real-world tricky interview scenarios involving Proxy traps custom sets and explain how to control validating fields before assignments.",
+    "technology": "javascript",
+    "difficulty": "medium",
+    "round": "Frontend",
+    "tags": [
+      "proxy",
+      "tricky",
+      "real-world"
+    ]
+  },
+  {
+    "title": "Tricky JavaScript Scenario #79: Proxy traps custom gets",
+    "description": "Analyze real-world tricky interview scenarios involving Proxy traps custom gets and explain how to control providing dynamic defaults for missing fields.",
+    "technology": "javascript",
+    "difficulty": "medium",
+    "round": "Frontend",
+    "tags": [
+      "proxy",
+      "tricky",
+      "real-world"
+    ]
+  },
+  {
+    "title": "Tricky JavaScript Scenario #80: Symbol.iterator custom generator",
+    "description": "Analyze real-world tricky interview scenarios involving Symbol.iterator custom generator and explain how to control making plain objects iterable.",
+    "technology": "javascript",
+    "difficulty": "hard",
+    "round": "DSA",
+    "tags": [
+      "iterators",
+      "tricky",
+      "real-world"
+    ]
+  },
+  {
+    "title": "Tricky JavaScript Scenario #81: Symbol.asyncIterator paging fetches",
+    "description": "Analyze real-world tricky interview scenarios involving Symbol.asyncIterator paging fetches and explain how to control iterating paginated APIs.",
+    "technology": "javascript",
+    "difficulty": "hard",
+    "round": "DSA",
+    "tags": [
+      "iterators",
+      "tricky",
+      "real-world"
+    ]
+  },
+  {
+    "title": "Tricky JavaScript Scenario #82: WeakSet garbage collection behavior",
+    "description": "Analyze real-world tricky interview scenarios involving WeakSet garbage collection behavior and explain how to control preventing duplicates without leaks.",
+    "technology": "javascript",
+    "difficulty": "medium",
+    "round": "Frontend",
+    "tags": [
+      "weakset",
+      "tricky",
+      "real-world"
+    ]
+  },
+  {
+    "title": "Tricky JavaScript Scenario #83: deepClone with cycles detection",
+    "description": "Analyze real-world tricky interview scenarios involving deepClone with cycles detection and explain how to control cloning objects containing circular loops.",
+    "technology": "javascript",
+    "difficulty": "hard",
+    "round": "DSA",
+    "tags": [
+      "utility",
+      "tricky",
+      "real-world"
+    ]
+  },
+  {
+    "title": "Tricky JavaScript Scenario #84: Function currying with placeholder inputs",
+    "description": "Analyze real-world tricky interview scenarios involving Function currying with placeholder inputs and explain how to control fixing params dynamically using placeholder markers.",
+    "technology": "javascript",
+    "difficulty": "hard",
+    "round": "DSA",
+    "tags": [
+      "functional",
+      "tricky",
+      "real-world"
+    ]
+  },
+  {
+    "title": "Tricky JavaScript Scenario #85: custom debounce with cancel method",
+    "description": "Analyze real-world tricky interview scenarios involving custom debounce with cancel method and explain how to control debouncing calls with cleanup hooks.",
+    "technology": "javascript",
+    "difficulty": "medium",
+    "round": "Frontend",
+    "tags": [
+      "utility",
+      "tricky",
+      "real-world"
+    ]
+  },
+  {
+    "title": "Tricky JavaScript Scenario #86: custom throttle with leading flags",
+    "description": "Analyze real-world tricky interview scenarios involving custom throttle with leading flags and explain how to control throttling with precise timing boundaries.",
+    "technology": "javascript",
+    "difficulty": "hard",
+    "round": "Frontend",
+    "tags": [
+      "utility",
+      "tricky",
+      "real-world"
+    ]
+  },
+  {
+    "title": "Tricky JavaScript Scenario #87: Array element kinds optimization",
+    "description": "Analyze real-world tricky interview scenarios involving Array element kinds optimization and explain how to control V8 array slots holey vs packed.",
+    "technology": "javascript",
+    "difficulty": "hard",
+    "round": "System Design",
+    "tags": [
+      "v8",
+      "tricky",
+      "real-world"
+    ]
+  },
+  {
+    "title": "Tricky JavaScript Scenario #88: SharedArrayBuffer thread isolation",
+    "description": "Analyze real-world tricky interview scenarios involving SharedArrayBuffer thread isolation and explain how to control multi-threaded memory sharing constraints.",
+    "technology": "javascript",
+    "difficulty": "hard",
+    "round": "System Design",
+    "tags": [
+      "workers",
+      "tricky",
+      "real-world"
+    ]
+  },
+  {
+    "title": "Tricky JavaScript Scenario #89: postMessage transferable streams",
+    "description": "Analyze real-world tricky interview scenarios involving postMessage transferable streams and explain how to control transferring memory allocations without copying.",
+    "technology": "javascript",
+    "difficulty": "hard",
+    "round": "System Design",
+    "tags": [
+      "workers",
+      "tricky",
+      "real-world"
+    ]
+  },
+  {
+    "title": "Tricky JavaScript Scenario #90: BroadcastChannel multi-tab updates",
+    "description": "Analyze real-world tricky interview scenarios involving BroadcastChannel multi-tab updates and explain how to control communicating across open browsing instances.",
+    "technology": "javascript",
+    "difficulty": "medium",
+    "round": "Frontend",
+    "tags": [
+      "messaging",
+      "tricky",
+      "real-world"
+    ]
+  },
+  {
+    "title": "Tricky JavaScript Scenario #91: History API route state handling",
+    "description": "Analyze real-world tricky interview scenarios involving History API route state handling and explain how to control manipulating browser stacks without refresh.",
+    "technology": "javascript",
+    "difficulty": "medium",
+    "round": "Frontend",
+    "tags": [
+      "routing",
+      "tricky",
+      "real-world"
+    ]
+  },
+  {
+    "title": "Tricky JavaScript Scenario #92: DOM Layout Thrashing remedies",
+    "description": "Analyze real-world tricky interview scenarios involving DOM Layout Thrashing remedies and explain how to control resolving layout updates bottlenecking performance.",
+    "technology": "javascript",
+    "difficulty": "medium",
+    "round": "Frontend",
+    "tags": [
+      "rendering",
+      "tricky",
+      "real-world"
+    ]
+  },
+  {
+    "title": "Tricky JavaScript Scenario #93: Passive event listener scroll enhancements",
+    "description": "Analyze real-world tricky interview scenarios involving Passive event listener scroll enhancements and explain how to control non-blocking scroll threads touch updates.",
+    "technology": "javascript",
+    "difficulty": "easy",
+    "round": "Frontend",
+    "tags": [
+      "rendering",
+      "tricky",
+      "real-world"
+    ]
+  },
+  {
+    "title": "Tricky JavaScript Scenario #94: navigator.sendBeacon final telemetry",
+    "description": "Analyze real-world tricky interview scenarios involving navigator.sendBeacon final telemetry and explain how to control dispatching data packages before tab closing.",
+    "technology": "javascript",
+    "difficulty": "medium",
+    "round": "Frontend",
+    "tags": [
+      "utility",
+      "tricky",
+      "real-world"
+    ]
+  },
+  {
+    "title": "Tricky JavaScript Scenario #95: High Resolution Time API precision",
+    "description": "Analyze real-world tricky interview scenarios involving High Resolution Time API precision and explain how to control measuring execution drifts with precision.",
+    "technology": "javascript",
+    "difficulty": "easy",
+    "round": "Phone Screen",
+    "tags": [
+      "perf-api",
+      "tricky",
+      "real-world"
+    ]
+  },
+  {
+    "title": "Tricky JavaScript Scenario #96: Page Visibility API interval freezing",
+    "description": "Analyze real-world tricky interview scenarios involving Page Visibility API interval freezing and explain how to control optimizing frames when tab is backgrounded.",
+    "technology": "javascript",
+    "difficulty": "easy",
+    "round": "Phone Screen",
+    "tags": [
+      "perf-api",
+      "tricky",
+      "real-world"
+    ]
+  },
+  {
+    "title": "Tricky JavaScript Scenario #97: IntersectionObserver lazy loaded content",
+    "description": "Analyze real-world tricky interview scenarios involving IntersectionObserver lazy loaded content and explain how to control rendering nodes as they enter viewports.",
+    "technology": "javascript",
+    "difficulty": "medium",
+    "round": "Frontend",
+    "tags": [
+      "observers",
+      "tricky",
+      "real-world"
+    ]
+  },
+  {
+    "title": "Tricky JavaScript Scenario #98: ResizeObserver sizing alterations tracking",
+    "description": "Analyze real-world tricky interview scenarios involving ResizeObserver sizing alterations tracking and explain how to control listening to DOM element scale mutations.",
+    "technology": "javascript",
+    "difficulty": "medium",
+    "round": "Frontend",
+    "tags": [
+      "observers",
+      "tricky",
+      "real-world"
+    ]
+  },
+  {
+    "title": "Tricky JavaScript Scenario #99: MutationObserver tree monitoring",
+    "description": "Analyze real-world tricky interview scenarios involving MutationObserver tree monitoring and explain how to control detecting script alterations on target nodes.",
+    "technology": "javascript",
+    "difficulty": "medium",
+    "round": "Frontend",
+    "tags": [
+      "observers",
+      "tricky",
+      "real-world"
+    ]
+  },
+  {
+    "title": "Tricky JavaScript Scenario #100: strict mode this bindings binding rules",
+    "description": "Analyze real-world tricky interview scenarios involving strict mode this bindings binding rules and explain how to control sloppy vs strict context parsing limits.",
+    "technology": "javascript",
+    "difficulty": "easy",
+    "round": "Phone Screen",
+    "tags": [
+      "syntax",
+      "tricky",
+      "real-world"
+    ]
+  }
+]

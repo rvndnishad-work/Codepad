@@ -13,7 +13,7 @@
 import { writeFileSync } from "fs";
 import { join } from "path";
 
-type Example = { label: string; code: string };
+type Example = { label: string; code: string; runnable?: boolean };
 type Q = {
   title: string;
   description: string;

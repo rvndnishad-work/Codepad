@@ -1127,7 +1127,7 @@ while (items.length < 100) {
   addQuestion(
     `Tricky JavaScript Scenario #${qNum}: ${concept.name}`,
     `Analyze real-world tricky interview scenarios involving ${concept.name} and explain how to control ${concept.desc}.`,
-    concept.diff,
+    concept.diff as "easy" | "medium" | "hard",
     concept.round,
     [concept.tag, "tricky", "real-world"],
     `Understanding ${concept.name} is key for optimizing SDE applications. V8 relies on standard properties to evaluate ${concept.desc}.`,
@@ -1153,7 +1153,7 @@ topicsList.forEach(t => {
     addQuestion(
       t.title,
       t.desc,
-      t.diff,
+      t.diff as "easy" | "medium" | "hard",
       t.round,
       t.tags,
       t.intuition,

@@ -15,7 +15,7 @@ const augments: Augment[] = [
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "Describe the React component lifecycle.",
-    answer: `**Core concept (TL;DR).** A component passes through three phases: **mounting** (added to the DOM), **updating** (re-rendered due to prop/state changes), and **unmounting** (removed). In function components these map to <code>useEffect</code> — the effect body runs on mount/update, and the returned cleanup runs before the next effect and on unmount.
+    answer: `**Core concept.** A component passes through three phases: **mounting** (added to the DOM), **updating** (re-rendered due to prop/state changes), and **unmounting** (removed). In function components these map to <code>useEffect</code> — the effect body runs on mount/update, and the returned cleanup runs before the next effect and on unmount.
 
 ${card(`<svg viewBox="0 0 520 150" style="width:100%;display:block" xmlns="http://www.w3.org/2000/svg" font-family="ui-sans-serif,system-ui">
   <text x="16" y="22" fill="currentColor" font-size="12" font-weight="700">Mount → Update(s) → Unmount</text>
@@ -76,7 +76,7 @@ export default function App() {
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "How do you handle side effects in functional components?",
-    answer: `**Core concept (TL;DR).** Keep rendering pure and put side effects where they belong: **user-driven** effects (a click that saves data) go in **event handlers**; effects that **synchronize with an external system** (subscriptions, fetching for the current props, manual DOM) go in <code>useEffect</code>. Anything you can **derive during render**, derive — don't store it in state via an effect.
+    answer: `**Core concept.** Keep rendering pure and put side effects where they belong: **user-driven** effects (a click that saves data) go in **event handlers**; effects that **synchronize with an external system** (subscriptions, fetching for the current props, manual DOM) go in <code>useEffect</code>. Anything you can **derive during render**, derive — don't store it in state via an effect.
 
 ${card(`<svg viewBox="0 0 520 150" style="width:100%;display:block" xmlns="http://www.w3.org/2000/svg" font-family="ui-sans-serif,system-ui">
   <text x="16" y="22" fill="currentColor" font-size="12" font-weight="700">Right home for each kind of work</text>
@@ -135,7 +135,7 @@ export default function App() {
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "How do you safely handle async work and race conditions inside effects?",
-    answer: `**Core concept (TL;DR).** An effect callback can't be <code>async</code> directly (its return value is the **cleanup**, not a promise), so define an async function *inside* and call it. The real hazard is a **race condition**: if inputs change quickly, an older request can resolve **after** a newer one and overwrite fresh data. Guard with an <code>ignore</code> flag or an <code>AbortController</code> in the cleanup.
+    answer: `**Core concept.** An effect callback can't be <code>async</code> directly (its return value is the **cleanup**, not a promise), so define an async function *inside* and call it. The real hazard is a **race condition**: if inputs change quickly, an older request can resolve **after** a newer one and overwrite fresh data. Guard with an <code>ignore</code> flag or an <code>AbortController</code> in the cleanup.
 
 ${card(`<svg viewBox="0 0 520 150" style="width:100%;display:block" xmlns="http://www.w3.org/2000/svg" font-family="ui-sans-serif,system-ui">
   <text x="16" y="22" fill="currentColor" font-size="12" font-weight="700">Discard stale responses on re-run/unmount</text>
@@ -195,7 +195,7 @@ export default function App() {
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "How do you handle memory leaks in React?",
-    answer: `**Core concept (TL;DR).** Memory leaks come from **work that outlives the component**: uncleaned timers, subscriptions, event listeners, or a pending request that calls <code>setState</code> after unmount. The fix is to **clean up in <code>useEffect</code>'s return**: clear timers, unsubscribe, remove listeners, and abort/ignore in-flight requests.
+    answer: `**Core concept.** Memory leaks come from **work that outlives the component**: uncleaned timers, subscriptions, event listeners, or a pending request that calls <code>setState</code> after unmount. The fix is to **clean up in <code>useEffect</code>'s return**: clear timers, unsubscribe, remove listeners, and abort/ignore in-flight requests.
 
 ${card(`<svg viewBox="0 0 520 150" style="width:100%;display:block" xmlns="http://www.w3.org/2000/svg" font-family="ui-sans-serif,system-ui">
   <text x="16" y="22" fill="currentColor" font-size="12" font-weight="700">Tear down everything the effect set up</text>
@@ -251,7 +251,7 @@ function Ticker() {
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "What are React Hooks? Name a few common ones.",
-    answer: `**Core concept (TL;DR).** Hooks are special functions (named <code>use*</code>) that let **function components** use React features — state, lifecycle/side effects, context — that previously required class components. The everyday ones are <code>useState</code>, <code>useEffect</code>, <code>useContext</code>, <code>useRef</code>, <code>useReducer</code>, <code>useMemo</code>, and <code>useCallback</code>.
+    answer: `**Core concept.** Hooks are special functions (named <code>use*</code>) that let **function components** use React features — state, lifecycle/side effects, context — that previously required class components. The everyday ones are <code>useState</code>, <code>useEffect</code>, <code>useContext</code>, <code>useRef</code>, <code>useReducer</code>, <code>useMemo</code>, and <code>useCallback</code>.
 
 ${card(`<svg viewBox="0 0 520 150" style="width:100%;display:block" xmlns="http://www.w3.org/2000/svg" font-family="ui-sans-serif,system-ui">
   <text x="16" y="22" fill="currentColor" font-size="12" font-weight="700">Common hooks by purpose</text>
@@ -308,7 +308,7 @@ export default function App() {
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "How do you manage component-level state without `useState` or `useReducer`?",
-    answer: `**Core concept (TL;DR).** Often you don't need state at all. **Derive** values from existing props/state during render; use a **<code>ref</code>** for mutable data that shouldn't trigger re-renders (timers, previous value); read shared data from **Context**; subscribe to an external store with **<code>useSyncExternalStore</code>**; or reset a subtree with a **<code>key</code>**. Reach for <code>useState</code> only for data the UI must render *and* that changes over time.
+    answer: `**Core concept.** Often you don't need state at all. **Derive** values from existing props/state during render; use a **<code>ref</code>** for mutable data that shouldn't trigger re-renders (timers, previous value); read shared data from **Context**; subscribe to an external store with **<code>useSyncExternalStore</code>**; or reset a subtree with a **<code>key</code>**. Reach for <code>useState</code> only for data the UI must render *and* that changes over time.
 
 ${card(`<svg viewBox="0 0 520 150" style="width:100%;display:block" xmlns="http://www.w3.org/2000/svg" font-family="ui-sans-serif,system-ui">
   <text x="16" y="22" fill="currentColor" font-size="12" font-weight="700">Alternatives to component state</text>
@@ -363,7 +363,7 @@ export default function App() {
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "When and why do you use `forwardRef` with `useImperativeHandle`?",
-    answer: `**Core concept (TL;DR).** <code>forwardRef</code> lets a parent pass a <code>ref</code> *through* a component to something inside it (usually a DOM node). <code>useImperativeHandle</code> customizes **what that ref exposes** — instead of the raw DOM node, you expose a small, intentional imperative API (e.g. <code>focus()</code>, <code>reset()</code>). Use it sparingly, for imperative actions that don't fit the declarative model.
+    answer: `**Core concept.** <code>forwardRef</code> lets a parent pass a <code>ref</code> *through* a component to something inside it (usually a DOM node). <code>useImperativeHandle</code> customizes **what that ref exposes** — instead of the raw DOM node, you expose a small, intentional imperative API (e.g. <code>focus()</code>, <code>reset()</code>). Use it sparingly, for imperative actions that don't fit the declarative model.
 
 ${card(`<svg viewBox="0 0 520 150" style="width:100%;display:block" xmlns="http://www.w3.org/2000/svg" font-family="ui-sans-serif,system-ui">
   <text x="16" y="22" fill="currentColor" font-size="12" font-weight="700">Expose a limited imperative API via a ref</text>
@@ -420,7 +420,7 @@ export default function App() {
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "When would you choose a class component over a functional component with hooks?",
-    answer: `**Core concept (TL;DR).** Almost never for new code — **function components with hooks** are the modern standard. The one thing classes still do that hooks can't is be an **Error Boundary** (which needs <code>componentDidCatch</code>/<code>getDerivedStateFromError</code>). Otherwise you'd only touch classes to maintain **legacy** code.
+    answer: `**Core concept.** Almost never for new code — **function components with hooks** are the modern standard. The one thing classes still do that hooks can't is be an **Error Boundary** (which needs <code>componentDidCatch</code>/<code>getDerivedStateFromError</code>). Otherwise you'd only touch classes to maintain **legacy** code.
 
 ${card(`<svg viewBox="0 0 520 150" style="width:100%;display:block" xmlns="http://www.w3.org/2000/svg" font-family="ui-sans-serif,system-ui">
   <text x="16" y="22" fill="currentColor" font-size="12" font-weight="700">Hooks are default; classes are the exception</text>

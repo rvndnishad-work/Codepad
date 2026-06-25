@@ -15,7 +15,7 @@ const augments: Augment[] = [
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "How would you structure a large React application?",
-    answer: `**Core concept (TL;DR).** Organize by **feature/domain**, not by file type. Group each feature's components, hooks, state, and tests together (colocation), keep a shared <code>ui</code>/<code>lib</code> layer for cross-cutting pieces, isolate the **data layer**, lazy-load routes, and enforce consistent conventions. The goal is that related code changes together and the structure "screams" what the app does.
+    answer: `**Core concept.** Organize by **feature/domain**, not by file type. Group each feature's components, hooks, state, and tests together (colocation), keep a shared <code>ui</code>/<code>lib</code> layer for cross-cutting pieces, isolate the **data layer**, lazy-load routes, and enforce consistent conventions. The goal is that related code changes together and the structure "screams" what the app does.
 
 ${card(`<svg viewBox="0 0 520 150" style="width:100%;display:block" xmlns="http://www.w3.org/2000/svg" font-family="ui-sans-serif,system-ui">
   <text x="16" y="22" fill="currentColor" font-size="12" font-weight="700">By feature (colocated) beats by file-type</text>
@@ -74,7 +74,7 @@ export default CartPage;`,
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "What are React Components?",
-    answer: `**Core concept (TL;DR).** Components are the **reusable, independent building blocks** of a React UI. A component is typically a JavaScript **function** that accepts inputs (**props**) and returns **JSX** describing what to render. You compose small components into larger ones to build the whole interface.
+    answer: `**Core concept.** Components are the **reusable, independent building blocks** of a React UI. A component is typically a JavaScript **function** that accepts inputs (**props**) and returns **JSX** describing what to render. You compose small components into larger ones to build the whole interface.
 
 ${card(`<svg viewBox="0 0 520 150" style="width:100%;display:block" xmlns="http://www.w3.org/2000/svg" font-family="ui-sans-serif,system-ui">
   <text x="16" y="22" fill="currentColor" font-size="12" font-weight="700">Small components compose into a UI tree</text>
@@ -128,7 +128,7 @@ export default function App() {
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "What is React and its main features?",
-    answer: `**Core concept (TL;DR).** React is an open-source **JavaScript library for building user interfaces** out of components. Its defining features: a **component-based** architecture, a **declarative** programming model, a **virtual DOM** for efficient updates, **one-way data flow**, **JSX**, and **hooks** — backed by a huge ecosystem.
+    answer: `**Core concept.** React is an open-source **JavaScript library for building user interfaces** out of components. Its defining features: a **component-based** architecture, a **declarative** programming model, a **virtual DOM** for efficient updates, **one-way data flow**, **JSX**, and **hooks** — backed by a huge ecosystem.
 
 ${card(`<svg viewBox="0 0 520 150" style="width:100%;display:block" xmlns="http://www.w3.org/2000/svg" font-family="ui-sans-serif,system-ui">
   <text x="16" y="22" fill="currentColor" font-size="12" font-weight="700">A UI library: declarative, component-based</text>
@@ -181,7 +181,7 @@ export default function App() {
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "What are the advantages of using React over plain JavaScript?",
-    answer: `**Core concept (TL;DR).** With plain JS you **imperatively** find and mutate DOM nodes — verbose and error-prone as apps grow. React lets you write **declarative**, **component-based** UIs driven by state: you describe the result and React efficiently updates the DOM (via the virtual DOM). You gain reuse, maintainability, predictable state, and a vast ecosystem.
+    answer: `**Core concept.** With plain JS you **imperatively** find and mutate DOM nodes — verbose and error-prone as apps grow. React lets you write **declarative**, **component-based** UIs driven by state: you describe the result and React efficiently updates the DOM (via the virtual DOM). You gain reuse, maintainability, predictable state, and a vast ecosystem.
 
 ${card(`<svg viewBox="0 0 520 150" style="width:100%;display:block" xmlns="http://www.w3.org/2000/svg" font-family="ui-sans-serif,system-ui">
   <text x="16" y="22" fill="currentColor" font-size="12" font-weight="700">Imperative DOM vs declarative, state-driven UI</text>
@@ -233,7 +233,7 @@ export default function App() {
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "What are React's design principles?",
-    answer: `**Core concept (TL;DR).** React's guiding ideas: be **declarative**, **component-based**, favour **composition over inheritance**, enforce **one-way data flow**, keep rendering **pure**, and prioritize **gradual adoption** and developer experience ("learn once, write anywhere"). These principles explain most of React's APIs.
+    answer: `**Core concept.** React's guiding ideas: be **declarative**, **component-based**, favour **composition over inheritance**, enforce **one-way data flow**, keep rendering **pure**, and prioritize **gradual adoption** and developer experience ("learn once, write anywhere"). These principles explain most of React's APIs.
 
 ${card(`<svg viewBox="0 0 520 150" style="width:100%;display:block" xmlns="http://www.w3.org/2000/svg" font-family="ui-sans-serif,system-ui">
   <text x="16" y="22" fill="currentColor" font-size="12" font-weight="700">The ideas behind the API</text>
@@ -287,7 +287,7 @@ export default function App() {
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "What is the purpose of `React.StrictMode`?",
-    answer: `**Core concept (TL;DR).** <code>&lt;StrictMode&gt;</code> is a **development-only** helper that surfaces potential problems in your app. It intentionally **double-invokes** renders and effects (mount → unmount → remount) to expose impure renders and missing effect cleanup, and it warns about deprecated/unsafe APIs. It renders **no visible UI** and has **zero effect in production**.
+    answer: `**Core concept.** <code>&lt;StrictMode&gt;</code> is a **development-only** helper that surfaces potential problems in your app. It intentionally **double-invokes** renders and effects (mount → unmount → remount) to expose impure renders and missing effect cleanup, and it warns about deprecated/unsafe APIs. It renders **no visible UI** and has **zero effect in production**.
 
 ${card(`<svg viewBox="0 0 520 150" style="width:100%;display:block" xmlns="http://www.w3.org/2000/svg" font-family="ui-sans-serif,system-ui">
   <text x="16" y="22" fill="currentColor" font-size="12" font-weight="700">Dev-only checks; no output, no prod impact</text>
@@ -344,7 +344,7 @@ export default function App() {
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "What is the role of `react-dom`?",
-    answer: `**Core concept (TL;DR).** <code>react</code> is the renderer-agnostic core (components, hooks, elements); <code>react-dom</code> is the package that **renders React to the browser DOM**. It provides <code>createRoot</code>/<code>render</code> (mount an app), <code>hydrateRoot</code> (attach to SSR HTML), <code>createPortal</code>, and <code>flushSync</code>.
+    answer: `**Core concept.** <code>react</code> is the renderer-agnostic core (components, hooks, elements); <code>react-dom</code> is the package that **renders React to the browser DOM**. It provides <code>createRoot</code>/<code>render</code> (mount an app), <code>hydrateRoot</code> (attach to SSR HTML), <code>createPortal</code>, and <code>flushSync</code>.
 
 ${card(`<svg viewBox="0 0 520 150" style="width:100%;display:block" xmlns="http://www.w3.org/2000/svg" font-family="ui-sans-serif,system-ui">
   <text x="16" y="22" fill="currentColor" font-size="12" font-weight="700">One core, many renderers</text>
@@ -395,7 +395,7 @@ export default App;`,
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "What is the role of a bundler like Webpack in a React project?",
-    answer: `**Core concept (TL;DR).** Browsers can't run JSX/TypeScript or efficiently load hundreds of separate module files. A **bundler** (Webpack, **Vite**, esbuild, Rollup) **transpiles** your JSX/TS (via Babel/SWC), **bundles** modules into optimized files, processes assets (CSS/images), enables **code-splitting** and **tree-shaking**, and runs a dev server with **hot module replacement**.
+    answer: `**Core concept.** Browsers can't run JSX/TypeScript or efficiently load hundreds of separate module files. A **bundler** (Webpack, **Vite**, esbuild, Rollup) **transpiles** your JSX/TS (via Babel/SWC), **bundles** modules into optimized files, processes assets (CSS/images), enables **code-splitting** and **tree-shaking**, and runs a dev server with **hot module replacement**.
 
 ${card(`<svg viewBox="0 0 520 150" style="width:100%;display:block" xmlns="http://www.w3.org/2000/svg" font-family="ui-sans-serif,system-ui">
   <text x="16" y="22" fill="currentColor" font-size="12" font-weight="700">Source modules → transpile + bundle → browser assets</text>

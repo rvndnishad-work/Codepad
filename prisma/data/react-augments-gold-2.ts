@@ -17,7 +17,7 @@ const augments: Augment[] = [
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "What is JSX?",
-    answer: `**Core concept (TL;DR).** JSX is a syntax extension that lets you write markup-like code inside JavaScript. It is **not HTML** — a compiler (Babel/SWC) transforms each tag into a <code>React.createElement</code> call (or the modern <code>jsx()</code> runtime), which returns a plain **React element** object describing the UI.
+    answer: `**Core concept.** JSX is a syntax extension that lets you write markup-like code inside JavaScript. It is **not HTML** — a compiler (Babel/SWC) transforms each tag into a <code>React.createElement</code> call (or the modern <code>jsx()</code> runtime), which returns a plain **React element** object describing the UI.
 
 ${card(`<svg viewBox="0 0 520 158" style="width:100%;display:block" xmlns="http://www.w3.org/2000/svg" font-family="ui-sans-serif,system-ui">
   <text x="16" y="22" fill="currentColor" font-size="12" font-weight="700">JSX compiles to function calls that return objects</text>
@@ -74,7 +74,7 @@ ${card(`<svg viewBox="0 0 520 158" style="width:100%;display:block" xmlns="http:
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "What is the difference between element and component in React?",
-    answer: `**Core concept (TL;DR).** A **component** is a function (or class) that returns UI — the reusable blueprint. An **element** is the plain, immutable object that a component (or JSX) *produces* to describe what should appear on screen. You write components; React works with the elements they return.
+    answer: `**Core concept.** A **component** is a function (or class) that returns UI — the reusable blueprint. An **element** is the plain, immutable object that a component (or JSX) *produces* to describe what should appear on screen. You write components; React works with the elements they return.
 
 ${card(`<svg viewBox="0 0 520 158" style="width:100%;display:block" xmlns="http://www.w3.org/2000/svg" font-family="ui-sans-serif,system-ui">
   <text x="16" y="22" fill="currentColor" font-size="12" font-weight="700">Component (factory) → element (description) → DOM</text>
@@ -130,7 +130,7 @@ export default function App() {
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "What is the difference between state and props?",
-    answer: `**Core concept (TL;DR).** **Props** are inputs passed *into* a component from its parent — read-only from the child's view. **State** is data a component *owns* internally and can change over time; updating it (via the setter) triggers a re-render. Props flow **down**; state is **local** and mutable through its updater.
+    answer: `**Core concept.** **Props** are inputs passed *into* a component from its parent — read-only from the child's view. **State** is data a component *owns* internally and can change over time; updating it (via the setter) triggers a re-render. Props flow **down**; state is **local** and mutable through its updater.
 
 ${card(`<svg viewBox="0 0 520 158" style="width:100%;display:block" xmlns="http://www.w3.org/2000/svg" font-family="ui-sans-serif,system-ui">
   <text x="16" y="22" fill="currentColor" font-size="12" font-weight="700">Props come from above (read-only) · state is internal</text>
@@ -185,7 +185,7 @@ export default function App() {
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "What are fragments in React?",
-    answer: `**Core concept (TL;DR).** A Fragment lets a component return **multiple children without adding an extra DOM node**. Because a component must return a single root, fragments — written as <code>&lt;&gt;…&lt;/&gt;</code> or <code>&lt;React.Fragment&gt;</code> — group siblings without the "wrapper <code>&lt;div&gt;</code> soup" that breaks layouts like fl/grid and tables.
+    answer: `**Core concept.** A Fragment lets a component return **multiple children without adding an extra DOM node**. Because a component must return a single root, fragments — written as <code>&lt;&gt;…&lt;/&gt;</code> or <code>&lt;React.Fragment&gt;</code> — group siblings without the "wrapper <code>&lt;div&gt;</code> soup" that breaks layouts like fl/grid and tables.
 
 ${card(`<svg viewBox="0 0 520 150" style="width:100%;display:block" xmlns="http://www.w3.org/2000/svg" font-family="ui-sans-serif,system-ui">
   <text x="16" y="22" fill="currentColor" font-size="12" font-weight="700">Group siblings, emit no wrapper element</text>
@@ -245,7 +245,7 @@ export default function App() {
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "What is the purpose of the `key` prop when rendering lists in React?",
-    answer: `**Core concept (TL;DR).** <code>key</code> gives each item in a list a **stable identity** so React can match elements between renders during reconciliation. With correct keys, React updates/moves only what changed instead of re-creating the whole list. Keys must be **unique among siblings** and **stable** — use a real id, not the array index.
+    answer: `**Core concept.** <code>key</code> gives each item in a list a **stable identity** so React can match elements between renders during reconciliation. With correct keys, React updates/moves only what changed instead of re-creating the whole list. Keys must be **unique among siblings** and **stable** — use a real id, not the array index.
 
 ${card(`<svg viewBox="0 0 520 162" style="width:100%;display:block" xmlns="http://www.w3.org/2000/svg" font-family="ui-sans-serif,system-ui">
   <text x="16" y="22" fill="currentColor" font-size="12" font-weight="700">Keys let React match items across renders</text>
@@ -306,7 +306,7 @@ export default function App() {
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "Explain the concept of 'composition' in React components.",
-    answer: `**Core concept (TL;DR).** Composition means building complex UIs by **combining and nesting** small components — passing other components/markup via the <code>children</code> prop or named props — instead of using class inheritance. React explicitly favours **composition over inheritance** for reuse and customization.
+    answer: `**Core concept.** Composition means building complex UIs by **combining and nesting** small components — passing other components/markup via the <code>children</code> prop or named props — instead of using class inheritance. React explicitly favours **composition over inheritance** for reuse and customization.
 
 ${card(`<svg viewBox="0 0 520 150" style="width:100%;display:block" xmlns="http://www.w3.org/2000/svg" font-family="ui-sans-serif,system-ui">
   <text x="16" y="22" fill="currentColor" font-size="12" font-weight="700">Build UIs by nesting components via children</text>
@@ -364,7 +364,7 @@ export default function App() {
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "What are Higher-Order Components (HOCs) in React?",
-    answer: `**Core concept (TL;DR).** A Higher-Order Component is a **function that takes a component and returns a new, enhanced component** — <code>const Enhanced = withX(Component)</code>. It was the pre-hooks pattern for reusing cross-cutting logic (auth, data loading, logging) across many components. Today **custom hooks** usually do the same job more cleanly.
+    answer: `**Core concept.** A Higher-Order Component is a **function that takes a component and returns a new, enhanced component** — <code>const Enhanced = withX(Component)</code>. It was the pre-hooks pattern for reusing cross-cutting logic (auth, data loading, logging) across many components. Today **custom hooks** usually do the same job more cleanly.
 
 ${card(`<svg viewBox="0 0 520 150" style="width:100%;display:block" xmlns="http://www.w3.org/2000/svg" font-family="ui-sans-serif,system-ui">
   <text x="16" y="22" fill="currentColor" font-size="12" font-weight="700">Wrap a component to inject shared behaviour</text>
@@ -423,7 +423,7 @@ export default function App() {
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "What are render props and how do they work?",
-    answer: `**Core concept (TL;DR).** A render prop is a **function passed as a prop** (often as <code>children</code>) that a component calls to let the *caller* decide what to render, while the component supplies the data/behaviour. Like HOCs, it's a pre-hooks pattern for sharing stateful logic — and like HOCs, **custom hooks** have largely replaced it.
+    answer: `**Core concept.** A render prop is a **function passed as a prop** (often as <code>children</code>) that a component calls to let the *caller* decide what to render, while the component supplies the data/behaviour. Like HOCs, it's a pre-hooks pattern for sharing stateful logic — and like HOCs, **custom hooks** have largely replaced it.
 
 ${card(`<svg viewBox="0 0 520 150" style="width:100%;display:block" xmlns="http://www.w3.org/2000/svg" font-family="ui-sans-serif,system-ui">
   <text x="16" y="22" fill="currentColor" font-size="12" font-weight="700">Component owns the data; caller owns the UI</text>

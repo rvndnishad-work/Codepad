@@ -8,7 +8,7 @@ const augments: AngularAugment[] = [
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "What are the types of data binding in Angular?",
-    answer: `**Core concept (TL;DR).** There are four forms, defined by the **direction** of data flow. **Interpolation** <code>{{ }}</code> and **property binding** <code>[prop]</code> push data from the component **to the view**. **Event binding** <code>(event)</code> sends events from the view **to the component**. **Two-way binding** <code>[(ngModel)]</code> does both at once.
+    answer: `**Core concept.** There are four forms, defined by the **direction** of data flow. **Interpolation** <code>{{ }}</code> and **property binding** <code>[prop]</code> push data from the component **to the view**. **Event binding** <code>(event)</code> sends events from the view **to the component**. **Two-way binding** <code>[(ngModel)]</code> does both at once.
 
 <svg class='iq-diagram' viewBox='0 0 460 165' role='img' aria-label='Four binding types by direction between component and view'>
   <rect class='d-box-accent' x='30' y='62' width='130' height='44' rx='10'/>
@@ -62,7 +62,7 @@ export class AppComponent {
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "What is trackBy in ngFor and why use it?",
-    answer: `**Core concept (TL;DR).** <code>trackBy</code> gives <code>*ngFor</code> a function that returns a **stable identity** (usually an id) for each item, so Angular can tell which items are the same across renders. Without it, replacing the array makes Angular **destroy and rebuild every row**; with it, it reuses the existing DOM and only touches what changed.
+    answer: `**Core concept.** <code>trackBy</code> gives <code>*ngFor</code> a function that returns a **stable identity** (usually an id) for each item, so Angular can tell which items are the same across renders. Without it, replacing the array makes Angular **destroy and rebuild every row**; with it, it reuses the existing DOM and only touches what changed.
 
 <svg class='iq-diagram' viewBox='0 0 460 150' role='img' aria-label='trackBy reuses DOM nodes by identity instead of rebuilding the list'>
   <rect class='d-box' x='20' y='44' width='190' height='62' rx='10'/>
@@ -112,7 +112,7 @@ export class AppComponent {
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "What does ChangeDetectorRef do?",
-    answer: `**Core concept (TL;DR).** <code>ChangeDetectorRef</code> lets you **manually control a component's change detection**. Its key methods: <code>markForCheck()</code> (schedule this component to be checked on the next cycle — essential with <code>OnPush</code>), <code>detectChanges()</code> (run change detection now), and <code>detach()</code>/<code>reattach()</code> (remove/restore it from the CD tree).
+    answer: `**Core concept.** <code>ChangeDetectorRef</code> lets you **manually control a component's change detection**. Its key methods: <code>markForCheck()</code> (schedule this component to be checked on the next cycle — essential with <code>OnPush</code>), <code>detectChanges()</code> (run change detection now), and <code>detach()</code>/<code>reattach()</code> (remove/restore it from the CD tree).
 
 <svg class='iq-diagram' viewBox='0 0 460 150' role='img' aria-label='ChangeDetectorRef methods to control change detection'>
   <rect class='d-box-accent' x='20' y='30' width='200' height='44' rx='10'/>
@@ -170,7 +170,7 @@ export class ClockComponent {
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "What is NgZone and when do you run outside Angular?",
-    answer: `**Core concept (TL;DR).** Angular uses **Zone.js** to know when to run change detection — it patches async APIs (<code>setTimeout</code>, events, XHR) so Angular re-checks the UI after they fire. <code>NgZone.runOutsideAngular()</code> runs code **without** triggering change detection (a performance escape hatch for very frequent events), and <code>NgZone.run()</code> re-enters the zone to update the UI.
+    answer: `**Core concept.** Angular uses **Zone.js** to know when to run change detection — it patches async APIs (<code>setTimeout</code>, events, XHR) so Angular re-checks the UI after they fire. <code>NgZone.runOutsideAngular()</code> runs code **without** triggering change detection (a performance escape hatch for very frequent events), and <code>NgZone.run()</code> re-enters the zone to update the UI.
 
 <svg class='iq-diagram' viewBox='0 0 460 150' role='img' aria-label='runOutsideAngular avoids change detection; run() re-enters'>
   <rect class='d-box-accent' x='30' y='44' width='180' height='62' rx='10'/>
@@ -222,7 +222,7 @@ export class AppComponent {
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "What are Angular Signals?",
-    answer: `**Core concept (TL;DR).** Signals (Angular 16+) are a **reactive primitive**: a <code>signal()</code> holds a value, **reading** it tracks the reader as a dependency, and **writing** it notifies dependents to recompute. <code>computed()</code> derives values, and <code>effect()</code> runs side effects when dependencies change — enabling **fine-grained**, efficient updates (and eventually zoneless change detection).
+    answer: `**Core concept.** Signals (Angular 16+) are a **reactive primitive**: a <code>signal()</code> holds a value, **reading** it tracks the reader as a dependency, and **writing** it notifies dependents to recompute. <code>computed()</code> derives values, and <code>effect()</code> runs side effects when dependencies change — enabling **fine-grained**, efficient updates (and eventually zoneless change detection).
 
 <svg class='iq-diagram' viewBox='0 0 460 150' role='img' aria-label='signal feeds computed and effect; writes propagate'>
   <rect class='d-box-accent' x='30' y='52' width='120' height='46' rx='10'/>
@@ -275,7 +275,7 @@ export class AppComponent {
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "What are signal inputs and model() in modern Angular?",
-    answer: `**Core concept (TL;DR).** <code>input()</code> creates a **signal-based component input** — you read it like a signal (<code>this.value()</code>) and it's reactive in computeds/effects, replacing the decorator <code>@Input()</code>. <code>model()</code> creates a **two-way bindable** signal input, so a parent can use <code>[(value)]</code> — it bundles an input and its <code>valueChange</code> output.
+    answer: `**Core concept.** <code>input()</code> creates a **signal-based component input** — you read it like a signal (<code>this.value()</code>) and it's reactive in computeds/effects, replacing the decorator <code>@Input()</code>. <code>model()</code> creates a **two-way bindable** signal input, so a parent can use <code>[(value)]</code> — it bundles an input and its <code>valueChange</code> output.
 
 <svg class='iq-diagram' viewBox='0 0 460 150' role='img' aria-label='input() is one-way signal input; model() is two-way bindable'>
   <rect class='d-box-accent' x='30' y='44' width='180' height='62' rx='10'/>
@@ -322,7 +322,7 @@ export class RatingComponent {
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "What are Angular lifecycle hooks?",
-    answer: `**Core concept (TL;DR).** Lifecycle hooks are methods Angular calls at defined moments in a component/directive's life — from input changes and initialization through view/content checks to destruction. The most-used are <code>ngOnInit</code> (init), <code>ngOnChanges</code> (input changes), <code>ngAfterViewInit</code> (view ready), and <code>ngOnDestroy</code> (cleanup).
+    answer: `**Core concept.** Lifecycle hooks are methods Angular calls at defined moments in a component/directive's life — from input changes and initialization through view/content checks to destruction. The most-used are <code>ngOnInit</code> (init), <code>ngOnChanges</code> (input changes), <code>ngAfterViewInit</code> (view ready), and <code>ngOnDestroy</code> (cleanup).
 
 <svg class='iq-diagram' viewBox='0 0 460 150' role='img' aria-label='Lifecycle order: OnChanges, OnInit, AfterViewInit, OnDestroy'>
   <rect class='d-box-accent' x='14' y='54' width='100' height='44' rx='8'/>
@@ -377,7 +377,7 @@ export class UserComponent implements OnInit, OnChanges, OnDestroy {
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "What are @ViewChild and @ContentChild?",
-    answer: `**Core concept (TL;DR).** Both query for a child element/component/directive, but from **different places**. <code>@ViewChild</code> queries the component's **own template** (its view). <code>@ContentChild</code> queries content **projected into it** via <code>&lt;ng-content&gt;</code>. The plural versions, <code>@ViewChildren</code>/<code>@ContentChildren</code>, return a <code>QueryList</code>.
+    answer: `**Core concept.** Both query for a child element/component/directive, but from **different places**. <code>@ViewChild</code> queries the component's **own template** (its view). <code>@ContentChild</code> queries content **projected into it** via <code>&lt;ng-content&gt;</code>. The plural versions, <code>@ViewChildren</code>/<code>@ContentChildren</code>, return a <code>QueryList</code>.
 
 <svg class='iq-diagram' viewBox='0 0 460 155' role='img' aria-label='ViewChild queries the view; ContentChild queries projected content'>
   <rect class='d-box-accent' x='30' y='40' width='180' height='80' rx='10'/>

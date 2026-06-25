@@ -15,7 +15,7 @@ const augments: Augment[] = [
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "How do you fetch data in React?",
-    answer: `**Core concept (TL;DR).** The basic approach is to fetch inside <code>useEffect</code> and track **loading / error / data** state, with cleanup to avoid race conditions. For anything real, prefer a **data library** (React Query / SWR) that adds caching, deduping, and revalidation — or a framework's data loaders. React 19's <code>use()</code> can unwrap a promise directly with Suspense.
+    answer: `**Core concept.** The basic approach is to fetch inside <code>useEffect</code> and track **loading / error / data** state, with cleanup to avoid race conditions. For anything real, prefer a **data library** (React Query / SWR) that adds caching, deduping, and revalidation — or a framework's data loaders. React 19's <code>use()</code> can unwrap a promise directly with Suspense.
 
 ${card(`<svg viewBox="0 0 520 150" style="width:100%;display:block" xmlns="http://www.w3.org/2000/svg" font-family="ui-sans-serif,system-ui">
   <text x="16" y="22" fill="currentColor" font-size="12" font-weight="700">Track loading / error / data; prefer a cache</text>
@@ -69,7 +69,7 @@ export default function App() {
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "How do you handle asynchronous operations in React functional components?",
-    answer: `**Core concept (TL;DR).** Put async work where it belongs: **user-triggered** async (submitting a form) in **event handlers**; async that **synchronizes** with external data (fetching for current props) in <code>useEffect</code>. Effects can't be <code>async</code> themselves, so define an async function inside. Track pending/error state, use <code>try/catch</code> with <code>async/await</code>, and guard against races/unmount.
+    answer: `**Core concept.** Put async work where it belongs: **user-triggered** async (submitting a form) in **event handlers**; async that **synchronizes** with external data (fetching for current props) in <code>useEffect</code>. Effects can't be <code>async</code> themselves, so define an async function inside. Track pending/error state, use <code>try/catch</code> with <code>async/await</code>, and guard against races/unmount.
 
 ${card(`<svg viewBox="0 0 520 150" style="width:100%;display:block" xmlns="http://www.w3.org/2000/svg" font-family="ui-sans-serif,system-ui">
   <text x="16" y="22" fill="currentColor" font-size="12" font-weight="700">Async in handlers vs effects (with pending UI)</text>
@@ -132,7 +132,7 @@ export default function App() {
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "How do you interact with external APIs in React?",
-    answer: `**Core concept (TL;DR).** Call REST or GraphQL endpoints with <code>fetch</code>/<code>axios</code> from an **event handler** (for actions) or a <code>useEffect</code>/data-library (for loading), and manage **loading / error / data**. Keep base URLs and keys in **environment variables**, handle auth headers, and prefer **React Query** (or Apollo/urql for GraphQL) for caching and revalidation.
+    answer: `**Core concept.** Call REST or GraphQL endpoints with <code>fetch</code>/<code>axios</code> from an **event handler** (for actions) or a <code>useEffect</code>/data-library (for loading), and manage **loading / error / data**. Keep base URLs and keys in **environment variables**, handle auth headers, and prefer **React Query** (or Apollo/urql for GraphQL) for caching and revalidation.
 
 ${card(`<svg viewBox="0 0 520 150" style="width:100%;display:block" xmlns="http://www.w3.org/2000/svg" font-family="ui-sans-serif,system-ui">
   <text x="16" y="22" fill="currentColor" font-size="12" font-weight="700">Component ↔ API: fetch/axios + cache layer</text>
@@ -192,7 +192,7 @@ export default function App() {
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "How do you handle routing in React applications?",
-    answer: `**Core concept (TL;DR).** React has **no built-in router** — you add one. **React Router** is the common library: you map URL paths to components, navigate with <code>&lt;Link&gt;</code> (no full page reload), read URL params with hooks, and nest routes. Frameworks like **Next.js**/**Remix** provide file-based routing instead.
+    answer: `**Core concept.** React has **no built-in router** — you add one. **React Router** is the common library: you map URL paths to components, navigate with <code>&lt;Link&gt;</code> (no full page reload), read URL params with hooks, and nest routes. Frameworks like **Next.js**/**Remix** provide file-based routing instead.
 
 ${card(`<svg viewBox="0 0 520 150" style="width:100%;display:block" xmlns="http://www.w3.org/2000/svg" font-family="ui-sans-serif,system-ui">
   <text x="16" y="22" fill="currentColor" font-size="12" font-weight="700">URL → matched component (client-side, no reload)</text>
@@ -248,7 +248,7 @@ export default function App() {
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "How do you test React components?",
-    answer: `**Core concept (TL;DR).** Use **React Testing Library** (RTL) with a runner like **Jest** or **Vitest**. RTL's philosophy is to test **behaviour the user sees**, not implementation details: render the component, query elements by role/text, simulate user interactions, and assert on the resulting output. Add **Playwright/Cypress** for end-to-end flows.
+    answer: `**Core concept.** Use **React Testing Library** (RTL) with a runner like **Jest** or **Vitest**. RTL's philosophy is to test **behaviour the user sees**, not implementation details: render the component, query elements by role/text, simulate user interactions, and assert on the resulting output. Add **Playwright/Cypress** for end-to-end flows.
 
 ${card(`<svg viewBox="0 0 520 150" style="width:100%;display:block" xmlns="http://www.w3.org/2000/svg" font-family="ui-sans-serif,system-ui">
   <text x="16" y="22" fill="currentColor" font-size="12" font-weight="700">Render → query → interact → assert</text>
@@ -305,7 +305,7 @@ export default Counter; // (component under test)`,
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "How do you debug React applications?",
-    answer: `**Core concept (TL;DR).** Reach for **React DevTools** first — inspect the component tree, view/edit props/state/hooks, and use the **Profiler** to see what rendered and why. Combine with browser breakpoints, <code>console</code> logging, <code>StrictMode</code> (surfaces side-effect bugs), and **Error Boundaries** for runtime errors.
+    answer: `**Core concept.** Reach for **React DevTools** first — inspect the component tree, view/edit props/state/hooks, and use the **Profiler** to see what rendered and why. Combine with browser breakpoints, <code>console</code> logging, <code>StrictMode</code> (surfaces side-effect bugs), and **Error Boundaries** for runtime errors.
 
 ${card(`<svg viewBox="0 0 520 150" style="width:100%;display:block" xmlns="http://www.w3.org/2000/svg" font-family="ui-sans-serif,system-ui">
   <text x="16" y="22" fill="currentColor" font-size="12" font-weight="700">Tools for React-specific bugs</text>
@@ -364,7 +364,7 @@ export default function App() {
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "What are React Developer Tools and how do you use them?",
-    answer: `**Core concept (TL;DR).** React DevTools is a **browser extension** (and standalone app) that adds two panels: **Components** — inspect the component tree with each node's props, state, and hooks (editable live) — and **Profiler** — record renders to see **which** components rendered, **why**, and **how long** they took.
+    answer: `**Core concept.** React DevTools is a **browser extension** (and standalone app) that adds two panels: **Components** — inspect the component tree with each node's props, state, and hooks (editable live) — and **Profiler** — record renders to see **which** components rendered, **why**, and **how long** they took.
 
 ${card(`<svg viewBox="0 0 520 150" style="width:100%;display:block" xmlns="http://www.w3.org/2000/svg" font-family="ui-sans-serif,system-ui">
   <text x="16" y="22" fill="currentColor" font-size="12" font-weight="700">Two panels: inspect tree · profile renders</text>
@@ -416,7 +416,7 @@ export default function App() {
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "How does React handle security concerns like XSS?",
-    answer: `**Core concept (TL;DR).** React **auto-escapes** any value you interpolate in JSX, rendering it as text rather than HTML — which prevents most cross-site-scripting (XSS). The main ways you can *reintroduce* XSS are <code>dangerouslySetInnerHTML</code> (raw HTML), unsafe URLs (<code>javascript:</code> in <code>href</code>/<code>src</code>), and injecting untrusted data into the DOM outside React.
+    answer: `**Core concept.** React **auto-escapes** any value you interpolate in JSX, rendering it as text rather than HTML — which prevents most cross-site-scripting (XSS). The main ways you can *reintroduce* XSS are <code>dangerouslySetInnerHTML</code> (raw HTML), unsafe URLs (<code>javascript:</code> in <code>href</code>/<code>src</code>), and injecting untrusted data into the DOM outside React.
 
 ${card(`<svg viewBox="0 0 520 150" style="width:100%;display:block" xmlns="http://www.w3.org/2000/svg" font-family="ui-sans-serif,system-ui">
   <text x="16" y="22" fill="currentColor" font-size="12" font-weight="700">JSX escapes by default; opt-outs are the risk</text>

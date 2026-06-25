@@ -17,7 +17,7 @@ const augments: AngularAugment[] = [
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "What are components and modules in Angular?",
-    answer: `**Core concept (TL;DR).** A **component** controls a piece of the screen — it's a TypeScript class decorated with <code>@Component</code> that ties together a **template** (HTML), **styles**, and logic. A **module** (<code>@NgModule</code>) groups related components, directives, and pipes plus their dependencies into a cohesive block. Modern Angular increasingly favours **standalone components**, which need no NgModule.
+    answer: `**Core concept.** A **component** controls a piece of the screen — it's a TypeScript class decorated with <code>@Component</code> that ties together a **template** (HTML), **styles**, and logic. A **module** (<code>@NgModule</code>) groups related components, directives, and pipes plus their dependencies into a cohesive block. Modern Angular increasingly favours **standalone components**, which need no NgModule.
 
 <svg class='iq-diagram' viewBox='0 0 460 180' role='img' aria-label='An NgModule groups components, directives and pipes'>
   <rect class='d-box-muted' x='20' y='20' width='420' height='140' rx='10'/>
@@ -73,7 +73,7 @@ export class AppModule {}`,
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "What are standalone components?",
-    answer: `**Core concept (TL;DR).** A standalone component (also directive/pipe) sets <code>standalone: true</code> and declares its **own <code>imports</code>** — so it doesn't need to be declared in an <code>@NgModule</code>. You bootstrap a standalone app with <code>bootstrapApplication(AppComponent)</code>. Since Angular 17+ standalone is the **default** for new projects.
+    answer: `**Core concept.** A standalone component (also directive/pipe) sets <code>standalone: true</code> and declares its **own <code>imports</code>** — so it doesn't need to be declared in an <code>@NgModule</code>. You bootstrap a standalone app with <code>bootstrapApplication(AppComponent)</code>. Since Angular 17+ standalone is the **default** for new projects.
 
 <svg class='iq-diagram' viewBox='0 0 460 160' role='img' aria-label='Standalone component imports its dependencies directly'>
   <rect class='d-box-accent' x='120' y='24' width='220' height='52' rx='10'/>
@@ -132,7 +132,7 @@ bootstrapApplication(AppComponent);`,
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "What is a directive and what are the types?",
-    answer: `**Core concept (TL;DR).** A directive attaches **behaviour** to elements in the DOM. There are three kinds: **components** (directives *with* a template), **structural** directives that change layout by adding/removing elements (<code>*ngIf</code>, <code>*ngFor</code> — note the <code>*</code>), and **attribute** directives that change an element's appearance or behaviour (<code>ngClass</code>, <code>ngStyle</code>, or your own).
+    answer: `**Core concept.** A directive attaches **behaviour** to elements in the DOM. There are three kinds: **components** (directives *with* a template), **structural** directives that change layout by adding/removing elements (<code>*ngIf</code>, <code>*ngFor</code> — note the <code>*</code>), and **attribute** directives that change an element's appearance or behaviour (<code>ngClass</code>, <code>ngStyle</code>, or your own).
 
 <svg class='iq-diagram' viewBox='0 0 460 170' role='img' aria-label='Three directive types: component, structural, attribute'>
   <rect class='d-box-accent' x='20' y='30' width='130' height='110' rx='10'/>
@@ -188,7 +188,7 @@ export class HighlightDirective {
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "What is content projection and ng-content?",
-    answer: `**Core concept (TL;DR).** Content projection lets a component render markup that the **parent** places between its tags — Angular's version of "slots" / React <code>children</code>. You mark the insertion point in the component's template with <code>&lt;ng-content&gt;</code>, and you can have **multiple** slots by adding a <code>select</code> attribute.
+    answer: `**Core concept.** Content projection lets a component render markup that the **parent** places between its tags — Angular's version of "slots" / React <code>children</code>. You mark the insertion point in the component's template with <code>&lt;ng-content&gt;</code>, and you can have **multiple** slots by adding a <code>select</code> attribute.
 
 <svg class='iq-diagram' viewBox='0 0 460 160' role='img' aria-label='Parent markup is projected into the component ng-content slot'>
   <rect class='d-box' x='20' y='30' width='180' height='100' rx='10'/>
@@ -243,7 +243,7 @@ export class CardComponent {}
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "What are ng-container and ng-template?",
-    answer: `**Core concept (TL;DR).** <code>&lt;ng-container&gt;</code> is a **logical grouping** element that renders **no DOM** of its own — perfect for applying a structural directive (or several) without adding a wrapper. <code>&lt;ng-template&gt;</code> defines a block of markup that is **not rendered** until something instantiates it (an <code>*ngIf</code> "else", <code>ngTemplateOutlet</code>, etc.).
+    answer: `**Core concept.** <code>&lt;ng-container&gt;</code> is a **logical grouping** element that renders **no DOM** of its own — perfect for applying a structural directive (or several) without adding a wrapper. <code>&lt;ng-template&gt;</code> defines a block of markup that is **not rendered** until something instantiates it (an <code>*ngIf</code> "else", <code>ngTemplateOutlet</code>, etc.).
 
 <svg class='iq-diagram' viewBox='0 0 460 160' role='img' aria-label='ng-container adds no DOM; ng-template is rendered on demand'>
   <rect class='d-box-accent' x='20' y='30' width='200' height='100' rx='10'/>
@@ -296,7 +296,7 @@ export class AppComponent {
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "What are template reference variables?",
-    answer: `**Core concept (TL;DR).** A template reference variable — declared with <code>#name</code> in the template — gives you a handle to a **DOM element**, a **component**, or a **directive** within that same template. You can then read its properties or call its methods elsewhere in the template.
+    answer: `**Core concept.** A template reference variable — declared with <code>#name</code> in the template — gives you a handle to a **DOM element**, a **component**, or a **directive** within that same template. You can then read its properties or call its methods elsewhere in the template.
 
 <svg class='iq-diagram' viewBox='0 0 460 150' role='img' aria-label='A #ref variable refers to an element used elsewhere in the template'>
   <rect class='d-box-accent' x='40' y='40' width='150' height='60' rx='10'/>
@@ -347,7 +347,7 @@ export class AppComponent {
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "What is ngTemplateOutlet?",
-    answer: `**Core concept (TL;DR).** <code>[ngTemplateOutlet]</code> is a structural directive that **renders an <code>&lt;ng-template&gt;</code>** you point it at, optionally passing **context** data. It's how you reuse a template block in several places and parameterize it — Angular's lightweight equivalent of a render prop / slot with data.
+    answer: `**Core concept.** <code>[ngTemplateOutlet]</code> is a structural directive that **renders an <code>&lt;ng-template&gt;</code>** you point it at, optionally passing **context** data. It's how you reuse a template block in several places and parameterize it — Angular's lightweight equivalent of a render prop / slot with data.
 
 <svg class='iq-diagram' viewBox='0 0 460 150' role='img' aria-label='ngTemplateOutlet renders a referenced template with context'>
   <rect class='d-box' x='30' y='40' width='160' height='66' rx='10'/>
@@ -399,7 +399,7 @@ export class AppComponent {}`,
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "What is ViewEncapsulation in Angular?",
-    answer: `**Core concept (TL;DR).** ViewEncapsulation controls how a component's **styles are scoped**. The default, <code>Emulated</code>, scopes styles to the component by adding unique attributes to its elements (so they don't leak out or in). <code>None</code> makes the styles **global**, and <code>ShadowDom</code> uses the browser's native **Shadow DOM** for real isolation.
+    answer: `**Core concept.** ViewEncapsulation controls how a component's **styles are scoped**. The default, <code>Emulated</code>, scopes styles to the component by adding unique attributes to its elements (so they don't leak out or in). <code>None</code> makes the styles **global**, and <code>ShadowDom</code> uses the browser's native **Shadow DOM** for real isolation.
 
 <svg class='iq-diagram' viewBox='0 0 460 165' role='img' aria-label='Three view encapsulation modes: Emulated, None, ShadowDom'>
   <rect class='d-box-accent' x='20' y='34' width='130' height='104' rx='10'/>

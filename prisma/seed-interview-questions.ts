@@ -34,10 +34,6 @@ type Q = {
 };
 
 const questions: Q[] = [
-  { title: "Explain the virtual DOM and how React uses it", slug: "react-virtual-dom-explained",
-    description: "What is the virtual DOM, and how does React use diffing/reconciliation to update the UI efficiently?",
-    answer: "The **virtual DOM** is an in-memory tree of React elements. On state change React builds a new tree and *diffs* it against the previous one (reconciliation), computing the minimal set of real-DOM mutations to apply. Keys help it match list items across renders.",
-    company: "Meta", technology: "reactjs", role: "Frontend Engineer", difficulty: "easy", round: "Frontend", experienceLevel: "mid", tags: ["react", "frontend", "dom"], years: [2023, 2024] },
   { title: "How does the Node.js event loop work?", slug: "nodejs-event-loop",
     description: "Walk through the phases of the Node.js event loop and where microtasks fit.",
     answer: "The event loop has phases: **timers → pending callbacks → poll → check (setImmediate) → close**. Microtasks (`process.nextTick`, Promise jobs) run between phases. This single-threaded loop offloads I/O to libuv's thread pool.",
@@ -50,10 +46,6 @@ const questions: Q[] = [
     description: "Given an unsorted array, return the kth largest element. Discuss time complexity.",
     answer: "Use a **min-heap of size k** (O(n log k)) or **Quickselect** (avg O(n)). Quickselect partitions around a pivot and recurses into the side containing the kth index.",
     company: "Amazon", technology: "dsa", difficulty: "medium", round: "DSA", experienceLevel: "mid", tags: ["dsa", "heap", "arrays"], years: [2022, 2023, 2024] },
-  { title: "What is useMemo and when should you use it?", slug: "react-usememo",
-    description: "Explain useMemo, its trade-offs, and when it actually helps.",
-    answer: "`useMemo` caches a computed value between renders keyed by its deps, avoiding expensive recomputation. Only worth it for genuinely costly work or to stabilise referential identity for child memoization — overuse adds memory + comparison overhead.",
-    company: "Meta", technology: "reactjs", difficulty: "medium", round: "Frontend", experienceLevel: "mid", tags: ["react", "performance", "hooks"], years: [2024] },
   { title: "Explain database indexing and B-trees", slug: "database-indexing-btrees",
     description: "How do indexes speed up queries, and why are B-trees used?",
     answer: "An index is a sorted auxiliary structure mapping column values to row locations, turning O(n) scans into O(log n) lookups. **B-trees** keep data balanced and shallow with high fan-out, minimising disk reads; great for range queries.",

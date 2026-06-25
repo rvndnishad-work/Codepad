@@ -1,8 +1,9 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { Play, RotateCcw, Loader2, ChevronRight, Trash2 } from "lucide-react";
+import { Play, RotateCcw, Loader2, ChevronRight, Trash2, ExternalLink } from "lucide-react";
 import CodeMirrorEditor from "./CodeMirrorEditor";
+import { playgroundFilesHref } from "@/lib/playground-handoff";
 
 type LogLine = { type: "log" | "warn" | "error"; text: string };
 
@@ -41,7 +42,41 @@ self.onmessage = function (e) {
 };
 `;
 
-export default function JsPlayground({ code, label }: { code: string; label?: string }) {
+/** Build a practice stub from the question's title and description. */
+function buildPracticeStub(title: string, description: string): string {
+  // Wrap the description as a JSDoc-style comment block
+  const descLines = description
+    .split("\n")
+    .map((line) => ` * ${line}`)
+    .join("\n");
+  return [
+    `/**`,
+    ` * ${title}`,
+    ` *`,
+    descLines,
+    ` */`,
+    ``,
+    `// Write your solution below:`,
+    ``,
+  ].join("\n");
+}
+
+export default function JsPlayground({
+  code,
+  label,
+  title,
+  description,
+  backFrom,
+}: {
+  code: string;
+  label?: string;
+  /** Question title — used to build the practice stub. */
+  title?: string;
+  /** Question description / problem statement — used to build the practice stub. */
+  description?: string;
+  /** The originating question URL so the playground shows a "Back" button. */
+  backFrom?: string;
+}) {
   const [src, setSrc] = useState(code.trim());
   const [logs, setLogs] = useState<LogLine[]>([]);
   const [hasRun, setHasRun] = useState(false);
@@ -116,6 +151,25 @@ export default function JsPlayground({ code, label }: { code: string; label?: st
           >
             <RotateCcw className="w-3.5 h-3.5" />
           </button>
+          {title && description && (
+            <a
+              href={playgroundFilesHref(
+                {
+                  "/index.js": buildPracticeStub(title, description),
+                  "/solution.js": code.trim(),
+                },
+                "empty-js",
+                backFrom,
+              )}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-accent/30 text-accent text-xs font-black uppercase tracking-wider hover:bg-accent/10 transition shadow-sm"
+              title="Open in playground with a practice stub to solve"
+            >
+              <ExternalLink className="w-3.5 h-3.5" />
+              Practice
+            </a>
+          )}
           <button
             onClick={run}
             disabled={running}

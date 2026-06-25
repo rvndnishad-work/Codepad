@@ -483,7 +483,7 @@ export default function QuestionDetailClient({
                     }
                     // In-page runner for plain JavaScript single-variant examples.
                     if (isRunnable && ex.runnable !== false && !ex.variants) {
-                      return <JsPlayground key={i} code={ex.code ?? ""} label={ex.label} />;
+                      return <JsPlayground key={i} code={ex.code ?? ""} label={ex.label} title={q.title} description={q.description ?? undefined} backFrom={`/interview-question/${q.slug}`} />;
                     }
                     // Highlighted block with an optional language/framework
                     // dropdown + per-variant "Open in Playground". React

@@ -15,20 +15,6 @@
       "technology": "reactjs"
     },
     {
-      "title": "Explain the Virtual DOM in React.",
-      "description": "Understand how React optimizes UI updates and its difference from the browser's DOM.",
-      "answer": "The Virtual DOM is a lightweight copy of the actual DOM, represented as a JavaScript object. When component state changes, React first updates this virtual DOM. It then compares the updated virtual DOM with the previous version using a diffing algorithm. Only the minimal set of changes needed to reflect the new state are then applied to the real browser DOM, which is more performant than directly manipulating the browser DOM on every change.",
-      "difficulty": "medium",
-      "round": "Frontend",
-      "tags": [
-        "virtual dom",
-        "performance",
-        "reconciliation",
-        "dom"
-      ],
-      "technology": "reactjs"
-    },
-    {
       "title": "What are React Components?",
       "description": "A fundamental concept, crucial for building any React application.",
       "answer": "React components are independent, reusable pieces of UI. They allow you to split the UI into independent, reusable parts, making the application easier to build and maintain. Components can be either class components (ES6 classes extending `React.Component`) or functional components (JavaScript functions that return JSX). Functional components are now more common due to Hooks.",
@@ -39,20 +25,6 @@
         "reusability",
         "ui",
         "functional components"
-      ],
-      "technology": "reactjs"
-    },
-    {
-      "title": "Differentiate between controlled and uncontrolled components.",
-      "description": "Tests understanding of how React handles form inputs and state management.",
-      "answer": "In React, controlled components are form elements whose values are entirely managed by React state. Every state mutation has an associated handler function, making the data flow predictable. Uncontrolled components, on the other hand, manage their own state internally, typically using a `ref` to get their current value directly from the DOM when needed. Controlled components are generally preferred for better control and validation.",
-      "difficulty": "medium",
-      "round": "Frontend",
-      "tags": [
-        "forms",
-        "state management",
-        "refs",
-        "controlled components"
       ],
       "technology": "reactjs"
     },
@@ -113,34 +85,6 @@
       "technology": "reactjs"
     },
     {
-      "title": "When would you use `useMemo` or `useCallback`?",
-      "description": "Tests understanding of performance optimizations and memoization in React.",
-      "answer": "`useMemo` and `useCallback` are Hooks used for performance optimization by memoizing values and functions, respectively. `useMemo` caches the result of an expensive calculation and only re-calculates it if its dependencies change. `useCallback` memoizes a function definition and only recreates the function if its dependencies change, preventing unnecessary re-renders of child components that receive the function as a prop, especially when used with `React.memo`.",
-      "difficulty": "hard",
-      "round": "Frontend",
-      "tags": [
-        "performance",
-        "memoization",
-        "useMemo",
-        "useCallback"
-      ],
-      "technology": "reactjs"
-    },
-    {
-      "title": "Explain the concept of 'lifting state up'.",
-      "description": "A common pattern for sharing state between sibling components.",
-      "answer": "Lifting state up is a pattern where if several components need to reflect the same changing data, the shared state is moved up to their closest common ancestor. The parent component then passes that state down to its children via props. This ensures a single source of truth for that piece of state and keeps the UI consistent across components.",
-      "difficulty": "medium",
-      "round": "Frontend",
-      "tags": [
-        "state management",
-        "data flow",
-        "component communication",
-        "props"
-      ],
-      "technology": "reactjs"
-    },
-    {
       "title": "What is JSX?",
       "description": "Basic syntax understanding is essential for writing React applications.",
       "answer": "JSX stands for JavaScript XML. It is a syntax extension for JavaScript that allows you to write HTML-like code directly within your JavaScript files. JSX is not required to write React applications, but it makes component creation more intuitive and readable by letting you define UI structure alongside the rendering logic. Browsers cannot understand JSX directly, so it must be transpiled into regular JavaScript using tools like Babel.",
@@ -169,34 +113,6 @@
       "technology": "reactjs"
     },
     {
-      "title": "What are keys in React lists?",
-      "description": "Important for performance and correctness when rendering dynamic lists.",
-      "answer": "Keys are a special string attribute that you need to include when creating lists of elements in React. They help React identify which items have changed, are added, or are removed. Keys should be unique among siblings and stable (not changing between re-renders) to ensure proper component identity and optimal performance during reconciliation. Using index as a key is generally discouraged unless the list items are static and will never be reordered or filtered.",
-      "difficulty": "medium",
-      "round": "Frontend",
-      "tags": [
-        "keys",
-        "lists",
-        "reconciliation",
-        "performance"
-      ],
-      "technology": "reactjs"
-    },
-    {
-      "title": "Explain the difference between `useState` and `useReducer`.",
-      "description": "Knowing when to choose the right state management Hook.",
-      "answer": "`useState` is a basic Hook for managing simple state values in functional components. It takes an initial state and returns the current state and a setter function. `useReducer` is an alternative to `useState` for more complex state logic, especially when state transitions involve multiple sub-values or the next state depends on the previous one. It takes a reducer function and an initial state, returning the current state and a dispatch function to trigger state updates.",
-      "difficulty": "hard",
-      "round": "Frontend",
-      "tags": [
-        "useState",
-        "useReducer",
-        "hooks",
-        "state management"
-      ],
-      "technology": "reactjs"
-    },
-    {
       "title": "How do you optimize React component rendering?",
       "description": "Demonstrates an understanding of performance best practices.",
       "answer": "Optimizing React rendering involves several strategies. Using `React.memo` for functional components and `PureComponent` for class components prevents re-renders if props or state haven't changed. `useMemo` and `useCallback` memoize values and functions. Virtualization/windowing libraries like `react-window` or `react-virtualized` are crucial for rendering large lists. Avoiding unnecessary state updates, using keys effectively in lists, and code splitting also contribute to better performance.",
@@ -207,20 +123,6 @@
         "optimization",
         "memoization",
         "react.memo"
-      ],
-      "technology": "reactjs"
-    },
-    {
-      "title": "What is the Context API in React?",
-      "description": "Essential for managing global state without prop drilling.",
-      "answer": "The React Context API provides a way to pass data through the component tree without having to pass props down manually at every level (prop drilling). It's designed to share 'global' data, such as authenticated user, theme, or preferred language, to a tree of React components. It consists of `React.createContext`, a `Provider` component to supply the context value, and a `Consumer` component or `useContext` hook to consume the value.",
-      "difficulty": "medium",
-      "round": "Frontend",
-      "tags": [
-        "context api",
-        "state management",
-        "prop drilling",
-        "global state"
       ],
       "technology": "reactjs"
     },
@@ -281,20 +183,6 @@
       "technology": "reactjs"
     },
     {
-      "title": "What is the significance of the `deps` array in `useEffect`?",
-      "description": "Elaborate on how the dependency array in the `useEffect` hook controls when the effect function re-runs, and its importance for performance and preventing infinite loops.",
-      "answer": "The `deps` array (dependency array) in `useEffect` determines when the effect function will re-run. If the array is empty `[]`, the effect runs only once after the initial render. If omitted, the effect runs after every render. When dependencies are provided, the effect re-runs only if any value in the `deps` array has changed between renders. This mechanism is crucial for optimizing performance by avoiding unnecessary re-runs and preventing infinite loops when effects interact with state or props.",
-      "difficulty": "medium",
-      "round": "Frontend",
-      "tags": [
-        "hooks",
-        "lifecycle",
-        "performance",
-        "useeffect"
-      ],
-      "technology": "reactjs"
-    },
-    {
       "title": "How do you handle forms in React?",
       "description": "Discuss common strategies for managing form input, state, and submissions in React applications.",
       "answer": "Forms in React are typically handled using controlled components, where form input elements are bound to React state. The state is updated via `onChange` event handlers, making the React component the single source of truth for the input's value. Upon form submission, the `onSubmit` event handler prevents the default browser behavior and processes the data held in the component's state. Uncontrolled components can also be used, often with `useRef` for direct DOM access, but controlled components are generally preferred for most scenarios.",
@@ -305,20 +193,6 @@
         "state management",
         "events",
         "controlled components"
-      ],
-      "technology": "reactjs"
-    },
-    {
-      "title": "Explain the concept of Higher-Order Components (HOCs) in React.",
-      "description": "Define HOCs, explain their purpose, and provide an example of when you might use one.",
-      "answer": "A Higher-Order Component (HOC) is an advanced technique in React for reusing component logic. HOCs are functions that take a component as an argument and return a new component with enhanced props or behavior, without modifying the original component. They are commonly used for concerns like authentication, data fetching, logging, or state management. For example, a `withAuth` HOC could add authentication logic to a component, rendering it only if the user is logged in. HOCs follow the decorator pattern.",
-      "difficulty": "medium",
-      "round": "Frontend",
-      "tags": [
-        "hoc",
-        "reusability",
-        "patterns",
-        "higher-order components"
       ],
       "technology": "reactjs"
     },
@@ -347,20 +221,6 @@
         "class components",
         "legacy",
         "setstate"
-      ],
-      "technology": "reactjs"
-    },
-    {
-      "title": "What is Strict Mode in React?",
-      "description": "Explain the purpose of React's Strict Mode and what benefits it provides during development.",
-      "answer": "Strict Mode is a development tool in React that helps identify potential problems in an application. It does not render any visible UI. Instead, it activates additional checks and warnings for its descendants. For example, it helps detect deprecated lifecycle methods, side effects, and unexpected side effects. By running effects twice in development, it helps ensure that effects are properly cleaned up. Strict Mode is incredibly useful for writing robust and future-proof React code.",
-      "difficulty": "easy",
-      "round": "Frontend",
-      "tags": [
-        "development",
-        "debugging",
-        "strict mode",
-        "tools"
       ],
       "technology": "reactjs"
     },
@@ -407,34 +267,6 @@
       "technology": "reactjs"
     },
     {
-      "title": "What is the purpose of `React.memo`?",
-      "description": "Explain how `React.memo` helps optimize functional components by preventing unnecessary re-renders.",
-      "answer": "`React.memo` is a Higher-Order Component that optimizes functional components by memoizing their rendering. It prevents a component from re-rendering if its props have not changed. It performs a shallow comparison of props by default. If the previous props are shallowly equal to the new props, React skips rendering the component and reuses the last rendered result. This can significantly improve performance for pure functional components that render frequently with the same props.",
-      "difficulty": "medium",
-      "round": "Frontend",
-      "tags": [
-        "performance",
-        "optimization",
-        "react.memo",
-        "hoc"
-      ],
-      "technology": "reactjs"
-    },
-    {
-      "title": "Explain how to debug React applications.",
-      "description": "Outline common tools and techniques used for debugging issues in React components and applications.",
-      "answer": "Debugging React applications typically involves several tools and techniques. The primary tool is the React Developer Tools browser extension, which allows inspection of component trees, props, state, and hooks. Standard browser developer tools (console, network, debugger) are also essential. `console.log` is a quick way to inspect values. React's Strict Mode helps identify potential problems during development. Error Boundaries catch and display errors gracefully, and source maps aid in debugging transpiled code.",
-      "difficulty": "easy",
-      "round": "Frontend",
-      "tags": [
-        "debugging",
-        "developer tools",
-        "troubleshooting",
-        "tools"
-      ],
-      "technology": "reactjs"
-    },
-    {
       "title": "What is `create-react-app` and when would you use it?",
       "description": "Describe `create-react-app`'s function and its utility for starting new React projects.",
       "answer": "`create-react-app` is an officially supported global command-line utility for quickly setting up a new single-page React application. It provides a modern build setup with no configuration required, including features like Webpack, Babel, ESLint, and testing utilities out-of-the-box. It's ideal for beginners and for quickly bootstrapping new projects without spending time on complex build configurations. For more custom or advanced setups, alternatives like Next.js or Vite might be preferred.",
@@ -463,20 +295,6 @@
       "technology": "reactjs"
     },
     {
-      "title": "What is the purpose of `key` prop when rendering lists in React?",
-      "description": "Explain why the `key` prop is important for list rendering and the issues it solves.",
-      "answer": "The `key` prop is crucial when rendering lists of elements in React. It helps React identify which items have changed, are added, or are removed. Keys should be unique among siblings and stable across re-renders. Without proper keys, React's reconciliation algorithm can become inefficient, leading to performance issues and potential bugs, especially when list items are reordered, filtered, or added/removed. The `key` should ideally be a stable ID from the data itself, not an array index.",
-      "difficulty": "easy",
-      "round": "Frontend",
-      "tags": [
-        "lists",
-        "keys",
-        "performance",
-        "reconciliation"
-      ],
-      "technology": "reactjs"
-    },
-    {
       "title": "What is `PropTypes` and when would you use it?",
       "description": "Describe the role of `PropTypes` in React for type-checking component props.",
       "answer": "`PropTypes` is a library used for type-checking props passed to React components. It allows you to define the expected data types and whether props are required for a component. While not enforcing types at compile-time like TypeScript, `PropTypes` provides helpful warnings in the browser's console during development if props don't match the specified types. It aids in debugging and ensuring components are used correctly, improving component reusability and maintainability. It's primarily used in JavaScript projects.",
@@ -501,20 +319,6 @@
         "data fetching",
         "useeffect",
         "axios"
-      ],
-      "technology": "reactjs"
-    },
-    {
-      "title": "Explain the concept of 'uncontrolled components'.",
-      "description": "Define uncontrolled components and when they might be a suitable choice compared to controlled components.",
-      "answer": "Uncontrolled components are form components where the form data is handled by the DOM itself, rather than by React state. To get their values, you typically use a ref to access the DOM element directly, similar to traditional HTML forms. They are simpler to implement for very basic forms or when integrating with non-React code. However, they offer less control and flexibility for validation and instant feedback compared to controlled components, where React state is the single source of truth.",
-      "difficulty": "medium",
-      "round": "Frontend",
-      "tags": [
-        "forms",
-        "uncontrolled components",
-        "dom",
-        "useref"
       ],
       "technology": "reactjs"
     },
@@ -571,20 +375,6 @@
         "props",
         "components",
         "data flow"
-      ],
-      "technology": "reactjs"
-    },
-    {
-      "title": "Explain the concept of immutability in React state management.",
-      "description": "This question checks if a candidate understands best practices for modifying state and preventing common bugs.",
-      "answer": "Immutability in React means that you should never directly modify state objects or arrays. Instead, always create new copies of the state and then update those copies. This ensures predictable state changes, helps React detect when re-renders are necessary (via shallow comparison), and prevents tricky side effects. For example, to update an array, you'd use `map` or `filter` to create a new array, rather than `push` or `splice` on the original.",
-      "difficulty": "medium",
-      "round": "Frontend",
-      "tags": [
-        "state",
-        "immutability",
-        "best practices",
-        "performance"
       ],
       "technology": "reactjs"
     },
@@ -673,62 +463,6 @@
       "technology": "reactjs"
     },
     {
-      "title": "What are custom hooks and why would you create one?",
-      "description": "This question checks knowledge of advanced hook usage for sharing stateful logic.",
-      "answer": "Custom hooks are JavaScript functions whose names start with `use` and can call other hooks. Their primary purpose is to extract and reuse stateful logic or side effects across multiple functional components without duplicating code. For example, a custom hook could encapsulate logic for fetching data, managing form inputs, or handling local storage. They promote better organization, readability, and testability of complex component logic.",
-      "difficulty": "medium",
-      "round": "Frontend",
-      "tags": [
-        "hooks",
-        "custom hooks",
-        "reusability",
-        "stateful logic"
-      ],
-      "technology": "reactjs"
-    },
-    {
-      "title": "How do you prevent re-renders in functional components?",
-      "description": "This question is a practical test of optimization techniques in modern React.",
-      "answer": "To prevent unnecessary re-renders in functional components, the primary tool is `React.memo`. When a component is wrapped with `React.memo`, it will only re-render if its props have shallowly changed. For functions passed as props, `useCallback` can be used to memoize the function itself, preventing its re-creation on every render. Similarly, `useMemo` can memoize expensive computations or objects, ensuring they are only recalculated when their dependencies change.",
-      "difficulty": "medium",
-      "round": "Frontend",
-      "tags": [
-        "performance",
-        "memoization",
-        "React.memo",
-        "useCallback"
-      ],
-      "technology": "reactjs"
-    },
-    {
-      "title": "Describe the concept of unidirectional data flow in React.",
-      "description": "This question evaluates understanding of React's fundamental data management principle.",
-      "answer": "Unidirectional data flow, also known as one-way data binding, is a core principle in React where data primarily flows down from parent components to child components via props. State changes in a child component typically trigger an event that bubbles up to the parent, which then updates its state, causing data to flow down again. This predictable, one-way flow makes it easier to understand how data changes, simplifies debugging, and improves the overall stability of the application.",
-      "difficulty": "easy",
-      "round": "Frontend",
-      "tags": [
-        "data flow",
-        "props",
-        "state",
-        "architecture"
-      ],
-      "technology": "reactjs"
-    },
-    {
-      "title": "What are React Developer Tools?",
-      "description": "This question assesses familiarity with essential debugging and inspection tools for React applications.",
-      "answer": "React Developer Tools are a browser extension (available for Chrome, Firefox, etc.) that allows developers to inspect and debug React component hierarchies. They provide insight into a component's props, state, hooks, and context. You can modify state and props on the fly to test different scenarios, profile component render times, and visualize the component tree, making it an invaluable tool for understanding and troubleshooting React applications.",
-      "difficulty": "easy",
-      "round": "Frontend",
-      "tags": [
-        "debugging",
-        "developer tools",
-        "inspection",
-        "browser extension"
-      ],
-      "technology": "reactjs"
-    },
-    {
       "title": "When would you use `useLayoutEffect` instead of `useEffect`?",
       "description": "This question probes a deeper understanding of React's rendering lifecycle and specific hook behaviors.",
       "answer": "`useLayoutEffect` is similar to `useEffect` but fires synchronously after all DOM mutations are performed, but before the browser has a chance to paint. You would use `useLayoutEffect` when you need to perform DOM measurements or make synchronous DOM updates that might affect the layout, such as reading scroll position or modifying styles, to prevent visual inconsistencies or 'flickering.' For most side effects that don't directly interact with the DOM's layout, `useEffect` is preferred.",
@@ -739,20 +473,6 @@
         "useLayoutEffect",
         "useEffect",
         "dom"
-      ],
-      "technology": "reactjs"
-    },
-    {
-      "title": "How do you handle global state management in a large React application?",
-      "description": "This question explores strategies for managing state across many components beyond simple prop drilling or context.",
-      "answer": "For large React applications, global state management often goes beyond the Context API due to potential re-rendering issues or complexity. Popular solutions include Redux (with `react-redux` and Redux Toolkit), MobX, or Zustand. These libraries provide centralized stores for application state, along with predictable patterns for updating it. They offer powerful tools for organizing, debugging, and scaling state management across complex applications, often integrating with middleware for asynchronous actions.",
-      "difficulty": "medium",
-      "round": "Frontend",
-      "tags": [
-        "state management",
-        "redux",
-        "global state",
-        "architecture"
       ],
       "technology": "reactjs"
     },
@@ -771,20 +491,6 @@
       "technology": "reactjs"
     },
     {
-      "title": "Explain how event handling works in React.",
-      "description": "This question assesses understanding of how user interactions are managed and processed in React.",
-      "answer": "React's event handling system is a wrapper around the browser's native event system. Events are named using camelCase (e.g., `onClick` instead of `onclick`). React uses a synthetic event system, which normalizes events across different browsers, ensuring consistent behavior. Events are delegated to the document root, meaning React attaches a single event listener at the root and then dispatches events to the correct component based on the event target. This improves performance and simplifies cross-browser compatibility.",
-      "difficulty": "medium",
-      "round": "Frontend",
-      "tags": [
-        "events",
-        "event handling",
-        "synthetic events",
-        "dom"
-      ],
-      "technology": "reactjs"
-    },
-    {
       "title": "How would you structure a large React application?",
       "description": "This question evaluates the candidate's architectural thinking for maintainable and scalable React projects.",
       "answer": "Structuring a large React application often involves organizing files by feature or domain, rather than by type. A common approach is to have a `src` directory with subdirectories for `components`, `pages` (or `views`), `hooks`, `utils`, `services`, and `store` (for state management). Within `components` or `pages`, further organize into domain-specific folders like `users`, `products`, each containing its related components, hooks, and styles. This modular approach enhances maintainability, scalability, and developer experience.",
@@ -795,20 +501,6 @@
         "architecture",
         "scalability",
         "organization"
-      ],
-      "technology": "reactjs"
-    },
-    {
-      "title": "What is dependency array in `useEffect` and `useCallback`?",
-      "description": "This question tests the understanding of a crucial concept for correct hook behavior and performance optimization.",
-      "answer": "The dependency array (or `deps` array) in `useEffect` and `useCallback` is an optional second argument that lists all values from the component scope that the effect or memoized function relies on. React uses this array to determine if the effect or function needs to be re-run or re-created. If a value in the dependency array changes between renders, the effect will re-run, or the function will be re-created. Omitting the dependency array causes the effect/function to run/re-create on every render, while an empty array `[]` means it runs/creates only once on mount.",
-      "difficulty": "easy",
-      "round": "Frontend",
-      "tags": [
-        "hooks",
-        "useEffect",
-        "useCallback",
-        "dependencies"
       ],
       "technology": "reactjs"
     },
@@ -837,34 +529,6 @@
         "xss",
         "jsx",
         "best practices"
-      ],
-      "technology": "reactjs"
-    },
-    {
-      "title": "What is the role of a 'key' prop when rendering lists in React?",
-      "description": "Keys help React identify which items have changed, are added, or are removed. They give a stable identity to elements in a list.",
-      "answer": "Keys are crucial when rendering lists of elements in React. They provide a stable identity to each item in the list, allowing React to efficiently update, reorder, and remove items without unnecessarily re-rendering the entire list. Without unique keys, React's reconciliation algorithm may struggle to identify changes, leading to performance issues and potential bugs, especially with mutable list operations. Keys should be unique among siblings and stable over time, often derived from item IDs if available.",
-      "difficulty": "easy",
-      "round": "Frontend",
-      "tags": [
-        "lists",
-        "keys",
-        "performance",
-        "reconciliation"
-      ],
-      "technology": "reactjs"
-    },
-    {
-      "title": "Explain the concept of 'prop drilling' and how can it be avoided?",
-      "description": "Prop drilling refers to the process of passing props down multiple levels of nested components, even if intermediate components don't directly use them.",
-      "answer": "Prop drilling occurs when data is passed through several layers of components that don't need the data themselves, solely to reach a deeply nested child component. This makes code harder to maintain and refactor. To avoid it, solutions like React's Context API can be used for global or semi-global state, allowing components to subscribe directly to the data they need. State management libraries like Redux or Zustand are also common for more complex applications, centralizing state and providing explicit ways to access it.",
-      "difficulty": "medium",
-      "round": "Frontend",
-      "tags": [
-        "state management",
-        "props",
-        "context api",
-        "architecture"
       ],
       "technology": "reactjs"
     },
@@ -925,20 +589,6 @@
       "technology": "reactjs"
     },
     {
-      "title": "What is the purpose of the `deps` array in `useEffect`?",
-      "description": "The `deps` (dependencies) array in `useEffect` controls when the effect function will re-run, optimizing performance.",
-      "answer": "The `deps` array in `useEffect` is crucial for controlling when the effect function re-executes. React will re-run the effect only if any value in the `deps` array has changed between renders. An empty `deps` array (`[]`) means the effect runs only once after the initial render and cleanup happens on unmount. Omitting the `deps` array means the effect runs after every render. Including all values from the component scope that the effect uses ensures the effect always sees the latest values and avoids stale closures, though it can also lead to infinite loops if not managed carefully.",
-      "difficulty": "easy",
-      "round": "Frontend",
-      "tags": [
-        "hooks",
-        "useEffect",
-        "dependencies",
-        "side effects"
-      ],
-      "technology": "reactjs"
-    },
-    {
       "title": "What is the purpose of `React.StrictMode`?",
       "description": "`React.StrictMode` is a tool for highlighting potential problems in an application, helping to identify unsafe lifecycles, legacy API usage, and side effects.",
       "answer": "`React.StrictMode` is a development tool that helps identify potential issues in a React application. It doesn't render any visible UI but activates additional checks and warnings for its descendants. Its purpose is to prepare components for future React versions, detect deprecated features, and highlight unintended side effects. For example, it intentionally double-invokes methods like `render` or `useEffect` callbacks to expose side effects, ensuring components are resilient to re-renders and don't rely on single-execution assumptions. It only runs in development mode and has no impact on production builds.",
@@ -949,20 +599,6 @@
         "debugging",
         "best practices",
         "strictmode"
-      ],
-      "technology": "reactjs"
-    },
-    {
-      "title": "What are the core principles behind React's design?",
-      "description": "This question probes understanding of React's fundamental philosophy and its impact on application development.",
-      "answer": "React is built on principles like declarative programming, where you describe the desired UI state, and React figures out how to update the DOM. It uses a component-based architecture for reusability and maintainability. Unidirectional data flow, typically from parent to child via props, simplifies debugging. The Virtual DOM optimizes updates by minimizing direct DOM manipulations, enhancing performance.",
-      "difficulty": "medium",
-      "round": "Frontend",
-      "tags": [
-        "principles",
-        "architecture",
-        "virtual dom",
-        "declarative"
       ],
       "technology": "reactjs"
     },
@@ -995,62 +631,6 @@
       "technology": "reactjs"
     },
     {
-      "title": "What is the significance of the `key` prop when rendering lists in React?",
-      "description": "This question assesses understanding of how React efficiently updates dynamic lists of components.",
-      "answer": "The `key` prop is a special string attribute that you need to include when creating lists of elements. Keys help React identify which items have changed, are added, or are removed. Without stable keys, React's reconciliation process can be inefficient, leading to performance issues and potential bugs when list items are reordered or filtered. Keys should be unique among siblings.",
-      "difficulty": "easy",
-      "round": "Frontend",
-      "tags": [
-        "lists",
-        "keys",
-        "performance",
-        "reconciliation"
-      ],
-      "technology": "reactjs"
-    },
-    {
-      "title": "Explain 'prop drilling' and how to mitigate it.",
-      "description": "This question probes understanding of a common anti-pattern in React and solutions for managing state.",
-      "answer": "Prop drilling refers to the process of passing data down through multiple nested components, even if intermediate components don't directly use the data. This makes code harder to maintain and refactor. To mitigate prop drilling, you can use React Context API for global or shared state, component composition to pass children directly, or state management libraries like Redux or Zustand for complex applications.",
-      "difficulty": "medium",
-      "round": "Frontend",
-      "tags": [
-        "props",
-        "state management",
-        "context api",
-        "architecture"
-      ],
-      "technology": "reactjs"
-    },
-    {
-      "title": "Differentiate between `useState` and `useReducer` hooks.",
-      "description": "Examines understanding of state management options in functional components and when to choose each.",
-      "answer": "`useState` is a basic hook for managing simple state values, suitable for independent pieces of state like a counter or a boolean toggle. `useReducer` is generally preferred for more complex state logic, especially when state transitions involve multiple sub-values or when the next state depends on the previous one in intricate ways. It provides a more predictable state management pattern, similar to Redux.",
-      "difficulty": "medium",
-      "round": "Frontend",
-      "tags": [
-        "hooks",
-        "state management",
-        "usestate",
-        "usereducer"
-      ],
-      "technology": "reactjs"
-    },
-    {
-      "title": "What is the concept of immutability in React state management?",
-      "description": "Probes understanding of a fundamental principle for predictable state updates.",
-      "answer": "Immutability in React state management means that once an object or array is created, it cannot be changed. Instead of modifying existing state directly, you create a new copy with the desired changes. React relies on shallow comparisons to detect state changes and trigger re-renders; mutating state directly bypasses this, leading to unpredictable behavior or missed updates. Immutability ensures predictable state changes and helps optimize rendering performance.",
-      "difficulty": "medium",
-      "round": "Frontend",
-      "tags": [
-        "state management",
-        "immutability",
-        "performance",
-        "best practices"
-      ],
-      "technology": "reactjs"
-    },
-    {
       "title": "What is the Virtual DOM in React?",
       "description": "Explain the concept of the Virtual DOM and its role in React's performance optimization.",
       "answer": "The Virtual DOM is a lightweight, in-memory representation of the actual DOM. When state changes in a React component, React first updates this Virtual DOM. It then efficiently compares the new Virtual DOM with the previous one (a process called 'diffing') to identify only the changed parts. Finally, it updates only those specific changed parts in the real DOM, minimizing direct manipulation of the browser's expensive DOM operations and improving performance.",
@@ -1060,20 +640,6 @@
         "virtual dom",
         "performance",
         "reconciliation",
-        "dom"
-      ],
-      "technology": "reactjs"
-    },
-    {
-      "title": "Explain how React handles events.",
-      "description": "Describe React's synthetic event system and how it differs from native browser events.",
-      "answer": "React implements its own 'Synthetic Event System' which wraps the browser's native events. This system provides a consistent cross-browser API for events, normalizing their behavior. Events are delegated to the document root, meaning React attaches a single event listener to the document, and events bubble up to it. This improves performance by reducing the number of event listeners attached to individual DOM nodes. When an event fires, React dispatches it through its internal event system.",
-      "difficulty": "medium",
-      "round": "Frontend",
-      "tags": [
-        "events",
-        "synthetic events",
-        "event handling",
         "dom"
       ],
       "technology": "reactjs"
@@ -1149,19 +715,6 @@
       "technology": "reactjs"
     },
     {
-      "title": "What is the difference between a controlled and an uncontrolled component?",
-      "description": "Elaborate on the two main approaches to managing form inputs in React.",
-      "answer": "A controlled component is a form input whose value is controlled by React state. The input's value is always driven by the state, and any changes are handled via an `onChange` event handler that updates the state. An uncontrolled component, on the other hand, lets the DOM handle its own state. You access its value directly from the DOM, typically using a `useRef` hook, rather than through React state.",
-      "difficulty": "medium",
-      "round": "Frontend",
-      "tags": [
-        "forms",
-        "controlled components",
-        "uncontrolled components"
-      ],
-      "technology": "reactjs"
-    },
-    {
       "title": "How does React handle events?",
       "description": "Explain React's synthetic event system and how it differs from native DOM events.",
       "answer": "React implements its own synthetic event system, which wraps the browser's native events. This provides a consistent, cross-browser event system. Event handlers in React are typically attached directly to JSX elements. React uses event delegation, attaching a single event listener to the root of the application (e.g., the `document` or `root` element) and then dispatches synthetic events to the correct component, normalizing event object properties across different browsers.",
@@ -1199,19 +752,6 @@
         "usestate",
         "usecallback",
         "dependencies"
-      ],
-      "technology": "reactjs"
-    },
-    {
-      "title": "Explain the concept of 'prop drilling' and how to mitigate it.",
-      "description": "This question tests understanding of a common React anti-pattern and knowledge of solutions for passing data deeply.",
-      "answer": "Prop drilling refers to the process of passing data from a higher-level component down to a deeply nested child component through multiple intermediate components that don't actually need the data themselves. This can make code harder to maintain and refactor. It can be mitigated using React's Context API, which allows data to be passed directly to any component in the tree, or by using state management libraries like Redux for more complex global state.",
-      "difficulty": "medium",
-      "round": "Frontend",
-      "tags": [
-        "props",
-        "state management",
-        "context api"
       ],
       "technology": "reactjs"
     },
@@ -1288,18 +828,6 @@
         "ssr",
         "hydration",
         "performance"
-      ],
-      "technology": "reactjs"
-    },
-    {
-      "title": "Why should we not update state directly?",
-      "description": "The reasoning behind treating React state as immutable.",
-      "answer": "Updating state directly (e.g., `this.state.count = 1` or modifying an array directly) does not trigger a component re-render, leaving the UI out of sync. React relies on shallow comparisons of state to detect changes and trigger updates. Immutability ensures that React can accurately track changes and run its reconciliation algorithm correctly.",
-      "difficulty": "easy",
-      "round": "Phone Screen",
-      "tags": [
-        "state",
-        "immutability"
       ],
       "technology": "reactjs"
     },

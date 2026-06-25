@@ -1,4 +1,5 @@
 import type { NextConfig } from "next";
+import { reactMergeRedirects } from "./src/lib/react-merge-redirects";
 
 const nextConfig: NextConfig = {
   distDir: process.env.NEXT_DIST_DIR || ".next",
@@ -69,6 +70,8 @@ const nextConfig: NextConfig = {
         destination: "/interview-question/what-is-the-difference-between-null-and-undefined",
         permanent: true,
       },
+      // Merged duplicate React questions → canonical pages (reactjs dedup).
+      ...reactMergeRedirects,
     ];
   },
 };

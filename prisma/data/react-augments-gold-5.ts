@@ -15,7 +15,7 @@ const augments: Augment[] = [
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "What is `React.memo` and when would you use it?",
-    answer: `**Core concept (TL;DR).** <code>React.memo</code> is a higher-order component that **memoizes** a component: it skips re-rendering when the new props are **shallowly equal** to the previous ones. Use it for components that render often with the **same props** and are non-trivial to render — but only when their props are referentially stable.
+    answer: `**Core concept.** <code>React.memo</code> is a higher-order component that **memoizes** a component: it skips re-rendering when the new props are **shallowly equal** to the previous ones. Use it for components that render often with the **same props** and are non-trivial to render — but only when their props are referentially stable.
 
 ${card(`<svg viewBox="0 0 520 150" style="width:100%;display:block" xmlns="http://www.w3.org/2000/svg" font-family="ui-sans-serif,system-ui">
   <text x="16" y="22" fill="currentColor" font-size="12" font-weight="700">Parent re-renders; memoized child checks props first</text>
@@ -69,7 +69,7 @@ export default function App() {
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "When does `React.memo` do nothing — or actually hurt performance?",
-    answer: `**Core concept (TL;DR).** <code>React.memo</code> only helps when props are **referentially stable**. If the parent passes a **new object, array, or function** every render (e.g. an inline <code>{}</code> or arrow), the shallow comparison always fails and the child re-renders anyway — now with the *extra* cost of the comparison. It also adds overhead for trivially cheap components.
+    answer: `**Core concept.** <code>React.memo</code> only helps when props are **referentially stable**. If the parent passes a **new object, array, or function** every render (e.g. an inline <code>{}</code> or arrow), the shallow comparison always fails and the child re-renders anyway — now with the *extra* cost of the comparison. It also adds overhead for trivially cheap components.
 
 ${card(`<svg viewBox="0 0 520 150" style="width:100%;display:block" xmlns="http://www.w3.org/2000/svg" font-family="ui-sans-serif,system-ui">
   <text x="16" y="22" fill="currentColor" font-size="12" font-weight="700">Unstable props defeat the shallow check</text>
@@ -124,7 +124,7 @@ export default function App() {
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "How do you optimize performance in a React application?",
-    answer: `**Core concept (TL;DR).** **Measure first** (React Profiler / DevTools), then apply targeted fixes: **code-split** with <code>lazy</code>/Suspense, **virtualize** long lists, **memoize** hot paths (<code>memo</code>/<code>useMemo</code>/<code>useCallback</code>), cut unnecessary re-renders (stable props, move state down, split context), and ship a **production build**. Don't optimize blindly.
+    answer: `**Core concept.** **Measure first** (React Profiler / DevTools), then apply targeted fixes: **code-split** with <code>lazy</code>/Suspense, **virtualize** long lists, **memoize** hot paths (<code>memo</code>/<code>useMemo</code>/<code>useCallback</code>), cut unnecessary re-renders (stable props, move state down, split context), and ship a **production build**. Don't optimize blindly.
 
 ${card(`<svg viewBox="0 0 520 156" style="width:100%;display:block" xmlns="http://www.w3.org/2000/svg" font-family="ui-sans-serif,system-ui">
   <text x="16" y="22" fill="currentColor" font-size="12" font-weight="700">Profile → fix the real bottleneck</text>
@@ -180,7 +180,7 @@ export default function App() {
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "How do you optimize React component rendering?",
-    answer: `**Core concept (TL;DR).** Reduce both **how often** a component renders and **how much** each render costs. Skip needless renders with <code>React.memo</code> + stable props, **move state down** so updates touch a small subtree, **lift slow content into <code>children</code>**, memoize expensive calculations with <code>useMemo</code>, keep **stable keys**, and avoid creating new objects/functions inline.
+    answer: `**Core concept.** Reduce both **how often** a component renders and **how much** each render costs. Skip needless renders with <code>React.memo</code> + stable props, **move state down** so updates touch a small subtree, **lift slow content into <code>children</code>**, memoize expensive calculations with <code>useMemo</code>, keep **stable keys**, and avoid creating new objects/functions inline.
 
 ${card(`<svg viewBox="0 0 520 150" style="width:100%;display:block" xmlns="http://www.w3.org/2000/svg" font-family="ui-sans-serif,system-ui">
   <text x="16" y="22" fill="currentColor" font-size="12" font-weight="700">Render less often · render less work</text>
@@ -238,7 +238,7 @@ export default function App() {
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "How do you prevent unnecessary re-renders in functional components?",
-    answer: `**Core concept (TL;DR).** Stop a render before it starts, or stop it from cascading. Wrap pure children in <code>React.memo</code> and feed them **stable props** (<code>useCallback</code>/<code>useMemo</code>); **colocate** state so changes touch a small subtree; pass slow subtrees as <code>children</code>; and **split or memoize Context** so consumers don't all re-render. Don't over-optimize cheap components.
+    answer: `**Core concept.** Stop a render before it starts, or stop it from cascading. Wrap pure children in <code>React.memo</code> and feed them **stable props** (<code>useCallback</code>/<code>useMemo</code>); **colocate** state so changes touch a small subtree; pass slow subtrees as <code>children</code>; and **split or memoize Context** so consumers don't all re-render. Don't over-optimize cheap components.
 
 ${card(`<svg viewBox="0 0 520 150" style="width:100%;display:block" xmlns="http://www.w3.org/2000/svg" font-family="ui-sans-serif,system-ui">
   <text x="16" y="22" fill="currentColor" font-size="12" font-weight="700">Four levers against needless renders</text>
@@ -291,7 +291,7 @@ export default function App() {
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "How do you avoid re-renders with composition instead of memoization?",
-    answer: `**Core concept (TL;DR).** If a component holds state but also renders an expensive subtree that doesn't depend on that state, pass the subtree in as <code>children</code> (or a prop). Because the element is created by the **parent above the state**, its reference stays the same across the stateful component's renders — so React skips re-rendering it, **without any <code>memo</code>**.
+    answer: `**Core concept.** If a component holds state but also renders an expensive subtree that doesn't depend on that state, pass the subtree in as <code>children</code> (or a prop). Because the element is created by the **parent above the state**, its reference stays the same across the stateful component's renders — so React skips re-rendering it, **without any <code>memo</code>**.
 
 ${card(`<svg viewBox="0 0 520 150" style="width:100%;display:block" xmlns="http://www.w3.org/2000/svg" font-family="ui-sans-serif,system-ui">
   <text x="16" y="22" fill="currentColor" font-size="12" font-weight="700">Stable children element → React reuses it</text>
@@ -352,7 +352,7 @@ export default function App() {
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "What causes stale closures in React hooks, and how do you fix them correctly?",
-    answer: `**Core concept (TL;DR).** A stale closure happens when a function created during one render **captures** the props/state from that render and is later called when those values are outdated — so it "sees" old data. The usual culprits are effects/callbacks with **missing or wrong dependencies**. Fix with correct deps, **functional state updates**, or a **ref** holding the latest value.
+    answer: `**Core concept.** A stale closure happens when a function created during one render **captures** the props/state from that render and is later called when those values are outdated — so it "sees" old data. The usual culprits are effects/callbacks with **missing or wrong dependencies**. Fix with correct deps, **functional state updates**, or a **ref** holding the latest value.
 
 ${card(`<svg viewBox="0 0 520 150" style="width:100%;display:block" xmlns="http://www.w3.org/2000/svg" font-family="ui-sans-serif,system-ui">
   <text x="16" y="22" fill="currentColor" font-size="12" font-weight="700">Closure captures the render it was created in</text>
@@ -405,7 +405,7 @@ export default function App() {
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "When would you use `useLayoutEffect` instead of `useEffect`?",
-    answer: `**Core concept (TL;DR).** Use <code>useLayoutEffect</code> when you must **read or change the DOM before the browser paints** — typically measuring layout (size/position) and synchronously adjusting it to avoid a visible flicker. It runs **synchronously after DOM mutations but before paint**; <code>useEffect</code> runs **after** paint (asynchronously). Default to <code>useEffect</code>.
+    answer: `**Core concept.** Use <code>useLayoutEffect</code> when you must **read or change the DOM before the browser paints** — typically measuring layout (size/position) and synchronously adjusting it to avoid a visible flicker. It runs **synchronously after DOM mutations but before paint**; <code>useEffect</code> runs **after** paint (asynchronously). Default to <code>useEffect</code>.
 
 ${card(`<svg viewBox="0 0 520 150" style="width:100%;display:block" xmlns="http://www.w3.org/2000/svg" font-family="ui-sans-serif,system-ui">
   <text x="16" y="22" fill="currentColor" font-size="12" font-weight="700">Before paint (layout) vs after paint (effect)</text>

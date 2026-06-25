@@ -23,7 +23,7 @@ const augments: Augment[] = [
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "What is the difference between `useState` and `useReducer`?",
-    answer: `**Core concept (TL;DR).** Both add state to a function component. <code>useState</code> is best for **simple, independent** values you update directly. <code>useReducer</code> centralises update logic in a **reducer** <code>(state, action) => newState</code> and you <code>dispatch</code> actions — better when state is **complex**, has many sub-values, or the next state depends on the previous one.
+    answer: `**Core concept.** Both add state to a function component. <code>useState</code> is best for **simple, independent** values you update directly. <code>useReducer</code> centralises update logic in a **reducer** <code>(state, action) => newState</code> and you <code>dispatch</code> actions — better when state is **complex**, has many sub-values, or the next state depends on the previous one.
 
 ${card(`<svg viewBox="0 0 520 176" style="width:100%;display:block" xmlns="http://www.w3.org/2000/svg" font-family="ui-sans-serif,system-ui">
   <text x="16" y="22" fill="currentColor" font-size="12" font-weight="700">Direct setter vs dispatch → reducer</text>
@@ -84,7 +84,7 @@ export default function App() {
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "Explain the purpose of `useEffect`.",
-    answer: `**Core concept (TL;DR).** <code>useEffect</code> lets a component run **side effects** — work outside rendering, like data fetching, subscriptions, timers, or manual DOM changes. It runs **after** React commits to the screen; its **dependency array** controls when it re-runs; and the function it returns is a **cleanup** that undoes the previous effect.
+    answer: `**Core concept.** <code>useEffect</code> lets a component run **side effects** — work outside rendering, like data fetching, subscriptions, timers, or manual DOM changes. It runs **after** React commits to the screen; its **dependency array** controls when it re-runs; and the function it returns is a **cleanup** that undoes the previous effect.
 
 ${card(`<svg viewBox="0 0 520 168" style="width:100%;display:block" xmlns="http://www.w3.org/2000/svg" font-family="ui-sans-serif,system-ui">
   <text x="16" y="22" fill="currentColor" font-size="12" font-weight="700">Effects run after render/paint, not during</text>
@@ -140,7 +140,7 @@ export default function App() {
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "What is the purpose of the cleanup function in useEffect?",
-    answer: `**Core concept (TL;DR).** The **cleanup** is the function you return from <code>useEffect</code>. React runs it **before re-running the effect** and **when the component unmounts**, so it can undo whatever the previous effect set up — unsubscribe, <code>clearInterval</code>, abort a request, remove a listener. Without it you get memory leaks and stale, duplicated subscriptions.
+    answer: `**Core concept.** The **cleanup** is the function you return from <code>useEffect</code>. React runs it **before re-running the effect** and **when the component unmounts**, so it can undo whatever the previous effect set up — unsubscribe, <code>clearInterval</code>, abort a request, remove a listener. Without it you get memory leaks and stale, duplicated subscriptions.
 
 ${card(`<svg viewBox="0 0 520 162" style="width:100%;display:block" xmlns="http://www.w3.org/2000/svg" font-family="ui-sans-serif,system-ui">
   <text x="16" y="22" fill="currentColor" font-size="12" font-weight="700">Each effect cleans up the previous one</text>
@@ -197,7 +197,7 @@ export default function App() {
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "What is the purpose of the `deps` array in `useEffect` and `useCallback`?",
-    answer: `**Core concept (TL;DR).** The dependency array tells React **when to act**. For <code>useEffect</code> it decides when the effect re-runs; for <code>useCallback</code>/<code>useMemo</code> it decides when the memoized function/value is recreated. React shallowly compares the array between renders and only re-runs/recomputes when a dependency changed.
+    answer: `**Core concept.** The dependency array tells React **when to act**. For <code>useEffect</code> it decides when the effect re-runs; for <code>useCallback</code>/<code>useMemo</code> it decides when the memoized function/value is recreated. React shallowly compares the array between renders and only re-runs/recomputes when a dependency changed.
 
 ${card(`<svg viewBox="0 0 520 162" style="width:100%;display:block" xmlns="http://www.w3.org/2000/svg" font-family="ui-sans-serif,system-ui">
   <text x="16" y="22" fill="currentColor" font-size="12" font-weight="700">React compares deps; acts only on change</text>
@@ -258,7 +258,7 @@ export default function App() {
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "What is the difference between useMemo and useCallback?",
-    answer: `**Core concept (TL;DR).** Both memoize across renders to preserve **referential stability**, keyed by a dependency array. <code>useMemo</code> caches a computed **value**; <code>useCallback</code> caches a **function**. In fact <code>useCallback(fn, deps)</code> is exactly <code>useMemo(() => fn, deps)</code>.
+    answer: `**Core concept.** Both memoize across renders to preserve **referential stability**, keyed by a dependency array. <code>useMemo</code> caches a computed **value**; <code>useCallback</code> caches a **function**. In fact <code>useCallback(fn, deps)</code> is exactly <code>useMemo(() => fn, deps)</code>.
 
 ${card(`<svg viewBox="0 0 520 168" style="width:100%;display:block" xmlns="http://www.w3.org/2000/svg" font-family="ui-sans-serif,system-ui">
   <text x="16" y="22" fill="currentColor" font-size="12" font-weight="700">Cache a value vs cache a function</text>
@@ -315,7 +315,7 @@ export default function App() {
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "Describe the `useRef` hook and its typical use cases.",
-    answer: `**Core concept (TL;DR).** <code>useRef</code> returns a mutable object — <code>{ current }</code> — that **persists across renders** but does **not** trigger a re-render when you change it. Two main uses: (1) get a handle to a **DOM node**, and (2) store a **mutable value** that should survive renders without being state (timer ids, the previous value, instance-like data).
+    answer: `**Core concept.** <code>useRef</code> returns a mutable object — <code>{ current }</code> — that **persists across renders** but does **not** trigger a re-render when you change it. Two main uses: (1) get a handle to a **DOM node**, and (2) store a **mutable value** that should survive renders without being state (timer ids, the previous value, instance-like data).
 
 ${card(`<svg viewBox="0 0 520 162" style="width:100%;display:block" xmlns="http://www.w3.org/2000/svg" font-family="ui-sans-serif,system-ui">
   <text x="16" y="22" fill="currentColor" font-size="12" font-weight="700">A persistent box that doesn't cause re-renders</text>
@@ -370,7 +370,7 @@ export default function App() {
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "What are React custom hooks and when should you use them?",
-    answer: `**Core concept (TL;DR).** A custom hook is a function whose name starts with <code>use</code> and which calls other hooks to **extract and reuse stateful logic** across components. It shares the **logic**, not the state — each component that calls the hook gets its own independent state.
+    answer: `**Core concept.** A custom hook is a function whose name starts with <code>use</code> and which calls other hooks to **extract and reuse stateful logic** across components. It shares the **logic**, not the state — each component that calls the hook gets its own independent state.
 
 ${card(`<svg viewBox="0 0 520 162" style="width:100%;display:block" xmlns="http://www.w3.org/2000/svg" font-family="ui-sans-serif,system-ui">
   <text x="16" y="22" fill="currentColor" font-size="12" font-weight="700">Extract reusable logic; each caller gets its own state</text>
@@ -430,7 +430,7 @@ export default function App() {
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "What is the Context API in React and when would you use it?",
-    answer: `**Core concept (TL;DR).** Context lets you pass data through the component tree **without prop drilling**. You <code>createContext</code>, wrap a subtree in its <code>&lt;Provider value={...}&gt;</code>, and any descendant reads it with <code>useContext</code> — no manual passing through every intermediate component. It's ideal for **global-ish** data: theme, current user/auth, locale.
+    answer: `**Core concept.** Context lets you pass data through the component tree **without prop drilling**. You <code>createContext</code>, wrap a subtree in its <code>&lt;Provider value={...}&gt;</code>, and any descendant reads it with <code>useContext</code> — no manual passing through every intermediate component. It's ideal for **global-ish** data: theme, current user/auth, locale.
 
 ${card(`<svg viewBox="0 0 520 168" style="width:100%;display:block" xmlns="http://www.w3.org/2000/svg" font-family="ui-sans-serif,system-ui">
   <text x="16" y="22" fill="currentColor" font-size="12" font-weight="700">Provider broadcasts; any descendant consumes directly</text>

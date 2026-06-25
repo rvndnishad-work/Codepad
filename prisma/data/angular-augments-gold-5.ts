@@ -8,7 +8,7 @@ const augments: AngularAugment[] = [
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "How do you read route parameters?",
-    answer: `**Core concept (TL;DR).** Inject <code>ActivatedRoute</code> and read parameters either **once** via the snapshot (<code>route.snapshot.paramMap.get('id')</code>) or **reactively** via the <code>paramMap</code> observable (for params that change while the component stays mounted). Query parameters come from <code>queryParamMap</code>. Modern Angular can also bind params straight to component <code>@Input</code>s.
+    answer: `**Core concept.** Inject <code>ActivatedRoute</code> and read parameters either **once** via the snapshot (<code>route.snapshot.paramMap.get('id')</code>) or **reactively** via the <code>paramMap</code> observable (for params that change while the component stays mounted). Query parameters come from <code>queryParamMap</code>. Modern Angular can also bind params straight to component <code>@Input</code>s.
 
 <svg class='iq-diagram' viewBox='0 0 460 150' role='img' aria-label='ActivatedRoute exposes snapshot params and a paramMap observable'>
   <rect class='d-box-accent' x='140' y='24' width='180' height='44' rx='10'/>
@@ -64,7 +64,7 @@ export class UserComponent {
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "How does routing and lazy loading work in Angular?",
-    answer: `**Core concept (TL;DR).** The Router maps **URL paths to components**: you declare routes, <code>&lt;router-outlet&gt;</code> renders the matched component, and <code>routerLink</code> navigates without a full reload. **Lazy loading** defers loading a feature's code until its route is first visited — via <code>loadComponent</code> (standalone) or <code>loadChildren</code> — shrinking the initial bundle.
+    answer: `**Core concept.** The Router maps **URL paths to components**: you declare routes, <code>&lt;router-outlet&gt;</code> renders the matched component, and <code>routerLink</code> navigates without a full reload. **Lazy loading** defers loading a feature's code until its route is first visited — via <code>loadComponent</code> (standalone) or <code>loadChildren</code> — shrinking the initial bundle.
 
 <svg class='iq-diagram' viewBox='0 0 460 150' role='img' aria-label='URL matches a route which renders into the outlet; lazy routes load on demand'>
   <rect class='d-box' x='20' y='52' width='110' height='46' rx='10'/>
@@ -119,7 +119,7 @@ class HomeComponent {} class UserComponent {}`,
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "What are route guards in Angular?",
-    answer: `**Core concept (TL;DR).** Route guards are functions that decide whether a navigation may proceed. The main ones: <code>CanActivate</code> (allowed to **enter** a route?), <code>CanDeactivate</code> (allowed to **leave**? — e.g. unsaved-changes prompt), <code>CanMatch</code> (should this route/lazy chunk match at all?), and resolvers (pre-fetch data). They return a boolean, a <code>UrlTree</code> (redirect), or an Observable/Promise of those.
+    answer: `**Core concept.** Route guards are functions that decide whether a navigation may proceed. The main ones: <code>CanActivate</code> (allowed to **enter** a route?), <code>CanDeactivate</code> (allowed to **leave**? — e.g. unsaved-changes prompt), <code>CanMatch</code> (should this route/lazy chunk match at all?), and resolvers (pre-fetch data). They return a boolean, a <code>UrlTree</code> (redirect), or an Observable/Promise of those.
 
 <svg class='iq-diagram' viewBox='0 0 460 150' role='img' aria-label='Guards allow, block, or redirect navigation'>
   <rect class='d-box' x='20' y='52' width='120' height='46' rx='10'/>
@@ -170,7 +170,7 @@ export const authGuard: CanActivateFn = () => {
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "What is a route resolver and when is it useful?",
-    answer: `**Core concept (TL;DR).** A resolver **pre-fetches data before a route activates**, so the component renders with its data already available — no empty/loading flash on entry. You write a <code>ResolveFn</code> that returns the data (often an Observable), attach it to the route's <code>resolve</code>, and read it from <code>ActivatedRoute.data</code>.
+    answer: `**Core concept.** A resolver **pre-fetches data before a route activates**, so the component renders with its data already available — no empty/loading flash on entry. You write a <code>ResolveFn</code> that returns the data (often an Observable), attach it to the route's <code>resolve</code>, and read it from <code>ActivatedRoute.data</code>.
 
 <svg class='iq-diagram' viewBox='0 0 460 150' role='img' aria-label='Resolver fetches data before the component activates'>
   <rect class='d-box' x='20' y='52' width='120' height='46' rx='10'/>
@@ -220,7 +220,7 @@ export const userResolver: ResolveFn<any> = (route: ActivatedRouteSnapshot) =>
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "What are preloading strategies?",
-    answer: `**Core concept (TL;DR).** Preloading controls **when lazy-loaded routes are fetched in the background** after the app starts. The default <code>NoPreloading</code> loads a feature only on navigation; <code>PreloadAllModules</code> eagerly downloads all lazy chunks once the app is idle; a **custom** strategy preloads only selected routes. It balances a small initial bundle against fast later navigation.
+    answer: `**Core concept.** Preloading controls **when lazy-loaded routes are fetched in the background** after the app starts. The default <code>NoPreloading</code> loads a feature only on navigation; <code>PreloadAllModules</code> eagerly downloads all lazy chunks once the app is idle; a **custom** strategy preloads only selected routes. It balances a small initial bundle against fast later navigation.
 
 <svg class='iq-diagram' viewBox='0 0 460 150' role='img' aria-label='No preloading vs preload all vs custom selective preloading'>
   <rect class='d-box' x='14' y='44' width='140' height='62' rx='10'/>
@@ -270,7 +270,7 @@ export class SelectivePreload implements PreloadingStrategy {
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "What is the difference between reactive and template-driven forms?",
-    answer: `**Core concept (TL;DR).** **Template-driven** forms keep the logic in the **template** (using <code>ngModel</code> and directives) — simple and quick, but implicit and async. **Reactive** forms define the form model **in the component** (<code>FormGroup</code>/<code>FormControl</code>) — explicit, synchronous, type-safe, and far more scalable for complex, dynamic, or heavily-validated forms.
+    answer: `**Core concept.** **Template-driven** forms keep the logic in the **template** (using <code>ngModel</code> and directives) — simple and quick, but implicit and async. **Reactive** forms define the form model **in the component** (<code>FormGroup</code>/<code>FormControl</code>) — explicit, synchronous, type-safe, and far more scalable for complex, dynamic, or heavily-validated forms.
 
 <svg class='iq-diagram' viewBox='0 0 460 150' role='img' aria-label='Template-driven keeps logic in the template; reactive defines the model in code'>
   <rect class='d-box' x='20' y='44' width='200' height='62' rx='10'/>
@@ -324,7 +324,7 @@ export class AppComponent {
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "How do you create a custom validator in reactive forms?",
-    answer: `**Core concept (TL;DR).** A validator is a function (<code>ValidatorFn</code>) that takes a control and returns <code>null</code> when valid, or an **error object** (<code>{ errorKey: true }</code>) when invalid. Attach it to a <code>FormControl</code> alongside the built-ins. For server checks use an <code>AsyncValidatorFn</code> (returns an Observable/Promise); for rules spanning fields, put a validator on the <code>FormGroup</code>.
+    answer: `**Core concept.** A validator is a function (<code>ValidatorFn</code>) that takes a control and returns <code>null</code> when valid, or an **error object** (<code>{ errorKey: true }</code>) when invalid. Attach it to a <code>FormControl</code> alongside the built-ins. For server checks use an <code>AsyncValidatorFn</code> (returns an Observable/Promise); for rules spanning fields, put a validator on the <code>FormGroup</code>.
 
 <svg class='iq-diagram' viewBox='0 0 460 150' role='img' aria-label='A validator returns null when valid or an error object when invalid'>
   <rect class='d-box-accent' x='30' y='44' width='170' height='62' rx='10'/>

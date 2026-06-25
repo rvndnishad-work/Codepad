@@ -15,7 +15,7 @@ const augments: Augment[] = [
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "What is the Virtual DOM in React?",
-    answer: `**Core concept (TL;DR).** The Virtual DOM is a lightweight **in-memory tree of plain JavaScript objects** (React elements) describing the UI. On a state change React builds a **new** tree, **diffs** it against the previous one (reconciliation), and applies only the **minimal set of real-DOM mutations** — avoiding slow, manual DOM work.
+    answer: `**Core concept.** The Virtual DOM is a lightweight **in-memory tree of plain JavaScript objects** (React elements) describing the UI. On a state change React builds a **new** tree, **diffs** it against the previous one (reconciliation), and applies only the **minimal set of real-DOM mutations** — avoiding slow, manual DOM work.
 
 ${card(`<svg viewBox="0 0 520 162" style="width:100%;display:block" xmlns="http://www.w3.org/2000/svg" font-family="ui-sans-serif,system-ui">
   <text x="16" y="22" fill="currentColor" font-size="12" font-weight="700">Diff two virtual trees, patch only the difference</text>
@@ -71,7 +71,7 @@ export default function App() {
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "Explain the concept of reconciliation in React.",
-    answer: `**Core concept (TL;DR).** Reconciliation is the **diffing algorithm** React uses to compare the newly rendered element tree with the previous one and figure out the minimal DOM changes. To stay fast (roughly O(n)), it relies on two heuristics: elements of **different types** replace the whole subtree, and **keys** identify which list children moved.
+    answer: `**Core concept.** Reconciliation is the **diffing algorithm** React uses to compare the newly rendered element tree with the previous one and figure out the minimal DOM changes. To stay fast (roughly O(n)), it relies on two heuristics: elements of **different types** replace the whole subtree, and **keys** identify which list children moved.
 
 ${card(`<svg viewBox="0 0 520 156" style="width:100%;display:block" xmlns="http://www.w3.org/2000/svg" font-family="ui-sans-serif,system-ui">
   <text x="16" y="22" fill="currentColor" font-size="12" font-weight="700">Heuristic diff: type changes & keys</text>
@@ -128,7 +128,7 @@ export default function App() {
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "How does React Fiber work?",
-    answer: `**Core concept (TL;DR).** Fiber is React's reconciliation **engine** (since React 16). It re-implements reconciliation as small, **interruptible units of work** ("fibers") that React can pause, resume, reprioritize, or abandon — which is what makes **concurrent rendering** (time-slicing, Suspense, transitions) possible. Work happens in two phases: an interruptible **render** phase and a synchronous **commit** phase.
+    answer: `**Core concept.** Fiber is React's reconciliation **engine** (since React 16). It re-implements reconciliation as small, **interruptible units of work** ("fibers") that React can pause, resume, reprioritize, or abandon — which is what makes **concurrent rendering** (time-slicing, Suspense, transitions) possible. Work happens in two phases: an interruptible **render** phase and a synchronous **commit** phase.
 
 ${card(`<svg viewBox="0 0 520 156" style="width:100%;display:block" xmlns="http://www.w3.org/2000/svg" font-family="ui-sans-serif,system-ui">
   <text x="16" y="22" fill="currentColor" font-size="12" font-weight="700">Two phases: interruptible render, atomic commit</text>
@@ -188,7 +188,7 @@ export default function App() {
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "How does React's Batching work?",
-    answer: `**Core concept (TL;DR).** Batching means React groups **multiple state updates** that happen in the same tick into a **single re-render**, instead of re-rendering once per <code>setState</code>. React 18's **automatic batching** extends this beyond event handlers to updates inside promises, <code>setTimeout</code>, and native callbacks. <code>flushSync</code> opts out when you need a synchronous update.
+    answer: `**Core concept.** Batching means React groups **multiple state updates** that happen in the same tick into a **single re-render**, instead of re-rendering once per <code>setState</code>. React 18's **automatic batching** extends this beyond event handlers to updates inside promises, <code>setTimeout</code>, and native callbacks. <code>flushSync</code> opts out when you need a synchronous update.
 
 ${card(`<svg viewBox="0 0 520 150" style="width:100%;display:block" xmlns="http://www.w3.org/2000/svg" font-family="ui-sans-serif,system-ui">
   <text x="16" y="22" fill="currentColor" font-size="12" font-weight="700">Many setState calls → one render</text>
@@ -244,7 +244,7 @@ export default function App() {
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "What is hydration in React?",
-    answer: `**Core concept (TL;DR).** Hydration is the process of **attaching React to server-rendered HTML** — wiring up event handlers and internal state so the static markup becomes interactive — **without rebuilding** the DOM. The client renders the same tree and "adopts" the existing nodes via <code>hydrateRoot</code>.
+    answer: `**Core concept.** Hydration is the process of **attaching React to server-rendered HTML** — wiring up event handlers and internal state so the static markup becomes interactive — **without rebuilding** the DOM. The client renders the same tree and "adopts" the existing nodes via <code>hydrateRoot</code>.
 
 ${card(`<svg viewBox="0 0 520 152" style="width:100%;display:block" xmlns="http://www.w3.org/2000/svg" font-family="ui-sans-serif,system-ui">
   <text x="16" y="22" fill="currentColor" font-size="12" font-weight="700">Server HTML + JS → interactive app (reuse the DOM)</text>
@@ -299,7 +299,7 @@ export default function Clock() {
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "What are React synthetic events?",
-    answer: `**Core concept (TL;DR).** A SyntheticEvent is React's **cross-browser wrapper** around the native DOM event. It gives every event a consistent API (<code>preventDefault</code>, <code>stopPropagation</code>, <code>target</code>) regardless of browser quirks, and you can always reach the underlying event via <code>e.nativeEvent</code>.
+    answer: `**Core concept.** A SyntheticEvent is React's **cross-browser wrapper** around the native DOM event. It gives every event a consistent API (<code>preventDefault</code>, <code>stopPropagation</code>, <code>target</code>) regardless of browser quirks, and you can always reach the underlying event via <code>e.nativeEvent</code>.
 
 ${card(`<svg viewBox="0 0 520 150" style="width:100%;display:block" xmlns="http://www.w3.org/2000/svg" font-family="ui-sans-serif,system-ui">
   <text x="16" y="22" fill="currentColor" font-size="12" font-weight="700">A normalized wrapper over the native event</text>
@@ -350,7 +350,7 @@ ${card(`<svg viewBox="0 0 520 150" style="width:100%;display:block" xmlns="http:
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "How does React handle events?",
-    answer: `**Core concept (TL;DR).** You attach handlers in JSX with **camelCase** props (<code>onClick</code>, <code>onChange</code>) that take a **function**, not a string. Under the hood React uses **event delegation** — a single listener per event type at the root container — and dispatches a normalized **SyntheticEvent** to your handler.
+    answer: `**Core concept.** You attach handlers in JSX with **camelCase** props (<code>onClick</code>, <code>onChange</code>) that take a **function**, not a string. Under the hood React uses **event delegation** — a single listener per event type at the root container — and dispatches a normalized **SyntheticEvent** to your handler.
 
 ${card(`<svg viewBox="0 0 520 150" style="width:100%;display:block" xmlns="http://www.w3.org/2000/svg" font-family="ui-sans-serif,system-ui">
   <text x="16" y="22" fill="currentColor" font-size="12" font-weight="700">One root listener delegates to your handlers</text>
@@ -399,7 +399,7 @@ ${card(`<svg viewBox="0 0 520 150" style="width:100%;display:block" xmlns="http:
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "What is the difference between shadow DOM and virtual DOM?",
-    answer: `**Core concept (TL;DR).** Despite the similar names they're unrelated. The **Shadow DOM** is a **browser standard** for *encapsulation* — it scopes a component's DOM and CSS so they don't leak in or out (the backbone of Web Components). The **Virtual DOM** is React's in-memory *optimization* for computing efficient UI updates. One isolates; the other diffs.
+    answer: `**Core concept.** Despite the similar names they're unrelated. The **Shadow DOM** is a **browser standard** for *encapsulation* — it scopes a component's DOM and CSS so they don't leak in or out (the backbone of Web Components). The **Virtual DOM** is React's in-memory *optimization* for computing efficient UI updates. One isolates; the other diffs.
 
 ${card(`<svg viewBox="0 0 520 150" style="width:100%;display:block" xmlns="http://www.w3.org/2000/svg" font-family="ui-sans-serif,system-ui">
   <text x="16" y="22" fill="currentColor" font-size="12" font-weight="700">Encapsulation (browser) vs efficient updates (React)</text>

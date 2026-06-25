@@ -1,0 +1,461 @@
+[
+  {
+    "technology": "angular",
+    "round": "Frontend",
+    "difficulty": "hard",
+    "tags": ["performance", "routing", "defer"],
+    "title": "What are Deferrable Views (@defer) and how do they work in Angular 17+?",
+    "description": "Explain how Deferrable Views allow lazy loading of template sections dynamically.",
+    "answer": "Deferrable Views allow developers to lazily load component, directive, and pipe dependencies directly from templates using the `@defer` block. Triggered by conditions like `viewport`, `hover`, or custom logical expressions, it splits the application bundle automatically to optimize page load."
+  },
+  {
+    "technology": "angular",
+    "round": "Frontend",
+    "difficulty": "medium",
+    "tags": ["di", "dependency-injection"],
+    "title": "What is the difference between constructor-based DI and the inject() function?",
+    "description": "Compare injecting dependencies in constructor versus the modern inject() function.",
+    "answer": "Constructor-based injection uses TypeScript parameter types to resolve dependencies. The functional `inject()` API can be used outside constructors in initialization contexts (like field declarations, guards, or custom functions), enabling cleaner composition and functional APIs."
+  },
+  {
+    "technology": "angular",
+    "round": "Frontend",
+    "difficulty": "easy",
+    "tags": ["control-flow", "directives"],
+    "title": "Explain the new Control Flow (@if, @for, @switch) and how it compares to structural directives.",
+    "description": "Contrast the new block syntax in Angular 17 with *ngIf, *ngFor, and *ngSwitch.",
+    "answer": "The new built-in control flow syntax (`@if`, `@for`, `@switch`) does not require importing structural directives or `CommonModule`. It features a clean syntax, supports automatic track-by enforcement in loops, and yields better performance because it compiles to plain JavaScript operations rather than directive lookups."
+  },
+  {
+    "technology": "angular",
+    "round": "Frontend",
+    "difficulty": "hard",
+    "tags": ["ssr", "hydration", "performance"],
+    "title": "How does Hydration work in modern Angular SSR, and what is non-destructive hydration?",
+    "description": "Explain non-destructive hydration in Angular 17+ and how it differs from re-rendering.",
+    "answer": "Non-destructive hydration reconciles the client-side state with the server-rendered DOM without tearing down and recreating it. It traverses the existing nodes, attaches event listeners, and hooks up reactivity, resulting in faster Largest Contentful Paint (LCP) and zero flickering."
+  },
+  {
+    "technology": "angular",
+    "round": "Frontend",
+    "difficulty": "medium",
+    "tags": ["ssr", "hydration", "troubleshooting"],
+    "title": "How do you handle SSR hydration mismatch errors using ngSkipHydration?",
+    "description": "Explain causes of hydration mismatches and how to use the ngSkipHydration attribute.",
+    "answer": "Hydration mismatches occur when the DOM generated on the server differs from the DOM rendered on the client (e.g. using `new Date()` or browser-only APIs). Adding `ngSkipHydration` to a component's host element skips hydration for that subtree, falling back to destructive rendering."
+  },
+  {
+    "technology": "angular",
+    "round": "Frontend",
+    "difficulty": "hard",
+    "tags": ["signals", "reactivity"],
+    "title": "What is the effect() function in Angular Signals, and when should you NOT use it?",
+    "description": "Explain signals-based side effects and their limitations.",
+    "answer": "An `effect()` runs side-effects dynamically when one or more signals inside it change. It is designed for logging, synchronizing with custom DOM elements, or analytics. It should not be used to set other signals (which can cause infinite loop dependencies) or perform logic better suited for `computed()`."
+  },
+  {
+    "technology": "angular",
+    "round": "Frontend",
+    "difficulty": "medium",
+    "tags": ["signals", "performance"],
+    "title": "What is the difference between computed() signals and standard method/getter calls in templates?",
+    "description": "Explain caching and performance differences of computed signals versus method evaluations.",
+    "answer": "`computed()` signals compute derived state and cache their values, re-evaluating only when their dependency signals change. Standard template methods or getters evaluate on every single change detection cycle, potentially causing performance bottlenecks for heavy logic."
+  },
+  {
+    "technology": "angular",
+    "round": "Frontend",
+    "difficulty": "medium",
+    "tags": ["routing", "guards"],
+    "title": "What are functional Route Guards, and how do they differ from class-based guards?",
+    "description": "Explain functional route guards in modern Angular.",
+    "answer": "Functional route guards are standard JavaScript functions registered as guards (e.g., return boolean or UrlTree). They utilize `inject()` to fetch dependencies, avoiding the boilerplate of class-based guards implementing interfaces, and are simpler to combine and reuse."
+  },
+  {
+    "technology": "angular",
+    "round": "Frontend",
+    "difficulty": "medium",
+    "tags": ["http", "interceptors"],
+    "title": "What are functional HTTP Interceptors in modern Angular, and how do you register them?",
+    "description": "Describe modern functional HTTP interceptors and registration.",
+    "answer": "Functional HTTP interceptors are lightweight functions of type `HttpInterceptorFn`. Instead of a class, they take `req` and `next` and return an Observable. They are registered via `provideHttpClient(withInterceptors([myInterceptorFn]))` in the application root config."
+  },
+  {
+    "technology": "angular",
+    "round": "Frontend",
+    "difficulty": "medium",
+    "tags": ["http", "di"],
+    "title": "What is provideHttpClient(withInterceptors([...])) and how does it replace legacy HTTP interceptor providing?",
+    "description": "Explain how modern HTTP client providers work.",
+    "answer": "`provideHttpClient(withInterceptors([...]))` configures the application HttpClient and registers functional interceptors in a specific order. It replaces the legacy `HTTP_INTERCEPTORS` multi-token class registration, enhancing type safety and enabling tree-shaking."
+  },
+  {
+    "technology": "angular",
+    "round": "Frontend",
+    "difficulty": "medium",
+    "tags": ["signals", "output"],
+    "title": "Explain what output() and outputFromObservable() are in modern Angular and how they differ from @Output().",
+    "description": "Discuss signals-based output mechanisms in modern Angular.",
+    "answer": "`output()` declares a new signal-compatible output emitter that is clean and does not need `@Output()` or `EventEmitter`. `outputFromObservable()` bridges RxJS streams to output events, automatically cleaning up subscription on component teardown."
+  },
+  {
+    "technology": "angular",
+    "round": "Frontend",
+    "difficulty": "easy",
+    "tags": ["lifecycle", "inputs"],
+    "title": "What is the purpose of ngOnChanges and how does it capture changes in @Input properties?",
+    "description": "Explain the ngOnChanges hook, SimpleChanges parameter, and its execution order.",
+    "answer": "`ngOnChanges` fires whenever inputs bound via property binding change. It receives a `SimpleChanges` object mapping input names to their previous and current values. It runs before `ngOnInit` and on every subsequent input value mutation."
+  },
+  {
+    "technology": "angular",
+    "round": "Frontend",
+    "difficulty": "medium",
+    "tags": ["components", "state"],
+    "title": "How do you pass data between sibling components that don't have a direct parent-child relationship?",
+    "description": "Describe cross-component communication using services or state management.",
+    "answer": "Sibling communication is achieved using a shared `@Injectable()` service containing an RxJS `BehaviorSubject` or a Signal. One component pushes data into the service, and the sibling component subscribes to the observable or reads the signal to receive updates."
+  },
+  {
+    "technology": "angular",
+    "round": "Frontend",
+    "difficulty": "hard",
+    "tags": ["lifecycle", "rendering"],
+    "title": "What is the difference between afterRender and afterNextRender lifecycle hooks?",
+    "description": "Contrast rendering lifecycle hooks in modern Angular.",
+    "answer": "`afterRender` triggers a callback on every subsequent DOM write/read cycle. `afterNextRender` triggers a callback only during the next DOM write/read cycle. Both are safe for browser-only operations because they never run during server-side rendering (SSR)."
+  },
+  {
+    "technology": "angular",
+    "round": "Frontend",
+    "difficulty": "hard",
+    "tags": ["di", "decorators"],
+    "title": "How does Angular's dependency resolution search work using @Self(), @SkipSelf(), @Optional(), and @Host()?",
+    "description": "Explain resolution modifiers in Angular DI.",
+    "answer": "Resolution modifiers restrict or modify where the DI injector searches for dependencies: `@Self()` queries only the current component's injector; `@SkipSelf()` starts searching from the parent injector; `@Host()` stops searching at the template boundary; `@Optional()` prevents throwing an error if the token isn't found, returning `null` instead."
+  },
+  {
+    "technology": "angular",
+    "round": "Frontend",
+    "difficulty": "medium",
+    "tags": ["content-projection"],
+    "title": "What is standard content projection vs. Multi-Slot Content Projection?",
+    "description": "Explain how multi-slot content projection works with ng-content selectors.",
+    "answer": "Standard content projection renders all child tags inside `<ng-content>`. Multi-slot projection allows directing specific elements to specific slots using selectors on `<ng-content select=\"[css-selector]\">` (e.g., matching a class, tag, or attribute), ideal for card headers/footers."
+  },
+  {
+    "technology": "angular",
+    "round": "Frontend",
+    "difficulty": "hard",
+    "tags": ["architecture", "micro-frontends"],
+    "title": "How do you handle micro-frontend architecture in Angular using Module Federation?",
+    "description": "Explain how webpack module federation allows dynamically loading Angular bundles.",
+    "answer": "Module Federation allows independent builds to expose and share code dynamically. In Angular, you configure Webpack/esbuild to share core packages (e.g. `@angular/core`, RxJS) as singletons and load remote components asynchronously via the Router using dynamic import strings."
+  },
+  {
+    "technology": "angular",
+    "round": "Frontend",
+    "difficulty": "hard",
+    "tags": ["di", "advanced"],
+    "title": "What is runInInjectionContext and when do you need to use it?",
+    "description": "Explain injection contexts and when runInInjectionContext is required.",
+    "answer": "`runInInjectionContext` executes a function within an injector's context. This is required when calling APIs like `inject()`, `toSignal()`, or `effect()` asynchronously or outside construction lifecycle boundaries (e.g., inside an event handler or timer callback)."
+  },
+  {
+    "technology": "angular",
+    "round": "Frontend",
+    "difficulty": "medium",
+    "tags": ["testing", "signals"],
+    "title": "Explain how to perform unit testing on components with Signals using TestBed.",
+    "description": "Describe testing strategies for signal-based components.",
+    "answer": "To test signal components, interact with signals using `.set()` or `.update()` inside test specs, then call `fixture.detectChanges()` to propagate changes. When testing `effect()`, you may need `TestBed.flushEffects()` or `fixture.whenStable()` to wait for asynchronous runs."
+  },
+  {
+    "technology": "angular",
+    "round": "Frontend",
+    "difficulty": "medium",
+    "tags": ["testing", "services"],
+    "title": "How do you mock services in Angular unit tests using Jasmine/Jest spies?",
+    "description": "Compare mocking options for dependencies in TestBed.",
+    "answer": "Inject mock implementations using providers in `TestBed.configureTestingModule`. Create spy objects using `jasmine.createSpyObj('Service', ['method'])` or Jest mocks, override providers with `useValue: spy`, and stub method return values to assert on component behavior."
+  },
+  {
+    "technology": "angular",
+    "round": "Frontend",
+    "difficulty": "easy",
+    "tags": ["testing", "change-detection"],
+    "title": "What is the fixture.detectChanges() method in Angular testing, and when should you call it?",
+    "description": "Explain the role of manual change detection in unit tests.",
+    "answer": "`fixture.detectChanges()` triggers Angular's change detection on the test component, updating template bindings and executing lifecycle hooks. It must be called manually in tests to reflect model changes in the DOM since test zones don't auto-run change detection."
+  },
+  {
+    "technology": "angular",
+    "round": "Frontend",
+    "difficulty": "medium",
+    "tags": ["testing"],
+    "title": "What is ComponentFixtureAutoDetect and how does it affect unit tests?",
+    "description": "Explain auto change detection in TestBed configuration.",
+    "answer": "`ComponentFixtureAutoDetect` is a DI token that configures TestBed to automatically run change detection when async actions complete. While helpful, it doesn't capture synchronous model modifications, so manual `fixture.detectChanges()` is still frequently needed."
+  },
+  {
+    "technology": "angular",
+    "round": "Frontend",
+    "difficulty": "hard",
+    "tags": ["testing", "async"],
+    "title": "What is the difference between fakeAsync, tick, and waitForAsync in Angular unit tests?",
+    "description": "Compare asynchronous test utilities in Angular.",
+    "answer": "`fakeAsync` runs tests in a special linear zone where time is simulated and controlled via `tick(ms)`. `waitForAsync` runs tests with real asynchronous processing (e.g., standard timers or HTTP requests) and requires calling `fixture.whenStable()` to block until promises resolve."
+  },
+  {
+    "technology": "angular",
+    "round": "Frontend",
+    "difficulty": "hard",
+    "tags": ["forms", "custom-control"],
+    "title": "How do you build a custom form control by implementing the ControlValueAccessor interface?",
+    "description": "Explain how to hook up custom UI components to Reactive Forms.",
+    "answer": "Implement the `ControlValueAccessor` interface by defining `writeValue()`, `registerOnChange()`, `registerOnTouched()`, and optionally `setDisabledState()`. Register the component as an `NG_VALUE_ACCESSOR` provider in the component's providers array."
+  },
+  {
+    "technology": "angular",
+    "round": "Frontend",
+    "difficulty": "medium",
+    "tags": ["forms", "di"],
+    "title": "What is the role of NG_VALUE_ACCESSOR in a custom component?",
+    "description": "Explain the NG_VALUE_ACCESSOR provider token.",
+    "answer": "`NG_VALUE_ACCESSOR` is an InjectionToken used to register custom form controls. By providing it with `useExisting: forwardRef(() => MyComponent)` and `multi: true`, the control registers into Angular's Forms registry to communicate state with `formControlName`."
+  },
+  {
+    "technology": "angular",
+    "round": "Frontend",
+    "difficulty": "easy",
+    "tags": ["forms"],
+    "title": "Explain the difference between FormGroup.patchValue() and FormGroup.setValue().",
+    "description": "Compare partial versus full form model updates.",
+    "answer": "`setValue()` updates the entire form group and throws an error if any controls are missing from the input object. `patchValue()` updates only the specified controls, ignoring missing ones, making it ideal for partial state updates."
+  },
+  {
+    "technology": "angular",
+    "round": "Frontend",
+    "difficulty": "medium",
+    "tags": ["forms", "validation"],
+    "title": "How do you handle dynamic validation where one form field's validator depends on another field's value?",
+    "description": "Show how to dynamically add or remove form validators based on model state changes.",
+    "answer": "Subscribe to the source control's `valueChanges`. On emit, add/remove validators from the target control using `.setValidators(...)` or `.clearValidators()`, then call `.updateValueAndValidity()` to trigger validation reconciliation."
+  },
+  {
+    "technology": "angular",
+    "round": "Frontend",
+    "difficulty": "medium",
+    "tags": ["forms", "performance"],
+    "title": "What is the purpose of updateOn in Reactive Forms?",
+    "description": "Explain configuration of change events via updateOn ('change' | 'blur' | 'submit').",
+    "answer": "`updateOn` determines when form control value and validation status update. Options are `'change'` (default, immediate), `'blur'` (updates on focus loss), and `'submit'` (updates only when the parent form is submitted), which reduces performance overhead."
+  },
+  {
+    "technology": "angular",
+    "round": "Frontend",
+    "difficulty": "medium",
+    "tags": ["rxjs", "operators"],
+    "title": "What is the difference between take(1) and first() operators in RxJS?",
+    "description": "Compare RxJS termination operators.",
+    "answer": "`take(1)` completes the observable after the first emission. `first()` also completes after the first emission but throws an `EmptyError` if the stream completes without emitting any value (unless a default/predicate is supplied)."
+  },
+  {
+    "technology": "angular",
+    "round": "Frontend",
+    "difficulty": "hard",
+    "tags": ["rxjs", "caching"],
+    "title": "Explain the shareReplay operator in RxJS and how it prevents duplicate HTTP requests.",
+    "description": "Explain hot observables, multicasting, and request caching with shareReplay.",
+    "answer": "`shareReplay(1)` converts a cold observable into a hot multicasted observable that buffers the latest emission. Subsequent subscribers receive the cached response immediately instead of triggerring a new HTTP call, ideal for shared app config."
+  },
+  {
+    "technology": "angular",
+    "round": "Frontend",
+    "difficulty": "hard",
+    "tags": ["rxjs", "operators"],
+    "title": "What is the difference between forkJoin, zip, combineLatest, and withLatestFrom?",
+    "description": "Compare RxJS combination operators.",
+    "answer": "`forkJoin` waits for all streams to complete and emits their last values. `zip` pairs emissions by index. `combineLatest` emits when any stream emits, using the latest from others. `withLatestFrom` triggers only when the source stream emits, fetching the latest value from auxiliary streams."
+  },
+  {
+    "technology": "angular",
+    "round": "Frontend",
+    "difficulty": "medium",
+    "tags": ["rxjs", "error-handling"],
+    "title": "How does catchError work in RxJS, and how do you return a fallback value?",
+    "description": "Describe RxJS catchError operator and error recovery.",
+    "answer": "`catchError` intercepts error notifications in an observable stream. To handle the error and return a fallback value, return a new observable emitting the fallback (e.g. `of(fallbackValue)`), which completes the source stream cleanly."
+  },
+  {
+    "technology": "angular",
+    "round": "Frontend",
+    "difficulty": "hard",
+    "tags": ["signals", "rxjs"],
+    "title": "Explain how you can bridge Signals and RxJS observables using toSignal() and toObservable().",
+    "description": "Explain compatibility layer functions between signals reactivity and RxJS streams.",
+    "answer": "`toSignal(obs$)` subscribes to an RxJS observable and exposes its latest value as a read-only Signal (unsubscribing automatically on destroy). `toObservable(sig)` monitors a Signal reactively and exposes it as an RxJS stream."
+  },
+  {
+    "technology": "angular",
+    "round": "Frontend",
+    "difficulty": "medium",
+    "tags": ["components", "queries"],
+    "title": "What is the difference between @ViewChildren and @ViewChild?",
+    "description": "Compare query decorators for single vs multiple templates.",
+    "answer": "`@ViewChild` queries the first matching element/component/directive and returns a single reference. `@ViewChildren` queries all matches in the component template and returns a dynamic `QueryList` that updates automatically as the DOM updates."
+  },
+  {
+    "technology": "angular",
+    "round": "Frontend",
+    "difficulty": "hard",
+    "tags": ["performance", "advanced"],
+    "title": "What is the purpose of the KeyValueDiffers and IterableDiffers services?",
+    "description": "Explain differ services for tracking custom object and list mutations.",
+    "answer": "`KeyValueDiffers` and `IterableDiffers` are low-level utilities used to detect changes in key-value maps and arrays respectively. They calculate granular additions, deletions, and moves, which is useful when writing high-performance custom directives."
+  },
+  {
+    "technology": "angular",
+    "round": "Frontend",
+    "difficulty": "medium",
+    "tags": ["styles", "encapsulation"],
+    "title": "Explain the difference between Shadow DOM, Emulated, and None View Encapsulation with compile output.",
+    "description": "Explain ViewEncapsulation and compiled CSS results.",
+    "answer": "`Emulated` applies custom `_ngcontent-*` attributes to scope styles locally. `ShadowDom` uses native browser Shadow DOM boundaries. `None` injects styles globally, meaning selector names are not hashed and styles affect the whole page."
+  },
+  {
+    "technology": "angular",
+    "round": "Frontend",
+    "difficulty": "hard",
+    "tags": ["security", "xss"],
+    "title": "What are security vulnerabilities in Angular apps, and how does DomSanitizer prevent XSS?",
+    "description": "Explain Angular security model and context sanitization.",
+    "answer": "Angular automatically escapes template bindings to prevent XSS. For dynamic content (e.g. iframe URLs, raw HTML, styles), inject `DomSanitizer` and call explicit trust methods (e.g., `bypassSecurityTrustHtml()`) only after manual sanitization."
+  },
+  {
+    "technology": "angular",
+    "round": "Frontend",
+    "difficulty": "medium",
+    "tags": ["bootstrap", "di"],
+    "title": "What is the APP_INITIALIZER token and how is it used to load configuration at startup?",
+    "description": "Explain app initialization and loading config files.",
+    "answer": "`APP_INITIALIZER` is a multi-provider token that accepts initialization functions. If a function returns a Promise or Observable, Angular waits for it to complete before finishing bootstrap, perfect for loading external environment configuration."
+  },
+  {
+    "technology": "angular",
+    "round": "Frontend",
+    "difficulty": "medium",
+    "tags": ["routing", "performance"],
+    "title": "How do you optimize initial bundle size using Route Preloading with custom strategies?",
+    "description": "Explain customizing Route Preloading to selectively load lazy routes.",
+    "answer": "Custom preloading strategies implement `PreloadingStrategy` and its `preload()` method. By checking custom `route.data` properties (e.g., `{ preload: true }`), they dynamically decide whether to load lazy route bundles immediately after startup."
+  },
+  {
+    "technology": "angular",
+    "round": "Frontend",
+    "difficulty": "easy",
+    "tags": ["build", "cli"],
+    "title": "How do you configure dynamic base href in Angular builds for different environments?",
+    "description": "Describe setting base href dynamically during bootstrap or build.",
+    "answer": "You can set base href in `angular.json` using the `--base-href` flag during build, or provide the `APP_BASE_HREF` token dynamically in the bootstrap providers array, resolving the base path dynamically from window/location parameters."
+  },
+  {
+    "technology": "angular",
+    "round": "Frontend",
+    "difficulty": "hard",
+    "tags": ["state-management", "architecture"],
+    "title": "What are the differences between State Management libraries in Angular?",
+    "description": "Compare NgRx, Akita, Elf, and Signals-based state management.",
+    "answer": "NgRx provides heavy, Redux-pattern state management suited for massive enterprise apps. Akita and Elf use RxJS stores with simpler, object-oriented APIs. Signals-based state represents modern Angular: lightweight, low boilerplate, and reactive without needing RxJS."
+  },
+  {
+    "technology": "angular",
+    "round": "Frontend",
+    "difficulty": "medium",
+    "tags": ["ngrx", "architecture"],
+    "title": "What is the role of NgRx Effects, and why do we separate side effects from reducers?",
+    "description": "Explain NgRx Effects and asynchronous operations.",
+    "answer": "NgRx reducers must be pure functions. Effects intercept actions, perform asynchronous side effects (e.g. HTTP queries, route changes, logs), and dispatch success/error actions. This isolation ensures components remain thin and state transitions are pure and predictable."
+  },
+  {
+    "technology": "angular",
+    "round": "Frontend",
+    "difficulty": "medium",
+    "tags": ["performance", "images"],
+    "title": "How do you optimize images in Angular using NgOptimizedImage?",
+    "description": "Explain ngSrc, placeholder, and performance optimizations using NgOptimizedImage.",
+    "answer": "`NgOptimizedImage` (`ngSrc`) automatically implements image loading optimizations: enforcing srcsets for responsive sizing, lazy loading off-screen images, preconnecting to image domains, and asserting width/height to avoid layout shifts."
+  },
+  {
+    "technology": "angular",
+    "round": "Frontend",
+    "difficulty": "hard",
+    "tags": ["performance", "optimization"],
+    "title": "What is the critical render path and how does Angular handle font and style optimization?",
+    "description": "Describe optimization options like CSS inlining and prefetching.",
+    "answer": "During production builds, Angular optimizes the critical path by inlining critical styles directly into index.html and preconnecting to/prefetching fonts. In SSR setups, it serializes style dependencies to avoid blocking rendering."
+  },
+  {
+    "technology": "angular",
+    "round": "Frontend",
+    "difficulty": "hard",
+    "tags": ["performance", "zoneless"],
+    "title": "What is Zone.js, how does it monkey-patch browser APIs, and how do you build a Zoneless Angular application?",
+    "description": "Explain Zone.js, dirty checking, and building applications without Zones in Angular 18.",
+    "answer": "Zone.js wraps browser async APIs (events, timers, HTTP) to trigger automatic change detection. In Angular 18, you can build a Zoneless application using `provideExperimentalZonelessChangeDetection()` and signals, removing Zone.js overhead."
+  },
+  {
+    "technology": "angular",
+    "round": "Frontend",
+    "difficulty": "hard",
+    "tags": ["ivy", "under-the-hood"],
+    "title": "How does compilation work under the hood in Ivy?",
+    "description": "Explain Ivy compilers, incremental building, and runtime instructions.",
+    "answer": "Ivy compiles Angular HTML templates into static, tree-shakable TypeScript render instructions (template functions). It compiles components incrementally and features a locality principle, where only modified files compile, speeding up builds."
+  },
+  {
+    "technology": "angular",
+    "round": "Frontend",
+    "difficulty": "medium",
+    "tags": ["web-components", "schemas"],
+    "title": "What is the customElements schema in Angular and when do you need to use it?",
+    "description": "Explain CUSTOM_ELEMENTS_SCHEMA and Web Components.",
+    "answer": "`CUSTOM_ELEMENTS_SCHEMA` enables using custom tag names (Web Components) inside Angular templates without throwing compiler errors. It tells the compiler that unresolved tags are custom elements rather than misspelled Angular components."
+  },
+  {
+    "technology": "angular",
+    "round": "Frontend",
+    "difficulty": "medium",
+    "tags": ["i18n"],
+    "title": "How do you handle internationalization (i18n) in Angular?",
+    "description": "Describe Angular i18n tooling, translation files, and compile options.",
+    "answer": "Angular has built-in i18n features: you mark template text with `i18n` attributes, run `ng extract-i18n` to generate source translation files (XLIFF), and compile translations during build or dynamically translate text using `@angular/localize` runtime APIs."
+  },
+  {
+    "technology": "angular",
+    "round": "Frontend",
+    "difficulty": "hard",
+    "tags": ["components", "views"],
+    "title": "What is the difference between ElementRef, TemplateRef, and ViewContainerRef?",
+    "description": "Compare views and elements reference wrappers.",
+    "answer": "`ElementRef` wraps a raw DOM element. `TemplateRef` represents an uninstantiated template block (`<ng-template>`). `ViewContainerRef` represents a container where views can be dynamically created, attached, or destroyed."
+  },
+  {
+    "technology": "angular",
+    "round": "Frontend",
+    "difficulty": "medium",
+    "tags": ["styles", "css"],
+    "title": "What is the difference between component styling using :host, :host-context, and ::ng-deep?",
+    "description": "Compare host, host-context, and deep selector targeting.",
+    "answer": "`:host` styles the component container element. `:host-context(.theme)` styles the host element based on outer parent element classes. `::ng-deep` pierces component styling boundaries to style child views, but is deprecated."
+  },
+  {
+    "technology": "angular",
+    "round": "Frontend",
+    "difficulty": "hard",
+    "tags": ["routing", "performance"],
+    "title": "How do you implement custom routing strategies by extending RouteReuseStrategy?",
+    "description": "Describe configuring RouteReuseStrategy to cache dynamic router components.",
+    "answer": "Extend `RouteReuseStrategy` and implement methods like `shouldDetach()`, `store()`, `shouldAttach()`, and `retrieve()`. By storing the `RouteSnapshot` manually, you can prevent component destruction on navigation, allowing immediate restore on return."
+  }
+]

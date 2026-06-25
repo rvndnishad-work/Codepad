@@ -15,7 +15,7 @@ const augments: Augment[] = [
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "What is `create-react-app` and when would you use it?",
-    answer: `**Core concept (TL;DR).** Create React App (CRA) was the official **zero-config** CLI for scaffolding a single-page React app — Webpack, Babel, ESLint, and a dev server preconfigured so you could start without setup. It's now **deprecated/unmaintained**; the React team recommends a **framework** (Next.js) or **Vite** for new projects.
+    answer: `**Core concept.** Create React App (CRA) was the official **zero-config** CLI for scaffolding a single-page React app — Webpack, Babel, ESLint, and a dev server preconfigured so you could start without setup. It's now **deprecated/unmaintained**; the React team recommends a **framework** (Next.js) or **Vite** for new projects.
 
 ${card(`<svg viewBox="0 0 520 150" style="width:100%;display:block" xmlns="http://www.w3.org/2000/svg" font-family="ui-sans-serif,system-ui">
   <text x="16" y="22" fill="currentColor" font-size="12" font-weight="700">CRA: easy start, now superseded</text>
@@ -67,7 +67,7 @@ export default function App() {
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "What are Error Boundaries in React?",
-    answer: `**Core concept (TL;DR).** An Error Boundary is a **class component** that **catches JavaScript errors in its child tree** during rendering, lifecycle methods, and constructors — then renders a **fallback UI** instead of letting the whole app crash (an unmounted white screen). It implements <code>getDerivedStateFromError</code> and/or <code>componentDidCatch</code>.
+    answer: `**Core concept.** An Error Boundary is a **class component** that **catches JavaScript errors in its child tree** during rendering, lifecycle methods, and constructors — then renders a **fallback UI** instead of letting the whole app crash (an unmounted white screen). It implements <code>getDerivedStateFromError</code> and/or <code>componentDidCatch</code>.
 
 ${card(`<svg viewBox="0 0 520 150" style="width:100%;display:block" xmlns="http://www.w3.org/2000/svg" font-family="ui-sans-serif,system-ui">
   <text x="16" y="22" fill="currentColor" font-size="12" font-weight="700">Catch render errors, show a fallback</text>
@@ -125,7 +125,7 @@ export default function App() {
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "What are Portals in React and when would you use them?",
-    answer: `**Core concept (TL;DR).** A portal renders a component's children into a **DOM node outside the parent's hierarchy** (e.g. <code>document.body</code>) while keeping it in the **React tree** — so context and event bubbling still work normally. Use portals for **modals, tooltips, dropdowns, and toasts** that must escape a parent's <code>overflow</code>/<code>z-index</code>/clipping.
+    answer: `**Core concept.** A portal renders a component's children into a **DOM node outside the parent's hierarchy** (e.g. <code>document.body</code>) while keeping it in the **React tree** — so context and event bubbling still work normally. Use portals for **modals, tooltips, dropdowns, and toasts** that must escape a parent's <code>overflow</code>/<code>z-index</code>/clipping.
 
 ${card(`<svg viewBox="0 0 520 150" style="width:100%;display:block" xmlns="http://www.w3.org/2000/svg" font-family="ui-sans-serif,system-ui">
   <text x="16" y="22" fill="currentColor" font-size="12" font-weight="700">React tree stays; DOM node moves elsewhere</text>
@@ -187,7 +187,7 @@ export default function App() {
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "Explain React Suspense and its use cases.",
-    answer: `**Core concept (TL;DR).** Suspense lets a component **"wait" for something** before rendering and show a **fallback** (a spinner/skeleton) meanwhile — declaratively, without manual loading flags. You wrap part of the tree in <code>&lt;Suspense fallback={…}&gt;</code>; anything inside that "suspends" (lazy-loaded code, or data via a Suspense-enabled source) triggers the fallback until ready.
+    answer: `**Core concept.** Suspense lets a component **"wait" for something** before rendering and show a **fallback** (a spinner/skeleton) meanwhile — declaratively, without manual loading flags. You wrap part of the tree in <code>&lt;Suspense fallback={…}&gt;</code>; anything inside that "suspends" (lazy-loaded code, or data via a Suspense-enabled source) triggers the fallback until ready.
 
 ${card(`<svg viewBox="0 0 520 150" style="width:100%;display:block" xmlns="http://www.w3.org/2000/svg" font-family="ui-sans-serif,system-ui">
   <text x="16" y="22" fill="currentColor" font-size="12" font-weight="700">Show a fallback while children load</text>
@@ -238,7 +238,7 @@ export default function App() {
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "Describe the benefits of using TypeScript with React.",
-    answer: `**Core concept (TL;DR).** TypeScript adds **static typing** to React: you type props, state, hooks, events, and context, so mistakes (wrong prop, missing field, bad event handler) are caught at **compile time** instead of crashing at runtime. You also get far better **autocomplete**, **refactoring**, and self-documenting components.
+    answer: `**Core concept.** TypeScript adds **static typing** to React: you type props, state, hooks, events, and context, so mistakes (wrong prop, missing field, bad event handler) are caught at **compile time** instead of crashing at runtime. You also get far better **autocomplete**, **refactoring**, and self-documenting components.
 
 ${card(`<svg viewBox="0 0 520 150" style="width:100%;display:block" xmlns="http://www.w3.org/2000/svg" font-family="ui-sans-serif,system-ui">
   <text x="16" y="22" fill="currentColor" font-size="12" font-weight="700">Catch prop/state mistakes before runtime</text>
@@ -293,7 +293,7 @@ export default function UserCard({ user, onSelect }: Props) {
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "What is `PropTypes` and when would you use it?",
-    answer: `**Core concept (TL;DR).** <code>PropTypes</code> (the <code>prop-types</code> package) is a **runtime** type-checker for component props: in **development** it warns in the console when a prop is the wrong type or a required prop is missing. It predates TypeScript adoption — today TS is preferred (compile-time), but PropTypes is still useful in **plain-JS** codebases or libraries.
+    answer: `**Core concept.** <code>PropTypes</code> (the <code>prop-types</code> package) is a **runtime** type-checker for component props: in **development** it warns in the console when a prop is the wrong type or a required prop is missing. It predates TypeScript adoption — today TS is preferred (compile-time), but PropTypes is still useful in **plain-JS** codebases or libraries.
 
 ${card(`<svg viewBox="0 0 520 150" style="width:100%;display:block" xmlns="http://www.w3.org/2000/svg" font-family="ui-sans-serif,system-ui">
   <text x="16" y="22" fill="currentColor" font-size="12" font-weight="700">Runtime prop validation (dev warnings)</text>
@@ -347,7 +347,7 @@ export default function App() {
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "What is server-side rendering (SSR) and when would you use it with React?",
-    answer: `**Core concept (TL;DR).** SSR renders your React components to **HTML on the server** for each request and sends ready-to-display markup; the client then **hydrates** it to add interactivity. Use it when you need a **fast first paint** and strong **SEO** — content/marketing sites, e-commerce, anything indexed or latency-sensitive. In practice you use a framework like **Next.js**.
+    answer: `**Core concept.** SSR renders your React components to **HTML on the server** for each request and sends ready-to-display markup; the client then **hydrates** it to add interactivity. Use it when you need a **fast first paint** and strong **SEO** — content/marketing sites, e-commerce, anything indexed or latency-sensitive. In practice you use a framework like **Next.js**.
 
 ${card(`<svg viewBox="0 0 520 150" style="width:100%;display:block" xmlns="http://www.w3.org/2000/svg" font-family="ui-sans-serif,system-ui">
   <text x="16" y="22" fill="currentColor" font-size="12" font-weight="700">Server renders HTML → client hydrates</text>
@@ -400,7 +400,7 @@ export default function App() {
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "What is the difference between client-side rendering (CSR) and server-side rendering (SSR) in React?",
-    answer: `**Core concept (TL;DR).** With **CSR**, the server sends a near-empty HTML shell plus a JS bundle and the **browser** builds the page. With **SSR**, the **server** renders full HTML per request (fast first paint + SEO), then the client **hydrates** it. CSR is app-like and cheap to host but slower to first paint and weaker for SEO; SSR is the reverse trade-off.
+    answer: `**Core concept.** With **CSR**, the server sends a near-empty HTML shell plus a JS bundle and the **browser** builds the page. With **SSR**, the **server** renders full HTML per request (fast first paint + SEO), then the client **hydrates** it. CSR is app-like and cheap to host but slower to first paint and weaker for SEO; SSR is the reverse trade-off.
 
 ${card(`<svg viewBox="0 0 520 150" style="width:100%;display:block" xmlns="http://www.w3.org/2000/svg" font-family="ui-sans-serif,system-ui">
   <text x="16" y="22" fill="currentColor" font-size="12" font-weight="700">Where the first HTML is built</text>

@@ -8,7 +8,7 @@ const augments: AngularAugment[] = [
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "What is a service and why use it?",
-    answer: `**Core concept (TL;DR).** A service is a reusable class — usually marked <code>@Injectable</code> — that holds logic, data access, or shared state that **isn't tied to a view**: HTTP calls, business rules, caching, app-wide state. Components stay focused on the UI and **inject** services via Dependency Injection, which keeps code reusable and testable.
+    answer: `**Core concept.** A service is a reusable class — usually marked <code>@Injectable</code> — that holds logic, data access, or shared state that **isn't tied to a view**: HTTP calls, business rules, caching, app-wide state. Components stay focused on the UI and **inject** services via Dependency Injection, which keeps code reusable and testable.
 
 <svg class='iq-diagram' viewBox='0 0 460 170' role='img' aria-label='Multiple components share one injected service'>
   <rect class='d-box' x='30' y='30' width='110' height='44' rx='8'/>
@@ -66,7 +66,7 @@ export class AppComponent {
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "What is the difference between providing a service in root vs in a component?",
-    answer: `**Core concept (TL;DR).** <code>providedIn: 'root'</code> registers the service **once for the whole app** — a single shared singleton (and it's tree-shakable). Providing it in a component's <code>providers: []</code> creates a **new instance per component instance** (shared only with that component's children), and it's destroyed when the component is. Choose root for shared state, component-level for isolated state.
+    answer: `**Core concept.** <code>providedIn: 'root'</code> registers the service **once for the whole app** — a single shared singleton (and it's tree-shakable). Providing it in a component's <code>providers: []</code> creates a **new instance per component instance** (shared only with that component's children), and it's destroyed when the component is. Choose root for shared state, component-level for isolated state.
 
 <svg class='iq-diagram' viewBox='0 0 460 175' role='img' aria-label='Root provider is one singleton; component provider is one instance per component'>
   <rect class='d-box-accent' x='20' y='28' width='190' height='130' rx='10'/>
@@ -122,7 +122,7 @@ export class WidgetComponent {
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "What is the difference between useClass, useValue, useFactory, and useExisting?",
-    answer: `**Core concept (TL;DR).** They are the four **provider recipes** that tell Angular *how* to produce the value for a token. <code>useClass</code> instantiates a class, <code>useValue</code> supplies a ready-made value, <code>useFactory</code> computes one with a function (optionally using other deps), and <code>useExisting</code> **aliases** one token to another (sharing the same instance).
+    answer: `**Core concept.** They are the four **provider recipes** that tell Angular *how* to produce the value for a token. <code>useClass</code> instantiates a class, <code>useValue</code> supplies a ready-made value, <code>useFactory</code> computes one with a function (optionally using other deps), and <code>useExisting</code> **aliases** one token to another (sharing the same instance).
 
 <svg class='iq-diagram' viewBox='0 0 460 175' role='img' aria-label='Four provider recipes: useClass, useValue, useFactory, useExisting'>
   <rect class='d-box-accent' x='20' y='28' width='200' height='52' rx='10'/>
@@ -176,7 +176,7 @@ export { providers };`,
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "What is an InjectionToken?",
-    answer: `**Core concept (TL;DR).** An <code>InjectionToken</code> is a **unique key** for injecting things that **aren't classes** — config objects, strings, functions, or interface-typed values. Because TypeScript interfaces don't exist at runtime, you can't inject by interface; a token gives DI a stable, collision-proof identity to provide and inject by.
+    answer: `**Core concept.** An <code>InjectionToken</code> is a **unique key** for injecting things that **aren't classes** — config objects, strings, functions, or interface-typed values. Because TypeScript interfaces don't exist at runtime, you can't inject by interface; a token gives DI a stable, collision-proof identity to provide and inject by.
 
 <svg class='iq-diagram' viewBox='0 0 460 150' role='img' aria-label='An InjectionToken keys a non-class value into DI'>
   <rect class='d-box-accent' x='30' y='44' width='170' height='62' rx='10'/>
@@ -228,7 +228,7 @@ export class AppComponent {
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "Why use Renderer2 instead of direct DOM access?",
-    answer: `**Core concept (TL;DR).** <code>Renderer2</code> is an abstraction over DOM manipulation. Using it (instead of touching <code>nativeElement</code> directly) keeps your code **platform-agnostic** — it works in server-side rendering, web workers, and other renderers — and **safer**, since it goes through Angular's sanitization and avoids direct, error-prone DOM coupling.
+    answer: `**Core concept.** <code>Renderer2</code> is an abstraction over DOM manipulation. Using it (instead of touching <code>nativeElement</code> directly) keeps your code **platform-agnostic** — it works in server-side rendering, web workers, and other renderers — and **safer**, since it goes through Angular's sanitization and avoids direct, error-prone DOM coupling.
 
 <svg class='iq-diagram' viewBox='0 0 460 150' role='img' aria-label='Renderer2 abstracts DOM access across platforms'>
   <rect class='d-box-accent' x='150' y='24' width='160' height='44' rx='10'/>
@@ -280,7 +280,7 @@ export class PinDirective implements OnInit {
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "What is the difference between the constructor and ngOnInit?",
-    answer: `**Core concept (TL;DR).** The **constructor** runs when the class is instantiated — its job is **Dependency Injection** (receive services), not real work. <code>ngOnInit</code> is an Angular **lifecycle hook** that runs **after** Angular has set the component's <code>@Input</code> bindings, so it's where initialization that depends on inputs belongs.
+    answer: `**Core concept.** The **constructor** runs when the class is instantiated — its job is **Dependency Injection** (receive services), not real work. <code>ngOnInit</code> is an Angular **lifecycle hook** that runs **after** Angular has set the component's <code>@Input</code> bindings, so it's where initialization that depends on inputs belongs.
 
 <svg class='iq-diagram' viewBox='0 0 460 140' role='img' aria-label='Constructor runs first for DI, then inputs are set, then ngOnInit'>
   <rect class='d-box-accent' x='20' y='50' width='120' height='44' rx='8'/>
@@ -336,7 +336,7 @@ export class UserComponent implements OnInit {
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "What does the Angular CLI provide?",
-    answer: `**Core concept (TL;DR).** The Angular CLI (<code>ng</code>) is the official command-line tool that **scaffolds, serves, builds, tests, and upgrades** Angular projects. It generates boilerplate (<code>ng generate</code>), runs a dev server with live reload (<code>ng serve</code>), produces optimized production builds (<code>ng build</code>), and keeps dependencies current (<code>ng update</code>) — all following Angular conventions.
+    answer: `**Core concept.** The Angular CLI (<code>ng</code>) is the official command-line tool that **scaffolds, serves, builds, tests, and upgrades** Angular projects. It generates boilerplate (<code>ng generate</code>), runs a dev server with live reload (<code>ng serve</code>), produces optimized production builds (<code>ng build</code>), and keeps dependencies current (<code>ng update</code>) — all following Angular conventions.
 
 <svg class='iq-diagram' viewBox='0 0 460 150' role='img' aria-label='Angular CLI commands across the project lifecycle'>
   <rect class='d-box-accent' x='20' y='50' width='100' height='48' rx='8'/>
@@ -393,7 +393,7 @@ ng update @angular/core @angular/cli`,
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "What is Angular and how does it differ from AngularJS?",
-    answer: `**Core concept (TL;DR).** **Angular** (2+) is a complete **TypeScript** rewrite of the original **AngularJS** (1.x). It replaced AngularJS's scopes/controllers and digest-cycle change detection with a **component-based**, faster architecture, plus a CLI, RxJS, mobile/SSR support, and modern tooling. They are **not** compatible — Angular is a different framework, not an upgrade.
+    answer: `**Core concept.** **Angular** (2+) is a complete **TypeScript** rewrite of the original **AngularJS** (1.x). It replaced AngularJS's scopes/controllers and digest-cycle change detection with a **component-based**, faster architecture, plus a CLI, RxJS, mobile/SSR support, and modern tooling. They are **not** compatible — Angular is a different framework, not an upgrade.
 
 <svg class='iq-diagram' viewBox='0 0 460 165' role='img' aria-label='AngularJS (scopes, JS) vs Angular (components, TypeScript)'>
   <rect class='d-box' x='20' y='30' width='200' height='110' rx='10'/>

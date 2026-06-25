@@ -8,7 +8,7 @@ const augments: AngularAugment[] = [
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "What is the difference between Observables and Promises?",
-    answer: `**Core concept (TL;DR).** A **Promise** represents a **single** future value, is **eager** (runs immediately), and can't be cancelled. An **Observable** is a **stream of 0..n values over time**, is **lazy** (nothing happens until you subscribe), is **cancellable** (unsubscribe), and comes with composable **operators**. Angular's <code>HttpClient</code> and many APIs return Observables.
+    answer: `**Core concept.** A **Promise** represents a **single** future value, is **eager** (runs immediately), and can't be cancelled. An **Observable** is a **stream of 0..n values over time**, is **lazy** (nothing happens until you subscribe), is **cancellable** (unsubscribe), and comes with composable **operators**. Angular's <code>HttpClient</code> and many APIs return Observables.
 
 <svg class='iq-diagram' viewBox='0 0 460 160' role='img' aria-label='Promise emits one value; Observable emits a stream over time'>
   <rect class='d-box' x='20' y='30' width='200' height='110' rx='10'/>
@@ -59,7 +59,7 @@ const sub = stream$.subscribe(v => console.log('observable:', v));
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "What is the difference between Subject, BehaviorSubject, and ReplaySubject?",
-    answer: `**Core concept (TL;DR).** All three are **Subjects** — observables you can also push values into, and they **multicast** to many subscribers. They differ in what a **new subscriber** receives: a plain <code>Subject</code> gets only **future** values; a <code>BehaviorSubject</code> gets the **current/last** value immediately (and needs an initial value); a <code>ReplaySubject</code> gets the **last N** values replayed.
+    answer: `**Core concept.** All three are **Subjects** — observables you can also push values into, and they **multicast** to many subscribers. They differ in what a **new subscriber** receives: a plain <code>Subject</code> gets only **future** values; a <code>BehaviorSubject</code> gets the **current/last** value immediately (and needs an initial value); a <code>ReplaySubject</code> gets the **last N** values replayed.
 
 <svg class='iq-diagram' viewBox='0 0 460 165' role='img' aria-label='Subject emits future only; BehaviorSubject emits current; ReplaySubject replays N'>
   <rect class='d-box-accent' x='14' y='34' width='140' height='104' rx='10'/>
@@ -112,7 +112,7 @@ r.subscribe(v => console.log('replay:', v));    // 1, 2  (last two)`,
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "What is the difference between switchMap, mergeMap, concatMap, and exhaustMap?",
-    answer: `**Core concept (TL;DR).** All four are **higher-order mapping** operators: they map each source value to an **inner observable** and flatten the results. They differ in how they handle a **new** source value while a previous inner observable is still running: <code>switchMap</code> cancels the old one, <code>mergeMap</code> runs them concurrently, <code>concatMap</code> queues them, and <code>exhaustMap</code> ignores new ones until the current finishes.
+    answer: `**Core concept.** All four are **higher-order mapping** operators: they map each source value to an **inner observable** and flatten the results. They differ in how they handle a **new** source value while a previous inner observable is still running: <code>switchMap</code> cancels the old one, <code>mergeMap</code> runs them concurrently, <code>concatMap</code> queues them, and <code>exhaustMap</code> ignores new ones until the current finishes.
 
 <svg class='iq-diagram' viewBox='0 0 460 165' role='img' aria-label='switchMap cancels, mergeMap concurrent, concatMap queues, exhaustMap ignores'>
   <rect class='d-box-accent' x='14' y='34' width='140' height='104' rx='10'/>
@@ -168,7 +168,7 @@ results$.subscribe(r => console.log('latest results only:', r));`,
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "What is the async pipe and why is it useful?",
-    answer: `**Core concept (TL;DR).** The <code>async</code> pipe subscribes to an **Observable** (or Promise) directly in the template, returns its **latest value**, and — crucially — **automatically unsubscribes** when the component is destroyed. It removes manual <code>subscribe</code>/<code>unsubscribe</code> boilerplate and the memory leaks that come from forgetting to clean up.
+    answer: `**Core concept.** The <code>async</code> pipe subscribes to an **Observable** (or Promise) directly in the template, returns its **latest value**, and — crucially — **automatically unsubscribes** when the component is destroyed. It removes manual <code>subscribe</code>/<code>unsubscribe</code> boilerplate and the memory leaks that come from forgetting to clean up.
 
 <svg class='iq-diagram' viewBox='0 0 460 150' role='img' aria-label='async pipe subscribes, renders latest value, and auto-unsubscribes'>
   <rect class='d-box-accent' x='30' y='44' width='170' height='62' rx='10'/>
@@ -219,7 +219,7 @@ export class AppComponent {
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "How do you avoid memory leaks from subscriptions?",
-    answer: `**Core concept (TL;DR).** An RxJS subscription keeps running until it completes or you unsubscribe — so a subscription created in a component that **isn't closed** keeps firing (and holding references) after the component is destroyed: a leak. Avoid it by preferring the **<code>async</code> pipe**, or by tearing subscriptions down on destroy with <code>takeUntilDestroyed()</code> / a <code>takeUntil(destroy$)</code> pattern.
+    answer: `**Core concept.** An RxJS subscription keeps running until it completes or you unsubscribe — so a subscription created in a component that **isn't closed** keeps firing (and holding references) after the component is destroyed: a leak. Avoid it by preferring the **<code>async</code> pipe**, or by tearing subscriptions down on destroy with <code>takeUntilDestroyed()</code> / a <code>takeUntil(destroy$)</code> pattern.
 
 <svg class='iq-diagram' viewBox='0 0 460 150' role='img' aria-label='Unclosed subscriptions leak; close them on destroy'>
   <rect class='d-box' x='20' y='44' width='200' height='62' rx='10'/>
@@ -267,7 +267,7 @@ export class AppComponent {
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "What is an HTTP interceptor?",
-    answer: `**Core concept (TL;DR).** An HTTP interceptor sits in <code>HttpClient</code>'s pipeline and can inspect or modify **every** outgoing request and incoming response. It's the central place for cross-cutting HTTP concerns: attaching auth tokens, logging, setting headers, handling errors, retrying, caching, and showing loading indicators.
+    answer: `**Core concept.** An HTTP interceptor sits in <code>HttpClient</code>'s pipeline and can inspect or modify **every** outgoing request and incoming response. It's the central place for cross-cutting HTTP concerns: attaching auth tokens, logging, setting headers, handling errors, retrying, caching, and showing loading indicators.
 
 <svg class='iq-diagram' viewBox='0 0 460 150' role='img' aria-label='Interceptor sits between HttpClient and the server'>
   <rect class='d-box' x='14' y='52' width='110' height='46' rx='10'/>
@@ -317,7 +317,7 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "How do you handle errors and retries globally with interceptors?",
-    answer: `**Core concept (TL;DR).** Put cross-cutting HTTP resilience in an interceptor: pipe the response through <code>retry</code> (re-attempt **transient** failures) and <code>catchError</code> (handle/transform errors once, centrally) — e.g. retry network errors a couple of times, log, redirect to login on <code>401</code>, and surface a friendly message. This avoids repeating error handling in every service.
+    answer: `**Core concept.** Put cross-cutting HTTP resilience in an interceptor: pipe the response through <code>retry</code> (re-attempt **transient** failures) and <code>catchError</code> (handle/transform errors once, centrally) — e.g. retry network errors a couple of times, log, redirect to login on <code>401</code>, and surface a friendly message. This avoids repeating error handling in every service.
 
 <svg class='iq-diagram' viewBox='0 0 460 150' role='img' aria-label='Interceptor retries transient errors then catches the rest'>
   <rect class='d-box' x='20' y='52' width='130' height='46' rx='10'/>

@@ -15,7 +15,7 @@ const augments: Augment[] = [
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "Explain the concept of 'lifting state up' in React.",
-    answer: `**Core concept (TL;DR).** When two or more components need to share or stay in sync over the same data, you move that state **up to their nearest common ancestor** and pass it down as props (with callbacks to update it). The parent becomes the **single source of truth**; the children become controlled by it.
+    answer: `**Core concept.** When two or more components need to share or stay in sync over the same data, you move that state **up to their nearest common ancestor** and pass it down as props (with callbacks to update it). The parent becomes the **single source of truth**; the children become controlled by it.
 
 ${card(`<svg viewBox="0 0 520 156" style="width:100%;display:block" xmlns="http://www.w3.org/2000/svg" font-family="ui-sans-serif,system-ui">
   <text x="16" y="22" fill="currentColor" font-size="12" font-weight="700">Shared state moves to the common parent</text>
@@ -69,7 +69,7 @@ export default function App() {
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "Explain the concept of 'unidirectional data flow' in React.",
-    answer: `**Core concept (TL;DR).** Data in React flows in **one direction**: parent → child via **props**. Children never write to their parent's data directly — they communicate **up** by calling **callback** props the parent provided. State lives in one place and updates flow downward, making the UI predictable and easy to trace.
+    answer: `**Core concept.** Data in React flows in **one direction**: parent → child via **props**. Children never write to their parent's data directly — they communicate **up** by calling **callback** props the parent provided. State lives in one place and updates flow downward, making the UI predictable and easy to trace.
 
 ${card(`<svg viewBox="0 0 520 156" style="width:100%;display:block" xmlns="http://www.w3.org/2000/svg" font-family="ui-sans-serif,system-ui">
   <text x="16" y="22" fill="currentColor" font-size="12" font-weight="700">Props flow down · events bubble up via callbacks</text>
@@ -123,7 +123,7 @@ export default function App() {
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "What is 'prop drilling' and how can it be avoided?",
-    answer: `**Core concept (TL;DR).** Prop drilling is passing data through **many intermediate components that don't use it**, just to reach a deeply nested child. It clutters components with props they only forward, and makes refactoring brittle. Fix it with **Context**, **component composition** (<code>children</code>), or a **state library**.
+    answer: `**Core concept.** Prop drilling is passing data through **many intermediate components that don't use it**, just to reach a deeply nested child. It clutters components with props they only forward, and makes refactoring brittle. Fix it with **Context**, **component composition** (<code>children</code>), or a **state library**.
 
 ${card(`<svg viewBox="0 0 520 158" style="width:100%;display:block" xmlns="http://www.w3.org/2000/svg" font-family="ui-sans-serif,system-ui">
   <text x="16" y="22" fill="currentColor" font-size="12" font-weight="700">Threading props through uninterested layers</text>
@@ -182,7 +182,7 @@ export default function App() {
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "How do you pass data between components in React?",
-    answer: `**Core concept (TL;DR).** It depends on the relationship. **Parent → child:** props. **Child → parent:** call a **callback** prop the parent passed. **Between siblings:** lift the state to their common parent. **Between distant components:** **Context** or an external **store**.
+    answer: `**Core concept.** It depends on the relationship. **Parent → child:** props. **Child → parent:** call a **callback** prop the parent passed. **Between siblings:** lift the state to their common parent. **Between distant components:** **Context** or an external **store**.
 
 ${card(`<svg viewBox="0 0 520 162" style="width:100%;display:block" xmlns="http://www.w3.org/2000/svg" font-family="ui-sans-serif,system-ui">
   <text x="16" y="22" fill="currentColor" font-size="12" font-weight="700">Pick the channel by component relationship</text>
@@ -234,7 +234,7 @@ export default function App() {
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "How do you manage global state in a large React application?",
-    answer: `**Core concept (TL;DR).** Match the tool to the data. **Context** suits low-churn global values (theme, auth, locale). For complex client state use a dedicated **store** (Redux Toolkit, Zustand, Jotai). For **server** data, prefer a data-fetching cache (React Query / SWR) rather than hand-rolling it into global state.
+    answer: `**Core concept.** Match the tool to the data. **Context** suits low-churn global values (theme, auth, locale). For complex client state use a dedicated **store** (Redux Toolkit, Zustand, Jotai). For **server** data, prefer a data-fetching cache (React Query / SWR) rather than hand-rolling it into global state.
 
 ${card(`<svg viewBox="0 0 520 156" style="width:100%;display:block" xmlns="http://www.w3.org/2000/svg" font-family="ui-sans-serif,system-ui">
   <text x="16" y="22" fill="currentColor" font-size="12" font-weight="700">Different state, different tool</text>
@@ -295,7 +295,7 @@ export default function App() {
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "Why must React state updates be immutable?",
-    answer: `**Core concept (TL;DR).** React decides whether to re-render by comparing the **previous and next state by reference** (<code>Object.is</code>). If you **mutate** the existing object/array, the reference is unchanged, so React thinks nothing happened and skips the update. Always produce a **new** object/array instead of editing in place.
+    answer: `**Core concept.** React decides whether to re-render by comparing the **previous and next state by reference** (<code>Object.is</code>). If you **mutate** the existing object/array, the reference is unchanged, so React thinks nothing happened and skips the update. Always produce a **new** object/array instead of editing in place.
 
 ${card(`<svg viewBox="0 0 520 156" style="width:100%;display:block" xmlns="http://www.w3.org/2000/svg" font-family="ui-sans-serif,system-ui">
   <text x="16" y="22" fill="currentColor" font-size="12" font-weight="700">Same reference → no re-render · new reference → render</text>
@@ -351,7 +351,7 @@ export default function App() {
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "What is the difference between controlled and uncontrolled components?",
-    answer: `**Core concept (TL;DR).** In a **controlled** component, React state is the single source of truth for a form input — you set its <code>value</code> and update state in <code>onChange</code>. In an **uncontrolled** component, the **DOM** holds the value and you read it when needed via a <code>ref</code> (with an optional <code>defaultValue</code>).
+    answer: `**Core concept.** In a **controlled** component, React state is the single source of truth for a form input — you set its <code>value</code> and update state in <code>onChange</code>. In an **uncontrolled** component, the **DOM** holds the value and you read it when needed via a <code>ref</code> (with an optional <code>defaultValue</code>).
 
 ${card(`<svg viewBox="0 0 520 156" style="width:100%;display:block" xmlns="http://www.w3.org/2000/svg" font-family="ui-sans-serif,system-ui">
   <text x="16" y="22" fill="currentColor" font-size="12" font-weight="700">React state vs the DOM as source of truth</text>
@@ -404,7 +404,7 @@ export default function App() {
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "How do you handle forms in React?",
-    answer: `**Core concept (TL;DR).** Manage inputs as **controlled** components (state + <code>onChange</code>) or **uncontrolled** (refs), handle submission with an <code>onSubmit</code> that calls <code>e.preventDefault()</code>, and validate in the handler. React 19 adds **Actions** (<code>&lt;form action={fn}&gt;</code> + <code>useActionState</code>) for built-in pending/error handling; for complex forms, libraries like React Hook Form reduce re-renders and boilerplate.
+    answer: `**Core concept.** Manage inputs as **controlled** components (state + <code>onChange</code>) or **uncontrolled** (refs), handle submission with an <code>onSubmit</code> that calls <code>e.preventDefault()</code>, and validate in the handler. React 19 adds **Actions** (<code>&lt;form action={fn}&gt;</code> + <code>useActionState</code>) for built-in pending/error handling; for complex forms, libraries like React Hook Form reduce re-renders and boilerplate.
 
 ${card(`<svg viewBox="0 0 520 156" style="width:100%;display:block" xmlns="http://www.w3.org/2000/svg" font-family="ui-sans-serif,system-ui">
   <text x="16" y="22" fill="currentColor" font-size="12" font-weight="700">Inputs → submit handler → validate → action</text>

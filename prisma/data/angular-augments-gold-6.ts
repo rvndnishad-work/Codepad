@@ -8,7 +8,7 @@ const augments: AngularAugment[] = [
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "What is a FormArray?",
-    answer: `**Core concept (TL;DR).** A <code>FormArray</code> manages a **dynamic, variable-length list** of form controls (each a <code>FormControl</code>, <code>FormGroup</code>, or nested <code>FormArray</code>). It's the reactive-forms tool for inputs whose count isn't known up front — phone numbers, line items, tags — letting you <code>push</code>/<code>removeAt</code> controls at runtime.
+    answer: `**Core concept.** A <code>FormArray</code> manages a **dynamic, variable-length list** of form controls (each a <code>FormControl</code>, <code>FormGroup</code>, or nested <code>FormArray</code>). It's the reactive-forms tool for inputs whose count isn't known up front — phone numbers, line items, tags — letting you <code>push</code>/<code>removeAt</code> controls at runtime.
 
 <svg class='iq-diagram' viewBox='0 0 460 150' role='img' aria-label='A FormArray holds an indexed list of controls you can add or remove'>
   <rect class='d-box-accent' x='30' y='28' width='400' height='40' rx='10'/>
@@ -65,7 +65,7 @@ export class AppComponent {
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "What are pipes in Angular?",
-    answer: `**Core concept (TL;DR).** Pipes transform a value **for display** in a template, using the <code>|</code> syntax: <code>{{ price | currency }}</code>, <code>{{ date | date:'short' }}</code>, <code>{{ name | uppercase }}</code>, <code>{{ data$ | async }}</code>. They're **pure** by default (re-run only when the input reference changes), can take parameters, and chain. You can write custom ones with <code>@Pipe</code>.
+    answer: `**Core concept.** Pipes transform a value **for display** in a template, using the <code>|</code> syntax: <code>{{ price | currency }}</code>, <code>{{ date | date:'short' }}</code>, <code>{{ name | uppercase }}</code>, <code>{{ data$ | async }}</code>. They're **pure** by default (re-run only when the input reference changes), can take parameters, and chain. You can write custom ones with <code>@Pipe</code>.
 
 <svg class='iq-diagram' viewBox='0 0 460 150' role='img' aria-label='A pipe transforms an input value into a formatted output'>
   <rect class='d-box' x='30' y='52' width='130' height='46' rx='10'/>
@@ -115,7 +115,7 @@ export class TruncatePipe implements PipeTransform {
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "What do @HostListener and @HostBinding do?",
-    answer: `**Core concept (TL;DR).** They let a directive or component interact with its **host element** without a template. <code>@HostListener('event')</code> binds a method to an event on the host (or <code>window</code>/<code>document</code>). <code>@HostBinding('prop')</code> binds a class property to a host property, attribute, class, or style.
+    answer: `**Core concept.** They let a directive or component interact with its **host element** without a template. <code>@HostListener('event')</code> binds a method to an event on the host (or <code>window</code>/<code>document</code>). <code>@HostBinding('prop')</code> binds a class property to a host property, attribute, class, or style.
 
 <svg class='iq-diagram' viewBox='0 0 460 150' role='img' aria-label='HostListener reacts to host events; HostBinding sets host properties'>
   <rect class='d-box-accent' x='160' y='24' width='140' height='40' rx='10'/>
@@ -165,7 +165,7 @@ export class ToggleActiveDirective {
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "How do child components emit events to parents?",
-    answer: `**Core concept (TL;DR).** A child exposes an <code>@Output()</code> property of type <code>EventEmitter</code>, and calls <code>this.event.emit(value)</code> to notify the parent. The parent binds to it like a DOM event — <code>(childEvent)="handler($event)"</code>. This is the "data up" channel that complements "data down" via <code>@Input</code>. (Modern Angular also offers the <code>output()</code> function.)
+    answer: `**Core concept.** A child exposes an <code>@Output()</code> property of type <code>EventEmitter</code>, and calls <code>this.event.emit(value)</code> to notify the parent. The parent binds to it like a DOM event — <code>(childEvent)="handler($event)"</code>. This is the "data up" channel that complements "data down" via <code>@Input</code>. (Modern Angular also offers the <code>output()</code> function.)
 
 <svg class='iq-diagram' viewBox='0 0 460 150' role='img' aria-label='Child emits via Output; parent listens and handles'>
   <rect class='d-box' x='30' y='52' width='150' height='46' rx='10'/>
@@ -216,7 +216,7 @@ export class LikesComponent {
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "How do you dynamically create components?",
-    answer: `**Core concept (TL;DR).** To instantiate a component at **runtime** (not declared in a template), use a <code>ViewContainerRef</code> and call <code>vcr.createComponent(SomeComponent)</code> — in Ivy you no longer need a component factory. You then set inputs on the returned <code>ComponentRef</code> and destroy it when done. The template alternative is <code>&lt;ng-container *ngComponentOutlet="comp"&gt;</code>.
+    answer: `**Core concept.** To instantiate a component at **runtime** (not declared in a template), use a <code>ViewContainerRef</code> and call <code>vcr.createComponent(SomeComponent)</code> — in Ivy you no longer need a component factory. You then set inputs on the returned <code>ComponentRef</code> and destroy it when done. The template alternative is <code>&lt;ng-container *ngComponentOutlet="comp"&gt;</code>.
 
 <svg class='iq-diagram' viewBox='0 0 460 150' role='img' aria-label='ViewContainerRef.createComponent instantiates a component at runtime'>
   <rect class='d-box-accent' x='30' y='52' width='180' height='46' rx='10'/>
@@ -271,7 +271,7 @@ export class AppComponent implements AfterViewInit {
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "How do you bootstrap a standalone Angular application?",
-    answer: `**Core concept (TL;DR).** Call <code>bootstrapApplication(AppComponent, { providers: [...] })</code> in <code>main.ts</code> — no <code>AppModule</code> required. App-wide dependencies (router, HTTP, animations) are supplied as **providers**, using the <code>provide*</code> functions (<code>provideRouter</code>, <code>provideHttpClient</code>, …).
+    answer: `**Core concept.** Call <code>bootstrapApplication(AppComponent, { providers: [...] })</code> in <code>main.ts</code> — no <code>AppModule</code> required. App-wide dependencies (router, HTTP, animations) are supplied as **providers**, using the <code>provide*</code> functions (<code>provideRouter</code>, <code>provideHttpClient</code>, …).
 
 <svg class='iq-diagram' viewBox='0 0 460 150' role='img' aria-label='bootstrapApplication starts a standalone app with providers'>
   <rect class='d-box-accent' x='40' y='52' width='180' height='46' rx='10'/>
@@ -321,7 +321,7 @@ bootstrapApplication(AppComponent, {
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "What is the difference between AOT and JIT compilation?",
-    answer: `**Core concept (TL;DR).** Angular compiles templates to JavaScript. **AOT** (Ahead-of-Time) does this at **build time** — faster startup, smaller bundles, template errors caught during the build, and better security. **JIT** (Just-in-Time) compiles in the **browser at runtime**. Production uses **AOT** (the default); JIT was mainly a development convenience.
+    answer: `**Core concept.** Angular compiles templates to JavaScript. **AOT** (Ahead-of-Time) does this at **build time** — faster startup, smaller bundles, template errors caught during the build, and better security. **JIT** (Just-in-Time) compiles in the **browser at runtime**. Production uses **AOT** (the default); JIT was mainly a development convenience.
 
 <svg class='iq-diagram' viewBox='0 0 460 150' role='img' aria-label='AOT compiles at build time; JIT compiles in the browser'>
   <rect class='d-box-accent' x='20' y='44' width='200' height='62' rx='10'/>

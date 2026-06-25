@@ -15,7 +15,7 @@ const augments: Augment[] = [
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "What changed with Context in React 19 (`<Context>` as a provider)?",
-    answer: `**Core concept (TL;DR).** In React 19 you can render the context object **directly** as the provider — <code>&lt;ThemeContext value={…}&gt;</code> — instead of <code>&lt;ThemeContext.Provider value={…}&gt;</code>. It's a small ergonomics win; the old <code>.Provider</code> form still works but is deprecated. You can also read context with the new <code>use()</code> API.
+    answer: `**Core concept.** In React 19 you can render the context object **directly** as the provider — <code>&lt;ThemeContext value={…}&gt;</code> — instead of <code>&lt;ThemeContext.Provider value={…}&gt;</code>. It's a small ergonomics win; the old <code>.Provider</code> form still works but is deprecated. You can also read context with the new <code>use()</code> API.
 
 ${card(`<svg viewBox="0 0 520 150" style="width:100%;display:block" xmlns="http://www.w3.org/2000/svg" font-family="ui-sans-serif,system-ui">
   <text x="16" y="22" fill="currentColor" font-size="12" font-weight="700">Render the Context itself as the provider</text>
@@ -70,7 +70,7 @@ export default function App() {
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "How did ref handling change in React 19 (ref as a prop, forwardRef, ref cleanup)?",
-    answer: `**Core concept (TL;DR).** React 19 makes <code>ref</code> a **normal prop** for function components — you can accept <code>ref</code> directly in props, so <code>forwardRef</code> is **no longer needed** (and is being deprecated). It also lets a **ref callback return a cleanup function**, which React runs when the element unmounts.
+    answer: `**Core concept.** React 19 makes <code>ref</code> a **normal prop** for function components — you can accept <code>ref</code> directly in props, so <code>forwardRef</code> is **no longer needed** (and is being deprecated). It also lets a **ref callback return a cleanup function**, which React runs when the element unmounts.
 
 ${card(`<svg viewBox="0 0 520 150" style="width:100%;display:block" xmlns="http://www.w3.org/2000/svg" font-family="ui-sans-serif,system-ui">
   <text x="16" y="22" fill="currentColor" font-size="12" font-weight="700">ref is just a prop now; callbacks can clean up</text>
@@ -129,7 +129,7 @@ export default function App() {
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "How does React 19 handle document metadata like `<title>` and `<meta>`?",
-    answer: `**Core concept (TL;DR).** React 19 lets you render <code>&lt;title&gt;</code>, <code>&lt;meta&gt;</code>, and <code>&lt;link&gt;</code> **anywhere** in your component tree, and it automatically **hoists them into the document <code>&lt;head&gt;</code></code>. No more <code>react-helmet</code> — metadata lives next to the component that owns it, and it works with SSR/streaming.
+    answer: `**Core concept.** React 19 lets you render <code>&lt;title&gt;</code>, <code>&lt;meta&gt;</code>, and <code>&lt;link&gt;</code> **anywhere** in your component tree, and it automatically **hoists them into the document <code>&lt;head&gt;</code></code>. No more <code>react-helmet</code> — metadata lives next to the component that owns it, and it works with SSR/streaming.
 
 ${card(`<svg viewBox="0 0 520 150" style="width:100%;display:block" xmlns="http://www.w3.org/2000/svg" font-family="ui-sans-serif,system-ui">
   <text x="16" y="22" fill="currentColor" font-size="12" font-weight="700">Tags rendered in a component → hoisted to &lt;head&gt;</text>
@@ -183,7 +183,7 @@ export default function App() {
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "What are the resource preloading APIs in React 19 (`preload`, `preinit`, etc.)?",
-    answer: `**Core concept (TL;DR).** React 19 (via <code>react-dom</code>) exposes functions that **hint the browser to load resources early** — <code>preload</code>, <code>preinit</code>, <code>preconnect</code>, and <code>prefetchDNS</code>. You call them during render to start fetching fonts, stylesheets, scripts, or to warm up a connection, improving load performance. React **deduplicates** the hints.
+    answer: `**Core concept.** React 19 (via <code>react-dom</code>) exposes functions that **hint the browser to load resources early** — <code>preload</code>, <code>preinit</code>, <code>preconnect</code>, and <code>prefetchDNS</code>. You call them during render to start fetching fonts, stylesheets, scripts, or to warm up a connection, improving load performance. React **deduplicates** the hints.
 
 ${card(`<svg viewBox="0 0 520 150" style="width:100%;display:block" xmlns="http://www.w3.org/2000/svg" font-family="ui-sans-serif,system-ui">
   <text x="16" y="22" fill="currentColor" font-size="12" font-weight="700">Tell the browser to fetch/connect early</text>
@@ -234,7 +234,7 @@ export default function App() {
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "What does the `use()` hook do, and why is it special?",
-    answer: `**Core concept (TL;DR).** <code>use()</code> reads the value of a **resource** during render: <code>use(promise)</code> unwraps a promise (suspending until it resolves), and <code>use(Context)</code> reads context. It's special because — unlike every other hook — it can be called **conditionally** (inside <code>if</code>/loops), since it doesn't rely on call-order state.
+    answer: `**Core concept.** <code>use()</code> reads the value of a **resource** during render: <code>use(promise)</code> unwraps a promise (suspending until it resolves), and <code>use(Context)</code> reads context. It's special because — unlike every other hook — it can be called **conditionally** (inside <code>if</code>/loops), since it doesn't rely on call-order state.
 
 ${card(`<svg viewBox="0 0 520 150" style="width:100%;display:block" xmlns="http://www.w3.org/2000/svg" font-family="ui-sans-serif,system-ui">
   <text x="16" y="22" fill="currentColor" font-size="12" font-weight="700">use(): read a promise or context in render</text>
@@ -291,7 +291,7 @@ export default function App() {
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "What does the `useActionState` hook do in React 19?",
-    answer: `**Core concept (TL;DR).** <code>useActionState</code> manages the state of a **form Action**. You pass an async action function and an initial state; it returns <code>[state, formAction, isPending]</code>. Wire <code>formAction</code> to a <code>&lt;form action={…}&gt;</code>, and React tracks the **pending** status and the action's **returned result** for you — no manual loading/error state.
+    answer: `**Core concept.** <code>useActionState</code> manages the state of a **form Action**. You pass an async action function and an initial state; it returns <code>[state, formAction, isPending]</code>. Wire <code>formAction</code> to a <code>&lt;form action={…}&gt;</code>, and React tracks the **pending** status and the action's **returned result** for you — no manual loading/error state.
 
 ${card(`<svg viewBox="0 0 520 150" style="width:100%;display:block" xmlns="http://www.w3.org/2000/svg" font-family="ui-sans-serif,system-ui">
   <text x="16" y="22" fill="currentColor" font-size="12" font-weight="700">[state, formAction, isPending] = useActionState(fn, init)</text>
@@ -351,7 +351,7 @@ export default function App() {
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "What is `useFormStatus` in React 19, and why does it exist?",
-    answer: `**Core concept (TL;DR).** <code>useFormStatus</code> (from <code>react-dom</code>) lets a component read the **submission status of the parent <code>&lt;form&gt;</code>** — most importantly <code>pending</code> — **without prop drilling**. It exists so reusable pieces like a design-system submit button can show a spinner/disable themselves during submission automatically.
+    answer: `**Core concept.** <code>useFormStatus</code> (from <code>react-dom</code>) lets a component read the **submission status of the parent <code>&lt;form&gt;</code>** — most importantly <code>pending</code> — **without prop drilling**. It exists so reusable pieces like a design-system submit button can show a spinner/disable themselves during submission automatically.
 
 ${card(`<svg viewBox="0 0 520 150" style="width:100%;display:block" xmlns="http://www.w3.org/2000/svg" font-family="ui-sans-serif,system-ui">
   <text x="16" y="22" fill="currentColor" font-size="12" font-weight="700">A child reads the parent form's pending state</text>

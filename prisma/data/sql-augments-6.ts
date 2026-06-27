@@ -441,34 +441,34 @@ const augments: SqlAugment[] = [
       "| **Storage** | Always n bytes | Length prefix + data | Length prefix + data |\n" +
       "| **Max size** | 255 (MySQL), 10485760 (PG) | 65,535 (MySQL), 10MB (PG) | 4GB+ |\n" +
       "| **Indexable** | ✅ Full | ✅ Full (up to limit) | ⚠️ Prefix only (MySQL) |\n\n" +
-      "<svg class='iq-diagram' viewBox='0 0 480 180' role='img' aria-label='CHAR vs VARCHAR vs TEXT storage comparison'>" +
+      "<svg class='iq-diagram' viewBox='0 0 520 180' role='img' aria-label='CHAR vs VARCHAR vs TEXT storage comparison'>" +
       "<defs><marker id='arrow' markerWidth='6' markerHeight='6' refX='5' refY='3' orient='auto'><path class='d-arrow' d='M0,0 L6,3 L0,6 Z'/></marker></defs>" +
       "<!-- CHAR storage -->" +
       "<g transform='translate(15, 15)'>" +
-      "  <text class='d-sub' x='0' y='0' font-weight='bold' font-size='10'>CHAR(10) storing \"US\":</text>" +
-      "  <rect class='d-box-accent' x='0' y='10' width='25' height='25' rx='2'/><text class='d-accent d-text' x='12' y='28' text-anchor='middle' font-size='9'>U</text>" +
-      "  <rect class='d-box-accent' x='28' y='10' width='25' height='25' rx='2'/><text class='d-accent d-text' x='40' y='28' text-anchor='middle' font-size='9'>S</text>" +
-      "  <rect class='d-box' x='56' y='10' width='25' height='25' rx='2'/><text class='d-sub' x='68' y='28' text-anchor='middle' font-size='8'>_</text>" +
-      "  <rect class='d-box' x='84' y='10' width='25' height='25' rx='2'/><text class='d-sub' x='96' y='28' text-anchor='middle' font-size='8'>_</text>" +
-      "  <rect class='d-box' x='112' y='10' width='25' height='25' rx='2'/><text class='d-sub' x='124' y='28' text-anchor='middle' font-size='8'>_</text>" +
-      "  <text class='d-sub' x='145' y='28' font-size='8'>... (padded to 10)</text>" +
-      "  <text class='d-accent d-text' x='330' y='28' font-size='9' font-weight='bold'>Always 10 bytes</text>" +
+      "  <text class='d-sub' x='0' y='0' font-weight='bold' style='font-size: 10px;'>CHAR(10) storing \"US\":</text>" +
+      "  <rect class='d-box-accent' x='0' y='10' width='25' height='25' rx='2'/><text class='d-accent d-text' x='12' y='28' text-anchor='middle' style='font-size: 9px;'>U</text>" +
+      "  <rect class='d-box-accent' x='28' y='10' width='25' height='25' rx='2'/><text class='d-accent d-text' x='40' y='28' text-anchor='middle' style='font-size: 9px;'>S</text>" +
+      "  <rect class='d-box' x='56' y='10' width='25' height='25' rx='2'/><text class='d-sub' x='68' y='28' text-anchor='middle' style='font-size: 8px;'>_</text>" +
+      "  <rect class='d-box' x='84' y='10' width='25' height='25' rx='2'/><text class='d-sub' x='96' y='28' text-anchor='middle' style='font-size: 8px;'>_</text>" +
+      "  <rect class='d-box' x='112' y='10' width='25' height='25' rx='2'/><text class='d-sub' x='124' y='28' text-anchor='middle' style='font-size: 8px;'>_</text>" +
+      "  <text class='d-sub' x='145' y='28' style='font-size: 8px;'>... (padded to 10)</text>" +
+      "  <text class='d-accent d-text' x='330' y='28' style='font-size: 8.5px; font-weight: bold;'>Always 10 bytes</text>" +
       "</g>" +
       "<!-- VARCHAR storage -->" +
       "<g transform='translate(15, 70)'>" +
-      "  <text class='d-sub' x='0' y='0' font-weight='bold' font-size='10'>VARCHAR(10) storing \"US\":</text>" +
-      "  <rect class='d-box' x='0' y='10' width='25' height='25' rx='2'/><text class='d-sub' x='12' y='28' text-anchor='middle' font-size='8'>2</text>" +
-      "  <rect class='d-box-accent' x='28' y='10' width='25' height='25' rx='2'/><text class='d-accent d-text' x='40' y='28' text-anchor='middle' font-size='9'>U</text>" +
-      "  <rect class='d-box-accent' x='56' y='10' width='25' height='25' rx='2'/><text class='d-accent d-text' x='68' y='28' text-anchor='middle' font-size='9'>S</text>" +
-      "  <text class='d-sub' x='110' y='28' font-size='8'>(no padding)</text>" +
-      "  <text class='d-accent d-text' x='330' y='28' font-size='9' font-weight='bold'>Only 3 bytes (1 len + 2 data)</text>" +
+      "  <text class='d-sub' x='0' y='0' font-weight='bold' style='font-size: 10px;'>VARCHAR(10) storing \"US\":</text>" +
+      "  <rect class='d-box' x='0' y='10' width='25' height='25' rx='2'/><text class='d-sub' x='12' y='28' text-anchor='middle' style='font-size: 8px;'>2</text>" +
+      "  <rect class='d-box-accent' x='28' y='10' width='25' height='25' rx='2'/><text class='d-accent d-text' x='40' y='28' text-anchor='middle' style='font-size: 9px;'>U</text>" +
+      "  <rect class='d-box-accent' x='56' y='10' width='25' height='25' rx='2'/><text class='d-accent d-text' x='68' y='28' text-anchor='middle' style='font-size: 9px;'>S</text>" +
+      "  <text class='d-sub' x='110' y='28' style='font-size: 8px;'>(no padding)</text>" +
+      "  <text class='d-accent d-text' x='330' y='28' style='font-size: 8.5px; font-weight: bold;'>Only 3 bytes (1 len + 2 data)</text>" +
       "</g>" +
       "<!-- TEXT storage -->" +
       "<g transform='translate(15, 125)'>" +
-      "  <text class='d-sub' x='0' y='0' font-weight='bold' font-size='10'>TEXT storing a long bio:</text>" +
+      "  <text class='d-sub' x='0' y='0' font-weight='bold' style='font-size: 10px;'>TEXT storing a long bio:</text>" +
       "  <rect class='d-box' x='0' y='10' width='300' height='25' rx='2'/>" +
-      "  <text class='d-sub' x='150' y='28' text-anchor='middle' font-size='8'>Variable-length, often stored out-of-line (TOAST in PG)</text>" +
-      "  <text class='d-accent d-text' x='330' y='28' font-size='9' font-weight='bold'>No length limit enforced</text>" +
+      "  <text class='d-sub' x='150' y='28' text-anchor='middle' style='font-size: 8px;'>Variable-length, often stored out-of-line (TOAST in PG)</text>" +
+      "  <text class='d-accent d-text' x='330' y='28' style='font-size: 8.5px; font-weight: bold;'>No length limit enforced</text>" +
       "</g>" +
       "</svg>\n\n" +
       "### When to Use Each\n\n" +

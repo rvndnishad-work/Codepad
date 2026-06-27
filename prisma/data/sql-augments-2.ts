@@ -317,43 +317,43 @@ const augments: SqlAugment[] = [
       "| **`ROW_NUMBER()`** | Sequential numbers | `1, 2, 3, 4` |\n" +
       "| **`RANK()`** | Leaves gaps after ties | `1, 2, 2, 4` (no rank 3) |\n" +
       "| **`DENSE_RANK()`** | No gaps after ties | `1, 2, 2, 3` (rank 2 covers both tie rows) |\n\n" +
-      "<svg class='iq-diagram' viewBox='0 0 480 160' role='img' aria-label='DENSE_RANK vs RANK behavior comparison'>" +
+      "<svg class='iq-diagram' viewBox='0 0 500 160' role='img' aria-label='DENSE_RANK vs RANK behavior comparison'>" +
       "<!-- Header -->" +
       "<text class='d-sub' x='30' y='25' font-weight='bold' font-size='10'>Salary</text>" +
       "<text class='d-sub' x='150' y='25' font-weight='bold' font-size='10'>ROW_NUMBER()</text>" +
       "<text class='d-sub' x='270' y='25' font-weight='bold' font-size='10'>RANK()</text>" +
-      "<text class='d-sub' x='380' y='25' font-weight='bold' font-size='10'>DENSE_RANK()</text>" +
+      "<text class='d-sub' x='390' y='25' font-weight='bold' font-size='10'>DENSE_RANK()</text>" +
       "<!-- Row 1 -->" +
       "<g transform='translate(10, 35)'>" +
-      "  <rect class='d-box' x='0' y='0' width='460' height='25' rx='3'/>" +
+      "  <rect class='d-box' x='0' y='0' width='480' height='25' rx='3'/>" +
       "  <text class='d-sub' x='20' y='16' font-size='9'>$90,000 (Alice)</text>" +
       "  <text class='d-sub' x='160' y='16' font-size='9'>1</text>" +
       "  <text class='d-sub' x='270' y='16' font-size='9'>1</text>" +
-      "  <text class='d-accent d-text' x='385' y='16' font-size='9' font-weight='bold'>1</text>" +
+      "  <text class='d-accent d-text' x='395' y='16' font-size='9' font-weight='bold'>1</text>" +
       "</g>" +
       "<!-- Row 2 -->" +
       "<g transform='translate(10, 65)'>" +
-      "  <rect class='d-box-accent' x='0' y='0' width='460' height='25' rx='3'/>" +
+      "  <rect class='d-box-accent' x='0' y='0' width='480' height='25' rx='3'/>" +
       "  <text class='d-accent d-text' x='20' y='16' font-size='9'>$80,000 (Bob)</text>" +
       "  <text class='d-sub' x='160' y='16' font-size='9'>2</text>" +
       "  <text class='d-sub' x='270' y='16' font-size='9'>2</text>" +
-      "  <text class='d-accent d-text' x='385' y='16' font-size='9' font-weight='bold'>2 (N=2 Output)</text>" +
+      "  <text class='d-accent d-text' x='395' y='16' font-size='9' font-weight='bold'>2 (N=2 Output)</text>" +
       "</g>" +
       "<!-- Row 3 -->" +
       "<g transform='translate(10, 95)'>" +
-      "  <rect class='d-box-accent' x='0' y='0' width='460' height='25' rx='3'/>" +
+      "  <rect class='d-box-accent' x='0' y='0' width='480' height='25' rx='3'/>" +
       "  <text class='d-accent d-text' x='20' y='16' font-size='9'>$80,000 (Charlie)</text>" +
       "  <text class='d-sub' x='160' y='16' font-size='9'>3</text>" +
       "  <text class='d-sub' x='270' y='16' font-size='9'>2</text>" +
-      "  <text class='d-accent d-text' x='385' y='16' font-size='9' font-weight='bold'>2 (N=2 Output)</text>" +
+      "  <text class='d-accent d-text' x='395' y='16' font-size='9' font-weight='bold'>2 (N=2 Output)</text>" +
       "</g>" +
       "<!-- Row 4 -->" +
       "<g transform='translate(10, 125)'>" +
-      "  <rect class='d-box' x='0' y='0' width='460' height='25' rx='3'/>" +
+      "  <rect class='d-box' x='0' y='0' width='480' height='25' rx='3'/>" +
       "  <text class='d-sub' x='20' y='16' font-size='9'>$70,000 (David)</text>" +
       "  <text class='d-sub' x='160' y='16' font-size='9'>4</text>" +
       "  <text class='d-sub' x='270' y='16' font-size='9'>4 (Gap)</text>" +
-      "  <text class='d-sub' x='385' y='16' font-size='9'>3</text>" +
+      "  <text class='d-sub' x='395' y='16' font-size='9'>3</text>" +
       "</g>" +
       "</svg>\n\n" +
       "### Common Approaches\n" +

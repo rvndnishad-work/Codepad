@@ -27,29 +27,29 @@ const augments: SqlAugment[] = [
       "Primary keys and foreign keys define database constraints that guarantee relational integrity across tables:\n\n" +
       "- **Primary Key (PK):** Uniquely identifies each record inside a table. It cannot contain `NULL` values, and a table can have **only one** primary key.\n" +
       "- **Foreign Key (FK):** Reference column that maps to a primary key in another table (or the same table). It enforces **referential integrity**, ensuring that the value in the child column matches an existing parent row key.\n\n" +
-      "<svg class='iq-diagram' viewBox='0 0 480 160' role='img' aria-label='Primary Key to Foreign Key relationship mapping'>" +
+      "<svg class='iq-diagram' viewBox='0 0 550 170' role='img' aria-label='Primary Key to Foreign Key relationship mapping'>" +
       "<defs><marker id='arrow' markerWidth='6' markerHeight='6' refX='5' refY='3' orient='auto'><path class='d-arrow' d='M0,0 L6,3 L0,6 Z'/></marker></defs>" +
       "<!-- Parent Table (Departments) -->" +
       "<g transform='translate(15, 20)'>" +
-      "  <rect class='d-box-accent' x='0' y='0' width='180' height='120' rx='5'/>" +
-      "  <text class='d-accent d-text' x='90' y='22' text-anchor='middle' font-weight='bold'>departments (Parent)</text>" +
-      "  <rect class='d-box' x='10' y='35' width='160' height='25' rx='3'/>" +
-      "  <text class='d-sub' x='20' y='51' font-size='9' font-weight='bold'>dept_id (PK - Unique, Not Null)</text>" +
-      "  <text class='d-sub' x='20' y='85' font-size='9'>dept_name</text>" +
+      "  <rect class='d-box-accent' x='0' y='0' width='210' height='125' rx='5'/>" +
+      "  <text x='105' y='22' text-anchor='middle' font-weight='bold' font-size='10' fill='var(--accent)'>departments (Parent)</text>" +
+      "  <rect class='d-box' x='10' y='35' width='190' height='25' rx='3'/>" +
+      "  <text x='105' y='51' text-anchor='middle' font-weight='bold' font-size='9' fill='var(--muted)'>dept_id (PK - Unique, Not Null)</text>" +
+      "  <text x='20' y='90' font-size='9' fill='var(--muted)'>dept_name</text>" +
       "</g>" +
       "<!-- Relation edge -->" +
-      "<line class='d-edge' x1='195' y1='50' x2='275' y2='65' marker-end='url(#arrow)' stroke-width='2'/>" +
-      "<text class='d-sub' x='235' y='45' text-anchor='middle' font-size='8'>Enforces Match</text>" +
+      "<line class='d-edge' x1='230' y1='70' x2='305' y2='70' marker-end='url(#arrow)' stroke-width='2'/>" +
+      "<text x='267' y='60' text-anchor='middle' font-size='8.5' fill='var(--muted)'>Enforces Match</text>" +
       "<!-- Child Table (Employees) -->" +
-      "<g transform='translate(285, 20)'>" +
-      "  <rect class='d-box' x='0' y='0' width='180' height='120' rx='5'/>" +
-      "  <text class='d-sub' x='90' y='22' text-anchor='middle' font-weight='bold'>employees (Child)</text>" +
-      "  <text class='d-sub' x='20' y='50' font-size='9'>emp_id (PK)</text>" +
-      "  <text class='d-sub' x='20' y='75' font-size='9'>name</text>" +
-      "  <rect class='d-box-accent' x='10' y='85' width='160' height='25' rx='3'/>" +
-      "  <text class='d-accent d-text' x='20' y='101' font-size='9' font-weight='bold'>department_id (FK - Nullable)</text>" +
+      "<g transform='translate(315, 20)'>" +
+      "  <rect class='d-box' x='0' y='0' width='220' height='125' rx='5'/>" +
+      "  <text x='110' y='22' text-anchor='middle' font-weight='bold' font-size='10' fill='var(--fg)'>employees (Child)</text>" +
+      "  <text x='20' y='50' font-size='9' fill='var(--muted)'>emp_id (PK)</text>" +
+      "  <text x='20' y='75' font-size='9' fill='var(--muted)'>name</text>" +
+      "  <rect class='d-box-accent' x='10' y='88' width='200' height='25' rx='3'/>" +
+      "  <text x='110' y='104' text-anchor='middle' font-weight='bold' font-size='9' fill='var(--accent)'>department_id (FK - Nullable)</text>" +
       "</g>" +
-      "</svg>\n\n" +
+      "</svg>" +
       "### Core Differences\n" +
       "| Attribute | Primary Key | Foreign Key |\n" +
       "|---|---|---|\n" +

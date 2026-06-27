@@ -287,40 +287,40 @@ const augments: SqlAugment[] = [
     answer:
       "## Composite Index Column Order — The Left-Prefix Rule\n\n" +
       "A **composite index** (multi-column index) is a B-Tree sorted by the first column, then by the second within each group of the first, and so on. The database can only use the index starting from the **leftmost** columns — this is the **left-prefix rule**.\n\n" +
-      "<svg class='iq-diagram' viewBox='0 0 480 200' role='img' aria-label='Composite index left-prefix rule visualization'>" +
+      "<svg class='iq-diagram' viewBox='0 0 500 200' role='img' aria-label='Composite index left-prefix rule visualization'>" +
       "<defs><marker id='arrow' markerWidth='6' markerHeight='6' refX='5' refY='3' orient='auto'><path class='d-arrow' d='M0,0 L6,3 L0,6 Z'/></marker></defs>" +
       "<!-- Index structure INDEX(status, customer_id, amount) -->" +
       "<g transform='translate(15, 10)'>" +
-      "  <rect class='d-box-accent' x='0' y='0' width='450' height='30' rx='4'/>" +
-      "  <text class='d-accent d-text' x='225' y='20' text-anchor='middle' font-weight='bold' font-size='10'>INDEX(status, customer_id, amount)</text>" +
+      "  <rect class='d-box-accent' x='0' y='0' width='470' height='30' rx='4'/>" +
+      "  <text class='d-accent d-text' x='235' y='20' text-anchor='middle' font-weight='bold' style='font-size: 10px;'>INDEX(status, customer_id, amount)</text>" +
       "</g>" +
       "<!-- Level 1: status -->" +
       "<g transform='translate(15, 50)'>" +
       "  <rect class='d-box-accent' x='0' y='0' width='130' height='30' rx='4'/>" +
-      "  <text class='d-accent d-text' x='65' y='20' text-anchor='middle' font-size='9' font-weight='bold'>delivered</text>" +
-      "  <rect class='d-box-accent' x='160' y='0' width='130' height='30' rx='4'/>" +
-      "  <text class='d-accent d-text' x='225' y='20' text-anchor='middle' font-size='9' font-weight='bold'>pending</text>" +
-      "  <rect class='d-box-accent' x='320' y='0' width='130' height='30' rx='4'/>" +
-      "  <text class='d-accent d-text' x='385' y='20' text-anchor='middle' font-size='9' font-weight='bold'>shipped</text>" +
+      "  <text class='d-accent d-text' x='65' y='20' text-anchor='middle' font-weight='bold' style='font-size: 9px;'>delivered</text>" +
+      "  <rect class='d-box-accent' x='170' y='0' width='130' height='30' rx='4'/>" +
+      "  <text class='d-accent d-text' x='235' y='20' text-anchor='middle' font-weight='bold' style='font-size: 9px;'>pending</text>" +
+      "  <rect class='d-box-accent' x='340' y='0' width='130' height='30' rx='4'/>" +
+      "  <text class='d-accent d-text' x='405' y='20' text-anchor='middle' font-weight='bold' style='font-size: 9px;'>shipped</text>" +
       "</g>" +
       "<!-- Level 2: customer_id within status -->" +
-      "<line class='d-edge' x1='385' y1='80' x2='340' y2='100' marker-end='url(#arrow)'/>" +
-      "<line class='d-edge' x1='385' y1='80' x2='430' y2='100' marker-end='url(#arrow)'/>" +
-      "<g transform='translate(305, 105)'>" +
-      "  <rect class='d-box' x='0' y='0' width='55' height='25' rx='3'/>" +
-      "  <text class='d-sub' x='28' y='17' text-anchor='middle' font-size='8'>c:101</text>" +
+      "<line class='d-edge' x1='405' y1='80' x2='350' y2='100' marker-end='url(#arrow)'/>" +
+      "<line class='d-edge' x1='405' y1='80' x2='445' y2='100' marker-end='url(#arrow)'/>" +
+      "<g transform='translate(315, 105)'>" +
+      "  <rect class='d-box' x='0' y='0' width='60' height='25' rx='3'/>" +
+      "  <text class='d-sub' x='30' y='17' text-anchor='middle' style='font-size: 8px;'>c:101</text>" +
       "</g>" +
-      "<g transform='translate(400, 105)'>" +
-      "  <rect class='d-box' x='0' y='0' width='55' height='25' rx='3'/>" +
-      "  <text class='d-sub' x='28' y='17' text-anchor='middle' font-size='8'>c:102</text>" +
+      "<g transform='translate(415, 105)'>" +
+      "  <rect class='d-box' x='0' y='0' width='60' height='25' rx='3'/>" +
+      "  <text class='d-sub' x='30' y='17' text-anchor='middle' style='font-size: 8px;'>c:102</text>" +
       "</g>" +
       "<!-- Usability table -->" +
       "<g transform='translate(15, 145)'>" +
-      "  <rect class='d-box' x='0' y='0' width='450' height='45' rx='4'/>" +
-      "  <text class='d-sub' x='20' y='17' font-size='8'>✅ WHERE status='shipped'</text>" +
-      "  <text class='d-sub' x='220' y='17' font-size='8'>✅ WHERE status='shipped' AND customer_id=101</text>" +
-      "  <text class='d-accent d-text' x='20' y='37' font-size='8' font-weight='bold'>❌ WHERE customer_id=101 (skips leftmost!)</text>" +
-      "  <text class='d-accent d-text' x='270' y='37' font-size='8' font-weight='bold'>❌ WHERE amount > 500 (skips leftmost!)</text>" +
+      "  <rect class='d-box' x='0' y='0' width='470' height='45' rx='4'/>" +
+      "  <text class='d-sub' x='15' y='17' style='font-size: 8px;'>✅ WHERE status='shipped'</text>" +
+      "  <text class='d-sub' x='205' y='17' style='font-size: 8px;'>✅ WHERE status='shipped' AND customer_id=101</text>" +
+      "  <text class='d-accent d-text' x='15' y='37' font-weight='bold' style='font-size: 8px;'>❌ WHERE customer_id=101 (skips leftmost!)</text>" +
+      "  <text class='d-accent d-text' x='255' y='37' font-weight='bold' style='font-size: 8px;'>❌ WHERE amount > 500 (skips leftmost!)</text>" +
       "</g>" +
       "</svg>\n\n" +
       "### Which Queries Can Use INDEX(A, B, C)?\n\n" +

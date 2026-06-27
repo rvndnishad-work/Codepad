@@ -76,6 +76,8 @@ model User {
   notifications        Notification[]
   notificationPreferences NotificationPreference[]
   prepQuestionComments PrepQuestionComment[]
+  savedPrepQuestions   PrepQuestion[]        @relation("UserSavedPrepQuestions")
+  solvedPrepQuestions  PrepQuestion[]        @relation("UserSolvedPrepQuestions")
 }
 
 /// Admin-composed broadcast (IP-45). One row per admin send; the per-recipient
@@ -1712,6 +1714,8 @@ model PrepQuestion {
   updatedAt       DateTime @updatedAt
   company         Company?              @relation(fields: [companyId], references: [id], onDelete: SetNull)
   comments        PrepQuestionComment[]
+  savedByUsers    User[]                @relation("UserSavedPrepQuestions")
+  solvedByUsers   User[]                @relation("UserSolvedPrepQuestions")
 
   @@index([companyId])
   @@index([technology, status])

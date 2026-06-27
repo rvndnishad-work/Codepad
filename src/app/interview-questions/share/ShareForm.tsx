@@ -15,13 +15,19 @@ export default function ShareForm() {
   });
   const [state, setState] = useState<"idle" | "saving" | "done">("idle");
   const [error, setError] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string[]>>({});
   const set = (k: keyof typeof f) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) =>
     setF((p) => ({ ...p, [k]: e.target.value }));
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
-    if (!f.company.trim()) return setError("Company is required.");
+    if (!f.company.trim()) {
+      setError("Company is required.");
+      setFieldErrors({ company: ["Company name is required"] });
+      return;
+    }
     setError(null);
+    setFieldErrors({});
     setState("saving");
     try {
       const res = await fetch("/api/interview-questions/experiences", {
@@ -40,7 +46,14 @@ export default function ShareForm() {
           tips: f.tips || null,
         }),
       });
-      if (!res.ok) throw new Error("Submission failed. Please check your inputs.");
+      if (!res.ok) {
+        const data = await res.json().catch(() => null);
+        if (data && data.error && data.error.fieldErrors) {
+          setFieldErrors(data.error.fieldErrors);
+          throw new Error("Please correct the validation errors highlighted below.");
+        }
+        throw new Error("Submission failed. Please check your inputs.");
+      }
       setState("done");
     } catch (err) {
       setError((err as Error).message);
@@ -68,17 +81,44 @@ export default function ShareForm() {
       {error && <div className="p-3 rounded-lg border border-rose-500/30 bg-rose-500/10 text-rose-500 text-sm">{error}</div>}
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <div><label className={label}>Company *</label><input value={f.company} onChange={set("company")} className={field} placeholder="Google" /></div>
-        <div><label className={label}>Role</label><input value={f.role} onChange={set("role")} className={field} placeholder="Software Engineer" /></div>
+        <div>
+          <label className={label}>Company *</label>
+          <input value={f.company} onChange={set("company")} className={field} placeholder="Google" />
+          {fieldErrors.company && (
+            <p className="text-[11px] text-rose-500 mt-1 font-bold">{fieldErrors.company.join(", ")}</p>
+          )}
+        </div>
+        <div>
+          <label className={label}>Role</label>
+          <input value={f.role} onChange={set("role")} className={field} placeholder="Software Engineer" />
+          {fieldErrors.role && (
+            <p className="text-[11px] text-rose-500 mt-1 font-bold">{fieldErrors.role.join(", ")}</p>
+          )}
+        </div>
         <div>
           <label className={label}>Experience level</label>
           <select value={f.experienceLevel} onChange={set("experienceLevel")} className={field}>
             <option value="">— Select —</option>
             {EXPERIENCE_LEVELS.map((e) => <option key={e.slug} value={e.slug}>{e.label}</option>)}
           </select>
+          {fieldErrors.experienceLevel && (
+            <p className="text-[11px] text-rose-500 mt-1 font-bold">{fieldErrors.experienceLevel.join(", ")}</p>
+          )}
         </div>
-        <div><label className={label}>Location</label><input value={f.location} onChange={set("location")} className={field} placeholder="Bangalore / Remote" /></div>
-        <div><label className={label}>Year</label><input value={f.year} onChange={set("year")} className={field} placeholder="2024" inputMode="numeric" /></div>
+        <div>
+          <label className={label}>Location</label>
+          <input value={f.location} onChange={set("location")} className={field} placeholder="Bangalore / Remote" />
+          {fieldErrors.location && (
+            <p className="text-[11px] text-rose-500 mt-1 font-bold">{fieldErrors.location.join(", ")}</p>
+          )}
+        </div>
+        <div>
+          <label className={label}>Year</label>
+          <input value={f.year} onChange={set("year")} className={field} placeholder="2024" inputMode="numeric" />
+          {fieldErrors.year && (
+            <p className="text-[11px] text-rose-500 mt-1 font-bold">{fieldErrors.year.join(", ")}</p>
+          )}
+        </div>
         <div>
           <label className={label}>Outcome</label>
           <select value={f.result} onChange={set("result")} className={field}>
@@ -87,6 +127,9 @@ export default function ShareForm() {
             <option value="rejected">Rejected</option>
             <option value="pending">Pending</option>
           </select>
+          {fieldErrors.result && (
+            <p className="text-[11px] text-rose-500 mt-1 font-bold">{fieldErrors.result.join(", ")}</p>
+          )}
         </div>
       </div>
 
@@ -106,11 +149,32 @@ export default function ShareForm() {
             </button>
           ))}
         </div>
+        {fieldErrors.difficulty && (
+          <p className="text-[11px] text-rose-500 mt-1 font-bold">{fieldErrors.difficulty.join(", ")}</p>
+        )}
       </div>
 
-      <div><label className={label}>Interview process</label><textarea value={f.process} onChange={set("process")} rows={3} className={field} placeholder="Recruiter screen → online assessment → 4 onsite rounds…" /></div>
-      <div><label className={label}>Rounds & questions asked</label><textarea value={f.rounds} onChange={set("rounds")} rows={3} className={field} placeholder="DSA: two-pointers, graphs. System design: rate limiter…" /></div>
-      <div><label className={label}>Tips for future candidates</label><textarea value={f.tips} onChange={set("tips")} rows={2} className={field} placeholder="Think out loud, clarify constraints…" /></div>
+      <div>
+        <label className={label}>Interview process</label>
+        <textarea value={f.process} onChange={set("process")} rows={3} className={field} placeholder="Recruiter screen → online assessment → 4 onsite rounds…" />
+        {fieldErrors.process && (
+          <p className="text-[11px] text-rose-500 mt-1 font-bold">{fieldErrors.process.join(", ")}</p>
+        )}
+      </div>
+      <div>
+        <label className={label}>Rounds & questions asked</label>
+        <textarea value={f.rounds} onChange={set("rounds")} rows={3} className={field} placeholder="DSA: two-pointers, graphs. System design: rate limiter…" />
+        {fieldErrors.rounds && (
+          <p className="text-[11px] text-rose-500 mt-1 font-bold">{fieldErrors.rounds.join(", ")}</p>
+        )}
+      </div>
+      <div>
+        <label className={label}>Tips for future candidates</label>
+        <textarea value={f.tips} onChange={set("tips")} rows={2} className={field} placeholder="Think out loud, clarify constraints…" />
+        {fieldErrors.tips && (
+          <p className="text-[11px] text-rose-500 mt-1 font-bold">{fieldErrors.tips.join(", ")}</p>
+        )}
+      </div>
 
       <button disabled={state === "saving"} className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg bg-accent text-bg text-sm font-black uppercase tracking-wider hover:bg-accent-soft disabled:opacity-60">
         {state === "saving" ? <Loader2 className="w-4 h-4 animate-spin" /> : null}

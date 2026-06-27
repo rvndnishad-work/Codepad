@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { Search, Loader2, FileText, Building2, Layers } from "lucide-react";
 
@@ -21,6 +21,27 @@ export default function GlobalSearch() {
   const [loading, setLoading] = useState(false);
   const [open, setOpen] = useState(false);
   const boxRef = useRef<HTMLDivElement>(null);
+
+  const [activeIndex, setActiveIndex] = useState(-1);
+
+  // Compute a flattened array of selectable results for keyboard navigation.
+  const flatItems = useMemo(() => {
+    const list: { type: "company" | "tech" | "question"; label: string; url: string }[] = [];
+    res.companies.forEach((c) => {
+      list.push({ type: "company", label: c.name, url: `/interview-questions/company/${c.slug}` });
+    });
+    res.technologies.forEach((t) => {
+      list.push({ type: "tech", label: t.label, url: `/interview-questions/${t.slug}` });
+    });
+    res.questions.forEach((q) => {
+      list.push({ type: "question", label: q.title, url: `/interview-question/${q.slug}` });
+    });
+    return list;
+  }, [res]);
+
+  useEffect(() => {
+    setActiveIndex(-1);
+  }, [res]);
 
   const updateQuery = (val: string) => {
     setQ(val);
@@ -58,6 +79,28 @@ export default function GlobalSearch() {
     return () => document.removeEventListener("mousedown", onClick);
   }, []);
 
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (!open || flatItems.length === 0) return;
+
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      setActiveIndex((prev) => (prev + 1 >= flatItems.length ? 0 : prev + 1));
+    } else if (e.key === "ArrowUp") {
+      e.preventDefault();
+      setActiveIndex((prev) => (prev - 1 < 0 ? flatItems.length - 1 : prev - 1));
+    } else if (e.key === "Enter") {
+      if (activeIndex >= 0 && activeIndex < flatItems.length) {
+        e.preventDefault();
+        const selected = flatItems[activeIndex];
+        router.push(selected.url);
+        setOpen(false);
+      }
+    } else if (e.key === "Escape") {
+      e.preventDefault();
+      setOpen(false);
+    }
+  };
+
   const hasResults = res.questions.length + res.companies.length + res.technologies.length > 0;
 
   return (
@@ -69,6 +112,7 @@ export default function GlobalSearch() {
           value={q}
           onChange={(e) => updateQuery(e.target.value)}
           onFocus={() => setOpen(true)}
+          onKeyDown={handleKeyDown}
           placeholder="Search questions, companies, technologies…"
           className="w-full pl-10 pr-10 py-3 rounded-xl border border-border bg-surface text-sm focus:outline-none focus:border-accent/50 shadow-sm"
         />
@@ -97,30 +141,60 @@ export default function GlobalSearch() {
             <div className="max-h-[60vh] overflow-y-auto py-1.5">
               {res.companies.length > 0 && (
                 <Section icon={<Building2 className="w-3.5 h-3.5" />} label="Companies">
-                  {res.companies.map((c) => (
-                    <Row key={c.slug} onClick={() => router.push(`/interview-questions/company/${c.slug}`)}>
-                      {c.name}
-                    </Row>
-                  ))}
+                  {res.companies.map((c, idx) => {
+                    const flatIdx = idx;
+                    return (
+                      <Row
+                        key={c.slug}
+                        active={activeIndex === flatIdx}
+                        onClick={() => {
+                          router.push(`/interview-questions/company/${c.slug}`);
+                          setOpen(false);
+                        }}
+                      >
+                        {c.name}
+                      </Row>
+                    );
+                  })}
                 </Section>
               )}
               {res.technologies.length > 0 && (
                 <Section icon={<Layers className="w-3.5 h-3.5" />} label="Technologies">
-                  {res.technologies.map((t) => (
-                    <Row key={t.slug} onClick={() => router.push(`/interview-questions/${t.slug}`)}>
-                      {t.label}
-                    </Row>
-                  ))}
+                  {res.technologies.map((t, idx) => {
+                    const flatIdx = res.companies.length + idx;
+                    return (
+                      <Row
+                        key={t.slug}
+                        active={activeIndex === flatIdx}
+                        onClick={() => {
+                          router.push(`/interview-questions/${t.slug}`);
+                          setOpen(false);
+                        }}
+                      >
+                        {t.label}
+                      </Row>
+                    );
+                  })}
                 </Section>
               )}
               {res.questions.length > 0 && (
                 <Section icon={<FileText className="w-3.5 h-3.5" />} label="Questions">
-                  {res.questions.map((qq) => (
-                    <Row key={qq.slug} onClick={() => router.push(`/interview-question/${qq.slug}`)}>
-                      <span className="truncate">{qq.title}</span>
-                      {qq.company && <span className="text-[10px] text-muted shrink-0 ml-2">{qq.company}</span>}
-                    </Row>
-                  ))}
+                  {res.questions.map((qq, idx) => {
+                    const flatIdx = res.companies.length + res.technologies.length + idx;
+                    return (
+                      <Row
+                        key={qq.slug}
+                        active={activeIndex === flatIdx}
+                        onClick={() => {
+                          router.push(`/interview-question/${qq.slug}`);
+                          setOpen(false);
+                        }}
+                      >
+                        <span className="truncate">{qq.title}</span>
+                        {qq.company && <span className="text-[10px] text-muted shrink-0 ml-2">{qq.company}</span>}
+                      </Row>
+                    );
+                  })}
                 </Section>
               )}
             </div>
@@ -143,11 +217,23 @@ function Section({ icon, label, children }: { icon: React.ReactNode; label: stri
   );
 }
 
-function Row({ children, onClick }: { children: React.ReactNode; onClick: () => void }) {
+function Row({
+  children,
+  onClick,
+  active,
+}: {
+  children: React.ReactNode;
+  onClick: () => void;
+  active?: boolean;
+}) {
   return (
     <button
       onClick={onClick}
-      className="w-full flex items-center justify-between px-3 py-2 rounded-lg text-sm font-medium text-left hover:bg-bg transition"
+      className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-sm font-medium text-left transition ${
+        active
+          ? "bg-accent/10 text-accent font-bold shadow-sm"
+          : "hover:bg-bg text-fg/90"
+      }`}
     >
       {children}
     </button>

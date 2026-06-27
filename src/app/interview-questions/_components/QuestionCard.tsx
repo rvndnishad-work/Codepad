@@ -1,7 +1,11 @@
+"use client";
+
+import { useState, useEffect } from "react";
 import Link from "next/link";
-import { Eye, Heart, Calendar, Building2, ArrowUpRight } from "lucide-react";
+import { Eye, Heart, Calendar, Building2, ArrowUpRight, Check } from "lucide-react";
 import TechSvg from "@/components/TechSvg";
 import { difficultyClasses, techLabel, parseJsonArray, compactNumber } from "@/lib/interview-questions/shared";
+import { isSolved } from "@/lib/interview-questions/progress";
 
 export type QuestionCardData = {
   title: string;
@@ -174,6 +178,14 @@ export default function QuestionCard({ q, showCompany = true }: { q: QuestionCar
   const years = parseJsonArray<number>(q.yearsAsked).sort((a, b) => b - a);
   const theme = CARD_THEMES[q.technology ?? ""] ?? FALLBACK_THEME;
 
+  const [solved, setSolved] = useState(false);
+  useEffect(() => {
+    setSolved(isSolved(q.slug));
+    const refresh = () => setSolved(isSolved(q.slug));
+    window.addEventListener("iq-solved-changed", refresh);
+    return () => window.removeEventListener("iq-solved-changed", refresh);
+  }, [q.slug]);
+
   return (
     <Link
       href={`/interview-question/${q.slug}`}
@@ -190,6 +202,11 @@ export default function QuestionCard({ q, showCompany = true }: { q: QuestionCar
       <div className="min-w-0 flex-1">
         {/* Meta chips — render only what exists */}
         <div className="flex items-center flex-wrap gap-x-2 gap-y-1 text-[11px] font-bold tracking-wide text-muted">
+          {solved && (
+            <span className="inline-flex items-center gap-1 bg-emerald-500/10 dark:bg-emerald-500/5 text-emerald-600 dark:text-emerald-450 border border-emerald-500/20 px-2 py-0.5 rounded-md font-extrabold uppercase text-[9px] tracking-wider">
+              <Check className="w-3 h-3 text-emerald-500" /> Solved
+            </span>
+          )}
           {q.technology && (
             <span className={`inline-flex items-center px-2 py-0.5 rounded-md border ${theme.tag} transition-colors duration-200`}>
               {techLabel(q.technology)}

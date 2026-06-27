@@ -7,18 +7,18 @@ import { EditorView, keymap } from "@codemirror/view";
 import { defaultKeymap, history, historyKeymap, indentWithTab } from "@codemirror/commands";
 import { HighlightStyle, syntaxHighlighting } from "@codemirror/language";
 import { javascript } from "@codemirror/lang-javascript";
+import { python } from "@codemirror/lang-python";
+import { sql } from "@codemirror/lang-sql";
 import { tags as t } from "@lezer/highlight";
 
 /**
- * Editable CodeMirror 6 editor for the in-page JS playground. Its theme mirrors
+ * Editable CodeMirror 6 editor for the in-page multi-language playground. Its theme mirrors
  * the static `.iq-hl` highlight used by CodeExample on React/DSA questions (same
- * pastel token palette, mono font, size, spacing and surface) so a JavaScript
- * question's snippet looks identical to every other question's code block. The
- * editor is re-created when the light/dark theme changes.
+ * pastel token palette, mono font, size, spacing and surface) so a question's
+ * snippet looks identical to every other question's code block. The
+ * editor is re-created when the light/dark theme changes or technology changes.
  */
 
-// Token palette copied verbatim from the `.iq-hl` rules in globals.css so the
-// editor and the static highlighter render code with the exact same colours.
 const PALETTE = {
   light: {
     bg: "#f8fafc", // slate-50
@@ -72,9 +72,11 @@ function highlightStyleFor(dark: boolean) {
 export default function CodeMirrorEditor({
   value,
   onChange,
+  technology = "javascript",
 }: {
   value: string;
   onChange: (v: string) => void;
+  technology?: string;
 }) {
   const { resolvedTheme } = useTheme();
   const isDark = resolvedTheme !== "light";
@@ -96,19 +98,23 @@ export default function CodeMirrorEditor({
     if (!hostRef.current) return;
     const c = isDark ? PALETTE.dark : PALETTE.light;
 
+    const langExtension =
+      technology === "python"
+        ? python()
+        : technology === "sql"
+        ? sql()
+        : javascript({ typescript: technology === "typescript" });
+
     const state = EditorState.create({
       doc: valueRef.current,
       extensions: [
         history(),
         keymap.of([...defaultKeymap, ...historyKeymap, indentWithTab]),
-        javascript(),
+        langExtension,
         syntaxHighlighting(highlightStyleFor(isDark)),
         EditorView.updateListener.of((u) => {
           if (u.docChanged) onChangeRef.current(u.state.doc.toString());
         }),
-        // Match CodeExample's <pre className="iq-hl p-4 text-xs font-mono
-        // leading-relaxed text-slate-800 dark:text-slate-200 bg-slate-50
-        // dark:bg-[#0a0b10]"> exactly — no gutter, same font/size/spacing/surface.
         EditorView.theme(
           {
             "&": {
@@ -138,7 +144,7 @@ export default function CodeMirrorEditor({
     const view = new EditorView({ state, parent: hostRef.current });
     viewRef.current = view;
     return () => view.destroy();
-  }, [isDark]);
+  }, [isDark, technology]);
 
   // Sync external value changes (e.g. Reset) into the editor.
   useEffect(() => {

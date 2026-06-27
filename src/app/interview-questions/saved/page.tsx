@@ -8,13 +8,116 @@ import { difficultyClasses, techLabel } from "@/lib/interview-questions/shared";
 
 export default function SavedQuestionsPage() {
   const [items, setItems] = useState<SavedQuestion[] | null>(null);
+  const [userId, setUserId] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const refresh = () => setItems(getSaved());
-    refresh();
+    async function loadData() {
+      setLoading(true);
+      let currentUserId: string | null = null;
+      try {
+        const sessionRes = await fetch("/api/auth/session");
+        if (sessionRes.ok) {
+          const session = await sessionRes.json();
+          currentUserId = session?.user?.id || null;
+          setUserId(currentUserId);
+        }
+      } catch (e) {
+        console.error("Failed to check auth session", e);
+      }
+
+      if (currentUserId) {
+        // 1. Sync guest history if it exists
+        const localSaved = getSaved();
+        const localSolved = typeof window !== "undefined" ? localStorage.getItem("iq-solved-questions") : null;
+        let solvedSlugs: string[] = [];
+        try {
+          if (localSolved) {
+            const arr = JSON.parse(localSolved);
+            if (Array.isArray(arr)) solvedSlugs = arr.map((item: any) => item.slug);
+          }
+        } catch {}
+
+        if (localSaved.length > 0 || solvedSlugs.length > 0) {
+          try {
+            await fetch("/api/interview-questions/sync", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                savedSlugs: localSaved.map((q) => q.slug),
+                solvedSlugs,
+              }),
+            });
+            localStorage.removeItem("iq-saved-questions");
+            localStorage.removeItem("iq-solved-questions");
+            window.dispatchEvent(new Event("iq-saved-changed"));
+            window.dispatchEvent(new Event("iq-solved-changed"));
+          } catch (e) {
+            console.error("Failed to sync guest data on saved page mount", e);
+          }
+        }
+
+        // 2. Fetch the current state from the database
+        try {
+          const dbRes = await fetch("/api/interview-questions/sync");
+          if (dbRes.ok) {
+            const dbData = await dbRes.json();
+            setItems(dbData.saved || []);
+            setLoading(false);
+            return;
+          }
+        } catch (e) {
+          console.error("Failed to fetch saved questions from database", e);
+        }
+      }
+
+      // Guest fallback
+      setItems(getSaved());
+      setLoading(false);
+    }
+
+    loadData();
+
+    const refresh = () => {
+      if (!userId) setItems(getSaved());
+    };
     window.addEventListener("iq-saved-changed", refresh);
     return () => window.removeEventListener("iq-saved-changed", refresh);
-  }, []);
+  }, [userId]);
+
+  async function handleRemove(slug: string) {
+    if (userId) {
+      try {
+        setItems((prev) => (prev ? prev.filter((q) => q.slug !== slug) : []));
+        await fetch(`/api/interview-questions/${slug}/state`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ type: "saved", active: false }),
+        });
+      } catch (e) {
+        console.error("Failed to remove saved question from database", e);
+      }
+    } else {
+      removeSaved(slug);
+    }
+  }
+
+  async function handleClearAll() {
+    if (items && items.length > 0) {
+      if (userId) {
+        try {
+          setItems([]);
+          await fetch("/api/interview-questions/sync", {
+            method: "DELETE",
+          });
+        } catch (e) {
+          console.error("Failed to clear saved questions from database", e);
+        }
+      } else {
+        items.forEach((q) => removeSaved(q.slug));
+      }
+    }
+  }
 
   return (
     <div className="min-h-screen bg-bg text-fg">
@@ -29,7 +132,9 @@ export default function SavedQuestionsPage() {
         <p className="text-sm text-muted mt-2">Questions you saved to review later. Stored on this device.</p>
 
         <div className="mt-6 space-y-3">
-          {items === null ? null : items.length === 0 ? (
+          {loading ? (
+            <div className="py-10 text-center text-sm text-muted">Loading your saved questions...</div>
+          ) : items === null || items.length === 0 ? (
             <div className="p-10 rounded-2xl border border-dashed border-border text-center">
               <p className="text-sm text-muted">No saved questions yet.</p>
               <Link href="/interview-questions" className="inline-block mt-3 text-sm font-bold text-accent hover:underline">
@@ -48,7 +153,7 @@ export default function SavedQuestionsPage() {
                   </div>
                 </Link>
                 <button
-                  onClick={() => removeSaved(q.slug)}
+                  onClick={() => handleRemove(q.slug)}
                   className="p-1.5 rounded-md text-muted hover:text-rose-500 hover:bg-rose-500/10 shrink-0"
                   title="Remove"
                 >
@@ -59,9 +164,9 @@ export default function SavedQuestionsPage() {
           )}
         </div>
 
-        {items && items.length > 0 && (
+        {items && items.length > 0 && !loading && (
           <button
-            onClick={() => { items.forEach((q) => removeSaved(q.slug)); }}
+            onClick={handleClearAll}
             className="inline-flex items-center gap-1.5 mt-6 text-xs font-bold text-muted hover:text-rose-500 transition"
           >
             <Trash2 className="w-3.5 h-3.5" /> Clear all

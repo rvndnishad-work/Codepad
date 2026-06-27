@@ -16,7 +16,10 @@ import {
   Clock,
   Layers,
   Award,
+  CheckCircle2,
 } from "lucide-react";
+import { isSolved, toggleSolved } from "@/lib/interview-questions/progress";
+import { isSaved, toggleSaved } from "@/lib/interview-questions/saved";
 // ExternalLink removed: per-example "Open in Playground" now lives in CodeExample.
 import MarkdownRenderer from "@/components/MarkdownRenderer";
 import CodeExample, { MultiFileExample, type ExampleData } from "./CodeExample";
@@ -32,6 +35,7 @@ import QuestionEngagement from "./QuestionEngagement";
 import SaveButton from "./SaveButton";
 import HintBox from "./HintBox";
 import JsPlayground from "./JsPlayground";
+import SqlPlayground from "./SqlPlayground";
 import TechSvg from "@/components/TechSvg";
 
 interface QuestionData {
@@ -176,6 +180,13 @@ export default function QuestionDetailClient({
 
   const tags = parseJsonArray(q.tags);
   const years = parseJsonArray<number>(q.yearsAsked).sort((a, b) => b - a);
+
+  const cleanDescription = useMemo(() => {
+    if (!q.description) return "";
+    return q.description
+      .replace(/(?:Here is the schema for our [a-zA-Z0-9`_\-\s,()]+ table[s]?:)?\s*```sql[\s\S]*?```/gi, "")
+      .trim();
+  }, [q.description]);
   
   // Parse examples. An example is either single-code or multi-variant (with a
   // language/framework dropdown), so keep any entry that has runnable code OR
@@ -188,7 +199,8 @@ export default function QuestionDetailClient({
         (e.files && Object.keys(e.files).length > 0)),
   );
 
-  const isRunnable = q.technology === "javascript" || q.technology === "javascript-coding";
+  const isRunnable = q.technology === "javascript" || q.technology === "javascript-coding" || q.technology === "typescript" || q.technology === "python";
+  const isSql = q.technology === "sql";
   // Machine-coding solutions are React components — render examples the same way
   // (highlighted code + "Open in Playground" into the empty-react template).
   const isReact = q.technology === "reactjs" || q.technology === "machine-coding";
@@ -217,10 +229,143 @@ export default function QuestionDetailClient({
       : frameworkKeys.includes("react")
         ? "react"
         : frameworkKeys[0];
-    setTimeout(() => {
-      setFramework(nextFw);
-    }, 0);
+    setFramework(nextFw);
   }, [hasFrameworks, frameworkKeys]);
+
+  const [saved, setSaved] = useState(false);
+  const [solved, setSolved] = useState(false);
+
+  useEffect(() => {
+    async function initAndSync() {
+      if (currentUserId) {
+        // 1. Sync guest history if it exists
+        const localSaved = typeof window !== "undefined" ? localStorage.getItem("iq-saved-questions") : null;
+        const localSolved = typeof window !== "undefined" ? localStorage.getItem("iq-solved-questions") : null;
+        
+        let savedSlugs: string[] = [];
+        let solvedSlugs: string[] = [];
+        
+        try {
+          if (localSaved) {
+            const arr = JSON.parse(localSaved);
+            if (Array.isArray(arr)) savedSlugs = arr.map((item: any) => item.slug);
+          }
+          if (localSolved) {
+            const arr = JSON.parse(localSolved);
+            if (Array.isArray(arr)) solvedSlugs = arr.map((item: any) => item.slug);
+          }
+        } catch (e) {
+          console.error("Failed to parse local storage items for sync", e);
+        }
+
+        if (savedSlugs.length > 0 || solvedSlugs.length > 0) {
+          try {
+            const response = await fetch("/api/interview-questions/sync", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ savedSlugs, solvedSlugs }),
+            });
+            if (response.ok) {
+              localStorage.removeItem("iq-saved-questions");
+              localStorage.removeItem("iq-solved-questions");
+              window.dispatchEvent(new Event("iq-saved-changed"));
+              window.dispatchEvent(new Event("iq-solved-changed"));
+            }
+          } catch (e) {
+            console.error("Failed to sync local data to database", e);
+          }
+        }
+
+        // 2. Fetch the state from the DB for this question
+        try {
+          const res = await fetch(`/api/interview-questions/${q.slug}/state`);
+          if (res.ok) {
+            const data = await res.json();
+            setSaved(data.saved);
+            setSolved(data.solved);
+            return;
+          }
+        } catch (e) {
+          console.error("Failed to fetch database state, falling back to local storage", e);
+        }
+      }
+
+      // Guest fallback / DB fetch fail fallback
+      setSaved(isSaved(q.slug));
+      setSolved(isSolved(q.slug));
+    }
+
+    initAndSync();
+
+    const refreshSaved = () => {
+      if (!currentUserId) setSaved(isSaved(q.slug));
+    };
+    const refreshSolved = () => {
+      if (!currentUserId) setSolved(isSolved(q.slug));
+    };
+
+    window.addEventListener("iq-saved-changed", refreshSaved);
+    window.addEventListener("iq-solved-changed", refreshSolved);
+    return () => {
+      window.removeEventListener("iq-saved-changed", refreshSaved);
+      window.removeEventListener("iq-solved-changed", refreshSolved);
+    };
+  }, [q.slug, currentUserId]);
+
+  async function handleToggleSaved() {
+    const nextSaved = !saved;
+    setSaved(nextSaved);
+
+    if (currentUserId) {
+      try {
+        const response = await fetch(`/api/interview-questions/${q.slug}/state`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ type: "saved", active: nextSaved }),
+        });
+        if (!response.ok) {
+          setSaved(saved);
+        }
+      } catch (e) {
+        console.error(e);
+        setSaved(saved);
+      }
+    } else {
+      const questionData = {
+        slug: q.slug,
+        title: q.title,
+        difficulty: q.difficulty,
+        technology: q.technology,
+        company: q.company?.name ?? null,
+      };
+      const check = toggleSaved(questionData);
+      setSaved(check);
+    }
+  }
+
+  async function handleToggleSolved() {
+    const nextSolved = !solved;
+    setSolved(nextSolved);
+
+    if (currentUserId) {
+      try {
+        const response = await fetch(`/api/interview-questions/${q.slug}/state`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ type: "solved", active: nextSolved }),
+        });
+        if (!response.ok) {
+          setSolved(solved);
+        }
+      } catch (e) {
+        console.error(e);
+        setSolved(solved);
+      }
+    } else {
+      const check = toggleSolved(q.slug, q.technology);
+      setSolved(check);
+    }
+  }
 
   function selectFramework(fw: string) {
     setFramework(fw);
@@ -300,9 +445,9 @@ export default function QuestionDetailClient({
               </h1>
 
               {/* Description body */}
-              {q.description && (
+              {cleanDescription && (
                 <div className="mt-6 pt-5 border-t border-border prose dark:prose-invert max-w-none text-sm text-fg/90 leading-relaxed">
-                  <MarkdownRenderer content={q.description} />
+                  <MarkdownRenderer content={cleanDescription} />
                 </div>
               )}
 
@@ -323,25 +468,7 @@ export default function QuestionDetailClient({
             </motion.div>
 
             {/* 2. AI Hint Card */}
-            <motion.div
-              initial="hidden"
-              animate="visible"
-              variants={fadeInVariants}
-              className="rounded-3xl border border-amber-500/35 dark:border-amber-500/20 bg-amber-500/[0.06] dark:bg-amber-500/[0.03] p-5 flex items-center justify-between gap-4 shadow-sm"
-            >
-              <div className="space-y-1">
-                <h3 className="text-xs font-black uppercase tracking-wider text-amber-600 dark:text-amber-500 flex items-center gap-1.5">
-                  <Sparkles className="w-4 h-4 animate-pulse" />
-                  Stuck? AI Nudge Available
-                </h3>
-                <p className="text-xs text-muted max-w-md">
-                  Get a conceptual hint to guide your logic without spoiling the final implementation.
-                </p>
-              </div>
-              <div className="shrink-0">
-                <HintBox slug={q.slug} />
-              </div>
-            </motion.div>
+            <HintBox slug={q.slug} />
 
             {/* Framework selector — swaps the tutorial + solution (machine-coding). */}
             {hasFrameworks && (
@@ -427,11 +554,38 @@ export default function QuestionDetailClient({
                       {/* Blurred placeholder code list */}
                       <div className="absolute inset-0 bg-gradient-to-t from-bg/90 to-transparent pointer-events-none z-10" />
                       <div className="blur-sm opacity-15 select-none text-left font-mono text-xs space-y-1.5 p-2 border border-border rounded-xl mb-4">
-                        <p>function solveChallenges(inputs) &#123;</p>
-                        <p className="pl-4">{"// Optimized algorithmic steps"}</p>
-                        <p className="pl-4">const cache = new Map();</p>
-                        <p className="pl-4">return inputs.filter(item =&gt; cache.has(item));</p>
-                        <p>&#125;</p>
+                        {q.technology === "sql" ? (
+                          <>
+                            <p>SELECT product, SUM(amount) AS total</p>
+                            <p>FROM sales</p>
+                            <p>WHERE amount &gt; 100</p>
+                            <p>GROUP BY product</p>
+                            <p>HAVING SUM(amount) &gt; 500;</p>
+                          </>
+                        ) : q.technology === "python" ? (
+                          <>
+                            <p>def solve_challenges(inputs):</p>
+                            <p className="pl-4"># Optimized algorithmic steps</p>
+                            <p className="pl-4">cache = set()</p>
+                            <p className="pl-4">return [item for item in inputs if item in cache]</p>
+                          </>
+                        ) : q.technology === "typescript" ? (
+                          <>
+                            <p>function solveChallenges(inputs: string[]): string[] &#123;</p>
+                            <p className="pl-4">{"// Optimized algorithmic steps"}</p>
+                            <p className="pl-4">const cache = new Set&lt;string&gt;();</p>
+                            <p className="pl-4">return inputs.filter(item =&gt; cache.has(item));</p>
+                            <p>&#125;</p>
+                          </>
+                        ) : (
+                          <>
+                            <p>function solveChallenges(inputs) &#123;</p>
+                            <p className="pl-4">{"// Optimized algorithmic steps"}</p>
+                            <p className="pl-4">const cache = new Map();</p>
+                            <p className="pl-4">return inputs.filter(item =&gt; cache.has(item));</p>
+                            <p>&#125;</p>
+                          </>
+                        )}
                       </div>
                       
                       <button
@@ -459,7 +613,7 @@ export default function QuestionDetailClient({
                   <h2 className="text-sm font-black uppercase tracking-wider text-fg">
                     {activeFw
                       ? `${CODE_VARIANTS[activeFw]?.label ?? activeFw} Solution`
-                      : displayExamples.some((e) => isRunnable && e.runnable !== false)
+                      : (isRunnable || isSql) && displayExamples.some((e) => e.runnable !== false)
                       ? "Executable Playgrounds"
                       : isReact && displayExamples.some((e) => e.runnable !== false)
                       ? "React Playground Snippets"
@@ -481,9 +635,13 @@ export default function QuestionDetailClient({
                         />
                       );
                     }
-                    // In-page runner for plain JavaScript single-variant examples.
+                    // In-page runner for JS/TS/Python single-variant examples.
                     if (isRunnable && ex.runnable !== false && !ex.variants) {
-                      return <JsPlayground key={i} code={ex.code ?? ""} label={ex.label} title={q.title} description={q.description ?? undefined} backFrom={`/interview-question/${q.slug}`} />;
+                      return <JsPlayground key={i} code={ex.code ?? ""} label={ex.label} title={q.title} description={q.description ?? undefined} backFrom={`/interview-question/${q.slug}`} technology={q.technology ?? "javascript"} />;
+                    }
+                    // In-page runner for SQL examples.
+                    if (isSql && ex.runnable !== false && !ex.variants) {
+                      return <SqlPlayground key={i} code={ex.code ?? ""} label={ex.label} title={q.title} description={q.description ?? undefined} />;
                     }
                     // Highlighted block with an optional language/framework
                     // dropdown + per-variant "Open in Playground". React
@@ -586,7 +744,7 @@ export default function QuestionDetailClient({
               )}
 
               {/* Engagement Controls */}
-              <div className="flex items-center gap-3 mt-5 w-full justify-center">
+              <div className="flex items-center flex-wrap gap-3 mt-5 w-full justify-center">
                 <QuestionEngagement slug={q.slug} initialLikes={q.likes} />
                 <SaveButton
                   question={{
@@ -596,7 +754,20 @@ export default function QuestionDetailClient({
                     technology: q.technology,
                     company: q.company?.name ?? null,
                   }}
+                  saved={saved}
+                  onClick={handleToggleSaved}
                 />
+                <button
+                  onClick={handleToggleSolved}
+                  className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl border text-sm font-bold transition duration-200 ${
+                    solved
+                      ? "border-emerald-500/40 bg-emerald-500/10 text-emerald-600 dark:text-emerald-455"
+                      : "border-border text-muted hover:text-fg hover:border-fg/30"
+                  }`}
+                >
+                  <CheckCircle2 className="w-4 h-4" />
+                  {solved ? "Solved" : "Mark Solved"}
+                </button>
               </div>
             </motion.div>
 

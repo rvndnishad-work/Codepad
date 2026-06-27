@@ -1,7 +1,11 @@
+"use client";
+
+import { useState, useEffect } from "react";
 import Link from "next/link";
-import { ArrowUpRight } from "lucide-react";
+import { ArrowUpRight, CheckCircle2 } from "lucide-react";
 import { TECHNOLOGIES } from "@/lib/interview-questions/shared";
 import TechSvg from "@/components/TechSvg";
+import { getSolved } from "@/lib/interview-questions/progress";
 
 interface TechStats {
   easy: number;
@@ -163,6 +167,25 @@ export default function TechCards({
 }: {
   stats: Record<string, TechStats>;
 }) {
+  const [solvedCounts, setSolvedCounts] = useState<Record<string, number>>({});
+
+  useEffect(() => {
+    const computeSolved = () => {
+      const list = getSolved();
+      const counts: Record<string, number> = {};
+      list.forEach((q) => {
+        if (q.technology) {
+          counts[q.technology] = (counts[q.technology] || 0) + 1;
+        }
+      });
+      setSolvedCounts(counts);
+    };
+
+    computeSolved();
+    window.addEventListener("iq-solved-changed", computeSolved);
+    return () => window.removeEventListener("iq-solved-changed", computeSolved);
+  }, []);
+
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
       {TECHNOLOGIES.map((t) => {
@@ -172,6 +195,7 @@ export default function TechCards({
         const easyPct = (stat.easy / total) * 100;
         const mediumPct = (stat.medium / total) * 100;
         const hardPct = (stat.hard / total) * 100;
+        const solvedCount = solvedCounts[t.slug] || 0;
 
         return (
           <Link
@@ -218,6 +242,23 @@ export default function TechCards({
             <div className="mt-6 pt-5 border-t border-border">
               {stat.total > 0 ? (
                 <div>
+                  {/* Progress Tracker */}
+                  <div className="flex justify-between items-center mb-1.5 text-[10px] font-bold text-muted">
+                    <span className="text-fg/80 flex items-center gap-1">
+                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />
+                      {solvedCount} / {stat.total} Solved
+                    </span>
+                    <span className="text-muted/80">{Math.round((solvedCount / stat.total) * 100)}%</span>
+                  </div>
+                  {solvedCount > 0 && (
+                    <div className="h-1 w-full bg-bg border border-border rounded-full overflow-hidden mb-3.5">
+                      <div
+                        className="h-full bg-emerald-500 rounded-full transition-all duration-500"
+                        style={{ width: `${(solvedCount / stat.total) * 100}%` }}
+                      />
+                    </div>
+                  )}
+
                   {/* Distribution Bar */}
                   <div className="flex h-1.5 w-full rounded-full overflow-hidden bg-bg border border-border gap-0.5 p-[1px]">
                     {stat.easy > 0 && (

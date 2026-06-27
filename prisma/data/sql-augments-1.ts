@@ -33,29 +33,29 @@ const augments: SqlAugment[] = [
       "| `RIGHT JOIN` | Outer join | Returns **all** rows from the right table, plus matching rows from the left (or `NULL`s). |\n" +
       "| `FULL JOIN` | Outer join | Returns all rows when there is a match in **either** table (with `NULL`s where unmatched). |\n" +
       "| `CROSS JOIN` | Cartesian product | Combines every row from the left table with every row from the right. |\n\n" +
-      "<svg class='iq-diagram' viewBox='0 0 480 180' role='img' aria-label='Venn Diagrams of INNER, LEFT, RIGHT and FULL Joins'>" +
-      "<g transform='translate(0, 0)'>" +
-      "  <circle cx='60' cy='80' r='40' class='d-box-muted' />" +
-      "  <circle cx='100' cy='80' r='40' class='d-box-muted' />" +
-      "  <path d='M80,45 A40,40 0 0,1 100,80 A40,40 0 0,1 80,115 A40,40 0 0,1 60,80 A40,40 0 0,1 80,45 Z' class='d-box-accent' />" +
-      "  <text x='80' y='145' text-anchor='middle' class='d-sub'>INNER JOIN</text>" +
+      "<svg class='iq-diagram' viewBox='0 0 480 170' role='img' aria-label='Venn Diagrams of INNER, LEFT, RIGHT and FULL Joins'>" +
+      "<g transform='translate(15, 5)'>" +
+      "  <circle cx='50' cy='70' r='35' class='d-box-muted' />" +
+      "  <circle cx='85' cy='70' r='35' class='d-box-muted' />" +
+      "  <path d='M68,39 A35,35 0 0,1 85,70 A35,35 0 0,1 68,101 A35,35 0 0,1 50,70 A35,35 0 0,1 68,39 Z' class='d-box-accent' />" +
+      "  <text x='68' y='130' text-anchor='middle' class='d-sub' font-size='10'>INNER JOIN</text>" +
       "</g>" +
-      "<g transform='translate(120, 0)'>" +
-      "  <circle cx='60' cy='80' r='40' class='d-box-accent' />" +
-      "  <circle cx='100' cy='80' r='40' class='d-box-muted' />" +
-      "  <path d='M80,45 A40,40 0 0,1 100,80 A40,40 0 0,1 80,115 A40,40 0 0,1 60,80 A40,40 0 0,1 80,45 Z' class='d-box-accent' />" +
-      "  <text x='80' y='145' text-anchor='middle' class='d-sub'>LEFT JOIN</text>" +
+      "<g transform='translate(130, 5)'>" +
+      "  <circle cx='50' cy='70' r='35' class='d-box-accent' />" +
+      "  <circle cx='85' cy='70' r='35' class='d-box-muted' />" +
+      "  <path d='M68,39 A35,35 0 0,1 85,70 A35,35 0 0,1 68,101 A35,35 0 0,1 50,70 A35,35 0 0,1 68,39 Z' class='d-box-accent' />" +
+      "  <text x='68' y='130' text-anchor='middle' class='d-sub' font-size='10'>LEFT JOIN</text>" +
       "</g>" +
-      "<g transform='translate(240, 0)'>" +
-      "  <circle cx='60' cy='80' r='40' class='d-box-muted' />" +
-      "  <circle cx='100' cy='80' r='40' class='d-box-accent' />" +
-      "  <path d='M80,45 A40,40 0 0,1 100,80 A40,40 0 0,1 80,115 A40,40 0 0,1 60,80 A40,40 0 0,1 80,45 Z' class='d-box-accent' />" +
-      "  <text x='80' y='145' text-anchor='middle' class='d-sub'>RIGHT JOIN</text>" +
+      "<g transform='translate(245, 5)'>" +
+      "  <circle cx='50' cy='70' r='35' class='d-box-muted' />" +
+      "  <circle cx='85' cy='70' r='35' class='d-box-accent' />" +
+      "  <path d='M68,39 A35,35 0 0,1 85,70 A35,35 0 0,1 68,101 A35,35 0 0,1 50,70 A35,35 0 0,1 68,39 Z' class='d-box-accent' />" +
+      "  <text x='68' y='130' text-anchor='middle' class='d-sub' font-size='10'>RIGHT JOIN</text>" +
       "</g>" +
-      "<g transform='translate(360, 0)'>" +
-      "  <circle cx='60' cy='80' r='40' class='d-box-accent' fill-opacity='0.75' />" +
-      "  <circle cx='100' cy='80' r='40' class='d-box-accent' fill-opacity='0.75' />" +
-      "  <text x='80' y='145' text-anchor='middle' class='d-sub'>FULL JOIN</text>" +
+      "<g transform='translate(360, 5)'>" +
+      "  <circle cx='50' cy='70' r='35' class='d-box-accent' fill-opacity='0.75' />" +
+      "  <circle cx='85' cy='70' r='35' class='d-box-accent' fill-opacity='0.75' />" +
+      "  <text x='68' y='130' text-anchor='middle' class='d-sub' font-size='10'>FULL JOIN</text>" +
       "</g>" +
       "</svg>\n\n" +
       "### Practical Advice\n" +
@@ -268,7 +268,7 @@ const augments: SqlAugment[] = [
       "<rect class='d-box' x='300' y='80' width='100' height='30' rx='5'/><text class='d-sub' x='350' y='99' text-anchor='middle'>Charlie (Mgr: 1)</text>" +
       "<line class='d-edge' x1='220' y1='45' x2='150' y2='75' marker-end='url(#arrow)'/>" +
       "<line class='d-edge' x1='260' y1='45' x2='330' y2='75' marker-end='url(#arrow)'/>" +
-      "<text class='d-sub' x='240' y='135' text-anchor='middle'>Joined table aliases (e.g. employees e JOIN employees m) map these relations</text>" +
+      "<text class='d-sub' x='240' y='135' text-anchor='middle' font-size='9'>Self-join uses aliases (e, m) to reference the same table twice</text>" +
       "</svg>\n\n" +
       "### Common Query Template\n" +
       "To map employee names directly to their manager's name, you aliased the table as `e` (for employee) and `m` (for manager):\n\n" +

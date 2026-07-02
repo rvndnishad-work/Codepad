@@ -21,6 +21,16 @@ export function NodeSvg({ className = "w-10 h-10" }: { className?: string }) {
   );
 }
 
+export function NextSvg({ className = "w-10 h-10" }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 100 100" className={`${className} text-zinc-700 dark:text-zinc-300`}>
+      <circle cx="50" cy="50" r="35" fill="none" stroke="currentColor" strokeWidth="2" className="opacity-60" />
+      <path d="M 38 35 L 38 65 M 38 35 L 64 68 M 64 35 L 64 65" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+      <circle cx="50" cy="50" r="35" fill="none" stroke="currentColor" strokeWidth="1" strokeDasharray="3 4" className="opacity-40 animate-[spin_12s_linear_infinite]" style={{ transformOrigin: "center" }} />
+    </svg>
+  );
+}
+
 export function JavaScriptSvg({ className = "w-10 h-10" }: { className?: string }) {
   return (
     <svg viewBox="0 0 100 100" className={`${className} text-amber-500 dark:text-yellow-400`}>
@@ -147,6 +157,8 @@ export default function TechSvg({ tech, className = "w-10 h-10" }: { tech: strin
       return <ReactSvg className={className} />;
     case "nodejs":
       return <NodeSvg className={className} />;
+    case "nextjs":
+      return <NextSvg className={className} />;
     case "javascript":
     case "javascript-coding":
       return <JavaScriptSvg className={className} />;

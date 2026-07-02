@@ -1,5 +1,6 @@
 import type { NextConfig } from "next";
 import { reactMergeRedirects } from "./src/lib/react-merge-redirects";
+import { nodeMergeRedirects } from "./src/lib/node-merge-redirects";
 
 const nextConfig: NextConfig = {
   distDir: process.env.NEXT_DIST_DIR || ".next",
@@ -72,6 +73,8 @@ const nextConfig: NextConfig = {
       },
       // Merged duplicate React questions → canonical pages (reactjs dedup).
       ...reactMergeRedirects,
+      // Merged duplicate Node.js questions → canonical pages (nodejs dedup).
+      ...nodeMergeRedirects,
     ];
   },
 };

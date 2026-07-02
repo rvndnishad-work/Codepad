@@ -49,6 +49,17 @@ const META: Record<string, TechMeta> = {
     tagline: "Event loop, streams & APIs",
     concepts: ["Event Loop", "Streams", "V8 Engine", "Buffers"],
   },
+  nextjs: {
+    bg: "bg-gradient-to-br from-zinc-500/5 via-surface to-surface dark:from-zinc-800/20 dark:via-surface/10 dark:to-surface/5",
+    border: "border-zinc-500/15 dark:border-zinc-400/10",
+    hoverBg: "hover:from-zinc-500/10 dark:hover:from-zinc-800/30",
+    hoverBorder: "hover:border-zinc-500/40 dark:hover:border-zinc-400/30",
+    hoverShadow: "hover:shadow-[0_8px_30px_rgba(113,113,122,0.08)]",
+    iconBg: "bg-zinc-500/10 dark:bg-zinc-400/20",
+    glowColor: "bg-zinc-500/5",
+    tagline: "App Router, RSC & rendering",
+    concepts: ["App Router", "RSC", "SSR/ISR", "Server Actions"],
+  },
   javascript: {
     bg: "bg-gradient-to-br from-yellow-500/5 via-surface to-surface dark:from-yellow-950/15 dark:via-surface/10 dark:to-surface/5",
     border: "border-yellow-500/15 dark:border-yellow-500/10",

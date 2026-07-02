@@ -1189,19 +1189,6 @@
       "technology": "nodejs"
     },
     {
-      "title": "What is `npm` and what are its core functionalities?",
-      "description": "This question assesses the candidate's basic understanding of Node.js's package manager and its primary uses.",
-      "answer": "npm stands for Node Package Manager. It is the default package manager for Node.js and is used for installing, sharing, and managing project dependencies. Its core functionalities include installing packages from the npm registry, managing project metadata in `package.json`, running scripts defined in `package.json`, and publishing your own packages to the registry. It's crucial for building and maintaining Node.js applications efficiently.",
-      "difficulty": "easy",
-      "round": "Phone Screen",
-      "tags": [
-        "npm",
-        "package manager",
-        "dependencies"
-      ],
-      "technology": "nodejs"
-    },
-    {
       "title": "How do you handle environment variables in Node.js?",
       "description": "This question checks how candidates manage configuration for different deployment environments.",
       "answer": "Environment variables are a standard way to externalize configuration from your code, making applications more flexible and secure. In Node.js, they are accessed via `process.env`. For local development, a common practice is to use a `.env` file with a library like `dotenv` to load these variables into `process.env`. In production, they are usually set directly in the deployment environment (e.g., Heroku config vars, Kubernetes secrets).",
@@ -1479,32 +1466,6 @@
       "technology": "nodejs"
     },
     {
-      "title": "Explain the difference between require() and import in Node.js.",
-      "description": "Contrast the CommonJS module system with the modern ES modules system in Node.js runtime environments.",
-      "answer": "`require()` is the synchronous, runtime loading mechanism used by the CommonJS module system, while `import` is the static, compile-time loading mechanism used by ECMAScript Modules (ESM). Because `require()` is dynamic, it can be called conditionally inside `if` statements, whereas standard `import` statements must reside at the top-level of the file. To use `import` in Node.js, you must either use the `.mjs` extension or set `\"type\": \"module\"` in `package.json`.",
-      "difficulty": "easy",
-      "round": "Phone Screen",
-      "tags": [
-        "modules",
-        "commonjs",
-        "esm"
-      ],
-      "technology": "nodejs"
-    },
-    {
-      "title": "What is the purpose of the cluster module and how does it utilize multi-core CPUs?",
-      "description": "Explain how to scale a Node.js application vertically to take full advantage of multi-core servers.",
-      "answer": "The `cluster` module allows you to spawn a network of child processes (workers) that all share the exact same server ports. The master process uses a round-robin load balancing strategy by default to distribute incoming HTTP requests among the active worker instances. This allows single-threaded Node.js applications to utilize all available CPU cores of the host machine, significantly increasing overall throughput.",
-      "difficulty": "medium",
-      "round": "System Design",
-      "tags": [
-        "clustering",
-        "scaling",
-        "multiprocess"
-      ],
-      "technology": "nodejs"
-    },
-    {
       "title": "How do you handle uncaught exceptions and unhandled promise rejections in Node.js?",
       "description": "Detail the global event listeners used to catch unexpected application-level errors and prevent silent failures.",
       "answer": "You can listen to global process events using `process.on('uncaughtException', callback)` and `process.on('unhandledRejection', callback)`. When an uncaught exception occurs, the application is in an undefined state, so it is best practice to log the error and perform a graceful shutdown using `process.exit(1)`. For unhandled promise rejections, Node.js will automatically terminate the process in modern versions unless handled explicitly.",
@@ -1713,19 +1674,6 @@
       "technology": "nodejs"
     },
     {
-      "title": "What is the difference between spawn() and exec() in Node.js?",
-      "description": "Candidates are frequently asked to compare these two child_process methods to evaluate their understanding of stream-based vs buffer-based processes.",
-      "answer": "The main difference is that `spawn` runs a process and streams its output in real-time, making it ideal for large volumes of data or long-running processes. Conversely, `exec` runs a command in a shell and buffers the entire stdout/stderr output before returning it in a callback, which can fail if the buffer size exceeds its limit (default 1024KB). Use `spawn` for streaming data and `exec` for running simple commands with small execution outputs.",
-      "difficulty": "medium",
-      "round": "Phone Screen",
-      "tags": [
-        "child-process",
-        "streams",
-        "v8"
-      ],
-      "technology": "nodejs"
-    },
-    {
       "title": "How do you implement rate limiting in a Node.js Express application?",
       "description": "Interviewers want to see how you protect APIs from abuse or brute-force attacks at the application level.",
       "answer": "Rate limiting is typically implemented using middleware like `express-rate-limit` which tracks incoming IP requests. For distributed systems, a fast, memory-based store like Redis is used to maintain request counts across multiple application instances. When a client exceeds their limit, the middleware intercepts the request and returns a `429 Too Many Requests` HTTP status code.",
@@ -1830,19 +1778,6 @@
       "technology": "nodejs"
     },
     {
-      "title": "What is the difference between string concatenation and path.join/path.resolve?",
-      "description": "Tests knowledge of cross-platform compatibility and absolute vs relative path resolution.",
-      "answer": "Manual string concatenation can cause errors across different operating systems because Windows uses backslashes (`\\`) while POSIX systems use forward slashes (`/`). `path.join()` joins path segments using the platform-specific separator. `path.resolve()` goes a step further by always returning an absolute path, resolving relative segments against the current working directory (`process.cwd()`).",
-      "difficulty": "easy",
-      "round": "Phone Screen",
-      "tags": [
-        "path",
-        "fs",
-        "cross-platform"
-      ],
-      "technology": "nodejs"
-    },
-    {
       "title": "What is the purpose of the 'zlib' module in Node.js?",
       "description": "Tests knowledge of native compression tools to reduce network payloads.",
       "answer": "The `zlib` module provides compression and decompression functionalities using Gzip, Deflate, and Brotli algorithms. It is commonly used in HTTP servers to compress outgoing response bodies on the fly, reducing network transfer sizes and improving load times. Because it is stream-based, it can compress and decompress large files with minimal memory overhead.",
@@ -1852,19 +1787,6 @@
         "zlib",
         "compression",
         "performance"
-      ],
-      "technology": "nodejs"
-    },
-    {
-      "title": "How does Node.js handle multi-threading behind the scenes if JavaScript is single-threaded?",
-      "description": "Clarifies the distinction between JS execution and the underlying platform architecture.",
-      "answer": "While the JavaScript execution engine (V8) runs on a single thread, Node.js offloads heavy asynchronous operations to C++ APIs and libuv. Libuv maintains a thread pool (default size of 4) to execute blocking tasks like cryptography, compression, and file system I/O in parallel. Once a background thread finishes a task, it notifies the main thread to execute its callback via the event loop queue.",
-      "difficulty": "medium",
-      "round": "System Design",
-      "tags": [
-        "libuv",
-        "multi-threading",
-        "event-loop"
       ],
       "technology": "nodejs"
     },
@@ -1943,19 +1865,6 @@
         "microservices",
         "grpc",
         "architecture"
-      ],
-      "technology": "nodejs"
-    },
-    {
-      "title": "What are 'unhandledRejections' and how do they differ from 'uncaughtExceptions'?",
-      "description": "Tests error propagation knowledge in asynchronous vs synchronous execution flow.",
-      "answer": "An `uncaughtException` occurs when an error is thrown in synchronous code but is never caught by a `try-catch` block, immediately crashing the process if not handled. An `unhandledRejection` occurs when a Promise is rejected, but no `.catch()` block or try-catch handles it. In modern Node.js, unhandled promise rejections will also terminate the process with a non-zero exit code to prevent state corruption.",
-      "difficulty": "medium",
-      "round": "Phone Screen",
-      "tags": [
-        "errors",
-        "promises",
-        "async"
       ],
       "technology": "nodejs"
     },

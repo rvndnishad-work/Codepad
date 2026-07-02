@@ -24,6 +24,8 @@
     "augment:react": "npx tsx prisma/augment-react-examples.ts",
     "augment:sd": "npx tsx prisma/augment-system-design.ts",
     "augment:ng": "npx tsx prisma/augment-angular.ts",
+    "augment:node": "npx tsx prisma/augment-node.ts",
+    "augment:next": "npx tsx prisma/augment-nextjs.ts",
     "augment:py": "npx tsx prisma/augment-python.ts",
     "augment:dsa": "npx tsx prisma/augment-dsa.ts",
     "augment:mc": "npx tsx prisma/augment-machine-coding.ts",

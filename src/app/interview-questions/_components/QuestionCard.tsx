@@ -55,6 +55,17 @@ const CARD_THEMES: Record<string, CardTheme> = {
     tag: "bg-green-500/10 text-green-600 dark:text-green-400 border-green-500/20",
     tile: "bg-green-500/10 border-green-500/20 group-hover:border-green-500/40",
   },
+  nextjs: {
+    bg: "bg-gradient-to-br from-zinc-500/[0.04] to-surface/40 dark:from-zinc-700/[0.06] dark:to-surface/5",
+    border: "border-zinc-500/20 dark:border-zinc-400/15",
+    leftBorder: "border-l-zinc-500",
+    hoverBg: "hover:from-zinc-500/[0.08] dark:hover:from-zinc-700/[0.1]",
+    hoverBorder: "hover:border-zinc-500/40 dark:hover:border-zinc-400/30",
+    hoverShadow: "hover:shadow-[0_8px_30px_rgba(113,113,122,0.08)]",
+    textAccent: "group-hover:text-zinc-700 dark:group-hover:text-zinc-300",
+    tag: "bg-zinc-500/10 text-zinc-700 dark:text-zinc-300 border-zinc-500/20",
+    tile: "bg-zinc-500/10 border-zinc-500/20 group-hover:border-zinc-500/40",
+  },
   javascript: {
     bg: "bg-gradient-to-br from-yellow-500/[0.04] to-surface/40 dark:from-yellow-500/[0.02] dark:to-surface/5",
     border: "border-yellow-500/20 dark:border-yellow-500/15",

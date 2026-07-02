@@ -788,16 +788,6 @@ portal-nextjs-toast,
   fill: var(--bg);
 }
 
-/* Legacy answer-diagram cards (React/DSA/curated-hard sets) were authored wrapped
-   in a fixed `max-width:~520-560px` <div>, which shrank the inline SVG so its
-   inline font-sizes rendered too small to read (scale ~1x). Raise that cap so the
-   diagram scales up to a legible size, matching the responsive .iq-diagram set.
-   Scoped to rendered markdown only: a div directly holding a `.not-prose` span
-   that holds an <svg> — so it can't affect UI icons or code blocks. */
-.prose div:has(> span.not-prose > svg) {
-  max-width: 820px !important;
-}
-
 /* Placeholder shown on empty paragraphs / headings via Tiptap Placeholder ext */
 .tiptap-prose p.is-editor-empty:first-child::before,
 .tiptap-prose h1.is-empty::before,

@@ -1,0 +1,515 @@
+[
+  {
+    "title": "What is the built-in node:test runner and how does it compare to Jest and Mocha?",
+    "description": "Node's native test runner, its API, and trade-offs vs Jest/Mocha.",
+    "answer": "node:test is Node's built-in test runner (stable since Node 20). It needs no dependencies, runs files in parallel, and ships with node:assert, mocking, and --experimental-test-coverage. Jest/Mocha add richer ecosystems (snapshots, watch UIs) but cost install size and config.",
+    "difficulty": "medium",
+    "round": "Backend",
+    "tags": ["nodejs", "testing", "node-test", "tooling"],
+    "technology": "nodejs"
+  },
+  {
+    "title": "What does the Node.js --watch flag do and how does it replace nodemon?",
+    "description": "Native file-watching/restart with node --watch and --watch-path.",
+    "answer": "node --watch restarts the process when imported files change, and --watch-path scopes the watched directories. It covers nodemon's core restart-on-change use case with zero dependencies, though nodemon still offers more config (delays, exec maps, extensions).",
+    "difficulty": "easy",
+    "round": "Backend",
+    "tags": ["nodejs", "tooling", "dx", "watch"],
+    "technology": "nodejs"
+  },
+  {
+    "title": "What is the Node.js permission model (--permission) and what does it protect against?",
+    "description": "The experimental --permission flag restricting fs, child_process, and worker access.",
+    "answer": "The permission model (--permission, with --allow-fs-read, --allow-fs-write, --allow-child-process, --allow-worker) denies a process access to the filesystem, child processes, and workers unless explicitly granted. It limits the blast radius of a compromised dependency running arbitrary code.",
+    "difficulty": "hard",
+    "round": "Backend",
+    "tags": ["nodejs", "security", "permission-model", "sandbox"],
+    "technology": "nodejs"
+  },
+  {
+    "title": "What are Single Executable Applications (SEA) in Node.js?",
+    "description": "Bundling a Node app + runtime into one self-contained binary.",
+    "answer": "A Single Executable Application embeds your bundled JavaScript into a copy of the Node binary, producing one file you can ship without requiring users to install Node. You generate a SEA blob from a config, then inject it into the executable with postject.",
+    "difficulty": "hard",
+    "round": "Backend",
+    "tags": ["nodejs", "distribution", "sea", "tooling"],
+    "technology": "nodejs"
+  },
+  {
+    "title": "How do you run TypeScript directly in Node.js (native type stripping, tsx, ts-node)?",
+    "description": "Type stripping in modern Node vs tsx/ts-node loaders.",
+    "answer": "Recent Node versions can run .ts files by stripping types at load time (no type-checking). tsx and ts-node are loaders that transpile on the fly; ts-node can also type-check. For production you usually compile ahead of time with tsc or a bundler.",
+    "difficulty": "medium",
+    "round": "Backend",
+    "tags": ["nodejs", "typescript", "tooling", "esm"],
+    "technology": "nodejs"
+  },
+  {
+    "title": "What are the differences between npm, Yarn, and pnpm?",
+    "description": "Install strategy, lockfiles, and disk usage across the three managers.",
+    "answer": "All three install npm-registry packages but differ in layout: npm and Yarn flatten node_modules, while pnpm uses a content-addressable store with symlinks, saving disk and enforcing stricter dependency access. Each has its own lockfile and workspace support.",
+    "difficulty": "medium",
+    "round": "Backend",
+    "tags": ["nodejs", "npm", "pnpm", "yarn", "tooling"],
+    "technology": "nodejs"
+  },
+  {
+    "title": "What are npm workspaces and how do you manage a monorepo with them?",
+    "description": "Linking multiple packages in one repo with the workspaces field.",
+    "answer": "npm workspaces let one repo host multiple packages under a workspaces array in the root package.json. npm installs and symlinks them together so local packages resolve each other, enabling a monorepo without an extra tool.",
+    "difficulty": "medium",
+    "round": "Backend",
+    "tags": ["nodejs", "npm", "monorepo", "workspaces"],
+    "technology": "nodejs"
+  },
+  {
+    "title": "What is the package.json \"exports\" field and conditional exports?",
+    "description": "Controlling a package's public entry points and per-environment resolution.",
+    "answer": "The exports field defines a package's official entry points and hides everything else, so consumers can't deep-import internals. Conditional keys (import, require, types, node, default) resolve different files per environment, enabling dual ESM/CJS packages.",
+    "difficulty": "hard",
+    "round": "Backend",
+    "tags": ["nodejs", "esm", "packaging", "exports"],
+    "technology": "nodejs"
+  },
+  {
+    "title": "What is the difference between \"type\": \"module\", .mjs, and .cjs?",
+    "description": "How Node decides whether a file is ESM or CommonJS.",
+    "answer": "Node picks the module system per file: .mjs is always ESM, .cjs is always CommonJS, and .js follows the nearest package.json \"type\" field (\"module\" = ESM, default/\"commonjs\" = CJS). Mixing them has interop rules around require/import.",
+    "difficulty": "medium",
+    "round": "Backend",
+    "tags": ["nodejs", "esm", "commonjs", "modules"],
+    "technology": "nodejs"
+  },
+  {
+    "title": "What is top-level await and what are its caveats in Node.js ESM?",
+    "description": "Awaiting at module scope and how it affects module loading.",
+    "answer": "Top-level await lets you use await directly in an ES module body. It's powerful for async initialization, but it blocks the importing module until it resolves, so a slow top-level await delays everything downstream and can risk deadlocks with circular imports.",
+    "difficulty": "medium",
+    "round": "Backend",
+    "tags": ["nodejs", "esm", "async", "top-level-await"],
+    "technology": "nodejs"
+  },
+  {
+    "title": "How do you replicate __dirname in ES Modules using import.meta.url?",
+    "description": "Recovering directory/file paths in ESM where __dirname is undefined.",
+    "answer": "ESM has no __dirname/__filename. You derive them from import.meta.url with fileURLToPath: const __filename = fileURLToPath(import.meta.url); const __dirname = path.dirname(__filename). Newer Node also exposes import.meta.dirname directly.",
+    "difficulty": "easy",
+    "round": "Backend",
+    "tags": ["nodejs", "esm", "import-meta", "paths"],
+    "technology": "nodejs"
+  },
+  {
+    "title": "What is npx and how does it differ from a global install?",
+    "description": "Running package binaries on demand without polluting global installs.",
+    "answer": "npx executes a package's binary, downloading it temporarily if it's not installed, instead of installing it globally. It always runs the project-local version if present, avoiding version drift and stale global tools.",
+    "difficulty": "easy",
+    "round": "Backend",
+    "tags": ["nodejs", "npm", "npx", "tooling"],
+    "technology": "nodejs"
+  },
+  {
+    "title": "What is semantic versioning and how do ^, ~, and exact versions behave?",
+    "description": "MAJOR.MINOR.PATCH and the range operators in package.json.",
+    "answer": "SemVer is MAJOR.MINOR.PATCH: breaking, feature, fix. ^1.2.3 allows minor+patch up to <2.0.0, ~1.2.3 allows patch up to <1.3.0, and 1.2.3 pins exactly. The lockfile records the actually-installed versions.",
+    "difficulty": "easy",
+    "round": "Backend",
+    "tags": ["nodejs", "npm", "semver", "versioning"],
+    "technology": "nodejs"
+  },
+  {
+    "title": "What is the difference between `npm ci` and `npm install`?",
+    "description": "Reproducible CI installs vs dependency resolution.",
+    "answer": "npm install resolves the dependency tree and may update package-lock.json. npm ci deletes node_modules and installs exactly what the lockfile specifies, failing if package.json and the lockfile disagree — making it faster and deterministic for CI.",
+    "difficulty": "medium",
+    "round": "Backend",
+    "tags": ["nodejs", "npm", "ci", "lockfile"],
+    "technology": "nodejs"
+  },
+  {
+    "title": "What is AsyncLocalStorage and what problem does it solve?",
+    "description": "Per-request context propagation across async boundaries.",
+    "answer": "AsyncLocalStorage stores data that stays attached to a logical async operation as it flows through callbacks, promises, and timers. It solves request-scoped context (request id, user, trace id) without threading parameters through every function.",
+    "difficulty": "hard",
+    "round": "Backend",
+    "tags": ["nodejs", "async-hooks", "context", "observability"],
+    "technology": "nodejs"
+  },
+  {
+    "title": "What is diagnostics_channel and when would you use it?",
+    "description": "A built-in publish/subscribe channel for instrumentation.",
+    "answer": "diagnostics_channel is a core pub/sub API for emitting and subscribing to named diagnostic events with near-zero cost when no subscriber is attached. Libraries publish lifecycle events (e.g. http requests) so APM/tracing tools can observe them without monkey-patching.",
+    "difficulty": "hard",
+    "round": "Backend",
+    "tags": ["nodejs", "observability", "diagnostics", "instrumentation"],
+    "technology": "nodejs"
+  },
+  {
+    "title": "What is the perf_hooks module and how do you measure performance?",
+    "description": "High-resolution timing, marks/measures, and observers.",
+    "answer": "perf_hooks exposes high-resolution timing: performance.now(), performance.mark()/measure() for named spans, and a PerformanceObserver to collect entries. It also surfaces event-loop utilization and GC timing for production performance analysis.",
+    "difficulty": "medium",
+    "round": "Backend",
+    "tags": ["nodejs", "performance", "perf-hooks", "observability"],
+    "technology": "nodejs"
+  },
+  {
+    "title": "How do you capture and analyze a heap snapshot to find a memory leak?",
+    "description": "Generating and diffing V8 heap snapshots.",
+    "answer": "You capture a V8 heap snapshot with v8.writeHeapSnapshot() or via the inspector, load it in Chrome DevTools Memory tab, and compare snapshots taken over time. Objects that keep growing between snapshots — retained by a path you didn't expect — reveal the leak.",
+    "difficulty": "hard",
+    "round": "Backend",
+    "tags": ["nodejs", "memory", "heap-snapshot", "debugging"],
+    "technology": "nodejs"
+  },
+  {
+    "title": "How do you profile CPU usage with --prof, 0x, or clinic.js flame graphs?",
+    "description": "Finding hot functions and event-loop blockers.",
+    "answer": "node --prof writes a V8 tick log you process with --prof-process; 0x and clinic.js flame produce flame graphs where wide frames are the functions consuming the most CPU. They pinpoint synchronous hot paths that block the event loop.",
+    "difficulty": "hard",
+    "round": "Backend",
+    "tags": ["nodejs", "performance", "profiling", "flame-graph"],
+    "technology": "nodejs"
+  },
+  {
+    "title": "How do you implement structured logging with pino or winston, and why avoid console.log in production?",
+    "description": "JSON logs, levels, and async transport performance.",
+    "answer": "Structured loggers like pino emit JSON with levels, timestamps, and context so logs are machine-parseable and queryable. console.log is synchronous, unstructured, and can block under load; pino is asynchronous and far faster, and pairs with AsyncLocalStorage for per-request fields.",
+    "difficulty": "medium",
+    "round": "Backend",
+    "tags": ["nodejs", "logging", "pino", "observability"],
+    "technology": "nodejs"
+  },
+  {
+    "title": "How do you add OpenTelemetry distributed tracing to a Node.js service?",
+    "description": "Spans, context propagation, and exporters across services.",
+    "answer": "OpenTelemetry auto-instruments HTTP/DB clients to create spans, propagates a trace context header across service boundaries, and exports traces to a collector (Jaeger, Tempo). It lets you follow one request end-to-end across multiple Node services.",
+    "difficulty": "hard",
+    "round": "Backend",
+    "tags": ["nodejs", "observability", "opentelemetry", "tracing"],
+    "technology": "nodejs"
+  },
+  {
+    "title": "How do you design liveness and readiness health-check endpoints?",
+    "description": "Distinguishing 'is the process alive' from 'can it serve traffic'.",
+    "answer": "A liveness probe answers 'is the process alive?' and should stay cheap so orchestrators don't kill a busy-but-healthy app. A readiness probe answers 'can it serve traffic?' and checks dependencies (DB, cache); failing it removes the instance from the load balancer without restarting it.",
+    "difficulty": "medium",
+    "round": "Backend",
+    "tags": ["nodejs", "ops", "health-check", "kubernetes"],
+    "technology": "nodejs"
+  },
+  {
+    "title": "What is undici and why is the global fetch built on it in modern Node.js?",
+    "description": "Node's from-scratch HTTP/1.1 client behind global fetch.",
+    "answer": "undici is a fast HTTP/1.1 client written for Node, and the global fetch is implemented on top of it. It offers connection pooling via Agent/Pool, lower overhead than the legacy http client, and APIs like request() and stream() for high-throughput services.",
+    "difficulty": "medium",
+    "round": "Backend",
+    "tags": ["nodejs", "http", "undici", "fetch"],
+    "technology": "nodejs"
+  },
+  {
+    "title": "How does HTTP/2 support work in Node.js and how does it differ from HTTP/1.1?",
+    "description": "Multiplexing, streams, and server push over a single connection.",
+    "answer": "The node:http2 module multiplexes many concurrent request/response streams over one TCP connection with header compression, eliminating HTTP/1.1 head-of-line blocking at the connection level. It requires TLS in browsers and uses a stream-based API.",
+    "difficulty": "hard",
+    "round": "Backend",
+    "tags": ["nodejs", "http2", "networking", "performance"],
+    "technology": "nodejs"
+  },
+  {
+    "title": "How do you implement real-time communication with WebSockets (ws) in Node.js?",
+    "description": "Upgrading HTTP to a persistent duplex connection.",
+    "answer": "WebSockets upgrade an HTTP connection to a persistent, full-duplex channel so server and client push messages without polling. The ws library attaches to an http server, emits 'connection' and 'message' events, and you broadcast by iterating connected clients.",
+    "difficulty": "medium",
+    "round": "Backend",
+    "tags": ["nodejs", "websockets", "realtime", "networking"],
+    "technology": "nodejs"
+  },
+  {
+    "title": "How do you implement Server-Sent Events (SSE) in Node.js?",
+    "description": "One-way server push over a long-lived HTTP response.",
+    "answer": "SSE keeps a single HTTP response open with Content-Type text/event-stream and writes 'data: ...\\n\\n' frames to push updates one-way to the browser, which auto-reconnects via EventSource. It's simpler than WebSockets when you only need server→client streaming.",
+    "difficulty": "medium",
+    "round": "Backend",
+    "tags": ["nodejs", "sse", "realtime", "streaming"],
+    "technology": "nodejs"
+  },
+  {
+    "title": "How do you handle streaming multipart file uploads (busboy/multer)?",
+    "description": "Parsing multipart/form-data without buffering whole files in memory.",
+    "answer": "Multipart uploads should be streamed: busboy (which multer wraps) parses the multipart/form-data request and emits each file as a stream you pipe straight to disk or object storage. This avoids loading large files fully into memory and enables size limits mid-stream.",
+    "difficulty": "medium",
+    "round": "Backend",
+    "tags": ["nodejs", "uploads", "streams", "multipart"],
+    "technology": "nodejs"
+  },
+  {
+    "title": "How do you enable gzip/Brotli compression for HTTP responses?",
+    "description": "Compressing responses via zlib or compression middleware.",
+    "answer": "You compress responses based on the client's Accept-Encoding header using zlib (gzip/brotli) or Express's compression middleware. Brotli compresses smaller but costs more CPU; you typically skip compressing already-compressed assets and tiny payloads.",
+    "difficulty": "easy",
+    "round": "Backend",
+    "tags": ["nodejs", "http", "compression", "performance"],
+    "technology": "nodejs"
+  },
+  {
+    "title": "What are the Web Streams API (ReadableStream/WritableStream) in Node.js and how do they differ from node:stream?",
+    "description": "WHATWG streams vs the classic Node stream API.",
+    "answer": "Web Streams (ReadableStream/WritableStream/TransformStream) are the WHATWG standard also used in browsers and fetch, while node:stream is Node's older EventEmitter-based API. They interoperate via Readable.fromWeb/toWeb; Web Streams are more portable, node:stream is more mature in the ecosystem.",
+    "difficulty": "hard",
+    "round": "Backend",
+    "tags": ["nodejs", "streams", "web-streams", "interop"],
+    "technology": "nodejs"
+  },
+  {
+    "title": "How do you implement a custom Transform stream?",
+    "description": "Subclassing Transform to process data chunk-by-chunk.",
+    "answer": "A Transform stream reads input, transforms each chunk, and writes output. You implement _transform(chunk, encoding, callback) to push processed data and optionally _flush() for trailing output, then pipe data through it — ideal for streaming parsing, encryption, or line processing.",
+    "difficulty": "medium",
+    "round": "Backend",
+    "tags": ["nodejs", "streams", "transform", "backpressure"],
+    "technology": "nodejs"
+  },
+  {
+    "title": "How do you build a worker-thread pool (e.g. Piscina) for CPU-bound work?",
+    "description": "Reusing worker threads to parallelize heavy computation.",
+    "answer": "Spawning a worker per task is expensive, so a pool (like Piscina) keeps N long-lived worker_threads and dispatches tasks to idle workers via a queue. It parallelizes CPU-bound work across cores while keeping the main event loop responsive.",
+    "difficulty": "hard",
+    "round": "Backend",
+    "tags": ["nodejs", "worker-threads", "concurrency", "piscina"],
+    "technology": "nodejs"
+  },
+  {
+    "title": "What is a background job queue (BullMQ/Redis) and when do you need one?",
+    "description": "Offloading slow/async work to durable queues.",
+    "answer": "A job queue (e.g. BullMQ on Redis) stores units of work that separate worker processes consume asynchronously, with retries, scheduling, and concurrency control. You need one to move slow or unreliable work (emails, image processing, webhooks) out of the request path.",
+    "difficulty": "medium",
+    "round": "System Design",
+    "tags": ["nodejs", "queue", "bullmq", "redis", "async"],
+    "technology": "nodejs"
+  },
+  {
+    "title": "How do you guarantee idempotency in a queue consumer?",
+    "description": "Making at-least-once delivery safe to retry.",
+    "answer": "Queues usually deliver at-least-once, so consumers must be idempotent: deduplicate with a unique job/idempotency key, use upserts or conditional writes, and record processed ids so a redelivered message produces no extra side effects.",
+    "difficulty": "hard",
+    "round": "System Design",
+    "tags": ["nodejs", "queue", "idempotency", "reliability"],
+    "technology": "nodejs"
+  },
+  {
+    "title": "How do you implement a circuit breaker for unreliable downstream services?",
+    "description": "Failing fast to protect a service from cascading failures.",
+    "answer": "A circuit breaker tracks downstream failures and, past a threshold, 'opens' to fail fast for a cooldown instead of hammering a dead dependency. After the cooldown it goes 'half-open' to test recovery. This prevents thread/connection exhaustion and cascading failures.",
+    "difficulty": "hard",
+    "round": "System Design",
+    "tags": ["nodejs", "resilience", "circuit-breaker", "reliability"],
+    "technology": "nodejs"
+  },
+  {
+    "title": "How do you limit the concurrency of many async operations (p-limit / promise pool)?",
+    "description": "Bounding parallelism to avoid overwhelming resources.",
+    "answer": "Firing thousands of promises at once exhausts sockets, memory, or rate limits. A concurrency limiter (p-limit, or a manual pool) caps how many run simultaneously, processing the rest as slots free up — bounding load while keeping throughput high.",
+    "difficulty": "medium",
+    "round": "Backend",
+    "tags": ["nodejs", "concurrency", "async", "p-limit"],
+    "technology": "nodejs"
+  },
+  {
+    "title": "What is AbortSignal.timeout and how do you cancel async work cleanly?",
+    "description": "Standardized cancellation for fetch, timers, and streams.",
+    "answer": "AbortSignal.timeout(ms) creates a signal that aborts after a delay, and AbortSignal.any() combines signals. Passing one to fetch, streams, or timers cancels the operation cleanly and rejects with an AbortError, avoiding leaked work after a deadline.",
+    "difficulty": "medium",
+    "round": "Backend",
+    "tags": ["nodejs", "async", "abortcontroller", "cancellation"],
+    "technology": "nodejs"
+  },
+  {
+    "title": "How do you implement retries with exponential backoff and jitter?",
+    "description": "Retrying transient failures without thundering herds.",
+    "answer": "Retry transient failures with increasing delays (base * 2^attempt) up to a cap, plus random jitter so many clients don't retry in sync and overload the recovering service. Only retry idempotent or safe operations, and bound the attempt count.",
+    "difficulty": "medium",
+    "round": "Backend",
+    "tags": ["nodejs", "resilience", "retries", "backoff"],
+    "technology": "nodejs"
+  },
+  {
+    "title": "What is the difference between an ORM, a query builder, and a raw driver?",
+    "description": "Trade-offs of Prisma/TypeORM vs Knex vs pg.",
+    "answer": "A raw driver (pg) sends SQL strings you write. A query builder (Knex) composes SQL programmatically while staying close to it. An ORM (Prisma, TypeORM) maps rows to objects and generates queries from a schema, trading some control and performance for productivity and type-safety.",
+    "difficulty": "medium",
+    "round": "Backend",
+    "tags": ["nodejs", "database", "orm", "query-builder"],
+    "technology": "nodejs"
+  },
+  {
+    "title": "How do database transactions work in Node.js and how do you avoid connection leaks?",
+    "description": "BEGIN/COMMIT/ROLLBACK on a pooled connection and try/finally release.",
+    "answer": "A transaction runs BEGIN, your queries, then COMMIT or ROLLBACK on a single connection checked out from the pool. The classic leak is forgetting to release that connection on error, so you always release in a finally block (or use the driver's managed transaction helper).",
+    "difficulty": "hard",
+    "round": "Backend",
+    "tags": ["nodejs", "database", "transactions", "pooling"],
+    "technology": "nodejs"
+  },
+  {
+    "title": "How do you prevent SQL injection in Node.js database access?",
+    "description": "Parameterized queries vs string interpolation.",
+    "answer": "Never interpolate user input into SQL strings. Use parameterized/prepared statements ($1, ? placeholders) so the driver sends data separately from the query, making injection impossible. ORMs and query builders parameterize by default.",
+    "difficulty": "medium",
+    "round": "Backend",
+    "tags": ["nodejs", "security", "sql-injection", "database"],
+    "technology": "nodejs"
+  },
+  {
+    "title": "How do you manage database schema migrations in a Node.js project?",
+    "description": "Versioned, ordered schema changes with up/down steps.",
+    "answer": "Migrations are versioned, ordered scripts (via Prisma Migrate, Knex, or node-pg-migrate) that evolve the schema reproducibly across environments. A migrations table records which have run, so deploys apply only new ones; backward-compatible 'expand then contract' migrations enable zero-downtime deploys.",
+    "difficulty": "medium",
+    "round": "Backend",
+    "tags": ["nodejs", "database", "migrations", "schema"],
+    "technology": "nodejs"
+  },
+  {
+    "title": "What is prototype pollution and how do you prevent it in Node.js?",
+    "description": "Polluting Object.prototype via __proto__ in merges.",
+    "answer": "Prototype pollution happens when untrusted input sets __proto__/constructor/prototype keys during a deep merge or object assignment, injecting properties onto Object.prototype and affecting every object. Prevent it by rejecting those keys, using Map or Object.create(null), and validating input shape.",
+    "difficulty": "hard",
+    "round": "Backend",
+    "tags": ["nodejs", "security", "prototype-pollution", "validation"],
+    "technology": "nodejs"
+  },
+  {
+    "title": "What is a ReDoS (Regular Expression Denial of Service) attack and how do you avoid it?",
+    "description": "Catastrophic backtracking blocking the event loop.",
+    "answer": "A vulnerable regex with nested quantifiers can backtrack exponentially on crafted input, pinning the single event-loop thread and freezing the whole process. Avoid it with linear-time patterns, input length limits, safe-regex linting, or a RE2-based engine.",
+    "difficulty": "hard",
+    "round": "Backend",
+    "tags": ["nodejs", "security", "redos", "regex"],
+    "technology": "nodejs"
+  },
+  {
+    "title": "What is SSRF and how do you mitigate it in a Node.js backend?",
+    "description": "Server-Side Request Forgery against internal services.",
+    "answer": "SSRF tricks your server into making requests to attacker-chosen URLs — often internal metadata endpoints or private IPs. Mitigate by validating/allowlisting destinations, resolving and blocking private IP ranges, disabling redirects to new hosts, and isolating outbound network access.",
+    "difficulty": "hard",
+    "round": "Backend",
+    "tags": ["nodejs", "security", "ssrf", "networking"],
+    "technology": "nodejs"
+  },
+  {
+    "title": "How do you validate and sanitize request input (zod / joi)?",
+    "description": "Schema validation at the API boundary.",
+    "answer": "Validate every external input against an explicit schema (zod, joi) at the boundary, rejecting malformed requests before they reach business logic. zod also infers TypeScript types from the schema, giving one source of truth for runtime checks and static types.",
+    "difficulty": "medium",
+    "round": "Backend",
+    "tags": ["nodejs", "validation", "zod", "security"],
+    "technology": "nodejs"
+  },
+  {
+    "title": "What is the difference between JWT and session-based authentication, and where do refresh tokens fit?",
+    "description": "Stateless tokens vs server-side sessions and token rotation.",
+    "answer": "Session auth stores state server-side and gives the client an opaque cookie id; JWT auth is stateless — the signed token carries claims and is verified without a lookup, but can't be easily revoked. Short-lived access tokens plus a stored, rotating refresh token balance statelessness with revocability.",
+    "difficulty": "medium",
+    "round": "Backend",
+    "tags": ["nodejs", "security", "jwt", "auth"],
+    "technology": "nodejs"
+  },
+  {
+    "title": "What is Helmet and which HTTP security headers should a Node.js API set?",
+    "description": "Hardening responses with security headers.",
+    "answer": "Helmet is Express middleware that sets defensive HTTP headers: Content-Security-Policy, Strict-Transport-Security (HSTS), X-Content-Type-Options, X-Frame-Options, and Referrer-Policy. They reduce XSS, clickjacking, MIME-sniffing, and protocol-downgrade risks with minimal effort.",
+    "difficulty": "medium",
+    "round": "Backend",
+    "tags": ["nodejs", "security", "helmet", "headers"],
+    "technology": "nodejs"
+  },
+  {
+    "title": "How do you mock modules, timers, and network calls in Node.js tests?",
+    "description": "Isolating units with mocks, fake timers, and HTTP intercept.",
+    "answer": "Use the test runner's mock API (mock.fn, mock.method, mock.timers) or libraries like Sinon to replace dependencies and control time, and nock or undici's MockAgent to intercept HTTP. Mocking isolates the unit under test and makes async/time-dependent code deterministic.",
+    "difficulty": "medium",
+    "round": "Backend",
+    "tags": ["nodejs", "testing", "mocking", "timers"],
+    "technology": "nodejs"
+  },
+  {
+    "title": "What is the difference between unit, integration, and end-to-end tests for a Node.js API?",
+    "description": "The testing pyramid applied to a backend service.",
+    "answer": "Unit tests check one function in isolation with mocks; integration tests exercise several modules together (e.g. route + DB) against real-ish infrastructure; e2e tests drive the whole running system over HTTP. The pyramid favours many fast unit tests and fewer slow e2e tests.",
+    "difficulty": "easy",
+    "round": "Backend",
+    "tags": ["nodejs", "testing", "integration", "e2e"],
+    "technology": "nodejs"
+  },
+  {
+    "title": "What is the Repository pattern and how does it decouple business logic from the database?",
+    "description": "Abstracting persistence behind an interface.",
+    "answer": "The Repository pattern hides data access behind an interface (e.g. UserRepository.findById) so business logic depends on the abstraction, not on SQL or a specific ORM. This makes services testable with in-memory fakes and lets you swap the data store without touching domain code.",
+    "difficulty": "medium",
+    "round": "Backend",
+    "tags": ["nodejs", "architecture", "repository-pattern", "design"],
+    "technology": "nodejs"
+  },
+  {
+    "title": "What is the 12-factor app methodology as applied to Node.js services?",
+    "description": "Cloud-native principles for portable, scalable services.",
+    "answer": "The 12-factor methodology guides cloud-native apps: config in the environment, explicit dependencies, stateless processes, logs as event streams, and dev/prod parity. For Node it means env-based config, no local session state, graceful shutdown, and horizontal scaling via the process model.",
+    "difficulty": "medium",
+    "round": "System Design",
+    "tags": ["nodejs", "architecture", "12-factor", "cloud-native"],
+    "technology": "nodejs"
+  },
+  {
+    "title": "How do you containerize a Node.js app with a small, secure Docker image (multi-stage, distroless)?",
+    "description": "Multi-stage builds, non-root users, and minimal base images.",
+    "answer": "Use a multi-stage Dockerfile: install/build in a full image, then copy only production artifacts into a slim or distroless base. Run as a non-root user, install with npm ci --omit=dev, leverage layer caching, and add a .dockerignore to keep the image small and the attack surface low.",
+    "difficulty": "medium",
+    "round": "System Design",
+    "tags": ["nodejs", "docker", "deployment", "security"],
+    "technology": "nodejs"
+  },
+  {
+    "title": "What does NODE_ENV=production actually change and why does it matter?",
+    "description": "Library behavior and performance gated on NODE_ENV.",
+    "answer": "NODE_ENV is just an env var, but many libraries branch on it: Express disables verbose error pages and enables view caching, React strips dev warnings, and npm install skips devDependencies. Setting it to 'production' enables performance optimizations and avoids leaking debug detail.",
+    "difficulty": "easy",
+    "round": "Backend",
+    "tags": ["nodejs", "ops", "node-env", "production"],
+    "technology": "nodejs"
+  },
+  {
+    "title": "What is PM2 and what does it add over running `node server.js` directly?",
+    "description": "Process management, clustering, and zero-downtime reloads.",
+    "answer": "PM2 is a production process manager that keeps apps alive (auto-restart on crash), runs them in cluster mode across CPU cores, supports zero-downtime reloads, and centralizes logs and metrics — things bare `node server.js` doesn't provide. In containers an orchestrator often replaces it.",
+    "difficulty": "medium",
+    "round": "Backend",
+    "tags": ["nodejs", "ops", "pm2", "process-manager"],
+    "technology": "nodejs"
+  },
+  {
+    "title": "What does the events.once() helper do and how does it bridge EventEmitter and async/await?",
+    "description": "Awaiting a single emitted event as a promise.",
+    "answer": "events.once(emitter, 'event') returns a promise that resolves with the next emission of that event (or rejects on 'error'), letting you await an event in async code instead of nesting callbacks. It's ideal for one-shot signals like a server 'listening' or a stream 'end'.",
+    "difficulty": "medium",
+    "round": "Backend",
+    "tags": ["nodejs", "events", "async", "eventemitter"],
+    "technology": "nodejs"
+  },
+  {
+    "title": "What is structuredClone and when is it useful in Node.js?",
+    "description": "Built-in deep cloning of structured data.",
+    "answer": "structuredClone(value) is a global that deep-clones objects using the structured clone algorithm, handling Maps, Sets, Dates, ArrayBuffers, and cyclic references that JSON.parse(JSON.stringify(...)) can't. It doesn't copy functions or class prototypes.",
+    "difficulty": "easy",
+    "round": "Backend",
+    "tags": ["nodejs", "cloning", "structuredclone", "utilities"],
+    "technology": "nodejs"
+  },
+  {
+    "title": "What is the node:util parseArgs helper for building CLIs?",
+    "description": "Parsing command-line flags without a dependency.",
+    "answer": "util.parseArgs parses process.argv into typed options and positionals from a declarative options config, covering basic CLI flag parsing without pulling in a dependency like yargs or commander. It supports booleans, strings, short aliases, and multiples.",
+    "difficulty": "easy",
+    "round": "Backend",
+    "tags": ["nodejs", "cli", "parseargs", "utilities"],
+    "technology": "nodejs"
+  }
+]

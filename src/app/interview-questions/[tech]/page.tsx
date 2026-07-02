@@ -33,6 +33,15 @@ const TECH_THEMES: Record<string, { bg: string; border: string; hoverBorder: str
     bgGlow: "bg-green-500/5",
     tagline: "Event loop, asynchronous operations & scalable APIs",
   },
+  nextjs: {
+    bg: "bg-gradient-to-br from-zinc-500/5 via-surface to-surface dark:from-zinc-800/20 dark:via-surface/10 dark:to-surface/5",
+    border: "border-zinc-500/15 dark:border-zinc-400/10",
+    hoverBorder: "hover:border-zinc-500/40 dark:hover:border-zinc-400/30",
+    glow: "hover:shadow-[0_8px_30px_rgba(113,113,122,0.06)]",
+    text: "text-zinc-700 dark:text-zinc-300",
+    bgGlow: "bg-zinc-500/5",
+    tagline: "App Router, Server Components, rendering & data fetching",
+  },
   javascript: {
     bg: "bg-gradient-to-br from-yellow-500/5 via-surface to-surface dark:from-yellow-950/15 dark:via-surface/10 dark:to-surface/5",
     border: "border-yellow-500/15 dark:border-yellow-500/10",

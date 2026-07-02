@@ -41,7 +41,7 @@ export default function AdminPersonaToggle({ initial }: Props) {
     <div
       role="tablist"
       aria-label="Admin view persona"
-      className="mx-3 mb-3 mt-1 flex items-center gap-1 rounded-xl border border-border bg-panel/40 p-1 shadow-inner"
+      className="mb-3 mt-1 flex items-center gap-1 rounded-xl border border-border bg-panel/40 p-1 shadow-inner"
     >
       {OPTIONS.map(({ value, label, Icon }) => {
         const isActive = persona === value;
@@ -51,11 +51,10 @@ export default function AdminPersonaToggle({ initial }: Props) {
             role="tab"
             aria-selected={isActive}
             onClick={() => select(value)}
-            className={`flex-1 inline-flex items-center justify-center gap-1.5 rounded-lg px-2 py-1.5 text-[10px] font-semibold uppercase tracking-wide transition-colors ${
-              isActive
+            className={`flex-1 inline-flex items-center justify-center gap-1.5 rounded-lg px-2 py-1.5 text-[10px] font-semibold uppercase tracking-wide transition-colors ${isActive
                 ? "bg-elevated text-fg shadow-sm"
                 : "text-muted hover:text-fg"
-            }`}
+              }`}
           >
             <Icon className="w-3 h-3" />
             {label}

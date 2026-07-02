@@ -25,6 +25,8 @@ const SCRIPTS = [
   "prisma/seed-frontend-utils-extra.ts", // 24 extra JS/TS utilities (bringing total to 50+)
   "prisma/seed-frontend-ui.ts", //    22 UI / design
   "prisma/seed-frontend-ui-extra.ts", // 28 extra UI / design (bringing total to 50+)
+  "prisma/seed-prompt-scenarios.ts", // Prompt Arena Scenarios
+  "prisma/seed-prompt-exemplars.ts", // Prompt Arena Exemplars
 ];
 
 function targetDb(): string {

@@ -34,9 +34,7 @@ export default async function QuestionDetailPage({ params }: { params: Promise<{
   const session = await auth().catch(() => null);
 
   // Follow-ups (same company) + similar (same technology), excluding self.
-  // `techTrack` is the full ordered list of the technology so we can derive the
-  // previous/next question (same order the /interview-questions/<tech> list uses).
-  const [followUps, similar, commentRows, isAdmin, techTrack] = await Promise.all([
+  const [followUps, similar, commentRows, isAdmin] = await Promise.all([
     q.companyId
       ? prisma.prepQuestion.findMany({
           where: { companyId: q.companyId, status: "published", slug: { not: slug } },
@@ -59,28 +57,7 @@ export default async function QuestionDetailPage({ params }: { params: Promise<{
       include: { user: { select: { id: true, name: true, image: true } } },
     }),
     staffCan(session, "content:moderate"),
-    q.technology
-      ? prisma.prepQuestion.findMany({
-          where: { technology: q.technology, status: "published" },
-          select: { title: true, slug: true, difficulty: true, views: true },
-          orderBy: [{ views: "desc" }],
-        })
-      : Promise.resolve([]),
   ]);
-
-  // Order the track easy -> hard (then popularity, inherited from the query's
-  // views-desc order) exactly like the list page, then find this question's
-  // neighbours for the Previous/Next buttons.
-  const DIFF_RANK: Record<string, number> = { easy: 0, medium: 1, hard: 2 };
-  const ordered = [...techTrack].sort(
-    (a, b) => (DIFF_RANK[a.difficulty ?? "medium"] ?? 1) - (DIFF_RANK[b.difficulty ?? "medium"] ?? 1),
-  );
-  const idx = ordered.findIndex((n) => n.slug === slug);
-  const prevQuestion = idx > 0 ? { slug: ordered[idx - 1].slug, title: ordered[idx - 1].title } : null;
-  const nextQuestion =
-    idx >= 0 && idx < ordered.length - 1
-      ? { slug: ordered[idx + 1].slug, title: ordered[idx + 1].title }
-      : null;
 
   const comments: CommentNode[] = commentRows.map((c) => ({
     id: c.id,
@@ -114,8 +91,6 @@ export default async function QuestionDetailPage({ params }: { params: Promise<{
         q={q}
         followUps={followUps}
         similar={similar}
-        prevQuestion={prevQuestion}
-        nextQuestion={nextQuestion}
         initialComments={comments}
         isAdmin={isAdmin}
         currentUserId={session?.user?.id ?? null}

@@ -6,7 +6,6 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   Eye,
   ArrowLeft,
-  ArrowRight,
   Building2,
   Hash,
   ChevronDown,
@@ -80,13 +79,6 @@ const TECH_THEMES: Record<string, { bg: string; border: string; hoverBorder: str
     hoverBorder: "hover:border-green-500/40 dark:hover:border-green-500/30",
     text: "text-green-600 dark:text-green-400",
     bgGlow: "bg-green-500/5"
-  },
-  nextjs: {
-    bg: "bg-gradient-to-br from-zinc-500/5 via-surface to-surface dark:from-zinc-800/20 dark:via-surface/10 dark:to-surface/5",
-    border: "border-zinc-500/15 dark:border-zinc-400/10",
-    hoverBorder: "hover:border-zinc-500/40 dark:hover:border-zinc-400/30",
-    text: "text-zinc-700 dark:text-zinc-300",
-    bgGlow: "bg-zinc-500/5"
   },
   javascript: {
     bg: "bg-gradient-to-br from-yellow-500/5 via-surface to-surface dark:from-yellow-950/15 dark:via-surface/10 dark:to-surface/5",
@@ -172,8 +164,6 @@ export default function QuestionDetailClient({
   q,
   followUps,
   similar,
-  prevQuestion,
-  nextQuestion,
   initialComments,
   isAdmin,
   currentUserId,
@@ -181,8 +171,6 @@ export default function QuestionDetailClient({
   q: QuestionData;
   followUps: SuggestionItem[];
   similar: SuggestionItem[];
-  prevQuestion: { slug: string; title: string } | null;
-  nextQuestion: { slug: string; title: string } | null;
   initialComments: CommentNode[];
   isAdmin: boolean;
   currentUserId: string | null;
@@ -410,57 +398,16 @@ export default function QuestionDetailClient({
     <div className="min-h-screen bg-bg text-fg">
       <div className="max-w-6xl mx-auto px-6 py-8">
         
-        {/* Top nav bar: back-to-list on the left, Previous/Next question on the
-            right so users can move through a technology track without returning
-            to the list. Prev/Next follow the same order as the list page. */}
-        <div className="flex items-center justify-between gap-4 mb-8">
-          {/* Sleek back arrow link with hover slide. Returns to the question's
-              technology set (e.g. /interview-questions/javascript), not the whole
-              library — falls back to the library when there's no technology. */}
-          <Link
-            href={q.technology ? `/interview-questions/${q.technology}` : "/interview-questions"}
-            className="group inline-flex items-center gap-2 text-xs font-bold text-muted hover:text-fg transition-colors duration-200 shrink-0"
-          >
-            <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1.5 transition-transform duration-200" />
-            <span className="hidden sm:inline">{q.technology ? `Back to ${techLabel(q.technology)} questions` : "Back to Prep Library"}</span>
-            <span className="sm:hidden">Back</span>
-          </Link>
-
-          {(prevQuestion || nextQuestion) && (
-            <div className="flex items-center gap-2 shrink-0">
-              {prevQuestion ? (
-                <Link
-                  href={`/interview-question/${prevQuestion.slug}`}
-                  title={prevQuestion.title}
-                  className="group inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold text-muted hover:text-fg border border-border hover:border-accent/40 bg-surface/60 transition-colors duration-200"
-                >
-                  <ArrowLeft className="w-3.5 h-3.5 group-hover:-translate-x-0.5 transition-transform duration-200" />
-                  <span>Previous</span>
-                </Link>
-              ) : (
-                <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold text-muted/40 border border-border/60 cursor-not-allowed select-none">
-                  <ArrowLeft className="w-3.5 h-3.5" />
-                  <span>Previous</span>
-                </span>
-              )}
-              {nextQuestion ? (
-                <Link
-                  href={`/interview-question/${nextQuestion.slug}`}
-                  title={nextQuestion.title}
-                  className="group inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold text-muted hover:text-fg border border-border hover:border-accent/40 bg-surface/60 transition-colors duration-200"
-                >
-                  <span>Next</span>
-                  <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform duration-200" />
-                </Link>
-              ) : (
-                <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold text-muted/40 border border-border/60 cursor-not-allowed select-none">
-                  <span>Next</span>
-                  <ArrowRight className="w-3.5 h-3.5" />
-                </span>
-              )}
-            </div>
-          )}
-        </div>
+        {/* Sleek back arrow link with hover slide. Returns to the question's
+            technology set (e.g. /interview-questions/javascript), not the whole
+            library — falls back to the library when there's no technology. */}
+        <Link
+          href={q.technology ? `/interview-questions/${q.technology}` : "/interview-questions"}
+          className="group inline-flex items-center gap-2 text-xs font-bold text-muted hover:text-fg transition-colors duration-200 mb-8"
+        >
+          <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1.5 transition-transform duration-200" />
+          <span>{q.technology ? `Back to ${techLabel(q.technology)} questions` : "Back to Prep Library"}</span>
+        </Link>
 
         {/* 2-Column Responsive Layout */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
@@ -762,42 +709,6 @@ export default function QuestionDetailClient({
                 )}
               </AnimatePresence>
             </motion.div>
-
-            {/* Bottom Previous / Next question navigation — lets users move to the
-                adjacent question in the technology track without scrolling back up
-                or returning to the list. Same order as the top nav / list page. */}
-            {(prevQuestion || nextQuestion) && (
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
-                {prevQuestion ? (
-                  <Link
-                    href={`/interview-question/${prevQuestion.slug}`}
-                    className="group flex items-center gap-3 p-4 rounded-2xl border border-border hover:border-accent/40 bg-surface/60 hover:bg-surface transition-colors duration-200"
-                  >
-                    <ArrowLeft className="w-4 h-4 text-muted group-hover:text-accent group-hover:-translate-x-0.5 transition-all duration-200 shrink-0" />
-                    <div className="min-w-0">
-                      <div className="text-[10px] font-black uppercase tracking-widest text-muted/70">Previous</div>
-                      <div className="text-sm font-bold text-fg truncate group-hover:text-accent transition-colors duration-200">{prevQuestion.title}</div>
-                    </div>
-                  </Link>
-                ) : (
-                  <div className="hidden sm:block" />
-                )}
-                {nextQuestion ? (
-                  <Link
-                    href={`/interview-question/${nextQuestion.slug}`}
-                    className="group flex items-center justify-end gap-3 p-4 rounded-2xl border border-border hover:border-accent/40 bg-surface/60 hover:bg-surface transition-colors duration-200 text-right"
-                  >
-                    <div className="min-w-0">
-                      <div className="text-[10px] font-black uppercase tracking-widest text-muted/70">Next</div>
-                      <div className="text-sm font-bold text-fg truncate group-hover:text-accent transition-colors duration-200">{nextQuestion.title}</div>
-                    </div>
-                    <ArrowRight className="w-4 h-4 text-muted group-hover:text-accent group-hover:translate-x-0.5 transition-all duration-200 shrink-0" />
-                  </Link>
-                ) : (
-                  <div className="hidden sm:block" />
-                )}
-              </div>
-            )}
 
           </div>
 

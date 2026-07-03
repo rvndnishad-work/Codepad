@@ -6,6 +6,7 @@ import { clientKey, rateLimitDistributed } from "@/lib/rate-limit";
 import { runUnitJs } from "@/lib/judge/unit-js";
 import { PistonUnavailableError } from "@/lib/piston";
 import { resolveCandidateFromToken } from "@/lib/take-home/candidate";
+import { recordPrepCompletion } from "@/lib/prep-journey/complete";
 
 // Server-authoritative recording of a challenge attempt.
 //
@@ -266,6 +267,14 @@ export async function POST(
     },
     select: { id: true, status: true },
   });
+
+  // A passing submit credits the user's active prep journey (fire-and-forget:
+  // submission recording must never fail because of tracker bookkeeping).
+  if (status === "passed") {
+    void recordPrepCompletion(candidateUserId, slug, "challenge").catch((e) =>
+      console.error("[prep-journey] completion credit failed:", e),
+    );
+  }
 
   return NextResponse.json({
     id: attempt.id,

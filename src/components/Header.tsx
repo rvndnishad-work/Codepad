@@ -48,12 +48,14 @@ export default async function Header() {
       label: "Playgrounds",
       description: "Whiteboard-style code sandboxes — no setup.",
       iconName: "Box" as const,
+      tint: "cyan",
     },
     {
       href: "/candidate/challenges",
       label: "Challenges",
       description: "Browse the public challenge catalog.",
       iconName: "Target" as const,
+      tint: "violet",
     },
     {
       href: "/candidate/prompt-practice",
@@ -61,6 +63,7 @@ export default async function Header() {
       description: "Evaluate and practice prompt engineering quality.",
       iconName: "Sparkles" as const,
       badge: "New",
+      tint: "amber",
     },
     {
       href: "/interview-questions",
@@ -68,6 +71,7 @@ export default async function Header() {
       description: "Company & tech questions with answers.",
       iconName: "BookOpen" as const,
       badge: "New",
+      tint: "emerald",
     },
     {
       href: user ? "/candidate/interview" : "/login?next=/candidate/interview",
@@ -76,6 +80,7 @@ export default async function Header() {
         ? "Practice realistic mock interviews and review past sessions."
         : "Sign in to practice realistic mock interviews.",
       iconName: "Briefcase" as const,
+      tint: "blue",
     },
   ];
 
@@ -85,6 +90,7 @@ export default async function Header() {
       label: "Workspaces",
       description: "Manage candidates, interviews, and your team.",
       iconName: "Building2" as const,
+      tint: "indigo",
     },
     {
       href: aiScreeningHref,
@@ -92,6 +98,7 @@ export default async function Header() {
       description: "Let an AI agent run first-round interviews.",
       iconName: "Sparkles" as const,
       badge: "New",
+      tint: "rose",
     },
   ];
 
@@ -197,65 +204,72 @@ export default async function Header() {
         {/* Navigation & Auth */}
         <div className="flex items-center gap-4">
           <nav className="flex items-center">
-            <div className="hidden md:flex items-center gap-6 text-sm font-medium mr-6 border-r border-border pr-6 h-16">
+            <div className="hidden md:flex items-center gap-1 mr-4 h-16">
               {(devsMenuStatus !== "hidden" || showAdmin) && (filteredDeveloperItems.length > 0 || showAdmin) && (
                 <NavDropdown
                   label={devsMenuStatus === "hidden" && showAdmin ? "For Developers (Hidden)" : "For Developers"}
                   items={filteredDeveloperItems}
+                  kicker="Build & practice"
+                  featuredHref="/interview-questions"
                 />
               )}
               {(recruitersMenuStatus !== "hidden" || showAdmin) && (filteredRecruiterItems.length > 0 || showAdmin) && (
                 <NavDropdown
                   label={recruitersMenuStatus === "hidden" && showAdmin ? "For Recruiters (Hidden)" : "For Recruiters"}
                   items={filteredRecruiterItems}
+                  kicker="Hire & screen"
                 />
               )}
 
               {(blogStatus !== "hidden" || showAdmin) && (
                 <Link
                   href={blogStatus === "coming_soon" && !showAdmin ? "/coming-soon?feature=Blog" : "/blog"}
-                  className={`transition-colors flex items-center h-full text-fg/50 hover:text-fg ${
-                    blogStatus === "coming_soon" && !showAdmin ? "opacity-50 hover:text-amber-400" : ""
-                  } ${blogStatus === "hidden" && showAdmin ? "opacity-75 text-rose-400 hover:text-rose-300" : ""}`}
+                  className={`flex items-center gap-1.5 h-9 px-3.5 rounded-full text-[13px] font-semibold transition-all duration-200 ${
+                    blogStatus === "coming_soon" && !showAdmin
+                      ? "opacity-50 text-fg/50 hover:text-amber-400 hover:bg-elevated/60"
+                      : blogStatus === "hidden" && showAdmin
+                        ? "opacity-75 text-rose-400 hover:text-rose-300 hover:bg-elevated/60"
+                        : "text-fg/60 hover:text-fg hover:bg-elevated/60"
+                  }`}
                 >
-                  <span className="relative flex items-center gap-1.5">
-                    <BookOpen className="w-3.5 h-3.5" />
-                    Blog
-                    {blogStatus === "coming_soon" && (
-                      <span className="text-[9px] px-1 py-0.2 rounded bg-amber-500/10 text-amber-500 border border-amber-500/20 font-black uppercase tracking-wider scale-90 animate-fade-in">
-                        Soon
-                      </span>
-                    )}
-                    {blogStatus === "hidden" && showAdmin && (
-                      <span className="text-[9px] px-1 py-0.2 rounded bg-rose-500/10 text-rose-400 border border-rose-500/20 font-black uppercase tracking-wider scale-90 animate-fade-in">
-                        Hidden
-                      </span>
-                    )}
-                  </span>
+                  <BookOpen className="w-3.5 h-3.5" />
+                  Blog
+                  {blogStatus === "coming_soon" && (
+                    <span className="text-[9px] px-1.5 py-0.5 rounded-md bg-amber-500/10 text-amber-500 font-black uppercase tracking-wider animate-fade-in">
+                      Soon
+                    </span>
+                  )}
+                  {blogStatus === "hidden" && showAdmin && (
+                    <span className="text-[9px] px-1.5 py-0.5 rounded-md bg-rose-500/10 text-rose-400 font-black uppercase tracking-wider animate-fade-in">
+                      Hidden
+                    </span>
+                  )}
                 </Link>
               )}
 
               {(pricingStatus !== "hidden" || showAdmin) && (
                 <Link
                   href={pricingStatus === "coming_soon" && !showAdmin ? "/coming-soon?feature=Pricing" : "/pricing"}
-                  className={`transition-colors flex items-center h-full text-fg/50 hover:text-fg ${
-                    pricingStatus === "coming_soon" && !showAdmin ? "opacity-50 hover:text-amber-400" : ""
-                  } ${pricingStatus === "hidden" && showAdmin ? "opacity-75 text-rose-400 hover:text-rose-300" : ""}`}
+                  className={`flex items-center gap-1.5 h-9 px-3.5 rounded-full text-[13px] font-semibold transition-all duration-200 ${
+                    pricingStatus === "coming_soon" && !showAdmin
+                      ? "opacity-50 text-fg/50 hover:text-amber-400 hover:bg-elevated/60"
+                      : pricingStatus === "hidden" && showAdmin
+                        ? "opacity-75 text-rose-400 hover:text-rose-300 hover:bg-elevated/60"
+                        : "text-fg/60 hover:text-fg hover:bg-elevated/60"
+                  }`}
                 >
-                  <span className="relative flex items-center gap-1.5">
-                    <CreditCard className="w-3.5 h-3.5" />
-                    Pricing
-                    {pricingStatus === "coming_soon" && (
-                      <span className="text-[9px] px-1 py-0.2 rounded bg-amber-500/10 text-amber-500 border border-amber-500/20 font-black uppercase tracking-wider scale-90 animate-fade-in">
-                        Soon
-                      </span>
-                    )}
-                    {pricingStatus === "hidden" && showAdmin && (
-                      <span className="text-[9px] px-1 py-0.2 rounded bg-rose-500/10 text-rose-400 border border-rose-500/20 font-black uppercase tracking-wider scale-90 animate-fade-in">
-                        Hidden
-                      </span>
-                    )}
-                  </span>
+                  <CreditCard className="w-3.5 h-3.5" />
+                  Pricing
+                  {pricingStatus === "coming_soon" && (
+                    <span className="text-[9px] px-1.5 py-0.5 rounded-md bg-amber-500/10 text-amber-500 font-black uppercase tracking-wider animate-fade-in">
+                      Soon
+                    </span>
+                  )}
+                  {pricingStatus === "hidden" && showAdmin && (
+                    <span className="text-[9px] px-1.5 py-0.5 rounded-md bg-rose-500/10 text-rose-400 font-black uppercase tracking-wider animate-fade-in">
+                      Hidden
+                    </span>
+                  )}
                 </Link>
               )}
             </div>
@@ -277,7 +291,7 @@ export default async function Header() {
                 ) : (
                   <Link
                     href="/login"
-                    className="px-4 py-2 rounded-lg bg-fg text-bg text-sm font-semibold hover:bg-fg/90 transition-all shadow-soft active:scale-95"
+                    className="px-5 py-2 rounded-full bg-fg text-bg text-sm font-semibold hover:bg-fg/90 transition-all shadow-soft active:scale-95"
                   >
                     Sign In
                   </Link>

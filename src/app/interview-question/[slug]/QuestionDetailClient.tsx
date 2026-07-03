@@ -2,26 +2,25 @@
 
 import { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence, useScroll, useSpring } from "framer-motion";
 import {
   Eye,
   ArrowLeft,
   ArrowRight,
+  ArrowUpRight,
   Building2,
   Hash,
   ChevronDown,
-  BookOpen,
+  ChevronRight,
   MessageSquare,
-  Sparkles,
-  HelpCircle,
-  Clock,
+  Calendar,
   Layers,
   Award,
   CheckCircle2,
+  Lock,
 } from "lucide-react";
 import { isSolved, toggleSolved } from "@/lib/interview-questions/progress";
 import { isSaved, toggleSaved } from "@/lib/interview-questions/saved";
-// ExternalLink removed: per-example "Open in Playground" now lives in CodeExample.
 import MarkdownRenderer from "@/components/MarkdownRenderer";
 import CodeExample, { MultiFileExample, type ExampleData } from "./CodeExample";
 import { CODE_VARIANTS } from "@/lib/interview-questions/code-variants";
@@ -66,106 +65,112 @@ interface SuggestionItem {
   difficulty: string;
 }
 
-const TECH_THEMES: Record<string, { bg: string; border: string; hoverBorder: string; text: string; bgGlow: string }> = {
+/**
+ * Per-technology accent: `hex` drives the reading-progress bar and ambient
+ * glows (inline styles, so it also works with the `var(--accent)` fallback);
+ * the class strings tint the expanded-answer card and text accents.
+ */
+interface TechTheme {
+  hex: string;
+  text: string;
+  border: string;
+  bg: string;
+}
+
+const TECH_THEMES: Record<string, TechTheme> = {
   reactjs: {
-    bg: "bg-gradient-to-br from-cyan-500/5 via-surface to-surface dark:from-cyan-950/15 dark:via-surface/10 dark:to-surface/5",
-    border: "border-cyan-500/15 dark:border-cyan-500/10",
-    hoverBorder: "hover:border-cyan-500/40 dark:hover:border-cyan-500/30",
+    hex: "#06b6d4",
     text: "text-cyan-600 dark:text-cyan-400",
-    bgGlow: "bg-cyan-500/5"
+    border: "border-cyan-500/20 dark:border-cyan-500/15",
+    bg: "bg-gradient-to-br from-cyan-500/5 via-surface to-surface dark:from-cyan-950/15 dark:via-surface/10 dark:to-surface/5",
   },
   nodejs: {
-    bg: "bg-gradient-to-br from-green-500/5 via-surface to-surface dark:from-green-950/15 dark:via-surface/10 dark:to-surface/5",
-    border: "border-green-500/15 dark:border-green-500/10",
-    hoverBorder: "hover:border-green-500/40 dark:hover:border-green-500/30",
+    hex: "#22c55e",
     text: "text-green-600 dark:text-green-400",
-    bgGlow: "bg-green-500/5"
+    border: "border-green-500/20 dark:border-green-500/15",
+    bg: "bg-gradient-to-br from-green-500/5 via-surface to-surface dark:from-green-950/15 dark:via-surface/10 dark:to-surface/5",
   },
   nextjs: {
-    bg: "bg-gradient-to-br from-zinc-500/5 via-surface to-surface dark:from-zinc-800/20 dark:via-surface/10 dark:to-surface/5",
-    border: "border-zinc-500/15 dark:border-zinc-400/10",
-    hoverBorder: "hover:border-zinc-500/40 dark:hover:border-zinc-400/30",
+    hex: "#71717a",
     text: "text-zinc-700 dark:text-zinc-300",
-    bgGlow: "bg-zinc-500/5"
+    border: "border-zinc-500/20 dark:border-zinc-400/15",
+    bg: "bg-gradient-to-br from-zinc-500/5 via-surface to-surface dark:from-zinc-800/20 dark:via-surface/10 dark:to-surface/5",
   },
   javascript: {
-    bg: "bg-gradient-to-br from-yellow-500/5 via-surface to-surface dark:from-yellow-950/15 dark:via-surface/10 dark:to-surface/5",
-    border: "border-yellow-500/15 dark:border-yellow-500/10",
-    hoverBorder: "hover:border-yellow-500/40 dark:hover:border-yellow-500/30",
+    hex: "#eab308",
     text: "text-amber-500 dark:text-yellow-400",
-    bgGlow: "bg-yellow-500/5"
+    border: "border-yellow-500/20 dark:border-yellow-500/15",
+    bg: "bg-gradient-to-br from-yellow-500/5 via-surface to-surface dark:from-yellow-950/15 dark:via-surface/10 dark:to-surface/5",
   },
   "javascript-coding": {
-    bg: "bg-gradient-to-br from-amber-500/5 via-surface to-surface dark:from-amber-950/15 dark:via-surface/10 dark:to-surface/5",
-    border: "border-amber-500/15 dark:border-amber-500/10",
-    hoverBorder: "hover:border-amber-500/40 dark:hover:border-amber-500/30",
+    hex: "#f59e0b",
     text: "text-amber-600 dark:text-amber-400",
-    bgGlow: "bg-amber-500/5"
+    border: "border-amber-500/20 dark:border-amber-500/15",
+    bg: "bg-gradient-to-br from-amber-500/5 via-surface to-surface dark:from-amber-950/15 dark:via-surface/10 dark:to-surface/5",
   },
   angular: {
-    bg: "bg-gradient-to-br from-red-500/5 via-surface to-surface dark:from-red-950/15 dark:via-surface/10 dark:to-surface/5",
-    border: "border-red-500/15 dark:border-red-500/10",
-    hoverBorder: "hover:border-red-500/40 dark:hover:border-red-500/30",
+    hex: "#ef4444",
     text: "text-red-600 dark:text-red-400",
-    bgGlow: "bg-red-500/5"
+    border: "border-red-500/20 dark:border-red-500/15",
+    bg: "bg-gradient-to-br from-red-500/5 via-surface to-surface dark:from-red-950/15 dark:via-surface/10 dark:to-surface/5",
   },
   vuejs: {
-    bg: "bg-gradient-to-br from-emerald-500/5 via-surface to-surface dark:from-emerald-950/15 dark:via-surface/10 dark:to-surface/5",
-    border: "border-emerald-500/15 dark:border-emerald-500/10",
-    hoverBorder: "hover:border-emerald-500/40 dark:hover:border-emerald-500/30",
+    hex: "#10b981",
     text: "text-emerald-600 dark:text-emerald-400",
-    bgGlow: "bg-emerald-500/5"
+    border: "border-emerald-500/20 dark:border-emerald-500/15",
+    bg: "bg-gradient-to-br from-emerald-500/5 via-surface to-surface dark:from-emerald-950/15 dark:via-surface/10 dark:to-surface/5",
   },
   typescript: {
-    bg: "bg-gradient-to-br from-blue-500/5 via-surface to-surface dark:from-blue-950/15 dark:via-surface/10 dark:to-surface/5",
-    border: "border-blue-500/15 dark:border-blue-500/10",
-    hoverBorder: "hover:border-blue-500/40 dark:hover:border-blue-500/30",
+    hex: "#3b82f6",
     text: "text-blue-600 dark:text-blue-400",
-    bgGlow: "bg-blue-500/5"
+    border: "border-blue-500/20 dark:border-blue-500/15",
+    bg: "bg-gradient-to-br from-blue-500/5 via-surface to-surface dark:from-blue-950/15 dark:via-surface/10 dark:to-surface/5",
   },
   dsa: {
-    bg: "bg-gradient-to-br from-purple-500/5 via-surface to-surface dark:from-purple-950/15 dark:via-surface/10 dark:to-surface/5",
-    border: "border-purple-500/15 dark:border-purple-500/10",
-    hoverBorder: "hover:border-purple-500/40 dark:hover:border-purple-500/30",
+    hex: "#a855f7",
     text: "text-purple-600 dark:text-purple-400",
-    bgGlow: "bg-purple-500/5"
+    border: "border-purple-500/20 dark:border-purple-500/15",
+    bg: "bg-gradient-to-br from-purple-500/5 via-surface to-surface dark:from-purple-950/15 dark:via-surface/10 dark:to-surface/5",
   },
   "system-design": {
-    bg: "bg-gradient-to-br from-orange-500/5 via-surface to-surface dark:from-orange-950/15 dark:via-surface/10 dark:to-surface/5",
-    border: "border-orange-500/15 dark:border-orange-500/10",
-    hoverBorder: "hover:border-orange-500/40 dark:hover:border-orange-500/30",
+    hex: "#f97316",
     text: "text-orange-600 dark:text-orange-400",
-    bgGlow: "bg-orange-500/5"
+    border: "border-orange-500/20 dark:border-orange-500/15",
+    bg: "bg-gradient-to-br from-orange-500/5 via-surface to-surface dark:from-orange-950/15 dark:via-surface/10 dark:to-surface/5",
   },
   python: {
-    bg: "bg-gradient-to-br from-emerald-500/5 via-surface to-surface dark:from-emerald-950/15 dark:via-surface/10 dark:to-surface/5",
-    border: "border-emerald-500/15 dark:border-emerald-500/10",
-    hoverBorder: "hover:border-emerald-500/40 dark:hover:border-emerald-500/30",
+    hex: "#10b981",
     text: "text-emerald-600 dark:text-emerald-400",
-    bgGlow: "bg-emerald-500/5"
+    border: "border-emerald-500/20 dark:border-emerald-500/15",
+    bg: "bg-gradient-to-br from-emerald-500/5 via-surface to-surface dark:from-emerald-950/15 dark:via-surface/10 dark:to-surface/5",
   },
   sql: {
-    bg: "bg-gradient-to-br from-sky-500/5 via-surface to-surface dark:from-sky-950/15 dark:via-surface/10 dark:to-surface/5",
-    border: "border-sky-500/15 dark:border-sky-500/10",
-    hoverBorder: "hover:border-sky-500/40 dark:hover:border-sky-500/30",
+    hex: "#38bdf8",
     text: "text-sky-600 dark:text-sky-400",
-    bgGlow: "bg-sky-500/5"
+    border: "border-sky-500/20 dark:border-sky-500/15",
+    bg: "bg-gradient-to-br from-sky-500/5 via-surface to-surface dark:from-sky-950/15 dark:via-surface/10 dark:to-surface/5",
   },
   "machine-coding": {
-    bg: "bg-gradient-to-br from-indigo-500/5 via-surface to-surface dark:from-indigo-950/15 dark:via-surface/10 dark:to-surface/5",
-    border: "border-indigo-500/15 dark:border-indigo-500/10",
-    hoverBorder: "hover:border-indigo-500/40 dark:hover:border-indigo-500/30",
+    hex: "#6366f1",
     text: "text-indigo-600 dark:text-indigo-400",
-    bgGlow: "bg-indigo-500/5"
+    border: "border-indigo-500/20 dark:border-indigo-500/15",
+    bg: "bg-gradient-to-br from-indigo-500/5 via-surface to-surface dark:from-indigo-950/15 dark:via-surface/10 dark:to-surface/5",
   },
 };
 
-const FALLBACK_THEME = {
-  bg: "bg-gradient-to-br from-accent/5 via-surface to-surface dark:from-accent/5 dark:via-surface/10 dark:to-surface/5",
-  border: "border-accent/15 dark:border-accent/10",
-  hoverBorder: "hover:border-accent/50",
+const FALLBACK_THEME: TechTheme = {
+  hex: "var(--accent)",
   text: "text-accent",
-  bgGlow: "bg-accent/5",
+  border: "border-accent/20 dark:border-accent/15",
+  bg: "bg-gradient-to-br from-accent/5 via-surface to-surface dark:from-accent/5 dark:via-surface/10 dark:to-surface/5",
+};
+
+/** Translucent tint helpers so ambient glows work for any theme hex (or var). */
+const tint = (hex: string, pct: number) => `color-mix(in srgb, ${hex} ${pct}%, transparent)`;
+
+const fadeInVariants = {
+  hidden: { opacity: 0, y: 12 },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.4, ease: "easeOut" as const } },
 };
 
 export default function QuestionDetailClient({
@@ -190,6 +195,10 @@ export default function QuestionDetailClient({
   const [isAnswerExpanded, setIsAnswerExpanded] = useState(false);
   const [isCommentsExpanded, setIsCommentsExpanded] = useState(true);
 
+  // Reading progress — thin bar under the top edge, tinted to the technology.
+  const { scrollYProgress } = useScroll();
+  const progress = useSpring(scrollYProgress, { stiffness: 220, damping: 40, restDelta: 0.001 });
+
   const tags = parseJsonArray(q.tags);
   const years = parseJsonArray<number>(q.yearsAsked).sort((a, b) => b - a);
 
@@ -199,7 +208,7 @@ export default function QuestionDetailClient({
       .replace(/(?:Here is the schema for our [a-zA-Z0-9`_\-\s,()]+ table[s]?:)?\s*```sql[\s\S]*?```/gi, "")
       .trim();
   }, [q.description]);
-  
+
   // Parse examples. An example is either single-code or multi-variant (with a
   // language/framework dropdown), so keep any entry that has runnable code OR
   // at least one variant. CodeExample handles highlighting per variant.
@@ -253,10 +262,10 @@ export default function QuestionDetailClient({
         // 1. Sync guest history if it exists
         const localSaved = typeof window !== "undefined" ? localStorage.getItem("iq-saved-questions") : null;
         const localSolved = typeof window !== "undefined" ? localStorage.getItem("iq-solved-questions") : null;
-        
+
         let savedSlugs: string[] = [];
         let solvedSlugs: string[] = [];
-        
+
         try {
           if (localSaved) {
             const arr = JSON.parse(localSaved);
@@ -400,374 +409,465 @@ export default function QuestionDetailClient({
 
   const theme = TECH_THEMES[q.technology ?? ""] ?? FALLBACK_THEME;
 
-  // Animation variants
-  const fadeInVariants = {
-    hidden: { opacity: 0, y: 12 },
-    visible: { opacity: 1, y: 0, transition: { duration: 0.4, ease: "easeOut" as const } },
-  };
+  const hasProblem = Boolean(cleanDescription) || tags.length > 0;
+  const hasAnswer = Boolean(answerContent);
+  const hasExamples = displayExamples.length > 0;
+
+  // Study-flow step numbering: only sections that actually render get a number,
+  // so the rail always reads 01, 02, 03… without gaps.
+  let stepCount = 0;
+  const nextStep = () => String(++stepCount).padStart(2, "0");
 
   return (
     <div className="min-h-screen bg-bg text-fg">
-      <div className="max-w-6xl mx-auto px-6 py-8">
-        
-        {/* Top nav bar: back-to-list on the left, Previous/Next question on the
-            right so users can move through a technology track without returning
-            to the list. Prev/Next follow the same order as the list page. */}
-        <div className="flex items-center justify-between gap-4 mb-8">
-          {/* Sleek back arrow link with hover slide. Returns to the question's
-              technology set (e.g. /interview-questions/javascript), not the whole
-              library — falls back to the library when there's no technology. */}
-          <Link
-            href={q.technology ? `/interview-questions/${q.technology}` : "/interview-questions"}
-            className="group inline-flex items-center gap-2 text-xs font-bold text-muted hover:text-fg transition-colors duration-200 shrink-0"
-          >
-            <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1.5 transition-transform duration-200" />
-            <span className="hidden sm:inline">{q.technology ? `Back to ${techLabel(q.technology)} questions` : "Back to Prep Library"}</span>
-            <span className="sm:hidden">Back</span>
-          </Link>
+      {/* Reading progress bar */}
+      <motion.div
+        aria-hidden
+        className="fixed inset-x-0 top-0 h-[3px] z-[60] origin-left"
+        style={{ scaleX: progress, background: theme.hex }}
+      />
 
-          {(prevQuestion || nextQuestion) && (
-            <div className="flex items-center gap-2 shrink-0">
-              {prevQuestion ? (
-                <Link
-                  href={`/interview-question/${prevQuestion.slug}`}
-                  title={prevQuestion.title}
-                  className="group inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold text-muted hover:text-fg border border-border hover:border-accent/40 bg-surface/60 transition-colors duration-200"
-                >
-                  <ArrowLeft className="w-3.5 h-3.5 group-hover:-translate-x-0.5 transition-transform duration-200" />
-                  <span>Previous</span>
-                </Link>
-              ) : (
-                <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold text-muted/40 border border-border/60 cursor-not-allowed select-none">
-                  <ArrowLeft className="w-3.5 h-3.5" />
-                  <span>Previous</span>
-                </span>
-              )}
-              {nextQuestion ? (
-                <Link
-                  href={`/interview-question/${nextQuestion.slug}`}
-                  title={nextQuestion.title}
-                  className="group inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold text-muted hover:text-fg border border-border hover:border-accent/40 bg-surface/60 transition-colors duration-200"
-                >
-                  <span>Next</span>
-                  <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform duration-200" />
-                </Link>
-              ) : (
-                <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold text-muted/40 border border-border/60 cursor-not-allowed select-none">
-                  <span>Next</span>
-                  <ArrowRight className="w-3.5 h-3.5" />
-                </span>
-              )}
-            </div>
-          )}
+      {/* ============ HERO — full-bleed, tech-tinted ============ */}
+      <header className="relative overflow-hidden border-b border-border">
+        {/* Ambient glows + faint dividing gradient */}
+        <div aria-hidden className="absolute inset-0 pointer-events-none">
+          <div
+            className="absolute -top-28 -right-20 w-[420px] h-[420px] rounded-full blur-3xl"
+            style={{ background: tint(theme.hex, 12) }}
+          />
+          <div
+            className="absolute -bottom-36 -left-24 w-[360px] h-[360px] rounded-full blur-3xl"
+            style={{ background: tint(theme.hex, 7) }}
+          />
         </div>
 
-        {/* 2-Column Responsive Layout */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-          
-          {/* LEFT COLUMN: Main content (Question, Hint, Collapsible Answer, Playgrounds, Comments) */}
-          <div className="lg:col-span-8 space-y-6">
-            
-            {/* 1. Question Prompt Card */}
-            <motion.div
-              initial="hidden"
-              animate="visible"
-              variants={fadeInVariants}
-              className="p-6 sm:p-8 rounded-3xl border border-border bg-surface/85 dark:bg-surface/25 backdrop-blur-sm relative overflow-hidden shadow-sm"
-            >
-              {/* Top banner tag */}
-              <div className="flex items-center justify-between gap-4">
-                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest bg-bg border border-border text-muted">
-                  <HelpCircle className="w-3.5 h-3.5 text-accent" />
-                  Interview Question
-                </span>
-                
-                {/* Difficulty tag */}
-                <span
-                  className={`shrink-0 text-[10px] font-black uppercase tracking-wider px-2.5 py-0.5 rounded-lg border dark:bg-black/20 ${difficultyClasses(
-                    q.difficulty
-                  )}`}
-                >
-                  {q.difficulty}
-                </span>
+        {/* Giant watermark icon drifting off the right edge */}
+        {q.technology && (
+          <div aria-hidden className="absolute -right-8 -bottom-10 opacity-[0.06] dark:opacity-[0.05] pointer-events-none rotate-6">
+            <TechSvg tech={q.technology} className="w-56 h-56 sm:w-72 sm:h-72" />
+          </div>
+        )}
+
+        <div className="relative max-w-6xl mx-auto px-6 pt-6 pb-9">
+          {/* Breadcrumb + track navigation */}
+          <div className="flex items-center justify-between gap-4">
+            <nav className="flex items-center gap-1.5 text-xs font-bold text-muted min-w-0">
+              <Link href="/interview-questions" className="hover:text-fg transition-colors shrink-0">
+                Prep Library
+              </Link>
+              {q.technology && (
+                <>
+                  <ChevronRight className="w-3.5 h-3.5 text-muted/50 shrink-0" />
+                  <Link
+                    href={`/interview-questions/${q.technology}`}
+                    className={`${theme.text} hover:opacity-80 transition-opacity shrink-0`}
+                  >
+                    {techLabel(q.technology)}
+                  </Link>
+                </>
+              )}
+              <ChevronRight className="w-3.5 h-3.5 text-muted/50 shrink-0 hidden sm:block" />
+              <span className="truncate text-muted/60 hidden sm:block">{q.title}</span>
+            </nav>
+
+            {(prevQuestion || nextQuestion) && (
+              <div className="flex items-center gap-2 shrink-0">
+                {prevQuestion ? (
+                  <Link
+                    href={`/interview-question/${prevQuestion.slug}`}
+                    title={prevQuestion.title}
+                    className="group inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold text-muted hover:text-fg border border-border hover:border-accent/40 bg-surface/60 transition-colors duration-200"
+                  >
+                    <ArrowLeft className="w-3.5 h-3.5 group-hover:-translate-x-0.5 transition-transform duration-200" />
+                    <span className="hidden sm:inline">Previous</span>
+                  </Link>
+                ) : (
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold text-muted/40 border border-border/60 cursor-not-allowed select-none">
+                    <ArrowLeft className="w-3.5 h-3.5" />
+                    <span className="hidden sm:inline">Previous</span>
+                  </span>
+                )}
+                {nextQuestion ? (
+                  <Link
+                    href={`/interview-question/${nextQuestion.slug}`}
+                    title={nextQuestion.title}
+                    className="group inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold text-muted hover:text-fg border border-border hover:border-accent/40 bg-surface/60 transition-colors duration-200"
+                  >
+                    <span className="hidden sm:inline">Next</span>
+                    <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform duration-200" />
+                  </Link>
+                ) : (
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold text-muted/40 border border-border/60 cursor-not-allowed select-none">
+                    <span className="hidden sm:inline">Next</span>
+                    <ArrowRight className="w-3.5 h-3.5" />
+                  </span>
+                )}
               </div>
-
-              {/* Title */}
-              <h1 className="text-2xl sm:text-3xl font-black tracking-tight leading-tight mt-5 text-fg">
-                {q.title}
-              </h1>
-
-              {/* Description body */}
-              {cleanDescription && (
-                <div className="mt-6 pt-5 border-t border-border prose dark:prose-invert max-w-none text-sm text-fg/90 leading-relaxed">
-                  <MarkdownRenderer content={cleanDescription} />
-                </div>
-              )}
-
-              {/* Tags list */}
-              {tags.length > 0 && (
-                <div className="flex items-center flex-wrap gap-2 mt-6">
-                  {tags.map((t) => (
-                    <span
-                      key={t}
-                      className="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl border border-border bg-bg/40 text-[10px] font-black tracking-wider uppercase text-muted"
-                    >
-                      <Hash className="w-3 h-3 text-accent" />
-                      {t}
-                    </span>
-                  ))}
-                </div>
-              )}
-            </motion.div>
-
-            {/* 2. AI Hint Card */}
-            <HintBox slug={q.slug} />
-
-            {/* Framework selector — swaps the tutorial + solution (machine-coding). */}
-            {hasFrameworks && (
-              <motion.div
-                initial="hidden"
-                animate="visible"
-                variants={fadeInVariants}
-                className="flex flex-wrap items-center gap-2 p-3 rounded-2xl border border-border bg-surface/85 dark:bg-surface/25 shadow-sm"
-              >
-                <span className="text-[11px] font-black uppercase tracking-wider text-muted px-1.5">
-                  Solve in
-                </span>
-                <div className="flex flex-wrap gap-1.5">
-                  {frameworkKeys.map((fw) => (
-                    <button
-                      key={fw}
-                      onClick={() => selectFramework(fw)}
-                      className={`px-3.5 py-1.5 rounded-xl text-xs font-bold border transition ${
-                        fw === activeFw
-                          ? "bg-accent text-bg border-accent shadow-sm"
-                          : "bg-bg border-border text-muted hover:text-fg hover:border-accent/40"
-                      }`}
-                    >
-                      {CODE_VARIANTS[fw]?.label ?? fw}
-                    </button>
-                  ))}
-                </div>
-              </motion.div>
             )}
+          </div>
 
-            {/* 3. Collapsible Answer & Explanation Card */}
-            {answerContent && (
-              <motion.div
-                initial="hidden"
-                animate="visible"
-                variants={fadeInVariants}
-                className={`rounded-3xl border overflow-hidden transition-all duration-300 ${
-                  isAnswerExpanded
-                    ? `${theme.border} ${theme.bg} shadow-md`
-                    : "border-border bg-surface/85 dark:bg-surface/25 shadow-sm"
-                }`}
+          {/* Meta chips */}
+          <motion.div
+            initial="hidden"
+            animate="visible"
+            variants={fadeInVariants}
+            className="flex items-center flex-wrap gap-2 mt-7"
+          >
+            <span
+              className={`text-[10px] font-black uppercase tracking-wider px-2.5 py-1 rounded-lg border dark:bg-black/20 ${difficultyClasses(q.difficulty)}`}
+            >
+              {q.difficulty}
+            </span>
+            {solved && (
+              <span className="inline-flex items-center gap-1 text-[10px] font-black uppercase tracking-wider px-2.5 py-1 rounded-lg border border-emerald-500/25 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
+                <CheckCircle2 className="w-3 h-3" /> Solved
+              </span>
+            )}
+            {q.company && (
+              <Link
+                href={`/interview-questions/company/${q.company.slug}`}
+                className="inline-flex items-center gap-1.5 text-[11px] font-bold px-2.5 py-1 rounded-lg border border-border bg-surface/70 text-fg/85 hover:border-accent/40 hover:text-accent transition-colors"
               >
-                {/* Header Toggle */}
-                <button
-                  onClick={() => setIsAnswerExpanded(!isAnswerExpanded)}
-                  className="flex items-center justify-between w-full p-6 text-left hover:bg-surface/50 transition-colors duration-200 focus:outline-none"
-                >
-                  <div className="flex items-center gap-2.5">
-                    <BookOpen className={`w-5 h-5 ${isAnswerExpanded ? theme.text : "text-muted"}`} />
-                    <h2 className="text-sm font-black uppercase tracking-wider text-fg">
-                      Detailed Solution & Approach
-                    </h2>
-                  </div>
-                  <ChevronDown
-                    className={`w-5 h-5 text-muted transition-transform duration-300 ${
-                      isAnswerExpanded ? "rotate-180" : ""
-                    }`}
-                  />
-                </button>
+                <Building2 className="w-3.5 h-3.5 text-muted" />
+                {q.company.name}
+              </Link>
+            )}
+            {q.round && (
+              <span className="inline-flex items-center gap-1.5 text-[11px] font-bold px-2.5 py-1 rounded-lg border border-border bg-surface/70 text-muted">
+                <Layers className="w-3.5 h-3.5 text-muted/60" />
+                {q.round}
+              </span>
+            )}
+            {years.length > 0 && (
+              <span className="inline-flex items-center gap-1.5 text-[11px] font-bold px-2.5 py-1 rounded-lg border border-border bg-surface/70 text-muted">
+                <Calendar className="w-3.5 h-3.5 text-muted/60" />
+                {years.slice(0, 3).join(" · ")}
+              </span>
+            )}
+          </motion.div>
 
-                {/* Collapsible content area */}
-                <AnimatePresence initial={false}>
-                  {isAnswerExpanded ? (
-                    <motion.div
-                      key="answer-content"
-                      initial={{ height: 0, opacity: 0 }}
-                      animate={{ height: "auto", opacity: 1 }}
-                      exit={{ height: 0, opacity: 0 }}
-                      transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
-                      className="overflow-hidden"
-                    >
-                      <div className="px-6 pb-6 pt-2 border-t border-border prose dark:prose-invert max-w-none text-sm text-fg/90 leading-relaxed">
-                        {/* allowHtml: answers are admin-curated and may embed
-                            hand-authored inline SVG diagrams. */}
-                        <MarkdownRenderer content={answerContent} allowHtml />
+          {/* Title — the star of the page */}
+          <motion.h1
+            initial="hidden"
+            animate="visible"
+            variants={fadeInVariants}
+            className="mt-4 max-w-3xl text-3xl sm:text-[2.75rem] font-black tracking-tight leading-[1.12] text-fg"
+          >
+            {q.title}
+          </motion.h1>
+
+          {/* Action row: engage + track progress, right where the reading starts */}
+          <motion.div
+            initial="hidden"
+            animate="visible"
+            variants={fadeInVariants}
+            className="mt-7 flex items-center flex-wrap gap-2.5"
+          >
+            <QuestionEngagement slug={q.slug} initialLikes={q.likes} />
+            <SaveButton
+              question={{
+                slug: q.slug,
+                title: q.title,
+                difficulty: q.difficulty,
+                technology: q.technology,
+                company: q.company?.name ?? null,
+              }}
+              saved={saved}
+              onClick={handleToggleSaved}
+            />
+            <button
+              onClick={handleToggleSolved}
+              className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl border text-sm font-bold transition duration-200 ${
+                solved
+                  ? "border-emerald-500/40 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
+                  : "border-border text-muted hover:text-fg hover:border-fg/30"
+              }`}
+            >
+              <CheckCircle2 className="w-4 h-4" />
+              {solved ? "Solved" : "Mark Solved"}
+            </button>
+            <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-muted pl-2">
+              <Eye className="w-3.5 h-3.5" />
+              {compactNumber(q.views)} views
+            </span>
+          </motion.div>
+        </div>
+      </header>
+
+      {/* ============ BODY ============ */}
+      <div className="max-w-6xl mx-auto px-6 py-10">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+          {/* LEFT: guided study flow on a numbered rail */}
+          <div className="lg:col-span-8">
+            <div className="relative lg:pl-14 space-y-10">
+              {/* Connecting rail line (desktop) */}
+              <div aria-hidden className="hidden lg:block absolute left-4 top-3 bottom-3 w-px bg-border" />
+
+              {/* Step: understand the problem */}
+              {hasProblem && (
+                <StudyStep num={nextStep()} title="Understand the problem" hex={theme.hex}>
+                  <motion.div
+                    initial="hidden"
+                    animate="visible"
+                    variants={fadeInVariants}
+                    className="rounded-2xl border border-border bg-surface/70 dark:bg-surface/20 backdrop-blur-sm p-6 sm:p-7 shadow-sm"
+                  >
+                    {cleanDescription && (
+                      <div className="prose dark:prose-invert max-w-none text-sm text-fg/90 leading-relaxed">
+                        <MarkdownRenderer content={cleanDescription} />
                       </div>
-                    </motion.div>
-                  ) : (
-                    <motion.div
-                      key="answer-teaser"
-                      className="relative px-6 pb-6 pt-1 text-center bg-gradient-to-b from-transparent to-surface/40"
-                    >
-                      {/* Blurred placeholder code list */}
-                      <div className="absolute inset-0 bg-gradient-to-t from-bg/90 to-transparent pointer-events-none z-10" />
-                      <div className="blur-sm opacity-15 select-none text-left font-mono text-xs space-y-1.5 p-2 border border-border rounded-xl mb-4">
-                        {q.technology === "sql" ? (
-                          <>
-                            <p>SELECT product, SUM(amount) AS total</p>
-                            <p>FROM sales</p>
-                            <p>WHERE amount &gt; 100</p>
-                            <p>GROUP BY product</p>
-                            <p>HAVING SUM(amount) &gt; 500;</p>
-                          </>
-                        ) : q.technology === "python" ? (
-                          <>
-                            <p>def solve_challenges(inputs):</p>
-                            <p className="pl-4"># Optimized algorithmic steps</p>
-                            <p className="pl-4">cache = set()</p>
-                            <p className="pl-4">return [item for item in inputs if item in cache]</p>
-                          </>
-                        ) : q.technology === "typescript" ? (
-                          <>
-                            <p>function solveChallenges(inputs: string[]): string[] &#123;</p>
-                            <p className="pl-4">{"// Optimized algorithmic steps"}</p>
-                            <p className="pl-4">const cache = new Set&lt;string&gt;();</p>
-                            <p className="pl-4">return inputs.filter(item =&gt; cache.has(item));</p>
-                            <p>&#125;</p>
-                          </>
-                        ) : (
-                          <>
-                            <p>function solveChallenges(inputs) &#123;</p>
-                            <p className="pl-4">{"// Optimized algorithmic steps"}</p>
-                            <p className="pl-4">const cache = new Map();</p>
-                            <p className="pl-4">return inputs.filter(item =&gt; cache.has(item));</p>
-                            <p>&#125;</p>
-                          </>
-                        )}
+                    )}
+                    {tags.length > 0 && (
+                      <div className={`flex items-center flex-wrap gap-2 ${cleanDescription ? "mt-6 pt-5 border-t border-border" : ""}`}>
+                        {tags.map((t) => (
+                          <span
+                            key={t}
+                            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg border border-border bg-bg/40 text-[10px] font-black tracking-wider uppercase text-muted"
+                          >
+                            <Hash className={`w-3 h-3 ${theme.text}`} />
+                            {t}
+                          </span>
+                        ))}
                       </div>
-                      
-                      <button
-                        onClick={() => setIsAnswerExpanded(true)}
-                        className="relative z-20 inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-accent text-bg text-xs font-black uppercase tracking-wider hover:bg-accent-soft shadow-lg transition duration-200"
+                    )}
+                  </motion.div>
+                </StudyStep>
+              )}
+
+              {/* Step: try it, with an AI nudge if stuck */}
+              <StudyStep
+                num={nextStep()}
+                title="Attempt it yourself"
+                sub="Sketch your approach before reading the solution — that's what interviews test."
+                hex={theme.hex}
+              >
+                <HintBox slug={q.slug} />
+              </StudyStep>
+
+              {/* Step: the solution */}
+              {hasAnswer && (
+                <StudyStep num={nextStep()} title="Study the solution" hex={theme.hex}>
+                  <div className="space-y-4">
+                    {/* Framework selector — swaps the tutorial + solution (machine-coding). */}
+                    {hasFrameworks && (
+                      <motion.div
+                        initial="hidden"
+                        animate="visible"
+                        variants={fadeInVariants}
+                        className="flex flex-wrap items-center gap-2 p-3 rounded-2xl border border-border bg-surface/70 dark:bg-surface/20 shadow-sm"
                       >
-                        Reveal Complete Explanation
-                      </button>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </motion.div>
-            )}
+                        <span className="text-[11px] font-black uppercase tracking-wider text-muted px-1.5">
+                          Solve in
+                        </span>
+                        <div className="flex flex-wrap gap-1.5">
+                          {frameworkKeys.map((fw) => (
+                            <button
+                              key={fw}
+                              onClick={() => selectFramework(fw)}
+                              className={`px-3.5 py-1.5 rounded-xl text-xs font-bold border transition ${
+                                fw === activeFw
+                                  ? "bg-accent text-bg border-accent shadow-sm"
+                                  : "bg-bg border-border text-muted hover:text-fg hover:border-accent/40"
+                              }`}
+                            >
+                              {CODE_VARIANTS[fw]?.label ?? fw}
+                            </button>
+                          ))}
+                        </div>
+                      </motion.div>
+                    )}
 
-            {/* 4. Runnable Code Playgrounds / Examples */}
-            {displayExamples.length > 0 && (
-              <motion.div
-                initial="hidden"
-                animate="visible"
-                variants={fadeInVariants}
-                className="p-6 rounded-3xl border border-border bg-surface/85 dark:bg-surface/25 backdrop-blur-sm space-y-4 shadow-sm"
-              >
-                <div className="flex items-center gap-2">
-                  <span className="w-1.5 h-6 rounded-full bg-accent" />
-                  <h2 className="text-sm font-black uppercase tracking-wider text-fg">
-                    {activeFw
-                      ? `${CODE_VARIANTS[activeFw]?.label ?? activeFw} Solution`
+                    <AnimatePresence initial={false} mode="wait">
+                      {!isAnswerExpanded ? (
+                        /* Spoiler gate — an honest, calm "peek when ready" panel */
+                        <motion.div
+                          key="answer-gate"
+                          initial={{ opacity: 0 }}
+                          animate={{ opacity: 1 }}
+                          exit={{ opacity: 0 }}
+                          transition={{ duration: 0.25 }}
+                          className="relative rounded-2xl border border-border overflow-hidden bg-surface/70 dark:bg-surface/20"
+                        >
+                          <div
+                            aria-hidden
+                            className="absolute -top-16 right-0 w-64 h-64 rounded-full blur-3xl pointer-events-none"
+                            style={{ background: tint(theme.hex, 10) }}
+                          />
+                          <div className="relative px-6 py-12 sm:py-14 flex flex-col items-center text-center">
+                            <div
+                              className="grid place-items-center w-12 h-12 rounded-2xl border mb-4"
+                              style={{ background: tint(theme.hex, 10), borderColor: tint(theme.hex, 25) }}
+                            >
+                              <Lock className={`w-5 h-5 ${theme.text}`} />
+                            </div>
+                            <h3 className="text-lg font-black tracking-tight text-fg">The solution is waiting</h3>
+                            <p className="text-sm text-muted mt-1.5 max-w-sm leading-relaxed">
+                              Give it an honest attempt first — then compare your thinking with the full walkthrough.
+                            </p>
+                            <button
+                              onClick={() => setIsAnswerExpanded(true)}
+                              className="mt-6 inline-flex items-center gap-2 px-6 py-2.5 rounded-xl bg-accent text-bg text-xs font-black uppercase tracking-wider hover:bg-accent-soft shadow-lg transition duration-200"
+                            >
+                              Reveal the solution
+                            </button>
+                          </div>
+                        </motion.div>
+                      ) : (
+                        <motion.div
+                          key="answer-content"
+                          initial={{ opacity: 0, y: 8 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          exit={{ opacity: 0 }}
+                          transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
+                          className={`rounded-2xl border ${theme.border} ${theme.bg} shadow-md overflow-hidden`}
+                        >
+                          <div className="p-6 sm:p-7 prose dark:prose-invert max-w-none text-sm text-fg/90 leading-relaxed">
+                            {/* allowHtml: answers are admin-curated and may embed
+                                hand-authored inline SVG diagrams. */}
+                            <MarkdownRenderer content={answerContent!} allowHtml />
+                          </div>
+
+                          {/* Post-read nudge: close the loop on progress */}
+                          <div className="px-6 pb-6">
+                            <div className="flex flex-col sm:flex-row items-center justify-between gap-3 rounded-xl border border-emerald-500/25 bg-emerald-500/[0.06] px-4 py-3.5">
+                              <p className="text-xs font-semibold text-muted">
+                                {solved ? "Nice — this one's in your solved list." : "Understood it end to end? Log your progress."}
+                              </p>
+                              <button
+                                onClick={handleToggleSolved}
+                                className={`shrink-0 inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg border text-xs font-bold transition duration-200 ${
+                                  solved
+                                    ? "border-emerald-500/40 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
+                                    : "border-border bg-bg/50 text-muted hover:text-emerald-600 dark:hover:text-emerald-400 hover:border-emerald-500/40"
+                                }`}
+                              >
+                                <CheckCircle2 className="w-3.5 h-3.5" />
+                                {solved ? "Solved" : "Mark as solved"}
+                              </button>
+                            </div>
+                          </div>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </div>
+                </StudyStep>
+              )}
+
+              {/* Step: run the code */}
+              {hasExamples && (
+                <StudyStep
+                  num={nextStep()}
+                  title={
+                    activeFw
+                      ? `${CODE_VARIANTS[activeFw]?.label ?? activeFw} solution`
                       : (isRunnable || isSql) && displayExamples.some((e) => e.runnable !== false)
-                      ? "Executable Playgrounds"
+                      ? "Run the code"
                       : isReact && displayExamples.some((e) => e.runnable !== false)
-                      ? "React Playground Snippets"
-                      : "Code Snippets"}
-                  </h2>
-                </div>
-
-                <div className="space-y-4">
-                  {displayExamples.map((ex, i) => {
-                    // Multi-file (component-wise) solution: file tabs + a single
-                    // "Run Playground" that opens every file in the workspace.
-                    if (ex.files && Object.keys(ex.files).length > 0) {
+                      ? "Explore the playground snippets"
+                      : "Read the code"
+                  }
+                  hex={theme.hex}
+                >
+                  <motion.div
+                    initial="hidden"
+                    animate="visible"
+                    variants={fadeInVariants}
+                    className="space-y-4"
+                  >
+                    {displayExamples.map((ex, i) => {
+                      // Multi-file (component-wise) solution: file tabs + a single
+                      // "Run Playground" that opens every file in the workspace.
+                      if (ex.files && Object.keys(ex.files).length > 0) {
+                        return (
+                          <MultiFileExample
+                            key={`${activeFw ?? "f"}-${i}`}
+                            label={ex.label}
+                            files={ex.files}
+                            template={fwTemplate}
+                          />
+                        );
+                      }
+                      // In-page runner for JS/TS/Python single-variant examples.
+                      if (isRunnable && ex.runnable !== false && !ex.variants) {
+                        return <JsPlayground key={i} code={ex.code ?? ""} label={ex.label} title={q.title} description={q.description ?? undefined} backFrom={`/interview-question/${q.slug}`} technology={q.technology ?? "javascript"} />;
+                      }
+                      // In-page runner for SQL examples.
+                      if (isSql && ex.runnable !== false && !ex.variants) {
+                        return <SqlPlayground key={i} code={ex.code ?? ""} label={ex.label} title={q.title} description={q.description ?? undefined} />;
+                      }
+                      // Highlighted block with an optional language/framework
+                      // dropdown + per-variant "Open in Playground". React
+                      // single-variant examples default to the react template.
                       return (
-                        <MultiFileExample
-                          key={`${activeFw ?? "f"}-${i}`}
-                          label={ex.label}
-                          files={ex.files}
-                          template={fwTemplate}
+                        <CodeExample
+                          key={i}
+                          example={ex}
+                          defaultTech={isReact ? "react" : undefined}
                         />
                       );
-                    }
-                    // In-page runner for JS/TS/Python single-variant examples.
-                    if (isRunnable && ex.runnable !== false && !ex.variants) {
-                      return <JsPlayground key={i} code={ex.code ?? ""} label={ex.label} title={q.title} description={q.description ?? undefined} backFrom={`/interview-question/${q.slug}`} technology={q.technology ?? "javascript"} />;
-                    }
-                    // In-page runner for SQL examples.
-                    if (isSql && ex.runnable !== false && !ex.variants) {
-                      return <SqlPlayground key={i} code={ex.code ?? ""} label={ex.label} title={q.title} description={q.description ?? undefined} />;
-                    }
-                    // Highlighted block with an optional language/framework
-                    // dropdown + per-variant "Open in Playground". React
-                    // single-variant examples default to the react template.
-                    return (
-                      <CodeExample
-                        key={i}
-                        example={ex}
-                        defaultTech={isReact ? "react" : undefined}
-                      />
-                    );
-                  })}
-                </div>
-              </motion.div>
-            )}
-
-            {/* 5. Collapsible Discussion Card */}
-            <motion.div
-              initial="hidden"
-              animate="visible"
-              variants={fadeInVariants}
-              className="rounded-3xl border border-border bg-surface/85 dark:bg-surface/25 backdrop-blur-sm overflow-hidden shadow-sm"
-            >
-              {/* Discussion Header */}
-              <button
-                onClick={() => setIsCommentsExpanded(!isCommentsExpanded)}
-                className="flex items-center justify-between w-full p-6 text-left hover:bg-surface/50 transition-colors duration-200 focus:outline-none"
-              >
-                <div className="flex items-center gap-2.5">
-                  <MessageSquare className="w-5 h-5 text-muted" />
-                  <h2 className="text-sm font-black uppercase tracking-wider text-fg">
-                    Community discussion
-                  </h2>
-                </div>
-                <ChevronDown
-                  className={`w-5 h-5 text-muted transition-transform duration-300 ${
-                    isCommentsExpanded ? "rotate-180" : ""
-                  }`}
-                />
-              </button>
-
-              <AnimatePresence initial={false}>
-                {isCommentsExpanded && (
-                  <motion.div
-                    initial={{ height: 0, opacity: 0 }}
-                    animate={{ height: "auto", opacity: 1 }}
-                    exit={{ height: 0, opacity: 0 }}
-                    transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
-                    className="overflow-hidden"
-                  >
-                    <div className="px-6 pb-6 pt-2 border-t border-border">
-                      <CommentSection
-                        postId={q.id}
-                        initialComments={initialComments}
-                        signedIn={!!currentUserId}
-                        currentUserId={currentUserId}
-                        isAdmin={isAdmin}
-                        postUrl={`/api/interview-questions/${q.slug}/comments`}
-                        deleteUrlBase="/api/interview-questions/comments"
-                        heading="Discussion"
-                        placeholder="Share your approach, an alternative answer, or a follow-up…"
-                      />
-                    </div>
+                    })}
                   </motion.div>
-                )}
-              </AnimatePresence>
-            </motion.div>
+                </StudyStep>
+              )}
 
-            {/* Bottom Previous / Next question navigation — lets users move to the
-                adjacent question in the technology track without scrolling back up
-                or returning to the list. Same order as the top nav / list page. */}
+              {/* Step: discuss */}
+              <StudyStep num={nextStep()} title="Join the discussion" hex={theme.hex}>
+                <motion.div
+                  initial="hidden"
+                  animate="visible"
+                  variants={fadeInVariants}
+                  className="rounded-2xl border border-border bg-surface/70 dark:bg-surface/20 backdrop-blur-sm overflow-hidden shadow-sm"
+                >
+                  <button
+                    onClick={() => setIsCommentsExpanded(!isCommentsExpanded)}
+                    className="flex items-center justify-between w-full px-6 py-5 text-left hover:bg-surface/50 transition-colors duration-200 focus:outline-none"
+                  >
+                    <div className="flex items-center gap-2.5">
+                      <MessageSquare className="w-5 h-5 text-muted" />
+                      <span className="text-sm font-bold text-fg">
+                        Approaches, follow-ups & war stories from other candidates
+                      </span>
+                    </div>
+                    <ChevronDown
+                      className={`w-5 h-5 text-muted transition-transform duration-300 shrink-0 ${
+                        isCommentsExpanded ? "rotate-180" : ""
+                      }`}
+                    />
+                  </button>
+
+                  <AnimatePresence initial={false}>
+                    {isCommentsExpanded && (
+                      <motion.div
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: "auto", opacity: 1 }}
+                        exit={{ height: 0, opacity: 0 }}
+                        transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
+                        className="overflow-hidden"
+                      >
+                        <div className="px-6 pb-6 pt-2 border-t border-border">
+                          <CommentSection
+                            postId={q.id}
+                            initialComments={initialComments}
+                            signedIn={!!currentUserId}
+                            currentUserId={currentUserId}
+                            isAdmin={isAdmin}
+                            postUrl={`/api/interview-questions/${q.slug}/comments`}
+                            deleteUrlBase="/api/interview-questions/comments"
+                            heading="Discussion"
+                            placeholder="Share your approach, an alternative answer, or a follow-up…"
+                          />
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </motion.div>
+              </StudyStep>
+            </div>
+
+            {/* Bottom Previous / Next question navigation — continue the track
+                without scrolling back up. Same order as the top nav / list page. */}
             {(prevQuestion || nextQuestion) && (
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-10">
                 {prevQuestion ? (
                   <Link
                     href={`/interview-question/${prevQuestion.slug}`}
@@ -798,116 +898,74 @@ export default function QuestionDetailClient({
                 )}
               </div>
             )}
-
           </div>
 
-          {/* RIGHT COLUMN: Sidebar (glowing Tech banner, details specs grid, related lists) */}
-          <div className="lg:col-span-4 space-y-6 sticky top-6">
-            
-            {/* 1. Technology Specs & Engagement Banner */}
-            <motion.div
-              initial="hidden"
-              animate="visible"
-              variants={fadeInVariants}
-              className={`p-6 rounded-3xl border ${theme.border} ${theme.bg} backdrop-blur-sm relative overflow-hidden flex flex-col items-center text-center shadow-sm hover:shadow-md transition-all duration-300 ${theme.hoverBorder} ${theme.bgGlow}`}
-            >
-              {/* Glowing SVG Header */}
-              <div className="p-4 rounded-full bg-bg/60 border border-border backdrop-blur-lg flex items-center justify-center relative shadow-[0_4px_30px_rgba(0,0,0,0.1)] group">
-                <div className="absolute inset-0 rounded-full blur-xl opacity-20 group-hover:opacity-40 transition-opacity duration-300 bg-current" style={{ color: "inherit" }} />
-                {q.technology ? (
-                  <TechSvg tech={q.technology} className="w-16 h-16 group-hover:scale-110 transition-transform duration-500" />
-                ) : (
-                  <div className="w-16 h-16 rounded-full flex items-center justify-center bg-accent/10 border border-accent/20 text-accent font-black">
-                    IQ
-                  </div>
-                )}
-              </div>
-
-              {q.technology && (
+          {/* RIGHT: sticky companion sidebar */}
+          <aside className="lg:col-span-4 space-y-5 lg:sticky lg:top-6">
+            {/* Track card — where this question lives */}
+            {q.technology && (
+              <motion.div initial="hidden" animate="visible" variants={fadeInVariants}>
                 <Link
                   href={`/interview-questions/${q.technology}`}
-                  className="font-black text-base mt-4 hover:text-accent transition duration-200 tracking-tight"
+                  className={`group flex items-center gap-4 p-4 rounded-2xl border ${theme.border} ${theme.bg} backdrop-blur-sm shadow-sm hover:shadow-md transition-all duration-300`}
                 >
-                  {techLabel(q.technology)}
+                  <div
+                    className="shrink-0 grid place-items-center w-12 h-12 rounded-xl border transition-colors"
+                    style={{ background: tint(theme.hex, 10), borderColor: tint(theme.hex, 25) }}
+                  >
+                    <TechSvg tech={q.technology} className="w-7 h-7 group-hover:scale-110 transition-transform duration-300" />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <div className="text-[10px] font-black uppercase tracking-widest text-muted/70">Track</div>
+                    <div className="text-sm font-black tracking-tight text-fg group-hover:text-accent transition-colors truncate">
+                      {techLabel(q.technology)} questions
+                    </div>
+                  </div>
+                  <ArrowUpRight className="w-4 h-4 text-muted group-hover:text-accent group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-all duration-300 shrink-0" />
                 </Link>
-              )}
+              </motion.div>
+            )}
 
-              {/* Engagement Controls */}
-              <div className="flex items-center flex-wrap gap-3 mt-5 w-full justify-center">
-                <QuestionEngagement slug={q.slug} initialLikes={q.likes} />
-                <SaveButton
-                  question={{
-                    slug: q.slug,
-                    title: q.title,
-                    difficulty: q.difficulty,
-                    technology: q.technology,
-                    company: q.company?.name ?? null,
-                  }}
-                  saved={saved}
-                  onClick={handleToggleSaved}
-                />
-                <button
-                  onClick={handleToggleSolved}
-                  className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl border text-sm font-bold transition duration-200 ${
-                    solved
-                      ? "border-emerald-500/40 bg-emerald-500/10 text-emerald-600 dark:text-emerald-455"
-                      : "border-border text-muted hover:text-fg hover:border-fg/30"
-                  }`}
-                >
-                  <CheckCircle2 className="w-4 h-4" />
-                  {solved ? "Solved" : "Mark Solved"}
-                </button>
-              </div>
-            </motion.div>
-
-            {/* 2. Specs List Grid */}
+            {/* At a glance */}
             <motion.div
               initial="hidden"
               animate="visible"
               variants={fadeInVariants}
-              className="p-6 rounded-3xl border border-border bg-surface/85 dark:bg-surface/25 backdrop-blur-sm space-y-4 shadow-sm"
+              className="p-5 rounded-2xl border border-border bg-surface/70 dark:bg-surface/20 backdrop-blur-sm space-y-3.5 shadow-sm"
             >
-              <h3 className="text-xs font-black uppercase tracking-wider text-muted">Specifications</h3>
-              <div className="space-y-3.5 text-xs">
-                
-                {/* Company Row */}
+              <h3 className="text-xs font-black uppercase tracking-wider text-muted">At a glance</h3>
+              <div className="space-y-3 text-xs">
                 {q.company && (
-                  <div className="flex items-center justify-between">
+                  <div className="flex items-center justify-between gap-3">
                     <span className="text-muted flex items-center gap-1.5">
                       <Building2 className="w-3.5 h-3.5 text-muted/50" /> Company
                     </span>
                     <Link
                       href={`/interview-questions/company/${q.company.slug}`}
-                      className="font-bold hover:text-accent"
+                      className="font-bold hover:text-accent truncate"
                     >
                       {q.company.name}
                     </Link>
                   </div>
                 )}
-
-                {/* Round Row */}
                 {q.round && (
-                  <div className="flex items-center justify-between">
+                  <div className="flex items-center justify-between gap-3">
                     <span className="text-muted flex items-center gap-1.5">
-                      <Layers className="w-3.5 h-3.5 text-muted/50" /> Interview Round
+                      <Layers className="w-3.5 h-3.5 text-muted/50" /> Round
                     </span>
                     <span className="font-bold">{q.round}</span>
                   </div>
                 )}
-
-                {/* Views Row */}
-                <div className="flex items-center justify-between">
+                <div className="flex items-center justify-between gap-3">
                   <span className="text-muted flex items-center gap-1.5">
                     <Eye className="w-3.5 h-3.5 text-muted/50" /> Views
                   </span>
                   <span className="font-bold">{compactNumber(q.views)}</span>
                 </div>
-
-                {/* Asked Years Row */}
                 {years.length > 0 && (
                   <div className="flex flex-col gap-2 pt-2.5 border-t border-border">
                     <span className="text-muted flex items-center gap-1.5">
-                      <Clock className="w-3.5 h-3.5 text-muted/50" /> Asked in Campaigns
+                      <Calendar className="w-3.5 h-3.5 text-muted/50" /> Years asked
                     </span>
                     <div className="flex flex-wrap gap-1.5">
                       {years.map((yr) => (
@@ -921,18 +979,12 @@ export default function QuestionDetailClient({
                     </div>
                   </div>
                 )}
-
               </div>
             </motion.div>
 
-            {/* 3. Related Questions Lists */}
+            {/* Related questions */}
             {(followUps.length > 0 || similar.length > 0) && (
-              <motion.div
-                initial="hidden"
-                animate="visible"
-                variants={fadeInVariants}
-                className="space-y-4"
-              >
+              <motion.div initial="hidden" animate="visible" variants={fadeInVariants} className="space-y-5">
                 {followUps.length > 0 && (
                   <RelatedList
                     title={q.company ? `Asked at ${q.company.name}` : "Follow-ups"}
@@ -947,34 +999,73 @@ export default function QuestionDetailClient({
                 )}
               </motion.div>
             )}
-
-          </div>
-
+          </aside>
         </div>
-
       </div>
     </div>
   );
 }
 
+/**
+ * One stop on the study-flow rail: a numbered marker (desktop) hanging on the
+ * connecting line, a compact heading, then the section content.
+ */
+function StudyStep({
+  num,
+  title,
+  sub,
+  hex,
+  children,
+}: {
+  num: string;
+  title: string;
+  sub?: string;
+  hex: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <section className="relative">
+      <div
+        className="hidden lg:grid absolute -left-14 top-0 place-items-center w-8 h-8 rounded-full border bg-bg text-[10px] font-black"
+        style={{ borderColor: tint(hex, 35), color: hex }}
+      >
+        {num}
+      </div>
+      <div className="mb-3.5 flex items-baseline gap-2">
+        <span className="lg:hidden text-[11px] font-black" style={{ color: hex }}>
+          {num}
+        </span>
+        <div>
+          <h2 className="text-sm font-black uppercase tracking-[0.15em] text-fg">{title}</h2>
+          {sub && <p className="text-xs text-muted mt-1 leading-relaxed">{sub}</p>}
+        </div>
+      </div>
+      {children}
+    </section>
+  );
+}
+
 function RelatedList({ title, items }: { title: string; items: SuggestionItem[] }) {
   return (
-    <div className="p-6 rounded-3xl border border-border bg-surface/85 dark:bg-surface/25 backdrop-blur-sm space-y-3 shadow-sm">
+    <div className="p-5 rounded-2xl border border-border bg-surface/70 dark:bg-surface/20 backdrop-blur-sm space-y-3 shadow-sm">
       <div className="flex items-center gap-1.5 text-xs font-black uppercase tracking-wider text-muted">
         <Award className="w-3.5 h-3.5 text-accent" />
         {title}
       </div>
-      <div className="space-y-2">
-        {items.map((it) => (
+      <div className="space-y-1.5">
+        {items.map((it, i) => (
           <Link
             key={it.slug}
             href={`/interview-question/${it.slug}`}
-            className="flex items-center justify-between gap-3 p-3.5 rounded-xl border border-border bg-bg/30 hover:border-accent/40 hover:bg-surface/50 transition duration-200 text-xs font-semibold"
+            className="group flex items-center gap-3 p-3 rounded-xl border border-transparent hover:border-accent/30 hover:bg-surface/60 transition duration-200 text-xs font-semibold"
           >
-            <span className="truncate text-fg/85 hover:text-accent">{it.title}</span>
+            <span className="shrink-0 w-5 text-right font-black text-muted/40 group-hover:text-accent/70 transition-colors tabular-nums">
+              {i + 1}
+            </span>
+            <span className="truncate flex-1 text-fg/85 group-hover:text-accent transition-colors">{it.title}</span>
             <span
               className={`shrink-0 text-[9px] font-black uppercase px-1.5 py-0.5 rounded border ${difficultyClasses(
-                it.difficulty
+                it.difficulty,
               )}`}
             >
               {it.difficulty}

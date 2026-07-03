@@ -2,6 +2,7 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { redirect } from "next/navigation";
 import DashboardHero from "./DashboardHero";
+import DashboardJourney from "./DashboardJourney";
 import DashboardStats from "./DashboardStats";
 import DashboardSidebar from "./DashboardSidebar";
 import DashboardWorkspace from "./DashboardWorkspace";
@@ -209,6 +210,8 @@ export default async function DashboardPage() {
   return (
     <div className="mx-auto max-w-7xl px-4 py-8 md:py-12">
       <DashboardHero userName={session.user?.name ?? null} />
+
+      <DashboardJourney userId={userId} />
 
       <DashboardStats stats={stats} />
 

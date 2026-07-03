@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { clientKey, rateLimitDistributed } from "@/lib/rate-limit";
 import { resolveCandidateFromToken } from "@/lib/take-home/candidate";
 import { judge, type JudgeCase } from "@/lib/judge/run";
+import { recordPrepCompletion } from "@/lib/prep-journey/complete";
 import { hasHarness } from "@/lib/judge/harness";
 import { runUnitJs } from "@/lib/judge/unit-js";
 import { PistonUnavailableError } from "@/lib/piston";
@@ -257,6 +258,14 @@ export async function POST(req: Request, { params }: { params: Promise<{ slug: s
     },
     select: { id: true, status: true },
   });
+
+  // A passing submit credits the user's active prep journey (fire-and-forget:
+  // grading must never fail because of tracker bookkeeping).
+  if (status === "passed") {
+    void recordPrepCompletion(candidateUserId, slug, "challenge").catch((e) =>
+      console.error("[prep-journey] completion credit failed:", e),
+    );
+  }
 
   // Take-home status update + recruiter notify (fire-and-forget, mirrors submit route).
   if (token && assignmentTokenMatched) {

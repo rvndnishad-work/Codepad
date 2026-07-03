@@ -16,6 +16,7 @@ import {
   Sparkles,
 } from "lucide-react";
 import { LogoLockup } from "./Logo";
+import { NAV_TINTS } from "./NavDropdown";
 import type { NavStatus } from "@/lib/settings-constants";
 
 /** Icon names are passed across the RSC boundary as strings. See NavDropdown for rationale. */
@@ -35,6 +36,8 @@ export type MobileNavItem = {
   description?: string;
   iconName: string;
   badge?: string;
+  /** Color identity for the icon tile — a key of NAV_TINTS (see NavDropdown). */
+  tint?: string;
   /** When set to "coming_soon", the item renders muted and is non-interactive. */
   status?: "visible" | "coming_soon";
 };
@@ -212,15 +215,18 @@ function MobileGroup({
       <button
         type="button"
         onClick={onToggle}
-        className={`w-full flex items-center justify-between px-3 py-2.5 text-sm font-semibold transition-colors ${
+        className={`w-full flex items-center justify-between px-3 py-3 rounded-xl text-[11px] font-black uppercase tracking-[0.15em] transition-colors ${
           expanded || groupActive
             ? "bg-elevated text-fg"
-            : "text-fg/70 hover:bg-elevated hover:text-fg"
+            : "text-muted hover:bg-elevated hover:text-fg"
         }`}
       >
-        <span>{title}</span>
+        <span className="flex items-center gap-1.5">
+          {groupActive && <span className="w-1 h-1 rounded-full bg-accent" aria-hidden />}
+          {title}
+        </span>
         <ChevronDown
-          className={`w-3.5 h-3.5 transition-transform ${expanded ? "rotate-180" : ""}`}
+          className={`w-3.5 h-3.5 transition-transform duration-200 ${expanded ? "rotate-180" : ""}`}
         />
       </button>
 
@@ -231,18 +237,19 @@ function MobileGroup({
             const isComingSoon = item.status === "coming_soon";
             const active = !isComingSoon && matchesActive(pathname, item.href);
 
+            const tintClass = (item.tint && NAV_TINTS[item.tint]) || "bg-elevated/60 text-muted border-border";
             const content = (
               <>
                 <div
-                  className={`w-7 h-7 rounded-md flex items-center justify-center shrink-0 ${
+                  className={`w-8 h-8 rounded-lg border flex items-center justify-center shrink-0 ${
                     isComingSoon
-                      ? "bg-amber-500/10 text-amber-400/60"
+                      ? "bg-amber-500/10 text-amber-400/60 border-amber-500/15"
                       : active
-                        ? "bg-accent/15 text-accent"
-                        : "bg-elevated/60 text-muted"
+                        ? "bg-accent/15 text-accent border-accent/25"
+                        : tintClass
                   }`}
                 >
-                  <Icon className="w-3.5 h-3.5" />
+                  <Icon className="w-4 h-4" />
                 </div>
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-1.5">

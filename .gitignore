@@ -21,3 +21,4 @@ tmp/
 .next-test/
 playwright-report/
 test-results/
+.vercel

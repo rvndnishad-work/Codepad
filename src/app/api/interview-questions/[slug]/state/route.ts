@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
+import { recordPrepCompletion } from "@/lib/prep-journey/complete";
 
 /**
  * Fetch saved/solved state for a question.
@@ -70,6 +71,15 @@ export async function POST(
           : { disconnect: { slug } },
       },
     });
+
+    // Solving a question credits the user's active prep journey (sticky —
+    // un-solving doesn't revert journey progress). Failures here must not
+    // break the solved toggle itself.
+    if (type === "solved" && active) {
+      await recordPrepCompletion(userId, slug, "question").catch((e) =>
+        console.error("[prep-journey] completion credit failed:", e),
+      );
+    }
 
     return NextResponse.json({ ok: true });
   } catch (err) {

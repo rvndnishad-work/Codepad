@@ -9,7 +9,7 @@ export interface JourneyItemView {
   id: string;
   day: number;
   position: number;
-  itemType: "question" | "challenge";
+  itemType: "question" | "challenge" | "scenario";
   refSlug: string;
   title: string;
   technology: string | null;
@@ -94,7 +94,8 @@ export async function getJourneyOverview(userId: string): Promise<JourneyOvervie
     id: r.id,
     day: r.day,
     position: r.position,
-    itemType: r.itemType === "challenge" ? "challenge" : "question",
+    itemType:
+      r.itemType === "challenge" ? "challenge" : r.itemType === "scenario" ? "scenario" : "question",
     refSlug: r.refSlug,
     title: r.title,
     technology: r.technology,

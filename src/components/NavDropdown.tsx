@@ -16,6 +16,7 @@ import {
   BookOpen,
   CreditCard,
   Code2,
+  Bug,
 } from "lucide-react";
 
 /**
@@ -31,6 +32,7 @@ const ICON_MAP: Record<string, React.ComponentType<{ className?: string }>> = {
   Sparkles,
   BookOpen,
   CreditCard,
+  Bug,
 };
 
 /**

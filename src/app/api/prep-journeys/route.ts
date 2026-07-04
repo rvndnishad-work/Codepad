@@ -9,8 +9,8 @@ import { TECHNOLOGIES } from "@/lib/interview-questions/shared";
 const VALID_TECHS = new Set<string>(TECHNOLOGIES.map((t) => t.slug));
 
 const createSchema = z.object({
-  role: z.enum(["frontend", "backend", "fullstack", "custom"]),
-  techStack: z.array(z.string()).min(1).max(13),
+  role: z.enum(["frontend", "backend", "fullstack", "ai-ready", "custom"]),
+  techStack: z.array(z.string()).min(1).max(20),
   dailyMinutes: z.number().int(),
   /** Requested plan length when no target date is given. */
   durationDays: z.number().int().min(7).max(90).optional(),

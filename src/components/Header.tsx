@@ -66,6 +66,14 @@ export default async function Header() {
       tint: "amber",
     },
     {
+      href: "/candidate/ai-code-review",
+      label: "Review the AI's Code",
+      description: "Spot planted bugs, hallucinated APIs, and security holes in AI code.",
+      iconName: "Bug" as const,
+      badge: "New",
+      tint: "rose",
+    },
+    {
       href: "/interview-questions",
       label: "Interview Questions",
       description: "Company & tech questions with answers.",

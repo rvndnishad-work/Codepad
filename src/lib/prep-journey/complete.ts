@@ -15,7 +15,7 @@ import { localDateString } from "./shared";
 export async function recordPrepCompletion(
   userId: string,
   refSlug: string,
-  itemType: "question" | "challenge",
+  itemType: "question" | "challenge" | "scenario",
 ): Promise<void> {
   const journey = await prisma.prepJourney.findFirst({
     where: { userId, status: "active" },

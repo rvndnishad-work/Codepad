@@ -31,9 +31,17 @@ const fadeIn = {
 };
 
 function itemHref(item: JourneyItemView): string {
-  return item.itemType === "challenge"
-    ? `/challenges/${item.refSlug}`
-    : `/interview-question/${item.refSlug}`;
+  if (item.itemType === "challenge") return `/challenges/${item.refSlug}`;
+  // Prompt Arena is a single-page app (scenarios are picked in-page), so the
+  // practice stage links to the Arena rather than a per-scenario route.
+  if (item.itemType === "scenario") return `/interview/prompt-practice?scenario=${item.refSlug}`;
+  return `/interview-question/${item.refSlug}`;
+}
+
+function itemTypeLabel(item: JourneyItemView): string {
+  if (item.itemType === "challenge") return "Challenge";
+  if (item.itemType === "scenario") return "Prompt Arena";
+  return techLabel(item.technology ?? "");
 }
 
 export default function PrepTrackerClient({ overview }: { overview: JourneyOverview }) {
@@ -283,9 +291,7 @@ export default function PrepTrackerClient({ overview }: { overview: JourneyOverv
                       {item.title}
                     </Link>
                     <div className="flex items-center gap-2 mt-1 text-[10px] font-bold text-muted">
-                      <span className="uppercase tracking-wider">
-                        {item.itemType === "challenge" ? "Challenge" : techLabel(item.technology ?? "")}
-                      </span>
+                      <span className="uppercase tracking-wider">{itemTypeLabel(item)}</span>
                       <span>·</span>
                       <span>~{item.estMinutes} min</span>
                     </div>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import Link from "next/link";
 import { toast } from "sonner";
 import {
@@ -81,6 +81,22 @@ export default function PromptLabClient({
     const saved = typeof window !== "undefined" ? localStorage.getItem("promptLabMode") : null;
     setMode(saved === "challenges" || saved === "playground" ? (saved as Mode) : "landing");
   }, []);
+
+  // Deep link from a Prep Journey practice item (?scenario=<slug>): drop the
+  // user straight into that scenario's runner. Applied once on mount so a later
+  // "back" isn't undone by scenario-list changes.
+  const deepLinkApplied = useRef(false);
+  useEffect(() => {
+    if (deepLinkApplied.current || typeof window === "undefined") return;
+    const slug = new URLSearchParams(window.location.search).get("scenario");
+    if (!slug) return;
+    const match = scenarios.find((s) => s.slug === slug);
+    if (match) {
+      deepLinkApplied.current = true;
+      setActiveScenario(match);
+      setMode("challenges");
+    }
+  }, [scenarios]);
   useEffect(() => {
     if (mode && typeof window !== "undefined") localStorage.setItem("promptLabMode", mode);
   }, [mode]);

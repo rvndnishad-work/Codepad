@@ -1,0 +1,542 @@
+[
+  {
+    "title": "What is a Large Language Model and how does it generate text?",
+    "description": "The transformer, next-token prediction, and why 'autocomplete at scale' produces reasoning-like behaviour.",
+    "answer": "A Large Language Model is a transformer neural network trained on huge text corpora to predict the next token. At inference it generates text one token at a time, feeding each generated token back in as input (autoregressive decoding). Capabilities like reasoning, coding and instruction-following emerge from this objective plus post-training (instruction tuning, RLHF).",
+    "difficulty": "easy",
+    "round": "AI Engineering",
+    "tags": ["llm", "transformer", "fundamentals", "next-token"],
+    "technology": "ai-engineering"
+  },
+  {
+    "title": "What are tokens and why do they matter for cost and limits?",
+    "description": "Tokenization is the unit of everything: pricing, context limits, latency and even model quirks.",
+    "answer": "Tokens are the sub-word units a model reads and writes (roughly 4 characters or 0.75 words of English each). Everything is denominated in tokens: API pricing (per input/output token), the context-window limit, and generation latency (one forward pass per output token). Tokenization also explains quirks like poor character counting and inflated costs for non-English text or JSON-heavy payloads.",
+    "difficulty": "easy",
+    "round": "AI Engineering",
+    "tags": ["tokens", "tokenization", "pricing", "fundamentals"],
+    "technology": "ai-engineering"
+  },
+  {
+    "title": "What is a context window and what happens when you exceed it?",
+    "description": "The model's working memory: what fits, what falls out, and how apps deal with the limit.",
+    "answer": "The context window is the maximum number of tokens (prompt + generated output) a model can attend to in one request. Exceeding it causes an API error or forces truncation; apps handle the limit by summarizing, trimming old turns, or retrieving only relevant context. Long contexts also degrade attention quality ('lost in the middle') and cost more per call.",
+    "difficulty": "easy",
+    "round": "AI Engineering",
+    "tags": ["context-window", "limits", "fundamentals"],
+    "technology": "ai-engineering"
+  },
+  {
+    "title": "How do temperature, top-p and other sampling parameters affect output?",
+    "description": "The dials that trade determinism for creativity — and when to turn each one.",
+    "answer": "The model outputs a probability distribution over the next token; sampling parameters shape how you pick from it. Temperature rescales the distribution (0 = near-greedy/deterministic, higher = more diverse), top-p keeps only the smallest set of tokens whose cumulative probability reaches p, and top-k caps the candidate count. Use low temperature for extraction/classification and higher for brainstorming or creative writing; tune temperature or top-p, not both.",
+    "difficulty": "medium",
+    "round": "AI Engineering",
+    "tags": ["temperature", "top-p", "sampling", "inference"],
+    "technology": "ai-engineering"
+  },
+  {
+    "title": "What is the difference between a base model, an instruction-tuned model and a chat model?",
+    "description": "Pretraining vs post-training: why raw next-token predictors need alignment before they are useful assistants.",
+    "answer": "A base model is the raw next-token predictor from pretraining — it completes text but does not follow instructions. Instruction tuning fine-tunes it on (instruction, response) pairs so it answers requests, and chat models add multi-turn conversation formatting plus preference training (RLHF/RLAIF) for helpfulness and safety. Production APIs expose chat models; base models matter mainly for research and custom fine-tunes.",
+    "difficulty": "medium",
+    "round": "AI Engineering",
+    "tags": ["base-model", "instruction-tuning", "rlhf", "post-training"],
+    "technology": "ai-engineering"
+  },
+  {
+    "title": "What are hallucinations and what causes them?",
+    "description": "Why models state falsehoods fluently, and the failure modes every AI engineer must anticipate.",
+    "answer": "A hallucination is fluent output that is factually wrong or fabricated — invented citations, APIs that do not exist, confident wrong answers. They happen because the model optimizes plausibility (next-token likelihood), not truth: when the training data or provided context lacks the answer, the most statistically plausible continuation may be false. Mitigations include grounding with retrieval, allowing the model to abstain, and verifying claims downstream.",
+    "difficulty": "easy",
+    "round": "AI Engineering",
+    "tags": ["hallucination", "grounding", "reliability"],
+    "technology": "ai-engineering"
+  },
+  {
+    "title": "What is the difference between fine-tuning, LoRA and prompt engineering?",
+    "description": "Three ways to change model behaviour — weights, adapters or context — and how to pick.",
+    "answer": "Prompt engineering changes behaviour via the input (instructions, examples, retrieved context) with no training. Full fine-tuning updates all weights on your dataset; LoRA trains small low-rank adapter matrices instead, giving most of the benefit at a fraction of the cost. Rule of thumb: start with prompting (+RAG for knowledge); fine-tune only for style, format or narrow-task specialization that prompting cannot reach — fine-tuning is not the way to add facts.",
+    "difficulty": "medium",
+    "round": "AI Engineering",
+    "tags": ["fine-tuning", "lora", "prompt-engineering", "adaptation"],
+    "technology": "ai-engineering"
+  },
+  {
+    "title": "What is quantization and when would you use a quantized model?",
+    "description": "Shrinking weights from 16-bit to 4-bit: the memory/quality trade-off behind local and edge LLMs.",
+    "answer": "Quantization stores model weights (and sometimes activations) at lower numeric precision — e.g. 4-bit integers instead of 16-bit floats — cutting memory and increasing throughput 2-4x with a small quality loss. It is what makes running open-weight models on a laptop or single GPU feasible (GGUF, AWQ, GPTQ formats). Use it for self-hosted inference under memory pressure; avoid aggressive quantization for tasks needing fine-grained reasoning accuracy.",
+    "difficulty": "hard",
+    "round": "AI Engineering",
+    "tags": ["quantization", "inference", "open-weights", "self-hosting"],
+    "technology": "ai-engineering"
+  },
+  {
+    "title": "How do you choose between open-weight models and proprietary API models?",
+    "description": "Build vs buy for models: capability, cost curves, privacy, and operational burden.",
+    "answer": "Proprietary APIs (Claude, GPT, Gemini) give top capability with zero infrastructure — you pay per token and accept data leaving your VPC (subject to provider terms). Open-weight models (Llama, Mistral, Qwen) give data control, customization (fine-tunes) and predictable cost at scale, but you own serving, scaling and quality gaps. Decide on: capability required, privacy/compliance constraints, volume economics, and whether you have an inference-ops team.",
+    "difficulty": "medium",
+    "round": "AI Engineering",
+    "tags": ["open-weights", "api", "build-vs-buy", "architecture"],
+    "technology": "ai-engineering"
+  },
+  {
+    "title": "How do multimodal models handle images, audio and other non-text inputs?",
+    "description": "Vision encoders, audio tokens, and what multimodality means for app design.",
+    "answer": "Multimodal models encode non-text inputs into the same token/embedding space the language model reasons over — an image is split into patches and projected into visual tokens, audio into acoustic tokens. This enables OCR-free document understanding, screenshot reasoning, and voice pipelines without separate transcription models. For engineers the key implications are token cost (images can be thousands of tokens), resolution/detail settings, and prompt design that references the attached media explicitly.",
+    "difficulty": "medium",
+    "round": "AI Engineering",
+    "tags": ["multimodal", "vision", "audio", "fundamentals"],
+    "technology": "ai-engineering"
+  },
+  {
+    "title": "What is the difference between zero-shot, one-shot and few-shot prompting?",
+    "description": "How in-context examples steer a model without any training.",
+    "answer": "Zero-shot gives only an instruction; one-shot/few-shot include example input-output pairs in the prompt so the model infers the pattern (in-context learning). Few-shot examples are the highest-leverage tool for format compliance and edge-case handling: pick diverse, correct examples and keep their format identical to the desired output. Modern instruction-tuned models are strong zero-shot, so add examples when the task is ambiguous or format-critical, not by default.",
+    "difficulty": "easy",
+    "round": "AI Engineering",
+    "tags": ["few-shot", "zero-shot", "in-context-learning", "prompting"],
+    "technology": "ai-engineering"
+  },
+  {
+    "title": "What is chain-of-thought prompting and when does it actually help?",
+    "description": "Making the model 'think out loud' — why it works, when it is wasted tokens, and reasoning models.",
+    "answer": "Chain-of-thought (CoT) prompting asks the model to reason step by step before answering, which improves accuracy on math, logic and multi-step tasks because each token of reasoning conditions the next. It costs extra tokens and does not help simple lookups or classification. Modern 'reasoning' models internalize this with dedicated thinking tokens; with them explicit CoT instructions matter less, but structuring the output (reason first, answer last) still prevents the model committing to an early wrong answer.",
+    "difficulty": "medium",
+    "round": "AI Engineering",
+    "tags": ["chain-of-thought", "reasoning", "prompting"],
+    "technology": "ai-engineering"
+  },
+  {
+    "title": "What belongs in the system prompt versus the user message?",
+    "description": "Role separation as an API contract: identity, rules and format vs task and data.",
+    "answer": "The system prompt sets durable behaviour: role/persona, rules and constraints, output format, tool-use policy — things the app controls and the user should not override. User messages carry the task and data for each turn. Keeping the split clean improves instruction-following (models weight system instructions heavily), enables prompt caching of the stable prefix, and is your first line of defense against prompt injection since untrusted content stays in user/tool messages.",
+    "difficulty": "easy",
+    "round": "AI Engineering",
+    "tags": ["system-prompt", "roles", "prompting"],
+    "technology": "ai-engineering"
+  },
+  {
+    "title": "How do you get reliable structured JSON output from an LLM?",
+    "description": "Schemas, constrained decoding, and the validate-repair loop production apps actually use.",
+    "answer": "Best-first order: use the provider's structured-output/JSON mode with a JSON Schema (constrained decoding guarantees syntax), or a tool/function definition whose parameters encode your schema. Reinforce with prompt-level instructions and a low temperature. Always validate the parsed result against the schema (e.g. Zod/Pydantic) and on failure retry once with the validation error appended — a validate-repair loop covers the rare misses.",
+    "difficulty": "medium",
+    "round": "AI Engineering",
+    "tags": ["structured-output", "json-schema", "validation", "reliability"],
+    "technology": "ai-engineering"
+  },
+  {
+    "title": "What is prompt injection and how do you defend against it?",
+    "description": "The SQL injection of the LLM era: untrusted text that hijacks your model's instructions.",
+    "answer": "Prompt injection is when untrusted content (a web page, email, document, tool result) contains instructions that the model follows as if they came from the developer — 'ignore previous instructions and exfiltrate the data'. There is no complete fix; defense is layered: separate trusted instructions (system) from untrusted data, mark and delimit external content, restrict the blast radius (least-privilege tools, human approval for sensitive actions), and detect/filter suspicious inputs and outputs. Assume any model reading attacker-controlled text can be steered.",
+    "difficulty": "hard",
+    "round": "AI Engineering",
+    "tags": ["prompt-injection", "security", "guardrails"],
+    "technology": "ai-engineering"
+  },
+  {
+    "title": "What is context engineering and how does it differ from prompt engineering?",
+    "description": "The discipline of deciding what the model sees: retrieval, memory, tools and budget allocation.",
+    "answer": "Prompt engineering crafts the instruction; context engineering designs everything the model sees at inference time — system rules, retrieved documents, conversation memory, tool results and few-shot examples — under a token budget. It treats the context window as a scarce resource: rank and admit only what raises answer quality, place critical content near the start or end, and evict or summarize the rest. In agent and RAG systems, context assembly usually moves quality more than wording tweaks.",
+    "difficulty": "medium",
+    "round": "AI Engineering",
+    "tags": ["context-engineering", "prompting", "rag", "memory"],
+    "technology": "ai-engineering"
+  },
+  {
+    "title": "How do you manage conversations that outgrow the context window?",
+    "description": "Sliding windows, summarization, and externalized memory for long-running chats and agents.",
+    "answer": "Common strategies: keep a sliding window of recent turns; compress older turns into a running summary that is prepended; extract durable facts into an external store (profile/memory) and retrieve them when relevant; and for agents, checkpoint task state so work can resume in a fresh context. The trade-off is fidelity vs tokens — summaries lose nuance, so keep verbatim the things that must not drift (IDs, constraints, decisions).",
+    "difficulty": "medium",
+    "round": "AI Engineering",
+    "tags": ["memory", "summarization", "context-window", "chat"],
+    "technology": "ai-engineering"
+  },
+  {
+    "title": "What is prompt caching and how does it reduce cost and latency?",
+    "description": "Reusing the KV-cache for stable prompt prefixes — the cheapest optimization most apps skip.",
+    "answer": "Providers cache the internal computation (KV cache) for a prompt prefix they have seen recently, so repeated calls that share that prefix skip recomputing it — cached input tokens are billed at a large discount (up to ~90%) and time-to-first-token drops. To exploit it, structure prompts as stable-prefix-first (system prompt, tool definitions, few-shot examples) with variable content last, and keep the prefix byte-identical across calls. It is the single easiest cost lever in high-traffic LLM apps.",
+    "difficulty": "medium",
+    "round": "AI Engineering",
+    "tags": ["prompt-caching", "cost", "latency", "kv-cache"],
+    "technology": "ai-engineering"
+  },
+  {
+    "title": "How do you reduce hallucinations in a production LLM application?",
+    "description": "Grounding, abstention, citations and verification — a layered anti-hallucination playbook.",
+    "answer": "Layer defenses: ground answers in retrieved or provided context and instruct the model to answer only from it; give an explicit out ('say you do not know if the context is insufficient'); require citations to source passages so claims are checkable; lower temperature for factual tasks; and verify high-stakes outputs downstream (schema checks, code execution, a second-pass verifier). Measure faithfulness in evals so regressions are caught, and prefer retrieval over fine-tuning for knowledge.",
+    "difficulty": "medium",
+    "round": "AI Engineering",
+    "tags": ["hallucination", "grounding", "citations", "reliability"],
+    "technology": "ai-engineering"
+  },
+  {
+    "title": "How do you version, test and safely roll out prompt changes?",
+    "description": "Prompts are code: review, eval gates, and staged rollout instead of vibes-driven edits.",
+    "answer": "Treat prompts as versioned artifacts: store them in git (or a prompt registry) with IDs, review changes like code, and gate merges on an eval suite — a golden dataset scored by code and LLM-judge graders — so you see accuracy deltas, not anecdotes. Roll out gradually (shadow traffic or a percentage canary), monitor quality and cost metrics, and keep instant rollback. Never hot-edit a production prompt without an eval run; small wording changes can regress distant behaviours.",
+    "difficulty": "hard",
+    "round": "AI Engineering",
+    "tags": ["prompt-versioning", "evals", "deployment", "llmops"],
+    "technology": "ai-engineering"
+  },
+  {
+    "title": "What are embeddings and what are they used for?",
+    "description": "Text as vectors: the geometry that powers semantic search, RAG, clustering and recommendations.",
+    "answer": "An embedding is a dense vector (hundreds to thousands of floats) produced by a model such that semantically similar texts map to nearby points. Because similarity becomes geometry, embeddings power semantic search (query vs document vectors), RAG retrieval, deduplication, clustering, classification and recommendations. Key practical facts: they come from dedicated embedding models (not the chat model), similarity is usually cosine, and vectors from different models are not comparable.",
+    "difficulty": "easy",
+    "round": "AI Engineering",
+    "tags": ["embeddings", "vectors", "semantic-search"],
+    "technology": "ai-engineering"
+  },
+  {
+    "title": "How does similarity search work — cosine, dot product and Euclidean?",
+    "description": "The metrics behind nearest-neighbour retrieval and why ANN indexes make it fast.",
+    "answer": "Similarity search finds the vectors closest to a query vector. Cosine similarity compares direction (angle) ignoring magnitude and is the default for normalized text embeddings; dot product equals cosine when vectors are unit-normalized; Euclidean measures straight-line distance. Exact search is O(n), so vector stores use approximate-nearest-neighbour indexes (HNSW graphs, IVF partitions) that trade a little recall for orders-of-magnitude speed at scale.",
+    "difficulty": "medium",
+    "round": "AI Engineering",
+    "tags": ["similarity", "cosine", "ann", "hnsw"],
+    "technology": "ai-engineering"
+  },
+  {
+    "title": "What is a vector database and when do you actually need one?",
+    "description": "Purpose-built ANN stores vs pgvector vs a numpy array — sizing the decision honestly.",
+    "answer": "A vector database stores embeddings with ANN indexes plus filtering, CRUD and scaling (Pinecone, Weaviate, Qdrant, Milvus). But you often do not need a dedicated one: under ~100k vectors a flat in-memory search is fine, and pgvector/SQLite extensions let you keep vectors next to your relational data with transactional consistency. Reach for a dedicated vector DB at millions of vectors, high QPS, or when you need heavy metadata filtering combined with ANN at scale.",
+    "difficulty": "easy",
+    "round": "AI Engineering",
+    "tags": ["vector-database", "pgvector", "infrastructure", "rag"],
+    "technology": "ai-engineering"
+  },
+  {
+    "title": "What is RAG and why use it instead of fine-tuning for knowledge?",
+    "description": "Retrieve-then-generate: fresh, cited, per-tenant knowledge without touching model weights.",
+    "answer": "Retrieval-Augmented Generation retrieves relevant documents for a query (usually via embeddings) and puts them in the prompt so the model answers from them. Versus fine-tuning it wins for knowledge because it is updateable instantly (reindex, no retraining), auditable (citations), per-tenant scoped (retrieval filters enforce access), and cheaper. Fine-tuning is for behaviour and style, not facts — the standard architecture is RAG for knowledge, prompting/fine-tuning for form.",
+    "difficulty": "easy",
+    "round": "AI Engineering",
+    "tags": ["rag", "retrieval", "fine-tuning", "architecture"],
+    "technology": "ai-engineering"
+  },
+  {
+    "title": "What chunking strategies exist and how does chunk size affect RAG quality?",
+    "description": "Fixed windows, semantic splits, parent-child chunks — the retrieval decision made at index time.",
+    "answer": "Chunking splits documents into retrievable units: fixed-size token windows with overlap (simple baseline), structure-aware splits (headings, paragraphs, code blocks), and parent-child schemes that embed small chunks but return their larger parent for context. Small chunks give precise matching but fragment meaning; large chunks preserve context but dilute the embedding and waste prompt tokens. Tune with retrieval evals; a common starting point is 300-800 tokens with 10-20% overlap, respecting document structure.",
+    "difficulty": "medium",
+    "round": "AI Engineering",
+    "tags": ["chunking", "rag", "indexing"],
+    "technology": "ai-engineering"
+  },
+  {
+    "title": "What is hybrid search and why combine BM25 with vector search?",
+    "description": "Lexical + semantic retrieval fused with RRF: covering each method's blind spots.",
+    "answer": "Hybrid search runs a lexical ranker (BM25 keyword matching) and semantic vector search in parallel and fuses the results, typically with Reciprocal Rank Fusion. Vector search understands paraphrase but misses exact identifiers (error codes, SKUs, function names); BM25 nails exact terms but not meaning. Fusing them raises recall on both query types, which is why hybrid is the default in serious RAG systems, often followed by a reranker.",
+    "difficulty": "medium",
+    "round": "AI Engineering",
+    "tags": ["hybrid-search", "bm25", "rrf", "retrieval"],
+    "technology": "ai-engineering"
+  },
+  {
+    "title": "What is reranking and why add it after retrieval?",
+    "description": "Cross-encoders as a precision stage: cheap recall first, expensive relevance second.",
+    "answer": "A reranker is a cross-encoder model that scores each (query, document) pair jointly — far more accurate than comparing precomputed embeddings, but too slow to run over the whole corpus. So RAG pipelines do two stages: fast ANN/hybrid retrieval pulls top-50/100 candidates (recall), then the reranker reorders them and you keep the top 5-10 (precision). It is usually the single biggest retrieval-quality upgrade per line of code added.",
+    "difficulty": "medium",
+    "round": "AI Engineering",
+    "tags": ["reranking", "cross-encoder", "retrieval", "rag"],
+    "technology": "ai-engineering"
+  },
+  {
+    "title": "How do you evaluate a RAG pipeline end to end?",
+    "description": "Retrieval metrics (recall@k, MRR) plus generation metrics (faithfulness, relevance) — measured separately.",
+    "answer": "Evaluate the two stages separately. Retrieval: build a set of (query, relevant-chunk) labels and measure recall@k, precision@k, MRR/nDCG. Generation: given fixed retrieved context, judge faithfulness (is every claim supported by the context?), answer relevance and completeness — typically with an LLM judge validated against human labels. Separating stages tells you where failures come from; end-to-end answer accuracy alone cannot distinguish a retrieval miss from a hallucinating generator.",
+    "difficulty": "hard",
+    "round": "AI Engineering",
+    "tags": ["rag-evaluation", "recall", "faithfulness", "evals"],
+    "technology": "ai-engineering"
+  },
+  {
+    "title": "What are common RAG failure modes and how do you debug them?",
+    "description": "Retrieval misses, lost-in-the-middle, stale indexes, chunk fragmentation — a triage guide.",
+    "answer": "Frequent failures: the answer chunk is not retrieved (vocabulary mismatch, bad chunking, wrong k), retrieved but ignored (buried mid-context, conflicting chunks), stale or duplicated index content, and questions that need synthesis across many chunks (retrieval alone cannot). Debug by logging the retrieved set per query and triaging: if the gold chunk is absent it is a retrieval problem (fix chunking/hybrid/reranking); if present but unused it is a generation problem (fewer, better-ordered chunks; stronger grounding instructions).",
+    "difficulty": "hard",
+    "round": "AI Engineering",
+    "tags": ["rag", "debugging", "failure-modes", "retrieval"],
+    "technology": "ai-engineering"
+  },
+  {
+    "title": "How do you scope retrieval with metadata filtering and multi-tenancy?",
+    "description": "Pre-filtering vectors by tenant, permission and attributes — where access control lives in RAG.",
+    "answer": "Store metadata (tenant ID, ACLs, document type, date) alongside each vector and apply filters as part of the ANN query (pre-filtering), so users can only ever retrieve chunks they are authorized to see. This is the correct place for access control in RAG — enforcing it in the prompt ('do not reveal other tenants data') is not a security boundary. Filters also improve relevance (restrict by recency or doc type) but very selective filters can degrade ANN performance, which is why engines implement filtered-HNSW strategies.",
+    "difficulty": "medium",
+    "round": "AI Engineering",
+    "tags": ["metadata-filtering", "multi-tenancy", "security", "rag"],
+    "technology": "ai-engineering"
+  },
+  {
+    "title": "What is semantic caching and when is it safe to use?",
+    "description": "Serving cached answers for similar (not identical) queries — big savings, real correctness risks.",
+    "answer": "Semantic caching embeds incoming queries and, if a previous query is within a similarity threshold, returns its cached answer instead of calling the model. It can eliminate a large share of LLM calls in FAQ-like traffic, but false positives are dangerous: similar wording does not guarantee identical intent ('cancel my order' vs 'can I cancel my order?' may need different handling). Use high thresholds, scope caches per user/tenant/version, set TTLs, and reserve it for idempotent informational queries — never for personalized or stateful answers.",
+    "difficulty": "hard",
+    "round": "AI Engineering",
+    "tags": ["semantic-caching", "cost", "caching", "risk"],
+    "technology": "ai-engineering"
+  },
+  {
+    "title": "How does function calling (tool use) work under the hood?",
+    "description": "Schemas in, structured intent out: the request-response loop that lets models act.",
+    "answer": "You send the model tool definitions (name, description, JSON-Schema parameters) with the conversation. When the model decides a tool helps, it does not execute anything — it returns a structured tool-call message (name + arguments). Your code executes the function, appends the result as a tool-result message, and calls the model again; the loop repeats until the model answers in text. The model is a planner emitting intents; execution, validation and permissions stay entirely in your runtime.",
+    "difficulty": "medium",
+    "round": "AI Engineering",
+    "tags": ["function-calling", "tool-use", "agents"],
+    "technology": "ai-engineering"
+  },
+  {
+    "title": "How do you design good tool definitions for an LLM?",
+    "description": "Tool ergonomics: names, descriptions, parameter design and error messages the model can act on.",
+    "answer": "Treat the model as the API consumer: give tools verb-object names, descriptions that say when to use (and not use) them, few and well-typed parameters with enums over free strings, and defaults for everything optional. Return results the model can reason about — concise, structured, with actionable error messages ('date must be YYYY-MM-DD') rather than stack traces. Fewer, higher-level tools beat many granular ones; overlapping tools cause wrong-tool selection, which is the most common tool-use failure.",
+    "difficulty": "medium",
+    "round": "AI Engineering",
+    "tags": ["tool-design", "function-calling", "schemas", "agents"],
+    "technology": "ai-engineering"
+  },
+  {
+    "title": "What is an AI agent and how does the agent loop work?",
+    "description": "Model + tools + loop: the minimal architecture behind every agent framework.",
+    "answer": "An agent is a model that pursues a goal by repeatedly deciding an action, executing it via tools, and observing the result — the agent loop: prompt with goal and tool defs, model emits a tool call, runtime executes and appends the result, repeat until the model concludes or a budget stops it. Everything else in agent frameworks (planning, memory, subagents) is elaboration on this loop. Engineering concerns: termination conditions (max steps, cost caps), state accumulation in context, and error recovery mid-loop.",
+    "difficulty": "medium",
+    "round": "AI Engineering",
+    "tags": ["agents", "agent-loop", "tool-use", "architecture"],
+    "technology": "ai-engineering"
+  },
+  {
+    "title": "What is the ReAct pattern and why did it become the default for agents?",
+    "description": "Interleaving reasoning and acting: thought, action, observation on repeat.",
+    "answer": "ReAct (Reason + Act) has the model alternate explicit reasoning steps ('the user wants X, I should check Y') with tool actions, feeding each observation back before the next thought. The verbalized reasoning improves action selection and makes trajectories debuggable — you can see why the agent chose a tool. Modern tool-calling APIs internalize much of this (models reason before emitting calls, or use dedicated thinking tokens), but the thought-action-observation structure remains the mental model for designing and debugging agent behaviour.",
+    "difficulty": "medium",
+    "round": "AI Engineering",
+    "tags": ["react-pattern", "agents", "reasoning"],
+    "technology": "ai-engineering"
+  },
+  {
+    "title": "What is the Model Context Protocol (MCP) and what problem does it solve?",
+    "description": "A USB port for AI tools: one open protocol connecting any model client to any tool server.",
+    "answer": "MCP is an open protocol that standardizes how AI applications connect to external tools and data. An MCP server exposes tools, resources and prompts over a standard transport (stdio or HTTP); any MCP client (Claude Desktop/Code, IDEs, custom agents) can discover and call them. It solves the N-by-M integration problem — instead of every app writing custom connectors for every service, a service ships one MCP server that all clients reuse. For interviews: know the primitives (tools/resources/prompts) and that the host app still mediates execution and permissions.",
+    "difficulty": "medium",
+    "round": "AI Engineering",
+    "tags": ["mcp", "protocol", "tools", "integration"],
+    "technology": "ai-engineering"
+  },
+  {
+    "title": "How should an agent handle tool errors, timeouts and retries?",
+    "description": "Resilience inside the loop: which failures the model should see and which the runtime should absorb.",
+    "answer": "Split responsibilities: the runtime absorbs transient infrastructure failures (retry with exponential backoff on timeouts/429s, idempotency keys for writes), while semantic errors are returned to the model as tool results with actionable messages so it can correct its arguments or change approach. Guard the loop itself: cap consecutive failures and total steps so the agent cannot burn budget retrying a hopeless action, and surface a clean failure to the user when caps are hit. Never let the model see raw stack traces or secrets in error text.",
+    "difficulty": "hard",
+    "round": "AI Engineering",
+    "tags": ["error-handling", "retries", "agents", "resilience"],
+    "technology": "ai-engineering"
+  },
+  {
+    "title": "When should you split work across multiple agents instead of one?",
+    "description": "Subagents, orchestrators and the honest trade-offs vs one capable agent with good tools.",
+    "answer": "Prefer one agent until you hit a real constraint: context isolation (a subagent can burn thousands of tokens exploring and return only a summary), true parallelism (fan out independent subtasks), or genuinely distinct roles/permissions (a reviewer that must not share the writer's context). Multi-agent costs are real — inter-agent communication loses information, orchestration adds failure modes, and debugging gets harder — so the default answer interviewers want is: strong single agent with well-designed tools first, subagents for isolation and parallelism, not for theatre.",
+    "difficulty": "hard",
+    "round": "AI Engineering",
+    "tags": ["multi-agent", "orchestration", "subagents", "architecture"],
+    "technology": "ai-engineering"
+  },
+  {
+    "title": "How do agents maintain memory across steps and sessions?",
+    "description": "Working context, scratchpads, and external long-term stores — what lives where.",
+    "answer": "Three layers: working memory is the context window itself (recent messages, tool results); scratchpad memory is files or notes the agent writes during a task (plans, intermediate results) so state survives context compaction; long-term memory is an external store (database, vector index, memory files) holding durable facts across sessions, retrieved or loaded when relevant. The engineering problems are selection (store what is durable, not everything), staleness (memories describe the past), and injection (retrieved memories are data, not instructions).",
+    "difficulty": "hard",
+    "round": "AI Engineering",
+    "tags": ["memory", "agents", "state", "long-term-memory"],
+    "technology": "ai-engineering"
+  },
+  {
+    "title": "How do you sandbox an agent and enforce least-privilege tool access?",
+    "description": "Blast-radius engineering: scoped credentials, allowlists, dry-runs and irreversibility gates.",
+    "answer": "Assume the agent can be wrong or hijacked, and bound the damage: give tools scoped, short-lived credentials (not admin keys); run code-executing tools in isolated sandboxes (containers, no network by default); allowlist file paths, hosts and commands; make destructive operations dry-run by default; and distinguish read tools (auto-allowed) from write tools (policied) from irreversible tools (human approval). Log every tool invocation for audit. Permissions live in the runtime — an instruction in the prompt is not a security control.",
+    "difficulty": "hard",
+    "round": "AI Engineering",
+    "tags": ["sandboxing", "least-privilege", "security", "agents"],
+    "technology": "ai-engineering"
+  },
+  {
+    "title": "How do you design human-in-the-loop approval for agent actions?",
+    "description": "Approval gates that catch the risky 2% without drowning users in confirmation fatigue.",
+    "answer": "Classify actions by reversibility and blast radius: auto-execute safe reads, batch-notify low-risk writes, and require explicit approval for irreversible or outward-facing actions (payments, emails, deletes, deploys). Present approvals with enough context to actually judge (what, why, diff/preview), support edit-then-approve rather than yes/no only, and remember scoped grants ('allow this for the session') to prevent fatigue. Route approvals to the person with authority, and treat approval UX as part of the agent's design, not an afterthought.",
+    "difficulty": "medium",
+    "round": "AI Engineering",
+    "tags": ["human-in-the-loop", "approvals", "safety", "agents"],
+    "technology": "ai-engineering"
+  },
+  {
+    "title": "How do you evaluate and debug agent trajectories?",
+    "description": "Beyond final-answer accuracy: step-level grading, tool-call correctness and trace analysis.",
+    "answer": "Evaluate at two levels. Outcome: did the agent achieve the goal (task success rate on a scenario suite, cost/steps as secondary metrics)? Process: were the tool calls correct (right tool, valid args), did it recover from errors, did it loop or go off-policy — graded per step by rules or an LLM judge over the full trace. Debugging is trace-first: log every model input/output and tool result, replay failures deterministically (record tool results as fixtures), and diff traces across prompt/model versions to localize regressions.",
+    "difficulty": "hard",
+    "round": "AI Engineering",
+    "tags": ["agent-evals", "trajectories", "tracing", "debugging"],
+    "technology": "ai-engineering"
+  },
+  {
+    "title": "How does streaming work in LLM APIs and why does it matter for UX?",
+    "description": "SSE token streams, time-to-first-token, and rendering partial responses safely.",
+    "answer": "LLM APIs stream responses as server-sent events: the client receives token deltas as they are generated instead of waiting for the full completion, cutting perceived latency from seconds to the time-to-first-token. Engineering concerns: render partial markdown/JSON safely (buffer until parseable or use streaming-tolerant parsers), handle tool-call deltas and mid-stream errors, propagate cancellation to stop paying for abandoned generations, and keep the stream alive through proxies (heartbeats, no buffering). Streaming is the difference between a dead 8-second spinner and a responsive product.",
+    "difficulty": "medium",
+    "round": "AI Engineering",
+    "tags": ["streaming", "sse", "latency", "ux"],
+    "technology": "ai-engineering"
+  },
+  {
+    "title": "How do you estimate and control LLM costs in production?",
+    "description": "Token math, the levers that actually move the bill, and per-feature cost accounting.",
+    "answer": "Cost = input tokens x input rate + output tokens x output rate, summed over calls — so estimate by modelling tokens per request and requests per day, remembering that agent loops multiply calls and re-send growing context each turn. The big levers, in rough order: route easy tasks to smaller models, prompt caching for stable prefixes, trim context (retrieval instead of stuffing, summaries instead of full history), cap output length, and batch APIs for offline work. Meter tokens per feature/user so you can see unit economics, and set budget alerts before the surprise invoice.",
+    "difficulty": "medium",
+    "round": "AI Engineering",
+    "tags": ["cost", "tokens", "optimization", "llmops"],
+    "technology": "ai-engineering"
+  },
+  {
+    "title": "What techniques reduce LLM latency at each stage of a request?",
+    "description": "TTFT vs generation time: caching, smaller models, parallelism, and speculative tricks.",
+    "answer": "Split latency into time-to-first-token (prompt processing + queueing) and generation time (output tokens x per-token time). Reduce TTFT with prompt caching, shorter prompts and warm capacity; reduce generation time with smaller/faster models, capped or more concise outputs, and predicted-output/speculative techniques where supported. At the app level: stream immediately, parallelize independent LLM calls and tool executions, precompute or cache repeated answers, and route by task difficulty so the big slow model only handles requests that need it.",
+    "difficulty": "hard",
+    "round": "AI Engineering",
+    "tags": ["latency", "ttft", "performance", "optimization"],
+    "technology": "ai-engineering"
+  },
+  {
+    "title": "How do you build resilient LLM calls with rate limits, retries and fallbacks?",
+    "description": "429s, overloaded errors and provider outages: the reliability layer every LLM app needs.",
+    "answer": "Wrap every model call in a resilience layer: retry transient failures (429/5xx/timeouts) with exponential backoff and jitter, respect rate-limit headers, and queue or shed load when sustained. For availability beyond one provider, define a fallback chain (same model other region, smaller same-family model, different provider) with the caveat that outputs differ across models — keep fallback prompts provider-agnostic and eval them too. Set timeouts around streaming stalls, use circuit breakers to fail fast during outages, and make degraded modes explicit in the product (cached answer, 'try again later').",
+    "difficulty": "medium",
+    "round": "AI Engineering",
+    "tags": ["rate-limits", "retries", "fallbacks", "reliability"],
+    "technology": "ai-engineering"
+  },
+  {
+    "title": "What should you log and trace in an LLM application?",
+    "description": "Observability for nondeterministic systems: traces, token metrics, and quality signals.",
+    "answer": "Log the full request lifecycle as a trace: prompt version and rendered prompt, model + parameters, retrieved context, every tool call and result, the response, token counts, latency and cost — with PII handling applied. On top of traces, track aggregate metrics (cost per feature, p95 TTFT, error and refusal rates) and quality signals (user feedback, judge scores on sampled traffic, guardrail triggers). This is what makes regressions diagnosable and evals buildable — production traces become tomorrow's eval dataset. Tools: LangSmith/Langfuse/Braintrust or OpenTelemetry GenAI conventions.",
+    "difficulty": "medium",
+    "round": "AI Engineering",
+    "tags": ["observability", "tracing", "logging", "llmops"],
+    "technology": "ai-engineering"
+  },
+  {
+    "title": "What are guardrails and how do you implement them around a model?",
+    "description": "Input filters, output validators and policy checks — the sandwich around every model call.",
+    "answer": "Guardrails are programmatic checks wrapped around model calls: input-side (block or sanitize prompt-injection attempts, off-topic or abusive requests, PII), and output-side (schema validation, content policy classification, grounding/citation checks, blocklists for competitors/claims/URLs). Implement as a pipeline: cheap deterministic checks first (regex, allowlists, schema), then model-based classifiers for nuance; on failure either repair (retry with the error), degrade (canned response) or escalate to a human. Keep guardrails observable — every trigger is logged and counted — and test them in evals like any other behaviour.",
+    "difficulty": "medium",
+    "round": "AI Engineering",
+    "tags": ["guardrails", "validation", "safety", "moderation"],
+    "technology": "ai-engineering"
+  },
+  {
+    "title": "How do you handle PII and sensitive data when calling LLM APIs?",
+    "description": "Data minimization, redaction, retention terms and regional processing for LLM traffic.",
+    "answer": "Start with the provider contract: enterprise API terms typically exclude training on your data and offer zero-or-short retention and regional processing — verify, do not assume. Then minimize: send only fields the task needs, redact or pseudonymize identifiers before the call (reversible mapping if the answer must reference them), and scrub PII from logs and traces (which teams forget more often than the API call itself). Gate what models can echo back, apply access control at retrieval time in RAG, and for the strictest data classes keep inference in-VPC with self-hosted or private-endpoint models.",
+    "difficulty": "medium",
+    "round": "AI Engineering",
+    "tags": ["pii", "privacy", "compliance", "security"],
+    "technology": "ai-engineering"
+  },
+  {
+    "title": "When should you use batch APIs instead of real-time LLM calls?",
+    "description": "The 50% discount most pipelines ignore: async processing for anything without a user waiting.",
+    "answer": "Batch APIs accept a file of requests and return results asynchronously (typically within hours) at roughly half the per-token price, with separate, much higher rate limits. Use them whenever no user is waiting: nightly enrichment, classification backfills, embedding-adjacent content generation, eval runs, report generation. Keep real-time calls for interactive traffic. The design consequence: structure pipelines so LLM work is queued and idempotent, then choosing batch vs realtime becomes a flag rather than a rewrite.",
+    "difficulty": "easy",
+    "round": "AI Engineering",
+    "tags": ["batch-api", "cost", "async", "pipelines"],
+    "technology": "ai-engineering"
+  },
+  {
+    "title": "How do you choose the right model for a task?",
+    "description": "Capability, cost, latency, context and modality — a routing mindset instead of one-model-fits-all.",
+    "answer": "Score the task on: required capability (reasoning depth, coding, instruction precision), latency budget, cost per call at your volume, context length needed, and modality/features (vision, tool use, structured output). Then pick the cheapest model that passes your evals — not the biggest one available — and route: small fast models for classification/extraction/simple chat, frontier models for complex reasoning and agentic work. Re-evaluate on each model release; the honest answer to 'which model?' is 'the one that passes our eval suite at the lowest cost', which is why you need evals first.",
+    "difficulty": "easy",
+    "round": "AI Engineering",
+    "tags": ["model-selection", "routing", "cost", "capability"],
+    "technology": "ai-engineering"
+  },
+  {
+    "title": "How do you validate and repair structured LLM output at runtime?",
+    "description": "Schema validation, bounded retries with error feedback, and safe fallbacks when repair fails.",
+    "answer": "Never trust parsed output: validate against a schema (Zod/Pydantic/JSON Schema) including semantic rules (enums, ranges, cross-field constraints) that syntax alone misses. On failure, run a bounded repair loop — re-prompt with the original output plus the specific validation errors, at most once or twice — then fall back deterministically: use constrained decoding if available, degrade to a default/partial result, or route to a human queue. Log every repair and fallback; a rising repair rate is an early-warning signal of prompt or model drift.",
+    "difficulty": "hard",
+    "round": "AI Engineering",
+    "tags": ["validation", "structured-output", "repair-loop", "reliability"],
+    "technology": "ai-engineering"
+  },
+  {
+    "title": "What are evals and why does every LLM feature need them?",
+    "description": "The unit tests of AI engineering: measuring nondeterministic behaviour so you can change things safely.",
+    "answer": "Evals are automated tests for model behaviour: a dataset of realistic inputs, expected outcomes or grading criteria, and graders (code checks or LLM judges) producing scores. They exist because LLM behaviour is nondeterministic and prompt/model changes have non-local effects — without evals every change is vibes-tested on three examples. A minimal loop: collect real cases (especially failures), define graders, run on every prompt/model change, track scores over time. Evals are the highest-leverage engineering asset in an AI product; they are what makes iteration safe.",
+    "difficulty": "easy",
+    "round": "AI Engineering",
+    "tags": ["evals", "testing", "quality", "llmops"],
+    "technology": "ai-engineering"
+  },
+  {
+    "title": "What is LLM-as-judge and what are its known biases?",
+    "description": "Using a model to grade model outputs — scalable, but only after you validate the judge.",
+    "answer": "LLM-as-judge uses a (usually strong) model with a grading rubric to score outputs where code cannot — helpfulness, faithfulness, tone. It scales human-like judgment to thousands of cases, but has documented biases: position bias in pairwise comparisons (favouring the first/last answer), verbosity bias (longer looks better), self-preference for its own family's style, and leniency drift. Mitigate with rubric-anchored scoring, randomized ordering, forced justifications before the verdict, and — critically — validate the judge against a sample of human labels before trusting its numbers.",
+    "difficulty": "medium",
+    "round": "AI Engineering",
+    "tags": ["llm-as-judge", "evals", "bias", "grading"],
+    "technology": "ai-engineering"
+  },
+  {
+    "title": "How do you build a golden dataset for evaluating an LLM feature?",
+    "description": "Sourcing, labelling and maintaining the test set your whole quality process hangs on.",
+    "answer": "Source cases from reality: sampled production traffic (especially user-flagged failures and edge cases), plus synthetic cases for coverage of rare-but-important scenarios; 50-200 well-chosen cases beat thousands of random ones. Label with clear per-case criteria (expected answer, must-include facts, rubric) and adjudicate disagreements so labels are trustworthy. Maintain it like code: version it, quarantine cases the team disputes, keep a held-out split if you tune prompts against it, and continuously fold in new production failures so the set tracks real usage rather than launch-day assumptions.",
+    "difficulty": "medium",
+    "round": "AI Engineering",
+    "tags": ["golden-dataset", "evals", "labelling", "quality"],
+    "technology": "ai-engineering"
+  },
+  {
+    "title": "When do you use code-based graders versus model-based graders?",
+    "description": "Deterministic checks vs judged qualities — and why good eval suites layer both.",
+    "answer": "Use code graders for anything objectively checkable: exact/contains matches, schema validity, numeric tolerance, code that compiles and passes tests, latency/cost budgets — they are deterministic, free and unarguable. Use model graders for qualities code cannot verify: relevance, faithfulness to context, tone, completeness. Layer them: cheap code checks gate first (an output that fails schema never reaches the judge), then the judge scores the survivors. Prefer converting judge criteria into code checks whenever possible — every criterion moved to code makes the suite faster and more trustworthy.",
+    "difficulty": "medium",
+    "round": "AI Engineering",
+    "tags": ["graders", "evals", "code-graders", "llm-as-judge"],
+    "technology": "ai-engineering"
+  },
+  {
+    "title": "How do you catch regressions when changing a prompt or upgrading a model?",
+    "description": "Eval gates, side-by-side diffs and canary rollouts for changes with non-local effects.",
+    "answer": "Run the eval suite on every change and compare against the baseline run — overall scores plus per-slice breakdowns (task type, language, difficulty), because aggregate parity can hide a slice regressing badly. Diff individual case outputs for the changed cases to understand what moved, not just how much. For model upgrades, expect distribution shift: re-tune prompts, re-validate judges (a new model may game the old rubric), then canary in production with quality monitoring before full cutover. The discipline is: no prompt or model change ships without an eval delta attached.",
+    "difficulty": "medium",
+    "round": "AI Engineering",
+    "tags": ["regression-testing", "evals", "model-upgrade", "ci"],
+    "technology": "ai-engineering"
+  },
+  {
+    "title": "What is red-teaming an LLM application and how is it done?",
+    "description": "Adversarial testing: jailbreaks, injections, data exfiltration and the process for finding them first.",
+    "answer": "Red-teaming is deliberately attacking your own AI system to find failures before users and attackers do: jailbreaks (overriding safety/system instructions), prompt injection via documents and tool results, data exfiltration (leaking system prompts, other tenants' context, PII), tool abuse (steering an agent into destructive actions) and brand-damage outputs. Method: threat-model what your app specifically can leak or do, attack manually, then scale with automated adversarial suites and keep every successful attack as a permanent regression test. Wire findings into layered fixes — guardrails, least-privilege tools, approval gates — not just prompt patches.",
+    "difficulty": "hard",
+    "round": "AI Engineering",
+    "tags": ["red-teaming", "security", "jailbreak", "adversarial"],
+    "technology": "ai-engineering"
+  },
+  {
+    "title": "How do you monitor LLM quality drift in production?",
+    "description": "Detecting silent degradation: input drift, provider-side changes and feedback-signal dashboards.",
+    "answer": "Quality can degrade without any deploy: user inputs drift from what you tested, providers update models or infrastructure, and upstream data changes. Monitor continuously: run LLM-judge scoring on a sample of live traffic, track proxy signals (thumbs-down rate, retry/rephrase rate, guardrail and repair-loop triggers, refusal rate, output-length shifts), and alert on deltas against a rolling baseline rather than fixed thresholds. Pin model versions where offered, re-run the full eval suite on provider model updates, and continuously fold drifted-traffic failures back into the golden dataset.",
+    "difficulty": "hard",
+    "round": "AI Engineering",
+    "tags": ["drift", "monitoring", "production", "quality"],
+    "technology": "ai-engineering"
+  },
+  {
+    "title": "Why are BLEU and ROUGE poor metrics for LLM outputs, and what replaced them?",
+    "description": "From n-gram overlap to semantic similarity and rubric-based judging — matching the metric to the task.",
+    "answer": "BLEU and ROUGE score n-gram overlap with a reference text, which assumes one right wording — but LLM outputs are open-ended, and a perfect answer can share almost no n-grams with the reference (and vice versa: overlapping words can be factually wrong). Modern practice replaces them with embedding-based semantic similarity (BERTScore-style) for closeness-to-reference, task-specific code checks (exact answers, passing tests, valid schema) where objective, and rubric-anchored LLM-as-judge for open-ended quality dimensions like faithfulness and helpfulness. BLEU/ROUGE survive mainly in translation/summarization research baselines — quoting them for a chatbot is an interview red flag.",
+    "difficulty": "hard",
+    "round": "AI Engineering",
+    "tags": ["metrics", "bleu", "rouge", "semantic-similarity", "evals"],
+    "technology": "ai-engineering"
+  }
+]

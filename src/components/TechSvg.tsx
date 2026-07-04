@@ -142,6 +142,26 @@ export function MachineCodingSvg({ className = "w-10 h-10" }: { className?: stri
   );
 }
 
+export function AiEngineeringSvg({ className = "w-10 h-10" }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 100 100" className={`${className} text-fuchsia-600 dark:text-fuchsia-400`}>
+      {/* neural nodes */}
+      <circle cx="25" cy="30" r="6" fill="none" stroke="currentColor" strokeWidth="2.5" />
+      <circle cx="25" cy="70" r="6" fill="none" stroke="currentColor" strokeWidth="2.5" />
+      <circle cx="50" cy="50" r="8" fill="currentColor" className="opacity-90 animate-pulse" />
+      <circle cx="75" cy="30" r="6" fill="none" stroke="currentColor" strokeWidth="2.5" />
+      <circle cx="75" cy="70" r="6" fill="none" stroke="currentColor" strokeWidth="2.5" />
+      {/* edges */}
+      <line x1="30" y1="33" x2="43" y2="46" stroke="currentColor" strokeWidth="2" className="opacity-70" />
+      <line x1="30" y1="67" x2="43" y2="54" stroke="currentColor" strokeWidth="2" className="opacity-70" />
+      <line x1="57" y1="46" x2="70" y2="33" stroke="currentColor" strokeWidth="2" className="opacity-70" />
+      <line x1="57" y1="54" x2="70" y2="67" stroke="currentColor" strokeWidth="2" className="opacity-70" />
+      {/* spark */}
+      <path d="M 50 12 L 53 20 L 61 23 L 53 26 L 50 34 L 47 26 L 39 23 L 47 20 Z" fill="currentColor" className="opacity-80" />
+    </svg>
+  );
+}
+
 export function FallbackSvg({ className = "w-10 h-10" }: { className?: string }) {
   return (
     <svg viewBox="0 0 100 100" className={`${className} text-accent`}>
@@ -178,6 +198,8 @@ export default function TechSvg({ tech, className = "w-10 h-10" }: { tech: strin
       return <SqlSvg className={className} />;
     case "machine-coding":
       return <MachineCodingSvg className={className} />;
+    case "ai-engineering":
+      return <AiEngineeringSvg className={className} />;
     default:
       return <FallbackSvg className={className} />;
   }

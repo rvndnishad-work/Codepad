@@ -96,6 +96,12 @@ const TECH_THEMES: Record<string, TechTheme> = {
     border: "border-zinc-500/20 dark:border-zinc-400/15",
     bg: "bg-gradient-to-br from-zinc-500/5 via-surface to-surface dark:from-zinc-800/20 dark:via-surface/10 dark:to-surface/5",
   },
+  "ai-engineering": {
+    hex: "#d946ef",
+    text: "text-fuchsia-600 dark:text-fuchsia-400",
+    border: "border-fuchsia-500/20 dark:border-fuchsia-500/15",
+    bg: "bg-gradient-to-br from-fuchsia-500/5 via-surface to-surface dark:from-fuchsia-950/15 dark:via-surface/10 dark:to-surface/5",
+  },
   javascript: {
     hex: "#eab308",
     text: "text-amber-500 dark:text-yellow-400",

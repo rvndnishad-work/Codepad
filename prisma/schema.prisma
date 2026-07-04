@@ -1307,6 +1307,87 @@ model PromptUpvote {
   @@index([attemptId])
 }
 
+/// "Review the AI's code" challenge — a plausible AI-generated answer to a
+/// stated prompt, with deliberately planted flaws (hallucinated APIs, subtle
+/// logic bugs, security holes) the candidate must find. Grading is a
+/// deterministic checklist of the planted ReviewFindings — no LLM calls.
+model ReviewChallenge {
+  id               String          @id @default(cuid())
+  slug             String          @unique
+  title            String
+  /// The prompt the fictional AI assistant was answering. Shown as context so
+  /// reviewers judge the code against its stated intent.
+  prompt           String
+  /// "javascript" | "typescript" | "python" | "sql" — must map to a
+  /// highlight.js language registered in src/lib/code-peek.ts.
+  language         String
+  difficulty       String          @default("intermediate")
+  /// Full code listing shown to the reviewer. Finding anchors are 1-based line
+  /// numbers into this exact string — never reformat without re-anchoring.
+  code             String
+  estimatedMinutes Int             @default(10)
+  /// Countdown for the timed "Hallucination Hunt" mode, in seconds.
+  timeLimitSec     Int             @default(120)
+  published        Boolean         @default(true)
+  sortOrder        Int             @default(0)
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
+  findings         ReviewFinding[]
+  attempts         ReviewAttempt[]
+
+  @@index([published, sortOrder])
+  @@index([language, difficulty])
+}
+
+/// One planted flaw in a ReviewChallenge. `lineStart..lineEnd` (1-based,
+/// inclusive) anchors it in the challenge code; grading accepts a mark within
+/// ±1 line of the range. Findings are only sent to the client after an attempt
+/// is submitted (the reveal), never with the challenge itself.
+model ReviewFinding {
+  id          String          @id @default(cuid())
+  challengeId String
+  lineStart   Int
+  lineEnd     Int
+  /// "hallucinated-api" | "logic-bug" | "security" | "performance" | "edge-case"
+  category    String
+  title       String
+  /// Reveal text: why the code is wrong and what the correct version looks like.
+  explanation String
+  points      Int             @default(10)
+  challenge   ReviewChallenge @relation(fields: [challengeId], references: [id], onDelete: Cascade)
+
+  @@index([challengeId])
+}
+
+/// A reviewer's graded submission. `marks` is the JSON array of what they
+/// flagged ([{ "line": 12, "category": "security" }]); the score breakdown is
+/// recomputed deterministically server-side from the planted findings.
+/// Like PromptAttempt, `userId` is a bare string (no FK) — anonymous attempts
+/// are graded but not persisted.
+model ReviewAttempt {
+  id             String          @id @default(cuid())
+  challengeId    String
+  userId         String?
+  marks          String
+  /// 0–100 normalized score (finding points earned minus false-positive penalty).
+  score          Int
+  /// Findings hit with the correct category.
+  foundCount     Int
+  /// Findings hit on the right lines but with the wrong category (half credit).
+  partialCount   Int
+  totalFindings  Int
+  falsePositives Int
+  durationSec    Int?
+  /// "standard" | "hunt" — hunt attempts are timed and feed the leaderboard.
+  mode           String          @default("standard")
+  createdAt      DateTime        @default(now())
+  challenge      ReviewChallenge @relation(fields: [challengeId], references: [id], onDelete: Cascade)
+
+  @@index([challengeId])
+  @@index([userId])
+  @@index([mode, score])
+}
+
 /// Workspace-configured outbound MCP server. Used by the AI interviewer
 /// (Phase 4.1) to call into customer-specific context during a screening —
 /// internal docs, ATS, repo summaries, etc.
@@ -1779,7 +1860,7 @@ model PrepJourney {
   id           String            @id @default(cuid())
   userId       String
   title        String
-  /// "frontend" | "backend" | "fullstack" | "custom"
+  /// "frontend" | "backend" | "fullstack" | "ai-ready" | "custom"
   role         String
   /// JSON string[] of technology slugs (TECHNOLOGIES in interview-questions/shared).
   techStack    String            @default("[]")
@@ -1813,9 +1894,9 @@ model PrepJourneyItem {
   day         Int
   /// Order within the day.
   position    Int
-  /// "question" | "challenge"
+  /// "question" | "challenge" | "scenario"
   itemType    String
-  /// PrepQuestion.slug or Challenge.slug.
+  /// PrepQuestion.slug, Challenge.slug, or PromptScenario.slug.
   refSlug     String
   /// Denormalized display fields so the tracker renders without joining two
   /// content tables per row.

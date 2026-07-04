@@ -28,6 +28,7 @@ export const TECHNOLOGIES = [
   { slug: "reactjs", label: "React.js" },
   { slug: "nodejs", label: "Node.js" },
   { slug: "nextjs", label: "Next.js" },
+  { slug: "ai-engineering", label: "AI Engineering" },
   { slug: "javascript", label: "JavaScript" },
   { slug: "javascript-coding", label: "JavaScript Coding" },
   { slug: "machine-coding", label: "Frontend Machine Coding" },

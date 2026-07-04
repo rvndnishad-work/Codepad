@@ -3,6 +3,8 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { rateLimitDistributed } from "@/lib/rate-limit";
 import { runRulesBasedGrader, callGeminiGrader, ScenarioDetails } from "@/lib/prompt-challenges/grader";
+import { recordPrepCompletion } from "@/lib/prep-journey/complete";
+import { PROMPT_PRACTICE_PASS_SCORE } from "@/lib/prep-journey/shared";
 
 // POST /api/prompt-challenges/submit
 // Grades a prompt submission using Gemini (if key available) or rules-based offline fallback.
@@ -111,6 +113,14 @@ export async function POST(req: NextRequest) {
         }
       }
     });
+
+    // A strong prompt credits the AI-Ready journey's practice stage (fire-and-
+    // forget: tracker bookkeeping must never fail the grade response).
+    if (typeof grading.score === "number" && grading.score >= PROMPT_PRACTICE_PASS_SCORE) {
+      void recordPrepCompletion(userId, scenario.slug, "scenario").catch((e) =>
+        console.error("[prep-journey] prompt completion credit failed:", e),
+      );
+    }
 
     return NextResponse.json({
       success: true,

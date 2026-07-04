@@ -19,7 +19,7 @@ export const QUESTION_MINUTES: Record<string, number> = {
   hard: 12,
 };
 
-export type JourneyRole = "frontend" | "backend" | "fullstack" | "custom";
+export type JourneyRole = "frontend" | "backend" | "fullstack" | "ai-ready" | "custom";
 
 export interface JourneyRolePreset {
   slug: JourneyRole;
@@ -45,6 +45,7 @@ const ALL_TECHS = [
   "sql",
   "dsa",
   "system-design",
+  "ai-engineering",
 ];
 
 export const JOURNEY_ROLES: JourneyRolePreset[] = [
@@ -89,6 +90,21 @@ export const JOURNEY_ROLES: JourneyRolePreset[] = [
     stackOptions: ALL_TECHS,
   },
   {
+    slug: "ai-ready",
+    label: "AI-Ready Developer",
+    tagline: "LLMs, prompting, RAG, agents & prompt-engineering practice",
+    defaultStack: ["ai-engineering"],
+    stackOptions: [
+      "ai-engineering",
+      "python",
+      "nodejs",
+      "typescript",
+      "javascript",
+      "system-design",
+      "dsa",
+    ],
+  },
+  {
     slug: "custom",
     label: "Custom",
     tagline: "Pick exactly the techs you want to drill",
@@ -98,7 +114,36 @@ export const JOURNEY_ROLES: JourneyRolePreset[] = [
 ];
 
 export function rolePreset(slug: string): JourneyRolePreset {
-  return JOURNEY_ROLES.find((r) => r.slug === slug) ?? JOURNEY_ROLES[3];
+  return (
+    JOURNEY_ROLES.find((r) => r.slug === slug) ??
+    JOURNEY_ROLES.find((r) => r.slug === "custom") ??
+    JOURNEY_ROLES[JOURNEY_ROLES.length - 1]
+  );
+}
+
+/** The technology slug whose bank powers the AI-Ready journey. */
+export const AI_ENGINEERING_TECH = "ai-engineering";
+
+/**
+ * Minimum Prompt Arena score that counts a scenario "cleared" for journey
+ * credit — mirrors the "pass a challenge" bar for hands-on stages.
+ */
+export const PROMPT_PRACTICE_PASS_SCORE = 70;
+
+/**
+ * Prompt Arena scenarios grade on beginner/intermediate/advanced; the journey
+ * tracker styles difficulty as easy/medium/hard. Map onto the shared scale so
+ * scenario items render with the same badges as questions and challenges.
+ */
+export function scenarioDifficulty(difficulty: string | null | undefined): string {
+  switch (difficulty) {
+    case "beginner":
+      return "easy";
+    case "advanced":
+      return "hard";
+    default:
+      return "medium";
+  }
 }
 
 /**

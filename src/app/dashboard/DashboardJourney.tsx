@@ -34,8 +34,9 @@ export default async function DashboardJourney({ userId }: { userId: string }) {
               Preparing for interviews? Get a day-by-day plan.
             </h2>
             <p className="text-sm text-muted mt-1.5 leading-relaxed">
-              Pick frontend, backend or full-stack, choose your tech stack and daily time — we build a
-              schedule from the question bank and challenges, and track everything you solve.
+              Pick a track — frontend, backend, full-stack or AI-ready — choose your tech stack and
+              daily time, and we build a schedule from the question bank, challenges and prompt
+              practice, tracking everything you solve.
             </p>
           </div>
           <Link

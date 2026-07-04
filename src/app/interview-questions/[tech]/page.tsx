@@ -42,6 +42,15 @@ const TECH_THEMES: Record<string, { bg: string; border: string; hoverBorder: str
     bgGlow: "bg-zinc-500/5",
     tagline: "App Router, Server Components, rendering & data fetching",
   },
+  "ai-engineering": {
+    bg: "bg-gradient-to-br from-fuchsia-500/5 via-surface to-surface dark:from-fuchsia-950/15 dark:via-surface/10 dark:to-surface/5",
+    border: "border-fuchsia-500/15 dark:border-fuchsia-500/10",
+    hoverBorder: "hover:border-fuchsia-500/40 dark:hover:border-fuchsia-500/30",
+    glow: "hover:shadow-[0_8px_30px_rgba(217,70,239,0.06)]",
+    text: "text-fuchsia-600 dark:text-fuchsia-400",
+    bgGlow: "bg-fuchsia-500/5",
+    tagline: "Prompting, RAG pipelines, tool-calling agents & LLM app engineering",
+  },
   javascript: {
     bg: "bg-gradient-to-br from-yellow-500/5 via-surface to-surface dark:from-yellow-950/15 dark:via-surface/10 dark:to-surface/5",
     border: "border-yellow-500/15 dark:border-yellow-500/10",
@@ -262,6 +271,8 @@ export default async function TechnologyPage({
   const STUDY_TIPS: Record<string, string> = {
     reactjs: "Focus on React 19 updates, Server Components/Actions lifecycle, hooks internals, Concurrent Mode rendering, and performance tuning (memo, transitions).",
     nodejs: "Master the Event Loop lifecycle, asynchronous primitives (Worker Threads, child processes), streaming pipelines, and backpressure management.",
+    "ai-engineering":
+      "Master prompt/context engineering, embeddings + RAG retrieval pipelines, tool-calling agent loops, eval design (LLM-as-judge, golden sets), and production concerns: streaming, caching, cost and guardrails.",
     javascript: "Study prototypical inheritance, memory leaks in closures, V8 compilation stages, event loop task queues, and advanced asynchronous patterns.",
     "javascript-coding": "Practice array/object deep transformations, Promise.all/allSettled polyfills, debounce/throttle variants, and custom Event Emitter class systems.",
     typescript: "Practice advanced mapped/conditional types, utility implementations, type assertion guards, and strict configuration parameters.",

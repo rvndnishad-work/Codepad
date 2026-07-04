@@ -60,6 +60,17 @@ const META: Record<string, TechMeta> = {
     tagline: "App Router, RSC & rendering",
     concepts: ["App Router", "RSC", "SSR/ISR", "Server Actions"],
   },
+  "ai-engineering": {
+    bg: "bg-gradient-to-br from-fuchsia-500/5 via-surface to-surface dark:from-fuchsia-950/15 dark:via-surface/10 dark:to-surface/5",
+    border: "border-fuchsia-500/15 dark:border-fuchsia-500/10",
+    hoverBg: "hover:from-fuchsia-500/10 dark:hover:from-fuchsia-950/25",
+    hoverBorder: "hover:border-fuchsia-500/40 dark:hover:border-fuchsia-500/30",
+    hoverShadow: "hover:shadow-[0_8px_30px_rgba(217,70,239,0.06)]",
+    iconBg: "bg-fuchsia-500/10 dark:bg-fuchsia-500/20",
+    glowColor: "bg-fuchsia-500/5",
+    tagline: "Prompts, RAG, agents & evals",
+    concepts: ["Prompting", "RAG", "Agents", "Evals"],
+  },
   javascript: {
     bg: "bg-gradient-to-br from-yellow-500/5 via-surface to-surface dark:from-yellow-950/15 dark:via-surface/10 dark:to-surface/5",
     border: "border-yellow-500/15 dark:border-yellow-500/10",

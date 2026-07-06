@@ -281,7 +281,7 @@ LIMIT 10;`,
           "The prompt asked for highest first, but ORDER BY total_spend defaults to ASC, so LIMIT 10 returns the ten *smallest* totals. Add DESC.",
       },
       {
-        lines: [2, 8],
+        lines: [8, 8],
         category: "edge-case",
         title: "GROUP BY c.id but SELECT c.name",
         explanation:
@@ -365,7 +365,7 @@ $$ LANGUAGE plpgsql;
 --   SELECT * FROM search_users(:q);`,
     findings: [
       {
-        lines: [4, 6],
+        lines: [4, 4],
         category: "security",
         title: "SQL injection inside a dynamic-SQL function",
         explanation:

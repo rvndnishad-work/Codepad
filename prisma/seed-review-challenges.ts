@@ -11,6 +11,13 @@
 import { PrismaClient } from "@prisma/client";
 import { REVIEW_CHALLENGES_1 } from "./data/review-challenges-1";
 import { REVIEW_CHALLENGES_2 } from "./data/review-challenges-2";
+import { REVIEW_CHALLENGES_3 } from "./data/review-challenges-3";
+import { REVIEW_CHALLENGES_4 } from "./data/review-challenges-4";
+import { REVIEW_CHALLENGES_5 } from "./data/review-challenges-5";
+import { REVIEW_CHALLENGES_6 } from "./data/review-challenges-6";
+import { REVIEW_CHALLENGES_7 } from "./data/review-challenges-7";
+import { REVIEW_CHALLENGES_8 } from "./data/review-challenges-8";
+import { REVIEW_CHALLENGES_9 } from "./data/review-challenges-9";
 import type {
   CuratedReviewChallenge,
   ReviewCategory,
@@ -21,6 +28,13 @@ const prisma = new PrismaClient();
 const ALL: CuratedReviewChallenge[] = [
   ...REVIEW_CHALLENGES_1,
   ...REVIEW_CHALLENGES_2,
+  ...REVIEW_CHALLENGES_3,
+  ...REVIEW_CHALLENGES_4,
+  ...REVIEW_CHALLENGES_5,
+  ...REVIEW_CHALLENGES_6,
+  ...REVIEW_CHALLENGES_7,
+  ...REVIEW_CHALLENGES_8,
+  ...REVIEW_CHALLENGES_9,
 ];
 
 const VALID_CATEGORIES: ReviewCategory[] = [

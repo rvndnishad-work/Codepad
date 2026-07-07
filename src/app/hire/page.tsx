@@ -8,6 +8,7 @@ import HomeFinalCTA from "../HomeFinalCTA";
 import { RecruiterDemoCard } from "../HomeBento";
 import TrustBand from "./TrustBand";
 import PricingTeaser from "./PricingTeaser";
+import HirePipeline from "./HirePipeline";
 
 export const metadata: Metadata = {
   title: "Interviewpad for Hiring Teams — Technical Interviews, Take-Homes & AI Screening",
@@ -39,6 +40,9 @@ export default async function HirePage() {
   return (
     <div className="bg-bg min-h-screen">
       <HomeHero persona="recruiter" sessionName={session?.user?.name ?? null} />
+
+      {/* Funnel-stage map: which feature earns its keep at which stage */}
+      <HirePipeline />
 
       {/* Product glimpse: the live interview room mock + real platform numbers */}
       <section className="mx-auto max-w-6xl px-4 py-20">

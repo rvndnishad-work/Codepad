@@ -1,28 +1,123 @@
 import { prisma } from "@/lib/prisma";
+import type { Prisma } from "@prisma/client";
 import { requireAdminAccess } from "@/lib/permissions/staff";
+import { cookies } from "next/headers";
+import { redirect } from "next/navigation";
 import Link from "next/link";
 import { Building2, FileText, Users, Clock, CheckCircle2, Plus, Upload } from "lucide-react";
+import { DIFFICULTIES } from "@/lib/interview-questions/shared";
 import QuestionAdminRow from "./QuestionAdminRow";
+import QuestionsFilterBar from "./QuestionsFilterBar";
+import { PAGE_SIZES, DEFAULT_PAGE_SIZE, SORT_OPTIONS, FILTER_COOKIE, PERSISTED_KEYS, type SortKey } from "./list-params";
+import Pagination from "../Pagination";
 
 export const metadata = { title: "Interview Questions — Admin", robots: { index: false } };
 export const dynamic = "force-dynamic";
 
-export default async function InterviewQuestionsAdmin() {
-  await requireAdminAccess("content:curate");
+const ROW_SELECT = {
+  id: true, title: true, slug: true, status: true, difficulty: true, technology: true, views: true,
+  company: { select: { name: true } },
+} as const;
 
-  const [companies, totalQ, publishedQ, draftQ, totalExp, pendingExp, recent] = await Promise.all([
+/**
+ * Difficulty is a plain string column, so a DB `orderBy` would sort it
+ * alphabetically (easy < hard < medium). Instead, page across per-difficulty
+ * buckets in rank order — counts steer skip/take into the right bucket(s), and
+ * rows inside a bucket stay newest-first. A trailing catch-all bucket keeps
+ * rows with unexpected difficulty values reachable.
+ */
+async function findSortedByDifficulty(
+  where: Prisma.PrepQuestionWhereInput,
+  dir: "asc" | "desc",
+  skip: number,
+  take: number,
+) {
+  const ranked: Prisma.PrepQuestionWhereInput[] = (
+    dir === "asc" ? [...DIFFICULTIES] : [...DIFFICULTIES].reverse()
+  ).map((d) => ({ difficulty: d }));
+  ranked.push({ difficulty: { notIn: [...DIFFICULTIES] } });
+
+  const rows = [];
+  let offset = skip;
+  let remaining = take;
+  for (const bucket of ranked) {
+    if (remaining <= 0) break;
+    const bucketWhere = { ...where, ...bucket };
+    const count = await prisma.prepQuestion.count({ where: bucketWhere });
+    if (offset >= count) {
+      offset -= count;
+      continue;
+    }
+    const got = await prisma.prepQuestion.findMany({
+      where: bucketWhere,
+      orderBy: { updatedAt: "desc" },
+      skip: offset,
+      take: remaining,
+      select: ROW_SELECT,
+    });
+    rows.push(...got);
+    remaining -= got.length;
+    offset = 0;
+  }
+  return rows;
+}
+
+export default async function InterviewQuestionsAdmin({
+  searchParams,
+}: {
+  searchParams: Promise<{ q?: string; tech?: string; status?: string; page?: string; per?: string; sort?: string }>;
+}) {
+  await requireAdminAccess("content:curate");
+  const sp = await searchParams;
+
+  // Bare visit (sidebar link, bookmark without params): restore the admin's
+  // last-used filters from the cookie the filter bar maintains. Any explicit
+  // param — including ?page= — means "respect the URL as given".
+  if (Object.keys(sp).length === 0) {
+    const saved = (await cookies()).get(FILTER_COOKIE)?.value;
+    if (saved) {
+      const parsed = new URLSearchParams(saved);
+      const clean = new URLSearchParams();
+      for (const key of PERSISTED_KEYS) {
+        const v = parsed.get(key);
+        if (v) clean.set(key, v);
+      }
+      const qs = clean.toString();
+      if (qs) redirect(`/admin/interview-questions?${qs}`);
+    }
+  }
+
+  const { q = "", tech = "", status = "", page: pageParam, per: perParam, sort: sortParam } = sp;
+  const page = Math.max(1, parseInt(pageParam ?? "1", 10) || 1);
+  const perPage = PAGE_SIZES.find((n) => n === parseInt(perParam ?? "", 10)) ?? DEFAULT_PAGE_SIZE;
+  const sort: SortKey = SORT_OPTIONS.some((o) => o.value === sortParam) ? (sortParam as SortKey) : "";
+
+  const where: Prisma.PrepQuestionWhereInput = {
+    ...(q ? { OR: [{ title: { contains: q, mode: "insensitive" as const } }, { slug: { contains: q, mode: "insensitive" as const } }] } : {}),
+    ...(tech ? { technology: tech } : {}),
+    ...(status ? { status } : {}),
+  };
+
+  const [companies, totalQ, publishedQ, draftQ, totalExp, pendingExp, filteredQ, questions] = await Promise.all([
     prisma.company.count(),
     prisma.prepQuestion.count(),
     prisma.prepQuestion.count({ where: { status: "published" } }),
     prisma.prepQuestion.count({ where: { status: "draft" } }),
     prisma.prepExperience.count(),
     prisma.prepExperience.count({ where: { status: "pending" } }),
-    prisma.prepQuestion.findMany({
-      orderBy: { updatedAt: "desc" },
-      take: 25,
-      select: { id: true, title: true, slug: true, status: true, difficulty: true, technology: true, views: true, company: { select: { name: true } } },
-    }),
+    prisma.prepQuestion.count({ where }),
+    sort
+      ? findSortedByDifficulty(where, sort === "difficulty-asc" ? "asc" : "desc", (page - 1) * perPage, perPage)
+      : prisma.prepQuestion.findMany({
+          where,
+          orderBy: { updatedAt: "desc" },
+          skip: (page - 1) * perPage,
+          take: perPage,
+          select: ROW_SELECT,
+        }),
   ]);
+  const totalPages = Math.ceil(filteredQ / perPage);
+  const filtering = Boolean(q || tech || status);
 
   const metrics = [
     { label: "Companies", value: companies, icon: Building2, href: "/admin/interview-questions/companies" },
@@ -75,9 +170,14 @@ export default async function InterviewQuestionsAdmin() {
         <Link href="/admin/interview-questions/experiences" className="px-3 py-1.5 rounded-lg border border-border font-bold hover:border-accent/40 transition">Experiences{pendingExp > 0 ? ` (${pendingExp})` : ""}</Link>
       </div>
 
-      {/* Recent questions */}
-      <div>
-        <h2 className="text-xs font-black uppercase tracking-[0.2em] text-muted mb-3">Recent questions</h2>
+      {/* Questions */}
+      <div className="space-y-3">
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
+          <h2 className="text-xs font-black uppercase tracking-[0.2em] text-muted">
+            Questions{filtering ? ` — ${filteredQ} match${filteredQ === 1 ? "" : "es"}` : ""}
+          </h2>
+          <QuestionsFilterBar q={q} tech={tech} status={status} per={perPage} sort={sort} />
+        </div>
         <div className="rounded-2xl border border-border overflow-hidden">
           <table className="w-full text-sm">
             <thead className="bg-bg/50 text-[10px] font-black uppercase tracking-wider text-muted">
@@ -90,14 +190,36 @@ export default async function InterviewQuestionsAdmin() {
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
-              {recent.map((q) => (
-                <QuestionAdminRow key={q.id} q={{ ...q, company: q.company?.name ?? null }} />
+              {questions.map((row) => (
+                <QuestionAdminRow key={row.id} q={{ ...row, company: row.company?.name ?? null }} />
               ))}
-              {recent.length === 0 && (
-                <tr><td colSpan={5} className="p-8 text-center text-muted">No questions yet. Create one or bulk import.</td></tr>
+              {questions.length === 0 && (
+                <tr>
+                  <td colSpan={5} className="p-8 text-center text-muted">
+                    {filtering ? (
+                      <>No questions match. <Link href="/admin/interview-questions" className="text-accent font-bold hover:underline">Clear filters</Link></>
+                    ) : (
+                      "No questions yet. Create one or bulk import."
+                    )}
+                  </td>
+                </tr>
               )}
             </tbody>
           </table>
+          <Pagination
+            currentPage={page}
+            totalPages={totalPages}
+            totalItems={filteredQ}
+            itemsPerPage={perPage}
+            baseUrl="/admin/interview-questions"
+            currentParams={{
+              q: q || undefined,
+              tech: tech || undefined,
+              status: status || undefined,
+              per: perPage !== DEFAULT_PAGE_SIZE ? String(perPage) : undefined,
+              sort: sort || undefined,
+            }}
+          />
         </div>
       </div>
     </div>

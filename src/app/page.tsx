@@ -4,6 +4,7 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { validatePageAccess } from "@/lib/settings";
 import HomeHero from "./HomeHero";
+import HomeArsenal, { type ArsenalCounts } from "./HomeArsenal";
 import HomeBento from "./HomeBento";
 import HomeInfographic from "./HomeInfographic";
 import HomeExplore from "./HomeExplore";
@@ -14,6 +15,7 @@ import { ArrowRight, BookOpen, TrendingUp, PenSquare } from "lucide-react";
 import { type BlogFeedEntry } from "@/components/BlogFeedItem";
 import BlogCardHero from "@/components/BlogCardHero";
 import BlogLazyFeed from "@/components/BlogLazyFeed";
+import { snippetPeek } from "@/lib/snippet-peek";
 import FeaturedCarousel from "@/components/FeaturedCarousel";
 import BlogPopularRow from "@/components/BlogPopularRow";
 
@@ -51,11 +53,56 @@ async function loadStats() {
 }
 
 export const metadata: Metadata = {
-  title: "Interviewpad — Practice Coding Challenges & Build Your Developer Portfolio",
+  title: "Interviewpad — Interview Prep, Coding Challenges & Developer Portfolio",
   description:
-    "Solve curated coding challenges in eight languages, build in a zero-setup sandbox with real code execution, and turn your work into a shareable developer portfolio.",
+    "Prep with 1,000+ hand-written interview questions across 14 technologies, solve runnable challenges in eight languages, train AI-readiness skills, and turn it all into a shareable developer portfolio.",
   alternates: { canonical: "/" },
 };
+
+/**
+ * Real content counts for the prep-arsenal bento. Every number rendered on the
+ * homepage comes from the DB — cards for features with no content hide
+ * themselves rather than show zeros.
+ */
+async function loadArsenalCounts(): Promise<ArsenalCounts> {
+  try {
+    const [prepQuestions, techGroups, companies, reviewChallenges, promptScenarios, challenges, journeys] =
+      await Promise.all([
+        prisma.prepQuestion.count({ where: { status: "published" } }),
+        prisma.prepQuestion.groupBy({
+          by: ["technology"],
+          where: { status: "published" },
+          _count: { _all: true },
+        }),
+        prisma.company.count(),
+        prisma.reviewChallenge.count({ where: { published: true } }),
+        prisma.promptScenario.count(),
+        prisma.challenge.count({ where: { published: true } }),
+        prisma.prepJourney.count(),
+      ]);
+    return {
+      prepQuestions,
+      techs: techGroups
+        .filter((g): g is typeof g & { technology: string } => g.technology !== null)
+        .map((g) => ({ technology: g.technology, count: g._count._all })),
+      companies,
+      reviewChallenges,
+      promptScenarios,
+      challenges,
+      journeys,
+    };
+  } catch {
+    return {
+      prepQuestions: 0,
+      techs: [],
+      companies: 0,
+      reviewChallenges: 0,
+      promptScenarios: 0,
+      challenges: 0,
+      journeys: 0,
+    };
+  }
+}
 
 export default async function HomePage() {
   const session = await auth().catch(() => null);
@@ -67,7 +114,7 @@ export default async function HomePage() {
   if (userType === "recruiter") redirect("/hire");
 
   const userId = session?.user?.id;
-  const stats = await loadStats();
+  const [stats, arsenal] = await Promise.all([loadStats(), loadArsenalCounts()]);
 
   let welcomeData: {
     name: string | null;
@@ -232,6 +279,9 @@ export default async function HomePage() {
     template: s.template,
     updatedAt: s.updatedAt.toISOString(),
     author: s.user ? { name: s.user.name, image: s.user.image } : null,
+    views: s.viewCount,
+    // Highlighted server-side so the section ships no hljs to the client.
+    preview: snippetPeek(s.files),
   }));
 
   return (
@@ -242,6 +292,8 @@ export default async function HomePage() {
         snippetCount={welcomeData?.snippetCount ?? 0}
         recentSnippet={welcomeData?.recent}
       />
+
+      <HomeArsenal counts={arsenal} />
 
       <HomeBento />
 

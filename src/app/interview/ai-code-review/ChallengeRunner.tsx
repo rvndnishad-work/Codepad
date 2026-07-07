@@ -13,10 +13,12 @@ import {
   Bot,
   Trophy,
   RotateCcw,
+  Sparkles,
 } from "lucide-react";
 
 import CodeViewer from "./CodeViewer";
 import Leaderboard from "./Leaderboard";
+import SolutionPanel, { type SolutionState } from "./SolutionPanel";
 import {
   CATEGORY_META,
   DIFFICULTY_STYLES,
@@ -46,6 +48,39 @@ export default function ChallengeRunner({
   const [startedAt] = useState(() => Date.now());
   const [remaining, setRemaining] = useState(challenge.timeLimitSec);
   const [lbRefresh, setLbRefresh] = useState(0);
+
+  // Premium "Show Solution" (study mode). Null = panel closed.
+  const [solution, setSolution] = useState<SolutionState | null>(null);
+
+  const openSolution = useCallback(async () => {
+    let alreadyLoaded = false;
+    setSolution((cur) => {
+      // If we already resolved it once, just re-open without refetching.
+      if (cur && (cur.status === "unlocked" || cur.status === "locked")) {
+        alreadyLoaded = true;
+        return cur;
+      }
+      return { status: "loading" };
+    });
+    if (alreadyLoaded) return;
+    try {
+      const res = await fetch(
+        `/api/review-challenges/${challenge.slug}/solution`,
+      );
+      const data = await res.json().catch(() => null);
+      if (res.status === 401 || res.status === 403) {
+        setSolution({ status: "locked" });
+        return;
+      }
+      if (!res.ok) throw new Error(data?.error ?? `HTTP ${res.status}`);
+      setSolution({ status: "unlocked", findings: data.findings ?? [] });
+    } catch (err) {
+      setSolution({
+        status: "error",
+        message: err instanceof Error ? err.message : "Couldn't load the solution.",
+      });
+    }
+  }, [challenge.slug]);
 
   const setMark = useCallback((line: number, category: ReviewCategory | null) => {
     setMarks((prev) => {
@@ -203,13 +238,26 @@ export default function ChallengeRunner({
             onMark={setMark}
             reveal={phase === "revealed" ? result?.reveal ?? null : null}
             falsePositiveLines={result?.falsePositiveMarks.map((m) => m.line) ?? []}
+            studyFindings={
+              phase === "reviewing" && solution?.status === "unlocked"
+                ? solution.findings
+                : null
+            }
             disabled={submitting}
           />
         </div>
 
         {/* RIGHT — controls / scorecard */}
         <div className="w-full lg:w-96 flex-shrink-0 space-y-4 lg:sticky lg:top-6">
-          {phase === "reviewing" ? (
+          {phase === "reviewing" && solution ? (
+            <SolutionPanel
+              state={solution}
+              code={challenge.code}
+              language={challenge.language}
+              findingCount={challenge.findingCount}
+              onClose={() => setSolution(null)}
+            />
+          ) : phase === "reviewing" ? (
             <ReviewingPanel
               marks={marks}
               findingCount={challenge.findingCount}
@@ -217,6 +265,7 @@ export default function ChallengeRunner({
               submitting={submitting}
               onSubmit={() => doSubmit(false)}
               onClearAll={() => setMarks([])}
+              onShowSolution={openSolution}
             />
           ) : (
             result && (
@@ -251,6 +300,7 @@ function ReviewingPanel({
   submitting,
   onSubmit,
   onClearAll,
+  onShowSolution,
 }: {
   marks: Mark[];
   findingCount: number;
@@ -258,6 +308,7 @@ function ReviewingPanel({
   submitting: boolean;
   onSubmit: () => void;
   onClearAll: () => void;
+  onShowSolution: () => void;
 }) {
   const sorted = useMemo(() => [...marks].sort((a, b) => a.line - b.line), [marks]);
   return (
@@ -324,6 +375,19 @@ function ReviewingPanel({
           {submitting ? "Scoring…" : "Submit review"}
         </button>
       </div>
+
+      {/* Premium: reveal the full worked solution without spending an attempt. */}
+      <button
+        onClick={onShowSolution}
+        disabled={submitting}
+        className="group w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl border border-indigo-500/30 bg-gradient-to-r from-indigo-500/10 to-fuchsia-500/10 hover:from-indigo-500/15 hover:to-fuchsia-500/15 text-sm font-bold text-indigo-600 dark:text-indigo-300 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+      >
+        <Sparkles className="w-4 h-4" />
+        Show solution
+        <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-gradient-to-r from-amber-400 to-amber-500 text-[9px] font-black uppercase tracking-wider text-amber-950">
+          Pro
+        </span>
+      </button>
     </div>
   );
 }

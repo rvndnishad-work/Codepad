@@ -9,6 +9,16 @@ import { parseJsonArray } from "@/lib/interview-questions/shared";
 export const metadata = { title: "Edit question — Admin", robots: { index: false } };
 export const dynamic = "force-dynamic";
 
+/** Stored JSON is compact; pretty-print it for the textarea. */
+function prettyJson(raw: string | null): string {
+  if (!raw) return "";
+  try {
+    return JSON.stringify(JSON.parse(raw), null, 2);
+  } catch {
+    return raw;
+  }
+}
+
 export default async function EditQuestionPage({ params }: { params: Promise<{ id: string }> }) {
   await requireAdminAccess("content:curate");
   const { id } = await params;
@@ -20,6 +30,7 @@ export default async function EditQuestionPage({ params }: { params: Promise<{ i
 
   const initial: QuestionInitial = {
     id: q.id,
+    slug: q.slug,
     title: q.title,
     description: q.description ?? "",
     answer: q.answer ?? "",
@@ -34,6 +45,8 @@ export default async function EditQuestionPage({ params }: { params: Promise<{ i
     status: q.status,
     seoTitle: q.seoTitle ?? "",
     seoDescription: q.seoDescription ?? "",
+    examplesData: prettyJson(q.examplesData),
+    frameworksData: prettyJson(q.frameworksData),
   };
 
   return (

@@ -70,6 +70,25 @@ export async function deleteCompany(id: string) {
 
 // ── Questions ──────────────────────────────────────────────────────────────
 
+/**
+ * Validate a raw-JSON form field (examplesData / frameworksData). Empty →
+ * null (clears the column); invalid JSON or wrong shape → throws so the form
+ * surfaces it instead of persisting a string the question page can't parse.
+ */
+function normalizeJsonField(raw: string, kind: "array" | "object", label: string): string | null {
+  const trimmed = raw.trim();
+  if (!trimmed) return null;
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(trimmed);
+  } catch {
+    throw new Error(`${label} is not valid JSON.`);
+  }
+  const ok = kind === "array" ? Array.isArray(parsed) : typeof parsed === "object" && parsed !== null && !Array.isArray(parsed);
+  if (!ok) throw new Error(`${label} must be a JSON ${kind}.`);
+  return JSON.stringify(parsed);
+}
+
 export async function saveQuestion(input: {
   id?: string;
   title: string;
@@ -86,6 +105,10 @@ export async function saveQuestion(input: {
   status?: string;
   seoTitle?: string;
   seoDescription?: string;
+  /** Raw JSON array of runnable examples; omit to leave untouched, "" to clear. */
+  examplesData?: string;
+  /** Raw JSON map of per-framework bundles; omit to leave untouched, "" to clear. */
+  frameworksData?: string;
 }): Promise<{ id: string }> {
   const session = await assertCurate();
   const data = {
@@ -103,10 +126,29 @@ export async function saveQuestion(input: {
     status: input.status || "draft",
     seoTitle: input.seoTitle?.trim() || null,
     seoDescription: input.seoDescription?.trim() || null,
+    // Only touch the rich-content columns when the caller sends them, so
+    // callers that predate these fields can never wipe seeded content.
+    ...(input.examplesData !== undefined
+      ? { examplesData: normalizeJsonField(input.examplesData, "array", "Examples data") }
+      : {}),
+    ...(input.frameworksData !== undefined
+      ? { frameworksData: normalizeJsonField(input.frameworksData, "object", "Frameworks data") }
+      : {}),
   };
   let id = input.id;
   if (id) {
-    await prisma.prepQuestion.update({ where: { id }, data });
+    const existing = await prisma.prepQuestion.findUnique({
+      where: { id },
+      select: { title: true, description: true, answer: true },
+    });
+    if (!existing) throw new Error("Question not found.");
+    // The cached AI hint is derived from the question content — drop it when
+    // that content changes so the next request regenerates it.
+    const contentChanged =
+      existing.title !== data.title ||
+      (existing.description ?? null) !== data.description ||
+      (existing.answer ?? null) !== data.answer;
+    await prisma.prepQuestion.update({ where: { id }, data: contentChanged ? { ...data, aiHint: null } : data });
   } else {
     const slug = await uniqueSlug(input.title, "prepQuestion");
     const created = await prisma.prepQuestion.create({

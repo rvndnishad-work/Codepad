@@ -11,7 +11,7 @@ import type { Mark, ReviewCategory, RevealFinding } from "./types";
  * then split on "\n" and re-balance the open-tag stack per line so each row is
  * valid standalone HTML.
  */
-function highlightLines(code: string, lang: string): string[] {
+export function highlightLines(code: string, lang: string): string[] {
   const html = highlight(code, lang);
   const rows: string[] = [];
   const open: string[] = [];
@@ -39,6 +39,9 @@ interface Props {
   reveal?: RevealFinding[] | null;
   /** Lines flagged that matched nothing (false positives), painted after reveal. */
   falsePositiveLines?: number[];
+  /** Premium study mode: highlight these finding lines in a neutral tone with a
+   *  numbered marker, read-only (no flagging). Independent of grading. */
+  studyFindings?: { lineStart: number; lineEnd: number }[] | null;
   disabled?: boolean;
 }
 
@@ -49,6 +52,7 @@ export default function CodeViewer({
   onMark,
   reveal = null,
   falsePositiveLines = [],
+  studyFindings = null,
   disabled = false,
 }: Props) {
   const lines = useMemo(() => highlightLines(code, hljsLang(language)), [code, language]);
@@ -92,6 +96,19 @@ export default function CodeViewer({
   const fpSet = useMemo(() => new Set(falsePositiveLines), [falsePositiveLines]);
   const revealed = reveal !== null;
 
+  // Premium study mode: line -> 1-based finding order (for the numbered marker).
+  const studyByLine = useMemo(() => {
+    const m = new Map<number, number>();
+    if (studyFindings) {
+      studyFindings.forEach((f, i) => {
+        for (let n = f.lineStart; n <= f.lineEnd; n++) m.set(n, i + 1);
+      });
+    }
+    return m;
+  }, [studyFindings]);
+  const studyMode = studyFindings !== null;
+  const locked = revealed || studyMode || disabled;
+
   return (
     <div
       ref={containerRef}
@@ -105,6 +122,7 @@ export default function CodeViewer({
               const marked = markByLine.get(lineNo);
               const finding = revealByLine.get(lineNo);
               const isFp = revealed && fpSet.has(lineNo);
+              const studyIdx = studyByLine.get(lineNo);
 
               // Gutter tint after reveal.
               let rowTint = "";
@@ -117,6 +135,8 @@ export default function CodeViewer({
                       : "bg-rose-500/10"; // missed
               } else if (isFp) {
                 rowTint = "bg-slate-500/10";
+              } else if (studyMode && studyIdx) {
+                rowTint = "bg-indigo-500/10 ring-1 ring-inset ring-indigo-500/20";
               } else if (marked) {
                 rowTint = "bg-indigo-500/10";
               }
@@ -125,10 +145,10 @@ export default function CodeViewer({
                 <tr
                   key={lineNo}
                   className={`group/line align-top transition-colors ${rowTint} ${
-                    !revealed && !disabled ? "hover:bg-indigo-500/[0.06] cursor-pointer" : ""
+                    !locked ? "hover:bg-indigo-500/[0.06] cursor-pointer" : ""
                   }`}
                   onClick={() => {
-                    if (revealed || disabled) return;
+                    if (locked) return;
                     setOpenLine((cur) => (cur === lineNo ? null : lineNo));
                   }}
                 >
@@ -145,11 +165,18 @@ export default function CodeViewer({
                       </span>
                     ) : revealed && isFp ? (
                       <span title="False positive — nothing wrong here">➖</span>
+                    ) : studyMode && studyIdx ? (
+                      <span
+                        className="inline-flex items-center justify-center w-4 h-4 rounded-full bg-indigo-500 text-white text-[9px] font-bold tabular-nums"
+                        title={`Issue #${studyIdx}`}
+                      >
+                        {studyIdx}
+                      </span>
                     ) : marked ? (
                       <span title={CATEGORY_META[marked].label}>{CATEGORY_META[marked].emoji}</span>
-                    ) : (
+                    ) : !studyMode ? (
                       <span className="opacity-0 group-hover/line:opacity-40">＋</span>
-                    )}
+                    ) : null}
                   </td>
 
                   {/* code */}
@@ -157,7 +184,7 @@ export default function CodeViewer({
                     <code dangerouslySetInnerHTML={{ __html: html || "&nbsp;" }} />
 
                     {/* category picker */}
-                    {openLine === lineNo && !revealed && (
+                    {openLine === lineNo && !locked && (
                       <div
                         className="absolute z-20 left-0 top-full mt-1 flex flex-wrap gap-1.5 p-2 rounded-xl border border-border bg-surface shadow-xl"
                         onClick={(e) => e.stopPropagation()}

@@ -177,7 +177,7 @@ export default function HomeHero({
             <p className="text-muted text-lg md:text-xl leading-relaxed font-medium max-w-xl mx-auto lg:mx-0">
               {isRecruiter
                 ? "Live coding interviews with replay, async take-homes with server-side grading, AI screening at batch scale, and integrity signals on every attempt — in one workspace."
-                : "Solve curated challenges in eight languages, build in a zero-setup sandbox, and turn your attempts into a shareable developer portfolio."}
+                : "Hand-written interview question banks, runnable challenges in eight languages, and an AI-readiness track — practice in a real sandbox and turn it all into a shareable portfolio."}
             </p>
 
             <div className="flex flex-col sm:flex-row items-center lg:justify-start justify-center gap-4">

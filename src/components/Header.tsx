@@ -17,24 +17,23 @@ import NotificationBell from "./NotificationBell";
 export default async function Header() {
   const session = await auth().catch(() => null);
   const user = session?.user;
-  const userType = (user as { userType?: string | null } | undefined)?.userType ?? null;
   const showAdmin = await isStaff(session);
   const showCreator = user?.id ? await userCan(user.id, "content:author") : false;
 
-  // Resolve the recruiter's "best" workspace landing. Signed-in recruiters with
-  // a workspace deep-link straight into it; otherwise we send them to the
-  // creation flow. Unauthenticated visitors get nudged to /pricing where the
-  // marketing copy explains workspaces.
+  // Resolve the workspace nav landing. Signed-in users go to the /w hub — it
+  // lists their workspaces (picker) or pitches creating the first one, so the
+  // link never dead-ends on marketing for someone who already has a tenant.
+  // AI Screening still deep-links into the primary workspace when one exists.
+  // Unauthenticated visitors get nudged to /pricing where the marketing copy
+  // explains workspaces.
   let workspaceHref = "/pricing";
   let aiScreeningHref = "/pricing";
   if (user?.id) {
+    workspaceHref = "/w";
+    aiScreeningHref = "/w";
     const slug = await getPrimaryWorkspaceSlug(user.id);
     if (slug) {
-      workspaceHref = `/w/${slug}`;
       aiScreeningHref = `/w/${slug}/ai-interviews`;
-    } else if (userType === "recruiter") {
-      workspaceHref = "/w/create";
-      aiScreeningHref = "/w/create";
     }
   }
 

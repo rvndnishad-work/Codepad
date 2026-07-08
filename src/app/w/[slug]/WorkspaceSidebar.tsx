@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { Building2, ExternalLink, Plus, ChevronsLeft, ChevronsRight } from "lucide-react";
+import { Building2, ExternalLink, Plus, ChevronsLeft, ChevronsRight, Menu, X } from "lucide-react";
 import UserMenu from "@/components/UserMenu";
 import WorkspaceSidebarNav from "./WorkspaceSidebarNav";
 
@@ -45,6 +45,9 @@ export default function WorkspaceSidebar({
 }: Props) {
   // Collapse is a desktop affordance; persisted so it survives navigation.
   const [collapsed, setCollapsed] = useState(false);
+  // On mobile the sidebar is a compact top bar; the nav expands on demand.
+  // Defaults closed so the dashboard content is immediately reachable.
+  const [mobileOpen, setMobileOpen] = useState(false);
   useEffect(() => {
     try {
       setCollapsed(localStorage.getItem(STORAGE_KEY) === "1");
@@ -96,8 +99,13 @@ export default function WorkspaceSidebar({
         {collapsed ? <ChevronsRight className="w-3.5 h-3.5" /> : <ChevronsLeft className="w-3.5 h-3.5" />}
       </button>
 
-      {/* Active workspace header */}
-      <div className={`border-b border-border ${collapsed ? "p-3 flex justify-center" : "p-4"}`}>
+      {/* Active workspace header — on mobile it doubles as the compact top
+          bar with a menu toggle that expands the nav below. */}
+      <div
+        className={`border-b border-border flex items-center justify-between gap-2 ${
+          collapsed ? "p-3 md:justify-center" : "p-4"
+        }`}
+      >
         <div className="flex items-center gap-2.5 min-w-0">
           <div
             className="w-9 h-9 rounded-lg bg-indigo-500/10 border border-indigo-500/15 flex items-center justify-center text-indigo-600 dark:text-indigo-300 font-semibold text-[11px] shrink-0 select-none"
@@ -105,26 +113,41 @@ export default function WorkspaceSidebar({
           >
             {workspaceName.substring(0, 2).toUpperCase()}
           </div>
-          {!collapsed && (
-            <div className="min-w-0">
-              <div className="text-sm font-semibold text-fg truncate">{workspaceName}</div>
-              <div className="flex items-center gap-1.5 mt-0.5">
-                <span
-                  className={`inline-flex items-center px-1.5 py-0.5 rounded border text-[9px] font-semibold uppercase tracking-wider ${
-                    PLAN_BADGES[planName] || PLAN_BADGES.FREE
-                  }`}
-                >
-                  {planName}
-                </span>
-              </div>
+          <div className={`min-w-0 ${collapsed ? "md:hidden" : ""}`}>
+            <div className="text-sm font-semibold text-fg truncate">{workspaceName}</div>
+            <div className="flex items-center gap-1.5 mt-0.5">
+              <span
+                className={`inline-flex items-center px-1.5 py-0.5 rounded border text-[9px] font-semibold uppercase tracking-wider ${
+                  PLAN_BADGES[planName] || PLAN_BADGES.FREE
+                }`}
+              >
+                {planName}
+              </span>
             </div>
-          )}
+          </div>
         </div>
+
+        <button
+          type="button"
+          onClick={() => setMobileOpen((o) => !o)}
+          aria-label={mobileOpen ? "Close workspace menu" : "Open workspace menu"}
+          aria-expanded={mobileOpen}
+          className="md:hidden w-9 h-9 rounded-lg border border-border bg-panel/40 flex items-center justify-center text-muted hover:text-fg transition-colors shrink-0"
+        >
+          {mobileOpen ? <X className="w-4 h-4" /> : <Menu className="w-4 h-4" />}
+        </button>
       </div>
 
-      {/* Switcher + nav */}
+      {/* Switcher + nav. Mobile: collapsed behind the menu toggle (capped
+          height, own scroll) so the dashboard content below stays reachable;
+          tapping any link closes the panel. Desktop: always visible. */}
       <div
-        className={`flex-1 overflow-y-auto overflow-x-hidden py-4 space-y-5 ${collapsed ? "px-2" : "px-3"}`}
+        className={`flex-1 overflow-y-auto overflow-x-hidden py-4 space-y-5 ${collapsed ? "px-2" : "px-3"} ${
+          mobileOpen ? "block max-h-[55vh]" : "hidden"
+        } md:block md:max-h-none`}
+        onClick={(e) => {
+          if ((e.target as HTMLElement | null)?.closest("a")) setMobileOpen(false);
+        }}
       >
         {/* Workspace switcher — collapses away to keep the rail focused on nav. */}
         {!collapsed && (
@@ -173,8 +196,12 @@ export default function WorkspaceSidebar({
         <WorkspaceSidebarNav slug={slug} planName={planName} counts={counts} collapsed={collapsed} />
       </div>
 
-      {/* Footer */}
-      <div className={`border-t border-border flex flex-col gap-2 ${collapsed ? "p-2 items-center" : "p-3"}`}>
+      {/* Footer — hidden on mobile unless the menu is expanded */}
+      <div
+        className={`border-t border-border flex-col gap-2 ${collapsed ? "p-2 items-center" : "p-3"} ${
+          mobileOpen ? "flex" : "hidden"
+        } md:flex`}
+      >
         <Link
           href="/dashboard"
           title={collapsed ? "Personal dashboard" : undefined}

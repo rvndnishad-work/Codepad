@@ -74,11 +74,11 @@ export default function CreateWorkspacePage() {
       <div className="w-full max-w-lg relative z-10 space-y-6">
         {/* Back Link */}
         <Link
-          href="/dashboard"
+          href="/w"
           className="inline-flex items-center gap-2 text-xs font-bold text-muted hover:text-fg transition-colors group"
         >
           <ArrowLeft className="w-3.5 h-3.5 transition-transform group-hover:-translate-x-0.5" />
-          Back to Dashboard
+          Back to Workspaces
         </Link>
 
         {/* Form Card */}

@@ -35,6 +35,8 @@ import {
   Copy,
   X,
   Search,
+  Zap,
+  ArrowUpRight,
 } from "lucide-react";
 import {
   AreaChart,
@@ -309,6 +311,9 @@ export default function WorkspaceDashboardClient({
   const [selectedAttempt, setSelectedAttempt] = useState<any | null>(null);
   const [addCandidateOpen, setAddCandidateOpen] = useState(false);
   const [bulkAddOpen, setBulkAddOpen] = useState(false);
+  // Overview quick-action: send a one-off take-home without leaving the
+  // dashboard (same form/handler as the Assessments → Take-Homes tab).
+  const [quickTakeHomeOpen, setQuickTakeHomeOpen] = useState(false);
   const [candidateSort, setCandidateSort] = useState<"recent" | "name" | "status" | "take-homes" | "interviews">("recent");
   const [candidateStatusFilter, setCandidateStatusFilter] = useState<string>("all");
   const [selectedCandidateIds, setSelectedCandidateIds] = useState<Set<string>>(new Set());
@@ -698,9 +703,10 @@ export default function WorkspaceDashboardClient({
       // Prepend the new take-home invitation to the list
       setCurrentTakeHomes([data.takeHome, ...currentTakeHomes]);
       
-      // Reset form
+      // Reset form + close the overview quick-action modal if it was the caller
       setCandidateName("");
       setCandidateEmail("");
+      setQuickTakeHomeOpen(false);
     } catch (err) {
       toast.error("Failed to generate invitation", {
         description: err instanceof Error ? err.message : String(err),
@@ -1055,20 +1061,36 @@ export default function WorkspaceDashboardClient({
 
   return (
     <div className="space-y-6">
-      {/* Stat cards */}
-      <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+      {/* Stat strip — one segmented panel (hairline dividers via gap-px over a
+          border-tinted backdrop) so metrics read as a single instrument, not a
+          row of cards competing with the action tiles below. */}
+      <div className="rounded-[24px] border border-border bg-border/40 shadow-sm overflow-hidden grid grid-cols-2 md:grid-cols-5 gap-px">
         {currentStats.map((stat, i) => (
-          <div key={i} className="relative group/stat p-5 rounded-[24px] border border-border bg-surface/80 dark:bg-surface/60 backdrop-blur-2xl shadow-sm hover:shadow-xl transition-all duration-500 overflow-hidden">
-            <div className={`absolute inset-0 bg-gradient-to-br ${stat.gradClass} to-transparent opacity-0 group-hover/stat:opacity-100 transition-opacity duration-500`}></div>
-            <div className="relative flex items-center justify-between mb-4">
-              <span className="text-[10px] font-bold uppercase tracking-widest text-muted/80">{stat.label}</span>
-              <div className={`w-8 h-8 rounded-xl border ${stat.borderClass} ${stat.bgClass} flex items-center justify-center ${stat.colorClass} shadow-inner transition-transform duration-300 group-hover/stat:scale-110`}>
-                <stat.icon className="w-4 h-4" />
+          <div
+            key={i}
+            className={`relative group/stat p-5 bg-surface/90 dark:bg-surface/80 backdrop-blur-2xl overflow-hidden transition-colors hover:bg-panel/60 ${
+              i === 4 ? "col-span-2 md:col-span-1" : ""
+            }`}
+          >
+            {/* Oversized watermark icon */}
+            <stat.icon
+              className={`absolute -right-3 -bottom-4 w-20 h-20 ${stat.colorClass} opacity-[0.06] group-hover/stat:opacity-[0.14] group-hover/stat:-rotate-6 group-hover/stat:scale-110 transition-all duration-500 pointer-events-none`}
+            />
+            <div className="relative flex items-center gap-2 mb-3">
+              <div className={`w-6 h-6 rounded-lg border ${stat.borderClass} ${stat.bgClass} flex items-center justify-center ${stat.colorClass}`}>
+                <stat.icon className="w-3 h-3" />
               </div>
+              <span className="text-[10px] font-bold uppercase tracking-widest text-muted/80">{stat.label}</span>
             </div>
-            <div className="relative flex items-baseline gap-2">
-              <div className="text-3xl font-bold text-fg tracking-tight tabular-nums">{stat.value}</div>
+            <div className={`relative text-4xl font-black tracking-tighter tabular-nums ${stat.colorClass}`}>
+              {stat.value}
             </div>
+            {/* Accent underline sweeps in on hover (currentColor from the
+                stat's text tint — avoids dynamically-built Tailwind classes) */}
+            <div
+              className={`absolute bottom-0 left-0 h-[3px] w-0 group-hover/stat:w-full transition-all duration-500 opacity-70 ${stat.colorClass}`}
+              style={{ background: "currentColor" }}
+            />
           </div>
         ))}
       </div>
@@ -1086,6 +1108,101 @@ export default function WorkspaceDashboardClient({
                 <div>
                   <h3 className="text-xl font-bold text-fg tracking-tight">Command Center</h3>
                   <p className="text-sm text-muted mt-1">Real-time metrics and activity across your workspace.</p>
+                </div>
+              </div>
+
+              {/* Quick actions — vivid, color-coded tiles so they read as
+                  "do something" controls, in deliberate contrast with the
+                  neutral stat strip above. */}
+              <div className="space-y-3">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-6 h-6 rounded-lg bg-accent/10 border border-accent/25 flex items-center justify-center">
+                    <Zap className="w-3 h-3 text-accent" />
+                  </div>
+                  <span className="text-[10px] font-black uppercase tracking-[0.2em] text-muted">Quick Actions</span>
+                  <div className="flex-1 h-px bg-gradient-to-r from-border to-transparent" />
+                </div>
+
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                  {[
+                    {
+                      key: "add-candidate",
+                      onClick: () => setAddCandidateOpen(true),
+                      icon: UserPlus,
+                      title: "Add Candidate",
+                      desc: "Register a new candidate in your pipeline.",
+                      tile: "border-blue-500/25 hover:border-blue-400/60 hover:shadow-[0_16px_40px_-12px_rgba(59,130,246,0.45)]",
+                      grad: "from-blue-500/[0.12] via-blue-500/[0.03]",
+                      glow: "bg-blue-500/30",
+                      iconBox: "border-blue-500/40 bg-blue-500/15 text-blue-500 dark:text-blue-400 shadow-[0_0_24px_-6px_rgba(59,130,246,0.7)]",
+                      arrow: "group-hover:text-blue-500 dark:group-hover:text-blue-400",
+                    },
+                    {
+                      key: "bulk-import",
+                      onClick: () => setBulkAddOpen(true),
+                      icon: Upload,
+                      title: "Bulk Import",
+                      desc: "Paste a CSV list to add many candidates at once.",
+                      tile: "border-fuchsia-500/25 hover:border-fuchsia-400/60 hover:shadow-[0_16px_40px_-12px_rgba(217,70,239,0.45)]",
+                      grad: "from-fuchsia-500/[0.12] via-fuchsia-500/[0.03]",
+                      glow: "bg-fuchsia-500/30",
+                      iconBox: "border-fuchsia-500/40 bg-fuchsia-500/15 text-fuchsia-500 dark:text-fuchsia-400 shadow-[0_0_24px_-6px_rgba(217,70,239,0.7)]",
+                      arrow: "group-hover:text-fuchsia-500 dark:group-hover:text-fuchsia-400",
+                    },
+                    {
+                      key: "schedule-interview",
+                      href: `/interview/new?workspaceSlug=${workspace.slug}`,
+                      icon: Calendar,
+                      title: "Schedule Interview",
+                      desc: "Set up a live pair-programming session.",
+                      tile: "border-amber-500/25 hover:border-amber-400/60 hover:shadow-[0_16px_40px_-12px_rgba(245,158,11,0.45)]",
+                      grad: "from-amber-500/[0.12] via-amber-500/[0.03]",
+                      glow: "bg-amber-500/30",
+                      iconBox: "border-amber-500/40 bg-amber-500/15 text-amber-500 dark:text-amber-400 shadow-[0_0_24px_-6px_rgba(245,158,11,0.7)]",
+                      arrow: "group-hover:text-amber-500 dark:group-hover:text-amber-400",
+                    },
+                    {
+                      key: "send-take-home",
+                      onClick: () => setQuickTakeHomeOpen(true),
+                      icon: Mail,
+                      title: "Send Take-Home",
+                      desc: "Generate a secure assessment invite link.",
+                      tile: "border-emerald-500/25 hover:border-emerald-400/60 hover:shadow-[0_16px_40px_-12px_rgba(16,185,129,0.45)]",
+                      grad: "from-emerald-500/[0.12] via-emerald-500/[0.03]",
+                      glow: "bg-emerald-500/30",
+                      iconBox: "border-emerald-500/40 bg-emerald-500/15 text-emerald-500 dark:text-emerald-400 shadow-[0_0_24px_-6px_rgba(16,185,129,0.7)]",
+                      arrow: "group-hover:text-emerald-500 dark:group-hover:text-emerald-400",
+                    },
+                  ].map((a) => {
+                    const inner = (
+                      <>
+                        {/* Color wash + corner glow orb */}
+                        <div className={`absolute inset-0 bg-gradient-to-br ${a.grad} to-transparent`} />
+                        <div className={`absolute -top-10 -right-10 w-28 h-28 rounded-full blur-3xl opacity-40 group-hover:opacity-90 transition-opacity duration-500 ${a.glow}`} />
+                        {/* Launch arrow */}
+                        <ArrowUpRight
+                          className={`absolute top-4 right-4 w-4 h-4 text-muted/40 transition-all duration-300 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 ${a.arrow}`}
+                        />
+                        <div className="relative">
+                          <div className={`w-11 h-11 rounded-2xl border flex items-center justify-center transition-transform duration-300 group-hover:scale-110 group-hover:-rotate-6 ${a.iconBox}`}>
+                            <a.icon className="w-5 h-5" />
+                          </div>
+                          <div className="text-sm font-black text-fg tracking-tight mt-4">{a.title}</div>
+                          <p className="text-[11px] text-muted mt-1 leading-relaxed">{a.desc}</p>
+                        </div>
+                      </>
+                    );
+                    const tileClass = `group relative overflow-hidden text-left p-5 rounded-2xl border bg-surface/70 backdrop-blur-xl transition-all duration-300 hover:-translate-y-1 active:scale-[0.98] ${a.tile}`;
+                    return a.href ? (
+                      <Link key={a.key} href={a.href} className={tileClass}>
+                        {inner}
+                      </Link>
+                    ) : (
+                      <button key={a.key} type="button" onClick={a.onClick} className={tileClass}>
+                        {inner}
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
 
@@ -2702,6 +2819,123 @@ export default function WorkspaceDashboardClient({
         onClose={() => setBulkAddOpen(false)}
         workspaceSlug={workspace.slug}
       />
+
+      {/* Quick Send Take-Home modal (overview quick action). Same state +
+          handler as the Assessments → Take-Homes invite form. */}
+      {quickTakeHomeOpen && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-bg/85 backdrop-blur-sm animate-in fade-in duration-200"
+          onClick={() => setQuickTakeHomeOpen(false)}
+        >
+          <div
+            className="w-full max-w-lg bg-surface border border-border rounded-xl shadow-2xl overflow-hidden max-h-[90vh] flex flex-col animate-in slide-in-from-bottom duration-300"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="px-6 py-4 border-b border-border flex items-center justify-between bg-panel/30">
+              <div className="flex items-center gap-2">
+                <Mail className="w-5 h-5 text-indigo-500" />
+                <h2 className="text-base font-semibold text-fg">Send Take-Home Assessment</h2>
+              </div>
+              <button
+                onClick={() => setQuickTakeHomeOpen(false)}
+                className="p-1 rounded-md hover:bg-panel text-muted hover:text-fg transition-colors"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <form onSubmit={handleGenerateTakeHome} className="flex-1 overflow-y-auto p-6 space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-1">
+                  <label className="text-[10px] font-semibold uppercase tracking-wider text-muted">Candidate name</label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="Candidate name"
+                    value={candidateName}
+                    onChange={(e) => setCandidateName(e.target.value)}
+                    className="w-full px-3 py-2 rounded-md border border-border bg-bg text-fg text-xs focus:outline-none focus:border-accent/40"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-[10px] font-semibold uppercase tracking-wider text-muted">Email</label>
+                  <input
+                    type="email"
+                    required
+                    placeholder="candidate@example.com"
+                    value={candidateEmail}
+                    onChange={(e) => setCandidateEmail(e.target.value)}
+                    className="w-full px-3 py-2 rounded-md border border-border bg-bg text-fg text-xs focus:outline-none focus:border-accent/40"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-[10px] font-semibold uppercase tracking-wider text-muted">Challenge</label>
+                <select
+                  value={selectedChallengeId}
+                  onChange={(e) => setSelectedChallengeId(e.target.value)}
+                  className="w-full px-3 py-2 rounded-md border border-border bg-bg text-fg text-xs focus:outline-none focus:border-accent/40"
+                >
+                  {challenges.map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {c.title} ({c.difficulty})
+                    </option>
+                  ))}
+                </select>
+                {challenges.length === 0 && (
+                  <p className="text-[11px] text-amber-500 pt-1">
+                    No workspace challenges yet — use the multi-question builder below, or create a challenge first.
+                  </p>
+                )}
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1">
+                  <label className="text-[10px] font-semibold uppercase tracking-wider text-muted">Time limit (min)</label>
+                  <input
+                    type="number"
+                    min={10}
+                    max={480}
+                    value={timeLimitMin}
+                    onChange={(e) => setTimeLimitMin(parseInt(e.target.value, 10) || 60)}
+                    className="w-full px-3 py-2 rounded-md border border-border bg-bg text-fg text-xs focus:outline-none focus:border-accent/40"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-[10px] font-semibold uppercase tracking-wider text-muted">Expires in (days)</label>
+                  <input
+                    type="number"
+                    min={1}
+                    max={30}
+                    value={daysToExpire}
+                    onChange={(e) => setDaysToExpire(parseInt(e.target.value, 10) || 7)}
+                    className="w-full px-3 py-2 rounded-md border border-border bg-bg text-fg text-xs focus:outline-none focus:border-accent/40"
+                  />
+                </div>
+              </div>
+
+              <button
+                type="submit"
+                disabled={generating || challenges.length === 0}
+                className="w-full px-3 py-2.5 rounded-md bg-accent hover:bg-accent-soft text-bg text-[11px] font-semibold uppercase tracking-wider transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {generating ? "Generating…" : "Generate invite link"}
+              </button>
+
+              <div className="text-center pt-1 border-t border-border">
+                <Link
+                  href={`/w/${workspace.slug}/take-homes/new`}
+                  className="inline-flex items-center gap-1 pt-3 text-[11px] font-semibold text-accent hover:underline"
+                >
+                  Need multiple questions? Open the full take-home builder
+                  <ChevronRight className="w-3 h-3" />
+                </Link>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
       {/* Custom Prompt Scenario Creation Modal */}
       {createPromptOpen && (

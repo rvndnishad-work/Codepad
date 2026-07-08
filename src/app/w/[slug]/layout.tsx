@@ -97,8 +97,10 @@ export default async function WorkspaceLayout({ children, params }: Props) {
         isAdmin={showAdmin}
       />
 
-      {/* Main content — scrolls independently of the sidebar */}
-      <main className="flex-1 min-w-0 relative z-10 bg-bg overflow-y-auto h-full">
+      {/* Main content — scrolls independently of the sidebar. min-h-0 (not
+          h-full) so on mobile it takes the height left over below the compact
+          sidebar bar instead of overflowing the clipped container. */}
+      <main className="flex-1 min-w-0 min-h-0 relative z-10 bg-bg overflow-y-auto">
         <div className="workspace-content mx-auto w-full max-w-5xl p-4 md:p-8 space-y-6">{children}</div>
       </main>
     </div>

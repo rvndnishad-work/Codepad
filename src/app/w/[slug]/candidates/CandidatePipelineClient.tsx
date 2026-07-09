@@ -39,7 +39,7 @@ import {
 import {
   updateCandidateStageAction,
   importCandidatesCsvAction,
-  bulkDispatchTakeHomesAction,
+  bulkCreateTakeHomeSessions,
   type CsvImportResult,
   type BulkDispatchResult,
 } from "./actions";
@@ -141,6 +141,7 @@ export default function CandidatePipelineClient({
   async function commitMove(
     candidateId: string,
     toStage: PipelineStage,
+    fromStage: PipelineStage,
     rejectReason?: RejectReason,
     rejectReasonNote?: string,
   ) {
@@ -154,8 +155,8 @@ export default function CandidatePipelineClient({
       toast.success(`Moved to ${STAGE_LABELS[toStage]}`);
     } catch (err) {
       toast.error((err as Error).message ?? "Couldn't update stage.");
-      // No automatic rollback — refresh from server is simpler.
-      window.location.reload();
+      // Revert the optimistic move in place — no full-page reload.
+      moveLocally(candidateId, toStage, fromStage);
     }
   }
 
@@ -174,7 +175,7 @@ export default function CandidatePipelineClient({
     }
     moveLocally(candidateId, cur.stage, toStage);
     startTransition(() => {
-      void commitMove(candidateId, toStage);
+      void commitMove(candidateId, toStage, cur.stage);
     });
   }
 
@@ -184,7 +185,7 @@ export default function CandidatePipelineClient({
     moveLocally(candidateId, fromStage, "REJECTED");
     setRejectPrompt(null);
     startTransition(() => {
-      void commitMove(candidateId, "REJECTED", reason, note);
+      void commitMove(candidateId, "REJECTED", fromStage, reason, note);
     });
   }
 
@@ -209,7 +210,7 @@ export default function CandidatePipelineClient({
     }
     moveLocally(cardId, fromStage, toStage);
     startTransition(() => {
-      void commitMove(cardId, toStage);
+      void commitMove(cardId, toStage, fromStage);
     });
   }
 
@@ -229,8 +230,9 @@ export default function CandidatePipelineClient({
             {" "}(or use the <span className="text-fg font-medium">⋯ button</span>) on any card to jump
             to a specific stage. Moving to{" "}
             <span className="text-rose-300 font-medium">Rejected</span> requires a reason.
-            Auto-transitions on workflow events (submit, complete) ship with{" "}
-            <code className="font-mono">IP-69</code>.
+            Workflow events (take-home sent or submitted, AI screening completed, interview
+            scheduled) advance candidates forward automatically — never backward, and
+            hire/offer decisions always stay with you.
           </p>
         </div>
         <div className="flex items-center gap-2 shrink-0">
@@ -818,13 +820,28 @@ function BulkSendTakeHomeModal({
     }
     startPending(async () => {
       try {
-        const result = await bulkDispatchTakeHomesAction(slug, {
-          challengeId,
+        // Session-backed dispatch (IP-88 convergence): each recipient gets a
+        // 1-question take-home session — same runner/review as the builder.
+        const picked = challenges.find((c) => c.id === challengeId);
+        const result = await bulkCreateTakeHomeSessions(slug, {
+          title: picked ? `Take-home: ${picked.title}` : "Take-home assessment",
+          curation: {
+            challengeIds: [challengeId],
+            playgroundIds: [],
+            promptScenarioIds: [],
+            perQuestionMinutes: { [challengeId]: timeLimitMin },
+          },
           recipients: finalRecipients,
-          timeLimitMin,
           daysToExpire,
         });
-        onComplete(result);
+        onComplete({
+          dispatched: result.created,
+          emailed: result.emailed,
+          skipped: result.skipped,
+          errored: result.errored,
+          details: result.details,
+          challengeTitle: picked?.title ?? "take-home",
+        });
       } catch (err) {
         toast.error((err as Error).message ?? "Bulk dispatch failed.");
       }

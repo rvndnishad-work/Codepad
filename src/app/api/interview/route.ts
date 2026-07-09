@@ -5,6 +5,8 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { clientKey, rateLimit } from "@/lib/rate-limit";
 import { templatesById } from "@/lib/templates";
+import { upsertCandidateForWorkflow } from "@/lib/crm/auto-create";
+import { advanceCandidateStage } from "@/lib/crm/advance";
 
 const createSchema = z
   .object({
@@ -23,6 +25,8 @@ const createSchema = z
     creatorRole: z.enum(["interviewer", "candidate"]).optional().default("candidate"),
     /** JSON of the chosen TechStack (from the Tech-Stack selector). */
     stackJson: z.string().max(2000).optional().nullable(),
+    /** Planned meeting time (IP-90). ISO datetime, optional. */
+    scheduledAt: z.string().datetime().optional().nullable(),
   })
   .refine(
     (d) =>
@@ -175,7 +179,10 @@ export async function POST(req: Request) {
     workspaceId = workspace.id;
   }
 
-  // Handle Candidate CRM Sync
+  // Handle Candidate CRM Sync — single linkage path via the shared upsert
+  // helper. Email is the dedup key: participants named without an email get
+  // NO CRM row (the old unconditional create spawned a duplicate candidate on
+  // every interview); their name stays denormalized on the session below.
   if (workspaceId) {
     if (candidateId) {
       const candidateExists = await prisma.candidate.findFirst({
@@ -189,34 +196,28 @@ export async function POST(req: Request) {
       const candidateEmail = parsed.data.candidateEmail?.trim()?.toLowerCase() || null;
 
       if (candidateEmail) {
-        const candidate = await prisma.candidate.upsert({
-          where: { workspaceId_email: { workspaceId, email: candidateEmail } },
-          update: { name: candidateName },
-          create: {
-            workspaceId,
-            name: candidateName,
-            email: candidateEmail,
-            source: "interview",
-            status: "active",
-            stage: "ONSITE",
-            stageChangedAt: new Date(),
-          },
+        const { candidateId: linkedId } = await upsertCandidateForWorkflow({
+          workspaceId,
+          name: candidateName,
+          email: candidateEmail,
+          source: "interview-schedule",
+          initialStage: "ONSITE",
         });
-        candidateId = candidate.id;
-      } else if (parsed.data.candidateName) {
-        const candidate = await prisma.candidate.create({
-          data: {
-            workspaceId,
-            name: candidateName,
-            email: null,
-            source: "interview",
-            status: "active",
-            stage: "ONSITE",
-            stageChangedAt: new Date(),
-          },
-        });
-        candidateId = candidate.id;
+        candidateId = linkedId;
       }
+    }
+
+    // IP-69: a live interview means the candidate reached the onsite round —
+    // forward-advance existing rows still sitting earlier in the pipeline.
+    if (candidateId && (parsed.data.type ?? "mock") === "live") {
+      await advanceCandidateStage({
+        workspaceId,
+        candidateId,
+        toStage: "ONSITE",
+        source: "auto:interview-created",
+        actorUserId: session.user.id,
+        actorEmail: session.user.email ?? null,
+      });
     }
   }
 
@@ -249,11 +250,71 @@ export async function POST(req: Request) {
       status: "scheduled",
       creatorRole: parsed.data.creatorRole,
       stackJson: parsed.data.stackJson ?? null,
+      scheduledAt: parsed.data.scheduledAt ? new Date(parsed.data.scheduledAt) : null,
       workspaceId,
       candidateId,
     },
     select: { id: true, shareToken: true, shortCode: true },
   });
+
+  // IP-90: tell the candidate. Workspace live sessions with a reachable email
+  // get an invite email (join link + code + time) and, when the candidate has
+  // an Interviewpad account, an in-app notification. Fire-and-forget — the
+  // session exists either way and the recruiter can still copy the link.
+  if (workspaceId && (parsed.data.type ?? "mock") === "live") {
+    const inviteEmail =
+      parsed.data.candidateEmail?.trim()?.toLowerCase() ||
+      (candidateId
+        ? (
+            await prisma.candidate.findUnique({
+              where: { id: candidateId },
+              select: { email: true },
+            })
+          )?.email ?? null
+        : null);
+
+    if (inviteEmail) {
+      void (async () => {
+        try {
+          const ws = await prisma.workspace.findUnique({
+            where: { id: workspaceId },
+            select: { name: true },
+          });
+          const { sendEmail } = await import("@/lib/email");
+          const baseUrl = process.env.NEXTAUTH_URL || "http://localhost:3000";
+          const res = await sendEmail({
+            template: "interview-invite",
+            to: inviteEmail,
+            props: {
+              candidateName: finalCandidateName || "there",
+              workspaceName: ws?.name ?? "the team",
+              title: parsed.data.title ?? "Interview Session",
+              joinUrl: `${baseUrl}/interview/${interview.id}?token=${interview.shareToken}`,
+              shortCode: interview.shortCode,
+              scheduledAt: parsed.data.scheduledAt ?? null,
+              durationMin: Math.round(parsed.data.totalSec / 60),
+            },
+            workspaceId,
+            sessionId: interview.id,
+            idempotencyKey: `interview-invite:${interview.id}`,
+          });
+          if (!res.sent) console.warn(`[interview-invite] ${inviteEmail}: ${res.reason}`);
+
+          const { notifyInterviewScheduled } = await import("@/lib/notifications/triggers");
+          await notifyInterviewScheduled({
+            sessionId: interview.id,
+            shareToken: interview.shareToken,
+            title: parsed.data.title ?? "Interview Session",
+            type: "live",
+            candidateEmail: inviteEmail,
+            actorId: session.user.id,
+          });
+        } catch (err) {
+          console.error("[interview-invite] dispatch failed:", err);
+        }
+      })();
+    }
+  }
 
   return NextResponse.json(interview, { status: 201 });
 }

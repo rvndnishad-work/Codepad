@@ -2,6 +2,7 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { NextResponse } from "next/server";
 import { z } from "zod";
+import { canMember, type Permission } from "@/lib/permissions";
 
 const createSchema = z.object({
   name: z.string().min(1).max(120),
@@ -12,16 +13,19 @@ const createSchema = z.object({
   tags: z.array(z.string().max(40)).optional(),
 });
 
-async function authorize(slug: string) {
+async function authorize(slug: string, permission?: Permission) {
   const session = await auth();
   if (!session?.user?.id) return { error: "unauthorized" as const, status: 401 };
   const workspace = await prisma.workspace.findUnique({
     where: { slug },
-    include: { members: { select: { userId: true } } },
+    include: { members: { select: { userId: true, role: true, permissions: true } } },
   });
   if (!workspace) return { error: "Workspace not found" as const, status: 404 };
-  const isMember = workspace.members.some((m) => m.userId === session.user!.id);
-  if (!isMember) return { error: "Forbidden" as const, status: 403 };
+  const member = workspace.members.find((m) => m.userId === session.user!.id);
+  if (!member) return { error: "Forbidden" as const, status: 403 };
+  if (permission && !(await canMember(member, permission))) {
+    return { error: "Forbidden" as const, status: 403 };
+  }
   return { workspace, userId: session.user.id };
 }
 
@@ -43,7 +47,7 @@ export async function GET(_req: Request, { params }: { params: Promise<{ slug: s
 
 export async function POST(req: Request, { params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
-  const ctx = await authorize(slug);
+  const ctx = await authorize(slug, "candidate:write");
   if ("error" in ctx) return NextResponse.json({ error: ctx.error }, { status: ctx.status });
 
   const body = await req.json().catch(() => null);

@@ -106,9 +106,18 @@ export default function TakeHomeBuilder({
     return out;
   }
 
-  const groupStats = groups.map((g) => ({ id: g.id, questions: g.questions.length, recipients: recipientsOf(g).length }));
-  const totalSessions = groupStats.reduce((s, gs) => s + (gs.questions > 0 ? gs.recipients : 0), 0);
-  const validGroups = groupStats.filter((gs) => gs.questions > 0 && gs.recipients > 0).length;
+  // A group needs ≥1 coding challenge to be sendable: completion is keyed on
+  // challenge attempts, so a prompt/playground-only take-home could never
+  // finish (the server action enforces the same rule).
+  const groupStats = groups.map((g) => ({
+    id: g.id,
+    questions: g.questions.length,
+    challenges: g.questions.filter((q) => q.kind === "challenge").length,
+    recipients: recipientsOf(g).length,
+  }));
+  const totalSessions = groupStats.reduce((s, gs) => s + (gs.questions > 0 && gs.challenges > 0 ? gs.recipients : 0), 0);
+  const validGroups = groupStats.filter((gs) => gs.questions > 0 && gs.challenges > 0 && gs.recipients > 0).length;
+  const needsChallenge = groupStats.some((gs) => gs.questions > 0 && gs.challenges === 0);
   const canSend = validGroups > 0 && !creating;
 
   function send() {
@@ -224,7 +233,11 @@ export default function TakeHomeBuilder({
               </div>
               <div className="leading-tight">
                 <div className="text-base font-extrabold text-fg tabular-nums">{totalSessions} <span className="font-medium text-sm text-muted">Sessions</span></div>
-                <div className="text-[10px] uppercase tracking-wider text-muted font-bold">{validGroups} Active Module{validGroups === 1 ? "" : "s"}</div>
+                <div className="text-[10px] uppercase tracking-wider text-muted font-bold">
+                  {needsChallenge
+                    ? "Add a coding challenge to each module"
+                    : `${validGroups} Active Module${validGroups === 1 ? "" : "s"}`}
+                </div>
               </div>
             </div>
             

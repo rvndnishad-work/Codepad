@@ -35,6 +35,7 @@ const TEMPLATE_LABEL: Record<string, string> = {
   "ai-screening-invite": "AI screening invite",
   "screening-completed": "AI screening completed",
   "take-home-invite": "Take-home invite",
+  "take-home-session-invite": "Take-home invite",
   "take-home-reminder": "Take-home reminder",
   "take-home-submitted-candidate": "Take-home receipt (candidate)",
   "take-home-submitted-recruiter": "Take-home submitted (you)",

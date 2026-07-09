@@ -4,10 +4,8 @@ import { notFound, redirect } from "next/navigation";
 import { validatePageAccess } from "@/lib/settings";
 import Link from "next/link";
 import { Lock, Sparkles } from "lucide-react";
-import {
-  getWorkspaceCredits,
-  workspacePlanAllowsAiScreening,
-} from "@/lib/ai-interview/credits";
+import { getWorkspaceCredits } from "@/lib/ai-interview/credits";
+import { effectivePlanAllowsAiScreening } from "@/lib/billing/trial";
 import { listTemplatesForWorkspace } from "@/lib/ai-interview/template-resolver";
 import { canMember } from "@/lib/permissions";
 import AIInterviewRecruiterConsole from "./AIInterviewRecruiterConsole";
@@ -42,6 +40,8 @@ export default async function WorkspaceAiInterviewsPage({ params, searchParams }
       name: true,
       slug: true,
       planName: true,
+      trialEndsAt: true,
+      stripeSubscriptionId: true,
       allowExternalMcp: true,
       members: { select: { userId: true, role: true, permissions: true } },
     },
@@ -51,8 +51,8 @@ export default async function WorkspaceAiInterviewsPage({ params, searchParams }
   const member = workspace.members.find((m) => m.userId === session.user.id);
   if (!member) redirect("/dashboard");
 
-  // Plan gate — render a friendly upgrade prompt instead of 404.
-  if (!workspacePlanAllowsAiScreening(workspace.planName)) {
+  // Plan gate — trial workspaces (IP-91) pass. Friendly upgrade prompt on fail.
+  if (!effectivePlanAllowsAiScreening(workspace)) {
     return (
       <div className="rounded-3xl border border-border bg-surface p-10 text-center flex flex-col items-center gap-5 max-w-2xl mx-auto">
         <div className="w-14 h-14 rounded-2xl bg-indigo-500/10 border border-indigo-500/25 flex items-center justify-center text-indigo-400">

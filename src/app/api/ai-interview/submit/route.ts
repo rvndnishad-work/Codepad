@@ -6,6 +6,7 @@ import { sendRecruiterNotifyEmail } from "@/lib/ai-interview/submit-notify";
 import { checkFilesSize } from "@/lib/ai-interview/files-size";
 import { resolveSessionRounds, type SessionRound } from "@/lib/ai-interview/rounds";
 import { STAFF_ROLES } from "@/lib/permissions/role-groups";
+import { advanceCandidateStage } from "@/lib/crm/advance";
 
 type GraderResult = {
   score: number;
@@ -351,6 +352,20 @@ export async function POST(req: NextRequest) {
             })
           )),
     ]);
+
+    // IP-69: a completed screening forward-advances the candidate to SCREENED
+    // (no-op for practice runs, unlinked candidates, or anyone already ahead).
+    // Best-effort — advanceCandidateStage swallows its own failures.
+    if (!session.practice) {
+      void advanceCandidateStage({
+        workspaceId: session.workspaceId,
+        ...(session.candidateId
+          ? { candidateId: session.candidateId }
+          : { email: session.candidateEmail }),
+        toStage: "SCREENED",
+        source: "auto:ai-screening-completed",
+      });
+    }
 
     // Notify all workspace members who can act on the result. Fire-and-forget:
     // the candidate response must not wait on SMTP/Resend round-trips, and

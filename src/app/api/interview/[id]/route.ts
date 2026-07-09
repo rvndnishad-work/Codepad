@@ -75,6 +75,12 @@ export async function PATCH(
       // transition INTO "completed" without re-querying.
       status: true,
       title: true,
+      // IP-90: verdict hook needs the workspace/candidate linkage + the
+      // pre-update verdict to detect first-time verdicts.
+      verdict: true,
+      workspaceId: true,
+      candidateId: true,
+      candidateName: true,
     },
   });
   if (!existing) return NextResponse.json({ error: "not found" }, { status: 404 });
@@ -172,6 +178,33 @@ export async function PATCH(
       rubric: true,
     },
   });
+
+  // IP-90: verdicts on workspace sessions land on the candidate's audit trail
+  // so hiring decisions are traceable from the candidate page. Stage moves
+  // stay manual — a passing verdict is a signal, not an auto-advance.
+  if (
+    parsed.data.verdict !== undefined &&
+    parsed.data.verdict !== existing.verdict &&
+    existing.workspaceId &&
+    existing.candidateId
+  ) {
+    const { writeWorkspaceAuditEntry } = await import("@/lib/workspace-audit");
+    void writeWorkspaceAuditEntry({
+      workspaceId: existing.workspaceId,
+      actorUserId: session?.user?.id ?? null,
+      actorEmail: session?.user?.email ?? null,
+      action: "INTERVIEW_VERDICT_RECORDED",
+      targetType: "candidate",
+      targetId: existing.candidateId,
+      meta: {
+        candidateName: existing.candidateName,
+        sessionId: id,
+        sessionTitle: existing.title,
+        verdict: parsed.data.verdict,
+        previousVerdict: existing.verdict,
+      },
+    });
+  }
 
   // IP-44: notification triggers on status transition INTO "completed".
   // Compare existing.status to the new status so re-saving a completed

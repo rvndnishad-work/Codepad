@@ -5,10 +5,10 @@ import { headers } from "next/headers";
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 import {
-  workspacePlanAllowsAiScreening,
   getAiCreditPack,
   normalizeEngagementLevel,
 } from "@/lib/ai-interview/credits";
+import { effectivePlanAllowsAiScreening } from "@/lib/billing/trial";
 import { sendInviteEmail } from "@/lib/ai-interview/invite-email";
 import { validateStarterFilesJson } from "@/lib/ai-interview/template-resolver";
 import type { RoundSpecInput } from "@/lib/ai-interview/rounds";
@@ -40,6 +40,8 @@ async function assertWorkspaceWriter(slug: string) {
       name: true,
       slug: true,
       planName: true,
+      trialEndsAt: true,
+      stripeSubscriptionId: true,
       members: { select: { userId: true, role: true, permissions: true } },
     },
   });
@@ -48,7 +50,8 @@ async function assertWorkspaceWriter(slug: string) {
   const member = workspace.members.find((m: Member) => m.userId === session.user.id);
   if (!member) throw new Error("Not a member of this workspace");
 
-  if (!workspacePlanAllowsAiScreening(workspace.planName)) {
+  // Trial workspaces (IP-91) get AI Screening at GROWTH level.
+  if (!effectivePlanAllowsAiScreening(workspace)) {
     throw new Error("This workspace plan does not include AI Screening");
   }
 

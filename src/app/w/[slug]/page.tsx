@@ -96,6 +96,12 @@ export default async function WorkspaceDashboardPage({ params }: Props) {
 
   if (!workspace) notFound();
 
+  const pendingInvites = await prisma.workspaceInvite.findMany({
+    where: { workspaceId: workspace.id, acceptedAt: null, expiresAt: { gt: new Date() } },
+    orderBy: { createdAt: "desc" },
+    select: { id: true, email: true, role: true, expiresAt: true, createdAt: true },
+  });
+
   const [promptScenarios, promptAttempts, globalChallenges, takeHomeSessionRows] = await Promise.all([
     prisma.promptScenario.findMany({
       where: {
@@ -326,6 +332,13 @@ export default async function WorkspaceDashboardPage({ params }: Props) {
         initialBuckets={buckets as any}
         promptScenarios={promptScenarios}
         promptAttempts={formattedPromptAttempts}
+        pendingInvites={pendingInvites.map((i) => ({
+          id: i.id,
+          email: i.email,
+          role: i.role,
+          expiresAt: i.expiresAt.toISOString(),
+          createdAt: i.createdAt.toISOString(),
+        }))}
       />
     </div>
   );

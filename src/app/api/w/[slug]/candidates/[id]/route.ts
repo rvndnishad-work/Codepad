@@ -2,6 +2,7 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { NextResponse } from "next/server";
 import { z } from "zod";
+import { canMember, type Permission } from "@/lib/permissions";
 
 const patchSchema = z.object({
   name: z.string().min(1).max(120).optional(),
@@ -13,16 +14,19 @@ const patchSchema = z.object({
   status: z.enum(["active", "future_hire", "do_not_hire", "hired", "rejected", "archived"]).optional(),
 });
 
-async function authorize(slug: string, candidateId: string) {
+async function authorize(slug: string, candidateId: string, permission?: Permission) {
   const session = await auth();
   if (!session?.user?.id) return { error: "unauthorized" as const, status: 401 };
   const workspace = await prisma.workspace.findUnique({
     where: { slug },
-    include: { members: { select: { userId: true } } },
+    include: { members: { select: { userId: true, role: true, permissions: true } } },
   });
   if (!workspace) return { error: "Workspace not found" as const, status: 404 };
-  const isMember = workspace.members.some((m) => m.userId === session.user!.id);
-  if (!isMember) return { error: "Forbidden" as const, status: 403 };
+  const member = workspace.members.find((m) => m.userId === session.user!.id);
+  if (!member) return { error: "Forbidden" as const, status: 403 };
+  if (permission && !(await canMember(member, permission))) {
+    return { error: "Forbidden" as const, status: 403 };
+  }
   const candidate = await prisma.candidate.findFirst({
     where: { id: candidateId, workspaceId: workspace.id },
   });
@@ -35,7 +39,7 @@ export async function PATCH(
   { params }: { params: Promise<{ slug: string; id: string }> }
 ) {
   const { slug, id } = await params;
-  const ctx = await authorize(slug, id);
+  const ctx = await authorize(slug, id, "candidate:write");
   if ("error" in ctx) return NextResponse.json({ error: ctx.error }, { status: ctx.status });
 
   const body = await req.json().catch(() => null);
@@ -50,6 +54,30 @@ export async function PATCH(
   }
   if ("tags" in data) {
     data.tags = data.tags ? JSON.stringify(data.tags) : null;
+  }
+
+  // Keep the pipeline `stage` in lockstep with terminal dispositions set via
+  // the legacy status dropdown, and pull a candidate back onto the board when
+  // their terminal status is lifted. Mirrors updateCandidateStageAction's
+  // stage→status sync so the two taxonomies can no longer diverge.
+  if (parsed.data.status) {
+    const prevStage = ctx.candidate.stage;
+    if (parsed.data.status === "hired" && prevStage !== "HIRED") {
+      data.stage = "HIRED";
+      data.stageChangedAt = new Date();
+    } else if (parsed.data.status === "rejected" && prevStage !== "REJECTED") {
+      data.stage = "REJECTED";
+      data.rejectReason = "OTHER";
+      data.stageChangedAt = new Date();
+    } else if (
+      parsed.data.status === "active" &&
+      (prevStage === "HIRED" || prevStage === "REJECTED")
+    ) {
+      data.stage = "APPLIED";
+      data.rejectReason = null;
+      data.rejectReasonNote = null;
+      data.stageChangedAt = new Date();
+    }
   }
 
   try {
@@ -69,7 +97,7 @@ export async function DELETE(
   { params }: { params: Promise<{ slug: string; id: string }> }
 ) {
   const { slug, id } = await params;
-  const ctx = await authorize(slug, id);
+  const ctx = await authorize(slug, id, "candidate:delete");
   if ("error" in ctx) return NextResponse.json({ error: ctx.error }, { status: ctx.status });
 
   try {

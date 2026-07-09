@@ -218,6 +218,17 @@ export async function POST(
         },
       });
       submittedTakeHomeId = updated.id;
+      // IP-69: submission confirms the candidate is (at least) in the
+      // take-home round — forward-advance anyone still parked earlier.
+      if (updated.workspaceId && updated.candidateId) {
+        const { advanceCandidateStage } = await import("@/lib/crm/advance");
+        void advanceCandidateStage({
+          workspaceId: updated.workspaceId,
+          candidateId: updated.candidateId,
+          toStage: "TAKE_HOME",
+          source: "auto:take-home-submitted",
+        });
+      }
       // IP-44: notify workspace owners/admins. Fire-and-forget — failure
       // here must not roll back the submission.
       const { notifyTakeHomeSubmitted } = await import("@/lib/notifications/triggers");

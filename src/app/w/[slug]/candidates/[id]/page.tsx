@@ -17,6 +17,8 @@ import {
 } from "lucide-react";
 import CandidateNotesEditor from "./CandidateNotesEditor";
 import CandidateStatusControl from "./CandidateStatusControl";
+import CandidateStageControl from "./CandidateStageControl";
+import { History } from "lucide-react";
 
 type Props = {
   params: Promise<{ slug: string; id: string }>;
@@ -92,6 +94,16 @@ export default async function CandidateDetailPage({ params }: Props) {
 
   if (!candidate) notFound();
 
+  // Candidate-targeted audit rows (stage moves, rejections, verdicts) — these
+  // used to be written to the audit log but never surfaced here, so the
+  // timeline silently omitted the decisions that matter most.
+  const auditRows = await prisma.workspaceAuditLog.findMany({
+    where: { workspaceId: workspace.id, targetType: "candidate", targetId: id },
+    orderBy: { createdAt: "desc" },
+    take: 30,
+    select: { id: true, action: true, actorEmail: true, meta: true, createdAt: true },
+  });
+
   const tags: string[] = candidate.tags ? JSON.parse(candidate.tags) : [];
 
   // Aggregate score: average of submitted attempt scores
@@ -104,18 +116,58 @@ export default async function CandidateDetailPage({ params }: Props) {
 
   // Combined timeline of all activity
   type TimelineEvent = {
-    kind: "take-home" | "interview";
+    kind: "take-home" | "interview" | "audit";
     id: string;
     title: string;
     timestamp: Date;
     status: string;
     detail?: string;
     score?: number | null;
-    href: string;
+    /** Audit events have no destination — they're facts, not artifacts. */
+    href: string | null;
     secondary: string;
   };
 
+  // Human-readable line per audit action; unknown actions fall back to the key.
+  function describeAudit(action: string, meta: Record<string, unknown>): { title: string; status: string } {
+    if (action === "PIPELINE_STAGE_CHANGED") {
+      const from = String(meta.fromStage ?? "?");
+      const to = String(meta.toStage ?? "?");
+      const src = typeof meta.source === "string" && meta.source.startsWith("auto:") ? " (automatic)" : "";
+      return { title: `Stage moved ${from} → ${to}${src}`, status: String(meta.toStage ?? "MOVED") };
+    }
+    if (action === "INTERVIEW_VERDICT_RECORDED") {
+      return {
+        title: `Interview verdict: ${String(meta.verdict ?? "?").replace(/_/g, " ")} — ${String(meta.sessionTitle ?? "")}`,
+        status: "VERDICT",
+      };
+    }
+    return { title: action.replace(/_/g, " ").toLowerCase(), status: "EVENT" };
+  }
+
+  const auditEvents: TimelineEvent[] = auditRows.map((row) => {
+    let meta: Record<string, unknown> = {};
+    try {
+      const parsed = row.meta ? JSON.parse(row.meta) : null;
+      if (parsed && typeof parsed === "object") meta = parsed as Record<string, unknown>;
+    } catch {
+      /* unreadable meta — describe from the action alone */
+    }
+    const d = describeAudit(row.action, meta);
+    return {
+      kind: "audit" as const,
+      id: row.id,
+      title: d.title,
+      timestamp: row.createdAt,
+      status: d.status,
+      score: null,
+      href: null,
+      secondary: row.actorEmail ? `By ${row.actorEmail}` : "System",
+    };
+  });
+
   const timeline: TimelineEvent[] = [
+    ...auditEvents,
     ...candidate.takeHomes.map((th) => ({
       kind: "take-home" as const,
       id: th.id,
@@ -195,6 +247,11 @@ export default async function CandidateDetailPage({ params }: Props) {
             <div className="flex flex-col lg:flex-row lg:items-center gap-3 justify-between w-full mb-2">
               <div className="flex flex-wrap items-center gap-3 min-w-0">
                 <h2 className="text-xl font-semibold text-fg tracking-tight truncate">{candidate.name}</h2>
+                <CandidateStageControl
+                  workspaceSlug={slug}
+                  candidateId={candidate.id}
+                  initialStage={candidate.stage}
+                />
                 <CandidateStatusControl
                   workspaceSlug={slug}
                   candidateId={candidate.id}
@@ -212,7 +269,7 @@ export default async function CandidateDetailPage({ params }: Props) {
                   Schedule Interview
                 </Link>
                 <Link
-                  href={`/w/${workspace.slug}?section=candidates&view=list`}
+                  href={`/w/${workspace.slug}/take-homes/new?candidateId=${candidate.id}`}
                   className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-panel border border-border hover:border-border-strong text-fg text-[11px] font-semibold uppercase tracking-wider transition-colors shadow-sm"
                 >
                   <Clock className="w-3.5 h-3.5" />
@@ -325,16 +382,25 @@ export default async function CandidateDetailPage({ params }: Props) {
                     month: "short",
                     day: "numeric",
                   });
-                  const Icon = ev.kind === "take-home" ? Clock : Briefcase;
+                  const Icon =
+                    ev.kind === "take-home" ? Clock : ev.kind === "interview" ? Briefcase : History;
                   const iconColor =
-                    ev.kind === "take-home" ? "text-purple-500" : "text-violet-500";
+                    ev.kind === "take-home"
+                      ? "text-purple-500"
+                      : ev.kind === "interview"
+                      ? "text-violet-500"
+                      : "text-sky-500";
                   const iconBg =
                     ev.kind === "take-home"
                       ? "bg-purple-500/10 border-purple-500/20"
-                      : "bg-violet-500/10 border-violet-500/20";
+                      : ev.kind === "interview"
+                      ? "bg-violet-500/10 border-violet-500/20"
+                      : "bg-sky-500/10 border-sky-500/20";
                   const statusColor =
                     ev.kind === "take-home"
                       ? TAKEHOME_STATUS_BADGES[ev.status] || ""
+                      : ev.kind === "audit"
+                      ? "text-sky-600 dark:text-sky-400 border-sky-500/25 bg-sky-500/[0.06]"
                       : ev.status === "COMPLETED"
                       ? "text-emerald-600 dark:text-emerald-400 border-emerald-500/25 bg-emerald-500/[0.06]"
                       : ev.status === "LIVE"
@@ -348,12 +414,16 @@ export default async function CandidateDetailPage({ params }: Props) {
                       </div>
                       <div className="min-w-0 flex-1">
                         <div className="flex flex-wrap items-center gap-2">
-                          <Link
-                            href={ev.href}
-                            className="font-semibold text-fg text-sm hover:text-accent transition-colors truncate"
-                          >
-                            {ev.title}
-                          </Link>
+                          {ev.href ? (
+                            <Link
+                              href={ev.href}
+                              className="font-semibold text-fg text-sm hover:text-accent transition-colors truncate"
+                            >
+                              {ev.title}
+                            </Link>
+                          ) : (
+                            <span className="font-semibold text-fg text-sm truncate">{ev.title}</span>
+                          )}
                           <span className={`inline-flex items-center px-2 py-0.5 rounded-md border text-[10px] font-semibold uppercase tracking-wider ${statusColor}`}>
                             {ev.status}
                           </span>
@@ -368,17 +438,19 @@ export default async function CandidateDetailPage({ params }: Props) {
                           {ev.secondary} · {ts}
                         </div>
                       </div>
-                      <Link
-                        href={ev.href}
-                        className="inline-flex items-center justify-center w-7 h-7 rounded-md text-muted hover:text-fg hover:bg-panel/40 transition-colors shrink-0"
-                        title="Open"
-                      >
-                        {ev.kind === "take-home" && ev.status === "SUBMITTED" ? (
-                          <Play className="w-3.5 h-3.5" />
-                        ) : (
-                          <ExternalLink className="w-3.5 h-3.5" />
-                        )}
-                      </Link>
+                      {ev.href && (
+                        <Link
+                          href={ev.href}
+                          className="inline-flex items-center justify-center w-7 h-7 rounded-md text-muted hover:text-fg hover:bg-panel/40 transition-colors shrink-0"
+                          title="Open"
+                        >
+                          {ev.kind === "take-home" && ev.status === "SUBMITTED" ? (
+                            <Play className="w-3.5 h-3.5" />
+                          ) : (
+                            <ExternalLink className="w-3.5 h-3.5" />
+                          )}
+                        </Link>
+                      )}
                     </li>
                   );
                 })}

@@ -4,8 +4,9 @@ import { Prisma } from "@prisma/client";
 import { getStripe } from "@/lib/stripe";
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { getB2bSettings } from "@/lib/settings";
+import crypto from "crypto";
 import { canMember, isPermission } from "@/lib/permissions";
+import { effectivePlan } from "@/lib/billing/trial";
 
 /** Roles assignable to a teammate on invite. OWNER is intentionally excluded —
  *  ownership is granted only via PATCH by an existing OWNER (see guards). */
@@ -67,77 +68,88 @@ export async function POST(
   const { email, role } = parsed.data;
   const targetEmail = email.toLowerCase().trim();
 
-  // Find or create User placeholder for this email
-  let targetUser = await prisma.user.findUnique({
+  // Already an active member? (Only if they have a real account + membership.)
+  const existingUser = await prisma.user.findUnique({
     where: { email: targetEmail },
+    select: { id: true },
   });
-
-  if (!targetUser) {
-    targetUser = await prisma.user.create({
-      data: {
-        email: targetEmail,
-        name: targetEmail.split("@")[0],
-        portfolioPublic: false,
-      },
-    });
-  }
-
-  // Check if already a member
-  const alreadyMember = workspace.members.some((m) => m.userId === targetUser.id);
-  if (alreadyMember) {
+  if (existingUser && workspace.members.some((m) => m.userId === existingUser.id)) {
     return NextResponse.json(
-      { error: "User is already enrolled in this workspace" },
+      { error: "That person is already a member of this workspace." },
       { status: 400 }
     );
   }
 
-  // Enforce seat limits for Free plan
-  const b2bSettings = await getB2bSettings();
-  if (workspace.planName === "FREE" && workspace.members.length >= b2bSettings.freeSeatLimit) {
+  // Seat limit counts existing members + outstanding (unaccepted) invites so a
+  // batch of pending invites can't overshoot the plan. Trial workspaces get the
+  // higher seat cap via effectivePlan (IP-91).
+  const pendingCount = await prisma.workspaceInvite.count({
+    where: { workspaceId: workspace.id, acceptedAt: null, expiresAt: { gt: new Date() } },
+  });
+  const { seatLimit } = effectivePlan(workspace);
+  if (seatLimit !== null && workspace.members.length + pendingCount >= seatLimit) {
     return NextResponse.json(
-      { error: `Teammate limit reached. Free plans are limited to ${b2bSettings.freeSeatLimit} seats. Please upgrade to the Growth tier in the Billing tab.` },
+      { error: `Seat limit reached (${seatLimit}). Remove a member or pending invite, or upgrade in Billing.` },
       { status: 403 }
     );
   }
 
-
   try {
-    // If on active metered subscription, scale up Stripe seats
-    if (workspace.planName === "GROWTH" && workspace.stripeSubscriptionId) {
-      try {
-        const stripe = getStripe();
-        const subscription = await stripe.subscriptions.retrieve(workspace.stripeSubscriptionId);
-        const subItemId = subscription.items.data[0]?.id;
-        if (subItemId) {
-          const newQuantity = workspace.members.length + 1;
-          await stripe.subscriptionItems.update(subItemId, {
-            quantity: newQuantity,
-          });
-          console.log(`Stripe subscription seats scaled up to ${newQuantity} for workspace ${workspace.id}`);
-        }
-      } catch (stripeErr) {
-        console.error("Failed to update Stripe seats count during member invite:", stripeErr);
-      }
-    }
-
-    // Add member
-    const member = await prisma.workspaceMember.create({
-      data: {
+    // Upsert the invite (re-inviting the same email refreshes its token/expiry).
+    const token = crypto.randomBytes(24).toString("hex");
+    const expiresAt = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000);
+    const invite = await prisma.workspaceInvite.upsert({
+      where: { workspaceId_email: { workspaceId: workspace.id, email: targetEmail } },
+      update: { role, token, expiresAt, acceptedAt: null, invitedById: activeUserId },
+      create: {
         workspaceId: workspace.id,
-        userId: targetUser.id,
+        email: targetEmail,
         role,
-      },
-      include: {
-        user: {
-          select: { name: true, image: true, email: true },
-        },
+        token,
+        expiresAt,
+        invitedById: activeUserId,
       },
     });
 
-    return NextResponse.json({ ok: true, member });
+    // Send the invite email (fire-and-forget; the invite row is the source of
+    // truth and can be re-sent from the members tab).
+    void (async () => {
+      try {
+        const { sendEmail } = await import("@/lib/email");
+        const baseUrl = process.env.NEXTAUTH_URL || "http://localhost:3000";
+        const inviter = workspace.members.find((m) => m.userId === activeUserId);
+        const inviterName =
+          session.user.name || session.user.email?.split("@")[0] || "A teammate";
+        await sendEmail({
+          template: "workspace-invite",
+          to: targetEmail,
+          props: {
+            workspaceName: workspace.name,
+            inviterName,
+            roleLabel: role.charAt(0) + role.slice(1).toLowerCase(),
+            acceptUrl: `${baseUrl}/invite/${token}`,
+          },
+          workspaceId: workspace.id,
+          idempotencyKey: `ws-invite:${invite.id}:${token.slice(0, 8)}`,
+        });
+        void inviter; // (reserved — inviter role could gate future logic)
+      } catch (err) {
+        console.error("[ws-invite] email failed:", err);
+      }
+    })();
+
+    return NextResponse.json({
+      ok: true,
+      invite: {
+        id: invite.id,
+        email: invite.email,
+        role: invite.role,
+        expiresAt: invite.expiresAt.toISOString(),
+      },
+    });
   } catch (err) {
-    console.error("Failed to enroll member:", err);
-    return NextResponse.json({ error: "Failed to enroll member" }, { status: 500 });
+    console.error("Failed to create invite:", err);
+    return NextResponse.json({ error: "Failed to send invite" }, { status: 500 });
   }
 }
 
@@ -155,8 +167,9 @@ export async function DELETE(
 
     const body = await req.json().catch(() => null);
     const memberId = body?.memberId;
-    if (!memberId) {
-      return NextResponse.json({ error: "Missing memberId parameter" }, { status: 400 });
+    const inviteId = body?.inviteId;
+    if (!memberId && !inviteId) {
+      return NextResponse.json({ error: "Missing memberId or inviteId parameter" }, { status: 400 });
     }
 
     // Verify workspace membership and roles (OWNER / ADMIN)
@@ -177,6 +190,18 @@ export async function DELETE(
         { error: "Forbidden: Only Owners or Admins can remove teammates." },
         { status: 403 }
       );
+    }
+
+    // Revoke a pending invite (IP-73) — scoped to this workspace so a guessed
+    // id from another tenant can't be revoked.
+    if (inviteId) {
+      const del = await prisma.workspaceInvite.deleteMany({
+        where: { id: inviteId, workspaceId: workspace.id },
+      });
+      if (del.count === 0) {
+        return NextResponse.json({ error: "Invite not found" }, { status: 404 });
+      }
+      return NextResponse.json({ ok: true });
     }
 
     // Locate the target member to delete

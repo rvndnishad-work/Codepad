@@ -16,6 +16,7 @@ import {
   SiRust,
   SiCplusplus,
   SiOpenjdk,
+  SiNodedotjs,
 } from "react-icons/si";
 
 export type IconFn = ComponentType<SVGProps<SVGSVGElement>>;
@@ -31,6 +32,7 @@ export const templateIcon: Record<
   "empty-js":     { Icon: SiJavascript, color: "#f7df1e", bg: "rgba(247,223,30,0.10)" },
   "empty-ts":     { Icon: SiTypescript, color: "#3178c6", bg: "rgba(49,120,198,0.12)" },
   "empty-react":  { Icon: SiReact,      color: "#61dafb", bg: "rgba(97,218,251,0.10)" },
+  vanilla:        { Icon: SiJavascript, color: "#f7df1e", bg: "rgba(247,223,30,0.10)" },
   javascript:     { Icon: SiJavascript, color: "#f7df1e", bg: "rgba(247,223,30,0.10)" },
   typescript:     { Icon: SiTypescript, color: "#3178c6", bg: "rgba(49,120,198,0.12)" },
   react:          { Icon: SiReact,      color: "#61dafb", bg: "rgba(97,218,251,0.10)" },
@@ -49,6 +51,8 @@ export const templateIcon: Record<
   java:           { Icon: SiOpenjdk,    color: "#5382a1", bg: "rgba(83,130,161,0.10)" },
   cpp:            { Icon: SiCplusplus,  color: "#00599c", bg: "rgba(0,89,156,0.10)" },
   rust:           { Icon: SiRust,       color: "#e43716", bg: "rgba(228,55,22,0.10)" },
+  node:           { Icon: SiNodedotjs,  color: "#5fa04e", bg: "rgba(95,160,78,0.12)" },
+  "ts-node":      { Icon: SiNodedotjs,  color: "#5fa04e", bg: "rgba(95,160,78,0.12)" },
 };
 
 export function TemplateLogo({

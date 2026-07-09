@@ -274,12 +274,102 @@ export async function POST(req: Request, { params }: { params: Promise<{ slug: s
         const updated = await prisma.takeHomeAssignment.update({
           where: { token },
           data: { status: "SUBMITTED", submittedAt: new Date() },
-          select: { id: true },
+          select: { id: true, workspaceId: true, candidateId: true },
         });
+        // IP-69: forward-advance the candidate to TAKE_HOME on submission.
+        if (updated.workspaceId && updated.candidateId) {
+          const { advanceCandidateStage } = await import("@/lib/crm/advance");
+          void advanceCandidateStage({
+            workspaceId: updated.workspaceId,
+            candidateId: updated.candidateId,
+            toStage: "TAKE_HOME",
+            source: "auto:take-home-submitted",
+          });
+        }
         const { sendTakeHomeSubmissionEmails } = await import("@/lib/take-home/emails");
         await sendTakeHomeSubmissionEmails({ takeHomeId: updated.id, score: graded.score });
       } catch (e) {
         console.error("[grade] take-home post-submit failed:", e);
+      }
+    })();
+  }
+
+  // IP-88: session-backed take-home completion. When this attempt closes the
+  // last remaining challenge of a take-home session, complete the session and
+  // fire submission comms right away — the candidate shouldn't have to revisit
+  // the lobby for the recruiter to hear about it. The lobby's own check stays
+  // as an idempotent fallback (it does bookkeeping only, no comms).
+  if (sessionId && !dryRun) {
+    void (async () => {
+      try {
+        const th = await prisma.interviewSession.findFirst({
+          where: { id: sessionId, type: "take-home", status: { not: "completed" } },
+          select: {
+            id: true,
+            workspaceId: true,
+            candidateId: true,
+            candidateName: true,
+            title: true,
+            challengeIds: true,
+            workspace: { select: { slug: true } },
+          },
+        });
+        if (!th) return;
+
+        let ids: string[] = [];
+        try {
+          const v = JSON.parse(th.challengeIds ?? "[]");
+          ids = Array.isArray(v) ? v.filter((x): x is string => typeof x === "string") : [];
+        } catch {
+          ids = [];
+        }
+        if (ids.length === 0) return;
+
+        const attempts = await prisma.challengeAttempt.findMany({
+          where: { sessionId, status: { in: ["passed", "failed"] } },
+          select: { challengeId: true, score: true },
+        });
+        const done = new Set(attempts.map((a) => a.challengeId));
+        if (!ids.every((id) => done.has(id))) return;
+
+        // Guarded update — count 0 means the lobby fallback (or a concurrent
+        // grade) already completed it, so skip the comms to avoid duplicates.
+        const res = await prisma.interviewSession.updateMany({
+          where: { id: sessionId, status: { not: "completed" } },
+          data: { status: "completed", finishedAt: new Date() },
+        });
+        if (res.count === 0) return;
+
+        const avgScore = attempts.length
+          ? Math.round(attempts.reduce((s, a) => s + (a.score ?? 0), 0) / attempts.length)
+          : null;
+
+        if (th.workspaceId) {
+          if (th.candidateId) {
+            const { advanceCandidateStage } = await import("@/lib/crm/advance");
+            void advanceCandidateStage({
+              workspaceId: th.workspaceId,
+              candidateId: th.candidateId,
+              toStage: "TAKE_HOME",
+              source: "auto:take-home-session-completed",
+            });
+          }
+          const { sendTakeHomeSessionSubmissionEmails } = await import("@/lib/take-home/emails");
+          await sendTakeHomeSessionSubmissionEmails({ sessionId, score: avgScore });
+          if (th.workspace?.slug) {
+            const { notifyTakeHomeSubmitted } = await import("@/lib/notifications/triggers");
+            void notifyTakeHomeSubmitted({
+              workspaceId: th.workspaceId,
+              workspaceSlug: th.workspace.slug,
+              candidateName: th.candidateName ?? "A candidate",
+              challengeTitle: th.title || "Take-home assessment",
+              takeHomeId: sessionId,
+              candidateId: th.candidateId,
+            });
+          }
+        }
+      } catch (e) {
+        console.error("[grade] take-home session completion hook failed:", e);
       }
     })();
   }

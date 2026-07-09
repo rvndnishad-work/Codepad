@@ -593,6 +593,10 @@ model InterviewSession {
   shareToken         String           @unique
   /// A friendly 4-digit access code (e.g., "4921")
   shortCode          String?          @unique
+  /// Planned meeting time picked at creation (IP-90). Distinct from
+  /// startedAt/finishedAt, which record when the session actually ran —
+  /// never overload those with scheduling data.
+  scheduledAt        DateTime?
   startedAt          DateTime?
   finishedAt         DateTime?
   workspaceId        String?
@@ -766,6 +770,10 @@ model Workspace {
   /// bindings, the wire is dead unless this flag is true. Defaults false so
   /// nothing leaks while admins are still figuring out their setup.
   allowExternalMcp     Boolean                   @default(false)
+  /// IP-91: 14-day free trial window. Set at creation; null once the trial has
+  /// been consumed/cleared. `effectivePlan()` treats an unexpired trial as
+  /// GROWTH-level access regardless of planName.
+  trialEndsAt          DateTime?
   createdAt            DateTime                  @default(now())
   aiCreditLedger       AIInterviewCreditLedger[]
   aiInterviewSessions  AIInterviewSession[]
@@ -781,7 +789,29 @@ model Workspace {
   promptScenarios      PromptScenario[]
   takeHomes            TakeHomeAssignment[]
   members              WorkspaceMember[]
+  invites              WorkspaceInvite[]
   auditLogs            WorkspaceAuditLog[]
+}
+
+/// Pending teammate invitation (IP-73). Replaces the old "silently mint a
+/// placeholder User" flow: an invite is created + emailed, and a
+/// WorkspaceMember row is only created when the invitee accepts (on auth).
+model WorkspaceInvite {
+  id          String    @id @default(cuid())
+  workspaceId String
+  email       String
+  /// Role to grant on acceptance (never OWNER — ownership transfers via PATCH).
+  role        String    @default("INTERVIEWER")
+  /// One-time acceptance token used in the /invite/[token] URL.
+  token       String    @unique @default(cuid())
+  invitedById String?
+  expiresAt   DateTime
+  acceptedAt  DateTime?
+  createdAt   DateTime  @default(now())
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@unique([workspaceId, email])
+  @@index([workspaceId])
 }
 
 /// First-class candidate entity scoped to a workspace.

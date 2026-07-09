@@ -37,11 +37,15 @@ export async function POST(req: Request) {
   }
 
   try {
-    // Create the workspace and immediately add the creator as OWNER
+    // Create the workspace and immediately add the creator as OWNER. New
+    // workspaces get a 14-day trial (IP-91) — GROWTH-level access + 5 seats —
+    // which is what /w/create promises.
+    const trialEndsAt = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000);
     const workspace = await prisma.workspace.create({
       data: {
         name,
         slug,
+        trialEndsAt,
         members: {
           create: {
             userId: session.user.id,

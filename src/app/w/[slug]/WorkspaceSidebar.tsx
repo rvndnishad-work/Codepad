@@ -8,6 +8,7 @@ import WorkspaceSidebarNav from "./WorkspaceSidebarNav";
 
 const PLAN_BADGES: Record<string, string> = {
   FREE: "text-amber-600 dark:text-amber-400 border-amber-500/25 bg-amber-500/[0.06]",
+  TRIAL: "text-violet-600 dark:text-violet-400 border-violet-500/30 bg-violet-500/[0.08]",
   GROWTH: "text-indigo-600 dark:text-indigo-300 border-indigo-500/25 bg-indigo-500/[0.08]",
   ENTERPRISE: "text-emerald-600 dark:text-emerald-400 border-emerald-500/25 bg-emerald-500/[0.06]",
   LOCKED: "text-rose-600 dark:text-rose-400 border-rose-500/25 bg-rose-500/[0.06]",

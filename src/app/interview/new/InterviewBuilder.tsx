@@ -273,6 +273,9 @@ export default function InterviewBuilder({
   const [title, setTitle] = useState("Interview Session");
   const [candidateName, setCandidateName] = useState(searchParams?.get("candidateName") || "");
   const [candidateEmail, setCandidateEmail] = useState(searchParams?.get("candidateEmail") || "");
+  // Planned meeting time, in the browser's local timezone (datetime-local
+  // format); converted to ISO on submit.
+  const [scheduledAtLocal, setScheduledAtLocal] = useState("");
   const [type, setType] = useState<"mock" | "live">(initialType);
   const [creatorRole, setCreatorRole] = useState<"interviewer" | "candidate">(initialRole);
   const [sourceType, setSourceType] = useState<SourceType>(initialSource);
@@ -446,6 +449,7 @@ export default function InterviewBuilder({
           scenario: scenario.trim() || null,
           totalSec: minutes * 60,
           creatorRole,
+          scheduledAt: scheduledAtLocal ? new Date(scheduledAtLocal).toISOString() : null,
         }),
         cache: "no-store",
       });
@@ -568,6 +572,24 @@ export default function InterviewBuilder({
                     placeholder="e.g. alexis@company.com"
                     suppressHydrationWarning={true}
                     className="w-full px-3.5 py-2.5 rounded-xl bg-panel border border-border focus:border-accent/50 focus:bg-panel text-xs text-fg placeholder:text-muted/60 dark:placeholder:text-muted/50 outline-none transition-all shadow-inner group-hover:border-border-strong"
+                  />
+                  <div className="absolute bottom-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-accent/30 to-transparent scale-x-0 group-focus-within:scale-x-100 transition-all duration-300" />
+                </div>
+              </div>
+
+              {/* Scheduled time (IP-90) — optional planned meeting slot. Goes
+                  out in the candidate invite email + calendar copy. */}
+              <div className="space-y-2 animate-in fade-in duration-300">
+                <label className="block text-[10px] font-bold uppercase tracking-wider text-muted/80">
+                  Scheduled For <span className="text-muted/70 font-normal lowercase">(optional)</span>
+                </label>
+                <div className="relative group">
+                  <input
+                    type="datetime-local"
+                    value={scheduledAtLocal}
+                    onChange={(e) => setScheduledAtLocal(e.target.value)}
+                    suppressHydrationWarning={true}
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-panel border border-border focus:border-accent/50 focus:bg-panel text-xs text-fg placeholder:text-muted/60 outline-none transition-all shadow-inner group-hover:border-border-strong [color-scheme:light] dark:[color-scheme:dark]"
                   />
                   <div className="absolute bottom-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-accent/30 to-transparent scale-x-0 group-focus-within:scale-x-100 transition-all duration-300" />
                 </div>

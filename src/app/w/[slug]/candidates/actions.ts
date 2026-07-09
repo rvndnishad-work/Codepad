@@ -14,27 +14,38 @@ import {
   writeWorkspaceAuditEntry,
   WORKSPACE_AUDIT_ACTIONS,
 } from "@/lib/workspace-audit";
+import { upsertCandidateForWorkflow } from "@/lib/crm/auto-create";
+import { advanceCandidateStage } from "@/lib/crm/advance";
+import { canMember, type Permission } from "@/lib/permissions";
 
 /**
  * Authorize as a member of the workspace + return the workspace id.
  * Mirrors the pattern used in /w/[slug]/ats/actions.ts.
+ *
+ * Pass `permission` to additionally enforce a workspace permission via the
+ * shared engine (IP-73) — a VIEWER should not be able to move stages or delete
+ * candidates just because they can read the board.
  */
-async function assertWorkspaceMember(slug: string) {
+async function assertWorkspaceMember(slug: string, permission?: Permission) {
   const session = await auth().catch(() => null);
   if (!session?.user?.id) throw new Error("Not authenticated");
   const workspace = await prisma.workspace.findUnique({
     where: { slug },
     select: {
       id: true,
-      members: { select: { userId: true, role: true } },
+      members: { select: { userId: true, role: true, permissions: true } },
     },
   });
   if (!workspace) throw new Error("Workspace not found");
   const member = workspace.members.find((m) => m.userId === session.user.id);
   if (!member) throw new Error("Not a member of this workspace");
+  if (permission && !(await canMember(member, permission))) {
+    throw new Error("You don't have permission to perform this action.");
+  }
   return {
     workspaceId: workspace.id,
     role: member.role,
+    member,
     // Actor context for audit writes (IP-37). Email snapshot lets rows stay
     // readable even after the actor account is deleted.
     actorUserId: session.user.id,
@@ -54,7 +65,10 @@ export async function updateCandidateStageAction(
   slug: string,
   input: UpdateStageInput,
 ) {
-  const { workspaceId, actorUserId, actorEmail } = await assertWorkspaceMember(slug);
+  const { workspaceId, actorUserId, actorEmail } = await assertWorkspaceMember(
+    slug,
+    "candidate:manage_pipeline",
+  );
   if (!isPipelineStage(input.toStage)) {
     throw new Error(`Unknown stage: ${input.toStage}`);
   }
@@ -92,10 +106,17 @@ export async function updateCandidateStageAction(
           ? input.rejectReasonNote?.trim() || null
           : null,
       stageChangedAt: new Date(),
-      // Keep legacy `status` synced to the terminal stages so existing UIs
-      // that read `status` don't get out of sync.
+      // Keep legacy `status` synced with terminal stages in BOTH directions:
+      // entering HIRED/REJECTED sets the disposition, and leaving a terminal
+      // stage resets it to "active" so roster filters (status-keyed) agree
+      // with the board (stage-keyed) instead of showing a stale red pill.
       ...(input.toStage === "HIRED" ? { status: "hired" } : {}),
       ...(input.toStage === "REJECTED" ? { status: "rejected" } : {}),
+      ...(input.toStage !== "HIRED" &&
+      input.toStage !== "REJECTED" &&
+      (previous.stage === "HIRED" || previous.stage === "REJECTED")
+        ? { status: "active" }
+        : {}),
     },
   });
 
@@ -175,7 +196,10 @@ export async function importCandidatesCsvAction(
   slug: string,
   csv: string,
 ): Promise<CsvImportResult> {
-  const { workspaceId, actorUserId, actorEmail } = await assertWorkspaceMember(slug);
+  const { workspaceId, actorUserId, actorEmail } = await assertWorkspaceMember(
+    slug,
+    "candidate:write",
+  );
 
   if (csv.length > MAX_CSV_BYTES) {
     throw new Error(
@@ -362,20 +386,13 @@ function parseCsv(text: string): string[][] {
 }
 
 /* ──────────────────────────────────────────────────────────────────────────
- * Bulk take-home dispatch (IP-35)
+ * Take-home dispatch — shared types + limits
  * ──────────────────────────────────────────────────────────────────────────
- * One challenge → N candidates. Wraps all inserts in a single transaction so
- * a mid-loop failure rolls back the partial batch — recruiter never has to
- * worry about "did 14 of 20 go out?" ambiguity.
- *
- * Each recipient flow:
- *   - Upsert Candidate (auto-create at stage=TAKE_HOME if new)
- *   - Mint 64-char hex token
- *   - Create TakeHomeAssignment row pointing at the candidate
- *
- * Email delivery itself is currently a stub — when IP-24 ships, the dispatch
- * fans out via the email service. Tracked as IP-72 for throttling +
- * suppression cooperation.
+ * The legacy single-challenge dispatch (IP-35, `bulkDispatchTakeHomesAction`)
+ * was retired in the IP-88 convergence: ALL take-home creation now flows
+ * through `bulkCreateTakeHomeSessions` below (quick form and pipeline bulk
+ * dialog send 1-question sessions). The recipient/result types stay because
+ * the session path and its dialogs share them.
  */
 
 const BULK_DISPATCH_MAX = 100;
@@ -385,13 +402,6 @@ const DAYS_TO_EXPIRE_MIN = 1;
 const DAYS_TO_EXPIRE_MAX = 90;
 
 export type BulkRecipient = { name: string; email: string };
-
-export type BulkDispatchInput = {
-  challengeId: string;
-  recipients: BulkRecipient[];
-  timeLimitMin: number;
-  daysToExpire: number;
-};
 
 export type BulkDispatchPerRow =
   | { email: string; status: "dispatched"; tokenPreview: string; candidateId: string }
@@ -409,200 +419,15 @@ export type BulkDispatchResult = {
   challengeTitle: string;
 };
 
-export async function bulkDispatchTakeHomesAction(
-  slug: string,
-  input: BulkDispatchInput,
-): Promise<BulkDispatchResult> {
-  const { workspaceId, actorUserId, actorEmail } = await assertWorkspaceMember(slug);
-
-  // Input validation up-front so we don't open a transaction just to error.
-  if (!input.challengeId) throw new Error("Challenge is required.");
-  if (input.timeLimitMin < TIME_LIMIT_MIN || input.timeLimitMin > TIME_LIMIT_MAX) {
-    throw new Error(`Time limit must be between ${TIME_LIMIT_MIN} and ${TIME_LIMIT_MAX} minutes.`);
-  }
-  if (input.daysToExpire < DAYS_TO_EXPIRE_MIN || input.daysToExpire > DAYS_TO_EXPIRE_MAX) {
-    throw new Error(`Days to expire must be between ${DAYS_TO_EXPIRE_MIN} and ${DAYS_TO_EXPIRE_MAX}.`);
-  }
-  if (!Array.isArray(input.recipients) || input.recipients.length === 0) {
-    throw new Error("Pick at least one recipient.");
-  }
-  if (input.recipients.length > BULK_DISPATCH_MAX) {
-    throw new Error(`Bulk dispatch is capped at ${BULK_DISPATCH_MAX} recipients per send.`);
-  }
-
-  // Verify the challenge exists (and is accessible — caller is a workspace
-  // member, and challenges are global today).
-  const challenge = await prisma.challenge.findUnique({
-    where: { id: input.challengeId },
-    select: { id: true, title: true },
-  });
-  if (!challenge) throw new Error("Challenge not found.");
-
-  // Within-batch dedup: if the recruiter pastes the same email twice, only
-  // send once. Email comparison is case-insensitive + trimmed.
-  const seenEmails = new Set<string>();
-  const cleaned: BulkRecipient[] = [];
-  const details: BulkDispatchPerRow[] = [];
-  for (const r of input.recipients) {
-    const email = (r.email ?? "").toLowerCase().trim();
-    const name = (r.name ?? "").trim();
-    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      details.push({ email: r.email ?? "(empty)", status: "errored", reason: "Invalid email" });
-      continue;
-    }
-    if (!name) {
-      details.push({ email, status: "errored", reason: "Missing name" });
-      continue;
-    }
-    if (seenEmails.has(email)) {
-      details.push({ email, status: "skipped", reason: "Duplicate in this batch" });
-      continue;
-    }
-    seenEmails.add(email);
-    cleaned.push({ name, email });
-  }
-
-  if (cleaned.length === 0) {
-    throw new Error("No valid recipients after dedup / validation.");
-  }
-
-  const expiresAt = new Date();
-  expiresAt.setDate(expiresAt.getDate() + input.daysToExpire);
-
-  // Collected during the transaction so we can email AFTER it commits — emails
-  // aren't transactional, and we never want to invite a candidate whose row
-  // rolled back. Carries the full token (details[] only keeps a preview).
-  const dispatchedRows: { name: string; email: string; token: string; takeHomeId: string }[] = [];
-
-  // Single transaction — all-or-nothing. A 100-row batch is well within
-  // SQLite/Postgres comfort zones; the transaction also guarantees that a
-  // crash mid-loop doesn't leave half-sent state.
-  await prisma.$transaction(async (tx) => {
-    for (const r of cleaned) {
-      try {
-        const candidate = await tx.candidate.upsert({
-          where: { workspaceId_email: { workspaceId, email: r.email } },
-          update: { name: r.name },
-          create: {
-            workspaceId,
-            name: r.name,
-            email: r.email,
-            source: "take-home",
-            status: "active",
-            stage: "TAKE_HOME",
-            stageChangedAt: new Date(),
-          },
-          select: { id: true },
-        });
-
-        const token = crypto.randomBytes(32).toString("hex");
-        const created = await tx.takeHomeAssignment.create({
-          data: {
-            workspaceId,
-            challengeId: challenge.id,
-            candidateName: r.name,
-            candidateEmail: r.email,
-            candidateId: candidate.id,
-            token,
-            status: "PENDING",
-            expiresAt,
-            timeLimitMin: input.timeLimitMin,
-          },
-          select: { id: true },
-        });
-
-        details.push({
-          email: r.email,
-          status: "dispatched",
-          tokenPreview: token.slice(0, 8) + "…",
-          candidateId: candidate.id,
-        });
-        dispatchedRows.push({ name: r.name, email: r.email, token, takeHomeId: created.id });
-      } catch (err) {
-        details.push({
-          email: r.email,
-          status: "errored",
-          reason: (err as Error).message?.slice(0, 200) ?? "unknown",
-        });
-        // Throwing here would abort the transaction. Recorded as errored;
-        // the transaction continues to give the recruiter a full report.
-        // For a stricter all-or-nothing, swap to `throw err;` — but a single
-        // bad row shouldn't sink the other 99.
-      }
-    }
-  });
-
-  const dispatched = details.filter((d) => d.status === "dispatched").length;
-  const skipped = details.filter((d) => d.status === "skipped").length;
-  const errored = details.filter((d) => d.status === "errored").length;
-
-  // IP-72: email the invites via Resend's batch endpoint (one call for the
-  // whole batch). Runs AFTER the transaction commits. Failures here don't undo
-  // the assignments — the recruiter can still copy links — so we report the
-  // emailed count separately rather than throwing.
-  let emailed = 0;
-  if (dispatchedRows.length > 0) {
-    try {
-      const ws = await prisma.workspace.findUnique({
-        where: { id: workspaceId },
-        select: { name: true },
-      });
-      const { sendBulkTakeHomeInvites } = await import("@/lib/take-home/emails");
-      const res = await sendBulkTakeHomeInvites({
-        workspaceId,
-        workspaceName: ws?.name ?? "your workspace",
-        challengeTitle: challenge.title,
-        timeLimitMin: input.timeLimitMin,
-        expiresAt,
-        rows: dispatchedRows,
-      });
-      emailed = res.sent;
-    } catch (err) {
-      console.error("[bulk-take-home] invite emails failed:", err);
-    }
-  }
-
-  // IP-37: workspace audit row. Single row per bulk dispatch — meta records
-  // the aggregate counts + a small recipient sample so the audit trail is
-  // useful without being verbose.
-  void writeWorkspaceAuditEntry({
-    workspaceId,
-    actorUserId,
-    actorEmail,
-    action: WORKSPACE_AUDIT_ACTIONS.BULK_TAKE_HOME_DISPATCHED,
-    targetType: "challenge",
-    targetId: challenge.id,
-    meta: {
-      challengeTitle: challenge.title,
-      dispatched,
-      emailed,
-      skipped,
-      errored,
-      timeLimitMin: input.timeLimitMin,
-      daysToExpire: input.daysToExpire,
-      sampleRecipients: details
-        .filter((d) => d.status === "dispatched")
-        .slice(0, 5)
-        .map((d) => d.email),
-    },
-  });
-
-  revalidatePath(`/w/${slug}/candidates`);
-  revalidatePath(`/w/${slug}/leaderboard`);
-  revalidatePath(`/w/${slug}`);
-
-  return { dispatched, emailed, skipped, errored, details, challengeTitle: challenge.title };
-}
-
 /* ──────────────────────────────────────────────────────────────────────────
  * Multi-question take-home sessions (IP-88)
  * ──────────────────────────────────────────────────────────────────────────
  * The take-home builder curates a SET of questions (DSA + prompt + playground)
  * and assigns to N selected candidates. Each candidate gets one async,
  * tokenized InterviewSession (type="take-home") sharing the curated set, with a
- * per-question timer map + a start deadline. Mirrors bulkDispatchTakeHomesAction
- * for candidate upsert/dedup, but creates sessions instead of single-challenge
- * assignments, and emails via the IP-72 batch path.
+ * per-question timer map + a start deadline. Candidate upsert/dedup flows
+ * through upsertCandidateForWorkflow, and invites email via the IP-72 batch
+ * path. This is the ONLY take-home creation path (IP-88 convergence).
  */
 const DEFAULT_QUESTION_MIN = 30;
 
@@ -634,7 +459,10 @@ export async function bulkCreateTakeHomeSessions(
   slug: string,
   input: CreateTakeHomeSessionsInput,
 ): Promise<CreateTakeHomeSessionsResult> {
-  const { workspaceId, actorUserId, actorEmail } = await assertWorkspaceMember(slug);
+  const { workspaceId, actorUserId, actorEmail } = await assertWorkspaceMember(
+    slug,
+    "takehome:create",
+  );
 
   const challengeIds = [...new Set(input.curation.challengeIds ?? [])];
   const playgroundIds = [...new Set(input.curation.playgroundIds ?? [])];
@@ -642,6 +470,14 @@ export async function bulkCreateTakeHomeSessions(
   const totalQuestions = challengeIds.length + playgroundIds.length + promptScenarioIds.length;
 
   if (totalQuestions === 0) throw new Error("Add at least one question to the take-home.");
+  // Completion is keyed on coding-challenge attempts (the runner can't execute
+  // playground/prompt questions yet), so a session without at least one
+  // challenge could never reach "completed" — reject it up front.
+  if (challengeIds.length === 0) {
+    throw new Error(
+      "Include at least one coding challenge — playground and prompt questions aren't candidate-runnable yet, so a take-home needs a challenge to be completable.",
+    );
+  }
   if (input.daysToExpire < DAYS_TO_EXPIRE_MIN || input.daysToExpire > DAYS_TO_EXPIRE_MAX) {
     throw new Error(`Days to expire must be between ${DAYS_TO_EXPIRE_MIN} and ${DAYS_TO_EXPIRE_MAX}.`);
   }
@@ -720,31 +556,30 @@ export async function bulkCreateTakeHomeSessions(
   };
 
   const createdRows: { name: string; email: string; token: string; sessionId: string }[] = [];
+  // Pre-existing candidates to forward-advance to TAKE_HOME after commit (IP-69).
+  const advanceIds: string[] = [];
 
   await prisma.$transaction(async (tx) => {
     for (const r of cleaned) {
       try {
-        const candidate = await tx.candidate.upsert({
-          where: { workspaceId_email: { workspaceId, email: r.email } },
-          update: { name: r.name },
-          create: {
+        const { candidateId, created: isNew } = await upsertCandidateForWorkflow(
+          {
             workspaceId,
             name: r.name,
             email: r.email,
-            source: "take-home",
-            status: "active",
-            stage: "TAKE_HOME",
-            stageChangedAt: new Date(),
+            source: "take-home-dispatch",
+            initialStage: "TAKE_HOME",
           },
-          select: { id: true },
-        });
+          tx,
+        );
+        if (!isNew) advanceIds.push(candidateId);
 
         const token = crypto.randomBytes(32).toString("hex");
         const created = await tx.interviewSession.create({
           data: {
             userId: actorUserId,
             workspaceId,
-            candidateId: candidate.id,
+            candidateId,
             candidateName: r.name,
             title: input.title?.trim() || "Take-home assessment",
             type: "take-home",
@@ -764,13 +599,25 @@ export async function bulkCreateTakeHomeSessions(
           select: { id: true },
         });
 
-        details.push({ email: r.email, status: "dispatched", tokenPreview: token.slice(0, 8) + "…", candidateId: candidate.id });
+        details.push({ email: r.email, status: "dispatched", tokenPreview: token.slice(0, 8) + "…", candidateId });
         createdRows.push({ name: r.name, email: r.email, token, sessionId: created.id });
       } catch (err) {
         details.push({ email: r.email, status: "errored", reason: (err as Error).message?.slice(0, 200) ?? "unknown" });
       }
     }
   });
+
+  // IP-69: forward-advance pre-existing candidates to TAKE_HOME (post-commit).
+  for (const candidateId of advanceIds) {
+    await advanceCandidateStage({
+      workspaceId,
+      candidateId,
+      toStage: "TAKE_HOME",
+      source: "auto:take-home-session-dispatch",
+      actorUserId,
+      actorEmail,
+    });
+  }
 
   const created = details.filter((d) => d.status === "dispatched").length;
   const skipped = details.filter((d) => d.status === "skipped").length;
@@ -878,84 +725,4 @@ export async function createTakeHomeGroups(
   return { ...agg, groups: dispatchedGroups };
 }
 
-/* ──────────────────────────────────────────────────────────────────────────
- * Leaderboard CSV export (IP-35)
- * ──────────────────────────────────────────────────────────────────────────
- * Server action returning CSV text. Caller (the leaderboard client) wraps it
- * in a Blob + anchor download. Keeping it as a plain string return so this is
- * cheap to wire and reusable from automation later.
- */
-export type LeaderboardCsvFilters = {
-  challengeId?: string;
-};
-
-export async function exportLeaderboardCsvAction(
-  slug: string,
-  filters: LeaderboardCsvFilters = {},
-): Promise<string> {
-  const { workspaceId } = await assertWorkspaceMember(slug);
-  const where: Record<string, unknown> = { workspaceId };
-  if (filters.challengeId) where.challengeId = filters.challengeId;
-
-  const rows = await prisma.takeHomeAssignment.findMany({
-    where,
-    select: {
-      id: true,
-      candidateName: true,
-      candidateEmail: true,
-      status: true,
-      submittedAt: true,
-      expiresAt: true,
-      timeLimitMin: true,
-      challenge: { select: { title: true } },
-      attempt: { select: { score: true, startedAt: true } },
-      createdAt: true,
-    },
-    orderBy: [{ submittedAt: "desc" }, { createdAt: "desc" }],
-  });
-
-  const header = [
-    "candidate_name",
-    "candidate_email",
-    "challenge",
-    "status",
-    "score",
-    "dispatched_at",
-    "submitted_at",
-    "time_to_submit_minutes",
-    "expires_at",
-  ];
-
-  const esc = (v: string | number | null | undefined) => {
-    if (v === null || v === undefined) return "";
-    const s = String(v);
-    if (s.includes(",") || s.includes('"') || s.includes("\n")) {
-      return `"${s.replace(/"/g, '""')}"`;
-    }
-    return s;
-  };
-
-  const lines = [header.join(",")];
-  for (const r of rows) {
-    const minutesToSubmit =
-      r.submittedAt && r.attempt?.startedAt
-        ? Math.round((r.submittedAt.getTime() - r.attempt.startedAt.getTime()) / 60000)
-        : "";
-    lines.push(
-      [
-        esc(r.candidateName),
-        esc(r.candidateEmail),
-        esc(r.challenge.title),
-        esc(r.status),
-        esc(r.attempt?.score ?? ""),
-        esc(r.createdAt.toISOString()),
-        esc(r.submittedAt?.toISOString() ?? ""),
-        esc(minutesToSubmit),
-        esc(r.expiresAt.toISOString()),
-      ].join(","),
-    );
-  }
-
-  return lines.join("\n") + "\n";
-}
 

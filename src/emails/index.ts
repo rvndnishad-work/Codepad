@@ -51,6 +51,16 @@ import {
   otpVerificationText,
   type OtpVerificationProps,
 } from "./OtpVerification";
+import {
+  InterviewInvite,
+  interviewInviteText,
+  type InterviewInviteProps,
+} from "./InterviewInvite";
+import {
+  WorkspaceInviteEmail,
+  workspaceInviteEmailText,
+  type WorkspaceInviteEmailProps,
+} from "./WorkspaceInviteEmail";
 
 /**
  * Registry shape: each entry describes how to subject-line, render, and
@@ -115,6 +125,18 @@ export const TEMPLATES = {
     subject: () => "Verify your Interviewpad account",
     text: otpVerificationText,
   } satisfies TemplateDef<OtpVerificationProps>,
+
+  "interview-invite": {
+    Component: InterviewInvite,
+    subject: (p) => `Live interview with ${p.workspaceName}: ${p.title}`,
+    text: interviewInviteText,
+  } satisfies TemplateDef<InterviewInviteProps>,
+
+  "workspace-invite": {
+    Component: WorkspaceInviteEmail,
+    subject: (p) => `${p.inviterName} invited you to ${p.workspaceName} on Interviewpad`,
+    text: workspaceInviteEmailText,
+  } satisfies TemplateDef<WorkspaceInviteEmailProps>,
 } as const;
 
 /** Allowed template names. */
@@ -130,4 +152,6 @@ export type TemplateProps = {
   "take-home-submitted-recruiter": TakeHomeSubmittedRecruiterProps;
   "take-home-session-invite": TakeHomeSessionInviteProps;
   "otp-verification": OtpVerificationProps;
+  "interview-invite": InterviewInviteProps;
+  "workspace-invite": WorkspaceInviteEmailProps;
 };

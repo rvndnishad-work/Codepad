@@ -8,6 +8,7 @@ import {
   WORKSPACE_ADMIN_ROLES,
 } from "@/lib/totp-gate";
 import WorkspaceSidebar from "./WorkspaceSidebar";
+import { trialActive } from "@/lib/billing/trial";
 
 type Props = {
   children: React.ReactNode;
@@ -75,7 +76,7 @@ export default async function WorkspaceLayout({ children, params }: Props) {
       <WorkspaceSidebar
         slug={slug}
         workspaceName={activeWorkspace.name}
-        planName={activeWorkspace.planName}
+        planName={trialActive(activeWorkspace) ? "TRIAL" : activeWorkspace.planName}
         memberships={myMemberships.map((m) => ({
           name: m.workspace.name,
           slug: m.workspace.slug,

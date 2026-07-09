@@ -360,6 +360,22 @@ export default function LeaderboardClient({
   }, [rows, selectedChallenges, selectedStages, selectedTags, startDate, endDate, dateType]);
 
   // Client-Side Sorting
+  // Genuine rank = position by score (highest first, unscored last), computed
+  // ONCE over the filtered set and independent of the active sort. Previously
+  // the "rank" badge was just the row index, so sorting alphabetically
+  // numbered rows 1,2,3 as if they were ranked — misleading.
+  const rankById = useMemo(() => {
+    const byScore = [...filteredRows].sort((a, b) => {
+      if (a.score === null && b.score === null) return 0;
+      if (a.score === null) return 1;
+      if (b.score === null) return -1;
+      return b.score - a.score;
+    });
+    const map = new Map<string, number>();
+    byScore.forEach((r, i) => map.set(r.id, i + 1));
+    return map;
+  }, [filteredRows]);
+
   const sorted = useMemo(() => {
     const arr = [...filteredRows];
     const dirMul = sortDir === "asc" ? 1 : -1;
@@ -813,7 +829,7 @@ export default function LeaderboardClient({
           <table className="w-full text-sm">
             <thead>
               <tr className="bg-panel/40 border-b border-border text-[10px] uppercase tracking-[0.12em] text-muted/80 font-bold">
-                <SortableTh label="Rank" active={sortKey === "candidateName"} dir={sortDir} onClick={() => toggleSort("candidateName")} />
+                <SortableTh label="Rank" active={sortKey === "score"} dir={sortDir} onClick={() => toggleSort("score")} />
                 <th className="px-4 py-3.5 text-left font-bold">Challenge</th>
                 <th className="px-4 py-3.5 text-left font-bold">Status</th>
                 <SortableTh label="Score" active={sortKey === "score"} dir={sortDir} onClick={() => toggleSort("score")} align="right" />
@@ -824,7 +840,7 @@ export default function LeaderboardClient({
             <tbody className="divide-y divide-border">
               {sorted.map((r, i) => {
                 const meta = STATUS_META[r.status] ?? STATUS_META.PENDING;
-                const rank = i + 1;
+                const rank = rankById.get(r.id) ?? i + 1;
                 const stage = r.candidateStage ? STAGE_META[r.candidateStage] : null;
 
                 return (

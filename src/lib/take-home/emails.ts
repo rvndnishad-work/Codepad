@@ -246,3 +246,74 @@ export async function sendTakeHomeSubmissionEmails(args: {
 
   await Promise.allSettled([candidateSend, ...recruiterSends]);
 }
+
+/**
+ * Session-backed (multi-question, IP-88) submission comms: candidate receipt +
+ * recruiter notify. Sibling of sendTakeHomeSubmissionEmails, reusing the same
+ * two templates with the session title as the headline. Idempotency keys are
+ * session-scoped so the completion hook can fire more than once safely.
+ */
+export async function sendTakeHomeSessionSubmissionEmails(args: {
+  sessionId: string;
+  score: number | null;
+}) {
+  const s = await prisma.interviewSession.findUnique({
+    where: { id: args.sessionId },
+    select: {
+      title: true,
+      candidateName: true,
+      candidate: { select: { email: true } },
+      workspace: {
+        select: {
+          id: true,
+          name: true,
+          slug: true,
+          members: {
+            where: { role: { in: [...STAFF_ROLES] } },
+            select: { user: { select: { email: true, name: true } } },
+          },
+        },
+      },
+    },
+  });
+  if (!s || !s.workspace) return;
+
+  const title = s.title || "Take-home assessment";
+  const workspaceName = s.workspace.name;
+  const workspaceId = s.workspace.id;
+  const candidateEmail = s.candidate?.email ?? null;
+
+  const candidateSend = candidateEmail
+    ? sendEmail({
+        template: "take-home-submitted-candidate",
+        to: candidateEmail,
+        props: { candidateName: s.candidateName ?? "there", challengeTitle: title, workspaceName },
+        workspaceId,
+        sessionId: args.sessionId,
+        idempotencyKey: `ths-submit-candidate:${args.sessionId}`,
+      })
+    : Promise.resolve();
+
+  const reviewUrl = `${appBaseUrl()}/w/${s.workspace.slug}?section=assessments&view=take-homes`;
+  const recruiterSends = s.workspace.members
+    .filter((m) => !!m.user.email)
+    .map((m) =>
+      sendEmail({
+        template: "take-home-submitted-recruiter",
+        to: m.user.email!,
+        props: {
+          recruiterName: m.user.name || "there",
+          candidateName: s.candidateName ?? "A candidate",
+          challengeTitle: title,
+          workspaceName,
+          reviewUrl,
+          score: args.score,
+        },
+        workspaceId,
+        sessionId: args.sessionId,
+        idempotencyKey: `ths-submit-recruiter:${args.sessionId}:${m.user.email}`,
+      }),
+    );
+
+  await Promise.allSettled([candidateSend, ...recruiterSends]);
+}

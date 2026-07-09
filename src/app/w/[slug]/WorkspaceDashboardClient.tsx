@@ -53,6 +53,7 @@ import {
 import { describeExecution } from "@/lib/exec-result";
 import AddCandidateDialog from "./AddCandidateDialog";
 import BulkAddCandidatesDialog from "./BulkAddCandidatesDialog";
+import { bulkCreateTakeHomeSessions } from "./candidates/actions";
 import CandidatePipelineClient from "./candidates/CandidatePipelineClient";
 import LeaderboardClient from "./leaderboard/LeaderboardClient";
 
@@ -175,6 +176,8 @@ type CandidateItem = {
   phone: string | null;
   source: string | null;
   status: string;
+  /** Pipeline stage (APPLIED … HIRED/REJECTED) — see src/lib/crm/stages.ts. */
+  stage: string;
   tags: string[];
   takeHomeCount: number;
   sessionCount: number;
@@ -248,6 +251,15 @@ type Props = {
   initialBuckets?: any;
   promptScenarios?: PromptScenario[];
   promptAttempts?: PromptAttemptItem[];
+  pendingInvites?: PendingInvite[];
+};
+
+type PendingInvite = {
+  id: string;
+  email: string;
+  role: string;
+  expiresAt: string;
+  createdAt: string;
 };
 
 type TabId =
@@ -279,6 +291,7 @@ export default function WorkspaceDashboardClient({
   initialBuckets,
   promptScenarios = [],
   promptAttempts = [],
+  pendingInvites = [],
 }: Props) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -321,7 +334,9 @@ export default function WorkspaceDashboardClient({
 
   
   // Lists data in state so client can append newly created ones instantly
-  const [currentTakeHomes, setCurrentTakeHomes] = useState<TakeHome[]>(takeHomes);
+  // Legacy single-challenge assignments — read-only history now that all new
+  // take-homes are session-backed (the creation API is gone).
+  const currentTakeHomes = takeHomes;
   const [currentMembers, setCurrentMembers] = useState<Member[]>(members);
   // Which member's "Advanced permissions" panel is expanded (id) or null.
   const [expandedMemberId, setExpandedMemberId] = useState<string | null>(null);
@@ -343,13 +358,21 @@ export default function WorkspaceDashboardClient({
   }, [currentMembers, currentUserId, roleBasePermissions]);
   const canSetRoles = myEffective.has("member:set_role");
   const canRemoveMembers = myEffective.has("member:remove");
+  // Drives the pipeline board's edit affordances (drag / context menu). The
+  // server actions enforce this too; hiding the controls just avoids dead
+  // clicks + 403 toasts for VIEWERs.
+  const canManagePipeline = myEffective.has("candidate:manage_pipeline");
   const iAmOwner =
     currentMembers.find((m) => m.userId === currentUserId)?.role === "OWNER";
   
-  // Generating Take-Home state
+  // Generating Take-Home state. The quick picker offers the same catalog as
+  // the multi-question builder (global published + workspace challenges), not
+  // just workspace-authored ones.
+  const quickChallenges: { id: string; title: string; difficulty?: string }[] =
+    pipelineChallenges.length > 0 ? pipelineChallenges : challenges;
   const [candidateName, setCandidateName] = useState("");
   const [candidateEmail, setCandidateEmail] = useState("");
-  const [selectedChallengeId, setSelectedChallengeId] = useState(challenges[0]?.id || "");
+  const [selectedChallengeId, setSelectedChallengeId] = useState(quickChallenges[0]?.id || "");
   const [timeLimitMin, setTimeLimitMin] = useState(60);
   const [daysToExpire, setDaysToExpire] = useState(7);
   const [generating, setGenerating] = useState(false);
@@ -369,15 +392,6 @@ export default function WorkspaceDashboardClient({
   const [atsSavedUrl, setAtsSavedUrl] = useState("");
   const [atsLoading, setAtsLoading] = useState(false);
   const [atsActive, setAtsActive] = useState(false);
-
-  // Scheduling state hooks
-  const [scheduleStartTime, setScheduleStartTime] = useState("");
-  const [scheduleEndTime, setScheduleEndTime] = useState("");
-  const [scheduleCandidate, setScheduleCandidate] = useState("");
-  const [scheduleInterviewer, setScheduleInterviewer] = useState("");
-  const [scheduleSessionId, setScheduleSessionId] = useState("");
-  const [scheduleLoading, setScheduleLoading] = useState(false);
-  const [scheduleResult, setScheduleResult] = useState<string | null>(null);
 
   // Code Sandbox state hooks
   const [sandboxLang, setSandboxLang] = useState("python");
@@ -495,51 +509,6 @@ export default function WorkspaceDashboardClient({
       });
     } finally {
       setAtsLoading(false);
-    }
-  }
-
-  async function handleScheduleCalendar(e: React.FormEvent) {
-    e.preventDefault();
-    if (!scheduleSessionId.trim() || !scheduleStartTime || !scheduleEndTime) {
-      toast.error("Please fill in all panel scheduling parameters.");
-      return;
-    }
-
-    setScheduleLoading(true);
-    setScheduleResult(null);
-    try {
-      const res = await fetch(`/api/interview/${scheduleSessionId}/schedule`, {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({
-          startTime: scheduleStartTime,
-          endTime: scheduleEndTime,
-          candidateEmail: scheduleCandidate || "candidate@company.com",
-          interviewerEmail: scheduleInterviewer || "interviewer@company.com",
-        }),
-      });
-
-      const data = await res.json().catch(() => null);
-      if (!res.ok) throw new Error(data?.error ?? `HTTP ${res.status}`);
-
-      toast.success("Interview session scheduled successfully!");
-      
-      // Auto-trigger .ics file download trigger for single-click calendar sync
-      const blob = new Blob([data.icsContent], { type: "text/calendar;charset=utf-8" });
-      const link = document.createElement("a");
-      link.href = window.URL.createObjectURL(blob);
-      link.setAttribute("download", `interview_schedule_${scheduleSessionId.substring(0,8)}.ics`);
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-
-      setScheduleResult(JSON.stringify(data.googleCalendarPayload, null, 2));
-    } catch (err) {
-      toast.error("Scheduling sync failed", {
-        description: err instanceof Error ? err.message : String(err),
-      });
-    } finally {
-      setScheduleLoading(false);
     }
   }
 
@@ -683,32 +652,44 @@ export default function WorkspaceDashboardClient({
 
     setGenerating(true);
     try {
-      const res = await fetch(`/api/w/${workspace.slug}/take-home`, {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({
-          candidateName,
-          candidateEmail,
-          challengeId: selectedChallengeId,
-          timeLimitMin,
-          daysToExpire,
-        }),
+      // One-off invites are 1-question take-home sessions — same model, runner,
+      // and review surface as the multi-question builder (no legacy writes).
+      const picked = quickChallenges.find((c) => c.id === selectedChallengeId);
+      const res = await bulkCreateTakeHomeSessions(workspace.slug, {
+        title: picked ? `Take-home: ${picked.title}` : "Take-home assessment",
+        curation: {
+          challengeIds: [selectedChallengeId],
+          playgroundIds: [],
+          promptScenarioIds: [],
+          perQuestionMinutes: { [selectedChallengeId]: timeLimitMin },
+        },
+        recipients: [{ name: candidateName.trim(), email: candidateEmail.trim() }],
+        daysToExpire,
       });
 
-      const data = await res.json().catch(() => null);
-      if (!res.ok) throw new Error(data?.error ?? `HTTP ${res.status}`);
+      if (res.created === 0) {
+        const first = res.details[0];
+        throw new Error(
+          (first && "reason" in first ? first.reason : undefined) ??
+            "Failed to create the take-home.",
+        );
+      }
 
-      toast.success("Take-home invitation generated successfully!");
-      
-      // Prepend the new take-home invitation to the list
-      setCurrentTakeHomes([data.takeHome, ...currentTakeHomes]);
-      
+      toast.success("Take-home sent!", {
+        description:
+          res.emailed > 0
+            ? `Invitation emailed to ${candidateEmail.trim()}.`
+            : "Created — the invite email could not be sent, copy the link from the list instead.",
+      });
+
       // Reset form + close the overview quick-action modal if it was the caller
       setCandidateName("");
       setCandidateEmail("");
       setQuickTakeHomeOpen(false);
+      // Session list comes from the server payload — refresh to show the new row.
+      router.refresh();
     } catch (err) {
-      toast.error("Failed to generate invitation", {
+      toast.error("Failed to send take-home", {
         description: err instanceof Error ? err.message : String(err),
       });
     } finally {
@@ -737,15 +718,39 @@ export default function WorkspaceDashboardClient({
       const data = await res.json().catch(() => null);
       if (!res.ok) throw new Error(data?.error ?? `HTTP ${res.status}`);
 
-      toast.success("Teammate enrolled successfully!");
-      
-      // Prepend the newly added member to the list
-      setCurrentMembers([data.member, ...currentMembers]);
-      
-      // Reset form
+      // IP-73: invites are now pending until accepted — no instant membership.
+      toast.success("Invitation sent!", {
+        description: `${teammateEmail.trim()} will get an email to join as ${teammateRole.toLowerCase()}.`,
+      });
+
+      // Reset form + refresh so the pending-invite list reflects the new invite.
       setTeammateEmail("");
+      router.refresh();
+    } catch (err) {
+      toast.error("Failed to send invite", {
+        description: err instanceof Error ? err.message : String(err),
+      });
     } finally {
       setInviting(false);
+    }
+  }
+
+  async function handleRevokeInvite(inviteId: string) {
+    if (!window.confirm("Revoke this pending invite?")) return;
+    try {
+      const res = await fetch(`/api/w/${workspace.slug}/members`, {
+        method: "DELETE",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ inviteId }),
+      });
+      const data = await res.json().catch(() => null);
+      if (!res.ok) throw new Error(data?.error ?? `HTTP ${res.status}`);
+      toast.success("Invite revoked.");
+      router.refresh();
+    } catch (err) {
+      toast.error("Failed to revoke invite", {
+        description: err instanceof Error ? err.message : String(err),
+      });
     }
   }
 
@@ -966,30 +971,30 @@ export default function WorkspaceDashboardClient({
       });
     }
 
-    // Since mock data might have older timestamps, if we don't find a match in the last 14 days,
-    // we randomly distribute it in the last 14 days for visual demonstration, or just count exact dates.
-    // Given mock data usually has random past dates, let's just create a nice demo curve if data is outside range.
+    // Honest bucketing: events land on their real creation day; anything
+    // older than the 14-day window simply isn't in this chart. (This used to
+    // scatter out-of-range events onto Math.random() days, which made the
+    // chart non-deterministic and misrepresented when activity happened.)
     sessions.forEach(s => {
       const dStr = (s.createdAt || "").split('T')[0];
       const match = days.find(d => d.date === dStr);
       if (match) match.interviews++;
-      else {
-        // Fallback for mock data visual
-        days[Math.floor(Math.random() * 14)].interviews++;
-      }
     });
 
     currentTakeHomes.forEach(th => {
       const dStr = (th.createdAt || th.startedAt || th.expiresAt || "").split('T')[0];
       const match = days.find(d => d.date === dStr);
       if (match) match.takeHomes++;
-      else {
-        days[Math.floor(Math.random() * 14)].takeHomes++;
-      }
+    });
+
+    takeHomeSessions.forEach(th => {
+      const dStr = (th.createdAt || "").split('T')[0];
+      const match = days.find(d => d.date === dStr);
+      if (match) match.takeHomes++;
     });
 
     return days;
-  }, [sessions, currentTakeHomes]);
+  }, [sessions, currentTakeHomes, takeHomeSessions]);
 
   // Candidate Pipeline Data
   const pipelineData = useMemo(() => {
@@ -1023,8 +1028,8 @@ export default function WorkspaceDashboardClient({
       case "candidates":
         return [
           { label: "Total Candidates", value: candidates.length, icon: Users, colorClass: "text-blue-500", bgClass: "bg-blue-500/10", borderClass: "border-blue-500/20", gradClass: "from-blue-500/5" },
-          { label: "AI Screenings", value: candidates.filter(c => c.takeHomeCount > 0).length, icon: Brain, colorClass: "text-violet-500", bgClass: "bg-violet-500/10", borderClass: "border-violet-500/20", gradClass: "from-violet-500/5" },
-          { label: "Processed", value: Math.round(candidates.length * 0.8), icon: CheckCircle2, colorClass: "text-emerald-500", bgClass: "bg-emerald-500/10", borderClass: "border-emerald-500/20", gradClass: "from-emerald-500/5" },
+          { label: "Assessed", value: candidates.filter(c => c.takeHomeCount > 0 || c.sessionCount > 0).length, icon: Brain, colorClass: "text-violet-500", bgClass: "bg-violet-500/10", borderClass: "border-violet-500/20", gradClass: "from-violet-500/5" },
+          { label: "In Pipeline", value: candidates.filter(c => c.stage !== "APPLIED" && c.stage !== "REJECTED").length, icon: CheckCircle2, colorClass: "text-emerald-500", bgClass: "bg-emerald-500/10", borderClass: "border-emerald-500/20", gradClass: "from-emerald-500/5" },
           { label: "Hired", value: candidates.filter(c => c.status === 'hired').length, icon: Award, colorClass: "text-amber-500", bgClass: "bg-amber-500/10", borderClass: "border-amber-500/20", gradClass: "from-amber-500/5" },
           { label: "Rejected", value: candidates.filter(c => c.status === 'rejected' || c.status === 'do_not_hire').length, icon: X, colorClass: "text-rose-500", bgClass: "bg-rose-500/10", borderClass: "border-rose-500/20", gradClass: "from-rose-500/5" },
         ];
@@ -1042,7 +1047,7 @@ export default function WorkspaceDashboardClient({
           { label: "AI Scenarios", value: currentPromptScenarios.length, icon: Brain, colorClass: "text-violet-500", bgClass: "bg-violet-500/10", borderClass: "border-violet-500/20", gradClass: "from-violet-500/5" },
           { label: "Published", value: challenges.filter(c => c.published).length + currentPromptScenarios.filter(c => c.published).length, icon: CheckCircle2, colorClass: "text-emerald-500", bgClass: "bg-emerald-500/10", borderClass: "border-emerald-500/20", gradClass: "from-emerald-500/5" },
           { label: "Drafts", value: challenges.filter(c => !c.published).length + currentPromptScenarios.filter(c => !c.published).length, icon: ExternalLink, colorClass: "text-blue-500", bgClass: "bg-blue-500/10", borderClass: "border-blue-500/20", gradClass: "from-blue-500/5" },
-          { label: "Global Templates", value: 142, icon: Sparkles, colorClass: "text-fuchsia-500", bgClass: "bg-fuchsia-500/10", borderClass: "border-fuchsia-500/20", gradClass: "from-fuchsia-500/5" },
+          { label: "Global Templates", value: pipelineChallenges.length, icon: Sparkles, colorClass: "text-fuchsia-500", bgClass: "bg-fuchsia-500/10", borderClass: "border-fuchsia-500/20", gradClass: "from-fuchsia-500/5" },
         ];
       case "members":
       case "billing":
@@ -1651,19 +1656,19 @@ export default function WorkspaceDashboardClient({
                       onChange={(e) => setSelectedChallengeId(e.target.value)}
                       className="w-full px-3 py-2 rounded-md border border-border bg-bg text-fg text-xs focus:outline-none focus:border-accent/40"
                     >
-                      {challenges.map((c) => (
+                      {quickChallenges.map((c) => (
                         <option key={c.id} value={c.id}>
-                          {c.title} ({c.difficulty})
+                          {c.title}{c.difficulty ? ` (${c.difficulty})` : ""}
                         </option>
                       ))}
                     </select>
                   </div>
                   <button
                     type="submit"
-                    disabled={generating || challenges.length === 0}
+                    disabled={generating || quickChallenges.length === 0}
                     className="w-full px-3 py-2 rounded-md bg-accent hover:bg-accent-soft text-bg text-[11px] font-semibold uppercase tracking-wider transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    {generating ? "Generating…" : "Generate link"}
+                    {generating ? "Sending…" : "Send invite"}
                   </button>
                 </form>
               </div>
@@ -1691,7 +1696,11 @@ export default function WorkspaceDashboardClient({
                       <tbody className="divide-y divide-border">
                         {takeHomeSessions.map((s) => {
                           const deadline = s.deadlineAt ? new Date(s.deadlineAt) : null;
-                          const expired = !!deadline && Date.now() > deadline.getTime() && s.status !== "completed";
+                          // Stored "expired" (hourly cron) with an in-memory
+                          // fallback for rows the sweep hasn't reached yet.
+                          const expired =
+                            s.status === "expired" ||
+                            (!!deadline && Date.now() > deadline.getTime() && s.status !== "completed" && s.status !== "in_progress");
                           const { label, cls } =
                             s.status === "completed"
                               ? { label: "Completed", cls: "text-emerald-600 dark:text-emerald-400 border-emerald-500/25 bg-emerald-500/[0.06]" }
@@ -1728,7 +1737,7 @@ export default function WorkspaceDashboardClient({
                                     <Link2 className="w-3 h-3" /> Copy link
                                   </button>
                                   <Link
-                                    href={`/interview/${s.id}`}
+                                    href={`/w/${workspace.slug}/take-homes/${s.id}`}
                                     className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-accent/10 border border-accent/25 text-[11px] font-semibold text-accent hover:bg-accent/15 transition-colors"
                                   >
                                     <Eye className="w-3 h-3" /> Review
@@ -2025,7 +2034,7 @@ export default function WorkspaceDashboardClient({
                       className="px-2.5 py-1 rounded-md border border-border bg-bg text-fg text-[11px] font-semibold focus:outline-none focus:border-accent/40"
                     >
                       <option value="recent">Recent activity</option>
-                      <option value="status">Pipeline stage</option>
+                      <option value="status">Status</option>
                       <option value="name">Name A–Z</option>
                       <option value="take-homes">Take-homes (desc)</option>
                       <option value="interviews">Interviews (desc)</option>
@@ -2194,7 +2203,7 @@ export default function WorkspaceDashboardClient({
                   <CandidatePipelineClient
                     slug={workspace.slug}
                     workspaceName={workspace.name}
-                    canEdit={true}
+                    canEdit={canManagePipeline}
                     initialBuckets={initialBuckets}
                     challenges={pipelineChallenges || []}
                   />
@@ -2291,6 +2300,39 @@ export default function WorkspaceDashboardClient({
                   </button>
                 </form>
               </div>
+
+              {/* Pending invites (IP-73) — sent but not yet accepted. */}
+              {pendingInvites.length > 0 && (
+                <div className="space-y-2">
+                  <h3 className="text-sm font-semibold text-fg">
+                    Pending invites ({pendingInvites.length})
+                  </h3>
+                  <div className="rounded-xl border border-border bg-surface divide-y divide-border overflow-hidden">
+                    {pendingInvites.map((inv) => (
+                      <div key={inv.id} className="flex items-center justify-between gap-3 px-4 py-3">
+                        <div className="flex items-center gap-3 min-w-0">
+                          <div className="w-8 h-8 rounded-lg bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-500 shrink-0">
+                            <Mail className="w-3.5 h-3.5" />
+                          </div>
+                          <div className="min-w-0">
+                            <div className="text-xs font-semibold text-fg truncate">{inv.email}</div>
+                            <div className="text-[10px] text-muted uppercase tracking-wider">
+                              {inv.role.toLowerCase()} · invited, awaiting acceptance
+                            </div>
+                          </div>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => handleRevokeInvite(inv.id)}
+                          className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md border border-border hover:border-rose-500/40 text-[11px] font-semibold text-muted hover:text-rose-500 transition-colors shrink-0"
+                        >
+                          <X className="w-3 h-3" /> Revoke
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
 
               {/* Members listing */}
               <div className="space-y-2">
@@ -2641,96 +2683,37 @@ export default function WorkspaceDashboardClient({
                   </form>
                 </div>
 
-                {/* Calendar */}
+                {/* Scheduling — the real flow lives in interview creation now
+                    (IP-90); this card explains it instead of hosting the old
+                    disconnected demo form. */}
                 <div className="rounded-xl border border-border bg-surface p-5 space-y-4">
                   <div className="flex items-center gap-2.5">
                     <div className="w-8 h-8 rounded-lg bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-500">
                       <Calendar className="w-3.5 h-3.5" />
                     </div>
                     <div>
-                      <h4 className="text-sm font-semibold text-fg">Calendar sync</h4>
-                      <p className="text-[11px] text-muted">Send interview invites as .ics files with pad links.</p>
+                      <h4 className="text-sm font-semibold text-fg">Interview scheduling</h4>
+                      <p className="text-[11px] text-muted">Built into interview creation — no separate sync step.</p>
                     </div>
                   </div>
-
-                  <form onSubmit={handleScheduleCalendar} className="space-y-3">
-                    <div className="grid grid-cols-2 gap-3">
-                      <div className="space-y-1">
-                        <label className="text-[10px] font-semibold uppercase tracking-wider text-muted">Session ID</label>
-                        <input
-                          type="text"
-                          required
-                          placeholder="clx12…"
-                          value={scheduleSessionId}
-                          onChange={(e) => setScheduleSessionId(e.target.value)}
-                          className="w-full px-3 py-2 rounded-md border border-border bg-bg text-fg text-xs focus:outline-none focus:border-accent/40"
-                        />
-                      </div>
-                      <div className="space-y-1">
-                        <label className="text-[10px] font-semibold uppercase tracking-wider text-muted">Candidate email</label>
-                        <input
-                          type="email"
-                          required
-                          placeholder="candidate@company.com"
-                          value={scheduleCandidate}
-                          onChange={(e) => setScheduleCandidate(e.target.value)}
-                          className="w-full px-3 py-2 rounded-md border border-border bg-bg text-fg text-xs focus:outline-none focus:border-accent/40"
-                        />
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-3">
-                      <div className="space-y-1">
-                        <label className="text-[10px] font-semibold uppercase tracking-wider text-muted">Start</label>
-                        <input
-                          type="datetime-local"
-                          required
-                          value={scheduleStartTime}
-                          onChange={(e) => setScheduleStartTime(e.target.value)}
-                          className="w-full px-3 py-2 rounded-md border border-border bg-bg text-fg text-xs focus:outline-none focus:border-accent/40"
-                        />
-                      </div>
-                      <div className="space-y-1">
-                        <label className="text-[10px] font-semibold uppercase tracking-wider text-muted">End</label>
-                        <input
-                          type="datetime-local"
-                          required
-                          value={scheduleEndTime}
-                          onChange={(e) => setScheduleEndTime(e.target.value)}
-                          className="w-full px-3 py-2 rounded-md border border-border bg-bg text-fg text-xs focus:outline-none focus:border-accent/40"
-                        />
-                      </div>
-                    </div>
-
-                    <div className="space-y-1">
-                      <label className="text-[10px] font-semibold uppercase tracking-wider text-muted">Interviewer email</label>
-                      <input
-                        type="email"
-                        required
-                        placeholder="interviewer@company.com"
-                        value={scheduleInterviewer}
-                        onChange={(e) => setScheduleInterviewer(e.target.value)}
-                        className="w-full px-3 py-2 rounded-md border border-border bg-bg text-fg text-xs focus:outline-none focus:border-accent/40"
-                      />
-                    </div>
-
-                    <button
-                      type="submit"
-                      disabled={scheduleLoading}
-                      className="w-full py-2 rounded-md bg-accent hover:bg-accent-soft text-bg text-[11px] font-semibold uppercase tracking-wider transition-colors disabled:opacity-50"
-                    >
-                      {scheduleLoading ? "Scheduling…" : "Schedule & download invite"}
-                    </button>
-
-                    {scheduleResult && (
-                      <div className="space-y-1 pt-2 border-t border-border">
-                        <span className="text-[10px] font-semibold uppercase tracking-wider text-muted block">Sync log</span>
-                        <pre className="font-mono text-[10px] text-fg bg-bg border border-border rounded-md p-3 max-h-[120px] overflow-y-auto whitespace-pre-wrap leading-relaxed select-all">
-                          {scheduleResult}
-                        </pre>
-                      </div>
-                    )}
-                  </form>
+                  <ul className="space-y-2 text-xs text-muted leading-relaxed">
+                    <li className="flex items-start gap-2">
+                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500 shrink-0 mt-0.5" />
+                      Pick a date &amp; time when you create the interview — the candidate gets an
+                      invite email with the join link, access code, and scheduled slot.
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500 shrink-0 mt-0.5" />
+                      Candidates with an Interviewpad account also get an in-app notification.
+                    </li>
+                  </ul>
+                  <Link
+                    href={`/interview/new?workspaceSlug=${workspace.slug}`}
+                    className="inline-flex items-center gap-1.5 px-3 py-2 rounded-md bg-accent hover:bg-accent-soft text-bg text-[11px] font-semibold uppercase tracking-wider transition-colors"
+                  >
+                    <Plus className="w-3.5 h-3.5" />
+                    Schedule an interview
+                  </Link>
                 </div>
               </div>
 
@@ -2877,15 +2860,15 @@ export default function WorkspaceDashboardClient({
                   onChange={(e) => setSelectedChallengeId(e.target.value)}
                   className="w-full px-3 py-2 rounded-md border border-border bg-bg text-fg text-xs focus:outline-none focus:border-accent/40"
                 >
-                  {challenges.map((c) => (
+                  {quickChallenges.map((c) => (
                     <option key={c.id} value={c.id}>
-                      {c.title} ({c.difficulty})
+                      {c.title}{c.difficulty ? ` (${c.difficulty})` : ""}
                     </option>
                   ))}
                 </select>
-                {challenges.length === 0 && (
+                {quickChallenges.length === 0 && (
                   <p className="text-[11px] text-amber-500 pt-1">
-                    No workspace challenges yet — use the multi-question builder below, or create a challenge first.
+                    No challenges available yet — use the multi-question builder below, or create a challenge first.
                   </p>
                 )}
               </div>
@@ -2917,10 +2900,10 @@ export default function WorkspaceDashboardClient({
 
               <button
                 type="submit"
-                disabled={generating || challenges.length === 0}
+                disabled={generating || quickChallenges.length === 0}
                 className="w-full px-3 py-2.5 rounded-md bg-accent hover:bg-accent-soft text-bg text-[11px] font-semibold uppercase tracking-wider transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {generating ? "Generating…" : "Generate invite link"}
+                {generating ? "Sending…" : "Send take-home invite"}
               </button>
 
               <div className="text-center pt-1 border-t border-border">

@@ -6,7 +6,6 @@ import {
   Bell,
   BellRing,
   X,
-  Check,
   Briefcase,
   Clock,
   Award,
@@ -44,6 +43,8 @@ const ICON_FOR_TYPE: Record<string, { Icon: typeof Bell; tone: string }> = {
   AI_CREDITS_LOW: { Icon: CreditCard, tone: "text-amber-400 bg-amber-500/10" },
   SECURITY_2FA_ENABLED: { Icon: ShieldCheck, tone: "text-emerald-400 bg-emerald-500/10" },
   SECURITY_2FA_DISABLED: { Icon: ShieldAlert, tone: "text-amber-400 bg-amber-500/10" },
+  CREATOR_PUBLISH: { Icon: Sparkles, tone: "text-violet-400 bg-violet-500/10" },
+  CREATOR_NEW_FOLLOWER: { Icon: Heart, tone: "text-rose-400 bg-rose-500/10" },
   // IP-45: admin-composed broadcasts get a megaphone tone so users can
   // distinguish "system message" from event-driven rows at a glance.
   ADMIN_BROADCAST: { Icon: Megaphone, tone: "text-sky-400 bg-sky-500/10" },
@@ -85,6 +86,9 @@ export default function NotificationBell() {
   }, []);
 
   useEffect(() => {
+    // Initial fetch + poll: synchronizing local state with the server on mount
+    // is the intended use of an effect here (external system = the API).
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     refresh();
     const t = setInterval(refresh, POLL_INTERVAL_MS);
     return () => clearInterval(t);
@@ -116,7 +120,7 @@ export default function NotificationBell() {
       });
     }
     if (n.href) {
-      window.location.href = n.href;
+      window.location.assign(n.href);
     }
   }
 
@@ -185,7 +189,7 @@ export default function NotificationBell() {
           <div className="flex-1 overflow-y-auto">
             {items.length === 0 ? (
               <div className="px-4 py-10 text-center text-xs text-muted">
-                You're all caught up.
+                You&apos;re all caught up.
               </div>
             ) : (
               <ul className="divide-y divide-border/60">

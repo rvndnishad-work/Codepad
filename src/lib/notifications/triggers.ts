@@ -323,7 +323,6 @@ export async function notifyTakeHomeExpiringForAssignment(args: {
     const fresh = Array.from(recipientIds).filter((id) => !alreadyNotified.has(id));
     if (fresh.length === 0) return { created: 0 };
 
-    const candidateHref = `/take-home/`; // candidate-facing — they have the token-link from their email
     const adminHref = `/w/${args.workspaceSlug}`;
     // createNotification can short-circuit when the recipient has opted out
     // (IP-47). Count actual inserts rather than recipients-attempted.
@@ -368,5 +367,90 @@ export async function notify2faDisabled(userId: string) {
     });
   } catch (err) {
     logErr("SECURITY_2FA_DISABLED", err);
+  }
+}
+
+/* ──────────────────────────────────────────────────────────────────────────
+ * 7. Creator space followed (free follow — notifies the space owner)
+ * ────────────────────────────────────────────────────────────────────────── */
+export async function notifySpaceFollowed(args: {
+  spaceId: string;
+  followerId: string;
+}) {
+  try {
+    const space = await prisma.creatorSpace.findUnique({
+      where: { id: args.spaceId },
+      select: { ownerId: true, name: true, handle: true },
+    });
+    if (!space || space.ownerId === args.followerId) return;
+    const follower = await prisma.user.findUnique({
+      where: { id: args.followerId },
+      select: { name: true },
+    });
+    await createNotification({
+      userId: space.ownerId,
+      type: NOTIFICATION_TYPES.CREATOR_NEW_FOLLOWER,
+      title: `${follower?.name || "Someone"} followed ${space.name}`,
+      body: "They'll be notified whenever you publish new content.",
+      href: `/creator/${space.handle}/users`,
+      payload: { spaceId: args.spaceId, followerId: args.followerId },
+    });
+  } catch (err) {
+    logErr("CREATOR_NEW_FOLLOWER", err);
+  }
+}
+
+/* ──────────────────────────────────────────────────────────────────────────
+ * 8. Creator published new content — fan-out to followers ∪ active members.
+ *    Callers fire this only on the draft→published transition (never on
+ *    edits to already-published content), so no dedup window is needed here.
+ * ────────────────────────────────────────────────────────────────────────── */
+export async function notifySpaceContentPublished(args: {
+  spaceId: string;
+  /** Human label baked into the title, e.g. "tutorial" | "interview Q&A". */
+  contentKindLabel: string;
+  contentTitle: string;
+  href: string;
+}) {
+  try {
+    const space = await prisma.creatorSpace.findUnique({
+      where: { id: args.spaceId },
+      select: { ownerId: true, name: true },
+    });
+    if (!space) return { created: 0 };
+    const [follows, members] = await Promise.all([
+      prisma.spaceFollow.findMany({
+        where: { spaceId: args.spaceId },
+        select: { userId: true },
+      }),
+      prisma.spaceMembership.findMany({
+        where: { spaceId: args.spaceId, status: "active" },
+        select: { subscriberId: true },
+      }),
+    ]);
+    const recipients = new Set<string>([
+      ...follows.map((f) => f.userId),
+      ...members.map((m) => m.subscriberId),
+    ]);
+    recipients.delete(space.ownerId);
+    const results = await Promise.all(
+      [...recipients].map((userId) =>
+        createNotification({
+          userId,
+          type: NOTIFICATION_TYPES.CREATOR_PUBLISH,
+          title: `${space.name} published a new ${args.contentKindLabel}`,
+          body: args.contentTitle,
+          href: args.href,
+          payload: { spaceId: args.spaceId },
+        }),
+      ),
+    );
+    const created = results.filter(
+      (r) => !(r as { skipped?: boolean }).skipped,
+    ).length;
+    return { created };
+  } catch (err) {
+    logErr("CREATOR_PUBLISH", err);
+    return { created: 0 };
   }
 }

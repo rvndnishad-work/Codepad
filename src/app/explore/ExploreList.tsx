@@ -5,20 +5,14 @@ import Image from "next/image";
 import { useEffect, useRef, useState, useMemo } from "react";
 import { TemplateLogo, templateIcon } from "@/lib/icons";
 import { templatesById, groups } from "@/lib/templates";
-import { 
-  ArrowUpRight, 
-  Compass, 
-  Plus, 
-  Search, 
-  Sparkles, 
-  Cpu, 
-  Users, 
-  Code2, 
-  TrendingUp, 
-  FolderGit2,
-  Calendar,
-  Layers,
-  SearchIcon
+import {
+  ArrowUpRight,
+  Compass,
+  Plus,
+  Search,
+  TrendingUp,
+  Store,
+  ArrowRight
 } from "lucide-react";
 import RelativeTime from "@/components/RelativeTime";
 import { motion, AnimatePresence } from "framer-motion";
@@ -33,6 +27,17 @@ export type ExploreItem = {
   author: { name: string | null; image: string | null } | null;
 };
 
+/** Latest published creator-space content, shown as a rail above the feed. */
+export type CreatorRailItem = {
+  key: string;
+  title: string;
+  kindLabel: string;
+  href: string;
+  spaceName: string;
+  spaceHandle: string;
+  spaceAvatar: string | null;
+};
+
 const FILTERS = [
   { key: "all", label: "All Codebases" },
   ...groups.map((g) => ({ key: g.key, label: g.label })),
@@ -41,9 +46,11 @@ const FILTERS = [
 export default function ExploreList({
   initial,
   initialCursor,
+  creatorRail = [],
 }: {
   initial: ExploreItem[];
   initialCursor: string | null;
+  creatorRail?: CreatorRailItem[];
 }) {
   const [items, setItems] = useState<ExploreItem[]>(initial);
   const [cursor, setCursor] = useState<string | null>(initialCursor);
@@ -191,6 +198,51 @@ export default function ExploreList({
             </div>
           </div>
         </div>
+
+        {/* ── From creator spaces rail ── */}
+        {filter === "all" && !query.trim() && creatorRail.length > 0 && (
+          <div className="mb-16">
+            <div className="flex items-center justify-between gap-3 mb-4">
+              <h2 className="text-xs font-black text-fg uppercase tracking-widest flex items-center gap-2">
+                <Store className="w-4 h-4 text-accent" />
+                From creator spaces
+              </h2>
+              <Link
+                href="/creators"
+                className="inline-flex items-center gap-1 text-[11px] font-bold text-muted hover:text-accent transition-colors"
+              >
+                All creators <ArrowRight className="w-3 h-3" />
+              </Link>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {creatorRail.map((item) => (
+                <Link
+                  key={item.key}
+                  href={item.href}
+                  className="group rounded-2xl border border-border bg-surface/60 backdrop-blur-sm p-4 hover:border-accent/40 transition-colors flex flex-col gap-2.5"
+                >
+                  <span className="self-start text-[9px] font-bold uppercase tracking-wider text-accent bg-accent/10 border border-accent/25 rounded-full px-2 py-0.5">
+                    {item.kindLabel}
+                  </span>
+                  <span className="text-sm font-bold text-fg group-hover:text-accent transition-colors line-clamp-2 leading-snug">
+                    {item.title}
+                  </span>
+                  <span className="mt-auto pt-2 border-t border-border/60 flex items-center gap-2 text-[11px] font-semibold text-muted">
+                    {item.spaceAvatar ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={item.spaceAvatar} alt="" className="w-5 h-5 rounded-md border border-border object-cover" />
+                    ) : (
+                      <span className="w-5 h-5 rounded-md bg-accent/10 border border-accent/20 grid place-items-center text-accent">
+                        <Store className="w-3 h-3" />
+                      </span>
+                    )}
+                    <span className="truncate">{item.spaceName}</span>
+                  </span>
+                </Link>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* ── Trending Showcase Banner ── */}
         {filter === "all" && !query.trim() && trendingSnippets.length > 0 && (
@@ -360,7 +412,7 @@ export default function ExploreList({
               layout
               className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6"
             >
-              {visible.map((s, idx) => {
+              {visible.map((s) => {
                 const tpl = templatesById[s.template];
                 const icon = templateIcon[s.template];
                 const accentColor = icon?.color ?? "var(--accent)";

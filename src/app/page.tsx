@@ -8,6 +8,7 @@ import HomeArsenal, { type ArsenalCounts } from "./HomeArsenal";
 import HomeBento from "./HomeBento";
 import HomeInfographic from "./HomeInfographic";
 import HomeExplore from "./HomeExplore";
+import HomeCreators from "./HomeCreators";
 import HomeChallenges from "./HomeChallenges";
 import HomeFinalCTA from "./HomeFinalCTA";
 import Link from "next/link";
@@ -298,6 +299,8 @@ export default async function HomePage() {
       <HomeBento />
 
       <HomeInfographic />
+
+      <HomeCreators />
 
       <HomeExplore featured={featured} />
 

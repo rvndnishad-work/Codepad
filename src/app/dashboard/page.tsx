@@ -6,6 +6,7 @@ import DashboardJourney from "./DashboardJourney";
 import DashboardStats from "./DashboardStats";
 import DashboardSidebar from "./DashboardSidebar";
 import DashboardWorkspace from "./DashboardWorkspace";
+import DashboardCreatorFeed from "./DashboardCreatorFeed";
 import type {
   SnippetItem,
   BlogItem,
@@ -196,7 +197,16 @@ export default async function DashboardPage() {
     attemptCount: c._count.attempts,
   }));
 
-  const mapToFeed = (s: any): FeedItem => ({
+  type FeedSource = {
+    id: string;
+    slug: string;
+    title: string;
+    template: string;
+    updatedAt: Date;
+    viewCount: number;
+    user: { name: string | null; image: string | null } | null;
+  };
+  const mapToFeed = (s: FeedSource): FeedItem => ({
     id: s.id,
     slug: s.slug,
     title: s.title,
@@ -214,6 +224,8 @@ export default async function DashboardPage() {
       <DashboardJourney userId={userId} />
 
       <DashboardStats stats={stats} />
+
+      <DashboardCreatorFeed userId={userId} />
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
         <div className="lg:col-span-8">

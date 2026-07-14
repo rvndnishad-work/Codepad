@@ -60,6 +60,18 @@ const TYPE_META: Record<string, { label: string; body: string; Icon: typeof Bell
     Icon: Heart,
     group: "social",
   },
+  CREATOR_PUBLISH: {
+    label: "New content from creators you follow",
+    body: "A creator you follow (or subscribe to) published a new tutorial, Q&A, or experience.",
+    Icon: Sparkles,
+    group: "social",
+  },
+  CREATOR_NEW_FOLLOWER: {
+    label: "New follower on your space",
+    body: "Someone started following your creator space.",
+    Icon: Heart,
+    group: "social",
+  },
   AI_CREDITS_LOW: {
     label: "AI credits running low",
     body: "Your workspace is close to running out of AI screening credits.",
@@ -86,7 +98,7 @@ const TYPE_META: Record<string, { label: string; body: string; Icon: typeof Bell
   },
 };
 
-const GROUP_ORDER: Array<{ id: PreferenceView["type"] extends infer T ? "events" | "social" | "security" | "system" : never; label: string; sub: string }> = [
+const GROUP_ORDER: Array<{ id: "events" | "social" | "security" | "system"; label: string; sub: string }> = [
   { id: "events", label: "Workflow events", sub: "Things that happen in your active work — interviews, take-homes, scorecards." },
   { id: "social", label: "Social", sub: "Community engagement with your shared content." },
   { id: "system", label: "System messages", sub: "Platform announcements from the Interviewpad team." },

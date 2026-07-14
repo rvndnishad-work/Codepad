@@ -14,6 +14,8 @@ const STATIC_ROUTES: { path: string; changeFrequency: MetadataRoute.Sitemap[numb
   { path: "/blog", changeFrequency: "daily", priority: 0.9 },
   { path: "/interview-questions", changeFrequency: "daily", priority: 0.9 },
   { path: "/explore", changeFrequency: "daily", priority: 0.8 },
+  { path: "/creators", changeFrequency: "daily", priority: 0.8 },
+  { path: "/become-creator", changeFrequency: "monthly", priority: 0.6 },
   { path: "/login", changeFrequency: "yearly", priority: 0.2 },
   { path: "/privacy", changeFrequency: "yearly", priority: 0.3 },
   { path: "/terms", changeFrequency: "yearly", priority: 0.3 },
@@ -32,6 +34,11 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   let snippets: { slug: string; updatedAt: Date }[] = [];
   let companies: { slug: string; updatedAt: Date }[] = [];
   let questions: { slug: string; updatedAt: Date }[] = [];
+  let spaces: { handle: string; updatedAt: Date }[] = [];
+  let spaceTutorials: { slug: string; updatedAt: Date; spaceId: string }[] = [];
+  let spaceQAs: { slug: string; updatedAt: Date; spaceId: string }[] = [];
+  let spaceExperiences: { slug: string; updatedAt: Date; spaceId: string }[] = [];
+  let spaceIdToHandle = new Map<string, string>();
   try {
     [blogs, challenges, snippets, companies, questions] = await Promise.all([
       prisma.blogPost.findMany({
@@ -52,6 +59,28 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         where: { status: "published" },
         select: { slug: true, updatedAt: true },
         take: 10000,
+      }),
+    ]);
+    spaces = await prisma.creatorSpace.findMany({
+      where: { published: true },
+      select: { id: true, handle: true, updatedAt: true },
+    }).then((rows) => {
+      spaceIdToHandle = new Map(rows.map((s) => [s.id, s.handle]));
+      return rows;
+    });
+    const spaceIds = [...spaceIdToHandle.keys()];
+    [spaceTutorials, spaceQAs, spaceExperiences] = await Promise.all([
+      prisma.tutorial.findMany({
+        where: { spaceId: { in: spaceIds }, published: true },
+        select: { slug: true, updatedAt: true, spaceId: true },
+      }),
+      prisma.interviewQA.findMany({
+        where: { spaceId: { in: spaceIds }, published: true },
+        select: { slug: true, updatedAt: true, spaceId: true },
+      }),
+      prisma.interviewExperience.findMany({
+        where: { spaceId: { in: spaceIds }, published: true },
+        select: { slug: true, updatedAt: true, spaceId: true },
       }),
     ]);
   } catch (err) {
@@ -107,6 +136,30 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.6,
   }));
 
+  const spaceEntries: MetadataRoute.Sitemap = spaces.map((s) => ({
+    url: `${SITE_URL}/c/${s.handle}`,
+    lastModified: s.updatedAt,
+    changeFrequency: "weekly",
+    priority: 0.8,
+  }));
+
+  const spaceContentEntries: MetadataRoute.Sitemap = [
+    ...spaceTutorials.map((t) => ({ path: "tutorials", ...t })),
+    ...spaceQAs.map((q) => ({ path: "interview", ...q })),
+    ...spaceExperiences.map((e) => ({ path: "experience", ...e })),
+  ].flatMap((row) => {
+    const handle = spaceIdToHandle.get(row.spaceId);
+    if (!handle) return [];
+    return [
+      {
+        url: `${SITE_URL}/c/${handle}/${row.path}/${row.slug}`,
+        lastModified: row.updatedAt,
+        changeFrequency: "monthly" as const,
+        priority: 0.6,
+      },
+    ];
+  });
+
   return [
     ...staticEntries,
     ...blogEntries,
@@ -115,5 +168,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     ...techEntries,
     ...companyEntries,
     ...questionEntries,
+    ...spaceEntries,
+    ...spaceContentEntries,
   ];
 }

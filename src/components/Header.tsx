@@ -5,7 +5,7 @@ import { userCan } from "@/lib/permissions/access";
 import { getPrimaryWorkspaceSlug } from "@/lib/workspace-nav";
 import { getNavLinks } from "@/lib/settings";
 import type { NavDropdownItem } from "./NavDropdown";
-import { BookOpen, CreditCard } from "lucide-react";
+import { BookOpen, CreditCard, Store } from "lucide-react";
 import HeaderLogo from "./HeaderLogo";
 import NavDropdown from "./NavDropdown";
 
@@ -79,6 +79,14 @@ export default async function Header() {
       iconName: "BookOpen" as const,
       badge: "New",
       tint: "emerald",
+    },
+    {
+      href: "/creators",
+      label: "Creators",
+      description: "Exclusive prep from creators you follow.",
+      iconName: "Store" as const,
+      badge: "New",
+      tint: "amber",
     },
     {
       href: user ? "/candidate/interview" : "/login?next=/candidate/interview",
@@ -227,6 +235,17 @@ export default async function Header() {
                   kicker="Hire & screen"
                 />
               )}
+
+              <Link
+                href="/creators"
+                className="flex items-center gap-1.5 h-9 px-3.5 rounded-full text-[13px] font-semibold transition-all duration-200 text-fg/60 hover:text-fg hover:bg-elevated/60"
+              >
+                <Store className="w-3.5 h-3.5" />
+                Creators
+                <span className="text-[9px] px-1.5 py-0.5 rounded-md bg-accent/10 text-accent font-black uppercase tracking-wider">
+                  New
+                </span>
+              </Link>
 
               {(blogStatus !== "hidden" || showAdmin) && (
                 <Link

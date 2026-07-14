@@ -99,6 +99,8 @@ export type PaywallOptions = {
   tiers: {
     id: string;
     name: string;
+    description: string | null;
+    benefits: string[];
     rank: number;
     priceCents: number;
     currency: string;
@@ -126,7 +128,15 @@ export async function getPaywallOptions(
       rank: { gte: policy.accessTierRank },
     },
     orderBy: { rank: "asc" },
-    select: { id: true, name: true, rank: true, priceCents: true, currency: true },
+    select: {
+      id: true,
+      name: true,
+      description: true,
+      benefits: true,
+      rank: true,
+      priceCents: true,
+      currency: true,
+    },
   });
 
   return {

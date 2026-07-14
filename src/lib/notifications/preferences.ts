@@ -10,7 +10,7 @@
  * never reach into the table directly.
  */
 import { prisma } from "@/lib/prisma";
-import { NOTIFICATION_TYPES, type NotificationType } from "@/lib/notifications";
+import { NOTIFICATION_TYPES } from "@/lib/notifications";
 
 /**
  * Types the user cannot opt out of, ever. Security events are alerts the
@@ -41,6 +41,8 @@ export const DEFAULTS: Record<string, DefaultFlags> = {
   [NOTIFICATION_TYPES.AI_CREDITS_LOW]: { inApp: true, email: true },
   [NOTIFICATION_TYPES.SECURITY_2FA_ENABLED]: { inApp: true, email: true },
   [NOTIFICATION_TYPES.SECURITY_2FA_DISABLED]: { inApp: true, email: true },
+  [NOTIFICATION_TYPES.CREATOR_PUBLISH]: { inApp: true, email: true },
+  [NOTIFICATION_TYPES.CREATOR_NEW_FOLLOWER]: { inApp: true, email: false },
   ADMIN_BROADCAST: { inApp: true, email: false },
 };
 

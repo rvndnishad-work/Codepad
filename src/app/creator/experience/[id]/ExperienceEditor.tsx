@@ -1,14 +1,17 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
 import { toast } from "sonner";
-import { ArrowLeft, Briefcase } from "lucide-react";
-import { saveInterviewExperienceAction } from "../../actions";
+import { Briefcase } from "lucide-react";
+import { saveInterviewExperienceAction, setSpaceContentAction } from "../../actions";
+import RichEditor from "@/components/rich-editor/RichEditor";
+import ImageDropField from "@/app/creator/[handle]/layout/ImageDropField";
+import PublishPanel, { type AccessState } from "../../editor/PublishPanel";
+import type { EditorContext } from "../../editor/data";
 
-type Outcome = "offer" | "rejected" | "pending" | "withdrew" | "";
-type Difficulty = "easy" | "medium" | "hard" | "";
+type Outcome = "" | "offer" | "rejected" | "pending" | "withdrew";
+type Difficulty = "" | "easy" | "medium" | "hard";
 
 type Initial = {
   id: string;
@@ -19,146 +22,173 @@ type Initial = {
   difficulty: Difficulty;
   summary: string;
   body: string;
+  bodyJson: unknown | null;
+  coverImage: string;
   published: boolean;
+  slug: string;
 } | null;
 
-const inputCls =
-  "w-full px-3 py-2 rounded-lg border border-border bg-bg text-fg text-sm transition-colors placeholder:text-muted/50 focus:outline-none focus:border-accent/50 focus:ring-2 focus:ring-accent/15";
-
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
-  return (
-    <label className="block">
-      <span className="block text-[10px] font-bold uppercase tracking-[0.14em] text-muted mb-1.5">{label}</span>
-      {children}
-    </label>
-  );
-}
-
-export default function ExperienceEditor({ initial, spaceId }: { initial: Initial; spaceId?: string }) {
+export default function ExperienceEditor({ initial, ctx }: { initial: Initial; ctx: EditorContext }) {
   const router = useRouter();
+  const [id, setId] = useState(initial?.id ?? null);
+  const [slug, setSlug] = useState(initial?.slug ?? null);
   const [title, setTitle] = useState(initial?.title ?? "");
   const [company, setCompany] = useState(initial?.company ?? "");
   const [role, setRole] = useState(initial?.role ?? "");
   const [outcome, setOutcome] = useState<Outcome>(initial?.outcome ?? "");
   const [difficulty, setDifficulty] = useState<Difficulty>(initial?.difficulty ?? "");
   const [summary, setSummary] = useState(initial?.summary ?? "");
-  const [body, setBody] = useState(initial?.body ?? "");
+  const [coverImage, setCoverImage] = useState(initial?.coverImage ?? "");
+  const [bodyJson, setBodyJson] = useState<unknown | null>(initial?.bodyJson ?? null);
+  const [published, setPublished] = useState(initial?.published ?? false);
+  const [access, setAccess] = useState<AccessState>({
+    rank: ctx.policy?.accessTierRank != null ? String(ctx.policy.accessTierRank) : "",
+    price: ctx.policy?.purchasePriceCents != null ? (ctx.policy.purchasePriceCents / 100).toFixed(2) : "",
+  });
   const [busy, setBusy] = useState(false);
+  const [savedAt, setSavedAt] = useState<Date | null>(null);
 
-  async function save(published?: boolean) {
+  async function persist(publish?: boolean) {
     if (!title.trim()) {
       toast.error("Give your experience a title.");
       return;
     }
-    if (!body.trim()) {
-      toast.error("Write the experience body.");
-      return;
-    }
     setBusy(true);
     try {
-      await saveInterviewExperienceAction({
-        id: initial?.id,
-        spaceId,
+      const res = await saveInterviewExperienceAction({
+        id: id ?? undefined,
+        spaceId: ctx.space.id,
         title,
         company: company || undefined,
         role: role || undefined,
         outcome: outcome || undefined,
         difficulty: difficulty || undefined,
         summary: summary || undefined,
-        body,
-        published,
+        body: initial?.body || undefined,
+        bodyJson: bodyJson ?? undefined,
+        coverImage: coverImage || null,
+        published: publish,
       });
-      toast.success("Saved.");
-      router.push("/creator");
+      if (!id) {
+        setId(res.id);
+        window.history.replaceState(null, "", `/creator/experience/${res.id}`);
+      }
+      if (res.slug) setSlug(res.slug);
+      await setSpaceContentAction(ctx.space.id, {
+        contentType: "INTERVIEW_EXPERIENCE",
+        contentId: res.id,
+        accessTierRank: access.rank === "" ? null : parseInt(access.rank, 10),
+        purchasePriceCents: access.price.trim() === "" ? null : Math.round(parseFloat(access.price) * 100),
+      });
+      if (publish !== undefined) setPublished(publish);
+      setSavedAt(new Date());
+      toast.success(publish === true ? "Published — followers notified." : "Saved.");
+      router.refresh();
     } catch (err) {
       toast.error("Save failed", { description: err instanceof Error ? err.message : String(err) });
+    } finally {
       setBusy(false);
     }
   }
 
+  const persistRef = useRef(persist);
+  useEffect(() => {
+    persistRef.current = persist;
+  });
+  const dirtyRef = useRef(0);
+  useEffect(() => {
+    if (!id || published || busy) return;
+    dirtyRef.current += 1;
+    const token = dirtyRef.current;
+    const t = setTimeout(() => {
+      if (token === dirtyRef.current) void persistRef.current(undefined);
+    }, 3000);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [title, company, role, outcome, difficulty, summary, coverImage, bodyJson]);
+
   return (
-    <div className="max-w-3xl mx-auto px-4 py-8 space-y-5">
-      <Link href="/creator" className="inline-flex items-center gap-1.5 text-xs font-semibold text-muted hover:text-fg">
-        <ArrowLeft className="w-3.5 h-3.5" /> Creator Studio
-      </Link>
-
-      <div className="flex items-center gap-3">
-        <div className="w-10 h-10 rounded-xl bg-accent-glow border border-accent/20 grid place-items-center text-accent">
-          <Briefcase className="w-5 h-5" />
-        </div>
-        <h1 className="text-2xl font-black tracking-tight text-fg">
-          {initial ? "Edit interview experience" : "New interview experience"}
-        </h1>
-      </div>
-
-      <section className="rounded-2xl border border-border bg-surface shadow-tile p-5 space-y-4">
-        <Field label="Title">
+    <div className="max-w-6xl mx-auto px-4 py-8">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+        <div className="lg:col-span-8 space-y-5 min-w-0">
+          <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.16em] text-sky-500">
+            <Briefcase className="w-3.5 h-3.5" /> Interview Experience
+          </div>
           <input
             value={title}
             onChange={(e) => setTitle(e.target.value)}
-            placeholder="e.g. My onsite loop at Stripe"
-            className={`${inputCls} text-base font-semibold`}
+            placeholder='e.g. "My Stripe Frontend Engineer loop"'
+            className="w-full px-0 py-1 bg-transparent border-0 border-b border-border text-fg text-2xl md:text-3xl font-black tracking-tight placeholder:text-muted/30 focus:outline-none focus:border-accent/40"
           />
-        </Field>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <Field label="Company">
-            <input value={company} onChange={(e) => setCompany(e.target.value)} placeholder="Stripe" className={inputCls} />
-          </Field>
-          <Field label="Role">
-            <input value={role} onChange={(e) => setRole(e.target.value)} placeholder="Senior Frontend Engineer" className={inputCls} />
-          </Field>
-          <Field label="Outcome">
-            <select value={outcome} onChange={(e) => setOutcome(e.target.value as Outcome)} className={inputCls}>
-              <option value="">—</option>
-              <option value="offer">Offer</option>
-              <option value="rejected">Rejected</option>
-              <option value="pending">Pending</option>
-              <option value="withdrew">Withdrew</option>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            <input
+              value={company}
+              onChange={(e) => setCompany(e.target.value)}
+              placeholder="Company"
+              className="px-3 py-2 rounded-lg border border-border bg-bg text-fg text-sm focus:outline-none focus:border-accent/40"
+            />
+            <input
+              value={role}
+              onChange={(e) => setRole(e.target.value)}
+              placeholder="Role"
+              className="px-3 py-2 rounded-lg border border-border bg-bg text-fg text-sm focus:outline-none focus:border-accent/40"
+            />
+            <select
+              value={outcome}
+              onChange={(e) => setOutcome(e.target.value as Outcome)}
+              className="px-2.5 py-2 rounded-lg border border-border bg-bg text-fg text-sm focus:outline-none"
+              title="Outcome"
+            >
+              <option value="">outcome…</option>
+              <option value="offer">offer</option>
+              <option value="rejected">rejected</option>
+              <option value="pending">pending</option>
+              <option value="withdrew">withdrew</option>
             </select>
-          </Field>
-          <Field label="Difficulty">
-            <select value={difficulty} onChange={(e) => setDifficulty(e.target.value as Difficulty)} className={inputCls}>
-              <option value="">—</option>
-              <option value="easy">Easy</option>
-              <option value="medium">Medium</option>
-              <option value="hard">Hard</option>
+            <select
+              value={difficulty}
+              onChange={(e) => setDifficulty(e.target.value as Difficulty)}
+              className="px-2.5 py-2 rounded-lg border border-border bg-bg text-fg text-sm focus:outline-none"
+              title="Difficulty"
+            >
+              <option value="">difficulty…</option>
+              <option value="easy">easy</option>
+              <option value="medium">medium</option>
+              <option value="hard">hard</option>
             </select>
-          </Field>
-        </div>
-        <Field label="Summary (optional)">
+          </div>
           <input
             value={summary}
             onChange={(e) => setSummary(e.target.value)}
-            placeholder="One line shown in previews and the paywall"
-            className={inputCls}
+            placeholder="One-line summary shown on cards (optional)"
+            className="w-full px-3 py-2 rounded-lg border border-border bg-bg text-fg text-sm focus:outline-none focus:border-accent/40"
           />
-        </Field>
-        <Field label="Experience (markdown)">
-          <textarea
-            value={body}
-            onChange={(e) => setBody(e.target.value)}
-            placeholder={"Walk through the rounds, questions, timeline, what went well, and tips…"}
-            rows={16}
-            className={`${inputCls} font-mono leading-relaxed resize-y`}
-          />
-        </Field>
-      </section>
+          <ImageDropField label="Cover image" hint="Shown on your space page" value={coverImage} onChange={setCoverImage} />
 
-      <div className="flex items-center gap-2">
-        <button
-          onClick={() => save(false)}
-          disabled={busy}
-          className="px-4 py-2 rounded-lg border border-border text-sm font-bold text-fg hover:bg-panel disabled:opacity-50"
-        >
-          Save draft
-        </button>
-        <button
-          onClick={() => save(true)}
-          disabled={busy}
-          className="px-4 py-2 rounded-lg bg-accent hover:bg-accent-soft text-bg text-sm font-bold shadow-soft disabled:opacity-50"
-        >
-          {busy ? "Saving…" : "Save & publish"}
-        </button>
+          <RichEditor
+            initialJson={initial?.bodyJson}
+            initialMarkdown={initial?.body || null}
+            placeholder="Tell the story round by round — what they asked, how it went, what you'd do differently…"
+            minHeightClass="min-h-[380px]"
+            embeds={ctx.embeds}
+            onChange={setBodyJson}
+          />
+        </div>
+
+        <aside className="lg:col-span-4 lg:sticky lg:top-6">
+          <PublishPanel
+            backHref={`/creator/${ctx.space.handle}/content`}
+            published={published}
+            busy={busy}
+            savedAt={savedAt}
+            publicHref={slug ? `/c/${ctx.space.handle}/experience/${slug}` : null}
+            tiers={ctx.tiers}
+            chargesEnabled={ctx.chargesEnabled}
+            access={access}
+            onAccessChange={setAccess}
+            onSave={(p) => void persist(p)}
+          />
+        </aside>
       </div>
     </div>
   );

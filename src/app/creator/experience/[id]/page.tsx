@@ -2,6 +2,7 @@ import { auth } from "@/lib/auth";
 import { redirect, notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { userCan } from "@/lib/permissions/access";
+import { getEditorContext } from "../../editor/data";
 import ExperienceEditor from "./ExperienceEditor";
 
 export const metadata = { robots: { index: false, follow: false } };
@@ -19,10 +20,18 @@ export default async function ExperienceEditorPage({ params, searchParams }: Pag
   if (!userId) redirect("/login?next=/creator");
   if (!(await userCan(userId, "content:author"))) redirect("/dashboard");
 
-  if (id === "new") return <ExperienceEditor initial={null} spaceId={spaceId} />;
+  if (id === "new") {
+    if (!spaceId) redirect("/creator");
+    const ctx = await getEditorContext(userId, spaceId);
+    if (!ctx) notFound();
+    return <ExperienceEditor initial={null} ctx={ctx} />;
+  }
 
   const exp = await prisma.interviewExperience.findUnique({ where: { id } });
   if (!exp || exp.authorId !== userId) notFound();
+
+  const ctx = await getEditorContext(userId, exp.spaceId, { contentType: "INTERVIEW_EXPERIENCE", contentId: exp.id });
+  if (!ctx) notFound();
 
   return (
     <ExperienceEditor
@@ -35,9 +44,12 @@ export default async function ExperienceEditorPage({ params, searchParams }: Pag
         difficulty: (exp.difficulty as "easy" | "medium" | "hard" | null) ?? "",
         summary: exp.summary ?? "",
         body: exp.body,
+        bodyJson: exp.bodyJson ?? null,
+        coverImage: exp.coverImage ?? "",
         published: exp.published,
+        slug: exp.slug,
       }}
-      spaceId={exp.spaceId}
+      ctx={ctx}
     />
   );
 }

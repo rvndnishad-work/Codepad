@@ -131,6 +131,8 @@ async function main() {
       prisma.spaceContent.deleteMany({ where: { spaceId: prior.id } }),
       prisma.spaceTier.deleteMany({ where: { spaceId: prior.id } }),
       prisma.spaceMembership.deleteMany({ where: { spaceId: prior.id } }),
+      prisma.spaceFollow.deleteMany({ where: { spaceId: prior.id } }),
+      prisma.spaceEvent.deleteMany({ where: { spaceId: prior.id } }),
       prisma.tutorial.deleteMany({ where: { spaceId: prior.id } }),
       prisma.interviewQA.deleteMany({ where: { spaceId: prior.id } }),
       prisma.interviewExperience.deleteMany({ where: { spaceId: prior.id } }),
@@ -150,6 +152,14 @@ async function main() {
       avatarUrl: AVATAR,
       coverUrl: COVER,
       published: true,
+      featured: true,
+      topics: ["frontend", "react", "javascript", "interview-prep"],
+      socials: {
+        youtube: "https://youtube.com/@thefrontendlab",
+        linkedin: "https://linkedin.com/in/frontend-lab",
+        x: "https://x.com/frontendlab",
+        website: "https://frontendlab.dev",
+      },
       layout: {
         heroStyle: "banner",
         alignment: "left",
@@ -172,10 +182,35 @@ async function main() {
   // 5. Two published tiers.
   const [supporter, pro] = await Promise.all([
     prisma.spaceTier.create({
-      data: { spaceId: space.id, name: "Supporter", rank: 1, priceCents: 500, published: true },
+      data: {
+        spaceId: space.id,
+        name: "Supporter",
+        description: "Every members-only tutorial and prep guide.",
+        benefits: [
+          "All Supporter-tier tutorials & guides",
+          "New content notifications",
+          "Support independent teaching",
+        ],
+        rank: 1,
+        priceCents: 500,
+        published: true,
+      },
     }),
     prisma.spaceTier.create({
-      data: { spaceId: space.id, name: "Pro", rank: 2, priceCents: 1500, published: true },
+      data: {
+        spaceId: space.id,
+        name: "Pro",
+        description: "Everything, including deep-dive interview loops.",
+        benefits: [
+          "Everything in Supporter",
+          "Full interview experience write-ups",
+          "Pro-only deep-dive tutorials",
+          "Early access to new series",
+        ],
+        rank: 2,
+        priceCents: 1500,
+        published: true,
+      },
     }),
   ]);
 
@@ -376,6 +411,50 @@ async function main() {
       },
     });
   }
+
+  // 14. Free followers — the fans plus a few follow-only accounts.
+  const followers = await Promise.all(
+    [
+      { email: "demo-follower1@example.com", name: "Kai Follower" },
+      { email: "demo-follower2@example.com", name: "Mira Follower" },
+      { email: "demo-follower3@example.com", name: "Devon Follower" },
+    ].map((f) =>
+      prisma.user.upsert({ where: { email: f.email }, update: { name: f.name }, create: f }),
+    ),
+  );
+  await prisma.spaceFollow.createMany({
+    data: [...fans, ...followers].map((u) => ({ userId: u.id, spaceId: space.id })),
+    skipDuplicates: true,
+  });
+  console.log(`Followers: ${fans.length + followers.length}`);
+
+  // 15. 30 days of analytics events so the studio charts have a real shape.
+  const eventRows: { spaceId: string; kind: string; contentType?: string; contentId?: string; userId?: string; createdAt: Date }[] = [];
+  for (let day = 29; day >= 0; day--) {
+    const date = (h: number) => new Date(Date.now() - day * 86_400_000 - h * 3_600_000);
+    // Views trend gently upward toward today, with mild variance.
+    const views = 3 + Math.round((29 - day) / 3) + ((day * 7) % 4);
+    for (let v = 0; v < views; v++) {
+      eventRows.push({ spaceId: space.id, kind: "SPACE_VIEW", createdAt: date(v + 1) });
+    }
+    const contentViews = Math.max(1, Math.round(views / 2));
+    for (let v = 0; v < contentViews; v++) {
+      const a = attach[(day * 3 + v) % attach.length];
+      eventRows.push({
+        spaceId: space.id,
+        kind: "CONTENT_VIEW",
+        contentType: a.contentType,
+        contentId: a.contentId,
+        createdAt: date(v + 2),
+      });
+    }
+    if (day % 6 === 0) {
+      const u = [...fans, ...followers][(day / 6) % (fans.length + followers.length)];
+      eventRows.push({ spaceId: space.id, kind: "FOLLOW", userId: u.id, createdAt: date(3) });
+    }
+  }
+  await prisma.spaceEvent.createMany({ data: eventRows });
+  console.log(`Events: ${eventRows.length}`);
 
   console.log("✓ Demo creator space seeded.");
   console.log(`  Studio:  /creator/${space.handle}`);

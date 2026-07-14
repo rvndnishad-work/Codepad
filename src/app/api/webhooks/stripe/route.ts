@@ -4,6 +4,7 @@ import { recordPurchase } from "@/lib/ai-interview/credits";
 import {
   fulfillContentPurchase,
   fulfillMembershipCheckout,
+  fulfillMembershipRenewal,
   syncMembershipStatus,
 } from "@/lib/marketplace/fulfillment";
 import { syncConnectAccountFromStripe } from "@/lib/marketplace/connect";
@@ -134,6 +135,14 @@ export async function POST(req: Request) {
           cpe ? new Date(cpe * 1000) : null,
         );
         console.log(`Subscription ${sub.id} status → ${sub.status}.`);
+        break;
+      }
+
+      // Recurring membership payments → renewal earnings (first payment is
+      // recorded at checkout; subscription_create invoices are skipped inside).
+      case "invoice.paid": {
+        const invoice = event.data.object as Stripe.Invoice;
+        await fulfillMembershipRenewal(invoice);
         break;
       }
 

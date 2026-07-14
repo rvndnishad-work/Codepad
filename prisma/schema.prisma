@@ -1579,9 +1579,43 @@ model CreatorSpace {
   /// Public-page layout: hero style + ordered section visibility. Shape:
   /// { heroStyle: "banner"|"minimal", sections: [{ key, visible }] }.
   layout      Json?
+  /// Social profile links. Shape: { youtube?, linkedin?, x?, github?, website? }.
+  socials     Json?
+  /// Free-form topic tags shown on the directory + used for filtering.
+  topics      String[] @default([])
+  /// Staff-curated flag — featured spaces surface on the homepage/directory.
+  featured    Boolean  @default(false)
   published   Boolean  @default(false)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+}
+
+/// A free follow of a space — the audience-building relationship. Following
+/// costs nothing and drives publish notifications + the dashboard feed;
+/// paid access is SpaceMembership, not this.
+model SpaceFollow {
+  userId    String
+  spaceId   String
+  createdAt DateTime @default(now())
+
+  @@id([userId, spaceId])
+  @@index([spaceId])
+  @@index([userId])
+}
+
+/// Append-only analytics event for a space. Aggregated on read for the
+/// studio dashboard — no rollups in v1. `userId` is null for anonymous views.
+model SpaceEvent {
+  id          String   @id @default(cuid())
+  spaceId     String
+  /// "SPACE_VIEW" | "CONTENT_VIEW" | "FOLLOW"
+  kind        String
+  contentType String?
+  contentId   String?
+  userId      String?
+  createdAt   DateTime @default(now())
+
+  @@index([spaceId, createdAt])
 }
 
 /// A ranked membership tier within a space. Higher `rank` = more access: an
@@ -1591,6 +1625,10 @@ model SpaceTier {
   id              String  @id @default(cuid())
   spaceId         String
   name            String
+  /// One-line pitch shown under the tier name on the public page.
+  description     String?
+  /// "What you get" bullet list rendered as a checklist on the public page.
+  benefits        String[] @default([])
   rank            Int
   priceCents      Int
   currency        String  @default("usd")
@@ -1691,8 +1729,10 @@ model TutorialSection {
   tutorialId  String
   position    Int
   title       String?
-  /// Markdown body.
+  /// Markdown body (legacy authoring format — used when bodyJson is null).
   body        String
+  /// Tiptap JSON document — the rich-editor format. Takes precedence over body.
+  bodyJson    Json?
   snippetId   String?
   challengeId String?
   tutorial    Tutorial @relation(fields: [tutorialId], references: [id], onDelete: Cascade)
@@ -1705,14 +1745,15 @@ model InterviewQA {
   id        String              @id @default(cuid())
   spaceId   String
   authorId  String
-  slug      String
-  title     String
-  summary   String?
-  category  String?
-  published Boolean             @default(false)
-  createdAt DateTime            @default(now())
-  updatedAt DateTime            @updatedAt
-  questions InterviewQuestion[]
+  slug       String
+  title      String
+  summary    String?
+  category   String?
+  coverImage String?
+  published  Boolean             @default(false)
+  createdAt  DateTime            @default(now())
+  updatedAt  DateTime            @updatedAt
+  questions  InterviewQuestion[]
 
   @@unique([spaceId, slug])
   @@index([spaceId])
@@ -1723,8 +1764,10 @@ model InterviewQuestion {
   qaId       String
   position   Int
   question   String
-  /// Markdown answer.
+  /// Markdown answer (legacy authoring format — used when answerJson is null).
   answer     String
+  /// Tiptap JSON document — the rich-editor format. Takes precedence over answer.
+  answerJson Json?
   difficulty String?
   qa         InterviewQA @relation(fields: [qaId], references: [id], onDelete: Cascade)
 
@@ -1747,8 +1790,11 @@ model InterviewExperience {
   /// "easy" | "medium" | "hard"
   difficulty String?
   summary    String?
-  /// Markdown body — the full experience writeup.
+  /// Markdown body — the full experience writeup (legacy — used when bodyJson is null).
   body       String
+  /// Tiptap JSON document — the rich-editor format. Takes precedence over body.
+  bodyJson   Json?
+  coverImage String?
   published  Boolean  @default(false)
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt

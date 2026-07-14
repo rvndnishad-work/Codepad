@@ -17,6 +17,7 @@ import {
   CreditCard,
   Code2,
   Bug,
+  Store,
 } from "lucide-react";
 
 /**
@@ -33,6 +34,7 @@ const ICON_MAP: Record<string, React.ComponentType<{ className?: string }>> = {
   BookOpen,
   CreditCard,
   Bug,
+  Store,
 };
 
 /**
@@ -139,7 +141,9 @@ export default function NavDropdown({ label, items, kicker, featuredHref }: Prop
   const listItems = featuredItem ? items.filter((i) => i !== featuredItem) : items;
 
   // Close on route change (Link click) — pathname change is the cleanest signal.
+  // Syncing menu state to the router (an external system) is a valid effect use.
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setOpen(false);
   }, [pathname]);
 

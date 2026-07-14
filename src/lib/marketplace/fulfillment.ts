@@ -85,6 +85,63 @@ export async function fulfillMembershipCheckout(session: Stripe.Checkout.Session
   }
 }
 
+/**
+ * Recurring membership payment (invoice.paid) → record the renewal earning.
+ * The FIRST payment is recorded by fulfillMembershipCheckout, so invoices with
+ * billing_reason "subscription_create" are skipped — recording them too would
+ * double-count the same money under a different charge id. No-ops for
+ * invoices that don't belong to a space membership (workspace plans).
+ */
+export async function fulfillMembershipRenewal(invoice: Stripe.Invoice) {
+  // The subscription id moved between Stripe API versions (top-level string →
+  // parent.subscription_details) — read both shapes defensively.
+  const inv = invoice as unknown as {
+    id: string;
+    billing_reason?: string | null;
+    amount_paid?: number | null;
+    currency?: string | null;
+    payment_intent?: string | { id: string } | null;
+    subscription?: string | { id: string } | null;
+    parent?: { subscription_details?: { subscription?: string | { id: string } | null } | null } | null;
+  };
+  if (inv.billing_reason === "subscription_create") return;
+
+  const rawSub = inv.subscription ?? inv.parent?.subscription_details?.subscription ?? null;
+  const subscriptionId = typeof rawSub === "string" ? rawSub : rawSub?.id;
+  if (!subscriptionId || !inv.amount_paid) return;
+
+  const membership = await prisma.spaceMembership.findUnique({
+    where: { stripeSubscriptionId: subscriptionId },
+    select: { subscriberId: true, spaceId: true, tierRank: true },
+  });
+  if (!membership) return; // not a space membership (e.g. a workspace plan)
+
+  const [space, tier] = await Promise.all([
+    prisma.creatorSpace.findUnique({ where: { id: membership.spaceId }, select: { ownerId: true } }),
+    prisma.spaceTier.findUnique({
+      where: { spaceId_rank: { spaceId: membership.spaceId, rank: membership.tierRank } },
+      select: { id: true, platformFeeBps: true },
+    }),
+  ]);
+  if (!space) return;
+
+  const chargeId =
+    typeof inv.payment_intent === "string" ? inv.payment_intent : (inv.payment_intent?.id ?? `inv:${inv.id}`);
+  const res = await recordCreatorEarning({
+    creatorId: space.ownerId,
+    stripeChargeId: chargeId,
+    grossCents: inv.amount_paid,
+    platformFeeBps: tier?.platformFeeBps ?? FALLBACK_FEE_BPS,
+    currency: inv.currency ?? "usd",
+    sourceKind: "TIER",
+    sourceId: tier?.id ?? null,
+    buyerId: membership.subscriberId,
+  });
+  console.log(
+    `MEMBERSHIP_RENEWAL ${subscriptionId}: earning ${res.recorded ? "recorded" : "already recorded"} (${inv.amount_paid} ${inv.currency})`,
+  );
+}
+
 /** Mirror a Stripe subscription's status onto SpaceMembership rows. No-ops for
  *  workspace subscriptions (no matching row). */
 export async function syncMembershipStatus(

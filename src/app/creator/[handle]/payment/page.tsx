@@ -72,7 +72,6 @@ export default async function CreatorSpacePaymentPage({ params }: Props) {
     },
   ];
 
-  const chargesEnabled = !!account?.chargesEnabled;
   const hasAccount = !!account?.stripeAccountId;
 
   return (
@@ -96,10 +95,13 @@ export default async function CreatorSpacePaymentPage({ params }: Props) {
         tiers={tierRows.map((t) => ({
           id: t.id,
           name: t.name,
+          description: t.description,
+          benefits: t.benefits,
           rank: t.rank,
           priceCents: t.priceCents,
           currency: t.currency,
           published: t.published,
+          hasStripePrice: !!t.stripePriceId,
         }))}
       />
 

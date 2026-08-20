@@ -726,11 +726,32 @@ Guidelines:
 /**
  * Bound the files payload sent to Gemini per turn. Without this, every chat
  * message ships the entire workspace inside the system prompt — token cost
- * grows linearly with code size. Cap at ~6KB.
+ * grows linearly with code size. Cap at ~6KB with safe valid JSON formatting.
  */
-function truncateFilesForPrompt(files: Record<string, string>): string {
-  const MAX_CHARS = 6000;
-  const json = JSON.stringify(files);
-  if (json.length <= MAX_CHARS) return json;
-  return json.slice(0, MAX_CHARS) + '..."<truncated>"}';
+function truncateFilesForPrompt(files: Record<string, string>, maxTotalChars = 6000): string {
+  if (!files || typeof files !== "object") return "{}";
+  const entries = Object.entries(files);
+  if (entries.length === 0) return "{}";
+
+  const safe: Record<string, string> = {};
+  const maxPerFile = Math.max(500, Math.floor(maxTotalChars / entries.length));
+
+  for (const [path, content] of entries) {
+    if (typeof content !== "string") continue;
+    if (content.length > maxPerFile) {
+      safe[path] = content.slice(0, maxPerFile) + "\n/* ...[truncated for prompt brevity] */";
+    } else {
+      safe[path] = content;
+    }
+  }
+
+  const json = JSON.stringify(safe);
+  if (json.length <= maxTotalChars) return json;
+
+  // Fallback: retain path keys and short previews if still oversized
+  const minimal: Record<string, string> = {};
+  for (const [path, content] of entries) {
+    minimal[path] = typeof content === "string" ? content.slice(0, 200) + "..." : "";
+  }
+  return JSON.stringify(minimal);
 }

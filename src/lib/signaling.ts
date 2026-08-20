@@ -12,9 +12,24 @@ export function getSignalingUrls(): string[] {
       .filter((url) => url.length > 0);
   }
 
-  // Fallbacks: local development and public Yjs signaling servers
+  // In browser runtime, attempt to infer current origin websocket when port 4444 is used in dev
+  if (typeof window !== "undefined" && window.location) {
+    const isHttps = window.location.protocol === "https:";
+    const protocol = isHttps ? "wss:" : "ws:";
+    const host = window.location.hostname;
+    
+    if (process.env.NODE_ENV === "development") {
+      return [
+        `${protocol}//${host}:4444`,
+        "ws://localhost:4444",
+      ];
+    }
+  }
+
+  // Fallbacks: local development and fallback signaling
   return [
     "ws://localhost:4444",
     "wss://signaling.yjs.dev",
   ];
 }
+

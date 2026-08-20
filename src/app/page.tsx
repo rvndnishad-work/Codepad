@@ -11,6 +11,8 @@ import HomeExplore from "./HomeExplore";
 import HomeCreators from "./HomeCreators";
 import HomeChallenges from "./HomeChallenges";
 import HomeFinalCTA from "./HomeFinalCTA";
+import HomeStickyStory from "./HomeStickyStory";
+import HomeHorizontalScrub from "./HomeHorizontalScrub";
 import Link from "next/link";
 import { ArrowRight, BookOpen, TrendingUp, PenSquare } from "lucide-react";
 import { type BlogFeedEntry } from "@/components/BlogFeedItem";
@@ -295,6 +297,10 @@ export default async function HomePage() {
       />
 
       <HomeArsenal counts={arsenal} />
+
+      <HomeStickyStory />
+
+      <HomeHorizontalScrub />
 
       <HomeBento />
 

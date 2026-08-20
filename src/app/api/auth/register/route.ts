@@ -136,7 +136,18 @@ export async function POST(req: Request) {
       return NextResponse.json({ ok: true, otpSent: true });
     }
 
-    // 2. Validate supplied OTP
+    // 2. Validate supplied OTP with brute-force protection (max 5 attempts per window)
+    const otpLimit = await rateLimitDistributed("otp-verify:" + email, 5, 10 * 60_000);
+    if (!otpLimit.ok) {
+      await prisma.verificationToken.deleteMany({
+        where: { identifier: email },
+      });
+      return NextResponse.json(
+        { error: "Too many incorrect verification attempts. Please request a new code." },
+        { status: 429 }
+      );
+    }
+
     const tokenRecord = await prisma.verificationToken.findFirst({
       where: {
         identifier: email,

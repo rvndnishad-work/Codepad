@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Flame, Sparkles, TrendingUp, Users, PenSquare, Hash } from "lucide-react";
+import { Flame, Sparkles, TrendingUp, Users, PenSquare, Hash, Search, X } from "lucide-react";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { validatePageAccess } from "@/lib/settings";
@@ -42,7 +42,7 @@ function safeTags(raw: string | null): string[] {
 export default async function BlogListingPage({
   searchParams,
 }: {
-  searchParams: Promise<{ tab?: string; tag?: string }>;
+  searchParams: Promise<{ tab?: string; tag?: string; q?: string }>;
 }) {
   const sp = await searchParams;
   const session = await auth().catch(() => null);
@@ -53,6 +53,7 @@ export default async function BlogListingPage({
   const tab: Tab =
     requestedTab === "following" && !userId ? "latest" : requestedTab;
   const tag = sp.tag?.trim().toLowerCase() || null;
+  const q = sp.q?.trim() || null;
 
   // Build the where clause for the feed.
   let where: any = { published: true };
@@ -75,9 +76,20 @@ export default async function BlogListingPage({
     where = { ...where, tags: { contains: `"${tag}"` } };
   }
 
-  // Featured carousel runs only on the Latest tab with no tag filter — once the
+  if (q) {
+    where = {
+      ...where,
+      OR: [
+        { title: { contains: q, mode: "insensitive" } },
+        { excerpt: { contains: q, mode: "insensitive" } },
+        { content: { contains: q, mode: "insensitive" } },
+      ],
+    };
+  }
+
+  // Featured carousel runs only on the Latest tab with no tag or search filter — once the
   // user has narrowed the view, a horizontal "pinned" rail just gets in the way.
-  const showFeatured = tab === "latest" && !tag;
+  const showFeatured = tab === "latest" && !tag && !q;
   const featuredRows = showFeatured
     ? await prisma.blogPost.findMany({
         where: { published: true, featured: true },
@@ -223,7 +235,7 @@ export default async function BlogListingPage({
               return (
                 <Link
                   key={t.id}
-                  href={`/blog?tab=${t.id}${tag ? `&tag=${tag}` : ""}`}
+                  href={`/blog?tab=${t.id}${tag ? `&tag=${tag}` : ""}${q ? `&q=${q}` : ""}`}
                   className={`flex items-center gap-2 px-4 py-3 text-sm font-bold border-b-2 transition-colors -mb-px ${
                     active
                       ? "border-accent text-fg"
@@ -237,16 +249,26 @@ export default async function BlogListingPage({
             })}
           </div>
 
-          {/* Active filter chip */}
-          {tag && (
-            <div className="mb-4 flex items-center gap-2 text-xs">
+          {/* Active filter chips */}
+          {(tag || q) && (
+            <div className="mb-6 flex flex-wrap items-center gap-2 text-xs">
               <span className="text-muted">Filtered by</span>
-              <Link
-                href={`/blog?tab=${tab}`}
-                className="px-2.5 py-1 rounded-md bg-accent/10 border border-accent/30 text-accent font-bold uppercase tracking-wider hover:bg-accent/20 transition"
-              >
-                #{tag} ✕
-              </Link>
+              {tag && (
+                <Link
+                  href={`/blog?tab=${tab}${q ? `&q=${q}` : ""}`}
+                  className="px-2.5 py-1 rounded-md bg-accent/10 border border-accent/30 text-accent font-bold uppercase tracking-wider hover:bg-accent/20 transition"
+                >
+                  #{tag} ✕
+                </Link>
+              )}
+              {q && (
+                <Link
+                  href={`/blog?tab=${tab}${tag ? `&tag=${tag}` : ""}`}
+                  className="px-2.5 py-1 rounded-md bg-accent/10 border border-accent/30 text-accent font-medium hover:bg-accent/20 transition flex items-center gap-1"
+                >
+                  Search: &ldquo;{q}&rdquo; <span className="font-bold">✕</span>
+                </Link>
+              )}
             </div>
           )}
 
@@ -272,6 +294,7 @@ export default async function BlogListingPage({
               initialCursor={lazyCursor}
               excludeIds={featuredIds}
               tag={tag}
+              q={q}
               enableLazy={canLazyLoad}
             />
           )}
@@ -279,6 +302,32 @@ export default async function BlogListingPage({
 
         {/* SIDEBAR */}
         <aside className="space-y-6 lg:sticky lg:top-20 lg:self-start">
+          {/* Search Bar */}
+          <div className="rounded-2xl border border-border bg-surface p-5">
+            <form action="/blog" method="GET" className="relative flex items-center w-full">
+              {tag && <input type="hidden" name="tag" value={tag} />}
+              {tab && <input type="hidden" name="tab" value={tab} />}
+              <div className="relative w-full">
+                <input
+                  type="text"
+                  name="q"
+                  defaultValue={q || ""}
+                  placeholder="Search articles..."
+                  className="w-full bg-bg border border-border rounded-xl pl-10 pr-10 py-2.5 text-xs text-fg placeholder-muted focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent transition-all"
+                />
+                <Search className="absolute left-3.5 top-3 w-4 h-4 text-muted" />
+                {q && (
+                  <Link
+                    href={`/blog?tab=${tab}${tag ? `&tag=${tag}` : ""}`}
+                    className="absolute right-3.5 top-3 text-muted hover:text-fg transition-colors"
+                  >
+                    <X className="w-4 h-4" />
+                  </Link>
+                )}
+              </div>
+            </form>
+          </div>
+
           {/* Write CTA */}
           <div className="rounded-2xl border border-accent/30 bg-accent/5 p-5">
             <div className="flex items-center gap-2 mb-2">

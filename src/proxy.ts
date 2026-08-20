@@ -17,6 +17,7 @@ const ALLOWLIST = [
   "/api/auth", // NextAuth sign-in & callbacks
   "/admin", // admin panel — to toggle maintenance off
   "/api/admin", // admin APIs
+  "/api/webhooks", // payment & email delivery webhooks (Stripe, Resend)
   "/robots.txt",
   "/sitemap.xml",
   "/favicon.ico",

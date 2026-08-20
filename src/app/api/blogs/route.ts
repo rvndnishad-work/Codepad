@@ -57,6 +57,7 @@ export async function GET(req: Request) {
   const includeDrafts = searchParams.get("published") === "false";
   const userId = searchParams.get("userId");
   const tag = searchParams.get("tag")?.trim().toLowerCase() || null;
+  const q = searchParams.get("q")?.trim() || null;
   const excludeFeatured = searchParams.get("excludeFeatured") === "true";
 
   // Cursor pagination — `before` is the createdAt ISO of the last item the
@@ -90,6 +91,15 @@ export async function GET(req: Request) {
         // SQLite doesn't have a native JSON-array filter, so we LIKE-match the
         // tag as a quoted substring inside the JSON-encoded tags column.
         ...(tag ? { tags: { contains: `"${tag}"` } } : {}),
+        ...(q
+          ? {
+              OR: [
+                { title: { contains: q, mode: "insensitive" } },
+                { excerpt: { contains: q, mode: "insensitive" } },
+                { content: { contains: q, mode: "insensitive" } },
+              ],
+            }
+          : {}),
         ...(before && !Number.isNaN(before.getTime())
           ? { createdAt: { lt: before } }
           : {}),

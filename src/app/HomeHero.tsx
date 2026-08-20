@@ -4,7 +4,7 @@ import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import dynamic from "next/dynamic";
 import { Sparkles, Plus, Play, LayoutGrid, Building2, User, BadgeDollarSign } from "lucide-react";
-import { motion, useScroll, useTransform, useReducedMotion } from "framer-motion";
+import { motion, useScroll, useTransform, useSpring, useReducedMotion } from "framer-motion";
 import Lazy3D from "@/components/home/Lazy3D";
 
 // The runnable editor pulls CodeMirror — keep it out of the critical path so
@@ -57,8 +57,21 @@ export default function HomeHero({
     target: containerRef,
     offset: ["start start", "end start"],
   });
-  const titleY = useTransform(scrollYProgress, [0, 1], [0, -30]);
-  const titleOpacity = useTransform(scrollYProgress, [0, 0.7, 1], [1, 0.6, 0.2]);
+
+  const smoothProgress = useSpring(scrollYProgress, {
+    stiffness: 100,
+    damping: 30,
+    mass: 0.2,
+  });
+
+  const titleY = useTransform(smoothProgress, [0, 1], [0, -35]);
+  const titleOpacity = useTransform(smoothProgress, [0, 0.75, 1], [1, 0.6, 0.15]);
+  
+  // 3D Canvas Tilt linked to spring scroll
+  const canvasRotateX = useTransform(smoothProgress, [0, 0.8], [12, 0]);
+  const canvasScale = useTransform(smoothProgress, [0, 0.8], [0.93, 1]);
+  const glareOpacity = useTransform(smoothProgress, [0, 0.4, 0.8], [0.4, 0.8, 0.2]);
+  const glareX = useTransform(smoothProgress, [0, 1], [-100, 200]);
 
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
@@ -73,7 +86,7 @@ export default function HomeHero({
   return (
     <div
       ref={containerRef}
-      className="relative overflow-hidden pt-20 pb-16 md:pt-28 md:pb-24 bg-bg min-h-[80vh] flex items-center"
+      className="relative overflow-hidden pt-20 pb-16 md:pt-28 md:pb-24 bg-bg min-h-[85vh] flex items-center"
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
@@ -105,7 +118,7 @@ export default function HomeHero({
         <div className="flex justify-center lg:justify-start mb-8">
           <nav
             aria-label="Choose your view"
-            className="inline-flex items-center rounded-full border border-border bg-surface/60 backdrop-blur-md p-1 text-xs font-bold"
+            className="inline-flex items-center rounded-full border border-border bg-surface/60 backdrop-blur-md p-1 text-xs font-bold shadow-sm"
           >
             <Link
               href="/"
@@ -154,7 +167,7 @@ export default function HomeHero({
             </motion.div>
 
             <motion.h1
-              className="text-4xl md:text-6xl font-black tracking-tight text-fg leading-[1.05]"
+              className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-black tracking-tight text-fg leading-[1.03]"
               style={reducedMotion ? undefined : { y: titleY, opacity: titleOpacity }}
             >
               {isRecruiter ? (
@@ -174,13 +187,13 @@ export default function HomeHero({
               )}
             </motion.h1>
 
-            <p className="text-muted text-lg md:text-xl leading-relaxed font-medium max-w-xl mx-auto lg:mx-0">
+            <p className="text-muted text-base md:text-lg lg:text-xl leading-relaxed font-medium max-w-xl mx-auto lg:mx-0">
               {isRecruiter
                 ? "Live coding interviews with replay, async take-homes with server-side grading, AI screening at batch scale, and integrity signals on every attempt — in one workspace."
                 : "Hand-written interview question banks, runnable challenges in eight languages, and an AI-readiness track — practice in a real sandbox and turn it all into a shareable portfolio."}
             </p>
 
-            <div className="flex flex-col sm:flex-row items-center lg:justify-start justify-center gap-4">
+            <div className="flex flex-col sm:flex-row items-center lg:justify-start justify-center gap-4 pt-2">
               {isRecruiter ? (
                 <>
                   <Link
@@ -229,10 +242,21 @@ export default function HomeHero({
             </div>
           </div>
 
-          {/* ── Visual column ── */}
-          <div className="w-full">
+          {/* ── Visual 3D perspective column ── */}
+          <div className="w-full [perspective:1200px]">
             {isRecruiter ? (
-              <div>
+              <motion.div
+                style={
+                  reducedMotion
+                    ? undefined
+                    : {
+                        rotateX: canvasRotateX,
+                        scale: canvasScale,
+                        transformStyle: "preserve-3d",
+                      }
+                }
+                className="relative will-change-transform"
+              >
                 <Lazy3D
                   scene="funnel"
                   className="h-[340px] md:h-[400px] w-full"
@@ -246,9 +270,39 @@ export default function HomeHero({
                   <span>→ Offer</span>
                   <span className="text-emerald-500">→ Hired</span>
                 </div>
-              </div>
+              </motion.div>
             ) : (
-              <HeroRunner />
+              <motion.div
+                style={
+                  reducedMotion
+                    ? undefined
+                    : {
+                        rotateX: canvasRotateX,
+                        scale: canvasScale,
+                        transformStyle: "preserve-3d",
+                      }
+                }
+                className="relative will-change-transform"
+              >
+                {/* Floating 3D Telemetry Badges */}
+                <div className="absolute -top-3 -left-3 z-30 hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-xl border border-white/10 bg-surface/90 backdrop-blur-md shadow-xl text-[11px] font-bold text-fg">
+                  <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                  <span>0-Install In-Memory VFS</span>
+                </div>
+
+                <div className="absolute -bottom-3 -right-3 z-30 hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-xl border border-white/10 bg-surface/90 backdrop-blur-md shadow-xl text-[11px] font-bold text-fg">
+                  <span className="text-accent font-mono">⚡ 12ms</span>
+                  <span>Piston Sandbox Execution</span>
+                </div>
+
+                {/* Glare effect */}
+                <motion.div
+                  style={reducedMotion ? undefined : { opacity: glareOpacity, x: glareX }}
+                  className="absolute inset-0 pointer-events-none rounded-3xl bg-gradient-to-tr from-transparent via-white/5 to-transparent z-20"
+                />
+
+                <HeroRunner />
+              </motion.div>
             )}
           </div>
         </div>

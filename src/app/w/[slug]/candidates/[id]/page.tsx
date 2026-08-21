@@ -19,6 +19,7 @@ import {
 import CandidateNotesEditor from "./CandidateNotesEditor";
 import CandidateStatusControl from "./CandidateStatusControl";
 import CandidateStageControl from "./CandidateStageControl";
+import { getScreeningVerdict, type ScreeningVerdict } from "@/lib/ai-interview/verdict";
 import { History } from "lucide-react";
 
 type Props = {
@@ -143,6 +144,8 @@ export default async function CandidateDetailPage({ params }: Props) {
     status: string;
     detail?: string;
     score?: number | null;
+    /** Pass/fail interpretation of a completed AI screening. */
+    verdict?: ScreeningVerdict | null;
     /** Audit events have no destination — they're facts, not artifacts. */
     href: string | null;
     secondary: string;
@@ -220,6 +223,7 @@ export default async function CandidateDetailPage({ params }: Props) {
     ...candidate.aiInterviewSessions.map((s) => {
       const isDone = !!s.finishedAt;
       const isStarted = !!s.startedAt && !isDone;
+      const verdict = getScreeningVerdict(s.score);
       return {
         kind: "ai-screening" as const,
         id: s.id,
@@ -227,6 +231,7 @@ export default async function CandidateDetailPage({ params }: Props) {
         timestamp: s.finishedAt ?? s.startedAt ?? s.createdAt,
         status: isDone ? "COMPLETED" : isStarted ? "STARTED" : "INVITED",
         score: s.score,
+        verdict,
         href: `/w/${workspace.slug}/ai-interviews?candidate=${candidate.id}`,
         secondary: `AI screening · ${
           s.engagementLevel === "COACH"
@@ -234,7 +239,7 @@ export default async function CandidateDetailPage({ params }: Props) {
             : s.engagementLevel === "OBSERVER"
             ? "Observer mode"
             : "Reactive mode"
-        }${isStarted ? " · exited before submit" : ""}`,
+        }${isStarted ? " · exited before submit" : ""}${verdict ? ` · ${verdict.guidance}` : ""}`,
       };
     }),
   ].sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
@@ -493,6 +498,17 @@ export default async function CandidateDetailPage({ params }: Props) {
                             <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-600 dark:text-emerald-400">
                               <Award className="w-3 h-3" />
                               <span className="tabular-nums">{ev.score}%</span>
+                            </span>
+                          )}
+                          {/* Pass/fail verdict for completed AI screenings —
+                              HR decides next steps at a glance. */}
+                          {ev.kind === "ai-screening" && ev.verdict && (
+                            <span
+                              className={`inline-flex items-center px-2 py-0.5 rounded-md border text-[10px] font-black uppercase tracking-wider ${ev.verdict.className}`}
+                              title={ev.verdict.guidance}
+                            >
+                              {ev.status === "COMPLETED" ? (ev.verdict.passed ? "Passed" : "Failed") : ""}
+                              {ev.status === "COMPLETED" && ` · ${ev.verdict.label}`}
                             </span>
                           )}
                         </div>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useTransition } from "react";
+import { useState, useTransition } from "react";
 import { createPortal } from "react-dom";
 import Link from "next/link";
 import {
@@ -25,6 +25,7 @@ import {
   Plug,
   ShieldAlert,
   Layers,
+  AlertTriangle,
 } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -36,6 +37,7 @@ import {
   unbindExternalMcpFromTemplateAction,
 } from "./actions";
 import { AI_CREDIT_PACKS } from "@/lib/ai-interview/credits";
+import { getScreeningVerdict } from "@/lib/ai-interview/verdict";
 import ScreeningWizard from "./ScreeningWizard";
 
 export interface TemplateChoice {
@@ -155,9 +157,14 @@ export default function AIInterviewRecruiterConsole({
   initialCandidateId,
 }: ConsoleProps) {
   const [sessions, setSessions] = useState<RecruiterSession[]>(initialSessions);
-  const [selectedSessionId, setSelectedSessionId] = useState<string | null>(
-    initialSessions.length > 0 ? initialSessions[0].id : null
-  );
+  // Deep-link (?candidate=<id>) opens straight onto that candidate's session.
+  const [selectedSessionId, setSelectedSessionId] = useState<string | null>(() => {
+    if (initialCandidateId) {
+      const first = initialSessions.find((s) => s.candidateId === initialCandidateId);
+      if (first) return first.id;
+    }
+    return initialSessions.length > 0 ? initialSessions[0].id : null;
+  });
   const [templateChoices, setTemplateChoices] = useState<TemplateChoice[]>(templates);
 
   // Derived lookup so the candidate list and detail drawer can show readable
@@ -201,16 +208,6 @@ export default function AIInterviewRecruiterConsole({
 
   const activeSession = sessions.find((s) => s.id === selectedSessionId);
 
-  // When a candidate deep-link filter activates, focus their most relevant
-  // session so the detail drawer opens on the right person immediately.
-  useEffect(() => {
-    if (filterCandidate !== "ALL") {
-      const first = sessions.find((s) => s.candidateId === filterCandidate);
-      setSelectedSessionId(first ? first.id : null);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [filterCandidate]);
-
   const processedSessions = sessions
     .filter((s) => {
       const matchSearch =
@@ -248,7 +245,24 @@ export default function AIInterviewRecruiterConsole({
 
   const getCandidateBadge = (session: RecruiterSession) => {
     if (session.status !== "COMPLETED") return null;
+
+    // ABSOLUTE verdict first — being #1 of a weak batch means nothing at 10%.
+    // Relative crowns below only apply once the score clears the hiring bar.
+    const verdict = getScreeningVerdict(session.score);
     const rankIndex = rankPoolFor(session).findIndex((s) => s.id === session.id);
+
+    if (verdict && !verdict.passed) {
+      return (
+        <span
+          className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-widest border ${verdict.className}`}
+          title={verdict.guidance}
+        >
+          <AlertTriangle className="w-3 h-3" />
+          {verdict.label} · {session.score ?? 0}%
+        </span>
+      );
+    }
+
     if (rankIndex === 0) {
       return (
         <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-widest text-emerald-400 bg-emerald-500/10 border border-emerald-500/30 shadow-[0_0_15px_rgba(16,185,129,0.15)] animate-pulse">
@@ -715,6 +729,17 @@ export default function AIInterviewRecruiterConsole({
                         {activeSession.score}%
                       </div>
                       <span className="text-[9px] text-muted/60 mt-1 block">AI Weighted Rubric</span>
+                      {(() => {
+                        const v = getScreeningVerdict(activeSession.score);
+                        return v ? (
+                          <span
+                            className={`mt-2 inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[9px] font-black uppercase tracking-widest border ${v.className}`}
+                            title={v.guidance}
+                          >
+                            {v.label}
+                          </span>
+                        ) : null;
+                      })()}
                       {activeSession.aiSuspicionScore !== null && (
                         <SuspicionBadge score={activeSession.aiSuspicionScore} />
                       )}
@@ -1210,7 +1235,7 @@ function CustomTemplatesModal({
 
             <div className="space-y-1.5">
               <label className="text-[10px] font-black uppercase text-muted tracking-wider block">
-                Description (shown to candidate as the AI Interviewer's framing)
+                Description (shown to candidate as the AI Interviewer&apos;s framing)
               </label>
               <textarea
                 value={description}

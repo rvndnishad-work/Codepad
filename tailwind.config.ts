@@ -20,6 +20,11 @@ const config: Config = {
           soft: "var(--accent-soft)",
           glow: "var(--accent-glow)",
         },
+        secondary: {
+          DEFAULT: "var(--accent-2)",
+          soft: "var(--accent-2-soft)",
+          glow: "var(--accent-2-glow)",
+        },
       },
       fontFamily: {
         sans: [
@@ -67,6 +72,8 @@ const config: Config = {
           "100%": { transform: "scale(1)" },
         },
         shimmer: { "0%": { backgroundPosition: "-200% 0" }, "100%": { backgroundPosition: "200% 0" } },
+        "marquee-left": { from: { transform: "translateX(0)" }, to: { transform: "translateX(-50%)" } },
+        "marquee-right": { from: { transform: "translateX(-50%)" }, to: { transform: "translateX(0)" } },
       },
       animation: {
         "fade-in": "fade-in 200ms ease-out",
@@ -74,6 +81,8 @@ const config: Config = {
         "scale-in": "scale-in 200ms ease-out",
         "pop-in": "pop-in 260ms cubic-bezier(0.16,1,0.3,1)",
         shimmer: "shimmer 2.6s linear infinite",
+        "marquee-left": "marquee-left 42s linear infinite",
+        "marquee-right": "marquee-right 48s linear infinite",
       },
     },
   },

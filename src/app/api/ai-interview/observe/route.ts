@@ -1,10 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { rateLimit } from "@/lib/rate-limit";
-import { AI_INTERVIEW_GEMINI_MODEL } from "@/lib/ai-interview/scaffolds";
 import { resolveSessionRounds, type SessionRound } from "@/lib/ai-interview/rounds";
 import { resolveRoundsContent } from "@/lib/ai-interview/round-content";
 import { normalizeEngagementLevel } from "@/lib/ai-interview/credits";
+import {
+  callGemini,
+  extractText,
+  geminiApiKey,
+  type GeminiContent,
+} from "@/lib/ai-interview/gemini";
 
 /**
  * Proactive "Observer" endpoint — the background half of the live-presence
@@ -42,26 +47,20 @@ async function callGeminiText(params: {
   systemInstruction: string;
   userText: string;
 }): Promise<string> {
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/${AI_INTERVIEW_GEMINI_MODEL}:generateContent?key=${params.apiKey}`;
   try {
-    const res = await fetch(url, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        contents: [{ role: "user", parts: [{ text: params.userText }] }],
-        systemInstruction: { parts: [{ text: params.systemInstruction }] },
-        // gemini-2.5-flash is a "thinking" model: reasoning tokens count against
-        // maxOutputTokens, so a tiny cap leaks only a word or two. We keep
-        // thinking ON (it's much better at spotting bugs in raw code) and give a
-        // generous budget — the visible reply is still just one short sentence.
-        generationConfig: { maxOutputTokens: 512, temperature: 0.5 },
-      }),
+    // Shared client: timeout + retry + correct thinking-model config. The
+    // visible reply is just one short sentence, so thinking stays off.
+    const contents: GeminiContent[] = [
+      { role: "user", parts: [{ text: params.userText }] },
+    ];
+    const result = await callGemini({
+      apiKey: params.apiKey,
+      contents,
+      systemInstruction: params.systemInstruction,
+      maxOutputTokens: 512,
+      temperature: 0.5,
     });
-    if (!res.ok) return "";
-    const data = await res.json();
-    const parts = data.candidates?.[0]?.content?.parts;
-    if (!Array.isArray(parts)) return "";
-    return parts.map((p: { text?: string }) => p.text ?? "").join("").trim();
+    return extractText(result.parts).trim();
   } catch {
     return "";
   }
@@ -130,7 +129,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ comment: null });
   }
 
-  const apiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY;
+  const apiKey = geminiApiKey();
   if (!apiKey) {
     // No model → no proactive mock noise.
     return NextResponse.json({ comment: null });

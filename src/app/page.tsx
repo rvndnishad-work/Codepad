@@ -5,14 +5,13 @@ import { prisma } from "@/lib/prisma";
 import { validatePageAccess } from "@/lib/settings";
 import HomeHero from "./HomeHero";
 import HomeArsenal, { type ArsenalCounts } from "./HomeArsenal";
+import HomeHowItWorks from "./HomeHowItWorks";
+import TechMarquee from "@/components/home/TechMarquee";
 import HomeBento from "./HomeBento";
-import HomeInfographic from "./HomeInfographic";
 import HomeExplore from "./HomeExplore";
 import HomeCreators from "./HomeCreators";
 import HomeChallenges from "./HomeChallenges";
 import HomeFinalCTA from "./HomeFinalCTA";
-import HomeStickyStory from "./HomeStickyStory";
-import HomeHorizontalScrub from "./HomeHorizontalScrub";
 import Link from "next/link";
 import { ArrowRight, BookOpen, TrendingUp, PenSquare } from "lucide-react";
 import { type BlogFeedEntry } from "@/components/BlogFeedItem";
@@ -296,19 +295,21 @@ export default async function HomePage() {
         recentSnippet={welcomeData?.recent}
       />
 
+      {/* Breadth first: everything you can practice, with live DB counts. */}
       <HomeArsenal counts={arsenal} />
 
-      <HomeStickyStory />
+      {/* THE one pinned scroll moment: how the platform works under the hood. */}
+      <HomeHowItWorks />
 
-      <HomeHorizontalScrub />
+      {/* Breather: stack coverage as a lightweight marquee (no scroll-jacking). */}
+      <TechMarquee />
 
+      {/* Live proof: the actual editor demo running on the page. */}
       <HomeBento />
 
-      <HomeInfographic />
+      <HomeExplore featured={featured} />
 
       <HomeCreators />
-
-      <HomeExplore featured={featured} />
 
       <HomeChallenges stats={stats} />
 

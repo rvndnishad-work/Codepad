@@ -109,6 +109,23 @@ type Props = {
   initialChat: Message[];
 };
 
+/** Shape of GET /api/ai-interview/status — the honest health probe. */
+type AiStatus = {
+  ai: { configured: boolean; model: string };
+  credits: { required: number; balance: number; sufficient: boolean } | null;
+  deadline: string | null;
+  expired: boolean;
+  finished: boolean;
+  engagementLevel: string;
+};
+
+/** Metadata appended by /api/ai-interview/message on every turn. */
+type MessageTurnMeta = {
+  aiProvider?: "gemini" | "mock";
+  degraded?: boolean;
+  degradedReason?: string | null;
+};
+
 const ROUND_ICON: Record<string, React.ReactNode> = {
   frontend: <Monitor className="w-3.5 h-3.5" />,
   backend: <Server className="w-3.5 h-3.5" />,
@@ -156,6 +173,11 @@ export default function AIInterviewWorkspace({ session, rounds, initialChat }: P
   const [availableVoices, setAvailableVoices] = useState<SpeechSynthesisVoice[]>([]);
   const [selectedVoiceName, setSelectedVoiceName] = useState<string>("");
   const [speechRate, setSpeechRate] = useState<number>(0.97);
+  // Real AI health, probed on mount and refreshed after failed turns. Drives
+  // the status chip + banners so the candidate always knows whether the
+  // interviewer is live, degraded (offline mode), or paused (no credits).
+  const [aiStatus, setAiStatus] = useState<AiStatus | null>(null);
+  const [degradedTurn, setDegradedTurn] = useState(false);
   const recognitionRef = useRef<any>(null);
   const { width: chatW, onPointerDown: onChatDrag } = useResizable(450, 240, 700);
 
@@ -164,6 +186,26 @@ export default function AIInterviewWorkspace({ session, rounds, initialChat }: P
   const isMultiRound = rounds.length > 1;
 
   const chatEndRef = useRef<HTMLDivElement>(null);
+
+  // ── AI health derivation ────────────────────────────────────────────────
+  const outOfCredits = !!aiStatus?.credits && !aiStatus.credits.sufficient;
+  const aiConfigured = aiStatus ? aiStatus.ai.configured : true;
+  const offlineMode = degradedTurn || !aiConfigured;
+
+  const refreshAiStatus = () => {
+    fetch(`/api/ai-interview/status?inviteToken=${encodeURIComponent(session.inviteToken)}`)
+      .then((r) => (r.ok ? (r.json() as Promise<AiStatus>) : null))
+      .then((d) => {
+        if (d) setAiStatus(d);
+      })
+      .catch(() => {
+        /* probe is best-effort — banners just stay on last known state */
+      });
+  };
+  useEffect(() => {
+    refreshAiStatus();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [session.inviteToken]);
 
   const updateRoundFiles = (roundId: string, files: Record<string, string>) => {
     setRoundFiles((prev) => ({ ...prev, [roundId]: files }));
@@ -391,12 +433,18 @@ export default function AIInterviewWorkspace({ session, rounds, initialChat }: P
     try {
       const res = await postMessage("hello");
       if (res.ok) {
-        const data = (await res.json()) as { chatHistory: Message[] };
+        const data = (await res.json()) as { chatHistory: Message[] } & MessageTurnMeta;
         setChat(data.chatHistory);
+        setDegradedTurn(data.degraded === true);
         speakResponse(data.chatHistory[data.chatHistory.length - 1]?.text);
+      } else {
+        const data = (await res.json().catch(() => null)) as { error?: string } | null;
+        toast.error(data?.error ?? "The interviewer could not start. Please refresh the page.");
+        refreshAiStatus();
       }
     } catch (e) {
       console.error(e);
+      toast.error("Could not reach the interviewer. Check your connection and try again.");
     } finally {
       setSending(false);
     }
@@ -503,10 +551,14 @@ export default function AIInterviewWorkspace({ session, rounds, initialChat }: P
       const res = await postMessage(userMessage);
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
+        // 402 = the workspace ran out of AI credits mid-interview. Re-probe so
+        // the "paused" banner appears immediately instead of just a toast.
+        refreshAiStatus();
         throw new Error(data.error || "Failed to dispatch message");
       }
-      const data = (await res.json()) as { chatHistory: Message[] };
+      const data = (await res.json()) as { chatHistory: Message[] } & MessageTurnMeta;
       setChat(data.chatHistory);
+      setDegradedTurn(data.degraded === true);
       speakResponse(data.chatHistory[data.chatHistory.length - 1]?.text);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Interviewer failed to respond.");
@@ -870,6 +922,30 @@ export default function AIInterviewWorkspace({ session, rounds, initialChat }: P
             </span>
           </div>
 
+          {/* AI health banner — always visible so the candidate knows whether
+              the interviewer is live, degraded, or paused, before they type. */}
+          {(outOfCredits || offlineMode || aiStatus?.expired) && (
+            <div
+              className={`px-4 py-2 border-b border-border flex items-center gap-2 shrink-0 text-[11px] font-bold ${
+                outOfCredits || aiStatus?.expired
+                  ? "bg-rose-500/10 border-rose-500/25 text-rose-400"
+                  : "bg-amber-500/10 border-amber-500/25 text-amber-400"
+              }`}
+              role="status"
+            >
+              <span
+                className={`w-2 h-2 rounded-full shrink-0 ${
+                  outOfCredits || aiStatus?.expired ? "bg-rose-500" : "bg-amber-500 animate-pulse"
+                }`}
+              />
+              {outOfCredits
+                ? "Interviewer paused — this workspace is out of AI interview credits. Please contact your recruiter."
+                : aiStatus?.expired
+                  ? "Time is up for this session — submit your assessment to finish."
+                  : "The AI interviewer is temporarily in offline mode — replies come from a limited script and may not fit your answers."}
+            </div>
+          )}
+
           <div className="flex-1 min-h-0">
             <RoundSurface
               key={activeRound.roundId}
@@ -1188,11 +1264,27 @@ export default function AIInterviewWorkspace({ session, rounds, initialChat }: P
                 <div className="w-8 h-8 rounded-xl bg-accent/10 border border-accent/25 flex items-center justify-center text-accent">
                   <Bot className="w-4 h-4" />
                 </div>
-                <span className={`absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-emerald-500 border border-[#101424] ${sending ? "animate-ping" : ""}`} />
+                <span
+                  className={`absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border border-[#101424] ${
+                    outOfCredits
+                      ? "bg-rose-500"
+                      : offlineMode
+                        ? "bg-amber-500"
+                        : "bg-emerald-500"
+                  } ${sending ? "animate-ping" : ""}`}
+                />
               </div>
               <div>
                 <span className="text-[10px] font-black uppercase text-accent tracking-widest block">AI Interviewer</span>
-                <span className="text-xs font-bold text-fg">Agent Active</span>
+                <span className="text-xs font-bold text-fg">
+                  {sending
+                    ? "Thinking…"
+                    : outOfCredits
+                      ? "Paused · No credits"
+                      : offlineMode
+                        ? "Offline mode"
+                        : "Live"}
+                </span>
               </div>
             </div>
             <button

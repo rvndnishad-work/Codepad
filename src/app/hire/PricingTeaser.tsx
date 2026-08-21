@@ -1,10 +1,11 @@
 import Link from "next/link";
-import { ArrowRight, Check } from "lucide-react";
+import { ArrowRight, Check, Tag } from "lucide-react";
+import RevealOnScroll, { RevealItem } from "@/components/scroll/RevealOnScroll";
+import SectionHeading from "@/components/home/SectionHeading";
 
 /**
  * Compact pricing teaser for the recruiter page. Prices mirror /pricing
- * (monthly cadence) — if plans change there, update here too. Static server
- * component.
+ * (monthly cadence) — if plans change there, update here too.
  */
 const PLANS = [
   {
@@ -32,72 +33,67 @@ const PLANS = [
 
 export default function PricingTeaser() {
   return (
-    <section className="mx-auto max-w-6xl px-4 py-20">
-      <div className="flex items-end justify-between mb-10">
-        <div>
-          <div className="inline-flex items-center gap-2 text-[11px] font-black uppercase tracking-widest mb-2 px-3 py-1 rounded-full text-indigo-400 bg-indigo-500/10">
-            Pricing
-          </div>
-          <h2 className="text-3xl font-black text-fg tracking-tight">
-            Per-seat plans. Per-screening credits.
-          </h2>
-        </div>
-        <Link
-          href="/pricing"
-          className="text-sm font-bold text-muted hover:text-fg transition-colors flex items-center gap-2 group whitespace-nowrap"
-        >
-          Full pricing
-          <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
-        </Link>
-      </div>
+    <section className="mx-auto max-w-6xl px-4 py-24 md:py-32">
+      <SectionHeading
+        eyebrow="Pricing"
+        eyebrowIcon={<Tag className="w-3.5 h-3.5" />}
+        title="Per-seat plans."
+        highlight="Per-screening credits."
+        linkHref="/pricing"
+        linkLabel="Full pricing"
+        align="left"
+      />
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <RevealOnScroll stagger={0.1} amount={0.15} className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {PLANS.map((plan) => (
-          <div
-            key={plan.name}
-            className={`rounded-3xl border p-6 flex flex-col ${
-              plan.highlight
-                ? "border-indigo-500/40 bg-indigo-500/5 shadow-[0_8px_40px_-12px_rgba(99,102,241,0.25)]"
-                : "border-border bg-panel"
-            }`}
-          >
-            <div className="flex items-center justify-between mb-1">
-              <h3 className="text-lg font-black text-fg">{plan.name}</h3>
-              {plan.highlight && (
-                <span className="text-[10px] font-black uppercase tracking-wider text-indigo-400 bg-indigo-500/10 border border-indigo-500/25 px-2 py-0.5 rounded-full">
-                  Popular
-                </span>
-              )}
-            </div>
-            <div className="mb-3">
-              <span className="text-3xl font-black text-fg">{plan.price}</span>
-              <span className="text-xs text-muted font-bold"> / seat / month</span>
-            </div>
-            <p className="text-muted text-sm mb-4">{plan.blurb}</p>
-            <ul className="space-y-2 mb-6">
-              {plan.points.map((p) => (
-                <li key={p} className="flex items-start gap-2 text-sm text-muted">
-                  <Check className="w-4 h-4 text-indigo-400 shrink-0 mt-0.5" />
-                  {p}
-                </li>
-              ))}
-            </ul>
-            <Link
-              href="/pricing"
-              className={`mt-auto text-center px-4 py-2.5 rounded-xl text-sm font-bold transition-colors ${
+          <RevealItem key={plan.name}>
+            <div
+              className={`h-full rounded-3xl border p-6 flex flex-col transition-colors ${
                 plan.highlight
-                  ? "bg-indigo-500 hover:bg-indigo-600 text-white"
-                  : "bg-surface hover:bg-elevated text-fg border border-border"
+                  ? "border-secondary/40 bg-secondary/5 shadow-tile-hover"
+                  : "border-border bg-panel shadow-tile hover:border-secondary/30"
               }`}
             >
-              Compare plans
-            </Link>
-          </div>
+              <div className="flex items-center justify-between mb-1">
+                <h3 className="text-lg font-black text-fg">{plan.name}</h3>
+                {plan.highlight && (
+                  <span className="text-[10px] font-black uppercase tracking-wider text-secondary bg-secondary/10 border border-secondary/25 px-2 py-0.5 rounded-full">
+                    Popular
+                  </span>
+                )}
+              </div>
+              <div className="mb-3">
+                <span className="text-3xl font-black text-fg">{plan.price}</span>
+                <span className="text-xs text-muted font-bold"> / seat / month</span>
+              </div>
+              <p className="text-muted text-sm mb-4">{plan.blurb}</p>
+              <ul className="space-y-2 mb-6">
+                {plan.points.map((p) => (
+                  <li key={p} className="flex items-start gap-2 text-sm text-muted">
+                    <Check className="w-4 h-4 text-secondary shrink-0 mt-0.5" />
+                    {p}
+                  </li>
+                ))}
+              </ul>
+              <Link
+                href="/pricing"
+                className={`mt-auto text-center px-4 py-2.5 rounded-xl text-sm font-bold transition-all ${
+                  plan.highlight
+                    ? "bg-secondary hover:brightness-110 text-white"
+                    : "bg-surface hover:bg-elevated text-fg border border-border"
+                }`}
+              >
+                Compare plans
+              </Link>
+            </div>
+          </RevealItem>
         ))}
-      </div>
-      <p className="text-center text-xs text-muted/70 mt-6">
-        AI screenings are billed as credits on top of any plan — buy packs as you go, charged only when a candidate actually starts.
-      </p>
+      </RevealOnScroll>
+      <RevealOnScroll delay={0.15}>
+        <p className="text-center text-xs text-muted/70 mt-6">
+          AI screenings are billed as credits on top of any plan — buy packs as you go, charged only when a candidate actually starts.
+        </p>
+      </RevealOnScroll>
     </section>
   );
 }

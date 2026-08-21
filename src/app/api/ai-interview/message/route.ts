@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { AI_INTERVIEW_GEMINI_MODEL } from "@/lib/ai-interview/scaffolds";
 import { resolveSessionRounds, type SessionRound } from "@/lib/ai-interview/rounds";
 import { resolveRoundsContent } from "@/lib/ai-interview/round-content";
 import {
@@ -8,6 +7,14 @@ import {
   InsufficientCreditsError,
 } from "@/lib/ai-interview/credits";
 import { checkFilesSize } from "@/lib/ai-interview/files-size";
+import {
+  callGemini,
+  extractText,
+  geminiApiKey,
+  GeminiUnavailableError,
+  type GeminiContent,
+  type GeminiPart,
+} from "@/lib/ai-interview/gemini";
 import { rateLimit } from "@/lib/rate-limit";
 import {
   loadActiveExternalServers,
@@ -21,7 +28,6 @@ import {
   OUTBOUND_MAX_TOTAL_MS,
   type ResolvedTools,
   type ToolsCache,
-  type GeminiFunctionDeclaration,
 } from "@/lib/mcp/outbound-tools";
 
 /**
@@ -30,6 +36,14 @@ import {
  */
 const MAX_USER_MESSAGES_PER_SESSION = 60;
 const MIN_INTERVAL_MS = 1500;
+
+/**
+ * How much of the stored conversation is replayed to Gemini each turn. The DB
+ * keeps the full transcript (for grading + audit) but token cost per turn
+ * grows linearly with history — past this window, old turns stop earning
+ * their keep. 50 turns ≈ the whole realistic interview anyway.
+ */
+const MAX_HISTORY_SENT_TO_MODEL = 50;
 
 /**
  * Hard ceiling on Gemini ↔ tool-use loop iterations per turn. Without this,
@@ -42,56 +56,6 @@ type Message = {
   role: "user" | "assistant";
   text: string;
 };
-
-/**
- * One content entry in Gemini's `contents` array. We model it loose because
- * the part objects can be `{text}` OR `{functionCall}` OR `{functionResponse}`
- * across the tool-use loop.
- */
-type GeminiPart =
-  | { text: string }
-  | { functionCall: { name: string; args?: unknown } }
-  | { functionResponse: { name: string; response: { content?: string; error?: string } } };
-
-type GeminiContent = { role: "user" | "model"; parts: GeminiPart[] };
-
-/**
- * Single-shot Gemini call. Returns the raw candidate so the caller can inspect
- * function-call vs text parts. `tools` is optional — pass declarations to
- * enable function calling; omit for plain text generation.
- */
-async function callGemini(params: {
-  apiKey: string;
-  contents: GeminiContent[];
-  systemInstruction: string;
-  tools?: GeminiFunctionDeclaration[];
-}): Promise<{ parts: GeminiPart[] }> {
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/${AI_INTERVIEW_GEMINI_MODEL}:generateContent?key=${params.apiKey}`;
-
-  const body: Record<string, unknown> = {
-    contents: params.contents,
-    systemInstruction: { parts: [{ text: params.systemInstruction }] },
-    generationConfig: { maxOutputTokens: 800, temperature: 0.7 },
-  };
-  if (params.tools && params.tools.length > 0) {
-    body.tools = [{ functionDeclarations: params.tools }];
-  }
-
-  const res = await fetch(url, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(body),
-  });
-  if (!res.ok) {
-    throw new Error(`Gemini HTTP error ${res.status}`);
-  }
-  const data = await res.json();
-  const parts = data.candidates?.[0]?.content?.parts;
-  if (!Array.isArray(parts) || parts.length === 0) {
-    throw new Error("Empty response from Gemini");
-  }
-  return { parts: parts as GeminiPart[] };
-}
 
 /**
  * Tool-use loop. Calls Gemini; if the model emits functionCalls, dispatch
@@ -129,11 +93,8 @@ async function runToolUseLoop(params: {
 
     if (fnCalls.length === 0) {
       // Final text response — concatenate any text parts and return.
-      const text = candidate.parts
-        .map((p) => ("text" in p ? p.text : ""))
-        .filter(Boolean)
-        .join("");
-      if (!text.trim()) throw new Error("Empty text response from Gemini");
+      const text = extractText(candidate.parts);
+      if (!text.trim()) throw new GeminiUnavailableError("Empty text response from Gemini");
       return {
         text,
         toolCallsThisTurn,
@@ -251,8 +212,7 @@ async function runToolUseLoop(params: {
 }
 
 /**
- * Plain text-only call for the non-tool-using path. Same shape as before
- * Phase 4.1 so the mock-agent fallback can pretend nothing changed.
+ * Plain text-only call for the non-tool-using path.
  */
 async function callGeminiTextOnly(
   apiKey: string,
@@ -264,11 +224,8 @@ async function callGeminiTextOnly(
     parts: [{ text: msg.text }],
   }));
   const result = await callGemini({ apiKey, contents, systemInstruction });
-  const text = result.parts
-    .map((p) => ("text" in p ? p.text : ""))
-    .filter(Boolean)
-    .join("");
-  if (!text) throw new Error("Empty response from Gemini");
+  const text = extractText(result.parts);
+  if (!text) throw new GeminiUnavailableError("Empty response from Gemini");
   return text;
 }
 
@@ -641,15 +598,24 @@ Guidelines:
       systemInstruction += "\n\n" + REFERENCE_DATA_SYSTEM_NOTE;
     }
 
-    const apiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY;
+    const apiKey = geminiApiKey();
     let aiResponse = "";
     let toolCallsThisTurn: string[] = [];
+    // Honest provenance for the client: "gemini" means a real model reply,
+    // "mock" means the offline rules engine answered (upstream down, key
+    // missing, or empty response). The UI surfaces this as a status chip +
+    // banner instead of silently pretending the AI is fine.
+    let aiProvider: "gemini" | "mock" = "gemini";
+    let degradedReason: string | null = null;
 
     if (apiKey) {
+      // Replay only the recent window to the model — full transcript stays in
+      // the DB for grading/audit.
+      const recentHistory = history.slice(-MAX_HISTORY_SENT_TO_MODEL);
       try {
         if (resolved) {
           // Tool-use loop path.
-          const contents: GeminiContent[] = history.map((msg) => ({
+          const contents: GeminiContent[] = recentHistory.map((msg) => ({
             role: msg.role === "assistant" ? "model" : "user",
             parts: [{ text: msg.text }],
           }));
@@ -664,14 +630,22 @@ Guidelines:
           aiResponse = loopResult.text;
           toolCallsThisTurn = loopResult.toolCallsThisTurn;
         } else {
-          // Plain path — unchanged from pre-Phase-4.1.
-          aiResponse = await callGeminiTextOnly(apiKey, history, systemInstruction);
+          // Plain path.
+          aiResponse = await callGeminiTextOnly(apiKey, recentHistory, systemInstruction);
         }
       } catch (err) {
-        console.error("Gemini failed, falling back to mock agent:", err);
+        const detail =
+          err instanceof GeminiUnavailableError
+            ? `gemini unavailable (${err.message})`
+            : "unexpected error";
+        console.error(`[ai-interview] Gemini failed, degrading to mock agent: ${detail}`);
+        aiProvider = "mock";
+        degradedReason = err instanceof GeminiUnavailableError ? "upstream_unavailable" : "upstream_error";
         aiResponse = callMockAgent(message, files, history.length, session.templateId);
       }
     } else {
+      aiProvider = "mock";
+      degradedReason = "not_configured";
       aiResponse = callMockAgent(message, files, history.length, session.templateId);
     }
 
@@ -716,6 +690,9 @@ Guidelines:
     return NextResponse.json({
       chatHistory: history,
       response: aiResponse,
+      aiProvider,
+      degraded: aiProvider === "mock",
+      degradedReason,
     });
   } catch (error) {
     console.error("AI message error:", error);

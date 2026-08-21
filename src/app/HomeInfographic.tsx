@@ -118,7 +118,7 @@ function McpSimulator() {
     >
       <div className="sm:col-span-2 border border-slate-800 bg-slate-950/60 rounded-xl p-3 flex flex-col gap-1.5">
         <div className="text-[9px] font-bold uppercase text-slate-500 tracking-wider mb-1 flex items-center gap-1.5">
-          <Network className="w-3 h-3 text-indigo-400" /> MCP Catalog
+          <Network className="w-3 h-3 text-secondary" /> MCP Catalog
         </div>
         {[
           { id: "grade_structure", label: "grade_structure", desc: "Code quality heuristics" },
@@ -130,10 +130,10 @@ function McpSimulator() {
             type="button"
             onClick={() => setActiveTool(t.id)}
             className={`text-left p-2 rounded border transition-all ${
-              activeTool === t.id ? "bg-slate-900 border-indigo-500/30 text-white" : "border-transparent hover:bg-slate-900/40 text-slate-400"
+              activeTool === t.id ? "bg-slate-900 border-secondary/30 text-white" : "border-transparent hover:bg-slate-900/40 text-slate-400"
             }`}
           >
-            <div className="font-bold text-[10px] text-indigo-400">{t.label}</div>
+            <div className="font-bold text-[10px] text-secondary">{t.label}</div>
             <div className="text-[8px] text-slate-500">{t.desc}</div>
           </button>
         ))}
@@ -143,11 +143,11 @@ function McpSimulator() {
         <div>
           <div className="flex items-center justify-between border-b border-slate-900 pb-2 mb-2">
             <span className="text-[8px] uppercase tracking-wider text-slate-500">JSON-RPC Session</span>
-            <span className="w-1.5 h-1.5 rounded-full bg-indigo-500" />
+            <span className="w-1.5 h-1.5 rounded-full bg-secondary" />
           </div>
           {activeTool === "grade_structure" && (
             <div className="space-y-1">
-              <div><span className="text-indigo-400">› Call:</span> grade_structure()</div>
+              <div><span className="text-secondary">› Call:</span> grade_structure()</div>
               <div><span className="text-slate-600">Checking complexity, class bounds...</span></div>
               <div className="text-emerald-400">✓ Clean separation of layout files (95/100)</div>
               <div className="text-emerald-400">✓ No hardcoded environment variables</div>
@@ -155,7 +155,7 @@ function McpSimulator() {
           )}
           {activeTool === "grade_performance" && (
             <div className="space-y-1">
-              <div><span className="text-indigo-400">› Call:</span> grade_performance()</div>
+              <div><span className="text-secondary">› Call:</span> grade_performance()</div>
               <div><span className="text-slate-600">Evaluating sandbox runtime benchmark...</span></div>
               <div className="text-emerald-400">✓ Average execution time: 0.04 ms (O(1))</div>
               <div className="text-amber-400">▲ Memory footprint: 18.2MB (Expected: &lt;15MB)</div>
@@ -163,7 +163,7 @@ function McpSimulator() {
           )}
           {activeTool === "check_anti_cheat" && (
             <div className="space-y-1">
-              <div><span className="text-indigo-400">› Call:</span> check_anti_cheat()</div>
+              <div><span className="text-secondary">› Call:</span> check_anti_cheat()</div>
               <div><span className="text-slate-600">Cross-referencing GitHub snippets...</span></div>
               <div className="text-emerald-400">✓ 98% original keystroke cadence pattern</div>
               <div className="text-emerald-400">✓ Plagiarism probability: 2% (Safe bounds)</div>
@@ -198,20 +198,20 @@ function AtsSimulator() {
       <div className="border border-slate-800 bg-slate-950/60 rounded-xl p-4 relative min-h-[160px] flex flex-col justify-between">
         <div className="space-y-3">
           <div className="text-[9px] font-bold uppercase text-slate-500 tracking-wider flex items-center gap-1.5">
-            <Users className="w-3.5 h-3.5 text-indigo-400" /> ATS Campaign Lobby
+            <Users className="w-3.5 h-3.5 text-secondary" /> ATS Campaign Lobby
           </div>
           <div className="space-y-2">
             {candidates.map((c, i) => (
               <div key={i} className="flex justify-between items-center bg-slate-900/60 p-2.5 rounded-lg border border-slate-800">
                 <div className="flex items-center gap-2">
-                  <div className="w-2.5 h-2.5 rounded-full bg-indigo-500" />
+                  <div className="w-2.5 h-2.5 rounded-full bg-secondary" />
                   <div>
                     <div className="font-bold text-white">{c.name}</div>
                     <div className="text-[8px] text-slate-500">{c.role}</div>
                   </div>
                 </div>
                 <span className={`px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-wider ${
-                  c.badge === "LOBBY" ? "bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 animate-pulse" : "bg-slate-800 text-slate-500"
+                  c.badge === "LOBBY" ? "bg-secondary/10 text-secondary border border-secondary/20 animate-pulse" : "bg-slate-800 text-slate-500"
                 }`}>
                   {c.status}
                 </span>
@@ -279,7 +279,7 @@ function AntiCheatSimulator() {
         <div className="space-y-3">
           <div className="flex justify-between items-center">
             <div className="text-[9px] font-bold uppercase text-slate-500 tracking-wider flex items-center gap-1.5">
-              <ShieldCheck className="w-3.5 h-3.5 text-indigo-400" /> Live Proctoring Feed
+              <ShieldCheck className="w-3.5 h-3.5 text-secondary" /> Live Proctoring Feed
             </div>
             <span className={`px-2 py-0.5 rounded text-[8px] font-black ${
               status === "ACTIVE" 
@@ -340,10 +340,10 @@ function DossierSimulator() {
           <div key={idx} className="border border-slate-800 bg-slate-950/60 p-2.5 rounded-xl">
             <div className="flex justify-between text-[8px] uppercase tracking-wider text-slate-500 mb-1">
               <span>{m.name}</span>
-              <span className="text-indigo-400 font-bold">{m.score}%</span>
+              <span className="text-secondary font-bold">{m.score}%</span>
             </div>
             <div className="h-1 bg-slate-800 rounded-full overflow-hidden">
-              <div className="h-full bg-indigo-500" style={{ width: `${m.score}%` }} />
+              <div className="h-full bg-secondary" style={{ width: `${m.score}%` }} />
             </div>
           </div>
         ))}
@@ -355,7 +355,7 @@ function DossierSimulator() {
             <span className="text-[8px] uppercase tracking-wider text-slate-500">AI Scoring Output</span>
             <span className="text-[8px] text-emerald-400 font-bold">STABLE PROFILE</span>
           </div>
-          <div className="text-2xl font-black text-indigo-400 py-1 flex items-baseline gap-1 leading-none select-none">
+          <div className="text-2xl font-black text-secondary py-1 flex items-baseline gap-1 leading-none select-none">
             94 <span className="text-xs font-medium text-slate-500">/ 100 overall score</span>
           </div>
           <p className="text-[7.5px] text-slate-500 leading-normal mt-2">
@@ -394,7 +394,7 @@ export default function HomeInfographic({
         <RevealOnScroll className="mb-16 text-center" stagger={0.1}>
           <RevealItem>
             <div className={`inline-flex items-center gap-2 text-[11px] font-black uppercase tracking-[0.2em] mb-3 px-3 py-1.5 rounded-full ${
-              isRecruiter ? "text-indigo-400 bg-indigo-500/10" : "text-accent bg-accent/10"
+              isRecruiter ? "text-secondary bg-secondary/10" : "text-accent bg-accent/10"
             }`}>
               <Cpu className="w-3.5 h-3.5" />
               {isRecruiter ? "Hiring Lifecycle Flow" : "Runtime Architecture"}
@@ -404,7 +404,7 @@ export default function HomeInfographic({
             <h2 className="text-3xl md:text-5xl font-black text-fg tracking-tight leading-[1.05] max-w-3xl mx-auto">
               {isRecruiter ? (
                 <>
-                  Standardized evaluations, <span className="text-transparent bg-clip-text bg-gradient-to-br from-indigo-400 to-indigo-600">built on trust.</span>
+                  Standardized evaluations, <span className="text-transparent bg-clip-text bg-gradient-to-br from-secondary to-secondary-soft">built on trust.</span>
                 </>
               ) : (
                 <>
@@ -455,7 +455,7 @@ export default function HomeInfographic({
                   className={`text-left rounded-2xl border p-5 transition-all relative overflow-hidden flex gap-4 ${
                     isActive 
                       ? isRecruiter
-                        ? "bg-surface border-indigo-500/30 shadow-[0_4px_20px_-5px_rgba(99,102,241,0.12)]"
+                        ? "bg-surface border-secondary/30 shadow-tile-hover"
                         : "bg-surface border-accent/30 shadow-[0_4px_20px_-5px_rgba(var(--accent-rgb),0.12)]" 
                       : "bg-bg/40 border-border hover:border-border-strong hover:bg-surface/30"
                   }`}
@@ -464,14 +464,14 @@ export default function HomeInfographic({
                   {isActive && (
                     <motion.div 
                       layoutId="active-accent-bar"
-                      className={`absolute left-0 top-0 bottom-0 w-1 ${isRecruiter ? "bg-indigo-500" : "bg-accent"}`}
+                      className={`absolute left-0 top-0 bottom-0 w-1 ${isRecruiter ? "bg-secondary" : "bg-accent"}`}
                       transition={reducedMotion ? { duration: 0 } : { type: "spring", stiffness: 300, damping: 30 }}
                     />
                   )}
 
                   {/* Stage number */}
                   <div className={`font-mono text-xs font-black select-none ${
-                    isActive ? isRecruiter ? "text-indigo-400" : "text-accent" : "text-muted/50"
+                    isActive ? isRecruiter ? "text-secondary" : "text-accent" : "text-muted/50"
                   }`}>
                     {stage.number}
                   </div>
@@ -481,7 +481,7 @@ export default function HomeInfographic({
                       <span className={`text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded ${
                         isActive 
                           ? isRecruiter
-                            ? "bg-indigo-500/10 text-indigo-400 border border-indigo-500/20"
+                            ? "bg-secondary/10 text-secondary border border-secondary/20"
                             : "bg-accent/10 text-accent border border-accent/20"
                           : "bg-muted/10 text-muted/80"
                       }`}>
@@ -503,7 +503,7 @@ export default function HomeInfographic({
                         <div className="flex flex-wrap gap-x-3 gap-y-1.5 mt-3 pt-3 border-t border-border">
                           {stage.metrics.map((m, i) => (
                             <span key={i} className="inline-flex items-center gap-1 text-[10px] text-muted/80 font-mono">
-                              <span className={`w-1.5 h-1.5 rounded-full ${isRecruiter ? "bg-indigo-500" : "bg-accent"}`} />
+                              <span className={`w-1.5 h-1.5 rounded-full ${isRecruiter ? "bg-secondary" : "bg-accent"}`} />
                               {m}
                             </span>
                           ))}
@@ -535,9 +535,9 @@ export default function HomeInfographic({
                 </span>
               </div>
               <div className={`text-[10px] font-mono bg-slate-900 border border-slate-800 px-2 py-0.5 rounded flex items-center gap-1.5 ${
-                isRecruiter ? "text-indigo-400" : "text-accent"
+                isRecruiter ? "text-secondary" : "text-accent"
               }`}>
-                <span className={`w-1.5 h-1.5 rounded-full animate-pulse ${isRecruiter ? "bg-indigo-400" : "bg-accent"}`} />
+                <span className={`w-1.5 h-1.5 rounded-full animate-pulse ${isRecruiter ? "bg-secondary" : "bg-accent"}`} />
                 LIVE VIEW
               </div>
             </div>

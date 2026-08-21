@@ -69,7 +69,7 @@ export default function HomeChallenges({ stats }: { stats: Stats }) {
         <RevealOnScroll className="text-center mb-12 md:mb-16" stagger={0.1}>
           <RevealItem>
             <div className={`inline-flex items-center gap-2 text-[11px] font-black uppercase tracking-[0.2em] mb-4 px-3 py-1.5 rounded-full ${
-              isRecruiter ? "text-indigo-400 bg-indigo-500/10" : "text-accent bg-accent/10"
+              isRecruiter ? "text-secondary bg-secondary/10" : "text-accent bg-accent/10"
             }`}>
               {isRecruiter ? <Briefcase className="w-3.5 h-3.5" /> : <Sparkles className="w-3.5 h-3.5" />}
               {isRecruiter ? "Assess · Evaluate · Hire" : "Practice · Interview · Hire"}
@@ -79,7 +79,7 @@ export default function HomeChallenges({ stats }: { stats: Stats }) {
             <h2 className="text-3xl md:text-5xl font-black text-fg tracking-tight leading-[1.05] max-w-3xl mx-auto">
               {isRecruiter ? (
                 <>
-                  Evaluate developers, <span className="text-indigo-400">automate reviews.</span>
+                  Evaluate developers, <span className="text-secondary">automate reviews.</span>
                 </>
               ) : (
                 <>
@@ -116,8 +116,8 @@ export default function HomeChallenges({ stats }: { stats: Stats }) {
                     <StatCard
                       tone="emerald"
                       icon={<Target className="w-5 h-5" />}
-                      value="99.8%"
-                      label="AI grading accuracy"
+                      value="Auto"
+                      label="Server-side grading on submit"
                     />
                   </SpotlightCard>
                 </RevealItem>
@@ -126,8 +126,8 @@ export default function HomeChallenges({ stats }: { stats: Stats }) {
                     <StatCard
                       tone="amber"
                       icon={<Clock className="w-5 h-5" />}
-                      value="4.2s"
-                      label="Average time-to-grade"
+                      value="Replay"
+                      label="Full keystroke timelines"
                     />
                   </SpotlightCard>
                 </RevealItem>
@@ -136,8 +136,8 @@ export default function HomeChallenges({ stats }: { stats: Stats }) {
                     <StatCard
                       tone="rose"
                       icon={<Sparkles className="w-5 h-5" />}
-                      value="120h+"
-                      label="Engineering hours saved"
+                      value="Signals"
+                      label="Integrity & proctoring alerts"
                     />
                   </SpotlightCard>
                 </RevealItem>
@@ -202,8 +202,8 @@ export default function HomeChallenges({ stats }: { stats: Stats }) {
           <RevealItem>
             <Link
               href={isRecruiter ? "/dashboard" : "/challenges"}
-              className={`group inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl font-black text-sm text-bg transition-colors shadow-sm ${
-                isRecruiter ? "bg-indigo-500 hover:bg-indigo-600" : "bg-accent hover:bg-accent-soft"
+              className={`group inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl font-black text-sm text-bg transition-all shadow-sm ${
+                isRecruiter ? "bg-secondary hover:brightness-110" : "bg-accent hover:bg-accent-soft"
               }`}
             >
               {isRecruiter ? "Go to workspaces" : "Browse all challenges"}

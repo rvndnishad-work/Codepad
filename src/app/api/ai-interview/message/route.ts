@@ -15,6 +15,9 @@ import {
   type GeminiContent,
   type GeminiPart,
 } from "@/lib/ai-interview/gemini";
+import { getAgentConfig } from "@/lib/agents/config";
+import { DEFAULT_AGENTS } from "@/lib/agents/defaults";
+import { renderPrompt } from "@/lib/agents/types";
 import { rateLimit } from "@/lib/rate-limit";
 import {
   loadActiveExternalServers,
@@ -57,6 +60,13 @@ type Message = {
   text: string;
 };
 
+/** Model settings resolved from the agent config, forwarded to Gemini. */
+type AgentModelSettings = {
+  model: string | null;
+  temperature: number;
+  maxOutputTokens: number;
+};
+
 /**
  * Tool-use loop. Calls Gemini; if the model emits functionCalls, dispatch
  * each through the outbound MCP layer, wrap responses in <reference_data>,
@@ -73,6 +83,7 @@ async function runToolUseLoop(params: {
   resolved: ResolvedTools;
   sessionId: string;
   workspaceId: string;
+  agentModel: AgentModelSettings;
 }): Promise<{ text: string; toolCallsThisTurn: string[]; bytesAdded: number; msAdded: number }> {
   let iter = 0;
   const toolCallsThisTurn: string[] = [];
@@ -85,6 +96,9 @@ async function runToolUseLoop(params: {
       contents: params.contents,
       systemInstruction: params.systemInstruction,
       tools: params.resolved.declarations,
+      model: params.agentModel.model,
+      temperature: params.agentModel.temperature,
+      maxOutputTokens: params.agentModel.maxOutputTokens,
     });
 
     const fnCalls = candidate.parts.filter(
@@ -217,13 +231,21 @@ async function runToolUseLoop(params: {
 async function callGeminiTextOnly(
   apiKey: string,
   history: Message[],
-  systemInstruction: string
+  systemInstruction: string,
+  agentModel: AgentModelSettings
 ): Promise<string> {
   const contents: GeminiContent[] = history.map((msg) => ({
     role: msg.role === "assistant" ? "model" : "user",
     parts: [{ text: msg.text }],
   }));
-  const result = await callGemini({ apiKey, contents, systemInstruction });
+  const result = await callGemini({
+    apiKey,
+    contents,
+    systemInstruction,
+    model: agentModel.model,
+    temperature: agentModel.temperature,
+    maxOutputTokens: agentModel.maxOutputTokens,
+  });
   const text = extractText(result.parts);
   if (!text) throw new GeminiUnavailableError("Empty response from Gemini");
   return text;
@@ -574,16 +596,21 @@ export async function POST(req: NextRequest) {
         ? `\nThis is round ${activeRound.order + 1} of ${sessionRounds.length}. Focus on THIS round's task; if the candidate just switched rounds, briefly acknowledge it.`
         : "";
 
-    let systemInstruction = `You are the Interviewpad AI Technical Interviewer conducting a live coding interview for the position of "${session.positionTitle}".
-
-Task: ${roundContent?.title ?? session.positionTitle}
-${roundContent?.description ? `Brief: ${roundContent.description}\n` : ""}${stackLine}${roundLine}
-
-Guidelines:
-1. Be encouraging but professional and rigorous.
-2. Guide them using hints, but never write full solutions directly.
-3. If they describe code, check if their active files (${truncateFilesForPrompt(files)}) match their claims.
-4. Keep answers concise (around 100-150 words) and relevant to the task's stack.`;
+    // Configurable interviewer persona: workspace override → platform default
+    // → code default (defaults.ts, extracted verbatim from the old inline
+    // string). Everything dynamic is injected as {{vars}}.
+    const agent = await getAgentConfig("INTERVIEWER", session.workspaceId);
+    let systemInstruction = renderPrompt(
+      agent.systemPrompt || DEFAULT_AGENTS.INTERVIEWER.systemPrompt,
+      {
+        positionTitle: session.positionTitle,
+        taskTitle: roundContent?.title ?? session.positionTitle,
+        taskBrief: roundContent?.description ? `Brief: ${roundContent.description}\n` : "",
+        stackLine,
+        roundLine,
+        filesJson: truncateFilesForPrompt(files),
+      }
+    );
     // For backend/DSA rounds, give the interviewer the candidate's most recent
     // execution output so it can evaluate real results, not just the code.
     if ((kind === "backend" || kind === "dsa") && lastRun && (lastRun.stdout || lastRun.stderr)) {
@@ -612,6 +639,8 @@ Guidelines:
       // Replay only the recent window to the model — full transcript stays in
       // the DB for grading/audit.
       const recentHistory = history.slice(-MAX_HISTORY_SENT_TO_MODEL);
+      // Agent config drives model/temperature/token budget per workspace.
+      const agentModel = { model: agent.model, temperature: agent.temperature, maxOutputTokens: agent.maxOutputTokens };
       try {
         if (resolved) {
           // Tool-use loop path.
@@ -626,12 +655,13 @@ Guidelines:
             resolved,
             sessionId: session.id,
             workspaceId: session.workspaceId,
+            agentModel,
           });
           aiResponse = loopResult.text;
           toolCallsThisTurn = loopResult.toolCallsThisTurn;
         } else {
           // Plain path.
-          aiResponse = await callGeminiTextOnly(apiKey, recentHistory, systemInstruction);
+          aiResponse = await callGeminiTextOnly(apiKey, recentHistory, systemInstruction, agentModel);
         }
       } catch (err) {
         const detail =

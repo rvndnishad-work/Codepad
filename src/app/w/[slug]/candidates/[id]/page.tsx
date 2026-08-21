@@ -14,6 +14,7 @@ import {
   CheckCircle2,
   AlertTriangle,
   Star,
+  Sparkles,
 } from "lucide-react";
 import CandidateNotesEditor from "./CandidateNotesEditor";
 import CandidateStatusControl from "./CandidateStatusControl";
@@ -89,6 +90,21 @@ export default async function CandidateDetailPage({ params }: Props) {
           createdAt: true,
         },
       },
+      // AI screening sessions — previously missing entirely, so invites that
+      // were sent/started never appeared on the candidate activity board.
+      aiInterviewSessions: {
+        orderBy: { createdAt: "desc" },
+        select: {
+          id: true,
+          positionTitle: true,
+          status: true,
+          score: true,
+          engagementLevel: true,
+          startedAt: true,
+          finishedAt: true,
+          createdAt: true,
+        },
+      },
     },
   });
 
@@ -106,17 +122,21 @@ export default async function CandidateDetailPage({ params }: Props) {
 
   const tags: string[] = candidate.tags ? JSON.parse(candidate.tags) : [];
 
-  // Aggregate score: average of submitted attempt scores
+  // Aggregate score: average of submitted attempt scores + graded AI screenings
   const submittedScores = candidate.takeHomes
     .map((th) => th.attempt?.score)
     .filter((s): s is number => typeof s === "number");
-  const avgScore = submittedScores.length
-    ? Math.round(submittedScores.reduce((a, b) => a + b, 0) / submittedScores.length)
+  const aiGradedScores = candidate.aiInterviewSessions
+    .map((s) => s.score)
+    .filter((s): s is number => typeof s === "number");
+  const allScores = [...submittedScores, ...aiGradedScores];
+  const avgScore = allScores.length
+    ? Math.round(allScores.reduce((a, b) => a + b, 0) / allScores.length)
     : null;
 
   // Combined timeline of all activity
   type TimelineEvent = {
-    kind: "take-home" | "interview" | "audit";
+    kind: "take-home" | "interview" | "ai-screening" | "audit";
     id: string;
     title: string;
     timestamp: Date;
@@ -192,6 +212,29 @@ export default async function CandidateDetailPage({ params }: Props) {
         score: null,
         href: `/interview/${s.shareToken}`,
         secondary: `Interview · ${Math.round(s.totalSec / 60)} min · ${s.type}`,
+      };
+    }),
+    // AI screening sessions — invite sent, started, exited mid-way, or graded:
+    // every state is now visible on the board with a deep link into the
+    // AI Screening console pre-filtered to this candidate.
+    ...candidate.aiInterviewSessions.map((s) => {
+      const isDone = !!s.finishedAt;
+      const isStarted = !!s.startedAt && !isDone;
+      return {
+        kind: "ai-screening" as const,
+        id: s.id,
+        title: s.positionTitle,
+        timestamp: s.finishedAt ?? s.startedAt ?? s.createdAt,
+        status: isDone ? "COMPLETED" : isStarted ? "STARTED" : "INVITED",
+        score: s.score,
+        href: `/w/${workspace.slug}/ai-interviews?candidate=${candidate.id}`,
+        secondary: `AI screening · ${
+          s.engagementLevel === "COACH"
+            ? "Coach mode"
+            : s.engagementLevel === "OBSERVER"
+            ? "Observer mode"
+            : "Reactive mode"
+        }${isStarted ? " · exited before submit" : ""}`,
       };
     }),
   ].sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
@@ -337,7 +380,14 @@ export default async function CandidateDetailPage({ params }: Props) {
               <Briefcase className="w-3.5 h-3.5" />
             </div>
           </div>
-          <div className="text-2xl font-semibold text-fg tabular-nums">{candidate.sessions.length}</div>
+          <div className="text-2xl font-semibold text-fg tabular-nums">
+            {candidate.sessions.length + candidate.aiInterviewSessions.length}
+          </div>
+          {candidate.aiInterviewSessions.length > 0 && (
+            <div className="text-[10px] text-muted mt-0.5">
+              {candidate.aiInterviewSessions.length} AI screening{candidate.aiInterviewSessions.length === 1 ? "" : "s"}
+            </div>
+          )}
         </div>
 
         <div className="p-4 rounded-xl border border-border bg-surface">
@@ -347,7 +397,7 @@ export default async function CandidateDetailPage({ params }: Props) {
               <CheckCircle2 className="w-3.5 h-3.5" />
             </div>
           </div>
-          <div className="text-2xl font-semibold text-fg tabular-nums">{submittedScores.length}</div>
+          <div className="text-2xl font-semibold text-fg tabular-nums">{allScores.length}</div>
         </div>
 
         <div className="p-4 rounded-xl border border-border bg-surface">
@@ -383,29 +433,41 @@ export default async function CandidateDetailPage({ params }: Props) {
                     day: "numeric",
                   });
                   const Icon =
-                    ev.kind === "take-home" ? Clock : ev.kind === "interview" ? Briefcase : History;
+                    ev.kind === "take-home"
+                      ? Clock
+                      : ev.kind === "interview"
+                      ? Briefcase
+                      : ev.kind === "ai-screening"
+                      ? Sparkles
+                      : History;
                   const iconColor =
                     ev.kind === "take-home"
                       ? "text-purple-500"
+                      : ev.kind === "ai-screening"
+                      ? "text-accent"
                       : ev.kind === "interview"
                       ? "text-violet-500"
                       : "text-sky-500";
                   const iconBg =
                     ev.kind === "take-home"
                       ? "bg-purple-500/10 border-purple-500/20"
+                      : ev.kind === "ai-screening"
+                      ? "bg-accent/10 border-accent/20"
                       : ev.kind === "interview"
                       ? "bg-violet-500/10 border-violet-500/20"
                       : "bg-sky-500/10 border-sky-500/20";
                   const statusColor =
-                    ev.kind === "take-home"
-                      ? TAKEHOME_STATUS_BADGES[ev.status] || ""
-                      : ev.kind === "audit"
-                      ? "text-sky-600 dark:text-sky-400 border-sky-500/25 bg-sky-500/[0.06]"
-                      : ev.status === "COMPLETED"
-                      ? "text-emerald-600 dark:text-emerald-400 border-emerald-500/25 bg-emerald-500/[0.06]"
-                      : ev.status === "LIVE"
-                      ? "text-indigo-600 dark:text-indigo-400 border-indigo-500/25 bg-indigo-500/[0.08]"
-                      : "text-amber-600 dark:text-amber-400 border-amber-500/25 bg-amber-500/[0.06]";
+                    ev.kind === "take-home" ? (
+                      TAKEHOME_STATUS_BADGES[ev.status] || ""
+                    ) : ev.kind === "audit" ? (
+                      "text-sky-600 dark:text-sky-400 border-sky-500/25 bg-sky-500/[0.06]"
+                    ) : ev.status === "COMPLETED" ? (
+                      "text-emerald-600 dark:text-emerald-400 border-emerald-500/25 bg-emerald-500/[0.06]"
+                    ) : ev.status === "STARTED" || ev.status === "LIVE" ? (
+                      "text-indigo-600 dark:text-indigo-400 border-indigo-500/25 bg-indigo-500/[0.08]"
+                    ) : (
+                      "text-amber-600 dark:text-amber-400 border-amber-500/25 bg-amber-500/[0.06]"
+                    );
 
                   return (
                     <li key={`${ev.kind}-${ev.id}`} className="px-4 py-3 flex items-start gap-3 hover:bg-panel/30 transition-colors">

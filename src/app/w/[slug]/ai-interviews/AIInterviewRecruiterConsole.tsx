@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState, useEffect, useTransition } from "react";
 import { createPortal } from "react-dom";
 import Link from "next/link";
 import {
@@ -78,6 +78,8 @@ interface RoundSummary {
 interface RecruiterSession {
   id: string;
   inviteToken: string;
+  /** CRM candidate this screening belongs to (null for legacy/practice rows). */
+  candidateId: string | null;
   candidateName: string;
   candidateEmail: string;
   positionTitle: string;
@@ -133,6 +135,8 @@ interface ConsoleProps {
   availableExternalMcpServers: ExternalMcpServerOption[];
   workspaceAllowExternalMcp: boolean;
   pagination: PaginationInfo;
+  /** Deep-link filter from the candidate board (?candidate=<id>). */
+  initialCandidateId?: string | null;
 }
 
 export default function AIInterviewRecruiterConsole({
@@ -148,6 +152,7 @@ export default function AIInterviewRecruiterConsole({
   availableExternalMcpServers,
   workspaceAllowExternalMcp,
   pagination,
+  initialCandidateId,
 }: ConsoleProps) {
   const [sessions, setSessions] = useState<RecruiterSession[]>(initialSessions);
   const [selectedSessionId, setSelectedSessionId] = useState<string | null>(
@@ -167,6 +172,12 @@ export default function AIInterviewRecruiterConsole({
   const [search, setSearch] = useState("");
   const [filterStatus, setFilterStatus] = useState<string>("ALL");
   const [filterBatch, setFilterBatch] = useState<string>("ALL");
+  // Candidate deep-link (from the candidate activity board). Pre-filtered so
+  // the recruiter lands on exactly this candidate's screenings.
+  const [filterCandidate, setFilterCandidate] = useState<string>(
+    initialCandidateId ?? "ALL"
+  );
+  const filteredCandidateName = candidates.find((c) => c.id === filterCandidate)?.name;
 
   // Distinct batches present in the loaded sessions (for the batch filter).
   const batchOptions = Array.from(
@@ -190,6 +201,16 @@ export default function AIInterviewRecruiterConsole({
 
   const activeSession = sessions.find((s) => s.id === selectedSessionId);
 
+  // When a candidate deep-link filter activates, focus their most relevant
+  // session so the detail drawer opens on the right person immediately.
+  useEffect(() => {
+    if (filterCandidate !== "ALL") {
+      const first = sessions.find((s) => s.candidateId === filterCandidate);
+      setSelectedSessionId(first ? first.id : null);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filterCandidate]);
+
   const processedSessions = sessions
     .filter((s) => {
       const matchSearch =
@@ -199,7 +220,9 @@ export default function AIInterviewRecruiterConsole({
 
       const matchBatch = filterBatch === "ALL" || s.batchId === filterBatch;
       const matchStatus = filterStatus === "ALL" || s.status === filterStatus;
-      return matchSearch && matchBatch && matchStatus;
+      const matchCandidate =
+        filterCandidate === "ALL" || s.candidateId === filterCandidate;
+      return matchSearch && matchBatch && matchStatus && matchCandidate;
     })
     .sort((a, b) => {
       if (a.status === "COMPLETED" && b.status !== "COMPLETED") return -1;
@@ -258,6 +281,7 @@ export default function AIInterviewRecruiterConsole({
     const mapped: RecruiterSession[] = newSessions.map((s) => ({
       id: s.id,
       inviteToken: s.inviteToken,
+      candidateId: null, // fresh batch rows get their CRM link on next load
       candidateName: s.candidateName,
       candidateEmail: "",
       positionTitle,
@@ -527,6 +551,24 @@ export default function AIInterviewRecruiterConsole({
                   </option>
                 ))}
               </select>
+            )}
+
+            {/* Candidate deep-link chip (arrives via ?candidate=<id> from the
+                candidate activity board). Dismiss to see everyone. */}
+            {filterCandidate !== "ALL" && (
+              <div className="flex items-center justify-between gap-2 px-3 py-2 rounded-lg border border-accent/30 bg-accent/10 text-[11px] font-bold text-accent">
+                <span className="truncate">
+                  Filtered: {filteredCandidateName ?? "candidate"}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setFilterCandidate("ALL")}
+                  className="shrink-0 hover:text-fg transition-colors cursor-pointer"
+                  title="Clear candidate filter"
+                >
+                  ✕
+                </button>
+              </div>
             )}
           </div>
 

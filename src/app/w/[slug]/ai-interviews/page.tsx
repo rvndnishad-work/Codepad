@@ -12,7 +12,7 @@ import AIInterviewRecruiterConsole from "./AIInterviewRecruiterConsole";
 
 type Props = {
   params: Promise<{ slug: string }>;
-  searchParams: Promise<{ page?: string }>;
+  searchParams: Promise<{ page?: string; candidate?: string }>;
 };
 
 const PAGE_SIZE = 25;
@@ -196,6 +196,7 @@ export default async function WorkspaceAiInterviewsPage({ params, searchParams }
     return {
       id: s.id,
       inviteToken: s.inviteToken,
+      candidateId: s.candidateId,
       candidateName: s.candidateName,
       candidateEmail: s.candidateEmail,
       positionTitle: s.positionTitle,
@@ -264,6 +265,7 @@ export default async function WorkspaceAiInterviewsPage({ params, searchParams }
       templates={templateChoices}
       availableExternalMcpServers={availableExternalMcpServers}
       workspaceAllowExternalMcp={workspace.allowExternalMcp}
+      initialCandidateId={sp.candidate ?? null}
       pagination={{
         page,
         totalPages,

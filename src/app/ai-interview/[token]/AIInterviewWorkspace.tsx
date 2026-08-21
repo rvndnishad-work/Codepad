@@ -179,7 +179,21 @@ export default function AIInterviewWorkspace({ session, rounds, initialChat }: P
   const [aiStatus, setAiStatus] = useState<AiStatus | null>(null);
   const [degradedTurn, setDegradedTurn] = useState(false);
   const recognitionRef = useRef<any>(null);
-  const { width: chatW, onPointerDown: onChatDrag } = useResizable(450, 240, 700);
+  const { width: chatW, onPointerDown: onChatDrag } = useResizable(340, 260, 560);
+  // Track the viewport so fixed-width panes can never push the coding surface
+  // off-screen (the old fixed 450px question pane + 840px editor overflowed
+  // common laptop widths and crushed/misaligned the browser preview).
+  const [viewportW, setViewportW] = useState(0);
+  useEffect(() => {
+    const onResize = () => setViewportW(window.innerWidth);
+    onResize();
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, []);
+  // Question pane may claim at most ~26% of the viewport.
+  const effChatW = viewportW
+    ? Math.min(chatW, Math.max(260, Math.round(viewportW * 0.26)))
+    : chatW;
 
   const activeRound = rounds.find((r) => r.roundId === activeRoundId) ?? rounds[0];
   const activeFiles = roundFiles[activeRoundId] ?? {};
@@ -834,7 +848,7 @@ export default function AIInterviewWorkspace({ session, rounds, initialChat }: P
       <main className="flex-1 flex min-h-0 overflow-hidden relative">
         {/* Left Pane: Question Pane - collapsible & draggable */}
         <div
-          style={{ width: chatCollapsed ? "0px" : `${chatW}px` }}
+          style={{ width: chatCollapsed ? "0px" : `${effChatW}px` }}
           className={`transition-all duration-300 flex flex-col min-w-0 border-r border-border bg-surface/40 ${chatCollapsed ? "opacity-0 pointer-events-none border-r-0 shrink-0" : "shrink-0"}`}
         >
           <div className="px-5 py-3.5 border-b border-border bg-surface/60 flex items-center justify-between shrink-0 h-14">
@@ -912,8 +926,9 @@ export default function AIInterviewWorkspace({ session, rounds, initialChat }: P
             </div>
           )}
 
-          {/* Active round banner */}
-          <div className="px-4 py-2 border-b border-border bg-surface/40 flex items-center gap-2 shrink-0">
+          {/* Active round banner — h-14 so its baseline matches the question
+              pane header on the left and the panes read as one aligned row. */}
+          <div className="h-14 px-4 border-b border-border bg-surface/40 flex items-center gap-2 shrink-0">
             <span className="text-accent">{ROUND_ICON[activeRound.kind]}</span>
             <span className="text-[11px] font-bold text-fg truncate">{activeRound.title}</span>
             <span className="text-[9px] font-black uppercase tracking-wider text-muted bg-bg border border-border px-1.5 py-0.5 rounded ml-1">
@@ -946,7 +961,7 @@ export default function AIInterviewWorkspace({ session, rounds, initialChat }: P
             </div>
           )}
 
-          <div className="flex-1 min-h-0">
+          <div className="flex-1 min-h-0 overflow-hidden">
             <RoundSurface
               key={activeRound.roundId}
               round={activeRound}
@@ -955,6 +970,7 @@ export default function AIInterviewWorkspace({ session, rounds, initialChat }: P
               onRun={(o) => setLastRun(o)}
               outputView={outputView}
               setOutputView={setOutputView}
+              reservedLeft={chatCollapsed ? 0 : effChatW + 6}
             />
           </div>
         </div>
@@ -1385,6 +1401,7 @@ function RoundSurface({
   onRun,
   outputView,
   setOutputView,
+  reservedLeft,
 }: {
   round: RoundView;
   files: Record<string, string>;
@@ -1392,6 +1409,8 @@ function RoundSurface({
   onRun: (out: { stdout?: string; stderr?: string }) => void;
   outputView: "preview" | "both" | "console";
   setOutputView: (val: "preview" | "both" | "console") => void;
+  /** Width already consumed left of this surface (question pane + handles). */
+  reservedLeft: number;
 }) {
   const isFrontend = round.kind === "frontend";
   const { resolvedTheme } = useTheme();
@@ -1403,8 +1422,27 @@ function RoundSurface({
   useEffect(() => setMounted(true), []);
   const isDark = mounted && resolvedTheme === "dark";
   const [fileTreeCollapsed, setFileTreeCollapsed] = useState(false);
-  const { width: editorW, onPointerDown: onEditorDrag } = useResizable(840, 320, 2000);
+  const { width: editorW, onPointerDown: onEditorDrag } = useResizable(600, 380, 1200);
   const { height: consoleH, onPointerDown: onConsoleDrag } = useResizableHeight(180, 80, 700);
+
+  // Keep the editor from starving the preview: clamp to what's actually
+  // available after the question pane, file tree, drag handles, and a minimum
+  // ~320px preview. Without this the fixed editor width overflowed laptops
+  // and pushed/misaligned the Browser Preview off-screen.
+  const [surfaceVpW, setSurfaceVpW] = useState(0);
+  useEffect(() => {
+    const onResize = () => setSurfaceVpW(window.innerWidth);
+    onResize();
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, []);
+  const treeW = fileTreeCollapsed ? 48 : 192;
+  const effEditorW = surfaceVpW
+    ? Math.min(
+        editorW,
+        Math.max(380, surfaceVpW - reservedLeft - treeW - 12 - 320)
+      )
+    : editorW;
 
   // Capture initial files on mount of this round to keep SandpackProvider stable!
   const initialFilesRef = useRef(files);
@@ -1417,27 +1455,28 @@ function RoundSurface({
   };
 
   return (
-    <SandpackProvider
-      key={`${previewKey}-${isDark ? "dark" : "light"}`}
-      template={isFrontend ? "react" : "vanilla"}
-      theme={getSandpackTheme(isDark)}
-      files={initialFilesRef.current}
-      options={{
-        initMode: "immediate",
-        recompileMode: "delayed",
-        recompileDelay: 300,
-        visibleFiles: isFrontend ? ["/App.js"] : undefined,
-        activeFile: isFrontend ? "/App.js" : undefined,
-      }}
-    >
-      <SurfaceBridge roundId={round.roundId} onFilesChange={onFilesChange} />
-      {isFrontend ? (
-        <div className="flex h-full flex-col md:flex-row min-h-0 overflow-hidden">
-          {/* Column 2: File explorer sidebar & Editor area - drag-resizable on desktop */}
-          <div
-            className="w-full md:w-[var(--ide-editor-w)] md:shrink-0 flex border-r border-border h-full overflow-hidden"
-            style={{ "--ide-editor-w": `${editorW}px` } as React.CSSProperties}
-          >
+    <div className="h-full min-h-0 flex flex-col overflow-hidden ai-surface">
+      <SandpackProvider
+        key={`${previewKey}-${isDark ? "dark" : "light"}`}
+        template={isFrontend ? "react" : "vanilla"}
+        theme={getSandpackTheme(isDark)}
+        files={initialFilesRef.current}
+        options={{
+          initMode: "immediate",
+          recompileMode: "delayed",
+          recompileDelay: 300,
+          visibleFiles: isFrontend ? ["/App.js"] : undefined,
+          activeFile: isFrontend ? "/App.js" : undefined,
+        }}
+      >
+        <SurfaceBridge roundId={round.roundId} onFilesChange={onFilesChange} />
+        {isFrontend ? (
+          <div className="flex h-full flex-col md:flex-row min-h-0 overflow-hidden">
+            {/* Column 2: File explorer sidebar & Editor area - drag-resizable on desktop */}
+            <div
+              className="w-full md:w-[var(--ide-editor-w)] md:shrink-0 flex border-r border-border h-full overflow-hidden"
+              style={{ "--ide-editor-w": `${effEditorW}px` } as React.CSSProperties}
+            >
             {fileTreeCollapsed ? (
               <div className="w-12 shrink-0 border-r border-border bg-surface/20 hidden sm:flex flex-col items-center py-4 gap-4 h-full transition-all duration-300">
                 <button
@@ -1612,7 +1651,8 @@ function RoundSurface({
       ) : (
         <ConsoleSurface language={round.language ?? "node"} kind={round.kind as "backend" | "dsa"} onRun={onRun} />
       )}
-    </SandpackProvider>
+      </SandpackProvider>
+    </div>
   );
 }
 

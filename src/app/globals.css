@@ -1263,3 +1263,18 @@ body.sidebar-collapsed .workspace-content {
     justify-content: center;
   }
 }
+
+/* ── AI interview workspace surface ────────────────────────────────────── */
+/* Sandpack's provider renders an unstyled .sp-wrapper div between our layout
+   containers, which broke the height chain (editor/preview columns collapsed
+   or escaped their rows). Pin it to fill its parent so our flex layout owns
+   sizing again. */
+.ai-surface > .sp-wrapper {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+.ai-surface > .sp-wrapper > .sp-layout {
+  height: 100%;
+  min-height: 0;
+}

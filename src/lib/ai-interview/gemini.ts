@@ -88,14 +88,17 @@ export async function callGemini(params: {
   tools?: Array<Record<string, unknown>>;
   maxOutputTokens?: number;
   temperature?: number;
+  /** Per-agent model override; defaults to AI_INTERVIEW_GEMINI_MODEL. */
+  model?: string | null;
 }): Promise<{ parts: GeminiPart[]; finishReason: string | null }> {
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/${AI_INTERVIEW_GEMINI_MODEL}:generateContent?key=${params.apiKey}`;
+  const model = params.model || AI_INTERVIEW_GEMINI_MODEL;
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${params.apiKey}`;
 
   const generationConfig: Record<string, unknown> = {
     maxOutputTokens: params.maxOutputTokens ?? 1024,
     temperature: params.temperature ?? 0.7,
   };
-  const thinking = thinkingConfigFor(AI_INTERVIEW_GEMINI_MODEL);
+  const thinking = thinkingConfigFor(model);
   if (thinking) generationConfig.thinkingConfig = thinking;
 
   const body: Record<string, unknown> = {

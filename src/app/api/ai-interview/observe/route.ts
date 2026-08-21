@@ -10,6 +10,9 @@ import {
   geminiApiKey,
   type GeminiContent,
 } from "@/lib/ai-interview/gemini";
+import { getAgentConfig } from "@/lib/agents/config";
+import { DEFAULT_AGENTS } from "@/lib/agents/defaults";
+import { renderPrompt } from "@/lib/agents/types";
 
 /**
  * Proactive "Observer" endpoint — the background half of the live-presence
@@ -46,6 +49,9 @@ async function callGeminiText(params: {
   apiKey: string;
   systemInstruction: string;
   userText: string;
+  model?: string | null;
+  temperature?: number;
+  maxOutputTokens?: number;
 }): Promise<string> {
   try {
     // Shared client: timeout + retry + correct thinking-model config. The
@@ -57,8 +63,9 @@ async function callGeminiText(params: {
       apiKey: params.apiKey,
       contents,
       systemInstruction: params.systemInstruction,
-      maxOutputTokens: 512,
-      temperature: 0.5,
+      maxOutputTokens: params.maxOutputTokens ?? 512,
+      temperature: params.temperature ?? 0.5,
+      model: params.model,
     });
     return extractText(result.parts).trim();
   } catch {
@@ -162,15 +169,18 @@ export async function POST(req: NextRequest) {
     .map((m) => `${m.role === "assistant" ? "You" : "Candidate"}: ${m.text}`)
     .join("\n");
 
-  const systemInstruction = `You are the Interviewpad AI Technical Interviewer SILENTLY observing a candidate during a live coding interview for "${session.positionTitle}".
-Task: ${roundContent?.title ?? session.positionTitle}. ${stackLine}
-
-You are shown the candidate's current code and recent activity. Decide whether to briefly interject RIGHT NOW.
-Interject ONLY if there is something genuinely worth a short remark: a forming bug, a risky or incorrect approach, drifting off-task, clearly stuck, or a notably good move worth a quick acknowledgement.
-If you interject: output ONE short sentence (max 40 words) as a hint or encouragement — NEVER a full solution or literal code, never reveal the answer.
-If there is nothing worth interrupting for, output exactly: NONE.
-Do NOT repeat anything already said in the recent conversation.
-${recent ? `\nRecent conversation:\n${recent}` : ""}`;
+  // Configurable coach persona (workspace → platform → code default).
+  const agent = await getAgentConfig("COACH", session.workspaceId);
+  const systemInstruction = renderPrompt(
+    agent.systemPrompt || DEFAULT_AGENTS.COACH.systemPrompt,
+    {
+      modeBlock: "",
+      positionTitle: session.positionTitle,
+      taskTitle: roundContent?.title ?? session.positionTitle,
+      stackLine,
+      contextBlock: recent ? `\nRecent conversation:\n${recent}` : "",
+    }
+  );
 
   const runOut =
     body.lastRun && (body.lastRun.stdout || body.lastRun.stderr)
@@ -178,7 +188,14 @@ ${recent ? `\nRecent conversation:\n${recent}` : ""}`;
       : "";
   const userText = `Candidate's current files:\n${truncateFilesForPrompt(body.files ?? {})}${runOut}\n\nShould you interject right now? One short sentence, or NONE.`;
 
-  const raw = await callGeminiText({ apiKey, systemInstruction, userText });
+  const raw = await callGeminiText({
+    apiKey,
+    systemInstruction,
+    userText,
+    model: agent.model,
+    temperature: agent.temperature,
+    maxOutputTokens: agent.maxOutputTokens,
+  });
   if (isSilent(raw)) {
     return NextResponse.json({ comment: null });
   }

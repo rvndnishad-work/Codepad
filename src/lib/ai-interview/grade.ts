@@ -150,7 +150,7 @@ function rulesForTemplate(templateId: string): GraderRule[] {
 // template — untouched scaffold code earns nothing.
 function runRulesBasedGrader(
   files: Record<string, string>,
-  chatHistory: any[],
+  chatHistory: { role: "user" | "assistant"; text: string }[],
   templateId: string,
   diffCtx?: { diffs: FileDiff[]; addedCode: string; changedLines: number }
 ): GraderResult {
@@ -160,7 +160,7 @@ function runRulesBasedGrader(
       score: 5,
       codeQuality: 1,
       problemSolving: 1,
-      communication: chatHistory.filter((c: any) => c.role === "user").length >= 4 ? 3 : 1,
+      communication: chatHistory.filter((c) => c.role === "user").length >= 4 ? 3 : 1,
       aiSummary:
         "- [Flaw] The candidate did not modify any starter files — no code was written for this task.",
     };
@@ -189,7 +189,7 @@ function runRulesBasedGrader(
   }
 
   // Communication signal is template-agnostic — based on chat engagement.
-  const candidateChats = chatHistory.filter((c: any) => c.role === "user");
+  const candidateChats = chatHistory.filter((c) => c.role === "user");
   if (candidateChats.length > 8) {
     communication = 5;
     strengths.push("Highly communicative throughout the session.");
@@ -222,7 +222,7 @@ async function gradeSubmission(
   apiKey: string | undefined,
   label: string,
   chatLog: string,
-  chatHistory: any[],
+  chatHistory: { role: "user" | "assistant"; text: string }[],
   files: Record<string, string>,
   templateId: string,
   workspaceId: string,
@@ -299,7 +299,7 @@ export async function gradeSessionById(params: {
   // candidate submitting while the abandonment cron holds the same session.
   if (session.finishedAt) return { ok: false, reason: "already_graded" };
 
-  let chatHistory: any[] = [];
+  let chatHistory: { role: "user" | "assistant"; text: string }[] = [];
   try {
     chatHistory = JSON.parse(session.chatHistory);
   } catch {

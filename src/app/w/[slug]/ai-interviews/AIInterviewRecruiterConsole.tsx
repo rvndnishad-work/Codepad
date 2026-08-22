@@ -345,6 +345,8 @@ export default function AIInterviewRecruiterConsole({
       finishedAt: null,
       chatHistory: [],
       filesJson: {},
+      fileDiffs: null,
+      changeStats: null,
       ratings: { CodeQuality: 0, ProblemSolving: 0, Communication: 0 },
       rounds: [],
     }));
@@ -1648,5 +1650,190 @@ function Clock({ className }: { className?: string }) {
       <circle cx="12" cy="12" r="10" />
       <polyline points="12 6 12 12 16 14" />
     </svg>
+  );
+}
+
+/**
+ * Recruiter review surface for a candidate's submitted workspace.
+ *
+ * Three views:
+ *   - Diff (default): starter-vs-submitted unified diff — shows EXACTLY what
+ *     the candidate authored. Mirrors what the grader consumed, so the score
+ *     is auditable against visible changes.
+ *   - Code: raw final files (legacy view).
+ *   - Run: live Sandpack execution of the submitted code.
+ */
+function SubmittedWorkReview({ session }: { session: RecruiterSession }) {
+  const [view, setView] = useState<"diff" | "code" | "run">("diff");
+  const diffs = session.fileDiffs;
+  const stats = session.changeStats;
+  const hasDiffData = !!diffs && diffs.length > 0;
+
+  return (
+    <details className="rounded-2xl border border-border bg-bg overflow-hidden group" open>
+      <summary className="px-5 py-3 cursor-pointer flex items-center justify-between bg-elevated/30 hover:bg-elevated/50 transition list-none">
+        <span className="text-xs font-bold text-fg flex items-center gap-2">
+          <FileCode className="w-4 h-4 text-violet-400" />
+          Review Submitted Workspace Files ({Object.keys(session.filesJson).length})
+          {stats && stats.filesChanged > 0 && (
+            <span
+              className={`ml-2 inline-flex items-center px-2 py-0.5 rounded-md border text-[9px] font-black uppercase tracking-wider ${
+                stats.addedLines === 0
+                  ? "text-rose-400 bg-rose-500/[0.08] border-rose-500/25"
+                  : "text-emerald-400 bg-emerald-500/[0.08] border-emerald-500/25"
+              }`}
+            >
+              {stats.filesChanged} changed · +{stats.addedLines} −{stats.removedLines}
+            </span>
+          )}
+          {stats && stats.filesChanged === 0 && (
+            <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded-md border text-[9px] font-black uppercase tracking-wider text-rose-400 bg-rose-500/[0.08] border-rose-500/25">
+              No code written
+            </span>
+          )}
+        </span>
+        <span className="text-[10px] text-muted group-open:rotate-90 transition">❯</span>
+      </summary>
+
+      {/* View toggle */}
+      <div className="px-4 pt-3 flex items-center gap-1.5 border-t border-border bg-surface">
+        {([
+          { key: "diff", label: `Diff vs starter${hasDiffData ? "" : " (n/a)"}`, disabled: !hasDiffData },
+          { key: "code", label: "Final code", disabled: false },
+          { key: "run", label: "Run it", disabled: false },
+        ] as const).map(({ key, label, disabled }) => (
+          <button
+            key={key}
+            type="button"
+            onClick={() => !disabled && setView(key)}
+            disabled={disabled}
+            className={`px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wider border transition cursor-pointer ${
+              view === key
+                ? "bg-accent/15 border-accent/40 text-accent"
+                : disabled
+                ? "bg-bg border-border/30 text-muted/30 cursor-not-allowed"
+                : "bg-bg border-border/40 text-muted hover:text-fg"
+            }`}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+
+      <div className="p-4 border-t border-border bg-surface max-h-[480px] overflow-y-auto space-y-4">
+        {view === "run" ? (
+          <RunPreview files={session.filesJson} />
+        ) : view === "code" ? (
+          Object.entries(session.filesJson).map(([path, code]) => (
+            <div key={path} className="space-y-1.5">
+              <div className="text-[10px] font-mono font-bold text-fg bg-bg px-3 py-1.5 rounded-lg border border-border flex justify-between items-center">
+                <span className="flex items-center gap-1.5">
+                  <FolderOpen className="w-3.5 h-3.5 text-violet-400" />
+                  {path}
+                </span>
+                <span className="text-muted/65 text-[9px]">{code.split(/\r?\n/).length} lines</span>
+              </div>
+              <pre className="text-[10px] font-mono text-muted/90 bg-bg/80 p-3 overflow-x-auto leading-relaxed rounded-xl max-h-[260px] border border-border/20">
+                {code || "(empty)"}
+              </pre>
+            </div>
+          ))
+        ) : hasDiffData ? (
+          <>
+            {stats && (
+              <p className="text-[11px] text-muted">
+                Candidate changes vs starter template:{" "}
+                <span className="font-bold text-fg">{stats.filesChanged}</span> file(s) changed,{" "}
+                <span className="font-bold text-emerald-400">+{stats.addedLines}</span> /{" "}
+                <span className="font-bold text-rose-400">−{stats.removedLines}</span> lines. Grading
+                is based on exactly this diff.
+              </p>
+            )}
+            {(diffs ?? [])
+              .filter((d) => d.added.length > 0 || d.removed.length > 0)
+              .map((d) => (
+                <FileDiffCard key={d.path} diff={d} />
+              ))}
+          </>
+        ) : (
+          <p className="text-xs text-muted p-4 text-center">
+            Starter template unknown for this session — showing raw files instead. Use the
+            &ldquo;Final code&rdquo; view.
+          </p>
+        )}
+      </div>
+    </details>
+  );
+}
+
+/** One file's colored unified diff. */
+function FileDiffCard({ diff }: { diff: FileDiff }) {
+  const MAX_LINES = 200;
+
+  if (diff.isDeleted) {
+    return (
+      <div className="space-y-1.5">
+        <div className="text-[10px] font-mono font-bold text-rose-400 bg-bg px-3 py-1.5 rounded-lg border border-border flex items-center gap-1.5">
+          <FolderOpen className="w-3.5 h-3.5" /> {diff.path}
+          <span className="ml-auto text-[9px] uppercase tracking-wider">deleted by candidate</span>
+        </div>
+      </div>
+    );
+  }
+
+  const lines: { sign: "+" | "-" | " "; text: string }[] = [];
+  if (diff.isNew) {
+    for (const l of diff.added.slice(0, MAX_LINES)) lines.push({ sign: "+", text: l });
+  } else {
+    // Interleave removed then added per file (simple unified order).
+    for (const l of diff.removed.slice(0, MAX_LINES)) lines.push({ sign: "-", text: l });
+    for (const l of diff.added.slice(0, MAX_LINES)) lines.push({ sign: "+", text: l });
+  }
+
+  return (
+    <div className="space-y-1.5">
+      <div className="text-[10px] font-mono font-bold text-fg bg-bg px-3 py-1.5 rounded-lg border border-border flex justify-between items-center">
+        <span className="flex items-center gap-1.5">
+          <FolderOpen className={`w-3.5 h-3.5 ${diff.isNew ? "text-emerald-400" : "text-violet-400"}`} />
+          {diff.path}
+        </span>
+        <span className="flex items-center gap-2 text-[9px]">
+          {diff.isNew ? (
+            <span className="text-emerald-400 font-black uppercase tracking-wider">new file</span>
+          ) : (
+            <>
+              <span className="text-emerald-400">+{diff.added.length}</span>
+              <span className="text-rose-400">−{diff.removed.length}</span>
+            </>
+          )}
+        </span>
+      </div>
+      <div className="rounded-xl border border-border/20 bg-bg/80 p-3 max-h-[300px] overflow-auto">
+        {lines.length === 0 ? (
+          <p className="text-[10px] text-muted italic">No changes in this file.</p>
+        ) : (
+          <pre className="text-[10px] font-mono leading-relaxed">
+            {lines.map((l, i) => (
+              <div
+                key={i}
+                className={`px-2 py-px whitespace-pre-wrap break-all ${
+                  l.sign === "+"
+                    ? "bg-emerald-500/[0.08] text-emerald-300"
+                    : l.sign === "-"
+                    ? "bg-rose-500/[0.08] text-rose-300"
+                    : "text-muted/70"
+                }`}
+              >
+                <span className="select-none opacity-60 mr-2">{l.sign}</span>
+                {l.text || " "}
+              </div>
+            ))}
+            {((diff.isNew ? diff.added.length : diff.added.length + diff.removed.length) > MAX_LINES) && (
+              <div className="px-2 pt-1 text-muted/60 italic">…[truncated]</div>
+            )}
+          </pre>
+        )}
+      </div>
+    </div>
   );
 }

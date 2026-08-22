@@ -15,7 +15,7 @@
 import { prisma } from "@/lib/prisma";
 import { templates } from "@/lib/templates";
 import { resolveTemplate } from "./template-resolver";
-import type { SessionRound, Paradigm } from "./rounds";
+import { resolveSessionRounds, type SessionRound, type Paradigm } from "./rounds";
 
 export type RoundContent = {
   roundId: string;
@@ -154,11 +154,12 @@ export async function resolveRoundsContent(
  * Used by both the grading pipeline and the recruiter console.
  */
 export async function getStarterFilesByRoundId(
-  session: { id: string; templateId: string | null; filesJson?: string | null },
-  workspaceId: string,
-  roundsOverride?: { id: string; order: number; sourceKind: string; sourceId: string | null; templateId: string | null; paradigm: string | null; language: string | null; frameworkLabel: string | null; estimatedMinutes: number; filesJson: string }[]
+  session: { id: string; templateId: string | null; filesJson?: string | null } & { rounds?: unknown[] },
+  workspaceId: string
 ): Promise<Map<string, Record<string, string>>> {
-  const sessionRounds = roundsOverride ?? resolveSessionRounds(session as never);
+  // The caller passes a full Prisma AIInterviewSession (with .rounds when
+  // available). resolveSessionRounds handles both real rounds and legacy rows.
+  const sessionRounds = resolveSessionRounds(session as Parameters<typeof resolveSessionRounds>[0]);
   const contents = await resolveRoundsContent(sessionRounds, workspaceId);
   const map = new Map<string, Record<string, string>>();
   for (let i = 0; i < contents.length; i++) {

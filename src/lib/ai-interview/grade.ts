@@ -5,7 +5,7 @@ import { sendRecruiterNotifyEmail } from "@/lib/ai-interview/submit-notify";
 import { resolveSessionRounds, type SessionRound } from "@/lib/ai-interview/rounds";
 import { STAFF_ROLES } from "@/lib/permissions/role-groups";
 import { advanceCandidateStage } from "@/lib/crm/advance";
-import { resolveTemplate } from "@/lib/ai-interview/template-resolver";
+import { getStarterFilesByRoundId } from "@/lib/ai-interview/round-content";
 import {
   describeChanges,
   diffFiles,
@@ -310,6 +310,15 @@ export async function gradeSessionById(params: {
   const sessionRounds = resolveSessionRounds(session);
   const legacy = sessionRounds.length === 1 && sessionRounds[0].legacy;
 
+  // Authoritative starter baseline for EVERY round kind (scaffold / challenge /
+  // playground) — diffs and grading measure candidate-authored changes only.
+  let startersByRound = new Map<string, Record<string, string>>();
+  try {
+    startersByRound = await getStarterFilesByRoundId(session, session.workspaceId);
+  } catch {
+    startersByRound = new Map(); // unknown starter — grade raw files
+  }
+
   // Files each round is graded on: prefer the submitted map, else the round's
   // last-saved files (saved on every chat turn — so an abandoned session still
   // carries its latest code snapshot).
@@ -323,16 +332,8 @@ export async function gradeSessionById(params: {
         sessionRounds.length > 1
           ? `${session.positionTitle} — Round ${r.order + 1}`
           : session.positionTitle;
-      // Resolve the round's starter template so grading is diff-aware —
-      // untouched scaffold code must never earn credit.
-      let starterFiles: Record<string, string> | undefined;
-      try {
-        starterFiles = (
-          await resolveTemplate(r.templateId ?? session.templateId, session.workspaceId)
-        )?.starterFiles;
-      } catch {
-        starterFiles = undefined; // unknown template — grade raw files
-      }
+      // Starter for this round (works for every round source kind).
+      const starterFiles = startersByRound.get(r.id);
       const result = await gradeSubmission(
         apiKey,
         label,

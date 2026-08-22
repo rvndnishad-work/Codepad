@@ -1,8 +1,9 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState, useEffect, useTransition } from "react";
 import { createPortal } from "react-dom";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   Sparkles,
   Award,
@@ -38,7 +39,18 @@ import {
 } from "./actions";
 import { AI_CREDIT_PACKS } from "@/lib/ai-interview/credits";
 import { getScreeningVerdict } from "@/lib/ai-interview/verdict";
+import type { FileDiff, DiffStats } from "@/lib/ai-interview/diff";
+import dynamic from "next/dynamic";
 import ScreeningWizard from "./ScreeningWizard";
+
+const RunPreview = dynamic(() => import("./RunPreview"), {
+  ssr: false,
+  loading: () => (
+    <div className="rounded-xl border border-border bg-bg h-[420px] flex items-center justify-center text-muted text-xs">
+      <Loader2 className="w-4 h-4 animate-spin mr-2" /> Loading sandbox…
+    </div>
+  ),
+});
 
 export interface TemplateChoice {
   id: string;
@@ -108,6 +120,9 @@ interface RecruiterSession {
   };
   /** Per-round breakdown (empty for legacy single-round sessions). */
   rounds: RoundSummary[];
+  /** Starter-vs-submitted diffs (null when starter unknown / no submissions). */
+  fileDiffs: FileDiff[] | null;
+  changeStats: DiffStats | null;
 }
 
 export interface PaginationInfo {
@@ -157,6 +172,23 @@ export default function AIInterviewRecruiterConsole({
   initialCandidateId,
 }: ConsoleProps) {
   const [sessions, setSessions] = useState<RecruiterSession[]>(initialSessions);
+  const router = useRouter();
+
+  // Keep the pipeline live without manual refreshes. Server components re-render
+  // on router.refresh(), picking up sessions that were graded after this page
+  // loaded (candidate submits, or the abandonment cron grades an exited run).
+  // Refresh when the recruiter returns to the tab + a slow poll while open.
+  useEffect(() => {
+    const onFocus = () => {
+      if (document.visibilityState === "visible") router.refresh();
+    };
+    document.addEventListener("visibilitychange", onFocus);
+    const poll = setInterval(() => router.refresh(), 90_000);
+    return () => {
+      document.removeEventListener("visibilitychange", onFocus);
+      clearInterval(poll);
+    };
+  }, [router]);
   // Deep-link (?candidate=<id>) opens straight onto that candidate's session.
   const [selectedSessionId, setSelectedSessionId] = useState<string | null>(() => {
     if (initialCandidateId) {
@@ -846,30 +878,7 @@ export default function AIInterviewRecruiterConsole({
                     )}
 
                     {Object.keys(activeSession.filesJson).length > 0 && (
-                      <details className="rounded-2xl border border-border bg-bg overflow-hidden group">
-                        <summary className="px-5 py-3 cursor-pointer flex items-center justify-between bg-elevated/30 hover:bg-elevated/50 transition list-none">
-                          <span className="text-xs font-bold text-fg flex items-center gap-2">
-                            <FileCode className="w-4 h-4 text-violet-400" /> Review Submitted Workspace Files ({Object.keys(activeSession.filesJson).length})
-                          </span>
-                          <span className="text-[10px] text-muted group-open:rotate-90 transition">❯</span>
-                        </summary>
-                        <div className="p-4 border-t border-border bg-surface max-h-[400px] overflow-y-auto space-y-4">
-                          {Object.entries(activeSession.filesJson).map(([path, code]) => (
-                            <div key={path} className="space-y-1.5">
-                              <div className="text-[10px] font-mono font-bold text-fg bg-bg px-3 py-1.5 rounded-lg border border-border flex justify-between items-center">
-                                <span className="flex items-center gap-1.5">
-                                  <FolderOpen className="w-3.5 h-3.5 text-violet-400" />
-                                  {path}
-                                </span>
-                                <span className="text-muted/65 text-[9px]">{code.split(/\r?\n/).length} lines</span>
-                              </div>
-                              <pre className="text-[10px] font-mono text-muted/90 bg-bg/80 p-3 overflow-x-auto leading-relaxed rounded-xl max-h-[220px] border border-border/20">
-                                {code || "(empty)"}
-                              </pre>
-                            </div>
-                          ))}
-                        </div>
-                      </details>
+                      <SubmittedWorkReview session={activeSession} />
                     )}
                   </div>
                 </div>

@@ -6,7 +6,8 @@ import Link from "next/link";
 import { Lock, Sparkles } from "lucide-react";
 import { getWorkspaceCredits } from "@/lib/ai-interview/credits";
 import { effectivePlanAllowsAiScreening } from "@/lib/billing/trial";
-import { listTemplatesForWorkspace } from "@/lib/ai-interview/template-resolver";
+import { listTemplatesForWorkspace, resolveTemplate } from "@/lib/ai-interview/template-resolver";
+import { diffFiles, diffStats, type FileDiff, type DiffStats } from "@/lib/ai-interview/diff";
 import { canMember } from "@/lib/permissions";
 import AIInterviewRecruiterConsole from "./AIInterviewRecruiterConsole";
 
@@ -138,7 +139,8 @@ export default async function WorkspaceAiInterviewsPage({ params, searchParams }
   const totalScreened = completedAgg._count;
   const avgScore = Math.round(completedAgg._avg.score ?? 0);
 
-  const mappedSessions = rawSessions.map((s) => {
+  const mappedSessions = await Promise.all(
+    rawSessions.map(async (s) => {
     let parsedHistory: unknown[] = [];
     try {
       parsedHistory = JSON.parse(s.chatHistory || "[]");
@@ -151,6 +153,22 @@ export default async function WorkspaceAiInterviewsPage({ params, searchParams }
       parsedFiles = JSON.parse(s.filesJson || "{}");
     } catch {
       parsedFiles = {};
+    }
+
+    // Starter-vs-submitted diff so recruiters can see exactly what the
+    // candidate wrote (and nothing gets credit for untouched scaffold code).
+    let fileDiffs: FileDiff[] | null = null;
+    let changeStats: DiffStats | null = null;
+    try {
+      const starter = (
+        await resolveTemplate(s.templateId, workspace.id)
+      )?.starterFiles;
+      if (starter && Object.keys(starter).length > 0 && Object.keys(parsedFiles).length > 0) {
+        fileDiffs = diffFiles(starter, parsedFiles);
+        changeStats = diffStats(fileDiffs);
+      }
+    } catch {
+      fileDiffs = null;
     }
 
     let parsedRatings = { CodeQuality: 0, ProblemSolving: 0, Communication: 0 };
@@ -214,10 +232,13 @@ export default async function WorkspaceAiInterviewsPage({ params, searchParams }
       finishedAt: s.finishedAt?.toISOString() ?? null,
       chatHistory: parsedHistory as { role: "user" | "assistant"; text: string }[],
       filesJson: parsedFiles,
+      fileDiffs,
+      changeStats,
       ratings: parsedRatings,
       rounds,
     };
-  });
+  })
+  );
 
   // Pivot bindings into "for each custom template, which server ids are bound?"
   // — convenient lookup shape for the binding UI in the Templates modal.

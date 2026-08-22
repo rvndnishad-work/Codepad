@@ -59,9 +59,20 @@ ${diffBlock || "(empty — the candidate did not modify any files)"}
 For reference, their final conversation log:
 ${chatLog}
 
+Score using this weighted rubric (0-100 composite):
+1. CODE CHANGES (50%): quality, correctness and completeness of what they
+   actually wrote in the diff. Deleting working starter code is a regression —
+   penalize it. Adding files/features earns proportionally.
+2. TASK COMPLETION (25%): how many of a typical task's core requirements their
+   changes cover. A minimal-but-working slice beats large non-functional edits.
+3. COMMUNICATION (25%): engagement with the interviewer, clarity of their
+   explanations, honesty about what they did vs claimed.
+If the candidate made NO code changes, score must be below 10 regardless of
+conversation quality.
+
 Output your response strictly as a JSON object containing precisely:
 {
-  "score": number (0-100 composite score),
+  "score": number (0-100 weighted composite),
   "codeQuality": number (1-5 rating),
   "problemSolving": number (1-5 rating),
   "communication": number (1-5 rating),

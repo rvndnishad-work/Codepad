@@ -124,6 +124,8 @@ interface RecruiterSession {
   /** Starter-vs-submitted diffs (null when starter unknown / no submissions). */
   fileDiffs: FileDiff[] | null;
   changeStats: DiffStats | null;
+  /** Accumulated seconds the candidate spent in the workspace. */
+  timeSpentSec: number;
   /** Time-extension policy + usage (candidate's "+N min" button). */
   extensionPolicy: {
     extraMinutes: number;
@@ -355,6 +357,7 @@ export default function AIInterviewRecruiterConsole({
       filesJson: {},
       fileDiffs: null,
       changeStats: null,
+      timeSpentSec: 0,
       extensionPolicy: { extraMinutes: 0, used: 0, max: 1, minutesEach: 5 },
       ratings: { CodeQuality: 0, ProblemSolving: 0, Communication: 0 },
       rounds: [],
@@ -578,12 +581,12 @@ export default function AIInterviewRecruiterConsole({
               />
             </div>
 
-            <div className="flex gap-1.5">
+            <div className="flex gap-1.5 overflow-x-auto">
               {["ALL", "COMPLETED", "ACTIVE", "PENDING"].map((status) => (
                 <button
                   key={status}
                   onClick={() => setFilterStatus(status)}
-                  className={`flex-1 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wider border transition-all ${
+                  className={`flex-1 whitespace-nowrap px-1 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-wider border transition-all cursor-pointer ${
                     filterStatus === status
                       ? "bg-accent/15 border-accent/30 text-accent"
                       : "bg-bg border-border/40 text-muted hover:text-fg"
@@ -740,6 +743,16 @@ export default function AIInterviewRecruiterConsole({
                     <span className="font-bold text-fg">{activeSession.positionTitle}</span>
                     <span className="text-muted/30">•</span>
                     <span className="font-mono">{activeSession.candidateEmail}</span>
+                    <span className="text-muted/30">•</span>
+                    <span
+                      className="tabular-nums"
+                      title="Accumulated time the candidate spent in the interview workspace"
+                    >
+                      ⏱ {formatMinutes(activeSession.timeSpentSec)} spent
+                      {activeSession.extensionPolicy.extraMinutes > 0 && (
+                        <> · +{activeSession.extensionPolicy.extraMinutes}m extended</>
+                      )}
+                    </span>
                   </div>
                 </div>
 
@@ -763,8 +776,10 @@ export default function AIInterviewRecruiterConsole({
 
               {activeSession.status === "COMPLETED" ? (
                 <div className="space-y-6">
-                  <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-center">
-                    <div className="md:col-span-1 p-4 rounded-2xl bg-bg border border-border text-center flex flex-col justify-center items-center h-full">
+                  {/* 2/2 split — the old 1/3 starved the score tile and forced
+                      its badges into vertical letter-stacks. */}
+                  <div className="grid grid-cols-1 md:grid-cols-5 gap-4 items-center">
+                    <div className="md:col-span-2 p-4 rounded-2xl bg-bg border border-border text-center flex flex-col justify-center items-center h-full min-w-0">
                       <div className="text-[10px] font-black uppercase text-muted tracking-wider mb-2">Composite Score</div>
                       <div
                         className={`text-4xl font-black tracking-tight ${
@@ -803,7 +818,7 @@ export default function AIInterviewRecruiterConsole({
                       )}
                     </div>
 
-                    <div className="md:col-span-3 space-y-3.5 bg-bg/40 border border-border p-4 rounded-2xl">
+                    <div className="md:col-span-3 space-y-3.5 bg-bg/40 border border-border p-4 rounded-2xl min-w-0">
                       <RatingBar
                         icon={<FileCode className="w-3.5 h-3.5" />}
                         label="Code Architecture"
@@ -1433,14 +1448,16 @@ function SuspicionBadge({ score }: { score: number }) {
     med: "text-amber-300 bg-amber-500/15 border-amber-500/30",
     low: "text-emerald-300/80 bg-emerald-500/10 border-emerald-500/25",
   }[tier];
+  // Short labels — the long forms wrapped into vertical letter-stacks inside
+  // the narrow composite-score tile.
   const label = {
-    high: "High AI-cheat risk",
-    med: "Some integrity flags",
-    low: "Integrity clean",
+    high: "Cheat risk",
+    med: "Flags",
+    low: "Clean",
   }[tier];
   return (
     <span
-      className={`mt-2 inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-widest border ${cls}`}
+      className={`mt-2 inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider border whitespace-nowrap max-w-full ${cls}`}
       title={`Integrity suspicion: ${score}/100 (heuristic from paste/blur events)`}
     >
       {label}
@@ -1666,6 +1683,13 @@ function Clock({ className }: { className?: string }) {
       <polyline points="12 6 12 12 16 14" />
     </svg>
   );
+}
+
+/** Compact human duration for the time-spent readout. */
+function formatMinutes(sec: number | null | undefined): string {
+  const m = Math.max(0, Math.round((sec ?? 0) / 60));
+  if (m < 60) return `${m}m`;
+  return `${Math.floor(m / 60)}h ${m % 60}m`;
 }
 
 /**

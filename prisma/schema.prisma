@@ -1048,6 +1048,9 @@ model AIInterviewSession {
   /// every screening ONE 5-minute extension; recruiters can change both per
   /// session from the AI Screening console drawer, or set them at batch invite
   /// time in the wizard. extraMinutes is honored by every deadline check.
+  /// Accumulated seconds the candidate actually spent in the workspace
+  /// (visibility-gated heartbeats, capped per ping).
+  timeSpentSec     Int                       @default(0)
   extraMinutes     Int                       @default(0)
   extensionCount   Int                       @default(0)
   maxExtensions    Int                       @default(1)

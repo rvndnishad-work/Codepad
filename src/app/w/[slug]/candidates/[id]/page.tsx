@@ -101,6 +101,7 @@ export default async function CandidateDetailPage({ params }: Props) {
           status: true,
           score: true,
           engagementLevel: true,
+          timeSpentSec: true,
           startedAt: true,
           finishedAt: true,
           createdAt: true,
@@ -239,7 +240,9 @@ export default async function CandidateDetailPage({ params }: Props) {
             : s.engagementLevel === "OBSERVER"
             ? "Observer mode"
             : "Reactive mode"
-        }${isStarted ? " · exited before submit" : ""}${verdict ? ` · ${verdict.guidance}` : ""}`,
+        }${isStarted ? " · exited before submit" : ""}${
+          s.timeSpentSec > 0 ? ` · ${Math.max(1, Math.round(s.timeSpentSec / 60))} min spent` : ""
+        }${verdict ? ` · ${verdict.guidance}` : ""}`,
       };
     }),
   ].sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());

@@ -313,6 +313,33 @@ export default function AIInterviewWorkspace({ session, rounds, initialChat }: P
   const [serverDeadlineAt, setServerDeadlineAt] = useState<string | null>(null);
   const [extensionsRemaining, setExtensionsRemaining] = useState<number | null>(null);
   const [extensionMinutesEach, setExtensionMinutesEach] = useState<number>(5);
+  const [timeSpentSec, setTimeSpentSec] = useState<number | null>(null);
+
+  // Presence heartbeat: banks time-spent while the tab is visible (30s cadence,
+  // paused when hidden). Feeds the recruiter's "time spent" readout.
+  useEffect(() => {
+    if (!session.startedAt) return;
+    let stopped = false;
+    const ping = () => {
+      if (document.visibilityState !== "visible" || stopped) return;
+      fetch("/api/ai-interview/heartbeat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ inviteToken: session.inviteToken, seconds: 30 }),
+      })
+        .then((r) => (r.ok ? r.json() : null))
+        .then((d) => {
+          if (d?.ok && typeof d.timeSpentSec === "number") setTimeSpentSec(d.timeSpentSec);
+        })
+        .catch(() => {});
+    };
+    ping();
+    const id = setInterval(ping, 30_000);
+    return () => {
+      stopped = true;
+      clearInterval(id);
+    };
+  }, [session.inviteToken, session.startedAt]);
   useEffect(() => {
     // Pull the recruiter's policy once the session status probe lands.
     fetch(`/api/ai-interview/status?inviteToken=${encodeURIComponent(session.inviteToken)}`)

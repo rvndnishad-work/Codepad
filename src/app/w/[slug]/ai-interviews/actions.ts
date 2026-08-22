@@ -672,3 +672,34 @@ export async function deleteAIInterviewSessionAction(slug: string, id: string) {
   revalidatePath(`/w/${slug}/ai-interviews`);
   return { success: true };
 }
+
+/**
+ * Update a session's candidate time-extension policy (how many times and how
+ * many minutes per extension the candidate may self-grant). Takes effect
+ * immediately — the candidate's "+N min" button reads it live.
+ */
+export async function updateExtensionPolicyAction(
+  slug: string,
+  input: {
+    sessionId: string;
+    maxExtensions: number;
+    extensionMinutes: number;
+  }
+) {
+  const { workspace } = await assertWorkspaceWriter(slug);
+
+  const maxExtensions = Math.max(0, Math.min(5, Math.floor(Number(input.maxExtensions) || 0)));
+  const extensionMinutes = Math.max(1, Math.min(60, Math.floor(Number(input.extensionMinutes) || 5)));
+
+  // Tenant guard: the session must belong to this workspace.
+  const result = await prisma.aIInterviewSession.updateMany({
+    where: { id: input.sessionId, workspaceId: workspace.id },
+    data: { maxExtensions, extensionMinutes },
+  });
+  if (result.count === 0) {
+    throw new Error("Session not found in this workspace");
+  }
+
+  revalidatePath(`/w/${slug}/ai-interviews`);
+  return { success: true, maxExtensions, extensionMinutes };
+}

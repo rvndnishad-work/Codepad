@@ -166,7 +166,6 @@ export default function AIInterviewWorkspace({ session, rounds, initialChat }: P
   const [outputView, setOutputView] = useState<"preview" | "both" | "console">("both");
   const [floatingChatOpen, setFloatingChatOpen] = useState(false);
   const [showControls, setShowControls] = useState(false);
-  const [extendedMinutes, setExtendedMinutes] = useState(0);
   const [isListening, setIsListening] = useState(false);
   const [isAISpeaking, setIsAISpeaking] = useState(false);
   const [voiceSettingsOpen, setVoiceSettingsOpen] = useState(false);
@@ -298,20 +297,70 @@ export default function AIInterviewWorkspace({ session, rounds, initialChat }: P
   //    truth on expiry; this is UX with a matching grace buffer. ──────────────
   const [now, setNow] = useState<number>(Date.now());
   useEffect(() => {
-    if (!session.startedAt) return;
     const interval = setInterval(() => setNow(Date.now()), 1000);
     return () => clearInterval(interval);
-  }, [session.startedAt]);
-  const deadlineMs = session.startedAt
-    ? new Date(session.startedAt).getTime() + (session.estimatedMinutes + extendedMinutes) * 60_000
-    : null;
-  const remainingMs = deadlineMs ? deadlineMs - now : null;
-  const isExpired = remainingMs !== null && remainingMs <= 0;
-  const isLowTime = remainingMs !== null && remainingMs < 5 * 60_000;
+  }, []);
 
-  const handleExtendTimer = () => {
-    setExtendedMinutes((prev) => prev + 15);
-    toast.success("Added 15 minutes to your session!");
+  // FIX: the timer used to vanish for a candidate's FIRST visit because
+  // `session.startedAt` came from the initial server render (null until their
+  // first message) and never updated client-side. Now: once started, the
+  // server timestamp wins; before that, the clock starts from mount time so
+  // the countdown is ALWAYS visible (the greeting fires on load anyway).
+  const [mountedAt] = useState<number>(() => Date.now());
+  const startedAtMs = session.startedAt ? new Date(session.startedAt).getTime() : mountedAt;
+
+  // Authoritative deadline after a successful extension; local math otherwise.
+  const [serverDeadlineAt, setServerDeadlineAt] = useState<string | null>(null);
+  const [extensionsRemaining, setExtensionsRemaining] = useState<number | null>(null);
+  const [extensionMinutesEach, setExtensionMinutesEach] = useState<number>(5);
+  useEffect(() => {
+    // Pull the recruiter's policy once the session status probe lands.
+    fetch(`/api/ai-interview/status?inviteToken=${encodeURIComponent(session.inviteToken)}`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => {
+        if (d?.extensions) {
+          setExtensionsRemaining(d.extensions.remaining);
+          setExtensionMinutesEach(d.extensions.minutesEach ?? 5);
+        }
+      })
+      .catch(() => {});
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [session.inviteToken]);
+
+  const baseMinutes = Math.max(1, session.estimatedMinutes || 30);
+  const [localExtraMin, setLocalExtraMin] = useState(0);
+  const deadlineMs =
+    serverDeadlineAt !== null
+      ? new Date(serverDeadlineAt).getTime()
+      : startedAtMs + (baseMinutes + localExtraMin) * 60_000;
+  const remainingMs = deadlineMs - now;
+  const isExpired = remainingMs <= 0;
+  const isLowTime = remainingMs < 5 * 60_000;
+
+  const [extendingTime, setExtendingTime] = useState(false);
+  const handleExtendTimer = async () => {
+    if (extendingTime) return;
+    setExtendingTime(true);
+    try {
+      const res = await fetch("/api/ai-interview/extend", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ inviteToken: session.inviteToken }),
+      });
+      const data = await res.json().catch(() => null);
+      if (!res.ok || !data?.success) {
+        toast.error(data?.error ?? "Could not extend time.");
+        if (data?.error === "No extensions remaining") setExtensionsRemaining(0);
+        return;
+      }
+      setServerDeadlineAt(data.deadlineAt);
+      setExtensionsRemaining(data.extensionsRemaining);
+      toast.success(`+${data.extraMinutes >= 0 ? "" : ""}Time extended — good luck!`);
+    } catch {
+      toast.error("Network error while extending time.");
+    } finally {
+      setExtendingTime(false);
+    }
   };
 
   const autoSubmittedRef = useRef(false);
@@ -768,11 +817,13 @@ export default function AIInterviewWorkspace({ session, rounds, initialChat }: P
               </span>
             </div>
           )}
-          {mounted && remainingMs !== null && (
+          {mounted && (
             <div className="flex items-center gap-2">
               <div
                 className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-[11px] font-bold tabular-nums transition-colors ${
-                  isExpired
+                  completed
+                    ? "hidden"
+                    : isExpired
                     ? "bg-rose-500/15 border-rose-500/40 text-rose-700 dark:text-rose-300 animate-pulse"
                     : isLowTime
                     ? "bg-amber-500/15 border-amber-500/35 text-amber-700 dark:text-amber-300"
@@ -781,17 +832,26 @@ export default function AIInterviewWorkspace({ session, rounds, initialChat }: P
                 title="Time remaining on this screening"
               >
                 <Clock className="w-3.5 h-3.5 animate-pulse" />
-                <span>{formatRemaining(remainingMs)}</span>
+                <span>{completed ? "—" : formatRemaining(remainingMs)}</span>
               </div>
 
-              <button
-                type="button"
-                onClick={handleExtendTimer}
-                title="Extend timer by 15 minutes"
-                className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-border bg-bg hover:bg-elevated text-slate-700 dark:text-slate-300 hover:text-fg text-[10px] font-black tracking-wider transition cursor-pointer shrink-0 active:scale-95 shadow-sm"
-              >
-                +15m
-              </button>
+              {/* Candidate time extension — policy set by the recruiter
+                  (maxExtensions × extensionMinutes). Persisted server-side so
+                  it survives refresh and binds every deadline check. */}
+              {!completed && (extensionsRemaining ?? 0) > 0 && (
+                <button
+                  type="button"
+                  onClick={handleExtendTimer}
+                  disabled={extendingTime}
+                  title={`Add ${extensionMinutesEach} more minute${extensionMinutesEach === 1 ? "" : "s"} — ${extensionsRemaining} extension${extensionsRemaining === 1 ? "" : "s"} left`}
+                  className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-accent/40 bg-accent/10 hover:bg-accent/20 text-accent text-[10px] font-black tracking-wider transition cursor-pointer shrink-0 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed shadow-sm tabular-nums"
+                >
+                  {extendingTime ? "…" : `+${extensionMinutesEach}m`}
+                  {(extensionsRemaining ?? 0) > 0 && (
+                    <span className="text-[9px] opacity-70">×{extensionsRemaining}</span>
+                  )}
+                </button>
+              )}
             </div>
           )}
           

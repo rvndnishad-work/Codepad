@@ -464,7 +464,7 @@ export async function POST(req: NextRequest) {
     // elapses, no further chat turns; the client gets a clear signal to submit.
     const totalMinutes = sessionRounds.reduce((s, r) => s + (r.estimatedMinutes || 0), 0) || 30;
     const deadline = session.startedAt
-      ? new Date(new Date(session.startedAt).getTime() + totalMinutes * 60_000 + 30_000)
+      ? new Date(new Date(session.startedAt).getTime() + (totalMinutes + (session.extraMinutes ?? 0)) * 60_000 + 30_000)
       : null;
     if (deadline && Date.now() > deadline.getTime()) {
       return NextResponse.json(

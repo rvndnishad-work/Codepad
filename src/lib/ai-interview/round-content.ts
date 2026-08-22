@@ -146,3 +146,23 @@ export async function resolveRoundsContent(
 
   return out;
 }
+
+/**
+ * Resolve the STARTER files for every round of a session — the authoritative
+ * baseline for candidate-vs-starter diffs. Works for scaffold, challenge, and
+ * playground rounds (falls back to the default starter). Keyed by round id.
+ * Used by both the grading pipeline and the recruiter console.
+ */
+export async function getStarterFilesByRoundId(
+  session: { id: string; templateId: string | null; filesJson?: string | null },
+  workspaceId: string,
+  roundsOverride?: { id: string; order: number; sourceKind: string; sourceId: string | null; templateId: string | null; paradigm: string | null; language: string | null; frameworkLabel: string | null; estimatedMinutes: number; filesJson: string }[]
+): Promise<Map<string, Record<string, string>>> {
+  const sessionRounds = roundsOverride ?? resolveSessionRounds(session as never);
+  const contents = await resolveRoundsContent(sessionRounds, workspaceId);
+  const map = new Map<string, Record<string, string>>();
+  for (let i = 0; i < contents.length; i++) {
+    map.set(contents[i].roundId, contents[i].starterFiles);
+  }
+  return map;
+}

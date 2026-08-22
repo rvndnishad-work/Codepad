@@ -120,7 +120,7 @@ export async function POST(req: NextRequest) {
   // Respect the whole-session deadline — once time's up, stay quiet.
   const sessionRounds = resolveSessionRounds(session);
   const totalMinutes = sessionRounds.reduce((s, r) => s + (r.estimatedMinutes || 0), 0) || 30;
-  const deadline = new Date(new Date(session.startedAt).getTime() + totalMinutes * 60_000 + 30_000);
+  const deadline = new Date(new Date(session.startedAt).getTime() + (totalMinutes + (session.extraMinutes ?? 0)) * 60_000 + 30_000);
   if (Date.now() > deadline.getTime()) {
     return NextResponse.json({ comment: null });
   }

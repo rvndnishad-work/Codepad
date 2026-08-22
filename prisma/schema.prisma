@@ -1044,6 +1044,14 @@ model AIInterviewSession {
   /// Count of proactive (observer/coach) comments emitted this session. Used to
   /// enforce the per-session hard cap on background AI interjections.
   proactiveCount   Int                       @default(0)
+  /// Time-extension policy + usage (candidate's "+5 min" button). Defaults give
+  /// every screening ONE 5-minute extension; recruiters can change both per
+  /// session from the AI Screening console drawer, or set them at batch invite
+  /// time in the wizard. extraMinutes is honored by every deadline check.
+  extraMinutes     Int                       @default(0)
+  extensionCount   Int                       @default(0)
+  maxExtensions    Int                       @default(1)
+  extensionMinutes Int                       @default(5)
   createdAt        DateTime                  @default(now())
   updatedAt        DateTime                  @updatedAt
   ledgerEntries    AIInterviewCreditLedger[]

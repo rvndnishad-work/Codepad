@@ -33,11 +33,12 @@ export async function GET(req: NextRequest) {
   }
 
   // Deadline mirrors the message route exactly: startedAt + sum of round
-  // budgets (+30s grace). A session that hasn't started yet is never expired.
+  // budgets + candidate-granted extensions (+30s grace). A session that hasn't
+  // started yet is never expired.
   const sessionRounds = resolveSessionRounds(session);
   const totalMinutes = sessionRounds.reduce((s, r) => s + (r.estimatedMinutes || 0), 0) || 30;
   const deadline = session.startedAt
-    ? new Date(new Date(session.startedAt).getTime() + totalMinutes * 60_000 + 30_000)
+    ? new Date(new Date(session.startedAt).getTime() + (totalMinutes + (session.extraMinutes ?? 0)) * 60_000 + 30_000)
     : null;
   const expired = !!deadline && Date.now() > deadline.getTime();
 
@@ -60,5 +61,12 @@ export async function GET(req: NextRequest) {
     expired,
     finished,
     engagementLevel: session.engagementLevel,
+    // Time-extension policy + remaining uses for the candidate's "+5 min" button.
+    extensions: {
+      used: session.extensionCount,
+      max: session.maxExtensions,
+      minutesEach: session.extensionMinutes,
+      remaining: Math.max(0, session.maxExtensions - session.extensionCount),
+    },
   });
 }

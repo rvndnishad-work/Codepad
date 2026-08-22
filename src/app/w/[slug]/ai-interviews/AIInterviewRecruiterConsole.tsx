@@ -31,6 +31,7 @@ import {
 import { toast } from "sonner";
 import {
   deleteAIInterviewSessionAction,
+  updateExtensionPolicyAction,
   createCreditPackCheckoutAction,
   createCustomTemplateAction,
   deleteCustomTemplateAction,
@@ -123,6 +124,13 @@ interface RecruiterSession {
   /** Starter-vs-submitted diffs (null when starter unknown / no submissions). */
   fileDiffs: FileDiff[] | null;
   changeStats: DiffStats | null;
+  /** Time-extension policy + usage (candidate's "+N min" button). */
+  extensionPolicy: {
+    extraMinutes: number;
+    used: number;
+    max: number;
+    minutesEach: number;
+  };
 }
 
 export interface PaginationInfo {
@@ -347,6 +355,7 @@ export default function AIInterviewRecruiterConsole({
       filesJson: {},
       fileDiffs: null,
       changeStats: null,
+      extensionPolicy: { extraMinutes: 0, used: 0, max: 1, minutesEach: 5 },
       ratings: { CodeQuality: 0, ProblemSolving: 0, Communication: 0 },
       rounds: [],
     }));
@@ -745,6 +754,12 @@ export default function AIInterviewRecruiterConsole({
                   </Link>
                 </div>
               </div>
+
+              {/* Time-extension policy — recruiter decides how many times and
+                  how many minutes the candidate may self-extend. */}
+              {activeSession.status !== "COMPLETED" && (
+                <ExtensionPolicyEditor session={activeSession} workspaceSlug={workspaceSlug} />
+              )}
 
               {activeSession.status === "COMPLETED" ? (
                 <div className="space-y-6">
@@ -1834,6 +1849,95 @@ function FileDiffCard({ diff }: { diff: FileDiff }) {
           </pre>
         )}
       </div>
+    </div>
+  );
+}
+
+/**
+ * Recruiter control for a session's time-extension policy: how many times the
+ * candidate may self-extend and how many minutes each extension grants.
+ * Persists via updateExtensionPolicyAction; takes effect immediately on the
+ * candidate's workspace.
+ */
+function ExtensionPolicyEditor({
+  session,
+  workspaceSlug,
+}: {
+  session: RecruiterSession;
+  workspaceSlug: string;
+}) {
+  const [maxExt, setMaxExt] = useState(session.extensionPolicy.max);
+  const [minEach, setMinEach] = useState(session.extensionPolicy.minutesEach);
+  const [savedMax, setSavedMax] = useState(session.extensionPolicy.max);
+  const [savedMin, setSavedMin] = useState(session.extensionPolicy.minutesEach);
+  const [isPending, startTransition] = useTransition();
+
+  const dirty = maxExt !== savedMax || minEach !== savedMin;
+
+  const save = () => {
+    startTransition(async () => {
+      try {
+        const res = await updateExtensionPolicyAction(workspaceSlug, {
+          sessionId: session.id,
+          maxExtensions: maxExt,
+          extensionMinutes: minEach,
+        });
+        setSavedMax(res.maxExtensions);
+        setSavedMin(res.extensionMinutes);
+        toast.success(`Extension policy updated — candidate gets ${res.maxExtensions} × ${res.extensionMinutes}m`);
+      } catch (err) {
+        toast.error(err instanceof Error ? err.message : "Failed to update policy");
+      }
+    });
+  };
+
+  return (
+    <div className="rounded-xl border border-border bg-panel/50 p-3 flex flex-wrap items-end gap-3">
+      <div className="space-y-1">
+        <span className="text-[9px] font-black uppercase tracking-widest text-muted block">
+          Candidate extensions allowed
+        </span>
+        <input
+          type="number"
+          min={0}
+          max={5}
+          value={maxExt}
+          onChange={(e) => setMaxExt(Number(e.target.value))}
+          className="w-20 px-2.5 py-1.5 rounded-lg border border-border bg-bg text-xs text-fg tabular-nums focus:outline-none focus:border-accent"
+          title="How many times the candidate may extend"
+        />
+      </div>
+      <div className="space-y-1">
+        <span className="text-[9px] font-black uppercase tracking-widest text-muted block">
+          Minutes per extension
+        </span>
+        <input
+          type="number"
+          min={1}
+          max={60}
+          value={minEach}
+          onChange={(e) => setMinEach(Number(e.target.value))}
+          className="w-20 px-2.5 py-1.5 rounded-lg border border-border bg-bg text-xs text-fg tabular-nums focus:outline-none focus:border-accent"
+          title="Minutes granted per extension"
+        />
+      </div>
+      <button
+        type="button"
+        onClick={save}
+        disabled={!dirty || isPending}
+        className={`px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wider transition ${
+          dirty && !isPending
+            ? "bg-accent text-bg hover:bg-accent-soft cursor-pointer"
+            : "bg-surface text-muted border border-border cursor-not-allowed opacity-60"
+        }`}
+      >
+        {isPending ? "Saving…" : dirty ? "Save policy" : "Saved"}
+      </button>
+
+      {/* Usage readout */}
+      <span className="ml-auto text-[10px] font-bold text-muted tabular-nums">
+        Used: {session.extensionPolicy.used}/{savedMax} · granted {session.extensionPolicy.extraMinutes}m
+      </span>
     </div>
   );
 }

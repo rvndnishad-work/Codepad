@@ -1,0 +1,6 @@
+-- AlterTable
+ALTER TABLE "AIInterviewSession" ADD COLUMN     "extensionCount" INTEGER NOT NULL DEFAULT 0,
+ADD COLUMN     "extensionMinutes" INTEGER NOT NULL DEFAULT 5,
+ADD COLUMN     "extraMinutes" INTEGER NOT NULL DEFAULT 0,
+ADD COLUMN     "maxExtensions" INTEGER NOT NULL DEFAULT 1;
+

@@ -234,6 +234,12 @@ export default async function WorkspaceAiInterviewsPage({ params, searchParams }
       filesJson: parsedFiles,
       fileDiffs,
       changeStats,
+      extensionPolicy: {
+        extraMinutes: s.extraMinutes,
+        used: s.extensionCount,
+        max: s.maxExtensions,
+        minutesEach: s.extensionMinutes,
+      },
       ratings: parsedRatings,
       rounds,
     };

@@ -574,6 +574,22 @@ export async function POST(req: NextRequest) {
       }
     }
 
+    // Snapshot-first: backfill starterFilesJson if this session/round predates snapshots.
+    // The first save freezes the baseline so grading never re-resolves drifted templates.
+    try {
+      const rawRound = (session.rounds ?? []).find((rr) => rr.id === activeRound.id) as unknown as { starterFilesJson?: string | null } | undefined;
+      const needsRoundSnap = rawRound && !rawRound.starterFilesJson;
+      const needsSessSnap = activeRound.legacy && !(session as unknown as { starterFilesJson?: string | null }).starterFilesJson;
+      if (needsRoundSnap || needsSessSnap) {
+        const _tmpContent = (await resolveRoundsContent([activeRound], session.workspaceId).catch(() => []))[0];
+        if (_tmpContent?.starterFiles && Object.keys(_tmpContent.starterFiles).length > 0) {
+          const snap = JSON.stringify(_tmpContent.starterFiles);
+          if (needsRoundSnap) await prisma.aIInterviewRound.update({ where: { id: activeRound.id }, data: { starterFilesJson: snap } });
+          if (needsSessSnap) await prisma.aIInterviewSession.update({ where: { id: session.id }, data: { starterFilesJson: snap } });
+        }
+      }
+    } catch { /* backfill best-effort only */ }
+
     // Resolve the ACTIVE round's content so the interviewer knows the real
     // problem + tech stack and tailors questions to it (not the session id).
     const roundContent = (

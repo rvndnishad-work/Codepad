@@ -149,21 +149,36 @@ export async function resolveRoundsContent(
 
 /**
  * Resolve the STARTER files for every round of a session — the authoritative
- * baseline for candidate-vs-starter diffs. Works for scaffold, challenge, and
- * playground rounds (falls back to the default starter). Keyed by round id.
- * Used by both the grading pipeline and the recruiter console.
+ * baseline for candidate-vs-starter diffs. Snapshot-first: uses the immutable
+ * starterFilesJson captured at invite time, falling back to live template
+ * re-resolution only for pre-snapshot sessions.
  */
 export async function getStarterFilesByRoundId(
-  session: { id: string; templateId: string | null; filesJson?: string | null } & { rounds?: unknown[] },
+  session: { id: string; templateId: string | null; filesJson?: string | null; starterFilesJson?: string | null } & { rounds?: unknown[] },
   workspaceId: string
 ): Promise<Map<string, Record<string, string>>> {
-  // The caller passes a full Prisma AIInterviewSession (with .rounds when
-  // available). resolveSessionRounds handles both real rounds and legacy rows.
   const sessionRounds = resolveSessionRounds(session as Parameters<typeof resolveSessionRounds>[0]);
+  // Snapshot-first: if any round/session carries starterFilesJson, use it directly
+  const rawRoundsById = new Map<string, Record<string, unknown>>(
+    ((session as unknown as { rounds?: Array<Record<string, unknown>> }).rounds ?? []).map((r) => [String(r.id), r])
+  );
+  const snapshotMap = new Map<string, Record<string, string>>();
+  let needLiveResolve = false;
+  for (const sr of sessionRounds) {
+    const raw = rawRoundsById.get(sr.id) as unknown as { starterFilesJson?: string | null } | undefined;
+    const snapRaw = raw?.starterFilesJson ?? (sr.legacy ? (session as unknown as { starterFilesJson?: string | null }).starterFilesJson : null);
+    const parsed = parseFiles(snapRaw ?? null);
+    if (parsed) snapshotMap.set(sr.id, parsed);
+    else needLiveResolve = true;
+  }
+  if (!needLiveResolve) return snapshotMap;
+
+  // Live fallback for rounds still missing a snapshot (pre-migration data)
   const contents = await resolveRoundsContent(sessionRounds, workspaceId);
   const map = new Map<string, Record<string, string>>();
-  for (let i = 0; i < contents.length; i++) {
-    map.set(contents[i].roundId, contents[i].starterFiles);
+  for (const c of contents) {
+    if (snapshotMap.has(c.roundId)) map.set(c.roundId, snapshotMap.get(c.roundId)!);
+    else map.set(c.roundId, c.starterFiles);
   }
   return map;
 }

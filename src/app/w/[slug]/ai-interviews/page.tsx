@@ -141,15 +141,15 @@ export default async function WorkspaceAiInterviewsPage({ params, searchParams }
   const avgScore = Math.round(completedAgg._avg.score ?? 0);
 
   // One resolver pass for every listed session (batched challenge lookups).
-  // Primary round's starter wins.
+  // Snapshot-first: merged starters across all rounds so multi-round phantoms are impossible.
   const starterMap = new Map<string, Record<string, string>>();
   for (const s of rawSessions) {
     try {
       if (Object.keys(s.filesJson || "{}").length === 0) continue;
       const m = await getStarterFilesByRoundId(s as never, workspace.id);
-      for (const files of m.values()) {
-        if (!starterMap.has(s.id)) starterMap.set(s.id, files);
-      }
+      const merged: Record<string, string> = {};
+      for (const files of m.values()) Object.assign(merged, files);
+      if (Object.keys(merged).length > 0) starterMap.set(s.id, merged);
     } catch {
       /* starter unknown */
     }

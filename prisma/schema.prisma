@@ -1057,6 +1057,10 @@ model AIInterviewSession {
   extensionMinutes Int                       @default(5)
   createdAt        DateTime                  @default(now())
   updatedAt        DateTime                  @updatedAt
+  /// Immutable starter snapshot captured at invite time (path -> code JSON).
+  /// Used as the authoritative baseline for diffs/grading so re-resolving
+  /// templates at grade time can never drift and credit scaffold code.
+  starterFilesJson String?
   ledgerEntries    AIInterviewCreditLedger[]
   candidate        Candidate?                @relation(fields: [candidateId], references: [id])
   workspace        Workspace                 @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
@@ -1142,6 +1146,10 @@ model AIInterviewRound {
   /// Per-round candidate file state (path -> code, JSON). Seeds from the
   /// resolved starter files for this round's source.
   filesJson        String    @default("{}")
+  /// Immutable starter snapshot for this round (path -> code JSON), captured at
+  /// batch creation. Grading/diffs use this first; live template re-resolution
+  /// is only a fallback for pre-snapshot sessions.
+  starterFilesJson String?
   /// Reserved for a future per-round chat-reset mode. Null = shared session chat.
   chatHistory      String?
   /// Per-round score 0..100 + rubric, set at grade time. Session composite

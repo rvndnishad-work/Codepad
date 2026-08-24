@@ -34,6 +34,61 @@ type GraderResult = {
   aiSummary: string;
 };
 
+// ---------------------------------------------------------------------------
+// New scoring invariants (fixes phantom 35% for zero-effort submissions).
+// ---------------------------------------------------------------------------
+
+/** Zero code ownership → cap score hard. These survive even Gemini hallucination. */
+const ZERO_EFFORT_MAX_SCORE = 8;
+const LOW_EFFORT_MAX_SCORE = 18;
+const MIN_MEANINGFUL_ADDED_LINES = 3;
+
+/** A line counts as authored signal only if it carries a code token. */
+function isMeaningfulLine(line: string): boolean {
+  const t = line.trim();
+  if (t.length < 3) return false;
+  // ignore pure punctuation / braces / xml tags alone
+  if (/^[\{\}\[\]\(\)<>;:,]+$/.test(t)) return false;
+  // must contain an alphanumeric token
+  return /[A-Za-z0-9]/.test(t);
+}
+
+function meaningfulAddedLines(diffs: FileDiff[]): number {
+  let n = 0;
+  for (const d of diffs) for (const l of d.added) if (isMeaningfulLine(l)) n++;
+  return n;
+}
+
+function clampScoreForEffort(score: number, meaningfulLines: number): number {
+  if (meaningfulLines === 0) return Math.min(score, ZERO_EFFORT_MAX_SCORE);
+  if (meaningfulLines < MIN_MEANINGFUL_ADDED_LINES) return Math.min(score, LOW_EFFORT_MAX_SCORE);
+  return score;
+}
+
+function clampRatingsForEffort(
+  r: GraderResult,
+  meaningfulLines: number
+): GraderResult {
+  if (meaningfulLines === 0) {
+    return {
+      ...r,
+      score: clampScoreForEffort(r.score, meaningfulLines),
+      codeQuality: Math.min(r.codeQuality, 1),
+      problemSolving: Math.min(r.problemSolving, 1),
+      communication: Math.min(r.communication, 2),
+    };
+  }
+  if (meaningfulLines < MIN_MEANINGFUL_ADDED_LINES) {
+    return {
+      ...r,
+      score: clampScoreForEffort(r.score, meaningfulLines),
+      codeQuality: Math.min(r.codeQuality, 2),
+      problemSolving: Math.min(r.problemSolving, 2),
+    };
+  }
+  return { ...r, score: clampScoreForEffort(r.score, meaningfulLines) };
+}
+
 // Call Gemini API to perform programmatic grading — DIFF-AWARE.
 async function callGeminiGrader(
   apiKey: string,
@@ -163,18 +218,33 @@ function runRulesBasedGrader(
   files: Record<string, string>,
   chatHistory: { role: "user" | "assistant"; text: string }[],
   templateId: string,
-  diffCtx?: { diffs: FileDiff[]; addedCode: string; changedLines: number }
+  diffCtx?: { diffs: FileDiff[]; addedCode: string; changedLines: number; meaningfulLines: number }
 ): GraderResult {
-  // Zero-effort guard: submission identical to the starter template.
-  if (diffCtx && diffCtx.changedLines === 0) {
+  // Deterministic zero/near-zero effort guard — no credit for untouched scaffold.
+  // This also covers the phantom-diff case where the starter was missing at
+  // grade time and diffCtx was absent: we treat unknown baseline conservatively.
+  if (!diffCtx) {
     return {
       score: 5,
       codeQuality: 1,
       problemSolving: 1,
-      communication: chatHistory.filter((c) => c.role === "user").length >= 4 ? 3 : 1,
+      communication: 1,
       aiSummary:
-        "- [Flaw] The candidate did not modify any starter files — no code was written for this task.",
+        "- [Flaw] No verifiable code changes detected (starter baseline missing or submission empty) — graded conservatively.",
     };
+  }
+  if (diffCtx.meaningfulLines === 0) {
+    return {
+      score: 5,
+      codeQuality: 1,
+      problemSolving: 1,
+      communication: chatHistory.filter((c) => c.role === "user").length >= 4 ? 2 : 1,
+      aiSummary:
+        "- [Flaw] The candidate did not author any meaningful code — no starter files were modified.",
+    };
+  }
+  if (diffCtx.meaningfulLines < MIN_MEANINGFUL_ADDED_LINES) {
+    // Near-zero effort: show what they touched but cap strictly downstream.
   }
 
   let score = 10; // baseline for showing up and changing something
@@ -185,7 +255,7 @@ function runRulesBasedGrader(
   const flaws: string[] = [];
 
   // Signals are tested against what the candidate WROTE, not the scaffold.
-  const fileContents = diffCtx ? diffCtx.addedCode : Object.values(files).join("\n");
+  const fileContents = diffCtx.addedCode;
   const rules = rulesForTemplate(templateId);
 
   for (const rule of rules) {
@@ -217,13 +287,14 @@ function runRulesBasedGrader(
     ...flaws.map((f) => `- [Flaw] ${f}`),
   ];
 
-  return {
+  const raw: GraderResult = {
     score: Math.min(100, score),
     codeQuality: Math.min(5, codeQuality),
     problemSolving: Math.min(5, problemSolving),
     communication: Math.min(5, communication),
     aiSummary: bullets.join("\n"),
   };
+  return clampRatingsForEffort(raw, diffCtx.meaningfulLines);
 }
 
 /** Grade one round's (or a legacy whole-session) submission, with the static
@@ -242,30 +313,53 @@ async function gradeSubmission(
   // Diff the submission against the round's starter template so graders see
   // only candidate-authored changes.
   let diffs: FileDiff[] = [];
-  if (starterFiles) {
+  let hasStarter = false;
+  if (starterFiles && Object.keys(starterFiles).length > 0) {
+    hasStarter = true;
     try {
       diffs = diffFiles(starterFiles, files);
     } catch {
       diffs = [];
     }
   }
-  const changeSummary = describeChanges(diffs);
+  const changeSummary = hasStarter ? describeChanges(diffs) : "no baseline available";
   const addedCode = diffs.map((d) => d.added.join("\n")).join("\n");
-  const changedLines =
-    diffs.reduce((s, d) => s + d.added.length + d.removed.length, 0);
+  const changedLines = diffs.reduce((s, d) => s + d.added.length + d.removed.length, 0);
+  const meaningfulLines = hasStarter ? meaningfulAddedLines(diffs) : 0;
+
+  // Hard zero-effort fast-path: skip Gemini entirely — deterministic, cheap, fair.
+  // This also neutralizes any phantom diff (unknown starter handled below).
+  if (hasStarter && meaningfulLines === 0) {
+    return runRulesBasedGrader(files, chatHistory, templateId, {
+      diffs, addedCode, changedLines, meaningfulLines,
+    });
+  }
+  if (!hasStarter) {
+    // Unknown baseline — never credit scaffold-looking code. Log and grade conservatively.
+    console.warn(`[grade] no starter baseline for ${label} (templateId=${templateId}) — clamping score`);
+    // Still try Gemini with empty diff but clamped downstream; otherwise static guard returns 5.
+    if (apiKey) {
+      try {
+        const raw = await callGeminiGrader(apiKey, label, chatLog, "(empty — no verifiable diff; baseline unavailable)", changeSummary);
+        return clampRatingsForEffort(raw, 0);
+      } catch (err) {
+        console.error("Gemini grading failed, falling back to static:", err);
+      }
+    }
+    return runRulesBasedGrader(files, chatHistory, templateId, undefined);
+  }
 
   if (apiKey) {
     try {
-      const diffBlock = starterFiles
-        ? renderDiffForPrompt(diffs)
-        : Object.values(files).join("\n"); // unknown starter — fall back to raw files
-      return await callGeminiGrader(apiKey, label, chatLog, diffBlock, changeSummary);
+      const diffBlock = renderDiffForPrompt(diffs);
+      const raw = await callGeminiGrader(apiKey, label, chatLog, diffBlock, changeSummary);
+      return clampRatingsForEffort(raw, meaningfulLines);
     } catch (err) {
       console.error("Gemini grading failed, falling back to static:", err);
     }
   }
   return runRulesBasedGrader(files, chatHistory, templateId,
-    starterFiles ? { diffs, addedCode, changedLines } : undefined
+    { diffs, addedCode, changedLines, meaningfulLines }
   );
 }
 
@@ -321,13 +415,41 @@ export async function gradeSessionById(params: {
   const sessionRounds = resolveSessionRounds(session);
   const legacy = sessionRounds.length === 1 && sessionRounds[0].legacy;
 
-  // Authoritative starter baseline for EVERY round kind (scaffold / challenge /
-  // playground) — diffs and grading measure candidate-authored changes only.
+  // Authoritative starter baseline — SNAPSHOT FIRST.
+  // 1. Per-round starterFilesJson captured at invite (immutable, no drift).
+  // 2. Legacy session starterFilesJson.
+  // 3. Live resolver fallback (pre-snapshot sessions).
   let startersByRound = new Map<string, Record<string, string>>();
-  try {
-    startersByRound = await getStarterFilesByRoundId(session, session.workspaceId);
-  } catch {
-    startersByRound = new Map(); // unknown starter — grade raw files
+  const roundById = new Map<string, (typeof session.rounds)[number]>((session.rounds ?? []).map((rr) => [rr.id, rr]));
+  for (const r of sessionRounds) {
+    // Try snapshot stored on the round row
+    const rawRound = roundById.get(r.id) as unknown as { starterFilesJson?: string | null } | undefined;
+    const snap = parseFilesMap((rawRound as unknown as { starterFilesJson?: string | null })?.starterFilesJson ?? null);
+    if (snap && Object.keys(snap).length > 0) {
+      startersByRound.set(r.id, snap);
+      continue;
+    }
+    // Legacy: session-level snapshot
+    if (r.legacy) {
+      const sessSnap = parseFilesMap((session as unknown as { starterFilesJson?: string | null }).starterFilesJson ?? null);
+      if (sessSnap && Object.keys(sessSnap).length > 0) {
+        startersByRound.set(r.id, sessSnap);
+        continue;
+      }
+    }
+  }
+  // Fallback for any rounds still missing a baseline (pre-snapshot data)
+  const missing = sessionRounds.filter((r) => !startersByRound.has(r.id));
+  if (missing.length > 0) {
+    try {
+      const resolved = await getStarterFilesByRoundId(session, session.workspaceId);
+      for (const r of missing) {
+        const v = resolved.get(r.id);
+        if (v && Object.keys(v).length > 0) startersByRound.set(r.id, v);
+      }
+    } catch {
+      // leave missing as unknown starter — gradeSubmission will clamp conservatively
+    }
   }
 
   // Files each round is graded on: prefer the submitted map, else the round's

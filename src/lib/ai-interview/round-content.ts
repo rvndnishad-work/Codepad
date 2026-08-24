@@ -188,11 +188,90 @@ export async function getStarterFilesByRoundId(
   if (!needLiveResolve) return snapshotMap;
 
   // Live fallback for rounds still missing a snapshot (pre-migration data)
+  // If live resolution yields the generic sentinel (DEFAULT_STARTER), treat as
+  // unknown baseline instead of crediting phantom NEW FILEs. The diff UI and
+  // grader will then show "no verifiable diff" / clamp to 5, rather than
+  // 4 files changed +44 lines for a zero-effort submission.
   const contents = await resolveRoundsContent(sessionRounds, workspaceId);
   const map = new Map<string, Record<string, string>>();
   for (const c of contents) {
-    if (snapshotMap.has(c.roundId)) map.set(c.roundId, snapshotMap.get(c.roundId)!);
-    else map.set(c.roundId, c.starterFiles);
+    if (snapshotMap.has(c.roundId)) {
+      map.set(c.roundId, snapshotMap.get(c.roundId)!);
+      continue;
+    }
+    if (isDefaultStarter(c.starterFiles)) {
+      // Unknown baseline — do not populate, caller will handle as missing
+      continue;
+    }
+    map.set(c.roundId, c.starterFiles);
   }
   return map;
+}
+
+/**
+ * Best-effort inference for historical sessions without a snapshot: pick the
+ * template whose starter most closely matches the submitted files (minimal
+ * diff). Used to heal phantom diffs where fallback sentinel would otherwise
+ * show every file as NEW FILE.
+ */
+export async function inferStarterForSubmission(
+  submitted: Record<string, string>,
+  workspaceId: string
+): Promise<Record<string, string> | null> {
+  const { AI_INTERVIEW_TEMPLATES } = await import("./scaffolds");
+  const { templates: catalog } = await import("@/lib/templates");
+  // Load workspace custom templates
+  let customRows: { starterFiles: string }[] = [];
+  try {
+    customRows = await prisma.aIInterviewTemplate.findMany({
+      where: { workspaceId },
+      select: { starterFiles: true },
+    });
+  } catch {
+    customRows = [];
+  }
+
+  const candidates: Record<string, string>[] = [];
+  // Builtins
+  for (const t of AI_INTERVIEW_TEMPLATES) if (t.starterFiles) candidates.push(t.starterFiles);
+  // Customs
+  for (const r of customRows) {
+    try {
+      const p = JSON.parse(r.starterFiles);
+      if (p && typeof p === "object" && !Array.isArray(p) && Object.keys(p).length > 0) {
+        candidates.push(p as Record<string, string>);
+      }
+    } catch {}
+  }
+  // Playground catalog
+  for (const def of catalog) {
+    if (!def.files) continue;
+    const out: Record<string, string> = {};
+    for (const [pp, val] of Object.entries(def.files as Record<string, unknown>)) {
+      if (typeof val === "string") out[pp] = val;
+      else if (val && typeof val === "object" && "code" in val) out[pp] = String((val as { code: unknown }).code ?? "");
+    }
+    if (Object.keys(out).length > 0) candidates.push(out);
+  }
+  // Also consider generic default as last resort
+  candidates.push(DEFAULT_STARTER);
+
+  if (candidates.length === 0) return null;
+  // Use diff cost to rank — lazy import to avoid cycle
+  const { diffStats, diffFiles } = await import("./diff");
+  let best: Record<string, string> | null = null;
+  let bestCost = Infinity;
+  for (const cand of candidates) {
+    try {
+      const d = diffFiles(cand, submitted);
+      const s = diffStats(d);
+      const cost = s.addedLines + s.removedLines;
+      if (cost < bestCost) {
+        bestCost = cost;
+        best = cand;
+      }
+      if (cost === 0) break;
+    } catch {}
+  }
+  return best;
 }

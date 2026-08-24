@@ -7,7 +7,7 @@ import { Lock, Sparkles } from "lucide-react";
 import { getWorkspaceCredits } from "@/lib/ai-interview/credits";
 import { effectivePlanAllowsAiScreening } from "@/lib/billing/trial";
 import { listTemplatesForWorkspace } from "@/lib/ai-interview/template-resolver";
-import { getStarterFilesByRoundId } from "@/lib/ai-interview/round-content";
+import { getStarterFilesByRoundId, inferStarterForSubmission } from "@/lib/ai-interview/round-content";
 import { diffFiles, diffStats, type FileDiff, type DiffStats } from "@/lib/ai-interview/diff";
 import { canMember } from "@/lib/permissions";
 import AIInterviewRecruiterConsole from "./AIInterviewRecruiterConsole";
@@ -145,11 +145,22 @@ export default async function WorkspaceAiInterviewsPage({ params, searchParams }
   const starterMap = new Map<string, Record<string, string>>();
   for (const s of rawSessions) {
     try {
-      if (Object.keys(s.filesJson || "{}").length === 0) continue;
+      const parsedFilesEarly: Record<string, string> = (() => { try { return JSON.parse(s.filesJson || "{}"); } catch { return {}; }})();
+      if (Object.keys(parsedFilesEarly).length === 0) continue;
       const m = await getStarterFilesByRoundId(s as never, workspace.id);
       const merged: Record<string, string> = {};
       for (const files of m.values()) Object.assign(merged, files);
-      if (Object.keys(merged).length > 0) starterMap.set(s.id, merged);
+      if (Object.keys(merged).length > 0) {
+        starterMap.set(s.id, merged);
+      } else {
+        // Historical session without snapshot and live fallback yielded sentinel
+        // (e.g. old playground batch). Infer best matching template so zero-effort
+        // (submitted == starter) shows 0 files changed instead of phantom 4 NEW FILEs.
+        try {
+          const inferred = await inferStarterForSubmission(parsedFilesEarly, workspace.id);
+          if (inferred && Object.keys(inferred).length > 0) starterMap.set(s.id, inferred);
+        } catch {}
+      }
     } catch {
       /* starter unknown */
     }

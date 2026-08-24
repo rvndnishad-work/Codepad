@@ -5,7 +5,7 @@ import { sendRecruiterNotifyEmail } from "@/lib/ai-interview/submit-notify";
 import { resolveSessionRounds, type SessionRound } from "@/lib/ai-interview/rounds";
 import { STAFF_ROLES } from "@/lib/permissions/role-groups";
 import { advanceCandidateStage } from "@/lib/crm/advance";
-import { getStarterFilesByRoundId } from "@/lib/ai-interview/round-content";
+import { getStarterFilesByRoundId, inferStarterForSubmission } from "@/lib/ai-interview/round-content";
 import {
   describeChanges,
   diffFiles,
@@ -466,7 +466,18 @@ export async function gradeSessionById(params: {
           ? `${session.positionTitle} — Round ${r.order + 1}`
           : session.positionTitle;
       // Starter for this round (works for every round source kind).
-      const starterFiles = startersByRound.get(r.id);
+      let starterFiles = startersByRound.get(r.id);
+      // Historical fallback: if no snapshot/live baseline, infer from submitted files
+      // so zero-effort (submitted == template) shows 0 diff instead of phantom 4 NEW files.
+      if (!starterFiles || Object.keys(starterFiles).length === 0) {
+        const files = filesForRound(r);
+        if (Object.keys(files).length > 0) {
+          try {
+            const inferred = await inferStarterForSubmission(files, session.workspaceId);
+            if (inferred && Object.keys(inferred).length > 0) starterFiles = inferred;
+          } catch {}
+        }
+      }
       const result = await gradeSubmission(
         apiKey,
         label,

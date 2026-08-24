@@ -33,9 +33,15 @@ export type RoundContent = {
   status: string;
 };
 
-const DEFAULT_STARTER: Record<string, string> = {
+export const DEFAULT_STARTER: Record<string, string> = {
   "/index.js": "// Start coding here\n",
 };
+
+/** True when a starter map is just the generic fallback sentinel (not a real template). */
+export function isDefaultStarter(starter: Record<string, string> | null | undefined): boolean {
+  if (!starter || Object.keys(starter).length !== 1) return false;
+  return starter["/index.js"] === "// Start coding here\n";
+}
 
 /** Flatten a SandpackFiles map (string | {code}) to a plain path→code map. */
 function flattenCatalogFiles(files: Record<string, unknown>): Record<string, string> {
@@ -96,7 +102,7 @@ export async function resolveRoundsContent(
     let language = round.language ?? undefined;
     let frameworkLabel = round.frameworkLabel ?? undefined;
     let estimatedMinutes = round.estimatedMinutes;
-    let starterFiles: Record<string, string> = DEFAULT_STARTER;
+    let starterFiles: Record<string, string> | null = null;
 
     if (round.sourceKind === "scaffold") {
       const tpl = round.templateId
@@ -117,7 +123,8 @@ export async function resolveRoundsContent(
         title = c.title;
         description = c.description;
         estimatedMinutes = round.estimatedMinutes || c.estimatedMinutes;
-        starterFiles = parseFiles(c.starterFiles) ?? DEFAULT_STARTER;
+        const parsed = parseFiles(c.starterFiles);
+        if (parsed) starterFiles = parsed;
       }
     } else if (round.sourceKind === "playground") {
       const def = round.sourceId ? templates.find((t) => t.id === round.sourceId) : undefined;
@@ -127,6 +134,13 @@ export async function resolveRoundsContent(
         starterFiles = flattenCatalogFiles(def.files as Record<string, unknown>);
       }
     }
+
+    // Only fall back to generic sentinel when we truly have no round context
+    // (legacy rows with no sourceKind/sourceId). For scaffold/playground
+    // lookups that failed, we keep starterFiles=null so callers can detect
+    // an unknown baseline instead of crediting phantom NEW FILEs.
+    const resolvedStarter = starterFiles ?? (round.sourceKind ? null : DEFAULT_STARTER);
+    const effectiveStarter = resolvedStarter ?? DEFAULT_STARTER;
 
     const saved = parseFiles(round.filesJson);
     out.push({
@@ -138,8 +152,8 @@ export async function resolveRoundsContent(
       language,
       frameworkLabel,
       estimatedMinutes,
-      starterFiles,
-      files: saved ?? starterFiles,
+      starterFiles: effectiveStarter,
+      files: saved ?? effectiveStarter,
       status: round.status,
     });
   }

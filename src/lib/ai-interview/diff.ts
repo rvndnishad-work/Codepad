@@ -25,6 +25,50 @@ export type FileDiff = {
   isDeleted: boolean;
 };
 
+/**
+ * Sandpack base template boilerplate that is auto-injected by <SandpackProvider template="react">
+ * but never part of the AI-interview scaffold's starterFiles map. When a candidate
+ * submits without editing, these files appear in `submitted` but not in `starter`,
+ * producing phantom `NEW FILE` diffs (+44 lines). They must be ignored for grading
+ * and for the recruiter "DIFF VS STARTER" view — only files the developer actually
+ * wrote should appear.
+ */
+const SANDBOX_BOILERPLATE: Record<string, string> = {
+  "/index.js": `import React, { StrictMode } from "react";\nimport { createRoot } from "react-dom/client";\nimport "./styles.css";\n\nimport App from "./App";\n\nconst root = createRoot(document.getElementById("root"));\nroot.render(\n  <StrictMode>\n    <App />\n  </StrictMode>\n);`,
+  "/public/index.html": `<!DOCTYPE html>\n<html lang="en">\n  <head>\n    <meta charset="UTF-8">\n    <meta name="viewport" content="width=device-width, initial-scale=1.0">\n    <title>Document</title>\n  </head>\n  <body>\n    <div id="root"></div>\n  </body>\n</html>`,
+  "/styles.css": `body {\n  font-family: sans-serif;\n  -webkit-font-smoothing: auto;\n  -moz-font-smoothing: auto;\n  -moz-osx-font-smoothing: grayscale;\n  font-smoothing: auto;\n  text-rendering: optimizeLegibility;\n  font-smooth: always;\n  -webkit-tap-highlight-color: transparent;\n  -webkit-touch-callout: none;\n}\n\nh1 {\n  font-size: 1.5rem;\n}`,
+};
+
+function normalizeForCompare(s: string): string {
+  return s.replace(/\r\n/g, "\n").trim().replace(/\s+/g, " ");
+}
+
+function isSandboxBoilerplate(path: string, content: string | undefined): boolean {
+  if (!content) return false;
+  const boiler = SANDBOX_BOILERPLATE[path];
+  if (boiler === undefined) return false;
+  if (path === "/package.json") {
+    try {
+      const a = JSON.parse(content);
+      const b = JSON.parse(boiler);
+      // package.json boilerplate is identified by react deps; any package.json
+      // that exactly matches the sandbox default should be treated as boilerplate.
+      // For grading we parse both and compare deps/main.
+      return JSON.stringify(a.dependencies) === JSON.stringify(b.dependencies) && a.main === b.main;
+    } catch {
+      return normalizeForCompare(content) === normalizeForCompare(boiler);
+    }
+  }
+  return normalizeForCompare(content) === normalizeForCompare(boiler);
+}
+
+// Package.json boilerplate is JSON-stringified without pretty-print in some sandpack versions.
+// Add explicit entry for detection via parsed compare above; keep raw string for completeness.
+SANDBOX_BOILERPLATE["/package.json"] = JSON.stringify({
+  dependencies: { react: "^19.0.0", "react-dom": "^19.0.0", "react-scripts": "^5.0.0" },
+  main: "/index.js",
+});
+
 /** Per-file LCS line diff between two file maps. */
 export function diffFiles(
   starter: Record<string, string>,
@@ -38,7 +82,9 @@ export function diffFiles(
     const after = submitted[path];
 
     if (before === undefined) {
-      // Candidate-created file — every non-empty line counts as added.
+      // Candidate-created file — but ignore pure Sandpack boilerplate that the
+      // client injects (template="react" base files). Those are not candidate-authored.
+      if (isSandboxBoilerplate(path, after)) continue;
       diffs.push({
         path,
         added: splitLines(after),
@@ -61,9 +107,20 @@ export function diffFiles(
       continue;
     }
 
+    // Both exist — if submitted is pure boilerplate that differs from a custom
+    // scaffold starter (e.g. /styles.css glassmorphic vs base sans-serif), it's
+    // the same phantom injection in reverse (starter had custom, submitted got
+    // base). Hide it: treat as no candidate edit.
+    if (isSandboxBoilerplate(path, after) && !isSandboxBoilerplate(path, before)) {
+      // Only hide if after is boilerplate and before is not — meaning the candidate
+      // didn't write boilerplate; the runtime injected it.
+      continue;
+    }
+
     const a = splitLines(before);
     const b = splitLines(after);
     const { added, removed, unchanged } = lcsDiff(a, b);
+    if (added.length === 0 && removed.length === 0) continue;
     diffs.push({ path, added, removed, unchangedCount: unchanged, isNew: false, isDeleted: false });
   }
 

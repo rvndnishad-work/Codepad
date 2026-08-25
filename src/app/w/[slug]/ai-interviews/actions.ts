@@ -99,9 +99,15 @@ export async function createAIInterviewSessionAction(
   let legacyStarterJson: string | null = null;
   try {
     const { resolveTemplate } = await import("@/lib/ai-interview/template-resolver");
+    const { REACT_SANDBOX_BASE } = await import("@/lib/ai-interview/round-content");
     const tpl = await resolveTemplate(data.templateId.trim(), workspace.id);
     if (tpl?.starterFiles && Object.keys(tpl.starterFiles).length > 0) {
-      legacyStarterJson = JSON.stringify(tpl.starterFiles);
+      let files = tpl.starterFiles;
+      // Frontend scaffolds need Sandpack base merged (see withReactBase)
+      if (tpl.kind !== "backend" && tpl.kind !== "dsa") {
+        files = { ...REACT_SANDBOX_BASE, ...files };
+      }
+      legacyStarterJson = JSON.stringify(files);
     }
   } catch { /* fallback to resolver at grade time */ }
 
@@ -294,6 +300,7 @@ export async function createScreeningBatchAction(
   {
     const { resolveTemplate: _resolveTpl } = await import("@/lib/ai-interview/template-resolver");
     const { templates: _catalog } = await import("@/lib/templates");
+    const { REACT_SANDBOX_BASE } = await import("@/lib/ai-interview/round-content");
     const chalIds = [...new Set(allSpecs.filter((r) => r.sourceKind === "challenge" && r.sourceId).map((r) => r.sourceId!))];
     const chalRows = chalIds.length ? await prisma.challenge.findMany({ where: { id: { in: chalIds } }, select: { id: true, starterFiles: true } }) : [];
     const chalMap = new Map(chalRows.map((c) => [c.id, c.starterFiles as string]));
@@ -321,6 +328,15 @@ export async function createScreeningBatchAction(
           }
         }
       } catch {}
+      // For frontend scaffold/playground, merge Sandpack react base so the snapshot
+      // matches what <SandpackProvider template="react"> actually injects.
+      // Prevents phantom NEW FILEs (/index.js, /public/index.html, etc.) when
+      // candidate submits without editing.
+      if (files && r.sourceKind !== "challenge" && r.paradigm === "frontend") {
+        files = { ...REACT_SANDBOX_BASE, ...files };
+      } else if (!files && r.sourceKind !== "challenge" && r.paradigm === "frontend") {
+        files = { ...REACT_SANDBOX_BASE };
+      }
       starterCache.set(k, files);
     }
   }

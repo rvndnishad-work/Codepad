@@ -43,6 +43,30 @@ export function isDefaultStarter(starter: Record<string, string> | null | undefi
   return starter["/index.js"] === "// Start coding here\n";
 }
 
+/**
+ * Sandpack base files for template="react" — auto-injected by SandpackProvider
+ * but not part of most scaffold's starterFiles maps. Merged into the starter
+ * baseline so diffs don't show them as phantom NEW FILEs. Must stay in sync
+ * with diff.ts SANDBOX_BOILERPLATE.
+ */
+export const REACT_SANDBOX_BASE: Record<string, string> = {
+  "/index.js": `import React, { StrictMode } from "react";\nimport { createRoot } from "react-dom/client";\nimport "./styles.css";\n\nimport App from "./App";\n\nconst root = createRoot(document.getElementById("root"));\nroot.render(\n  <StrictMode>\n    <App />\n  </StrictMode>\n);`,
+  "/public/index.html": `<!DOCTYPE html>\n<html lang="en">\n  <head>\n    <meta charset="UTF-8">\n    <meta name="viewport" content="width=device-width, initial-scale=1.0">\n    <title>Document</title>\n  </head>\n  <body>\n    <div id="root"></div>\n  </body>\n</html>`,
+  "/package.json": JSON.stringify({
+    dependencies: { react: "^19.0.0", "react-dom": "^19.0.0", "react-scripts": "^5.0.0" },
+    main: "/index.js",
+  }),
+  "/styles.css": `body {\n  font-family: sans-serif;\n  -webkit-font-smoothing: auto;\n  -moz-font-smoothing: auto;\n  -moz-osx-font-smoothing: grayscale;\n  font-smoothing: auto;\n  text-rendering: optimizeLegibility;\n  font-smooth: always;\n  -webkit-tap-highlight-color: transparent;\n  -webkit-touch-callout: none;\n}\n\nh1 {\n  font-size: 1.5rem;\n}`,
+};
+
+function withReactBase(custom: Record<string, string> | null, kind: string | null | undefined): Record<string, string> | null {
+  if (kind !== "frontend" && kind !== null) return custom;
+  // For frontend/react, merge base so phantom NEW FILEs never appear.
+  // Custom files win (e.g. scaffold's glassmorphic /styles.css overrides base sans-serif).
+  if (!custom) return { ...REACT_SANDBOX_BASE };
+  return { ...REACT_SANDBOX_BASE, ...custom };
+}
+
 /** Flatten a SandpackFiles map (string | {code}) to a plain path→code map. */
 function flattenCatalogFiles(files: Record<string, unknown>): Record<string, string> {
   const out: Record<string, string> = {};
@@ -135,10 +159,19 @@ export async function resolveRoundsContent(
       }
     }
 
+    // Merge Sandpack react base for frontend scaffold/playground so the starter
+    // matches what <SandpackProvider template="react"> actually renders.
+    // Without this, base files (/index.js, /public/index.html, /package.json,
+    // /styles.css) appear as phantom NEW FILEs when the candidate submits
+    // without editing (diff +44 lines). Challenge rounds keep their own starter.
+    if (round.sourceKind !== "challenge") {
+      starterFiles = withReactBase(starterFiles, kind);
+    }
+
     // Only fall back to generic sentinel when we truly have no round context
     // (legacy rows with no sourceKind/sourceId). For scaffold/playground
-    // lookups that failed, we keep starterFiles=null so callers can detect
-    // an unknown baseline instead of crediting phantom NEW FILEs.
+    // lookups that failed but got base-merged above, we already have a real baseline.
+    // Challenge lookups that failed stay null so callers can detect unknown.
     const resolvedStarter = starterFiles ?? (round.sourceKind ? null : DEFAULT_STARTER);
     const effectiveStarter = resolvedStarter ?? DEFAULT_STARTER;
 

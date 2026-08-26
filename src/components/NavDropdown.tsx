@@ -306,11 +306,8 @@ export default function NavDropdown({ label, items, kicker, featuredHref }: Prop
         <div
           ref={panelRef}
           role="menu"
-          // `left` is set imperatively by the reposition effect; left-0 is the
-          // pre-measure default so there's no flash before it runs.
-          // The pt-2 is the invisible hover bridge between button and panel.
           className={`absolute top-full left-0 pt-2 z-50 ${
-            featuredItem ? "w-[620px]" : listItems.length >= 4 ? "w-[640px]" : "min-w-[330px]"
+            featuredItem ? "w-[560px]" : listItems.length >= 4 ? "w-[560px]" : "min-w-[330px]"
           }`}
         >
           <motion.div
@@ -325,51 +322,47 @@ export default function NavDropdown({ label, items, kicker, featuredHref }: Prop
               </div>
             )}
 
-            <div className={featuredItem ? "flex gap-2" : ""}>
-              {/* Item list — two columns only when long and there's no spotlight */}
-              <div
-                className={
-                  featuredItem
-                    ? "flex-1 min-w-0 flex flex-col gap-0.5"
-                    : listItems.length >= 4
-                      ? "grid grid-cols-2 gap-1"
-                      : "flex flex-col gap-0.5"
-                }
+            {/* Featured as compact top banner — balances the menu, no tall empty column */}
+            {featuredItem && FeaturedIcon && (
+              <Link
+                href={featuredItem.href}
+                role="menuitem"
+                className="group/feat relative flex items-center gap-4 rounded-xl border border-accent/20 bg-gradient-to-br from-accent/[0.14] via-accent/[0.06] to-transparent p-3.5 mb-2 overflow-hidden transition-colors duration-200 hover:border-accent/40"
               >
-                {listItems.map(renderItem)}
-              </div>
-
-              {/* Spotlight card — gradient tile promoting the featured item */}
-              {featuredItem && FeaturedIcon && (
-                <Link
-                  href={featuredItem.href}
-                  role="menuitem"
-                  className="group/feat relative w-[220px] shrink-0 rounded-xl border border-accent/20 bg-gradient-to-br from-accent/[0.14] via-accent/[0.05] to-transparent p-4 flex flex-col overflow-hidden transition-colors duration-200 hover:border-accent/40"
-                >
-                  <div
-                    aria-hidden
-                    className="absolute -top-10 -right-10 w-32 h-32 rounded-full bg-accent/20 blur-2xl opacity-60 group-hover/feat:opacity-100 transition-opacity duration-300"
-                  />
-                  <div className="relative">
-                    <div className="w-10 h-10 rounded-xl border border-accent/25 bg-accent/10 text-accent flex items-center justify-center group-hover/feat:scale-105 transition-transform duration-200">
-                      <FeaturedIcon className="w-5 h-5" />
-                    </div>
-                    <div className="flex items-center gap-1.5 mt-3">
-                      <span className="text-sm font-bold text-fg">{featuredItem.label}</span>
-                      {featuredItem.badge && <Badge text={featuredItem.badge} />}
-                    </div>
-                    {featuredItem.description && (
-                      <p className="text-[11.5px] text-muted mt-1 leading-relaxed">
-                        {featuredItem.description}
-                      </p>
-                    )}
+                <div
+                  aria-hidden
+                  className="absolute -top-8 -right-8 w-24 h-24 rounded-full bg-accent/20 blur-xl opacity-60 group-hover/feat:opacity-100 transition-opacity duration-300"
+                />
+                <div className="relative w-10 h-10 rounded-xl border border-accent/25 bg-accent/10 text-accent flex items-center justify-center shrink-0 group-hover/feat:scale-105 transition-transform duration-200">
+                  <FeaturedIcon className="w-5 h-5" />
+                </div>
+                <div className="relative min-w-0 flex-1">
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-sm font-bold text-fg">{featuredItem.label}</span>
+                    {featuredItem.badge && <Badge text={featuredItem.badge} />}
                   </div>
-                  <span className="relative mt-auto pt-4 inline-flex items-center gap-1 text-xs font-bold text-accent">
-                    Explore
-                    <ArrowRight className="w-3.5 h-3.5 group-hover/feat:translate-x-0.5 transition-transform duration-200" />
-                  </span>
-                </Link>
-              )}
+                  {featuredItem.description && (
+                    <p className="text-[11.5px] text-muted leading-relaxed truncate">
+                      {featuredItem.description}
+                    </p>
+                  )}
+                </div>
+                <span className="relative hidden sm:inline-flex items-center gap-1 text-xs font-bold text-accent shrink-0">
+                  Explore
+                  <ArrowRight className="w-3.5 h-3.5 group-hover/feat:translate-x-0.5 transition-transform duration-200" />
+                </span>
+              </Link>
+            )}
+
+            {/* Balanced 2-column grid — was 6 rows single column (tall) + 1 empty spotlight column */}
+            <div
+              className={
+                listItems.length >= 4
+                  ? "grid grid-cols-2 gap-1"
+                  : "flex flex-col gap-0.5"
+              }
+            >
+              {listItems.map(renderItem)}
             </div>
           </motion.div>
         </div>

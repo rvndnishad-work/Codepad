@@ -8,7 +8,7 @@ const augments: NodeAugment[] = [
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "Explain how memory management and Garbage Collection work in the V8 engine.",
-    answer: `**TL;DR.** V8 manages a **heap** and reclaims unreachable objects with a **generational, mark-and-sweep** garbage collector. Objects start in a small **young generation** (Scavenge, very fast); survivors are promoted to the **old generation** (Mark-Sweep-Compact). The **generational hypothesis** — most objects die young — keeps GC cheap.
+    answer: `V8 manages a **heap** and reclaims unreachable objects with a **generational, mark-and-sweep** garbage collector. Objects start in a small **young generation** (Scavenge, very fast); survivors are promoted to the **old generation** (Mark-Sweep-Compact). The **generational hypothesis** — most objects die young — keeps GC cheap.
 
 <svg class='iq-diagram' viewBox='0 0 460 150' role='img' aria-label='Young generation scavenges; survivors promote to old generation'>
   <rect class='d-box-accent' x='20' y='45' width='180' height='70' rx='10'/><text class='d-text' x='110' y='70' text-anchor='middle'>young gen</text><text class='d-sub' x='110' y='92' text-anchor='middle'>Scavenge — fast, frequent</text>
@@ -47,7 +47,7 @@ console.log((heapUsed / 1e6).toFixed(1), '/', (heapTotal / 1e6).toFixed(1), 'MB'
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "What are memory leaks in Node.js and how do you detect them?",
-    answer: `**TL;DR.** A **memory leak** is memory the GC can't reclaim because something still **references** it. Common causes: ever-growing **global** state/caches, **un-removed event listeners**, lingering **closures/timers**, and unbounded data structures. Detect with <code>process.memoryUsage()</code> trends and **heap snapshot diffs**; the tell-tale is heap that grows and never returns after GC.
+    answer: `A **memory leak** is memory the GC can't reclaim because something still **references** it. Common causes: ever-growing **global** state/caches, **un-removed event listeners**, lingering **closures/timers**, and unbounded data structures. Detect with <code>process.memoryUsage()</code> trends and **heap snapshot diffs**; the tell-tale is heap that grows and never returns after GC.
 
 <svg class='iq-diagram' viewBox='0 0 460 150' role='img' aria-label='Heap usage climbing over time indicating a leak'>
   <path class='d-edge' d='M40 120 H430'/>
@@ -92,7 +92,7 @@ app.get('/x', (req, res) => {
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "How do you capture and analyze a heap snapshot to find a memory leak?",
-    answer: `**TL;DR.** Capture a **V8 heap snapshot** with <code>v8.writeHeapSnapshot()</code> (or via the inspector), load it in **Chrome DevTools → Memory**, and **compare** snapshots taken over time under steady load. Object types that keep **growing** between snapshots — held by a retainer path you didn't expect — reveal the leak.
+    answer: `Capture a **V8 heap snapshot** with <code>v8.writeHeapSnapshot()</code> (or via the inspector), load it in **Chrome DevTools → Memory**, and **compare** snapshots taken over time under steady load. Object types that keep **growing** between snapshots — held by a retainer path you didn't expect — reveal the leak.
 
 <svg class='iq-diagram' viewBox='0 0 460 150' role='img' aria-label='Two snapshots diffed to find growing object counts'>
   <rect class='d-box' x='20' y='50' width='110' height='46' rx='8'/><text class='d-sub' x='75' y='71' text-anchor='middle'>snapshot A</text><text class='d-sub' x='75' y='88' text-anchor='middle'>(baseline)</text>
@@ -134,7 +134,7 @@ process.on('SIGUSR2', () => {
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "How do you monitor a Node.js application's memory usage in production?",
-    answer: `**TL;DR.** Continuously track <code>process.memoryUsage()</code> (**RSS**, **heapUsed**, **external**, **arrayBuffers**) and **event-loop lag**, export them as **metrics** (Prometheus) and dashboards/alerts. Watch for steadily **rising heap** (leak) or RSS near the container limit (OOM-kill risk), and capture snapshots on alert.
+    answer: `Continuously track <code>process.memoryUsage()</code> (**RSS**, **heapUsed**, **external**, **arrayBuffers**) and **event-loop lag**, export them as **metrics** (Prometheus) and dashboards/alerts. Watch for steadily **rising heap** (leak) or RSS near the container limit (OOM-kill risk), and capture snapshots on alert.
 
 <svg class='iq-diagram' viewBox='0 0 460 150' role='img' aria-label='App exposes memory metrics scraped into dashboards and alerts'>
   <rect class='d-box-accent' x='20' y='52' width='110' height='46' rx='8'/><text class='d-text' x='75' y='73' text-anchor='middle'>app /metrics</text><text class='d-sub' x='75' y='90' text-anchor='middle'>memoryUsage()</text>
@@ -175,7 +175,7 @@ app.get('/metrics', async (_req, res) => res.end(await client.register.metrics()
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "What are some common ways to improve performance in a Node.js application?",
-    answer: `**TL;DR.** Keep the **event loop unblocked** (no sync CPU work in handlers — offload to workers), do I/O **concurrently** (<code>Promise.all</code>, connection pools, keep-alive), add **caching**, **stream** large payloads, **scale across cores** (cluster/replicas), and **measure first** (profiling) so you optimize the real bottleneck.
+    answer: `Keep the **event loop unblocked** (no sync CPU work in handlers — offload to workers), do I/O **concurrently** (<code>Promise.all</code>, connection pools, keep-alive), add **caching**, **stream** large payloads, **scale across cores** (cluster/replicas), and **measure first** (profiling) so you optimize the real bottleneck.
 
 <svg class='iq-diagram' viewBox='0 0 460 150' role='img' aria-label='Performance levers: loop, IO concurrency, cache, scale'>
   <rect class='d-box-accent' x='15' y='45' width='105' height='80' rx='10'/><text class='d-text' x='67' y='69' text-anchor='middle'>unblock loop</text><text class='d-sub' x='67' y='91' text-anchor='middle'>workers</text><text class='d-sub' x='67' y='109' text-anchor='middle'>async I/O</text>
@@ -216,7 +216,7 @@ const hash2 = await pbkdf2Async(pw, salt, 1e6, 64, 'sha512');`,
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "How do you profile CPU usage with --prof, 0x, or clinic.js flame graphs?",
-    answer: `**TL;DR.** Profile to find **hot functions** and **event-loop blockers**. <code>node --prof</code> writes a V8 tick log you process with <code>--prof-process</code>; **0x** and **clinic.js flame** render **flame graphs** where **wide frames** are the functions burning the most CPU. They turn "it's slow" into a specific function to fix.
+    answer: `Profile to find **hot functions** and **event-loop blockers**. <code>node --prof</code> writes a V8 tick log you process with <code>--prof-process</code>; **0x** and **clinic.js flame** render **flame graphs** where **wide frames** are the functions burning the most CPU. They turn "it's slow" into a specific function to fix.
 
 <svg class='iq-diagram' viewBox='0 0 460 150' role='img' aria-label='Flame graph with the widest frame being the hottest function'>
   <rect class='d-box' x='40' y='30' width='360' height='22' rx='4'/><text class='d-sub' x='220' y='46' text-anchor='middle'>main</text>
@@ -258,7 +258,7 @@ node --prof server.js && node --prof-process isolate-*.log > profile.txt`,
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "What is the perf_hooks module and how do you measure performance?",
-    answer: `**TL;DR.** <code>node:perf_hooks</code> exposes **high-resolution timing**: <code>performance.now()</code>, <code>mark()</code>/<code>measure()</code> for named spans, and a <code>PerformanceObserver</code> to collect entries asynchronously. It also surfaces **event-loop utilization** and **GC** timing — the building blocks for instrumenting your own performance metrics.
+    answer: `<code>node:perf_hooks</code> exposes **high-resolution timing**: <code>performance.now()</code>, <code>mark()</code>/<code>measure()</code> for named spans, and a <code>PerformanceObserver</code> to collect entries asynchronously. It also surfaces **event-loop utilization** and **GC** timing — the building blocks for instrumenting your own performance metrics.
 
 <svg class='iq-diagram' viewBox='0 0 460 150' role='img' aria-label='mark start, mark end, measure the span between them'>
   <rect class='d-box-accent' x='30' y='55' width='90' height='40' rx='8'/><text class='d-sub' x='75' y='79' text-anchor='middle'>mark('A')</text>
@@ -303,7 +303,7 @@ performance.measure('db', 'db:start', 'db:end');`,
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "What is diagnostics_channel and when would you use it?",
-    answer: `**TL;DR.** <code>node:diagnostics_channel</code> is a built-in **publish/subscribe** API for emitting and subscribing to named **diagnostic events** with **near-zero cost when no subscriber** is attached. Libraries publish lifecycle events (e.g. HTTP requests, DB queries) so APM/tracing tools can observe them **without monkey-patching**.
+    answer: `<code>node:diagnostics_channel</code> is a built-in **publish/subscribe** API for emitting and subscribing to named **diagnostic events** with **near-zero cost when no subscriber** is attached. Libraries publish lifecycle events (e.g. HTTP requests, DB queries) so APM/tracing tools can observe them **without monkey-patching**.
 
 <svg class='iq-diagram' viewBox='0 0 460 150' role='img' aria-label='Library publishes to a named channel that subscribers consume'>
   <rect class='d-box-accent' x='20' y='52' width='120' height='46' rx='8'/><text class='d-text' x='80' y='73' text-anchor='middle'>library</text><text class='d-sub' x='80' y='90' text-anchor='middle'>channel.publish()</text>
@@ -349,7 +349,7 @@ diagnostics_channel.subscribe('app:query', (msg) => log.debug(msg));`,
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "How do you add OpenTelemetry distributed tracing to a Node.js service?",
-    answer: `**TL;DR.** **OpenTelemetry** auto-instruments HTTP/DB clients to create **spans**, **propagates a trace context** header across service boundaries, and **exports** traces to a collector/backend (Jaeger, Tempo). It lets you follow **one request end-to-end** across multiple services, seeing where the latency actually goes.
+    answer: `**OpenTelemetry** auto-instruments HTTP/DB clients to create **spans**, **propagates a trace context** header across service boundaries, and **exports** traces to a collector/backend (Jaeger, Tempo). It lets you follow **one request end-to-end** across multiple services, seeing where the latency actually goes.
 
 <svg class='iq-diagram' viewBox='0 0 460 150' role='img' aria-label='Trace context propagated across services into one trace'>
   <rect class='d-box-accent' x='20' y='55' width='90' height='44' rx='8'/><text class='d-sub' x='65' y='75' text-anchor='middle'>svc A</text><text class='d-sub' x='65' y='91' text-anchor='middle'>span 1</text>
@@ -396,7 +396,7 @@ new NodeSDK({
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "How do you implement structured logging with pino or winston, and why avoid console.log in production?",
-    answer: `**TL;DR.** Structured loggers like **pino** emit **JSON** with levels, timestamps, and context — so logs are **machine-parseable** and queryable in aggregators. <code>console.log</code> is **synchronous**, unstructured, and can **block** under load; pino is asynchronous and far faster, and pairs with <code>AsyncLocalStorage</code> for per-request fields.
+    answer: `Structured loggers like **pino** emit **JSON** with levels, timestamps, and context — so logs are **machine-parseable** and queryable in aggregators. <code>console.log</code> is **synchronous**, unstructured, and can **block** under load; pino is asynchronous and far faster, and pairs with <code>AsyncLocalStorage</code> for per-request fields.
 
 <svg class='iq-diagram' viewBox='0 0 460 150' role='img' aria-label='Structured JSON logs flow to an aggregator for querying'>
   <rect class='d-box-muted' x='20' y='30' width='200' height='44' rx='8'/><text class='d-sub' x='120' y='51' text-anchor='middle'>console.log('user', id)</text><text class='d-sub' x='120' y='67' text-anchor='middle'>❌ unstructured, sync</text>

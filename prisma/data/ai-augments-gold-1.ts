@@ -1,6 +1,6 @@
 /**
  * AI Engineering — Batch 1 (LLM fundamentals). Gold-standard answers:
- * TL;DR + theme-aware <svg class='iq-diagram'> diagram + GFM table + interview
+ * + theme-aware <svg class='iq-diagram'> diagram + GFM table + interview
  * tip + a static code example. Picked up by `npm run augment:ai`.
  *
  * Conventions: SVGs use the shared .iq-diagram helper classes (d-box, d-box-accent,
@@ -14,7 +14,7 @@ const augments: AiAugment[] = [
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "What is a Large Language Model and how does it generate text?",
-    answer: `**TL;DR.** An LLM is a **transformer** trained on massive text to **predict the next token**. Generation is **autoregressive**: it predicts one token, appends it to the input, and repeats. Instruction-following and reasoning emerge from this objective plus **post-training** (instruction tuning, preference training).
+    answer: `An LLM is a **transformer** trained on massive text to **predict the next token**. Generation is **autoregressive**: it predicts one token, appends it to the input, and repeats. Instruction-following and reasoning emerge from this objective plus **post-training** (instruction tuning, preference training).
 
 <svg class='iq-diagram' viewBox='0 0 460 150' role='img' aria-label='Autoregressive loop: prompt tokens go into the transformer which predicts the next token and feeds it back'>
   <rect class='d-box-muted' x='16' y='55' width='120' height='44' rx='8'/><text class='d-text' x='76' y='75' text-anchor='middle'>prompt tokens</text><text class='d-sub' x='76' y='91' text-anchor='middle'>The cat sat on</text>
@@ -55,7 +55,7 @@ while not done:
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "What are tokens and why do they matter for cost and limits?",
-    answer: `**TL;DR.** Tokens are the **sub-word units** a model reads and writes (~4 English characters each). They are the currency of everything: **pricing** (per input/output token), **context limits**, and **latency** (one forward pass per output token).
+    answer: `Tokens are the **sub-word units** a model reads and writes (~4 English characters each). They are the currency of everything: **pricing** (per input/output token), **context limits**, and **latency** (one forward pass per output token).
 
 <svg class='iq-diagram' viewBox='0 0 460 130' role='img' aria-label='A sentence split into tokens, each token feeding pricing, limits and latency'>
   <rect class='d-box-muted' x='16' y='20' width='428' height='36' rx='8'/>
@@ -98,7 +98,7 @@ if (n > MAX_INPUT_BUDGET) {
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "What is a context window and what happens when you exceed it?",
-    answer: `**TL;DR.** The context window is the **maximum tokens (input + output)** a model can attend to per request. Exceed it and you get an **API error or truncation**; apps cope by **trimming, summarizing, or retrieving** only what matters. Long contexts also degrade recall (**lost in the middle**) and cost more.
+    answer: `The context window is the **maximum tokens (input + output)** a model can attend to per request. Exceed it and you get an **API error or truncation**; apps cope by **trimming, summarizing, or retrieving** only what matters. Long contexts also degrade recall (**lost in the middle**) and cost more.
 
 <svg class='iq-diagram' viewBox='0 0 460 140' role='img' aria-label='Context window as a fixed-size bar holding system prompt, history, retrieved docs and output, with overflow falling out'>
   <rect class='d-box-muted' x='16' y='30' width='380' height='44' rx='8'/>
@@ -143,7 +143,7 @@ function fitMessages(system: string, turns: Msg[], docs: Doc[]) {
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "How do temperature, top-p and other sampling parameters affect output?",
-    answer: `**TL;DR.** The model outputs a **probability distribution** per token; sampling params shape the pick. **Temperature** rescales confidence (0 = deterministic-ish, high = diverse), **top-p** keeps the smallest set of tokens whose probabilities sum to p, **top-k** caps candidates. Low for extraction, higher for creative work — and tune **one**, not both.
+    answer: `The model outputs a **probability distribution** per token; sampling params shape the pick. **Temperature** rescales confidence (0 = deterministic-ish, high = diverse), **top-p** keeps the smallest set of tokens whose probabilities sum to p, **top-k** caps candidates. Low for extraction, higher for creative work — and tune **one**, not both.
 
 <svg class='iq-diagram' viewBox='0 0 460 150' role='img' aria-label='Token probability bars at low temperature are peaked and at high temperature are flat'>
   <text class='d-text' x='110' y='26' text-anchor='middle'>temperature 0.1</text>
@@ -189,7 +189,7 @@ await client.messages.create({
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "What is the difference between a base model, an instruction-tuned model and a chat model?",
-    answer: `**TL;DR.** A **base model** is the raw next-token predictor — it completes text, it does not answer you. **Instruction tuning** teaches it to follow requests; **chat models** add multi-turn structure plus **preference training** (RLHF/RLAIF) for helpfulness and safety. Production APIs serve chat models.
+    answer: `A **base model** is the raw next-token predictor — it completes text, it does not answer you. **Instruction tuning** teaches it to follow requests; **chat models** add multi-turn structure plus **preference training** (RLHF/RLAIF) for helpfulness and safety. Production APIs serve chat models.
 
 <svg class='iq-diagram' viewBox='0 0 460 130' role='img' aria-label='Pipeline from base model through instruction tuning to chat model'>
   <rect class='d-box-muted' x='16' y='40' width='120' height='54' rx='10'/><text class='d-text' x='76' y='63' text-anchor='middle'>base model</text><text class='d-sub' x='76' y='81' text-anchor='middle'>completes text</text>
@@ -230,7 +230,7 @@ OUT: "Paris."`,
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "What are hallucinations and what causes them?",
-    answer: `**TL;DR.** Hallucinations are **fluent but false** outputs — invented citations, nonexistent APIs, confident wrong facts. Root cause: the model optimizes **plausibility, not truth**; when the answer is missing from weights and context, the most likely-sounding continuation may be fabricated.
+    answer: `Hallucinations are **fluent but false** outputs — invented citations, nonexistent APIs, confident wrong facts. Root cause: the model optimizes **plausibility, not truth**; when the answer is missing from weights and context, the most likely-sounding continuation may be fabricated.
 
 <svg class='iq-diagram' viewBox='0 0 460 140' role='img' aria-label='A query missing from training data and context leads the model to output a plausible fabrication'>
   <rect class='d-box' x='16' y='24' width='130' height='40' rx='8'/><text class='d-sub' x='81' y='48' text-anchor='middle'>training data: no answer</text>

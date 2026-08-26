@@ -7,7 +7,7 @@ const augments: NextAugment[] = [
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "What is the difference between layout.js and template.js in Next.js?",
-    answer: `**TL;DR.** A <code>layout</code> **persists** across navigations and keeps state/DOM. A <code>template</code> **re-mounts a new instance** on every navigation, **resetting** state and re-running effects — useful for enter/exit animations, per-navigation logging, or resetting a form between routes.
+    answer: `A <code>layout</code> **persists** across navigations and keeps state/DOM. A <code>template</code> **re-mounts a new instance** on every navigation, **resetting** state and re-running effects — useful for enter/exit animations, per-navigation logging, or resetting a form between routes.
 
 <svg class='iq-diagram' viewBox='0 0 460 150' role='img' aria-label='layout persists across navigation, template re-mounts'>
   <rect class='d-box-accent' x='20' y='30' width='200' height='100' rx='10'/>
@@ -50,7 +50,7 @@ export default function Template({ children }) {
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "What are dynamic routes and catch-all segments in Next.js?",
-    answer: `**TL;DR.** A <code>[id]</code> folder creates a **dynamic segment** whose value arrives via <code>params</code>; <code>[...slug]</code> is a **catch-all** matching multiple segments; <code>[[...slug]]</code> is an **optional catch-all** that also matches the base path. They let **one route file** handle many URLs.
+    answer: `A <code>[id]</code> folder creates a **dynamic segment** whose value arrives via <code>params</code>; <code>[...slug]</code> is a **catch-all** matching multiple segments; <code>[[...slug]]</code> is an **optional catch-all** that also matches the base path. They let **one route file** handle many URLs.
 
 <svg class='iq-diagram' viewBox='0 0 460 160' role='img' aria-label='Dynamic, catch-all and optional catch-all segment patterns'>
   <rect class='d-box-accent' x='20' y='30' width='200' height='30' rx='6'/><text class='d-sub' x='120' y='50' text-anchor='middle'>[id] → /posts/42</text>
@@ -91,7 +91,7 @@ export default async function Post({ params }: { params: Promise<{ slug: string 
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "What are route groups in Next.js and how do you use them?",
-    answer: `**TL;DR.** A folder named in **parentheses**, like <code>(marketing)</code>, **groups routes** for organization or to apply a shared layout **without adding a URL segment**. It also lets you have **multiple root layouts** or separate sections that don't change the path.
+    answer: `A folder named in **parentheses**, like <code>(marketing)</code>, **groups routes** for organization or to apply a shared layout **without adding a URL segment**. It also lets you have **multiple root layouts** or separate sections that don't change the path.
 
 <svg class='iq-diagram' viewBox='0 0 460 150' role='img' aria-label='Route group folder organizes routes without changing the URL'>
   <rect class='d-box-muted' x='20' y='25' width='220' height='110' rx='10'/>
@@ -136,7 +136,7 @@ export default async function Post({ params }: { params: Promise<{ slug: string 
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "What are parallel routes (@slot) in Next.js and when would you use them?",
-    answer: `**TL;DR.** **Parallel routes** use <code>@folder</code> "slots" to render **multiple pages in the same layout at once** (e.g. a feed and a sidebar), each with **independent** loading/error states and navigation. They're ideal for **dashboards, modals, and split views**.
+    answer: `**Parallel routes** use <code>@folder</code> "slots" to render **multiple pages in the same layout at once** (e.g. a feed and a sidebar), each with **independent** loading/error states and navigation. They're ideal for **dashboards, modals, and split views**.
 
 <svg class='iq-diagram' viewBox='0 0 460 150' role='img' aria-label='Layout renders two parallel slots simultaneously'>
   <rect class='d-box-muted' x='30' y='25' width='400' height='110' rx='10'/>
@@ -175,7 +175,7 @@ export default function Layout({
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "What are intercepting routes in Next.js and what are they used for?",
-    answer: `**TL;DR.** **Intercepting routes** (the <code>(.)</code>, <code>(..)</code>, <code>(...)</code> conventions) let you load a route **within the current page's context** instead of a full navigation — classically to show a photo/detail in a **modal** while keeping the URL **shareable**, falling back to the **full page** on reload.
+    answer: `**Intercepting routes** (the <code>(.)</code>, <code>(..)</code>, <code>(...)</code> conventions) let you load a route **within the current page's context** instead of a full navigation — classically to show a photo/detail in a **modal** while keeping the URL **shareable**, falling back to the **full page** on reload.
 
 <svg class='iq-diagram' viewBox='0 0 460 150' role='img' aria-label='Clicking a link opens content in a modal; reload shows the full page'>
   <rect class='d-box-accent' x='20' y='52' width='130' height='46' rx='8'/><text class='d-text' x='85' y='73' text-anchor='middle'>click link</text><text class='d-sub' x='85' y='90' text-anchor='middle'>(soft nav)</text>
@@ -216,7 +216,7 @@ export default function Layout({
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "What is loading.js in Next.js and how does Suspense streaming work?",
-    answer: `**TL;DR.** Adding <code>loading.js</code> wraps the segment in a **Suspense boundary**, so Next.js **streams an instant fallback** while the Server Component fetches data, then **streams in** the real content when it's ready — improving perceived performance with no manual Suspense wiring.
+    answer: `Adding <code>loading.js</code> wraps the segment in a **Suspense boundary**, so Next.js **streams an instant fallback** while the Server Component fetches data, then **streams in** the real content when it's ready — improving perceived performance with no manual Suspense wiring.
 
 <svg class='iq-diagram' viewBox='0 0 460 150' role='img' aria-label='Shell streams first, then content replaces the loading fallback'>
   <rect class='d-box-accent' x='20' y='52' width='120' height='46' rx='8'/><text class='d-text' x='80' y='73' text-anchor='middle'>shell + loading</text><text class='d-sub' x='80' y='90' text-anchor='middle'>sent instantly</text>
@@ -259,7 +259,7 @@ export default async function Page() {
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "What is error.js in Next.js and how does error handling work in the App Router?",
-    answer: `**TL;DR.** <code>error.js</code> defines a **Client Component error boundary** for its segment, catching render/data errors and showing fallback UI with a <code>reset()</code> to retry. <code>global-error.js</code> catches root-layout errors. **Expected** errors you handle in code; <code>error.js</code> is for **unexpected** ones.
+    answer: `<code>error.js</code> defines a **Client Component error boundary** for its segment, catching render/data errors and showing fallback UI with a <code>reset()</code> to retry. <code>global-error.js</code> catches root-layout errors. **Expected** errors you handle in code; <code>error.js</code> is for **unexpected** ones.
 
 <svg class='iq-diagram' viewBox='0 0 460 150' role='img' aria-label='Error in a segment bubbles to its error boundary with reset'>
   <rect class='d-box-muted' x='20' y='52' width='120' height='46' rx='8'/><text class='d-sub' x='80' y='73' text-anchor='middle'>page throws</text><text class='d-sub' x='80' y='90' text-anchor='middle'>during render</text>
@@ -303,7 +303,7 @@ export default function Error({ error, reset }: { error: Error; reset: () => voi
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "What is not-found.js in Next.js and how do you trigger a 404?",
-    answer: `**TL;DR.** <code>not-found.tsx</code> renders the **404 UI** for a segment, and calling the **<code>notFound()</code>** function from a Server Component (e.g. when a record is missing) renders the nearest not-found boundary and returns a **404 status**.
+    answer: `<code>not-found.tsx</code> renders the **404 UI** for a segment, and calling the **<code>notFound()</code>** function from a Server Component (e.g. when a record is missing) renders the nearest not-found boundary and returns a **404 status**.
 
 <svg class='iq-diagram' viewBox='0 0 460 150' role='img' aria-label='notFound() call renders the not-found boundary with a 404 status'>
   <rect class='d-box-accent' x='20' y='52' width='150' height='46' rx='8'/><text class='d-text' x='95' y='73' text-anchor='middle'>notFound()</text><text class='d-sub' x='95' y='90' text-anchor='middle'>record missing</text>
@@ -344,7 +344,7 @@ export default async function Post({ params }) {
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "How does client-side navigation work in Next.js (next/link and useRouter)?",
-    answer: `**TL;DR.** <code>next/link</code> renders an anchor that does **client-side navigation** and **prefetches** the target route's code/data when it enters the viewport. <code>useRouter()</code>'s <code>push</code>/<code>replace</code> navigate **programmatically**. Both avoid full page reloads while keeping shared **layouts mounted**.
+    answer: `<code>next/link</code> renders an anchor that does **client-side navigation** and **prefetches** the target route's code/data when it enters the viewport. <code>useRouter()</code>'s <code>push</code>/<code>replace</code> navigate **programmatically**. Both avoid full page reloads while keeping shared **layouts mounted**.
 
 <svg class='iq-diagram' viewBox='0 0 460 150' role='img' aria-label='Link prefetches then soft-navigates, keeping layouts mounted'>
   <rect class='d-box-accent' x='20' y='52' width='120' height='46' rx='8'/><text class='d-text' x='80' y='73' text-anchor='middle'>&lt;Link&gt;</text><text class='d-sub' x='80' y='90' text-anchor='middle'>prefetch on view</text>

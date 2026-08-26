@@ -8,7 +8,7 @@ const augments: AiAugment[] = [
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "What chunking strategies exist and how does chunk size affect RAG quality?",
-    answer: `**TL;DR.** Chunking decides what your retriever can ever return. Options: **fixed token windows** (+overlap), **structure-aware splits** (headings, paragraphs, code blocks), and **parent-child** (embed small, return big). Small chunks match precisely but fragment meaning; large chunks keep context but dilute embeddings. Start ~**300-800 tokens, 10-20% overlap**, respect structure — then tune with retrieval evals.
+    answer: `Chunking decides what your retriever can ever return. Options: **fixed token windows** (+overlap), **structure-aware splits** (headings, paragraphs, code blocks), and **parent-child** (embed small, return big). Small chunks match precisely but fragment meaning; large chunks keep context but dilute embeddings. Start ~**300-800 tokens, 10-20% overlap**, respect structure — then tune with retrieval evals.
 
 <svg class='iq-diagram' viewBox='0 0 460 150' role='img' aria-label='Small chunks give precise matches but fragments; large chunks keep context but dilute; parent-child embeds small and returns the parent'>
   <rect class='d-box' x='16' y='30' width='130' height='92' rx='10'/><text class='d-text' x='81' y='52' text-anchor='middle'>small chunks</text>
@@ -56,7 +56,7 @@ const augments: AiAugment[] = [
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "What is hybrid search and why combine BM25 with vector search?",
-    answer: `**TL;DR.** Run **BM25 keyword search** and **vector search** in parallel and fuse the rankings (usually **Reciprocal Rank Fusion**). Vectors understand paraphrase but miss exact identifiers; BM25 nails exact terms but not meaning. Fusion raises recall on both query types — the default for serious RAG.
+    answer: `Run **BM25 keyword search** and **vector search** in parallel and fuse the rankings (usually **Reciprocal Rank Fusion**). Vectors understand paraphrase but miss exact identifiers; BM25 nails exact terms but not meaning. Fusion raises recall on both query types — the default for serious RAG.
 
 <svg class='iq-diagram' viewBox='0 0 460 150' role='img' aria-label='Query fans out to BM25 and vector search whose ranked lists are fused with RRF'>
   <rect class='d-box' x='16' y='56' width='80' height='40' rx='9'/><text class='d-text' x='56' y='80' text-anchor='middle'>query</text>
@@ -101,7 +101,7 @@ const fused = rrf([await bm25(q, 50), await vector(q, 50)]).slice(0, 20);`,
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "What is reranking and why add it after retrieval?",
-    answer: `**TL;DR.** A **cross-encoder** reranker scores each (query, document) pair **jointly** — far more accurate than embedding comparison, far too slow for the whole corpus. So: fast retrieval pulls top-50/100 (**recall**), the reranker reorders and you keep 5-10 (**precision**). Usually the biggest retrieval upgrade per line of code.
+    answer: `A **cross-encoder** reranker scores each (query, document) pair **jointly** — far more accurate than embedding comparison, far too slow for the whole corpus. So: fast retrieval pulls top-50/100 (**recall**), the reranker reorders and you keep 5-10 (**precision**). Usually the biggest retrieval upgrade per line of code.
 
 <svg class='iq-diagram' viewBox='0 0 460 140' role='img' aria-label='Two-stage retrieval: cheap ANN recall over millions, then cross-encoder precision over dozens'>
   <rect class='d-box-muted' x='16' y='40' width='120' height='56' rx='10'/><text class='d-text' x='76' y='62' text-anchor='middle'>corpus</text><text class='d-sub' x='76' y='80' text-anchor='middle'>millions of chunks</text>
@@ -148,7 +148,7 @@ return kept.map((r) => candidates[r.index]);`,
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "How do you evaluate a RAG pipeline end to end?",
-    answer: `**TL;DR.** Evaluate the **two stages separately**. Retrieval: labeled (query → relevant chunk) pairs scored with **recall@k, precision@k, MRR/nDCG**. Generation: with retrieval held fixed, judge **faithfulness, relevance, completeness** (LLM judge validated against humans). End-to-end accuracy alone cannot tell a retrieval miss from a hallucinating generator.
+    answer: `Evaluate the **two stages separately**. Retrieval: labeled (query → relevant chunk) pairs scored with **recall@k, precision@k, MRR/nDCG**. Generation: with retrieval held fixed, judge **faithfulness, relevance, completeness** (LLM judge validated against humans). End-to-end accuracy alone cannot tell a retrieval miss from a hallucinating generator.
 
 <svg class='iq-diagram' viewBox='0 0 460 150' role='img' aria-label='RAG evaluation split into a retrieval stage with ranking metrics and a generation stage with faithfulness metrics'>
   <rect class='d-box-muted' x='16' y='24' width='206' height='100' rx='10'/>
@@ -198,7 +198,7 @@ return kept.map((r) => candidates[r.index]);`,
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "What are common RAG failure modes and how do you debug them?",
-    answer: `**TL;DR.** The big four: **answer never retrieved** (vocabulary mismatch, bad chunking, wrong k), **retrieved but ignored** (buried mid-context, conflicting chunks), **stale/duplicate index**, and **multi-hop questions** top-k cannot serve. Debug by **logging the retrieved set per query** and triaging: gold chunk absent → retrieval problem; present but unused → generation problem.
+    answer: `The big four: **answer never retrieved** (vocabulary mismatch, bad chunking, wrong k), **retrieved but ignored** (buried mid-context, conflicting chunks), **stale/duplicate index**, and **multi-hop questions** top-k cannot serve. Debug by **logging the retrieved set per query** and triaging: gold chunk absent → retrieval problem; present but unused → generation problem.
 
 <svg class='iq-diagram' viewBox='0 0 460 150' role='img' aria-label='Triage tree: was the gold chunk retrieved; if no fix retrieval, if yes fix generation'>
   <rect class='d-box-accent' x='150' y='16' width='160' height='40' rx='9'/><text class='d-text' x='230' y='40' text-anchor='middle'>gold chunk in top-k?</text>
@@ -246,7 +246,7 @@ await log.rag({
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "How do you scope retrieval with metadata filtering and multi-tenancy?",
-    answer: `**TL;DR.** Store **tenant id, ACLs and attributes** beside each vector and apply them as **pre-filters inside the ANN query** — users can only retrieve chunks they are authorized to see. Access control lives in **retrieval**, never in the prompt ("do not reveal other tenants" is not a security boundary).
+    answer: `Store **tenant id, ACLs and attributes** beside each vector and apply them as **pre-filters inside the ANN query** — users can only retrieve chunks they are authorized to see. Access control lives in **retrieval**, never in the prompt ("do not reveal other tenants" is not a security boundary).
 
 <svg class='iq-diagram' viewBox='0 0 460 150' role='img' aria-label='Query with tenant filter passes through a filtered ANN index so only authorized chunks reach the model'>
   <rect class='d-box' x='16' y='50' width='110' height='50' rx='9'/><text class='d-text' x='71' y='70' text-anchor='middle'>query</text><text class='d-sub' x='71' y='88' text-anchor='middle'>tenant=42, role=hr</text>

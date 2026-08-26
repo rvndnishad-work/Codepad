@@ -8,7 +8,7 @@ const augments: NodeAugment[] = [
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "How do you handle CORS (Cross-Origin Resource Sharing) in Node.js?",
-    answer: `**TL;DR.** **CORS** is a browser security mechanism: the browser blocks cross-origin requests unless the server returns the right <code>Access-Control-Allow-*</code> headers. In Node you set those headers — usually via the <code>cors</code> middleware in Express — to **allowlist** specific origins, methods, headers, and credentials.
+    answer: `**CORS** is a browser security mechanism: the browser blocks cross-origin requests unless the server returns the right <code>Access-Control-Allow-*</code> headers. In Node you set those headers — usually via the <code>cors</code> middleware in Express — to **allowlist** specific origins, methods, headers, and credentials.
 
 <svg class='iq-diagram' viewBox='0 0 460 160' role='img' aria-label='Browser preflight checks Allow headers before the real request'>
   <rect class='d-box-accent' x='20' y='55' width='110' height='44' rx='8'/><text class='d-text' x='75' y='75' text-anchor='middle'>browser</text><text class='d-sub' x='75' y='91' text-anchor='middle'>origin A</text>
@@ -51,7 +51,7 @@ app.use(cors({
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "What is undici and why is the global fetch built on it in modern Node.js?",
-    answer: `**TL;DR.** **undici** is a fast, from-scratch **HTTP/1.1 client** written for Node, and the **global <code>fetch</code>** is implemented on top of it. It provides **connection pooling** (<code>Agent</code>/<code>Pool</code>), lower overhead than the legacy <code>http</code> client, and high-throughput APIs (<code>request</code>, <code>stream</code>, <code>pipeline</code>).
+    answer: `**undici** is a fast, from-scratch **HTTP/1.1 client** written for Node, and the **global <code>fetch</code>** is implemented on top of it. It provides **connection pooling** (<code>Agent</code>/<code>Pool</code>), lower overhead than the legacy <code>http</code> client, and high-throughput APIs (<code>request</code>, <code>stream</code>, <code>pipeline</code>).
 
 <svg class='iq-diagram' viewBox='0 0 460 150' role='img' aria-label='fetch sits on undici which pools connections to servers'>
   <rect class='d-box-accent' x='20' y='55' width='110' height='44' rx='8'/><text class='d-text' x='75' y='81' text-anchor='middle'>fetch()</text>
@@ -94,7 +94,7 @@ mock.get('https://api.example.com').intercept({ path: '/data' }).reply(200, { ok
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "How does HTTP/2 support work in Node.js and how does it differ from HTTP/1.1?",
-    answer: `**TL;DR.** The <code>node:http2</code> module **multiplexes** many concurrent request/response **streams over one TCP connection** with **header compression (HPACK)**, eliminating HTTP/1.1's connection-level head-of-line blocking. Browsers require **TLS** for HTTP/2, and the API is **stream-based** rather than the classic req/res.
+    answer: `The <code>node:http2</code> module **multiplexes** many concurrent request/response **streams over one TCP connection** with **header compression (HPACK)**, eliminating HTTP/1.1's connection-level head-of-line blocking. Browsers require **TLS** for HTTP/2, and the API is **stream-based** rather than the classic req/res.
 
 <svg class='iq-diagram' viewBox='0 0 460 160' role='img' aria-label='HTTP/1.1 one request per connection vs HTTP/2 multiplexed streams'>
   <rect class='d-box-muted' x='20' y='30' width='200' height='110' rx='10'/>
@@ -143,7 +143,7 @@ server.listen(8443);`,
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "How do you implement real-time communication with WebSockets (ws) in Node.js?",
-    answer: `**TL;DR.** **WebSockets** upgrade an HTTP connection to a **persistent, full-duplex** channel so server and client **push** messages anytime without polling. The <code>ws</code> library attaches to an HTTP server, emits <code>'connection'</code> and <code>'message'</code> events, and you **broadcast** by iterating connected clients.
+    answer: `**WebSockets** upgrade an HTTP connection to a **persistent, full-duplex** channel so server and client **push** messages anytime without polling. The <code>ws</code> library attaches to an HTTP server, emits <code>'connection'</code> and <code>'message'</code> events, and you **broadcast** by iterating connected clients.
 
 <svg class='iq-diagram' viewBox='0 0 460 150' role='img' aria-label='HTTP upgrade to a persistent two-way WebSocket'>
   <rect class='d-box-accent' x='30' y='52' width='120' height='44' rx='8'/><text class='d-text' x='90' y='78' text-anchor='middle'>client</text>
@@ -189,7 +189,7 @@ wss.on('connection', (socket) => {
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "How do you implement Server-Sent Events (SSE) in Node.js?",
-    answer: `**TL;DR.** **SSE** keeps a single HTTP response open with <code>Content-Type: text/event-stream</code> and writes <code>data: ...\\n\\n</code> frames to **push updates one-way** (server→client). The browser consumes it with <code>EventSource</code>, which **auto-reconnects**. It's simpler than WebSockets when you only need server-to-client streaming.
+    answer: `**SSE** keeps a single HTTP response open with <code>Content-Type: text/event-stream</code> and writes <code>data: ...\\n\\n</code> frames to **push updates one-way** (server→client). The browser consumes it with <code>EventSource</code>, which **auto-reconnects**. It's simpler than WebSockets when you only need server-to-client streaming.
 
 <svg class='iq-diagram' viewBox='0 0 460 150' role='img' aria-label='Server streams event frames down one open HTTP response'>
   <rect class='d-box-accent' x='20' y='52' width='120' height='44' rx='8'/><text class='d-text' x='80' y='78' text-anchor='middle'>server</text>
@@ -234,7 +234,7 @@ wss.on('connection', (socket) => {
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "How do you enable gzip/Brotli compression for HTTP responses?",
-    answer: `**TL;DR.** Compress responses based on the client's <code>Accept-Encoding</code> header using <code>zlib</code> (gzip/brotli) or Express's <code>compression</code> middleware. **Brotli** compresses smaller but costs more CPU; you typically **skip** already-compressed assets (images, video) and tiny payloads, and often offload compression to a reverse proxy/CDN.
+    answer: `Compress responses based on the client's <code>Accept-Encoding</code> header using <code>zlib</code> (gzip/brotli) or Express's <code>compression</code> middleware. **Brotli** compresses smaller but costs more CPU; you typically **skip** already-compressed assets (images, video) and tiny payloads, and often offload compression to a reverse proxy/CDN.
 
 <svg class='iq-diagram' viewBox='0 0 460 150' role='img' aria-label='Server picks an encoding from Accept-Encoding and compresses the body'>
   <rect class='d-box' x='20' y='52' width='130' height='46' rx='8'/><text class='d-sub' x='85' y='72' text-anchor='middle'>Accept-Encoding:</text><text class='d-sub' x='85' y='89' text-anchor='middle'>br, gzip</text>
@@ -276,7 +276,7 @@ app.use(compression({
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "What is the purpose of the HTTP Agent in Node.js?",
-    answer: `**TL;DR.** An <code>http.Agent</code> manages a **pool of sockets** for outgoing HTTP requests, enabling **keep-alive** connection reuse so you don't pay TCP+TLS setup on every call. It also caps concurrent sockets per host (<code>maxSockets</code>) and queues the rest — crucial for high-throughput clients.
+    answer: `An <code>http.Agent</code> manages a **pool of sockets** for outgoing HTTP requests, enabling **keep-alive** connection reuse so you don't pay TCP+TLS setup on every call. It also caps concurrent sockets per host (<code>maxSockets</code>) and queues the rest — crucial for high-throughput clients.
 
 <svg class='iq-diagram' viewBox='0 0 460 150' role='img' aria-label='Agent reuses keep-alive sockets across requests to a host'>
   <rect class='d-box' x='20' y='30' width='100' height='28' rx='6'/><text class='d-sub' x='70' y='49' text-anchor='middle'>req 1</text>
@@ -324,7 +324,7 @@ http.get('http://api.internal/health', { agent }, (res) => { /* ... */ });
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "How does the Node.js 'dns' module differ from browser-based DNS resolution?",
-    answer: `**TL;DR.** Node's <code>dns</code> module gives you **programmatic** DNS with two flavors: <code>dns.lookup</code> (uses the OS resolver via the **libuv thread pool**, honoring <code>/etc/hosts</code>) and <code>dns.resolve*</code> (talks to DNS servers directly over the **network**, no thread pool). Browsers, by contrast, resolve DNS **internally** with their own cache and give pages no DNS API.
+    answer: `Node's <code>dns</code> module gives you **programmatic** DNS with two flavors: <code>dns.lookup</code> (uses the OS resolver via the **libuv thread pool**, honoring <code>/etc/hosts</code>) and <code>dns.resolve*</code> (talks to DNS servers directly over the **network**, no thread pool). Browsers, by contrast, resolve DNS **internally** with their own cache and give pages no DNS API.
 
 <svg class='iq-diagram' viewBox='0 0 460 160' role='img' aria-label='dns.lookup uses OS+thread pool, dns.resolve queries servers directly'>
   <rect class='d-box-accent' x='20' y='30' width='200' height='110' rx='10'/>
@@ -370,7 +370,7 @@ console.log(await dns.resolve4('example.com'));      // A records`,
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "Explain the concept of 'middleware' in Express.js.",
-    answer: `**TL;DR.** **Middleware** are functions with the signature <code>(req, res, next)</code> that run **in order** for each request. Each can inspect/modify <code>req</code>/<code>res</code>, end the response, or call <code>next()</code> to pass control onward. They form a **pipeline** for cross-cutting concerns: logging, auth, parsing, validation, and error handling.
+    answer: `**Middleware** are functions with the signature <code>(req, res, next)</code> that run **in order** for each request. Each can inspect/modify <code>req</code>/<code>res</code>, end the response, or call <code>next()</code> to pass control onward. They form a **pipeline** for cross-cutting concerns: logging, auth, parsing, validation, and error handling.
 
 <svg class='iq-diagram' viewBox='0 0 460 150' role='img' aria-label='Request flows through a chain of middleware to the handler'>
   <rect class='d-box-accent' x='14' y='55' width='80' height='44' rx='8'/><text class='d-sub' x='54' y='81' text-anchor='middle'>request</text>

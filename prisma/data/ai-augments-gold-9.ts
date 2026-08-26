@@ -8,7 +8,7 @@ const augments: AiAugment[] = [
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "How do you handle PII and sensitive data when calling LLM APIs?",
-    answer: `**TL;DR.** Verify the **provider contract** (no-training terms, zero/short retention, regional processing), then **minimize**: send only needed fields, **redact/pseudonymize** identifiers before the call, and **scrub logs and traces** — the surface teams forget. For the strictest data, keep inference **in-VPC**.
+    answer: `Verify the **provider contract** (no-training terms, zero/short retention, regional processing), then **minimize**: send only needed fields, **redact/pseudonymize** identifiers before the call, and **scrub logs and traces** — the surface teams forget. For the strictest data, keep inference **in-VPC**.
 
 <svg class='iq-diagram' viewBox='0 0 460 150' role='img' aria-label='PII is redacted to placeholders before the LLM call and restored after the response, with logs scrubbed'>
   <rect class='d-box' x='16' y='50' width='96' height='46' rx='9'/><text class='d-text' x='64' y='70' text-anchor='middle'>raw record</text><text class='d-sub' x='64' y='87' text-anchor='middle'>Rahul, +91-98...</text>
@@ -55,7 +55,7 @@ await traces.write({ prompt: redacted, output: scrub(textOf(reply)) }); // never
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "When should you use batch APIs instead of real-time LLM calls?",
-    answer: `**TL;DR.** Batch APIs take a **file of requests** and return results **asynchronously** (typically within hours) at **~50% off**, with separate, far higher rate limits. Use them whenever **no user is waiting** — enrichment, backfills, eval runs, offline generation. Architect pipelines queue-first so batch vs realtime is a flag, not a rewrite.
+    answer: `Batch APIs take a **file of requests** and return results **asynchronously** (typically within hours) at **~50% off**, with separate, far higher rate limits. Use them whenever **no user is waiting** — enrichment, backfills, eval runs, offline generation. Architect pipelines queue-first so batch vs realtime is a flag, not a rewrite.
 
 <svg class='iq-diagram' viewBox='0 0 460 150' role='img' aria-label='Realtime path serves a waiting user in seconds while batch path processes a file of requests within hours at half price'>
   <rect class='d-box-accent' x='16' y='24' width='428' height='44' rx='9'/>
@@ -107,7 +107,7 @@ for (const r of await client.batches.results(batch.id)) {
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "How do you choose the right model for a task?",
-    answer: `**TL;DR.** Score the task on **capability needed, latency budget, cost at volume, context length, and features** (vision, tools, structured output) — then pick the **cheapest model that passes your evals**, and **route**: small models for classify/extract/simple chat, frontier for deep reasoning and agentic work.
+    answer: `Score the task on **capability needed, latency budget, cost at volume, context length, and features** (vision, tools, structured output) — then pick the **cheapest model that passes your evals**, and **route**: small models for classify/extract/simple chat, frontier for deep reasoning and agentic work.
 
 <svg class='iq-diagram' viewBox='0 0 460 150' role='img' aria-label='Router sends easy tasks to a small fast model and hard tasks to a frontier model, with escalation on low confidence'>
   <rect class='d-box' x='16' y='54' width='90' height='44' rx='9'/><text class='d-text' x='61' y='80' text-anchor='middle'>task</text>
@@ -158,7 +158,7 @@ for (const r of await client.batches.results(batch.id)) {
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "How do you validate and repair structured LLM output at runtime?",
-    answer: `**TL;DR.** Never trust parsed output: validate against a **schema plus semantic rules** (enums, ranges, cross-field constraints). On failure run a **bounded repair loop** — re-prompt with the specific errors, once or twice — then **fall back deterministically** (constrained decoding, defaults, human queue). A rising repair rate is an early drift alarm.
+    answer: `Never trust parsed output: validate against a **schema plus semantic rules** (enums, ranges, cross-field constraints). On failure run a **bounded repair loop** — re-prompt with the specific errors, once or twice — then **fall back deterministically** (constrained decoding, defaults, human queue). A rising repair rate is an early drift alarm.
 
 <svg class='iq-diagram' viewBox='0 0 460 150' role='img' aria-label='Output flows through schema and semantic validation, a bounded repair retry, and a deterministic fallback'>
   <rect class='d-box-accent' x='16' y='46' width='86' height='48' rx='9'/><text class='d-text' x='59' y='66' text-anchor='middle'>LLM out</text><text class='d-sub' x='59' y='84' text-anchor='middle'>parsed JSON</text>
@@ -211,7 +211,7 @@ for (const r of await client.batches.results(batch.id)) {
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "What are evals and why does every LLM feature need them?",
-    answer: `**TL;DR.** Evals are **automated tests for model behaviour**: realistic inputs + grading criteria + graders (code or LLM judges) producing scores. They exist because LLMs are **nondeterministic** and changes have **non-local effects** — without evals every prompt tweak and model upgrade is vibes-tested. They are the highest-leverage asset in an AI product.
+    answer: `Evals are **automated tests for model behaviour**: realistic inputs + grading criteria + graders (code or LLM judges) producing scores. They exist because LLMs are **nondeterministic** and changes have **non-local effects** — without evals every prompt tweak and model upgrade is vibes-tested. They are the highest-leverage asset in an AI product.
 
 <svg class='iq-diagram' viewBox='0 0 460 150' role='img' aria-label='Eval loop: dataset runs through the system, graders score outputs, scores gate changes and failures feed back into the dataset'>
   <rect class='d-box' x='16' y='50' width='96' height='48' rx='9'/><text class='d-text' x='64' y='70' text-anchor='middle'>dataset</text><text class='d-sub' x='64' y='87' text-anchor='middle'>real + edge cases</text>
@@ -260,7 +260,7 @@ console.table(sliceBy(results, "tags"));
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "What is LLM-as-judge and what are its known biases?",
-    answer: `**TL;DR.** LLM-as-judge = a (usually strong) model grading outputs against a **rubric** where code cannot — helpfulness, faithfulness, tone. It scales judgment to thousands of cases, but carries known biases: **position** (pairwise order), **verbosity** (longer looks better), **self-preference**, leniency drift. Mitigate with anchored rubrics, randomized order, forced justification — and **validate the judge against human labels** before trusting its numbers.
+    answer: `LLM-as-judge = a (usually strong) model grading outputs against a **rubric** where code cannot — helpfulness, faithfulness, tone. It scales judgment to thousands of cases, but carries known biases: **position** (pairwise order), **verbosity** (longer looks better), **self-preference**, leniency drift. Mitigate with anchored rubrics, randomized order, forced justification — and **validate the judge against human labels** before trusting its numbers.
 
 <svg class='iq-diagram' viewBox='0 0 460 150' role='img' aria-label='Judge model scores an output against a rubric, with bias controls and human calibration around it'>
   <rect class='d-box' x='16' y='46' width='96' height='48' rx='9'/><text class='d-text' x='64' y='66' text-anchor='middle'>output</text><text class='d-sub' x='64' y='84' text-anchor='middle'>+ input + context</text>

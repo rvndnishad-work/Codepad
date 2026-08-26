@@ -8,7 +8,7 @@ const augments: AiAugment[] = [
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "What belongs in the system prompt versus the user message?",
-    answer: `**TL;DR.** **System** = durable, app-controlled behaviour: role, rules, output format, tool policy. **User** = the per-turn task and data. A clean split improves instruction-following, enables **prompt caching**, and is the first layer of **injection defense** — untrusted content never goes in system.
+    answer: `**System** = durable, app-controlled behaviour: role, rules, output format, tool policy. **User** = the per-turn task and data. A clean split improves instruction-following, enables **prompt caching**, and is the first layer of **injection defense** — untrusted content never goes in system.
 
 <svg class='iq-diagram' viewBox='0 0 460 150' role='img' aria-label='System prompt holds stable rules while user messages carry per-turn tasks and untrusted data'>
   <rect class='d-box-accent' x='20' y='24' width='200' height='104' rx='10'/>
@@ -58,7 +58,7 @@ const user = [
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "How do you get reliable structured JSON output from an LLM?",
-    answer: `**TL;DR.** Best-first: use the provider's **structured output / JSON mode with a JSON Schema** (constrained decoding guarantees syntax) or a **tool definition** whose parameters encode the schema; reinforce in the prompt, keep temperature low, and always **validate + repair-once** downstream.
+    answer: `Best-first: use the provider's **structured output / JSON mode with a JSON Schema** (constrained decoding guarantees syntax) or a **tool definition** whose parameters encode the schema; reinforce in the prompt, keep temperature low, and always **validate + repair-once** downstream.
 
 <svg class='iq-diagram' viewBox='0 0 460 150' role='img' aria-label='Pipeline from schema-constrained generation through validation to a bounded repair retry'>
   <rect class='d-box-accent' x='16' y='40' width='120' height='54' rx='10'/><text class='d-text' x='76' y='62' text-anchor='middle'>generate</text><text class='d-sub' x='76' y='80' text-anchor='middle'>schema-constrained</text>
@@ -110,7 +110,7 @@ if (!parsed.success) return retryWithErrors(prompt, parsed.error); // once`,
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "What is prompt injection and how do you defend against it?",
-    answer: `**TL;DR.** Prompt injection is untrusted content (web page, email, tool result) carrying **instructions the model obeys** as if they were yours — the SQL injection of the LLM era. There is **no complete fix**; defense is layered: role separation, delimited data, **least-privilege tools**, approval gates, and detection.
+    answer: `Prompt injection is untrusted content (web page, email, tool result) carrying **instructions the model obeys** as if they were yours — the SQL injection of the LLM era. There is **no complete fix**; defense is layered: role separation, delimited data, **least-privilege tools**, approval gates, and detection.
 
 <svg class='iq-diagram' viewBox='0 0 460 160' role='img' aria-label='Malicious instructions inside fetched content steer the model unless layered defenses contain the blast radius'>
   <rect class='d-box-muted' x='16' y='24' width='150' height='58' rx='10'/><text class='d-text' x='91' y='46' text-anchor='middle'>fetched web page</text><text class='d-sub' x='91' y='66' text-anchor='middle'>...ignore all previous</text>
@@ -158,7 +158,7 @@ async function sendDraft(draftId: string, approvedBy: User) {
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "What is context engineering and how does it differ from prompt engineering?",
-    answer: `**TL;DR.** Prompt engineering crafts the **instruction**; context engineering designs **everything the model sees** — rules, retrieved docs, memory, tool results, examples — under a **token budget**. In RAG and agent systems, context assembly moves quality more than wording.
+    answer: `Prompt engineering crafts the **instruction**; context engineering designs **everything the model sees** — rules, retrieved docs, memory, tool results, examples — under a **token budget**. In RAG and agent systems, context assembly moves quality more than wording.
 
 <svg class='iq-diagram' viewBox='0 0 460 160' role='img' aria-label='Candidate context sources are ranked and admitted into a budgeted context window'>
   <rect class='d-box' x='16' y='20' width='104' height='28' rx='7'/><text class='d-sub' x='68' y='38' text-anchor='middle'>retrieved docs</text>
@@ -204,7 +204,7 @@ async function sendDraft(draftId: string, approvedBy: User) {
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "How do you manage conversations that outgrow the context window?",
-    answer: `**TL;DR.** Four patterns, usually combined: **sliding window** (keep recent turns), **running summary** (compress the old), **external memory** (store durable facts, retrieve on demand), and for agents, **state checkpoints** so work resumes in a fresh context. Keep IDs, constraints and decisions **verbatim** — summaries drift.
+    answer: `Four patterns, usually combined: **sliding window** (keep recent turns), **running summary** (compress the old), **external memory** (store durable facts, retrieve on demand), and for agents, **state checkpoints** so work resumes in a fresh context. Keep IDs, constraints and decisions **verbatim** — summaries drift.
 
 <svg class='iq-diagram' viewBox='0 0 460 150' role='img' aria-label='Old turns are compressed into a summary while recent turns stay verbatim and durable facts go to an external store'>
   <rect class='d-box-muted' x='16' y='30' width='150' height='40' rx='8'/><text class='d-sub' x='91' y='55' text-anchor='middle'>turns 1-40 (old)</text>
@@ -253,7 +253,7 @@ async function sendDraft(draftId: string, approvedBy: User) {
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "What is prompt caching and how does it reduce cost and latency?",
-    answer: `**TL;DR.** Providers cache the internal computation (**KV cache**) for a recently-seen **prompt prefix**; repeat calls sharing that prefix skip recomputation — cached input tokens cost up to ~90% less and **time-to-first-token drops sharply**. Exploit it by putting stable content first and keeping it **byte-identical**.
+    answer: `Providers cache the internal computation (**KV cache**) for a recently-seen **prompt prefix**; repeat calls sharing that prefix skip recomputation — cached input tokens cost up to ~90% less and **time-to-first-token drops sharply**. Exploit it by putting stable content first and keeping it **byte-identical**.
 
 <svg class='iq-diagram' viewBox='0 0 460 150' role='img' aria-label='Stable prompt prefix is cached across calls while only the variable suffix is recomputed'>
   <text class='d-text' x='30' y='34'>call 1</text>

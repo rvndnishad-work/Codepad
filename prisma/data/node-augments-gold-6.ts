@@ -8,7 +8,7 @@ const augments: NodeAugment[] = [
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "What are Node.js Streams and when would you use them?",
-    answer: `**TL;DR.** **Streams** process data **chunk-by-chunk** instead of loading it all into memory. There are four types — **Readable**, **Writable**, **Duplex**, and **Transform** — all built on <code>EventEmitter</code>. Use them for large files, network I/O, and pipelines where buffering everything would be slow or blow up memory.
+    answer: `**Streams** process data **chunk-by-chunk** instead of loading it all into memory. There are four types — **Readable**, **Writable**, **Duplex**, and **Transform** — all built on <code>EventEmitter</code>. Use them for large files, network I/O, and pipelines where buffering everything would be slow or blow up memory.
 
 <svg class='iq-diagram' viewBox='0 0 460 160' role='img' aria-label='Data flows through a stream pipeline in chunks'>
   <rect class='d-box-accent' x='20' y='55' width='110' height='44' rx='8'/><text class='d-text' x='75' y='78' text-anchor='middle'>Readable</text><text class='d-sub' x='75' y='93' text-anchor='middle'>source</text>
@@ -52,7 +52,7 @@ await pipeline(
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "What are stream piping and the .pipe() method in Node.js?",
-    answer: `**TL;DR.** <code>readable.pipe(writable)</code> connects a source stream to a destination, **forwarding chunks automatically** and applying **backpressure** (pausing the source when the destination's buffer fills). It replaces manual <code>'data'</code>/<code>'end'</code> wiring — but for production, prefer <code>pipeline()</code>, which also propagates errors and cleans up.
+    answer: `<code>readable.pipe(writable)</code> connects a source stream to a destination, **forwarding chunks automatically** and applying **backpressure** (pausing the source when the destination's buffer fills). It replaces manual <code>'data'</code>/<code>'end'</code> wiring — but for production, prefer <code>pipeline()</code>, which also propagates errors and cleans up.
 
 <svg class='iq-diagram' viewBox='0 0 460 150' role='img' aria-label='pipe forwards chunks and applies backpressure'>
   <rect class='d-box-accent' x='30' y='50' width='120' height='44' rx='8'/><text class='d-text' x='90' y='77' text-anchor='middle'>readable</text>
@@ -93,7 +93,7 @@ await pipeline(src, transform, dest);`,
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "What is backpressure in Node.js streams and how do you handle it?",
-    answer: `**TL;DR.** **Backpressure** is the mechanism that prevents a **fast producer** from overwhelming a **slow consumer**. When <code>writable.write()</code> returns <code>false</code>, its internal buffer is full — you must **stop writing** until the <code>'drain'</code> event. <code>.pipe()</code> and <code>pipeline()</code> handle this automatically; manual writers must respect the return value.
+    answer: `**Backpressure** is the mechanism that prevents a **fast producer** from overwhelming a **slow consumer**. When <code>writable.write()</code> returns <code>false</code>, its internal buffer is full — you must **stop writing** until the <code>'drain'</code> event. <code>.pipe()</code> and <code>pipeline()</code> handle this automatically; manual writers must respect the return value.
 
 <svg class='iq-diagram' viewBox='0 0 460 160' role='img' aria-label='Fast producer paused until slow consumer drains'>
   <rect class='d-box-accent' x='20' y='55' width='120' height='44' rx='8'/><text class='d-text' x='80' y='78' text-anchor='middle'>fast producer</text>
@@ -139,7 +139,7 @@ await pipeline(src, transform, dest);`,
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "Explain how to read and write large files using streams in Node.js",
-    answer: `**TL;DR.** For large files use <code>fs.createReadStream()</code> and <code>fs.createWriteStream()</code> instead of <code>readFile</code>/<code>writeFile</code>. They process the file in **small chunks** (default ~64KB) so memory stays **constant** regardless of file size. Connect them with <code>pipeline()</code>, which handles backpressure and errors.
+    answer: `For large files use <code>fs.createReadStream()</code> and <code>fs.createWriteStream()</code> instead of <code>readFile</code>/<code>writeFile</code>. They process the file in **small chunks** (default ~64KB) so memory stays **constant** regardless of file size. Connect them with <code>pipeline()</code>, which handles backpressure and errors.
 
 <svg class='iq-diagram' viewBox='0 0 460 150' role='img' aria-label='Read stream pipes chunks through to a write stream'>
   <rect class='d-box-accent' x='20' y='50' width='120' height='46' rx='8'/><text class='d-text' x='80' y='71' text-anchor='middle'>createReadStream</text><text class='d-sub' x='80' y='88' text-anchor='middle'>64KB chunks</text>
@@ -181,7 +181,7 @@ await pipeline(
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "What is the difference between readFile and createReadStream in Node.js?",
-    answer: `**TL;DR.** <code>fs.readFile</code> reads the **whole file into memory** and gives you one Buffer/string when done — simple, but memory grows with file size. <code>fs.createReadStream</code> returns a **Readable stream** that emits the file in chunks, using constant memory and letting you start processing before the file is fully read.
+    answer: `<code>fs.readFile</code> reads the **whole file into memory** and gives you one Buffer/string when done — simple, but memory grows with file size. <code>fs.createReadStream</code> returns a **Readable stream** that emits the file in chunks, using constant memory and letting you start processing before the file is fully read.
 
 <svg class='iq-diagram' viewBox='0 0 460 160' role='img' aria-label='readFile buffers all, stream emits chunks'>
   <rect class='d-box-muted' x='20' y='30' width='200' height='110' rx='10'/>
@@ -226,7 +226,7 @@ app.get('/video', (req, res) => createReadStream('movie.mp4').pipe(res));`,
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "How do you implement a custom Transform stream?",
-    answer: `**TL;DR.** A **Transform** stream reads input, transforms each chunk, and writes output — it's a Duplex you customize by implementing <code>_transform(chunk, encoding, callback)</code> (push processed data) and optionally <code>_flush(callback)</code> (emit trailing output). Drop it into a <code>pipeline()</code> for streaming parsing, encryption, or line processing.
+    answer: `A **Transform** stream reads input, transforms each chunk, and writes output — it's a Duplex you customize by implementing <code>_transform(chunk, encoding, callback)</code> (push processed data) and optionally <code>_flush(callback)</code> (emit trailing output). Drop it into a <code>pipeline()</code> for streaming parsing, encryption, or line processing.
 
 <svg class='iq-diagram' viewBox='0 0 460 150' role='img' aria-label='Transform receives a chunk, processes it, pushes output'>
   <rect class='d-box' x='20' y='52' width='100' height='44' rx='8'/><text class='d-sub' x='70' y='78' text-anchor='middle'>chunk in</text>
@@ -269,7 +269,7 @@ process.stdin.pipe(upper).pipe(process.stdout);`,
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "What are the Web Streams API (ReadableStream/WritableStream) in Node.js and how do they differ from node:stream?",
-    answer: `**TL;DR.** **Web Streams** (<code>ReadableStream</code>, <code>WritableStream</code>, <code>TransformStream</code>) are the **WHATWG standard** also used in browsers and by <code>fetch</code>. <code>node:stream</code> is Node's older, <code>EventEmitter</code>-based API. They interoperate via <code>Readable.fromWeb</code>/<code>toWeb</code>: Web Streams are **portable**, node:stream is more **mature** in the Node ecosystem.
+    answer: `**Web Streams** (<code>ReadableStream</code>, <code>WritableStream</code>, <code>TransformStream</code>) are the **WHATWG standard** also used in browsers and by <code>fetch</code>. <code>node:stream</code> is Node's older, <code>EventEmitter</code>-based API. They interoperate via <code>Readable.fromWeb</code>/<code>toWeb</code>: Web Streams are **portable**, node:stream is more **mature** in the Node ecosystem.
 
 <svg class='iq-diagram' viewBox='0 0 460 160' role='img' aria-label='Web Streams versus node:stream and their interop'>
   <rect class='d-box-accent' x='20' y='35' width='190' height='90' rx='10'/>
@@ -317,7 +317,7 @@ const nodeStream = Readable.fromWeb(res.body);`,
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "How do you handle streaming multipart file uploads (busboy/multer)?",
-    answer: `**TL;DR.** Don't buffer uploads in memory — **stream** them. <code>busboy</code> (which <code>multer</code> wraps) parses the <code>multipart/form-data</code> request and emits **each file as a stream** you pipe straight to disk or object storage. This keeps memory flat for large files and lets you enforce size limits **mid-stream**.
+    answer: `Don't buffer uploads in memory — **stream** them. <code>busboy</code> (which <code>multer</code> wraps) parses the <code>multipart/form-data</code> request and emits **each file as a stream** you pipe straight to disk or object storage. This keeps memory flat for large files and lets you enforce size limits **mid-stream**.
 
 <svg class='iq-diagram' viewBox='0 0 460 150' role='img' aria-label='Multipart request parsed into file streams piped to storage'>
   <rect class='d-box-accent' x='20' y='52' width='130' height='46' rx='8'/><text class='d-text' x='85' y='73' text-anchor='middle'>multipart req</text><text class='d-sub' x='85' y='90' text-anchor='middle'>fields + files</text>
@@ -363,7 +363,7 @@ app.post('/upload', (req, res) => {
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "Describe the `Buffer` class in Node.js and its use cases.",
-    answer: `**TL;DR.** A <code>Buffer</code> is a fixed-length chunk of **raw binary data** outside V8's heap — Node's way to handle bytes (files, network packets, crypto) before strings existed for binary. It's a subclass of <code>Uint8Array</code>, so it works with typed-array APIs, and you decode/encode it with a specified character encoding.
+    answer: `A <code>Buffer</code> is a fixed-length chunk of **raw binary data** outside V8's heap — Node's way to handle bytes (files, network packets, crypto) before strings existed for binary. It's a subclass of <code>Uint8Array</code>, so it works with typed-array APIs, and you decode/encode it with a specified character encoding.
 
 <svg class='iq-diagram' viewBox='0 0 460 150' role='img' aria-label='A buffer holds raw bytes that decode to text via an encoding'>
   <rect class='d-box-accent' x='20' y='50' width='200' height='50' rx='8'/>

@@ -1,5 +1,5 @@
 /**
- * React Phase R1 — Batch 1 (Core hooks). Gold-standard rewrites: TL;DR + React
+ * React Phase R1 — Batch 1 (Core hooks). Gold-standard rewrites: + React
  * SVG diagram + comparison table + interview tip + a self-contained JSX example.
  * Picked up by `npm run augment:react` (sorts after react-augments-N.ts so it
  * overrides the older moderate answers; before react-augments-hard.json).

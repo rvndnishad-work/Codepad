@@ -8,7 +8,7 @@ const augments: NextAugment[] = [
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "What are Route Handlers in Next.js and how do they differ from Pages API routes?",
-    answer: `**TL;DR.** **Route Handlers** (<code>route.ts</code> in the App Router) define HTTP endpoints with **named verb exports** (<code>GET</code>, <code>POST</code>…) using the **Web <code>Request</code>/<code>Response</code>** APIs. Unlike Pages API routes (Node <code>req</code>/<code>res</code> objects), they're **Web-standard**, run on **Node or Edge**, and live in the <code>app/</code> tree.
+    answer: `**Route Handlers** (<code>route.ts</code> in the App Router) define HTTP endpoints with **named verb exports** (<code>GET</code>, <code>POST</code>…) using the **Web <code>Request</code>/<code>Response</code>** APIs. Unlike Pages API routes (Node <code>req</code>/<code>res</code> objects), they're **Web-standard**, run on **Node or Edge**, and live in the <code>app/</code> tree.
 
 <svg class='iq-diagram' viewBox='0 0 460 150' role='img' aria-label='Pages API req/res versus App Router Web Request/Response handlers'>
   <rect class='d-box-muted' x='20' y='30' width='200' height='100' rx='10'/><text class='d-text' x='120' y='54' text-anchor='middle'>Pages API route</text><text class='d-sub' x='120' y='78' text-anchor='middle'>(req, res) Node objects</text><text class='d-sub' x='120' y='98' text-anchor='middle'>res.status().json()</text><text class='d-sub' x='120' y='118' text-anchor='middle'>pages/api/*</text>
@@ -49,7 +49,7 @@ export async function POST(request: Request) {
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "How do you read request data and return responses in a Next.js Route Handler?",
-    answer: `**TL;DR.** A handler receives a standard <code>Request</code>: use <code>await request.json()</code>/<code>formData()</code>, <code>request.nextUrl.searchParams</code>, <code>cookies()</code>, and <code>headers()</code>. Return a <code>Response</code> or <code>NextResponse</code> (e.g. <code>NextResponse.json(data, { status })</code>). Dynamic **params** come from the **second argument**.
+    answer: `A handler receives a standard <code>Request</code>: use <code>await request.json()</code>/<code>formData()</code>, <code>request.nextUrl.searchParams</code>, <code>cookies()</code>, and <code>headers()</code>. Return a <code>Response</code> or <code>NextResponse</code> (e.g. <code>NextResponse.json(data, { status })</code>). Dynamic **params** come from the **second argument**.
 
 <svg class='iq-diagram' viewBox='0 0 460 150' role='img' aria-label='Handler reads body/query/params and returns a Response'>
   <rect class='d-box' x='20' y='40' width='130' height='28' rx='6'/><text class='d-sub' x='85' y='59' text-anchor='middle'>request.json()</text>
@@ -94,7 +94,7 @@ export async function GET(request: Request,
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "What is Middleware in Next.js and what can it do?",
-    answer: `**TL;DR.** <code>middleware.ts</code> runs on **every matching request before rendering**, on the **Edge runtime**. Use it for **auth gating, redirects/rewrites, A/B testing, geolocation, setting headers/cookies** — but keep it **lightweight** (no DB, no heavy work) since it runs on the hot path.
+    answer: `<code>middleware.ts</code> runs on **every matching request before rendering**, on the **Edge runtime**. Use it for **auth gating, redirects/rewrites, A/B testing, geolocation, setting headers/cookies** — but keep it **lightweight** (no DB, no heavy work) since it runs on the hot path.
 
 <svg class='iq-diagram' viewBox='0 0 460 150' role='img' aria-label='Middleware intercepts requests before they reach routes'>
   <rect class='d-box-accent' x='20' y='52' width='110' height='46' rx='8'/><text class='d-text' x='75' y='78' text-anchor='middle'>request</text>
@@ -138,7 +138,7 @@ export const config = { matcher: ['/dashboard/:path*', '/settings/:path*'] };`,
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "What runtimes does Next.js support (Node.js vs Edge runtime)?",
-    answer: `**TL;DR.** The **Node.js runtime** supports all Node APIs and is the **default** for rendering/handlers. The **Edge runtime** is a lightweight, **globally-distributed** V8 environment with **low cold starts** and a **limited API subset** (no native Node modules) — ideal for **Middleware** and latency-sensitive handlers.
+    answer: `The **Node.js runtime** supports all Node APIs and is the **default** for rendering/handlers. The **Edge runtime** is a lightweight, **globally-distributed** V8 environment with **low cold starts** and a **limited API subset** (no native Node modules) — ideal for **Middleware** and latency-sensitive handlers.
 
 <svg class='iq-diagram' viewBox='0 0 460 150' role='img' aria-label='Node runtime full APIs versus Edge runtime lightweight global'>
   <rect class='d-box-accent' x='20' y='30' width='200' height='100' rx='10'/><text class='d-text' x='120' y='54' text-anchor='middle'>Node.js runtime</text><text class='d-sub' x='120' y='78' text-anchor='middle'>full Node APIs</text><text class='d-sub' x='120' y='98' text-anchor='middle'>DB drivers, fs</text><text class='d-sub' x='120' y='118' text-anchor='middle'>default</text>
@@ -176,7 +176,7 @@ export function GET(request: Request) {
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "How does the Metadata API work in Next.js (static and generateMetadata)?",
-    answer: `**TL;DR.** Export a **static <code>metadata</code> object** or an **async <code>generateMetadata()</code>** from a layout/page; Next.js renders the matching <code>&lt;title&gt;</code>, <code>meta</code>, **Open Graph**, and canonical tags. <code>generateMetadata</code> can **fetch data** (deduped with the page) to build dynamic, per-route SEO.
+    answer: `Export a **static <code>metadata</code> object** or an **async <code>generateMetadata()</code>** from a layout/page; Next.js renders the matching <code>&lt;title&gt;</code>, <code>meta</code>, **Open Graph**, and canonical tags. <code>generateMetadata</code> can **fetch data** (deduped with the page) to build dynamic, per-route SEO.
 
 <svg class='iq-diagram' viewBox='0 0 460 150' role='img' aria-label='Metadata export renders head tags for the route'>
   <rect class='d-box-accent' x='20' y='45' width='170' height='60' rx='8'/><text class='d-text' x='105' y='70' text-anchor='middle'>metadata /</text><text class='d-sub' x='105' y='88' text-anchor='middle'>generateMetadata()</text>
@@ -220,7 +220,7 @@ export async function generateMetadata({ params }) {
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "How do you implement dynamic Open Graph images in Next.js (ImageResponse)?",
-    answer: `**TL;DR.** An <code>opengraph-image.tsx</code> file (or the <code>ImageResponse</code> API from <code>next/og</code>) **renders JSX/CSS to a PNG** on demand, so you generate **per-page social share images** with dynamic content (title, author) — no design tool or external service.
+    answer: `An <code>opengraph-image.tsx</code> file (or the <code>ImageResponse</code> API from <code>next/og</code>) **renders JSX/CSS to a PNG** on demand, so you generate **per-page social share images** with dynamic content (title, author) — no design tool or external service.
 
 <svg class='iq-diagram' viewBox='0 0 460 150' role='img' aria-label='JSX rendered to a PNG at the edge for social cards'>
   <rect class='d-box-accent' x='20' y='52' width='140' height='46' rx='8'/><text class='d-text' x='90' y='73' text-anchor='middle'>JSX + data</text><text class='d-sub' x='90' y='90' text-anchor='middle'>title, author</text>
@@ -266,7 +266,7 @@ export default async function OG({ params }) {
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "How do sitemap.ts and robots.ts work in Next.js?",
-    answer: `**TL;DR.** <code>app/sitemap.ts</code> exports a function returning your URLs (with <code>lastModified</code>, priority) and Next.js serves <code>/sitemap.xml</code>; <code>app/robots.ts</code> returns rules and serves <code>/robots.txt</code>. Both can be **dynamic** (fetch routes from a DB) and are generated at build or on request.
+    answer: `<code>app/sitemap.ts</code> exports a function returning your URLs (with <code>lastModified</code>, priority) and Next.js serves <code>/sitemap.xml</code>; <code>app/robots.ts</code> returns rules and serves <code>/robots.txt</code>. Both can be **dynamic** (fetch routes from a DB) and are generated at build or on request.
 
 <svg class='iq-diagram' viewBox='0 0 460 150' role='img' aria-label='sitemap.ts and robots.ts generate xml and txt endpoints'>
   <rect class='d-box-accent' x='20' y='40' width='170' height='34' rx='8'/><text class='d-sub' x='105' y='62' text-anchor='middle'>app/sitemap.ts</text>
@@ -312,7 +312,7 @@ export default function robots(): MetadataRoute.Robots {
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "How does Next.js handle SEO compared to a client-rendered SPA?",
-    answer: `**TL;DR.** Because Next.js renders **HTML on the server** (SSR/SSG), crawlers get **fully-formed content and metadata on first request** — unlike a client-rendered SPA where bots may see an **empty shell** until JS runs. Plus the **Metadata API, sitemaps, and fast loads** boost rankings.
+    answer: `Because Next.js renders **HTML on the server** (SSR/SSG), crawlers get **fully-formed content and metadata on first request** — unlike a client-rendered SPA where bots may see an **empty shell** until JS runs. Plus the **Metadata API, sitemaps, and fast loads** boost rankings.
 
 <svg class='iq-diagram' viewBox='0 0 460 150' role='img' aria-label='SPA sends empty shell to crawler; Next.js sends full HTML'>
   <rect class='d-box-muted' x='20' y='30' width='200' height='100' rx='10'/><text class='d-text' x='120' y='54' text-anchor='middle'>SPA (CSR)</text><text class='d-sub' x='120' y='78' text-anchor='middle'>empty &lt;div id=root&gt;</text><text class='d-sub' x='120' y='98' text-anchor='middle'>content after JS</text><text class='d-sub' x='120' y='118' text-anchor='middle'>weaker/slower for bots</text>
@@ -348,7 +348,7 @@ export default function robots(): MetadataRoute.Robots {
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "What is JSON-LD structured data and how do you add it in Next.js?",
-    answer: `**TL;DR.** **JSON-LD** is schema.org **structured data** that helps search engines understand your content (articles, products, FAQs) and show **rich results**. In Next.js you render a <code>&lt;script type="application/ld+json"&gt;</code> with the JSON in a **Server Component**, often built from the same data as the page.
+    answer: `**JSON-LD** is schema.org **structured data** that helps search engines understand your content (articles, products, FAQs) and show **rich results**. In Next.js you render a <code>&lt;script type="application/ld+json"&gt;</code> with the JSON in a **Server Component**, often built from the same data as the page.
 
 <svg class='iq-diagram' viewBox='0 0 460 150' role='img' aria-label='JSON-LD script describes the page for rich search results'>
   <rect class='d-box-accent' x='20' y='45' width='170' height='60' rx='8'/><text class='d-text' x='105' y='70' text-anchor='middle'>page data</text><text class='d-sub' x='105' y='88' text-anchor='middle'>article/product</text>

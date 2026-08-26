@@ -8,7 +8,7 @@ const augments: NodeAugment[] = [
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "How do you handle errors in Node.js applications?",
-    answer: `**TL;DR.** Match the handler to the async style: <code>try/catch</code> for <code>async/await</code>, <code>.catch()</code> for promises, the **error-first callback** arg for callbacks, and the <code>'error'</code> **event** for streams/emitters. Centralize HTTP errors in **error-handling middleware**, distinguish **operational** vs **programmer** errors, and treat the global handlers as last-resort safety nets.
+    answer: `Match the handler to the async style: <code>try/catch</code> for <code>async/await</code>, <code>.catch()</code> for promises, the **error-first callback** arg for callbacks, and the <code>'error'</code> **event** for streams/emitters. Centralize HTTP errors in **error-handling middleware**, distinguish **operational** vs **programmer** errors, and treat the global handlers as last-resort safety nets.
 
 <svg class='iq-diagram' viewBox='0 0 460 160' role='img' aria-label='Different error channels per async pattern funnel to a central handler'>
   <rect class='d-box' x='20' y='25' width='140' height='28' rx='6'/><text class='d-sub' x='90' y='44' text-anchor='middle'>try/catch (await)</text>
@@ -56,7 +56,7 @@ app.use((err, req, res, next) => {
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "How do you handle uncaught exceptions and unhandled promise rejections in Node.js?",
-    answer: `**TL;DR.** Listen on <code>process.on('uncaughtException', …)</code> and <code>process.on('unhandledRejection', …)</code> as **last-resort** handlers: **log**, then **gracefully shut down and let a supervisor restart** — because after an uncaught error the process is in an **undefined state**. Don't use them to "keep running" as if nothing happened.
+    answer: `Listen on <code>process.on('uncaughtException', …)</code> and <code>process.on('unhandledRejection', …)</code> as **last-resort** handlers: **log**, then **gracefully shut down and let a supervisor restart** — because after an uncaught error the process is in an **undefined state**. Don't use them to "keep running" as if nothing happened.
 
 <svg class='iq-diagram' viewBox='0 0 460 160' role='img' aria-label='uncaught error logged then process restarted by supervisor'>
   <rect class='d-box-muted' x='20' y='55' width='130' height='46' rx='8'/><text class='d-sub' x='85' y='75' text-anchor='middle'>uncaughtException</text><text class='d-sub' x='85' y='92' text-anchor='middle'>/ unhandledRejection</text>
@@ -100,7 +100,7 @@ process.on('uncaughtException', (err) => {
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "How do you implement a circuit breaker for unreliable downstream services?",
-    answer: `**TL;DR.** A **circuit breaker** tracks downstream failures and, once they exceed a threshold, **"opens"** to **fail fast** for a cooldown instead of hammering a dead dependency. After the cooldown it goes **"half-open"** to test recovery with a trial request. This prevents resource exhaustion and **cascading failures**.
+    answer: `A **circuit breaker** tracks downstream failures and, once they exceed a threshold, **"opens"** to **fail fast** for a cooldown instead of hammering a dead dependency. After the cooldown it goes **"half-open"** to test recovery with a trial request. This prevents resource exhaustion and **cascading failures**.
 
 <svg class='iq-diagram' viewBox='0 0 460 160' role='img' aria-label='Closed, open, and half-open circuit breaker states'>
   <rect class='d-box-accent' x='20' y='60' width='110' height='46' rx='8'/><text class='d-text' x='75' y='82' text-anchor='middle'>CLOSED</text><text class='d-sub' x='75' y='98' text-anchor='middle'>calls pass</text>
@@ -148,7 +148,7 @@ const result = await breaker.fire(order);`,
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "How do you implement retries with exponential backoff and jitter?",
-    answer: `**TL;DR.** Retry **transient** failures with **increasing delays** (<code>base * 2^attempt</code>) up to a cap, plus **random jitter** so many clients don't retry in lockstep and re-overload the recovering service. Only retry **idempotent/safe** operations, bound the attempt count, and respect <code>Retry-After</code> headers.
+    answer: `Retry **transient** failures with **increasing delays** (<code>base * 2^attempt</code>) up to a cap, plus **random jitter** so many clients don't retry in lockstep and re-overload the recovering service. Only retry **idempotent/safe** operations, bound the attempt count, and respect <code>Retry-After</code> headers.
 
 <svg class='iq-diagram' viewBox='0 0 460 150' role='img' aria-label='Retry delays grow exponentially with jitter'>
   <rect class='d-box' x='20' y='90' width='50' height='24' rx='4'/><text class='d-sub' x='45' y='107' text-anchor='middle'>~1s</text>
@@ -196,7 +196,7 @@ const result = await breaker.fire(order);`,
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "How do you guarantee idempotency in a queue consumer?",
-    answer: `**TL;DR.** Message queues usually deliver **at-least-once**, so the same job can arrive **twice**. Make consumers **idempotent**: derive a stable **idempotency key**, **dedupe** processed ids, and use **upserts / conditional writes** so reprocessing produces **no extra side effects**.
+    answer: `Message queues usually deliver **at-least-once**, so the same job can arrive **twice**. Make consumers **idempotent**: derive a stable **idempotency key**, **dedupe** processed ids, and use **upserts / conditional writes** so reprocessing produces **no extra side effects**.
 
 <svg class='iq-diagram' viewBox='0 0 460 160' role='img' aria-label='Duplicate delivery deduplicated by a processed-id check'>
   <rect class='d-box' x='20' y='40' width='120' height='30' rx='6'/><text class='d-sub' x='80' y='60' text-anchor='middle'>job #42</text>
@@ -243,7 +243,7 @@ const result = await breaker.fire(order);`,
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "What is a background job queue (BullMQ/Redis) and when do you need one?",
-    answer: `**TL;DR.** A **job queue** stores units of work that **separate worker processes** consume asynchronously, with **retries, scheduling, and concurrency control**. Reach for one (e.g. **BullMQ** on Redis) to move **slow or unreliable** work — emails, image processing, webhooks, reports — **out of the request path**, so responses stay fast.
+    answer: `A **job queue** stores units of work that **separate worker processes** consume asynchronously, with **retries, scheduling, and concurrency control**. Reach for one (e.g. **BullMQ** on Redis) to move **slow or unreliable** work — emails, image processing, webhooks, reports — **out of the request path**, so responses stay fast.
 
 <svg class='iq-diagram' viewBox='0 0 460 160' role='img' aria-label='Producer enqueues jobs, workers consume them asynchronously'>
   <rect class='d-box-accent' x='20' y='55' width='110' height='44' rx='8'/><text class='d-text' x='75' y='75' text-anchor='middle'>API (producer)</text><text class='d-sub' x='75' y='91' text-anchor='middle'>add(job)</text>
@@ -288,7 +288,7 @@ new Worker('emails', async (job) => sendEmail(job.data), { connection, concurren
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "How do you implement microservices communication in Node.js?",
-    answer: `**TL;DR.** Services talk **synchronously** (request/response: REST, gRPC) or **asynchronously** (events/messages: Kafka, RabbitMQ, NATS). Sync is simple but **couples** caller to callee availability; async **decouples** and buffers load but is eventually consistent. Most systems use **both**: sync for queries, async for events.
+    answer: `Services talk **synchronously** (request/response: REST, gRPC) or **asynchronously** (events/messages: Kafka, RabbitMQ, NATS). Sync is simple but **couples** caller to callee availability; async **decouples** and buffers load but is eventually consistent. Most systems use **both**: sync for queries, async for events.
 
 <svg class='iq-diagram' viewBox='0 0 460 160' role='img' aria-label='Synchronous REST/gRPC versus asynchronous message broker'>
   <rect class='d-box-accent' x='20' y='30' width='200' height='110' rx='10'/>
@@ -333,7 +333,7 @@ await broker.publish('order.placed', { orderId, sku, qty });`,
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "How would you implement caching in a Node.js application?",
-    answer: `**TL;DR.** Cache to avoid recomputing or refetching expensive results. Choose a tier: **in-process** (a Map/LRU — fastest, per-instance) or **shared** (Redis — consistent across instances). Apply a strategy (**cache-aside** is most common), set **TTLs**, and have an **invalidation** plan. The hard parts are **staleness** and **invalidation**, not storage.
+    answer: `Cache to avoid recomputing or refetching expensive results. Choose a tier: **in-process** (a Map/LRU — fastest, per-instance) or **shared** (Redis — consistent across instances). Apply a strategy (**cache-aside** is most common), set **TTLs**, and have an **invalidation** plan. The hard parts are **staleness** and **invalidation**, not storage.
 
 <svg class='iq-diagram' viewBox='0 0 460 160' role='img' aria-label='Cache-aside: check cache, miss hits DB and populates cache'>
   <rect class='d-box-accent' x='20' y='55' width='100' height='44' rx='8'/><text class='d-text' x='70' y='81' text-anchor='middle'>request</text>
@@ -379,7 +379,7 @@ await broker.publish('order.placed', { orderId, sku, qty });`,
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "How do you handle database connection pooling in a Node.js application?",
-    answer: `**TL;DR.** A **connection pool** keeps a set of **reusable** DB connections so requests **borrow and return** them instead of paying the cost of opening a new connection each time. You configure a **max size**, acquire timeout, and idle timeout, and **always release** connections (use a <code>finally</code>) to avoid pool exhaustion.
+    answer: `A **connection pool** keeps a set of **reusable** DB connections so requests **borrow and return** them instead of paying the cost of opening a new connection each time. You configure a **max size**, acquire timeout, and idle timeout, and **always release** connections (use a <code>finally</code>) to avoid pool exhaustion.
 
 <svg class='iq-diagram' viewBox='0 0 460 160' role='img' aria-label='Requests borrow connections from a fixed pool to the database'>
   <rect class='d-box' x='20' y='35' width='90' height='28' rx='6'/><text class='d-sub' x='65' y='54' text-anchor='middle'>req A</text>

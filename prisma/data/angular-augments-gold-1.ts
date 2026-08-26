@@ -1,6 +1,6 @@
 /**
  * Angular Phase 1 — Batch 1 (Components & templates). Gold-standard rewrites:
- * TL;DR + theme-aware <svg class='iq-diagram'> diagram + GFM table + interview
+ * + theme-aware <svg class='iq-diagram'> diagram + GFM table + interview
  * tip + an Angular code example. Picked up by `npm run augment:ng` (sorts after
  * angular-augments-{1,2,3}.ts so it overrides the older moderate answers).
  *

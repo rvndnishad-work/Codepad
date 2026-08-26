@@ -1,6 +1,6 @@
 /**
  * React Phase R1 — Batch 2 (Components & rendering). Gold-standard rewrites.
- * Same conventions as react-augments-gold-1.ts: TL;DR + cyan SVG + table + tip +
+ * Same conventions as react-augments-gold-1.ts: + cyan SVG + table + tip +
  * self-contained JSX example (runnable:false). Inline code uses <code> tags and
  * &lt;/&gt; entities for JSX angle brackets (raw HTML goes through rehype-raw).
  */

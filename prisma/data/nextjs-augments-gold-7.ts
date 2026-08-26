@@ -7,7 +7,7 @@ const augments: NextAugment[] = [
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "How does next/image optimize images in Next.js?",
-    answer: `**TL;DR.** <code>next/image</code> serves **correctly-sized, modern-format** (WebP/AVIF) images **on demand**, **lazy-loads** by default, and **reserves space** (width/height) to prevent layout shift. It optimizes via a built-in loader/CDN, cutting bytes and improving **Core Web Vitals**.
+    answer: `<code>next/image</code> serves **correctly-sized, modern-format** (WebP/AVIF) images **on demand**, **lazy-loads** by default, and **reserves space** (width/height) to prevent layout shift. It optimizes via a built-in loader/CDN, cutting bytes and improving **Core Web Vitals**.
 
 <svg class='iq-diagram' viewBox='0 0 460 150' role='img' aria-label='Original image optimized to sized, modern-format, lazy-loaded output'>
   <rect class='d-box-muted' x='20' y='52' width='120' height='46' rx='8'/><text class='d-sub' x='80' y='72' text-anchor='middle'>original</text><text class='d-sub' x='80' y='90' text-anchor='middle'>large JPEG</text>
@@ -51,7 +51,7 @@ const augments: NextAugment[] = [
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "How does next/font work and why does it improve performance?",
-    answer: `**TL;DR.** <code>next/font</code> **downloads and self-hosts** fonts (Google or local) **at build time**, removing external requests and using <code>size-adjust</code>/fallback metrics to **eliminate layout shift** (CLS). It also **strips unused glyphs**, improving load performance and **privacy**.
+    answer: `<code>next/font</code> **downloads and self-hosts** fonts (Google or local) **at build time**, removing external requests and using <code>size-adjust</code>/fallback metrics to **eliminate layout shift** (CLS). It also **strips unused glyphs**, improving load performance and **privacy**.
 
 <svg class='iq-diagram' viewBox='0 0 460 150' role='img' aria-label='Fonts self-hosted at build, no external request, no layout shift'>
   <rect class='d-box-muted' x='20' y='52' width='140' height='46' rx='8'/><text class='d-sub' x='90' y='72' text-anchor='middle'>Google Fonts</text><text class='d-sub' x='90' y='90' text-anchor='middle'>(build time)</text>
@@ -93,7 +93,7 @@ export default function RootLayout({ children }) {
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "What is next/script and what are its strategy options in Next.js?",
-    answer: `**TL;DR.** <code>next/script</code> loads third-party scripts with a **strategy**: <code>beforeInteractive</code> (critical, before hydration), <code>afterInteractive</code> (default, after hydration), <code>lazyOnload</code> (browser idle), and <code>worker</code> (off the main thread). It prevents blocking scripts from hurting performance.
+    answer: `<code>next/script</code> loads third-party scripts with a **strategy**: <code>beforeInteractive</code> (critical, before hydration), <code>afterInteractive</code> (default, after hydration), <code>lazyOnload</code> (browser idle), and <code>worker</code> (off the main thread). It prevents blocking scripts from hurting performance.
 
 <svg class='iq-diagram' viewBox='0 0 460 150' role='img' aria-label='Script strategies map to points in the page lifecycle'>
   <rect class='d-box-accent' x='15' y='55' width='105' height='44' rx='8'/><text class='d-sub' x='67' y='75' text-anchor='middle'>beforeInteractive</text><text class='d-sub' x='67' y='91' text-anchor='middle'>pre-hydration</text>
@@ -132,7 +132,7 @@ export default function RootLayout({ children }) {
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "How does code splitting and next/dynamic work in Next.js?",
-    answer: `**TL;DR.** Next.js **automatically code-splits per route**. <code>next/dynamic</code> (or <code>React.lazy</code>) defers loading a **heavy or client-only** component until needed, with an optional loading fallback and <code>ssr: false</code> to skip server rendering — **shrinking the initial bundle**.
+    answer: `Next.js **automatically code-splits per route**. <code>next/dynamic</code> (or <code>React.lazy</code>) defers loading a **heavy or client-only** component until needed, with an optional loading fallback and <code>ssr: false</code> to skip server rendering — **shrinking the initial bundle**.
 
 <svg class='iq-diagram' viewBox='0 0 460 150' role='img' aria-label='Heavy component split into a separate chunk loaded on demand'>
   <rect class='d-box-accent' x='20' y='52' width='140' height='46' rx='8'/><text class='d-text' x='90' y='73' text-anchor='middle'>initial bundle</text><text class='d-sub' x='90' y='90' text-anchor='middle'>small</text>
@@ -176,7 +176,7 @@ export default function Dashboard() {
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "How does Next.js handle CSS (CSS Modules, global, Tailwind, CSS-in-JS)?",
-    answer: `**TL;DR.** Next.js supports **global CSS** (imported in the root layout), **CSS Modules** (scoped per component), **Tailwind**, and **Sass** out of the box. **Runtime CSS-in-JS** libraries need a <code>'use client'</code> boundary/registry since they don't run in Server Components; **zero-runtime** CSS works best with RSC.
+    answer: `Next.js supports **global CSS** (imported in the root layout), **CSS Modules** (scoped per component), **Tailwind**, and **Sass** out of the box. **Runtime CSS-in-JS** libraries need a <code>'use client'</code> boundary/registry since they don't run in Server Components; **zero-runtime** CSS works best with RSC.
 
 <svg class='iq-diagram' viewBox='0 0 460 150' role='img' aria-label='CSS approaches and their compatibility with server components'>
   <rect class='d-box-accent' x='20' y='40' width='130' height='34' rx='6'/><text class='d-sub' x='85' y='62' text-anchor='middle'>CSS Modules ✓RSC</text>
@@ -216,7 +216,7 @@ export function Button() {
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "What is the difference between the /public folder and imported assets in Next.js?",
-    answer: `**TL;DR.** Files in <code>/public</code> are served **as-is** from the root URL (e.g. <code>/logo.png</code>) with **no processing** — good for <code>robots.txt</code>, favicons. **Imported assets** (<code>import img from './a.png'</code>) go through the **build pipeline**, get **hashed filenames** and optimization, and enable <code>next/image</code> features.
+    answer: `Files in <code>/public</code> are served **as-is** from the root URL (e.g. <code>/logo.png</code>) with **no processing** — good for <code>robots.txt</code>, favicons. **Imported assets** (<code>import img from './a.png'</code>) go through the **build pipeline**, get **hashed filenames** and optimization, and enable <code>next/image</code> features.
 
 <svg class='iq-diagram' viewBox='0 0 460 150' role='img' aria-label='public served raw versus imported assets processed by the build'>
   <rect class='d-box-muted' x='20' y='30' width='200' height='100' rx='10'/><text class='d-text' x='120' y='54' text-anchor='middle'>/public</text><text class='d-sub' x='120' y='78' text-anchor='middle'>served raw at /file</text><text class='d-sub' x='120' y='98' text-anchor='middle'>no hashing/optimization</text><text class='d-sub' x='120' y='118' text-anchor='middle'>robots, favicon</text>
@@ -253,7 +253,7 @@ import Image from 'next/image';
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "How do you analyze and reduce bundle size in Next.js?",
-    answer: `**TL;DR.** Use <code>@next/bundle-analyzer</code> to **visualize** bundles, then shrink them: keep components as **Server Components** (zero client JS), **lazy-load** heavy client code with <code>next/dynamic</code>, avoid large deps/**barrel imports**, and move logic **server-side**. Check the **build output's** per-route JS sizes.
+    answer: `Use <code>@next/bundle-analyzer</code> to **visualize** bundles, then shrink them: keep components as **Server Components** (zero client JS), **lazy-load** heavy client code with <code>next/dynamic</code>, avoid large deps/**barrel imports**, and move logic **server-side**. Check the **build output's** per-route JS sizes.
 
 <svg class='iq-diagram' viewBox='0 0 460 150' role='img' aria-label='Analyze then reduce: server components, dynamic import, lighter deps'>
   <rect class='d-box-accent' x='20' y='52' width='120' height='46' rx='8'/><text class='d-text' x='80' y='73' text-anchor='middle'>analyze</text><text class='d-sub' x='80' y='90' text-anchor='middle'>bundle-analyzer</text>
@@ -296,7 +296,7 @@ import debounce from 'lodash/debounce';`,
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "What is prefetching in Next.js and how does next/link prefetch routes?",
-    answer: `**TL;DR.** <code>next/link</code> **prefetches** the linked route's JS and (for static routes) data when the link is **visible/hovered**, so navigation feels **instant**. Prefetch can be disabled with <code>prefetch={false}</code>; in **dev** it's off. It populates the client **Router Cache** ahead of time.
+    answer: `<code>next/link</code> **prefetches** the linked route's JS and (for static routes) data when the link is **visible/hovered**, so navigation feels **instant**. Prefetch can be disabled with <code>prefetch={false}</code>; in **dev** it's off. It populates the client **Router Cache** ahead of time.
 
 <svg class='iq-diagram' viewBox='0 0 460 150' role='img' aria-label='Link in viewport triggers background prefetch into the router cache'>
   <rect class='d-box-accent' x='20' y='52' width='130' height='46' rx='8'/><text class='d-text' x='85' y='73' text-anchor='middle'>&lt;Link&gt; visible</text><text class='d-sub' x='85' y='90' text-anchor='middle'>in viewport</text>
@@ -338,7 +338,7 @@ import debounce from 'lodash/debounce';`,
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "How do environment variables work in Next.js (the NEXT_PUBLIC_ prefix)?",
-    answer: `**TL;DR.** Variables in <code>.env</code> are available on the **server** via <code>process.env</code>. **Only** those prefixed <code>NEXT_PUBLIC_</code> are **inlined into the client bundle** and exposed to the browser — so **never prefix secrets**. Next.js loads <code>.env.local</code>/<code>.env.production</code> etc. by convention.
+    answer: `Variables in <code>.env</code> are available on the **server** via <code>process.env</code>. **Only** those prefixed <code>NEXT_PUBLIC_</code> are **inlined into the client bundle** and exposed to the browser — so **never prefix secrets**. Next.js loads <code>.env.local</code>/<code>.env.production</code> etc. by convention.
 
 <svg class='iq-diagram' viewBox='0 0 460 150' role='img' aria-label='Only NEXT_PUBLIC vars reach the browser; others stay server-only'>
   <rect class='d-box-muted' x='20' y='30' width='200' height='100' rx='10'/><text class='d-text' x='120' y='54' text-anchor='middle'>server-only</text><text class='d-sub' x='120' y='78' text-anchor='middle'>DATABASE_URL, API_KEY</text><text class='d-sub' x='120' y='98' text-anchor='middle'>process.env (server)</text><text class='d-sub' x='120' y='118' text-anchor='middle'>never sent to browser</text>

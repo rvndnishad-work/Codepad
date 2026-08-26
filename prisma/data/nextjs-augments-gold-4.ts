@@ -7,7 +7,7 @@ const augments: NextAugment[] = [
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "How does Next.js decide between static and dynamic rendering at build time?",
-    answer: `**TL;DR.** At build, Next.js **analyzes each route**: if it uses no dynamic functions and only cached data, it's **prerendered statically**; if it uses <code>cookies()</code>/<code>headers()</code>/<code>searchParams</code> or **uncached** fetches, it's marked **dynamic**. Segment config (<code>dynamic</code>) can force either mode.
+    answer: `At build, Next.js **analyzes each route**: if it uses no dynamic functions and only cached data, it's **prerendered statically**; if it uses <code>cookies()</code>/<code>headers()</code>/<code>searchParams</code> or **uncached** fetches, it's marked **dynamic**. Segment config (<code>dynamic</code>) can force either mode.
 
 <svg class='iq-diagram' viewBox='0 0 460 160' role='img' aria-label='Build-time analysis routes each page to static or dynamic'>
   <rect class='d-box-accent' x='160' y='20' width='140' height='36' rx='8'/><text class='d-text' x='230' y='43' text-anchor='middle'>build analysis</text>
@@ -47,7 +47,7 @@ Route (app)                     Size
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "What are the caching layers in Next.js (Request Memoization, Data Cache, Full Route Cache, Router Cache)?",
-    answer: `**TL;DR.** Four overlapping caches: **Request Memoization** dedupes identical fetches within one render; the **Data Cache** persists fetch results across requests/deploys; the **Full Route Cache** stores rendered static routes; the **Router Cache** holds visited routes **client-side** for instant back/forward. Each has its own invalidation.
+    answer: `Four overlapping caches: **Request Memoization** dedupes identical fetches within one render; the **Data Cache** persists fetch results across requests/deploys; the **Full Route Cache** stores rendered static routes; the **Router Cache** holds visited routes **client-side** for instant back/forward. Each has its own invalidation.
 
 <svg class='iq-diagram' viewBox='0 0 460 160' role='img' aria-label='Four caching layers from per-render to client-side'>
   <rect class='d-box-accent' x='15' y='45' width='105' height='80' rx='10'/><text class='d-text' x='67' y='68' text-anchor='middle'>Request</text><text class='d-sub' x='67' y='86' text-anchor='middle'>memoization</text><text class='d-sub' x='67' y='106' text-anchor='middle'>per render</text>
@@ -89,7 +89,7 @@ router.refresh();`,
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "How does fetch caching work in the Next.js App Router (force-cache, no-store, revalidate)?",
-    answer: `**TL;DR.** <code>fetch</code> options control the **Data Cache**: <code>{ cache: 'force-cache' }</code> caches indefinitely, <code>{ cache: 'no-store' }</code> never caches (makes the route dynamic), and <code>{ next: { revalidate: N } }</code> caches but **revalidates after N seconds** (ISR). <code>next: { tags }</code> enables **on-demand** invalidation.
+    answer: `<code>fetch</code> options control the **Data Cache**: <code>{ cache: 'force-cache' }</code> caches indefinitely, <code>{ cache: 'no-store' }</code> never caches (makes the route dynamic), and <code>{ next: { revalidate: N } }</code> caches but **revalidates after N seconds** (ISR). <code>next: { tags }</code> enables **on-demand** invalidation.
 
 <svg class='iq-diagram' viewBox='0 0 460 150' role='img' aria-label='fetch options map to cache behaviors'>
   <rect class='d-box-accent' x='15' y='45' width='140' height='70' rx='10'/><text class='d-text' x='85' y='69' text-anchor='middle'>force-cache</text><text class='d-sub' x='85' y='90' text-anchor='middle'>cache forever</text>
@@ -128,7 +128,7 @@ await fetch('https://api/me', { cache: 'no-store' });`,
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "What is ISR (Incremental Static Regeneration) in Next.js and how do you implement it?",
-    answer: `**TL;DR.** **ISR** serves a **static** page and **regenerates it in the background** after a <code>revalidate</code> interval (or on demand), so content stays fresh **without rebuilding** the whole site. In the App Router you set <code>export const revalidate = N</code> or fetch with <code>next: { revalidate: N }</code>.
+    answer: `**ISR** serves a **static** page and **regenerates it in the background** after a <code>revalidate</code> interval (or on demand), so content stays fresh **without rebuilding** the whole site. In the App Router you set <code>export const revalidate = N</code> or fetch with <code>next: { revalidate: N }</code>.
 
 <svg class='iq-diagram' viewBox='0 0 460 150' role='img' aria-label='Stale-while-revalidate: serve cached, regenerate in background'>
   <rect class='d-box-accent' x='20' y='52' width='120' height='46' rx='8'/><text class='d-text' x='80' y='73' text-anchor='middle'>request</text><text class='d-sub' x='80' y='90' text-anchor='middle'>serve cached</text>
@@ -171,7 +171,7 @@ export default async function Post({ params }) {
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "What is on-demand revalidation in Next.js (revalidatePath / revalidateTag)?",
-    answer: `**TL;DR.** <code>revalidatePath(path)</code> and <code>revalidateTag(tag)</code> **invalidate cached routes/data immediately** — typically called from a **Server Action or webhook** after content changes — so the next request **regenerates fresh** content instead of waiting for a time-based interval.
+    answer: `<code>revalidatePath(path)</code> and <code>revalidateTag(tag)</code> **invalidate cached routes/data immediately** — typically called from a **Server Action or webhook** after content changes — so the next request **regenerates fresh** content instead of waiting for a time-based interval.
 
 <svg class='iq-diagram' viewBox='0 0 460 150' role='img' aria-label='A content change triggers revalidateTag which purges cached data'>
   <rect class='d-box-accent' x='20' y='52' width='130' height='46' rx='8'/><text class='d-text' x='85' y='73' text-anchor='middle'>CMS publish</text><text class='d-sub' x='85' y='90' text-anchor='middle'>webhook / action</text>
@@ -215,7 +215,7 @@ export async function createPost(data) {
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "What is the Data Cache in Next.js and how do you opt out of it?",
-    answer: `**TL;DR.** The **Data Cache** stores <code>fetch</code> (and cached function) results on the **server across requests and deployments** to avoid refetching. Opt out per fetch with <code>cache: 'no-store'</code>, per segment with <code>export const dynamic = 'force-dynamic'</code> or <code>revalidate = 0</code> — so data is always fresh.
+    answer: `The **Data Cache** stores <code>fetch</code> (and cached function) results on the **server across requests and deployments** to avoid refetching. Opt out per fetch with <code>cache: 'no-store'</code>, per segment with <code>export const dynamic = 'force-dynamic'</code> or <code>revalidate = 0</code> — so data is always fresh.
 
 <svg class='iq-diagram' viewBox='0 0 460 150' role='img' aria-label='Data Cache persists fetch results across requests unless opted out'>
   <rect class='d-box-accent' x='20' y='52' width='130' height='46' rx='8'/><text class='d-text' x='85' y='73' text-anchor='middle'>fetch()</text><text class='d-sub' x='85' y='90' text-anchor='middle'>result stored</text>
@@ -257,7 +257,7 @@ const me = await fetch('/api/me', { cache: 'no-store' });`,
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "What is the Full Route Cache in Next.js?",
-    answer: `**TL;DR.** The **Full Route Cache** stores the **rendered HTML and RSC payload** of **statically-rendered** routes at build time, so they're served **instantly without re-rendering**. It's invalidated by **revalidation** or a **new deploy**; **dynamic** routes skip it.
+    answer: `The **Full Route Cache** stores the **rendered HTML and RSC payload** of **statically-rendered** routes at build time, so they're served **instantly without re-rendering**. It's invalidated by **revalidation** or a **new deploy**; **dynamic** routes skip it.
 
 <svg class='iq-diagram' viewBox='0 0 460 150' role='img' aria-label='Static routes rendered once and stored, served without re-render'>
   <rect class='d-box-accent' x='20' y='52' width='130' height='46' rx='8'/><text class='d-text' x='85' y='73' text-anchor='middle'>build render</text><text class='d-sub' x='85' y='90' text-anchor='middle'>HTML + RSC</text>
@@ -299,7 +299,7 @@ export const dynamic = 'force-dynamic';`,
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "What is the Router Cache in Next.js and what are its implications?",
-    answer: `**TL;DR.** The **Router Cache** (client-side) stores the **RSC payload of visited/prefetched routes** for the session, giving **instant back/forward** navigation. Its staleness can show **outdated data** after a mutation, so you call <code>router.refresh()</code> or revalidate to update it.
+    answer: `The **Router Cache** (client-side) stores the **RSC payload of visited/prefetched routes** for the session, giving **instant back/forward** navigation. Its staleness can show **outdated data** after a mutation, so you call <code>router.refresh()</code> or revalidate to update it.
 
 <svg class='iq-diagram' viewBox='0 0 460 150' role='img' aria-label='Client caches visited route segments for instant navigation'>
   <rect class='d-box-accent' x='20' y='45' width='150' height='60' rx='8'/><text class='d-text' x='95' y='70' text-anchor='middle'>Router Cache</text><text class='d-sub' x='95' y='88' text-anchor='middle'>client, in-memory</text>
@@ -344,7 +344,7 @@ function DeleteButton({ id }) {
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "How do you fetch data in Next.js Client Components (SWR, React Query, use)?",
-    answer: `**TL;DR.** In Client Components you fetch with libraries like **SWR** or **React Query** (caching, revalidation, mutations) or stream a Server Component promise into the **<code>use()</code>** hook. Prefer fetching in **Server Components** when possible; use client fetching for **highly interactive/real-time** data.
+    answer: `In Client Components you fetch with libraries like **SWR** or **React Query** (caching, revalidation, mutations) or stream a Server Component promise into the **<code>use()</code>** hook. Prefer fetching in **Server Components** when possible; use client fetching for **highly interactive/real-time** data.
 
 <svg class='iq-diagram' viewBox='0 0 460 150' role='img' aria-label='Client fetching options: SWR/React Query cache or use() a streamed promise'>
   <rect class='d-box-accent' x='20' y='40' width='200' height='90' rx='10'/><text class='d-text' x='120' y='64' text-anchor='middle'>SWR / React Query</text><text class='d-sub' x='120' y='88' text-anchor='middle'>cache, revalidate,</text><text class='d-sub' x='120' y='108' text-anchor='middle'>mutations, polling</text>

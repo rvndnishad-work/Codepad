@@ -8,7 +8,7 @@ const augments: NodeAugment[] = [
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "Explain the purpose of `package.json` and `npm`.",
-    answer: `**TL;DR.** <code>package.json</code> is your project's **manifest** — name, version, entry point, **scripts**, and **dependencies**. **npm** (Node Package Manager) is the CLI + registry that reads that manifest to **install, run, and publish** packages. Together they make Node projects reproducible and shareable.
+    answer: `<code>package.json</code> is your project's **manifest** — name, version, entry point, **scripts**, and **dependencies**. **npm** (Node Package Manager) is the CLI + registry that reads that manifest to **install, run, and publish** packages. Together they make Node projects reproducible and shareable.
 
 <svg class='iq-diagram' viewBox='0 0 460 170' role='img' aria-label='npm reads package.json to install dependencies from the registry'>
   <rect class='d-box-accent' x='20' y='40' width='150' height='90' rx='10'/>
@@ -61,7 +61,7 @@ const augments: NodeAugment[] = [
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "What is the purpose of `package-lock.json`?",
-    answer: `**TL;DR.** <code>package-lock.json</code> records the **exact resolved version** (and integrity hash) of every package in the dependency tree, not just the ranges in <code>package.json</code>. It makes installs **deterministic and reproducible** across machines and CI, and verifies integrity. Always commit it.
+    answer: `<code>package-lock.json</code> records the **exact resolved version** (and integrity hash) of every package in the dependency tree, not just the ranges in <code>package.json</code>. It makes installs **deterministic and reproducible** across machines and CI, and verifies integrity. Always commit it.
 
 <svg class='iq-diagram' viewBox='0 0 460 160' role='img' aria-label='package.json ranges resolve to exact pinned versions in the lockfile'>
   <rect class='d-box-accent' x='20' y='45' width='170' height='70' rx='10'/>
@@ -105,7 +105,7 @@ npm ci      # CI: install exactly the locked tree, fail if drifted`,
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "What is the difference between dependencies, devDependencies, and peerDependencies?",
-    answer: `**TL;DR.** <code>dependencies</code> are needed at **runtime** (shipped). <code>devDependencies</code> are needed only for **development/build/test** (not installed in production with <code>--omit=dev</code>). <code>peerDependencies</code> declare a package your **host app must provide** (e.g. a React plugin expecting <code>react</code>), avoiding duplicate copies.
+    answer: `<code>dependencies</code> are needed at **runtime** (shipped). <code>devDependencies</code> are needed only for **development/build/test** (not installed in production with <code>--omit=dev</code>). <code>peerDependencies</code> declare a package your **host app must provide** (e.g. a React plugin expecting <code>react</code>), avoiding duplicate copies.
 
 <svg class='iq-diagram' viewBox='0 0 460 160' role='img' aria-label='Three dependency types and where they apply'>
   <rect class='d-box-accent' x='15' y='35' width='135' height='100' rx='10'/>
@@ -150,7 +150,7 @@ npm ci      # CI: install exactly the locked tree, fail if drifted`,
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "What is npx and how does it differ from a global install?",
-    answer: `**TL;DR.** <code>npx</code> **runs a package's binary on demand** — using a project-local copy if present, otherwise fetching it temporarily — without a permanent global install. It's ideal for one-off commands (scaffolders, generators) and guarantees you run the **project's** version of a tool rather than a stale global one.
+    answer: `<code>npx</code> **runs a package's binary on demand** — using a project-local copy if present, otherwise fetching it temporarily — without a permanent global install. It's ideal for one-off commands (scaffolders, generators) and guarantees you run the **project's** version of a tool rather than a stale global one.
 
 <svg class='iq-diagram' viewBox='0 0 460 160' role='img' aria-label='npx resolves local then temporary, vs a permanent global install'>
   <rect class='d-box-accent' x='20' y='30' width='200' height='110' rx='10'/>
@@ -193,7 +193,7 @@ npx prettier --check .              # uses local prettier if installed
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "What is semantic versioning and how do ^, ~, and exact versions behave?",
-    answer: `**TL;DR.** **SemVer** is <code>MAJOR.MINOR.PATCH</code>: bump **MAJOR** for breaking changes, **MINOR** for backward-compatible features, **PATCH** for fixes. In ranges, <code>^1.2.3</code> allows minor+patch (<code>&lt;2.0.0</code>), <code>~1.2.3</code> allows patch only (<code>&lt;1.3.0</code>), and <code>1.2.3</code> pins exactly.
+    answer: `**SemVer** is <code>MAJOR.MINOR.PATCH</code>: bump **MAJOR** for breaking changes, **MINOR** for backward-compatible features, **PATCH** for fixes. In ranges, <code>^1.2.3</code> allows minor+patch (<code>&lt;2.0.0</code>), <code>~1.2.3</code> allows patch only (<code>&lt;1.3.0</code>), and <code>1.2.3</code> pins exactly.
 
 <svg class='iq-diagram' viewBox='0 0 460 160' role='img' aria-label='Caret allows minor and patch, tilde allows patch, exact pins'>
   <rect class='d-box-accent' x='20' y='30' width='140' height='110' rx='10'/>
@@ -241,7 +241,7 @@ npx prettier --check .              # uses local prettier if installed
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "What is the difference between `npm ci` and `npm install`?",
-    answer: `**TL;DR.** <code>npm install</code> **resolves** dependencies from <code>package.json</code> and may **update** <code>package-lock.json</code> and <code>node_modules</code> incrementally. <code>npm ci</code> does a **clean, deterministic** install: it deletes <code>node_modules</code>, installs **exactly** what the lockfile says, and **fails** if the lockfile and <code>package.json</code> disagree. Use <code>ci</code> in CI/CD.
+    answer: `<code>npm install</code> **resolves** dependencies from <code>package.json</code> and may **update** <code>package-lock.json</code> and <code>node_modules</code> incrementally. <code>npm ci</code> does a **clean, deterministic** install: it deletes <code>node_modules</code>, installs **exactly** what the lockfile says, and **fails** if the lockfile and <code>package.json</code> disagree. Use <code>ci</code> in CI/CD.
 
 <svg class='iq-diagram' viewBox='0 0 460 160' role='img' aria-label='npm install mutates the lockfile, npm ci installs strictly from it'>
   <rect class='d-box-muted' x='20' y='30' width='200' height='110' rx='10'/>
@@ -284,7 +284,7 @@ npm install zod`,
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "What are the differences between npm, Yarn, and pnpm?",
-    answer: `**TL;DR.** All three install packages from the npm registry but differ in **node_modules layout** and speed. npm and Yarn **flatten** dependencies into <code>node_modules</code>; **pnpm** uses a global **content-addressable store** with symlinks — saving disk, speeding installs, and enforcing **strict** access (you can only import what you declared). Each has its own lockfile and workspaces.
+    answer: `All three install packages from the npm registry but differ in **node_modules layout** and speed. npm and Yarn **flatten** dependencies into <code>node_modules</code>; **pnpm** uses a global **content-addressable store** with symlinks — saving disk, speeding installs, and enforcing **strict** access (you can only import what you declared). Each has its own lockfile and workspaces.
 
 <svg class='iq-diagram' viewBox='0 0 460 160' role='img' aria-label='Flat node_modules vs pnpm symlinked store'>
   <rect class='d-box-muted' x='20' y='30' width='200' height='110' rx='10'/>
@@ -327,7 +327,7 @@ npm run build          yarn build      pnpm build
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "What are npm workspaces and how do you manage a monorepo with them?",
-    answer: `**TL;DR.** **npm workspaces** let one repository host **multiple packages** under a <code>"workspaces"</code> array in the root <code>package.json</code>. A single <code>npm install</code> at the root installs all of them, **symlinks** local packages so they resolve each other, and hoists shared dependencies — giving you a monorepo without an extra tool.
+    answer: `**npm workspaces** let one repository host **multiple packages** under a <code>"workspaces"</code> array in the root <code>package.json</code>. A single <code>npm install</code> at the root installs all of them, **symlinks** local packages so they resolve each other, and hoists shared dependencies — giving you a monorepo without an extra tool.
 
 <svg class='iq-diagram' viewBox='0 0 460 170' role='img' aria-label='Root manages multiple linked workspace packages'>
   <rect class='d-box-accent' x='160' y='20' width='140' height='40' rx='8'/>
@@ -373,7 +373,7 @@ npm run build          yarn build      pnpm build
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "What is the package.json \"exports\" field and conditional exports?",
-    answer: `**TL;DR.** The <code>"exports"</code> field defines a package's **official public entry points** and **hides everything else** — consumers can no longer deep-import internal files. **Conditional exports** (<code>import</code>, <code>require</code>, <code>types</code>, <code>node</code>, <code>default</code>) resolve **different files per environment**, which is how a package ships dual ESM/CJS builds and types.
+    answer: `The <code>"exports"</code> field defines a package's **official public entry points** and **hides everything else** — consumers can no longer deep-import internal files. **Conditional exports** (<code>import</code>, <code>require</code>, <code>types</code>, <code>node</code>, <code>default</code>) resolve **different files per environment**, which is how a package ships dual ESM/CJS builds and types.
 
 <svg class='iq-diagram' viewBox='0 0 460 160' role='img' aria-label='One import resolves to different files by condition'>
   <rect class='d-box-accent' x='20' y='55' width='150' height='44' rx='8'/>
@@ -425,7 +425,7 @@ npm run build          yarn build      pnpm build
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "How do you run TypeScript directly in Node.js (native type stripping, tsx, ts-node)?",
-    answer: `**TL;DR.** Three ways to run <code>.ts</code> without a separate build step: modern Node can **strip types** at load (no type-checking, fast); **tsx** is a zero-config loader that transpiles on the fly (great for dev); **ts-node** transpiles and can **type-check**. For production, you usually **compile ahead** with <code>tsc</code> or a bundler and run the plain JS.
+    answer: `Three ways to run <code>.ts</code> without a separate build step: modern Node can **strip types** at load (no type-checking, fast); **tsx** is a zero-config loader that transpiles on the fly (great for dev); **ts-node** transpiles and can **type-check**. For production, you usually **compile ahead** with <code>tsc</code> or a bundler and run the plain JS.
 
 <svg class='iq-diagram' viewBox='0 0 460 170' role='img' aria-label='Options to execute TypeScript in Node'>
   <rect class='d-box-accent' x='15' y='35' width='135' height='100' rx='10'/>

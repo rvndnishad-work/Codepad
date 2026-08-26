@@ -8,7 +8,7 @@ const augments: NodeAugment[] = [
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "Explain the differences between fork(), spawn(), and exec() in the child_process module.",
-    answer: `**TL;DR.** All three create **child processes** but differ in I/O and intent. <code>spawn</code> launches a process and **streams** its output (great for large/long output). <code>exec</code> runs a command **in a shell** and **buffers** the whole output to a callback (good for short commands). <code>fork</code> is a specialized <code>spawn</code> for **Node modules**, adding an **IPC channel** for message passing.
+    answer: `All three create **child processes** but differ in I/O and intent. <code>spawn</code> launches a process and **streams** its output (great for large/long output). <code>exec</code> runs a command **in a shell** and **buffers** the whole output to a callback (good for short commands). <code>fork</code> is a specialized <code>spawn</code> for **Node modules**, adding an **IPC channel** for message passing.
 
 <svg class='iq-diagram' viewBox='0 0 460 160' role='img' aria-label='spawn streams, exec buffers, fork adds IPC'>
   <rect class='d-box-accent' x='15' y='35' width='135' height='100' rx='10'/>
@@ -61,7 +61,7 @@ child.on('message', (msg) => console.log('from child:', msg));`,
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "When would you use `child_process` module in Node.js?",
-    answer: `**TL;DR.** Use <code>child_process</code> to **run external programs or separate processes** from Node — shelling out to CLI tools (git, ffmpeg, imagemagick), parallelizing CPU-heavy work across processes, or isolating untrusted/crash-prone code. Each child has its **own memory and event loop**, so a crash or heavy CPU there won't freeze the parent.
+    answer: `Use <code>child_process</code> to **run external programs or separate processes** from Node — shelling out to CLI tools (git, ffmpeg, imagemagick), parallelizing CPU-heavy work across processes, or isolating untrusted/crash-prone code. Each child has its **own memory and event loop**, so a crash or heavy CPU there won't freeze the parent.
 
 <svg class='iq-diagram' viewBox='0 0 460 160' role='img' aria-label='Parent spawns separate child processes with their own memory'>
   <rect class='d-box-accent' x='170' y='20' width='120' height='40' rx='8'/><text class='d-text' x='230' y='44' text-anchor='middle'>Node parent</text>
@@ -105,7 +105,7 @@ execFile('ffmpeg', ['-i', input, '-vf', 'scale=640:-1', output],
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "What are Worker Threads in Node.js and when would you use them?",
-    answer: `**TL;DR.** <code>worker_threads</code> run JavaScript on **additional threads within the same process**, each with its own V8 instance and event loop. Use them for **CPU-bound** work (parsing, hashing, image processing) that would otherwise block the main event loop. They can **share memory** via <code>SharedArrayBuffer</code> and communicate by **messages**.
+    answer: `<code>worker_threads</code> run JavaScript on **additional threads within the same process**, each with its own V8 instance and event loop. Use them for **CPU-bound** work (parsing, hashing, image processing) that would otherwise block the main event loop. They can **share memory** via <code>SharedArrayBuffer</code> and communicate by **messages**.
 
 <svg class='iq-diagram' viewBox='0 0 460 160' role='img' aria-label='Main thread offloads CPU work to worker threads in the same process'>
   <rect class='d-box-muted' x='20' y='25' width='420' height='120' rx='10'/>
@@ -150,7 +150,7 @@ parentPort.postMessage(digest);   // runs off the main thread`,
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "Explain how clustering works in Node.js.",
-    answer: `**TL;DR.** The <code>cluster</code> module forks **multiple worker processes** (typically one per CPU core) that **share the same server port**. A primary process load-balances incoming connections across workers, so a single-threaded Node app can use **all cores** and survive a worker crash.
+    answer: `The <code>cluster</code> module forks **multiple worker processes** (typically one per CPU core) that **share the same server port**. A primary process load-balances incoming connections across workers, so a single-threaded Node app can use **all cores** and survive a worker crash.
 
 <svg class='iq-diagram' viewBox='0 0 460 170' role='img' aria-label='Primary distributes connections to worker processes sharing a port'>
   <rect class='d-box-accent' x='160' y='20' width='140' height='40' rx='8'/><text class='d-text' x='230' y='44' text-anchor='middle'>primary :3000</text>
@@ -197,7 +197,7 @@ if (cluster.isPrimary) {
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "How do you build a worker-thread pool (e.g. Piscina) for CPU-bound work?",
-    answer: `**TL;DR.** Spawning a worker per task is expensive, so a **pool** keeps **N long-lived workers** and dispatches tasks to **idle** ones via a queue. Libraries like **Piscina** implement this; you submit a task and get a Promise back. It parallelizes CPU-bound work across cores while keeping the main event loop responsive.
+    answer: `Spawning a worker per task is expensive, so a **pool** keeps **N long-lived workers** and dispatches tasks to **idle** ones via a queue. Libraries like **Piscina** implement this; you submit a task and get a Promise back. It parallelizes CPU-bound work across cores while keeping the main event loop responsive.
 
 <svg class='iq-diagram' viewBox='0 0 460 170' role='img' aria-label='Tasks queue and are dispatched to a fixed set of reused workers'>
   <rect class='d-box-accent' x='20' y='65' width='110' height='44' rx='8'/><text class='d-text' x='75' y='85' text-anchor='middle'>task queue</text><text class='d-sub' x='75' y='101' text-anchor='middle'>submit()</text>
@@ -243,7 +243,7 @@ const results = await Promise.all(
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "How do you limit the concurrency of many async operations (p-limit / promise pool)?",
-    answer: `**TL;DR.** Firing thousands of promises at once exhausts sockets, memory, or hits rate limits. A **concurrency limiter** (like <code>p-limit</code>, or a manual pool) caps how many run **simultaneously**, starting the next only as a slot frees up — bounding resource use while keeping throughput high.
+    answer: `Firing thousands of promises at once exhausts sockets, memory, or hits rate limits. A **concurrency limiter** (like <code>p-limit</code>, or a manual pool) caps how many run **simultaneously**, starting the next only as a slot frees up — bounding resource use while keeping throughput high.
 
 <svg class='iq-diagram' viewBox='0 0 460 160' role='img' aria-label='Many tasks funnel through a fixed number of concurrent slots'>
   <rect class='d-box' x='20' y='30' width='110' height='100' rx='10'/>
@@ -289,7 +289,7 @@ const results = await Promise.all(
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "How does Node.js handle crypto operations efficiently without blocking the event loop?",
-    answer: `**TL;DR.** CPU-intensive crypto (hashing, key derivation) would block the single thread if run synchronously. Node's <code>crypto</code> module offers **asynchronous** variants (e.g. <code>crypto.pbkdf2</code>, <code>scrypt</code>, <code>randomBytes</code>) that offload work to the **libuv thread pool**, running in C++ background threads so the event loop stays free.
+    answer: `CPU-intensive crypto (hashing, key derivation) would block the single thread if run synchronously. Node's <code>crypto</code> module offers **asynchronous** variants (e.g. <code>crypto.pbkdf2</code>, <code>scrypt</code>, <code>randomBytes</code>) that offload work to the **libuv thread pool**, running in C++ background threads so the event loop stays free.
 
 <svg class='iq-diagram' viewBox='0 0 460 150' role='img' aria-label='Async crypto offloads to the thread pool, callback returns to the loop'>
   <rect class='d-box-accent' x='20' y='50' width='120' height='46' rx='8'/><text class='d-text' x='80' y='71' text-anchor='middle'>event loop</text><text class='d-sub' x='80' y='88' text-anchor='middle'>stays free</text>
@@ -333,7 +333,7 @@ function hash(pw, salt) {
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "How do you handle graceful shutdown in a Node.js application?",
-    answer: `**TL;DR.** On a termination signal (<code>SIGTERM</code>/<code>SIGINT</code>), **stop accepting new work, finish in-flight requests, close resources** (HTTP server, DB pool, queues), then exit. Add a **timeout** so a stuck connection can't hang forever. This prevents dropped requests and corrupted state during deploys/restarts.
+    answer: `On a termination signal (<code>SIGTERM</code>/<code>SIGINT</code>), **stop accepting new work, finish in-flight requests, close resources** (HTTP server, DB pool, queues), then exit. Add a **timeout** so a stuck connection can't hang forever. This prevents dropped requests and corrupted state during deploys/restarts.
 
 <svg class='iq-diagram' viewBox='0 0 460 160' role='img' aria-label='Signal triggers stop-accepting, drain, close, exit'>
   <rect class='d-box-accent' x='12' y='58' width='90' height='44' rx='8'/><text class='d-text' x='57' y='80' text-anchor='middle'>SIGTERM</text><text class='d-sub' x='57' y='95' text-anchor='middle'>received</text>

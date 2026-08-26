@@ -8,7 +8,7 @@ const augments: AiAugment[] = [
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "What is the difference between fine-tuning, LoRA and prompt engineering?",
-    answer: `**TL;DR.** Three levers, increasing cost: **prompt engineering** changes the input (no training), **LoRA** trains small adapter matrices, **full fine-tuning** updates all weights. Default path: prompt (+RAG for knowledge) first; fine-tune for **style, format, narrow-task specialization** — never to add facts.
+    answer: `Three levers, increasing cost: **prompt engineering** changes the input (no training), **LoRA** trains small adapter matrices, **full fine-tuning** updates all weights. Default path: prompt (+RAG for knowledge) first; fine-tune for **style, format, narrow-task specialization** — never to add facts.
 
 <svg class='iq-diagram' viewBox='0 0 460 150' role='img' aria-label='Three levers ordered by cost: prompting changes context, LoRA adds adapters, fine-tuning updates all weights'>
   <rect class='d-box-accent' x='16' y='30' width='130' height='60' rx='10'/><text class='d-text' x='81' y='54' text-anchor='middle'>prompting</text><text class='d-sub' x='81' y='72' text-anchor='middle'>edit the context</text>
@@ -49,7 +49,7 @@ model.print_trainable_parameters()
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "What is quantization and when would you use a quantized model?",
-    answer: `**TL;DR.** Quantization stores weights at **lower precision** (e.g. 4-bit ints instead of 16-bit floats), cutting memory ~4x and boosting throughput with a small quality loss. It is what makes **local and single-GPU LLMs** practical.
+    answer: `Quantization stores weights at **lower precision** (e.g. 4-bit ints instead of 16-bit floats), cutting memory ~4x and boosting throughput with a small quality loss. It is what makes **local and single-GPU LLMs** practical.
 
 <svg class='iq-diagram' viewBox='0 0 460 140' role='img' aria-label='FP16 weights compressed to INT4 shrink memory from 14GB to about 4GB'>
   <rect class='d-box-muted' x='30' y='30' width='170' height='60' rx='10'/><text class='d-text' x='115' y='55' text-anchor='middle'>FP16 weights</text><text class='d-sub' x='115' y='74' text-anchor='middle'>7B model ≈ 14 GB</text>
@@ -88,7 +88,7 @@ ollama run llama3.1:8b
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "How do you choose between open-weight models and proprietary API models?",
-    answer: `**TL;DR.** **Proprietary APIs** buy top capability with zero infrastructure; **open weights** buy data control, customization and at-scale cost predictability — paid for in serving ops and a capability gap. Decide on **capability need, privacy constraints, volume economics, and team maturity**.
+    answer: `**Proprietary APIs** buy top capability with zero infrastructure; **open weights** buy data control, customization and at-scale cost predictability — paid for in serving ops and a capability gap. Decide on **capability need, privacy constraints, volume economics, and team maturity**.
 
 <svg class='iq-diagram' viewBox='0 0 460 160' role='img' aria-label='Two columns comparing proprietary API models and open-weight models'>
   <rect class='d-box-accent' x='20' y='24' width='200' height='112' rx='10'/>
@@ -136,7 +136,7 @@ const client = task.tier === "frontier" ? anthropic : selfHostedSmall;`,
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "How do multimodal models handle images, audio and other non-text inputs?",
-    answer: `**TL;DR.** Non-text inputs are encoded into the **same token/embedding space** the language model reasons over — images become visual tokens via a vision encoder, audio becomes acoustic tokens. One model then attends across modalities. Engineering realities: **images cost thousands of tokens**, resolution settings matter, and prompts should reference the media explicitly.
+    answer: `Non-text inputs are encoded into the **same token/embedding space** the language model reasons over — images become visual tokens via a vision encoder, audio becomes acoustic tokens. One model then attends across modalities. Engineering realities: **images cost thousands of tokens**, resolution settings matter, and prompts should reference the media explicitly.
 
 <svg class='iq-diagram' viewBox='0 0 460 150' role='img' aria-label='Image and audio encoders project into the shared token space of the language model'>
   <rect class='d-box' x='16' y='20' width='110' height='40' rx='8'/><text class='d-text' x='71' y='44' text-anchor='middle'>image</text>
@@ -185,7 +185,7 @@ await client.messages.create({
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "What is the difference between zero-shot, one-shot and few-shot prompting?",
-    answer: `**TL;DR.** **Zero-shot** = instruction only; **one-/few-shot** = include worked examples so the model infers the pattern (**in-context learning**, no training). Modern chat models are strong zero-shot — add examples when **format or edge-case behaviour** must be nailed, not by default.
+    answer: `**Zero-shot** = instruction only; **one-/few-shot** = include worked examples so the model infers the pattern (**in-context learning**, no training). Modern chat models are strong zero-shot — add examples when **format or edge-case behaviour** must be nailed, not by default.
 
 <svg class='iq-diagram' viewBox='0 0 460 140' role='img' aria-label='Zero-shot prompt has instruction only; few-shot prepends example pairs before the real input'>
   <rect class='d-box-muted' x='20' y='24' width='190' height='96' rx='10'/>
@@ -233,7 +233,7 @@ await client.messages.create({
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "What is chain-of-thought prompting and when does it actually help?",
-    answer: `**TL;DR.** Chain-of-thought (CoT) asks the model to **reason step by step before answering**. It lifts accuracy on math, logic and multi-step tasks because each reasoning token conditions the next; it wastes tokens on simple lookups. **Reasoning models** now internalize it with dedicated thinking tokens.
+    answer: `Chain-of-thought (CoT) asks the model to **reason step by step before answering**. It lifts accuracy on math, logic and multi-step tasks because each reasoning token conditions the next; it wastes tokens on simple lookups. **Reasoning models** now internalize it with dedicated thinking tokens.
 
 <svg class='iq-diagram' viewBox='0 0 460 140' role='img' aria-label='Direct answering jumps to output; chain of thought inserts reasoning steps before the answer'>
   <text class='d-text' x='30' y='34'>direct</text>

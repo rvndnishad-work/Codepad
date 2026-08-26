@@ -7,7 +7,7 @@ const augments: NextAugment[] = [
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "What are React Server Components and why does Next.js use them?",
-    answer: `**TL;DR.** **React Server Components (RSC)** render **only on the server**, can directly access databases/secrets, and send **serialized output (not JS)** to the client — cutting bundle size and enabling secure data access. Next.js makes them the **default** to improve performance and developer experience.
+    answer: `**React Server Components (RSC)** render **only on the server**, can directly access databases/secrets, and send **serialized output (not JS)** to the client — cutting bundle size and enabling secure data access. Next.js makes them the **default** to improve performance and developer experience.
 
 <svg class='iq-diagram' viewBox='0 0 460 150' role='img' aria-label='Server Components render to a payload; only client islands ship JS'>
   <rect class='d-box-accent' x='20' y='45' width='180' height='70' rx='10'/><text class='d-text' x='110' y='70' text-anchor='middle'>Server Components</text><text class='d-sub' x='110' y='92' text-anchor='middle'>render → RSC payload</text>
@@ -48,7 +48,7 @@ export default async function Report() {
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "How do Server and Client Components compose in Next.js?",
-    answer: `**TL;DR.** A **Server Component can render a Client Component**, but a **Client Component cannot import a Server Component** directly — instead you **pass Server Components as <code>children</code>/props** into Client Components. Props crossing the boundary must be **serializable**.
+    answer: `A **Server Component can render a Client Component**, but a **Client Component cannot import a Server Component** directly — instead you **pass Server Components as <code>children</code>/props** into Client Components. Props crossing the boundary must be **serializable**.
 
 <svg class='iq-diagram' viewBox='0 0 460 150' role='img' aria-label='Server renders client; server content passed as children into client'>
   <rect class='d-box-accent' x='20' y='30' width='200' height='100' rx='10'/><text class='d-text' x='120' y='54' text-anchor='middle'>✅ Server → Client</text><text class='d-sub' x='120' y='78' text-anchor='middle'>import &amp; render directly</text><text class='d-sub' x='120' y='100' text-anchor='middle'>props serializable</text>
@@ -89,7 +89,7 @@ export default async function Page() {
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "How do you pass data from Server Components to Client Components in Next.js?",
-    answer: `**TL;DR.** Fetch data in a **Server Component** and pass it as **props** to a Client Component. The props must be **serializable** (plain objects/arrays/strings/numbers; no functions, class instances, or non-plain values), since they cross the server-to-client boundary in the RSC payload.
+    answer: `Fetch data in a **Server Component** and pass it as **props** to a Client Component. The props must be **serializable** (plain objects/arrays/strings/numbers; no functions, class instances, or non-plain values), since they cross the server-to-client boundary in the RSC payload.
 
 <svg class='iq-diagram' viewBox='0 0 460 150' role='img' aria-label='Server fetches data and passes serializable props to a client component'>
   <rect class='d-box-accent' x='20' y='52' width='150' height='46' rx='8'/><text class='d-text' x='95' y='73' text-anchor='middle'>Server fetch</text><text class='d-sub' x='95' y='90' text-anchor='middle'>db / fetch()</text>
@@ -135,7 +135,7 @@ function Profile({ name, avatar }: { name: string; avatar: string }) {
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "What is streaming SSR with Suspense in Next.js?",
-    answer: `**TL;DR.** **Streaming SSR** sends the page **shell immediately** and streams in parts as their data resolves, using **Suspense** boundaries (<code>loading.js</code> or explicit <code>&lt;Suspense&gt;</code>). The user sees content faster and **slow data doesn't block** the whole page.
+    answer: `**Streaming SSR** sends the page **shell immediately** and streams in parts as their data resolves, using **Suspense** boundaries (<code>loading.js</code> or explicit <code>&lt;Suspense&gt;</code>). The user sees content faster and **slow data doesn't block** the whole page.
 
 <svg class='iq-diagram' viewBox='0 0 460 150' role='img' aria-label='Shell streams first, then slow sections stream in independently'>
   <rect class='d-box-accent' x='20' y='30' width='420' height='28' rx='6'/><text class='d-text' x='230' y='49' text-anchor='middle'>shell + fast content (sent first)</text>
@@ -181,7 +181,7 @@ export default function Page() {
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "What is Partial Prerendering (PPR) in Next.js?",
-    answer: `**TL;DR.** **Partial Prerendering** serves a **static prerendered shell instantly** and **streams in the dynamic parts** (wrapped in Suspense) within the **same response** — combining the speed of static with the freshness of dynamic in a **single route**, no all-or-nothing choice.
+    answer: `**Partial Prerendering** serves a **static prerendered shell instantly** and **streams in the dynamic parts** (wrapped in Suspense) within the **same response** — combining the speed of static with the freshness of dynamic in a **single route**, no all-or-nothing choice.
 
 <svg class='iq-diagram' viewBox='0 0 460 150' role='img' aria-label='Static shell served instantly with dynamic holes streamed in'>
   <rect class='d-box-accent' x='30' y='25' width='400' height='110' rx='10'/>
@@ -224,7 +224,7 @@ export default function Product() {
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "What is the difference between static and dynamic rendering in the Next.js App Router?",
-    answer: `**TL;DR.** **Static rendering** produces HTML at **build time** (or on revalidation) and serves it from **cache**; **dynamic rendering** runs **per request**. A route becomes dynamic when it uses **dynamic functions** (<code>cookies</code>, <code>headers</code>, <code>searchParams</code>) or **uncached** data; otherwise Next.js renders it **statically by default**.
+    answer: `**Static rendering** produces HTML at **build time** (or on revalidation) and serves it from **cache**; **dynamic rendering** runs **per request**. A route becomes dynamic when it uses **dynamic functions** (<code>cookies</code>, <code>headers</code>, <code>searchParams</code>) or **uncached** data; otherwise Next.js renders it **statically by default**.
 
 <svg class='iq-diagram' viewBox='0 0 460 150' role='img' aria-label='Static built once and cached vs dynamic rendered per request'>
   <rect class='d-box-accent' x='20' y='30' width='200' height='100' rx='10'/><text class='d-text' x='120' y='54' text-anchor='middle'>static (default)</text><text class='d-sub' x='120' y='78' text-anchor='middle'>built once, cached/CDN</text><text class='d-sub' x='120' y='100' text-anchor='middle'>fastest</text>
@@ -263,7 +263,7 @@ export default async function Page() {
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "What makes a route dynamic in the Next.js App Router?",
-    answer: `**TL;DR.** Using **dynamic functions** — <code>cookies()</code>, <code>headers()</code>, <code>draftMode()</code>, or the <code>searchParams</code> prop — or fetching with **no cache** (<code>cache: 'no-store'</code>, <code>revalidate: 0</code>) makes a route **dynamic** (rendered per request). Without those, Next.js **prerenders it statically** by default.
+    answer: `Using **dynamic functions** — <code>cookies()</code>, <code>headers()</code>, <code>draftMode()</code>, or the <code>searchParams</code> prop — or fetching with **no cache** (<code>cache: 'no-store'</code>, <code>revalidate: 0</code>) makes a route **dynamic** (rendered per request). Without those, Next.js **prerenders it statically** by default.
 
 <svg class='iq-diagram' viewBox='0 0 460 150' role='img' aria-label='Dynamic triggers flip a route from static to per-request'>
   <rect class='d-box-muted' x='20' y='28' width='150' height='30' rx='6'/><text class='d-sub' x='95' y='48' text-anchor='middle'>cookies()/headers()</text>
@@ -307,7 +307,7 @@ export const revalidate = 0;`,
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "What is generateStaticParams in Next.js and how does it enable SSG for dynamic routes?",
-    answer: `**TL;DR.** <code>generateStaticParams</code> returns the list of **param values** (e.g. all blog slugs) so Next.js **statically pre-renders** those dynamic-route pages at **build time**. Params not in the list can be generated **on demand** and cached, controlled by <code>dynamicParams</code>.
+    answer: `<code>generateStaticParams</code> returns the list of **param values** (e.g. all blog slugs) so Next.js **statically pre-renders** those dynamic-route pages at **build time**. Params not in the list can be generated **on demand** and cached, controlled by <code>dynamicParams</code>.
 
 <svg class='iq-diagram' viewBox='0 0 460 150' role='img' aria-label='generateStaticParams lists slugs that are prerendered at build'>
   <rect class='d-box-accent' x='20' y='52' width='170' height='46' rx='8'/><text class='d-text' x='105' y='73' text-anchor='middle'>generateStaticParams</text><text class='d-sub' x='105' y='90' text-anchor='middle'>returns [{slug:'a'},…]</text>
@@ -350,7 +350,7 @@ export default async function Post({ params }) {
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "What is the route segment config in Next.js (dynamic, revalidate, runtime)?",
-    answer: `**TL;DR.** You **export consts** from a <code>layout</code>/<code>page</code>/<code>route</code> to control its behavior: <code>dynamic</code> (<code>'auto'</code>|<code>'force-dynamic'</code>|<code>'force-static'</code>), <code>revalidate</code> (ISR interval), <code>runtime</code> (<code>'nodejs'</code>|<code>'edge'</code>), <code>fetchCache</code>, and <code>dynamicParams</code>. They **override the defaults** for that segment.
+    answer: `You **export consts** from a <code>layout</code>/<code>page</code>/<code>route</code> to control its behavior: <code>dynamic</code> (<code>'auto'</code>|<code>'force-dynamic'</code>|<code>'force-static'</code>), <code>revalidate</code> (ISR interval), <code>runtime</code> (<code>'nodejs'</code>|<code>'edge'</code>), <code>fetchCache</code>, and <code>dynamicParams</code>. They **override the defaults** for that segment.
 
 <svg class='iq-diagram' viewBox='0 0 460 150' role='img' aria-label='Segment config exports control rendering, caching and runtime'>
   <rect class='d-box-accent' x='20' y='40' width='130' height='30' rx='6'/><text class='d-sub' x='85' y='60' text-anchor='middle'>dynamic</text>

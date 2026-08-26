@@ -1,6 +1,6 @@
 /**
  * Next.js Phase — Batch 1 (Fundamentals). Gold-standard answers:
- * TL;DR + theme-aware <svg class='iq-diagram'> diagram + GFM table + interview
+ * + theme-aware <svg class='iq-diagram'> diagram + GFM table + interview
  * tip + a Next.js code example. Picked up by `npm run augment:next`.
  *
  * Conventions: SVGs use the shared .iq-diagram helper classes (d-box, d-box-accent,
@@ -15,7 +15,7 @@ const augments: NextAugment[] = [
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "What is Next.js and what problems does it solve?",
-    answer: `**TL;DR.** Next.js is a **React framework** that adds **server-side rendering, static generation, file-based routing, data fetching, bundling, and image/font optimization** on top of React — so you ship fast, SEO-friendly, full-stack apps without assembling all that infrastructure yourself.
+    answer: `Next.js is a **React framework** that adds **server-side rendering, static generation, file-based routing, data fetching, bundling, and image/font optimization** on top of React — so you ship fast, SEO-friendly, full-stack apps without assembling all that infrastructure yourself.
 
 <svg class='iq-diagram' viewBox='0 0 460 170' role='img' aria-label='Next.js wraps React with rendering, routing, data and optimization'>
   <rect class='d-box-muted' x='20' y='20' width='420' height='130' rx='10'/>
@@ -58,7 +58,7 @@ export default async function Home() {
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "What is the difference between the App Router and the Pages Router?",
-    answer: `**TL;DR.** The **Pages Router** (<code>pages/</code>) is the original system: client components plus <code>getServerSideProps</code>/<code>getStaticProps</code>. The **App Router** (<code>app/</code>) is built on **React Server Components**, adding **nested layouts, streaming, Server Actions, and granular caching**. The App Router is the recommended default for new apps.
+    answer: `The **Pages Router** (<code>pages/</code>) is the original system: client components plus <code>getServerSideProps</code>/<code>getStaticProps</code>. The **App Router** (<code>app/</code>) is built on **React Server Components**, adding **nested layouts, streaming, Server Actions, and granular caching**. The App Router is the recommended default for new apps.
 
 <svg class='iq-diagram' viewBox='0 0 460 160' role='img' aria-label='Pages Router versus App Router capabilities'>
   <rect class='d-box-muted' x='20' y='25' width='200' height='130' rx='10'/>
@@ -110,7 +110,7 @@ export default async function Posts() {
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "What are the rendering strategies in Next.js (SSR, SSG, ISR, CSR)?",
-    answer: `**TL;DR.** **SSG** pre-renders HTML at **build time**; **SSR** renders **per request** on the server; **ISR** serves static pages but **regenerates** them in the background; **CSR** renders in the **browser**. The App Router picks **static or dynamic** per route automatically based on the data/APIs you use.
+    answer: `**SSG** pre-renders HTML at **build time**; **SSR** renders **per request** on the server; **ISR** serves static pages but **regenerates** them in the background; **CSR** renders in the **browser**. The App Router picks **static or dynamic** per route automatically based on the data/APIs you use.
 
 <svg class='iq-diagram' viewBox='0 0 460 160' role='img' aria-label='Four rendering strategies on a build-time to request-time spectrum'>
   <rect class='d-box-accent' x='12' y='50' width='100' height='60' rx='8'/><text class='d-text' x='62' y='74' text-anchor='middle'>SSG</text><text class='d-sub' x='62' y='92' text-anchor='middle'>build time</text>
@@ -152,7 +152,7 @@ export const dynamic = 'force-dynamic';`,
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "What is the difference between Server Components and Client Components in Next.js?",
-    answer: `**TL;DR.** **Server Components** render on the **server**, can access the backend directly, and ship **no JavaScript** to the browser — they're the **default** in the App Router. **Client Components** (<code>'use client'</code>) run in the browser and enable **state, effects, and event handlers**. You compose them, pushing interactivity to the leaves.
+    answer: `**Server Components** render on the **server**, can access the backend directly, and ship **no JavaScript** to the browser — they're the **default** in the App Router. **Client Components** (<code>'use client'</code>) run in the browser and enable **state, effects, and event handlers**. You compose them, pushing interactivity to the leaves.
 
 <svg class='iq-diagram' viewBox='0 0 460 160' role='img' aria-label='Server Components render server-side, Client Components hydrate in browser'>
   <rect class='d-box-accent' x='20' y='30' width='200' height='115' rx='10'/>
@@ -204,7 +204,7 @@ export default function Likes({ initial }) {
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "What is the 'use client' directive and when do you need it?",
-    answer: `**TL;DR.** <code>'use client'</code> at the **top of a file** marks it (and every module it imports) as **Client Components**, enabling hooks, state, effects, and browser APIs. You need it whenever a component is **interactive**; keep it at the **leaves** so most of the tree stays server-rendered and ships less JS.
+    answer: `<code>'use client'</code> at the **top of a file** marks it (and every module it imports) as **Client Components**, enabling hooks, state, effects, and browser APIs. You need it whenever a component is **interactive**; keep it at the **leaves** so most of the tree stays server-rendered and ships less JS.
 
 <svg class='iq-diagram' viewBox='0 0 460 160' role='img' aria-label='use client marks the boundary; everything below is client'>
   <rect class='d-box-accent' x='150' y='20' width='160' height='34' rx='8'/><text class='d-text' x='230' y='42' text-anchor='middle'>Server tree (default)</text>
@@ -245,7 +245,7 @@ export default function Counter() {
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "How does file-based routing work in the Next.js App Router?",
-    answer: `**TL;DR.** In the App Router, **folders under <code>app/</code> define URL segments** and a <code>page.js</code> (or <code>.tsx</code>) makes that segment a publicly routable page. **Special files** (<code>layout</code>, <code>loading</code>, <code>error</code>, <code>route</code>) add behavior, and bracket folders like <code>[id]</code> create **dynamic** segments.
+    answer: `In the App Router, **folders under <code>app/</code> define URL segments** and a <code>page.js</code> (or <code>.tsx</code>) makes that segment a publicly routable page. **Special files** (<code>layout</code>, <code>loading</code>, <code>error</code>, <code>route</code>) add behavior, and bracket folders like <code>[id]</code> create **dynamic** segments.
 
 <svg class='iq-diagram' viewBox='0 0 460 160' role='img' aria-label='Folder structure maps to URL paths'>
   <rect class='d-box-muted' x='20' y='25' width='200' height='130' rx='10'/>
@@ -293,7 +293,7 @@ export default function Counter() {
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "What are the special files in the Next.js App Router (page, layout, loading, error)?",
-    answer: `**TL;DR.** The App Router recognizes **convention files** per segment: <code>page</code> (route UI), <code>layout</code> (shared shell), <code>loading</code> (Suspense fallback), <code>error</code> (error boundary), <code>not-found</code> (404), <code>route</code> (API handler), and <code>template</code> (re-mounting layout). Next.js wires them into the route tree automatically.
+    answer: `The App Router recognizes **convention files** per segment: <code>page</code> (route UI), <code>layout</code> (shared shell), <code>loading</code> (Suspense fallback), <code>error</code> (error boundary), <code>not-found</code> (404), <code>route</code> (API handler), and <code>template</code> (re-mounting layout). Next.js wires them into the route tree automatically.
 
 <svg class='iq-diagram' viewBox='0 0 460 170' role='img' aria-label='Special files wrap the page in layout, loading and error boundaries'>
   <rect class='d-box-muted' x='30' y='20' width='400' height='140' rx='10'/>
@@ -336,7 +336,7 @@ export default function Counter() {
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "What is hydration in Next.js and what causes a hydration error?",
-    answer: `**TL;DR.** **Hydration** is when React **attaches event handlers and state** to the server-rendered HTML on the client, making the static markup interactive. A **hydration error** occurs when the **client render differs** from the server HTML — e.g. using <code>Date.now()</code>, random values, or browser-only APIs during render — so the two trees don't match.
+    answer: `**Hydration** is when React **attaches event handlers and state** to the server-rendered HTML on the client, making the static markup interactive. A **hydration error** occurs when the **client render differs** from the server HTML — e.g. using <code>Date.now()</code>, random values, or browser-only APIs during render — so the two trees don't match.
 
 <svg class='iq-diagram' viewBox='0 0 460 150' role='img' aria-label='Server HTML hydrated by client React; mismatch causes an error'>
   <rect class='d-box-accent' x='20' y='52' width='120' height='46' rx='8'/><text class='d-text' x='80' y='73' text-anchor='middle'>server HTML</text><text class='d-sub' x='80' y='90' text-anchor='middle'>static markup</text>
@@ -380,7 +380,7 @@ export default function Clock() {
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "What are layouts and nested layouts in the Next.js App Router?",
-    answer: `**TL;DR.** A <code>layout.tsx</code> wraps its segment **and all child segments** with shared UI (nav, sidebar) and **persists across navigation** without re-rendering or losing state. Layouts **nest** by folder hierarchy, so each level adds its own shell around the children below it.
+    answer: `A <code>layout.tsx</code> wraps its segment **and all child segments** with shared UI (nav, sidebar) and **persists across navigation** without re-rendering or losing state. Layouts **nest** by folder hierarchy, so each level adds its own shell around the children below it.
 
 <svg class='iq-diagram' viewBox='0 0 460 160' role='img' aria-label='Root layout wraps a section layout which wraps the page'>
   <rect class='d-box-muted' x='30' y='20' width='400' height='130' rx='10'/>

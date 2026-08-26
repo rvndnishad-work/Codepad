@@ -8,7 +8,7 @@ const augments: NodeAugment[] = [
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "What is `process.nextTick()` and `setImmediate()` and when to use them?",
-    answer: `**TL;DR.** Both defer work, but at very different times. <code>process.nextTick(cb)</code> runs **before the event loop continues** — right after the current operation, ahead of Promises and any phase. <code>setImmediate(cb)</code> runs in the **check** phase, *after* the current poll phase completes. Rule of thumb: <code>setImmediate</code> for "run after I/O", <code>nextTick</code> sparingly for "run before anything else".
+    answer: `Both defer work, but at very different times. <code>process.nextTick(cb)</code> runs **before the event loop continues** — right after the current operation, ahead of Promises and any phase. <code>setImmediate(cb)</code> runs in the **check** phase, *after* the current poll phase completes. Rule of thumb: <code>setImmediate</code> for "run after I/O", <code>nextTick</code> sparingly for "run before anything else".
 
 <svg class='iq-diagram' viewBox='0 0 460 180' role='img' aria-label='nextTick runs before promises and the next phase; setImmediate runs in the check phase'>
   <rect class='d-box' x='20' y='30' width='120' height='40' rx='8'/>
@@ -55,7 +55,7 @@ process.nextTick(() => console.log('1 nextTick'));       // before all
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "Explain the concept of 'Event Loop Pollution' and how to avoid it.",
-    answer: `**TL;DR.** **Event-loop pollution** (a.k.a. microtask/nextTick starvation) is when an endless stream of **microtasks** — recursive <code>process.nextTick</code> or Promise chains — keeps the loop draining microtasks so it **never reaches I/O or timer phases**. The server appears frozen even though the CPU is busy. Fix it by yielding via <code>setImmediate</code> and chunking work.
+    answer: `**Event-loop pollution** (a.k.a. microtask/nextTick starvation) is when an endless stream of **microtasks** — recursive <code>process.nextTick</code> or Promise chains — keeps the loop draining microtasks so it **never reaches I/O or timer phases**. The server appears frozen even though the CPU is busy. Fix it by yielding via <code>setImmediate</code> and chunking work.
 
 <svg class='iq-diagram' viewBox='0 0 460 170' role='img' aria-label='Microtask queue refills before the loop can advance to I/O'>
   <rect class='d-box-accent' x='40' y='50' width='150' height='70' rx='10'/>
@@ -102,7 +102,7 @@ function process(items, i = 0) {
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "What are Promises in Node.js and how do they improve async code?",
-    answer: `**TL;DR.** A **Promise** is an object representing the eventual result of an async operation — **pending**, then **fulfilled** (value) or **rejected** (error). It replaces nested callbacks with chainable <code>.then()/.catch()</code>, enables composition (<code>Promise.all</code>, <code>allSettled</code>, <code>race</code>), and underpins <code>async/await</code>.
+    answer: `A **Promise** is an object representing the eventual result of an async operation — **pending**, then **fulfilled** (value) or **rejected** (error). It replaces nested callbacks with chainable <code>.then()/.catch()</code>, enables composition (<code>Promise.all</code>, <code>allSettled</code>, <code>race</code>), and underpins <code>async/await</code>.
 
 <svg class='iq-diagram' viewBox='0 0 460 160' role='img' aria-label='Promise states: pending to fulfilled or rejected'>
   <rect class='d-box-accent' x='160' y='60' width='130' height='44' rx='10'/>
@@ -149,7 +149,7 @@ const [a, b] = await Promise.all([fetch('/a'), fetch('/b')]);`,
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "How does `async/await` work and what are its benefits?",
-    answer: `**TL;DR.** <code>async/await</code> is **syntactic sugar over Promises**. An <code>async</code> function always returns a Promise; <code>await</code> pauses the function until the awaited Promise settles, then resumes with its value — letting you write asynchronous code that **reads top-to-bottom** with ordinary <code>try/catch</code> for errors.
+    answer: `<code>async/await</code> is **syntactic sugar over Promises**. An <code>async</code> function always returns a Promise; <code>await</code> pauses the function until the awaited Promise settles, then resumes with its value — letting you write asynchronous code that **reads top-to-bottom** with ordinary <code>try/catch</code> for errors.
 
 <svg class='iq-diagram' viewBox='0 0 460 160' role='img' aria-label='await pauses the async function and resumes after the promise settles'>
   <rect class='d-box' x='20' y='60' width='110' height='40' rx='8'/>
@@ -199,7 +199,7 @@ async function fast(ids) {
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "Explain what 'callback hell' is and how to avoid it.",
-    answer: `**TL;DR.** **Callback hell** is deeply nested callbacks ("the pyramid of doom") that arises when async steps depend on each other. It's hard to read, error-prone (every level needs its own error check), and tough to refactor. Avoid it with **Promises**, **async/await**, and **named functions** instead of inline nesting.
+    answer: `**Callback hell** is deeply nested callbacks ("the pyramid of doom") that arises when async steps depend on each other. It's hard to read, error-prone (every level needs its own error check), and tough to refactor. Avoid it with **Promises**, **async/await**, and **named functions** instead of inline nesting.
 
 <svg class='iq-diagram' viewBox='0 0 460 170' role='img' aria-label='Nested callbacks form a rightward pyramid'>
   <rect class='d-box-muted' x='20' y='20' width='420' height='30' rx='6'/><text class='d-sub' x='34' y='40'>step1(a, (e, r) =&gt; {</text>
@@ -242,7 +242,7 @@ const invoices = await getInvoices(orders);`,
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "What is the purpose of the util.promisify function in Node.js?",
-    answer: `**TL;DR.** <code>util.promisify</code> converts a classic **error-first callback** function (<code>(err, result) => …</code>) into one that **returns a Promise**, so you can <code>await</code> legacy Node APIs instead of nesting callbacks. Many core modules also ship promise versions (e.g. <code>fs/promises</code>) you can use directly.
+    answer: `<code>util.promisify</code> converts a classic **error-first callback** function (<code>(err, result) => …</code>) into one that **returns a Promise**, so you can <code>await</code> legacy Node APIs instead of nesting callbacks. Many core modules also ship promise versions (e.g. <code>fs/promises</code>) you can use directly.
 
 <svg class='iq-diagram' viewBox='0 0 460 150' role='img' aria-label='promisify wraps a callback function into a promise-returning one'>
   <rect class='d-box' x='20' y='50' width='160' height='50' rx='8'/>
@@ -288,7 +288,7 @@ const text2 = await read('./data.txt', 'utf8');`,
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "What is the purpose of the AbortController in modern Node.js?",
-    answer: `**TL;DR.** <code>AbortController</code> provides a **standard way to cancel** async operations. You pass its <code>signal</code> to a cancelable API (fetch, streams, timers, custom code); calling <code>controller.abort()</code> fires the signal's <code>'abort'</code> event and makes the operation reject with an <code>AbortError</code>. It's the same primitive used in browsers, so the pattern is portable.
+    answer: `<code>AbortController</code> provides a **standard way to cancel** async operations. You pass its <code>signal</code> to a cancelable API (fetch, streams, timers, custom code); calling <code>controller.abort()</code> fires the signal's <code>'abort'</code> event and makes the operation reject with an <code>AbortError</code>. It's the same primitive used in browsers, so the pattern is portable.
 
 <svg class='iq-diagram' viewBox='0 0 460 160' role='img' aria-label='AbortController signal cancels a pending operation'>
   <rect class='d-box-accent' x='20' y='55' width='150' height='50' rx='8'/>
@@ -337,7 +337,7 @@ try {
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "What is AbortSignal.timeout and how do you cancel async work cleanly?",
-    answer: `**TL;DR.** <code>AbortSignal.timeout(ms)</code> returns a signal that **auto-aborts after a delay** — a one-liner deadline you pass to fetch/streams/timers. <code>AbortSignal.any([...signals])</code> combines several signals into one that fires if **any** does. Together they make timeouts and multi-source cancellation clean and leak-free.
+    answer: `<code>AbortSignal.timeout(ms)</code> returns a signal that **auto-aborts after a delay** — a one-liner deadline you pass to fetch/streams/timers. <code>AbortSignal.any([...signals])</code> combines several signals into one that fires if **any** does. Together they make timeouts and multi-source cancellation clean and leak-free.
 
 <svg class='iq-diagram' viewBox='0 0 460 160' role='img' aria-label='timeout and any combine into one signal that cancels work'>
   <rect class='d-box' x='20' y='30' width='150' height='34' rx='8'/>
@@ -385,7 +385,7 @@ const res = await fetch('https://api/data', {
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "What is AsyncLocalStorage and what problem does it solve?",
-    answer: `**TL;DR.** <code>AsyncLocalStorage</code> (from <code>node:async_hooks</code>) stores data that **stays attached to a logical async chain** as it flows through callbacks, promises, and timers. It solves request-scoped context — a **request id**, user, or trace id available everywhere in a request — without threading parameters through every function call.
+    answer: `<code>AsyncLocalStorage</code> (from <code>node:async_hooks</code>) stores data that **stays attached to a logical async chain** as it flows through callbacks, promises, and timers. It solves request-scoped context — a **request id**, user, or trace id available everywhere in a request — without threading parameters through every function call.
 
 <svg class='iq-diagram' viewBox='0 0 460 160' role='img' aria-label='Context persists across async hops within one request'>
   <rect class='d-box-accent' x='20' y='50' width='110' height='44' rx='8'/>
@@ -434,7 +434,7 @@ function log(msg) {
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "What does the events.once() helper do and how does it bridge EventEmitter and async/await?",
-    answer: `**TL;DR.** <code>events.once(emitter, name)</code> returns a **Promise that resolves with the next emission** of that event (and **rejects** if the emitter fires <code>'error'</code> first). It lets you <code>await</code> a one-shot event — like a server <code>'listening'</code> or a stream <code>'end'</code> — instead of wiring up <code>.on()</code> callbacks.
+    answer: `<code>events.once(emitter, name)</code> returns a **Promise that resolves with the next emission** of that event (and **rejects** if the emitter fires <code>'error'</code> first). It lets you <code>await</code> a one-shot event — like a server <code>'listening'</code> or a stream <code>'end'</code> — instead of wiring up <code>.on()</code> callbacks.
 
 <svg class='iq-diagram' viewBox='0 0 460 150' role='img' aria-label='events.once turns the next event into an awaitable promise'>
   <rect class='d-box' x='20' y='55' width='150' height='44' rx='8'/>

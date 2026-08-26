@@ -8,7 +8,7 @@ const augments: NodeAugment[] = [
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "What are some common security best practices in Node.js applications?",
-    answer: `**TL;DR.** Defense in depth: **validate all input**, use **parameterized queries**, **hash passwords** (bcrypt/argon2), set **security headers** (Helmet), enforce **HTTPS/TLS**, keep **secrets in env/vaults**, **rate-limit**, **audit dependencies** (<code>npm audit</code>), and never leak stack traces. No single control is enough.
+    answer: `Defense in depth: **validate all input**, use **parameterized queries**, **hash passwords** (bcrypt/argon2), set **security headers** (Helmet), enforce **HTTPS/TLS**, keep **secrets in env/vaults**, **rate-limit**, **audit dependencies** (<code>npm audit</code>), and never leak stack traces. No single control is enough.
 
 <svg class='iq-diagram' viewBox='0 0 460 160' role='img' aria-label='Layered security controls around a Node app'>
   <rect class='d-box-muted' x='30' y='20' width='400' height='128' rx='12'/>
@@ -53,7 +53,7 @@ app.use((err, req, res, next) => res.status(500).json({ error: 'Internal error' 
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "How do you secure your Node.js API endpoints?",
-    answer: `**TL;DR.** Layer controls: **authenticate** (verify identity via JWT/session/OAuth), **authorize** (check permissions/RBAC per route), **validate input**, **rate-limit**, enforce **HTTPS** + security headers, and return **least-privilege** errors. Authentication answers *who*; authorization answers *what they may do*.
+    answer: `Layer controls: **authenticate** (verify identity via JWT/session/OAuth), **authorize** (check permissions/RBAC per route), **validate input**, **rate-limit**, enforce **HTTPS** + security headers, and return **least-privilege** errors. Authentication answers *who*; authorization answers *what they may do*.
 
 <svg class='iq-diagram' viewBox='0 0 460 150' role='img' aria-label='Request passes authn, authz, validation before the handler'>
   <rect class='d-box' x='14' y='55' width='90' height='44' rx='8'/><text class='d-sub' x='59' y='75' text-anchor='middle'>authn</text><text class='d-sub' x='59' y='91' text-anchor='middle'>who?</text>
@@ -98,7 +98,7 @@ app.post('/admin/users',
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "How do you protect a Node.js API against Denial of Service (DoS) and brute-force attacks?",
-    answer: `**TL;DR.** Combine **rate limiting** (per IP/user/route), **body-size and request limits**, **timeouts**, **slow-down/backoff** on repeated auth failures, **account lockout/CAPTCHA**, and upstream protection (WAF/CDN). Also keep the **event loop unblocked** so one expensive request can't stall the whole server.
+    answer: `Combine **rate limiting** (per IP/user/route), **body-size and request limits**, **timeouts**, **slow-down/backoff** on repeated auth failures, **account lockout/CAPTCHA**, and upstream protection (WAF/CDN). Also keep the **event loop unblocked** so one expensive request can't stall the whole server.
 
 <svg class='iq-diagram' viewBox='0 0 460 160' role='img' aria-label='Layers of abuse protection in front of the app'>
   <rect class='d-box-muted' x='30' y='20' width='400' height='128' rx='12'/>
@@ -143,7 +143,7 @@ app.use(express.json({ limit: '50kb' }));   // cap payload size`,
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "How do you implement rate limiting in a Node.js Express application?",
-    answer: `**TL;DR.** Cap how many requests a client can make in a time window using a middleware like <code>express-rate-limit</code>, backed by an **in-memory** store (single instance) or **Redis** (shared across instances). Common algorithms: **fixed window**, **sliding window**, and **token bucket**. Key by IP, API key, or user.
+    answer: `Cap how many requests a client can make in a time window using a middleware like <code>express-rate-limit</code>, backed by an **in-memory** store (single instance) or **Redis** (shared across instances). Common algorithms: **fixed window**, **sliding window**, and **token bucket**. Key by IP, API key, or user.
 
 <svg class='iq-diagram' viewBox='0 0 460 150' role='img' aria-label='Requests counted against a per-key budget, excess rejected with 429'>
   <rect class='d-box' x='20' y='52' width='100' height='44' rx='8'/><text class='d-sub' x='70' y='78' text-anchor='middle'>requests</text>
@@ -189,7 +189,7 @@ app.use(rateLimit({
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "How can you securely store and verify passwords in a Node.js application?",
-    answer: `**TL;DR.** **Never** store plaintext or fast hashes (MD5/SHA). Use a **slow, salted** password hash — **bcrypt**, **scrypt**, or **argon2** — which is deliberately expensive to resist brute force. Store only the hash (salt is embedded); verify with the library's **constant-time** compare. Use the **async** API so hashing doesn't block the event loop.
+    answer: `**Never** store plaintext or fast hashes (MD5/SHA). Use a **slow, salted** password hash — **bcrypt**, **scrypt**, or **argon2** — which is deliberately expensive to resist brute force. Store only the hash (salt is embedded); verify with the library's **constant-time** compare. Use the **async** API so hashing doesn't block the event loop.
 
 <svg class='iq-diagram' viewBox='0 0 460 150' role='img' aria-label='Password hashed with salt and cost factor, only hash stored'>
   <rect class='d-box' x='20' y='52' width='100' height='44' rx='8'/><text class='d-sub' x='70' y='78' text-anchor='middle'>password</text>
@@ -231,7 +231,7 @@ if (!ok) return res.status(401).end();`,
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "What is prototype pollution and how do you prevent it in Node.js?",
-    answer: `**TL;DR.** **Prototype pollution** happens when untrusted input sets <code>__proto__</code>/<code>constructor</code>/<code>prototype</code> keys during a **deep merge** or recursive assignment, injecting properties onto <code>Object.prototype</code> — affecting **every** object and enabling DoS, privilege escalation, or RCE. Prevent it by **rejecting those keys**, using <code>Map</code>/<code>Object.create(null)</code>, and validating input shape.
+    answer: `**Prototype pollution** happens when untrusted input sets <code>__proto__</code>/<code>constructor</code>/<code>prototype</code> keys during a **deep merge** or recursive assignment, injecting properties onto <code>Object.prototype</code> — affecting **every** object and enabling DoS, privilege escalation, or RCE. Prevent it by **rejecting those keys**, using <code>Map</code>/<code>Object.create(null)</code>, and validating input shape.
 
 <svg class='iq-diagram' viewBox='0 0 460 150' role='img' aria-label='Malicious __proto__ key pollutes Object.prototype affecting all objects'>
   <rect class='d-box-muted' x='20' y='50' width='150' height='50' rx='8'/><text class='d-sub' x='95' y='72' text-anchor='middle'>{"__proto__":</text><text class='d-sub' x='95' y='90' text-anchor='middle'>{"isAdmin":true}}</text>
@@ -276,7 +276,7 @@ function safeMerge(t, s) {
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "What is a ReDoS (Regular Expression Denial of Service) attack and how do you avoid it?",
-    answer: `**TL;DR.** A **ReDoS** exploits a regex with **catastrophic backtracking**: crafted input makes the engine try exponentially many paths, **pinning the single event-loop thread** and freezing the whole process. Avoid it with **linear-time patterns**, **input length limits**, **safe-regex linting**, or a non-backtracking engine like **RE2**.
+    answer: `A **ReDoS** exploits a regex with **catastrophic backtracking**: crafted input makes the engine try exponentially many paths, **pinning the single event-loop thread** and freezing the whole process. Avoid it with **linear-time patterns**, **input length limits**, **safe-regex linting**, or a non-backtracking engine like **RE2**.
 
 <svg class='iq-diagram' viewBox='0 0 460 150' role='img' aria-label='Evil regex on crafted input explodes into exponential backtracking, blocking the loop'>
   <rect class='d-box-muted' x='20' y='52' width='150' height='46' rx='8'/><text class='d-sub' x='95' y='72' text-anchor='middle'>(a+)+$  on</text><text class='d-sub' x='95' y='89' text-anchor='middle'>"aaaa…aaa!"</text>
@@ -317,7 +317,7 @@ const safe = /^a+$/;
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "What is SSRF and how do you mitigate it in a Node.js backend?",
-    answer: `**TL;DR.** **Server-Side Request Forgery** tricks your server into making requests to **attacker-chosen URLs** — often internal services, cloud **metadata** endpoints, or private IPs — using the server's trusted network position. Mitigate by **allowlisting** destinations, **resolving and blocking private IP ranges**, disabling redirects to new hosts, and isolating outbound access.
+    answer: `**Server-Side Request Forgery** tricks your server into making requests to **attacker-chosen URLs** — often internal services, cloud **metadata** endpoints, or private IPs — using the server's trusted network position. Mitigate by **allowlisting** destinations, **resolving and blocking private IP ranges**, disabling redirects to new hosts, and isolating outbound access.
 
 <svg class='iq-diagram' viewBox='0 0 460 150' role='img' aria-label='Attacker-supplied URL makes the server hit an internal metadata endpoint'>
   <rect class='d-box' x='20' y='52' width='110' height='44' rx='8'/><text class='d-sub' x='75' y='72' text-anchor='middle'>user URL</text><text class='d-sub' x='75' y='88' text-anchor='middle'>(untrusted)</text>
@@ -362,7 +362,7 @@ async function safeFetch(rawUrl) {
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "What is the difference between JWT and session-based authentication, and where do refresh tokens fit?",
-    answer: `**TL;DR.** **Session auth** stores state server-side and gives the client an opaque **cookie id** (look up the session each request). **JWT auth** is **stateless** — a signed token carries the claims and is verified without a DB lookup, but is hard to revoke. **Short-lived access tokens** + a stored, **rotating refresh token** balance statelessness with revocability.
+    answer: `**Session auth** stores state server-side and gives the client an opaque **cookie id** (look up the session each request). **JWT auth** is **stateless** — a signed token carries the claims and is verified without a DB lookup, but is hard to revoke. **Short-lived access tokens** + a stored, **rotating refresh token** balance statelessness with revocability.
 
 <svg class='iq-diagram' viewBox='0 0 460 160' role='img' aria-label='Session stores state server-side; JWT carries claims in a signed token'>
   <rect class='d-box-muted' x='20' y='30' width='200' height='110' rx='10'/>
@@ -410,7 +410,7 @@ res.cookie('rt', refresh, { httpOnly: true, secure: true, sameSite: 'strict' });
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "What is Helmet and which HTTP security headers should a Node.js API set?",
-    answer: `**TL;DR.** **Helmet** is Express middleware that sets defensive **HTTP headers** with sane defaults: <code>Content-Security-Policy</code>, <code>Strict-Transport-Security</code> (HSTS), <code>X-Content-Type-Options</code>, <code>X-Frame-Options</code>, and <code>Referrer-Policy</code>. They reduce XSS, clickjacking, MIME-sniffing, and protocol-downgrade risks with one line.
+    answer: `**Helmet** is Express middleware that sets defensive **HTTP headers** with sane defaults: <code>Content-Security-Policy</code>, <code>Strict-Transport-Security</code> (HSTS), <code>X-Content-Type-Options</code>, <code>X-Frame-Options</code>, and <code>Referrer-Policy</code>. They reduce XSS, clickjacking, MIME-sniffing, and protocol-downgrade risks with one line.
 
 <svg class='iq-diagram' viewBox='0 0 460 150' role='img' aria-label='Helmet adds protective headers to every response'>
   <rect class='d-box-accent' x='20' y='52' width='110' height='44' rx='8'/><text class='d-text' x='75' y='78' text-anchor='middle'>helmet()</text>

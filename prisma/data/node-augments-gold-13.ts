@@ -8,7 +8,7 @@ const augments: NodeAugment[] = [
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "What is the built-in node:test runner and how does it compare to Jest and Mocha?",
-    answer: `**TL;DR.** <code>node:test</code> is Node's **built-in** test runner (stable since Node 20): no dependencies, parallel file execution, and bundled <code>node:assert</code>, **mocking**, and <code>--experimental-test-coverage</code>. Jest/Mocha add richer ecosystems (snapshots, watch UIs, huge plugin sets) at the cost of install size and config.
+    answer: `<code>node:test</code> is Node's **built-in** test runner (stable since Node 20): no dependencies, parallel file execution, and bundled <code>node:assert</code>, **mocking**, and <code>--experimental-test-coverage</code>. Jest/Mocha add richer ecosystems (snapshots, watch UIs, huge plugin sets) at the cost of install size and config.
 
 <svg class='iq-diagram' viewBox='0 0 460 150' role='img' aria-label='node:test built-in vs Jest/Mocha ecosystems'>
   <rect class='d-box-accent' x='20' y='40' width='200' height='90' rx='10'/><text class='d-text' x='120' y='64' text-anchor='middle'>node:test</text><text class='d-sub' x='120' y='86' text-anchor='middle'>zero deps, built-in</text><text class='d-sub' x='120' y='106' text-anchor='middle'>assert + mock + coverage</text>
@@ -47,7 +47,7 @@ test('sends one email', () => {
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "How do you mock modules, timers, and network calls in Node.js tests?",
-    answer: `**TL;DR.** Use the runner's mock API (<code>mock.fn</code>, <code>mock.method</code>, <code>mock.timers</code>) or **Sinon** to replace dependencies and control time, and **nock** or undici's **MockAgent** to intercept HTTP. Mocking **isolates** the unit under test and makes async/time-dependent code **deterministic**.
+    answer: `Use the runner's mock API (<code>mock.fn</code>, <code>mock.method</code>, <code>mock.timers</code>) or **Sinon** to replace dependencies and control time, and **nock** or undici's **MockAgent** to intercept HTTP. Mocking **isolates** the unit under test and makes async/time-dependent code **deterministic**.
 
 <svg class='iq-diagram' viewBox='0 0 460 150' role='img' aria-label='Real dependencies swapped for mocks around the unit under test'>
   <rect class='d-box-accent' x='160' y='52' width='140' height='46' rx='8'/><text class='d-text' x='230' y='79' text-anchor='middle'>unit under test</text>
@@ -96,7 +96,7 @@ test('retries after delay', () => {
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "What is the difference between unit, integration, and end-to-end tests for a Node.js API?",
-    answer: `**TL;DR.** **Unit** tests check one function in **isolation** with mocks (fast, many). **Integration** tests exercise several modules together — e.g. a route hitting a real (test) DB. **E2E** tests drive the **whole running system** over HTTP. The **testing pyramid** favors many fast unit tests and few slow E2E tests.
+    answer: `**Unit** tests check one function in **isolation** with mocks (fast, many). **Integration** tests exercise several modules together — e.g. a route hitting a real (test) DB. **E2E** tests drive the **whole running system** over HTTP. The **testing pyramid** favors many fast unit tests and few slow E2E tests.
 
 <svg class='iq-diagram' viewBox='0 0 460 150' role='img' aria-label='Testing pyramid: many unit, fewer integration, few e2e'>
   <path class='d-box' d='M180 30 L280 30 L320 110 L140 110 Z' fill='none'/>
@@ -137,7 +137,7 @@ test('POST /users creates a user', async () => {
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "What is the Repository pattern and how does it decouple business logic from the database?",
-    answer: `**TL;DR.** The **Repository pattern** hides data access behind an **interface** (e.g. <code>UserRepository.findById</code>), so business logic depends on the **abstraction**, not on SQL or a specific ORM. This makes services **testable** with in-memory fakes and lets you **swap** the data store without touching domain code.
+    answer: `The **Repository pattern** hides data access behind an **interface** (e.g. <code>UserRepository.findById</code>), so business logic depends on the **abstraction**, not on SQL or a specific ORM. This makes services **testable** with in-memory fakes and lets you **swap** the data store without touching domain code.
 
 <svg class='iq-diagram' viewBox='0 0 460 150' role='img' aria-label='Service depends on a repository interface, implementations vary'>
   <rect class='d-box-accent' x='20' y='55' width='110' height='44' rx='8'/><text class='d-text' x='75' y='81' text-anchor='middle'>service</text>
@@ -183,7 +183,7 @@ class FakeUserRepo { users = new Map(); async findById(id){return this.users.get
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "What is the 12-factor app methodology as applied to Node.js services?",
-    answer: `**TL;DR.** **12-factor** is a set of principles for portable, scalable cloud apps. The high-impact ones for Node: **config in the environment**, **explicit dependencies**, **stateless processes**, **logs as event streams**, **dev/prod parity**, and **disposability** (fast start, graceful shutdown). They let you scale horizontally and deploy reliably.
+    answer: `**12-factor** is a set of principles for portable, scalable cloud apps. The high-impact ones for Node: **config in the environment**, **explicit dependencies**, **stateless processes**, **logs as event streams**, **dev/prod parity**, and **disposability** (fast start, graceful shutdown). They let you scale horizontally and deploy reliably.
 
 <svg class='iq-diagram' viewBox='0 0 460 150' role='img' aria-label='Key 12-factor principles around a stateless Node process'>
   <rect class='d-box-accent' x='160' y='55' width='140' height='44' rx='8'/><text class='d-text' x='230' y='75' text-anchor='middle'>stateless process</text><text class='d-sub' x='230' y='91' text-anchor='middle'>scale by replicas</text>
@@ -222,7 +222,7 @@ process.on('SIGTERM', gracefulShutdown);    // disposability`,
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "How do you containerize a Node.js app with a small, secure Docker image (multi-stage, distroless)?",
-    answer: `**TL;DR.** Use a **multi-stage** Dockerfile: install/build in a full image, then copy only **production artifacts** into a slim or **distroless** base. Run as a **non-root** user, install with <code>npm ci --omit=dev</code>, leverage **layer caching**, and add a <code>.dockerignore</code> — keeping the image small and the attack surface low.
+    answer: `Use a **multi-stage** Dockerfile: install/build in a full image, then copy only **production artifacts** into a slim or **distroless** base. Run as a **non-root** user, install with <code>npm ci --omit=dev</code>, leverage **layer caching**, and add a <code>.dockerignore</code> — keeping the image small and the attack surface low.
 
 <svg class='iq-diagram' viewBox='0 0 460 150' role='img' aria-label='Build stage compiles, runtime stage copies only artifacts'>
   <rect class='d-box-muted' x='20' y='45' width='180' height='70' rx='10'/><text class='d-text' x='110' y='69' text-anchor='middle'>build stage</text><text class='d-sub' x='110' y='91' text-anchor='middle'>deps + tsc/bundle</text>
@@ -270,7 +270,7 @@ CMD ["dist/index.js"]`,
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "What is PM2 and what does it add over running `node server.js` directly?",
-    answer: `**TL;DR.** **PM2** is a production **process manager** that keeps apps alive (**auto-restart** on crash), runs them in **cluster mode** across CPU cores, supports **zero-downtime reloads**, and centralizes **logs and metrics** — things bare <code>node server.js</code> doesn't provide. In containers, an **orchestrator** (Kubernetes) often replaces it.
+    answer: `**PM2** is a production **process manager** that keeps apps alive (**auto-restart** on crash), runs them in **cluster mode** across CPU cores, supports **zero-downtime reloads**, and centralizes **logs and metrics** — things bare <code>node server.js</code> doesn't provide. In containers, an **orchestrator** (Kubernetes) often replaces it.
 
 <svg class='iq-diagram' viewBox='0 0 460 150' role='img' aria-label='PM2 supervises clustered workers, restarting and reloading them'>
   <rect class='d-box-accent' x='170' y='20' width='120' height='38' rx='8'/><text class='d-text' x='230' y='44' text-anchor='middle'>PM2 daemon</text>
@@ -311,7 +311,7 @@ pm2 startup && pm2 save         # resurrect on reboot
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "How do you design liveness and readiness health-check endpoints?",
-    answer: `**TL;DR.** A **liveness** probe answers "is the process alive?" and must stay **cheap** so orchestrators don't kill a busy-but-healthy app. A **readiness** probe answers "can it serve traffic?" and checks **dependencies** (DB, cache); failing it **removes the instance from the load balancer** without restarting it.
+    answer: `A **liveness** probe answers "is the process alive?" and must stay **cheap** so orchestrators don't kill a busy-but-healthy app. A **readiness** probe answers "can it serve traffic?" and checks **dependencies** (DB, cache); failing it **removes the instance from the load balancer** without restarting it.
 
 <svg class='iq-diagram' viewBox='0 0 460 150' role='img' aria-label='Liveness checks the process, readiness checks dependencies'>
   <rect class='d-box-accent' x='20' y='40' width='200' height='90' rx='10'/><text class='d-text' x='120' y='64' text-anchor='middle'>/livez (liveness)</text><text class='d-sub' x='120' y='86' text-anchor='middle'>cheap, no deps</text><text class='d-sub' x='120' y='106' text-anchor='middle'>fail ⇒ restart pod</text>
@@ -351,7 +351,7 @@ process.on('SIGTERM', () => { ready = false; /* then drain + close */ });`,
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "How do you run Node.js processes as a background service?",
-    answer: `**TL;DR.** In production, run Node under a **supervisor** that keeps it alive and starts it on boot: a **process manager** (PM2/systemd) on VMs, or a **container orchestrator** (Docker + Kubernetes) in the cloud. Avoid ad-hoc <code>node app.js &</code> / <code>nohup</code> — they don't restart on crash or survive reboots.
+    answer: `In production, run Node under a **supervisor** that keeps it alive and starts it on boot: a **process manager** (PM2/systemd) on VMs, or a **container orchestrator** (Docker + Kubernetes) in the cloud. Avoid ad-hoc <code>node app.js &</code> / <code>nohup</code> — they don't restart on crash or survive reboots.
 
 <svg class='iq-diagram' viewBox='0 0 460 150' role='img' aria-label='Supervisor keeps the Node service running and restarts it'>
   <rect class='d-box-accent' x='20' y='52' width='150' height='46' rx='8'/><text class='d-text' x='95' y='73' text-anchor='middle'>supervisor</text><text class='d-sub' x='95' y='90' text-anchor='middle'>systemd / PM2 / k8s</text>

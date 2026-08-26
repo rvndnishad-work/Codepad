@@ -8,7 +8,7 @@ const augments: AiAugment[] = [
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "How do you reduce hallucinations in a production LLM application?",
-    answer: `**TL;DR.** Layer defenses: **ground** answers in retrieved context, give the model an explicit **abstain** path, require **citations**, lower temperature for factual tasks, and **verify** high-stakes outputs downstream. Measure **faithfulness** in evals so regressions surface.
+    answer: `Layer defenses: **ground** answers in retrieved context, give the model an explicit **abstain** path, require **citations**, lower temperature for factual tasks, and **verify** high-stakes outputs downstream. Measure **faithfulness** in evals so regressions surface.
 
 <svg class='iq-diagram' viewBox='0 0 460 150' role='img' aria-label='Anti-hallucination pipeline: retrieve, ground with abstain option, cite, verify'>
   <rect class='d-box' x='16' y='45' width='96' height='50' rx='9'/><text class='d-text' x='64' y='66' text-anchor='middle'>retrieve</text><text class='d-sub' x='64' y='83' text-anchor='middle'>evidence in</text>
@@ -55,7 +55,7 @@ if (!valid) {
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "How do you version, test and safely roll out prompt changes?",
-    answer: `**TL;DR.** Treat prompts as **code**: version them in git or a registry, review changes, gate merges on an **eval suite**, roll out via **canary**, keep instant rollback. Small wording edits can regress distant behaviours — never hot-edit production prompts.
+    answer: `Treat prompts as **code**: version them in git or a registry, review changes, gate merges on an **eval suite**, roll out via **canary**, keep instant rollback. Small wording edits can regress distant behaviours — never hot-edit production prompts.
 
 <svg class='iq-diagram' viewBox='0 0 460 140' role='img' aria-label='Prompt change flows through eval gate and canary rollout to production with rollback path'>
   <rect class='d-box' x='16' y='45' width='90' height='50' rx='9'/><text class='d-text' x='61' y='66' text-anchor='middle'>edit v42</text><text class='d-sub' x='61' y='83' text-anchor='middle'>PR + review</text>
@@ -99,7 +99,7 @@ npm run eval -- --prompt support-triage@HEAD --dataset golden/triage.jsonl \\
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "What are embeddings and what are they used for?",
-    answer: `**TL;DR.** An embedding is a **dense vector** representing text (or images/code) such that **similar meaning → nearby points**. Similarity becomes geometry, powering **semantic search, RAG, dedup, clustering, classification and recommendations**.
+    answer: `An embedding is a **dense vector** representing text (or images/code) such that **similar meaning → nearby points**. Similarity becomes geometry, powering **semantic search, RAG, dedup, clustering, classification and recommendations**.
 
 <svg class='iq-diagram' viewBox='0 0 460 150' role='img' aria-label='Semantically similar phrases cluster near each other in vector space while unrelated text sits far away'>
   <rect class='d-box-muted' x='150' y='16' width='294' height='120' rx='10'/>
@@ -145,7 +145,7 @@ top3 = [d.title for d, _ in ranked[:3]]`,
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "How does similarity search work — cosine, dot product and Euclidean?",
-    answer: `**TL;DR.** **Cosine** compares direction (angle), ignoring magnitude — the default for text embeddings. **Dot product** equals cosine on unit-normalized vectors; **Euclidean** measures straight-line distance. Exact search is O(n), so real systems use **ANN indexes** (HNSW, IVF) trading a little recall for huge speed.
+    answer: `**Cosine** compares direction (angle), ignoring magnitude — the default for text embeddings. **Dot product** equals cosine on unit-normalized vectors; **Euclidean** measures straight-line distance. Exact search is O(n), so real systems use **ANN indexes** (HNSW, IVF) trading a little recall for huge speed.
 
 <svg class='iq-diagram' viewBox='0 0 460 150' role='img' aria-label='Cosine measures the angle between vectors; ANN indexes avoid comparing the query against every vector'>
   <line class='d-edge' x1='40' y1='120' x2='40' y2='30'/><line class='d-edge' x1='40' y1='120' x2='180' y2='120'/>
@@ -191,7 +191,7 @@ LIMIT 10;`,
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "What is a vector database and when do you actually need one?",
-    answer: `**TL;DR.** A vector DB stores embeddings with **ANN indexes plus filtering, CRUD and scaling**. But under ~100k vectors a flat search is fine, and **pgvector** keeps vectors next to your relational data. Reach for a dedicated engine at **millions of vectors, high QPS, or heavy filtered search**.
+    answer: `A vector DB stores embeddings with **ANN indexes plus filtering, CRUD and scaling**. But under ~100k vectors a flat search is fine, and **pgvector** keeps vectors next to your relational data. Reach for a dedicated engine at **millions of vectors, high QPS, or heavy filtered search**.
 
 <svg class='iq-diagram' viewBox='0 0 460 140' role='img' aria-label='Storage ladder from in-memory arrays through pgvector to dedicated vector databases as scale grows'>
   <rect class='d-box' x='16' y='40' width='128' height='54' rx='10'/><text class='d-text' x='80' y='62' text-anchor='middle'>in-memory</text><text class='d-sub' x='80' y='80' text-anchor='middle'>&lt;100k vectors</text>
@@ -236,7 +236,7 @@ CREATE INDEX ON chunks USING hnsw (embedding vector_cosine_ops);
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "What is RAG and why use it instead of fine-tuning for knowledge?",
-    answer: `**TL;DR.** **Retrieval-Augmented Generation**: retrieve relevant documents for the query and put them in the prompt so the model answers **from evidence**. For knowledge it beats fine-tuning on every axis that matters: **instantly updateable, auditable via citations, per-tenant scopable, cheaper**. Fine-tune for behaviour, RAG for facts.
+    answer: `**Retrieval-Augmented Generation**: retrieve relevant documents for the query and put them in the prompt so the model answers **from evidence**. For knowledge it beats fine-tuning on every axis that matters: **instantly updateable, auditable via citations, per-tenant scopable, cheaper**. Fine-tune for behaviour, RAG for facts.
 
 <svg class='iq-diagram' viewBox='0 0 460 150' role='img' aria-label='RAG pipeline: query is embedded, nearest chunks retrieved from the index and passed with the question to the model'>
   <rect class='d-box' x='16' y='52' width='84' height='44' rx='9'/><text class='d-text' x='58' y='71' text-anchor='middle'>query</text><text class='d-sub' x='58' y='87' text-anchor='middle'>embed</text>

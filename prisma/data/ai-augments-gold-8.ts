@@ -8,7 +8,7 @@ const augments: AiAugment[] = [
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "How does streaming work in LLM APIs and why does it matter for UX?",
-    answer: `**TL;DR.** LLM APIs stream **server-sent events**: token deltas arrive as generated, so perceived latency collapses from full-completion time to **time-to-first-token**. Engineering care: render partial markdown/JSON safely, handle tool-call deltas and mid-stream errors, **propagate cancellation**, and keep proxies from buffering.
+    answer: `LLM APIs stream **server-sent events**: token deltas arrive as generated, so perceived latency collapses from full-completion time to **time-to-first-token**. Engineering care: render partial markdown/JSON safely, handle tool-call deltas and mid-stream errors, **propagate cancellation**, and keep proxies from buffering.
 
 <svg class='iq-diagram' viewBox='0 0 460 140' role='img' aria-label='Blocking response shows a long spinner then all text; streaming shows tokens arriving progressively from first token onward'>
   <text class='d-text' x='30' y='36'>blocking</text>
@@ -64,7 +64,7 @@ const augments: AiAugment[] = [
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "How do you estimate and control LLM costs in production?",
-    answer: `**TL;DR.** Cost = **input tokens × input rate + output tokens × output rate**, summed over calls — and agent loops re-send growing context every turn. Levers in impact order: **route to smaller models**, **prompt caching**, **trim context**, **cap outputs**, **batch APIs**. Meter per feature/user; alert on budgets before the invoice does.
+    answer: `Cost = **input tokens × input rate + output tokens × output rate**, summed over calls — and agent loops re-send growing context every turn. Levers in impact order: **route to smaller models**, **prompt caching**, **trim context**, **cap outputs**, **batch APIs**. Meter per feature/user; alert on budgets before the invoice does.
 
 <svg class='iq-diagram' viewBox='0 0 460 150' role='img' aria-label='Cost levers ranked: model routing, prompt caching, context trimming, output caps, batch API'>
   <rect class='d-box-accent' x='16' y='24' width='196' height='30' rx='7'/><text class='d-sub' x='114' y='43' text-anchor='middle'>route easy tasks to small models</text>
@@ -112,7 +112,7 @@ await metrics.record({
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "What techniques reduce LLM latency at each stage of a request?",
-    answer: `**TL;DR.** Split latency into **TTFT** (queue + prompt processing) and **generation** (output tokens × per-token time). Cut TTFT with **prompt caching and shorter prompts**; cut generation with **smaller models and shorter outputs**; cut both at the app layer with **streaming, parallelism, precomputation and routing**.
+    answer: `Split latency into **TTFT** (queue + prompt processing) and **generation** (output tokens × per-token time). Cut TTFT with **prompt caching and shorter prompts**; cut generation with **smaller models and shorter outputs**; cut both at the app layer with **streaming, parallelism, precomputation and routing**.
 
 <svg class='iq-diagram' viewBox='0 0 460 140' role='img' aria-label='Request timeline split into time to first token and generation time, each with its own optimization levers'>
   <rect class='d-box-muted' x='16' y='30' width='170' height='34' rx='7'/><text class='d-sub' x='101' y='51' text-anchor='middle'>TTFT: queue + prefill</text>
@@ -160,7 +160,7 @@ const answer = needsDeepReasoning(query)
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "How do you build resilient LLM calls with rate limits, retries and fallbacks?",
-    answer: `**TL;DR.** Wrap every model call in a resilience layer: **exponential backoff + jitter** on 429/5xx/timeouts honoring <code>Retry-After</code>, **queue or shed** sustained overload, a **fallback chain** (other region → smaller sibling → other provider) with the honesty that outputs differ, **circuit breakers** to fail fast, and **explicit degraded modes** in the product.
+    answer: `Wrap every model call in a resilience layer: **exponential backoff + jitter** on 429/5xx/timeouts honoring <code>Retry-After</code>, **queue or shed** sustained overload, a **fallback chain** (other region → smaller sibling → other provider) with the honesty that outputs differ, **circuit breakers** to fail fast, and **explicit degraded modes** in the product.
 
 <svg class='iq-diagram' viewBox='0 0 460 150' role='img' aria-label='Request flows through retry with backoff, then a fallback chain, then degraded mode if everything fails'>
   <rect class='d-box' x='16' y='54' width='84' height='44' rx='9'/><text class='d-text' x='58' y='80' text-anchor='middle'>request</text>
@@ -213,7 +213,7 @@ async function completeResilient(req: Req) {
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "What should you log and trace in an LLM application?",
-    answer: `**TL;DR.** Log each request as a **trace**: prompt version + rendered prompt, model/params, retrieved context, every tool call/result, response, **token counts, latency, cost** — PII-scrubbed. Add aggregate metrics (cost/feature, p95 TTFT, error+refusal rates) and **quality signals** (feedback, sampled judge scores, guardrail triggers). Traces are tomorrow's eval set.
+    answer: `Log each request as a **trace**: prompt version + rendered prompt, model/params, retrieved context, every tool call/result, response, **token counts, latency, cost** — PII-scrubbed. Add aggregate metrics (cost/feature, p95 TTFT, error+refusal rates) and **quality signals** (feedback, sampled judge scores, guardrail triggers). Traces are tomorrow's eval set.
 
 <svg class='iq-diagram' viewBox='0 0 460 150' role='img' aria-label='A trace containing spans for retrieval, model call and tool call feeds dashboards and the eval dataset'>
   <rect class='d-box-muted' x='16' y='20' width='268' height='110' rx='10'/>
@@ -260,7 +260,7 @@ async function completeResilient(req: Req) {
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "What are guardrails and how do you implement them around a model?",
-    answer: `**TL;DR.** Guardrails are **programmatic checks sandwiching every model call**: input-side (injection attempts, off-topic, abuse, PII) and output-side (schema, content policy, grounding, blocklists). Order them **cheap-deterministic first, model-based second**; on failure **repair, degrade or escalate** — and log every trigger.
+    answer: `Guardrails are **programmatic checks sandwiching every model call**: input-side (injection attempts, off-topic, abuse, PII) and output-side (schema, content policy, grounding, blocklists). Order them **cheap-deterministic first, model-based second**; on failure **repair, degrade or escalate** — and log every trigger.
 
 <svg class='iq-diagram' viewBox='0 0 460 140' role='img' aria-label='Input guards before the model and output guards after it, with repair, degrade or escalate on failure'>
   <rect class='d-box' x='16' y='50' width='60 ' height='40' rx='8'/><text class='d-sub' x='46' y='74' text-anchor='middle'>input</text>

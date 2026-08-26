@@ -8,7 +8,7 @@ const augments: AiAugment[] = [
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "How should an agent handle tool errors, timeouts and retries?",
-    answer: `**TL;DR.** Split responsibilities: the **runtime absorbs transient faults** (backoff retries on timeouts/429s, idempotency keys for writes) while **semantic errors go back to the model** as actionable tool results so it can correct course. Cap consecutive failures and total steps; never leak stack traces or secrets into model-visible errors.
+    answer: `Split responsibilities: the **runtime absorbs transient faults** (backoff retries on timeouts/429s, idempotency keys for writes) while **semantic errors go back to the model** as actionable tool results so it can correct course. Cap consecutive failures and total steps; never leak stack traces or secrets into model-visible errors.
 
 <svg class='iq-diagram' viewBox='0 0 460 150' role='img' aria-label='Tool failure routed by type: transient faults retried by the runtime, semantic errors returned to the model, repeated failures hit a cap'>
   <rect class='d-box' x='16' y='52' width='104' height='46' rx='9'/><text class='d-text' x='68' y='72' text-anchor='middle'>tool fails</text><text class='d-sub' x='68' y='89' text-anchor='middle'>classify error</text>
@@ -55,7 +55,7 @@ const augments: AiAugment[] = [
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "When should you split work across multiple agents instead of one?",
-    answer: `**TL;DR.** Default to **one capable agent with good tools**. Split for three real reasons: **context isolation** (a subagent burns tokens exploring, returns a summary), **parallelism** (independent subtasks fan out), or **role/permission separation** (a reviewer that must not share the writer's context or credentials). Multi-agent adds real costs: lossy communication, orchestration failures, harder debugging.
+    answer: `Default to **one capable agent with good tools**. Split for three real reasons: **context isolation** (a subagent burns tokens exploring, returns a summary), **parallelism** (independent subtasks fan out), or **role/permission separation** (a reviewer that must not share the writer's context or credentials). Multi-agent adds real costs: lossy communication, orchestration failures, harder debugging.
 
 <svg class='iq-diagram' viewBox='0 0 460 150' role='img' aria-label='Orchestrator delegates to subagents that work in isolated contexts and return summaries'>
   <rect class='d-box-accent' x='170' y='16' width='120' height='46' rx='10'/><text class='d-text' x='230' y='36' text-anchor='middle'>orchestrator</text><text class='d-sub' x='230' y='52' text-anchor='middle'>clean main context</text>
@@ -100,7 +100,7 @@ orchestrator.push(user("Exploration result:\\n" + findings.summary));
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "How do agents maintain memory across steps and sessions?",
-    answer: `**TL;DR.** Three layers: **working memory** = the context window (this task, right now); **scratchpad** = files/notes the agent writes so state survives compaction; **long-term memory** = an external store of durable facts across sessions, retrieved when relevant. Hard problems: **selection** (store little), **staleness** (memories age), **injection** (memories are data, not instructions).
+    answer: `Three layers: **working memory** = the context window (this task, right now); **scratchpad** = files/notes the agent writes so state survives compaction; **long-term memory** = an external store of durable facts across sessions, retrieved when relevant. Hard problems: **selection** (store little), **staleness** (memories age), **injection** (memories are data, not instructions).
 
 <svg class='iq-diagram' viewBox='0 0 460 150' role='img' aria-label='Three memory layers: context window, scratchpad files during the task, and an external long-term store across sessions'>
   <rect class='d-box-accent' x='16' y='30' width='130' height='90' rx='10'/>
@@ -152,7 +152,7 @@ prompt.push("[Background notes — verify before relying on them]\\n" +
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "How do you sandbox an agent and enforce least-privilege tool access?",
-    answer: `**TL;DR.** Assume the agent **will** be wrong or hijacked; bound the damage. **Scoped short-lived credentials**, code execution in **isolated sandboxes** (no network by default), **allowlists** for paths/hosts/commands, dry-run defaults for destructive ops, and a **read / write / irreversible** permission tier with human approval at the top. The prompt is not a security control.
+    answer: `Assume the agent **will** be wrong or hijacked; bound the damage. **Scoped short-lived credentials**, code execution in **isolated sandboxes** (no network by default), **allowlists** for paths/hosts/commands, dry-run defaults for destructive ops, and a **read / write / irreversible** permission tier with human approval at the top. The prompt is not a security control.
 
 <svg class='iq-diagram' viewBox='0 0 460 150' role='img' aria-label='Agent actions pass through permission tiers: reads auto-allowed, writes policied, irreversible actions require human approval'>
   <rect class='d-box-accent' x='16' y='50' width='90' height='46' rx='9'/><text class='d-text' x='61' y='77' text-anchor='middle'>agent</text>
@@ -205,7 +205,7 @@ async function authorize(call: ToolCall, session: Session) {
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "How do you design human-in-the-loop approval for agent actions?",
-    answer: `**TL;DR.** Classify actions by **reversibility and blast radius**: auto-execute safe reads, batch-notify low-risk writes, require **explicit approval** for irreversible or outward-facing actions. Approvals must show **enough context to judge**, support **edit-then-approve**, and remember **scoped grants** — or users rubber-stamp everything and the gate is theatre.
+    answer: `Classify actions by **reversibility and blast radius**: auto-execute safe reads, batch-notify low-risk writes, require **explicit approval** for irreversible or outward-facing actions. Approvals must show **enough context to judge**, support **edit-then-approve**, and remember **scoped grants** — or users rubber-stamp everything and the gate is theatre.
 
 <svg class='iq-diagram' viewBox='0 0 460 150' role='img' aria-label='Action risk ladder from auto-execute through notify to explicit approval, with approval fatigue as the failure mode'>
   <rect class='d-box' x='16' y='84' width='130' height='46' rx='9'/><text class='d-text' x='81' y='104' text-anchor='middle'>auto-execute</text><text class='d-sub' x='81' y='121' text-anchor='middle'>reads, safe queries</text>
@@ -249,7 +249,7 @@ else agent.observe("Email rejected: " + decision.note);   // feedback, not silen
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "How do you evaluate and debug agent trajectories?",
-    answer: `**TL;DR.** Grade **outcomes** (task success rate on a scenario suite, with cost/steps as guardrail metrics) *and* **process** (right tool, valid args, error recovery, no loops — judged per step over the full trace). Debugging is **trace-first**: log every model input/output and tool result, replay failures with **recorded tool fixtures**, and diff trajectories across versions.
+    answer: `Grade **outcomes** (task success rate on a scenario suite, with cost/steps as guardrail metrics) *and* **process** (right tool, valid args, error recovery, no loops — judged per step over the full trace). Debugging is **trace-first**: log every model input/output and tool result, replay failures with **recorded tool fixtures**, and diff trajectories across versions.
 
 <svg class='iq-diagram' viewBox='0 0 460 150' role='img' aria-label='Agent evaluation covers outcome metrics and process metrics, both reading from stored traces'>
   <rect class='d-box-muted' x='140' y='16' width='180' height='40' rx='9'/><text class='d-text' x='230' y='34' text-anchor='middle'>trace store</text><text class='d-sub' x='230' y='50' text-anchor='middle'>every step, every run</text>

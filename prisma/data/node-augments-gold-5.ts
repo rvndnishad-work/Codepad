@@ -8,7 +8,7 @@ const augments: NodeAugment[] = [
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "What does the Node.js --watch flag do and how does it replace nodemon?",
-    answer: `**TL;DR.** <code>node --watch app.js</code> **restarts the process automatically** when any imported file changes — built into Node, zero dependencies. <code>--watch-path</code> scopes which directories to watch. It covers nodemon's core "restart on save" use case; nodemon still offers more configuration (debounce, custom exec, extension maps).
+    answer: `<code>node --watch app.js</code> **restarts the process automatically** when any imported file changes — built into Node, zero dependencies. <code>--watch-path</code> scopes which directories to watch. It covers nodemon's core "restart on save" use case; nodemon still offers more configuration (debounce, custom exec, extension maps).
 
 <svg class='iq-diagram' viewBox='0 0 460 150' role='img' aria-label='File change triggers an automatic restart'>
   <rect class='d-box' x='20' y='55' width='130' height='44' rx='8'/>
@@ -49,7 +49,7 @@ node --watch server.ts                  # with native type stripping`,
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "What is the Node.js permission model (--permission) and what does it protect against?",
-    answer: `**TL;DR.** The **permission model** (run with <code>--permission</code>) **denies** a process access to the file system, child processes, and worker threads unless you **explicitly grant** it (<code>--allow-fs-read</code>, <code>--allow-fs-write</code>, <code>--allow-child-process</code>, <code>--allow-worker</code>). It shrinks the **blast radius** of a compromised dependency running arbitrary code.
+    answer: `The **permission model** (run with <code>--permission</code>) **denies** a process access to the file system, child processes, and worker threads unless you **explicitly grant** it (<code>--allow-fs-read</code>, <code>--allow-fs-write</code>, <code>--allow-child-process</code>, <code>--allow-worker</code>). It shrinks the **blast radius** of a compromised dependency running arbitrary code.
 
 <svg class='iq-diagram' viewBox='0 0 460 170' role='img' aria-label='Permission model gates access to fs, child processes and workers'>
   <rect class='d-box-accent' x='160' y='20' width='140' height='40' rx='8'/>
@@ -94,7 +94,7 @@ node --permission \\
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "What are Single Executable Applications (SEA) in Node.js?",
-    answer: `**TL;DR.** A **Single Executable Application** bundles your app's JavaScript **into a copy of the Node binary**, producing **one self-contained file** you can ship to users who don't have Node installed. You generate a SEA "blob" from a config, then inject it into the executable with the <code>postject</code> tool.
+    answer: `A **Single Executable Application** bundles your app's JavaScript **into a copy of the Node binary**, producing **one self-contained file** you can ship to users who don't have Node installed. You generate a SEA "blob" from a config, then inject it into the executable with the <code>postject</code> tool.
 
 <svg class='iq-diagram' viewBox='0 0 460 160' role='img' aria-label='Bundle plus node binary injected to form one executable'>
   <rect class='d-box' x='20' y='40' width='110' height='44' rx='8'/><text class='d-sub' x='75' y='66' text-anchor='middle'>bundle.js</text>
@@ -139,7 +139,7 @@ npx postject app NODE_SEA_BLOB sea-prep.blob \\
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "How do you replicate __dirname in ES Modules using import.meta.url?",
-    answer: `**TL;DR.** ESM has **no <code>__dirname</code>/<code>__filename</code>**. Derive them from <code>import.meta.url</code> (the module's file URL) with <code>fileURLToPath</code>: convert the URL to a path, then take its directory. Modern Node also exposes <code>import.meta.dirname</code> and <code>import.meta.filename</code> directly.
+    answer: `ESM has **no <code>__dirname</code>/<code>__filename</code>**. Derive them from <code>import.meta.url</code> (the module's file URL) with <code>fileURLToPath</code>: convert the URL to a path, then take its directory. Modern Node also exposes <code>import.meta.dirname</code> and <code>import.meta.filename</code> directly.
 
 <svg class='iq-diagram' viewBox='0 0 460 150' role='img' aria-label='import.meta.url converts to a file path then a directory'>
   <rect class='d-box-accent' x='20' y='55' width='150' height='44' rx='8'/>
@@ -186,7 +186,7 @@ const cfg = path.join(__dirname, 'config.json');`,
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "What is the purpose of `__dirname` and `__filename` in Node.js?",
-    answer: `**TL;DR.** <code>__dirname</code> is the **absolute path of the current module's directory** and <code>__filename</code> is the **absolute path of the current file**. They let you build paths **relative to the file** (not the unpredictable working directory). They exist in **CommonJS** only; ESM derives them from <code>import.meta.url</code>.
+    answer: `<code>__dirname</code> is the **absolute path of the current module's directory** and <code>__filename</code> is the **absolute path of the current file**. They let you build paths **relative to the file** (not the unpredictable working directory). They exist in **CommonJS** only; ESM derives them from <code>import.meta.url</code>.
 
 <svg class='iq-diagram' viewBox='0 0 460 150' role='img' aria-label='__dirname is the folder, __filename is the file'>
   <rect class='d-box-muted' x='40' y='40' width='380' height='80' rx='10'/>
@@ -224,7 +224,7 @@ const fragile = './templates/email.html';`,
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "What is structuredClone and when is it useful in Node.js?",
-    answer: `**TL;DR.** <code>structuredClone(value)</code> is a global that **deep-clones** data using the structured clone algorithm. Unlike <code>JSON.parse(JSON.stringify(x))</code>, it handles <code>Map</code>, <code>Set</code>, <code>Date</code>, <code>RegExp</code>, typed arrays/<code>ArrayBuffer</code>, and **cyclic references**. It does **not** copy functions, class prototypes, or DOM-specific types.
+    answer: `<code>structuredClone(value)</code> is a global that **deep-clones** data using the structured clone algorithm. Unlike <code>JSON.parse(JSON.stringify(x))</code>, it handles <code>Map</code>, <code>Set</code>, <code>Date</code>, <code>RegExp</code>, typed arrays/<code>ArrayBuffer</code>, and **cyclic references**. It does **not** copy functions, class prototypes, or DOM-specific types.
 
 <svg class='iq-diagram' viewBox='0 0 460 160' role='img' aria-label='structuredClone deep-copies rich types JSON cannot'>
   <rect class='d-box-accent' x='20' y='45' width='160' height='70' rx='10'/>
@@ -266,7 +266,7 @@ console.log(state.tags.has('b'));    // false — fully independent`,
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "What is the node:util parseArgs helper for building CLIs?",
-    answer: `**TL;DR.** <code>util.parseArgs</code> parses <code>process.argv</code> into **typed options and positionals** from a declarative <code>options</code> config — covering basic CLI flag parsing **without a dependency** like yargs or commander. It supports booleans, strings, short aliases, and repeated (multiple) values.
+    answer: `<code>util.parseArgs</code> parses <code>process.argv</code> into **typed options and positionals** from a declarative <code>options</code> config — covering basic CLI flag parsing **without a dependency** like yargs or commander. It supports booleans, strings, short aliases, and repeated (multiple) values.
 
 <svg class='iq-diagram' viewBox='0 0 460 150' role='img' aria-label='Raw argv parsed into structured values and positionals'>
   <rect class='d-box' x='20' y='50' width='180' height='50' rx='8'/>
@@ -314,7 +314,7 @@ console.log(values.port, values.verbose, positionals); // 8080 true ['file.txt']
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "What does NODE_ENV=production actually change and why does it matter?",
-    answer: `**TL;DR.** <code>NODE_ENV</code> is just an **environment variable** — Node itself doesn't treat it specially. But **many libraries branch on it**: Express disables verbose error pages and caches views, React strips dev warnings, and <code>npm install</code> skips <code>devDependencies</code>. Setting it to <code>"production"</code> turns on performance paths and avoids leaking debug detail.
+    answer: `<code>NODE_ENV</code> is just an **environment variable** — Node itself doesn't treat it specially. But **many libraries branch on it**: Express disables verbose error pages and caches views, React strips dev warnings, and <code>npm install</code> skips <code>devDependencies</code>. Setting it to <code>"production"</code> turns on performance paths and avoids leaking debug detail.
 
 <svg class='iq-diagram' viewBox='0 0 460 160' role='img' aria-label='Same code behaves differently based on NODE_ENV'>
   <rect class='d-box-accent' x='160' y='20' width='140' height='38' rx='8'/>
@@ -362,7 +362,7 @@ app.use((err, req, res, next) => {
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "What is the role of the path module and why is it preferred over manual string concatenation?",
-    answer: `**TL;DR.** The <code>node:path</code> module builds and manipulates file paths **correctly across operating systems**, which use different separators (<code>/</code> on POSIX, <code>\\</code> on Windows). <code>path.join</code>/<code>path.resolve</code> pick the right separator, normalize redundant slashes and <code>..</code> segments, and avoid the subtle bugs of hand-built strings.
+    answer: `The <code>node:path</code> module builds and manipulates file paths **correctly across operating systems**, which use different separators (<code>/</code> on POSIX, <code>\\</code> on Windows). <code>path.join</code>/<code>path.resolve</code> pick the right separator, normalize redundant slashes and <code>..</code> segments, and avoid the subtle bugs of hand-built strings.
 
 <svg class='iq-diagram' viewBox='0 0 460 160' role='img' aria-label='path.join handles separators that manual concatenation gets wrong'>
   <rect class='d-box-muted' x='20' y='30' width='200' height='110' rx='10'/>

@@ -8,7 +8,7 @@ const augments: AiAugment[] = [
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "How do you build a golden dataset for evaluating an LLM feature?",
-    answer: `**TL;DR.** Source cases from **reality** (sampled traffic + user-flagged failures) plus synthetic coverage of rare-but-important scenarios; **50-200 well-chosen cases beat thousands of random ones**. Label with per-case criteria, adjudicate disagreements, **version it like code**, and keep folding in new production failures.
+    answer: `Source cases from **reality** (sampled traffic + user-flagged failures) plus synthetic coverage of rare-but-important scenarios; **50-200 well-chosen cases beat thousands of random ones**. Label with per-case criteria, adjudicate disagreements, **version it like code**, and keep folding in new production failures.
 
 <svg class='iq-diagram' viewBox='0 0 460 150' role='img' aria-label='Production traffic, flagged failures and synthetic edge cases flow into a labeled versioned golden set that gates changes'>
   <rect class='d-box' x='16' y='16' width='128' height='34' rx='8'/><text class='d-sub' x='80' y='37' text-anchor='middle'>sampled traffic</text>
@@ -59,7 +59,7 @@ const augments: AiAugment[] = [
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "When do you use code-based graders versus model-based graders?",
-    answer: `**TL;DR.** **Code graders** for anything objectively checkable — schema, exact/contains, numeric tolerance, tests passing, latency budgets: free, deterministic, unarguable. **Model graders** for what code cannot verify — relevance, faithfulness, tone. **Layer them**: code gates first, judge scores the survivors; and keep converting judged criteria into code checks.
+    answer: `**Code graders** for anything objectively checkable — schema, exact/contains, numeric tolerance, tests passing, latency budgets: free, deterministic, unarguable. **Model graders** for what code cannot verify — relevance, faithfulness, tone. **Layer them**: code gates first, judge scores the survivors; and keep converting judged criteria into code checks.
 
 <svg class='iq-diagram' viewBox='0 0 460 140' role='img' aria-label='Outputs pass cheap deterministic code gates first and only survivors reach the more expensive model judge'>
   <rect class='d-box' x='16' y='46' width='90' height='48' rx='9'/><text class='d-text' x='61' y='74' text-anchor='middle'>outputs</text>
@@ -116,7 +116,7 @@ const augments: AiAugment[] = [
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "How do you catch regressions when changing a prompt or upgrading a model?",
-    answer: `**TL;DR.** Run the eval suite on **every change** and compare to baseline — **overall and per-slice**, because aggregate parity can hide a badly regressing slice. Diff individual outputs to see *what* moved. For model upgrades: re-tune prompts, **re-validate judges**, then **canary** with live quality monitoring. No change ships without an eval delta.
+    answer: `Run the eval suite on **every change** and compare to baseline — **overall and per-slice**, because aggregate parity can hide a badly regressing slice. Diff individual outputs to see *what* moved. For model upgrades: re-tune prompts, **re-validate judges**, then **canary** with live quality monitoring. No change ships without an eval delta.
 
 <svg class='iq-diagram' viewBox='0 0 460 150' role='img' aria-label='Aggregate score parity hides a regressing slice revealed by per-slice comparison'>
   <text class='d-text' x='110' y='30' text-anchor='middle'>aggregate: looks fine</text>
@@ -160,7 +160,7 @@ exit 1   # merge blocked until the multilingual slice is addressed`,
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "What is red-teaming an LLM application and how is it done?",
-    answer: `**TL;DR.** Red-teaming = **attacking your own AI system** before users and adversaries do: jailbreaks, prompt injection via documents/tools, **data exfiltration** (system prompts, cross-tenant, PII), tool abuse, brand-damage outputs. Method: threat-model your app specifically, attack manually, scale with automated adversarial suites, and keep every successful attack as a **permanent regression test**.
+    answer: `Red-teaming = **attacking your own AI system** before users and adversaries do: jailbreaks, prompt injection via documents/tools, **data exfiltration** (system prompts, cross-tenant, PII), tool abuse, brand-damage outputs. Method: threat-model your app specifically, attack manually, scale with automated adversarial suites, and keep every successful attack as a **permanent regression test**.
 
 <svg class='iq-diagram' viewBox='0 0 460 150' role='img' aria-label='Threat model leads to manual and automated attacks whose findings become layered fixes and permanent regression tests'>
   <rect class='d-box' x='16' y='50' width='104' height='50' rx='9'/><text class='d-text' x='68' y='70' text-anchor='middle'>threat model</text><text class='d-sub' x='68' y='88' text-anchor='middle'>what can leak/act?</text>
@@ -205,7 +205,7 @@ exit 1   # merge blocked until the multilingual slice is addressed`,
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "How do you monitor LLM quality drift in production?",
-    answer: `**TL;DR.** Quality degrades **without any deploy**: user inputs drift, providers update models/infrastructure, upstream data changes. Monitor continuously: **LLM-judge scoring on sampled live traffic**, proxy signals (thumbs-down, retry/rephrase, guardrail + repair triggers, refusal rate, output-length shifts), and **alerts on deltas vs a rolling baseline**. Pin versions where offered; re-run the suite on provider updates; fold drifted failures into the golden set.
+    answer: `Quality degrades **without any deploy**: user inputs drift, providers update models/infrastructure, upstream data changes. Monitor continuously: **LLM-judge scoring on sampled live traffic**, proxy signals (thumbs-down, retry/rephrase, guardrail + repair triggers, refusal rate, output-length shifts), and **alerts on deltas vs a rolling baseline**. Pin versions where offered; re-run the suite on provider updates; fold drifted failures into the golden set.
 
 <svg class='iq-diagram' viewBox='0 0 460 150' role='img' aria-label='Live traffic is sampled and scored continuously; a quality timeline shows silent degradation caught by a rolling-baseline alert'>
   <rect class='d-box' x='16' y='24' width='110' height='44' rx='9'/><text class='d-text' x='71' y='43' text-anchor='middle'>live traffic</text><text class='d-sub' x='71' y='60' text-anchor='middle'>sample 2-5%</text>
@@ -252,7 +252,7 @@ await alerts.evaluate("quality.faithfulness", { window: "24h", baseline: "7d", s
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "Why are BLEU and ROUGE poor metrics for LLM outputs, and what replaced them?",
-    answer: `**TL;DR.** BLEU/ROUGE score **n-gram overlap with a reference**, assuming one right wording — but LLM outputs are open-ended: a perfect answer can share almost no n-grams with the reference, and overlapping words can still be factually wrong. Modern practice: **embedding similarity** for closeness-to-reference, **task-specific code checks** where objective, and **rubric-anchored LLM-as-judge** for open-ended quality.
+    answer: `BLEU/ROUGE score **n-gram overlap with a reference**, assuming one right wording — but LLM outputs are open-ended: a perfect answer can share almost no n-grams with the reference, and overlapping words can still be factually wrong. Modern practice: **embedding similarity** for closeness-to-reference, **task-specific code checks** where objective, and **rubric-anchored LLM-as-judge** for open-ended quality.
 
 <svg class='iq-diagram' viewBox='0 0 460 150' role='img' aria-label='Two answers compared to a reference: a correct paraphrase scores low on n-gram overlap while a wrong answer with overlapping words scores high'>
   <rect class='d-box-muted' x='130' y='14' width='200' height='30' rx='7'/><text class='d-sub' x='230' y='33' text-anchor='middle'>ref: "Refunds take 5-7 business days"</text>

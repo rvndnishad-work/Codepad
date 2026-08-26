@@ -8,7 +8,7 @@ const augments: AiAugment[] = [
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "What is semantic caching and when is it safe to use?",
-    answer: `**TL;DR.** Semantic caching **embeds incoming queries** and returns a **previous answer** when a past query is within a similarity threshold. Huge savings on FAQ-like traffic — but similar wording ≠ same intent, so it is only safe for **idempotent, non-personalized, informational** queries with high thresholds, tenant scoping and TTLs.
+    answer: `Semantic caching **embeds incoming queries** and returns a **previous answer** when a past query is within a similarity threshold. Huge savings on FAQ-like traffic — but similar wording ≠ same intent, so it is only safe for **idempotent, non-personalized, informational** queries with high thresholds, tenant scoping and TTLs.
 
 <svg class='iq-diagram' viewBox='0 0 460 150' role='img' aria-label='New query is embedded and compared to cached queries; a hit returns the stored answer, a miss calls the model'>
   <rect class='d-box' x='16' y='52' width='96' height='46' rx='9'/><text class='d-text' x='64' y='72' text-anchor='middle'>query</text><text class='d-sub' x='64' y='89' text-anchor='middle'>embed</text>
@@ -59,7 +59,7 @@ const augments: AiAugment[] = [
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "How does function calling (tool use) work under the hood?",
-    answer: `**TL;DR.** You send **tool definitions** (name, description, JSON-Schema params) with the conversation. The model **does not execute anything** — it returns a structured **tool-call message** (name + arguments); your code runs the function, appends the **result message**, and calls the model again until it answers in text. The model plans; **your runtime executes**.
+    answer: `You send **tool definitions** (name, description, JSON-Schema params) with the conversation. The model **does not execute anything** — it returns a structured **tool-call message** (name + arguments); your code runs the function, appends the **result message**, and calls the model again until it answers in text. The model plans; **your runtime executes**.
 
 <svg class='iq-diagram' viewBox='0 0 460 160' role='img' aria-label='Loop between model emitting tool calls and runtime executing them and returning results until a final text answer'>
   <rect class='d-box-accent' x='40' y='30' width='150' height='54' rx='10'/><text class='d-text' x='115' y='53' text-anchor='middle'>model</text><text class='d-sub' x='115' y='71' text-anchor='middle'>emits tool_use: name+args</text>
@@ -110,7 +110,7 @@ throw new Error("step budget exhausted");`,
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "How do you design good tool definitions for an LLM?",
-    answer: `**TL;DR.** The model is your API consumer: **verb-object names**, descriptions that say **when to use (and not use)** the tool, **few well-typed parameters** (enums over free strings), and results/errors the model can act on. **Fewer, higher-level tools** beat many granular ones — wrong-tool selection is the top tool-use failure.
+    answer: `The model is your API consumer: **verb-object names**, descriptions that say **when to use (and not use)** the tool, **few well-typed parameters** (enums over free strings), and results/errors the model can act on. **Fewer, higher-level tools** beat many granular ones — wrong-tool selection is the top tool-use failure.
 
 <svg class='iq-diagram' viewBox='0 0 460 150' role='img' aria-label='A bad vague tool definition contrasted with a good one that has clear name, usage guidance and typed parameters'>
   <rect class='d-box-muted' x='16' y='24' width='206' height='104' rx='10'/>
@@ -167,7 +167,7 @@ throw new Error("step budget exhausted");`,
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "What is an AI agent and how does the agent loop work?",
-    answer: `**TL;DR.** An agent = **model + tools + loop**: the model repeatedly decides an action, the runtime executes it, the observation feeds back — until the goal is met or a **budget** stops it. Everything else in agent frameworks is elaboration on this loop.
+    answer: `An agent = **model + tools + loop**: the model repeatedly decides an action, the runtime executes it, the observation feeds back — until the goal is met or a **budget** stops it. Everything else in agent frameworks is elaboration on this loop.
 
 <svg class='iq-diagram' viewBox='0 0 460 160' role='img' aria-label='Agent loop cycling through decide, act, observe with a termination check to final answer'>
   <rect class='d-box-accent' x='60' y='24' width='120' height='46' rx='10'/><text class='d-text' x='120' y='44' text-anchor='middle'>decide</text><text class='d-sub' x='120' y='60' text-anchor='middle'>model picks action</text>
@@ -219,7 +219,7 @@ while (true) {
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "What is the ReAct pattern and why did it become the default for agents?",
-    answer: `**TL;DR.** **ReAct = Reason + Act**: the model alternates explicit **thoughts** ("user wants X, I should check Y") with **actions** (tool calls), feeding each **observation** back before the next thought. Verbalized reasoning improves action selection and makes trajectories **debuggable** — which is why the structure stuck.
+    answer: `**ReAct = Reason + Act**: the model alternates explicit **thoughts** ("user wants X, I should check Y") with **actions** (tool calls), feeding each **observation** back before the next thought. Verbalized reasoning improves action selection and makes trajectories **debuggable** — which is why the structure stuck.
 
 <svg class='iq-diagram' viewBox='0 0 460 140' role='img' aria-label='ReAct alternates thought, action and observation in a repeating chain'>
   <rect class='d-box-accent' x='16' y='40' width='96' height='44' rx='9'/><text class='d-text' x='64' y='59' text-anchor='middle'>thought</text><text class='d-sub' x='64' y='76' text-anchor='middle'>plan next step</text>
@@ -264,7 +264,7 @@ Final:   "Q2 2026: $180 refunded across 2 orders; 1 refund ($75) still pending."
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "What is the Model Context Protocol (MCP) and what problem does it solve?",
-    answer: `**TL;DR.** MCP is an **open protocol** standardizing how AI apps connect to tools and data: a service ships **one MCP server** (exposing tools, resources, prompts) and **any MCP client** — Claude Desktop/Code, IDEs, custom agents — can use it. It kills the **N×M** custom-connector problem.
+    answer: `MCP is an **open protocol** standardizing how AI apps connect to tools and data: a service ships **one MCP server** (exposing tools, resources, prompts) and **any MCP client** — Claude Desktop/Code, IDEs, custom agents — can use it. It kills the **N×M** custom-connector problem.
 
 <svg class='iq-diagram' viewBox='0 0 460 160' role='img' aria-label='Without MCP every client needs a connector per service; with MCP clients and servers meet at one protocol'>
   <text class='d-text' x='110' y='30' text-anchor='middle'>before: N × M</text>

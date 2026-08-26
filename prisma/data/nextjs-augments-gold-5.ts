@@ -8,7 +8,7 @@ const augments: NextAugment[] = [
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "What is request memoization in Next.js?",
-    answer: `**TL;DR.** Within a **single server render**, Next.js **memoizes identical <code>fetch()</code> calls** (same URL + options) so multiple components requesting the same data trigger only **one** network call. This lets you fetch **where you need data** without prop-drilling or manual deduping.
+    answer: `Within a **single server render**, Next.js **memoizes identical <code>fetch()</code> calls** (same URL + options) so multiple components requesting the same data trigger only **one** network call. This lets you fetch **where you need data** without prop-drilling or manual deduping.
 
 <svg class='iq-diagram' viewBox='0 0 460 150' role='img' aria-label='Three components fetch the same URL, deduped to one call'>
   <rect class='d-box' x='20' y='30' width='120' height='28' rx='6'/><text class='d-sub' x='80' y='49' text-anchor='middle'>layout fetch /u</text>
@@ -51,7 +51,7 @@ async function Page({ params })   { const u = await getUser(params.id); /* same,
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "How do you handle loading and error states for data fetching in Next.js?",
-    answer: `**TL;DR.** Use <code>loading.js</code> (or <code>&lt;Suspense fallback&gt;</code>) to show **loading UI** while Server Component data resolves, and <code>error.js</code> to catch fetch/render **failures** with a retry. For **expected** states (empty, not found), handle them in code — often with <code>notFound()</code>.
+    answer: `Use <code>loading.js</code> (or <code>&lt;Suspense fallback&gt;</code>) to show **loading UI** while Server Component data resolves, and <code>error.js</code> to catch fetch/render **failures** with a retry. For **expected** states (empty, not found), handle them in code — often with <code>notFound()</code>.
 
 <svg class='iq-diagram' viewBox='0 0 460 150' role='img' aria-label='loading, error and not-found cover the fetch lifecycle'>
   <rect class='d-box-accent' x='20' y='55' width='120' height='40' rx='8'/><text class='d-sub' x='80' y='79' text-anchor='middle'>loading.js</text>
@@ -95,7 +95,7 @@ export default async function Page() {
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "What changed about caching defaults in Next.js 15?",
-    answer: `**TL;DR.** Next.js 15 made caching **opt-in rather than aggressive-by-default**: <code>fetch</code> and <code>GET</code> Route Handlers are **no longer cached** by default, and the client **Router Cache no longer reuses page segments** by default (<code>staleTime</code> 0). You now opt **into** caching explicitly when you want it.
+    answer: `Next.js 15 made caching **opt-in rather than aggressive-by-default**: <code>fetch</code> and <code>GET</code> Route Handlers are **no longer cached** by default, and the client **Router Cache no longer reuses page segments** by default (<code>staleTime</code> 0). You now opt **into** caching explicitly when you want it.
 
 <svg class='iq-diagram' viewBox='0 0 460 150' role='img' aria-label='Next 14 cached by default versus Next 15 opt-in caching'>
   <rect class='d-box-muted' x='20' y='30' width='200' height='100' rx='10'/><text class='d-text' x='120' y='54' text-anchor='middle'>Next 14</text><text class='d-sub' x='120' y='78' text-anchor='middle'>fetch cached by default</text><text class='d-sub' x='120' y='98' text-anchor='middle'>Router reuses segments</text><text class='d-sub' x='120' y='118' text-anchor='middle'>surprising staleness</text>
@@ -132,7 +132,7 @@ export const dynamic = 'force-static';`,
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "What are Server Actions in Next.js and how do they work?",
-    answer: `**TL;DR.** **Server Actions** are async functions marked <code>'use server'</code> that **run on the server** and can be called directly from components/forms — Next.js creates an **RPC endpoint** under the hood. They handle **mutations** (DB writes, revalidation) without you writing an API route.
+    answer: `**Server Actions** are async functions marked <code>'use server'</code> that **run on the server** and can be called directly from components/forms — Next.js creates an **RPC endpoint** under the hood. They handle **mutations** (DB writes, revalidation) without you writing an API route.
 
 <svg class='iq-diagram' viewBox='0 0 460 150' role='img' aria-label='Client invokes a use server function that runs on the server'>
   <rect class='d-box' x='20' y='52' width='130' height='46' rx='8'/><text class='d-text' x='85' y='73' text-anchor='middle'>form / button</text><text class='d-sub' x='85' y='90' text-anchor='middle'>calls action</text>
@@ -174,7 +174,7 @@ export async function addTodo(formData: FormData) {
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "How do you handle forms with Server Actions in Next.js (progressive enhancement)?",
-    answer: `**TL;DR.** Pass a Server Action to a <code>&lt;form action={...}&gt;</code>; it receives <code>FormData</code> and runs on the server. Because it works **without client JS**, forms are **progressively enhanced** — they submit even before hydration — and you pair it with <code>useActionState</code> for pending/error UI.
+    answer: `Pass a Server Action to a <code>&lt;form action={...}&gt;</code>; it receives <code>FormData</code> and runs on the server. Because it works **without client JS**, forms are **progressively enhanced** — they submit even before hydration — and you pair it with <code>useActionState</code> for pending/error UI.
 
 <svg class='iq-diagram' viewBox='0 0 460 150' role='img' aria-label='Form action posts FormData to a server action, works without JS'>
   <rect class='d-box-accent' x='20' y='52' width='140' height='46' rx='8'/><text class='d-text' x='90' y='73' text-anchor='middle'>&lt;form action&gt;</text><text class='d-sub' x='90' y='90' text-anchor='middle'>FormData</text>
@@ -221,7 +221,7 @@ export function PostForm() {
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "How do you do optimistic updates in Next.js (useOptimistic, useActionState)?",
-    answer: `**TL;DR.** <code>useOptimistic</code> applies a **temporary optimistic state immediately** while the Server Action is pending, **reverting** if it fails. <code>useActionState</code> tracks the action's **result and pending status**. Together they give responsive forms/mutations with proper **rollback**.
+    answer: `<code>useOptimistic</code> applies a **temporary optimistic state immediately** while the Server Action is pending, **reverting** if it fails. <code>useActionState</code> tracks the action's **result and pending status**. Together they give responsive forms/mutations with proper **rollback**.
 
 <svg class='iq-diagram' viewBox='0 0 460 150' role='img' aria-label='Optimistic UI shown instantly, confirmed or reverted after the action'>
   <rect class='d-box-accent' x='20' y='52' width='130' height='46' rx='8'/><text class='d-text' x='85' y='73' text-anchor='middle'>optimistic UI</text><text class='d-sub' x='85' y='90' text-anchor='middle'>shown instantly</text>
@@ -267,7 +267,7 @@ export function Like({ post }) {
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "How do you revalidate data after a mutation in Next.js?",
-    answer: `**TL;DR.** After a Server Action mutates data, call <code>revalidatePath()</code> or <code>revalidateTag()</code> to invalidate the affected caches, or <code>router.refresh()</code> on the client, so the UI reflects the change. Redirecting with <code>redirect()</code> also re-renders the target route fresh.
+    answer: `After a Server Action mutates data, call <code>revalidatePath()</code> or <code>revalidateTag()</code> to invalidate the affected caches, or <code>router.refresh()</code> on the client, so the UI reflects the change. Redirecting with <code>redirect()</code> also re-renders the target route fresh.
 
 <svg class='iq-diagram' viewBox='0 0 460 150' role='img' aria-label='Mutation followed by revalidate refreshes the UI'>
   <rect class='d-box-accent' x='20' y='52' width='120' height='46' rx='8'/><text class='d-text' x='80' y='73' text-anchor='middle'>mutation</text><text class='d-sub' x='80' y='90' text-anchor='middle'>DB write</text>
@@ -311,7 +311,7 @@ export async function createTodo(data) {
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "What are the security considerations for Server Actions in Next.js?",
-    answer: `**TL;DR.** Server Actions are **public HTTP endpoints**, so you must **authenticate/authorize inside each one**, **validate all inputs** (zod), and **never trust client-provided ids**. Next.js adds protections (encrypted action ids, same-origin checks), but auth and validation are **your** responsibility.
+    answer: `Server Actions are **public HTTP endpoints**, so you must **authenticate/authorize inside each one**, **validate all inputs** (zod), and **never trust client-provided ids**. Next.js adds protections (encrypted action ids, same-origin checks), but auth and validation are **your** responsibility.
 
 <svg class='iq-diagram' viewBox='0 0 460 150' role='img' aria-label='Every server action must check auth, validate input, and authorize'>
   <rect class='d-box' x='20' y='55' width='100' height='44' rx='8'/><text class='d-sub' x='70' y='81' text-anchor='middle'>authn</text>
@@ -361,7 +361,7 @@ export async function deletePost(input: unknown) {
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "How do Server Actions differ from Route Handlers in Next.js?",
-    answer: `**TL;DR.** **Server Actions** are **RPC-like** functions co-located with components, ideal for **form mutations** and progressive enhancement. **Route Handlers** (<code>route.js</code>) are **explicit HTTP endpoints** for webhooks, third-party clients, or public APIs. Use **Actions** for your own UI mutations, **Handlers** for external/HTTP needs.
+    answer: `**Server Actions** are **RPC-like** functions co-located with components, ideal for **form mutations** and progressive enhancement. **Route Handlers** (<code>route.js</code>) are **explicit HTTP endpoints** for webhooks, third-party clients, or public APIs. Use **Actions** for your own UI mutations, **Handlers** for external/HTTP needs.
 
 <svg class='iq-diagram' viewBox='0 0 460 150' role='img' aria-label='Server Actions for internal UI mutations, Route Handlers for external HTTP'>
   <rect class='d-box-accent' x='20' y='30' width='200' height='100' rx='10'/><text class='d-text' x='120' y='54' text-anchor='middle'>Server Actions</text><text class='d-sub' x='120' y='78' text-anchor='middle'>RPC, co-located</text><text class='d-sub' x='120' y='98' text-anchor='middle'>forms + mutations</text><text class='d-sub' x='120' y='118' text-anchor='middle'>your own UI</text>

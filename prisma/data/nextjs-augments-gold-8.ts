@@ -8,7 +8,7 @@ const augments: NextAugment[] = [
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "How do you fetch data in Next.js Server Components?",
-    answer: `**TL;DR.** Server Components can be **async** and <code>await</code> data **directly** — call <code>fetch()</code> (which integrates with Next.js caching) or query your **database/ORM** straight in the component. No <code>getServerSideProps</code> needed, and the data **never ships** to the client.
+    answer: `Server Components can be **async** and <code>await</code> data **directly** — call <code>fetch()</code> (which integrates with Next.js caching) or query your **database/ORM** straight in the component. No <code>getServerSideProps</code> needed, and the data **never ships** to the client.
 
 <svg class='iq-diagram' viewBox='0 0 460 150' role='img' aria-label='Async Server Component awaits data directly and renders'>
   <rect class='d-box-accent' x='20' y='45' width='170' height='60' rx='8'/><text class='d-text' x='105' y='70' text-anchor='middle'>async component</text><text class='d-sub' x='105' y='88' text-anchor='middle'>await fetch/db</text>
@@ -49,7 +49,7 @@ export default async function Dashboard() {
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "What is the difference between build-time and runtime environment variables in Next.js?",
-    answer: `**TL;DR.** <code>NEXT_PUBLIC_</code> vars are **inlined at build time**, so changing them requires a **rebuild**. Server-only vars read from <code>process.env</code> at **runtime** can change per environment **without rebuilding** (for dynamically-rendered code). This matters for **Docker images promoted across environments**.
+    answer: `<code>NEXT_PUBLIC_</code> vars are **inlined at build time**, so changing them requires a **rebuild**. Server-only vars read from <code>process.env</code> at **runtime** can change per environment **without rebuilding** (for dynamically-rendered code). This matters for **Docker images promoted across environments**.
 
 <svg class='iq-diagram' viewBox='0 0 460 150' role='img' aria-label='Build-time inlined public vars versus runtime server vars'>
   <rect class='d-box-muted' x='20' y='30' width='200' height='100' rx='10'/><text class='d-text' x='120' y='54' text-anchor='middle'>build-time</text><text class='d-sub' x='120' y='78' text-anchor='middle'>NEXT_PUBLIC_* inlined</text><text class='d-sub' x='120' y='98' text-anchor='middle'>baked into bundle</text><text class='d-sub' x='120' y='118' text-anchor='middle'>change → rebuild</text>
@@ -88,7 +88,7 @@ export default async function Page() {
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "What is the difference between getServerSideProps/getStaticProps and App Router data fetching?",
-    answer: `**TL;DR.** In the **Pages Router**, <code>getStaticProps</code> (build-time) and <code>getServerSideProps</code> (per-request) fetch data and **pass props** to a page. The **App Router** replaces both with **async Server Components** that fetch **directly**, using <code>fetch</code> caching/<code>revalidate</code> to choose static vs dynamic per call — more **granular and colocated**.
+    answer: `In the **Pages Router**, <code>getStaticProps</code> (build-time) and <code>getServerSideProps</code> (per-request) fetch data and **pass props** to a page. The **App Router** replaces both with **async Server Components** that fetch **directly**, using <code>fetch</code> caching/<code>revalidate</code> to choose static vs dynamic per call — more **granular and colocated**.
 
 <svg class='iq-diagram' viewBox='0 0 460 150' role='img' aria-label='Pages data functions versus App Router inline fetching'>
   <rect class='d-box-muted' x='20' y='30' width='200' height='100' rx='10'/><text class='d-text' x='120' y='54' text-anchor='middle'>Pages Router</text><text class='d-sub' x='120' y='78' text-anchor='middle'>getStaticProps (build)</text><text class='d-sub' x='120' y='98' text-anchor='middle'>getServerSideProps (req)</text><text class='d-sub' x='120' y='118' text-anchor='middle'>→ props to page</text>
@@ -129,7 +129,7 @@ export default async function Page() {
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "What is next.config.js in Next.js and what are common configurations?",
-    answer: `**TL;DR.** <code>next.config.js</code> (or <code>.ts</code>/<code>.mjs</code>) configures the build and runtime: <code>redirects()</code>, <code>rewrites()</code>, <code>headers()</code>, <code>images</code> (remote patterns/loaders), <code>output</code> mode, experimental flags, <code>env</code>, <code>transpilePackages</code>, and webpack/turbopack tweaks. It's evaluated at **build/start**, not per request.
+    answer: `<code>next.config.js</code> (or <code>.ts</code>/<code>.mjs</code>) configures the build and runtime: <code>redirects()</code>, <code>rewrites()</code>, <code>headers()</code>, <code>images</code> (remote patterns/loaders), <code>output</code> mode, experimental flags, <code>env</code>, <code>transpilePackages</code>, and webpack/turbopack tweaks. It's evaluated at **build/start**, not per request.
 
 <svg class='iq-diagram' viewBox='0 0 460 150' role='img' aria-label='next.config.js central configuration areas'>
   <rect class='d-box-accent' x='160' y='55' width='140' height='40' rx='8'/><text class='d-text' x='230' y='79' text-anchor='middle'>next.config</text>
@@ -177,7 +177,7 @@ export default config;`,
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "How do you handle redirects and rewrites in Next.js?",
-    answer: `**TL;DR.** Define **static** <code>redirects()</code>/<code>rewrites()</code> in <code>next.config.js</code> (a **redirect** changes the URL; a **rewrite** proxies internally while keeping the URL). For **dynamic/conditional** cases use **middleware** (<code>NextResponse.redirect/rewrite</code>) or call <code>redirect()</code> inside Server Components/Actions.
+    answer: `Define **static** <code>redirects()</code>/<code>rewrites()</code> in <code>next.config.js</code> (a **redirect** changes the URL; a **rewrite** proxies internally while keeping the URL). For **dynamic/conditional** cases use **middleware** (<code>NextResponse.redirect/rewrite</code>) or call <code>redirect()</code> inside Server Components/Actions.
 
 <svg class='iq-diagram' viewBox='0 0 460 150' role='img' aria-label='Redirect changes URL; rewrite keeps URL but serves other content'>
   <rect class='d-box-muted' x='20' y='30' width='200' height='100' rx='10'/><text class='d-text' x='120' y='54' text-anchor='middle'>redirect</text><text class='d-sub' x='120' y='78' text-anchor='middle'>/old → /new</text><text class='d-sub' x='120' y='98' text-anchor='middle'>URL changes (301/308)</text><text class='d-sub' x='120' y='118' text-anchor='middle'>browser navigates</text>
@@ -216,7 +216,7 @@ export function middleware(req) {
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "How do you internationalize (i18n) a Next.js App Router app?",
-    answer: `**TL;DR.** The App Router has **no built-in i18n routing** (unlike Pages), so you use a <code>[lang]</code> dynamic segment plus **middleware** to detect/redirect by locale, and a library (**next-intl**, next-i18next) to load translations. <code>generateStaticParams</code> pre-renders each locale; **metadata** is localized per route.
+    answer: `The App Router has **no built-in i18n routing** (unlike Pages), so you use a <code>[lang]</code> dynamic segment plus **middleware** to detect/redirect by locale, and a library (**next-intl**, next-i18next) to load translations. <code>generateStaticParams</code> pre-renders each locale; **metadata** is localized per route.
 
 <svg class='iq-diagram' viewBox='0 0 460 150' role='img' aria-label='Middleware detects locale, [lang] segment scopes translated routes'>
   <rect class='d-box-accent' x='20' y='52' width='120' height='46' rx='8'/><text class='d-text' x='80' y='73' text-anchor='middle'>middleware</text><text class='d-sub' x='80' y='90' text-anchor='middle'>detect locale</text>
@@ -259,7 +259,7 @@ export default async function Layout({ children, params }) {
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "How do you migrate from the Pages Router to the App Router in Next.js?",
-    answer: `**TL;DR.** <code>app/</code> and <code>pages/</code> **coexist**, so migrate **incrementally**: move routes into <code>app/</code> one at a time, convert data functions to **async Server Components**, replace <code>_app</code>/<code>_document</code> with a **root layout**, swap <code>getServerSideProps</code>/<code>getStaticProps</code> for <code>fetch</code>/segment config, and update <code>next/router</code> → <code>next/navigation</code>.
+    answer: `<code>app/</code> and <code>pages/</code> **coexist**, so migrate **incrementally**: move routes into <code>app/</code> one at a time, convert data functions to **async Server Components**, replace <code>_app</code>/<code>_document</code> with a **root layout**, swap <code>getServerSideProps</code>/<code>getStaticProps</code> for <code>fetch</code>/segment config, and update <code>next/router</code> → <code>next/navigation</code>.
 
 <svg class='iq-diagram' viewBox='0 0 460 150' role='img' aria-label='Pages and App routers coexist during incremental migration'>
   <rect class='d-box-muted' x='20' y='45' width='170' height='60' rx='8'/><text class='d-text' x='105' y='70' text-anchor='middle'>pages/ (legacy)</text><text class='d-sub' x='105' y='88' text-anchor='middle'>still works</text>
@@ -301,7 +301,7 @@ const params = useSearchParams();   // replaces router.query`,
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "How do you deploy a Next.js app (Vercel vs self-hosted)?",
-    answer: `**TL;DR.** **Vercel** offers zero-config hosting with built-in CDN, ISR, and edge functions. **Self-hosting** runs <code>next start</code> on a Node server or a **Docker** container (often <code>output: 'standalone'</code>); you then provide your own CDN, image optimizer, and revalidation infra. **Static export** works for purely static sites.
+    answer: `**Vercel** offers zero-config hosting with built-in CDN, ISR, and edge functions. **Self-hosting** runs <code>next start</code> on a Node server or a **Docker** container (often <code>output: 'standalone'</code>); you then provide your own CDN, image optimizer, and revalidation infra. **Static export** works for purely static sites.
 
 <svg class='iq-diagram' viewBox='0 0 460 150' role='img' aria-label='Deployment targets: Vercel, Node/Docker self-host, static export'>
   <rect class='d-box-accent' x='15' y='40' width='140' height='80' rx='10'/><text class='d-text' x='85' y='64' text-anchor='middle'>Vercel</text><text class='d-sub' x='85' y='86' text-anchor='middle'>zero-config</text><text class='d-sub' x='85' y='104' text-anchor='middle'>CDN/ISR/edge</text>
@@ -340,7 +340,7 @@ node server.js
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "What is the output: 'standalone' build in Next.js and when do you use it?",
-    answer: `**TL;DR.** <code>output: 'standalone'</code> produces a **minimal folder** with the server and **only the <code>node_modules</code> it needs**, so Docker images are **small** and don't require installing all dependencies. Use it for **self-hosted/containerized** deployments to cut image size and cold starts.
+    answer: `<code>output: 'standalone'</code> produces a **minimal folder** with the server and **only the <code>node_modules</code> it needs**, so Docker images are **small** and don't require installing all dependencies. Use it for **self-hosted/containerized** deployments to cut image size and cold starts.
 
 <svg class='iq-diagram' viewBox='0 0 460 150' role='img' aria-label='Standalone output traces only required files into a slim server bundle'>
   <rect class='d-box-muted' x='20' y='45' width='170' height='60' rx='8'/><text class='d-text' x='105' y='70' text-anchor='middle'>full app + deps</text><text class='d-sub' x='105' y='88' text-anchor='middle'>large</text>
@@ -379,7 +379,7 @@ CMD ["node", "server.js"]      # no node_modules install needed`,
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "How do you handle authentication in Next.js?",
-    answer: `**TL;DR.** Authenticate (credentials/OAuth via **NextAuth/Auth.js** or your own), store a session in an **HttpOnly cookie** or JWT, gate routes in **middleware** for fast redirects, and **verify the session in Server Components/Server Actions** before data access. **Never** rely on client-only checks.
+    answer: `Authenticate (credentials/OAuth via **NextAuth/Auth.js** or your own), store a session in an **HttpOnly cookie** or JWT, gate routes in **middleware** for fast redirects, and **verify the session in Server Components/Server Actions** before data access. **Never** rely on client-only checks.
 
 <svg class='iq-diagram' viewBox='0 0 460 150' role='img' aria-label='Middleware gates routes; server verifies session before data access'>
   <rect class='d-box-accent' x='20' y='52' width='120' height='46' rx='8'/><text class='d-text' x='80' y='73' text-anchor='middle'>middleware</text><text class='d-sub' x='80' y='90' text-anchor='middle'>gate/redirect</text>
@@ -422,7 +422,7 @@ export default async function Dashboard() {
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "What is Turbopack in Next.js and how does it compare to Webpack?",
-    answer: `**TL;DR.** **Turbopack** is Next.js's **Rust-based bundler** designed to replace Webpack, offering **much faster cold starts** and **incremental updates (HMR)** via fine-grained caching. It's the **default for <code>next dev</code>** in recent versions; Webpack remains the fallback while Turbopack's production builds mature.
+    answer: `**Turbopack** is Next.js's **Rust-based bundler** designed to replace Webpack, offering **much faster cold starts** and **incremental updates (HMR)** via fine-grained caching. It's the **default for <code>next dev</code>** in recent versions; Webpack remains the fallback while Turbopack's production builds mature.
 
 <svg class='iq-diagram' viewBox='0 0 460 150' role='img' aria-label='Turbopack Rust bundler faster than JS-based Webpack'>
   <rect class='d-box-muted' x='20' y='40' width='200' height='80' rx='10'/><text class='d-text' x='120' y='64' text-anchor='middle'>Webpack (JS)</text><text class='d-sub' x='120' y='86' text-anchor='middle'>mature, slower</text><text class='d-sub' x='120' y='104' text-anchor='middle'>large plugin ecosystem</text>
@@ -455,7 +455,7 @@ next dev`,
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "How do you handle instrumentation and observability in Next.js (instrumentation.ts)?",
-    answer: `**TL;DR.** <code>instrumentation.ts</code> exports a <code>register()</code> function that runs **once when the server starts** — the place to initialize **OpenTelemetry**, error monitoring (Sentry), or other tracing. Next.js also supports <code>onRequestError</code> and OpenTelemetry integration for **distributed tracing** across rendering and handlers.
+    answer: `<code>instrumentation.ts</code> exports a <code>register()</code> function that runs **once when the server starts** — the place to initialize **OpenTelemetry**, error monitoring (Sentry), or other tracing. Next.js also supports <code>onRequestError</code> and OpenTelemetry integration for **distributed tracing** across rendering and handlers.
 
 <svg class='iq-diagram' viewBox='0 0 460 150' role='img' aria-label='register() runs at startup to wire tracing and monitoring'>
   <rect class='d-box-accent' x='20' y='52' width='150' height='46' rx='8'/><text class='d-text' x='95' y='73' text-anchor='middle'>register()</text><text class='d-sub' x='95' y='90' text-anchor='middle'>at server start</text>

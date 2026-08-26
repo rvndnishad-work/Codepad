@@ -8,7 +8,7 @@ const augments: NodeAugment[] = [
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "What are `EventEmitter`s in Node.js?",
-    answer: `**TL;DR.** <code>EventEmitter</code> (from <code>node:events</code>) is the core class behind Node's **event-driven** model. Objects **emit named events** (<code>emitter.emit('data', payload)</code>) and **listeners** registered with <code>.on()</code> react to them. Streams, HTTP servers, sockets, and the process object all inherit from it.
+    answer: `<code>EventEmitter</code> (from <code>node:events</code>) is the core class behind Node's **event-driven** model. Objects **emit named events** (<code>emitter.emit('data', payload)</code>) and **listeners** registered with <code>.on()</code> react to them. Streams, HTTP servers, sockets, and the process object all inherit from it.
 
 <svg class='iq-diagram' viewBox='0 0 460 160' role='img' aria-label='An emitter dispatches a named event to multiple listeners'>
   <rect class='d-box-accent' x='20' y='55' width='140' height='50' rx='10'/>
@@ -57,7 +57,7 @@ job.emit('done', { ok: true });`,
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "Explain how the EventEmitter class works under the hood.",
-    answer: `**TL;DR.** Internally an <code>EventEmitter</code> keeps a plain object (<code>_events</code>) mapping **event name → listener(s)**. <code>.on()</code> pushes a function into that name's array; <code>.emit()</code> looks up the array and calls each listener **synchronously in order** with the emitted args. It's a simple registry, not magic.
+    answer: `Internally an <code>EventEmitter</code> keeps a plain object (<code>_events</code>) mapping **event name → listener(s)**. <code>.on()</code> pushes a function into that name's array; <code>.emit()</code> looks up the array and calls each listener **synchronously in order** with the emitted args. It's a simple registry, not magic.
 
 <svg class='iq-diagram' viewBox='0 0 460 170' role='img' aria-label='Internal map of event names to listener arrays'>
   <rect class='d-box-muted' x='20' y='25' width='420' height='120' rx='10'/>
@@ -102,7 +102,7 @@ console.log('after');   // ...so output is: before, A, B, after`,
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "Explain the concept of 'event-driven architecture' in Node.js.",
-    answer: `**TL;DR.** **Event-driven architecture (EDA)** structures a program around **producing and reacting to events** rather than calling functions directly. Node embodies this: the **event loop** dispatches I/O completion events, and <code>EventEmitter</code> lets your components emit/observe domain events — decoupling producers from consumers.
+    answer: `**Event-driven architecture (EDA)** structures a program around **producing and reacting to events** rather than calling functions directly. Node embodies this: the **event loop** dispatches I/O completion events, and <code>EventEmitter</code> lets your components emit/observe domain events — decoupling producers from consumers.
 
 <svg class='iq-diagram' viewBox='0 0 460 170' role='img' aria-label='Producers emit events that decoupled consumers react to'>
   <rect class='d-box' x='20' y='30' width='120' height='34' rx='8'/><text class='d-sub' x='80' y='52' text-anchor='middle'>order service</text>
@@ -149,7 +149,7 @@ bus.on('order.created', (o) => trackAnalytics('order', o));`,
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "What are 'Event Emitting' patterns and how does error-first callback convention relate to them?",
-    answer: `**TL;DR.** Node has two async patterns. **Error-first callbacks** ((<code>err, result</code>) as the last argument) suit **one-shot** operations like reading a file. **Event emitting** (<code>EventEmitter</code>) suits **repeated/streamed** results — many <code>'data'</code> events plus terminal <code>'end'</code>/<code>'error'</code> events. They share one rule: **errors are explicit**, either as the first callback arg or a dedicated <code>'error'</code> event.
+    answer: `Node has two async patterns. **Error-first callbacks** ((<code>err, result</code>) as the last argument) suit **one-shot** operations like reading a file. **Event emitting** (<code>EventEmitter</code>) suits **repeated/streamed** results — many <code>'data'</code> events plus terminal <code>'end'</code>/<code>'error'</code> events. They share one rule: **errors are explicit**, either as the first callback arg or a dedicated <code>'error'</code> event.
 
 <svg class='iq-diagram' viewBox='0 0 460 170' role='img' aria-label='Callback for one result, emitter for many events'>
   <rect class='d-box-accent' x='20' y='30' width='200' height='120' rx='10'/>
@@ -197,7 +197,7 @@ rs.on('end', () => console.log('done'));`,
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "Explain how modules work in Node.js.",
-    answer: `**TL;DR.** A **module** is a file with its **own scope**: variables are private unless explicitly exported. Node supports two systems — **CommonJS** (<code>require</code>/<code>module.exports</code>, loaded synchronously) and **ES Modules** (<code>import</code>/<code>export</code>, statically analyzed). Each file is loaded once and **cached**, so repeated requires return the same instance.
+    answer: `A **module** is a file with its **own scope**: variables are private unless explicitly exported. Node supports two systems — **CommonJS** (<code>require</code>/<code>module.exports</code>, loaded synchronously) and **ES Modules** (<code>import</code>/<code>export</code>, statically analyzed). Each file is loaded once and **cached**, so repeated requires return the same instance.
 
 <svg class='iq-diagram' viewBox='0 0 460 160' role='img' aria-label='A module exports a public surface and hides internals'>
   <rect class='d-box-muted' x='20' y='30' width='200' height='110' rx='10'/>
@@ -244,7 +244,7 @@ console.log(m1 === m2);              // true — cached singleton`,
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "Describe the Node.js module system. What are CommonJS and ES Modules?",
-    answer: `**TL;DR.** Node ships **two** module systems. **CommonJS (CJS)** uses <code>require()</code>/<code>module.exports</code>, loads **synchronously** at runtime, and is dynamic. **ES Modules (ESM)** use <code>import</code>/<code>export</code>, are **statically analyzed** before execution, support **top-level await** and tree-shaking, and are the JavaScript standard. Node decides per file via extension and the package <code>"type"</code> field.
+    answer: `Node ships **two** module systems. **CommonJS (CJS)** uses <code>require()</code>/<code>module.exports</code>, loads **synchronously** at runtime, and is dynamic. **ES Modules (ESM)** use <code>import</code>/<code>export</code>, are **statically analyzed** before execution, support **top-level await** and tree-shaking, and are the JavaScript standard. Node decides per file via extension and the package <code>"type"</code> field.
 
 <svg class='iq-diagram' viewBox='0 0 460 170' role='img' aria-label='CommonJS versus ES Modules characteristics'>
   <rect class='d-box-muted' x='20' y='25' width='200' height='130' rx='10'/>
@@ -292,7 +292,7 @@ const mod = await import('./dynamic.js');  // dynamic import works in both`,
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "What is the difference between \"type\": \"module\", .mjs, and .cjs?",
-    answer: `**TL;DR.** Node decides a file's module system **per file**: <code>.mjs</code> is **always ESM**, <code>.cjs</code> is **always CommonJS**, and a plain <code>.js</code> follows the **nearest <code>package.json</code> <code>"type"</code>** field — <code>"module"</code> means ESM, while <code>"commonjs"</code> or absent means CJS. The explicit extensions override the package default.
+    answer: `Node decides a file's module system **per file**: <code>.mjs</code> is **always ESM**, <code>.cjs</code> is **always CommonJS**, and a plain <code>.js</code> follows the **nearest <code>package.json</code> <code>"type"</code>** field — <code>"module"</code> means ESM, while <code>"commonjs"</code> or absent means CJS. The explicit extensions override the package default.
 
 <svg class='iq-diagram' viewBox='0 0 460 170' role='img' aria-label='How file extension and type field decide ESM vs CJS'>
   <rect class='d-box' x='20' y='30' width='120' height='40' rx='8'/><text class='d-text' x='80' y='54' text-anchor='middle'>.mjs</text>
@@ -338,7 +338,7 @@ module.exports = { old };`,
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "How do you handle circular dependencies in Node.js?",
-    answer: `**TL;DR.** A **circular dependency** is when module A requires B and B requires A. Node won't infinite-loop — it returns a **partial export** of whichever module is still mid-execution. That can yield <code>undefined</code> imports if you use them at load time. Fix by **restructuring** (extract shared code into a third module), deferring access, or using late <code>require</code>.
+    answer: `A **circular dependency** is when module A requires B and B requires A. Node won't infinite-loop — it returns a **partial export** of whichever module is still mid-execution. That can yield <code>undefined</code> imports if you use them at load time. Fix by **restructuring** (extract shared code into a third module), deferring access, or using late <code>require</code>.
 
 <svg class='iq-diagram' viewBox='0 0 460 150' role='img' aria-label='A requires B and B requires A, forming a cycle'>
   <rect class='d-box-accent' x='60' y='55' width='110' height='44' rx='8'/><text class='d-text' x='115' y='82' text-anchor='middle'>module A</text>
@@ -382,7 +382,7 @@ module.exports.value = 42;
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "What is top-level await and what are its caveats in Node.js ESM?",
-    answer: `**TL;DR.** **Top-level await** lets you use <code>await</code> directly in an **ES module** body (no wrapping <code>async</code> function). It's great for async setup — opening a DB, dynamic imports, fetching config. The caveat: it **blocks the importing module** until it resolves, so a slow top-level await delays everything downstream and can deadlock with circular imports.
+    answer: `**Top-level await** lets you use <code>await</code> directly in an **ES module** body (no wrapping <code>async</code> function). It's great for async setup — opening a DB, dynamic imports, fetching config. The caveat: it **blocks the importing module** until it resolves, so a slow top-level await delays everything downstream and can deadlock with circular imports.
 
 <svg class='iq-diagram' viewBox='0 0 460 150' role='img' aria-label='An importer waits for the awaited module to finish initializing'>
   <rect class='d-box-accent' x='20' y='50' width='150' height='50' rx='8'/>

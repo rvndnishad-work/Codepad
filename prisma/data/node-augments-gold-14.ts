@@ -8,7 +8,7 @@ const augments: NodeAugment[] = [
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "Explain 'dependency injection' and how it can be used in Node.js.",
-    answer: `**TL;DR.** **Dependency injection (DI)** means a module receives its **collaborators from outside** (constructor/parameters) instead of creating them itself. This **decouples** code, makes it **testable** (inject mocks/fakes), and centralizes wiring. In Node you often do DI **manually** (pass deps in) or with a container (Awilix, NestJS, tsyringe).
+    answer: `**Dependency injection (DI)** means a module receives its **collaborators from outside** (constructor/parameters) instead of creating them itself. This **decouples** code, makes it **testable** (inject mocks/fakes), and centralizes wiring. In Node you often do DI **manually** (pass deps in) or with a container (Awilix, NestJS, tsyringe).
 
 <svg class='iq-diagram' viewBox='0 0 460 150' role='img' aria-label='Dependencies injected into a service rather than created inside it'>
   <rect class='d-box-muted' x='20' y='40' width='110' height='28' rx='6'/><text class='d-sub' x='75' y='59' text-anchor='middle'>db</text>
@@ -56,7 +56,7 @@ const svc = new UserService({ repo: new PgUserRepo(), mailer, logger });`,
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "What are some best practices for structuring a Node.js project?",
-    answer: `**TL;DR.** Organize by **feature/domain**, separate **layers** (routes/controllers → services → data access), keep **config in the environment**, centralize **error handling**, and isolate the **app** from the **server** (for testing). Favor small modules with single responsibilities over one giant file.
+    answer: `Organize by **feature/domain**, separate **layers** (routes/controllers → services → data access), keep **config in the environment**, centralize **error handling**, and isolate the **app** from the **server** (for testing). Favor small modules with single responsibilities over one giant file.
 
 <svg class='iq-diagram' viewBox='0 0 460 150' role='img' aria-label='Layered structure: routes to services to repositories'>
   <rect class='d-box-accent' x='40' y='25' width='380' height='28' rx='6'/><text class='d-text' x='230' y='44' text-anchor='middle'>routes / controllers (HTTP)</text>
@@ -99,7 +99,7 @@ app.listen(process.env.PORT ?? 3000);
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "How can you debug a Node.js application?",
-    answer: `**TL;DR.** Use the built-in **inspector**: launch with <code>node --inspect</code> (or <code>--inspect-brk</code>) and connect **Chrome DevTools** or your **IDE** (VS Code) for breakpoints, stepping, watches, and the console. Beyond that: structured **logging**, the <code>debug</code> namespace lib, CPU/heap **profiling**, and <code>node --inspect</code> for production triage.
+    answer: `Use the built-in **inspector**: launch with <code>node --inspect</code> (or <code>--inspect-brk</code>) and connect **Chrome DevTools** or your **IDE** (VS Code) for breakpoints, stepping, watches, and the console. Beyond that: structured **logging**, the <code>debug</code> namespace lib, CPU/heap **profiling**, and <code>node --inspect</code> for production triage.
 
 <svg class='iq-diagram' viewBox='0 0 460 150' role='img' aria-label='Node inspector exposes a debug protocol to DevTools/IDE'>
   <rect class='d-box-accent' x='20' y='52' width='150' height='46' rx='8'/><text class='d-text' x='95' y='73' text-anchor='middle'>node --inspect</text><text class='d-sub' x='95' y='90' text-anchor='middle'>inspector protocol</text>
@@ -140,7 +140,7 @@ DEBUG=app:* node server.js`,
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "Explain the concept of REPL in Node.js",
-    answer: `**TL;DR.** **REPL** = **Read-Eval-Print Loop**: an interactive shell that **reads** an expression, **evaluates** it, **prints** the result, and **loops**. Start it by running <code>node</code> with no file. It's great for quickly trying APIs, inspecting values, and prototyping; you can also build **custom REPLs** with the <code>repl</code> module.
+    answer: `**REPL** = **Read-Eval-Print Loop**: an interactive shell that **reads** an expression, **evaluates** it, **prints** the result, and **loops**. Start it by running <code>node</code> with no file. It's great for quickly trying APIs, inspecting values, and prototyping; you can also build **custom REPLs** with the <code>repl</code> module.
 
 <svg class='iq-diagram' viewBox='0 0 460 150' role='img' aria-label='Read evaluate print loop cycle'>
   <rect class='d-box-accent' x='30' y='60' width='80' height='38' rx='8'/><text class='d-text' x='70' y='84' text-anchor='middle'>Read</text>
@@ -188,7 +188,7 @@ r.context.db = db;           // now you can use 'db' in the prompt`,
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "What is the purpose of the assert module in Node.js?",
-    answer: `**TL;DR.** <code>node:assert</code> provides **assertion** functions that throw an <code>AssertionError</code> when a condition is false. It's the foundation for **tests** (used by <code>node:test</code>) and for enforcing **invariants** in code. Prefer the **strict** mode (<code>node:assert/strict</code>) so comparisons use <code>===</code> semantics.
+    answer: `<code>node:assert</code> provides **assertion** functions that throw an <code>AssertionError</code> when a condition is false. It's the foundation for **tests** (used by <code>node:test</code>) and for enforcing **invariants** in code. Prefer the **strict** mode (<code>node:assert/strict</code>) so comparisons use <code>===</code> semantics.
 
 <svg class='iq-diagram' viewBox='0 0 460 150' role='img' aria-label='Assertion passes silently or throws AssertionError'>
   <rect class='d-box-accent' x='20' y='52' width='150' height='46' rx='8'/><text class='d-text' x='95' y='73' text-anchor='middle'>assert(condition)</text><text class='d-sub' x='95' y='90' text-anchor='middle'>check invariant</text>
@@ -230,7 +230,7 @@ function area({ w, h }) { assert(w > 0 && h > 0, 'dims must be positive'); retur
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "What is the use of the 'os' module in Node.js?",
-    answer: `**TL;DR.** <code>node:os</code> exposes **operating-system information**: CPU cores (<code>os.cpus()</code>), total/free **memory**, **platform**/architecture, **hostname**, **network interfaces**, uptime, load average, the temp dir, and the EOL/path separators. It's used for **scaling decisions**, diagnostics, and writing **cross-platform** code.
+    answer: `<code>node:os</code> exposes **operating-system information**: CPU cores (<code>os.cpus()</code>), total/free **memory**, **platform**/architecture, **hostname**, **network interfaces**, uptime, load average, the temp dir, and the EOL/path separators. It's used for **scaling decisions**, diagnostics, and writing **cross-platform** code.
 
 <svg class='iq-diagram' viewBox='0 0 460 150' role='img' aria-label='os module surfaces CPU, memory, platform and network info'>
   <rect class='d-box-accent' x='160' y='55' width='140' height='44' rx='8'/><text class='d-text' x='230' y='81' text-anchor='middle'>node:os</text>
@@ -275,7 +275,7 @@ const tmpFile = path.join(os.tmpdir(), 'upload.tmp');   // portable, not '/tmp'`
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "What is the purpose of the 'zlib' module in Node.js?",
-    answer: `**TL;DR.** <code>node:zlib</code> provides **compression and decompression** — gzip, deflate, and **brotli** — as one-shot helpers and as **streams** you pipe through. Use it to shrink HTTP responses, compress stored data/backups, and read/write <code>.gz</code> files. CPU-heavy work is offloaded to the **libuv thread pool**.
+    answer: `<code>node:zlib</code> provides **compression and decompression** — gzip, deflate, and **brotli** — as one-shot helpers and as **streams** you pipe through. Use it to shrink HTTP responses, compress stored data/backups, and read/write <code>.gz</code> files. CPU-heavy work is offloaded to the **libuv thread pool**.
 
 <svg class='iq-diagram' viewBox='0 0 460 150' role='img' aria-label='Data piped through gzip transform becomes smaller'>
   <rect class='d-box' x='20' y='52' width='110' height='46' rx='8'/><text class='d-sub' x='75' y='79' text-anchor='middle'>read stream</text>
@@ -318,7 +318,7 @@ await pipeline(
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "What is the 'vm' (Virtual Machine) module and when would you use it?",
-    answer: `**TL;DR.** <code>node:vm</code> compiles and runs JavaScript in a **separate V8 context** with its **own global object**, so the code doesn't see your module scope. It's useful for **isolating** dynamic code (templating, plugins, REPLs, config DSLs) — but it is **NOT a security sandbox** on its own; untrusted code can still escape and reach the host.
+    answer: `<code>node:vm</code> compiles and runs JavaScript in a **separate V8 context** with its **own global object**, so the code doesn't see your module scope. It's useful for **isolating** dynamic code (templating, plugins, REPLs, config DSLs) — but it is **NOT a security sandbox** on its own; untrusted code can still escape and reach the host.
 
 <svg class='iq-diagram' viewBox='0 0 460 150' role='img' aria-label='vm runs code in a separate context with its own globals'>
   <rect class='d-box-accent' x='20' y='40' width='180' height='80' rx='10'/><text class='d-text' x='110' y='64' text-anchor='middle'>host context</text><text class='d-sub' x='110' y='86' text-anchor='middle'>your app + require/process</text>

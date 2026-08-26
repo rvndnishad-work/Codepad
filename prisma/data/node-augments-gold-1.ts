@@ -1,6 +1,6 @@
 /**
  * Node Phase N3 — Batch 1 (Fundamentals & runtime). Gold-standard rewrites:
- * TL;DR + theme-aware <svg class='iq-diagram'> diagram + GFM table + interview
+ * + theme-aware <svg class='iq-diagram'> diagram + GFM table + interview
  * tip + a Node code example. Picked up by `npm run augment:node`.
  *
  * Conventions: SVGs use the shared .iq-diagram helper classes (d-box, d-box-accent,
@@ -15,7 +15,7 @@ const augments: NodeAugment[] = [
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "What is Node.js and why is it popular?",
-    answer: `**TL;DR.** Node.js is a **runtime** that runs JavaScript outside the browser, built on Chrome's **V8** engine plus **libuv** for non-blocking I/O. Its single-threaded, **event-driven** model handles thousands of concurrent connections cheaply, and "JavaScript everywhere" lets teams share one language across front and back end.
+    answer: `Node.js is a **runtime** that runs JavaScript outside the browser, built on Chrome's **V8** engine plus **libuv** for non-blocking I/O. Its single-threaded, **event-driven** model handles thousands of concurrent connections cheaply, and "JavaScript everywhere" lets teams share one language across front and back end.
 
 <svg class='iq-diagram' viewBox='0 0 460 200' role='img' aria-label='Node.js is V8 plus libuv plus core libraries running JavaScript on the server'>
   <rect class='d-box-muted' x='20' y='20' width='420' height='160' rx='10'/>
@@ -62,7 +62,7 @@ server.listen(3000, () => console.log('Listening on :3000'));`,
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "When would you choose Node.js over other backend technologies?",
-    answer: `**TL;DR.** Choose Node.js for **I/O-bound, high-concurrency** work — REST/GraphQL APIs, real-time apps (chat, notifications), streaming, and BFF/gateway layers — especially when your team already writes JavaScript. Avoid it for **CPU-bound** number-crunching, where a multi-threaded runtime (Go, Java, Rust) fits better.
+    answer: `Choose Node.js for **I/O-bound, high-concurrency** work — REST/GraphQL APIs, real-time apps (chat, notifications), streaming, and BFF/gateway layers — especially when your team already writes JavaScript. Avoid it for **CPU-bound** number-crunching, where a multi-threaded runtime (Go, Java, Rust) fits better.
 
 <svg class='iq-diagram' viewBox='0 0 460 190' role='img' aria-label='Node.js suits I/O-bound work, struggles with CPU-bound work'>
   <rect class='d-box-accent' x='20' y='30' width='200' height='130' rx='10'/>
@@ -113,7 +113,7 @@ app.get('/dashboard', async (req, res) => {
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "Describe the Node.js architecture.",
-    answer: `**TL;DR.** Node layers **your JS** on top of **V8** (executes JS), **libuv** (event loop + thread pool + async I/O), and **C/C++ bindings** to OS APIs. The single JS thread runs your code and callbacks; libuv offloads blocking work and feeds completed results back through the **event loop**.
+    answer: `Node layers **your JS** on top of **V8** (executes JS), **libuv** (event loop + thread pool + async I/O), and **C/C++ bindings** to OS APIs. The single JS thread runs your code and callbacks; libuv offloads blocking work and feeds completed results back through the **event loop**.
 
 <svg class='iq-diagram' viewBox='0 0 460 220' role='img' aria-label='Layered Node.js architecture from JS down to the OS'>
   <rect class='d-box-accent' x='60' y='20' width='340' height='34' rx='8'/>
@@ -165,7 +165,7 @@ console.log('2: sync, runs before the callback');
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "What is the role of the V8 JavaScript engine in Node.js?",
-    answer: `**TL;DR.** **V8** is Google's open-source JavaScript engine (also in Chrome). In Node it **parses and executes** your JS, **JIT-compiles** hot code to native machine code, and **manages memory/garbage collection**. Node adds the server APIs around it; V8 is the part that actually runs the language.
+    answer: `**V8** is Google's open-source JavaScript engine (also in Chrome). In Node it **parses and executes** your JS, **JIT-compiles** hot code to native machine code, and **manages memory/garbage collection**. Node adds the server APIs around it; V8 is the part that actually runs the language.
 
 <svg class='iq-diagram' viewBox='0 0 460 180' role='img' aria-label='V8 pipeline from source to optimized machine code'>
   <rect class='d-box' x='10' y='70' width='90' height='44' rx='8'/>
@@ -219,7 +219,7 @@ function area(p) { return p.w * p.h; }     // always {w, h} → stays fast
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "What is the role of `libuv` in Node.js?",
-    answer: `**TL;DR.** **libuv** is the C library that gives Node its **event loop**, its **thread pool**, and cross-platform **async I/O**. It abstracts OS primitives (epoll on Linux, kqueue on macOS, IOCP on Windows) and offloads work that has no async OS API onto a small thread pool — this is what makes single-threaded Node non-blocking.
+    answer: `**libuv** is the C library that gives Node its **event loop**, its **thread pool**, and cross-platform **async I/O**. It abstracts OS primitives (epoll on Linux, kqueue on macOS, IOCP on Windows) and offloads work that has no async OS API onto a small thread pool — this is what makes single-threaded Node non-blocking.
 
 <svg class='iq-diagram' viewBox='0 0 460 200' role='img' aria-label='libuv routes work to OS async I/O or its thread pool'>
   <rect class='d-box-accent' x='170' y='20' width='120' height='40' rx='8'/>
@@ -265,7 +265,7 @@ UV_THREADPOOL_SIZE=8 node server.js
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "Explain the Node.js event loop.",
-    answer: `**TL;DR.** The **event loop** is the heart of Node's concurrency: a single thread that repeatedly runs queued callbacks across ordered **phases** (timers → pending → poll → check → close). Between phases (and after each callback) it drains the **microtask** queues (<code>process.nextTick</code>, then Promises). This lets one thread juggle many async operations without blocking.
+    answer: `The **event loop** is the heart of Node's concurrency: a single thread that repeatedly runs queued callbacks across ordered **phases** (timers → pending → poll → check → close). Between phases (and after each callback) it drains the **microtask** queues (<code>process.nextTick</code>, then Promises). This lets one thread juggle many async operations without blocking.
 
 <svg class='iq-diagram' viewBox='0 0 460 210' role='img' aria-label='Event loop phases in a cycle'>
   <rect class='d-box-accent' x='160' y='14' width='140' height='34' rx='8'/>
@@ -319,7 +319,7 @@ console.log('2 sync');
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "How does the Node.js event loop work?",
-    answer: `**TL;DR.** Practically: Node runs your synchronous code first, then enters the **event loop**, which in each tick runs a phase's callbacks and, after *every* callback, drains **microtasks** (<code>process.nextTick</code> → Promises) before moving on. The single thread keeps cycling phases until no timers, I/O, or immediates remain, then exits.
+    answer: `Practically: Node runs your synchronous code first, then enters the **event loop**, which in each tick runs a phase's callbacks and, after *every* callback, drains **microtasks** (<code>process.nextTick</code> → Promises) before moving on. The single thread keeps cycling phases until no timers, I/O, or immediates remain, then exits.
 
 <svg class='iq-diagram' viewBox='0 0 460 180' role='img' aria-label='Macrotask then microtask drain each tick'>
   <rect class='d-box' x='20' y='40' width='150' height='100' rx='10'/>
@@ -369,7 +369,7 @@ Promise.resolve()
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "What is the difference between blocking and non-blocking I/O in Node.js?",
-    answer: `**TL;DR.** **Blocking** I/O makes the thread **wait** until the operation completes (e.g. <code>fs.readFileSync</code>) — nothing else runs meanwhile. **Non-blocking** I/O **returns immediately** and notifies you later via a callback/Promise (e.g. <code>fs.readFile</code>, <code>fs.promises.readFile</code>), letting the single thread serve other work while the OS/libuv does the I/O.
+    answer: `**Blocking** I/O makes the thread **wait** until the operation completes (e.g. <code>fs.readFileSync</code>) — nothing else runs meanwhile. **Non-blocking** I/O **returns immediately** and notifies you later via a callback/Promise (e.g. <code>fs.readFile</code>, <code>fs.promises.readFile</code>), letting the single thread serve other work while the OS/libuv does the I/O.
 
 <svg class='iq-diagram' viewBox='0 0 460 200' role='img' aria-label='Blocking waits inline, non-blocking continues and gets a callback'>
   <text class='d-text' x='115' y='28' text-anchor='middle'>Blocking</text>
@@ -420,7 +420,7 @@ readFile('./data.json', 'utf8', (err, data) => {
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "How does the thread pool work in Node.js?",
-    answer: `**TL;DR.** libuv keeps a small **thread pool** (default **4**, set via <code>UV_THREADPOOL_SIZE</code>, max 1024) to run operations that have **no async OS API** — file system, <code>dns.lookup</code>, and CPU-bound <code>crypto</code>/<code>zlib</code>. Network sockets do **not** use it. When a pool thread finishes, it queues your callback back onto the event loop.
+    answer: `libuv keeps a small **thread pool** (default **4**, set via <code>UV_THREADPOOL_SIZE</code>, max 1024) to run operations that have **no async OS API** — file system, <code>dns.lookup</code>, and CPU-bound <code>crypto</code>/<code>zlib</code>. Network sockets do **not** use it. When a pool thread finishes, it queues your callback back onto the event loop.
 
 <svg class='iq-diagram' viewBox='0 0 460 190' role='img' aria-label='Tasks queue into a fixed-size libuv thread pool'>
   <rect class='d-box-accent' x='20' y='70' width='110' height='44' rx='8'/>
@@ -473,7 +473,7 @@ for (let i = 0; i < 5; i++) {
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "How do you achieve concurrency in Node.js since it's single-threaded?",
-    answer: `**TL;DR.** Node's JS runs on one thread, but it achieves **concurrency** three ways: (1) **non-blocking I/O** via the event loop + libuv (the everyday model), (2) **worker_threads** for CPU-bound work in the same process, and (3) **child_process / cluster** to run multiple processes across CPU cores. Pick based on whether the bottleneck is **I/O** or **CPU**.
+    answer: `Node's JS runs on one thread, but it achieves **concurrency** three ways: (1) **non-blocking I/O** via the event loop + libuv (the everyday model), (2) **worker_threads** for CPU-bound work in the same process, and (3) **child_process / cluster** to run multiple processes across CPU cores. Pick based on whether the bottleneck is **I/O** or **CPU**.
 
 <svg class='iq-diagram' viewBox='0 0 460 190' role='img' aria-label='Three concurrency strategies in Node'>
   <rect class='d-box-accent' x='15' y='40' width='135' height='120' rx='10'/>

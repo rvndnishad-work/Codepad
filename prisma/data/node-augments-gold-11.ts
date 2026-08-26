@@ -8,7 +8,7 @@ const augments: NodeAugment[] = [
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "How do you handle environment variables in Node.js?",
-    answer: `**TL;DR.** Read environment variables from <code>process.env</code>. Keep secrets and per-environment settings **out of code** — load them from the real environment (or a <code>.env</code> file in dev via <code>--env-file</code>/dotenv), **validate** them at startup, and never commit <code>.env</code>. This follows the 12-factor "config in the environment" principle.
+    answer: `Read environment variables from <code>process.env</code>. Keep secrets and per-environment settings **out of code** — load them from the real environment (or a <code>.env</code> file in dev via <code>--env-file</code>/dotenv), **validate** them at startup, and never commit <code>.env</code>. This follows the 12-factor "config in the environment" principle.
 
 <svg class='iq-diagram' viewBox='0 0 460 150' role='img' aria-label='Environment variables injected into the process and validated at boot'>
   <rect class='d-box-muted' x='20' y='50' width='130' height='48' rx='8'/><text class='d-sub' x='85' y='70' text-anchor='middle'>.env / shell /</text><text class='d-sub' x='85' y='88' text-anchor='middle'>secrets manager</text>
@@ -52,7 +52,7 @@ export const env = Env.parse(process.env);   // throws at boot if invalid
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "How do you manage configuration in a Node.js application for different environments?",
-    answer: `**TL;DR.** Keep configuration **in the environment**, not in code, and **layer** it: sensible defaults → per-environment overrides → environment variables/secrets (highest precedence). Validate the merged config **once at startup** into a typed object, so dev/staging/prod differ only by their env, not their build.
+    answer: `Keep configuration **in the environment**, not in code, and **layer** it: sensible defaults → per-environment overrides → environment variables/secrets (highest precedence). Validate the merged config **once at startup** into a typed object, so dev/staging/prod differ only by their env, not their build.
 
 <svg class='iq-diagram' viewBox='0 0 460 150' role='img' aria-label='Defaults overridden by env-specific values then env vars'>
   <rect class='d-box' x='20' y='52' width='120' height='44' rx='8'/><text class='d-sub' x='80' y='72' text-anchor='middle'>defaults</text><text class='d-sub' x='80' y='88' text-anchor='middle'>(lowest)</text>
@@ -100,7 +100,7 @@ export const config = Object.freeze(Schema.parse({
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "How do you manage sessions and authentication in a Node.js web application?",
-    answer: `**TL;DR.** Authenticate the user (password+hash, OAuth, magic link), then maintain a **session**: either **server-side sessions** (a record in Redis keyed by a signed <code>HttpOnly</code> cookie) or **stateless tokens** (JWT). Protect cookies (<code>HttpOnly</code>, <code>Secure</code>, <code>SameSite</code>), guard against **CSRF** and **session fixation**, and authorize per request.
+    answer: `Authenticate the user (password+hash, OAuth, magic link), then maintain a **session**: either **server-side sessions** (a record in Redis keyed by a signed <code>HttpOnly</code> cookie) or **stateless tokens** (JWT). Protect cookies (<code>HttpOnly</code>, <code>Secure</code>, <code>SameSite</code>), guard against **CSRF** and **session fixation**, and authorize per request.
 
 <svg class='iq-diagram' viewBox='0 0 460 150' role='img' aria-label='Login creates a session stored in Redis, cookie carries the id'>
   <rect class='d-box-accent' x='20' y='52' width='110' height='44' rx='8'/><text class='d-text' x='75' y='73' text-anchor='middle'>login</text><text class='d-sub' x='75' y='89' text-anchor='middle'>verify creds</text>
@@ -148,7 +148,7 @@ app.post('/login', async (req, res) => {
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "How do you validate and sanitize request input (zod / joi)?",
-    answer: `**TL;DR.** Validate **every external input** (body, query, params, headers) against an explicit **schema** (zod, joi) at the **boundary**, rejecting malformed requests before they reach business logic. With **zod** the schema also **infers the TypeScript type**, giving one source of truth for runtime checks and static types.
+    answer: `Validate **every external input** (body, query, params, headers) against an explicit **schema** (zod, joi) at the **boundary**, rejecting malformed requests before they reach business logic. With **zod** the schema also **infers the TypeScript type**, giving one source of truth for runtime checks and static types.
 
 <svg class='iq-diagram' viewBox='0 0 460 150' role='img' aria-label='Schema validates input at the boundary, rejecting bad data'>
   <rect class='d-box' x='20' y='52' width='110' height='44' rx='8'/><text class='d-sub' x='75' y='78' text-anchor='middle'>raw request</text>
@@ -198,7 +198,7 @@ app.post('/users', validate(CreateUser), createUser);`,
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "How do you prevent SQL injection in Node.js database access?",
-    answer: `**TL;DR.** **Never interpolate user input into SQL strings.** Use **parameterized / prepared statements** (<code>$1</code>, <code>?</code> placeholders) so the driver sends the query and the data **separately** — the input is treated as a value, never as SQL, making injection impossible. ORMs and query builders parameterize by default.
+    answer: `**Never interpolate user input into SQL strings.** Use **parameterized / prepared statements** (<code>$1</code>, <code>?</code> placeholders) so the driver sends the query and the data **separately** — the input is treated as a value, never as SQL, making injection impossible. ORMs and query builders parameterize by default.
 
 <svg class='iq-diagram' viewBox='0 0 460 150' role='img' aria-label='Parameterized query keeps SQL and user data separate'>
   <rect class='d-box-muted' x='20' y='30' width='200' height='44' rx='8'/><text class='d-sub' x='120' y='51' text-anchor='middle'>"…WHERE id=" + input</text><text class='d-sub' x='120' y='67' text-anchor='middle'>❌ injectable</text>
@@ -239,7 +239,7 @@ const { rows } = await db.query(
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "How do database transactions work in Node.js and how do you avoid connection leaks?",
-    answer: `**TL;DR.** A transaction runs <code>BEGIN</code> → your queries → <code>COMMIT</code> (or <code>ROLLBACK</code> on error) on a **single** connection checked out from the pool, giving **all-or-nothing** atomicity. The classic leak is forgetting to **release** that connection on an error path — so always release in a <code>finally</code> (or use the driver's managed-transaction helper).
+    answer: `A transaction runs <code>BEGIN</code> → your queries → <code>COMMIT</code> (or <code>ROLLBACK</code> on error) on a **single** connection checked out from the pool, giving **all-or-nothing** atomicity. The classic leak is forgetting to **release** that connection on an error path — so always release in a <code>finally</code> (or use the driver's managed-transaction helper).
 
 <svg class='iq-diagram' viewBox='0 0 460 150' role='img' aria-label='BEGIN, queries, then COMMIT or ROLLBACK on one connection, always released'>
   <rect class='d-box-accent' x='14' y='55' width='80' height='44' rx='8'/><text class='d-text' x='54' y='81' text-anchor='middle'>BEGIN</text>
@@ -291,7 +291,7 @@ const { rows } = await db.query(
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "What is the difference between an ORM, a query builder, and a raw driver?",
-    answer: `**TL;DR.** A **raw driver** (<code>pg</code>) sends SQL strings you write. A **query builder** (Knex) composes SQL programmatically while staying close to it. An **ORM** (Prisma, TypeORM, Sequelize) maps rows to objects and generates queries from a schema — trading some control and performance for **productivity and type-safety**.
+    answer: `A **raw driver** (<code>pg</code>) sends SQL strings you write. A **query builder** (Knex) composes SQL programmatically while staying close to it. An **ORM** (Prisma, TypeORM, Sequelize) maps rows to objects and generates queries from a schema — trading some control and performance for **productivity and type-safety**.
 
 <svg class='iq-diagram' viewBox='0 0 460 150' role='img' aria-label='Abstraction spectrum from raw driver to ORM'>
   <rect class='d-box-muted' x='15' y='45' width='135' height='80' rx='10'/><text class='d-text' x='82' y='69' text-anchor='middle'>raw driver</text><text class='d-sub' x='82' y='91' text-anchor='middle'>you write SQL</text><text class='d-sub' x='82' y='111' text-anchor='middle'>max control</text>
@@ -330,7 +330,7 @@ await prisma.user.findUnique({ where: { id }, include: { posts: true } });`,
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "How do you manage database schema migrations in a Node.js project?",
-    answer: `**TL;DR.** Migrations are **versioned, ordered scripts** (via Prisma Migrate, Knex, or node-pg-migrate) that evolve the schema **reproducibly** across environments. A <code>migrations</code> table records which have run, so each deploy applies only **new** ones. Use **backward-compatible "expand then contract"** steps for **zero-downtime** deploys.
+    answer: `Migrations are **versioned, ordered scripts** (via Prisma Migrate, Knex, or node-pg-migrate) that evolve the schema **reproducibly** across environments. A <code>migrations</code> table records which have run, so each deploy applies only **new** ones. Use **backward-compatible "expand then contract"** steps for **zero-downtime** deploys.
 
 <svg class='iq-diagram' viewBox='0 0 460 150' role='img' aria-label='Ordered migrations applied in sequence, tracked in a table'>
   <rect class='d-box-accent' x='20' y='55' width='90' height='40' rx='8'/><text class='d-sub' x='65' y='79' text-anchor='middle'>001_init</text>
@@ -372,7 +372,7 @@ npx prisma migrate deploy
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "Explain how the 'crypto' module secures sensitive data in Node.js",
-    answer: `**TL;DR.** The <code>node:crypto</code> module wraps OpenSSL to provide **hashing** (SHA-256), **HMAC**, **symmetric** encryption (AES), **asymmetric** keys (RSA/EC), **signing/verification**, and secure **random** bytes. Use it to protect data **at rest and in transit** — but for passwords use slow KDFs (pbkdf2/scrypt/argon2), not plain hashes.
+    answer: `The <code>node:crypto</code> module wraps OpenSSL to provide **hashing** (SHA-256), **HMAC**, **symmetric** encryption (AES), **asymmetric** keys (RSA/EC), **signing/verification**, and secure **random** bytes. Use it to protect data **at rest and in transit** — but for passwords use slow KDFs (pbkdf2/scrypt/argon2), not plain hashes.
 
 <svg class='iq-diagram' viewBox='0 0 460 150' role='img' aria-label='crypto provides hashing, symmetric and asymmetric encryption, signing'>
   <rect class='d-box-accent' x='20' y='40' width='100' height='40' rx='8'/><text class='d-sub' x='70' y='64' text-anchor='middle'>hash / HMAC</text>
@@ -413,7 +413,7 @@ function encrypt(plaintext, key /* 32 bytes */) {
   // ──────────────────────────────────────────────────────────────────────────
   {
     title: "What are the main security risks of using the 'eval()' function in Node.js?",
-    answer: `**TL;DR.** <code>eval()</code> (and friends — <code>new Function</code>, <code>vm</code> without isolation, <code>setTimeout('code')</code>) executes **arbitrary strings as code**. If any part is attacker-influenced, it's **remote code execution**. It also defeats optimization, breaks scope safety, and is nearly impossible to sandbox correctly. **Avoid it**; use safe parsers/data structures instead.
+    answer: `<code>eval()</code> (and friends — <code>new Function</code>, <code>vm</code> without isolation, <code>setTimeout('code')</code>) executes **arbitrary strings as code**. If any part is attacker-influenced, it's **remote code execution**. It also defeats optimization, breaks scope safety, and is nearly impossible to sandbox correctly. **Avoid it**; use safe parsers/data structures instead.
 
 <svg class='iq-diagram' viewBox='0 0 460 150' role='img' aria-label='User input flowing into eval becomes executed code'>
   <rect class='d-box-muted' x='20' y='52' width='130' height='46' rx='8'/><text class='d-sub' x='85' y='73' text-anchor='middle'>user input</text><text class='d-sub' x='85' y='90' text-anchor='middle'>(string)</text>

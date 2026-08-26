@@ -27,6 +27,8 @@ import {
   ShieldAlert,
   Layers,
   AlertTriangle,
+  Info,
+  HelpCircle,
 } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -290,6 +292,7 @@ export default function AIInterviewRecruiterConsole({
 
   // Custom templates manager state
   const [showTemplatesModal, setShowTemplatesModal] = useState(false);
+  const [showBenchmark, setShowBenchmark] = useState(false);
 
   const activeSession = sessions.find((s) => s.id === selectedSessionId);
 
@@ -860,8 +863,19 @@ export default function AIInterviewRecruiterConsole({
                   {/* 2/2 split — the old 1/3 starved the score tile and forced
                       its badges into vertical letter-stacks. */}
                   <div className="grid grid-cols-1 md:grid-cols-5 gap-4 items-center">
-                    <div className="md:col-span-2 p-4 rounded-2xl bg-bg border border-border text-center flex flex-col justify-center items-center h-full min-w-0">
-                      <div className="text-[10px] font-black uppercase text-muted tracking-wider mb-2">Composite Score</div>
+                    <div className="md:col-span-2 p-4 rounded-2xl bg-bg border border-border text-center flex flex-col justify-center items-center h-full min-w-0 relative">
+                      <div className="flex items-center gap-1.5 mb-2">
+                        <span className="text-[10px] font-black uppercase text-muted tracking-wider">Composite Score</span>
+                        <button
+                          type="button"
+                          onClick={() => setShowBenchmark(true)}
+                          className="w-5 h-5 rounded-full bg-muted/10 hover:bg-accent/20 border border-border/40 flex items-center justify-center text-muted hover:text-accent transition"
+                          title="How is score calculated? — benchmark"
+                          aria-label="Scoring benchmark"
+                        >
+                          <Info className="w-3 h-3" />
+                        </button>
+                      </div>
                       <div
                         className={`text-4xl font-black tracking-tight ${
                           (activeSession.score ?? 0) >= 80
@@ -920,6 +934,58 @@ export default function AIInterviewRecruiterConsole({
                       />
                     </div>
                   </div>
+
+                  {showBenchmark && (
+                    <div className="fixed inset-0 z-[80] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4" onClick={() => setShowBenchmark(false)}>
+                      <div onClick={(e) => e.stopPropagation()} className="w-full max-w-xl bg-surface border border-border rounded-2xl shadow-2xl overflow-hidden">
+                        <div className="px-6 py-4 border-b border-border bg-bg/50 flex items-center justify-between">
+                          <h3 className="text-xs font-black uppercase tracking-widest text-fg flex items-center gap-2">
+                            <HelpCircle className="w-4 h-4 text-accent" /> Scoring Benchmark
+                          </h3>
+                          <button onClick={() => setShowBenchmark(false)} className="p-1 rounded-md hover:bg-elevated text-muted hover:text-fg"><X className="w-4 h-4" /></button>
+                        </div>
+                        <div className="p-6 space-y-4 max-h-[65vh] overflow-y-auto">
+                          <p className="text-[11px] leading-relaxed text-muted">
+                            Score is <span className="font-bold text-fg">candidate-authored diff only</span> — boilerplate (`/package.json` auto-format, Sandpack base) and untouched starter are ignored. `5%` = started but wrote `0` meaningful lines (not an error).
+                          </p>
+                          <div className="rounded-xl border border-border overflow-hidden">
+                            <div className="grid grid-cols-12 gap-0 bg-bg/80 px-3 py-2 text-[9px] font-black uppercase tracking-wider text-muted">
+                              <span className="col-span-5">Candidate action</span>
+                              <span className="col-span-3 text-center">Score</span>
+                              <span className="col-span-4 text-right">Signal</span>
+                            </div>
+                            {[
+                              ["Immediate submit — 0 lines", "5%", "No code authored"],
+                              ["1 meaningful line (trivial)", "7%", "e.g. const x=1;"],
+                              ["2 lines", "9%", "Still trivial"],
+                              ["3–4 lines", "10–16%", "Low effort"],
+                              ["5–9 lines", "18–34%", "Partial"],
+                              ["10–15 lines + logic", "35–58%", "Solid slice"],
+                              ["16+ lines + task signals", "60–100%", "Strong/Good fit"],
+                            ].map(([action, score, signal]) => (
+                              <div key={action} className="grid grid-cols-12 gap-0 px-3 py-2.5 text-[11px] border-t border-border/40 items-center">
+                                <span className="col-span-5 text-fg font-medium">{action}</span>
+                                <span className={`col-span-3 text-center font-black ${score.startsWith("5") || score.startsWith("7") || score.startsWith("9") ? "text-rose-400" : score.includes("16") || score.includes("34") ? "text-amber-400" : "text-emerald-400"}`}>{score}</span>
+                                <span className="col-span-4 text-right text-muted text-[10px]">{signal}</span>
+                              </div>
+                            ))}
+                          </div>
+                          <div className="space-y-2">
+                            <h4 className="text-[10px] font-black uppercase tracking-widest text-fg">Rubric (5-point each, capped by effort)</h4>
+                            <ul className="text-[11px] leading-relaxed text-muted space-y-1 list-disc pl-4">
+                              <li><span className="font-bold text-fg">Code Architecture</span> — React hooks, file structure, signal gates (`useState` needs ≥3 lines, `slice` ≥6)</li>
+                              <li><span className="font-bold text-fg">Problem Solving</span> — task signals (pagination `slice`, stack `push/pop`, memo `cache`) + meaningful line tiers</li>
+                              <li><span className="font-bold text-fg">Conversational telemetry</span> — chat turns, but capped: `1 line` caps at `2/5` even if chatty</li>
+                              <li className="text-muted/70">`package.json` / boilerplate never counts — only code files (`/App.js`, `/components/*`, etc.)</li>
+                            </ul>
+                          </div>
+                          <div className="rounded-lg bg-amber-500/10 border border-amber-500/20 p-3 text-[10px] leading-relaxed text-amber-200">
+                            <span className="font-black uppercase tracking-wider text-amber-300">For founders:</span> `5%` = verified zero contribution — quick filter `NOT A FIT`. Use `DIFF VS STARTER` to audit exactly what was written. Real hire bar is `60%+` (`GOOD FIT`).
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
 
                   {activeSession.rounds.length > 0 && (
                     <RoundBreakdown rounds={activeSession.rounds} />

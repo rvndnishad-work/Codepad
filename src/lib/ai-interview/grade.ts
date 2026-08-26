@@ -12,6 +12,7 @@ import {
   renderDiffForPrompt,
   type FileDiff,
 } from "@/lib/ai-interview/diff";
+import { computeV2Score, clampV2ScoreForEffort } from "@/lib/ai-interview/scoring-v2";
 
 /**
  * Canonical AI screening grading pipeline.
@@ -35,21 +36,13 @@ type GraderResult = {
 };
 
 // ---------------------------------------------------------------------------
-// New scoring invariants (fixes phantom 35% for zero-effort submissions).
+// V2 scoring — single source of truth in scoring-v2.ts (effort-gated, no
+// phantom 35% for 1 line). Keep local helpers for backward compat.
 // ---------------------------------------------------------------------------
-
-/** Zero code ownership → cap score hard. These survive even Gemini hallucination. */
-const ZERO_EFFORT_MAX_SCORE = 8;
-const LOW_EFFORT_MAX_SCORE = 18;
-const MIN_MEANINGFUL_ADDED_LINES = 3;
-
-/** A line counts as authored signal only if it carries a code token. */
 function isMeaningfulLine(line: string): boolean {
   const t = line.trim();
   if (t.length < 3) return false;
-  // ignore pure punctuation / braces / xml tags alone
   if (/^[\{\}\[\]\(\)<>;:,]+$/.test(t)) return false;
-  // must contain an alphanumeric token
   return /[A-Za-z0-9]/.test(t);
 }
 
@@ -60,33 +53,24 @@ function meaningfulAddedLines(diffs: FileDiff[]): number {
 }
 
 function clampScoreForEffort(score: number, meaningfulLines: number): number {
-  if (meaningfulLines === 0) return Math.min(score, ZERO_EFFORT_MAX_SCORE);
-  if (meaningfulLines < MIN_MEANINGFUL_ADDED_LINES) return Math.min(score, LOW_EFFORT_MAX_SCORE);
-  return score;
+  return clampV2ScoreForEffort(score, meaningfulLines);
 }
 
-function clampRatingsForEffort(
-  r: GraderResult,
-  meaningfulLines: number
-): GraderResult {
+function clampRatingsForEffort(r: GraderResult, meaningfulLines: number): GraderResult {
+  const clampedScore = clampV2ScoreForEffort(r.score, meaningfulLines);
   if (meaningfulLines === 0) {
-    return {
-      ...r,
-      score: clampScoreForEffort(r.score, meaningfulLines),
-      codeQuality: Math.min(r.codeQuality, 1),
-      problemSolving: Math.min(r.problemSolving, 1),
-      communication: Math.min(r.communication, 2),
-    };
+    return { ...r, score: clampedScore, codeQuality: Math.min(r.codeQuality, 1), problemSolving: Math.min(r.problemSolving, 1), communication: Math.min(r.communication, 2) };
   }
-  if (meaningfulLines < MIN_MEANINGFUL_ADDED_LINES) {
-    return {
-      ...r,
-      score: clampScoreForEffort(r.score, meaningfulLines),
-      codeQuality: Math.min(r.codeQuality, 2),
-      problemSolving: Math.min(r.problemSolving, 2),
-    };
+  if (meaningfulLines <= 2) {
+    return { ...r, score: clampedScore, codeQuality: Math.min(r.codeQuality, 1), problemSolving: Math.min(r.problemSolving, 1), communication: Math.min(r.communication, 2) };
   }
-  return { ...r, score: clampScoreForEffort(r.score, meaningfulLines) };
+  if (meaningfulLines <= 4) {
+    return { ...r, score: clampedScore, codeQuality: Math.min(r.codeQuality, 2), problemSolving: Math.min(r.problemSolving, 2), communication: Math.min(r.communication, 2) };
+  }
+  if (meaningfulLines <= 9) {
+    return { ...r, score: clampedScore, codeQuality: Math.min(r.codeQuality, 3), problemSolving: Math.min(r.problemSolving, 3) };
+  }
+  return { ...r, score: clampedScore };
 }
 
 // Call Gemini API to perform programmatic grading — DIFF-AWARE.
@@ -211,90 +195,33 @@ function rulesForTemplate(templateId: string): GraderRule[] {
   return TEMPLATE_GRADER_RULES[templateId] ?? GENERIC_RULES;
 }
 
-// Rules-based static grader fallback for local developers without keys.
-// DIFF-AWARE: rules test the candidate's ADDED lines, never the starter
-// template — untouched scaffold code earns nothing.
+// Rules-based static grader — now delegates to scoring-v2.ts (single line => 7/9, not 35)
+// DIFF-AWARE: rules test the candidate's ADDED lines, never the starter template.
 function runRulesBasedGrader(
   files: Record<string, string>,
   chatHistory: { role: "user" | "assistant"; text: string }[],
   templateId: string,
   diffCtx?: { diffs: FileDiff[]; addedCode: string; changedLines: number; meaningfulLines: number }
 ): GraderResult {
-  // Deterministic zero/near-zero effort guard — no credit for untouched scaffold.
-  // This also covers the phantom-diff case where the starter was missing at
-  // grade time and diffCtx was absent: we treat unknown baseline conservatively.
   if (!diffCtx) {
     return {
       score: 5,
       codeQuality: 1,
       problemSolving: 1,
       communication: 1,
-      aiSummary:
-        "- [Flaw] No verifiable code changes detected (starter baseline missing or submission empty) — graded conservatively.",
+      aiSummary: "- [Flaw] No verifiable code changes detected (starter baseline missing or submission empty) — graded conservatively.",
     };
   }
-  if (diffCtx.meaningfulLines === 0) {
-    return {
-      score: 5,
-      codeQuality: 1,
-      problemSolving: 1,
-      communication: chatHistory.filter((c) => c.role === "user").length >= 4 ? 2 : 1,
-      aiSummary:
-        "- [Flaw] The candidate did not author any meaningful code — no starter files were modified.",
-    };
-  }
-  if (diffCtx.meaningfulLines < MIN_MEANINGFUL_ADDED_LINES) {
-    // Near-zero effort: show what they touched but cap strictly downstream.
-  }
-
-  let score = 10; // baseline for showing up and changing something
-  let codeQuality = 2;
-  let problemSolving = 1;
-  let communication = 3;
-  const strengths: string[] = [];
-  const flaws: string[] = [];
-
-  // Signals are tested against what the candidate WROTE, not the scaffold.
-  const fileContents = diffCtx.addedCode;
-  const rules = rulesForTemplate(templateId);
-
-  for (const rule of rules) {
-    if (rule.pattern.test(fileContents)) {
-      score += rule.score;
-      codeQuality += rule.codeQuality ?? 0;
-      problemSolving += rule.problemSolving ?? 0;
-      strengths.push(`Code ${rule.label}.`);
-    } else {
-      flaws.push(`Missing signal: code does not ${rule.label}.`);
-    }
-  }
-
-  // Communication signal is template-agnostic — based on chat engagement.
-  const candidateChats = chatHistory.filter((c) => c.role === "user");
-  if (candidateChats.length > 8) {
-    communication = 5;
-    strengths.push("Highly communicative throughout the session.");
-  } else if (candidateChats.length >= 4) {
-    communication = 4;
-    strengths.push("Engaged moderately with the AI interviewer.");
-  } else {
-    communication = 2;
-    flaws.push("Minimal communication with the AI interviewer.");
-  }
-
-  const bullets = [
-    ...strengths.map((s) => `+ [Strength] ${s}`),
-    ...flaws.map((f) => `- [Flaw] ${f}`),
-  ];
-
-  const raw: GraderResult = {
-    score: Math.min(100, score),
-    codeQuality: Math.min(5, codeQuality),
-    problemSolving: Math.min(5, problemSolving),
-    communication: Math.min(5, communication),
-    aiSummary: bullets.join("\n"),
-  };
-  return clampRatingsForEffort(raw, diffCtx.meaningfulLines);
+  // Delegate to V2 — deterministic, effort-gated, no 200-char loophole
+  const v2 = computeV2Score({
+    meaningfulLines: diffCtx.meaningfulLines,
+    addedLines: diffCtx.changedLines,
+    filesChanged: diffCtx.diffs.length,
+    addedCode: diffCtx.addedCode,
+    templateId,
+    chatHistory,
+  });
+  return v2;
 }
 
 /** Grade one round's (or a legacy whole-session) submission, with the static

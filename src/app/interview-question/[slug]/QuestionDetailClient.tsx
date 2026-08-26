@@ -18,6 +18,7 @@ import {
   Award,
   CheckCircle2,
   Lock,
+  X,
 } from "lucide-react";
 import { isSolved, toggleSolved } from "@/lib/interview-questions/progress";
 import { isSaved, toggleSaved } from "@/lib/interview-questions/saved";
@@ -200,6 +201,7 @@ export default function QuestionDetailClient({
 }) {
   const [isAnswerExpanded, setIsAnswerExpanded] = useState(false);
   const [isCommentsExpanded, setIsCommentsExpanded] = useState(true);
+  const [lightboxSvg, setLightboxSvg] = useState<string | null>(null);
 
   // Reading progress — thin bar under the top edge, tinted to the technology.
   const { scrollYProgress } = useScroll();
@@ -338,6 +340,21 @@ export default function QuestionDetailClient({
       window.removeEventListener("iq-solved-changed", refreshSolved);
     };
   }, [q.slug, currentUserId]);
+
+  // SVG lightbox — click any iq-diagram to open pan/zoom modal (Phase 5)
+  useEffect(() => {
+    if (!isAnswerExpanded) return;
+    const handler = (e: MouseEvent) => {
+      const target = e.target as Element;
+      const svg = target.closest("svg.iq-diagram") as SVGElement | null;
+      if (svg) {
+        e.preventDefault();
+        setLightboxSvg(svg.outerHTML);
+      }
+    };
+    document.addEventListener("click", handler);
+    return () => document.removeEventListener("click", handler);
+  }, [isAnswerExpanded]);
 
   async function handleToggleSaved() {
     const nextSaved = !saved;
@@ -699,23 +716,38 @@ export default function QuestionDetailClient({
                             className="absolute -top-16 right-0 w-64 h-64 rounded-full blur-3xl pointer-events-none"
                             style={{ background: tint(theme.hex, 10) }}
                           />
-                          <div className="relative px-6 py-12 sm:py-14 flex flex-col items-center text-center">
-                            <div
-                              className="grid place-items-center w-12 h-12 rounded-2xl border mb-4"
-                              style={{ background: tint(theme.hex, 10), borderColor: tint(theme.hex, 25) }}
-                            >
-                              <Lock className={`w-5 h-5 ${theme.text}`} />
+                          <div className="relative">
+                            {/* Drawer handle */}
+                            <div className="flex justify-center pt-3">
+                              <div className="w-12 h-1.5 rounded-full bg-border" />
                             </div>
-                            <h3 className="text-lg font-black tracking-tight text-fg">The solution is waiting</h3>
-                            <p className="text-sm text-muted mt-1.5 max-w-sm leading-relaxed">
-                              Give it an honest attempt first — then compare your thinking with the full walkthrough.
-                            </p>
-                            <button
-                              onClick={() => setIsAnswerExpanded(true)}
-                              className="mt-6 inline-flex items-center gap-2 px-6 py-2.5 rounded-xl bg-accent text-bg text-xs font-black uppercase tracking-wider hover:bg-accent-soft shadow-lg transition duration-200"
-                            >
-                              Reveal the solution
-                            </button>
+                            {/* Blurred preview of answer */}
+                            {answerContent && (
+                              <div className="px-6 pt-4 pb-2 overflow-hidden max-h-24 relative">
+                                <div className="prose dark:prose-invert max-w-none text-sm text-fg/90 leading-relaxed blur-[3px] select-none opacity-60">
+                                  <MarkdownRenderer content={answerContent.slice(0, 320)} allowHtml />
+                                </div>
+                                <div className="absolute inset-0 bg-gradient-to-t from-surface via-surface/80 to-transparent pointer-events-none" />
+                              </div>
+                            )}
+                            <div className="px-6 pb-6 sm:pb-7 flex flex-col items-center text-center">
+                              <div
+                                className="grid place-items-center w-10 h-10 rounded-xl border mb-3"
+                                style={{ background: tint(theme.hex, 10), borderColor: tint(theme.hex, 25) }}
+                              >
+                                <Lock className={`w-4 h-4 ${theme.text}`} />
+                              </div>
+                              <h3 className="text-base font-black tracking-tight text-fg">Solution ready — 2 min read</h3>
+                              <p className="text-xs text-muted mt-1 max-w-sm leading-relaxed">
+                                Drawer • progress syncs with the top bar • Mark as solved is primary
+                              </p>
+                              <button
+                                onClick={() => setIsAnswerExpanded(true)}
+                                className="mt-4 inline-flex items-center gap-2 px-6 py-2.5 rounded-xl bg-accent text-bg text-xs font-black uppercase tracking-wider hover:bg-accent-soft shadow-lg transition duration-200"
+                              >
+                                Reveal the solution
+                              </button>
+                            </div>
                           </div>
                         </motion.div>
                       ) : (
@@ -906,8 +938,8 @@ export default function QuestionDetailClient({
             )}
           </div>
 
-          {/* RIGHT: sticky companion sidebar */}
-          <aside className="lg:col-span-4 space-y-5 lg:sticky lg:top-6">
+          {/* RIGHT: sticky companion sidebar — offset by 3px progress bar */}
+          <aside className="lg:col-span-4 space-y-5 lg:sticky lg:top-8">
             {/* Track card — where this question lives */}
             {q.technology && (
               <motion.div initial="hidden" animate="visible" variants={fadeInVariants}>
@@ -1008,6 +1040,19 @@ export default function QuestionDetailClient({
           </aside>
         </div>
       </div>
+      {lightboxSvg && (
+        <div className="fixed inset-0 z-[100] bg-black/80 backdrop-blur-sm flex items-center justify-center p-4" onClick={() => setLightboxSvg(null)}>
+          <div className="relative w-full max-w-4xl bg-surface border border-border rounded-2xl shadow-2xl p-6 max-h-[85vh] overflow-auto" onClick={(e) => e.stopPropagation()}>
+            <button onClick={() => setLightboxSvg(null)} className="absolute top-3 right-3 p-1.5 rounded-lg border border-border bg-bg hover:bg-elevated text-muted hover:text-fg transition">
+              <X className="w-4 h-4" />
+            </button>
+            <div className="pr-8 overflow-auto max-h-[70vh] p-2" dangerouslySetInnerHTML={{ __html: lightboxSvg }} />
+            <div className="mt-3 flex justify-center">
+              <span className="px-3 py-1 rounded-full bg-panel border border-border text-[10px] font-bold uppercase tracking-wider text-muted">Pan & zoom • Click outside to close</span>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

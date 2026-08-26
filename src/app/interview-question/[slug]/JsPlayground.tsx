@@ -5,6 +5,11 @@ import { Play, RotateCcw, Loader2, ChevronRight, Trash2, ExternalLink, Check, X 
 import CodeMirrorEditor from "./CodeMirrorEditor";
 import { playgroundFilesHref } from "@/lib/playground-handoff";
 
+// Cached workers to avoid re-downloading 500KB TS + 20MB Pyodide on every Run
+let tsWorkerBlobUrl: string | null = null;
+let pyodideInstance: any = null;
+let pyodideLoading: Promise<any> | null = null;
+
 type TestCase = {
   id: number;
   expression: string;
@@ -302,14 +307,21 @@ export default function JsPlayground({
     setActiveTab("console");
 
     let workerSrc = JS_WORKER_SRC;
+    let blobUrl: string | null = null;
     if (technology === "typescript") {
       workerSrc = TS_WORKER_SRC;
+      if (!tsWorkerBlobUrl) {
+        const b = new Blob([workerSrc], { type: "application/javascript" });
+        tsWorkerBlobUrl = URL.createObjectURL(b);
+      }
+      blobUrl = tsWorkerBlobUrl;
     } else if (technology === "python") {
       workerSrc = PY_WORKER_SRC;
     }
 
-    const blob = new Blob([workerSrc], { type: "application/javascript" });
-    const worker = new Worker(URL.createObjectURL(blob));
+    const worker = blobUrl
+      ? new Worker(blobUrl)
+      : new Worker(URL.createObjectURL(new Blob([workerSrc], { type: "application/javascript" })));
     workerRef.current = worker;
 
     const collected: LogLine[] = [];
@@ -480,7 +492,7 @@ export default function JsPlayground({
             )}
           </div>
 
-          <div className="px-3.5 py-3 font-mono text-[12px] leading-relaxed max-h-60 overflow-auto bg-slate-50/50 dark:bg-black/25">
+          <div className="px-3.5 py-3 font-mono text-[13px] leading-relaxed max-h-60 overflow-auto bg-[#0a0b10] text-slate-200">
             {running && logs.length === 0 && testResults.every(r => r.passed === undefined) ? (
               <div className="text-muted flex items-center gap-1.5"><Loader2 className="w-3.5 h-3.5 animate-spin" /> running…</div>
             ) : activeTab === "tests" && testCases.length > 0 ? (

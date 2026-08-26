@@ -100,22 +100,22 @@ export function MultiFileExample({
         ))}
       </div>
 
-      <pre className="iq-hl p-4 overflow-auto text-xs font-mono leading-relaxed text-slate-800 dark:text-slate-200 bg-slate-50 dark:bg-[#0a0b10]">
+      <pre className="iq-hl p-4 overflow-auto text-[13px] font-mono leading-[1.625] text-slate-200 bg-[#0a0b10] overflow-x-auto">
         <code dangerouslySetInnerHTML={{ __html: highlighted }} />
       </pre>
     </div>
   );
 }
 
-/**
- * Renders one code example as a syntax-highlighted (theme-aware `.iq-hl`) block.
- * If the example has multiple `variants` (e.g. the same algorithm in Python /
- * Go / Java, or a UI in React / Vue / Angular), a dropdown switches between them
- * and each variant's "Open in Playground" hands off to its own template.
- *
- * `defaultTech` is the implicit tech for a single-variant example that has no
- * explicit `tech` (e.g. React question examples are JS/JSX).
- */
+ /**
+  * Renders one code example as a syntax-highlighted (theme-aware `.iq-hl`) block.
+  * If the example has multiple `variants` (e.g. the same algorithm in Python /
+  * Go / Java, or a UI in React / Vue / Angular), a dropdown switches between them
+  * and each variant's "Open in Playground" hands off to its own template.
+  *
+  * `defaultTech` is the implicit tech for a single-variant example that has no
+  * explicit `tech` (e.g. React question examples are JS/JSX).
+  */
 export default function CodeExample({
   example,
   defaultTech,
@@ -192,7 +192,7 @@ export default function CodeExample({
         )}
       </div>
 
-      <pre className="iq-hl p-4 overflow-auto text-xs font-mono leading-relaxed text-slate-800 dark:text-slate-200 bg-slate-50 dark:bg-[#0a0b10]">
+      <pre className="iq-hl p-4 overflow-auto text-[13px] font-mono leading-[1.625] text-slate-200 bg-[#0a0b10] overflow-x-auto">
         <code dangerouslySetInnerHTML={{ __html: highlighted }} />
       </pre>
     </div>

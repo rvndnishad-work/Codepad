@@ -9,6 +9,7 @@ import { effectivePlanAllowsAiScreening } from "@/lib/billing/trial";
 import { listTemplatesForWorkspace } from "@/lib/ai-interview/template-resolver";
 import { getStarterFilesByRoundId, inferStarterForSubmission } from "@/lib/ai-interview/round-content";
 import { diffFiles, diffStats, type FileDiff, type DiffStats } from "@/lib/ai-interview/diff";
+import { computeV2Score } from "@/lib/ai-interview/scoring-v2";
 import { canMember } from "@/lib/permissions";
 import AIInterviewRecruiterConsole from "./AIInterviewRecruiterConsole";
 
@@ -186,11 +187,29 @@ export default async function WorkspaceAiInterviewsPage({ params, searchParams }
     // (scaffold / challenge / playground rounds all covered).
     let fileDiffs: FileDiff[] | null = null;
     let changeStats: DiffStats | null = null;
+    let liveV2Score: number | null = null;
+    let liveV2Ratings: { CodeQuality: number; ProblemSolving: number; Communication: number } | null = null;
     try {
       const starter = starterMap.get(s.id);
       if (starter && Object.keys(starter).length > 0 && Object.keys(parsedFiles).length > 0) {
         fileDiffs = diffFiles(starter, parsedFiles);
         changeStats = diffStats(fileDiffs);
+        // V2 live recompute — fixes historical 35% for single-line (1 meaningful => 7)
+        // Apply on page so old rows heal without DB backfill; future rows already stored via grade.ts
+        if (fileDiffs) {
+          const addedCode = fileDiffs.map((d) => d.added.join("\n")).join("\n");
+          const meaningfulLines = fileDiffs.reduce((n, d) => n + d.added.filter((l) => l.trim().length >= 3 && /[A-Za-z0-9]/.test(l) && !/^[\{\}\[\]\(\)<>;:,]+$/.test(l.trim())).length, 0);
+          const v2 = computeV2Score({
+            meaningfulLines,
+            addedLines: changeStats?.addedLines ?? 0,
+            filesChanged: changeStats?.filesChanged ?? 0,
+            addedCode,
+            templateId: s.templateId,
+            chatHistory: Array.isArray(parsedHistory) ? (parsedHistory as { role: "user" | "assistant"; text: string }[]) : [],
+          });
+          liveV2Score = v2.score;
+          liveV2Ratings = { CodeQuality: v2.codeQuality, ProblemSolving: v2.problemSolving, Communication: v2.communication };
+        }
       }
     } catch {
       fileDiffs = null;
@@ -203,6 +222,14 @@ export default async function WorkspaceAiInterviewsPage({ params, searchParams }
       } catch {
         // ignore
       }
+    }
+    // V2 live correction for historical inflated scores (single line => 35)
+    // If fileDiff shows <=4 meaningful lines and V2 says <=16, prefer V2
+    let displayScore: number | null = s.score;
+    let displayRatings = parsedRatings;
+    if (liveV2Score !== null && s.status === "COMPLETED" && liveV2Score <= 16 && (s.score ?? 0) >= 30) {
+      displayScore = liveV2Score;
+      if (liveV2Ratings) displayRatings = liveV2Ratings;
     }
 
     // Per-round summaries (multi-round batches). Files parsed for the per-round
@@ -247,7 +274,7 @@ export default async function WorkspaceAiInterviewsPage({ params, searchParams }
       templateId: s.templateId,
       batchId: s.batchId,
       batchTitle: s.batch?.positionTitle ?? null,
-      score: s.score,
+      score: displayScore,
       aiSummary: s.aiSummary,
       aiSuspicionScore: s.aiSuspicionScore,
       outboundCallCount: s.outboundCallCount,
@@ -266,7 +293,7 @@ export default async function WorkspaceAiInterviewsPage({ params, searchParams }
         max: s.maxExtensions,
         minutesEach: s.extensionMinutes,
       },
-      ratings: parsedRatings,
+      ratings: displayRatings,
       rounds,
     };
   })

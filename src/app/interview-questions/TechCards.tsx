@@ -7,6 +7,7 @@ import { TECHNOLOGIES } from "@/lib/interview-questions/shared";
 import TechSvg from "@/components/TechSvg";
 import { getSolved } from "@/lib/interview-questions/progress";
 import { getTechMeta } from "@/lib/interview-questions/techTheme";
+import { SpotlightGroup, SpotlightCard } from "@/components/scroll/SpotlightGroup";
 
 interface TechStats {
   easy: number;
@@ -40,7 +41,7 @@ export default function TechCards({
   }, []);
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+    <SpotlightGroup className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
       {TECHNOLOGIES.map((t) => {
         const m = getTechMeta(t.slug);
         const stat = stats[t.slug] ?? { easy: 0, medium: 0, hard: 0, total: 0 };
@@ -51,11 +52,11 @@ export default function TechCards({
         const solvedCount = solvedCounts[t.slug] || 0;
 
         return (
-          <Link
-            key={t.slug}
-            href={`/interview-questions/${t.slug}`}
-            className={`group relative p-6 rounded-2xl border ${m.border} ${m.bg} ${m.hoverBg} transition-all duration-300 overflow-hidden flex flex-col justify-between ${m.hoverBorder} ${m.hoverShadow}`}
-          >
+          <SpotlightCard key={t.slug} className="h-full">
+            <Link
+              href={`/interview-questions/${t.slug}`}
+              className={`group relative p-6 rounded-3xl border ${m.border} ${m.bg} ${m.hoverBg} transition-all duration-500 overflow-hidden flex flex-col justify-between ${m.hoverBorder} ${m.hoverShadow} hover:-translate-y-1 backdrop-blur-sm`}
+            >
             {/* Background Glow */}
             <div className={`absolute -top-12 -right-12 w-32 h-32 rounded-full blur-3xl opacity-0 group-hover:opacity-45 transition-opacity duration-500 ${m.glowColor}`} />
 
@@ -168,9 +169,10 @@ export default function TechCards({
                 </div>
               )}
             </div>
-          </Link>
+            </Link>
+          </SpotlightCard>
         );
       })}
-    </div>
+    </SpotlightGroup>
   );
 }

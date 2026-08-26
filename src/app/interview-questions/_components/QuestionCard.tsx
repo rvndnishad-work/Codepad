@@ -211,7 +211,7 @@ export default function QuestionCard({ q, showCompany = true }: { q: QuestionCar
   return (
     <Link
       href={`/interview-question/${q.slug}`}
-      className={`group relative flex items-center gap-4 p-4 sm:p-5 rounded-2xl border-y border-r ${theme.border} border-l-[4px] ${theme.leftBorder} ${theme.bg} backdrop-blur-sm ${theme.hoverBg} hover:-translate-y-0.5 transition-all duration-300 ${theme.hoverBorder} ${theme.hoverShadow}`}
+      className={`group relative flex items-center gap-4 p-4 sm:p-5 rounded-2xl border ${theme.border} border-l-[3px] ${theme.leftBorder} ${theme.bg} backdrop-blur-sm ${theme.hoverBg} hover:-translate-y-0.5 transition-all duration-300 ${theme.hoverBorder} ${theme.hoverShadow}`}
     >
       {/* Icon tile — visual anchor tinted to the technology */}
       <div

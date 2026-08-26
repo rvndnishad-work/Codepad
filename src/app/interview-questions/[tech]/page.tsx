@@ -234,8 +234,8 @@ export default async function TechnologyPage({
           
           {/* LEFT COLUMN: Main catalog list with filters */}
           <div className="lg:col-span-8 space-y-6">
-            {/* Filters Panel */}
-            <div className="bg-surface/85 dark:bg-surface/20 border border-border rounded-2xl p-4 backdrop-blur-sm">
+            {/* Filters Panel — sticky glass (hire cohesion) */}
+            <div className="sticky top-[64px] z-20 bg-surface/60 dark:bg-surface/40 backdrop-blur-xl border border-white/10 shadow-soft rounded-2xl p-4 supports-[backdrop-filter]:bg-surface/60">
               <TechFilters
                 tech={tech}
                 companies={companiesInTech}

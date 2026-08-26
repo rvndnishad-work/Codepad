@@ -10,6 +10,7 @@ import ScrollProgressBar from "@/app/hire/ScrollProgressBar";
 import { SpotlightGroup } from "@/components/scroll/SpotlightGroup";
 import KineticText from "@/components/scroll/KineticText";
 import CountUp from "@/components/scroll/CountUp";
+import TechMarquee from "@/components/home/TechMarquee";
 
 export const metadata = {
   title: "Interview Questions by Company & Technology — Interviewpad",
@@ -129,6 +130,8 @@ export default async function InterviewQuestionsPage() {
           </SpotlightGroup>
         </div>
       </section>
+
+      <TechMarquee />
 
       <div className="max-w-6xl mx-auto px-6 py-10 space-y-12">
         {/* Browse by technology — the primary, dev-first entry point */}

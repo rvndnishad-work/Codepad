@@ -1,0 +1,519 @@
+[
+  {
+    "technology": "javascript-coding",
+    "round": "DSA",
+    "difficulty": "easy",
+    "tags": [
+      "array",
+      "hash-map",
+      "two-sum"
+    ],
+    "title": "Two Sum — Find indices of two numbers that add to target",
+    "description": "Given an array nums and target, return indices of the two numbers that sum to target. Assume exactly one solution, no reuse.",
+    "answer": "**Approach:** One-pass hash map — for each `num`, check if `target - num` was seen. O(n) time, O(n) space. Handles negatives, duplicates.\n\n**Key steps:** map stores `value -> index`. On iteration, compute complement and test `has`.\n\n```javascript\nfunction twoSum(nums, target) {\n  const map = new Map();\n  for (let i = 0; i < nums.length; i++) {\n    const need = target - nums[i];\n    if (map.has(need)) return [map.get(need), i];\n    map.set(nums[i], i);\n  }\n  return [];\n}\n\n// Runnable demo\nconsole.log(twoSum([2,7,11,15], 9)); // [0,1]\nconsole.log(twoSum([3,2,4], 6)); // [1,2]\nconsole.log(twoSum([3,3], 6)); // [0,1]\nconsole.log(twoSum([-1, -2, -3, -4], -6)); // [1,3]\n```\nEdge: return `[]` if not found. Variant: return values not indices — same map but store complement check first."
+  },
+  {
+    "technology": "javascript-coding",
+    "round": "Frontend",
+    "difficulty": "medium",
+    "tags": [
+      "debounce",
+      "timers",
+      "closure"
+    ],
+    "title": "Implement debounce() with leading/trailing and cancel/flush",
+    "description": "Create debounce(func, wait, {leading, trailing}) that delays invoking func until after wait ms since last call. Support cancel and flush.",
+    "answer": "**Approach:** Closure holds timer + last args. On call, clear previous timer and schedule new. Leading fires immediately if not already waiting; trailing fires after quiet period. `cancel` clears timer, `flush` invokes pending immediately.\n\n```javascript\nfunction debounce(func, wait, { leading = false, trailing = true } = {}) {\n  let timer = null, lastArgs, lastThis, result;\n  let pending = false;\n  function invoke() {\n    result = func.apply(lastThis, lastArgs);\n    lastArgs = lastThis = null;\n    pending = false;\n    return result;\n  }\n  function debounced(...args) {\n    lastArgs = args; lastThis = this; pending = true;\n    const shouldLead = leading && !timer;\n    clearTimeout(timer);\n    timer = setTimeout(() => {\n      timer = null;\n      if (trailing && pending) invoke();\n      else pending = false;\n    }, wait);\n    if (shouldLead) return invoke();\n    return result;\n  }\n  debounced.cancel = () => { clearTimeout(timer); timer = null; pending = false; lastArgs = lastThis = null; };\n  debounced.flush = () => { if (pending) { clearTimeout(timer); timer = null; return invoke(); } };\n  return debounced;\n}\n\n// Demo\nconst log = debounce((v) => console.log('call', v), 200);\nlog(1); log(2); log(3); // only 3 after 200ms\nsetTimeout(() => log.flush(), 100); // forces immediate\nconst leading = debounce(console.log, 200, { leading: true, trailing: false });\nleading('a'); leading('b'); // 'a' immediately, 'b' ignored\n```\nUse `AbortController` variant for fetch debouncing in React."
+  },
+  {
+    "technology": "javascript-coding",
+    "round": "Frontend",
+    "difficulty": "medium",
+    "tags": [
+      "memoize",
+      "cache",
+      "closure"
+    ],
+    "title": "Implement memoize() with custom resolver and cache limit",
+    "description": "Create memoize(func, resolver?, maxSize?) that caches results. Resolver derives cache key. Evict oldest when maxSize exceeded.",
+    "answer": "**Approach:** Map cache keyed by resolver or JSON.stringify. On hit return cached; on miss compute, set, and evict if over maxSize. Expose `cache` Map.\n\n```javascript\nfunction memoize(func, resolver, maxSize = Infinity) {\n  const cache = new Map();\n  function memoized(...args) {\n    const key = resolver ? resolver(...args) : JSON.stringify(args);\n    if (cache.has(key)) return cache.get(key);\n    const result = func.apply(this, args);\n    if (cache.size >= maxSize) {\n      const firstKey = cache.keys().next().value;\n      cache.delete(firstKey);\n    }\n    cache.set(key, result);\n    return result;\n  }\n  memoized.cache = cache;\n  memoized.clear = () => cache.clear();\n  return memoized;\n}\n\n// Demo\nconst add = memoize((a,b) => { console.log('compute', a,b); return a+b; });\nconsole.log(add(1,2)); // compute 1 2 -> 3\nconsole.log(add(1,2)); // cached 3 (no log)\nconsole.log(add(2,3)); // compute 2 3 -> 5\nconst fetchUser = memoize((id, opts) => ({id}), (id) => String(id));\nconsole.log(fetchUser(1, {a:1}));\nconsole.log(fetchUser(1, {a:2})); // cache hit on id '1'\n```\nFor object keys, use `WeakMap` or custom Map with `Map` + deep key."
+  },
+  {
+    "technology": "javascript-coding",
+    "round": "Frontend",
+    "difficulty": "medium",
+    "tags": [
+      "event-emitter",
+      "pubsub"
+    ],
+    "title": "Implement EventEmitter (on/off/once/emit) — Node style",
+    "description": "Build an EventEmitter class with on, off, once, emit, and removeAllListeners. Support multiple listeners per event.",
+    "answer": "**Approach:** Map `event -> Set<listener>`. `once` wraps listener to self-remove after first call. `emit` clones listeners before iterating to allow mutation during emit.\n\n```javascript\nclass EventEmitter {\n  constructor() { this.events = new Map(); }\n  on(event, listener) {\n    if (!this.events.has(event)) this.events.set(event, new Set());\n    this.events.get(event).add(listener);\n    return this;\n  }\n  off(event, listener) {\n    if (!this.events.has(event)) return this;\n    if (!listener) this.events.delete(event);\n    else this.events.get(event).delete(listener);\n    return this;\n  }\n  once(event, listener) {\n    const wrapper = (...args) => { this.off(event, wrapper); listener(...args); };\n    wrapper._original = listener;\n    return this.on(event, wrapper);\n  }\n  emit(event, ...args) {\n    const set = this.events.get(event);\n    if (!set) return false;\n    for (const fn of [...set]) fn(...args);\n    return true;\n  }\n  removeAllListeners(event) {\n    if (event) this.events.delete(event);\n    else this.events.clear();\n    return this;\n  }\n  listenerCount(event) { return this.events.get(event)?.size ?? 0; }\n}\n\n// Demo\nconst ee = new EventEmitter();\nee.on('data', x => console.log('on', x));\nee.once('data', x => console.log('once', x));\nee.emit('data', 1); // on 1, once 1\nee.emit('data', 2); // on 2\nconsole.log(ee.listenerCount('data')); // 1\nee.off('data');\nconsole.log(ee.emit('data', 3)); // false\n```\nEdge: `once` removal must work even if `off` called with original fn — store `_original` and compare."
+  },
+  {
+    "technology": "javascript-coding",
+    "round": "Frontend",
+    "difficulty": "medium",
+    "tags": [
+      "concurrency",
+      "p-limit",
+      "promises"
+    ],
+    "title": "Implement p-limit — concurrency limiter for async tasks",
+    "description": "Create pLimit(concurrency) that returns a limiter function to run at most N promises concurrently, queuing the rest.",
+    "answer": "**Approach:** Queue + active count. `limit(fn)` enqueues and tries to run. `runNext` dequeues if `active < concurrency`, increments active, awaits fn, then decrements and recurses.\n\n```javascript\nfunction pLimit(concurrency) {\n  let active = 0;\n  const queue = [];\n  const next = () => {\n    if (active >= concurrency || queue.length === 0) return;\n    active++;\n    const { fn, resolve, reject } = queue.shift();\n    (async () => fn())().then(resolve, reject).finally(() => { active--; next(); });\n  };\n  return function limit(fn) {\n    return new Promise((resolve, reject) => {\n      queue.push({ fn, resolve, reject });\n      next();\n    });\n  };\n}\n\n// Demo\nconst limit = pLimit(2);\nconst sleep = (ms, v) => new Promise(r => setTimeout(() => r(v), ms));\nasync function demo() {\n  const start = Date.now();\n  const tasks = [1,2,3,4].map(i => limit(() => sleep(200, i).then(v => {\n    console.log(`task ${v} done at ${Date.now()-start}ms`); return v;\n  })));\n  console.log(await Promise.all(tasks)); // [1,2,3,4], but only 2 at a time\n}\ndemo();\n```\nHandles rejection without stalling queue (finally triggers next)."
+  },
+  {
+    "technology": "javascript-coding",
+    "round": "DSA",
+    "difficulty": "hard",
+    "tags": [
+      "deep-equal",
+      "NaN",
+      "-0",
+      "edge-cases"
+    ],
+    "title": "Implement deepEqual(a, b) handling NaN, -0, Dates, RegExp & circular refs",
+    "description": "Create isEqual that correctly handles NaN === NaN, -0 vs +0, Dates, RegExps, Arrays, plain objects, and circular references.",
+    "answer": "**Approach:** Fast paths for SameValue (Object.is distinguishes -0/NaN), then type checks, then structural recursion with WeakMap for circular tracking.\n\n```javascript\nfunction deepEqual(a, b, seen = new WeakMap()) {\n  if (Object.is(a, b)) return true;\n  if (a == null || b == null || typeof a !== 'object' || typeof b !== 'object') return false;\n  if (seen.has(a)) return seen.get(a) === b;\n  seen.set(a, b);\n  const protoA = Object.getPrototypeOf(a), protoB = Object.getPrototypeOf(b);\n  if (protoA !== protoB) return false;\n  if (a instanceof Date) return a.getTime() === b.getTime();\n  if (a instanceof RegExp) return String(a) === String(b);\n  if (a instanceof Map) {\n    if (a.size !== b.size) return false;\n    for (const [k,v] of a) if (!b.has(k) || !deepEqual(v, b.get(k), seen)) return false;\n    return true;\n  }\n  if (a instanceof Set) {\n    if (a.size !== b.size) return false;\n    for (const v of a) if (!b.has(v)) return false;\n    return true;\n  }\n  if (Array.isArray(a)) {\n    if (a.length !== b.length) return false;\n    return a.every((v,i) => deepEqual(v, b[i], seen));\n  }\n  const keysA = Reflect.ownKeys(a), keysB = Reflect.ownKeys(b);\n  if (keysA.length !== keysB.length) return false;\n  return keysA.every(k => keysB.includes(k) && deepEqual(a[k], b[k], seen));\n}\n\n// Demo\nconsole.log(deepEqual(NaN, NaN)); // true\nconsole.log(deepEqual(0, -0)); // false (Object.is)\nconsole.log(deepEqual({a:1, b:[2]}, {a:1, b:[2]})); // true\nconsole.log(deepEqual(new Date('2020-01-01'), new Date('2020-01-01'))); // true\nconsole.log(deepEqual(/ab/gi, /ab/gi)); // true\nconst c = {}; c.self = c; const d = {}; d.self = d;\nconsole.log(deepEqual(c, d)); // true (circular)\nconsole.log(deepEqual({a: NaN}, {a: NaN})); // true\n```\nNote: lodash `isEqual` uses `===` for -0 (treats 0 === -0); pick behavior and document."
+  },
+  {
+    "technology": "javascript-coding",
+    "round": "Frontend",
+    "difficulty": "medium",
+    "tags": [
+      "throttle",
+      "timers",
+      "leading-trailing"
+    ],
+    "title": "Implement throttle(func, wait, {leading, trailing})",
+    "description": "Create throttle that invokes func at most once per wait ms. Support leading/trailing options, plus cancel/flush.",
+    "answer": "**Approach:** Track `lastCall` time + trailing timer. Leading invokes immediately if elapsed >= wait; trailing schedules last args.\n\n```javascript\nfunction throttle(func, wait, { leading = true, trailing = true } = {}) {\n  let lastCall = 0, timer = null, lastArgs, lastThis, result;\n  function invoke(time) {\n    lastCall = time;\n    result = func.apply(lastThis, lastArgs);\n    lastArgs = lastThis = null;\n    return result;\n  }\n  function throttled(...args) {\n    const now = Date.now();\n    const remaining = wait - (now - lastCall);\n    lastArgs = args; lastThis = this;\n    if (remaining <= 0 || remaining > wait) {\n      if (timer) { clearTimeout(timer); timer = null; }\n      if (leading) return invoke(now);\n    }\n    if (!timer && trailing) {\n      timer = setTimeout(() => {\n        timer = null;\n        if (trailing && lastArgs) invoke(Date.now());\n      }, remaining > 0 ? remaining : wait);\n    }\n    return result;\n  }\n  throttled.cancel = () => { clearTimeout(timer); timer = null; lastArgs = lastThis = null; };\n  throttled.flush = () => { if (timer) { clearTimeout(timer); timer = null; if (lastArgs) return invoke(Date.now()); } };\n  return throttled;\n}\n\n// Demo\nlet count = 0;\nconst inc = throttle(() => count++, 100, { leading: true, trailing: true });\ninc(); inc(); inc(); // leading immediate count=1\nsetTimeout(() => { inc(); console.log(count); }, 150);\n```\nDifference vs debounce: throttle guarantees periodic execution during continuous calls."
+  },
+  {
+    "technology": "javascript-coding",
+    "round": "DSA",
+    "difficulty": "medium",
+    "tags": [
+      "curry",
+      "closure",
+      "partial-application"
+    ],
+    "title": "Implement curry(func) with placeholder support",
+    "description": "Create curry that transforms f(a,b,c) into f(a)(b)(c) or f(a,b)(c). Support lodash-style placeholder _. Use func.length for arity.",
+    "answer": "**Approach:** Accumulate args until arity met; placeholder version needs gap filling. Simple version covers 90% of interviews; placeholder extended is bonus.\n\n```javascript\nfunction simpleCurry(fn, arity = fn.length) {\n  return function curried(...args) {\n    if (args.length >= arity) return fn.apply(this, args);\n    return (...next) => curried.apply(this, [...args, ...next]);\n  };\n}\ncurryPlaceholder.placeholder = Symbol('_');\nfunction curryPlaceholder(fn, arity = fn.length) {\n  const PH = curryPlaceholder.placeholder;\n  function curried(...args) {\n    const prev = curried._prev || [];\n    const all = [...prev, ...args];\n    const real = all.filter(v => v !== PH).length;\n    if (real >= arity) {\n      const out=[]; let j=0;\n      for(let i=0;i<all.length && out.length < arity;i++){\n        if(all[i]===PH){ while(j<args.length && args[j]===PH) j++; if(j<args.length) out.push(args[j++]); }\n        else out.push(all[i]);\n      }\n      if(out.includes(PH)) { const n=curryPlaceholder(fn, arity); n._prev=out; return n; }\n      return fn.apply(this, out.slice(0, arity));\n    }\n    const n=curryPlaceholder(fn, arity); n._prev=all; return n;\n  }\n  curried._prev=[]; return curried;\n}\n\n// Demo\nfunction add(a,b,c) { return a+b+c; }\nconst curried = simpleCurry(add);\nconsole.log(curried(1)(2)(3)); // 6\nconsole.log(curried(1,2)(3)); // 6\nconsole.log(curried(1)(2,3)); // 6\nconsole.log(simpleCurry((a,b)=>a*b)(2)(3)); // 6\n```\nPlaceholder: `curried(1, _, 3)(2)` → needs PH logic."
+  },
+  {
+    "technology": "javascript-coding",
+    "round": "DSA",
+    "difficulty": "easy",
+    "tags": [
+      "array",
+      "flat",
+      "recursion"
+    ],
+    "title": "Implement Array.prototype.flat() — flatten with depth",
+    "description": "Create flat(arr, depth=1) that flattens nested arrays up to depth. Also implement flatMap.",
+    "answer": "**Approach:** Recursive DFS, decrement depth; `depth = Infinity` fully flattens.\n\n```javascript\nfunction flat(arr, depth = 1) {\n  const res = [];\n  (function helper(a, d) {\n    for (const v of a) {\n      if (Array.isArray(v) && d > 0) helper(v, d - 1);\n      else res.push(v);\n    }\n  })(arr, depth);\n  return res;\n}\nfunction flatMap(arr, fn) { return flat(arr.map(fn), 1); }\nfunction flatIter(arr, depth = 1) {\n  const stack = [...arr.map(v => [v, depth])].reverse();\n  const out = [];\n  while (stack.length) {\n    const [val, d] = stack.pop();\n    if (Array.isArray(val) && d > 0) {\n      for (let i = val.length - 1; i >= 0; i--) stack.push([val[i], d - 1]);\n    } else out.push(val);\n  }\n  return out;\n}\n\n// Demo\nconsole.log(flat([1,[2,[3,[4]]]], 1)); // [1,2,[3,[4]]]\nconsole.log(flat([1,[2,[3,[4]]]], 2)); // [1,2,3,[4]]\nconsole.log(flat([1,[2,[3,[4]]]], Infinity)); // [1,2,3,4]\nconsole.log(flatMap([1,2,3], x => [x, x*2])); // [1,2,2,4,3,6]\nconsole.log(flatIter([1,[2,[3]]], 1)); // [1,2,[3]]\n```\nEdge: sparse arrays — `for...of` skips holes; use `for (let i=0;i<a.length;i++) if (i in a)` to preserve spec."
+  },
+  {
+    "technology": "javascript-coding",
+    "round": "Frontend",
+    "difficulty": "easy",
+    "tags": [
+      "once",
+      "closure"
+    ],
+    "title": "Implement once(func) — ensure a function runs only once",
+    "description": "Create once(func) that invokes func at most once and caches result. Subsequent calls return first result.",
+    "answer": "**Approach:** Flag + cached result. Preserve `this` and args on first call.\n\n```javascript\nfunction once(func) {\n  let called = false, result;\n  return function(...args) {\n    if (!called) { called = true; result = func.apply(this, args); }\n    return result;\n  };\n}\n\n// Demo\nlet n = 0;\nconst init = once(() => ++n);\nconsole.log(init()); // 1\nconsole.log(init()); // 1 (cached)\nconsole.log(n); // 1\nconst obj = { val: 10, get: once(function() { return this.val; }) };\nconsole.log(obj.get()); // 10\nfunction onceAsync(fn) {\n  let p;\n  return function(...args) { if (!p) p = Promise.resolve(fn.apply(this, args)); return p; };\n}\n(async () => {\n  const fetchOnce = onceAsync(async () => { console.log('fetch'); return 42; });\n  console.log(await fetchOnce()); // fetch 42\n  console.log(await fetchOnce()); // 42 (no second fetch)\n})();\n```\nUseful for singleton init, event listener setup, lazy config load."
+  },
+  {
+    "technology": "javascript-coding",
+    "round": "Frontend",
+    "difficulty": "medium",
+    "tags": [
+      "promise",
+      "promiseAll",
+      "concurrency"
+    ],
+    "title": "Implement Promise.all() from scratch",
+    "description": "Create promiseAll(promises) that resolves when all resolve (in input order) or rejects on first rejection. Handle non-promises and empty array.",
+    "answer": "**Approach:** Wrap each with `Promise.resolve`, track results array + remaining count. Resolve when count 0. Reject immediately on any rejection.\n\n```javascript\nfunction promiseAll(iterable) {\n  const promises = [...iterable];\n  if (promises.length === 0) return Promise.resolve([]);\n  return new Promise((resolve, reject) => {\n    const results = new Array(promises.length);\n    let remaining = promises.length;\n    promises.forEach((p, i) => {\n      Promise.resolve(p).then(\n        val => { results[i] = val; remaining--; if (remaining === 0) resolve(results); },\n        err => reject(err)\n      );\n    });\n  });\n}\n\n// Demo\npromiseAll([1, Promise.resolve(2), new Promise(r => setTimeout(()=>r(3), 50))])\n  .then(v => console.log(v)); // [1,2,3]\npromiseAll([Promise.resolve(1), Promise.reject('oops'), Promise.resolve(3)])\n  .catch(e => console.log('rejected', e)); // rejected oops\npromiseAll([]).then(v => console.log('empty', v)); // empty []\npromiseAll([{ then: cb => cb(99) }]).then(v => console.log(v)); // [99]\n```\nOrder guarantee: results indexed by input position, not resolution order."
+  },
+  {
+    "technology": "javascript-coding",
+    "round": "DSA",
+    "difficulty": "medium",
+    "tags": [
+      "lru",
+      "cache",
+      "map",
+      "doubly-linked-list"
+    ],
+    "title": "Implement LRU Cache (get/put with O(1))",
+    "description": "Design an LRU cache with get(key) and put(key, value) in O(1). Evict least recently used when capacity exceeded. Use Map or Doubly Linked List.",
+    "answer": "**Approach:** `Map` preserves insertion order — `get` deletes+re-sets to mark recent; `put` does same and evicts first key when over capacity. O(1) via Map ops. DLL alternative for interview depth.\n\n```javascript\nclass LRUCache {\n  constructor(capacity) { this.capacity = capacity; this.map = new Map(); }\n  get(key) {\n    if (!this.map.has(key)) return -1;\n    const val = this.map.get(key);\n    this.map.delete(key);\n    this.map.set(key, val);\n    return val;\n  }\n  put(key, value) {\n    if (this.map.has(key)) this.map.delete(key);\n    this.map.set(key, value);\n    if (this.map.size > this.capacity) {\n      const firstKey = this.map.keys().next().value;\n      this.map.delete(firstKey);\n    }\n  }\n}\n\n// Demo\nconst lru = new LRUCache(2);\nlru.put(1, 1); lru.put(2, 2);\nconsole.log(lru.get(1)); // 1 (makes 1 most recent, order: 2,1)\nlru.put(3, 3); // evicts 2\nconsole.log(lru.get(2)); // -1\nlru.put(4, 4); // evicts 1\nconsole.log(lru.get(1)); // -1\nconsole.log(lru.get(3)); // 3\nconsole.log(lru.get(4)); // 4\n```\nDLL gives explicit O(1) without relying on Map order — good to mention in follow-up."
+  },
+  {
+    "technology": "javascript-coding",
+    "round": "Frontend",
+    "difficulty": "medium",
+    "tags": [
+      "promise",
+      "promiseAllSettled"
+    ],
+    "title": "Implement Promise.allSettled()",
+    "description": "Create promiseAllSettled that waits for all promises to settle and returns array of {status, value/reason}. Never rejects.",
+    "answer": "**Approach:** Map each to `Promise.resolve(p).then(value=>({status:\"fulfilled\", value}), reason=>({status:\"rejected\", reason}))` then `Promise.all`.\n\n```javascript\nfunction promiseAllSettled(iterable) {\n  const promises = [...iterable];\n  if (promises.length === 0) return Promise.resolve([]);\n  return Promise.all(promises.map(p =>\n    Promise.resolve(p).then(\n      value => ({ status: 'fulfilled', value }),\n      reason => ({ status: 'rejected', reason })\n    )\n  ));\n}\n\n// Demo\npromiseAllSettled([Promise.resolve(1), Promise.reject('err'), 3])\n  .then(r => console.log(r));\n// [\n//   { status: 'fulfilled', value: 1 },\n//   { status: 'rejected', reason: 'err' },\n//   { status: 'fulfilled', value: 3 }\n// ]\npromiseAllSettled([]).then(r => console.log('empty', r)); // []\n```\nUse for batch where partial failure is okay (e.g. fetch multiple resources)."
+  },
+  {
+    "technology": "javascript-coding",
+    "round": "Frontend",
+    "difficulty": "easy",
+    "tags": [
+      "promise",
+      "promiseRace"
+    ],
+    "title": "Implement Promise.race()",
+    "description": "Create promiseRace that settles (resolve or reject) as soon as the first promise settles. Handle empty array (never settles).",
+    "answer": "**Approach:** Iterate and attach `then(resolve, reject)` to outer promise; first settlement wins.\n\n```javascript\nfunction promiseRace(iterable) {\n  const promises = [...iterable];\n  return new Promise((resolve, reject) => {\n    for (const p of promises) Promise.resolve(p).then(resolve, reject);\n  });\n}\n\n// Demo\npromiseRace([\n  new Promise(r => setTimeout(()=>r('slow'), 100)),\n  new Promise(r => setTimeout(()=>r('fast'), 10))\n]).then(v => console.log(v)); // fast\npromiseRace([Promise.reject('oops'), Promise.resolve(1)])\n  .catch(e => console.log('race rejected', e)); // oops\nconsole.log(promiseRace([1, Promise.resolve(2)])); // Promise that resolves to 1\nfunction withTimeout(promise, ms) {\n  return promiseRace([promise, new Promise((_, rej) => setTimeout(()=>rej(new Error('timeout')), ms))]);\n}\nwithTimeout(new Promise(r=>setTimeout(()=>r('ok'), 50)), 100).then(v=>console.log('ok', v));\n```\nEmpty iterable returns forever-pending promise per spec."
+  },
+  {
+    "technology": "javascript-coding",
+    "round": "DSA",
+    "difficulty": "medium",
+    "tags": [
+      "promise",
+      "promiseAny",
+      "aggregateError"
+    ],
+    "title": "Implement Promise.any() with AggregateError",
+    "description": "Create promiseAny that resolves with the first fulfilled value, or rejects with AggregateError if all reject. Handle empty iterable.",
+    "answer": "**Approach:** Track rejections; on first fulfillment resolve; if all reject, reject with `AggregateError`.\n\n```javascript\nfunction promiseAny(iterable) {\n  const promises = [...iterable];\n  if (promises.length === 0) return Promise.reject(new AggregateError([], 'All promises were rejected'));\n  return new Promise((resolve, reject) => {\n    const errors = new Array(promises.length);\n    let rejectedCount = 0;\n    promises.forEach((p, i) => {\n      Promise.resolve(p).then(resolve, err => {\n        errors[i] = err;\n        rejectedCount++;\n        if (rejectedCount === promises.length) reject(new AggregateError(errors, 'All promises were rejected'));\n      });\n    });\n  });\n}\n\n// Demo\npromiseAny([Promise.reject(1), Promise.reject(2), Promise.resolve(3)])\n  .then(v => console.log(v)); // 3\npromiseAny([Promise.reject('a'), Promise.reject('b')])\n  .catch(e => { console.log(e instanceof AggregateError); console.log(e.errors); });\npromiseAny([]).catch(e => console.log(e instanceof AggregateError)); // true\n```\n`AggregateError` is ES2021; polyfill if needed: `class AggregateError extends Error { constructor(errors, msg){ super(msg); this.errors=errors; }}`"
+  },
+  {
+    "technology": "javascript-coding",
+    "round": "Frontend",
+    "difficulty": "medium",
+    "tags": [
+      "retry",
+      "promise",
+      "exponential-backoff"
+    ],
+    "title": "Implement promiseRetry(fn, retries, delay) with exponential backoff",
+    "description": "Create a retry utility that calls an async fn up to retries times with exponential backoff. Support abort on certain errors.",
+    "answer": "**Approach:** Loop with `try/catch`, `await sleep(delay * 2**attempt)`. Optionally check `shouldRetry(err)`.\n\n```javascript\nfunction sleep(ms) { return new Promise(r => setTimeout(r, ms)); }\nasync function promiseRetry(fn, { retries = 3, delay = 100, factor = 2, shouldRetry = () => true } = {}) {\n  let lastError;\n  for (let attempt = 0; attempt <= retries; attempt++) {\n    try { return await fn(attempt); }\n    catch (err) {\n      lastError = err;\n      if (attempt === retries || !shouldRetry(err)) throw err;\n      await sleep(delay * Math.pow(factor, attempt));\n    }\n  }\n  throw lastError;\n}\n\n// Demo\nlet tries = 0;\npromiseRetry(async () => {\n  tries++;\n  if (tries < 3) throw new Error('fail ' + tries);\n  return 'success';\n}, { retries: 3, delay: 10 }).then(v => console.log(v, 'after', tries, 'tries')); // success after 3\npromiseRetry(async () => { throw Object.assign(new Error('400'), { status: 400 }); },\n  { retries: 3, shouldRetry: e => e.status >= 500 }\n).catch(e => console.log('not retried', e.message));\n```\nPattern used for fetch with flaky networks; combine with `jitter` for production."
+  },
+  {
+    "technology": "javascript-coding",
+    "round": "DSA",
+    "difficulty": "medium",
+    "tags": [
+      "array",
+      "get",
+      "lodash-get",
+      "path"
+    ],
+    "title": "Implement lodash.get(obj, path, defaultValue)",
+    "description": "Create get that safely reads nested properties via dot/bracket path like \"a.b[0].c\" or [\"a\",\"b\",0]. Return defaultValue if unresolved.",
+    "answer": "**Approach:** Normalize path to keys array (split by `.` and `[]`), then reduce, returning defaultValue if `null/undefined` encountered.\n\n```javascript\nfunction get(obj, path, defaultValue) {\n  const keys = Array.isArray(path) ? path : path.replace(/\\[(\\w+)\\]/g, '.$1').split('.').filter(Boolean);\n  let cur = obj;\n  for (const k of keys) {\n    if (cur == null) return defaultValue;\n    cur = cur[k];\n  }\n  return cur === undefined ? defaultValue : cur;\n}\n\n// Demo\nconst obj = { a: { b: [{ c: 3 }], 'd.e': 5 } };\nconsole.log(get(obj, 'a.b[0].c')); // 3\nconsole.log(get(obj, 'a.b[0].x', 'default')); // default\nconsole.log(get(obj, ['a','b',0,'c'])); // 3\nconsole.log(get(obj, 'a.missing.c', 42)); // 42\nconsole.log(get(null, 'a.b', 'fallback')); // fallback\nconsole.log(get(obj, 'a.b[1].c', null)); // null\n```\nHandles `a[0].b` via regex `\\[(\\w+)\\]` → `.\\$1`."
+  },
+  {
+    "technology": "javascript-coding",
+    "round": "DSA",
+    "difficulty": "medium",
+    "tags": [
+      "chunk",
+      "array"
+    ],
+    "title": "Implement _.chunk(array, size)",
+    "description": "Create chunk that splits array into groups of size length. Return empty array if input invalid.",
+    "answer": "**Approach:** Slice in steps of `size`.\n\n```javascript\nfunction chunk(array, size = 1) {\n  if (!Array.isArray(array) || size < 1) return [];\n  const res = [];\n  for (let i = 0; i < array.length; i += size) res.push(array.slice(i, i + size));\n  return res;\n}\n\n// Demo\nconsole.log(chunk([1,2,3,4,5], 2)); // [[1,2],[3,4],[5]]\nconsole.log(chunk(['a','b','c','d'], 3)); // [['a','b','c'],['d']]\nconsole.log(chunk([1,2], 5)); // [[1,2]]\nconsole.log(chunk([], 2)); // []\nconsole.log(chunk([1,2,3], 1)); // [[1],[2],[3]]\nfunction* chunkGen(arr, size) { for (let i = 0; i < arr.length; i += size) yield arr.slice(i, i+size); }\nconsole.log([...chunkGen([1,2,3,4], 2)]); // [[1,2],[3,4]]\n```\nUsed for pagination & batching API calls."
+  },
+  {
+    "technology": "javascript-coding",
+    "round": "DSA",
+    "difficulty": "easy",
+    "tags": [
+      "object",
+      "groupBy",
+      "array"
+    ],
+    "title": "Implement groupBy(array, iteratee) — lodash style",
+    "description": "Create groupBy that groups collection elements by key from iteratee (function or property string). Return object with arrays.",
+    "answer": "**Approach:** Iterate, compute key (call fn or read prop), push to `result[key]`.\n\n```javascript\nfunction groupBy(collection, iteratee) {\n  const fn = typeof iteratee === 'function' ? iteratee : (v) => v[iteratee];\n  const result = {};\n  for (const item of collection) {\n    const key = String(fn(item));\n    if (!result[key]) result[key] = [];\n    result[key].push(item);\n  }\n  return result;\n}\n\n// Demo\nconsole.log(groupBy([6.1, 4.2, 6.3], Math.floor)); // { '4': [4.2], '6': [6.1, 6.3] }\nconsole.log(groupBy(['one','two','three'], 'length')); // { '3': ['one','two'], '5': ['three'] }\nconsole.log(groupBy([{a:1},{a:2},{a:1}], x => x.a)); // { '1': [{a:1},{a:1}], '2': [{a:2}] }\nfunction groupByMap(arr, fn) {\n  const m = new Map();\n  for (const v of arr) { const k = fn(v); if (!m.has(k)) m.set(k, []); m.get(k).push(v); }\n  return m;\n}\nconsole.log([...groupByMap([1,2,3,4], x => x%2)]); // [[1,[1,3]],[0,[2,4]]]\n```\nES2024 has native `Object.groupBy` and `Map.groupBy` — polyfill should match."
+  },
+  {
+    "technology": "javascript-coding",
+    "round": "DSA",
+    "difficulty": "hard",
+    "tags": [
+      "deep-clone",
+      "structuredClone",
+      "circular"
+    ],
+    "title": "Implement deepClone — handle Dates, RegExp, Map, Set & circular refs",
+    "description": "Create deepClone(obj) that correctly clones plain objects, arrays, Dates, RegExps, Maps, Sets, and handles circular references.",
+    "answer": "**Approach:** Recursive clone with `WeakMap` for seen objects. Handle each built-in type, then plain object via `Reflect.ownKeys`.\n\n```javascript\nfunction deepClone(obj, seen = new WeakMap()) {\n  if (obj === null || typeof obj !== 'object') return obj;\n  if (seen.has(obj)) return seen.get(obj);\n  if (obj instanceof Date) return new Date(obj);\n  if (obj instanceof RegExp) return new RegExp(obj.source, obj.flags);\n  if (obj instanceof Map) {\n    const c = new Map(); seen.set(obj, c);\n    for (const [k,v] of obj) c.set(deepClone(k, seen), deepClone(v, seen));\n    return c;\n  }\n  if (obj instanceof Set) {\n    const c = new Set(); seen.set(obj, c);\n    for (const v of obj) c.add(deepClone(v, seen));\n    return c;\n  }\n  if (Array.isArray(obj)) {\n    const c = []; seen.set(obj, c);\n    obj.forEach((v,i) => c[i] = deepClone(v, seen));\n    return c;\n  }\n  if (obj instanceof ArrayBuffer) return obj.slice(0);\n  const c = Object.create(Object.getPrototypeOf(obj));\n  seen.set(obj, c);\n  for (const k of Reflect.ownKeys(obj)) c[k] = deepClone(obj[k], seen);\n  return c;\n}\n\n// Demo\nconst a = { x: 1, d: new Date('2020-01-01'), r: /ab/gi, m: new Map([['k', {n:1}]]) };\na.self = a;\nconst b = deepClone(a);\nconsole.log(b !== a && b.m !== a.m && b.m.get('k') !== a.m.get('k')); // true\nconsole.log(b.self === b); // true (circular preserved)\nconsole.log(b.d instanceof Date && b.d.getTime() === a.d.getTime()); // true\nconsole.log(String(b.r) === String(a.r)); // true\n```\n`structuredClone` is native (2022+) and handles more types — mention as preferred."
+  },
+  {
+    "technology": "javascript-coding",
+    "round": "DSA",
+    "difficulty": "easy",
+    "tags": [
+      "polyfill",
+      "array",
+      "map"
+    ],
+    "title": "Polyfill Array.prototype.map from scratch",
+    "description": "Implement myMap that mimics Array.prototype.map — handles sparse arrays, thisArg, and does not mutate original.",
+    "answer": "**Approach:** Loop by index, check `i in array` for holes, call callback with `thisArg`.\n\n```javascript\nArray.prototype.myMap = function(callback, thisArg) {\n  if (this == null) throw new TypeError('myMap called on null');\n  if (typeof callback !== 'function') throw new TypeError(callback + ' is not a function');\n  const O = Object(this);\n  const len = O.length >>> 0;\n  const A = new Array(len);\n  for (let i = 0; i < len; i++) if (i in O) A[i] = callback.call(thisArg, O[i], i, O);\n  return A;\n};\n\n// Demo\nconsole.log([1,2,3].myMap(x => x*2)); // [2,4,6]\nconsole.log([1,,3].myMap(x => (x||0)+1)); // [2, empty, 4] preserves holes\nconsole.log([1,2,3].myMap(function(x){ return x + this.n }, {n:10})); // [11,12,13]\nconsole.log(Array.prototype.myMap.call({0:'a',1:'b', length:2}, x=>x.toUpperCase())); // ['A','B']\nconst sparse = [1,,3];\nconsole.log(1 in sparse.myMap(x=>x)); // false (hole preserved)\n```\nSpec: uses `>>>0` to coerce length, skips holes, passes (value, index, array)."
+  },
+  {
+    "technology": "javascript-coding",
+    "round": "DSA",
+    "difficulty": "medium",
+    "tags": [
+      "polyfill",
+      "array",
+      "reduce"
+    ],
+    "title": "Polyfill Array.prototype.reduce",
+    "description": "Implement myReduce that matches spec: handles no initialValue, sparse arrays, and throws on empty array without initialValue.",
+    "answer": "**Approach:** Find first present index if no initialValue, then iterate, skipping holes.\n\n```javascript\nArray.prototype.myReduce = function(callback, initialValue) {\n  if (this == null) throw new TypeError('myReduce called on null');\n  if (typeof callback !== 'function') throw new TypeError('callback not a function');\n  const O = Object(this); const len = O.length >>> 0;\n  let k = 0, acc;\n  if (arguments.length > 1) acc = initialValue;\n  else {\n    while (k < len && !(k in O)) k++;\n    if (k >= len) throw new TypeError('Reduce of empty array with no initial value');\n    acc = O[k++];\n  }\n  for (; k < len; k++) if (k in O) acc = callback(acc, O[k], k, O);\n  return acc;\n};\n\n// Demo\nconsole.log([1,2,3].myReduce((a,b)=>a+b, 0)); // 6\nconsole.log([1,2,3].myReduce((a,b)=>a+b)); // 6 (no init)\nconsole.log([,1,,2].myReduce((a,b)=>a+b, 0)); // 3 (skips holes)\ntry { [].myReduce((a,b)=>a+b); } catch(e) { console.log(e.message.includes('empty')); } // true\nconsole.log(['a','b','c'].myReduce((a,b)=>a+b)); // abc\n```\nMust handle `initialValue` being `undefined` explicitly via `arguments.length`."
+  },
+  {
+    "technology": "javascript-coding",
+    "round": "DSA",
+    "difficulty": "medium",
+    "tags": [
+      "polyfill",
+      "bind",
+      "this"
+    ],
+    "title": "Polyfill Function.prototype.bind (with new support)",
+    "description": "Implement myBind that binds this and partial args, and works correctly when called with new.",
+    "answer": "**Approach:** Return bound function that handles `new` via `instanceof` check, and concatenates bound args + call args.\n\n```javascript\nFunction.prototype.myBind = function(thisArg, ...boundArgs) {\n  if (typeof this !== 'function') throw new TypeError('myBind called on non-function');\n  const target = this;\n  function bound(...args) {\n    const isNew = this instanceof bound;\n    const that = isNew ? this : thisArg;\n    return target.apply(that, [...boundArgs, ...args]);\n  }\n  bound.prototype = Object.create(target.prototype);\n  Object.defineProperty(bound, 'length', { value: Math.max(0, target.length - boundArgs.length) });\n  return bound;\n};\n\n// Demo\nfunction greet(greeting, punct) { return greeting + ' ' + this.name + punct; }\nconst obj = { name: 'Ada' };\nconst bound = greet.myBind(obj, 'Hello');\nconsole.log(bound('!')); // Hello Ada!\nfunction Person(name, age) { this.name=name; this.age=age; }\nconst BoundPerson = Person.myBind(null, 'Bob');\nconst p = new BoundPerson(30);\nconsole.log(p.name, p.age, p instanceof Person); // Bob 30 true\nconsole.log((function(a,b,c){ return a+b+c; }).myBind(null, 1,2)(3)); // 6\n```\nEdge: arrow functions cannot be bound (ignore)."
+  },
+  {
+    "technology": "javascript-coding",
+    "round": "Frontend",
+    "difficulty": "medium",
+    "tags": [
+      "compose",
+      "pipe",
+      "functional"
+    ],
+    "title": "Implement compose() and pipe() for function composition",
+    "description": "Create compose(...fns) (right-to-left) and pipe(...fns) (left-to-right) that compose functions. Handle async functions.",
+    "answer": "**Approach:** `compose` reduces right-to-left: `(...args) => f(g(h(...args)))`. `pipe` is reverse. Provide async variants that await.\n\n```javascript\nfunction compose(...fns) {\n  if (fns.length === 0) return x => x;\n  return function(...args) {\n    let result = fns[fns.length - 1].apply(this, args);\n    for (let i = fns.length - 2; i >= 0; i--) result = fns[i].call(this, result);\n    return result;\n  };\n}\nfunction pipe(...fns) {\n  if (fns.length === 0) return x => x;\n  return function(...args) {\n    let result = fns[0].apply(this, args);\n    for (let i = 1; i < fns.length; i++) result = fns[i].call(this, result);\n    return result;\n  };\n}\nfunction pipeAsync(...fns) {\n  return async function(...args) {\n    let res = await fns[0].apply(this, args);\n    for (let i = 1; i < fns.length; i++) res = await fns[i].call(this, res);\n    return res;\n  };\n}\n\n// Demo\nconst add1 = x => x+1, double = x => x*2, toStr = x => String(x);\nconsole.log(compose(toStr, double, add1)(5)); // \"12\" (5+1=6*2=12 -> \"12\")\nconsole.log(pipe(add1, double, toStr)(5)); // \"12\"\nconst sanitize = pipe(s => s.trim(), s => s.toLowerCase(), s => s.replace(/[^a-z]/g, ''));\nconsole.log(sanitize('  Hello! ')); // hello\n(async () => { const fetchUser = pipeAsync(async id => ({id, name: 'Ada'}), u => u.name.toUpperCase()); console.log(await fetchUser(1)); })(); // ADA\n```\n`compose` is common in Redux middleware; `pipe` is more readable."
+  },
+  {
+    "technology": "javascript-coding",
+    "round": "Frontend",
+    "difficulty": "hard",
+    "tags": [
+      "promise",
+      "cancelable",
+      "abort"
+    ],
+    "title": "Implement a Cancelable Promise (with CancelToken / AbortController)",
+    "description": "Create a cancelable promise wrapper that can be cancelled before it settles, rejecting with CancelError.",
+    "answer": "**Approach:** Wrap promise with controller that rejects on cancel signal. Use `AbortController` for standard.\n\n```javascript\nclass CancelError extends Error { constructor(msg='Cancelled'){ super(msg); this.name='CancelError'; } }\nfunction makeCancelable(promise) {\n  let canceled = false, cancel;\n  const cancelPromise = new Promise((_, reject) => { cancel = () => { canceled = true; reject(new CancelError()); }; });\n  const wrapped = Promise.race([promise, cancelPromise]);\n  promise.catch(()=>{});\n  return { promise: wrapped, cancel, isCanceled: () => canceled };\n}\nfunction withAbort(promise, signal) {\n  if (signal.aborted) return Promise.reject(new DOMException('Aborted','AbortError'));\n  return new Promise((resolve, reject) => {\n    const onAbort = () => reject(new DOMException('Aborted','AbortError'));\n    signal.addEventListener('abort', onAbort, { once: true });\n    promise.then(v => { signal.removeEventListener('abort', onAbort); resolve(v); }, e => { signal.removeEventListener('abort', onAbort); reject(e); });\n  });\n}\n\n// Demo\nconst { promise, cancel } = makeCancelable(new Promise(r => setTimeout(()=>r('done'), 100)));\npromise.then(v=>console.log(v)).catch(e=>console.log(e.name)); // CancelError if canceled\nsetTimeout(() => cancel(), 10);\nconst ctrl = new AbortController();\nwithAbort(Promise.resolve('mock'), ctrl.signal).catch(e=>console.log(e.name));\nctrl.abort();\n```\nReact use: `useEffect(() => { const c = makeCancelable(fetchData()); return () => c.cancel(); }, [])`."
+  },
+  {
+    "technology": "javascript-coding",
+    "round": "DSA",
+    "difficulty": "medium",
+    "tags": [
+      "time-limited-cache",
+      "expiry",
+      "map"
+    ],
+    "title": "Implement TimeLimitedCache (LeetCode 2622) with expiry",
+    "description": "Design a cache where set(key, value, duration) stores value that expires after duration ms. Return true if un-expired key existed.",
+    "answer": "**Approach:** Map stores `{value, timer}`. On `set`, clear old timer if exists, set new `setTimeout` to delete.\n\n```javascript\nclass TimeLimitedCache {\n  constructor() { this.map = new Map(); }\n  set(key, value, duration) {\n    const exists = this.map.has(key);\n    if (exists) clearTimeout(this.map.get(key).timer);\n    const timer = setTimeout(() => this.map.delete(key), duration);\n    this.map.set(key, { value, timer });\n    return exists;\n  }\n  get(key) { return this.map.has(key) ? this.map.get(key).value : -1; }\n  count() { return this.map.size; }\n}\n\n// Demo\nconst cache = new TimeLimitedCache();\nconsole.log(cache.set(1, 42, 100)); // false\nconsole.log(cache.get(1)); // 42\nconsole.log(cache.set(1, 100, 100)); // true (unexpired existed)\nconsole.log(cache.count()); // 1\nsetTimeout(()=> console.log(cache.get(1)), 150); // -1 (expired)\nclass SimpleTTL {\n  constructor(){ this.m=new Map(); }\n  set(k,v,dur){ const has=this.m.has(k) && this.m.get(k).exp > Date.now(); this.m.set(k,{v, exp: Date.now()+dur}); return has; }\n  get(k){ const e=this.m.get(k); if(!e||e.exp<=Date.now()) return -1; return e.v; }\n  count(){ const now=Date.now(); for(const [k, e] of this.m) if(e.exp<=now) this.m.delete(k); return this.m.size; }\n}\nconsole.log(new SimpleTTL().set('a',1, 1000));\n```\nHandles timer leak by clearing previous."
+  },
+  {
+    "technology": "javascript-coding",
+    "round": "DSA",
+    "difficulty": "medium",
+    "tags": [
+      "object",
+      "flatten",
+      "unflatten"
+    ],
+    "title": "Flatten and Unflatten a Nested Object (dot notation & arrays)",
+    "description": "Create flattenObject(obj) to {\"a.b.0.c\": value} and unflattenObject to reverse. Support arrays and escaping.",
+    "answer": "**Approach:** DFS to flatten, building `prefix.key`; for unflatten, split by `.` and build nested structure, detecting numeric keys for arrays.\n\n```javascript\nfunction flattenObject(obj, prefix = '', res = {}) {\n  for (const [k, v] of Object.entries(obj)) {\n    const key = prefix ? `${prefix}.${k}` : k;\n    if (v !== null && typeof v === 'object' && !Array.isArray(v) && !(v instanceof Date)) {\n      flattenObject(v, key, res);\n    } else if (Array.isArray(v)) {\n      v.forEach((item, i) => {\n        const ak = `${key}.${i}`;\n        if (item !== null && typeof item === 'object') flattenObject({ [i]: item }, key, res);\n        else res[ak] = item;\n      });\n      if (v.length === 0) res[key] = [];\n    } else res[key] = v;\n  }\n  return res;\n}\nfunction unflattenObject(flat) {\n  const res = {};\n  for (const [path, val] of Object.entries(flat)) {\n    const keys = path.split('.');\n    let cur = res;\n    for (let i = 0; i < keys.length; i++) {\n      const k = keys[i]; const isLast = i === keys.length - 1;\n      const nextIsArrayIndex = !isLast && /^\\\\d+$/.test(keys[i+1]);\n      if (isLast) cur[k] = val;\n      else { if (!(k in cur)) cur[k] = nextIsArrayIndex ? [] : {}; cur = cur[k]; }\n    }\n  }\n  return res;\n}\n\n// Demo\nconst nested = { a: { b: { c: 1 }, d: [2, { e: 3 }] } };\nconst flat = flattenObject(nested);\nconsole.log(flat); // { 'a.b.c':1, 'a.d.0':2, 'a.d.1.e':3 }\nconsole.log(unflattenObject(flat)); // { a:{b:{c:1}, d:[2,{e:3}]} }\n```\nEdge: preserve empty arrays/objects explicitly."
+  },
+  {
+    "technology": "javascript-coding",
+    "round": "DSA",
+    "difficulty": "medium",
+    "tags": [
+      "array",
+      "shuffle",
+      "fisher-yates"
+    ],
+    "title": "Implement Fisher-Yates Shuffle (in-place, unbiased)",
+    "description": "Create shuffle(array) that returns a uniformly random permutation in O(n) without bias. Do not use sort with Math.random.",
+    "answer": "**Approach:** Iterate from end, swap `i` with random `j` in `[0,i]`. Copy first to avoid mutating input.\n\n```javascript\nfunction shuffle(array) {\n  const a = [...array];\n  for (let i = a.length - 1; i > 0; i--) {\n    const j = Math.floor(Math.random() * (i + 1));\n    [a[i], a[j]] = [a[j], a[i]];\n  }\n  return a;\n}\n\n// Demo\nconsole.log(shuffle([1,2,3,4,5])); // e.g. [3,1,5,2,4] (random)\nconsole.log(shuffle([])); // []\nconsole.log(shuffle([1])); // [1]\nfunction testUniform() {\n  const counts = {};\n  for (let i=0;i<6000;i++) {\n    const s = shuffle([1,2,3]).join(',');\n    counts[s] = (counts[s]||0)+1;\n  }\n  console.log(counts); // each of 6 perms ~1000\n}\ntestUniform();\nfunction shuffleSeeded(arr, rng = Math.random) {\n  const a=[...arr];\n  for(let i=a.length-1;i>0;i--){ const j=Math.floor(rng()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; }\n  return a;\n}\n```\nNever use `arr.sort(()=>Math.random()-0.5)` — biased and O(n log n)."
+  },
+  {
+    "technology": "javascript-coding",
+    "round": "Frontend",
+    "difficulty": "easy",
+    "tags": [
+      "sleep",
+      "delay",
+      "promise"
+    ],
+    "title": "Implement sleep(ms) and delay with value",
+    "description": "Create sleep that returns a promise resolving after ms milliseconds. Also implement delay(fn, ms) that delays execution.",
+    "answer": "**Approach:** `new Promise(resolve => setTimeout(resolve, ms))`. For `delay`, combine with `then`.\n\n```javascript\nfunction sleep(ms) { return new Promise(resolve => setTimeout(resolve, ms)); }\nfunction delay(fn, ms, ...args) { return sleep(ms).then(() => fn(...args)); }\n\n// Demo\n(async () => {\n  console.log('start', Date.now());\n  await sleep(50);\n  console.log('after 50ms', Date.now());\n  const v = await delay(x => x*2, 30, 21);\n  console.log(v); // 42\n})();\nfunction sleepAbortable(ms, signal) {\n  if (signal?.aborted) return Promise.reject(new DOMException('Aborted','AbortError'));\n  return new Promise((resolve, reject) => {\n    const id = setTimeout(resolve, ms);\n    signal?.addEventListener('abort', () => { clearTimeout(id); reject(new DOMException('Aborted','AbortError')); }, { once: true });\n  });\n}\n```\nUsed for polling, debouncing, animation sequencing."
+  },
+  {
+    "technology": "javascript-coding",
+    "round": "DSA",
+    "difficulty": "medium",
+    "tags": [
+      "deep-merge",
+      "object",
+      "recursion"
+    ],
+    "title": "Implement deepMerge(target, source) — recursive merge",
+    "description": "Create deepMerge that recursively merges source into target. Arrays replace (not concat) by default; handle nested objects.",
+    "answer": "**Approach:** For each key in source, if both values are plain objects, recurse; else assign.\n\n```javascript\nfunction isPlainObject(v) { return v !== null && typeof v === 'object' && Object.getPrototypeOf(v) === Object.prototype; }\nfunction deepMerge(target, source) {\n  const out = { ...target };\n  for (const [k, v] of Object.entries(source)) {\n    if (isPlainObject(v) && isPlainObject(out[k])) out[k] = deepMerge(out[k], v);\n    else out[k] = v;\n  }\n  return out;\n}\n\n// Demo\nconsole.log(deepMerge({a:{b:1, c:2}}, {a:{b:10, d:3}})); // {a:{b:10,c:2,d:3}}\nconsole.log(deepMerge({a:[1,2]}, {a:[3]})); // {a:[3]} (replace)\nconsole.log(deepMerge({a:1}, {b:2})); // {a:1,b:2}\nfunction deepMergeMut(target, source) {\n  for (const [k,v] of Object.entries(source)) {\n    if (isPlainObject(v) && isPlainObject(target[k])) deepMergeMut(target[k], v);\n    else target[k] = v;\n  }\n  return target;\n}\n```\nDistinguish plain objects from Dates/RegExp/Maps — don’t deep-merge those."
+  },
+  {
+    "technology": "javascript-coding",
+    "round": "Frontend",
+    "difficulty": "medium",
+    "tags": [
+      "promise",
+      "queue",
+      "concurrency"
+    ],
+    "title": "Implement a Promise Queue (TaskQueue) with concurrency",
+    "description": "Build a queue that enqueues async tasks and runs up to concurrency at once. Support pause/resume and onIdle.",
+    "answer": "**Approach:** Similar to p-limit but as a class with `add`, `pause`, `onIdle`.\n\n```javascript\nclass TaskQueue {\n  constructor(concurrency = 2) { this.concurrency = concurrency; this.running = 0; this.queue = []; this.paused = false; }\n  add(task) {\n    return new Promise((resolve, reject) => {\n      this.queue.push({ task, resolve, reject });\n      this._next();\n    });\n  }\n  _next() {\n    if (this.paused || this.running >= this.concurrency || this.queue.length === 0) return;\n    this.running++;\n    const { task, resolve, reject } = this.queue.shift();\n    Promise.resolve().then(task).then(resolve, reject).finally(() => { this.running--; this._next(); });\n  }\n  pause() { this.paused = true; }\n  resume() { this.paused = false; this._next(); }\n  onIdle() {\n    if (this.running === 0 && this.queue.length === 0) return Promise.resolve();\n    return new Promise(r => { const check = () => { if (this.running === 0 && this.queue.length === 0) r(); else setTimeout(check, 10); }; check(); });\n  }\n}\n\n// Demo\n(async () => {\n  const q = new TaskQueue(2);\n  const sleep = (ms, v) => () => new Promise(r => setTimeout(()=>r(v), ms));\n  const results = await Promise.all([q.add(sleep(50,1)), q.add(sleep(30,2)), q.add(sleep(20,3))]);\n  console.log(results); // [1,2,3]\n  await q.onIdle();\n  console.log('idle');\n})();\n```\nUse for rate-limited API calls, image loading."
+  },
+  {
+    "technology": "javascript-coding",
+    "round": "DSA",
+    "difficulty": "easy",
+    "tags": [
+      "array",
+      "dedupe",
+      "set"
+    ],
+    "title": "Implement dedupe / unique — remove duplicates preserving order",
+    "description": "Create uniq(array) that removes duplicates. Handle primitives, objects by reference, and optionally by iteratee.",
+    "answer": "**Approach:** `Set` for primitives; `Map` with key function for objects.\n\n```javascript\nfunction uniq(array) { return [...new Set(array)]; }\nfunction uniqBy(array, iteratee) {\n  const fn = typeof iteratee === 'function' ? iteratee : (v) => v[iteratee];\n  const seen = new Set(); const res = [];\n  for (const item of array) { const key = fn(item); if (!seen.has(key)) { seen.add(key); res.push(item); } }\n  return res;\n}\n\n// Demo\nconsole.log(uniq([1,2,2,3,1])); // [1,2,3]\nconsole.log(uniqBy([{x:1},{x:2},{x:1}], x=>x.x)); // [{x:1},{x:2}]\nconsole.log(uniqBy(['a','A','b'], x=>x.toLowerCase())); // ['a','b']\nconst o = {};\nconsole.log(uniq([o, o, {}])); // [o, {}] (two distinct {} remain)\nconsole.log(uniqBy([{id:1},{id:1},{id:2}], 'id')); // [{id:1},{id:2}]\n```\nNaN: `Set` treats `NaN` as equal (SameValueZero) — `uniq([NaN, NaN])` → `[NaN]`."
+  },
+  {
+    "technology": "javascript-coding",
+    "round": "DSA",
+    "difficulty": "easy",
+    "tags": [
+      "array",
+      "intersection"
+    ],
+    "title": "Implement intersection of arrays (with duplicates & order)",
+    "description": "Create intersection(a,b) that returns common elements. Handle duplicates correctly and preserve order of first array.",
+    "answer": "**Approach:** Use `Set` for O(1) lookup for unique, or `Map` counting for duplicates.\n\n```javascript\nfunction intersection(a, b) {\n  const setB = new Set(b);\n  return [...new Set(a.filter(x => setB.has(x)))];\n}\nfunction intersectionWithDup(a, b) {\n  const count = new Map();\n  for (const x of b) count.set(x, (count.get(x)||0)+1);\n  const res = [];\n  for (const x of a) { const c = count.get(x) || 0; if (c > 0) { res.push(x); count.set(x, c-1); } }\n  return res;\n}\n\n// Demo\nconsole.log(intersection([1,2,2,3], [2,3,4])); // [2,3]\nconsole.log(intersectionWithDup([1,2,2,3], [2,2,4])); // [2,2]\nconsole.log(intersection(['a','b','c'], ['b','c','d'])); // ['b','c']\nconsole.log(intersection([], [1,2])); // []\nfunction intersectionAll(...arrays) { return arrays.reduce((a,b) => intersection(a,b)); }\nconsole.log(intersectionAll([1,2,3],[2,3,4],[3,4,5])); // [3]\n```\nUse `Set` intersection (ES2024 `a.intersection(b)`) when available."
+  },
+  {
+    "technology": "javascript-coding",
+    "round": "DSA",
+    "difficulty": "hard",
+    "tags": [
+      "promise",
+      "custom-promise",
+      "thenable"
+    ],
+    "title": "Implement a minimal Promise/A+ (MyPromise) with then/catch",
+    "description": "Create MyPromise class with constructor(executor), then, catch, and static resolve/reject. Handle chaining and thenables.",
+    "answer": "**Approach:** States pending/fulfilled/rejected; queue handlers; `resolvePromise` handles thenables recursively; `then` returns new promise.\n\n```javascript\nclass MyPromise {\n  constructor(executor) {\n    this.state = 'pending'; this.value = undefined; this.handlers = [];\n    const resolve = (v) => this._resolve(v);\n    const reject = (r) => this._reject(r);\n    try { executor(resolve, reject); } catch(e) { reject(e); }\n  }\n  _resolve(v) {\n    if (this.state !== 'pending') return;\n    if (v && (typeof v === 'object' || typeof v === 'function') && typeof v.then === 'function') {\n      try { v.then(this._resolve.bind(this), this._reject.bind(this)); } catch(e){ this._reject(e); }\n      return;\n    }\n    this.state = 'fulfilled'; this.value = v;\n    this.handlers.forEach(h => this._handle(h));\n  }\n  _reject(r) {\n    if (this.state !== 'pending') return;\n    this.state = 'rejected'; this.value = r;\n    this.handlers.forEach(h => this._handle(h));\n  }\n  _handle(handler) {\n    if (this.state === 'pending') { this.handlers.push(handler); return; }\n    queueMicrotask(() => {\n      const cb = this.state === 'fulfilled' ? handler.onFulfilled : handler.onRejected;\n      if (!cb) { (this.state === 'fulfilled' ? handler.resolve : handler.reject)(this.value); return; }\n      try { handler.resolve(cb(this.value)); } catch(e){ handler.reject(e); }\n    });\n  }\n  then(onFulfilled, onRejected) {\n    return new MyPromise((resolve, reject) => { this._handle({ onFulfilled, onRejected, resolve, reject }); });\n  }\n  catch(onRejected){ return this.then(null, onRejected); }\n  static resolve(v){ return new MyPromise(r=>r(v)); }\n  static reject(e){ return new MyPromise((_,r)=>r(e)); }\n}\n\n// Demo\nnew MyPromise(r => setTimeout(()=>r(42), 10))\n  .then(v => { console.log(v); return v*2; })\n  .then(v => console.log(v)); // 42, 84\nMyPromise.resolve(1).then(v=> v+1).then(v=> console.log(v)); // 2\nnew MyPromise((_, rej)=> rej('oops')).catch(e=> console.log('caught', e)); // caught oops\n```\nKey: `queueMicrotask` for async guarantee, thenable unwrapping, `then` always returns new promise."
+  },
+  {
+    "technology": "javascript-coding",
+    "round": "DSA",
+    "difficulty": "easy",
+    "tags": [
+      "call",
+      "apply",
+      "polyfill"
+    ],
+    "title": "Polyfill Function.prototype.call and apply",
+    "description": "Implement myCall and myApply that invoke function with given this and args. Handle null/undefined this and primitives.",
+    "answer": "**Approach:** Temporarily assign function as property on context object using Symbol key, invoke, delete.\n\n```javascript\nFunction.prototype.myCall = function(thisArg, ...args) {\n  if (typeof this !== 'function') throw new TypeError('myCall on non-function');\n  const ctx = thisArg == null ? globalThis : Object(thisArg);\n  const key = Symbol('fn');\n  ctx[key] = this;\n  const result = ctx[key](...args);\n  delete ctx[key];\n  return result;\n};\nFunction.prototype.myApply = function(thisArg, argsArray) {\n  if (typeof this !== 'function') throw new TypeError('myApply on non-function');\n  const ctx = thisArg == null ? globalThis : Object(thisArg);\n  const key = Symbol('fn');\n  ctx[key] = this;\n  const result = argsArray ? ctx[key](...argsArray) : ctx[key]();\n  delete ctx[key];\n  return result;\n};\n\n// Demo\nfunction greet(greeting, punct){ return `${greeting} ${this.name}${punct}`; }\nconst ctx = { name: 'Grace' };\nconsole.log(greet.myCall(ctx, 'Hi', '!')); // Hi Grace!\nconsole.log(greet.myApply(ctx, ['Hello', '!!'])); // Hello Grace!!\nconsole.log(function(){ return this }.myCall(null) === globalThis); // true\nconsole.log((function(a,b){ return a+b }).myApply(null, [2,3])); // 5\nconsole.log(Math.max.myApply(null, [1,5,3])); // 5\n```\nIn strict mode, `null` stays `null`; non-strict boxes primitives — above mimics sloppy."
+  },
+  {
+    "technology": "javascript-coding",
+    "round": "DSA",
+    "difficulty": "medium",
+    "tags": [
+      "array",
+      "compact",
+      "falsy"
+    ],
+    "title": "Implement _.compact — remove falsy values",
+    "description": "Create compact(array) that removes all falsy values (false, 0, \"\", null, undefined, NaN) from array.",
+    "answer": "**Approach:** `filter(Boolean)` — but be explicit for interview.\n\n```javascript\nfunction compact(array) { return array.filter(Boolean); }\nfunction compactVerbose(arr) { return arr.filter(v => !!v); }\n\n// Demo\nconsole.log(compact([0,1,false,2,'',3,null,undefined,NaN,4])); // [1,2,3,4]\nconsole.log(compact([0, '', null])); // []\nconsole.log(compact([1,2,3])); // [1,2,3]\n```\nUsed for cleaning API responses with empty slots."
+  },
+  {
+    "technology": "javascript-coding",
+    "round": "DSA",
+    "difficulty": "medium",
+    "tags": [
+      "set",
+      "difference",
+      "array"
+    ],
+    "title": "Implement difference(a, b) — elements in a not in b",
+    "description": "Create difference that returns values from first array not present in second. Also implement symmetricDifference.",
+    "answer": "**Approach:** `Set` for O(n). For `differenceBy` support iteratee.\n\n```javascript\nfunction difference(a, b) {\n  const setB = new Set(b);\n  return a.filter(x => !setB.has(x));\n}\nfunction symmetricDifference(a, b) {\n  const setA = new Set(a), setB = new Set(b);\n  return [...a.filter(x=>!setB.has(x)), ...b.filter(x=>!setA.has(x))];\n}\nfunction differenceBy(a, b, iteratee) {\n  const fn = typeof iteratee==='function'? iteratee : v=>v[iteratee];\n  const setB = new Set(b.map(fn));\n  return a.filter(x => !setB.has(fn(x)));\n}\n\n// Demo\nconsole.log(difference([2,1,3], [2,3])); // [1]\nconsole.log(symmetricDifference([1,2,3],[3,4,5])); // [1,2,4,5]\nconsole.log(differenceBy([2.1,1.2],[2.3,3.4], Math.floor)); // [1.2]\nconsole.log(difference([], [1,2])); // []\n```\nES2024 `Set.prototype.difference` is native — mention."
+  },
+  {
+    "technology": "javascript-coding",
+    "round": "Frontend",
+    "difficulty": "easy",
+    "tags": [
+      "range",
+      "array",
+      "utility"
+    ],
+    "title": "Implement _.range(start, end, step) generator",
+    "description": "Create range that generates numbers from start to end (exclusive) with step. Support single arg (0..end) and negative steps.",
+    "answer": "**Approach:** Normalize args, loop with `step`.\n\n```javascript\nfunction range(start, end, step = 1) {\n  if (end === undefined) { end = start; start = 0; }\n  if (step === 0) throw new Error('step cannot be 0');\n  const res = [];\n  if (step > 0) for (let i=start; i<end; i+=step) res.push(i);\n  else for (let i=start; i>end; i+=step) res.push(i);\n  return res;\n}\n\n// Demo\nconsole.log(range(4)); // [0,1,2,3]\nconsole.log(range(1,5)); // [1,2,3,4]\nconsole.log(range(0,20,5)); // [0,5,10,15]\nconsole.log(range(5,0,-1)); // [5,4,3,2,1]\nfunction* rangeGen(start, end, step=1){\n  if(end===undefined){ end=start; start=0; }\n  if(step>0) for(let i=start;i<end;i+=step) yield i;\n  else for(let i=start;i>end;i+=step) yield i;\n}\nconsole.log([...rangeGen(3)]); // [0,1,2]\n```\nUsed for pagination, calendar grids, test data."
+  },
+  {
+    "technology": "javascript-coding",
+    "round": "DSA",
+    "difficulty": "medium",
+    "tags": [
+      "set",
+      "lodash-set",
+      "path"
+    ],
+    "title": "Implement lodash.set(obj, path, value) — create nested path",
+    "description": "Create set(obj, path, value) that creates nested objects/arrays along path like \"a.b[0].c\" and sets value. Mutates obj.",
+    "answer": "**Approach:** Split path to keys, walk/create intermediate objects or arrays (numeric key -> array). Final key set.\n\n```javascript\nfunction set(obj, path, value) {\n  const keys = Array.isArray(path) ? path : path.replace(/\\[(\\w+)\\]/g, '.$1').split('.').filter(Boolean);\n  let cur = obj;\n  for (let i=0; i<keys.length; i++) {\n    const k = keys[i];\n    if (i === keys.length - 1) cur[k] = value;\n    else {\n      if (cur[k] == null || typeof cur[k] !== 'object') {\n        const nextIsIndex = /^\\\\d+$/.test(keys[i+1]);\n        cur[k] = nextIsIndex ? [] : {};\n      }\n      cur = cur[k];\n    }\n  }\n  return obj;\n}\n\n// Demo\nconst o = {};\nset(o, 'a.b[0].c', 42);\nconsole.log(JSON.stringify(o)); // {\"a\":{\"b\":[{\"c\":42}]}}\nconsole.log(set({a:{b:1}}, 'a.b', 2)); // {a:{b:2}}\nconsole.log(set({}, ['x','y',0], 'hi')); // {x:{y:['hi']}}\nconsole.log(set({a:[]}, 'a[1].b', 5)); // {a:[undefined,{b:5}]}\n```\nCompanion to `get`; handle array indices by checking if next key is numeric."
+  },
+  {
+    "technology": "javascript-coding",
+    "round": "DSA",
+    "difficulty": "easy",
+    "tags": [
+      "polyfill",
+      "array",
+      "filter"
+    ],
+    "title": "Polyfill Array.prototype.filter from scratch",
+    "description": "Implement myFilter that mimics Array.prototype.filter — handles sparse arrays, thisArg, and returns new array.",
+    "answer": "**Approach:** Loop by index, check `i in O` for sparse, test callback, push if truthy.\n\n```javascript\nArray.prototype.myFilter = function(callback, thisArg) {\n  if (this == null) throw new TypeError('myFilter called on null');\n  if (typeof callback !== 'function') throw new TypeError(callback + ' is not a function');\n  const O = Object(this);\n  const len = O.length >>> 0;\n  const res = [];\n  for (let i=0; i<len; i++) {\n    if (i in O) {\n      const val = O[i];\n      if (callback.call(thisArg, val, i, O)) res.push(val);\n    }\n  }\n  return res;\n};\n\n// Demo\nconsole.log([1,2,3,4].myFilter(x => x%2===0)); // [2,4]\nconsole.log([1,,3,4].myFilter(x => x>1)); // [3,4] (hole skipped)\nconsole.log([1,2,3].myFilter(function(x){ return x > this.min }, {min:2})); // [3]\nconsole.log(Array.prototype.myFilter.call({0:'a',1:'b',2:'c',length:2}, x=>x!=='a')); // ['b']\nconsole.log([0,1,false,2].myFilter(Boolean)); // [1,2]\n```\nSpec: does not mutate, skips holes, passes (value, index, array) and honors thisArg."
+  }
+]

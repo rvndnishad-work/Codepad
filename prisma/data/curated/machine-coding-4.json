@@ -1,0 +1,290 @@
+[
+  {
+    "technology": "machine-coding",
+    "round": "Frontend",
+    "difficulty": "hard",
+    "tags": [
+      "React",
+      "Virtualization",
+      "react-window",
+      "Performance"
+    ],
+    "title": "Build a Virtualized List with react-window (Fixed Size)",
+    "description": "Build a high-performance virtualized list that renders only visible rows using windowing (react-window / react-virtuoso) for 100k+ items.",
+    "answer": "**Requirements**\n- Render a list of 100,000 items (e.g. 10k contacts) with fixed row height (e.g. 48px) inside a scrollable container of height 400px.\n- Only mount DOM nodes for visible rows + overscan (e.g. 5 items above/below).\n- Support dynamic data, scrollToIndex(index), and keyboard navigation (↑/↓).\n- Show a scrollbar that reflects the full list height.\n\n**Architecture**\n```\nouter div (overflow:auto, height:400) -> inner spacer (height = itemCount * rowHeight)\n                                        -> absolute positioned visible slice (top = startIndex * rowHeight)\n```\n- Compute `startIndex = floor(scrollTop / rowHeight)`, `visibleCount = ceil(containerHeight / rowHeight) + overscan*2`.\n- Slice `items.slice(startIndex, endIndex)` and render with `transform: translateY(offset)`.\n- Or use `react-window` `FixedSizeList` — same math under the hood with `itemSize` + `itemCount`.\n\n**What interviewers look for:** windowing math, spacer vs translate, overscan trade-off, memoizing row (`React.memo`), avoiding re-render of all rows on scroll, `useRef` for scrollTop, handling `scrollToIndex`.\n\n**Reference implementation (gold)**\n```jsx\nimport { FixedSizeList as List } from \"react-window\";\n\nfunction Row({ index, style, data }) {\n  const item = data[index];\n  return <div style={style} className=\"row\">{item.name}</div>;\n}\n\nexport default function VirtualizedList({ items }) {\n  return (\n    <List height={400} itemCount={items.length} itemSize={48} width=\"100%\" itemData={items} overscanCount={5}>\n      {Row}\n    </List>\n  );\n}\n// Vanilla fallback: measure scrollTop, compute slice, render via translateY.\n// Cleanup: throttle scroll handler with rAF.\n```\n\n*Why trending 2025-26:* TanStack Virtual / virtuoso replaced react-window in many stacks; interviewers now ask variable-height + sticky headers."
+  },
+  {
+    "technology": "machine-coding",
+    "round": "Machine Coding",
+    "difficulty": "hard",
+    "tags": [
+      "React",
+      "Virtualization",
+      "Variable Size",
+      "AutoSizer"
+    ],
+    "title": "Build a Variable-Size Virtualized Feed (Dynamic Heights)",
+    "description": "Extend virtualization to items with unknown/variable heights (e.g. social feed with images & text) — measure and cache heights.",
+    "answer": "**Requirements**\n- Same 100k list but each row has variable height (text + optional image). Container height 600px.\n- Measure each rendered row with `ResizeObserver` and cache heights in `Map<index, height>`.\n- Estimate unmeasured rows (e.g. 80px avg) and correct scrollbar as measurements arrive.\n- Support `VariableSizeList` from react-window or `react-virtuoso` out-of-the-box.\n\n**Architecture**\n- `heightCache` + `estimatedHeight`. `getItemSize(i) => cache.get(i) ?? estimated`.\n- Cumulative offsets via prefix sum; binary search to find startIndex from scrollTop.\n- On `ResizeObserver` callback, update cache and recompute total height; if delta, adjust scroll.\n\n**What interviewers look for:** dynamic measurement, cache invalidation, binary search over offsets, jank-free correction, `AutoSizer` to fill parent.\n\n**Reference implementation**\n```jsx\nimport { VariableSizeList } from \"react-window\";\nimport AutoSizer from \"react-virtualized-auto-sizer\";\n\nfunction useHeightCache(estimated = 80) {\n  const cache = React.useRef(new Map());\n  const getSize = (i) => cache.current.get(i) ?? estimated;\n  const setSize = (i, h) => cache.current.set(i, h);\n  return { getSize, setSize };\n}\n\nexport function VariableFeed({ items }) {\n  const listRef = React.useRef();\n  const { getSize, setSize } = useHeightCache();\n  const Row = ({ index, style }) => {\n    const ref = React.useRef();\n    React.useEffect(() => {\n      const ro = new ResizeObserver(([e]) => {\n        setSize(index, e.contentRect.height);\n        listRef.current?.resetAfterIndex(index);\n      });\n      if (ref.current) ro.observe(ref.current);\n      return () => ro.disconnect();\n    }, [index]);\n    return <div style={style}><div ref={ref}>{items[index].content}</div></div>;\n  };\n  return (\n    <AutoSizer>{({ height, width }) => (\n      <VariableSizeList ref={listRef} height={height} width={width} itemCount={items.length} itemSize={getSize} estimatedItemSize={80}>\n        {Row}\n      </VariableSizeList>\n    )}</AutoSizer>\n  );\n}\n```\n\n*Trending:* All 2025 feeds (X/Twitter, LinkedIn clones) require this; interviewers test ResizeObserver + virtuoso."
+  },
+  {
+    "technology": "machine-coding",
+    "round": "Frontend",
+    "difficulty": "hard",
+    "tags": [
+      "React",
+      "Tree",
+      "Drag and Drop",
+      "File Explorer",
+      "DnD"
+    ],
+    "title": "Build a File Explorer with Nested Drag-and-Drop",
+    "description": "Build a VS Code-style file explorer tree with folders/files, expand/collapse, and nested drag-and-drop reordering.",
+    "answer": "**Requirements**\n- Render a tree from JSON: `{ id, name, type: \"file\"|\"folder\", children? }` with unlimited nesting.\n- Expand/collapse folders with animation; show indentation guides and icons.\n- Drag any file/folder to reorder or move into another folder (including nesting). Prevent dropping a folder into itself/descendant.\n- Support rename (double-click), delete, new file/folder, and keyboard nav (↑/↓/Enter).\n\n**Architecture**\n- Normalize tree to keep O(1) lookup: `Map<id, node>` + `parentMap`.\n- DnD via HTML5 `draggable` or `@dnd-kit` / `react-arborist`. On `dragover`, compute drop position (inside / before / after) via pointer Y vs row middle.\n- Immutable tree update: remove node from old parent, insert into new parent at index; guard `isDescendant(dragId, dropId)`.\n\n**What interviewers look for:** recursive tree rendering, normalized state, drag payload (`dataTransfer`), drop indicators, cycle prevention, accessibility.\n\n**Reference implementation (core logic)**\n```jsx\nfunction moveNode(tree, dragId, targetId, position) {\n  if (dragId === targetId || isDescendant(tree, dragId, targetId)) return tree;\n  const without = removeNode(tree, dragId);\n  return insertNode(without, dragId, targetId, position);\n}\n\nfunction FileNode({ node, depth, onDrop }) {\n  const [isOver, setIsOver] = React.useState(false);\n  return (\n    <div\n      draggable\n      onDragStart={e => e.dataTransfer.setData(\"text/plain\", node.id)}\n      onDragOver={e => { e.preventDefault(); setIsOver(true); }}\n      onDragLeave={() => setIsOver(false)}\n      onDrop={e => { onDrop(e.dataTransfer.getData(\"text/plain\"), node.id); setIsOver(false); }}\n      style={{ paddingLeft: depth * 16, background: isOver ? \"#e0f2ff\" : \"\" }}\n    >\n      {node.type === \"folder\" ? \"📁\" : \"📄\"} {node.name}\n      {node.children?.map(c => <FileNode key={c.id} node={c} depth={depth+1} onDrop={onDrop} />)}\n    </div>\n  );\n}\n```\n\n*Trending 2025:* Every frontend onsite now asks tree DnD (Notion, VS Code, Jira); @dnd-kit successor to react-beautiful-dnd."
+  },
+  {
+    "technology": "machine-coding",
+    "round": "Machine Coding",
+    "difficulty": "medium",
+    "tags": [
+      "React",
+      "File Explorer",
+      "Context Menu",
+      "Breadcrumbs"
+    ],
+    "title": "Build a File Explorer Toolbar — Breadcrumbs, Search & Context Menu",
+    "description": "Extend the file explorer with breadcrumbs, live search filtering, and a right-click context menu.",
+    "answer": "**Requirements**\n- Breadcrumbs showing path to current folder; click to navigate.\n- Live search that filters tree while preserving ancestors of matches (highlight matches).\n- Right-click context menu (New File, New Folder, Rename, Delete) positioned via portal; close on outside click/Esc.\n\n**Architecture**\n- Derive `currentPath` by walking `parentMap` from selected id to root.\n- Filter: DFS, keep node if itself matches or any descendant matches; return pruned tree.\n- Context menu: `onContextMenu` preventDefault, store `{x,y, nodeId}`, render in `createPortal`, use `getBoundingClientRect` + flip if near viewport edge.\n\n**What interviewers look for:** path derivation, filtered tree with ancestor preservation, portal + positioning, outside-click.\n\n**Reference implementation**\n```jsx\nfunction filterTree(nodes, query) {\n  if (!query) return nodes;\n  return nodes.flatMap(n => {\n    const match = n.name.toLowerCase().includes(query.toLowerCase());\n    if (n.children) {\n      const filtered = filterTree(n.children, query);\n      if (filtered.length) return [{ ...n, children: filtered, expanded: true }];\n    }\n    return match ? [n] : [];\n  });\n}\n\n// Context menu portal\nfunction ContextMenu({ x, y, onAction, onClose }) {\n  const ref = React.useRef();\n  React.useEffect(() => {\n    const h = e => !ref.current.contains(e.target) && onClose();\n    document.addEventListener(\"mousedown\", h); return () => document.removeEventListener(\"mousedown\", h);\n  }, []);\n  return ReactDOM.createPortal(\n    <div ref={ref} style={{ position: \"fixed\", left: x, top: y }} role=\"menu\">\n      <button onClick={() => onAction(\"rename\")}>Rename</button>\n      <button onClick={() => onAction(\"delete\")}>Delete</button>\n    </div>, document.body);\n}\n```\n\n*Trending:* Adds polish interviewers expect beyond basic tree in 2025."
+  },
+  {
+    "technology": "machine-coding",
+    "round": "Frontend",
+    "difficulty": "hard",
+    "tags": [
+      "React",
+      "Kanban",
+      "Yjs",
+      "CRDT",
+      "Collaboration"
+    ],
+    "title": "Build a Collaborative Kanban Board with Yjs (CRDT)",
+    "description": "Build a Trello-like Kanban board with drag-and-drop columns/cards and real-time collaboration via Yjs.",
+    "answer": "**Requirements**\n- Columns (To Do / Doing / Done) with cards; drag cards between columns and reorder within a column.\n- Add/edit/delete cards, add columns, persist to localStorage.\n- Real-time sync: use Yjs (`yjs` + `y-websocket` or `y-webrtc`) so two tabs/users see live updates without conflicts (CRDT).\n\n**Architecture**\n- Model as `Y.Map` for board + `Y.Array` per column. Example: `yDoc.getMap(\"board\")`, `yArray.push([{id, title}])`.\n- Bind Yjs to React via `useYjs` hook: observe `yArray.observe(() => setCards(yArray.toArray()))`.\n- DnD with `@dnd-kit` `SortableContext` per column; on `dragEnd`, do `yArray.delete(oldIdx,1); yArray.insert(newIdx,[moved])` — Yjs handles merge.\n\n**What interviewers look for:** CRDT mental model (no central lock), Yjs doc/provider setup, mapping Y types to React state, conflict-free drag.\n\n**Reference implementation**\n```jsx\nimport * as Y from \"yjs\";\nimport { WebrtcProvider } from \"y-webrtc\";\n\nfunction useKanban(room = \"kanban-demo\") {\n  const [doc] = React.useState(() => new Y.Doc());\n  const yColumns = doc.getArray(\"columns\");\n  React.useEffect(() => {\n    const provider = new WebrtcProvider(room, doc);\n    if (yColumns.length === 0) {\n      yColumns.push([{ id: \"todo\", title: \"To Do\", cards: new Y.Array() }]);\n    }\n    return () => provider.destroy();\n  }, []);\n  const moveCard = (fromCol, fromIdx, toCol, toIdx) => {\n    doc.transact(() => {\n      const card = fromCol.cards.get(fromIdx);\n      fromCol.cards.delete(fromIdx, 1);\n      toCol.cards.insert(toIdx, [card]);\n    });\n  };\n  return { yColumns, moveCard };\n}\n\n// Render: <DndContext onDragEnd={handle}><SortableContext />...\n```\n\n*Trending 2025-26:* Figma/Notion-style CRDT boards replaced plain DnD boards in interviews."
+  },
+  {
+    "technology": "machine-coding",
+    "round": "Machine Coding",
+    "difficulty": "medium",
+    "tags": [
+      "React",
+      "Kanban",
+      "Drag and Drop",
+      "Swimlanes"
+    ],
+    "title": "Build a Kanban Board with Swimlanes & WIP Limits",
+    "description": "Build a Kanban board variant with swimlanes (by assignee/priority) and WIP limit enforcement per column.",
+    "answer": "**Requirements**\n- Columns with WIP limits (e.g. Doing max 3); show count badge red when exceeded.\n- Swimlanes grouping cards by assignee; drag across columns and lanes.\n- Card modal with description, assignee, labels, due date; optimistic update.\n\n**Architecture**\n- State: `columns: {id, title, wipLimit, cardIds[]} ` + `cards: Map<id, card>` + `swimlaneKey`.\n- On drop, check `targetColumn.cardIds.length >= wipLimit ? reject + shake animation : allow`.\n- Render swimlane rows: `lanes.map(lane => columns.map(col => filter(col.cards, lane)))`. Use CSS grid.\n\n**What interviewers look for:** WIP validation before commit, lane grouping derivation, nested DnD contexts, optimistic UI.\n\n**Reference implementation**\n```jsx\nfunction canMove(cards, targetCol, wipLimit) {\n  return wipLimit == null || cards.filter(c => c.columnId === targetCol.id).length < wipLimit;\n}\n\nfunction Kanban({ columns, cards, onMove }) {\n  const handleDragEnd = ({ active, over }) => {\n    const card = cards.find(c => c.id === active.id);\n    const targetCol = columns.find(c => c.id === over.id);\n    if (!canMove(cards, targetCol, targetCol.wipLimit)) {\n      toast.error(`WIP limit ${targetCol.wipLimit} reached`);\n      return;\n    }\n    onMove(card.id, targetCol.id);\n  };\n  return (\n    <DndContext onDragEnd={handleDragEnd}>\n      <div className=\"board\" style={{ display: \"grid\", gridTemplateColumns: `repeat(${columns.length}, 280)` }}>\n        {columns.map(col => <Column key={col.id} col={col} cards={cards.filter(c => c.columnId===col.id)} />)}\n      </div>\n    </DndContext>\n  );\n}\n```\n\n*Gold detail:* Add `aria-label` for WIP, drag handle, and column roles."
+  },
+  {
+    "technology": "machine-coding",
+    "round": "Frontend",
+    "difficulty": "medium",
+    "tags": [
+      "React",
+      "Command Palette",
+      "kbar",
+      "cmdk",
+      "Fuzzy Search"
+    ],
+    "title": "Build a Command Palette (kbar / cmdk) with Fuzzy Search",
+    "description": "Build a Spotlight-style command palette (⌘K) with fuzzy search, groups, and keyboard navigation — trending via kbar & cmdk.",
+    "answer": "**Requirements**\n- Trigger with `⌘K` / `Ctrl+K` and `/`; overlay with input + grouped results (Actions, Files, Recent).\n- Fuzzy search (e.g. `fuse.js` or `cmdk` built-in) ranking; highlight matched chars.\n- Keyboard: ↑/↓ to navigate, Enter to execute, Esc to close; show `⌘` shortcuts; trap focus.\n\n**Architecture**\n- Use `cmdk` (`<Command><Command.Input><Command.List>`) or `kbar` (`KBarProvider` + `KBarPortal`). Both handle scoring + a11y.\n- Register actions: `{ id, name, keywords, shortcut, perform }`. Filter via `commandScore`.\n- Global hotkey: `useEffect(() => { const h=e=> (e.metaKey||e.ctrlKey)&&e.key===\"k\" && (e.preventDefault(), setOpen(o=>!o)); window.addEventListener(\"keydown\",h); return ()=>remove... })`.\n\n**What interviewers look for:** global hotkey, portal + focus trap, fuzzy ranking, grouping, action registry pattern, Esc/outside-click.\n\n**Reference implementation**\n```jsx\nimport { Command } from \"cmdk\";\n\nexport function Palette({ open, setOpen, actions }) {\n  React.useEffect(() => {\n    const down = e => { if (e.key===\"k\" && (e.metaKey||e.ctrlKey)) { e.preventDefault(); setOpen(o=>!o); } };\n    document.addEventListener(\"keydown\", down); return () => document.removeEventListener(\"keydown\", down);\n  }, []);\n  return (\n    <Command.Dialog open={open} onOpenChange={setOpen} label=\"Command menu\">\n      <Command.Input placeholder=\"Type a command or search...\" />\n      <Command.List>\n        <Command.Empty>No results.</Command.Empty>\n        <Command.Group heading=\"Actions\">\n          {actions.map(a => (\n            <Command.Item key={a.id} onSelect={a.perform} keywords={a.keywords}>\n              {a.name} <span className=\"shortcut\">{a.shortcut}</span>\n            </Command.Item>\n          ))}\n        </Command.Group>\n      </Command.List>\n    </Command.Dialog>\n  );\n}\n```\n\n*Trending:* cmdk + kbar are standard in Linear, Vercel, shadcn apps — asked in 70% of 2025 frontend onsites."
+  },
+  {
+    "technology": "machine-coding",
+    "round": "Machine Coding",
+    "difficulty": "medium",
+    "tags": [
+      "React",
+      "Resizable",
+      "useResizable",
+      "Layout"
+    ],
+    "title": "Build Resizable Panels with useResizable Hook",
+    "description": "Build a resizable split layout where a draggable handle adjusts two panels — implement a reusable useResizable hook.",
+    "answer": "**Requirements**\n- Two panels side-by-side with a draggable divider (8px handle).\n- Drag to resize; respect `min`/`max` widths (e.g. 200–600px); persist to localStorage.\n- Handle supports mouse, touch, and keyboard (ArrowLeft/Right 10px).\n- Hook API: `const { size, handleProps } = useResizable({ initial: 320, min: 200, max: 600 })`.\n\n**Architecture**\n- `useResizable` stores `size` in state; on `pointerdown`, capture pointer, add `pointermove` listener on window to compute `newSize = startSize + (clientX - startX)`, clamp, update.\n- Use `pointer` events (not mouse) for touch+pen; set `touch-action: none`.\n- Persist: `useEffect(() => localStorage.setItem(key, size), [size])`.\n\n**What interviewers look for:** pointer capture, window-level move listener, clamp, rAF throttling, keyboard a11y, reusable hook design.\n\n**Reference implementation**\n```jsx\nfunction useResizable({ initial = 300, min = 200, max = 600, storageKey } = {}) {\n  const [size, setSize] = React.useState(() => {\n    const v = storageKey && localStorage.getItem(storageKey);\n    return v ? Number(v) : initial;\n  });\n  const startRef = React.useRef(null);\n  const onPointerDown = e => {\n    e.currentTarget.setPointerCapture(e.pointerId);\n    startRef.current = { x: e.clientX, size };\n    const onMove = ev => {\n      const dx = ev.clientX - startRef.current.x;\n      setSize(s => Math.min(max, Math.max(min, startRef.current.size + dx)));\n    };\n    const onUp = () => { window.removeEventListener(\"pointermove\", onMove); window.removeEventListener(\"pointerup\", onUp); };\n    window.addEventListener(\"pointermove\", onMove);\n    window.addEventListener(\"pointerup\", onUp);\n  };\n  React.useEffect(() => { if (storageKey) localStorage.setItem(storageKey, size); }, [size, storageKey]);\n  return { size, handleProps: { onPointerDown, role: \"separator\", \"aria-orientation\": \"vertical\", tabIndex: 0 } };\n}\n\nexport function ResizableLayout() {\n  const left = useResizable({ initial: 320, min: 200, max: 500, storageKey: \"left\" });\n  return (\n    <div style={{ display: \"flex\", height: \"100vh\" }}>\n      <div style={{ width: left.size }}>Sidebar</div>\n      <div {...left.handleProps} style={{ width: 8, cursor: \"col-resize\", background: \"#ddd\" }} />\n      <div style={{ flex: 1 }}>Main</div>\n    </div>\n  );\n}\n```\n\n*2025 variant: ask for `alloy` or `react-resizable-panels` API compatibility.*"
+  },
+  {
+    "technology": "machine-coding",
+    "round": "Frontend",
+    "difficulty": "medium",
+    "tags": [
+      "React",
+      "Carousel",
+      "Animation",
+      "Gestures"
+    ],
+    "title": "Build an Image Carousel with Infinite Loop & Swipe",
+    "description": "Build a carousel with next/prev arrows, dots, infinite looping, autoplay (pause on hover), and touch swipe.",
+    "answer": "**Requirements**\n- Show one slide at a time (or 1.2 peeking); arrows wrap infinitely (0 → last, last → 0) with smooth translate.\n- Dots indicate active slide; click to jump. Autoplay every 3s, pause on hover/focus and when tab hidden.\n- Touch swipe: drag threshold 40px to advance; spring animation.\n- Keyboard ←/→, `aria-live` for screen readers.\n\n**Architecture**\n- Index state `i`; display via `transform: translateX(-i*100%)` on track `display:flex`.\n- Infinite: clone first/last or use modulo math with transition disabled on wrap (`transition: none` then re-enable).\n- Autoplay: `useEffect` with `setInterval` that respects `document.hidden` and `isHovered` ref; cleanup on unmount.\n- Swipe: `pointerdown/move/up` compute `dx`; if `|dx|>40` commit, else snap back.\n\n**What interviewers look for:** modulo wrap, transition toggle for seamless loop, interval cleanup + visibility, pointer gestures, a11y.\n\n**Reference implementation**\n```jsx\nexport function Carousel({ images, autoPlay = 3000 }) {\n  const [idx, setIdx] = React.useState(0);\n  const [paused, setPaused] = React.useState(false);\n  const n = images.length;\n  const go = d => setIdx(i => (i + d + n) % n);\n\n  React.useEffect(() => {\n    if (paused || document.hidden) return;\n    const id = setInterval(() => go(1), autoPlay);\n    return () => clearInterval(id);\n  }, [paused, autoPlay]);\n\n  const startX = React.useRef(0);\n  const onPointerDown = e => startX.current = e.clientX;\n  const onPointerUp = e => {\n    const dx = e.clientX - startX.current;\n    if (Math.abs(dx) > 40) go(dx < 0 ? 1 : -1);\n  };\n\n  return (\n    <div onMouseEnter={()=>setPaused(true)} onMouseLeave={()=>setPaused(false)}\n         onPointerDown={onPointerDown} onPointerUp={onPointerUp}\n         role=\"region\" aria-roledescription=\"carousel\" aria-label=\"Image carousel\">\n      <div style={{ display: \"flex\", transform: `translateX(-${idx*100}%)`, transition: \"transform 300ms\" }}>\n        {images.map((src,i)=><img key={i} src={src} style={{ minWidth: \"100%\" }} alt=\"\" />)}\n      </div>\n      <button onClick={()=>go(-1)} aria-label=\"Previous\">‹</button>\n      <button onClick={()=>go(1)} aria-label=\"Next\">›</button>\n      <div role=\"tablist\">{images.map((_,i)=><button key={i} aria-selected={i===idx} onClick={()=>setIdx(i)} />)}</div>\n    </div>\n  );\n}\n```\n\n*Trending 2025:* Embla, Swiper, and shadcn carousel all use this pattern; asked to implement from scratch."
+  },
+  {
+    "technology": "machine-coding",
+    "round": "Machine Coding",
+    "difficulty": "medium",
+    "tags": [
+      "React",
+      "Todo",
+      "Pagination",
+      "Optimistic UI"
+    ],
+    "title": "Build a Todo App with Pagination, Filters & Optimistic Updates",
+    "description": "Build a todo list with server-like pagination (5 per page), filters, and optimistic CRUD.",
+    "answer": "**Requirements**\n- CRUD todos (add/toggle/edit/delete) with pagination (5 per page), showing page numbers + prev/next + ellipsis.\n- Filters: All / Active / Completed; search by text.\n- Optimistic updates: UI updates instantly; rollback on simulated API failure (10% chance).\n- Persist to localStorage; URL sync `?page=2&filter=active`.\n\n**Architecture**\n- State: `todos: {id, text, done}[]`. Derived: `filtered = todos.filter(f)`, `paginated = filtered.slice((page-1)*5, page*5)`.\n- Pagination window algorithm: show first, last, current ±2 with `…`.\n- Optimistic: `setTodos(prev => [...prev, newTodo]); try { await api.create(newTodo)} catch { setTodos(prev=>prev.filter(t=>t.id!==newTodo.id)) }`.\n\n**What interviewers look for:** derived pagination, window/ellipsis logic, URL sync via `useSearchParams`, optimistic + rollback, empty states.\n\n**Reference implementation**\n```jsx\nfunction usePagination(items, pageSize=5) {\n  const [page, setPage] = React.useState(1);\n  const total = Math.ceil(items.length / pageSize);\n  const slice = items.slice((page-1)*pageSize, page*pageSize);\n  const pages = getPageWindow(page, total);\n  return { slice, page, setPage, total, pages };\n}\n\nfunction getPageWindow(cur, tot) {\n  if (tot <= 7) return Array.from({length:tot},(_,i)=>i+1);\n  const s = new Set([1, tot, cur, cur-1, cur+1]);\n  const arr = [...s].filter(n=>n>=1&&n<=tot).sort((a,b)=>a-b);\n  return arr.reduce((a,n,i)=> (i&&n-arr[i-1]>1 ? [...a,\"…\",n] : [...a,n]), []);\n}\n```\n\n*Why trending:* Pagination + optimistic is the 2025 replacement for plain todo in interviews."
+  },
+  {
+    "technology": "machine-coding",
+    "round": "Frontend",
+    "difficulty": "medium",
+    "tags": [
+      "React",
+      "Infinite Scroll",
+      "IntersectionObserver",
+      "Skeleton"
+    ],
+    "title": "Build Infinite Scroll with IntersectionObserver & Skeleton",
+    "description": "Build a feed that loads next pages as the user scrolls, using IntersectionObserver with skeletons and deduped fetches.",
+    "answer": "**Requirements**\n- Fetch pages (`/api/feed?page=n&limit=20` mock) and append; show skeleton loaders while fetching.\n- Sentinel div at bottom observed via `IntersectionObserver` (rootMargin 200px) triggers next fetch.\n- Guards: don’t fetch if already loading or no more pages; handle error with Retry.\n- Bonus: virtualize after 200 items; scroll restoration.\n\n**Architecture**\n- `page` + `items` + `hasMore` + `loading` refs. `observer = new IntersectionObserver(([e])=> e.isIntersecting && !loading && hasMore && loadNext(), {rootMargin:\"200px\"})`.\n- `loading` as ref to avoid stale closure; disconnect on unmount.\n- Skeleton: shimmer blocks matching card height to prevent CLS.\n\n**What interviewers look for:** IntersectionObserver vs scroll event, sentinel pattern, in-flight guard, cleanup, error/retry, no duplicate fetch on fast scroll.\n\n**Reference implementation**\n```jsx\nfunction useInfinite(fetchPage) {\n  const [items, setItems] = React.useState([]);\n  const [page, setPage] = React.useState(1);\n  const [hasMore, setHasMore] = React.useState(true);\n  const loadingRef = React.useRef(false);\n  const sentinelRef = React.useRef();\n\n  const load = React.useCallback(async () => {\n    if (loadingRef.current || !hasMore) return;\n    loadingRef.current = true;\n    try {\n      const { data, hasMore: hm } = await fetchPage(page);\n      setItems(p => [...p, ...data]); setPage(p=>p+1); setHasMore(hm);\n    } finally { loadingRef.current = false; }\n  }, [page, hasMore]);\n\n  React.useEffect(() => {\n    const el = sentinelRef.current; if (!el) return;\n    const io = new IntersectionObserver(([e]) => e.isIntersecting && load(), { rootMargin: \"200px\" });\n    io.observe(el); return () => io.disconnect();\n  }, [load]);\n\n  return { items, sentinelRef, hasMore };\n}\n\nexport function Feed({ fetchPage }) {\n  const { items, sentinelRef } = useInfinite(fetchPage);\n  return (<>\n    {items.map(i => <Card key={i.id} item={i} />)}\n    <div ref={sentinelRef} style={{ height: 1 }} />\n    <Skeleton count={3} />\n  </>);\n}\n```\n\n*Trending:* Sentinel + skeleton is expected over naive `onscroll` in 2025."
+  },
+  {
+    "technology": "machine-coding",
+    "round": "Machine Coding",
+    "difficulty": "medium",
+    "tags": [
+      "React",
+      "Autocomplete",
+      "Typeahead",
+      "Debounce",
+      "Accessibility"
+    ],
+    "title": "Build Autocomplete / Typeahead with Debounce & Highlight",
+    "description": "Build a typeahead input that fetches suggestions debounced, highlights matches, and supports full keyboard navigation.",
+    "answer": "**Requirements**\n- Input fetches suggestions from async source debounced 300ms; cancel stale requests (ignore out-of-order responses via sequence id / AbortController).\n- Dropdown shows matches with highlighted query substring; keyboard ↑/↓/Enter/Esc, mouse hover, and `aria-activedescendant`.\n- Cache results in `Map<query, results>`; handle empty, loading, error states; close on outside click.\n\n**Architecture**\n- `useDebouncedValue(query, 300)` + `requestId` ref incremented per fetch; only apply if `id === latest`.\n- Highlight: `text.split(new RegExp(`(${escape(query)})`,\"i\")).map(part => part.toLowerCase()===query.toLowerCase() ? <mark>{part}</mark> : part)`.\n- Outside click: `mousedown` listener on document checking `!container.contains(target)`.\n\n**What interviewers look for:** debounce + abort, race handling, caching, highlight, ARIA combobox pattern, outside-click.\n\n**Reference implementation**\n```jsx\nfunction useDebounce(v, ms=300) { const [d,setD]=React.useState(v); React.useEffect(()=>{const id=setTimeout(()=>setD(v),ms); return ()=>clearTimeout(id);},[v,ms]); return d; }\n\nexport function Autocomplete({ fetchSuggest }) {\n  const [q, setQ] = React.useState(\"\");\n  const dq = useDebounce(q, 300);\n  const [items, setItems] = React.useState([]);\n  const [active, setActive] = React.useState(-1);\n  const seq = React.useRef(0);\n  const cache = React.useRef(new Map());\n\n  React.useEffect(() => {\n    if (!dq) { setItems([]); return; }\n    if (cache.current.has(dq)) { setItems(cache.current.get(dq)); return; }\n    const id = ++seq.current;\n    fetchSuggest(dq).then(res => {\n      if (id !== seq.current) return;\n      cache.current.set(dq, res); setItems(res);\n    });\n  }, [dq]);\n\n  return (\n    <div role=\"combobox\" aria-expanded={!!items.length} aria-haspopup=\"listbox\">\n      <input value={q} onChange={e=>setQ(e.target.value)} aria-autocomplete=\"list\" aria-activedescendant={active>=0?`opt-${active}`:undefined}\n             onKeyDown={e=>{\n               if(e.key===\"ArrowDown\") setActive(a=>Math.min(a+1, items.length-1));\n               if(e.key===\"ArrowUp\") setActive(a=>Math.max(a-1, -1));\n               if(e.key===\"Enter\" && active>=0) setQ(items[active].label);\n               if(e.key===\"Escape\") setItems([]);\n             }} />\n      <ul role=\"listbox\">{items.map((it,i)=><li key={it.id} id={`opt-${i}`} role=\"option\" aria-selected={i===active} className={i===active?\"active\":\"\"}>{highlight(it.label, q)}</li>)}</ul>\n    </div>\n  );\n}\n```\n\n*Trending 2025:* `AbortController` + cache is now the expected answer."
+  },
+  {
+    "technology": "machine-coding",
+    "round": "Frontend",
+    "difficulty": "medium",
+    "tags": [
+      "React",
+      "Modal",
+      "Focus Trap",
+      "Accessibility",
+      "Portal"
+    ],
+    "title": "Build an Accessible Modal with Focus Trap & Scroll Lock",
+    "description": "Build a modal dialog with overlay, focus trap, Esc/outside-click close, body scroll lock, and focus restore.",
+    "answer": "**Requirements**\n- Trigger button opens modal via portal; overlay click and Esc close; `aria-modal=\"true\"` + `role=\"dialog\"`.\n- Focus trap: Tab / Shift+Tab cycles inside modal; initial focus on first focusable; restore focus to trigger on close.\n- Body scroll lock (prevent background scroll) and handle stacked modals (incremental lock count).\n- Close animation (fade + scale) before unmount.\n\n**Architecture**\n- Portal via `ReactDOM.createPortal(children, document.body)`.\n- Focus trap: collect `focusable = modal.querySelectorAll(\"a,button,input,[tabindex]:not([tabindex='-1'])\")`; on `keydown` Tab, wrap.\n- Scroll lock: `document.body.style.overflow=\"hidden\"` + padding compensation for scrollbar width; ref-count for stacking.\n\n**What interviewers look for:** portal, trap logic, restore focus ref, scroll lock with compensation, Esc listener cleanup, animation sequencing.\n\n**Reference implementation**\n```jsx\nexport function Modal({ open, onClose, children }) {\n  const triggerRef = React.useRef(document.activeElement);\n  const modalRef = React.useRef();\n  React.useEffect(() => {\n    if (!open) return;\n    const prev = document.activeElement;\n    const focusable = modalRef.current.querySelectorAll(\"button, [href], input, select, textarea, [tabindex]:not([tabindex='-1'])\");\n    focusable[0]?.focus();\n    const onKey = e => {\n      if (e.key === \"Escape\") onClose();\n      if (e.key === \"Tab\" && focusable.length) {\n        const first = focusable[0], last = focusable[focusable.length-1];\n        if (e.shiftKey && document.activeElement===first) { e.preventDefault(); last.focus(); }\n        else if (!e.shiftKey && document.activeElement===last) { e.preventDefault(); first.focus(); }\n      }\n    };\n    document.addEventListener(\"keydown\", onKey);\n    document.body.style.overflow = \"hidden\";\n    return () => {\n      document.removeEventListener(\"keydown\", onKey);\n      document.body.style.overflow = \"\";\n      (triggerRef.current || prev)?.focus();\n    };\n  }, [open, onClose]);\n\n  if (!open) return null;\n  return ReactDOM.createPortal(\n    <div className=\"overlay\" onMouseDown={e=> e.target===e.currentTarget && onClose()} role=\"presentation\">\n      <div ref={modalRef} role=\"dialog\" aria-modal=\"true\" className=\"modal\">\n        {children}\n        <button onClick={onClose} aria-label=\"Close\">×</button>\n      </div>\n    </div>, document.body);\n}\n```\n\n*Trending 2025:* Focus trap + scroll lock is the #1 a11y machine-coding question."
+  },
+  {
+    "technology": "machine-coding",
+    "round": "Machine Coding",
+    "difficulty": "medium",
+    "tags": [
+      "React",
+      "Poll",
+      "Widget",
+      "Animation",
+      "Optimistic"
+    ],
+    "title": "Build a Poll Widget with Live Results & Confetti",
+    "description": "Build a poll widget where users vote once, see animated percentage bars, and share results.",
+    "answer": "**Requirements**\n- Poll with 2–4 options, single vote per user (persist via localStorage); show total votes.\n- On vote, animate bars to new percentages (CSS width transition) and highlight selected option; optimistic update with rollback.\n- Show voters avatars (optional), share button (Web Share API / copy link), and poll expiry countdown.\n\n**Architecture**\n- State `poll: {id, question, options: [{id,label,votes}], votedId}`. `total = sum(votes)`, `pct = votes/total*100`.\n- Vote: `setPoll(p=> updateVote(p, optionId)); try { await api.vote(id)} catch{ rollback }` + `localStorage.setItem(\"poll:\"+id, optionId)`.\n- Bars: `<div className=\"bar\" style={{width: pct+\"%\", transition:\"width 600ms ease\"}} />`.\n- Expiry: `setInterval` to compute `remaining`.\n\n**What interviewers look for:** single-vote guard, percentage math, transition, optimistic + persist, share API fallback.\n\n**Reference implementation**\n```jsx\nexport function PollWidget({ poll: initial }) {\n  const [poll, setPoll] = React.useState(initial);\n  const total = poll.options.reduce((s,o)=>s+o.votes,0);\n  const voted = React.useRef(localStorage.getItem(\"poll:\"+poll.id));\n\n  const vote = id => {\n    if (voted.current) return;\n    const prev = poll;\n    setPoll(p => ({ ...p, options: p.options.map(o=> o.id===id?{...o, votes:o.votes+1}:o), votedId:id }));\n    voted.current = id; localStorage.setItem(\"poll:\"+poll.id, id);\n    apiVote(poll.id, id).catch(()=> { setPoll(prev); voted.current=null; localStorage.removeItem(\"poll:\"+poll.id); });\n  };\n\n  return (\n    <div role=\"group\" aria-label={poll.question}>\n      <h3>{poll.question}</h3>\n      {poll.options.map(o => {\n        const pct = total ? Math.round(o.votes/total*100) : 0;\n        return (\n          <button key={o.id} onClick={()=>vote(o.id)} disabled={!!voted.current} aria-pressed={poll.votedId===o.id}>\n            <span>{o.label}</span>\n            <div className=\"track\"><div className=\"bar\" style={{ width: pct+\"%\" }} /></div>\n            <span>{pct}% ({o.votes})</span>\n          </button>\n        );\n      })}\n      <p>{total} votes {poll.expiresAt && <Countdown to={poll.expiresAt} />}</p>\n    </div>\n  );\n}\n```\n\n*Trending 2025:* Poll widgets (Twitter/X, LinkedIn, Slack huddles) are common L4 take-homes."
+  },
+  {
+    "technology": "machine-coding",
+    "round": "Frontend",
+    "difficulty": "medium",
+    "tags": [
+      "React",
+      "Split Pane",
+      "Resizable",
+      "Layout",
+      "Keyboard"
+    ],
+    "title": "Build a Split Pane (Horizontal & Vertical) with Constraints",
+    "description": "Build a split pane that can split horizontally or vertically, with draggable gutter, collapsible panes, and keyboard support.",
+    "answer": "**Requirements**\n- Two or three panes split horizontally or vertically with gutters; drag gutter to resize.\n- Props: `direction=\"horizontal\"|\"vertical\"`, `minSize`, `defaultSize`, `collapsible`.\n- Double-click gutter to collapse/expand; keyboard Arrow keys on gutter (Shift+Arrow for 10px); `aria` separator.\n- Persist sizes to localStorage; handle window resize.\n\n**Architecture**\n- Flex layout: each pane `flex: 0 0 sizepx` or `flex: basis`. Gutter is `role=\"separator\"` with `aria-valuenow`.\n- Drag like Resizer: pointer capture, compute delta along axis (`clientX` for horizontal, `clientY` for vertical), clamp by `minSize` and container size.\n- Collapse: store `prevSize` before collapse, restore on dblclick.\n\n**What interviewers look for:** axis-aware delta, clamp + container bounds, collapsible state, keyboard, flex vs absolute layout, persistence.\n\n**Reference implementation**\n```jsx\nexport function SplitPane({ children, direction=\"horizontal\", minSize=100 }) {\n  const [sizes, setSizes] = React.useState([50, 50]);\n  const containerRef = React.useRef();\n  const isHoriz = direction === \"horizontal\";\n\n  const onPointerDown = (idx, e) => {\n    e.currentTarget.setPointerCapture(e.pointerId);\n    const start = isHoriz ? e.clientX : e.clientY;\n    const startSizes = [...sizes];\n    const total = isHoriz ? containerRef.current.offsetWidth : containerRef.current.offsetHeight;\n    const onMove = ev => {\n      const deltaPct = ((isHoriz?ev.clientX:ev.clientY) - start) / total * 100;\n      const next = [...startSizes];\n      next[idx] = Math.max(minSize/total*100, startSizes[idx] + deltaPct);\n      next[idx+1] = Math.max(minSize/total*100, startSizes[idx+1] - deltaPct);\n      setSizes(next);\n    };\n    const onUp = () => { window.removeEventListener(\"pointermove\", onMove); window.removeEventListener(\"pointerup\", onUp); };\n    window.addEventListener(\"pointermove\", onMove);\n    window.addEventListener(\"pointerup\", onUp);\n  };\n\n  return (\n    <div ref={containerRef} style={{ display: \"flex\", flexDirection: isHoriz?\"row\":\"column\", height: \"400px\" }}>\n      {React.Children.map(children, (child, i) => (\n        <>\n          <div style={{ flex: `0 0 ${sizes[i]}%`, overflow: \"auto\" }}>{child}</div>\n          {i < children.length-1 && <div role=\"separator\" aria-orientation={isHoriz?\"vertical\":\"horizontal\"}\n            onPointerDown={e=>onPointerDown(i,e)} onDoubleClick={()=>setSizes([50,50])}\n            style={{ [isHoriz?\"width\":\"height\"]: 8, cursor: isHoriz?\"col-resize\":\"row-resize\", background: \"#e5e7eb\" }} />}\n        </>\n      ))}\n    </div>\n  );\n}\n```\n\n*Gold:* Support 3 panes, `react-split-pane` API familiarity expected in 2025."
+  },
+  {
+    "technology": "machine-coding",
+    "round": "Machine Coding",
+    "difficulty": "hard",
+    "tags": [
+      "React",
+      "Data Grid",
+      "Virtualization",
+      "Sorting",
+      "Filtering"
+    ],
+    "title": "Build a Data Table with Virtualized Rows, Sorting & Filtering",
+    "description": "Build a spreadsheet-like data table with column sorting, filters, sticky header, and virtualized rows for 50k rows.",
+    "answer": "**Requirements**\n- Table with 6 columns (Name, Age, Role, Status, Joined, Actions); click header to sort (cycle asc/desc/none); per-column filter (text/select).\n- Sticky header, zebra rows, row selection (checkbox), and virtualized body for 50k rows.\n- Pagination or virtual scroll; export CSV; show empty & loading states.\n\n**Architecture**\n- State `sort: {key, dir}` + `filters: Map<col, value>`. Derived `filtered = rows.filter(f)` then `sorted = [...filtered].sort(...)` — memoize with `useMemo`.\n- Virtualize body with `react-window` or `TanStack Virtual`; header outside virtualizer stays sticky.\n- Sorting: stable sort, handle numeric vs string vs date; filter: case-insensitive substring / select equals.\n\n**What interviewers look for:** derived + memoized computation, stable sort, sticky header outside virtualizer, checkbox selection with shift-range, CSV export via blob.\n\n**Reference implementation**\n```jsx\nfunction useDataTable(rows) {\n  const [sort, setSort] = React.useState(null);\n  const [filters, setFilters] = React.useState({});\n  const filtered = React.useMemo(() => rows.filter(r =>\n    Object.entries(filters).every(([k,v])=> !v || String(r[k]).toLowerCase().includes(v.toLowerCase()))\n  ), [rows, filters]);\n  const sorted = React.useMemo(() => {\n    if (!sort) return filtered;\n    return [...filtered].sort((a,b)=>{\n      const av=a[sort.key], bv=b[sort.key];\n      if (av===bv) return 0;\n      const cmp = typeof av===\"number\" ? av-bv : String(av).localeCompare(String(bv));\n      return sort.dir===\"asc\"? cmp : -cmp;\n    });\n  }, [filtered, sort]);\n  return { rows: sorted, sort, setSort, setFilters };\n}\n```\n\n*Trending 2025:* TanStack Table v8 is the expected library; interviewers ask to wrap it with virtualization."
+  },
+  {
+    "technology": "machine-coding",
+    "round": "Frontend",
+    "difficulty": "hard",
+    "tags": [
+      "React",
+      "Nested Comments",
+      "Tree",
+      "Optimistic"
+    ],
+    "title": "Build Nested Comments with Collapsible Threads & Voting",
+    "description": "Build a Reddit-style nested comments system with infinite nesting, collapse, voting, and optimistic replies.",
+    "answer": "**Requirements**\n- Recursive comments `{id, author, body, votes, children[]}`; indent per depth with thread line.\n- Actions: reply (inline editor), collapse thread, upvote/downvote (optimistic), edit/delete own comment.\n- Sort by Best/New (score = upvotes - downvotes); highlight new comments since last visit.\n\n**Architecture**\n- Recursive `Comment` component: `depth` prop for indent; `collapsed` local state; thread line clickable to expand.\n- Updates via `updateTree(tree, id, updater)` DFS helper; optimistic vote: local delta, then `api.vote` with rollback.\n- Editor: controlled textarea with `onSubmit` that inserts child via `insertChild(tree, parentId, newComment)`.\n\n**What interviewers look for:** recursive component + key, immutable tree helpers, optimistic voting, depth limit handling, `contentEditable` vs textarea.\n\n**Reference implementation**\n```jsx\nfunction updateTree(nodes, id, fn) {\n  return nodes.map(n => n.id===id ? fn(n) : n.children ? {...n, children: updateTree(n.children, id, fn)} : n);\n}\n\nfunction Comment({ node, depth, onReply, onVote }) {\n  const [collapsed, setCollapsed] = React.useState(false);\n  const [replying, setReplying] = React.useState(false);\n  return (\n    <div style={{ marginLeft: depth*12, borderLeft: \"2px solid #e5e7eb\", paddingLeft: 8 }}>\n      <div>\n        <strong>{node.author}</strong> · <span>{node.votes} points</span>\n        <button onClick={()=>onVote(node.id, 1)}>▲</button>\n        <button onClick={()=>setCollapsed(c=>!c)}>{collapsed?`+ ${countDescendants(node)} replies` : \"−\"}</button>\n        <button onClick={()=>setReplying(true)}>Reply</button>\n      </div>\n      {!collapsed && <p>{node.body}</p>}\n      {replying && <ReplyEditor onSubmit={text=>{onReply(node.id, text); setReplying(false);}} />}\n      {!collapsed && node.children?.map(c=> <Comment key={c.id} node={c} depth={depth+1} onReply={onReply} onVote={onVote} />)}\n    </div>\n  );\n}\n```\n\n*2025 twist: add `react-virtuoso` for long threads.*"
+  },
+  {
+    "technology": "machine-coding",
+    "round": "Machine Coding",
+    "difficulty": "medium",
+    "tags": [
+      "React",
+      "Tabs",
+      "URL State",
+      "Accessibility"
+    ],
+    "title": "Build a Tabs Component with URL Sync & Lazy Mounting",
+    "description": "Build an accessible tabs component that syncs active tab to URL, supports lazy mounting, and keyboard roving.",
+    "answer": "**Requirements**\n- Tabs from config `[{id, label, panel}]`; active tab highlighted with animated indicator (underline sliding).\n- URL sync: `?tab=settings` via `useSearchParams` (or `history.pushState`); restore on reload/back.\n- Lazy mount panels (mount only when visited, keep mounted after); keyboard ←/→/Home/End roving.\n\n**Architecture**\n- `active` state initialized from `searchParams.get(\"tab\") ?? defaultId`. On change, `setSearchParams({tab: id}, {replace:true})` or `pushState`.\n- Indicator: measure active tab `getBoundingClientRect` vs container, set `left/width` with `transition`.\n- Panels: `visitedRef = useRef(new Set([active]))`; render `visited.has(id) ? panel : null` with `hidden={active!==id}`.\n\n**What interviewers look for:** URL as source of truth, lazy vs eager mounting, roving tabindex, indicator measurement, `aria-selected`.\n\n**Reference implementation**\n```jsx\nexport function Tabs({ tabs, defaultId }) {\n  const [active, setActive] = React.useState(() => new URLSearchParams(location.search).get(\"tab\") || defaultId);\n  const visited = React.useRef(new Set([active]));\n  visited.current.add(active);\n  React.useEffect(() => {\n    const url = new URL(location.href); url.searchParams.set(\"tab\", active);\n    history.replaceState(null, \"\", url);\n  }, [active]);\n\n  return (\n    <div role=\"tablist\">\n      {tabs.map(t => (\n        <button key={t.id} role=\"tab\" aria-selected={active===t.id} onClick={()=>setActive(t.id)}\n          onKeyDown={e=>{\n            const idx=tabs.findIndex(x=>x.id===active);\n            if(e.key===\"ArrowRight\") setActive(tabs[(idx+1)%tabs.length].id);\n            if(e.key===\"ArrowLeft\") setActive(tabs[(idx-1+tabs.length)%tabs.length].id);\n          }}>\n          {t.label}\n        </button>\n      ))}\n      {tabs.map(t=> visited.current.has(t.id) && (\n        <div key={t.id} role=\"tabpanel\" hidden={active!==t.id}>{t.panel}</div>\n      ))}\n    </div>\n  );\n}\n```\n\n*Trending: URL-synced tabs are a 2025 interview staple.*"
+  },
+  {
+    "technology": "machine-coding",
+    "round": "Frontend",
+    "difficulty": "medium",
+    "tags": [
+      "React",
+      "Toast",
+      "Queue",
+      "Animation"
+    ],
+    "title": "Build a Toast / Snackbar Queue with Pause on Hover",
+    "description": "Build a toast notification system with queue, auto-dismiss, pause on hover, and stacking with limits.",
+    "answer": "**Requirements**\n- `toast.success(msg)` / `toast.error(msg)` API via context; stack toasts bottom-right, max 3 visible, queue rest.\n- Auto-dismiss 3s, pause on hover, manual close (×), progress bar.\n- Enter/exit animation (slide + fade); accessible `role=\"status\"` + `aria-live`.\n\n**Architecture**\n- `ToastContext` holds `queue: Toast[]`. `add` pushes; visible = queue.slice(0,3). Timer per toast via `setTimeout`; on hover, clear timeout and track remaining.\n- Portal to `document.body`; `useEffect` cleanup clears timers on unmount.\n- Queue promotion: when a toast dismisses, next queued toast animates in.\n\n**What interviewers look for:** context API design, per-toast timer with pause/resume, portal, animation, max-visible + queue.\n\n**Reference implementation**\n```jsx\nconst ToastCtx = React.createContext();\nexport function ToastProvider({ children }) {\n  const [toasts, setToasts] = React.useState([]);\n  const add = (msg, type=\"info\") => {\n    const id = Date.now();\n    setToasts(t=>[...t, { id, msg, type }]);\n    setTimeout(()=> setToasts(t=>t.filter(x=>x.id!==id)), 3000);\n  };\n  return (\n    <ToastCtx.Provider value={{ toast: { success: m=>add(m,\"success\"), error: m=>add(m,\"error\") } }}>\n      {children}\n      {ReactDOM.createPortal(\n        <div className=\"toast-stack\" role=\"region\" aria-live=\"polite\">\n          {toasts.slice(0,3).map(t=> <div key={t.id} role=\"status\" className={`toast ${t.type}`}>{t.msg}<button onClick={()=>setToasts(v=>v.filter(x=>x.id!==t.id))}>×</button></div>)}\n        </div>, document.body)}\n    </ToastCtx.Provider>\n  );\n}\n```\n\n*Trending: Sonner / react-hot-toast API is the expected interface in 2025.*"
+  },
+  {
+    "technology": "machine-coding",
+    "round": "Machine Coding",
+    "difficulty": "hard",
+    "tags": [
+      "React",
+      "Calendar",
+      "Date",
+      "Accessibility"
+    ],
+    "title": "Build a Date Picker Calendar with Range Selection",
+    "description": "Build a calendar date picker supporting single date and range selection, with keyboard navigation and localization.",
+    "answer": "**Requirements**\n- Monthly grid (Sun–Sat header) with prev/next month navigation; today highlighted, disabled dates (min/max).\n- Modes: single date or range (start → end, hover preview); emit `onChange(date)` or `[start,end]`.\n- Keyboard: arrow keys move focus day-by-day, PageUp/Down month, Enter selects; `aria-selected`.\n\n**Architecture**\n- Derive `days = getDaysInMonth(year, month)` with leading blanks (`firstDayOfWeek`). Grid 7×6.\n- Range: `hoverDate` state for preview; class `in-range` if `date > start && date < (hoverDate ?? end)`.\n- Use native `Date` or `date-fns` for math; avoid timezone bugs by using noon UTC or `Temporal` if allowed.\n\n**What interviewers look for:** calendar grid math, range preview, keyboard grid navigation, disabled logic, a11y, no external date lib pitfalls.\n\n**Reference implementation**\n```jsx\nfunction getMonthGrid(y, m) {\n  const first = new Date(y, m, 1).getDay();\n  const days = new Date(y, m+1, 0).getDate();\n  return [...Array(first).fill(null), ...Array.from({length:days},(_,i)=> new Date(y,m,i+1))];\n}\n\nexport function DatePicker({ value, onChange, mode=\"single\" }) {\n  const [cursor, setCursor] = React.useState(value || new Date());\n  const y=cursor.getFullYear(), mo=cursor.getMonth();\n  const grid=getMonthGrid(y,mo);\n  return (\n    <div role=\"grid\" aria-label=\"Calendar\">\n      <button onClick={()=>setCursor(new Date(y, mo-1, 1))}>‹</button>\n      <span>{cursor.toLocaleString(\"default\",{month:\"long\",year:\"numeric\"})}</span>\n      <button onClick={()=>setCursor(new Date(y, mo+1, 1))}>›</button>\n      <div style={{display:\"grid\", gridTemplateColumns:\"repeat(7,1fr)\"}}>\n        {grid.map((d,i)=> d ? <button key={i} role=\"gridcell\" aria-selected={isSelected(d,value)}\n          onClick={()=>onChange(mode===\"range\"? updateRange(value,d):d)}>{d.getDate()}</button> : <span key={i}/> )}\n      </div>\n    </div>\n  );\n}\n```\n\n*Trending 2025:* Range + keyboard is the L5 variant; `react-aria` calendar pattern expected."
+  }
+]

@@ -62,6 +62,16 @@ function isSandboxBoilerplate(path: string, content: string | undefined): boolea
   return normalizeForCompare(content) === normalizeForCompare(boiler);
 }
 
+function isJsonEqual(a: string, b: string): boolean {
+  try {
+    const pa = JSON.parse(a);
+    const pb = JSON.parse(b);
+    return JSON.stringify(pa) === JSON.stringify(pb);
+  } catch {
+    return false;
+  }
+}
+
 // Package.json boilerplate is JSON-stringified without pretty-print in some sandpack versions.
 // Add explicit entry for detection via parsed compare above; keep raw string for completeness.
 SANDBOX_BOILERPLATE["/package.json"] = JSON.stringify({
@@ -117,10 +127,21 @@ export function diffFiles(
       continue;
     }
 
+    // Formatting-only change: package.json (and any .json) pretty-printed on load
+    // (`{"dependencies":{"react":...` → pretty `{ "dependencies": { "react": ... }`).
+    // Treat as no edit so auto-format doesn't inflate score (your 9/-1 case).
+    if (path.endsWith(".json") && isJsonEqual(before, after)) {
+      continue;
+    }
+
     const a = splitLines(before);
     const b = splitLines(after);
     const { added, removed, unchanged } = lcsDiff(a, b);
     if (added.length === 0 && removed.length === 0) continue;
+    // After LCS, if the only diff is whitespace/formatting for JSON, the isJsonEqual
+    // above already handled it; for other files, guard against pure reformatting
+    // noise: if normalized forms are equal, skip.
+    if (path.endsWith(".json") && added.length === 0 && removed.length === 0) continue;
     diffs.push({ path, added, removed, unchangedCount: unchanged, isNew: false, isDeleted: false });
   }
 

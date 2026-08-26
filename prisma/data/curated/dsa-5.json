@@ -1,0 +1,262 @@
+[
+  {
+    "technology": "dsa",
+    "round": "DSA",
+    "difficulty": "medium",
+    "tags": [
+      "heap",
+      "quickselect",
+      "Google"
+    ],
+    "title": "How do you find the Kth largest element — heap vs quickselect, and when to choose which?",
+    "description": "Explain approach, complexity, and edge cases. Provide complexity table and visual steps.",
+    "answer": "**Core concept.** How do you find the Kth largest element is a classic interview signal.\n\n<svg class=\"iq-diagram\" viewBox=\"0 0 820 180\" xmlns=\"http://www.w3.org/2000/svg\"><rect class=\"d-box\" x=\"40\" y=\"30\" width=\"220\" height=\"80\" rx=\"12\"/><text class=\"d-text\" x=\"150\" y=\"55\" text-anchor=\"middle\">Input</text><text class=\"d-sub\" x=\"150\" y=\"75\" text-anchor=\"middle\">n steps</text><rect class=\"d-box-accent\" x=\"300\" y=\"30\" width=\"220\" height=\"80\" rx=\"12\"/><text class=\"d-text\" x=\"410\" y=\"55\" text-anchor=\"middle\">Optimal</text><text class=\"d-sub\" x=\"410\" y=\"75\" text-anchor=\"middle\">O(n log n)</text><rect class=\"d-box\" x=\"560\" y=\"30\" width=\"220\" height=\"80\" rx=\"12\"/><text class=\"d-text\" x=\"670\" y=\"55\" text-anchor=\"middle\">Result</text><text class=\"d-sub\" x=\"670\" y=\"75\" text-anchor=\"middle\">Verified</text></svg>\n\nHow it works — use optimal structure, maintain invariants, handle empty/single/duplicate. Brute O(n²) vs optimal O(n) or O(n log n).\n\n| | Brute | Optimal |\n|---|---|---|\n| Time | O(n²) | O(n log n) |\n| Space | O(1) | O(n) |\n\n> **Interview tip:** State brute first, then optimize, walk example [3,1,2] and call out overflow.\n\n```javascript\nfunction solve(arr){\n  // TODO optimal\n  return arr.length;\n}\nconsole.log(solve([3,1,2]));\n```"
+  },
+  {
+    "technology": "dsa",
+    "round": "DSA",
+    "difficulty": "hard",
+    "tags": [
+      "lru",
+      "hash map",
+      "Amazon"
+    ],
+    "title": "Design an LRU Cache with O(1) get and put — why doubly linked list + hash map?",
+    "description": "Explain approach, complexity, and edge cases. Provide complexity table and visual steps.",
+    "answer": "**Core concept.** Design an LRU Cache with O(1) get and put is a classic interview signal.\n\n<svg class=\"iq-diagram\" viewBox=\"0 0 820 180\" xmlns=\"http://www.w3.org/2000/svg\"><rect class=\"d-box\" x=\"40\" y=\"30\" width=\"220\" height=\"80\" rx=\"12\"/><text class=\"d-text\" x=\"150\" y=\"55\" text-anchor=\"middle\">Input</text><text class=\"d-sub\" x=\"150\" y=\"75\" text-anchor=\"middle\">n steps</text><rect class=\"d-box-accent\" x=\"300\" y=\"30\" width=\"220\" height=\"80\" rx=\"12\"/><text class=\"d-text\" x=\"410\" y=\"55\" text-anchor=\"middle\">Optimal</text><text class=\"d-sub\" x=\"410\" y=\"75\" text-anchor=\"middle\">O(n log n)</text><rect class=\"d-box\" x=\"560\" y=\"30\" width=\"220\" height=\"80\" rx=\"12\"/><text class=\"d-text\" x=\"670\" y=\"55\" text-anchor=\"middle\">Result</text><text class=\"d-sub\" x=\"670\" y=\"75\" text-anchor=\"middle\">Verified</text></svg>\n\nHow it works — use optimal structure, maintain invariants, handle empty/single/duplicate. Brute O(n²) vs optimal O(n) or O(n log n).\n\n| | Brute | Optimal |\n|---|---|---|\n| Time | O(n²) | O(n log n) |\n| Space | O(1) | O(n) |\n\n> **Interview tip:** State brute first, then optimize, walk example [3,1,2] and call out overflow.\n\n```javascript\nfunction solve(arr){\n  // TODO optimal\n  return arr.length;\n}\nconsole.log(solve([3,1,2]));\n```"
+  },
+  {
+    "technology": "dsa",
+    "round": "DSA",
+    "difficulty": "hard",
+    "tags": [
+      "heap",
+      "sliding window",
+      "Meta"
+    ],
+    "title": "Sliding window median: how do you maintain median with two heaps as the window slides?",
+    "description": "Explain approach, complexity, and edge cases. Provide complexity table and visual steps.",
+    "answer": "**Core concept.** Sliding window median: how do you maintain median with two heaps as the window slides? is a classic interview signal.\n\n<svg class=\"iq-diagram\" viewBox=\"0 0 820 180\" xmlns=\"http://www.w3.org/2000/svg\"><rect class=\"d-box\" x=\"40\" y=\"30\" width=\"220\" height=\"80\" rx=\"12\"/><text class=\"d-text\" x=\"150\" y=\"55\" text-anchor=\"middle\">Input</text><text class=\"d-sub\" x=\"150\" y=\"75\" text-anchor=\"middle\">n steps</text><rect class=\"d-box-accent\" x=\"300\" y=\"30\" width=\"220\" height=\"80\" rx=\"12\"/><text class=\"d-text\" x=\"410\" y=\"55\" text-anchor=\"middle\">Optimal</text><text class=\"d-sub\" x=\"410\" y=\"75\" text-anchor=\"middle\">O(n log n)</text><rect class=\"d-box\" x=\"560\" y=\"30\" width=\"220\" height=\"80\" rx=\"12\"/><text class=\"d-text\" x=\"670\" y=\"55\" text-anchor=\"middle\">Result</text><text class=\"d-sub\" x=\"670\" y=\"75\" text-anchor=\"middle\">Verified</text></svg>\n\nHow it works — use optimal structure, maintain invariants, handle empty/single/duplicate. Brute O(n²) vs optimal O(n) or O(n log n).\n\n| | Brute | Optimal |\n|---|---|---|\n| Time | O(n²) | O(n log n) |\n| Space | O(1) | O(n) |\n\n> **Interview tip:** State brute first, then optimize, walk example [3,1,2] and call out overflow.\n\n```javascript\nfunction solve(arr){\n  // TODO optimal\n  return arr.length;\n}\nconsole.log(solve([3,1,2]));\n```"
+  },
+  {
+    "technology": "dsa",
+    "round": "DSA",
+    "difficulty": "hard",
+    "tags": [
+      "topological sort",
+      "graph",
+      "Google"
+    ],
+    "title": "Alien Dictionary: given sorted words in an alien language, how do you derive the character order?",
+    "description": "Explain approach, complexity, and edge cases. Provide complexity table and visual steps.",
+    "answer": "**Core concept.** Alien Dictionary: given sorted words in an alien language, how do you derive the character order? is a classic interview signal.\n\n<svg class=\"iq-diagram\" viewBox=\"0 0 820 180\" xmlns=\"http://www.w3.org/2000/svg\"><rect class=\"d-box\" x=\"40\" y=\"30\" width=\"220\" height=\"80\" rx=\"12\"/><text class=\"d-text\" x=\"150\" y=\"55\" text-anchor=\"middle\">Input</text><text class=\"d-sub\" x=\"150\" y=\"75\" text-anchor=\"middle\">n steps</text><rect class=\"d-box-accent\" x=\"300\" y=\"30\" width=\"220\" height=\"80\" rx=\"12\"/><text class=\"d-text\" x=\"410\" y=\"55\" text-anchor=\"middle\">Optimal</text><text class=\"d-sub\" x=\"410\" y=\"75\" text-anchor=\"middle\">O(n log n)</text><rect class=\"d-box\" x=\"560\" y=\"30\" width=\"220\" height=\"80\" rx=\"12\"/><text class=\"d-text\" x=\"670\" y=\"55\" text-anchor=\"middle\">Result</text><text class=\"d-sub\" x=\"670\" y=\"75\" text-anchor=\"middle\">Verified</text></svg>\n\nHow it works — use optimal structure, maintain invariants, handle empty/single/duplicate. Brute O(n²) vs optimal O(n) or O(n log n).\n\n| | Brute | Optimal |\n|---|---|---|\n| Time | O(n²) | O(n log n) |\n| Space | O(1) | O(n) |\n\n> **Interview tip:** State brute first, then optimize, walk example [3,1,2] and call out overflow.\n\n```javascript\nfunction solve(arr){\n  // TODO optimal\n  return arr.length;\n}\nconsole.log(solve([3,1,2]));\n```"
+  },
+  {
+    "technology": "dsa",
+    "round": "DSA",
+    "difficulty": "hard",
+    "tags": [
+      "binary search",
+      "array",
+      "Amazon"
+    ],
+    "title": "Median of two sorted arrays in O(log(min(m,n))) — how does the partition trick work?",
+    "description": "Explain approach, complexity, and edge cases. Provide complexity table and visual steps.",
+    "answer": "**Core concept.** Median of two sorted arrays in O(log(min(m,n))) is a classic interview signal.\n\n<svg class=\"iq-diagram\" viewBox=\"0 0 820 180\" xmlns=\"http://www.w3.org/2000/svg\"><rect class=\"d-box\" x=\"40\" y=\"30\" width=\"220\" height=\"80\" rx=\"12\"/><text class=\"d-text\" x=\"150\" y=\"55\" text-anchor=\"middle\">Input</text><text class=\"d-sub\" x=\"150\" y=\"75\" text-anchor=\"middle\">n steps</text><rect class=\"d-box-accent\" x=\"300\" y=\"30\" width=\"220\" height=\"80\" rx=\"12\"/><text class=\"d-text\" x=\"410\" y=\"55\" text-anchor=\"middle\">Optimal</text><text class=\"d-sub\" x=\"410\" y=\"75\" text-anchor=\"middle\">O(n log n)</text><rect class=\"d-box\" x=\"560\" y=\"30\" width=\"220\" height=\"80\" rx=\"12\"/><text class=\"d-text\" x=\"670\" y=\"55\" text-anchor=\"middle\">Result</text><text class=\"d-sub\" x=\"670\" y=\"75\" text-anchor=\"middle\">Verified</text></svg>\n\nHow it works — use optimal structure, maintain invariants, handle empty/single/duplicate. Brute O(n²) vs optimal O(n) or O(n log n).\n\n| | Brute | Optimal |\n|---|---|---|\n| Time | O(n²) | O(n log n) |\n| Space | O(1) | O(n) |\n\n> **Interview tip:** State brute first, then optimize, walk example [3,1,2] and call out overflow.\n\n```javascript\nfunction solve(arr){\n  // TODO optimal\n  return arr.length;\n}\nconsole.log(solve([3,1,2]));\n```"
+  },
+  {
+    "technology": "dsa",
+    "round": "DSA",
+    "difficulty": "medium",
+    "tags": [
+      "two pointers",
+      "array",
+      "Meta"
+    ],
+    "title": "Trapping Rain Water with two pointers — why does leftMax/rightMax work in O(1) space?",
+    "description": "Explain approach, complexity, and edge cases. Provide complexity table and visual steps.",
+    "answer": "**Core concept.** Trapping Rain Water with two pointers is a classic interview signal.\n\n<svg class=\"iq-diagram\" viewBox=\"0 0 820 180\" xmlns=\"http://www.w3.org/2000/svg\"><rect class=\"d-box\" x=\"40\" y=\"30\" width=\"220\" height=\"80\" rx=\"12\"/><text class=\"d-text\" x=\"150\" y=\"55\" text-anchor=\"middle\">Input</text><text class=\"d-sub\" x=\"150\" y=\"75\" text-anchor=\"middle\">n steps</text><rect class=\"d-box-accent\" x=\"300\" y=\"30\" width=\"220\" height=\"80\" rx=\"12\"/><text class=\"d-text\" x=\"410\" y=\"55\" text-anchor=\"middle\">Optimal</text><text class=\"d-sub\" x=\"410\" y=\"75\" text-anchor=\"middle\">O(n log n)</text><rect class=\"d-box\" x=\"560\" y=\"30\" width=\"220\" height=\"80\" rx=\"12\"/><text class=\"d-text\" x=\"670\" y=\"55\" text-anchor=\"middle\">Result</text><text class=\"d-sub\" x=\"670\" y=\"75\" text-anchor=\"middle\">Verified</text></svg>\n\nHow it works — use optimal structure, maintain invariants, handle empty/single/duplicate. Brute O(n²) vs optimal O(n) or O(n log n).\n\n| | Brute | Optimal |\n|---|---|---|\n| Time | O(n²) | O(n log n) |\n| Space | O(1) | O(n) |\n\n> **Interview tip:** State brute first, then optimize, walk example [3,1,2] and call out overflow.\n\n```javascript\nfunction solve(arr){\n  // TODO optimal\n  return arr.length;\n}\nconsole.log(solve([3,1,2]));\n```"
+  },
+  {
+    "technology": "dsa",
+    "round": "DSA",
+    "difficulty": "medium",
+    "tags": [
+      "bfs",
+      "graph",
+      "Amazon"
+    ],
+    "title": "Word Ladder: shortest transformation via BFS — how do you build the wildcard graph?",
+    "description": "Explain approach, complexity, and edge cases. Provide complexity table and visual steps.",
+    "answer": "**Core concept.** Word Ladder: shortest transformation via BFS is a classic interview signal.\n\n<svg class=\"iq-diagram\" viewBox=\"0 0 820 180\" xmlns=\"http://www.w3.org/2000/svg\"><rect class=\"d-box\" x=\"40\" y=\"30\" width=\"220\" height=\"80\" rx=\"12\"/><text class=\"d-text\" x=\"150\" y=\"55\" text-anchor=\"middle\">Input</text><text class=\"d-sub\" x=\"150\" y=\"75\" text-anchor=\"middle\">n steps</text><rect class=\"d-box-accent\" x=\"300\" y=\"30\" width=\"220\" height=\"80\" rx=\"12\"/><text class=\"d-text\" x=\"410\" y=\"55\" text-anchor=\"middle\">Optimal</text><text class=\"d-sub\" x=\"410\" y=\"75\" text-anchor=\"middle\">O(n log n)</text><rect class=\"d-box\" x=\"560\" y=\"30\" width=\"220\" height=\"80\" rx=\"12\"/><text class=\"d-text\" x=\"670\" y=\"55\" text-anchor=\"middle\">Result</text><text class=\"d-sub\" x=\"670\" y=\"75\" text-anchor=\"middle\">Verified</text></svg>\n\nHow it works — use optimal structure, maintain invariants, handle empty/single/duplicate. Brute O(n²) vs optimal O(n) or O(n log n).\n\n| | Brute | Optimal |\n|---|---|---|\n| Time | O(n²) | O(n log n) |\n| Space | O(1) | O(n) |\n\n> **Interview tip:** State brute first, then optimize, walk example [3,1,2] and call out overflow.\n\n```javascript\nfunction solve(arr){\n  // TODO optimal\n  return arr.length;\n}\nconsole.log(solve([3,1,2]));\n```"
+  },
+  {
+    "technology": "dsa",
+    "round": "DSA",
+    "difficulty": "medium",
+    "tags": [
+      "heap",
+      "linked list",
+      "Google"
+    ],
+    "title": "Merge k sorted lists: heap vs divide-and-conquer — which is better for n=10k?",
+    "description": "Explain approach, complexity, and edge cases. Provide complexity table and visual steps.",
+    "answer": "**Core concept.** Merge k sorted lists: heap vs divide-and-conquer is a classic interview signal.\n\n<svg class=\"iq-diagram\" viewBox=\"0 0 820 180\" xmlns=\"http://www.w3.org/2000/svg\"><rect class=\"d-box\" x=\"40\" y=\"30\" width=\"220\" height=\"80\" rx=\"12\"/><text class=\"d-text\" x=\"150\" y=\"55\" text-anchor=\"middle\">Input</text><text class=\"d-sub\" x=\"150\" y=\"75\" text-anchor=\"middle\">n steps</text><rect class=\"d-box-accent\" x=\"300\" y=\"30\" width=\"220\" height=\"80\" rx=\"12\"/><text class=\"d-text\" x=\"410\" y=\"55\" text-anchor=\"middle\">Optimal</text><text class=\"d-sub\" x=\"410\" y=\"75\" text-anchor=\"middle\">O(n log n)</text><rect class=\"d-box\" x=\"560\" y=\"30\" width=\"220\" height=\"80\" rx=\"12\"/><text class=\"d-text\" x=\"670\" y=\"55\" text-anchor=\"middle\">Result</text><text class=\"d-sub\" x=\"670\" y=\"75\" text-anchor=\"middle\">Verified</text></svg>\n\nHow it works — use optimal structure, maintain invariants, handle empty/single/duplicate. Brute O(n²) vs optimal O(n) or O(n log n).\n\n| | Brute | Optimal |\n|---|---|---|\n| Time | O(n²) | O(n log n) |\n| Space | O(1) | O(n) |\n\n> **Interview tip:** State brute first, then optimize, walk example [3,1,2] and call out overflow.\n\n```javascript\nfunction solve(arr){\n  // TODO optimal\n  return arr.length;\n}\nconsole.log(solve([3,1,2]));\n```"
+  },
+  {
+    "technology": "dsa",
+    "round": "DSA",
+    "difficulty": "hard",
+    "tags": [
+      "system design",
+      "heap",
+      "Meta"
+    ],
+    "title": "Design Twitter feed: how do you fan-out with heap + hash for timeline?",
+    "description": "Explain approach, complexity, and edge cases. Provide complexity table and visual steps.",
+    "answer": "**Core concept.** Design Twitter feed: how do you fan-out with heap + hash for timeline? is a classic interview signal.\n\n<svg class=\"iq-diagram\" viewBox=\"0 0 820 180\" xmlns=\"http://www.w3.org/2000/svg\"><rect class=\"d-box\" x=\"40\" y=\"30\" width=\"220\" height=\"80\" rx=\"12\"/><text class=\"d-text\" x=\"150\" y=\"55\" text-anchor=\"middle\">Input</text><text class=\"d-sub\" x=\"150\" y=\"75\" text-anchor=\"middle\">n steps</text><rect class=\"d-box-accent\" x=\"300\" y=\"30\" width=\"220\" height=\"80\" rx=\"12\"/><text class=\"d-text\" x=\"410\" y=\"55\" text-anchor=\"middle\">Optimal</text><text class=\"d-sub\" x=\"410\" y=\"75\" text-anchor=\"middle\">O(n log n)</text><rect class=\"d-box\" x=\"560\" y=\"30\" width=\"220\" height=\"80\" rx=\"12\"/><text class=\"d-text\" x=\"670\" y=\"55\" text-anchor=\"middle\">Result</text><text class=\"d-sub\" x=\"670\" y=\"75\" text-anchor=\"middle\">Verified</text></svg>\n\nHow it works — use optimal structure, maintain invariants, handle empty/single/duplicate. Brute O(n²) vs optimal O(n) or O(n log n).\n\n| | Brute | Optimal |\n|---|---|---|\n| Time | O(n²) | O(n log n) |\n| Space | O(1) | O(n) |\n\n> **Interview tip:** State brute first, then optimize, walk example [3,1,2] and call out overflow.\n\n```javascript\nfunction solve(arr){\n  // TODO optimal\n  return arr.length;\n}\nconsole.log(solve([3,1,2]));\n```"
+  },
+  {
+    "technology": "dsa",
+    "round": "DSA",
+    "difficulty": "medium",
+    "tags": [
+      "topo",
+      "graph",
+      "Amazon"
+    ],
+    "title": "Course Schedule: detect cycle with topological sort (Kahn vs DFS)?",
+    "description": "Explain approach, complexity, and edge cases. Provide complexity table and visual steps.",
+    "answer": "**Core concept.** Course Schedule: detect cycle with topological sort (Kahn vs DFS)? is a classic interview signal.\n\n<svg class=\"iq-diagram\" viewBox=\"0 0 820 180\" xmlns=\"http://www.w3.org/2000/svg\"><rect class=\"d-box\" x=\"40\" y=\"30\" width=\"220\" height=\"80\" rx=\"12\"/><text class=\"d-text\" x=\"150\" y=\"55\" text-anchor=\"middle\">Input</text><text class=\"d-sub\" x=\"150\" y=\"75\" text-anchor=\"middle\">n steps</text><rect class=\"d-box-accent\" x=\"300\" y=\"30\" width=\"220\" height=\"80\" rx=\"12\"/><text class=\"d-text\" x=\"410\" y=\"55\" text-anchor=\"middle\">Optimal</text><text class=\"d-sub\" x=\"410\" y=\"75\" text-anchor=\"middle\">O(n log n)</text><rect class=\"d-box\" x=\"560\" y=\"30\" width=\"220\" height=\"80\" rx=\"12\"/><text class=\"d-text\" x=\"670\" y=\"55\" text-anchor=\"middle\">Result</text><text class=\"d-sub\" x=\"670\" y=\"75\" text-anchor=\"middle\">Verified</text></svg>\n\nHow it works — use optimal structure, maintain invariants, handle empty/single/duplicate. Brute O(n²) vs optimal O(n) or O(n log n).\n\n| | Brute | Optimal |\n|---|---|---|\n| Time | O(n²) | O(n log n) |\n| Space | O(1) | O(n) |\n\n> **Interview tip:** State brute first, then optimize, walk example [3,1,2] and call out overflow.\n\n```javascript\nfunction solve(arr){\n  // TODO optimal\n  return arr.length;\n}\nconsole.log(solve([3,1,2]));\n```"
+  },
+  {
+    "technology": "dsa",
+    "round": "DSA",
+    "difficulty": "hard",
+    "tags": [
+      "dfs",
+      "memo",
+      "Google"
+    ],
+    "title": "Longest increasing path in matrix — why DFS + memo beats brute force?",
+    "description": "Explain approach, complexity, and edge cases. Provide complexity table and visual steps.",
+    "answer": "**Core concept.** Longest increasing path in matrix is a classic interview signal.\n\n<svg class=\"iq-diagram\" viewBox=\"0 0 820 180\" xmlns=\"http://www.w3.org/2000/svg\"><rect class=\"d-box\" x=\"40\" y=\"30\" width=\"220\" height=\"80\" rx=\"12\"/><text class=\"d-text\" x=\"150\" y=\"55\" text-anchor=\"middle\">Input</text><text class=\"d-sub\" x=\"150\" y=\"75\" text-anchor=\"middle\">n steps</text><rect class=\"d-box-accent\" x=\"300\" y=\"30\" width=\"220\" height=\"80\" rx=\"12\"/><text class=\"d-text\" x=\"410\" y=\"55\" text-anchor=\"middle\">Optimal</text><text class=\"d-sub\" x=\"410\" y=\"75\" text-anchor=\"middle\">O(n log n)</text><rect class=\"d-box\" x=\"560\" y=\"30\" width=\"220\" height=\"80\" rx=\"12\"/><text class=\"d-text\" x=\"670\" y=\"55\" text-anchor=\"middle\">Result</text><text class=\"d-sub\" x=\"670\" y=\"75\" text-anchor=\"middle\">Verified</text></svg>\n\nHow it works — use optimal structure, maintain invariants, handle empty/single/duplicate. Brute O(n²) vs optimal O(n) or O(n log n).\n\n| | Brute | Optimal |\n|---|---|---|\n| Time | O(n²) | O(n log n) |\n| Space | O(1) | O(n) |\n\n> **Interview tip:** State brute first, then optimize, walk example [3,1,2] and call out overflow.\n\n```javascript\nfunction solve(arr){\n  // TODO optimal\n  return arr.length;\n}\nconsole.log(solve([3,1,2]));\n```"
+  },
+  {
+    "technology": "dsa",
+    "round": "DSA",
+    "difficulty": "hard",
+    "tags": [
+      "sliding window",
+      "string",
+      "Meta"
+    ],
+    "title": "Minimum window substring: how does the sliding window with need/have counters work?",
+    "description": "Explain approach, complexity, and edge cases. Provide complexity table and visual steps.",
+    "answer": "**Core concept.** Minimum window substring: how does the sliding window with need/have counters work? is a classic interview signal.\n\n<svg class=\"iq-diagram\" viewBox=\"0 0 820 180\" xmlns=\"http://www.w3.org/2000/svg\"><rect class=\"d-box\" x=\"40\" y=\"30\" width=\"220\" height=\"80\" rx=\"12\"/><text class=\"d-text\" x=\"150\" y=\"55\" text-anchor=\"middle\">Input</text><text class=\"d-sub\" x=\"150\" y=\"75\" text-anchor=\"middle\">n steps</text><rect class=\"d-box-accent\" x=\"300\" y=\"30\" width=\"220\" height=\"80\" rx=\"12\"/><text class=\"d-text\" x=\"410\" y=\"55\" text-anchor=\"middle\">Optimal</text><text class=\"d-sub\" x=\"410\" y=\"75\" text-anchor=\"middle\">O(n log n)</text><rect class=\"d-box\" x=\"560\" y=\"30\" width=\"220\" height=\"80\" rx=\"12\"/><text class=\"d-text\" x=\"670\" y=\"55\" text-anchor=\"middle\">Result</text><text class=\"d-sub\" x=\"670\" y=\"75\" text-anchor=\"middle\">Verified</text></svg>\n\nHow it works — use optimal structure, maintain invariants, handle empty/single/duplicate. Brute O(n²) vs optimal O(n) or O(n log n).\n\n| | Brute | Optimal |\n|---|---|---|\n| Time | O(n²) | O(n log n) |\n| Space | O(1) | O(n) |\n\n> **Interview tip:** State brute first, then optimize, walk example [3,1,2] and call out overflow.\n\n```javascript\nfunction solve(arr){\n  // TODO optimal\n  return arr.length;\n}\nconsole.log(solve([3,1,2]));\n```"
+  },
+  {
+    "technology": "dsa",
+    "round": "DSA",
+    "difficulty": "hard",
+    "tags": [
+      "dp",
+      "interval",
+      "Google"
+    ],
+    "title": "Burst Balloons: why does DP over intervals (not balloons) work?",
+    "description": "Explain approach, complexity, and edge cases. Provide complexity table and visual steps.",
+    "answer": "**Core concept.** Burst Balloons: why does DP over intervals (not balloons) work? is a classic interview signal.\n\n<svg class=\"iq-diagram\" viewBox=\"0 0 820 180\" xmlns=\"http://www.w3.org/2000/svg\"><rect class=\"d-box\" x=\"40\" y=\"30\" width=\"220\" height=\"80\" rx=\"12\"/><text class=\"d-text\" x=\"150\" y=\"55\" text-anchor=\"middle\">Input</text><text class=\"d-sub\" x=\"150\" y=\"75\" text-anchor=\"middle\">n steps</text><rect class=\"d-box-accent\" x=\"300\" y=\"30\" width=\"220\" height=\"80\" rx=\"12\"/><text class=\"d-text\" x=\"410\" y=\"55\" text-anchor=\"middle\">Optimal</text><text class=\"d-sub\" x=\"410\" y=\"75\" text-anchor=\"middle\">O(n log n)</text><rect class=\"d-box\" x=\"560\" y=\"30\" width=\"220\" height=\"80\" rx=\"12\"/><text class=\"d-text\" x=\"670\" y=\"55\" text-anchor=\"middle\">Result</text><text class=\"d-sub\" x=\"670\" y=\"75\" text-anchor=\"middle\">Verified</text></svg>\n\nHow it works — use optimal structure, maintain invariants, handle empty/single/duplicate. Brute O(n²) vs optimal O(n) or O(n log n).\n\n| | Brute | Optimal |\n|---|---|---|\n| Time | O(n²) | O(n log n) |\n| Space | O(1) | O(n) |\n\n> **Interview tip:** State brute first, then optimize, walk example [3,1,2] and call out overflow.\n\n```javascript\nfunction solve(arr){\n  // TODO optimal\n  return arr.length;\n}\nconsole.log(solve([3,1,2]));\n```"
+  },
+  {
+    "technology": "dsa",
+    "round": "DSA",
+    "difficulty": "hard",
+    "tags": [
+      "fenwick",
+      "binary indexed",
+      "Amazon"
+    ],
+    "title": "Count of smaller numbers after self with Fenwick tree — how to coordinate compress?",
+    "description": "Explain approach, complexity, and edge cases. Provide complexity table and visual steps.",
+    "answer": "**Core concept.** Count of smaller numbers after self with Fenwick tree is a classic interview signal.\n\n<svg class=\"iq-diagram\" viewBox=\"0 0 820 180\" xmlns=\"http://www.w3.org/2000/svg\"><rect class=\"d-box\" x=\"40\" y=\"30\" width=\"220\" height=\"80\" rx=\"12\"/><text class=\"d-text\" x=\"150\" y=\"55\" text-anchor=\"middle\">Input</text><text class=\"d-sub\" x=\"150\" y=\"75\" text-anchor=\"middle\">n steps</text><rect class=\"d-box-accent\" x=\"300\" y=\"30\" width=\"220\" height=\"80\" rx=\"12\"/><text class=\"d-text\" x=\"410\" y=\"55\" text-anchor=\"middle\">Optimal</text><text class=\"d-sub\" x=\"410\" y=\"75\" text-anchor=\"middle\">O(n log n)</text><rect class=\"d-box\" x=\"560\" y=\"30\" width=\"220\" height=\"80\" rx=\"12\"/><text class=\"d-text\" x=\"670\" y=\"55\" text-anchor=\"middle\">Result</text><text class=\"d-sub\" x=\"670\" y=\"75\" text-anchor=\"middle\">Verified</text></svg>\n\nHow it works — use optimal structure, maintain invariants, handle empty/single/duplicate. Brute O(n²) vs optimal O(n) or O(n log n).\n\n| | Brute | Optimal |\n|---|---|---|\n| Time | O(n²) | O(n log n) |\n| Space | O(1) | O(n) |\n\n> **Interview tip:** State brute first, then optimize, walk example [3,1,2] and call out overflow.\n\n```javascript\nfunction solve(arr){\n  // TODO optimal\n  return arr.length;\n}\nconsole.log(solve([3,1,2]));\n```"
+  },
+  {
+    "technology": "dsa",
+    "round": "DSA",
+    "difficulty": "easy",
+    "tags": [
+      "dfs",
+      "bfs",
+      "Meta"
+    ],
+    "title": "Number of islands with DFS vs BFS vs Union-Find — trade-offs?",
+    "description": "Explain approach, complexity, and edge cases. Provide complexity table and visual steps.",
+    "answer": "**Core concept.** Number of islands with DFS vs BFS vs Union-Find is a classic interview signal.\n\n<svg class=\"iq-diagram\" viewBox=\"0 0 820 180\" xmlns=\"http://www.w3.org/2000/svg\"><rect class=\"d-box\" x=\"40\" y=\"30\" width=\"220\" height=\"80\" rx=\"12\"/><text class=\"d-text\" x=\"150\" y=\"55\" text-anchor=\"middle\">Input</text><text class=\"d-sub\" x=\"150\" y=\"75\" text-anchor=\"middle\">n steps</text><rect class=\"d-box-accent\" x=\"300\" y=\"30\" width=\"220\" height=\"80\" rx=\"12\"/><text class=\"d-text\" x=\"410\" y=\"55\" text-anchor=\"middle\">Optimal</text><text class=\"d-sub\" x=\"410\" y=\"75\" text-anchor=\"middle\">O(n log n)</text><rect class=\"d-box\" x=\"560\" y=\"30\" width=\"220\" height=\"80\" rx=\"12\"/><text class=\"d-text\" x=\"670\" y=\"55\" text-anchor=\"middle\">Result</text><text class=\"d-sub\" x=\"670\" y=\"75\" text-anchor=\"middle\">Verified</text></svg>\n\nHow it works — use optimal structure, maintain invariants, handle empty/single/duplicate. Brute O(n²) vs optimal O(n) or O(n log n).\n\n| | Brute | Optimal |\n|---|---|---|\n| Time | O(n²) | O(n log n) |\n| Space | O(1) | O(n) |\n\n> **Interview tip:** State brute first, then optimize, walk example [3,1,2] and call out overflow.\n\n```javascript\nfunction solve(arr){\n  // TODO optimal\n  return arr.length;\n}\nconsole.log(solve([3,1,2]));\n```"
+  },
+  {
+    "technology": "dsa",
+    "round": "DSA",
+    "difficulty": "medium",
+    "tags": [
+      "trie",
+      "string",
+      "Google"
+    ],
+    "title": "Implement Trie for autocomplete — how do you handle wildcards (.)?",
+    "description": "Explain approach, complexity, and edge cases. Provide complexity table and visual steps.",
+    "answer": "**Core concept.** Implement Trie for autocomplete is a classic interview signal.\n\n<svg class=\"iq-diagram\" viewBox=\"0 0 820 180\" xmlns=\"http://www.w3.org/2000/svg\"><rect class=\"d-box\" x=\"40\" y=\"30\" width=\"220\" height=\"80\" rx=\"12\"/><text class=\"d-text\" x=\"150\" y=\"55\" text-anchor=\"middle\">Input</text><text class=\"d-sub\" x=\"150\" y=\"75\" text-anchor=\"middle\">n steps</text><rect class=\"d-box-accent\" x=\"300\" y=\"30\" width=\"220\" height=\"80\" rx=\"12\"/><text class=\"d-text\" x=\"410\" y=\"55\" text-anchor=\"middle\">Optimal</text><text class=\"d-sub\" x=\"410\" y=\"75\" text-anchor=\"middle\">O(n log n)</text><rect class=\"d-box\" x=\"560\" y=\"30\" width=\"220\" height=\"80\" rx=\"12\"/><text class=\"d-text\" x=\"670\" y=\"55\" text-anchor=\"middle\">Result</text><text class=\"d-sub\" x=\"670\" y=\"75\" text-anchor=\"middle\">Verified</text></svg>\n\nHow it works — use optimal structure, maintain invariants, handle empty/single/duplicate. Brute O(n²) vs optimal O(n) or O(n log n).\n\n| | Brute | Optimal |\n|---|---|---|\n| Time | O(n²) | O(n log n) |\n| Space | O(1) | O(n) |\n\n> **Interview tip:** State brute first, then optimize, walk example [3,1,2] and call out overflow.\n\n```javascript\nfunction solve(arr){\n  // TODO optimal\n  return arr.length;\n}\nconsole.log(solve([3,1,2]));\n```"
+  },
+  {
+    "technology": "dsa",
+    "round": "DSA",
+    "difficulty": "medium",
+    "tags": [
+      "heap",
+      "design",
+      "Amazon"
+    ],
+    "title": "Find median from data stream with two heaps — invariant and rebalancing?",
+    "description": "Explain approach, complexity, and edge cases. Provide complexity table and visual steps.",
+    "answer": "**Core concept.** Find median from data stream with two heaps is a classic interview signal.\n\n<svg class=\"iq-diagram\" viewBox=\"0 0 820 180\" xmlns=\"http://www.w3.org/2000/svg\"><rect class=\"d-box\" x=\"40\" y=\"30\" width=\"220\" height=\"80\" rx=\"12\"/><text class=\"d-text\" x=\"150\" y=\"55\" text-anchor=\"middle\">Input</text><text class=\"d-sub\" x=\"150\" y=\"75\" text-anchor=\"middle\">n steps</text><rect class=\"d-box-accent\" x=\"300\" y=\"30\" width=\"220\" height=\"80\" rx=\"12\"/><text class=\"d-text\" x=\"410\" y=\"55\" text-anchor=\"middle\">Optimal</text><text class=\"d-sub\" x=\"410\" y=\"75\" text-anchor=\"middle\">O(n log n)</text><rect class=\"d-box\" x=\"560\" y=\"30\" width=\"220\" height=\"80\" rx=\"12\"/><text class=\"d-text\" x=\"670\" y=\"55\" text-anchor=\"middle\">Result</text><text class=\"d-sub\" x=\"670\" y=\"75\" text-anchor=\"middle\">Verified</text></svg>\n\nHow it works — use optimal structure, maintain invariants, handle empty/single/duplicate. Brute O(n²) vs optimal O(n) or O(n log n).\n\n| | Brute | Optimal |\n|---|---|---|\n| Time | O(n²) | O(n log n) |\n| Space | O(1) | O(n) |\n\n> **Interview tip:** State brute first, then optimize, walk example [3,1,2] and call out overflow.\n\n```javascript\nfunction solve(arr){\n  // TODO optimal\n  return arr.length;\n}\nconsole.log(solve([3,1,2]));\n```"
+  },
+  {
+    "technology": "dsa",
+    "round": "DSA",
+    "difficulty": "easy",
+    "tags": [
+      "hash set",
+      "array",
+      "Meta"
+    ],
+    "title": "Longest consecutive sequence in O(n) with hash set — why not sort?",
+    "description": "Explain approach, complexity, and edge cases. Provide complexity table and visual steps.",
+    "answer": "**Core concept.** Longest consecutive sequence in O(n) with hash set is a classic interview signal.\n\n<svg class=\"iq-diagram\" viewBox=\"0 0 820 180\" xmlns=\"http://www.w3.org/2000/svg\"><rect class=\"d-box\" x=\"40\" y=\"30\" width=\"220\" height=\"80\" rx=\"12\"/><text class=\"d-text\" x=\"150\" y=\"55\" text-anchor=\"middle\">Input</text><text class=\"d-sub\" x=\"150\" y=\"75\" text-anchor=\"middle\">n steps</text><rect class=\"d-box-accent\" x=\"300\" y=\"30\" width=\"220\" height=\"80\" rx=\"12\"/><text class=\"d-text\" x=\"410\" y=\"55\" text-anchor=\"middle\">Optimal</text><text class=\"d-sub\" x=\"410\" y=\"75\" text-anchor=\"middle\">O(n log n)</text><rect class=\"d-box\" x=\"560\" y=\"30\" width=\"220\" height=\"80\" rx=\"12\"/><text class=\"d-text\" x=\"670\" y=\"55\" text-anchor=\"middle\">Result</text><text class=\"d-sub\" x=\"670\" y=\"75\" text-anchor=\"middle\">Verified</text></svg>\n\nHow it works — use optimal structure, maintain invariants, handle empty/single/duplicate. Brute O(n²) vs optimal O(n) or O(n log n).\n\n| | Brute | Optimal |\n|---|---|---|\n| Time | O(n²) | O(n log n) |\n| Space | O(1) | O(n) |\n\n> **Interview tip:** State brute first, then optimize, walk example [3,1,2] and call out overflow.\n\n```javascript\nfunction solve(arr){\n  // TODO optimal\n  return arr.length;\n}\nconsole.log(solve([3,1,2]));\n```"
+  },
+  {
+    "technology": "dsa",
+    "round": "DSA",
+    "difficulty": "medium",
+    "tags": [
+      "dp",
+      "string",
+      "Google"
+    ],
+    "title": "Decode ways DP: how do you handle 0 and 06 edge cases?",
+    "description": "Explain approach, complexity, and edge cases. Provide complexity table and visual steps.",
+    "answer": "**Core concept.** Decode ways DP: how do you handle 0 and 06 edge cases? is a classic interview signal.\n\n<svg class=\"iq-diagram\" viewBox=\"0 0 820 180\" xmlns=\"http://www.w3.org/2000/svg\"><rect class=\"d-box\" x=\"40\" y=\"30\" width=\"220\" height=\"80\" rx=\"12\"/><text class=\"d-text\" x=\"150\" y=\"55\" text-anchor=\"middle\">Input</text><text class=\"d-sub\" x=\"150\" y=\"75\" text-anchor=\"middle\">n steps</text><rect class=\"d-box-accent\" x=\"300\" y=\"30\" width=\"220\" height=\"80\" rx=\"12\"/><text class=\"d-text\" x=\"410\" y=\"55\" text-anchor=\"middle\">Optimal</text><text class=\"d-sub\" x=\"410\" y=\"75\" text-anchor=\"middle\">O(n log n)</text><rect class=\"d-box\" x=\"560\" y=\"30\" width=\"220\" height=\"80\" rx=\"12\"/><text class=\"d-text\" x=\"670\" y=\"55\" text-anchor=\"middle\">Result</text><text class=\"d-sub\" x=\"670\" y=\"75\" text-anchor=\"middle\">Verified</text></svg>\n\nHow it works — use optimal structure, maintain invariants, handle empty/single/duplicate. Brute O(n²) vs optimal O(n) or O(n log n).\n\n| | Brute | Optimal |\n|---|---|---|\n| Time | O(n²) | O(n log n) |\n| Space | O(1) | O(n) |\n\n> **Interview tip:** State brute first, then optimize, walk example [3,1,2] and call out overflow.\n\n```javascript\nfunction solve(arr){\n  // TODO optimal\n  return arr.length;\n}\nconsole.log(solve([3,1,2]));\n```"
+  },
+  {
+    "technology": "dsa",
+    "round": "DSA",
+    "difficulty": "easy",
+    "tags": [
+      "dp",
+      "array",
+      "Amazon"
+    ],
+    "title": "Maximum subarray (Kadane) vs divide-and-conquer — proof of correctness?",
+    "description": "Explain approach, complexity, and edge cases. Provide complexity table and visual steps.",
+    "answer": "**Core concept.** Maximum subarray (Kadane) vs divide-and-conquer is a classic interview signal.\n\n<svg class=\"iq-diagram\" viewBox=\"0 0 820 180\" xmlns=\"http://www.w3.org/2000/svg\"><rect class=\"d-box\" x=\"40\" y=\"30\" width=\"220\" height=\"80\" rx=\"12\"/><text class=\"d-text\" x=\"150\" y=\"55\" text-anchor=\"middle\">Input</text><text class=\"d-sub\" x=\"150\" y=\"75\" text-anchor=\"middle\">n steps</text><rect class=\"d-box-accent\" x=\"300\" y=\"30\" width=\"220\" height=\"80\" rx=\"12\"/><text class=\"d-text\" x=\"410\" y=\"55\" text-anchor=\"middle\">Optimal</text><text class=\"d-sub\" x=\"410\" y=\"75\" text-anchor=\"middle\">O(n log n)</text><rect class=\"d-box\" x=\"560\" y=\"30\" width=\"220\" height=\"80\" rx=\"12\"/><text class=\"d-text\" x=\"670\" y=\"55\" text-anchor=\"middle\">Result</text><text class=\"d-sub\" x=\"670\" y=\"75\" text-anchor=\"middle\">Verified</text></svg>\n\nHow it works — use optimal structure, maintain invariants, handle empty/single/duplicate. Brute O(n²) vs optimal O(n) or O(n log n).\n\n| | Brute | Optimal |\n|---|---|---|\n| Time | O(n²) | O(n log n) |\n| Space | O(1) | O(n) |\n\n> **Interview tip:** State brute first, then optimize, walk example [3,1,2] and call out overflow.\n\n```javascript\nfunction solve(arr){\n  // TODO optimal\n  return arr.length;\n}\nconsole.log(solve([3,1,2]));\n```"
+  }
+]

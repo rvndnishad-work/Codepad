@@ -1,8 +1,9 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState, useEffect, useTransition } from "react";
 import { createPortal } from "react-dom";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   Sparkles,
   Award,
@@ -25,10 +26,12 @@ import {
   Plug,
   ShieldAlert,
   Layers,
+  AlertTriangle,
 } from "lucide-react";
 import { toast } from "sonner";
 import {
   deleteAIInterviewSessionAction,
+  updateExtensionPolicyAction,
   createCreditPackCheckoutAction,
   createCustomTemplateAction,
   deleteCustomTemplateAction,
@@ -36,7 +39,19 @@ import {
   unbindExternalMcpFromTemplateAction,
 } from "./actions";
 import { AI_CREDIT_PACKS } from "@/lib/ai-interview/credits";
+import { getScreeningVerdict } from "@/lib/ai-interview/verdict";
+import type { FileDiff, DiffStats } from "@/lib/ai-interview/diff";
+import dynamic from "next/dynamic";
 import ScreeningWizard from "./ScreeningWizard";
+
+const RunPreview = dynamic(() => import("./RunPreview"), {
+  ssr: false,
+  loading: () => (
+    <div className="rounded-xl border border-border bg-bg h-[420px] flex items-center justify-center text-muted text-xs">
+      <Loader2 className="w-4 h-4 animate-spin mr-2" /> Loading sandbox…
+    </div>
+  ),
+});
 
 export interface TemplateChoice {
   id: string;
@@ -78,6 +93,8 @@ interface RoundSummary {
 interface RecruiterSession {
   id: string;
   inviteToken: string;
+  /** CRM candidate this screening belongs to (null for legacy/practice rows). */
+  candidateId: string | null;
   candidateName: string;
   candidateEmail: string;
   positionTitle: string;
@@ -104,6 +121,18 @@ interface RecruiterSession {
   };
   /** Per-round breakdown (empty for legacy single-round sessions). */
   rounds: RoundSummary[];
+  /** Starter-vs-submitted diffs (null when starter unknown / no submissions). */
+  fileDiffs: FileDiff[] | null;
+  changeStats: DiffStats | null;
+  /** Accumulated seconds the candidate spent in the workspace. */
+  timeSpentSec: number;
+  /** Time-extension policy + usage (candidate's "+N min" button). */
+  extensionPolicy: {
+    extraMinutes: number;
+    used: number;
+    max: number;
+    minutesEach: number;
+  };
 }
 
 export interface PaginationInfo {
@@ -133,6 +162,8 @@ interface ConsoleProps {
   availableExternalMcpServers: ExternalMcpServerOption[];
   workspaceAllowExternalMcp: boolean;
   pagination: PaginationInfo;
+  /** Deep-link filter from the candidate board (?candidate=<id>). */
+  initialCandidateId?: string | null;
 }
 
 export default function AIInterviewRecruiterConsole({
@@ -148,11 +179,34 @@ export default function AIInterviewRecruiterConsole({
   availableExternalMcpServers,
   workspaceAllowExternalMcp,
   pagination,
+  initialCandidateId,
 }: ConsoleProps) {
   const [sessions, setSessions] = useState<RecruiterSession[]>(initialSessions);
-  const [selectedSessionId, setSelectedSessionId] = useState<string | null>(
-    initialSessions.length > 0 ? initialSessions[0].id : null
-  );
+  const router = useRouter();
+
+  // Keep the pipeline live without manual refreshes. Server components re-render
+  // on router.refresh(), picking up sessions that were graded after this page
+  // loaded (candidate submits, or the abandonment cron grades an exited run).
+  // Refresh when the recruiter returns to the tab + a slow poll while open.
+  useEffect(() => {
+    const onFocus = () => {
+      if (document.visibilityState === "visible") router.refresh();
+    };
+    document.addEventListener("visibilitychange", onFocus);
+    const poll = setInterval(() => router.refresh(), 90_000);
+    return () => {
+      document.removeEventListener("visibilitychange", onFocus);
+      clearInterval(poll);
+    };
+  }, [router]);
+  // Deep-link (?candidate=<id>) opens straight onto that candidate's session.
+  const [selectedSessionId, setSelectedSessionId] = useState<string | null>(() => {
+    if (initialCandidateId) {
+      const first = initialSessions.find((s) => s.candidateId === initialCandidateId);
+      if (first) return first.id;
+    }
+    return initialSessions.length > 0 ? initialSessions[0].id : null;
+  });
   const [templateChoices, setTemplateChoices] = useState<TemplateChoice[]>(templates);
 
   // Derived lookup so the candidate list and detail drawer can show readable
@@ -167,6 +221,12 @@ export default function AIInterviewRecruiterConsole({
   const [search, setSearch] = useState("");
   const [filterStatus, setFilterStatus] = useState<string>("ALL");
   const [filterBatch, setFilterBatch] = useState<string>("ALL");
+  // Candidate deep-link (from the candidate activity board). Pre-filtered so
+  // the recruiter lands on exactly this candidate's screenings.
+  const [filterCandidate, setFilterCandidate] = useState<string>(
+    initialCandidateId ?? "ALL"
+  );
+  const filteredCandidateName = candidates.find((c) => c.id === filterCandidate)?.name;
 
   // Distinct batches present in the loaded sessions (for the batch filter).
   const batchOptions = Array.from(
@@ -199,7 +259,9 @@ export default function AIInterviewRecruiterConsole({
 
       const matchBatch = filterBatch === "ALL" || s.batchId === filterBatch;
       const matchStatus = filterStatus === "ALL" || s.status === filterStatus;
-      return matchSearch && matchBatch && matchStatus;
+      const matchCandidate =
+        filterCandidate === "ALL" || s.candidateId === filterCandidate;
+      return matchSearch && matchBatch && matchStatus && matchCandidate;
     })
     .sort((a, b) => {
       if (a.status === "COMPLETED" && b.status !== "COMPLETED") return -1;
@@ -225,7 +287,24 @@ export default function AIInterviewRecruiterConsole({
 
   const getCandidateBadge = (session: RecruiterSession) => {
     if (session.status !== "COMPLETED") return null;
+
+    // ABSOLUTE verdict first — being #1 of a weak batch means nothing at 10%.
+    // Relative crowns below only apply once the score clears the hiring bar.
+    const verdict = getScreeningVerdict(session.score);
     const rankIndex = rankPoolFor(session).findIndex((s) => s.id === session.id);
+
+    if (verdict && !verdict.passed) {
+      return (
+        <span
+          className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-widest border ${verdict.className}`}
+          title={verdict.guidance}
+        >
+          <AlertTriangle className="w-3 h-3" />
+          {verdict.label} · {session.score ?? 0}%
+        </span>
+      );
+    }
+
     if (rankIndex === 0) {
       return (
         <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-widest text-emerald-400 bg-emerald-500/10 border border-emerald-500/30 shadow-[0_0_15px_rgba(16,185,129,0.15)] animate-pulse">
@@ -258,6 +337,7 @@ export default function AIInterviewRecruiterConsole({
     const mapped: RecruiterSession[] = newSessions.map((s) => ({
       id: s.id,
       inviteToken: s.inviteToken,
+      candidateId: null, // fresh batch rows get their CRM link on next load
       candidateName: s.candidateName,
       candidateEmail: "",
       positionTitle,
@@ -275,6 +355,10 @@ export default function AIInterviewRecruiterConsole({
       finishedAt: null,
       chatHistory: [],
       filesJson: {},
+      fileDiffs: null,
+      changeStats: null,
+      timeSpentSec: 0,
+      extensionPolicy: { extraMinutes: 0, used: 0, max: 1, minutesEach: 5 },
       ratings: { CodeQuality: 0, ProblemSolving: 0, Communication: 0 },
       rounds: [],
     }));
@@ -497,12 +581,12 @@ export default function AIInterviewRecruiterConsole({
               />
             </div>
 
-            <div className="flex gap-1.5">
+            <div className="flex gap-1.5 overflow-x-auto">
               {["ALL", "COMPLETED", "ACTIVE", "PENDING"].map((status) => (
                 <button
                   key={status}
                   onClick={() => setFilterStatus(status)}
-                  className={`flex-1 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wider border transition-all ${
+                  className={`flex-1 whitespace-nowrap px-1 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-wider border transition-all cursor-pointer ${
                     filterStatus === status
                       ? "bg-accent/15 border-accent/30 text-accent"
                       : "bg-bg border-border/40 text-muted hover:text-fg"
@@ -527,6 +611,24 @@ export default function AIInterviewRecruiterConsole({
                   </option>
                 ))}
               </select>
+            )}
+
+            {/* Candidate deep-link chip (arrives via ?candidate=<id> from the
+                candidate activity board). Dismiss to see everyone. */}
+            {filterCandidate !== "ALL" && (
+              <div className="flex items-center justify-between gap-2 px-3 py-2 rounded-lg border border-accent/30 bg-accent/10 text-[11px] font-bold text-accent">
+                <span className="truncate">
+                  Filtered: {filteredCandidateName ?? "candidate"}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setFilterCandidate("ALL")}
+                  className="shrink-0 hover:text-fg transition-colors cursor-pointer"
+                  title="Clear candidate filter"
+                >
+                  ✕
+                </button>
+              </div>
             )}
           </div>
 
@@ -641,6 +743,16 @@ export default function AIInterviewRecruiterConsole({
                     <span className="font-bold text-fg">{activeSession.positionTitle}</span>
                     <span className="text-muted/30">•</span>
                     <span className="font-mono">{activeSession.candidateEmail}</span>
+                    <span className="text-muted/30">•</span>
+                    <span
+                      className="tabular-nums"
+                      title="Accumulated time the candidate spent in the interview workspace"
+                    >
+                      ⏱ {formatMinutes(activeSession.timeSpentSec)} spent
+                      {activeSession.extensionPolicy.extraMinutes > 0 && (
+                        <> · +{activeSession.extensionPolicy.extraMinutes}m extended</>
+                      )}
+                    </span>
                   </div>
                 </div>
 
@@ -656,10 +768,18 @@ export default function AIInterviewRecruiterConsole({
                 </div>
               </div>
 
+              {/* Time-extension policy — recruiter decides how many times and
+                  how many minutes the candidate may self-extend. */}
+              {activeSession.status !== "COMPLETED" && (
+                <ExtensionPolicyEditor session={activeSession} workspaceSlug={workspaceSlug} />
+              )}
+
               {activeSession.status === "COMPLETED" ? (
                 <div className="space-y-6">
-                  <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-center">
-                    <div className="md:col-span-1 p-4 rounded-2xl bg-bg border border-border text-center flex flex-col justify-center items-center h-full">
+                  {/* 2/2 split — the old 1/3 starved the score tile and forced
+                      its badges into vertical letter-stacks. */}
+                  <div className="grid grid-cols-1 md:grid-cols-5 gap-4 items-center">
+                    <div className="md:col-span-2 p-4 rounded-2xl bg-bg border border-border text-center flex flex-col justify-center items-center h-full min-w-0">
                       <div className="text-[10px] font-black uppercase text-muted tracking-wider mb-2">Composite Score</div>
                       <div
                         className={`text-4xl font-black tracking-tight ${
@@ -673,6 +793,17 @@ export default function AIInterviewRecruiterConsole({
                         {activeSession.score}%
                       </div>
                       <span className="text-[9px] text-muted/60 mt-1 block">AI Weighted Rubric</span>
+                      {(() => {
+                        const v = getScreeningVerdict(activeSession.score);
+                        return v ? (
+                          <span
+                            className={`mt-2 inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[9px] font-black uppercase tracking-widest border ${v.className}`}
+                            title={v.guidance}
+                          >
+                            {v.label}
+                          </span>
+                        ) : null;
+                      })()}
                       {activeSession.aiSuspicionScore !== null && (
                         <SuspicionBadge score={activeSession.aiSuspicionScore} />
                       )}
@@ -687,7 +818,7 @@ export default function AIInterviewRecruiterConsole({
                       )}
                     </div>
 
-                    <div className="md:col-span-3 space-y-3.5 bg-bg/40 border border-border p-4 rounded-2xl">
+                    <div className="md:col-span-3 space-y-3.5 bg-bg/40 border border-border p-4 rounded-2xl min-w-0">
                       <RatingBar
                         icon={<FileCode className="w-3.5 h-3.5" />}
                         label="Code Architecture"
@@ -779,30 +910,7 @@ export default function AIInterviewRecruiterConsole({
                     )}
 
                     {Object.keys(activeSession.filesJson).length > 0 && (
-                      <details className="rounded-2xl border border-border bg-bg overflow-hidden group">
-                        <summary className="px-5 py-3 cursor-pointer flex items-center justify-between bg-elevated/30 hover:bg-elevated/50 transition list-none">
-                          <span className="text-xs font-bold text-fg flex items-center gap-2">
-                            <FileCode className="w-4 h-4 text-violet-400" /> Review Submitted Workspace Files ({Object.keys(activeSession.filesJson).length})
-                          </span>
-                          <span className="text-[10px] text-muted group-open:rotate-90 transition">❯</span>
-                        </summary>
-                        <div className="p-4 border-t border-border bg-surface max-h-[400px] overflow-y-auto space-y-4">
-                          {Object.entries(activeSession.filesJson).map(([path, code]) => (
-                            <div key={path} className="space-y-1.5">
-                              <div className="text-[10px] font-mono font-bold text-fg bg-bg px-3 py-1.5 rounded-lg border border-border flex justify-between items-center">
-                                <span className="flex items-center gap-1.5">
-                                  <FolderOpen className="w-3.5 h-3.5 text-violet-400" />
-                                  {path}
-                                </span>
-                                <span className="text-muted/65 text-[9px]">{code.split(/\r?\n/).length} lines</span>
-                              </div>
-                              <pre className="text-[10px] font-mono text-muted/90 bg-bg/80 p-3 overflow-x-auto leading-relaxed rounded-xl max-h-[220px] border border-border/20">
-                                {code || "(empty)"}
-                              </pre>
-                            </div>
-                          ))}
-                        </div>
-                      </details>
+                      <SubmittedWorkReview session={activeSession} />
                     )}
                   </div>
                 </div>
@@ -1168,7 +1276,7 @@ function CustomTemplatesModal({
 
             <div className="space-y-1.5">
               <label className="text-[10px] font-black uppercase text-muted tracking-wider block">
-                Description (shown to candidate as the AI Interviewer's framing)
+                Description (shown to candidate as the AI Interviewer&apos;s framing)
               </label>
               <textarea
                 value={description}
@@ -1340,14 +1448,16 @@ function SuspicionBadge({ score }: { score: number }) {
     med: "text-amber-300 bg-amber-500/15 border-amber-500/30",
     low: "text-emerald-300/80 bg-emerald-500/10 border-emerald-500/25",
   }[tier];
+  // Short labels — the long forms wrapped into vertical letter-stacks inside
+  // the narrow composite-score tile.
   const label = {
-    high: "High AI-cheat risk",
-    med: "Some integrity flags",
-    low: "Integrity clean",
+    high: "Cheat risk",
+    med: "Flags",
+    low: "Clean",
   }[tier];
   return (
     <span
-      className={`mt-2 inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-widest border ${cls}`}
+      className={`mt-2 inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider border whitespace-nowrap max-w-full ${cls}`}
       title={`Integrity suspicion: ${score}/100 (heuristic from paste/blur events)`}
     >
       {label}
@@ -1572,5 +1682,286 @@ function Clock({ className }: { className?: string }) {
       <circle cx="12" cy="12" r="10" />
       <polyline points="12 6 12 12 16 14" />
     </svg>
+  );
+}
+
+/** Compact human duration for the time-spent readout. */
+function formatMinutes(sec: number | null | undefined): string {
+  const m = Math.max(0, Math.round((sec ?? 0) / 60));
+  if (m < 60) return `${m}m`;
+  return `${Math.floor(m / 60)}h ${m % 60}m`;
+}
+
+/**
+ * Recruiter review surface for a candidate's submitted workspace.
+ *
+ * Three views:
+ *   - Diff (default): starter-vs-submitted unified diff — shows EXACTLY what
+ *     the candidate authored. Mirrors what the grader consumed, so the score
+ *     is auditable against visible changes.
+ *   - Code: raw final files (legacy view).
+ *   - Run: live Sandpack execution of the submitted code.
+ */
+function SubmittedWorkReview({ session }: { session: RecruiterSession }) {
+  const [view, setView] = useState<"diff" | "code" | "run">("diff");
+  const diffs = session.fileDiffs;
+  const stats = session.changeStats;
+  const hasDiffData = !!diffs && diffs.length > 0;
+
+  return (
+    <details className="rounded-2xl border border-border bg-bg overflow-hidden group" open>
+      <summary className="px-5 py-3 cursor-pointer flex items-center justify-between bg-elevated/30 hover:bg-elevated/50 transition list-none">
+        <span className="text-xs font-bold text-fg flex items-center gap-2">
+          <FileCode className="w-4 h-4 text-violet-400" />
+          Review Submitted Workspace Files ({Object.keys(session.filesJson).length})
+          {stats && stats.filesChanged > 0 && (
+            <span
+              className={`ml-2 inline-flex items-center px-2 py-0.5 rounded-md border text-[9px] font-black uppercase tracking-wider ${
+                stats.addedLines === 0
+                  ? "text-rose-400 bg-rose-500/[0.08] border-rose-500/25"
+                  : "text-emerald-400 bg-emerald-500/[0.08] border-emerald-500/25"
+              }`}
+            >
+              {stats.filesChanged} changed · +{stats.addedLines} −{stats.removedLines}
+            </span>
+          )}
+          {stats && stats.filesChanged === 0 && (
+            <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded-md border text-[9px] font-black uppercase tracking-wider text-rose-400 bg-rose-500/[0.08] border-rose-500/25">
+              No code written
+            </span>
+          )}
+        </span>
+        <span className="text-[10px] text-muted group-open:rotate-90 transition">❯</span>
+      </summary>
+
+      {/* View toggle */}
+      <div className="px-4 pt-3 flex items-center gap-1.5 border-t border-border bg-surface">
+        {([
+          { key: "diff", label: `Diff vs starter${hasDiffData ? "" : " (n/a)"}`, disabled: !hasDiffData },
+          { key: "code", label: "Final code", disabled: false },
+          { key: "run", label: "Run it", disabled: false },
+        ] as const).map(({ key, label, disabled }) => (
+          <button
+            key={key}
+            type="button"
+            onClick={() => !disabled && setView(key)}
+            disabled={disabled}
+            className={`px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wider border transition cursor-pointer ${
+              view === key
+                ? "bg-accent/15 border-accent/40 text-accent"
+                : disabled
+                ? "bg-bg border-border/30 text-muted/30 cursor-not-allowed"
+                : "bg-bg border-border/40 text-muted hover:text-fg"
+            }`}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+
+      <div className="p-4 border-t border-border bg-surface max-h-[480px] overflow-y-auto space-y-4">
+        {view === "run" ? (
+          <RunPreview files={session.filesJson} />
+        ) : view === "code" ? (
+          Object.entries(session.filesJson).map(([path, code]) => (
+            <div key={path} className="space-y-1.5">
+              <div className="text-[10px] font-mono font-bold text-fg bg-bg px-3 py-1.5 rounded-lg border border-border flex justify-between items-center">
+                <span className="flex items-center gap-1.5">
+                  <FolderOpen className="w-3.5 h-3.5 text-violet-400" />
+                  {path}
+                </span>
+                <span className="text-muted/65 text-[9px]">{code.split(/\r?\n/).length} lines</span>
+              </div>
+              <pre className="text-[10px] font-mono text-muted/90 bg-bg/80 p-3 overflow-x-auto leading-relaxed rounded-xl max-h-[260px] border border-border/20">
+                {code || "(empty)"}
+              </pre>
+            </div>
+          ))
+        ) : hasDiffData ? (
+          <>
+            {stats && (
+              <p className="text-[11px] text-muted">
+                Candidate changes vs starter template:{" "}
+                <span className="font-bold text-fg">{stats.filesChanged}</span> file(s) changed,{" "}
+                <span className="font-bold text-emerald-400">+{stats.addedLines}</span> /{" "}
+                <span className="font-bold text-rose-400">−{stats.removedLines}</span> lines. Grading
+                is based on exactly this diff.
+              </p>
+            )}
+            {(diffs ?? [])
+              .filter((d) => d.added.length > 0 || d.removed.length > 0)
+              .map((d) => (
+                <FileDiffCard key={d.path} diff={d} />
+              ))}
+          </>
+        ) : (
+          <p className="text-xs text-muted p-4 text-center">
+            Starter template unknown for this session — showing raw files instead. Use the
+            &ldquo;Final code&rdquo; view.
+          </p>
+        )}
+      </div>
+    </details>
+  );
+}
+
+/** One file's colored unified diff. */
+function FileDiffCard({ diff }: { diff: FileDiff }) {
+  const MAX_LINES = 200;
+
+  if (diff.isDeleted) {
+    return (
+      <div className="space-y-1.5">
+        <div className="text-[10px] font-mono font-bold text-rose-400 bg-bg px-3 py-1.5 rounded-lg border border-border flex items-center gap-1.5">
+          <FolderOpen className="w-3.5 h-3.5" /> {diff.path}
+          <span className="ml-auto text-[9px] uppercase tracking-wider">deleted by candidate</span>
+        </div>
+      </div>
+    );
+  }
+
+  const lines: { sign: "+" | "-" | " "; text: string }[] = [];
+  if (diff.isNew) {
+    for (const l of diff.added.slice(0, MAX_LINES)) lines.push({ sign: "+", text: l });
+  } else {
+    // Interleave removed then added per file (simple unified order).
+    for (const l of diff.removed.slice(0, MAX_LINES)) lines.push({ sign: "-", text: l });
+    for (const l of diff.added.slice(0, MAX_LINES)) lines.push({ sign: "+", text: l });
+  }
+
+  return (
+    <div className="space-y-1.5">
+      <div className="text-[10px] font-mono font-bold text-fg bg-bg px-3 py-1.5 rounded-lg border border-border flex justify-between items-center">
+        <span className="flex items-center gap-1.5">
+          <FolderOpen className={`w-3.5 h-3.5 ${diff.isNew ? "text-emerald-400" : "text-violet-400"}`} />
+          {diff.path}
+        </span>
+        <span className="flex items-center gap-2 text-[9px]">
+          {diff.isNew ? (
+            <span className="text-emerald-400 font-black uppercase tracking-wider">new file</span>
+          ) : (
+            <>
+              <span className="text-emerald-400">+{diff.added.length}</span>
+              <span className="text-rose-400">−{diff.removed.length}</span>
+            </>
+          )}
+        </span>
+      </div>
+      <div className="rounded-xl border border-border/20 bg-bg/80 p-3 max-h-[300px] overflow-auto">
+        {lines.length === 0 ? (
+          <p className="text-[10px] text-muted italic">No changes in this file.</p>
+        ) : (
+          <pre className="text-[10px] font-mono leading-relaxed">
+            {lines.map((l, i) => (
+              <div
+                key={i}
+                className={`px-2 py-px whitespace-pre-wrap break-all ${
+                  l.sign === "+"
+                    ? "bg-emerald-500/[0.08] text-emerald-300"
+                    : l.sign === "-"
+                    ? "bg-rose-500/[0.08] text-rose-300"
+                    : "text-muted/70"
+                }`}
+              >
+                <span className="select-none opacity-60 mr-2">{l.sign}</span>
+                {l.text || " "}
+              </div>
+            ))}
+            {((diff.isNew ? diff.added.length : diff.added.length + diff.removed.length) > MAX_LINES) && (
+              <div className="px-2 pt-1 text-muted/60 italic">…[truncated]</div>
+            )}
+          </pre>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/**
+ * Recruiter control for a session's time-extension policy: how many times the
+ * candidate may self-extend and how many minutes each extension grants.
+ * Persists via updateExtensionPolicyAction; takes effect immediately on the
+ * candidate's workspace.
+ */
+function ExtensionPolicyEditor({
+  session,
+  workspaceSlug,
+}: {
+  session: RecruiterSession;
+  workspaceSlug: string;
+}) {
+  const [maxExt, setMaxExt] = useState(session.extensionPolicy.max);
+  const [minEach, setMinEach] = useState(session.extensionPolicy.minutesEach);
+  const [savedMax, setSavedMax] = useState(session.extensionPolicy.max);
+  const [savedMin, setSavedMin] = useState(session.extensionPolicy.minutesEach);
+  const [isPending, startTransition] = useTransition();
+
+  const dirty = maxExt !== savedMax || minEach !== savedMin;
+
+  const save = () => {
+    startTransition(async () => {
+      try {
+        const res = await updateExtensionPolicyAction(workspaceSlug, {
+          sessionId: session.id,
+          maxExtensions: maxExt,
+          extensionMinutes: minEach,
+        });
+        setSavedMax(res.maxExtensions);
+        setSavedMin(res.extensionMinutes);
+        toast.success(`Extension policy updated — candidate gets ${res.maxExtensions} × ${res.extensionMinutes}m`);
+      } catch (err) {
+        toast.error(err instanceof Error ? err.message : "Failed to update policy");
+      }
+    });
+  };
+
+  return (
+    <div className="rounded-xl border border-border bg-panel/50 p-3 flex flex-wrap items-end gap-3">
+      <div className="space-y-1">
+        <span className="text-[9px] font-black uppercase tracking-widest text-muted block">
+          Candidate extensions allowed
+        </span>
+        <input
+          type="number"
+          min={0}
+          max={5}
+          value={maxExt}
+          onChange={(e) => setMaxExt(Number(e.target.value))}
+          className="w-20 px-2.5 py-1.5 rounded-lg border border-border bg-bg text-xs text-fg tabular-nums focus:outline-none focus:border-accent"
+          title="How many times the candidate may extend"
+        />
+      </div>
+      <div className="space-y-1">
+        <span className="text-[9px] font-black uppercase tracking-widest text-muted block">
+          Minutes per extension
+        </span>
+        <input
+          type="number"
+          min={1}
+          max={60}
+          value={minEach}
+          onChange={(e) => setMinEach(Number(e.target.value))}
+          className="w-20 px-2.5 py-1.5 rounded-lg border border-border bg-bg text-xs text-fg tabular-nums focus:outline-none focus:border-accent"
+          title="Minutes granted per extension"
+        />
+      </div>
+      <button
+        type="button"
+        onClick={save}
+        disabled={!dirty || isPending}
+        className={`px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wider transition ${
+          dirty && !isPending
+            ? "bg-accent text-bg hover:bg-accent-soft cursor-pointer"
+            : "bg-surface text-muted border border-border cursor-not-allowed opacity-60"
+        }`}
+      >
+        {isPending ? "Saving…" : dirty ? "Save policy" : "Saved"}
+      </button>
+
+      {/* Usage readout */}
+      <span className="ml-auto text-[10px] font-bold text-muted tabular-nums">
+        Used: {session.extensionPolicy.used}/{savedMax} · granted {session.extensionPolicy.extraMinutes}m
+      </span>
+    </div>
   );
 }

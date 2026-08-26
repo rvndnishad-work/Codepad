@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { AI_INTERVIEW_GEMINI_MODEL } from "@/lib/ai-interview/scaffolds";
 import { resolveSessionRounds, type SessionRound } from "@/lib/ai-interview/rounds";
 import { resolveRoundsContent } from "@/lib/ai-interview/round-content";
 import {
@@ -8,6 +7,17 @@ import {
   InsufficientCreditsError,
 } from "@/lib/ai-interview/credits";
 import { checkFilesSize } from "@/lib/ai-interview/files-size";
+import {
+  callGemini,
+  extractText,
+  geminiApiKey,
+  GeminiUnavailableError,
+  type GeminiContent,
+  type GeminiPart,
+} from "@/lib/ai-interview/gemini";
+import { getAgentConfig } from "@/lib/agents/config";
+import { DEFAULT_AGENTS } from "@/lib/agents/defaults";
+import { renderPrompt } from "@/lib/agents/types";
 import { rateLimit } from "@/lib/rate-limit";
 import {
   loadActiveExternalServers,
@@ -21,7 +31,6 @@ import {
   OUTBOUND_MAX_TOTAL_MS,
   type ResolvedTools,
   type ToolsCache,
-  type GeminiFunctionDeclaration,
 } from "@/lib/mcp/outbound-tools";
 
 /**
@@ -30,6 +39,14 @@ import {
  */
 const MAX_USER_MESSAGES_PER_SESSION = 60;
 const MIN_INTERVAL_MS = 1500;
+
+/**
+ * How much of the stored conversation is replayed to Gemini each turn. The DB
+ * keeps the full transcript (for grading + audit) but token cost per turn
+ * grows linearly with history — past this window, old turns stop earning
+ * their keep. 50 turns ≈ the whole realistic interview anyway.
+ */
+const MAX_HISTORY_SENT_TO_MODEL = 50;
 
 /**
  * Hard ceiling on Gemini ↔ tool-use loop iterations per turn. Without this,
@@ -43,55 +60,12 @@ type Message = {
   text: string;
 };
 
-/**
- * One content entry in Gemini's `contents` array. We model it loose because
- * the part objects can be `{text}` OR `{functionCall}` OR `{functionResponse}`
- * across the tool-use loop.
- */
-type GeminiPart =
-  | { text: string }
-  | { functionCall: { name: string; args?: unknown } }
-  | { functionResponse: { name: string; response: { content?: string; error?: string } } };
-
-type GeminiContent = { role: "user" | "model"; parts: GeminiPart[] };
-
-/**
- * Single-shot Gemini call. Returns the raw candidate so the caller can inspect
- * function-call vs text parts. `tools` is optional — pass declarations to
- * enable function calling; omit for plain text generation.
- */
-async function callGemini(params: {
-  apiKey: string;
-  contents: GeminiContent[];
-  systemInstruction: string;
-  tools?: GeminiFunctionDeclaration[];
-}): Promise<{ parts: GeminiPart[] }> {
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/${AI_INTERVIEW_GEMINI_MODEL}:generateContent?key=${params.apiKey}`;
-
-  const body: Record<string, unknown> = {
-    contents: params.contents,
-    systemInstruction: { parts: [{ text: params.systemInstruction }] },
-    generationConfig: { maxOutputTokens: 800, temperature: 0.7 },
-  };
-  if (params.tools && params.tools.length > 0) {
-    body.tools = [{ functionDeclarations: params.tools }];
-  }
-
-  const res = await fetch(url, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(body),
-  });
-  if (!res.ok) {
-    throw new Error(`Gemini HTTP error ${res.status}`);
-  }
-  const data = await res.json();
-  const parts = data.candidates?.[0]?.content?.parts;
-  if (!Array.isArray(parts) || parts.length === 0) {
-    throw new Error("Empty response from Gemini");
-  }
-  return { parts: parts as GeminiPart[] };
-}
+/** Model settings resolved from the agent config, forwarded to Gemini. */
+type AgentModelSettings = {
+  model: string | null;
+  temperature: number;
+  maxOutputTokens: number;
+};
 
 /**
  * Tool-use loop. Calls Gemini; if the model emits functionCalls, dispatch
@@ -109,6 +83,7 @@ async function runToolUseLoop(params: {
   resolved: ResolvedTools;
   sessionId: string;
   workspaceId: string;
+  agentModel: AgentModelSettings;
 }): Promise<{ text: string; toolCallsThisTurn: string[]; bytesAdded: number; msAdded: number }> {
   let iter = 0;
   const toolCallsThisTurn: string[] = [];
@@ -121,6 +96,9 @@ async function runToolUseLoop(params: {
       contents: params.contents,
       systemInstruction: params.systemInstruction,
       tools: params.resolved.declarations,
+      model: params.agentModel.model,
+      temperature: params.agentModel.temperature,
+      maxOutputTokens: params.agentModel.maxOutputTokens,
     });
 
     const fnCalls = candidate.parts.filter(
@@ -129,11 +107,8 @@ async function runToolUseLoop(params: {
 
     if (fnCalls.length === 0) {
       // Final text response — concatenate any text parts and return.
-      const text = candidate.parts
-        .map((p) => ("text" in p ? p.text : ""))
-        .filter(Boolean)
-        .join("");
-      if (!text.trim()) throw new Error("Empty text response from Gemini");
+      const text = extractText(candidate.parts);
+      if (!text.trim()) throw new GeminiUnavailableError("Empty text response from Gemini");
       return {
         text,
         toolCallsThisTurn,
@@ -251,24 +226,28 @@ async function runToolUseLoop(params: {
 }
 
 /**
- * Plain text-only call for the non-tool-using path. Same shape as before
- * Phase 4.1 so the mock-agent fallback can pretend nothing changed.
+ * Plain text-only call for the non-tool-using path.
  */
 async function callGeminiTextOnly(
   apiKey: string,
   history: Message[],
-  systemInstruction: string
+  systemInstruction: string,
+  agentModel: AgentModelSettings
 ): Promise<string> {
   const contents: GeminiContent[] = history.map((msg) => ({
     role: msg.role === "assistant" ? "model" : "user",
     parts: [{ text: msg.text }],
   }));
-  const result = await callGemini({ apiKey, contents, systemInstruction });
-  const text = result.parts
-    .map((p) => ("text" in p ? p.text : ""))
-    .filter(Boolean)
-    .join("");
-  if (!text) throw new Error("Empty response from Gemini");
+  const result = await callGemini({
+    apiKey,
+    contents,
+    systemInstruction,
+    model: agentModel.model,
+    temperature: agentModel.temperature,
+    maxOutputTokens: agentModel.maxOutputTokens,
+  });
+  const text = extractText(result.parts);
+  if (!text) throw new GeminiUnavailableError("Empty response from Gemini");
   return text;
 }
 
@@ -485,7 +464,7 @@ export async function POST(req: NextRequest) {
     // elapses, no further chat turns; the client gets a clear signal to submit.
     const totalMinutes = sessionRounds.reduce((s, r) => s + (r.estimatedMinutes || 0), 0) || 30;
     const deadline = session.startedAt
-      ? new Date(new Date(session.startedAt).getTime() + totalMinutes * 60_000 + 30_000)
+      ? new Date(new Date(session.startedAt).getTime() + (totalMinutes + (session.extraMinutes ?? 0)) * 60_000 + 30_000)
       : null;
     if (deadline && Date.now() > deadline.getTime()) {
       return NextResponse.json(
@@ -595,6 +574,22 @@ export async function POST(req: NextRequest) {
       }
     }
 
+    // Snapshot-first: backfill starterFilesJson if this session/round predates snapshots.
+    // The first save freezes the baseline so grading never re-resolves drifted templates.
+    try {
+      const rawRound = (session.rounds ?? []).find((rr) => rr.id === activeRound.id) as unknown as { starterFilesJson?: string | null } | undefined;
+      const needsRoundSnap = rawRound && !rawRound.starterFilesJson;
+      const needsSessSnap = activeRound.legacy && !(session as unknown as { starterFilesJson?: string | null }).starterFilesJson;
+      if (needsRoundSnap || needsSessSnap) {
+        const _tmpContent = (await resolveRoundsContent([activeRound], session.workspaceId).catch(() => []))[0];
+        if (_tmpContent?.starterFiles && Object.keys(_tmpContent.starterFiles).length > 0) {
+          const snap = JSON.stringify(_tmpContent.starterFiles);
+          if (needsRoundSnap) await prisma.aIInterviewRound.update({ where: { id: activeRound.id }, data: { starterFilesJson: snap } });
+          if (needsSessSnap) await prisma.aIInterviewSession.update({ where: { id: session.id }, data: { starterFilesJson: snap } });
+        }
+      }
+    } catch { /* backfill best-effort only */ }
+
     // Resolve the ACTIVE round's content so the interviewer knows the real
     // problem + tech stack and tailors questions to it (not the session id).
     const roundContent = (
@@ -617,16 +612,21 @@ export async function POST(req: NextRequest) {
         ? `\nThis is round ${activeRound.order + 1} of ${sessionRounds.length}. Focus on THIS round's task; if the candidate just switched rounds, briefly acknowledge it.`
         : "";
 
-    let systemInstruction = `You are the Interviewpad AI Technical Interviewer conducting a live coding interview for the position of "${session.positionTitle}".
-
-Task: ${roundContent?.title ?? session.positionTitle}
-${roundContent?.description ? `Brief: ${roundContent.description}\n` : ""}${stackLine}${roundLine}
-
-Guidelines:
-1. Be encouraging but professional and rigorous.
-2. Guide them using hints, but never write full solutions directly.
-3. If they describe code, check if their active files (${truncateFilesForPrompt(files)}) match their claims.
-4. Keep answers concise (around 100-150 words) and relevant to the task's stack.`;
+    // Configurable interviewer persona: workspace override → platform default
+    // → code default (defaults.ts, extracted verbatim from the old inline
+    // string). Everything dynamic is injected as {{vars}}.
+    const agent = await getAgentConfig("INTERVIEWER", session.workspaceId);
+    let systemInstruction = renderPrompt(
+      agent.systemPrompt || DEFAULT_AGENTS.INTERVIEWER.systemPrompt,
+      {
+        positionTitle: session.positionTitle,
+        taskTitle: roundContent?.title ?? session.positionTitle,
+        taskBrief: roundContent?.description ? `Brief: ${roundContent.description}\n` : "",
+        stackLine,
+        roundLine,
+        filesJson: truncateFilesForPrompt(files),
+      }
+    );
     // For backend/DSA rounds, give the interviewer the candidate's most recent
     // execution output so it can evaluate real results, not just the code.
     if ((kind === "backend" || kind === "dsa") && lastRun && (lastRun.stdout || lastRun.stderr)) {
@@ -641,15 +641,26 @@ Guidelines:
       systemInstruction += "\n\n" + REFERENCE_DATA_SYSTEM_NOTE;
     }
 
-    const apiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY;
+    const apiKey = geminiApiKey();
     let aiResponse = "";
     let toolCallsThisTurn: string[] = [];
+    // Honest provenance for the client: "gemini" means a real model reply,
+    // "mock" means the offline rules engine answered (upstream down, key
+    // missing, or empty response). The UI surfaces this as a status chip +
+    // banner instead of silently pretending the AI is fine.
+    let aiProvider: "gemini" | "mock" = "gemini";
+    let degradedReason: string | null = null;
 
     if (apiKey) {
+      // Replay only the recent window to the model — full transcript stays in
+      // the DB for grading/audit.
+      const recentHistory = history.slice(-MAX_HISTORY_SENT_TO_MODEL);
+      // Agent config drives model/temperature/token budget per workspace.
+      const agentModel = { model: agent.model, temperature: agent.temperature, maxOutputTokens: agent.maxOutputTokens };
       try {
         if (resolved) {
           // Tool-use loop path.
-          const contents: GeminiContent[] = history.map((msg) => ({
+          const contents: GeminiContent[] = recentHistory.map((msg) => ({
             role: msg.role === "assistant" ? "model" : "user",
             parts: [{ text: msg.text }],
           }));
@@ -660,18 +671,27 @@ Guidelines:
             resolved,
             sessionId: session.id,
             workspaceId: session.workspaceId,
+            agentModel,
           });
           aiResponse = loopResult.text;
           toolCallsThisTurn = loopResult.toolCallsThisTurn;
         } else {
-          // Plain path — unchanged from pre-Phase-4.1.
-          aiResponse = await callGeminiTextOnly(apiKey, history, systemInstruction);
+          // Plain path.
+          aiResponse = await callGeminiTextOnly(apiKey, recentHistory, systemInstruction, agentModel);
         }
       } catch (err) {
-        console.error("Gemini failed, falling back to mock agent:", err);
+        const detail =
+          err instanceof GeminiUnavailableError
+            ? `gemini unavailable (${err.message})`
+            : "unexpected error";
+        console.error(`[ai-interview] Gemini failed, degrading to mock agent: ${detail}`);
+        aiProvider = "mock";
+        degradedReason = err instanceof GeminiUnavailableError ? "upstream_unavailable" : "upstream_error";
         aiResponse = callMockAgent(message, files, history.length, session.templateId);
       }
     } else {
+      aiProvider = "mock";
+      degradedReason = "not_configured";
       aiResponse = callMockAgent(message, files, history.length, session.templateId);
     }
 
@@ -716,6 +736,9 @@ Guidelines:
     return NextResponse.json({
       chatHistory: history,
       response: aiResponse,
+      aiProvider,
+      degraded: aiProvider === "mock",
+      degradedReason,
     });
   } catch (error) {
     console.error("AI message error:", error);
@@ -726,11 +749,32 @@ Guidelines:
 /**
  * Bound the files payload sent to Gemini per turn. Without this, every chat
  * message ships the entire workspace inside the system prompt — token cost
- * grows linearly with code size. Cap at ~6KB.
+ * grows linearly with code size. Cap at ~6KB with safe valid JSON formatting.
  */
-function truncateFilesForPrompt(files: Record<string, string>): string {
-  const MAX_CHARS = 6000;
-  const json = JSON.stringify(files);
-  if (json.length <= MAX_CHARS) return json;
-  return json.slice(0, MAX_CHARS) + '..."<truncated>"}';
+function truncateFilesForPrompt(files: Record<string, string>, maxTotalChars = 6000): string {
+  if (!files || typeof files !== "object") return "{}";
+  const entries = Object.entries(files);
+  if (entries.length === 0) return "{}";
+
+  const safe: Record<string, string> = {};
+  const maxPerFile = Math.max(500, Math.floor(maxTotalChars / entries.length));
+
+  for (const [path, content] of entries) {
+    if (typeof content !== "string") continue;
+    if (content.length > maxPerFile) {
+      safe[path] = content.slice(0, maxPerFile) + "\n/* ...[truncated for prompt brevity] */";
+    } else {
+      safe[path] = content;
+    }
+  }
+
+  const json = JSON.stringify(safe);
+  if (json.length <= maxTotalChars) return json;
+
+  // Fallback: retain path keys and short previews if still oversized
+  const minimal: Record<string, string> = {};
+  for (const [path, content] of entries) {
+    minimal[path] = typeof content === "string" ? content.slice(0, 200) + "..." : "";
+  }
+  return JSON.stringify(minimal);
 }

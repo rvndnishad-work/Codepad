@@ -4,13 +4,21 @@ import { staffCan } from "@/lib/permissions/staff";
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 import { ensureSystemAdminWorkspace } from "@/lib/admin-system-workspace";
+import {
+  ADMIN_HELPER_TOOLS,
+  PROPOSABLE_ACTION_TYPES,
+  type ProposableActionType,
+} from "@/lib/agents/registry";
+import { getAgentConfig } from "@/lib/agents/config";
 
 /**
  * Default to a free-tier Gemma model so admin/day-to-day usage stays out of
  * the paid-Gemini budget. The full per-request model selector below lets the
  * admin flip to Gemini Flash if Gemma is rate-limited; live candidate
- * interviews continue to run on the credit-based Gemini Pro path in
- * src/lib/ai-interview/scaffolds.ts (untouched).
+ * interviews continue on the credit-based path (untouched).
+ *
+ * An AgentConfig row for ADMIN_HELPER can override the default model via its
+ * `model` field (still gated by ALLOWED_MODELS).
  *
  * Override via ADMIN_COPILOT_MODEL=gemma-4-27b-it (or any allowlisted name).
  */
@@ -26,9 +34,12 @@ const ALLOWED_MODELS = new Set([
   "gemini-2.5-pro",
 ]);
 
-function resolveModel(requested: unknown): string {
+function resolveModel(requested: unknown, configDefault?: string | null): string {
   if (typeof requested === "string" && ALLOWED_MODELS.has(requested)) {
     return requested;
+  }
+  if (configDefault && ALLOWED_MODELS.has(configDefault)) {
+    return configDefault;
   }
   return DEFAULT_ADMIN_COPILOT_MODEL;
 }
@@ -328,26 +339,12 @@ async function callMockAdminAgent(prompt: string): Promise<string> {
 }
 
 /**
- * The set of action types Gemma is allowed to propose via `propose_action`.
- * Mirror this list in GemmaConsole.tsx — the UI maps each type to a one-click
- * approval button, so adding a new type here without a corresponding UI
- * handler will leave admins with a proposal they can't approve.
+ * The set of action types Gemma is allowed to propose via `propose_action`
+ * now lives in src/lib/agents/registry.ts (PROPOSABLE_ACTION_TYPES) so agent
+ * configs and the tool declaration share one source of truth. The UI mapping
+ * is in GemmaConsole.tsx — adding a new type there still requires a
+ * corresponding approval button.
  */
-const PROPOSABLE_ACTION_TYPES = [
-  "BAN_USER",
-  "UNBAN_USER",
-  "ARCHIVE_SESSION",
-  "BULK_ARCHIVE_SESSIONS",
-  "MODERATE_BLOG",
-  "FEATURE_BLOG",
-  "UNFEATURE_BLOG",
-  "DELETE_COMMENT",
-  "PUBLISH_CHALLENGE",
-  "UNPUBLISH_CHALLENGE",
-  "UPDATE_TODO_STATUS",
-  "CREATE_TODO",
-] as const;
-type ProposableActionType = typeof PROPOSABLE_ACTION_TYPES[number];
 
 const VALID_ALERT_TYPES = new Set([
   "INTEGRITY", "MODERATION", "SYSTEM_STALL", "SECURITY", "BACKLOG", "SPAM", "GROWTH",

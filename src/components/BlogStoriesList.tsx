@@ -16,6 +16,8 @@ interface BlogStoriesListProps {
   excludeIds?: string[];
   /** Tag filter passed through to /api/blogs. */
   tag?: string | null;
+  /** Search query passed through to /api/blogs. */
+  q?: string | null;
   /** Disable lazy-load entirely. Used when the active tab can't be cursor-paginated
    *  (e.g. "Most read" is ordered by viewCount, not createdAt). */
   enableLazy?: boolean;
@@ -44,6 +46,7 @@ export default function BlogStoriesList({
   initialCursor,
   excludeIds = [],
   tag = null,
+  q = null,
   enableLazy = true,
   batchSize = 8,
 }: BlogStoriesListProps) {
@@ -69,6 +72,7 @@ export default function BlogStoriesList({
         excludeFeatured: "true",
       });
       if (tag) params.set("tag", tag);
+      if (q) params.set("q", q);
       const res = await fetch(`/api/blogs?${params}`, { cache: "no-store" });
       if (!res.ok) {
         setError("Couldn't load more.");

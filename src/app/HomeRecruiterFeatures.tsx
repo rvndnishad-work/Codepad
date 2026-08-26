@@ -7,6 +7,7 @@ import {
   AlertTriangle, Zap, Clock, BarChart3, CreditCard, TrendingUp, Activity,
 } from "lucide-react";
 import RevealOnScroll from "@/components/scroll/RevealOnScroll";
+import SectionHeading from "@/components/home/SectionHeading";
 import { motion, AnimatePresence } from "framer-motion";
 
 /* ─── Shared helpers ─── */
@@ -38,7 +39,6 @@ function ReplayBtn({ onClick }: { onClick: () => void }) {
 type SectionShellProps = {
   index: number;
   icon: React.ComponentType<{ className?: string; style?: React.CSSProperties }>;
-  accent: string;
   title: string;
   titleAccent: string;
   desc: string;
@@ -46,48 +46,62 @@ type SectionShellProps = {
   children: React.ReactNode;
 };
 
-function SectionShell({ index, icon: Icon, accent, title, titleAccent, desc, bullets, children }: SectionShellProps) {
+function SectionShell({ index, icon: Icon, title, titleAccent, desc, bullets, children }: SectionShellProps) {
   const isEven = index % 2 === 1;
+  // Demos only mount while on screen. Unmounting when scrolled away kills
+  // every timer/rAF loop inside them (they used to run forever offscreen),
+  // and scrolling back restarts the demo from its initial state.
+  const demoWrapRef = useRef<HTMLDivElement>(null);
+  const [demoInView, setDemoInView] = useState(false);
+  useEffect(() => {
+    const el = demoWrapRef.current;
+    if (!el) return;
+    const obs = new IntersectionObserver(([entry]) => setDemoInView(entry.isIntersecting), {
+      threshold: 0.1,
+    });
+    obs.observe(el);
+    return () => obs.disconnect();
+  }, []);
+
   return (
     <RevealOnScroll>
-      <div className="group bg-panel border border-border/80 hover:border-border-strong rounded-3xl p-6 md:p-10 relative overflow-hidden transition-all duration-500 hover:shadow-2xl hover:shadow-indigo-500/[0.02]">
+      <div className="group bg-panel border border-border/80 hover:border-secondary/40 rounded-3xl p-6 md:p-10 relative overflow-hidden transition-all duration-500 hover:shadow-tile-hover">
         {/* Soft background ambient glow */}
-        <div 
-          className="absolute -right-32 -top-32 w-96 h-96 rounded-full opacity-[0.01] group-hover:opacity-[0.03] blur-[100px] pointer-events-none transition-all duration-700"
-          style={{ background: accent }}
+        <div
+          className="absolute -right-32 -top-32 w-96 h-96 rounded-full bg-secondary/5 opacity-50 group-hover:opacity-100 blur-[100px] pointer-events-none transition-all duration-700"
         />
         <div className={`flex flex-col ${isEven ? "md:flex-row-reverse" : "md:flex-row"} gap-8 md:gap-12 items-center relative z-10`}>
           {/* Text side */}
           <div className="flex-1 min-w-0 space-y-5">
             <div className="flex items-center gap-3">
-              <div
-                className="w-11 h-11 rounded-xl border flex items-center justify-center shrink-0 transition-transform duration-500 group-hover:scale-110"
-                style={{ borderColor: `${accent}40`, background: `${accent}12` }}
-              >
-                <Icon className="w-5 h-5" style={{ color: accent }} />
+              <div className="w-11 h-11 rounded-xl border border-secondary/25 bg-secondary/10 flex items-center justify-center shrink-0 transition-transform duration-500 group-hover:scale-110">
+                <Icon className="w-5 h-5 text-secondary" />
               </div>
-              <div
-                className="text-[10px] font-black uppercase tracking-widest px-2.5 py-1 rounded-full"
-                style={{ color: accent, background: `${accent}15` }}
-              >
+              <div className="text-[10px] font-black uppercase tracking-widest px-2.5 py-1 rounded-full text-secondary bg-secondary/10">
                 Feature {index + 1}
               </div>
             </div>
             <h3 className="text-2xl md:text-3xl font-black text-fg tracking-tight leading-tight">
-              {title} <span style={{ color: accent }}>{titleAccent}</span>
+              {title} <span className="text-secondary">{titleAccent}</span>
             </h3>
             <p className="text-muted text-sm md:text-base leading-relaxed max-w-md">{desc}</p>
             <ul className="space-y-2.5">
               {bullets.map((b, i) => (
                 <li key={i} className="flex items-start gap-2.5 text-sm text-muted">
-                  <ChevronRight className="w-4 h-4 shrink-0 mt-0.5" style={{ color: accent }} />
+                  <ChevronRight className="w-4 h-4 shrink-0 mt-0.5 text-secondary" />
                   <span>{b}</span>
                 </li>
               ))}
             </ul>
           </div>
-          {/* Demo side */}
-          <div className="flex-1 min-w-0 w-full">{children}</div>
+          {/* Demo side — mounted only while visible */}
+          <div ref={demoWrapRef} className="flex-1 min-w-0 w-full min-h-[340px] flex">
+            {demoInView ? (
+              children
+            ) : (
+              <div className="w-full min-h-[340px] rounded-2xl border border-border bg-surface/50 animate-pulse" aria-hidden />
+            )}
+          </div>
         </div>
       </div>
     </RevealOnScroll>
@@ -265,7 +279,7 @@ function McpDemo() {
   const labelColor: Record<string, string> = {
     request: "text-amber-400",
     response: "text-emerald-400",
-    result: "text-indigo-400",
+    result: "text-secondary",
   };
 
   return (
@@ -505,7 +519,7 @@ function GradingDemo() {
         {/* Progress bar */}
         <div className="h-2 bg-border rounded-full overflow-hidden mb-2">
           <motion.div
-            className="h-full rounded-full bg-gradient-to-r from-purple-500 to-indigo-500"
+            className="h-full rounded-full bg-gradient-to-r bg-secondary"
             animate={{ width: `${pct}%` }}
             transition={{ duration: 0.3, ease: "easeOut" }}
           />
@@ -610,7 +624,7 @@ function RubricsDemo() {
           <div className="text-emerald-400 text-xs font-black tracking-wide bg-emerald-500/10 px-2.5 py-1 rounded-md border border-emerald-500/20 inline-block uppercase">
             Strong Pass
           </div>
-          <div className="text-[9px] font-bold text-muted/60 uppercase tracking-widest mt-1">TOP 3% OF CANDIDATES</div>
+          <div className="text-[9px] font-bold text-muted/60 uppercase tracking-widest mt-1">DOSSIER GENERATED</div>
         </div>
       </div>
       {/* Dimension bars */}
@@ -771,7 +785,6 @@ const SECTIONS: Omit<SectionShellProps, "children">[] = [
   {
     index: 0,
     icon: Brain,
-    accent: "#FF3D00",
     title: "AI Proctoring &",
     titleAccent: "Anti-Cheat",
     desc: "Real-time behavioral analysis catches suspicious activity the moment it happens — tab switching, clipboard hijacking, and keystroke anomalies.",
@@ -784,7 +797,6 @@ const SECTIONS: Omit<SectionShellProps, "children">[] = [
   {
     index: 1,
     icon: Cpu,
-    accent: "#FFE600",
     title: "Model Context",
     titleAccent: "Protocol (MCP)",
     desc: "Connect private LLMs and custom grading pipelines via the open JSON-RPC standard. Discover, invoke, and chain evaluation tools natively.",
@@ -797,7 +809,6 @@ const SECTIONS: Omit<SectionShellProps, "children">[] = [
   {
     index: 2,
     icon: Users,
-    accent: "#60A5FA",
     title: "Multiplayer",
     titleAccent: "Live Coding Panels",
     desc: "Host collaborative coding sessions with real-time cursor tracking, integrated chat, and zero-latency WebRTC synchronization.",
@@ -810,7 +821,6 @@ const SECTIONS: Omit<SectionShellProps, "children">[] = [
   {
     index: 3,
     icon: Workflow,
-    accent: "#E040FB",
     title: "Automated Grading",
     titleAccent: "Runtimes",
     desc: "Execute structured test-case matrices automatically on submission. Support for JUnit, Jest, PyTest and custom runners.",
@@ -823,20 +833,18 @@ const SECTIONS: Omit<SectionShellProps, "children">[] = [
   {
     index: 4,
     icon: FileText,
-    accent: "#00E5FF",
     title: "Structured Rubrics &",
     titleAccent: "Dossiers",
     desc: "Standardize evaluations across five key dimensions with animated scoring breakdowns and one-click PDF export.",
     bullets: [
       "Multi-dimensional scoring: quality, architecture, performance",
-      "Animated radar breakdown with per-dimension percentages",
+      "Animated rubric breakdown with per-dimension percentages",
       "Professional PDF dossier generation in one click",
     ],
   },
   {
     index: 5,
     icon: ShieldCheck,
-    accent: "#9DFF00",
     title: "Credit-Based",
     titleAccent: "Enterprise Economy",
     desc: "Scalable per-screening billing with real-time credit tracking. Control seat bounds, allocate workspace limits, and manage spending.",
@@ -853,15 +861,13 @@ const DEMOS = [ProctoringDemo, McpDemo, MultiplayerDemo, GradingDemo, RubricsDem
 export default function HomeRecruiterFeatures() {
   return (
     <div className="md:col-span-12 pt-16 md:pt-24 mt-16 md:mt-24 border-t border-border/30 space-y-12 md:space-y-16">
-      {/* Section heading */}
-      <RevealOnScroll className="text-center mb-8">
-        <h2 className="text-3xl md:text-4xl font-black text-fg tracking-tight mb-3">
-          Enterprise Screening <span className="text-indigo-400">Arsenal</span>
-        </h2>
-        <p className="text-muted text-base md:text-lg max-w-2xl mx-auto">
-          Every tool you need to run world-class technical hiring, built into one platform.
-        </p>
-      </RevealOnScroll>
+      <SectionHeading
+        eyebrow="The arsenal"
+        eyebrowIcon={<Brain className="w-3.5 h-3.5" />}
+        title="Enterprise screening"
+        highlight="arsenal."
+        lede="Every tool you need to run world-class technical hiring, built into one platform — each demo below is live, right on the page."
+      />
 
       {/* 6 feature sections */}
       {SECTIONS.map((section, i) => {

@@ -11,12 +11,18 @@ import {
   Swords,
   Target,
 } from "lucide-react";
+import RevealOnScroll, { RevealItem } from "@/components/scroll/RevealOnScroll";
+import SectionHeading from "@/components/home/SectionHeading";
 
 /**
  * "The prep arsenal" — the interview-prep universe in one bento, fed with real
  * DB counts (never invented numbers; cards hide themselves when a feature has
  * no content yet). Sits right under the developer hero so the breadth of the
  * platform is the first thing a visitor scrolls into.
+ *
+ * Revamp notes: entrance reveals via the shared RevealOnScroll rhythm, and a
+ * single tokenized card treatment (accent-tinted tiles instead of the old
+ * per-card rainbow gradients) so the section reads as one system.
  */
 
 export interface ArsenalCounts {
@@ -52,208 +58,203 @@ export default function HomeArsenal({ counts }: { counts: ArsenalCounts }) {
   const moreTechs = Math.max(0, topTechs.length - shownTechs.length);
 
   return (
-    <section className="relative overflow-hidden py-24">
-      {/* Ambient background */}
-      <div className="absolute top-0 left-1/3 w-[600px] h-[600px] bg-indigo-500/5 rounded-full blur-[140px] pointer-events-none" />
-      <div className="absolute bottom-0 right-0 w-[500px] h-[500px] bg-fuchsia-500/5 rounded-full blur-[140px] pointer-events-none" />
+    <section className="relative overflow-hidden py-24 md:py-32">
+      {/* Ambient background — accent-tinted, on-token */}
+      <div className="absolute top-0 left-1/3 w-[600px] h-[600px] bg-accent/5 rounded-full blur-[140px] pointer-events-none" />
+      <div className="absolute bottom-0 right-0 w-[500px] h-[500px] bg-secondary/5 rounded-full blur-[140px] pointer-events-none" />
 
-      <div className="relative mx-auto max-w-6xl px-4 space-y-10">
-        {/* Header */}
-        <div className="text-center space-y-3">
-          <span className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-gradient-to-r from-indigo-500/10 to-fuchsia-500/10 border border-indigo-500/20 text-indigo-400 text-[11px] font-bold uppercase tracking-widest">
-            <Target className="w-3.5 h-3.5" />
-            The prep arsenal
-          </span>
-          <h2 className="text-3xl md:text-5xl font-black tracking-tight text-fg leading-[1.05]">
-            Everything between you
-            <br className="hidden sm:block" /> and the offer.
-          </h2>
-          <p className="text-sm md:text-base text-muted font-medium max-w-xl mx-auto leading-relaxed">
-            Question banks, runnable challenges, AI-readiness training, and
-            company-specific prep — one account, zero setup.
-          </p>
-        </div>
+      <div className="relative mx-auto max-w-6xl px-4 space-y-12">
+        <SectionHeading
+          eyebrow="The prep arsenal"
+          eyebrowIcon={<Target className="w-3.5 h-3.5" />}
+          title="Everything between you"
+          highlight="and the offer."
+          lede="Question banks, runnable challenges, AI-readiness training, and company-specific prep — one account, zero setup."
+        />
 
         {/* Bento */}
-        <div className="grid grid-cols-1 md:grid-cols-12 gap-5">
+        <RevealOnScroll stagger={0.1} amount={0.15} className="grid grid-cols-1 md:grid-cols-12 gap-5">
           {/* ── Question banks — the flagship card ── */}
           {counts.prepQuestions > 0 && (
-            <Link
-              href="/interview-questions"
-              className="group relative md:col-span-7 rounded-3xl border border-border bg-surface overflow-hidden p-7 transition-all duration-300 hover:-translate-y-1 hover:shadow-2xl hover:border-indigo-400/50 hover:shadow-indigo-500/15"
-            >
-              <div className="absolute -top-24 -right-24 w-72 h-72 rounded-full bg-indigo-500/20 blur-[100px] opacity-60 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
-              <span
-                aria-hidden
-                className="absolute -bottom-10 -right-2 text-[9rem] leading-none font-black text-fg opacity-[0.04] select-none pointer-events-none"
+            <RevealItem className="md:col-span-7">
+              <Link
+                href="/interview-questions"
+                className="group relative block h-full rounded-3xl border border-border bg-surface shadow-tile overflow-hidden p-7 transition-all duration-300 hover:-translate-y-1 hover:border-accent/45 hover:shadow-tile-hover"
               >
-                ?
-              </span>
+                <div className="absolute -top-24 -right-24 w-72 h-72 rounded-full bg-accent/10 blur-[100px] opacity-60 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
+                <span
+                  aria-hidden
+                  className="absolute -bottom-10 -right-2 text-[9rem] leading-none font-black text-fg opacity-[0.04] select-none pointer-events-none"
+                >
+                  ?
+                </span>
 
-              <div className="relative space-y-5">
-                <div className="flex items-start justify-between gap-4">
-                  <div className="flex items-center gap-4">
-                    <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-indigo-500 to-violet-600 text-white flex items-center justify-center shadow-lg">
-                      <BookOpenCheck className="w-7 h-7" />
+                <div className="relative space-y-5">
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="flex items-center gap-4">
+                      <div className="w-14 h-14 rounded-2xl border border-accent/25 bg-accent/10 text-accent flex items-center justify-center">
+                        <BookOpenCheck className="w-7 h-7" />
+                      </div>
+                      <div>
+                        <h3 className="text-xl font-extrabold text-fg tracking-tight">
+                          Interview question banks
+                        </h3>
+                        <p className="text-xs text-muted font-medium mt-0.5">
+                          Every answer hand-written: diagrams, tables & runnable examples
+                        </p>
+                      </div>
                     </div>
-                    <div>
-                      <h3 className="text-xl font-extrabold text-fg tracking-tight">
-                        Interview question banks
-                      </h3>
-                      <p className="text-xs text-muted font-medium mt-0.5">
-                        Every answer hand-written: diagrams, tables & runnable examples
-                      </p>
-                    </div>
+                    <ArrowChip />
                   </div>
-                  <ArrowChip />
-                </div>
 
-                <div className="flex items-baseline gap-2">
-                  <span className="text-4xl font-black text-fg tabular-nums">
-                    {formatK(counts.prepQuestions)}
-                  </span>
-                  <span className="text-sm font-bold text-muted">
-                    questions · {counts.techs.length} technologies
-                  </span>
-                </div>
+                  <div className="flex items-baseline gap-2">
+                    <span className="text-4xl font-black text-fg tabular-nums">
+                      {formatK(counts.prepQuestions)}
+                    </span>
+                    <span className="text-sm font-bold text-muted">
+                      questions · {counts.techs.length} technologies
+                    </span>
+                  </div>
 
-                <div className="flex flex-wrap gap-1.5">
-                  {shownTechs.map((t) => (
-                    <span
-                      key={t.technology}
-                      className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg border border-border bg-bg/60 text-[11px] font-bold text-fg"
-                    >
-                      {TECH_LABELS[t.technology] ?? t.technology}
-                      <span className="text-muted/70 font-mono tabular-nums">{t.count}</span>
-                    </span>
-                  ))}
-                  {moreTechs > 0 && (
-                    <span className="inline-flex items-center px-2.5 py-1 rounded-lg border border-dashed border-border text-[11px] font-bold text-muted">
-                      +{moreTechs} more
-                    </span>
+                  <div className="flex flex-wrap gap-1.5">
+                    {shownTechs.map((t) => (
+                      <span
+                        key={t.technology}
+                        className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg border border-border bg-bg/60 text-[11px] font-bold text-fg"
+                      >
+                        {TECH_LABELS[t.technology] ?? t.technology}
+                        <span className="text-muted/70 font-mono tabular-nums">{t.count}</span>
+                      </span>
+                    ))}
+                    {moreTechs > 0 && (
+                      <span className="inline-flex items-center px-2.5 py-1 rounded-lg border border-dashed border-border text-[11px] font-bold text-muted">
+                        +{moreTechs} more
+                      </span>
+                    )}
+                  </div>
+
+                  {counts.companies > 0 && (
+                    <div className="flex items-center gap-2 text-xs font-semibold text-muted pt-1">
+                      <Building2 className="w-3.5 h-3.5 opacity-70" />
+                      Plus company-wise questions & real interview experiences
+                    </div>
                   )}
                 </div>
-
-                {counts.companies > 0 && (
-                  <div className="flex items-center gap-2 text-xs font-semibold text-muted pt-1">
-                    <Building2 className="w-3.5 h-3.5 opacity-70" />
-                    Plus company-wise questions & real interview experiences
-                  </div>
-                )}
-              </div>
-            </Link>
+              </Link>
+            </RevealItem>
           )}
 
           {/* ── Review the AI's Code ── */}
           {counts.reviewChallenges > 0 && (
-            <Link
-              href="/interview/ai-code-review"
-              className="group relative md:col-span-5 rounded-3xl border border-border bg-surface overflow-hidden p-7 transition-all duration-300 hover:-translate-y-1 hover:shadow-2xl hover:border-rose-400/50 hover:shadow-rose-500/15"
-            >
-              <div className="absolute -top-24 -right-24 w-72 h-72 rounded-full bg-rose-500/20 blur-[100px] opacity-60 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
-              <span
-                aria-hidden
-                className="absolute -bottom-9 -right-1 text-[8rem] leading-none font-black text-fg opacity-[0.04] select-none pointer-events-none"
+            <RevealItem className="md:col-span-5">
+              <Link
+                href="/interview/ai-code-review"
+                className="group relative flex h-full flex-col rounded-3xl border border-border bg-surface shadow-tile overflow-hidden p-7 transition-all duration-300 hover:-translate-y-1 hover:border-accent/45 hover:shadow-tile-hover"
               >
-                {"</>"}
-              </span>
+                <div className="absolute -top-24 -right-24 w-72 h-72 rounded-full bg-accent/10 blur-[100px] opacity-60 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
+                <span
+                  aria-hidden
+                  className="absolute -bottom-9 -right-1 text-[8rem] leading-none font-black text-fg opacity-[0.04] select-none pointer-events-none"
+                >
+                  {"</>"}
+                </span>
 
-              <div className="relative space-y-5 h-full flex flex-col">
-                <div className="flex items-start justify-between gap-4">
-                  <div className="flex items-center gap-4">
-                    <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-rose-500 to-orange-500 text-white flex items-center justify-center shadow-lg">
-                      <Bot className="w-7 h-7" />
-                    </div>
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <h3 className="text-xl font-extrabold text-fg tracking-tight">
-                          Review the AI&apos;s code
-                        </h3>
-                        <span className="px-1.5 py-0.5 rounded-md bg-rose-500/15 border border-rose-500/30 text-rose-400 text-[9px] font-black uppercase tracking-wider">
-                          New
-                        </span>
+                <div className="relative space-y-5 h-full flex flex-col">
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="flex items-center gap-4">
+                      <div className="w-14 h-14 rounded-2xl border border-accent/25 bg-accent/10 text-accent flex items-center justify-center">
+                        <Bot className="w-7 h-7" />
                       </div>
-                      <p className="text-xs text-muted font-medium mt-0.5">
-                        The AI-readiness skill interviews now test
-                      </p>
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <h3 className="text-xl font-extrabold text-fg tracking-tight">
+                            Review the AI&apos;s code
+                          </h3>
+                          <span className="px-1.5 py-0.5 rounded-md bg-emerald-500/15 border border-emerald-500/30 text-emerald-500 text-[9px] font-black uppercase tracking-wider">
+                            New
+                          </span>
+                        </div>
+                        <p className="text-xs text-muted font-medium mt-0.5">
+                          The AI-readiness skill interviews now test
+                        </p>
+                      </div>
                     </div>
+                    <ArrowChip />
                   </div>
-                  <ArrowChip />
-                </div>
 
-                <p className="text-sm text-muted leading-relaxed">
-                  Plausible AI-generated answers with planted flaws — hallucinated
-                  APIs, logic bugs, security holes. Find them all before shipping,
-                  or race the clock in Hallucination Hunt.
-                </p>
+                  <p className="text-sm text-muted leading-relaxed">
+                    Plausible AI-generated answers with planted flaws — hallucinated
+                    APIs, logic bugs, security holes. Find them all before shipping,
+                    or race the clock in Hallucination Hunt.
+                  </p>
 
-                <div className="mt-auto flex items-baseline gap-2">
-                  <span className="text-4xl font-black text-fg tabular-nums">
-                    {counts.reviewChallenges}
-                  </span>
-                  <span className="text-sm font-bold text-muted">
-                    challenges · JS, TS, Python & SQL
-                  </span>
+                  <div className="mt-auto flex items-baseline gap-2">
+                    <span className="text-4xl font-black text-fg tabular-nums">
+                      {counts.reviewChallenges}
+                    </span>
+                    <span className="text-sm font-bold text-muted">
+                      challenges · JS, TS, Python & SQL
+                    </span>
+                  </div>
                 </div>
-              </div>
-            </Link>
+              </Link>
+            </RevealItem>
           )}
 
           {/* ── Row 2: three equal cards ── */}
           {counts.challenges > 0 && (
-            <SmallCard
-              href="/challenges"
-              icon={<Swords className="w-6 h-6" />}
-              tile="bg-gradient-to-br from-emerald-500 to-teal-600"
-              glow="bg-emerald-500/20"
-              hover="hover:border-emerald-400/50 hover:shadow-emerald-500/15"
-              title="Coding challenges"
-              stat={`${counts.challenges}`}
-              statLabel="server-graded"
-              blurb="Real execution in 8 languages, hidden tests, and instant verdicts — like the take-home, before the take-home."
-            />
+            <RevealItem className="md:col-span-4">
+              <SmallCard
+                href="/challenges"
+                icon={<Swords className="w-6 h-6" />}
+                title="Coding challenges"
+                stat={`${counts.challenges}`}
+                statLabel="server-graded"
+                blurb="Real execution in 8 languages, hidden tests, and instant verdicts — like the take-home, before the take-home."
+              />
+            </RevealItem>
           )}
           {counts.promptScenarios > 0 && (
-            <SmallCard
-              href="/interview/prompt-practice"
-              icon={<MessagesSquare className="w-6 h-6" />}
-              tile="bg-gradient-to-br from-fuchsia-500 to-purple-600"
-              glow="bg-fuchsia-500/20"
-              hover="hover:border-fuchsia-400/50 hover:shadow-fuchsia-500/15"
-              title="Prompt Arena"
-              stat={`${counts.promptScenarios}`}
-              statLabel="scenarios"
-              blurb="Write prompts against real scenarios and get scored — the skill every AI-era JD quietly expects."
-            />
+            <RevealItem className="md:col-span-4">
+              <SmallCard
+                href="/interview/prompt-practice"
+                icon={<MessagesSquare className="w-6 h-6" />}
+                title="Prompt Arena"
+                stat={`${counts.promptScenarios}`}
+                statLabel="scenarios"
+                blurb="Write prompts against real scenarios and get scored — the skill every AI-era JD quietly expects."
+              />
+            </RevealItem>
           )}
-          <SmallCard
-            href={counts.journeys > 0 ? "/prep" : "/interview-questions"}
-            icon={<MapIcon className="w-6 h-6" />}
-            tile="bg-gradient-to-br from-amber-500 to-orange-600"
-            glow="bg-amber-500/20"
-            hover="hover:border-amber-400/50 hover:shadow-amber-500/15"
-            title="Prep journeys"
-            stat="Day-by-day"
-            statLabel="role-based plans"
-            blurb="Pick a target role — the plan sequences banks, challenges and scenarios into a phased track you can check off."
-          />
-        </div>
+          <RevealItem className="md:col-span-4">
+            <SmallCard
+              href={counts.journeys > 0 ? "/prep" : "/interview-questions"}
+              icon={<MapIcon className="w-6 h-6" />}
+              title="Prep journeys"
+              stat="Day-by-day"
+              statLabel="role-based plans"
+              blurb="Pick a target role — the plan sequences banks, challenges and scenarios into a phased track you can check off."
+            />
+          </RevealItem>
+        </RevealOnScroll>
 
         {/* AI-readiness ribbon */}
-        <div className="flex items-center justify-center gap-2 text-xs font-semibold text-muted">
-          <Sparkles className="w-3.5 h-3.5 text-fuchsia-400" />
-          <span>
-            New here?{" "}
-            <Link
-              href="/prep"
-              className="text-fg font-bold underline decoration-fuchsia-400/50 underline-offset-4 hover:decoration-fuchsia-400 transition-colors"
-            >
-              Take the AI-Ready journey
-            </Link>{" "}
-            — question bank, prompt drills and code-review challenges in one track.
-          </span>
-          <FlaskConical className="w-3.5 h-3.5 text-indigo-400" />
-        </div>
+        <RevealOnScroll delay={0.15} className="flex justify-center">
+          <div className="flex items-center justify-center gap-2 text-xs font-semibold text-muted">
+            <Sparkles className="w-3.5 h-3.5 text-accent" />
+            <span>
+              New here?{" "}
+              <Link
+                href="/prep"
+                className="text-fg font-bold underline decoration-accent/50 underline-offset-4 hover:decoration-accent transition-colors"
+              >
+                Take the AI-Ready journey
+              </Link>{" "}
+              — question bank, prompt drills and code-review challenges in one track.
+            </span>
+            <FlaskConical className="w-3.5 h-3.5 text-accent" />
+          </div>
+        </RevealOnScroll>
       </div>
     </section>
   );
@@ -262,9 +263,6 @@ export default function HomeArsenal({ counts }: { counts: ArsenalCounts }) {
 function SmallCard({
   href,
   icon,
-  tile,
-  glow,
-  hover,
   title,
   stat,
   statLabel,
@@ -272,9 +270,6 @@ function SmallCard({
 }: {
   href: string;
   icon: React.ReactNode;
-  tile: string;
-  glow: string;
-  hover: string;
   title: string;
   stat: string;
   statLabel: string;
@@ -283,16 +278,12 @@ function SmallCard({
   return (
     <Link
       href={href}
-      className={`group relative md:col-span-4 rounded-3xl border border-border bg-surface overflow-hidden p-6 transition-all duration-300 hover:-translate-y-1 hover:shadow-2xl ${hover}`}
+      className="group relative flex h-full flex-col rounded-3xl border border-border bg-surface shadow-tile overflow-hidden p-6 transition-all duration-300 hover:-translate-y-1 hover:border-accent/45 hover:shadow-tile-hover"
     >
-      <div
-        className={`absolute -top-20 -right-20 w-56 h-56 rounded-full blur-[90px] opacity-50 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none ${glow}`}
-      />
+      <div className="absolute -top-20 -right-20 w-56 h-56 rounded-full bg-accent/10 blur-[90px] opacity-50 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
       <div className="relative space-y-4">
         <div className="flex items-start justify-between gap-3">
-          <div
-            className={`w-12 h-12 rounded-2xl text-white flex items-center justify-center shadow-lg ${tile}`}
-          >
+          <div className="w-12 h-12 rounded-2xl border border-accent/25 bg-accent/10 text-accent flex items-center justify-center">
             {icon}
           </div>
           <ArrowChip />

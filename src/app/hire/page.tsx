@@ -5,10 +5,13 @@ import HomeHero from "../HomeHero";
 import HomeInfographic from "../HomeInfographic";
 import HomeRecruiterFeatures from "../HomeRecruiterFeatures";
 import HomeFinalCTA from "../HomeFinalCTA";
-import { RecruiterDemoCard } from "../HomeBento";
+import { RecruiterDemoCard } from "../RecruiterDemoCard";
 import TrustBand from "./TrustBand";
 import PricingTeaser from "./PricingTeaser";
 import HirePipeline from "./HirePipeline";
+import SectionHeading from "@/components/home/SectionHeading";
+import RevealOnScroll, { RevealItem } from "@/components/scroll/RevealOnScroll";
+import { Video } from "lucide-react";
 
 export const metadata: Metadata = {
   title: "Interviewpad for Hiring Teams — Technical Interviews, Take-Homes & AI Screening",
@@ -45,23 +48,26 @@ export default async function HirePage() {
       <HirePipeline />
 
       {/* Product glimpse: the live interview room mock + real platform numbers */}
-      <section className="mx-auto max-w-6xl px-4 py-20">
-        <div className="text-center mb-10">
-          <h2 className="text-3xl md:text-4xl font-black text-fg tracking-tight">
-            The interview room, <span className="text-indigo-400">as candidates see it.</span>
-          </h2>
-          <p className="text-muted text-base md:text-lg max-w-2xl mx-auto mt-3">
-            Collaborative editor, live execution, and proctoring signals — all in the browser, nothing to install on either side.
-          </p>
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
-          <RecruiterDemoCard />
-          <div className="md:col-span-4 grid grid-cols-1 gap-4">
-            {buildStats({ sessionCount, challengeCount, workspaceCount }).map((s) => (
-              <StatCard key={s.label} value={s.value} label={s.label} />
-            ))}
-          </div>
-        </div>
+      <section className="mx-auto max-w-6xl px-4 py-24 md:py-32">
+        <SectionHeading
+          eyebrow="Live interview room"
+          eyebrowIcon={<Video className="w-3.5 h-3.5" />}
+          title="The interview room,"
+          highlight="as candidates see it."
+          lede="Collaborative editor, live execution, and proctoring signals — all in the browser, nothing to install on either side."
+        />
+        <RevealOnScroll stagger={0.1} amount={0.15} className="grid grid-cols-1 md:grid-cols-12 gap-4">
+          <RevealItem className="md:col-span-8">
+            <RecruiterDemoCard />
+          </RevealItem>
+          <RevealItem className="md:col-span-4">
+            <div className="grid grid-cols-1 gap-4 h-full">
+              {buildStats({ sessionCount, challengeCount, workspaceCount }).map((s) => (
+                <StatCard key={s.label} value={s.value} label={s.label} />
+              ))}
+            </div>
+          </RevealItem>
+        </RevealOnScroll>
       </section>
 
       {/* Hiring lifecycle walkthrough (stage cards + live simulators) */}
@@ -115,8 +121,8 @@ function buildStats(counts: {
 
 function StatCard({ value, label }: { value: string; label: string }) {
   return (
-    <div className="rounded-3xl border border-border bg-panel p-6 flex flex-col justify-center">
-      <div className="text-3xl font-black text-indigo-400 tabular-nums">{value}</div>
+    <div className="rounded-3xl border border-border bg-panel p-6 flex flex-col justify-center h-full">
+      <div className="text-3xl font-black text-secondary tabular-nums">{value}</div>
       <div className="text-xs text-muted font-bold uppercase tracking-wider mt-1">{label}</div>
     </div>
   );

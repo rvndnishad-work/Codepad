@@ -94,6 +94,23 @@ export async function createAIInterviewSessionAction(
     initialStage: "SCREENED",
   });
 
+  // Snapshot the starter baseline at invite time so grading never drifts
+  // (phantom diff fix: diffing against live templates credited scaffold as candidate code).
+  let legacyStarterJson: string | null = null;
+  try {
+    const { resolveTemplate } = await import("@/lib/ai-interview/template-resolver");
+    const { REACT_SANDBOX_BASE } = await import("@/lib/ai-interview/round-content");
+    const tpl = await resolveTemplate(data.templateId.trim(), workspace.id);
+    if (tpl?.starterFiles && Object.keys(tpl.starterFiles).length > 0) {
+      let files = tpl.starterFiles;
+      // Frontend scaffolds need Sandpack base merged (see withReactBase)
+      if (tpl.kind !== "backend" && tpl.kind !== "dsa") {
+        files = { ...REACT_SANDBOX_BASE, ...files };
+      }
+      legacyStarterJson = JSON.stringify(files);
+    }
+  } catch { /* fallback to resolver at grade time */ }
+
   // No credit is consumed here — invites are free. The charge happens on the
   // candidate's first message to /api/ai-interview/message.
   const session = await prisma.aIInterviewSession.create({
@@ -107,6 +124,7 @@ export async function createAIInterviewSessionAction(
       status: "PENDING",
       chatHistory: "[]",
       filesJson: "{}",
+      ...(legacyStarterJson ? { starterFilesJson: legacyStarterJson } : {}),
     },
   });
 
@@ -275,6 +293,54 @@ export async function createScreeningBatchAction(
     if (sane.length > 0) overrides[cid] = sane;
   }
 
+  // Pre-resolve starter snapshots for every distinct round spec so
+  // each AIInterviewRound can carry an immutable baseline (phantom diff fix).
+  const starterCache = new Map<string, Record<string, string> | null>();
+  const allSpecs = [...sharedRounds, ...Object.values(overrides).flat()];
+  {
+    const { resolveTemplate: _resolveTpl } = await import("@/lib/ai-interview/template-resolver");
+    const { templates: _catalog } = await import("@/lib/templates");
+    const { REACT_SANDBOX_BASE } = await import("@/lib/ai-interview/round-content");
+    const chalIds = [...new Set(allSpecs.filter((r) => r.sourceKind === "challenge" && r.sourceId).map((r) => r.sourceId!))];
+    const chalRows = chalIds.length ? await prisma.challenge.findMany({ where: { id: { in: chalIds } }, select: { id: true, starterFiles: true } }) : [];
+    const chalMap = new Map(chalRows.map((c) => [c.id, c.starterFiles as string]));
+    const keyOf = (r: (typeof allSpecs)[number]) => `${r.sourceKind}:${r.sourceId ?? ""}:${r.templateId ?? ""}`;
+    for (const r of allSpecs) {
+      const k = keyOf(r);
+      if (starterCache.has(k)) continue;
+      let files: Record<string, string> | null = null;
+      try {
+        if (r.sourceKind === "scaffold" && r.templateId) {
+          const tpl = await _resolveTpl(r.templateId, workspace.id).catch(() => undefined);
+          if (tpl?.starterFiles) files = tpl.starterFiles;
+        } else if (r.sourceKind === "challenge" && r.sourceId) {
+          const raw = chalMap.get(r.sourceId);
+          if (raw) { try { const p = JSON.parse(raw); if (p && typeof p === "object" && !Array.isArray(p)) files = p as Record<string, string>; } catch {} }
+        } else if (r.sourceKind === "playground" && r.sourceId) {
+          const def = _catalog.find((t) => t.id === r.sourceId);
+          if (def?.files) {
+            const out: Record<string, string> = {};
+            for (const [pp, val] of Object.entries(def.files as Record<string, unknown>)) {
+              if (typeof val === "string") out[pp] = val;
+              else if (val && typeof val === "object" && "code" in val) out[pp] = String((val as { code: unknown }).code ?? "");
+            }
+            if (Object.keys(out).length > 0) files = out;
+          }
+        }
+      } catch {}
+      // For frontend scaffold/playground, merge Sandpack react base so the snapshot
+      // matches what <SandpackProvider template="react"> actually injects.
+      // Prevents phantom NEW FILEs (/index.js, /public/index.html, etc.) when
+      // candidate submits without editing.
+      if (files && r.sourceKind !== "challenge" && r.paradigm === "frontend") {
+        files = { ...REACT_SANDBOX_BASE, ...files };
+      } else if (!files && r.sourceKind !== "challenge" && r.paradigm === "frontend") {
+        files = { ...REACT_SANDBOX_BASE };
+      }
+      starterCache.set(k, files);
+    }
+  }
+
   const result = await prisma.$transaction(async (tx) => {
     const batch = await tx.aIScreeningBatch.create({
       data: {
@@ -304,6 +370,10 @@ export async function createScreeningBatchAction(
       // Legacy `templateId` column is non-null; point it at the first round's
       // identifier so any code still reading it has something sensible.
       const legacyTemplateId = rounds[0].templateId ?? rounds[0].sourceId ?? "batch";
+      // Session-level snapshot = first round's starter (for legacy single-round readers)
+      const firstKey = `${rounds[0].sourceKind}:${rounds[0].sourceId ?? ""}:${rounds[0].templateId ?? ""}`;
+      const firstStarter = starterCache.get(firstKey);
+      const sessionStarterJson = firstStarter ? JSON.stringify(firstStarter) : undefined;
       const session = await tx.aIInterviewSession.create({
         data: {
           workspaceId: workspace.id,
@@ -317,19 +387,25 @@ export async function createScreeningBatchAction(
           status: "PENDING",
           chatHistory: "[]",
           filesJson: "{}",
+          ...(sessionStarterJson ? { starterFilesJson: sessionStarterJson } : {}),
           rounds: {
-            create: rounds.map((r, order) => ({
-              order,
-              paradigm: r.paradigm,
-              language: r.language,
-              frameworkLabel: r.frameworkLabel,
-              sourceKind: r.sourceKind,
-              sourceId: r.sourceId,
-              templateId: r.templateId,
-              estimatedMinutes: r.estimatedMinutes ?? 30,
-              filesJson: "{}",
-              status: "PENDING",
-            })),
+            create: rounds.map((r, order) => {
+              const k = `${r.sourceKind}:${r.sourceId ?? ""}:${r.templateId ?? ""}`;
+              const sf = starterCache.get(k);
+              return {
+                order,
+                paradigm: r.paradigm,
+                language: r.language,
+                frameworkLabel: r.frameworkLabel,
+                sourceKind: r.sourceKind,
+                sourceId: r.sourceId,
+                templateId: r.templateId,
+                estimatedMinutes: r.estimatedMinutes ?? 30,
+                filesJson: "{}",
+                ...(sf ? { starterFilesJson: JSON.stringify(sf) } : {}),
+                status: "PENDING",
+              };
+            }),
           },
         },
         select: { id: true, inviteToken: true, candidateName: true, candidateEmail: true },
@@ -671,4 +747,35 @@ export async function deleteAIInterviewSessionAction(slug: string, id: string) {
 
   revalidatePath(`/w/${slug}/ai-interviews`);
   return { success: true };
+}
+
+/**
+ * Update a session's candidate time-extension policy (how many times and how
+ * many minutes per extension the candidate may self-grant). Takes effect
+ * immediately — the candidate's "+N min" button reads it live.
+ */
+export async function updateExtensionPolicyAction(
+  slug: string,
+  input: {
+    sessionId: string;
+    maxExtensions: number;
+    extensionMinutes: number;
+  }
+) {
+  const { workspace } = await assertWorkspaceWriter(slug);
+
+  const maxExtensions = Math.max(0, Math.min(5, Math.floor(Number(input.maxExtensions) || 0)));
+  const extensionMinutes = Math.max(1, Math.min(60, Math.floor(Number(input.extensionMinutes) || 5)));
+
+  // Tenant guard: the session must belong to this workspace.
+  const result = await prisma.aIInterviewSession.updateMany({
+    where: { id: input.sessionId, workspaceId: workspace.id },
+    data: { maxExtensions, extensionMinutes },
+  });
+  if (result.count === 0) {
+    throw new Error("Session not found in this workspace");
+  }
+
+  revalidatePath(`/w/${slug}/ai-interviews`);
+  return { success: true, maxExtensions, extensionMinutes };
 }

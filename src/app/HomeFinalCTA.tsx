@@ -14,17 +14,20 @@ export default function HomeFinalCTA({
   const reduced = useReducedMotion();
   const isRecruiter = persona === "recruiter";
 
-  const headline = isRecruiter ? "Hire your next elite engineer." : "Bring your ideas to life.";
+  const headline = isRecruiter ? "Hire your next elite engineer." : "Walk in prepared.";
   const subtitle = isRecruiter
-    ? "Standardize your technical interview pipelines and evaluate candidate coding abilities with isolated sandboxes."
-    : "Join thousands of developers building the next generation of web experiments.";
+    ? "Live coding interviews, async take-homes, and AI screening at batch scale — one workspace for your whole hiring pipeline."
+    : "Practice in the same sandbox you'll be interviewed in — then let your work speak for itself with a shareable portfolio.";
   const buttonText = isRecruiter ? "Start Screening Candidates" : "Get Started for Free";
   const linkHref = isRecruiter ? "/login?next=/dashboard" : "/login";
+  // On-token gradients: brand accent (candidate) / secondary accent (recruiter).
   const gradientClass = isRecruiter
-    ? "bg-gradient-to-r from-indigo-500 to-indigo-600 shadow-indigo-500/10"
-    : "bg-gradient-to-r from-accent to-[#FFB800] shadow-accent/10";
-  const textClass = isRecruiter ? "text-white" : "text-[#0A0A0A]";
-  const subtextClass = isRecruiter ? "text-white/80" : "text-[#0A0A0A]/70";
+    ? "bg-gradient-to-r from-secondary to-secondary-soft shadow-secondary/10"
+    : "bg-gradient-to-r from-accent to-accent-soft shadow-accent/10";
+  // Both accent ramps are light in dark mode and mid-tone in light mode —
+  // dark text keeps contrast on both.
+  const textClass = "text-[#16181d]";
+  const subtextClass = "text-[#16181d]/75";
 
   const words = headline.split(" ");
 

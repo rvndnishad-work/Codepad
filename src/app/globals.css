@@ -21,6 +21,13 @@
     --accent-soft: #fca5a5;
     --accent-glow: rgba(248, 113, 113, 0.1);
 
+    /* Secondary (recruiter/hiring) accent — one semantic token instead of
+       hardcoded indigo-* classes scattered across sections. */
+    --accent-2: #6366f1;
+    --accent-2-rgb: 99, 102, 241;
+    --accent-2-soft: #818cf8;
+    --accent-2-glow: rgba(99, 102, 241, 0.12);
+
     --ui-scale: 1;
     /* Fluid root type: every rem-based size (incl. the px→rem font sizes
        produced by postcss-pxtorem) scales with the viewport. Floor 16.5px so
@@ -46,6 +53,12 @@
     --accent-soft: #FFD700;
     --accent-glow: rgba(255, 230, 0, 0.15);
     --accent-brightness: none;
+
+    /* Secondary (recruiter/hiring) accent. */
+    --accent-2: #818cf8;
+    --accent-2-rgb: 129, 140, 248;
+    --accent-2-soft: #a5b4fc;
+    --accent-2-glow: rgba(129, 140, 248, 0.16);
   }
 
   /* Large external monitors (> 1920px wide): keep growing past the 18px cap so
@@ -1234,4 +1247,34 @@ body.sidebar-collapsed .workspace-content {
     animation: none;
     width: 100%;
   }
+}
+
+/* ── Homepage tech marquee ─────────────────────────────────────────────── */
+/* Edge fade so chips dissolve into the background on both sides. */
+.marquee-mask {
+  mask-image: linear-gradient(to right, transparent, #000 8%, #000 92%, transparent);
+  -webkit-mask-image: linear-gradient(to right, transparent, #000 8%, #000 92%, transparent);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .marquee-mask > div {
+    animation: none !important;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+}
+
+/* ── AI interview workspace surface ────────────────────────────────────── */
+/* Sandpack's provider renders an unstyled .sp-wrapper div between our layout
+   containers, which broke the height chain (editor/preview columns collapsed
+   or escaped their rows). Pin it to fill its parent so our flex layout owns
+   sizing again. */
+.ai-surface > .sp-wrapper {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+.ai-surface > .sp-wrapper > .sp-layout {
+  height: 100%;
+  min-height: 0;
 }

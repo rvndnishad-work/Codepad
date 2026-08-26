@@ -79,6 +79,7 @@ export async function POST(req: Request) {
       status: "PENDING",
       chatHistory: "[]",
       filesJson: JSON.stringify(template.starterFiles),
+      starterFilesJson: JSON.stringify(template.starterFiles),
       templateId,
     },
     select: { inviteToken: true },

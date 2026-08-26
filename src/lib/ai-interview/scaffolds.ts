@@ -1,10 +1,11 @@
 /**
  * Centralized Gemini model name for AI Interview endpoints. Update here when
  * Google rotates models — touching one constant avoids per-route drift.
- * `gemini-1.5-flash` was retired; use a current model from the v1beta catalog.
+ * `gemini-1.5-flash` was retired; `gemini-2.5-flash` still works but 3.5 is
+ * the current conversational generation.
  */
 export const AI_INTERVIEW_GEMINI_MODEL =
-  process.env.AI_INTERVIEW_GEMINI_MODEL || "gemini-2.5-flash";
+  process.env.AI_INTERVIEW_GEMINI_MODEL || "gemini-3.5-flash";
 
 export interface AIInterviewTemplateDef {
   id: string;

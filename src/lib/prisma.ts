@@ -33,3 +33,52 @@ export const prisma =
   new PrismaClient(url ? { datasources: { db: { url } } } : undefined);
 
 if (process.env.NODE_ENV !== "production") globalForPrisma.prisma = prisma;
+const SCOPED_OPERATIONS = [
+  "findMany",
+  "findFirst",
+  "findFirstOrThrow",
+  "count",
+  "updateMany",
+  "deleteMany",
+  "aggregate",
+  "groupBy",
+];
+
+function applyWorkspaceScope(workspaceId: string) {
+  return async ({ operation, args, query }: { operation: string; args: any; query: (args: any) => Promise<any> }) => {
+    if (SCOPED_OPERATIONS.includes(operation)) {
+      args = args ?? {};
+      args.where = { ...(args.where ?? {}), workspaceId };
+    }
+    return query(args);
+  };
+}
+
+/**
+ * Returns a Prisma Client instance extended with automatic tenant scoping
+ * for workspace-isolated models (Candidate, InterviewSession, TakeHomeAssignment,
+ * AIInterviewSession, WorkspaceAuditLog).
+ */
+export function forWorkspace(workspaceId: string) {
+  const scope = applyWorkspaceScope(workspaceId);
+  return prisma.$extends({
+    query: {
+      candidate: {
+        $allOperations: scope,
+      },
+      interviewSession: {
+        $allOperations: scope,
+      },
+      takeHomeAssignment: {
+        $allOperations: scope,
+      },
+      aIInterviewSession: {
+        $allOperations: scope,
+      },
+      workspaceAuditLog: {
+        $allOperations: scope,
+      },
+    },
+  });
+}
+

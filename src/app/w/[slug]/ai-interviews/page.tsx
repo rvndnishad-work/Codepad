@@ -7,12 +7,15 @@ import { Lock, Sparkles } from "lucide-react";
 import { getWorkspaceCredits } from "@/lib/ai-interview/credits";
 import { effectivePlanAllowsAiScreening } from "@/lib/billing/trial";
 import { listTemplatesForWorkspace } from "@/lib/ai-interview/template-resolver";
+import { getStarterFilesByRoundId, inferStarterForSubmission } from "@/lib/ai-interview/round-content";
+import { diffFiles, diffStats, type FileDiff, type DiffStats } from "@/lib/ai-interview/diff";
+import { computeV2Score } from "@/lib/ai-interview/scoring-v2";
 import { canMember } from "@/lib/permissions";
 import AIInterviewRecruiterConsole from "./AIInterviewRecruiterConsole";
 
 type Props = {
   params: Promise<{ slug: string }>;
-  searchParams: Promise<{ page?: string }>;
+  searchParams: Promise<{ page?: string; candidate?: string }>;
 };
 
 const PAGE_SIZE = 25;
@@ -138,7 +141,33 @@ export default async function WorkspaceAiInterviewsPage({ params, searchParams }
   const totalScreened = completedAgg._count;
   const avgScore = Math.round(completedAgg._avg.score ?? 0);
 
-  const mappedSessions = rawSessions.map((s) => {
+  // One resolver pass for every listed session (batched challenge lookups).
+  // Snapshot-first: merged starters across all rounds so multi-round phantoms are impossible.
+  const starterMap = new Map<string, Record<string, string>>();
+  for (const s of rawSessions) {
+    try {
+      const parsedFilesEarly: Record<string, string> = (() => { try { return JSON.parse(s.filesJson || "{}"); } catch { return {}; }})();
+      if (Object.keys(parsedFilesEarly).length === 0) continue;
+      const m = await getStarterFilesByRoundId(s as never, workspace.id);
+      const merged: Record<string, string> = {};
+      for (const files of m.values()) Object.assign(merged, files);
+      if (Object.keys(merged).length > 0) {
+        starterMap.set(s.id, merged);
+      } else {
+        // Historical session without snapshot and live fallback yielded sentinel
+        // (e.g. old playground batch). Infer best matching template so zero-effort
+        // (submitted == starter) shows 0 files changed instead of phantom 4 NEW FILEs.
+        try {
+          const inferred = await inferStarterForSubmission(parsedFilesEarly, workspace.id);
+          if (inferred && Object.keys(inferred).length > 0) starterMap.set(s.id, inferred);
+        } catch {}
+      }
+    } catch {
+      /* starter unknown */
+    }
+  }
+  const mappedSessions = await Promise.all(
+    rawSessions.map(async (s) => {
     let parsedHistory: unknown[] = [];
     try {
       parsedHistory = JSON.parse(s.chatHistory || "[]");
@@ -153,6 +182,39 @@ export default async function WorkspaceAiInterviewsPage({ params, searchParams }
       parsedFiles = {};
     }
 
+    // Starter-vs-submitted diff so recruiters can see exactly what the
+    // candidate wrote. Uses the round-aware starter resolver
+    // (scaffold / challenge / playground rounds all covered).
+    let fileDiffs: FileDiff[] | null = null;
+    let changeStats: DiffStats | null = null;
+    let liveV2Score: number | null = null;
+    let liveV2Ratings: { CodeQuality: number; ProblemSolving: number; Communication: number } | null = null;
+    try {
+      const starter = starterMap.get(s.id);
+      if (starter && Object.keys(starter).length > 0 && Object.keys(parsedFiles).length > 0) {
+        fileDiffs = diffFiles(starter, parsedFiles);
+        changeStats = diffStats(fileDiffs);
+        // V2 live recompute — fixes historical 35% for single-line (1 meaningful => 7)
+        // Apply on page so old rows heal without DB backfill; future rows already stored via grade.ts
+        if (fileDiffs) {
+          const addedCode = fileDiffs.map((d) => d.added.join("\n")).join("\n");
+          const meaningfulLines = fileDiffs.reduce((n, d) => n + d.added.filter((l) => l.trim().length >= 3 && /[A-Za-z0-9]/.test(l) && !/^[\{\}\[\]\(\)<>;:,]+$/.test(l.trim())).length, 0);
+          const v2 = computeV2Score({
+            meaningfulLines,
+            addedLines: changeStats?.addedLines ?? 0,
+            filesChanged: changeStats?.filesChanged ?? 0,
+            addedCode,
+            templateId: s.templateId,
+            chatHistory: Array.isArray(parsedHistory) ? (parsedHistory as { role: "user" | "assistant"; text: string }[]) : [],
+          });
+          liveV2Score = v2.score;
+          liveV2Ratings = { CodeQuality: v2.codeQuality, ProblemSolving: v2.problemSolving, Communication: v2.communication };
+        }
+      }
+    } catch {
+      fileDiffs = null;
+    }
+
     let parsedRatings = { CodeQuality: 0, ProblemSolving: 0, Communication: 0 };
     if (s.ratings) {
       try {
@@ -160,6 +222,14 @@ export default async function WorkspaceAiInterviewsPage({ params, searchParams }
       } catch {
         // ignore
       }
+    }
+    // V2 live correction for historical inflated scores (single line => 35)
+    // If fileDiff shows <=4 meaningful lines and V2 says <=16, prefer V2
+    let displayScore: number | null = s.score;
+    let displayRatings = parsedRatings;
+    if (liveV2Score !== null && s.status === "COMPLETED" && liveV2Score <= 16 && (s.score ?? 0) >= 30) {
+      displayScore = liveV2Score;
+      if (liveV2Ratings) displayRatings = liveV2Ratings;
     }
 
     // Per-round summaries (multi-round batches). Files parsed for the per-round
@@ -196,6 +266,7 @@ export default async function WorkspaceAiInterviewsPage({ params, searchParams }
     return {
       id: s.id,
       inviteToken: s.inviteToken,
+      candidateId: s.candidateId,
       candidateName: s.candidateName,
       candidateEmail: s.candidateEmail,
       positionTitle: s.positionTitle,
@@ -203,7 +274,7 @@ export default async function WorkspaceAiInterviewsPage({ params, searchParams }
       templateId: s.templateId,
       batchId: s.batchId,
       batchTitle: s.batch?.positionTitle ?? null,
-      score: s.score,
+      score: displayScore,
       aiSummary: s.aiSummary,
       aiSuspicionScore: s.aiSuspicionScore,
       outboundCallCount: s.outboundCallCount,
@@ -213,10 +284,20 @@ export default async function WorkspaceAiInterviewsPage({ params, searchParams }
       finishedAt: s.finishedAt?.toISOString() ?? null,
       chatHistory: parsedHistory as { role: "user" | "assistant"; text: string }[],
       filesJson: parsedFiles,
-      ratings: parsedRatings,
+      fileDiffs,
+      changeStats,
+      timeSpentSec: s.timeSpentSec,
+      extensionPolicy: {
+        extraMinutes: s.extraMinutes,
+        used: s.extensionCount,
+        max: s.maxExtensions,
+        minutesEach: s.extensionMinutes,
+      },
+      ratings: displayRatings,
       rounds,
     };
-  });
+  })
+  );
 
   // Pivot bindings into "for each custom template, which server ids are bound?"
   // — convenient lookup shape for the binding UI in the Templates modal.
@@ -264,6 +345,7 @@ export default async function WorkspaceAiInterviewsPage({ params, searchParams }
       templates={templateChoices}
       availableExternalMcpServers={availableExternalMcpServers}
       workspaceAllowExternalMcp={workspace.allowExternalMcp}
+      initialCandidateId={sp.candidate ?? null}
       pagination={{
         page,
         totalPages,

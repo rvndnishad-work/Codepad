@@ -15,7 +15,7 @@
 import { prisma } from "@/lib/prisma";
 import { templates } from "@/lib/templates";
 import { resolveTemplate } from "./template-resolver";
-import type { SessionRound, Paradigm } from "./rounds";
+import { resolveSessionRounds, type SessionRound, type Paradigm } from "./rounds";
 
 export type RoundContent = {
   roundId: string;
@@ -33,9 +33,39 @@ export type RoundContent = {
   status: string;
 };
 
-const DEFAULT_STARTER: Record<string, string> = {
+export const DEFAULT_STARTER: Record<string, string> = {
   "/index.js": "// Start coding here\n",
 };
+
+/** True when a starter map is just the generic fallback sentinel (not a real template). */
+export function isDefaultStarter(starter: Record<string, string> | null | undefined): boolean {
+  if (!starter || Object.keys(starter).length !== 1) return false;
+  return starter["/index.js"] === "// Start coding here\n";
+}
+
+/**
+ * Sandpack base files for template="react" — auto-injected by SandpackProvider
+ * but not part of most scaffold's starterFiles maps. Merged into the starter
+ * baseline so diffs don't show them as phantom NEW FILEs. Must stay in sync
+ * with diff.ts SANDBOX_BOILERPLATE.
+ */
+export const REACT_SANDBOX_BASE: Record<string, string> = {
+  "/index.js": `import React, { StrictMode } from "react";\nimport { createRoot } from "react-dom/client";\nimport "./styles.css";\n\nimport App from "./App";\n\nconst root = createRoot(document.getElementById("root"));\nroot.render(\n  <StrictMode>\n    <App />\n  </StrictMode>\n);`,
+  "/public/index.html": `<!DOCTYPE html>\n<html lang="en">\n  <head>\n    <meta charset="UTF-8">\n    <meta name="viewport" content="width=device-width, initial-scale=1.0">\n    <title>Document</title>\n  </head>\n  <body>\n    <div id="root"></div>\n  </body>\n</html>`,
+  "/package.json": JSON.stringify({
+    dependencies: { react: "^19.0.0", "react-dom": "^19.0.0", "react-scripts": "^5.0.0" },
+    main: "/index.js",
+  }),
+  "/styles.css": `body {\n  font-family: sans-serif;\n  -webkit-font-smoothing: auto;\n  -moz-font-smoothing: auto;\n  -moz-osx-font-smoothing: grayscale;\n  font-smoothing: auto;\n  text-rendering: optimizeLegibility;\n  font-smooth: always;\n  -webkit-tap-highlight-color: transparent;\n  -webkit-touch-callout: none;\n}\n\nh1 {\n  font-size: 1.5rem;\n}`,
+};
+
+function withReactBase(custom: Record<string, string> | null, kind: string | null | undefined): Record<string, string> | null {
+  if (kind !== "frontend" && kind !== null) return custom;
+  // For frontend/react, merge base so phantom NEW FILEs never appear.
+  // Custom files win (e.g. scaffold's glassmorphic /styles.css overrides base sans-serif).
+  if (!custom) return { ...REACT_SANDBOX_BASE };
+  return { ...REACT_SANDBOX_BASE, ...custom };
+}
 
 /** Flatten a SandpackFiles map (string | {code}) to a plain path→code map. */
 function flattenCatalogFiles(files: Record<string, unknown>): Record<string, string> {
@@ -96,7 +126,7 @@ export async function resolveRoundsContent(
     let language = round.language ?? undefined;
     let frameworkLabel = round.frameworkLabel ?? undefined;
     let estimatedMinutes = round.estimatedMinutes;
-    let starterFiles: Record<string, string> = DEFAULT_STARTER;
+    let starterFiles: Record<string, string> | null = null;
 
     if (round.sourceKind === "scaffold") {
       const tpl = round.templateId
@@ -117,7 +147,8 @@ export async function resolveRoundsContent(
         title = c.title;
         description = c.description;
         estimatedMinutes = round.estimatedMinutes || c.estimatedMinutes;
-        starterFiles = parseFiles(c.starterFiles) ?? DEFAULT_STARTER;
+        const parsed = parseFiles(c.starterFiles);
+        if (parsed) starterFiles = parsed;
       }
     } else if (round.sourceKind === "playground") {
       const def = round.sourceId ? templates.find((t) => t.id === round.sourceId) : undefined;
@@ -127,6 +158,22 @@ export async function resolveRoundsContent(
         starterFiles = flattenCatalogFiles(def.files as Record<string, unknown>);
       }
     }
+
+    // Merge Sandpack react base for frontend scaffold/playground so the starter
+    // matches what <SandpackProvider template="react"> actually renders.
+    // Without this, base files (/index.js, /public/index.html, /package.json,
+    // /styles.css) appear as phantom NEW FILEs when the candidate submits
+    // without editing (diff +44 lines). Challenge rounds keep their own starter.
+    if (round.sourceKind !== "challenge") {
+      starterFiles = withReactBase(starterFiles, kind);
+    }
+
+    // Only fall back to generic sentinel when we truly have no round context
+    // (legacy rows with no sourceKind/sourceId). For scaffold/playground
+    // lookups that failed but got base-merged above, we already have a real baseline.
+    // Challenge lookups that failed stay null so callers can detect unknown.
+    const resolvedStarter = starterFiles ?? (round.sourceKind ? null : DEFAULT_STARTER);
+    const effectiveStarter = resolvedStarter ?? DEFAULT_STARTER;
 
     const saved = parseFiles(round.filesJson);
     out.push({
@@ -138,11 +185,126 @@ export async function resolveRoundsContent(
       language,
       frameworkLabel,
       estimatedMinutes,
-      starterFiles,
-      files: saved ?? starterFiles,
+      starterFiles: effectiveStarter,
+      files: saved ?? effectiveStarter,
       status: round.status,
     });
   }
 
   return out;
+}
+
+/**
+ * Resolve the STARTER files for every round of a session — the authoritative
+ * baseline for candidate-vs-starter diffs. Snapshot-first: uses the immutable
+ * starterFilesJson captured at invite time, falling back to live template
+ * re-resolution only for pre-snapshot sessions.
+ */
+export async function getStarterFilesByRoundId(
+  session: { id: string; templateId: string | null; filesJson?: string | null; starterFilesJson?: string | null } & { rounds?: unknown[] },
+  workspaceId: string
+): Promise<Map<string, Record<string, string>>> {
+  const sessionRounds = resolveSessionRounds(session as Parameters<typeof resolveSessionRounds>[0]);
+  // Snapshot-first: if any round/session carries starterFilesJson, use it directly
+  const rawRoundsById = new Map<string, Record<string, unknown>>(
+    ((session as unknown as { rounds?: Array<Record<string, unknown>> }).rounds ?? []).map((r) => [String(r.id), r])
+  );
+  const snapshotMap = new Map<string, Record<string, string>>();
+  let needLiveResolve = false;
+  for (const sr of sessionRounds) {
+    const raw = rawRoundsById.get(sr.id) as unknown as { starterFilesJson?: string | null } | undefined;
+    const snapRaw = raw?.starterFilesJson ?? (sr.legacy ? (session as unknown as { starterFilesJson?: string | null }).starterFilesJson : null);
+    const parsed = parseFiles(snapRaw ?? null);
+    if (parsed) snapshotMap.set(sr.id, parsed);
+    else needLiveResolve = true;
+  }
+  if (!needLiveResolve) return snapshotMap;
+
+  // Live fallback for rounds still missing a snapshot (pre-migration data)
+  // If live resolution yields the generic sentinel (DEFAULT_STARTER), treat as
+  // unknown baseline instead of crediting phantom NEW FILEs. The diff UI and
+  // grader will then show "no verifiable diff" / clamp to 5, rather than
+  // 4 files changed +44 lines for a zero-effort submission.
+  const contents = await resolveRoundsContent(sessionRounds, workspaceId);
+  const map = new Map<string, Record<string, string>>();
+  for (const c of contents) {
+    if (snapshotMap.has(c.roundId)) {
+      map.set(c.roundId, snapshotMap.get(c.roundId)!);
+      continue;
+    }
+    if (isDefaultStarter(c.starterFiles)) {
+      // Unknown baseline — do not populate, caller will handle as missing
+      continue;
+    }
+    map.set(c.roundId, c.starterFiles);
+  }
+  return map;
+}
+
+/**
+ * Best-effort inference for historical sessions without a snapshot: pick the
+ * template whose starter most closely matches the submitted files (minimal
+ * diff). Used to heal phantom diffs where fallback sentinel would otherwise
+ * show every file as NEW FILE.
+ */
+export async function inferStarterForSubmission(
+  submitted: Record<string, string>,
+  workspaceId: string
+): Promise<Record<string, string> | null> {
+  const { AI_INTERVIEW_TEMPLATES } = await import("./scaffolds");
+  const { templates: catalog } = await import("@/lib/templates");
+  // Load workspace custom templates
+  let customRows: { starterFiles: string }[] = [];
+  try {
+    customRows = await prisma.aIInterviewTemplate.findMany({
+      where: { workspaceId },
+      select: { starterFiles: true },
+    });
+  } catch {
+    customRows = [];
+  }
+
+  const candidates: Record<string, string>[] = [];
+  // Builtins
+  for (const t of AI_INTERVIEW_TEMPLATES) if (t.starterFiles) candidates.push(t.starterFiles);
+  // Customs
+  for (const r of customRows) {
+    try {
+      const p = JSON.parse(r.starterFiles);
+      if (p && typeof p === "object" && !Array.isArray(p) && Object.keys(p).length > 0) {
+        candidates.push(p as Record<string, string>);
+      }
+    } catch {}
+  }
+  // Playground catalog
+  for (const def of catalog) {
+    if (!def.files) continue;
+    const out: Record<string, string> = {};
+    for (const [pp, val] of Object.entries(def.files as Record<string, unknown>)) {
+      if (typeof val === "string") out[pp] = val;
+      else if (val && typeof val === "object" && "code" in val) out[pp] = String((val as { code: unknown }).code ?? "");
+    }
+    if (Object.keys(out).length > 0) candidates.push(out);
+  }
+  // Also consider generic default as last resort
+  candidates.push(DEFAULT_STARTER);
+
+  if (candidates.length === 0) return null;
+  // Use diff cost to rank — lazy import to avoid cycle
+  const { diffStats, diffFiles } = await import("./diff");
+  let best: Record<string, string> | null = null;
+  let bestCost = Infinity;
+  for (const cand of candidates) {
+    try {
+      const d = diffFiles(cand, submitted);
+      const s = diffStats(d);
+      const cost = s.addedLines + s.removedLines;
+      if (cost < bestCost) {
+        bestCost = cost;
+        best = cand;
+      }
+      if (cost === 0) break;
+    } catch {}
+  }
+  return best;
 }

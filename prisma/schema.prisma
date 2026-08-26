@@ -791,6 +791,7 @@ model Workspace {
   members              WorkspaceMember[]
   invites              WorkspaceInvite[]
   auditLogs            WorkspaceAuditLog[]
+  agentConfigs         AgentConfig[]
 }
 
 /// Pending teammate invitation (IP-73). Replaces the old "silently mint a
@@ -1043,8 +1044,23 @@ model AIInterviewSession {
   /// Count of proactive (observer/coach) comments emitted this session. Used to
   /// enforce the per-session hard cap on background AI interjections.
   proactiveCount   Int                       @default(0)
+  /// Time-extension policy + usage (candidate's "+5 min" button). Defaults give
+  /// every screening ONE 5-minute extension; recruiters can change both per
+  /// session from the AI Screening console drawer, or set them at batch invite
+  /// time in the wizard. extraMinutes is honored by every deadline check.
+  /// Accumulated seconds the candidate actually spent in the workspace
+  /// (visibility-gated heartbeats, capped per ping).
+  timeSpentSec     Int                       @default(0)
+  extraMinutes     Int                       @default(0)
+  extensionCount   Int                       @default(0)
+  maxExtensions    Int                       @default(1)
+  extensionMinutes Int                       @default(5)
   createdAt        DateTime                  @default(now())
   updatedAt        DateTime                  @updatedAt
+  /// Immutable starter snapshot captured at invite time (path -> code JSON).
+  /// Used as the authoritative baseline for diffs/grading so re-resolving
+  /// templates at grade time can never drift and credit scaffold code.
+  starterFilesJson String?
   ledgerEntries    AIInterviewCreditLedger[]
   candidate        Candidate?                @relation(fields: [candidateId], references: [id])
   workspace        Workspace                 @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
@@ -1130,6 +1146,10 @@ model AIInterviewRound {
   /// Per-round candidate file state (path -> code, JSON). Seeds from the
   /// resolved starter files for this round's source.
   filesJson        String    @default("{}")
+  /// Immutable starter snapshot for this round (path -> code JSON), captured at
+  /// batch creation. Grading/diffs use this first; live template re-resolution
+  /// is only a fallback for pre-snapshot sessions.
+  starterFilesJson String?
   /// Reserved for a future per-round chat-reset mode. Null = shared session chat.
   chatHistory      String?
   /// Per-round score 0..100 + rubric, set at grade time. Session composite
@@ -2050,3 +2070,36 @@ model CreatorApplication {
   @@index([status])
 }
 
+/// Configurable AI agent. One row overrides platform defaults per workspace;
+/// `workspaceId = null` rows are the platform-level defaults seeded in code
+/// (see src/lib/agents/defaults.ts). The runtime (src/lib/agents/runtime.ts)
+/// renders {{variable}} placeholders in systemPrompt with per-call context.
+model AgentConfig {
+  id              String    @id @default(cuid())
+  /// Owning workspace for workspace-scoped personas; null = platform default.
+  workspaceId     String?
+  workspace       Workspace? @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  /// INTERVIEWER | COACH | ADMIN_HELPER | CUSTOM (validated app-side).
+  role            String
+  /// Display name shown in transcripts/UI ("Ava", "Screening Coach", â€¦).
+  name            String
+  /// System prompt template. {{variables}} are rendered at call time from
+  /// context (e.g. {{positionTitle}}, {{taskBrief}}, {{candidateName}}).
+  systemPrompt    String    @db.Text
+  /// Gemini model override; null = shared default (AI_INTERVIEW_GEMINI_MODEL).
+  model           String?
+  temperature     Float     @default(0.7)
+  maxOutputTokens Int       @default(1024)
+  /// Allowlist of builtin tool ids (src/lib/agents/registry.ts). Empty = no tools.
+  toolsJson       String    @default("[]")
+  /// Guardrails: { maxTurns?, cooldownMs?, proactiveCap? } â€” role-dependent.
+  guardrailsJson  String    @default("{}")
+  /// What to do when the upstream model fails: "mock" (degraded scripted reply)
+  /// or "error" (surface failure honestly).
+  fallback        String    @default("mock")
+  enabled         Boolean   @default(true)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@index([workspaceId, role])
+}

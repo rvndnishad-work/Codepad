@@ -109,6 +109,23 @@ type Props = {
   initialChat: Message[];
 };
 
+/** Shape of GET /api/ai-interview/status — the honest health probe. */
+type AiStatus = {
+  ai: { configured: boolean; model: string };
+  credits: { required: number; balance: number; sufficient: boolean } | null;
+  deadline: string | null;
+  expired: boolean;
+  finished: boolean;
+  engagementLevel: string;
+};
+
+/** Metadata appended by /api/ai-interview/message on every turn. */
+type MessageTurnMeta = {
+  aiProvider?: "gemini" | "mock";
+  degraded?: boolean;
+  degradedReason?: string | null;
+};
+
 const ROUND_ICON: Record<string, React.ReactNode> = {
   frontend: <Monitor className="w-3.5 h-3.5" />,
   backend: <Server className="w-3.5 h-3.5" />,
@@ -149,21 +166,59 @@ export default function AIInterviewWorkspace({ session, rounds, initialChat }: P
   const [outputView, setOutputView] = useState<"preview" | "both" | "console">("both");
   const [floatingChatOpen, setFloatingChatOpen] = useState(false);
   const [showControls, setShowControls] = useState(false);
-  const [extendedMinutes, setExtendedMinutes] = useState(0);
   const [isListening, setIsListening] = useState(false);
   const [isAISpeaking, setIsAISpeaking] = useState(false);
   const [voiceSettingsOpen, setVoiceSettingsOpen] = useState(false);
   const [availableVoices, setAvailableVoices] = useState<SpeechSynthesisVoice[]>([]);
   const [selectedVoiceName, setSelectedVoiceName] = useState<string>("");
   const [speechRate, setSpeechRate] = useState<number>(0.97);
+  // Real AI health, probed on mount and refreshed after failed turns. Drives
+  // the status chip + banners so the candidate always knows whether the
+  // interviewer is live, degraded (offline mode), or paused (no credits).
+  const [aiStatus, setAiStatus] = useState<AiStatus | null>(null);
+  const [degradedTurn, setDegradedTurn] = useState(false);
   const recognitionRef = useRef<any>(null);
-  const { width: chatW, onPointerDown: onChatDrag } = useResizable(450, 240, 700);
+  const { width: chatW, onPointerDown: onChatDrag } = useResizable(340, 260, 560);
+  // Track the viewport so fixed-width panes can never push the coding surface
+  // off-screen (the old fixed 450px question pane + 840px editor overflowed
+  // common laptop widths and crushed/misaligned the browser preview).
+  const [viewportW, setViewportW] = useState(0);
+  useEffect(() => {
+    const onResize = () => setViewportW(window.innerWidth);
+    onResize();
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, []);
+  // Question pane may claim at most ~26% of the viewport.
+  const effChatW = viewportW
+    ? Math.min(chatW, Math.max(260, Math.round(viewportW * 0.26)))
+    : chatW;
 
   const activeRound = rounds.find((r) => r.roundId === activeRoundId) ?? rounds[0];
   const activeFiles = roundFiles[activeRoundId] ?? {};
   const isMultiRound = rounds.length > 1;
 
   const chatEndRef = useRef<HTMLDivElement>(null);
+
+  // ── AI health derivation ────────────────────────────────────────────────
+  const outOfCredits = !!aiStatus?.credits && !aiStatus.credits.sufficient;
+  const aiConfigured = aiStatus ? aiStatus.ai.configured : true;
+  const offlineMode = degradedTurn || !aiConfigured;
+
+  const refreshAiStatus = () => {
+    fetch(`/api/ai-interview/status?inviteToken=${encodeURIComponent(session.inviteToken)}`)
+      .then((r) => (r.ok ? (r.json() as Promise<AiStatus>) : null))
+      .then((d) => {
+        if (d) setAiStatus(d);
+      })
+      .catch(() => {
+        /* probe is best-effort — banners just stay on last known state */
+      });
+  };
+  useEffect(() => {
+    refreshAiStatus();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [session.inviteToken]);
 
   const updateRoundFiles = (roundId: string, files: Record<string, string>) => {
     setRoundFiles((prev) => ({ ...prev, [roundId]: files }));
@@ -242,20 +297,97 @@ export default function AIInterviewWorkspace({ session, rounds, initialChat }: P
   //    truth on expiry; this is UX with a matching grace buffer. ──────────────
   const [now, setNow] = useState<number>(Date.now());
   useEffect(() => {
-    if (!session.startedAt) return;
     const interval = setInterval(() => setNow(Date.now()), 1000);
     return () => clearInterval(interval);
-  }, [session.startedAt]);
-  const deadlineMs = session.startedAt
-    ? new Date(session.startedAt).getTime() + (session.estimatedMinutes + extendedMinutes) * 60_000
-    : null;
-  const remainingMs = deadlineMs ? deadlineMs - now : null;
-  const isExpired = remainingMs !== null && remainingMs <= 0;
-  const isLowTime = remainingMs !== null && remainingMs < 5 * 60_000;
+  }, []);
 
-  const handleExtendTimer = () => {
-    setExtendedMinutes((prev) => prev + 15);
-    toast.success("Added 15 minutes to your session!");
+  // FIX: the timer used to vanish for a candidate's FIRST visit because
+  // `session.startedAt` came from the initial server render (null until their
+  // first message) and never updated client-side. Now: once started, the
+  // server timestamp wins; before that, the clock starts from mount time so
+  // the countdown is ALWAYS visible (the greeting fires on load anyway).
+  const [mountedAt] = useState<number>(() => Date.now());
+  const startedAtMs = session.startedAt ? new Date(session.startedAt).getTime() : mountedAt;
+
+  // Authoritative deadline after a successful extension; local math otherwise.
+  const [serverDeadlineAt, setServerDeadlineAt] = useState<string | null>(null);
+  const [extensionsRemaining, setExtensionsRemaining] = useState<number | null>(null);
+  const [extensionMinutesEach, setExtensionMinutesEach] = useState<number>(5);
+  const [timeSpentSec, setTimeSpentSec] = useState<number | null>(null);
+
+  // Presence heartbeat: banks time-spent while the tab is visible (30s cadence,
+  // paused when hidden). Feeds the recruiter's "time spent" readout.
+  useEffect(() => {
+    if (!session.startedAt) return;
+    let stopped = false;
+    const ping = () => {
+      if (document.visibilityState !== "visible" || stopped) return;
+      fetch("/api/ai-interview/heartbeat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ inviteToken: session.inviteToken, seconds: 30 }),
+      })
+        .then((r) => (r.ok ? r.json() : null))
+        .then((d) => {
+          if (d?.ok && typeof d.timeSpentSec === "number") setTimeSpentSec(d.timeSpentSec);
+        })
+        .catch(() => {});
+    };
+    ping();
+    const id = setInterval(ping, 30_000);
+    return () => {
+      stopped = true;
+      clearInterval(id);
+    };
+  }, [session.inviteToken, session.startedAt]);
+  useEffect(() => {
+    // Pull the recruiter's policy once the session status probe lands.
+    fetch(`/api/ai-interview/status?inviteToken=${encodeURIComponent(session.inviteToken)}`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => {
+        if (d?.extensions) {
+          setExtensionsRemaining(d.extensions.remaining);
+          setExtensionMinutesEach(d.extensions.minutesEach ?? 5);
+        }
+      })
+      .catch(() => {});
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [session.inviteToken]);
+
+  const baseMinutes = Math.max(1, session.estimatedMinutes || 30);
+  const [localExtraMin, setLocalExtraMin] = useState(0);
+  const deadlineMs =
+    serverDeadlineAt !== null
+      ? new Date(serverDeadlineAt).getTime()
+      : startedAtMs + (baseMinutes + localExtraMin) * 60_000;
+  const remainingMs = deadlineMs - now;
+  const isExpired = remainingMs <= 0;
+  const isLowTime = remainingMs < 5 * 60_000;
+
+  const [extendingTime, setExtendingTime] = useState(false);
+  const handleExtendTimer = async () => {
+    if (extendingTime) return;
+    setExtendingTime(true);
+    try {
+      const res = await fetch("/api/ai-interview/extend", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ inviteToken: session.inviteToken }),
+      });
+      const data = await res.json().catch(() => null);
+      if (!res.ok || !data?.success) {
+        toast.error(data?.error ?? "Could not extend time.");
+        if (data?.error === "No extensions remaining") setExtensionsRemaining(0);
+        return;
+      }
+      setServerDeadlineAt(data.deadlineAt);
+      setExtensionsRemaining(data.extensionsRemaining);
+      toast.success(`+${data.extraMinutes >= 0 ? "" : ""}Time extended — good luck!`);
+    } catch {
+      toast.error("Network error while extending time.");
+    } finally {
+      setExtendingTime(false);
+    }
   };
 
   const autoSubmittedRef = useRef(false);
@@ -391,12 +523,18 @@ export default function AIInterviewWorkspace({ session, rounds, initialChat }: P
     try {
       const res = await postMessage("hello");
       if (res.ok) {
-        const data = (await res.json()) as { chatHistory: Message[] };
+        const data = (await res.json()) as { chatHistory: Message[] } & MessageTurnMeta;
         setChat(data.chatHistory);
+        setDegradedTurn(data.degraded === true);
         speakResponse(data.chatHistory[data.chatHistory.length - 1]?.text);
+      } else {
+        const data = (await res.json().catch(() => null)) as { error?: string } | null;
+        toast.error(data?.error ?? "The interviewer could not start. Please refresh the page.");
+        refreshAiStatus();
       }
     } catch (e) {
       console.error(e);
+      toast.error("Could not reach the interviewer. Check your connection and try again.");
     } finally {
       setSending(false);
     }
@@ -503,10 +641,14 @@ export default function AIInterviewWorkspace({ session, rounds, initialChat }: P
       const res = await postMessage(userMessage);
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
+        // 402 = the workspace ran out of AI credits mid-interview. Re-probe so
+        // the "paused" banner appears immediately instead of just a toast.
+        refreshAiStatus();
         throw new Error(data.error || "Failed to dispatch message");
       }
-      const data = (await res.json()) as { chatHistory: Message[] };
+      const data = (await res.json()) as { chatHistory: Message[] } & MessageTurnMeta;
       setChat(data.chatHistory);
+      setDegradedTurn(data.degraded === true);
       speakResponse(data.chatHistory[data.chatHistory.length - 1]?.text);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Interviewer failed to respond.");
@@ -702,11 +844,13 @@ export default function AIInterviewWorkspace({ session, rounds, initialChat }: P
               </span>
             </div>
           )}
-          {mounted && remainingMs !== null && (
+          {mounted && (
             <div className="flex items-center gap-2">
               <div
                 className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-[11px] font-bold tabular-nums transition-colors ${
-                  isExpired
+                  completed
+                    ? "hidden"
+                    : isExpired
                     ? "bg-rose-500/15 border-rose-500/40 text-rose-700 dark:text-rose-300 animate-pulse"
                     : isLowTime
                     ? "bg-amber-500/15 border-amber-500/35 text-amber-700 dark:text-amber-300"
@@ -715,17 +859,26 @@ export default function AIInterviewWorkspace({ session, rounds, initialChat }: P
                 title="Time remaining on this screening"
               >
                 <Clock className="w-3.5 h-3.5 animate-pulse" />
-                <span>{formatRemaining(remainingMs)}</span>
+                <span>{completed ? "—" : formatRemaining(remainingMs)}</span>
               </div>
 
-              <button
-                type="button"
-                onClick={handleExtendTimer}
-                title="Extend timer by 15 minutes"
-                className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-border bg-bg hover:bg-elevated text-slate-700 dark:text-slate-300 hover:text-fg text-[10px] font-black tracking-wider transition cursor-pointer shrink-0 active:scale-95 shadow-sm"
-              >
-                +15m
-              </button>
+              {/* Candidate time extension — policy set by the recruiter
+                  (maxExtensions × extensionMinutes). Persisted server-side so
+                  it survives refresh and binds every deadline check. */}
+              {!completed && (extensionsRemaining ?? 0) > 0 && (
+                <button
+                  type="button"
+                  onClick={handleExtendTimer}
+                  disabled={extendingTime}
+                  title={`Add ${extensionMinutesEach} more minute${extensionMinutesEach === 1 ? "" : "s"} — ${extensionsRemaining} extension${extensionsRemaining === 1 ? "" : "s"} left`}
+                  className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-accent/40 bg-accent/10 hover:bg-accent/20 text-accent text-[10px] font-black tracking-wider transition cursor-pointer shrink-0 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed shadow-sm tabular-nums"
+                >
+                  {extendingTime ? "…" : `+${extensionMinutesEach}m`}
+                  {(extensionsRemaining ?? 0) > 0 && (
+                    <span className="text-[9px] opacity-70">×{extensionsRemaining}</span>
+                  )}
+                </button>
+              )}
             </div>
           )}
           
@@ -782,7 +935,7 @@ export default function AIInterviewWorkspace({ session, rounds, initialChat }: P
       <main className="flex-1 flex min-h-0 overflow-hidden relative">
         {/* Left Pane: Question Pane - collapsible & draggable */}
         <div
-          style={{ width: chatCollapsed ? "0px" : `${chatW}px` }}
+          style={{ width: chatCollapsed ? "0px" : `${effChatW}px` }}
           className={`transition-all duration-300 flex flex-col min-w-0 border-r border-border bg-surface/40 ${chatCollapsed ? "opacity-0 pointer-events-none border-r-0 shrink-0" : "shrink-0"}`}
         >
           <div className="px-5 py-3.5 border-b border-border bg-surface/60 flex items-center justify-between shrink-0 h-14">
@@ -860,8 +1013,9 @@ export default function AIInterviewWorkspace({ session, rounds, initialChat }: P
             </div>
           )}
 
-          {/* Active round banner */}
-          <div className="px-4 py-2 border-b border-border bg-surface/40 flex items-center gap-2 shrink-0">
+          {/* Active round banner — h-14 so its baseline matches the question
+              pane header on the left and the panes read as one aligned row. */}
+          <div className="h-14 px-4 border-b border-border bg-surface/40 flex items-center gap-2 shrink-0">
             <span className="text-accent">{ROUND_ICON[activeRound.kind]}</span>
             <span className="text-[11px] font-bold text-fg truncate">{activeRound.title}</span>
             <span className="text-[9px] font-black uppercase tracking-wider text-muted bg-bg border border-border px-1.5 py-0.5 rounded ml-1">
@@ -870,7 +1024,31 @@ export default function AIInterviewWorkspace({ session, rounds, initialChat }: P
             </span>
           </div>
 
-          <div className="flex-1 min-h-0">
+          {/* AI health banner — always visible so the candidate knows whether
+              the interviewer is live, degraded, or paused, before they type. */}
+          {(outOfCredits || offlineMode || aiStatus?.expired) && (
+            <div
+              className={`px-4 py-2 border-b border-border flex items-center gap-2 shrink-0 text-[11px] font-bold ${
+                outOfCredits || aiStatus?.expired
+                  ? "bg-rose-500/10 border-rose-500/25 text-rose-400"
+                  : "bg-amber-500/10 border-amber-500/25 text-amber-400"
+              }`}
+              role="status"
+            >
+              <span
+                className={`w-2 h-2 rounded-full shrink-0 ${
+                  outOfCredits || aiStatus?.expired ? "bg-rose-500" : "bg-amber-500 animate-pulse"
+                }`}
+              />
+              {outOfCredits
+                ? "Interviewer paused — this workspace is out of AI interview credits. Please contact your recruiter."
+                : aiStatus?.expired
+                  ? "Time is up for this session — submit your assessment to finish."
+                  : "The AI interviewer is temporarily in offline mode — replies come from a limited script and may not fit your answers."}
+            </div>
+          )}
+
+          <div className="flex-1 min-h-0 overflow-hidden">
             <RoundSurface
               key={activeRound.roundId}
               round={activeRound}
@@ -879,6 +1057,7 @@ export default function AIInterviewWorkspace({ session, rounds, initialChat }: P
               onRun={(o) => setLastRun(o)}
               outputView={outputView}
               setOutputView={setOutputView}
+              reservedLeft={chatCollapsed ? 0 : effChatW + 6}
             />
           </div>
         </div>
@@ -1188,11 +1367,27 @@ export default function AIInterviewWorkspace({ session, rounds, initialChat }: P
                 <div className="w-8 h-8 rounded-xl bg-accent/10 border border-accent/25 flex items-center justify-center text-accent">
                   <Bot className="w-4 h-4" />
                 </div>
-                <span className={`absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-emerald-500 border border-[#101424] ${sending ? "animate-ping" : ""}`} />
+                <span
+                  className={`absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border border-[#101424] ${
+                    outOfCredits
+                      ? "bg-rose-500"
+                      : offlineMode
+                        ? "bg-amber-500"
+                        : "bg-emerald-500"
+                  } ${sending ? "animate-ping" : ""}`}
+                />
               </div>
               <div>
                 <span className="text-[10px] font-black uppercase text-accent tracking-widest block">AI Interviewer</span>
-                <span className="text-xs font-bold text-fg">Agent Active</span>
+                <span className="text-xs font-bold text-fg">
+                  {sending
+                    ? "Thinking…"
+                    : outOfCredits
+                      ? "Paused · No credits"
+                      : offlineMode
+                        ? "Offline mode"
+                        : "Live"}
+                </span>
               </div>
             </div>
             <button
@@ -1293,6 +1488,7 @@ function RoundSurface({
   onRun,
   outputView,
   setOutputView,
+  reservedLeft,
 }: {
   round: RoundView;
   files: Record<string, string>;
@@ -1300,6 +1496,8 @@ function RoundSurface({
   onRun: (out: { stdout?: string; stderr?: string }) => void;
   outputView: "preview" | "both" | "console";
   setOutputView: (val: "preview" | "both" | "console") => void;
+  /** Width already consumed left of this surface (question pane + handles). */
+  reservedLeft: number;
 }) {
   const isFrontend = round.kind === "frontend";
   const { resolvedTheme } = useTheme();
@@ -1311,8 +1509,27 @@ function RoundSurface({
   useEffect(() => setMounted(true), []);
   const isDark = mounted && resolvedTheme === "dark";
   const [fileTreeCollapsed, setFileTreeCollapsed] = useState(false);
-  const { width: editorW, onPointerDown: onEditorDrag } = useResizable(840, 320, 2000);
+  const { width: editorW, onPointerDown: onEditorDrag } = useResizable(600, 380, 1200);
   const { height: consoleH, onPointerDown: onConsoleDrag } = useResizableHeight(180, 80, 700);
+
+  // Keep the editor from starving the preview: clamp to what's actually
+  // available after the question pane, file tree, drag handles, and a minimum
+  // ~320px preview. Without this the fixed editor width overflowed laptops
+  // and pushed/misaligned the Browser Preview off-screen.
+  const [surfaceVpW, setSurfaceVpW] = useState(0);
+  useEffect(() => {
+    const onResize = () => setSurfaceVpW(window.innerWidth);
+    onResize();
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, []);
+  const treeW = fileTreeCollapsed ? 48 : 192;
+  const effEditorW = surfaceVpW
+    ? Math.min(
+        editorW,
+        Math.max(380, surfaceVpW - reservedLeft - treeW - 12 - 320)
+      )
+    : editorW;
 
   // Capture initial files on mount of this round to keep SandpackProvider stable!
   const initialFilesRef = useRef(files);
@@ -1325,27 +1542,28 @@ function RoundSurface({
   };
 
   return (
-    <SandpackProvider
-      key={`${previewKey}-${isDark ? "dark" : "light"}`}
-      template={isFrontend ? "react" : "vanilla"}
-      theme={getSandpackTheme(isDark)}
-      files={initialFilesRef.current}
-      options={{
-        initMode: "immediate",
-        recompileMode: "delayed",
-        recompileDelay: 300,
-        visibleFiles: isFrontend ? ["/App.js"] : undefined,
-        activeFile: isFrontend ? "/App.js" : undefined,
-      }}
-    >
-      <SurfaceBridge roundId={round.roundId} onFilesChange={onFilesChange} />
-      {isFrontend ? (
-        <div className="flex h-full flex-col md:flex-row min-h-0 overflow-hidden">
-          {/* Column 2: File explorer sidebar & Editor area - drag-resizable on desktop */}
-          <div
-            className="w-full md:w-[var(--ide-editor-w)] md:shrink-0 flex border-r border-border h-full overflow-hidden"
-            style={{ "--ide-editor-w": `${editorW}px` } as React.CSSProperties}
-          >
+    <div className="h-full min-h-0 flex flex-col overflow-hidden ai-surface">
+      <SandpackProvider
+        key={`${previewKey}-${isDark ? "dark" : "light"}`}
+        template={isFrontend ? "react" : "vanilla"}
+        theme={getSandpackTheme(isDark)}
+        files={initialFilesRef.current}
+        options={{
+          initMode: "immediate",
+          recompileMode: "delayed",
+          recompileDelay: 300,
+          visibleFiles: isFrontend ? ["/App.js"] : undefined,
+          activeFile: isFrontend ? "/App.js" : undefined,
+        }}
+      >
+        <SurfaceBridge roundId={round.roundId} onFilesChange={onFilesChange} />
+        {isFrontend ? (
+          <div className="flex h-full flex-col md:flex-row min-h-0 overflow-hidden">
+            {/* Column 2: File explorer sidebar & Editor area - drag-resizable on desktop */}
+            <div
+              className="w-full md:w-[var(--ide-editor-w)] md:shrink-0 flex border-r border-border h-full overflow-hidden"
+              style={{ "--ide-editor-w": `${effEditorW}px` } as React.CSSProperties}
+            >
             {fileTreeCollapsed ? (
               <div className="w-12 shrink-0 border-r border-border bg-surface/20 hidden sm:flex flex-col items-center py-4 gap-4 h-full transition-all duration-300">
                 <button
@@ -1520,7 +1738,8 @@ function RoundSurface({
       ) : (
         <ConsoleSurface language={round.language ?? "node"} kind={round.kind as "backend" | "dsa"} onRun={onRun} />
       )}
-    </SandpackProvider>
+      </SandpackProvider>
+    </div>
   );
 }
 

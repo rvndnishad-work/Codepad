@@ -6,6 +6,7 @@ import { ArrowUpRight, CheckCircle2 } from "lucide-react";
 import { TECHNOLOGIES } from "@/lib/interview-questions/shared";
 import TechSvg from "@/components/TechSvg";
 import { getSolved } from "@/lib/interview-questions/progress";
+import { getTechMeta } from "@/lib/interview-questions/techTheme";
 
 interface TechStats {
   easy: number;
@@ -13,176 +14,6 @@ interface TechStats {
   hard: number;
   total: number;
 }
-
-interface TechMeta {
-  bg: string;
-  border: string;
-  hoverBg: string;
-  hoverBorder: string;
-  hoverShadow: string;
-  iconBg: string;
-  glowColor: string;
-  tagline: string;
-  concepts: string[];
-}
-
-const META: Record<string, TechMeta> = {
-  reactjs: {
-    bg: "bg-gradient-to-br from-cyan-500/5 via-surface to-surface dark:from-cyan-950/15 dark:via-surface/10 dark:to-surface/5",
-    border: "border-cyan-500/15 dark:border-cyan-500/10",
-    hoverBg: "hover:from-cyan-500/10 dark:hover:from-cyan-950/25",
-    hoverBorder: "hover:border-cyan-500/40 dark:hover:border-cyan-500/30",
-    hoverShadow: "hover:shadow-[0_8px_30px_rgba(6,182,212,0.06)]",
-    iconBg: "bg-cyan-500/10 dark:bg-cyan-500/20",
-    glowColor: "bg-cyan-500/5",
-    tagline: "Hooks, rendering & state",
-    concepts: ["Hooks", "JSX", "Context", "Suspense"],
-  },
-  nodejs: {
-    bg: "bg-gradient-to-br from-green-500/5 via-surface to-surface dark:from-green-950/15 dark:via-surface/10 dark:to-surface/5",
-    border: "border-green-500/15 dark:border-green-500/10",
-    hoverBg: "hover:from-green-500/10 dark:hover:from-green-950/25",
-    hoverBorder: "hover:border-green-500/40 dark:hover:border-green-500/30",
-    hoverShadow: "hover:shadow-[0_8px_30px_rgba(34,197,94,0.06)]",
-    iconBg: "bg-green-500/10 dark:bg-green-500/20",
-    glowColor: "bg-green-500/5",
-    tagline: "Event loop, streams & APIs",
-    concepts: ["Event Loop", "Streams", "V8 Engine", "Buffers"],
-  },
-  nextjs: {
-    bg: "bg-gradient-to-br from-zinc-500/5 via-surface to-surface dark:from-zinc-800/20 dark:via-surface/10 dark:to-surface/5",
-    border: "border-zinc-500/15 dark:border-zinc-400/10",
-    hoverBg: "hover:from-zinc-500/10 dark:hover:from-zinc-800/30",
-    hoverBorder: "hover:border-zinc-500/40 dark:hover:border-zinc-400/30",
-    hoverShadow: "hover:shadow-[0_8px_30px_rgba(113,113,122,0.08)]",
-    iconBg: "bg-zinc-500/10 dark:bg-zinc-400/20",
-    glowColor: "bg-zinc-500/5",
-    tagline: "App Router, RSC & rendering",
-    concepts: ["App Router", "RSC", "SSR/ISR", "Server Actions"],
-  },
-  "ai-engineering": {
-    bg: "bg-gradient-to-br from-fuchsia-500/5 via-surface to-surface dark:from-fuchsia-950/15 dark:via-surface/10 dark:to-surface/5",
-    border: "border-fuchsia-500/15 dark:border-fuchsia-500/10",
-    hoverBg: "hover:from-fuchsia-500/10 dark:hover:from-fuchsia-950/25",
-    hoverBorder: "hover:border-fuchsia-500/40 dark:hover:border-fuchsia-500/30",
-    hoverShadow: "hover:shadow-[0_8px_30px_rgba(217,70,239,0.06)]",
-    iconBg: "bg-fuchsia-500/10 dark:bg-fuchsia-500/20",
-    glowColor: "bg-fuchsia-500/5",
-    tagline: "Prompts, RAG, agents & evals",
-    concepts: ["Prompting", "RAG", "Agents", "Evals"],
-  },
-  javascript: {
-    bg: "bg-gradient-to-br from-yellow-500/5 via-surface to-surface dark:from-yellow-950/15 dark:via-surface/10 dark:to-surface/5",
-    border: "border-yellow-500/15 dark:border-yellow-500/10",
-    hoverBg: "hover:from-yellow-500/10 dark:hover:from-yellow-950/25",
-    hoverBorder: "hover:border-yellow-500/40 dark:hover:border-yellow-500/30",
-    hoverShadow: "hover:shadow-[0_8px_30px_rgba(234,179,8,0.06)]",
-    iconBg: "bg-yellow-500/10 dark:bg-yellow-500/20",
-    glowColor: "bg-yellow-500/5",
-    tagline: "Closures, async & the core",
-    concepts: ["Closures", "Async/Await", "Promises", "ES6+"],
-  },
-  "machine-coding": {
-    bg: "bg-gradient-to-br from-indigo-500/5 via-surface to-surface dark:from-indigo-950/15 dark:via-surface/10 dark:to-surface/5",
-    border: "border-indigo-500/15 dark:border-indigo-500/10",
-    hoverBg: "hover:from-indigo-500/10 dark:hover:from-indigo-950/25",
-    hoverBorder: "hover:border-indigo-500/40 dark:hover:border-indigo-500/30",
-    hoverShadow: "hover:shadow-[0_8px_30px_rgba(99,102,241,0.06)]",
-    iconBg: "bg-indigo-500/10 dark:bg-indigo-500/20",
-    glowColor: "bg-indigo-500/5",
-    tagline: "Build live UI components & widgets",
-    concepts: ["Components", "State", "Events", "Live Build"],
-  },
-  angular: {
-    bg: "bg-gradient-to-br from-red-500/5 via-surface to-surface dark:from-red-950/15 dark:via-surface/10 dark:to-surface/5",
-    border: "border-red-500/15 dark:border-red-500/10",
-    hoverBg: "hover:from-red-500/10 dark:hover:from-red-950/25",
-    hoverBorder: "hover:border-red-500/40 dark:hover:border-red-500/30",
-    hoverShadow: "hover:shadow-[0_8px_30px_rgba(239,68,68,0.06)]",
-    iconBg: "bg-red-500/10 dark:bg-red-500/20",
-    glowColor: "bg-red-500/5",
-    tagline: "Components, DI & RxJS",
-    concepts: ["Directives", "Services", "RxJS", "Routing"],
-  },
-  vuejs: {
-    bg: "bg-gradient-to-br from-emerald-500/5 via-surface to-surface dark:from-emerald-950/15 dark:via-surface/10 dark:to-surface/5",
-    border: "border-emerald-500/15 dark:border-emerald-500/10",
-    hoverBg: "hover:from-emerald-500/10 dark:hover:from-emerald-950/25",
-    hoverBorder: "hover:border-emerald-500/40 dark:hover:border-emerald-500/30",
-    hoverShadow: "hover:shadow-[0_8px_30px_rgba(16,185,129,0.06)]",
-    iconBg: "bg-emerald-500/10 dark:bg-emerald-500/20",
-    glowColor: "bg-emerald-500/5",
-    tagline: "Reactivity & composition API",
-    concepts: ["Reactivity", "Pinia", "Components", "Composition"],
-  },
-  typescript: {
-    bg: "bg-gradient-to-br from-blue-500/5 via-surface to-surface dark:from-blue-950/15 dark:via-surface/10 dark:to-surface/5",
-    border: "border-blue-500/15 dark:border-blue-500/10",
-    hoverBg: "hover:from-blue-500/10 dark:hover:from-blue-950/25",
-    hoverBorder: "hover:border-blue-500/40 dark:hover:border-blue-500/30",
-    hoverShadow: "hover:shadow-[0_8px_30px_rgba(59,130,246,0.06)]",
-    iconBg: "bg-blue-500/10 dark:bg-blue-500/20",
-    glowColor: "bg-blue-500/5",
-    tagline: "Types, generics & inference",
-    concepts: ["Generics", "Interfaces", "Union Types", "Inference"],
-  },
-  dsa: {
-    bg: "bg-gradient-to-br from-purple-500/5 via-surface to-surface dark:from-purple-950/15 dark:via-surface/10 dark:to-surface/5",
-    border: "border-purple-500/15 dark:border-purple-500/10",
-    hoverBg: "hover:from-purple-500/10 dark:hover:from-purple-950/25",
-    hoverBorder: "hover:border-purple-500/40 dark:hover:border-purple-500/30",
-    hoverShadow: "hover:shadow-[0_8px_30px_rgba(168,85,247,0.06)]",
-    iconBg: "bg-purple-500/10 dark:bg-purple-500/20",
-    glowColor: "bg-purple-500/5",
-    tagline: "Algorithms & data structures",
-    concepts: ["Trees", "Graphs", "DP", "Sorting"],
-  },
-  "system-design": {
-    bg: "bg-gradient-to-br from-orange-500/5 via-surface to-surface dark:from-orange-950/15 dark:via-surface/10 dark:to-surface/5",
-    border: "border-orange-500/15 dark:border-orange-500/10",
-    hoverBg: "hover:from-orange-500/10 dark:hover:from-orange-950/25",
-    hoverBorder: "hover:border-orange-500/40 dark:hover:border-orange-500/30",
-    hoverShadow: "hover:shadow-[0_8px_30px_rgba(249,115,22,0.06)]",
-    iconBg: "bg-orange-500/10 dark:bg-orange-500/20",
-    glowColor: "bg-orange-500/5",
-    tagline: "Scale, storage & trade-offs",
-    concepts: ["Load Balancer", "Caching", "Sharding", "Pub-Sub"],
-  },
-  python: {
-    bg: "bg-gradient-to-br from-emerald-500/5 via-surface to-surface dark:from-emerald-950/15 dark:via-surface/10 dark:to-surface/5",
-    border: "border-emerald-500/15 dark:border-emerald-500/10",
-    hoverBg: "hover:from-emerald-500/10 dark:hover:from-emerald-950/25",
-    hoverBorder: "hover:border-emerald-500/40 dark:hover:border-emerald-500/30",
-    hoverShadow: "hover:shadow-[0_8px_30px_rgba(16,185,129,0.06)]",
-    iconBg: "bg-emerald-500/10 dark:bg-emerald-500/20",
-    glowColor: "bg-emerald-500/5",
-    tagline: "Idioms, data & internals",
-    concepts: ["Decorators", "GIL", "Generators", "Asyncio"],
-  },
-  sql: {
-    bg: "bg-gradient-to-br from-sky-500/5 via-surface to-surface dark:from-sky-950/15 dark:via-surface/10 dark:to-surface/5",
-    border: "border-sky-500/15 dark:border-sky-500/10",
-    hoverBg: "hover:from-sky-500/10 dark:hover:from-sky-950/25",
-    hoverBorder: "hover:border-sky-500/40 dark:hover:border-sky-500/30",
-    hoverShadow: "hover:shadow-[0_8px_30px_rgba(56,189,248,0.06)]",
-    iconBg: "bg-sky-500/10 dark:bg-sky-500/20",
-    glowColor: "bg-sky-500/5",
-    tagline: "Joins, indexes & queries",
-    concepts: ["Joins", "Indexes", "Subqueries", "ACID"],
-  },
-};
-
-const FALLBACK: TechMeta = {
-  bg: "bg-gradient-to-br from-accent/5 via-surface to-surface dark:from-accent/5 dark:via-surface/10 dark:to-surface/5",
-  border: "border-accent/15 dark:border-accent/10",
-  hoverBg: "hover:from-accent/10 dark:hover:from-accent/15",
-  hoverBorder: "hover:border-accent/50",
-  hoverShadow: "hover:shadow-[0_8px_30px_var(--accent-glow)]",
-  iconBg: "bg-accent/10 dark:bg-accent/20",
-  glowColor: "bg-accent/5",
-  tagline: "Interview questions",
-  concepts: ["Concepts", "Problems", "Rounds"],
-};
 
 export default function TechCards({
   stats,
@@ -211,7 +42,7 @@ export default function TechCards({
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
       {TECHNOLOGIES.map((t) => {
-        const m = META[t.slug] ?? FALLBACK;
+        const m = getTechMeta(t.slug);
         const stat = stats[t.slug] ?? { easy: 0, medium: 0, hard: 0, total: 0 };
         const total = stat.total || 1;
         const easyPct = (stat.easy / total) * 100;

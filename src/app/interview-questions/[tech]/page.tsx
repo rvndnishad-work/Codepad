@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, Eye, Heart, BarChart3, Award, MessageSquare } from "lucide-react";
 import { TECHNOLOGIES, RESERVED_TECH_SLUGS, techLabel, parseJsonArray, compactNumber } from "@/lib/interview-questions/shared";
+import { getTechTheme } from "@/lib/interview-questions/techTheme";
 import QuestionCard from "../_components/QuestionCard";
 import JsonLd, { breadcrumb, faqPage } from "../_components/JsonLd";
 import TechFilters from "./TechFilters";
@@ -13,145 +14,6 @@ import type { Prisma } from "@prisma/client";
 export const dynamic = "force-dynamic";
 
 const isKnownTech = (slug: string) => TECHNOLOGIES.some((t) => t.slug === slug);
-
-const TECH_THEMES: Record<string, { bg: string; border: string; hoverBorder: string; glow: string; text: string; bgGlow: string; tagline: string }> = {
-  reactjs: {
-    bg: "bg-gradient-to-br from-cyan-500/5 via-surface to-surface dark:from-cyan-950/15 dark:via-surface/10 dark:to-surface/5",
-    border: "border-cyan-500/15 dark:border-cyan-500/10",
-    hoverBorder: "hover:border-cyan-500/40 dark:hover:border-cyan-500/30",
-    glow: "hover:shadow-[0_8px_30px_rgba(6,182,212,0.06)]",
-    text: "text-cyan-600 dark:text-cyan-400",
-    bgGlow: "bg-cyan-500/5",
-    tagline: "Hooks, rendering & state management",
-  },
-  nodejs: {
-    bg: "bg-gradient-to-br from-green-500/5 via-surface to-surface dark:from-green-950/15 dark:via-surface/10 dark:to-surface/5",
-    border: "border-green-500/15 dark:border-green-500/10",
-    hoverBorder: "hover:border-green-500/40 dark:hover:border-green-500/30",
-    glow: "hover:shadow-[0_8px_30px_rgba(34,197,94,0.06)]",
-    text: "text-green-600 dark:text-green-400",
-    bgGlow: "bg-green-500/5",
-    tagline: "Event loop, asynchronous operations & scalable APIs",
-  },
-  nextjs: {
-    bg: "bg-gradient-to-br from-zinc-500/5 via-surface to-surface dark:from-zinc-800/20 dark:via-surface/10 dark:to-surface/5",
-    border: "border-zinc-500/15 dark:border-zinc-400/10",
-    hoverBorder: "hover:border-zinc-500/40 dark:hover:border-zinc-400/30",
-    glow: "hover:shadow-[0_8px_30px_rgba(113,113,122,0.06)]",
-    text: "text-zinc-700 dark:text-zinc-300",
-    bgGlow: "bg-zinc-500/5",
-    tagline: "App Router, Server Components, rendering & data fetching",
-  },
-  "ai-engineering": {
-    bg: "bg-gradient-to-br from-fuchsia-500/5 via-surface to-surface dark:from-fuchsia-950/15 dark:via-surface/10 dark:to-surface/5",
-    border: "border-fuchsia-500/15 dark:border-fuchsia-500/10",
-    hoverBorder: "hover:border-fuchsia-500/40 dark:hover:border-fuchsia-500/30",
-    glow: "hover:shadow-[0_8px_30px_rgba(217,70,239,0.06)]",
-    text: "text-fuchsia-600 dark:text-fuchsia-400",
-    bgGlow: "bg-fuchsia-500/5",
-    tagline: "Prompting, RAG pipelines, tool-calling agents & LLM app engineering",
-  },
-  javascript: {
-    bg: "bg-gradient-to-br from-yellow-500/5 via-surface to-surface dark:from-yellow-950/15 dark:via-surface/10 dark:to-surface/5",
-    border: "border-yellow-500/15 dark:border-yellow-500/10",
-    hoverBorder: "hover:border-yellow-500/40 dark:hover:border-yellow-500/30",
-    glow: "hover:shadow-[0_8px_30px_rgba(234,179,8,0.06)]",
-    text: "text-amber-500 dark:text-yellow-400",
-    bgGlow: "bg-yellow-500/5",
-    tagline: "Closures, async programming & the engine core",
-  },
-  "javascript-coding": {
-    bg: "bg-gradient-to-br from-amber-500/5 via-surface to-surface dark:from-amber-950/15 dark:via-surface/10 dark:to-surface/5",
-    border: "border-amber-500/15 dark:border-amber-500/10",
-    hoverBorder: "hover:border-amber-500/40 dark:hover:border-amber-500/30",
-    glow: "hover:shadow-[0_8px_30px_rgba(245,158,11,0.06)]",
-    text: "text-amber-600 dark:text-amber-400",
-    bgGlow: "bg-amber-500/5",
-    tagline: "Implement polyfills, array algorithms, nested objects & async queue utilities",
-  },
-  angular: {
-    bg: "bg-gradient-to-br from-red-500/5 via-surface to-surface dark:from-red-950/15 dark:via-surface/10 dark:to-surface/5",
-    border: "border-red-500/15 dark:border-red-500/10",
-    hoverBorder: "hover:border-red-500/40 dark:hover:border-red-500/30",
-    glow: "hover:shadow-[0_8px_30px_rgba(239,68,68,0.06)]",
-    text: "text-red-600 dark:text-red-400",
-    bgGlow: "bg-red-500/5",
-    tagline: "Components, dependency injection & RxJS patterns",
-  },
-  vuejs: {
-    bg: "bg-gradient-to-br from-emerald-500/5 via-surface to-surface dark:from-emerald-950/15 dark:via-surface/10 dark:to-surface/5",
-    border: "border-emerald-500/15 dark:border-emerald-500/10",
-    hoverBorder: "hover:border-emerald-500/40 dark:hover:border-emerald-500/30",
-    glow: "hover:shadow-[0_8px_30px_rgba(16,185,129,0.06)]",
-    text: "text-emerald-600 dark:text-emerald-400",
-    bgGlow: "bg-emerald-500/5",
-    tagline: "Reactivity engines & the composition framework",
-  },
-  typescript: {
-    bg: "bg-gradient-to-br from-blue-500/5 via-surface to-surface dark:from-blue-950/15 dark:via-surface/10 dark:to-surface/5",
-    border: "border-blue-500/15 dark:border-blue-500/10",
-    hoverBorder: "hover:border-blue-500/40 dark:hover:border-blue-500/30",
-    glow: "hover:shadow-[0_8px_30px_rgba(59,130,246,0.06)]",
-    text: "text-blue-600 dark:text-blue-400",
-    bgGlow: "bg-blue-500/5",
-    tagline: "Advanced types, generic abstractions & type-safety",
-  },
-  dsa: {
-    bg: "bg-gradient-to-br from-purple-500/5 via-surface to-surface dark:from-purple-950/15 dark:via-surface/10 dark:to-surface/5",
-    border: "border-purple-500/15 dark:border-purple-500/10",
-    hoverBorder: "hover:border-purple-500/40 dark:hover:border-purple-500/30",
-    glow: "hover:shadow-[0_8px_30px_rgba(168,85,247,0.06)]",
-    text: "text-purple-600 dark:text-purple-400",
-    bgGlow: "bg-purple-500/5",
-    tagline: "Core data structures, algorithm design & optimisations",
-  },
-  "system-design": {
-    bg: "bg-gradient-to-br from-orange-500/5 via-surface to-surface dark:from-orange-950/15 dark:via-surface/10 dark:to-surface/5",
-    border: "border-orange-500/15 dark:border-orange-500/10",
-    hoverBorder: "hover:border-orange-500/40 dark:hover:border-orange-500/30",
-    glow: "hover:shadow-[0_8px_30px_rgba(249,115,22,0.06)]",
-    text: "text-orange-600 dark:text-orange-400",
-    bgGlow: "bg-orange-500/5",
-    tagline: "High-scale engineering, system architecture & database sharding",
-  },
-  python: {
-    bg: "bg-gradient-to-br from-emerald-500/5 via-surface to-surface dark:from-emerald-950/15 dark:via-surface/10 dark:to-surface/5",
-    border: "border-emerald-500/15 dark:border-emerald-500/10",
-    hoverBorder: "hover:border-emerald-500/40 dark:hover:border-emerald-500/30",
-    glow: "hover:shadow-[0_8px_30px_rgba(16,185,129,0.06)]",
-    text: "text-emerald-600 dark:text-emerald-400",
-    bgGlow: "bg-emerald-500/5",
-    tagline: "Pythonic structures, generator pipes & CPython internals",
-  },
-  sql: {
-    bg: "bg-gradient-to-br from-sky-500/5 via-surface to-surface dark:from-sky-950/15 dark:via-surface/10 dark:to-surface/5",
-    border: "border-sky-500/15 dark:border-sky-500/10",
-    hoverBorder: "hover:border-sky-500/40 dark:hover:border-sky-500/30",
-    glow: "hover:shadow-[0_8px_30px_rgba(56,189,248,0.06)]",
-    text: "text-sky-600 dark:text-sky-400",
-    bgGlow: "bg-sky-500/5",
-    tagline: "Index architectures, table joins & analytical queries",
-  },
-  "machine-coding": {
-    bg: "bg-gradient-to-br from-indigo-500/5 via-surface to-surface dark:from-indigo-950/15 dark:via-surface/10 dark:to-surface/5",
-    border: "border-indigo-500/15 dark:border-indigo-500/10",
-    hoverBorder: "hover:border-indigo-500/40 dark:hover:border-indigo-500/30",
-    glow: "hover:shadow-[0_8px_30px_rgba(99,102,241,0.06)]",
-    text: "text-indigo-600 dark:text-indigo-400",
-    bgGlow: "bg-indigo-500/5",
-    tagline: "Build live UI components & widgets from scratch in the browser",
-  },
-};
-
-const FALLBACK_THEME = {
-  bg: "bg-gradient-to-br from-accent/5 via-surface to-surface dark:from-accent/5 dark:via-surface/10 dark:to-surface/5",
-  border: "border-accent/15 dark:border-accent/10",
-  hoverBorder: "hover:border-accent/50",
-  glow: "hover:shadow-[0_8px_30px_var(--accent-glow)]",
-  text: "text-accent",
-  bgGlow: "bg-accent/5",
-  tagline: "Centralised technology interview questions",
-};
 
 export async function generateMetadata({ params }: { params: Promise<{ tech: string }> }) {
   const { tech } = await params;
@@ -245,7 +107,7 @@ export default async function TechnologyPage({
   const totalViews = statsAggregate._sum.views ?? 0;
   const totalLikes = statsAggregate._sum.likes ?? 0;
 
-  const theme = TECH_THEMES[tech] ?? FALLBACK_THEME;
+  const theme = getTechTheme(tech);
 
   const easyPct = total > 0 ? (diffCounts.easy / total) * 100 : 0;
   const mediumPct = total > 0 ? (diffCounts.medium / total) * 100 : 0;

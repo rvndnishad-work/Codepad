@@ -913,12 +913,10 @@ portal-nextjs-toast,
 }
 
 /* ────────────────────────────────────────────────────────────────────────
-   Readability overrides for small text (bumps 10px text to 12px baseline, 
-   fluidly scaling with viewport via postcss-pxtorem to rem-base).
+   Small text — keep Tailwind's 10px as 10px; use 11px/12px tokens
+   explicitly (e.g. text-[11px]) for pills. Former global hack
+   `.text-[10px]{font-size:12px!important}` removed (Phase 1 techTheme).
    ──────────────────────────────────────────────────────────────────────── */
-.text-\[10px\] {
-  font-size: 12px !important;
-}
 
 /* ────────────────────────────────────────────────────────────────────────
    Workspace content width expansion & transitions when sidebar collapses

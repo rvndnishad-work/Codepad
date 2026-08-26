@@ -6,6 +6,10 @@ import GlobalSearch from "./GlobalSearch";
 import TechCards from "./TechCards";
 import QuestionCard from "./_components/QuestionCard";
 import { Building2, Layers, Sparkles, Flame, Bookmark, Users } from "lucide-react";
+import ScrollProgressBar from "@/app/hire/ScrollProgressBar";
+import { SpotlightGroup } from "@/components/scroll/SpotlightGroup";
+import KineticText from "@/components/scroll/KineticText";
+import CountUp from "@/components/scroll/CountUp";
 
 export const metadata = {
   title: "Interview Questions by Company & Technology — Interviewpad",
@@ -88,24 +92,41 @@ export default async function InterviewQuestionsPage() {
 
   return (
     <div className="min-h-screen bg-bg text-fg">
-      {/* Hero */}
-      <section className="border-b border-border bg-gradient-to-b from-accent/5 to-transparent">
-        <div className="max-w-6xl mx-auto px-6 py-14 sm:py-20">
-          <div className="inline-flex items-center gap-2 text-[11px] font-black uppercase tracking-[0.2em] text-accent mb-4">
+      <ScrollProgressBar />
+      {/* Hero — Spotlight + Kinetic + CountUp (hire cohesion: secondary indigo, 24px reveal) */}
+      <section className="relative border-b border-border bg-gradient-to-b from-accent/5 via-transparent to-transparent overflow-hidden">
+        <div className="absolute inset-0 pointer-events-none">
+          <div className="absolute inset-0 bg-[linear-gradient(rgba(var(--accent-rgb),0.015)_1px,transparent_1px),linear-gradient(90deg,rgba(var(--accent-rgb),0.015)_1px,transparent_1px)] bg-[size:32px_32px]" />
+          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[900px] h-[400px] bg-accent/5 blur-[120px] rounded-full" />
+        </div>
+        <div className="relative max-w-6xl mx-auto px-6 py-14 sm:py-20">
+          <div className="inline-flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.08em] text-accent mb-4 px-3 py-1 rounded-full border border-accent/20 bg-accent/10">
             <Sparkles className="w-3.5 h-3.5" />
             Interview Prep Library
           </div>
-          <h1 className="text-3xl sm:text-5xl font-extrabold tracking-tight max-w-3xl">
-            Real interview questions, by company & technology
-          </h1>
-          <p className="text-muted mt-4 max-w-2xl text-sm sm:text-base leading-relaxed">
-            {publishedTotal.toLocaleString()} questions and counting across {TECHNOLOGIES.length} technologies
-            and {companies.length} companies. Search, filter by difficulty and round, and learn from real
+          <KineticText className="text-3xl sm:text-5xl font-black tracking-tight max-w-3xl" text="Real interview questions, by company & technology" />
+          <p className="text-muted mt-4 max-w-2xl text-sm sm:text-base leading-relaxed font-medium">
+            <CountUp value={publishedTotal} /> questions and counting across {TECHNOLOGIES.length} technologies
+            and <CountUp value={companies.length} /> companies. Search, filter by difficulty and round, and learn from real
             interview experiences.
           </p>
           <div className="mt-7 max-w-xl">
             <GlobalSearch />
           </div>
+          <SpotlightGroup className="mt-8 grid grid-cols-3 gap-3 max-w-xl">
+            <div className="rounded-2xl border border-border bg-surface/60 backdrop-blur-sm p-4 text-center">
+              <div className="text-xl font-black text-fg"><CountUp value={publishedTotal} /></div>
+              <div className="text-[10px] font-bold uppercase tracking-wider text-muted">Questions</div>
+            </div>
+            <div className="rounded-2xl border border-border bg-surface/60 backdrop-blur-sm p-4 text-center">
+              <div className="text-xl font-black text-fg"><CountUp value={TECHNOLOGIES.length} /></div>
+              <div className="text-[10px] font-bold uppercase tracking-wider text-muted">Stacks</div>
+            </div>
+            <div className="rounded-2xl border border-border bg-surface/60 backdrop-blur-sm p-4 text-center">
+              <div className="text-xl font-black text-fg"><CountUp value={companies.length} /></div>
+              <div className="text-[10px] font-bold uppercase tracking-wider text-muted">Companies</div>
+            </div>
+          </SpotlightGroup>
         </div>
       </section>
 

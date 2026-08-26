@@ -164,6 +164,10 @@ interface ConsoleProps {
   pagination: PaginationInfo;
   /** Deep-link filter from the candidate board (?candidate=<id>). */
   initialCandidateId?: string | null;
+  initialSearch?: string;
+  initialStatus?: string;
+  initialBatch?: string;
+  initialSort?: string;
 }
 
 export default function AIInterviewRecruiterConsole({
@@ -180,25 +184,41 @@ export default function AIInterviewRecruiterConsole({
   workspaceAllowExternalMcp,
   pagination,
   initialCandidateId,
+  initialSearch = "",
+  initialStatus = "ALL",
+  initialBatch = "ALL",
+  initialSort = "newest",
 }: ConsoleProps) {
   const [sessions, setSessions] = useState<RecruiterSession[]>(initialSessions);
   const router = useRouter();
+  const [isLive, setIsLive] = useState(true);
+  const [lastRefresh, setLastRefresh] = useState<Date>(new Date());
 
-  // Keep the pipeline live without manual refreshes. Server components re-render
-  // on router.refresh(), picking up sessions that were graded after this page
-  // loaded (candidate submits, or the abandonment cron grades an exited run).
-  // Refresh when the recruiter returns to the tab + a slow poll while open.
+  // Sync when server sends new filtered page (search/status/batch/sort/pagination)
   useEffect(() => {
+    setSessions(initialSessions);
+  }, [initialSessions]);
+
+  // Auto-refresh for HR: no manual reload needed when candidate submits.
+  // Server-driven polling every 15s + instant on tab focus. Toggle with Live button.
+  useEffect(() => {
+    if (!isLive) return;
     const onFocus = () => {
-      if (document.visibilityState === "visible") router.refresh();
+      if (document.visibilityState === "visible") {
+        router.refresh();
+        setLastRefresh(new Date());
+      }
     };
     document.addEventListener("visibilitychange", onFocus);
-    const poll = setInterval(() => router.refresh(), 90_000);
+    const poll = setInterval(() => {
+      router.refresh();
+      setLastRefresh(new Date());
+    }, 15_000);
     return () => {
       document.removeEventListener("visibilitychange", onFocus);
       clearInterval(poll);
     };
-  }, [router]);
+  }, [router, isLive]);
   // Deep-link (?candidate=<id>) opens straight onto that candidate's session.
   const [selectedSessionId, setSelectedSessionId] = useState<string | null>(() => {
     if (initialCandidateId) {
@@ -217,10 +237,13 @@ export default function AIInterviewRecruiterConsole({
     return acc;
   }, {});
 
-  // Search & Filter State
-  const [search, setSearch] = useState("");
-  const [filterStatus, setFilterStatus] = useState<string>("ALL");
-  const [filterBatch, setFilterBatch] = useState<string>("ALL");
+  // Search & Filter State — server-driven for 100s scale (URL query params)
+  // This keeps search/status/batch/sort consistent across pagination and shareable via URL.
+  const [search, setSearch] = useState(initialSearch);
+  const [filterStatus, setFilterStatus] = useState<string>(initialStatus);
+  const [filterBatch, setFilterBatch] = useState<string>(initialBatch);
+  const [sortBy, setSortBy] = useState<string>(initialSort);
+  const [density, setDensity] = useState<"cozy" | "compact">("cozy");
   // Candidate deep-link (from the candidate activity board). Pre-filtered so
   // the recruiter lands on exactly this candidate's screenings.
   const [filterCandidate, setFilterCandidate] = useState<string>(
@@ -237,6 +260,26 @@ export default function AIInterviewRecruiterConsole({
     ).entries()
   );
 
+  // Keep local inputs in sync when server navigates (back/forward)
+  useEffect(() => {
+    setSearch(initialSearch);
+    setFilterStatus(initialStatus);
+    setFilterBatch(initialBatch);
+    setSortBy(initialSort);
+  }, [initialSearch, initialStatus, initialBatch, initialSort]);
+
+  const updateQuery = (patch: Record<string, string | null>) => {
+    const params = new URLSearchParams(window.location.search);
+    Object.entries(patch).forEach(([k, v]) => {
+      if (v === null || v === "" || v === "ALL" || (k === "sort" && v === "newest")) params.delete(k);
+      else params.set(k, v);
+    });
+    // Reset to page 1 when filters change
+    if ("search" in patch || "status" in patch || "batch" in patch || "sort" in patch) params.delete("page");
+    const qs = params.toString();
+    router.push(qs ? `?${qs}` : "?");
+  };
+
   // Inline create-screening wizard (replaces the old popup + single-invite form).
   const [view, setView] = useState<"list" | "create">("list");
   const [wizardQuickAdd, setWizardQuickAdd] = useState(false);
@@ -250,25 +293,12 @@ export default function AIInterviewRecruiterConsole({
 
   const activeSession = sessions.find((s) => s.id === selectedSessionId);
 
-  const processedSessions = sessions
-    .filter((s) => {
-      const matchSearch =
-        s.candidateName.toLowerCase().includes(search.toLowerCase()) ||
-        s.candidateEmail.toLowerCase().includes(search.toLowerCase()) ||
-        s.positionTitle.toLowerCase().includes(search.toLowerCase());
-
-      const matchBatch = filterBatch === "ALL" || s.batchId === filterBatch;
-      const matchStatus = filterStatus === "ALL" || s.status === filterStatus;
-      const matchCandidate =
-        filterCandidate === "ALL" || s.candidateId === filterCandidate;
-      return matchSearch && matchBatch && matchStatus && matchCandidate;
-    })
-    .sort((a, b) => {
-      if (a.status === "COMPLETED" && b.status !== "COMPLETED") return -1;
-      if (a.status !== "COMPLETED" && b.status === "COMPLETED") return 1;
-      if (a.score !== b.score) return (b.score ?? 0) - (a.score ?? 0);
-      return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
-    });
+  // Server already filters by search/status/batch/sort for 100s scale.
+  // Client only applies the candidate deep-link filter.
+  const processedSessions = sessions.filter((s) => {
+    const matchCandidate = filterCandidate === "ALL" || s.candidateId === filterCandidate;
+    return matchCandidate;
+  });
 
   const completedSessionsSorted = [...sessions]
     .filter((s) => s.status === "COMPLETED")
@@ -571,12 +601,39 @@ export default function AIInterviewRecruiterConsole({
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
         <div className="lg:col-span-5 space-y-4">
           <div className="rounded-2xl border border-border bg-surface p-4 space-y-3">
+            <div className="flex items-center justify-between">
+              <span className="text-[9px] font-black uppercase tracking-widest text-muted">
+                {pagination.totalSessions} candidate{pagination.totalSessions === 1 ? "" : "s"} · {pagination.page}/{pagination.totalPages}
+              </span>
+              <div className="flex items-center gap-1.5">
+                <button
+                  type="button"
+                  onClick={() => setIsLive((v) => !v)}
+                  className={`inline-flex items-center gap-1 px-2 py-1 rounded-md border text-[9px] font-black uppercase tracking-wider transition ${isLive ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-400" : "bg-bg border-border/40 text-muted"}`}
+                  title={isLive ? `Live · updated ${lastRefresh.toLocaleTimeString()}` : "Live paused — click to resume auto-refresh"}
+                >
+                  <span className={`w-1.5 h-1.5 rounded-full ${isLive ? "bg-emerald-400 animate-pulse" : "bg-muted/40"}`} />
+                  {isLive ? "Live" : "Paused"}
+                </button>
+                <div className="hidden sm:flex items-center gap-0.5 rounded-md border border-border/40 bg-bg p-0.5">
+                  <button type="button" onClick={() => setDensity("cozy")} className={`px-2 py-1 text-[9px] font-bold rounded ${density === "cozy" ? "bg-accent/15 text-accent" : "text-muted"}`}>Cozy</button>
+                  <button type="button" onClick={() => setDensity("compact")} className={`px-2 py-1 text-[9px] font-bold rounded ${density === "compact" ? "bg-accent/15 text-accent" : "text-muted"}`}>Compact</button>
+                </div>
+              </div>
+            </div>
             <div className="relative">
               <Search className="absolute left-3 top-3 w-4 h-4 text-muted" />
               <input
                 value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                placeholder="Search candidate name, email, role..."
+                onChange={(e) => {
+                  const v = e.target.value;
+                  setSearch(v);
+                  // Debounced server search for 100s scale
+                  const t = (window as any).__aiSearchTimer;
+                  if (t) clearTimeout(t);
+                  (window as any).__aiSearchTimer = setTimeout(() => updateQuery({ search: v }), 400);
+                }}
+                placeholder="Search candidate name, email, role... (server-side)"
                 className="w-full pl-9 pr-4 py-2.5 rounded-xl border border-border bg-bg text-xs text-fg focus:outline-none focus:border-accent"
               />
             </div>
@@ -585,7 +642,10 @@ export default function AIInterviewRecruiterConsole({
               {["ALL", "COMPLETED", "ACTIVE", "PENDING"].map((status) => (
                 <button
                   key={status}
-                  onClick={() => setFilterStatus(status)}
+                  onClick={() => {
+                    setFilterStatus(status);
+                    updateQuery({ status });
+                  }}
                   className={`flex-1 whitespace-nowrap px-1 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-wider border transition-all cursor-pointer ${
                     filterStatus === status
                       ? "bg-accent/15 border-accent/30 text-accent"
@@ -597,21 +657,42 @@ export default function AIInterviewRecruiterConsole({
               ))}
             </div>
 
-            {batchOptions.length > 0 && (
+            <div className="grid grid-cols-2 gap-1.5">
+              {batchOptions.length > 0 && (
+                <select
+                  value={filterBatch}
+                  onChange={(e) => {
+                    const v = e.target.value;
+                    setFilterBatch(v);
+                    updateQuery({ batch: v });
+                  }}
+                  className="px-3 py-2 rounded-lg border border-border bg-bg text-[11px] text-fg focus:outline-none focus:border-accent"
+                  title="Filter by screening batch"
+                >
+                  <option value="ALL">All batches</option>
+                  {batchOptions.map(([id, title]) => (
+                    <option key={id} value={id}>
+                      {title}
+                    </option>
+                  ))}
+                </select>
+              )}
               <select
-                value={filterBatch}
-                onChange={(e) => setFilterBatch(e.target.value)}
-                className="w-full px-3 py-2 rounded-lg border border-border bg-bg text-[11px] text-fg focus:outline-none focus:border-accent"
-                title="Filter by screening batch"
+                value={sortBy}
+                onChange={(e) => {
+                  const v = e.target.value;
+                  setSortBy(v);
+                  updateQuery({ sort: v });
+                }}
+                className="px-3 py-2 rounded-lg border border-border bg-bg text-[11px] text-fg focus:outline-none focus:border-accent"
+                title="Sort candidates"
               >
-                <option value="ALL">All batches</option>
-                {batchOptions.map(([id, title]) => (
-                  <option key={id} value={id}>
-                    {title}
-                  </option>
-                ))}
+                <option value="newest">Newest</option>
+                <option value="score_desc">Score ↓</option>
+                <option value="score_asc">Score ↑</option>
+                <option value="name_asc">Name A→Z</option>
               </select>
-            )}
+            </div>
 
             {/* Candidate deep-link chip (arrives via ?candidate=<id> from the
                 candidate activity board). Dismiss to see everyone. */}
@@ -632,10 +713,10 @@ export default function AIInterviewRecruiterConsole({
             )}
           </div>
 
-          <div className="space-y-3 max-h-[600px] overflow-y-auto pr-1">
+          <div className={`space-y-2 overflow-y-auto pr-1 scrollbar-thin ${density === "compact" ? "max-h-[68vh]" : "max-h-[600px]"}`}>
             {processedSessions.length === 0 ? (
               <div className="rounded-2xl border border-dashed border-border bg-surface/30 p-8 text-center text-xs text-muted">
-                No matching candidate sessions found.
+                No matching candidate sessions found. {search || filterStatus !== "ALL" || filterBatch !== "ALL" ? "Try clearing filters." : ""}
               </div>
             ) : (
               processedSessions.map((session) => {
@@ -647,7 +728,7 @@ export default function AIInterviewRecruiterConsole({
                   <div
                     key={session.id}
                     onClick={() => setSelectedSessionId(session.id)}
-                    className={`rounded-2xl border p-4 cursor-pointer transition-all flex flex-col gap-3 relative overflow-hidden ${
+                    className={`rounded-2xl border cursor-pointer transition-all flex flex-col relative overflow-hidden ${density === "compact" ? "p-3 gap-2" : "p-4 gap-3"} ${
                       isSelected
                         ? "bg-surface/90 border-accent/50 shadow-md shadow-accent/5"
                         : "bg-surface border-border/40 hover:bg-surface/30 hover:border-border"

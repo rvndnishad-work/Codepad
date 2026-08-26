@@ -79,6 +79,19 @@ SANDBOX_BOILERPLATE["/package.json"] = JSON.stringify({
   main: "/index.js",
 });
 
+/**
+ * Files that are never candidate-authored and should never affect score or DIFF.
+ * `package.json` is auto-pretty-printed / injected with `devDependencies:{}`
+ * on load, causing phantom +9/-1 diffs. Only code files matter for hiring signal.
+ */
+const IGNORED_FOR_SCORING = new Set([
+  "/package.json",
+  "/package-lock.json",
+  "/yarn.lock",
+  "/pnpm-lock.yaml",
+  "/bun.lockb",
+]);
+
 /** Per-file LCS line diff between two file maps. */
 export function diffFiles(
   starter: Record<string, string>,
@@ -88,6 +101,9 @@ export function diffFiles(
   const diffs: FileDiff[] = [];
 
   for (const path of [...paths].sort()) {
+    // User explicitly requested: ignore package.json entirely for scoring.
+    // Auto-format + injected devDependencies should not inflate score or DIFF.
+    if (IGNORED_FOR_SCORING.has(path) || path.endsWith("/package.json")) continue;
     const before = starter[path];
     const after = submitted[path];
 

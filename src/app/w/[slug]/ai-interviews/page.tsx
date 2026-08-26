@@ -15,10 +15,11 @@ import AIInterviewRecruiterConsole from "./AIInterviewRecruiterConsole";
 
 type Props = {
   params: Promise<{ slug: string }>;
-  searchParams: Promise<{ page?: string; candidate?: string }>;
+  searchParams: Promise<{ page?: string; candidate?: string; search?: string; status?: string; batch?: string; sort?: string }>;
 };
 
 const PAGE_SIZE = 25;
+const VALID_SORTS = new Set(["newest", "score_desc", "score_asc", "name_asc"]);
 
 export const metadata = {
   title: "AI Screening — Workspace",
@@ -30,6 +31,10 @@ export default async function WorkspaceAiInterviewsPage({ params, searchParams }
   const sp = await searchParams;
   const page = Math.max(1, Number(sp.page) || 1);
   const skip = (page - 1) * PAGE_SIZE;
+  const search = (sp.search ?? "").trim();
+  const statusFilter = (sp.status ?? "ALL").toUpperCase();
+  const batchFilter = sp.batch ?? "ALL";
+  const sort = VALID_SORTS.has(sp.sort ?? "") ? (sp.sort as string) : "newest";
   const session = await auth().catch(() => null);
   await validatePageAccess("/w/ai-screening", session);
   if (!session?.user?.id) {
@@ -82,10 +87,29 @@ export default async function WorkspaceAiInterviewsPage({ params, searchParams }
 
   const canCreate = await canMember(member, "interview:conduct");
 
+  // Server-side filtering for 100s scale — URL-driven so HR can share/bookmark filtered views.
+  // Previously this was client-side over the current page only, which missed candidates on other pages.
+  const sessionWhere: Record<string, unknown> = { workspaceId: workspace.id };
+  if (search) {
+    (sessionWhere as any).OR = [
+      { candidateName: { contains: search, mode: "insensitive" } },
+      { candidateEmail: { contains: search, mode: "insensitive" } },
+      { positionTitle: { contains: search, mode: "insensitive" } },
+    ];
+  }
+  if (statusFilter !== "ALL") (sessionWhere as any).status = statusFilter;
+  if (batchFilter !== "ALL") (sessionWhere as any).batchId = batchFilter;
+
+  const sessionOrderBy: Record<string, string> =
+    sort === "score_desc" ? { score: "desc" } :
+    sort === "score_asc" ? { score: "asc" } :
+    sort === "name_asc" ? { candidateName: "asc" } :
+    { createdAt: "desc" };
+
   const [rawSessions, totalSessions, credits, usedThisMonth, templates, externalMcpServers, candidateRows] = await Promise.all([
     prisma.aIInterviewSession.findMany({
-      where: { workspaceId: workspace.id },
-      orderBy: { createdAt: "desc" },
+      where: sessionWhere as any,
+      orderBy: sessionOrderBy as any,
       skip,
       take: PAGE_SIZE,
       include: {
@@ -93,7 +117,7 @@ export default async function WorkspaceAiInterviewsPage({ params, searchParams }
         batch: { select: { id: true, positionTitle: true } },
       },
     }),
-    prisma.aIInterviewSession.count({ where: { workspaceId: workspace.id } }),
+    prisma.aIInterviewSession.count({ where: sessionWhere as any }),
     getWorkspaceCredits(workspace.id),
     prisma.aIInterviewCreditLedger.aggregate({
       where: {
@@ -346,6 +370,10 @@ export default async function WorkspaceAiInterviewsPage({ params, searchParams }
       availableExternalMcpServers={availableExternalMcpServers}
       workspaceAllowExternalMcp={workspace.allowExternalMcp}
       initialCandidateId={sp.candidate ?? null}
+      initialSearch={search}
+      initialStatus={statusFilter}
+      initialBatch={batchFilter}
+      initialSort={sort}
       pagination={{
         page,
         totalPages,

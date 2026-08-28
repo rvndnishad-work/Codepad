@@ -446,7 +446,7 @@ export default function PlaygroundToolbar({
   return (
     <>
       <style dangerouslySetInnerHTML={{ __html: toolbarCSS }} />
-      <div className="toolbar-3d h-14 px-4 flex items-center justify-between">
+      <div className="toolbar-3d h-14 px-2 sm:px-4 flex items-center justify-between gap-2 overflow-hidden">
         {/* â”€â”€ Left: Identity + Run â”€â”€ */}
         <div className="flex items-center gap-3">
           {/* Back to the originating question (only when arrived from there) */}
@@ -464,8 +464,8 @@ export default function PlaygroundToolbar({
             </>
           )}
 
-          {/* Project Identity */}
-          <div className="flex items-center gap-2 group/meta">
+          {/* Project Identity — responsive: truncate aggressively on small */}
+          <div className="flex items-center gap-1.5 sm:gap-2 group/meta min-w-0">
             <div className="w-6 h-6 rounded grid place-items-center flex-shrink-0 opacity-60">
               <TemplateLogo id={templateId} size={16} />
             </div>
@@ -473,15 +473,15 @@ export default function PlaygroundToolbar({
               value={title}
               onChange={(e) => { setTitle(e.target.value); setDirty(true); }}
               disabled={!editable}
-              className="bg-transparent outline-none font-medium text-[13px] text-fg/80 hover:text-fg transition-colors w-32 truncate focus:text-accent"
+              className="bg-transparent outline-none font-medium text-[13px] text-fg/80 hover:text-fg transition-colors w-20 sm:w-28 lg:w-32 xl:w-40 truncate focus:text-accent min-w-0"
             />
-            {editable && <Pencil className="w-2.5 h-2.5 text-muted/10 group-hover/meta:text-muted/25 transition-colors flex-shrink-0" />}
+            {editable && <Pencil className="hidden sm:block w-2.5 h-2.5 text-muted/10 group-hover/meta:text-muted/25 transition-colors flex-shrink-0" />}
             <div className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${saving ? "bg-muted/20 animate-pulse" : dirty ? "bg-amber-400/70" : "bg-emerald-400/50"}`}
-              title={saving ? "Savingâ€¦" : dirty ? "Unsaved" : "Saved"}
+              title={saving ? "Saving…" : dirty ? "Unsaved" : "Saved"}
             />
           </div>
 
-          <div className="tb-sep" />
+          <div className="tb-sep hidden sm:block" />
 
           {/* Run Button â€” 3D raised */}
           <button
@@ -508,7 +508,7 @@ export default function PlaygroundToolbar({
             secondary, so they stay gated to xl+ to keep narrower toolbars
             uncluttered. The Editor Engine selector is gone â€” Monaco is the
             sole editor now. */}
-        <div className="flex items-center gap-1.5">
+        <div className="flex items-center gap-1 sm:gap-1.5 min-w-0 flex-shrink-0">
           <ViewLayoutControl
             value={view}
             onChange={setView}
@@ -541,7 +541,7 @@ export default function PlaygroundToolbar({
           {/* AI Assist â€” uses accent */}
           <button
             onClick={onTogglePrompt}
-            className="tb-ai h-8 px-3 rounded-lg flex items-center gap-1.5 text-accent group/ai"
+            className="tb-ai h-8 px-3 rounded-lg hidden sm:flex items-center gap-1.5 text-accent group/ai shrink-0"
           >
             <Sparkles className="w-3.5 h-3.5 group-hover/ai:scale-110 transition-transform" />
             <span className="text-[11px] font-semibold tracking-wide">AI</span>
@@ -579,11 +579,44 @@ export default function PlaygroundToolbar({
               </button>
 
               {actionsOpen && (
-                <div className="absolute top-full right-0 mt-2 w-48 py-1 rounded-xl z-[100] animate-in fade-in slide-in-from-top-1 duration-150 border border-border shadow-2xl bg-panel"
+                <div className="absolute top-full right-0 mt-2 w-64 py-1 rounded-xl z-[100] animate-in fade-in slide-in-from-top-1 duration-150 border border-border shadow-2xl bg-panel"
                   style={{
                     boxShadow: "0 16px 48px rgba(0,0,0,0.1), 0 0 0 1px var(--border) inset"
                   }}
                 >
+                  {/* Responsive overflow — editor controls hidden on smaller viewports */}
+                  <div className="xl:hidden px-3 py-2 space-y-2 border-b border-border mb-1">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[11px] font-medium text-muted flex items-center gap-1.5"><Type className="w-3 h-3" /> Font</span>
+                      <NumericStepper
+                        value={String(fontSize)}
+                        onDecrease={() => setFontSize(Math.max(10, fontSize - 1))}
+                        onIncrease={() => setFontSize(Math.min(32, fontSize + 1))}
+                        suffix="px"
+                      />
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-[11px] font-medium text-muted flex items-center gap-1.5"><Type className="w-3 h-3" /> Zoom</span>
+                      <NumericStepper
+                        value={`${Math.round(uiScale * 100)}%`}
+                        onDecrease={() => setUiScale(Math.max(0.8, uiScale - 0.1))}
+                        onIncrease={() => setUiScale(Math.min(1.5, uiScale + 0.1))}
+                        icon={Type}
+                      />
+                    </div>
+                  </div>
+                  <div className="sm:hidden px-3 py-2 border-b border-border mb-1">
+                    <button
+                      onClick={() => { onTogglePrompt(); setActionsOpen(false); }}
+                      className="w-full flex items-center gap-2.5 px-3 py-2 text-[12px] text-accent hover:bg-accent/10 rounded-lg transition"
+                    >
+                      <Sparkles className="w-3.5 h-3.5" />
+                      <span className="flex-1 text-left font-medium">AI Assist</span>
+                    </button>
+                  </div>
+                  <div className="lg:hidden px-3 py-2 border-b border-border mb-1 flex justify-center">
+                    <ChallengeTimer />
+                  </div>
                   <button
                     onClick={() => { handleFork(); setActionsOpen(false); }}
                     className="w-full flex items-center gap-2.5 px-3 py-2.5 text-[12px] text-muted/70 hover:text-fg hover:bg-elevated transition-all"

@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Store, Heart, Users, LayoutGrid, Sparkles, BadgeCheck, ArrowRight } from "lucide-react";
+import { Store, Heart, Users, LayoutGrid, Sparkles, BadgeCheck, ArrowRight, Gift, UsersRound } from "lucide-react";
 import { prisma } from "@/lib/prisma";
 
 export const metadata = {
@@ -10,20 +10,25 @@ export const metadata = {
 
 export const revalidate = 300;
 
-type Props = { searchParams: Promise<{ topic?: string }> };
+type Props = { searchParams: Promise<{ topic?: string; sort?: string; q?: string }> };
 
 export default async function CreatorsDirectoryPage({ searchParams }: Props) {
-  const { topic } = await searchParams;
+  const { topic, sort, q } = await searchParams;
+  const qLower = (q ?? "").trim().toLowerCase();
 
-  const spaces = await prisma.creatorSpace.findMany({
+  let spaces = await prisma.creatorSpace.findMany({
     where: { published: true, ...(topic ? { topics: { has: topic } } : {}) },
     orderBy: [{ featured: "desc" }, { createdAt: "asc" }],
     take: 60,
   });
+  if (qLower) {
+    spaces = spaces.filter((s) => s.name.toLowerCase().includes(qLower) || s.handle.toLowerCase().includes(qLower));
+  }
 
   const spaceIds = spaces.map((s) => s.id);
   const ownerIds = [...new Set(spaces.map((s) => s.ownerId))];
-  const [followCounts, memberCounts, contentCounts, owners, verifiedApps, allTopicsRows] = await Promise.all([
+  const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 3600 * 1000);
+  const [followCounts, memberCounts, contentCounts, owners, verifiedApps, allTopicsRows, trendingFollows, trendingMembers] = await Promise.all([
     prisma.spaceFollow.groupBy({ by: ["spaceId"], where: { spaceId: { in: spaceIds } }, _count: { _all: true } }),
     prisma.spaceMembership.groupBy({
       by: ["spaceId"],
@@ -37,7 +42,13 @@ export default async function CreatorsDirectoryPage({ searchParams }: Props) {
       select: { userId: true },
     }),
     prisma.creatorSpace.findMany({ where: { published: true }, select: { topics: true } }),
+    prisma.spaceFollow.groupBy({ by: ["spaceId"], where: { spaceId: { in: spaceIds }, createdAt: { gte: sevenDaysAgo } }, _count: { _all: true } }),
+    prisma.spaceMembership.groupBy({ by: ["spaceId"], where: { spaceId: { in: spaceIds }, status: "active", createdAt: { gte: sevenDaysAgo } }, _count: { _all: true } }),
   ]);
+  if (sort === "trending") {
+    const trendingScore = (id: string) => (trendingFollows.find((r) => r.spaceId === id)?._count._all ?? 0) * 2 + (trendingMembers.find((r) => r.spaceId === id)?._count._all ?? 0) * 5;
+    spaces = [...spaces].sort((a, b) => trendingScore(b.id) - trendingScore(a.id));
+  }
 
   const count = (rows: { spaceId: string; _count: { _all: number } }[], id: string) =>
     rows.find((r) => r.spaceId === id)?._count._all ?? 0;
@@ -75,11 +86,34 @@ export default async function CreatorsDirectoryPage({ searchParams }: Props) {
           </p>
         </div>
 
+        {/* Search + sort */}
+        <form method="GET" className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-3 max-w-2xl mx-auto">
+          <div className="relative flex-1 w-full">
+            <input name="q" defaultValue={q} placeholder="Search creators, handles..." className="w-full pl-9 pr-3 py-2 rounded-full border border-border bg-surface text-sm focus:outline-none focus:border-accent" />
+            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <circle cx="11" cy="11" r="8" />
+                <path d="m21 21-4.35-4.35" />
+              </svg>
+            </span>
+            {topic && <input type="hidden" name="topic" value={topic} />}
+            {sort && <input type="hidden" name="sort" value={sort} />}
+          </div>
+          <div className="flex items-center gap-1.5">
+            <Link href={`/creators?${new URLSearchParams({ ...(topic ? { topic } : {}), ...(q ? { q } : {}), sort: "newest" }).toString()}`} className={`px-3 py-1.5 rounded-full text-[11px] font-bold border ${sort !== "trending" ? "border-accent/50 bg-accent-glow text-accent" : "border-border text-muted hover:text-fg"}`}>
+              Newest
+            </Link>
+            <Link href={`/creators?${new URLSearchParams({ ...(topic ? { topic } : {}), ...(q ? { q } : {}), sort: "trending" }).toString()}`} className={`px-3 py-1.5 rounded-full text-[11px] font-bold border ${sort === "trending" ? "border-accent/50 bg-accent-glow text-accent" : "border-border text-muted hover:text-fg"}`}>
+              Trending 7d
+            </Link>
+          </div>
+        </form>
+
         {/* Topic filter */}
         {allTopics.length > 0 && (
-          <div className="mt-10 flex items-center justify-center gap-1.5 flex-wrap">
+          <div className="mt-6 flex items-center justify-center gap-1.5 flex-wrap">
             <Link
-              href="/creators"
+              href={`/creators?${new URLSearchParams({ ...(q ? { q } : {}), ...(sort ? { sort } : {}) }).toString()}`}
               className={`px-3 py-1.5 rounded-full text-[11px] font-bold border transition-colors ${
                 !topic ? "border-accent/50 bg-accent-glow text-accent" : "border-border text-muted hover:text-fg"
               }`}
@@ -89,7 +123,7 @@ export default async function CreatorsDirectoryPage({ searchParams }: Props) {
             {allTopics.map((t) => (
               <Link
                 key={t}
-                href={`/creators?topic=${encodeURIComponent(t)}`}
+                href={`/creators?${new URLSearchParams({ topic: t, ...(q ? { q } : {}), ...(sort ? { sort } : {}) }).toString()}`}
                 className={`px-3 py-1.5 rounded-full text-[11px] font-bold border transition-colors ${
                   topic === t ? "border-accent/50 bg-accent-glow text-accent" : "border-border text-muted hover:text-fg"
                 }`}
@@ -115,6 +149,8 @@ export default async function CreatorsDirectoryPage({ searchParams }: Props) {
                 <Link
                   key={space.id}
                   href={`/c/${space.handle}`}
+                  // @ts-ignore viewTransitionName is valid in modern browsers
+                  style={{ viewTransitionName: `creator-${space.handle}` } as React.CSSProperties}
                   className="group rounded-2xl border border-border bg-surface overflow-hidden shadow-tile hover:border-accent/40 hover:-translate-y-0.5 transition-all"
                 >
                   {/* Banner strip */}
@@ -165,7 +201,7 @@ export default async function CreatorsDirectoryPage({ searchParams }: Props) {
                         ))}
                       </div>
                     )}
-                    <div className="mt-3.5 pt-3 border-t border-border/60 flex items-center gap-3 text-[10px] text-muted font-semibold">
+                    <div className="mt-3.5 pt-3 border-t border-border/60 flex items-center gap-2 text-[10px] text-muted font-semibold">
                       <span className="inline-flex items-center gap-1">
                         <Heart className="w-3 h-3 text-accent/60" /> {count(followCounts, space.id).toLocaleString()}
                       </span>
@@ -173,9 +209,15 @@ export default async function CreatorsDirectoryPage({ searchParams }: Props) {
                         <Users className="w-3 h-3 text-accent/60" /> {count(memberCounts, space.id).toLocaleString()}
                       </span>
                       <span className="inline-flex items-center gap-1">
-                        <LayoutGrid className="w-3 h-3 text-accent/60" /> {count(contentCounts, space.id)} resources
+                        <LayoutGrid className="w-3 h-3 text-accent/60" /> {count(contentCounts, space.id)}
                       </span>
-                      <ArrowRight className="w-3 h-3 ml-auto text-muted/50 group-hover:text-accent group-hover:translate-x-0.5 transition-all" />
+                      <span className="ml-auto inline-flex items-center gap-1 rounded-full border border-border bg-panel px-1.5 py-0.5 text-[9px] font-bold text-muted group-hover:border-accent/20 group-hover:text-accent" title="Gift membership — share this space">
+                        <Gift className="w-3 h-3" /> Gift
+                      </span>
+                      <span className="inline-flex items-center gap-1 rounded-full border border-border bg-panel px-1.5 py-0.5 text-[9px] font-bold text-muted group-hover:border-accent/20 group-hover:text-accent" title="Team plan">
+                        <UsersRound className="w-3 h-3" /> Team
+                      </span>
+                      <ArrowRight className="w-3 h-3 text-muted/50 group-hover:text-accent group-hover:translate-x-0.5 transition-all" />
                     </div>
                   </div>
                 </Link>

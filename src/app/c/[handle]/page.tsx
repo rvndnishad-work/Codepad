@@ -600,7 +600,15 @@ export default async function CreatorSpacePage({ params }: Props) {
               <p className="text-xs text-muted mt-1">Follow to get notified when {space.name} publishes.</p>
             </div>
           ) : (
-            <BlockRenderer doc={blocksDoc} allCards={allCards} carouselItems={carouselItems} sectionsByKey={sectionsByKey} />
+            <BlockRenderer
+              doc={blocksDoc}
+              allCards={allCards}
+              carouselItems={carouselItems}
+              sectionsByKey={sectionsByKey}
+              membershipRank={membershipRank}
+              isOwner={isOwner}
+              entitledKeys={entitled}
+            />
           )}
         </div>
 

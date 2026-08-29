@@ -235,6 +235,12 @@ export default function DesignClient(props: Props) {
   const removeBlock = (id: string) =>
     updateDoc((prev) => ({ ...prev, blocks: prev.blocks.filter((b) => b.id !== id) }));
 
+  const updateProps = (id: string, patch: Record<string, unknown>) =>
+    updateDoc((prev) => ({
+      ...prev,
+      blocks: prev.blocks.map((b) => (b.id === id ? { ...b, props: { ...b.props, ...patch } } : b)),
+    }));
+
   const changeTokens = (next: TokenSet) => {
     setTokens(next);
     scheduleAutosave(doc, next);
@@ -507,6 +513,62 @@ export default function DesignClient(props: Props) {
                     ))}
                   </select>
                 </label>
+
+                {/* Per-type props */}
+                {selected.type === "CTA" && (
+                  <div className="space-y-2 rounded-xl border border-border bg-panel/30 p-3">
+                    <div className="text-[10px] font-bold uppercase tracking-wider text-muted">CTA props</div>
+                    <input value={(selected.props.title as string) ?? ""} onChange={(e) => updateProps(selected.id, { title: e.target.value })} placeholder="Title" className="w-full px-2.5 py-1.5 rounded-lg border border-border bg-bg text-sm" />
+                    <input value={(selected.props.href as string) ?? ""} onChange={(e) => updateProps(selected.id, { href: e.target.value })} placeholder="Href e.g. #membership or https://" className="w-full px-2.5 py-1.5 rounded-lg border border-border bg-bg text-sm" />
+                    <select value={(selected.props.variant as string) ?? "primary"} onChange={(e) => updateProps(selected.id, { variant: e.target.value })} className="w-full px-2.5 py-1.5 rounded-lg border border-border bg-bg text-sm">
+                      <option value="primary">Primary (#FFE600)</option>
+                      <option value="secondary">Secondary (panel)</option>
+                      <option value="ghost">Ghost (glass)</option>
+                    </select>
+                    <input value={(selected.props.sub as string) ?? ""} onChange={(e) => updateProps(selected.id, { sub: e.target.value })} placeholder="Subtext (optional)" className="w-full px-2.5 py-1.5 rounded-lg border border-border bg-bg text-sm" />
+                  </div>
+                )}
+                {selected.type === "GALLERY" && (
+                  <div className="space-y-2 rounded-xl border border-border bg-panel/30 p-3">
+                    <div className="text-[10px] font-bold uppercase tracking-wider text-muted">Gallery — one URL per line (max 8)</div>
+                    <textarea value={((selected.props.images as string[]) ?? []).join("\n")} onChange={(e) => updateProps(selected.id, { images: e.target.value.split("\n").map((s) => s.trim()).filter(Boolean).slice(0, 8) })} rows={4} placeholder="https://images.unsplash.com/..." className="w-full px-2.5 py-1.5 rounded-lg border border-border bg-bg text-sm" />
+                    <input value={(selected.props.caption as string) ?? ""} onChange={(e) => updateProps(selected.id, { caption: e.target.value })} placeholder="Caption (optional)" className="w-full px-2.5 py-1.5 rounded-lg border border-border bg-bg text-sm" />
+                  </div>
+                )}
+                {selected.type === "FAQ" && (
+                  <div className="space-y-2 rounded-xl border border-border bg-panel/30 p-3">
+                    <div className="text-[10px] font-bold uppercase tracking-wider text-muted">FAQ items</div>
+                    {(((selected.props.items as { q: string; a: string }[]) ?? [])).map((it, idx) => (
+                      <div key={idx} className="space-y-1 rounded-lg border border-border bg-bg p-2">
+                        <input value={it.q} onChange={(e) => { const items = [...(((selected.props.items as { q: string; a: string }[]) ?? []) as { q: string; a: string }[])]; items[idx] = { ...items[idx], q: e.target.value }; updateProps(selected.id, { items }); }} placeholder="Question" className="w-full px-2 py-1 rounded border border-border bg-panel text-sm" />
+                        <textarea value={it.a} onChange={(e) => { const items = [...(((selected.props.items as { q: string; a: string }[]) ?? []) as { q: string; a: string }[])]; items[idx] = { ...items[idx], a: e.target.value }; updateProps(selected.id, { items }); }} placeholder="Answer" rows={2} className="w-full px-2 py-1 rounded border border-border bg-panel text-sm" />
+                        <button onClick={() => { const items = (((selected.props.items as { q: string; a: string }[]) ?? []) as { q: string; a: string }[]).filter((_, i) => i !== idx); updateProps(selected.id, { items }); }} className="text-[11px] text-rose-600 hover:underline">Remove</button>
+                      </div>
+                    ))}
+                    <button onClick={() => { const items = [...(((selected.props.items as { q: string; a: string }[]) ?? []) as { q: string; a: string }[]), { q: "New question?", a: "Answer." }]; if (items.length <= 20) updateProps(selected.id, { items }); }} className="w-full py-1.5 rounded-lg border border-dashed border-border text-xs font-bold text-muted hover:text-fg">+ Add FAQ</button>
+                  </div>
+                )}
+                {selected.type === "TESTIMONIAL" && (
+                  <div className="space-y-2 rounded-xl border border-border bg-panel/30 p-3">
+                    <div className="text-[10px] font-bold uppercase tracking-wider text-muted">Testimonial</div>
+                    <textarea value={(selected.props.quote as string) ?? ""} onChange={(e) => updateProps(selected.id, { quote: e.target.value })} rows={3} placeholder="Quote" className="w-full px-2.5 py-1.5 rounded-lg border border-border bg-bg text-sm" />
+                    <input value={(selected.props.author as string) ?? ""} onChange={(e) => updateProps(selected.id, { author: e.target.value })} placeholder="Author" className="w-full px-2.5 py-1.5 rounded-lg border border-border bg-bg text-sm" />
+                    <input value={(selected.props.role as string) ?? ""} onChange={(e) => updateProps(selected.id, { role: e.target.value })} placeholder="Role (optional)" className="w-full px-2.5 py-1.5 rounded-lg border border-border bg-bg text-sm" />
+                  </div>
+                )}
+                {selected.type === "NEWSLETTER" && (
+                  <div className="space-y-2 rounded-xl border border-border bg-panel/30 p-3">
+                    <div className="text-[10px] font-bold uppercase tracking-wider text-muted">Newsletter</div>
+                    <input value={(selected.props.placeholder as string) ?? ""} onChange={(e) => updateProps(selected.id, { placeholder: e.target.value })} placeholder="Placeholder" className="w-full px-2.5 py-1.5 rounded-lg border border-border bg-bg text-sm" />
+                    <input value={(selected.props.cta as string) ?? ""} onChange={(e) => updateProps(selected.id, { cta: e.target.value })} placeholder="CTA text" className="w-full px-2.5 py-1.5 rounded-lg border border-border bg-bg text-sm" />
+                  </div>
+                )}
+                {selected.type === "EMBED" && (
+                  <div className="space-y-2 rounded-xl border border-border bg-panel/30 p-3">
+                    <div className="text-[10px] font-bold uppercase tracking-wider text-muted">Embed</div>
+                    <input value={(selected.props.url as string) ?? ""} onChange={(e) => updateProps(selected.id, { url: e.target.value })} placeholder="https://..." className="w-full px-2.5 py-1.5 rounded-lg border border-border bg-bg text-sm" />
+                  </div>
+                )}
 
                 <button
                   onClick={() => toggleVisible(selected.id)}

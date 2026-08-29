@@ -73,16 +73,64 @@ const heroSchema = z.object({
   coverUrl: z.string().nullable().optional(),
 });
 
-export const blockSchema = z.object({
-  id: z.string().min(1).max(64),
-  type: z.string().refine((v) => (BLOCK_TYPES as readonly string[]).includes(v), {
-    message: "Unknown block type",
-  }),
-  props: z.record(z.unknown()).default({}),
-  cols: z.number().int().min(1).max(12),
-  visible: z.boolean(),
-  tierGate: z.number().int().min(0).nullable().optional(),
+// Per-type props — discriminated so Studio and public agree on shape.
+export const ctaPropsSchema = z.object({
+  title: z.string().min(1).max(80).default("Join now"),
+  href: z.string().max(500).default("#membership"),
+  variant: z.enum(["primary", "secondary", "ghost"]).default("primary"),
+  sub: z.string().max(160).optional(),
 });
+export const galleryPropsSchema = z.object({
+  images: z.array(z.string().max(800)).max(8).default([]),
+  caption: z.string().max(160).optional(),
+});
+export const faqPropsSchema = z.object({
+  items: z
+    .array(z.object({ q: z.string().min(1).max(200), a: z.string().min(1).max(800) }))
+    .max(20)
+    .default([{ q: "What do I get as a member?", a: "All members-only content at your tier and above." }]),
+});
+export const testimonialPropsSchema = z.object({
+  quote: z.string().min(1).max(400).default("This space helped me land my offer."),
+  author: z.string().max(80).default("A member"),
+  role: z.string().max(80).optional(),
+});
+export const newsletterPropsSchema = z.object({
+  placeholder: z.string().max(80).default("you@example.com"),
+  cta: z.string().max(32).default("Subscribe"),
+});
+export const embedPropsSchema = z.object({ url: z.string().max(800).default("https://") });
+
+const propsByType: Record<string, z.ZodTypeAny> = {
+  CTA: ctaPropsSchema,
+  GALLERY: galleryPropsSchema,
+  FAQ: faqPropsSchema,
+  TESTIMONIAL: testimonialPropsSchema,
+  NEWSLETTER: newsletterPropsSchema,
+  EMBED: embedPropsSchema,
+};
+
+export const blockSchema = z
+  .object({
+    id: z.string().min(1).max(64),
+    type: z.string().refine((v) => (BLOCK_TYPES as readonly string[]).includes(v), {
+      message: "Unknown block type",
+    }),
+    props: z.record(z.unknown()).default({}),
+    cols: z.number().int().min(1).max(12),
+    visible: z.boolean(),
+    tierGate: z.number().int().min(0).nullable().optional(),
+  })
+  .superRefine((b, ctx) => {
+    const schema = propsByType[b.type];
+    if (!schema) return;
+    const res = schema.safeParse(b.props);
+    if (!res.success) {
+      res.error.issues.forEach((iss) =>
+        ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["props", ...(iss.path as string[])], message: iss.message })
+      );
+    }
+  });
 
 export const blocksDocSchema = z.object({
   hero: heroSchema,

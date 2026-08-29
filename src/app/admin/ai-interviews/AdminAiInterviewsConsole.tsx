@@ -18,6 +18,8 @@ import {
   grantCreditsAction,
   refundSessionAction,
 } from "./actions";
+import BulkHiringWizard from "./BulkHiringWizard";
+import { computeIntegrityScore, LEVEL_STYLES } from "@/lib/integrity/score";
 
 interface WorkspaceRow {
   id: string;
@@ -98,13 +100,16 @@ export default function AdminAiInterviewsConsole({
 
   return (
     <div className="space-y-8 font-sans">
-      <div>
-        <h1 className="text-3xl font-black tracking-tight text-fg flex items-center gap-2">
-          <Coins className="w-7 h-7 text-amber-400" /> AI Screening — Credit Operations
-        </h1>
-        <p className="text-sm text-muted/80 mt-1 max-w-2xl leading-relaxed">
-          Manage AI Screening credits across workspaces. Recruiters run actual screenings inside their workspaces — this console is the admin-side ledger, grant tool, and forensic audit view.
-        </p>
+      <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-black tracking-tight text-fg flex items-center gap-2">
+            <Coins className="w-7 h-7 text-amber-400" /> AI Screening — Credit Operations
+          </h1>
+          <p className="text-sm text-muted/80 mt-1 max-w-2xl leading-relaxed">
+            Manage AI Screening credits across workspaces. Recruiters run actual screenings inside their workspaces — this console is the admin-side ledger, grant tool, and forensic audit view.
+          </p>
+        </div>
+        <BulkHiringWizard workspaces={workspaces.map((w) => ({ id: w.id, name: w.name, slug: w.slug }))} />
       </div>
 
       {/* Stats */}
@@ -555,7 +560,21 @@ function SessionForensicsModal({
           <Row label="Created" value={new Date(session.createdAt).toLocaleString()} />
           <Row label="Started" value={session.startedAt ? new Date(session.startedAt).toLocaleString() : "never"} />
           <Row label="Finished" value={session.finishedAt ? new Date(session.finishedAt).toLocaleString() : "—"} />
+          {(() => {
+            const integrity = computeIntegrityScore({ browser: { suspicionScore: (session as unknown as { suspicion?: number }).suspicion ?? 0 }, proctor: { suspicionScore: 0 } });
+            const style = LEVEL_STYLES[integrity.level];
+            return <Row label="Integrity" value={`${integrity.score} · ${style.label}${integrity.reasons.length ? ` (${integrity.reasons.join(", ")})` : ""}`} />;
+          })()}
         </div>
+        {(() => {
+          const integrity = computeIntegrityScore({ browser: { suspicionScore: (session as unknown as { suspicion?: number }).suspicion ?? 0 }, proctor: { suspicionScore: 0 } });
+          const style = LEVEL_STYLES[integrity.level];
+          return (
+            <div className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full border text-xs font-bold ${style.cls}`}>
+              Integrity: {integrity.score} — {style.label}
+            </div>
+          );
+        })()}
 
         {isRefundMode ? (
           <form onSubmit={submitRefund} className="space-y-3">

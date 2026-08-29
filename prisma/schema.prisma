@@ -80,6 +80,7 @@ model User {
   solvedPrepQuestions  PrepQuestion[]        @relation("UserSolvedPrepQuestions")
   prepJourneys         PrepJourney[]
   prepActivities       PrepActivity[]
+  spaceMembers         SpaceMember[]
 }
 
 /// Admin-composed broadcast (IP-45). One row per admin send; the per-recipient
@@ -1615,6 +1616,10 @@ model CreatorSpace {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
   versions    SpaceVersion[]
+  members     SpaceMember[]
+  domains     SpaceDomain[]
+
+  @@index([ownerId])
 }
 
 /// Versioned snapshot of a space's block doc, written on Publish.
@@ -1628,6 +1633,31 @@ model SpaceVersion {
   space       CreatorSpace @relation(fields: [spaceId], references: [id], onDelete: Cascade)
 
   @@index([spaceId, publishedAt])
+}
+
+model SpaceMember {
+  id        String   @id @default(cuid())
+  spaceId   String
+  userId    String
+  role      String
+  createdAt DateTime @default(now())
+  space     CreatorSpace @relation(fields: [spaceId], references: [id], onDelete: Cascade)
+  user      User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([spaceId, userId])
+  @@index([userId])
+  @@index([spaceId])
+}
+
+model SpaceDomain {
+  id         String   @id @default(cuid())
+  spaceId    String
+  hostname   String   @unique
+  verifiedAt DateTime?
+  createdAt  DateTime @default(now())
+  space      CreatorSpace @relation(fields: [spaceId], references: [id], onDelete: Cascade)
+
+  @@index([spaceId])
 }
 
 /// A free follow of a space — the audience-building relationship. Following

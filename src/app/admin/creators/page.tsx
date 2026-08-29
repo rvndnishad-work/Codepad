@@ -186,6 +186,7 @@ export default async function AdminCreatorsPage({ searchParams }: PageProps) {
                   <th className="px-5 py-3">Owner</th>
                   <th className="px-5 py-3">Subscribers</th>
                   <th className="px-5 py-3">Gated Content</th>
+                  <th className="px-5 py-3">Health</th>
                   <th className="px-5 py-3">Payouts</th>
                   <th className="px-5 py-3">Status</th>
                   <th className="px-5 py-3 text-right">Actions</th>
@@ -196,7 +197,9 @@ export default async function AdminCreatorsPage({ searchParams }: PageProps) {
                   <tr key={s.id} className="hover:bg-panel/20 transition-colors">
                     {/* Page details */}
                     <td className="px-5 py-3.5">
-                      <div className="font-semibold text-fg">{s.name}</div>
+                      <Link href={`/admin/creators/${s.handle}`} className="font-semibold text-fg hover:text-accent hover:underline">
+                        {s.name}
+                      </Link>
                       <div className="text-[10px] text-muted font-mono mt-0.5">/c/{s.handle}</div>
                     </td>
 
@@ -218,6 +221,17 @@ export default async function AdminCreatorsPage({ searchParams }: PageProps) {
                       <span className="inline-flex items-center gap-1 font-semibold text-fg">
                         <LayoutGrid className="w-3.5 h-3.5 text-muted" /> {s.contentCount}
                       </span>
+                    </td>
+
+                    {/* Health */}
+                    <td className="px-5 py-3.5">
+                      {s.contentCount === 0 ? (
+                        <span className="inline-flex items-center rounded-full bg-amber-500/10 border border-amber-500/20 px-2 py-0.5 text-[9px] font-bold text-amber-700">Empty</span>
+                      ) : s.subscriberCount === 0 ? (
+                        <span className="inline-flex items-center rounded-full bg-blue-500/10 border border-blue-500/20 px-2 py-0.5 text-[9px] font-bold text-blue-700">Needs growth</span>
+                      ) : (
+                        <span className="inline-flex items-center rounded-full bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 text-[9px] font-bold text-emerald-700">Healthy</span>
+                      )}
                     </td>
 
                     {/* Payouts Connect Status */}

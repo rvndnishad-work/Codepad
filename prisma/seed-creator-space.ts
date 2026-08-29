@@ -124,9 +124,17 @@ async function main() {
   await prisma.blogPost.deleteMany({ where: { userId: user.id, slug: { startsWith: "demo-" } } });
   await prisma.snippet.deleteMany({ where: { userId: user.id, slug: { startsWith: "demo-" } } });
 
-  // 3b. Wipe any prior demo space + its space-scoped content.
-  const prior = await prisma.creatorSpace.findUnique({ where: { handle: HANDLE } });
-  if (prior) {
+  // 3b. Wipe any prior demo space + any existing space for this owner.
+  // Handles the v1 unique-ownerId constraint (one space per creator) and the
+  // case where a prior run left a stale demo-studio for the same owner.
+  const priorByHandle = await prisma.creatorSpace.findUnique({ where: { handle: HANDLE } });
+  const priorByOwner = await prisma.creatorSpace.findFirst({ where: { ownerId: user.id } });
+  const toWipe = new Map<string, typeof priorByHandle>();
+  if (priorByHandle) toWipe.set(priorByHandle.id, priorByHandle);
+  if (priorByOwner) toWipe.set(priorByOwner.id, priorByOwner);
+  for (const prior of toWipe.values()) {
+    if (!prior) continue;
+    // eslint-disable-next-line no-await-in-loop
     await prisma.$transaction([
       prisma.spaceContent.deleteMany({ where: { spaceId: prior.id } }),
       prisma.spaceTier.deleteMany({ where: { spaceId: prior.id } }),
@@ -136,8 +144,10 @@ async function main() {
       prisma.tutorial.deleteMany({ where: { spaceId: prior.id } }),
       prisma.interviewQA.deleteMany({ where: { spaceId: prior.id } }),
       prisma.interviewExperience.deleteMany({ where: { spaceId: prior.id } }),
+      prisma.spaceVersion.deleteMany({ where: { spaceId: prior.id } }),
       prisma.creatorSpace.delete({ where: { id: prior.id } }),
     ]);
+    console.log(`Wiped prior space ${prior.handle} (${prior.id}) for owner ${user.id.slice(0, 8)}`);
   }
 
   // 4. The space — published, customized layout with every section visible.

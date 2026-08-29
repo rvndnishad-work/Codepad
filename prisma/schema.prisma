@@ -1598,7 +1598,13 @@ model CreatorSpace {
   coverUrl    String?
   /// Public-page layout: hero style + ordered section visibility. Shape:
   /// { heroStyle: "banner"|"minimal", sections: [{ key, visible }] }.
+  /// Kept for 2 releases as fallback; new writes go to `blocks`.
   layout      Json?
+  /// Block doc for the streaming renderer. Shape: { hero, blocks:[{id,type,props,cols,visible,tierGate}] }.
+  /// When present the public page prefers this over `layout`.
+  blocks      Json?
+  /// Token overrides for the design system. Shape: { accent, radius, font, density, card }.
+  styles      Json?
   /// Social profile links. Shape: { youtube?, linkedin?, x?, github?, website? }.
   socials     Json?
   /// Free-form topic tags shown on the directory + used for filtering.
@@ -1608,6 +1614,20 @@ model CreatorSpace {
   published   Boolean  @default(false)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+  versions    SpaceVersion[]
+}
+
+/// Versioned snapshot of a space's block doc, written on Publish.
+model SpaceVersion {
+  id          String   @id @default(cuid())
+  spaceId     String
+  blocks      Json
+  styles      Json?
+  actorId     String?
+  publishedAt DateTime @default(now())
+  space       CreatorSpace @relation(fields: [spaceId], references: [id], onDelete: Cascade)
+
+  @@index([spaceId, publishedAt])
 }
 
 /// A free follow of a space — the audience-building relationship. Following
@@ -2039,6 +2059,10 @@ model SpaceContent {
   platformFeeBps     Int      @default(2000)
   stripeProductId    String?
   stripePriceId      String?
+  /// Number of preview lines shown before the paywall. Null = default (3).
+  previewLines       Int?
+  /// Per-space SEO overrides for this content. Shape: { title?, description?, noindex? }.
+  seo                Json?
   createdAt          DateTime @default(now())
   updatedAt          DateTime @updatedAt
 

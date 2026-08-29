@@ -21,13 +21,15 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import MarkdownRenderer from "@/components/MarkdownRenderer";
 import { SubscribeButton } from "@/app/creator/BuyButton";
-import { normalizeLayout, type SectionKey } from "@/lib/creator/layout";
+import { type SectionKey } from "@/lib/creator/layout";
+import { blocksDocToLayout, normalizeBlocks } from "@/lib/creator/blocks";
+import { normalizeTokenSet, tokenSetToCssVars } from "@/lib/creator/tokens";
 import { recordSpaceEvent } from "@/lib/creator/events";
+import Image from "next/image";
 import FollowButton from "./FollowButton";
 import AnimatedCounter from "./AnimatedCounter";
 import SpaceSectionNav, { type NavSection } from "./SpaceSectionNav";
-import LatestCarousel from "./LatestCarousel";
-import SpaceFeed from "./SpaceFeed";
+import BlockRenderer from "./BlockRenderer";
 import { type ContentSectionKey, type SpaceCard } from "./space-cards";
 
 type Props = { params: Promise<{ handle: string }> };
@@ -36,6 +38,33 @@ const money = (cents: number, currency = "usd") =>
   new Intl.NumberFormat("en-US", { style: "currency", currency: currency.toUpperCase() }).format(cents / 100);
 
 const CAROUSEL_SIZE = 6;
+
+/** Allow next/image for allowlisted hosts; fall back to unoptimized for user-pasted URLs. */
+function isSafeImageUrl(url: string): boolean {
+  try {
+    const u = new URL(url);
+    return [
+      "avatars.githubusercontent.com",
+      "lh3.googleusercontent.com",
+      "platform-lookaside.fbsbx.com",
+      "graph.facebook.com",
+      "secure.gravatar.com",
+      "www.gravatar.com",
+      "image.pollinations.ai",
+      "images.unsplash.com",
+      "plus.unsplash.com",
+      "images.pexels.com",
+      "picsum.photos",
+      // common user-pasted blog covers — serve optimized when possible
+      "cdn.hashnode.com",
+      "dev-to-uploads.s3.amazonaws.com",
+      "miro.medium.com",
+      "images.pexels.com",
+    ].includes(u.hostname);
+  } catch {
+    return false;
+  }
+}
 
 /* ── socials ──────────────────────────────────────────────────────────────── */
 
@@ -91,7 +120,16 @@ export default async function CreatorSpacePage({ params }: Props) {
   const space = await prisma.creatorSpace.findUnique({ where: { handle } });
   if (!space || !space.published) notFound();
 
-  const layout = normalizeLayout(space.layout);
+  // Stage 1+2: prefer blocks doc when present; fall back to legacy layout via adapter.
+  // Keeping normalizeLayout as fallback ensures 2-release backward compat (see blocks.ts).
+  const rawBlocks = (space as unknown as { blocks?: unknown }).blocks;
+  const rawStyles = (space as unknown as { styles?: unknown }).styles;
+  const blocksDoc = normalizeBlocks(rawBlocks, space.layout);
+  // `layout` kept for tier/hero/nav helpers until BlockRenderer fully owns those;
+  // BlockRenderer is the streaming shell that will gradually replace page.tsx layout wiring.
+  const layout = blocksDocToLayout(blocksDoc);
+  const tokenSet = normalizeTokenSet(rawStyles);
+  const tokenVars = tokenSet ? tokenSetToCssVars(tokenSet) : null;
 
   const session = await auth().catch(() => null);
   const viewerId = session?.user?.id ?? null;
@@ -300,6 +338,10 @@ export default async function CreatorSpacePage({ params }: Props) {
   const hasAbout = sectionVisible("ABOUT") && !!space.description;
   const hasMembership = sectionVisible("MEMBERSHIP") && tiers.length > 0;
 
+  // Map for BlockRenderer streaming shell (Stage 3)
+  const sectionsByKey = new Map<string, SpaceCard[]>();
+  for (const s of contentSections) sectionsByKey.set(s.key, s.cards);
+
   const navSections: NavSection[] = [
     ...(carouselItems.length > 0 ? [{ id: "latest", label: "Latest" }] : []),
     ...(totalResources > 0 ? [{ id: "posts", label: "Posts", count: totalResources }] : []),
@@ -322,16 +364,23 @@ export default async function CreatorSpacePage({ params }: Props) {
   };
 
   return (
-    <div className="min-h-screen pb-20">
+    <div className="min-h-screen pb-20" style={tokenVars as React.CSSProperties | undefined}>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(ldJson) }} />
 
-      {/* ── Hero ──────────────────────────────────────────────────────────── */}
+        {/* ── Hero ──────────────────────────────────────────────────────────── */}
       <div className="relative overflow-hidden">
         {/* Backdrop: cover image or animated gradient mesh */}
         {showBanner ? (
           <div className="absolute inset-x-0 top-0 h-56 md:h-72 overflow-hidden bg-panel">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={space.coverUrl!} alt="" className="w-full h-full object-cover" />
+            <Image
+              src={space.coverUrl!}
+              alt=""
+              fill
+              priority
+              sizes="100vw"
+              className="object-cover"
+              unoptimized={!isSafeImageUrl(space.coverUrl!)}
+            />
             <div className="absolute inset-0 bg-gradient-to-t from-bg via-bg/40 to-bg/10" />
           </div>
         ) : (
@@ -490,19 +539,9 @@ export default async function CreatorSpacePage({ params }: Props) {
 
       {/* ── Body ──────────────────────────────────────────────────────────── */}
       <div className="max-w-6xl mx-auto px-4 mt-8 grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-        {/* Main content column */}
+        {/* Main content column — Stage 3 streaming shell */}
         <div className="lg:col-span-8 space-y-12">
-          {/* Autoplay carousel of the newest publications */}
-          {carouselItems.length > 0 && (
-            <section id="latest" className="scroll-mt-32">
-              <LatestCarousel items={carouselItems} />
-            </section>
-          )}
-
-          {/* Sections: compact list by default, card grid on toggle */}
-          <SpaceFeed sections={contentSections} />
-
-          {contentSections.length === 0 && (
+          {contentSections.length === 0 && carouselItems.length === 0 ? (
             <div className="rounded-2xl border border-dashed border-border/50 py-20 text-center relative overflow-hidden">
               <svg viewBox="0 0 80 80" className="w-16 h-16 mx-auto text-muted/40" fill="none" aria-hidden>
                 <circle cx="40" cy="40" r="34" stroke="currentColor" strokeWidth="1.5" strokeDasharray="6 8" className="animate-[spin_24s_linear_infinite] origin-center" />
@@ -511,6 +550,8 @@ export default async function CreatorSpacePage({ params }: Props) {
               <p className="mt-4 text-sm font-semibold text-fg">Nothing published yet</p>
               <p className="text-xs text-muted mt-1">Follow to get notified when {space.name} publishes.</p>
             </div>
+          ) : (
+            <BlockRenderer doc={blocksDoc} allCards={allCards} carouselItems={carouselItems} sectionsByKey={sectionsByKey} />
           )}
         </div>
 
@@ -619,8 +660,18 @@ function SpaceAvatar({
   const src = avatarUrl || fallbackImage || null;
   const cls = "w-24 h-24 md:w-28 md:h-28 rounded-[1.25rem] object-cover bg-surface shrink-0 border-4 border-bg";
   if (src) {
-    // eslint-disable-next-line @next/next/no-img-element
-    return <img src={src} alt={name} className={cls} />;
+    // next/image with fallback to unoptimized for arbitrary user URLs; priority in hero
+    return (
+      <Image
+        src={src}
+        alt={name}
+        width={112}
+        height={112}
+        priority
+        className={cls}
+        unoptimized={!isSafeImageUrl(src)}
+      />
+    );
   }
   return (
     <div className={`${cls} grid place-items-center bg-accent/10 text-accent`}>

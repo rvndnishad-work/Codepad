@@ -5,7 +5,6 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   Store,
-  ExternalLink,
   Plus,
   ChevronsLeft,
   ChevronsRight,
@@ -16,6 +15,9 @@ import {
   Wallet,
   ArrowLeft,
   Settings,
+  Palette,
+  Megaphone,
+  BarChart3,
 } from "lucide-react";
 import UserMenu from "@/components/UserMenu";
 
@@ -43,6 +45,7 @@ export default function CreatorSidebar({
 
   useEffect(() => {
     try {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setCollapsed(localStorage.getItem(STORAGE_KEY) === "1");
     } catch {
       /* ignore */
@@ -75,14 +78,46 @@ export default function CreatorSidebar({
       return next;
     });
 
-  const menuItems = [
-    { label: "Overview", icon: Compass, href: `/creator/${activeHandle}` },
-    { label: "Public Page Layout", icon: Globe, href: `/creator/${activeHandle}/layout` },
-    { label: "Users / Members", icon: Users, href: `/creator/${activeHandle}/users` },
-    { label: "Content & Access", icon: LayoutGrid, href: `/creator/${activeHandle}/content` },
-    { label: "Payment & Payouts", icon: Wallet, href: `/creator/${activeHandle}/payment` },
-    { label: "Space Settings", icon: Settings, href: `/creator/${activeHandle}/settings` },
+  // Stage 4: grouped nav — Design/Content/Audience/Commerce
+  const menuGroups: { heading: string; items: { label: string; icon: typeof Compass; href: string }[] }[] = [
+    {
+      heading: "Studio",
+      items: [{ label: "Overview", icon: Compass, href: `/creator/${activeHandle}` }],
+    },
+    {
+      heading: "Design",
+      items: [
+        { label: "Design", icon: Palette, href: `/creator/${activeHandle}/design` },
+        { label: "Public Page Layout (legacy)", icon: Globe, href: `/creator/${activeHandle}/layout` },
+      ],
+    },
+    {
+      heading: "Content",
+      items: [{ label: "Content & Access", icon: LayoutGrid, href: `/creator/${activeHandle}/content` }],
+    },
+    {
+      heading: "Audience",
+      items: [
+        { label: "Users / Members", icon: Users, href: `/creator/${activeHandle}/users` },
+        { label: "Growth", icon: Megaphone, href: `/creator/${activeHandle}/users` },
+      ],
+    },
+    {
+      heading: "Commerce",
+      items: [{ label: "Payment & Payouts", icon: Wallet, href: `/creator/${activeHandle}/payment` }],
+    },
+    {
+      heading: "Insights",
+      items: [{ label: "Analytics", icon: BarChart3, href: `/creator/${activeHandle}` }],
+    },
+    {
+      heading: "Settings",
+      items: [{ label: "Space Settings", icon: Settings, href: `/creator/${activeHandle}/settings` }],
+    },
   ];
+
+  // Flat list for non-grouped rendering paths (keep legacy `menuItems` shape for collapsed icon rail)
+  const menuItems = menuGroups.flatMap((g) => g.items);
 
   return (
     <aside
@@ -155,30 +190,53 @@ export default function CreatorSidebar({
           </div>
         )}
 
-        <div className="space-y-1">
-          {!collapsed && (
-            <div className="text-[10px] font-semibold uppercase tracking-[0.14em] text-muted/70 px-2.5 mb-1.5">
-              Creator Studio
-            </div>
-          )}
-          {menuItems.map((item) => {
-            const isActive = pathname === item.href;
-            const tone = isActive
-              ? "bg-accent/10 text-accent font-semibold"
-              : "text-muted hover:text-fg hover:bg-panel/40";
-            return (
-              <Link
-                key={item.label}
-                href={item.href}
-                title={collapsed ? item.label : undefined}
-                className={`group flex items-center gap-2.5 px-2.5 py-2 rounded-md text-[12px] transition-colors ${tone}`}
-              >
-                <item.icon className={`w-4 h-4 shrink-0 ${isActive ? "text-accent" : "text-muted/60 group-hover:text-fg"}`} />
-                {!collapsed && <span className="truncate">{item.label}</span>}
-              </Link>
-            );
-          })}
-        </div>
+        {/* Grouped Studio nav — expanded view shows headings */}
+        {!collapsed ? (
+          <div className="space-y-4">
+            {menuGroups.map((group) => (
+              <div key={group.heading} className="space-y-1">
+                <div className="text-[10px] font-semibold uppercase tracking-[0.14em] text-muted/70 px-2.5 mb-1">
+                  {group.heading}
+                </div>
+                {group.items.map((item) => {
+                  const isActive = pathname === item.href;
+                  const tone = isActive
+                    ? "bg-accent/10 text-accent font-semibold"
+                    : "text-muted hover:text-fg hover:bg-panel/40";
+                  return (
+                    <Link
+                      key={item.label}
+                      href={item.href}
+                      className={`group flex items-center gap-2.5 px-2.5 py-2 rounded-md text-[12px] transition-colors ${tone}`}
+                    >
+                      <item.icon className={`w-4 h-4 shrink-0 ${isActive ? "text-accent" : "text-muted/60 group-hover:text-fg"}`} />
+                      <span className="truncate">{item.label}</span>
+                    </Link>
+                  );
+                })}
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="space-y-1">
+            {menuItems.map((item) => {
+              const isActive = pathname === item.href;
+              const tone = isActive
+                ? "bg-accent/10 text-accent font-semibold"
+                : "text-muted hover:text-fg hover:bg-panel/40";
+              return (
+                <Link
+                  key={item.label}
+                  href={item.href}
+                  title={item.label}
+                  className={`group flex items-center justify-center p-2 rounded-md transition-colors ${tone}`}
+                >
+                  <item.icon className={`w-4 h-4 shrink-0 ${isActive ? "text-accent" : "text-muted/60 group-hover:text-fg"}`} />
+                </Link>
+              );
+            })}
+          </div>
+        )}
       </div>
 
       {/* Footer */}

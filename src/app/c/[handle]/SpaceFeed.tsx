@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 import Link from "next/link";
 import {
   List,
@@ -82,6 +83,8 @@ export default function SpaceFeed({
     setPage(1);
   };
 
+  const shouldReduceMotion = useReducedMotion();
+
   if (allCards.length === 0) return null;
 
   return (
@@ -124,19 +127,51 @@ export default function SpaceFeed({
         })}
       </div>
 
-      {/* Feed */}
+      {/* Feed — stagger children, respect reduced-motion, virtualization via pagination (PAGE_SIZE=8) */}
       {view === "list" ? (
-        <div className="rounded-2xl border border-border/50 bg-surface/60 shadow-tile divide-y divide-border/30 overflow-hidden">
-          {pageCards.map((card) => (
-            <ListRow key={card.key} card={card} showType={filter === "ALL"} />
-          ))}
-        </div>
+        <motion.div
+          initial={false}
+          animate={{ opacity: 1 }}
+          transition={{ staggerChildren: shouldReduceMotion ? 0 : 0.04 }}
+          className="rounded-2xl border border-border/50 bg-surface/60 shadow-tile divide-y divide-border/30 overflow-hidden"
+        >
+          <AnimatePresence mode="popLayout">
+            {pageCards.map((card) => (
+              <motion.div
+                key={card.key}
+                initial={shouldReduceMotion ? false : { opacity: 0, y: 6 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={shouldReduceMotion ? undefined : { opacity: 0, y: -6 }}
+                transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
+                layout={!shouldReduceMotion}
+              >
+                <ListRow card={card} showType={filter === "ALL"} />
+              </motion.div>
+            ))}
+          </AnimatePresence>
+        </motion.div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-          {pageCards.map((card) => (
-            <GridCard key={card.key} card={card} showType={filter === "ALL"} />
-          ))}
-        </div>
+        <motion.div
+          initial={false}
+          animate={{ opacity: 1 }}
+          transition={{ staggerChildren: shouldReduceMotion ? 0 : 0.06 }}
+          className="grid grid-cols-1 sm:grid-cols-2 gap-5"
+        >
+          <AnimatePresence mode="popLayout">
+            {pageCards.map((card) => (
+              <motion.div
+                key={card.key}
+                initial={shouldReduceMotion ? false : { opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={shouldReduceMotion ? undefined : { opacity: 0, scale: 0.98 }}
+                transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
+                layout={!shouldReduceMotion}
+              >
+                <GridCard card={card} showType={filter === "ALL"} />
+              </motion.div>
+            ))}
+          </AnimatePresence>
+        </motion.div>
       )}
 
       {/* Pagination */}

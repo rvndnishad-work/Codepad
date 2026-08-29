@@ -234,6 +234,7 @@ export default function LayoutClient(props: Props) {
                     <button
                       key={t.key}
                       type="button"
+                      // eslint-disable-next-line @typescript-eslint/no-explicit-any
                       onClick={() => setTheme(t.key as any)}
                       className={`p-3 rounded-xl border text-left transition-all relative ${
                         theme === t.key

@@ -6,15 +6,21 @@ import type { PaywallOptions } from "@/lib/marketplace/access";
 const money = (cents: number, currency = "usd") =>
   new Intl.NumberFormat("en-US", { style: "currency", currency: currency.toUpperCase() }).format(cents / 100);
 
+import RichContent from "@/components/rich-editor/RichContent";
+
 /** Generic paywall for any gated space content (tutorials, interview Q&A, …). */
 export default function SpacePaywall({
   title,
   blurb,
   options,
+  previewLines,
+  previewMarkdown,
 }: {
   title: string;
   blurb?: string | null;
   options: PaywallOptions;
+  previewLines?: number | null;
+  previewMarkdown?: string | null;
 }) {
   const recommendedId = options.tiers.length > 1 ? options.tiers[options.tiers.length - 1].id : null;
 
@@ -37,17 +43,32 @@ export default function SpacePaywall({
         {blurb && <p className="text-sm text-muted mt-3 leading-relaxed">{blurb}</p>}
       </div>
 
-      {/* Blurred stand-in for the locked body. */}
-      <div className="relative mt-8 select-none" aria-hidden>
-        <div className="space-y-2.5 blur-[6px] opacity-50">
-          <div className="h-3.5 rounded bg-panel w-11/12" />
-          <div className="h-3.5 rounded bg-panel w-full" />
-          <div className="h-3.5 rounded bg-panel w-4/5" />
-          <div className="h-24 rounded-xl bg-panel w-full mt-4" />
-          <div className="h-3.5 rounded bg-panel w-3/4 mt-4" />
-          <div className="h-3.5 rounded bg-panel w-5/6" />
-        </div>
-        <div className="absolute inset-0 bg-gradient-to-b from-transparent to-bg" />
+      {/* Preview lines (real content) + blurred stand-in */}
+      <div className="relative mt-8">
+        {previewMarkdown ? (
+          <div className="relative">
+            <div className="prose prose-sm dark:prose-invert max-w-none">
+              <RichContent markdown={previewMarkdown} />
+            </div>
+            <div className="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-bg via-bg/80 to-transparent" />
+            <div className="absolute inset-0 backdrop-blur-[0.5px] pointer-events-none border border-border/40 rounded-xl" />
+            <div className="absolute bottom-2 left-1/2 -translate-x-1/2 inline-flex items-center gap-1.5 rounded-full bg-panel border border-border px-3 py-1 text-[10px] font-bold text-muted">
+              Preview · {previewLines ?? 3} lines · Join to unlock
+            </div>
+          </div>
+        ) : (
+          <div className="relative select-none" aria-hidden>
+            <div className="space-y-2.5 blur-[6px] opacity-50">
+              <div className="h-3.5 rounded bg-panel w-11/12" />
+              <div className="h-3.5 rounded bg-panel w-full" />
+              <div className="h-3.5 rounded bg-panel w-4/5" />
+              <div className="h-24 rounded-xl bg-panel w-full mt-4" />
+              <div className="h-3.5 rounded bg-panel w-3/4 mt-4" />
+              <div className="h-3.5 rounded bg-panel w-5/6" />
+            </div>
+            <div className="absolute inset-0 bg-gradient-to-b from-transparent to-bg" />
+          </div>
+        )}
       </div>
 
       {/* Unlock options */}

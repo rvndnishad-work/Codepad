@@ -816,9 +816,9 @@ export async function subscribeTierAction(tierId: string): Promise<string> {
   return createTierCheckout({ tierId, buyerId: userId, origin: await origin() });
 }
 
-export async function buyContentAction(spaceContentId: string): Promise<string> {
+export async function buyContentAction(spaceContentId: string, coupon?: string | null): Promise<string> {
   const session = await auth().catch(() => null);
   const userId = session?.user?.id;
   if (!userId) throw new Error("Sign in to purchase.");
-  return createContentCheckout({ spaceContentId, buyerId: userId, origin: await origin() });
+  return createContentCheckout({ spaceContentId, buyerId: userId, origin: await origin(), coupon: coupon ?? null });
 }

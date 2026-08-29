@@ -17,12 +17,15 @@ export async function generateMetadata({ params }: Props) {
   if (!space || !space.published) return {};
   const tutorial = await prisma.tutorial.findUnique({
     where: { spaceId_slug: { spaceId: space.id, slug } },
-    select: { title: true, summary: true, published: true },
+    select: { id: true, title: true, summary: true, published: true },
   });
   if (!tutorial || !tutorial.published) return {};
+  const sc = await prisma.spaceContent.findUnique({ where: { contentType_contentId: { contentType: "TUTORIAL", contentId: tutorial.id } }, select: { seo: true } });
+  const seo = sc?.seo as { title?: string; description?: string; noindex?: boolean } | null;
   return {
-    title: `${tutorial.title} — ${space.name}`,
-    description: tutorial.summary ?? `A tutorial by ${space.name} on Interviewpad.`,
+    title: seo?.title ?? `${tutorial.title} — ${space.name}`,
+    description: seo?.description ?? tutorial.summary ?? `A tutorial by ${space.name} on Interviewpad.`,
+    robots: seo?.noindex ? { index: false, follow: false } : undefined,
   };
 }
 
@@ -45,7 +48,18 @@ export default async function TutorialViewer({ params }: Props) {
 
   if (!(await hasAccess(userId, "TUTORIAL", tutorial.id))) {
     const options = await getPaywallOptions("TUTORIAL", tutorial.id);
-    if (options) return <SpacePaywall title={tutorial.title} blurb={tutorial.summary} options={options} />;
+    if (options) {
+      const sc = await prisma.spaceContent.findUnique({ where: { contentType_contentId: { contentType: "TUTORIAL", contentId: tutorial.id } }, select: { previewLines: true, seo: true } });
+      const previewLines = sc?.previewLines ?? 3;
+      // Preview: first N lines of the first section's markdown/JSON text
+      const first = tutorial.sections[0];
+      let previewMarkdown: string | null = null;
+      if (first && previewLines > 0) {
+        const raw = first.body ?? "";
+        previewMarkdown = raw.split("\n").slice(0, previewLines).join("\n");
+      }
+      return <SpacePaywall title={tutorial.title} blurb={tutorial.summary} options={options} previewLines={previewLines} previewMarkdown={previewMarkdown} />;
+    }
   }
 
   after(() =>

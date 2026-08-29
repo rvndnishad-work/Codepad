@@ -169,14 +169,14 @@ export default function PrepTrackerClient({ overview }: { overview: JourneyOverv
         </div>
       </div>
 
-      {/* Title block */}
-      <motion.div initial="hidden" animate="visible" variants={fadeIn} className="mb-8">
-        <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest bg-surface border border-border text-muted mb-3">
+      {/* Title block — aurora glass */}
+      <motion.div initial="hidden" animate="visible" variants={fadeIn} className="mb-8 rounded-[1.5rem] border border-border bg-gradient-to-br from-accent/[0.08] via-surface to-violet-500/[0.06] backdrop-blur p-6 md:p-7">
+        <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest bg-white/70 dark:bg-white/10 backdrop-blur border border-border text-muted mb-3">
           <MapIcon className="w-3.5 h-3.5 text-accent" />
           Prep Journey
         </div>
         <div className="flex items-center flex-wrap gap-3">
-          <h1 className="text-3xl sm:text-4xl font-black tracking-tight">{overview.title}</h1>
+          <h1 className="text-3xl sm:text-4xl font-black tracking-tight bg-gradient-to-br from-fg to-fg/70 bg-clip-text text-transparent">{overview.title}</h1>
           {overview.status === "paused" && (
             <span className="text-[10px] font-black uppercase tracking-wider px-2.5 py-1 rounded-lg border border-amber-500/25 bg-amber-500/10 text-amber-600 dark:text-amber-400">
               Paused

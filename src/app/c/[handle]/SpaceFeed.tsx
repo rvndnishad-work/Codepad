@@ -370,43 +370,50 @@ function TypeTag({ sectionKey }: { sectionKey: ContentSectionKey }) {
 function ListRow({ card, showType }: { card: SpaceCard; showType: boolean }) {
   const meta = SECTION_META[card.sectionKey];
   return (
-    <div className="group flex items-center gap-4 px-3.5 py-3 hover:bg-panel/25 transition-colors">
-      {/* Thumb */}
-      <Link href={card.href} className="relative w-24 h-14 rounded-lg overflow-hidden bg-panel/60 shrink-0 hidden sm:block">
+    <div className="group relative flex items-center gap-4 px-4 py-4 hover:bg-panel/30 transition-colors">
+      {/* Thumb - editorial */}
+      <Link href={card.href} className="relative w-28 h-[68px] md:w-32 md:h-[72px] rounded-xl overflow-hidden bg-panel shrink-0 hidden sm:block border border-border/40 shadow-sm group-hover:shadow-md transition-all">
         {card.cover ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img
             src={card.cover}
             alt=""
-            className="w-full h-full object-cover group-hover:scale-[1.05] transition-transform duration-300"
+            className="w-full h-full object-cover group-hover:scale-[1.06] transition-transform duration-500"
           />
         ) : (
-          <div className={`w-full h-full bg-gradient-to-br ${meta.gradient} grid place-items-center`}>
-            <meta.Icon className="w-4.5 h-4.5 text-fg/30" />
+          <div className={`w-full h-full bg-gradient-to-br ${meta.gradient} grid place-items-center relative overflow-hidden`}>
+            <div className="absolute inset-0 bg-gradient-to-br from-white/[0.06] to-transparent" />
+            <meta.Icon className="w-6 h-6 text-white/80 drop-shadow-sm" />
           </div>
         )}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
         {!card.unlocked && (
-          <span className="absolute inset-0 grid place-items-center bg-bg/40 backdrop-blur-[1px]">
-            <Lock className="w-3.5 h-3.5 text-accent" />
+          <span className="absolute inset-0 grid place-items-center bg-black/35 backdrop-blur-[2px]">
+            <span className="w-7 h-7 rounded-full bg-white/90 text-zinc-900 grid place-items-center shadow">
+              <Lock className="w-3.5 h-3.5" />
+            </span>
           </span>
         )}
       </Link>
 
       {/* Title + meta */}
       <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-2 min-w-0">
+        <div className="flex items-center gap-2 min-w-0 mb-1">
           {showType && <TypeTag sectionKey={card.sectionKey} />}
+          <span className=" hidden md:inline-flex items-center gap-1 text-[10px] text-muted tabular-nums">
+            {new Date(card.updatedAtIso).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
+          </span>
         </div>
         <Link
           href={card.href}
-          className="text-sm font-bold text-fg group-hover:text-accent transition-colors line-clamp-1 leading-snug"
+          className="text-[15px] font-bold leading-snug text-fg group-hover:text-accent transition-colors line-clamp-2"
         >
           {card.title}
         </Link>
-        {card.summary && <p className="text-[11px] text-muted line-clamp-1 mt-0.5 leading-relaxed">{card.summary}</p>}
-        <div className="flex items-center gap-1.5 mt-1 flex-wrap">
+        {card.summary && <p className="text-[13px] text-muted line-clamp-2 mt-1 leading-relaxed hidden md:block">{card.summary}</p>}
+        <div className="flex items-center gap-1.5 mt-2 flex-wrap">
           {card.chips.slice(0, 3).map((c) => (
-            <span key={c} className="text-[9px] font-bold uppercase tracking-wider text-muted bg-panel/50 rounded px-1.5 py-0.5">
+            <span key={c} className="text-[10px] font-semibold tracking-wide text-muted bg-panel border border-border/50 rounded-full px-2 py-0.5">
               {c}
             </span>
           ))}
@@ -416,8 +423,9 @@ function ListRow({ card, showType }: { card: SpaceCard; showType: boolean }) {
       {/* Access / action */}
       <div className="flex items-center gap-3 shrink-0">
         <RowAction card={card} />
-        <ChevronRight className="w-4 h-4 text-muted/40 group-hover:text-accent group-hover:translate-x-0.5 transition-all hidden sm:block" />
+        <ChevronRight className="w-4 h-4 text-muted/40 group-hover:text-accent group-hover:translate-x-1 transition-all hidden lg:block" />
       </div>
+      <div className="absolute bottom-0 left-4 right-4 h-px bg-border/30 hidden md:block group-last:hidden" />
     </div>
   );
 }
@@ -427,36 +435,49 @@ function ListRow({ card, showType }: { card: SpaceCard; showType: boolean }) {
 function GridCard({ card, showType }: { card: SpaceCard; showType: boolean }) {
   const meta = SECTION_META[card.sectionKey];
   return (
-    <div className="group h-full rounded-2xl border border-border/50 bg-surface/60 overflow-hidden shadow-tile hover:border-accent/40 hover:-translate-y-1 transition-all duration-300 flex flex-col">
-      <Link href={card.href} className="block relative aspect-[21/9] bg-panel/60 overflow-hidden">
+    <div className="group h-full rounded-[1.25rem] border border-border bg-surface overflow-hidden shadow-sm hover:shadow-lg hover:border-accent/20 hover:-translate-y-1 transition-all duration-300 flex flex-col">
+      <Link href={card.href} className="block relative aspect-[16/10] bg-panel overflow-hidden">
         {card.cover ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img
             src={card.cover}
             alt=""
-            className="w-full h-full object-cover group-hover:scale-[1.04] transition-transform duration-500"
+            className="w-full h-full object-cover group-hover:scale-[1.05] transition-transform duration-700"
           />
         ) : (
-          <div className={`w-full h-full bg-gradient-to-br ${meta.gradient} grid place-items-center`}>
-            <meta.Icon className="w-7 h-7 text-fg/25 group-hover:scale-110 transition-transform duration-300" />
+          <div className={`w-full h-full bg-gradient-to-br ${meta.gradient} grid place-items-center relative`}>
+            <div className="absolute inset-0 bg-gradient-to-br from-white/[0.08] to-transparent" />
+            <meta.Icon className="w-8 h-8 text-white/90 drop-shadow-sm group-hover:scale-110 group-hover:rotate-3 transition-all duration-500" />
           </div>
         )}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent opacity-60" />
+        <div className="absolute top-3 left-3">
+          <TypeTag sectionKey={card.sectionKey} />
+        </div>
         {!card.unlocked && (
-          <span className="absolute top-2 right-2">
-            <AccessState card={card} />
+          <span className="absolute top-3 right-3">
+            <span className="inline-flex items-center gap-1 rounded-full bg-black/60 backdrop-blur-md border border-white/20 px-2.5 py-1 text-[10px] font-bold text-white">
+              <Lock className="w-3 h-3" /> Locked
+            </span>
           </span>
         )}
+        <div className="absolute bottom-0 left-0 right-0 p-3 flex items-center gap-2">
+          <span className="inline-flex items-center rounded-full bg-white/95 backdrop-blur px-2 py-1 text-[10px] font-semibold text-zinc-900 shadow">
+            {card.chips[0] ?? meta.label}
+          </span>
+          <span className="ml-auto text-[11px] text-white/80">{new Date(card.updatedAtIso).toLocaleDateString()}</span>
+        </div>
       </Link>
       <div className="p-4 flex flex-col gap-2 flex-1">
-        {showType && <TypeTag sectionKey={card.sectionKey} />}
-        <Link href={card.href} className="text-sm font-bold text-fg group-hover:text-accent transition-colors line-clamp-2 leading-snug">
+        {showType && <span className=" text-[11px] text-muted hidden">{meta.label}</span>}
+        <Link href={card.href} className="text-[15px] font-bold text-fg group-hover:text-accent transition-colors line-clamp-2 leading-snug">
           {card.title}
         </Link>
-        {card.summary && <p className="text-[11px] text-muted line-clamp-2 leading-relaxed">{card.summary}</p>}
-        <div className="mt-auto pt-2 flex items-center justify-between gap-2">
+        {card.summary && <p className="text-[13px] text-muted line-clamp-2 leading-relaxed">{card.summary}</p>}
+        <div className="mt-auto pt-3 flex items-center justify-between gap-2 border-t border-border/50">
           <div className="flex items-center gap-1.5 flex-wrap min-w-0">
-            {card.chips.slice(0, 3).map((c) => (
-              <span key={c} className="text-[9px] font-bold uppercase tracking-wider text-muted bg-panel/50 rounded px-1.5 py-0.5">
+            {card.chips.slice(1, 3).map((c) => (
+              <span key={c} className="text-[10px] font-semibold tracking-wide text-muted bg-panel border border-border/50 rounded-full px-2 py-0.5">
                 {c}
               </span>
             ))}

@@ -364,172 +364,221 @@ export default async function CreatorSpacePage({ params }: Props) {
   };
 
   return (
-    <div className="min-h-screen pb-20" style={tokenVars as React.CSSProperties | undefined}>
+    <div className="min-h-screen pb-20 bg-bg" style={tokenVars as React.CSSProperties | undefined}>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(ldJson) }} />
 
-        {/* ── Hero ──────────────────────────────────────────────────────────── */}
-      <div className="relative overflow-hidden">
-        {/* Backdrop: cover image or animated gradient mesh */}
-        {showBanner ? (
-          <div className="absolute inset-x-0 top-0 h-56 md:h-72 overflow-hidden bg-panel">
-            <Image
-              src={space.coverUrl!}
-              alt=""
-              fill
-              priority
-              sizes="100vw"
-              className="object-cover"
-              unoptimized={!isSafeImageUrl(space.coverUrl!)}
-            />
-            <div className="absolute inset-0 bg-gradient-to-t from-bg via-bg/40 to-bg/10" />
-          </div>
-        ) : (
-          <div className="absolute inset-x-0 top-0 h-56 md:h-72" aria-hidden>
-            <div className="absolute inset-0 bg-gradient-to-br from-accent/[0.14] via-transparent to-violet-500/10" />
-            <div
-              className="absolute inset-0 [mask-image:linear-gradient(to_bottom,black,transparent)]"
-              style={{
-                backgroundImage: "radial-gradient(circle at 1px 1px, rgba(var(--accent-rgb),0.16) 1px, transparent 0)",
-                backgroundSize: "22px 22px",
-              }}
-            />
-            {/* Floating code glyphs */}
-            <div className="absolute inset-0 hidden md:block font-mono font-bold text-accent/25 select-none pointer-events-none">
-              <span className="absolute top-[18%] left-[7%] text-lg animate-float" style={{ animationDuration: "7s" }}>{"</>"}</span>
-              <span className="absolute top-[42%] left-[16%] text-xs animate-float" style={{ animationDuration: "9s", animationDelay: "1.2s" }}>{"() =>"}</span>
-              <span className="absolute top-[22%] right-[10%] text-base animate-float" style={{ animationDuration: "8s", animationDelay: "0.6s" }}>{"{ }"}</span>
-              <span className="absolute top-[52%] right-[20%] text-xs animate-float" style={{ animationDuration: "10s", animationDelay: "2s" }}>{"[ ]"}</span>
-              <span className="absolute top-[10%] left-[38%] text-xs animate-float" style={{ animationDuration: "11s", animationDelay: "0.3s" }}>{"const"}</span>
-            </div>
-          </div>
-        )}
-
-        {/* Breathing ambient orbs */}
-        <div className="cs-orb absolute -top-16 -left-16 w-72 h-72 rounded-full bg-accent/10 blur-[100px] pointer-events-none" aria-hidden />
-        <div className="cs-orb absolute top-8 right-[-5%] w-80 h-80 rounded-full bg-violet-500/10 blur-[110px] pointer-events-none" style={{ animationDelay: "3s" }} aria-hidden />
-
-        <div className="relative max-w-6xl mx-auto px-4 pt-32 md:pt-44">
-          <div className="flex flex-col md:flex-row md:items-end gap-5 md:gap-7">
-            {/* Avatar with rotating conic ring */}
-            <div className="cs-avatar-ring shrink-0 w-fit">
-              <SpaceAvatar avatarUrl={space.avatarUrl} fallbackImage={owner?.image} name={space.name} />
-            </div>
-
-            <div className="flex-1 min-w-0 md:pb-1">
-              <div className="flex items-center gap-2.5 flex-wrap">
-                <h1 className="text-3xl md:text-4xl font-black tracking-tight text-fg">{space.name}</h1>
-                {verified && (
-                  <span
-                    className="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-sky-500 bg-sky-500/10 border border-sky-500/25 rounded-full px-2 py-0.5"
-                    title="Verified creator"
-                  >
-                    <BadgeCheck className="w-3 h-3" /> Verified
-                  </span>
-                )}
+      {/* ── HERO v2 — editorial, glass, motion ───────────────────────────── */}
+      <div className="relative overflow-hidden border-b border-border/50">
+        {/* Backdrop */}
+        <div className="absolute inset-0">
+          {showBanner ? (
+            <>
+              <Image
+                src={space.coverUrl!}
+                alt=""
+                fill
+                priority
+                sizes="100vw"
+                className="object-cover scale-[1.02]"
+                unoptimized={!isSafeImageUrl(space.coverUrl!)}
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-black via-black/60 to-black/10" />
+              <div className="absolute inset-0 bg-gradient-to-br from-accent/20 via-transparent to-violet-500/20 mix-blend-overlay" />
+              <div className="absolute inset-0 backdrop-blur-[0.5px]" />
+            </>
+          ) : (
+            <>
+              <div className="absolute inset-0 bg-gradient-to-br from-zinc-950 via-zinc-900 to-black" />
+              <div className="absolute inset-0 bg-gradient-to-tr from-accent/15 via-transparent to-violet-500/15" />
+              <div
+                className="absolute inset-0 opacity-[0.06] [mask-image:linear-gradient(to_bottom,black,transparent_85%)]"
+                style={{
+                  backgroundImage: "radial-gradient(circle at 1px 1px, white 1px, transparent 0)",
+                  backgroundSize: "22px 22px",
+                }}
+              />
+              <div className="absolute -top-24 -left-24 w-[520px] h-[520px] rounded-full bg-accent/15 blur-[90px] animate-[float_10s_ease-in-out_infinite]" />
+              <div className="absolute -bottom-32 -right-24 w-[640px] h-[640px] rounded-full bg-violet-500/10 blur-[110px] animate-[float_12s_ease-in-out_infinite_reverse]" />
+              <div className="absolute inset-0 hidden md:block font-mono text-white/10 select-none pointer-events-none">
+                <span className="absolute top-[18%] left-[8%] text-sm tracking-widest animate-float">{"</>"}</span>
+                <span className="absolute top-[45%] left-[14%] text-xs tracking-widest animate-float" style={{ animationDelay: "1.2s" }}>{"() =>"}</span>
+                <span className="absolute top-[22%] right-[10%] text-base tracking-widest animate-float" style={{ animationDelay: "0.6s" }}>{"{ }"}</span>
+                <span className="absolute top-[55%] right-[18%] text-xs tracking-widest animate-float" style={{ animationDelay: "2s" }}>{"[ ]"}</span>
               </div>
-              {space.tagline && <p className="text-sm md:text-base text-muted mt-1.5 max-w-xl">{space.tagline}</p>}
-
-              {/* Animated stats + pulse wave */}
-              <div className="mt-3 flex items-center gap-5 flex-wrap text-xs text-muted">
-                <span className="inline-flex items-center gap-1.5">
-                  <Heart className="w-3.5 h-3.5 text-accent/70" />
-                  <strong className="text-fg font-black text-sm tabular-nums">
-                    <AnimatedCounter value={followerCount} />
-                  </strong>
-                  followers
-                </span>
-                <span className="inline-flex items-center gap-1.5">
-                  <Users className="w-3.5 h-3.5 text-accent/70" />
-                  <strong className="text-fg font-black text-sm tabular-nums">
-                    <AnimatedCounter value={memberCount} />
-                  </strong>
-                  members
-                </span>
-                <span className="inline-flex items-center gap-1.5">
-                  <LayoutGrid className="w-3.5 h-3.5 text-accent/70" />
-                  <strong className="text-fg font-black text-sm tabular-nums">
-                    <AnimatedCounter value={totalResources} />
-                  </strong>
-                  resources
-                </span>
-                {socials.length > 0 && (
-                  <span className="inline-flex items-center gap-0.5">
-                    {socials.map((s) => (
-                      <a
-                        key={s.key}
-                        href={s.url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        title={s.label}
-                        className="w-7 h-7 rounded-lg grid place-items-center text-muted hover:text-accent hover:bg-panel/60 hover:-translate-y-0.5 transition-all"
-                      >
-                        <s.Icon className="w-4 h-4" />
-                      </a>
-                    ))}
-                  </span>
-                )}
-              </div>
-
-              {/* Animated pulse-wave signature line */}
-              <svg viewBox="0 0 320 18" className="mt-2.5 h-4 w-56 text-accent/40" fill="none" aria-hidden>
-                <path
-                  className="cs-wave"
-                  d="M0 9 H70 L82 9 88 2 96 16 102 9 H150 L162 9 168 4 176 14 182 9 H240 L252 9 258 3 266 15 272 9 H320"
-                  stroke="currentColor"
-                  strokeWidth="1.5"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-              </svg>
-            </div>
-
-            <div className="flex items-center gap-2.5 md:pb-2 shrink-0">
-              {isOwner ? (
-                <Link
-                  href={`/creator/${handle}`}
-                  className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-accent hover:bg-accent-soft text-bg text-sm font-bold shadow-soft transition-all hover:scale-[1.02] active:scale-[0.98]"
-                >
-                  <Store className="w-4 h-4" /> Open studio
-                </Link>
-              ) : (
-                <>
-                  <FollowButton
-                    spaceId={space.id}
-                    handle={handle}
-                    isAuthed={!!viewerId}
-                    initiallyFollowing={!!viewerFollow}
-                    followerCount={followerCount}
-                  />
-                  {tiers.length > 0 && !viewerMembership && (
-                    <a
-                      href="#membership"
-                      className="cs-shine inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-accent hover:bg-accent-soft text-bg text-sm font-bold shadow-soft transition-all hover:scale-[1.02] active:scale-[0.98]"
-                    >
-                      <Sparkles className="w-4 h-4" /> Become a member
-                    </a>
-                  )}
-                  {viewerMembership && (
-                    <span className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl border border-emerald-500/30 bg-emerald-500/10 text-emerald-500 text-xs font-bold">
-                      <Check className="w-3.5 h-3.5" /> {tierNameForRank(viewerMembership.tierRank)} member
-                    </span>
-                  )}
-                </>
-              )}
-            </div>
-          </div>
-
-          {space.topics.length > 0 && (
-            <div className="mt-5 flex items-center gap-1.5 flex-wrap">
-              {space.topics.map((t) => (
-                <span
-                  key={t}
-                  className="text-[10px] font-bold uppercase tracking-wider text-muted bg-panel/50 border border-border/40 rounded-full px-2.5 py-0.5 hover:border-accent/40 hover:text-fg transition-colors"
-                >
-                  {t}
-                </span>
-              ))}
-            </div>
+            </>
           )}
+        </div>
+
+        <div className="relative max-w-6xl mx-auto px-4">
+          {/* Top meta bar */}
+          <div className="pt-6 flex items-center justify-between gap-3 text-[11px]">
+            <span className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 backdrop-blur-md px-3 py-1.5 text-white/90 shadow-sm">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+              Live space
+              <span className=" hidden sm:inline text-white/60">·</span>
+              <span className=" hidden sm:inline text-white/80">{totalResources} resources</span>
+            </span>
+            <div className=" hidden md:flex items-center gap-2">
+              {verified && (
+                <span className="inline-flex items-center gap-1.5 rounded-full border border-white/15 bg-white/10 backdrop-blur-md px-3 py-1.5 text-white text-[11px] font-bold">
+                  <BadgeCheck className="w-3.5 h-3.5 text-sky-300" /> Verified creator
+                </span>
+              )}
+              <span className=" hidden lg:inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-black/20 backdrop-blur px-3 py-1.5 text-white/70">
+                <LayoutGrid className="w-3.5 h-3.5" /> {tiers.length} tiers
+              </span>
+            </div>
+          </div>
+
+          {/* Main hero grid */}
+          <div className="mt-6 md:mt-10 pb-8 md:pb-10 grid grid-cols-1 lg:grid-cols-12 gap-6 items-end">
+            {/* Left: identity card (glass) */}
+            <div className="lg:col-span-8">
+              <div className="rounded-[1.5rem] border border-white/15 bg-white/[0.08] backdrop-blur-xl shadow-[0_20px_80px_-20px_rgba(0,0,0,0.6)] p-5 md:p-7 flex flex-col md:flex-row gap-5 md:gap-7">
+                <div className="shrink-0 relative self-start">
+                  <div className="absolute -inset-1 rounded-[1.25rem] bg-gradient-to-br from-accent via-accent/50 to-violet-500 opacity-60 blur-[8px]" aria-hidden />
+                  <div className="relative">
+                    <SpaceAvatar avatarUrl={space.avatarUrl} fallbackImage={owner?.image} name={space.name} />
+                    <span className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-emerald-500 border-2 border-white grid place-items-center shadow">
+                      <Check className="w-3 h-3 text-white" />
+                    </span>
+                  </div>
+                </div>
+
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-start gap-3 flex-wrap">
+                    <h1 className="text-[28px] md:text-[40px] font-black tracking-tight leading-none text-white">
+                      <span className="bg-gradient-to-br from-white to-white/80 bg-clip-text text-transparent">{space.name}</span>
+                    </h1>
+                    {verified && (
+                      <span className=" md:hidden inline-flex items-center gap-1 rounded-full bg-sky-500 text-white text-[10px] font-bold px-2 py-1">
+                        <BadgeCheck className="w-3 h-3" /> Verified
+                      </span>
+                    )}
+                  </div>
+                  {space.tagline && (
+                    <p className="mt-2 text-[14px] md:text-[15px] leading-relaxed text-white/80 max-w-2xl">{space.tagline}</p>
+                  )}
+
+                  {/* Stats pills */}
+                  <div className="mt-4 flex flex-wrap items-center gap-2">
+                    <span className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 backdrop-blur px-3 py-1.5 text-xs font-semibold text-white">
+                      <Heart className="w-3.5 h-3.5 text-white/90" />
+                      <strong className="tabular-nums text-white">
+                        <AnimatedCounter value={followerCount} />
+                      </strong>
+                      <span className="text-white/70">followers</span>
+                    </span>
+                    <span className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 backdrop-blur px-3 py-1.5 text-xs font-semibold text-white">
+                      <Users className="w-3.5 h-3.5 text-white/90" />
+                      <strong className="tabular-nums text-white">
+                        <AnimatedCounter value={memberCount} />
+                      </strong>
+                      <span className="text-white/70">members</span>
+                    </span>
+                    <span className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-black/20 backdrop-blur px-3 py-1.5 text-xs font-semibold text-white/90">
+                      <LayoutGrid className="w-3.5 h-3.5" />
+                      <strong className="tabular-nums text-white">
+                        <AnimatedCounter value={totalResources} />
+                      </strong>
+                      <span className="text-white/60">resources</span>
+                    </span>
+                    {socials.length > 0 && (
+                      <span className="inline-flex items-center gap-1 rounded-full border border-white/10 bg-white/10 backdrop-blur p-1">
+                        {socials.map((s) => (
+                          <a
+                            key={s.key}
+                            href={s.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            title={s.label}
+                            className="w-7 h-7 rounded-full grid place-items-center text-white/80 hover:text-white hover:bg-white/15 transition-colors"
+                          >
+                            <s.Icon className="w-3.5 h-3.5" />
+                          </a>
+                        ))}
+                      </span>
+                    )}
+                  </div>
+
+                  {space.topics.length > 0 && (
+                    <div className="mt-4 flex flex-wrap gap-1.5">
+                      {space.topics.map((t) => (
+                        <span
+                          key={t}
+                          className="inline-flex items-center rounded-full border border-white/15 bg-white/10 backdrop-blur px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-white/90 hover:bg-white/15 transition-colors"
+                        >
+                          {t}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Right: actions card */}
+            <div className="lg:col-span-4">
+              <div className="rounded-[1.25rem] border border-white/15 bg-white/[0.08] backdrop-blur-xl p-4 md:p-5 shadow-[0_20px_80px_-20px_rgba(0,0,0,0.6)]">
+                <div className="flex items-center justify-between gap-3">
+                  <div className="text-xs font-bold text-white/90">Join this space</div>
+                  {tiers.length > 0 && (
+                    <span className="text-[11px] text-white/60">From {money(Math.min(...tiers.map((t) => t.priceCents)))} /mo</span>
+                  )}
+                </div>
+                <div className="mt-3 grid grid-cols-1 gap-2.5">
+                  {isOwner ? (
+                    <Link
+                      href={`/creator/${handle}`}
+                      className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#FFE600] hover:bg-[#FFD600] text-black text-sm font-black px-4 py-2.5 shadow-[0_8px_20px_-8px_rgba(255,230,0,0.6)] transition-all hover:scale-[1.01] active:scale-[0.99]"
+                    >
+                      <Store className="w-4 h-4" /> Open studio
+                    </Link>
+                  ) : (
+                    <>
+                      <FollowButton
+                        spaceId={space.id}
+                        handle={handle}
+                        isAuthed={!!viewerId}
+                        initiallyFollowing={!!viewerFollow}
+                        followerCount={followerCount}
+                      />
+                      {tiers.length > 0 && !viewerMembership && (
+                        <a
+                          href="#membership"
+                          className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#FFE600] hover:bg-[#FFD600] text-black text-sm font-black px-4 py-2.5 shadow-[0_8px_20px_-8px_rgba(255,230,0,0.6)] transition-all hover:scale-[1.01] active:scale-[0.99]"
+                        >
+                          <Sparkles className="w-4 h-4" /> Become a member
+                        </a>
+                      )}
+                      {viewerMembership && (
+                        <span className="inline-flex items-center justify-center gap-2 rounded-xl border border-emerald-400/30 bg-emerald-500/15 text-emerald-100 text-sm font-bold px-4 py-2.5">
+                          <Check className="w-4 h-4" /> {tierNameForRank(viewerMembership.tierRank)} member
+                        </span>
+                      )}
+                    </>
+                  )}
+                  <div className="grid grid-cols-2 gap-2 pt-1">
+                    <Link
+                      href={`/c/${handle}#posts`}
+                      className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-white/15 bg-white/10 hover:bg-white/15 text-white text-xs font-bold px-3 py-2 backdrop-blur transition-colors"
+                    >
+                      Browse posts <ArrowRight className="w-3.5 h-3.5" />
+                    </Link>
+                    <a
+                      href="#about"
+                      className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-white/10 bg-black/20 hover:bg-black/30 text-white/90 text-xs font-bold px-3 py-2 backdrop-blur transition-colors"
+                    >
+                      About
+                    </a>
+                  </div>
+                </div>
+                {tiers.length > 0 && (
+                  <p className="mt-3 text-[11px] leading-relaxed text-white/60 text-center">Cancel anytime · Members unlock gated content at tier and above</p>
+                )}
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -555,60 +604,66 @@ export default async function CreatorSpacePage({ params }: Props) {
           )}
         </div>
 
-        {/* Sidebar: membership + about */}
-        <aside className="lg:col-span-4 space-y-6 lg:sticky lg:top-32">
+        {/* Sidebar: membership + about — editorial premium */}
+        <aside className="lg:col-span-4 space-y-6 lg:sticky lg:top-24">
           {hasMembership && (
-            <div id="membership" className="rounded-2xl border border-accent/25 bg-accent/[0.03] p-5 space-y-4 scroll-mt-32">
-              <div>
-                <h3 className="text-sm font-black text-fg flex items-center gap-2">
-                  <Sparkles className="w-4 h-4 text-accent" /> Membership
+            <div id="membership" className="rounded-[1.5rem] border border-border bg-surface shadow-[0_16px_40px_-20px_rgba(0,0,0,0.15)] overflow-hidden scroll-mt-32">
+              <div className="p-6 pb-4 bg-gradient-to-br from-accent/[0.06] via-transparent to-violet-500/[0.04] border-b border-border/50">
+                <h3 className="text-[13px] font-black tracking-tight text-fg flex items-center gap-2">
+                  <span className="w-7 h-7 rounded-full bg-accent text-black grid place-items-center shadow-sm">
+                    <Sparkles className="w-3.5 h-3.5" />
+                  </span>
+                  Membership
                 </h3>
-                <p className="text-[11px] text-muted mt-1 leading-relaxed">
-                  Unlock members-only content at your tier and above. Cancel anytime.
-                </p>
+                <p className="text-[12px] text-muted mt-2 leading-relaxed">Unlock members-only content at your tier and above. Cancel anytime, keep your progress.</p>
               </div>
-              <div className="space-y-3">
+              <div className="p-5 space-y-3 bg-surface">
                 {tiers.map((t) => {
                   const isCurrent = membershipRank != null && membershipRank === t.rank;
                   const recommended = t.id === recommendedTierId;
                   return (
                     <div
                       key={t.id}
-                      className={`rounded-xl border p-4 space-y-3 relative transition-transform hover:-translate-y-0.5 ${
-                        recommended ? "cs-shine border-accent/50 bg-accent/[0.05]" : "border-border/40 bg-surface/70"
+                      className={`rounded-2xl border p-5 space-y-3 relative transition-all hover:shadow-md hover:-translate-y-0.5 ${
+                        recommended ? "border-[#FFE600] bg-[#FFE600]/[0.06] shadow-sm" : "border-border bg-panel/50 hover:bg-panel"
                       }`}
                     >
                       {recommended && (
-                        <span className="absolute -top-2 right-3 text-[9px] font-bold uppercase tracking-wider text-bg bg-accent rounded-full px-2 py-0.5 z-10">
+                        <span className="absolute -top-2.5 right-4 text-[10px] font-black uppercase tracking-wider text-black bg-[#FFE600] rounded-full px-3 py-1 shadow z-10">
                           Best value
                         </span>
                       )}
-                      <div className="flex items-baseline justify-between gap-2">
-                        <span className="text-sm font-black text-fg">{t.name}</span>
-                        <span className="text-sm font-black text-fg">
+                      <div className="flex items-baseline justify-between gap-3">
+                        <span className="text-[15px] font-black text-fg">{t.name}</span>
+                        <span className="text-[18px] font-black tracking-tight text-fg">
                           {money(t.priceCents, t.currency)}
-                          <span className="text-[10px] font-semibold text-muted">/mo</span>
+                          <span className="text-[11px] font-semibold text-muted">/mo</span>
                         </span>
                       </div>
-                      {t.description && <p className="text-[11px] text-muted leading-relaxed">{t.description}</p>}
+                      {t.description && <p className="text-[13px] text-muted leading-relaxed">{t.description}</p>}
                       {t.benefits.length > 0 && (
-                        <ul className="space-y-1.5">
+                        <ul className="space-y-2 pt-1">
                           {t.benefits.map((b, i) => (
-                            <li key={i} className="flex items-start gap-2 text-[11px] text-muted leading-snug">
-                              <Check className="w-3.5 h-3.5 text-emerald-500 shrink-0 mt-[1px]" /> {b}
+                            <li key={i} className="flex items-start gap-2 text-[13px] text-muted leading-snug">
+                              <span className="w-5 h-5 rounded-full bg-emerald-500/10 border border-emerald-500/20 grid place-items-center shrink-0 mt-0.5">
+                                <Check className="w-3 h-3 text-emerald-600" />
+                              </span>
+                              {b}
                             </li>
                           ))}
                         </ul>
                       )}
-                      {isCurrent ? (
-                        <span className="inline-flex items-center gap-1.5 text-[11px] font-bold text-emerald-500">
-                          <Check className="w-3.5 h-3.5" /> Your current tier
-                        </span>
-                      ) : (
-                        !isOwner && (
-                          <SubscribeButton tierId={t.id} name={t.name} priceCents={t.priceCents} currency={t.currency} />
-                        )
-                      )}
+                      <div className="pt-1">
+                        {isCurrent ? (
+                          <span className="inline-flex w-full items-center justify-center gap-1.5 rounded-xl border border-emerald-500/20 bg-emerald-50 text-emerald-700 text-xs font-bold px-4 py-2.5">
+                            <Check className="w-3.5 h-3.5" /> Your current tier
+                          </span>
+                        ) : (
+                          !isOwner && (
+                            <SubscribeButton tierId={t.id} name={t.name} priceCents={t.priceCents} currency={t.currency} />
+                          )
+                        )}
+                      </div>
                     </div>
                   );
                 })}
@@ -617,11 +672,14 @@ export default async function CreatorSpacePage({ params }: Props) {
           )}
 
           {hasAbout && (
-            <div id="about" className="rounded-2xl border border-border/50 bg-surface/60 p-5 shadow-tile scroll-mt-32">
-              <h3 className="text-xs font-bold uppercase tracking-wider text-muted flex items-center gap-1.5 mb-3">
-                <Store className="w-3.5 h-3.5" /> About
+            <div id="about" className="rounded-[1.5rem] border border-border bg-surface p-6 shadow-sm scroll-mt-32">
+              <h3 className="text-[11px] font-black uppercase tracking-widest text-muted flex items-center gap-2 mb-4">
+                <span className="w-6 h-6 rounded-full bg-panel border border-border grid place-items-center">
+                  <Store className="w-3 h-3.5" />
+                </span>
+                About
               </h3>
-              <div className="prose prose-sm dark:prose-invert max-w-none text-xs text-muted leading-relaxed">
+              <div className="prose prose-sm dark:prose-invert max-w-none text-[13px] text-muted leading-relaxed prose-p:leading-relaxed prose-headings:font-black prose-headings:tracking-tight">
                 <MarkdownRenderer content={space.description!} />
               </div>
             </div>

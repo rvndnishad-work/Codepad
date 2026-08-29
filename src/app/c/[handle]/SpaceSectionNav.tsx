@@ -60,41 +60,43 @@ export default function SpaceSectionNav({ sections }: { sections: NavSection[] }
   if (sections.length < 2) return null;
 
   return (
-    <div className="sticky top-16 z-30 mt-6 py-2.5 bg-bg/75 backdrop-blur-md border-b border-border/40">
-      <nav
-        className="max-w-6xl mx-auto px-4 flex items-center gap-1.5 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
-        aria-label="Page sections"
-      >
-        {sections.map((s) => {
-          const isActive = active === s.id;
-          return (
-            <a
-              key={s.id}
-              href={`#${s.id}`}
-              onClick={(e) => {
-                e.preventDefault();
-                document.getElementById(s.id)?.scrollIntoView({ behavior: "smooth", block: "start" });
-              }}
-              className={`shrink-0 inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-[11px] font-bold transition-all duration-200 ${
-                isActive
-                  ? "bg-accent text-bg shadow-soft"
-                  : "text-muted hover:text-fg hover:bg-panel/60 border border-transparent hover:border-border"
-              }`}
-            >
-              {s.label}
-              {s.count !== undefined && (
-                <span
-                  className={`text-[9px] font-black tabular-nums rounded-full px-1.5 py-px ${
-                    isActive ? "bg-bg/20 text-bg" : "bg-panel/80 text-muted"
-                  }`}
-                >
-                  {s.count}
-                </span>
-              )}
-            </a>
-          );
-        })}
-      </nav>
+    <div className="sticky top-16 z-30 mt-6">
+      <div className="mx-auto max-w-6xl px-4">
+        <nav
+          className="inline-flex items-center gap-1 p-1 rounded-full border border-border bg-surface/80 backdrop-blur-xl shadow-sm overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden max-w-full"
+          aria-label="Page sections"
+        >
+          {sections.map((s) => {
+            const isActive = active === s.id;
+            return (
+              <a
+                key={s.id}
+                href={`#${s.id}`}
+                onClick={(e) => {
+                  e.preventDefault();
+                  document.getElementById(s.id)?.scrollIntoView({ behavior: "smooth", block: "start" });
+                }}
+                className={`shrink-0 inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full text-[12px] font-bold transition-all duration-200 ${
+                  isActive
+                    ? "bg-[#FFE600] text-black shadow-sm"
+                    : "text-muted hover:text-fg hover:bg-panel"
+                }`}
+              >
+                {s.label}
+                {s.count !== undefined && (
+                  <span
+                    className={`text-[10px] font-black tabular-nums rounded-full px-1.5 py-0.5 ${
+                      isActive ? "bg-black/10 text-black" : "bg-panel border border-border text-muted"
+                    }`}
+                  >
+                    {s.count}
+                  </span>
+                )}
+              </a>
+            );
+          })}
+        </nav>
+      </div>
     </div>
   );
 }

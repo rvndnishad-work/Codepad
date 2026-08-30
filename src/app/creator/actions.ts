@@ -8,8 +8,12 @@ import { z } from "zod";
 import { userCan } from "@/lib/permissions/access";
 import { OWNABLE_CONTENT_TYPES, type OwnableContentType } from "@/lib/permissions/permissions";
 import { getContentOwnerId } from "@/lib/marketplace/entitlements";
+import { createGiftCode, claimGift } from "@/lib/marketplace/gifts";
+import { createTeamLicense } from "@/lib/marketplace/teams";
 import { coverImageSchema } from "@/lib/blog-schema";
 import { normalizeLayout, SECTION_KEYS } from "@/lib/creator/layout";
+import { blocksDocSchema, type SpaceBlocksDoc } from "@/lib/creator/blocks";
+import { tokenSetSchema } from "@/lib/creator/tokens";
 import { notifySpaceContentPublished } from "@/lib/notifications/triggers";
 import {
   getOrCreateConnectAccount,
@@ -167,6 +171,39 @@ export async function updateSpaceLayoutAction(
   revalidatePath(`/c/${space.handle}`);
 }
 
+// ── Block doc (Stage 2+4) — design studio autosave + publish ──────────────────
+export async function updateSpaceBlocksAction(spaceId: string, doc: SpaceBlocksDoc, styles: unknown) {
+  const userId = await requireCreator();
+  const space = await requireMySpace(spaceId, userId);
+  const parsed = blocksDocSchema.parse(doc);
+  const stylesParsed = styles == null ? null : tokenSetSchema.parse(styles);
+  await prisma.creatorSpace.update({
+    where: { id: space.id },
+    data: { blocks: parsed as unknown as object, styles: (stylesParsed as unknown as object) ?? undefined },
+  });
+  revalidatePath("/creator");
+  revalidatePath(`/creator/${space.handle}`);
+}
+
+export async function publishSpaceBlocksAction(spaceId: string, doc: SpaceBlocksDoc, styles: unknown) {
+  const userId = await requireCreator();
+  const space = await requireMySpace(spaceId, userId);
+  const parsed = blocksDocSchema.parse(doc);
+  const stylesParsed = styles == null ? null : tokenSetSchema.parse(styles);
+  await prisma.$transaction([
+    prisma.creatorSpace.update({
+      where: { id: space.id },
+      data: { blocks: parsed as unknown as object, styles: (stylesParsed as unknown as object) ?? undefined },
+    }),
+    prisma.spaceVersion.create({
+      data: { spaceId: space.id, blocks: parsed as unknown as object, styles: (stylesParsed as unknown as object) ?? undefined, actorId: userId },
+    }),
+  ]);
+  revalidatePath("/creator");
+  revalidatePath(`/creator/${space.handle}`);
+  revalidatePath(`/c/${space.handle}`);
+}
+
 // ── Tiers ────────────────────────────────────────────────────────────────────
 const tierSchema = z.object({
   name: z.string().min(2).max(60),
@@ -275,6 +312,13 @@ const policySchema = z.object({
   contentId: z.string().min(1),
   accessTierRank: z.number().int().min(0).max(100).nullable(),
   purchasePriceCents: z.number().int().min(50).max(1_000_000).nullable(),
+  previewLines: z.number().int().min(0).max(50).nullable().optional(),
+  seo: z
+    .object({ title: z.string().max(60).optional(), description: z.string().max(160).optional(), noindex: z.boolean().optional() })
+    .nullable()
+    .optional(),
+  coupon: z.string().max(32).nullable().optional(),
+  meteredFree: z.number().int().min(0).max(5).nullable().optional(),
 });
 
 /** Add content to the space (or update its access policy). Validates ownership. */
@@ -285,6 +329,10 @@ export async function setSpaceContentAction(
     contentId: string;
     accessTierRank: number | null;
     purchasePriceCents: number | null;
+    previewLines?: number | null;
+    seo?: { title?: string; description?: string; noindex?: boolean } | null;
+    coupon?: string | null;
+    meteredFree?: number | null;
   }
 ) {
   const userId = await requireCreator();
@@ -294,12 +342,22 @@ export async function setSpaceContentAction(
   const ownerId = await getContentOwnerId(data.contentType, data.contentId);
   if (ownerId !== userId) throw new Error("You can only add content you own.");
 
+  // Coupon is a checkout-time concern (Stripe promotion code). We validate
+  // its shape here but do not persist it — checkout reads promotionCode
+  // from the buyContent flow.
+  if (data.coupon && !/^[a-zA-Z0-9_-]{3,32}$/.test(data.coupon)) {
+    throw new Error("Invalid coupon code.");
+  }
+
   await prisma.spaceContent.upsert({
     where: { contentType_contentId: { contentType: data.contentType, contentId: data.contentId } },
     update: {
       spaceId: space.id,
       accessTierRank: data.accessTierRank,
       purchasePriceCents: data.purchasePriceCents,
+      ...(data.previewLines !== undefined ? { previewLines: data.previewLines } : {}),
+      ...(data.seo !== undefined ? { seo: (data.seo as unknown as object) ?? undefined } : {}),
+      ...(data.meteredFree !== undefined ? { meteredFree: data.meteredFree } : {}),
     },
     create: {
       spaceId: space.id,
@@ -307,10 +365,14 @@ export async function setSpaceContentAction(
       contentId: data.contentId,
       accessTierRank: data.accessTierRank,
       purchasePriceCents: data.purchasePriceCents,
+      previewLines: data.previewLines ?? null,
+      seo: (data.seo as unknown as object) ?? undefined,
+      meteredFree: data.meteredFree ?? 0,
     },
   });
   revalidatePath("/creator");
   revalidatePath(`/creator/${space.handle}`);
+  revalidatePath(`/c/${space.handle}`);
 }
 
 export async function removeSpaceContentAction(spaceId: string, spaceContentId: string) {
@@ -324,6 +386,28 @@ export async function removeSpaceContentAction(spaceId: string, spaceContentId: 
   await prisma.spaceContent.delete({ where: { id: spaceContentId } });
   revalidatePath("/creator");
   revalidatePath(`/creator/${space.handle}`);
+}
+
+export async function createGiftAction(input: { contentType: OwnableContentType; contentId: string; recipientEmail: string }) {
+  const userId = await requireCreator();
+  const ownerId = await getContentOwnerId(input.contentType, input.contentId);
+  if (ownerId !== userId) throw new Error("You can only gift content you own.");
+  const sc = await prisma.spaceContent.findUnique({ where: { contentType_contentId: { contentType: input.contentType, contentId: input.contentId } }, select: { id: true } });
+  const { code } = await createGiftCode({ giverId: userId, recipientEmail: input.recipientEmail, contentType: input.contentType, contentId: input.contentId, spaceContentId: sc?.id ?? null });
+  return { code };
+}
+
+export async function claimGiftAction(code: string) {
+  const session = await auth().catch(() => null);
+  const userId = session?.user?.id;
+  if (!userId) throw new Error("Sign in to claim.");
+  return claimGift(code, userId);
+}
+
+export async function createTeamLicenseAction(input: { spaceId: string; tierRank: number; seats: number }) {
+  const userId = await requireCreator();
+  const space = await requireMySpace(input.spaceId, userId);
+  return createTeamLicense({ buyerId: userId, spaceId: space.id, tierRank: input.tierRank, seats: input.seats });
 }
 
 // ── Tutorial authoring (replace-all sections) ────────────────────────────────
@@ -760,9 +844,9 @@ export async function subscribeTierAction(tierId: string): Promise<string> {
   return createTierCheckout({ tierId, buyerId: userId, origin: await origin() });
 }
 
-export async function buyContentAction(spaceContentId: string): Promise<string> {
+export async function buyContentAction(spaceContentId: string, coupon?: string | null): Promise<string> {
   const session = await auth().catch(() => null);
   const userId = session?.user?.id;
   if (!userId) throw new Error("Sign in to purchase.");
-  return createContentCheckout({ spaceContentId, buyerId: userId, origin: await origin() });
+  return createContentCheckout({ spaceContentId, buyerId: userId, origin: await origin(), coupon: coupon ?? null });
 }

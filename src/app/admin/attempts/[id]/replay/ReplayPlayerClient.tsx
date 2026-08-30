@@ -14,8 +14,11 @@ import {
   Calendar,
   Sparkles,
   Clipboard,
-  MousePointerClick
+  MousePointerClick,
+  Video,
+  ShieldCheck,
 } from "lucide-react";
+import { computeIntegrityScore, LEVEL_STYLES } from "@/lib/integrity/score";
 
 type TelemetryEvent = {
   t: number; // elapsed ms
@@ -171,12 +174,20 @@ export default function ReplayPlayerClient({ attempt, events, integrity, backUrl
             Reconstructing attempt for candidate <span className="text-[#F3F4F6] font-bold">{attempt.candidateName}</span> solving <span className="text-[#F3F4F6] font-bold">{attempt.challengeTitle}</span>.
           </p>
         </div>
-        {integrity && (
-          <div className={`px-4 py-2 rounded-2xl border text-xs font-bold flex items-center gap-2 shrink-0 ${suspicionScoreColor(integrity.suspicionScore)}`}>
-            <AlertTriangle className="w-4 h-4" />
-            <span>AI Suspicion Score: {integrity.suspicionScore}%</span>
-          </div>
-        )}
+        {integrity &&
+          (() => {
+            const unified = computeIntegrityScore({ browser: { suspicionScore: integrity.suspicionScore, blurCount: integrity.blurCount, pasteCount: integrity.pasteCount }, proctor: null });
+            const style = LEVEL_STYLES[unified.level];
+            return (
+              <div className={`px-4 py-2 rounded-2xl border text-xs font-bold flex flex-col gap-1 shrink-0 ${style.cls}`}>
+                <span className="flex items-center gap-2">
+                  <ShieldCheck className="w-4 h-4" /> Integrity: {unified.score} — {style.label}
+                </span>
+                {unified.reasons.length > 0 && <span className="text-[10px] font-normal opacity-80">{unified.reasons.join(" · ")}</span>}
+                <span className="text-[10px] font-normal opacity-60">AI Suspicion {integrity.suspicionScore}% · {integrity.blurCount} blurs · {integrity.pasteCount} pastes</span>
+              </div>
+            );
+          })()}
       </div>
 
       {/* Replay Main Layout (Monaco Left, Stats Right) */}
@@ -406,6 +417,41 @@ export default function ReplayPlayerClient({ attempt, events, integrity, backUrl
               </div>
             </div>
           )}
+
+          {/* Recording + AI Notes — P2-T6 bento */}
+          <div className="rounded-3xl border border-border bg-[#161B2E]/60 backdrop-blur-md p-5 space-y-4">
+            <h3 className="text-xs font-black uppercase tracking-widest text-muted flex items-center gap-2">
+              <Video className="w-4 h-4 text-violet-400" /> Recording & AI Notes
+            </h3>
+            <div className="aspect-[16/9] rounded-xl border border-border bg-black/40 grid place-items-center text-xs text-muted">
+              <span className="inline-flex items-center gap-1.5">
+                <Video className="w-3.5 h-3.5" /> Recording — LiveKit track (stub) · {integrity ? `${integrity.totalBlurSec}s unfocused` : "no data"}
+              </span>
+            </div>
+            <div className="rounded-xl border border-border bg-[#0B0F19]/40 p-3">
+              <div className="text-[11px] font-bold text-fg flex items-center gap-1.5">
+                <Sparkles className="w-3.5 h-3.5 text-accent" /> AI Notes (Gemini ADMIN_HELPER)
+              </div>
+              <p className="text-xs text-muted mt-1 leading-relaxed">
+                {integrity && integrity.suspicionScore > 40
+                  ? "Candidate showed repeated blur/paste — review paste logs and integrity heat overlay on timeline. Consider rubric focus on originality."
+                  : integrity
+                    ? "Low integrity signal — session appears clean. AI suggests checking approach clarity and time management."
+                    : "No integrity data — run a live session to generate notes."}
+              </p>
+              <button
+                onClick={() => {
+                  // Stub — would POST /api/sessions/[id]/notes with AgentConfig
+                  const el = document.getElementById("ai-notes-drawer");
+                  if (el) el.scrollIntoView({ behavior: "smooth" });
+                }}
+                className="mt-2 inline-flex items-center gap-1 px-2.5 py-1 rounded-lg border border-border bg-panel text-[11px] font-bold hover:border-accent/30"
+              >
+                <Sparkles className="w-3 h-3" /> Generate notes
+              </button>
+            </div>
+            <div id="ai-notes-drawer" className="h-px" />
+          </div>
 
           {/* Paste History Events Feed — full captured content for review */}
           {integrity && integrity.pasteDetails.length > 0 && (

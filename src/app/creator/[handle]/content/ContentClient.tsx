@@ -37,7 +37,14 @@ export type ContentItem = {
   published: boolean;
   updatedAt: string;
   views: number;
-  policy: { spaceContentId: string; accessTierRank: number | null; purchasePriceCents: number | null } | null;
+  policy: {
+    spaceContentId: string;
+    accessTierRank: number | null;
+    purchasePriceCents: number | null;
+    previewLines?: number | null;
+    seo?: { title?: string; description?: string; noindex?: boolean } | null;
+    meteredFree?: number | null;
+  } | null;
   /** Public URL path — used by the share button (UTM-tagged copy). */
   publicHref: string;
 };
@@ -223,6 +230,15 @@ function ContentRow({
   const [price, setPrice] = useState<string>(
     item.policy?.purchasePriceCents != null ? (item.policy.purchasePriceCents / 100).toFixed(2) : "",
   );
+  const [preview, setPreview] = useState<string>(item.policy?.previewLines != null ? String(item.policy.previewLines) : "");
+  const [metered, setMetered] = useState<string>(item.policy?.meteredFree != null ? String(item.policy.meteredFree) : "");
+  const [seoTitle, setSeoTitle] = useState(item.policy?.seo?.title ?? "");
+  const [seoDesc, setSeoDesc] = useState(item.policy?.seo?.description ?? "");
+  const [noindex, setNoindex] = useState(!!item.policy?.seo?.noindex);
+  const [coupon, setCoupon] = useState("");
+  const [giftEmail, setGiftEmail] = useState("");
+  const [teamSeats, setTeamSeats] = useState("5");
+  const [showAdvanced, setShowAdvanced] = useState(false);
   const [busy, setBusy] = useState(false);
   const [shared, setShared] = useState(false);
   const isNative = NATIVE_TYPES.has(item.contentType);
@@ -251,7 +267,13 @@ function ContentRow({
 
   const dirty =
     rank !== (item.policy?.accessTierRank != null ? String(item.policy.accessTierRank) : "") ||
-    price !== (item.policy?.purchasePriceCents != null ? (item.policy.purchasePriceCents / 100).toFixed(2) : "");
+    price !== (item.policy?.purchasePriceCents != null ? (item.policy.purchasePriceCents / 100).toFixed(2) : "") ||
+    preview !== (item.policy?.previewLines != null ? String(item.policy.previewLines) : "") ||
+    metered !== (item.policy?.meteredFree != null ? String(item.policy.meteredFree) : "") ||
+    seoTitle !== (item.policy?.seo?.title ?? "") ||
+    seoDesc !== (item.policy?.seo?.description ?? "") ||
+    noindex !== !!item.policy?.seo?.noindex ||
+    coupon.trim() !== "";
 
   async function savePolicy() {
     setBusy(true);
@@ -261,11 +283,48 @@ function ContentRow({
         contentId: item.contentId,
         accessTierRank: rank === "" ? null : parseInt(rank, 10),
         purchasePriceCents: price.trim() === "" ? null : Math.round(parseFloat(price) * 100),
+        previewLines: preview.trim() === "" ? null : parseInt(preview, 10),
+        meteredFree: metered.trim() === "" ? null : parseInt(metered, 10),
+        seo: seoTitle.trim() || seoDesc.trim() || noindex ? { title: seoTitle.trim() || undefined, description: seoDesc.trim() || undefined, noindex: noindex || undefined } : null,
+        coupon: coupon.trim() || null,
       });
-      toast.success("Access updated.");
+      toast.success("Access updated." + (coupon.trim() ? " Coupon validated." : ""));
+      setCoupon("");
       onChanged();
     } catch (err) {
       toast.error("Save failed", { description: err instanceof Error ? err.message : String(err) });
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function createGift() {
+    if (!giftEmail.trim() || !giftEmail.includes("@")) {
+      toast.error("Enter a valid recipient email.");
+      return;
+    }
+    setBusy(true);
+    try {
+      const { createGiftAction } = await import("../../actions");
+      const res = await createGiftAction({ contentType: item.contentType, contentId: item.contentId, recipientEmail: giftEmail.trim() });
+      toast.success(`Gift code: ${res.code} — share it`, { duration: 6000 });
+      setGiftEmail("");
+    } catch (err) {
+      toast.error("Gift failed", { description: err instanceof Error ? err.message : String(err) });
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function createTeam() {
+    setBusy(true);
+    try {
+      const { createTeamLicenseAction } = await import("../../actions");
+      const seats = parseInt(teamSeats, 10) || 5;
+      await createTeamLicenseAction({ spaceId, tierRank: rank ? parseInt(rank, 10) : 1, seats });
+      toast.success(`Team license for ${seats} seats created.`);
+    } catch (err) {
+      toast.error("Team failed", { description: err instanceof Error ? err.message : String(err) });
     } finally {
       setBusy(false);
     }
@@ -355,59 +414,110 @@ function ContentRow({
       )}
 
       {/* Access policy */}
-      <div className="flex items-center gap-2">
-        <div className="relative">
-          <Lock className="absolute left-2 top-1/2 -translate-y-1/2 w-3 h-3 text-muted pointer-events-none" />
-          <select
-            value={rank}
-            onChange={(e) => setRank(e.target.value)}
-            className="pl-6 pr-2 py-1.5 rounded-lg border border-border bg-bg text-fg text-xs focus:outline-none focus:border-accent/50"
-            title="Access"
+      <div className="flex flex-col gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
+          <div className="relative">
+            <Lock className="absolute left-2 top-1/2 -translate-y-1/2 w-3 h-3 text-muted pointer-events-none" />
+            <select
+              value={rank}
+              onChange={(e) => setRank(e.target.value)}
+              className="pl-6 pr-2 py-1.5 rounded-lg border border-border bg-bg text-fg text-xs focus:outline-none focus:border-accent/50"
+              title="Access"
+            >
+              <option value="">Free</option>
+              {tiers.map((t) => (
+                <option key={t.id} value={t.rank}>
+                  {t.name}+
+                </option>
+              ))}
+            </select>
+          </div>
+          <div className="relative" title={chargesEnabled ? "One-time price (optional)" : "Connect Stripe to sell"}>
+            <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-xs text-muted pointer-events-none">$</span>
+            <input
+              value={price}
+              onChange={(e) => setPrice(e.target.value)}
+              placeholder="—"
+              disabled={!chargesEnabled}
+              className="w-16 pl-5 pr-1.5 py-1.5 rounded-lg border border-border bg-bg text-fg text-xs focus:outline-none focus:border-accent/50 disabled:opacity-40"
+            />
+          </div>
+          <div className="relative" title="Preview lines before paywall (default 3)">
+            <input
+              value={preview}
+              onChange={(e) => setPreview(e.target.value.replace(/\D/g, ""))}
+              placeholder="3"
+              className="w-14 px-2 py-1.5 rounded-lg border border-border bg-bg text-fg text-xs focus:outline-none focus:border-accent/50"
+              title="Preview lines"
+            />
+            <span className="absolute -top-2 -right-1 text-[8px] font-bold uppercase tracking-wider text-muted bg-panel border border-border rounded px-1">preview</span>
+          </div>
+          <div className="relative" title="Metered free views/month (0=off)">
+            <input value={metered} onChange={(e) => setMetered(e.target.value.replace(/\D/g, ""))} placeholder="0" className="w-14 px-2 py-1.5 rounded-lg border border-border bg-bg text-fg text-xs focus:outline-none focus:border-accent/50" />
+            <span className="absolute -top-2 -right-1 text-[8px] font-bold uppercase tracking-wider text-muted bg-panel border border-border rounded px-1">metered</span>
+          </div>
+          <button
+            onClick={() => setShowAdvanced((v) => !v)}
+            className="text-[10px] font-bold text-muted hover:text-fg px-2 py-1 rounded hover:bg-panel/40"
+            title="SEO & coupon + gift/team"
           >
-            <option value="">Free</option>
-            {tiers.map((t) => (
-              <option key={t.id} value={t.rank}>
-                {t.name}+
-              </option>
-            ))}
-          </select>
+            {showAdvanced ? "Less" : "SEO & gift/team"}
+          </button>
+          {dirty && (
+            <button
+              onClick={savePolicy}
+              disabled={busy}
+              className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-accent hover:bg-accent-soft text-bg text-[10px] font-bold uppercase tracking-wider transition-colors disabled:opacity-50"
+            >
+              <CheckCircle className="w-3 h-3" /> Save
+            </button>
+          )}
+          {item.published && (
+            <button
+              onClick={share}
+              className="w-7 h-7 rounded-lg text-muted hover:text-accent hover:bg-accent/10 grid place-items-center transition-colors"
+              title="Copy share link (UTM-tagged)"
+            >
+              {shared ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Share2 className="w-3.5 h-3.5" />}
+            </button>
+          )}
+          {item.policy && !isNative && (
+            <button
+              onClick={remove}
+              className="w-7 h-7 rounded-lg text-muted hover:text-rose-500 hover:bg-rose-500/10 grid place-items-center transition-colors"
+              title="Remove from space"
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+            </button>
+          )}
         </div>
-        <div className="relative" title={chargesEnabled ? "One-time price (optional)" : "Connect Stripe to sell"}>
-          <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-xs text-muted pointer-events-none">$</span>
-          <input
-            value={price}
-            onChange={(e) => setPrice(e.target.value)}
-            placeholder="—"
-            disabled={!chargesEnabled}
-            className="w-16 pl-5 pr-1.5 py-1.5 rounded-lg border border-border bg-bg text-fg text-xs focus:outline-none focus:border-accent/50 disabled:opacity-40"
-          />
-        </div>
-        {dirty && (
-          <button
-            onClick={savePolicy}
-            disabled={busy}
-            className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-accent hover:bg-accent-soft text-bg text-[10px] font-bold uppercase tracking-wider transition-colors disabled:opacity-50"
-          >
-            <CheckCircle className="w-3 h-3" /> Save
-          </button>
-        )}
-        {item.published && (
-          <button
-            onClick={share}
-            className="w-7 h-7 rounded-lg text-muted hover:text-accent hover:bg-accent/10 grid place-items-center transition-colors"
-            title="Copy share link (UTM-tagged)"
-          >
-            {shared ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Share2 className="w-3.5 h-3.5" />}
-          </button>
-        )}
-        {item.policy && !isNative && (
-          <button
-            onClick={remove}
-            className="w-7 h-7 rounded-lg text-muted hover:text-rose-500 hover:bg-rose-500/10 grid place-items-center transition-colors"
-            title="Remove from space"
-          >
-            <Trash2 className="w-3.5 h-3.5" />
-          </button>
+        {showAdvanced && (
+          <div className="rounded-lg border border-border bg-panel/30 p-2.5 space-y-2">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+              <input value={seoTitle} onChange={(e) => setSeoTitle(e.target.value)} placeholder="SEO title (≤60)" maxLength={60} className="px-2.5 py-1.5 rounded-lg border border-border bg-bg text-fg text-xs focus:outline-none focus:border-accent/50" />
+              <input value={seoDesc} onChange={(e) => setSeoDesc(e.target.value)} placeholder="SEO description (≤160)" maxLength={160} className="px-2.5 py-1.5 rounded-lg border border-border bg-bg text-fg text-xs focus:outline-none focus:border-accent/50" />
+            </div>
+            <div className="flex items-center gap-3">
+              <label className="inline-flex items-center gap-1.5 text-xs text-muted">
+                <input type="checkbox" checked={noindex} onChange={(e) => setNoindex(e.target.checked)} className="rounded" /> noindex
+              </label>
+              <input value={coupon} onChange={(e) => setCoupon(e.target.value)} placeholder="Coupon code (optional)" className="flex-1 px-2.5 py-1.5 rounded-lg border border-border bg-bg text-fg text-xs focus:outline-none focus:border-accent/50" />
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+              <div className="flex gap-1">
+                <input value={giftEmail} onChange={(e) => setGiftEmail(e.target.value)} placeholder="Gift to email" className="flex-1 px-2.5 py-1.5 rounded-lg border border-border bg-bg text-fg text-xs" />
+                <button onClick={createGift} disabled={busy} className="px-2.5 py-1.5 rounded-lg bg-accent text-bg text-xs font-bold disabled:opacity-50">
+                  Gift
+                </button>
+              </div>
+              <div className="flex gap-1">
+                <input value={teamSeats} onChange={(e) => setTeamSeats(e.target.value.replace(/\D/g, ""))} placeholder="5" className="w-14 px-2.5 py-1.5 rounded-lg border border-border bg-bg text-fg text-xs" />
+                <button onClick={createTeam} disabled={busy} className="flex-1 px-2.5 py-1.5 rounded-lg border border-border bg-panel text-xs font-bold">
+                  Team seats
+                </button>
+              </div>
+            </div>
+          </div>
         )}
       </div>
     </div>

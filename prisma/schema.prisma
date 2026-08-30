@@ -80,6 +80,8 @@ model User {
   solvedPrepQuestions  PrepQuestion[]        @relation("UserSolvedPrepQuestions")
   prepJourneys         PrepJourney[]
   prepActivities       PrepActivity[]
+  spaceMembers         SpaceMember[]
+  teamLicenses         TeamLicense[]
 }
 
 /// Admin-composed broadcast (IP-45). One row per admin send; the per-recipient
@@ -1598,7 +1600,13 @@ model CreatorSpace {
   coverUrl    String?
   /// Public-page layout: hero style + ordered section visibility. Shape:
   /// { heroStyle: "banner"|"minimal", sections: [{ key, visible }] }.
+  /// Kept for 2 releases as fallback; new writes go to `blocks`.
   layout      Json?
+  /// Block doc for the streaming renderer. Shape: { hero, blocks:[{id,type,props,cols,visible,tierGate}] }.
+  /// When present the public page prefers this over `layout`.
+  blocks      Json?
+  /// Token overrides for the design system. Shape: { accent, radius, font, density, card }.
+  styles      Json?
   /// Social profile links. Shape: { youtube?, linkedin?, x?, github?, website? }.
   socials     Json?
   /// Free-form topic tags shown on the directory + used for filtering.
@@ -1608,6 +1616,50 @@ model CreatorSpace {
   published   Boolean  @default(false)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+  versions    SpaceVersion[]
+  members     SpaceMember[]
+  domains     SpaceDomain[]
+  teamLicenses TeamLicense[]
+
+  @@index([ownerId])
+}
+
+/// Versioned snapshot of a space's block doc, written on Publish.
+model SpaceVersion {
+  id          String   @id @default(cuid())
+  spaceId     String
+  blocks      Json
+  styles      Json?
+  actorId     String?
+  publishedAt DateTime @default(now())
+  space       CreatorSpace @relation(fields: [spaceId], references: [id], onDelete: Cascade)
+
+  @@index([spaceId, publishedAt])
+}
+
+model SpaceMember {
+  id        String   @id @default(cuid())
+  spaceId   String
+  userId    String
+  role      String
+  createdAt DateTime @default(now())
+  space     CreatorSpace @relation(fields: [spaceId], references: [id], onDelete: Cascade)
+  user      User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([spaceId, userId])
+  @@index([userId])
+  @@index([spaceId])
+}
+
+model SpaceDomain {
+  id         String   @id @default(cuid())
+  spaceId    String
+  hostname   String   @unique
+  verifiedAt DateTime?
+  createdAt  DateTime @default(now())
+  space      CreatorSpace @relation(fields: [spaceId], references: [id], onDelete: Cascade)
+
+  @@index([spaceId])
 }
 
 /// A free follow of a space — the audience-building relationship. Following
@@ -1672,15 +1724,51 @@ model Entitlement {
   userId      String
   contentType String
   contentId   String
-  /// "PURCHASE" | "GRANT"
+  /// "PURCHASE" | "GRANT" | "GIFT"
   source      String
   /// The SpaceContent row this purchase was for (informational).
   spaceContentId String?
+  giftId      String?
   expiresAt   DateTime?
   createdAt   DateTime  @default(now())
+  gift        GiftEntitlement? @relation(fields: [giftId], references: [id])
 
   @@unique([userId, contentType, contentId])
   @@index([userId])
+  @@index([giftId])
+}
+
+model GiftEntitlement {
+  id             String    @id @default(cuid())
+  giverId        String?
+  recipientEmail String
+  contentType    String
+  contentId      String
+  spaceContentId String?
+  code           String    @unique
+  claimedById    String?
+  claimedAt      DateTime?
+  createdAt      DateTime  @default(now())
+  entitlements   Entitlement[]
+
+  @@index([recipientEmail])
+  @@index([code])
+  @@index([contentId])
+}
+
+model TeamLicense {
+  id              String   @id @default(cuid())
+  buyerId         String
+  spaceId         String
+  tierRank        Int
+  seats           Int
+  stripeCheckoutId String? @unique
+  createdAt       DateTime @default(now())
+  space           CreatorSpace @relation(fields: [spaceId], references: [id], onDelete: Cascade)
+  buyer           User         @relation(fields: [buyerId], references: [id], onDelete: Cascade)
+
+  @@index([buyerId])
+  @@index([spaceId])
 }
 
 /// A buyer's active subscription to a space at a given tier rank. While
@@ -2039,6 +2127,11 @@ model SpaceContent {
   platformFeeBps     Int      @default(2000)
   stripeProductId    String?
   stripePriceId      String?
+  /// Number of preview lines shown before the paywall. Null = default (3).
+  previewLines       Int?
+  /// Per-space SEO overrides for this content. Shape: { title?, description?, noindex? }.
+  seo                Json?
+  meteredFree        Int?      @default(0)
   createdAt          DateTime @default(now())
   updatedAt          DateTime @updatedAt
 

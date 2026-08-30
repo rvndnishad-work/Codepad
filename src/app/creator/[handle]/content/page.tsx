@@ -53,10 +53,20 @@ export default async function CreatorSpaceContentPage({ params }: Props) {
     ]);
 
   const policyFor = (contentType: string, contentId: string) => {
-    const p = policies.find((x) => x.contentType === contentType && x.contentId === contentId);
-    return p
-      ? { spaceContentId: p.id, accessTierRank: p.accessTierRank, purchasePriceCents: p.purchasePriceCents }
-      : null;
+    const p = policies.find((x) => x.contentType === contentType && x.contentId === contentId) as unknown as
+      | { id: string; accessTierRank: number | null; purchasePriceCents: number | null; previewLines: number | null; seo: unknown; meteredFree: number | null }
+      | undefined;
+    if (!p) return null;
+    const seo =
+      p.seo && typeof p.seo === "object" ? (p.seo as { title?: string; description?: string; noindex?: boolean }) : null;
+    return {
+      spaceContentId: p.id,
+      accessTierRank: p.accessTierRank,
+      purchasePriceCents: p.purchasePriceCents,
+      previewLines: p.previewLines ?? null,
+      meteredFree: p.meteredFree ?? null,
+      seo,
+    };
   };
   const viewsFor = (contentType: string, contentId: string) =>
     viewRows.find((v) => v.contentType === contentType && v.contentId === contentId)?._count._all ?? 0;

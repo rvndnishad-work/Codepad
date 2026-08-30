@@ -23,12 +23,15 @@ export async function generateMetadata({ params }: Props) {
   if (!space || !space.published) return {};
   const qa = await prisma.interviewQA.findUnique({
     where: { spaceId_slug: { spaceId: space.id, slug } },
-    select: { title: true, summary: true, published: true },
+    select: { id: true, title: true, summary: true, published: true },
   });
   if (!qa || !qa.published) return {};
+  const sc = await prisma.spaceContent.findUnique({ where: { contentType_contentId: { contentType: "INTERVIEW_QA", contentId: qa.id } }, select: { seo: true } });
+  const seo = sc?.seo as { title?: string; description?: string; noindex?: boolean } | null;
   return {
-    title: `${qa.title} — ${space.name}`,
-    description: qa.summary ?? `Interview prep by ${space.name} on Interviewpad.`,
+    title: seo?.title ?? `${qa.title} — ${space.name}`,
+    description: seo?.description ?? qa.summary ?? `Interview prep by ${space.name} on Interviewpad.`,
+    robots: seo?.noindex ? { index: false, follow: false } : undefined,
   };
 }
 
@@ -51,7 +54,13 @@ export default async function InterviewViewer({ params }: Props) {
 
   if (!(await hasAccess(userId, "INTERVIEW_QA", qa.id))) {
     const options = await getPaywallOptions("INTERVIEW_QA", qa.id);
-    if (options) return <SpacePaywall title={qa.title} blurb={qa.summary} options={options} />;
+    if (options) {
+      const sc = await prisma.spaceContent.findUnique({ where: { contentType_contentId: { contentType: "INTERVIEW_QA", contentId: qa.id } }, select: { previewLines: true } });
+      const previewLines = sc?.previewLines ?? 3;
+      let previewMarkdown: string | null = null;
+      if (previewLines > 0 && qa.questions[0]) previewMarkdown = qa.questions[0].answer.split("\n").slice(0, previewLines).join("\n");
+      return <SpacePaywall title={qa.title} blurb={qa.summary} options={options} previewLines={previewLines} previewMarkdown={previewMarkdown} />;
+    }
   }
 
   after(() =>

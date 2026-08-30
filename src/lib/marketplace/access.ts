@@ -54,13 +54,17 @@ export async function hasAccess(
 ): Promise<boolean> {
   const policy = await getSpaceContentPolicy(contentType, contentId);
   if (!policy || policy.accessTierRank == null) return true; // not gated / free
-  if (!userId) return false;
+  if (!userId) {
+    // Allow metered free for anon if spaceContent.meteredFree >0
+    if ((policy as unknown as { meteredFree?: number | null }).meteredFree) return true;
+    return false;
+  }
 
   const ownerId = await getContentOwnerId(contentType, contentId);
   if (ownerId && ownerId === userId) return true;
 
   const now = new Date();
-  const [entitlement, membership, viewerCanModerate] = await Promise.all([
+  const [entitlement, membership, viewerCanModerate, gift, teamLicense, meteredOk] = await Promise.all([
     prisma.entitlement.findUnique({
       where: { userId_contentType_contentId: { userId, contentType, contentId } },
       select: { expiresAt: true },
@@ -75,10 +79,32 @@ export async function hasAccess(
       select: { tierRank: true },
     }),
     userCan(userId, "content:moderate"),
+    prisma.giftEntitlement.findFirst({
+      where: { contentType, contentId, claimedById: userId },
+      select: { id: true },
+    }),
+    prisma.teamLicense.findFirst({
+      where: { spaceId: policy.spaceId, buyerId: userId, tierRank: { gte: policy.accessTierRank } },
+      select: { id: true },
+    }),
+    (async () => {
+      const mf = (policy as unknown as { meteredFree?: number | null }).meteredFree;
+      if (!mf || mf <= 0) return false;
+      const monthStart = new Date();
+      monthStart.setDate(1);
+      monthStart.setHours(0, 0, 0, 0);
+      const views = await prisma.spaceEvent.count({
+        where: { userId, contentId, kind: "CONTENT_VIEW", createdAt: { gte: monthStart } },
+      });
+      return views < mf;
+    })(),
   ]);
 
   const hasPurchase =
-    !!entitlement && (entitlement.expiresAt === null || entitlement.expiresAt > now);
+    (!!entitlement && (entitlement.expiresAt === null || entitlement.expiresAt > now)) ||
+    !!gift ||
+    !!teamLicense ||
+    !!meteredOk;
 
   return resolveSpaceAccess({
     viewerId: userId,

@@ -56,7 +56,7 @@ export default function LatestCarousel({ items }: { items: SpaceCard[] }) {
 
   return (
     <div
-      className="group relative rounded-3xl border border-accent/20 bg-surface/70 overflow-hidden shadow-tile"
+      className="group relative rounded-[1.5rem] border border-border bg-surface overflow-hidden shadow-[0_20px_60px_-20px_rgba(0,0,0,0.3)]"
       role="region"
       aria-roledescription="carousel"
       aria-label="Latest drops"
@@ -152,45 +152,47 @@ function Slide({
       <Link
         href={card.href}
         tabIndex={active ? 0 : -1}
-        className="md:col-span-2 relative block aspect-[16/9] md:aspect-auto md:min-h-[200px] bg-panel overflow-hidden"
+        className="md:col-span-2 relative block aspect-[16/10] md:aspect-auto md:min-h-[220px] bg-panel overflow-hidden group/slide"
       >
         {card.cover ? (
           // eslint-disable-next-line @next/next/no-img-element
-          <img src={card.cover} alt="" className="w-full h-full object-cover" />
+          <img src={card.cover} alt="" className="w-full h-full object-cover group-hover/slide:scale-[1.03] transition-transform duration-700" />
         ) : (
-          <div className={`w-full h-full bg-gradient-to-br ${meta.gradient} grid place-items-center`}>
-            <meta.Icon className="w-10 h-10 text-fg/25" />
+          <div className={`w-full h-full bg-gradient-to-br ${meta.gradient} grid place-items-center relative overflow-hidden`}>
+            <div className="absolute inset-0 bg-gradient-to-br from-white/[0.08] to-transparent" />
+            <meta.Icon className="w-12 h-12 text-white/90 drop-shadow-md" />
           </div>
         )}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-transparent md:hidden" />
       </Link>
-      <div className="md:col-span-3 p-5 md:p-6 pb-8 flex flex-col gap-3">
+      <div className="md:col-span-3 p-5 md:p-7 pb-8 flex flex-col gap-4 bg-surface">
         <div className="flex items-center gap-2.5 flex-wrap">
-          <span className="relative inline-flex items-center gap-1.5 text-[9px] font-black uppercase tracking-[0.14em] text-accent bg-accent/10 border border-accent/30 rounded-full pl-2 pr-2.5 py-1">
+          <span className="relative inline-flex items-center gap-1.5 text-[10px] font-black uppercase tracking-[0.12em] text-accent bg-accent/10 border border-accent/20 rounded-full pl-2.5 pr-3 py-1.5">
             <span className="relative flex w-1.5 h-1.5">
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-accent opacity-75" />
               <span className="relative inline-flex rounded-full w-1.5 h-1.5 bg-accent" />
             </span>
             Latest drops
           </span>
-          <span className="inline-flex items-center gap-1 text-[9px] font-bold uppercase tracking-wider text-muted">
-            <meta.Icon className="w-3 h-3" /> {meta.label}
+          <span className="inline-flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-muted">
+            <meta.Icon className="w-3.5 h-3.5" /> {meta.label}
           </span>
-          <span className="ml-auto text-[10px] font-black tabular-nums text-muted/70">
+          <span className="ml-auto text-[11px] font-bold tabular-nums text-muted/60 bg-panel border border-border rounded-full px-2 py-0.5">
             {position}/{total}
           </span>
         </div>
         <Link
           href={card.href}
           tabIndex={active ? 0 : -1}
-          className="text-lg md:text-xl font-black tracking-tight text-fg hover:text-accent transition-colors leading-snug line-clamp-2"
+          className="text-[20px] md:text-[22px] font-black tracking-tight leading-tight text-fg hover:text-accent transition-colors line-clamp-2"
         >
           {card.title}
         </Link>
-        {card.summary && <p className="text-xs text-muted leading-relaxed line-clamp-2">{card.summary}</p>}
-        <div className="mt-auto pt-2 flex items-center justify-between gap-3">
+        {card.summary && <p className="text-[14px] text-muted leading-relaxed line-clamp-2">{card.summary}</p>}
+        <div className="mt-auto pt-3 flex items-center justify-between gap-3 border-t border-border/40">
           <div className="flex items-center gap-1.5 flex-wrap min-w-0">
             {card.chips.slice(0, 3).map((c) => (
-              <span key={c} className="text-[9px] font-bold uppercase tracking-wider text-muted bg-panel/70 rounded px-1.5 py-0.5">
+              <span key={c} className="text-[11px] font-semibold tracking-wide text-muted bg-panel border border-border/50 rounded-full px-2.5 py-1">
                 {c}
               </span>
             ))}
@@ -198,21 +200,21 @@ function Slide({
           <div className="flex items-center gap-2.5 shrink-0">
             {card.unlocked ? (
               card.accessTierRank != null ? (
-                <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-500">
-                  <Check className="w-3 h-3" /> Unlocked
+                <span className="inline-flex items-center gap-1.5 text-[12px] font-bold text-emerald-600 bg-emerald-50 border border-emerald-200 rounded-full px-2.5 py-1">
+                  <Check className="w-3.5 h-3.5" /> Unlocked
                 </span>
               ) : (
-                <span className="text-[11px] font-bold uppercase tracking-wider text-emerald-500">Free</span>
+                <span className="text-[11px] font-bold uppercase tracking-wider text-emerald-600 bg-emerald-50 border border-emerald-200 rounded-full px-2.5 py-1">Free</span>
               )
             ) : (
-              <span className="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-accent bg-accent/10 border border-accent/25 rounded-full px-2.5 py-1">
-                <Lock className="w-2.5 h-2.5" /> {card.tierName ?? "Members"}
+              <span className="inline-flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-accent bg-accent/10 border border-accent/20 rounded-full px-3 py-1.5">
+                <Lock className="w-3 h-3" /> {card.tierName ?? "Members"}
               </span>
             )}
             <Link
               href={card.href}
               tabIndex={active ? 0 : -1}
-              className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-accent hover:bg-accent-soft text-bg text-xs font-bold transition-colors"
+              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-[#FFE600] hover:bg-[#FFD600] text-black text-xs font-black shadow-sm transition-all hover:scale-[1.02] active:scale-[0.98]"
             >
               <Zap className="w-3.5 h-3.5" /> {card.unlocked ? "Open" : "Preview"}
             </Link>

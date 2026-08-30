@@ -183,6 +183,7 @@ export async function createContentCheckout(params: {
   spaceContentId: string;
   buyerId: string;
   origin: string;
+  coupon?: string | null;
 }): Promise<string> {
   const sc = await ensureContentPrice(params.spaceContentId);
   const { creatorId, stripeAccountId } = await requireSellableAccount(sc.spaceId);
@@ -197,6 +198,18 @@ export async function createContentCheckout(params: {
     creatorId,
   };
   const stripe = getStripe();
+
+  // Coupon → Stripe promotion code lookup (best-effort, fallback to allow_promotion_codes)
+  let discounts: { promotion_code: string }[] | undefined;
+  if (params.coupon) {
+    try {
+      const promos = await stripe.promotionCodes.list({ code: params.coupon, active: true, limit: 1 });
+      if (promos.data[0]) discounts = [{ promotion_code: promos.data[0].id }];
+    } catch {
+      // ignore lookup failure — fall through to allow_promotion_codes
+    }
+  }
+
   const session = await stripe.checkout.sessions.create({
     mode: "payment",
     line_items: [{ price: sc.stripePriceId!, quantity: 1 }],
@@ -204,6 +217,7 @@ export async function createContentCheckout(params: {
     cancel_url: RETURN_CANCEL(params.origin),
     client_reference_id: params.buyerId,
     metadata,
+    ...(discounts ? { discounts } : { allow_promotion_codes: true }),
     payment_intent_data: {
       application_fee_amount: Math.floor(
         ((sc.purchasePriceCents ?? 0) * sc.platformFeeBps) / 10000,

@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { toast } from "sonner";
-import { Settings, Globe, ExternalLink } from "lucide-react";
+import { Settings, Globe, ExternalLink, Users, Crown, Shield, Eye } from "lucide-react";
 import { updateSpaceAction } from "../../actions";
 
 export type SpaceData = {
@@ -130,6 +130,79 @@ export default function SettingsClient({ space }: { space: SpaceData }) {
               {busy ? "Saving…" : "Save changes"}
             </button>
           </div>
+        </div>
+      </section>
+
+      <section className="rounded-2xl border border-border bg-surface shadow-tile">
+        <div className="flex items-center gap-3 px-5 py-4 border-b border-border">
+          <div className="w-9 h-9 rounded-xl bg-accent-glow border border-accent/20 grid place-items-center text-accent shrink-0">
+            <Users className="w-4 h-4" />
+          </div>
+          <div>
+            <h2 className="text-sm font-bold text-fg leading-tight">Team</h2>
+            <p className="text-[11px] text-muted mt-0.5">Invite co-authors — ADMIN can publish, EDITOR can edit, VIEWER read-only. OWNER is you.</p>
+          </div>
+        </div>
+        <div className="p-5 space-y-4">
+          <div className="flex items-center gap-2 text-xs">
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-700 text-[10px] font-bold">
+              <Crown className="w-3 h-3" /> OWNER — you
+            </span>
+            <span className="text-muted">Multi-space enabled — add teammates to collaborate on this storefront.</span>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3 pt-2">
+            <div className="rounded-xl border border-border bg-panel/40 p-3 text-center">
+              <Shield className="w-5 h-5 text-accent mx-auto" />
+              <div className="text-xs font-bold mt-1">ADMIN</div>
+              <div className="text-[11px] text-muted">Can publish + members + domain</div>
+            </div>
+            <div className="rounded-xl border border-border bg-panel/40 p-3 text-center">
+              <Users className="w-5 h-5 text-accent mx-auto" />
+              <div className="text-xs font-bold mt-1">EDITOR</div>
+              <div className="text-[11px] text-muted">Can edit + publish</div>
+            </div>
+            <div className="rounded-xl border border-border bg-panel/40 p-3 text-center">
+              <Eye className="w-5 h-5 text-muted mx-auto" />
+              <div className="text-xs font-bold mt-1">VIEWER</div>
+              <div className="text-[11px] text-muted">Read-only</div>
+            </div>
+          </div>
+          <div className="flex gap-2">
+            <input placeholder="teammate@example.com" className={inputCls + " flex-1"} id="team-invite-email" />
+            <select className="px-3 py-2 rounded-lg border border-border bg-bg text-sm" defaultValue="EDITOR" id="team-role">
+              <option value="ADMIN">ADMIN</option>
+              <option value="EDITOR">EDITOR</option>
+              <option value="VIEWER">VIEWER</option>
+            </select>
+            <button
+              onClick={() => toast.info("Team invites — coming next iteration (SpaceMember). DB ready: SpaceMember + SpaceDomain migrated 20260830050609).")}
+              className="px-4 py-2 rounded-lg bg-accent text-bg text-xs font-bold hover:bg-accent-soft"
+            >
+              Invite
+            </button>
+          </div>
+          <p className="text-[11px] text-muted">DB: <code className="px-1 py-0.5 rounded bg-panel border border-border text-[10px]">SpaceMember</code> + <code className="px-1 py-0.5 rounded bg-panel border border-border text-[10px]">SpaceDomain</code> migrated — `src/lib/creator/teams.ts:can()` ready.</p>
+        </div>
+      </section>
+
+      <section className="rounded-2xl border border-border bg-surface shadow-tile">
+        <div className="flex items-center gap-3 px-5 py-4 border-b border-border">
+          <div className="w-9 h-9 rounded-xl bg-accent-glow border border-accent/20 grid place-items-center text-accent shrink-0">
+            <Globe className="w-4 h-4" />
+          </div>
+          <div>
+            <h2 className="text-sm font-bold text-fg leading-tight">Custom domain</h2>
+            <p className="text-[11px] text-muted mt-0.5">Map design.example.com → /c/{space.handle} via TXT verify.</p>
+          </div>
+        </div>
+        <div className="p-5 space-y-3">
+          <div className="flex gap-2">
+            <input placeholder="design.example.com" className={inputCls + " flex-1"} />
+            <button onClick={() => toast.info("Domain verify — add TXT interviewpad-verify=<spaceId> at your DNS, then Verify.")} className="px-4 py-2 rounded-lg border border-border bg-panel text-xs font-bold hover:border-accent/40">
+              Verify
+            </button>
+          </div>
+          <p className="text-[11px] text-muted">After verify, middleware routes host to storefront. See `src/middleware.ts` host match (next iter).</p>
         </div>
       </section>
     </div>

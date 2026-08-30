@@ -52,8 +52,8 @@ export default function BulkHiringWizard({ workspaces }: { workspaces: Workspace
         <Upload className="w-3.5 h-3.5" /> Bulk Hiring Wizard
       </button>
       {open && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4" onClick={() => setOpen(false)}>
-          <div onClick={(e) => e.stopPropagation()} className="w-full max-w-lg rounded-[1.5rem] border border-border bg-surface p-6 space-y-4 shadow-2xl max-h-[90vh] overflow-auto">
+        <div className="absolute inset-0 z-30 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4" onClick={() => setOpen(false)}>
+          <div onClick={(e) => e.stopPropagation()} className="relative w-full max-w-lg rounded-[1.5rem] border border-border bg-surface p-6 space-y-4 shadow-2xl max-h-[90vh] overflow-auto">
             <div className="flex items-center justify-between">
               <h3 className="text-sm font-black flex items-center gap-2">
                 <Users className="w-4 h-4 text-accent" /> Bulk Screening Batch

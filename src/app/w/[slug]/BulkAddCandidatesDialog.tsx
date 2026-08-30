@@ -3,7 +3,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { X, Upload, AlertTriangle, CheckCircle2 } from "lucide-react";
+import { X, Upload, AlertTriangle, CheckCircle2, Download, FileSpreadsheet } from "lucide-react";
 
 type Props = {
   open: boolean;
@@ -49,6 +49,27 @@ const SAMPLE = `# Paste rows below — one per line. Format:
 Jane Doe, jane@example.com, +1 415 555 0100, sourced from LinkedIn
 John Smith, john@example.com
 Ada Lovelace`;
+
+const TEMPLATE_CSV = `name,email,phone,notes
+Jane Doe,jane@example.com,+1 415 555 0100,sourced from LinkedIn
+John Smith,john@example.com,,
+Ada Lovelace,ada@example.com,,
+"Example, With Comma",example+bulk@test.dev,+44 20 7946 0958,"notes with, comma"
+`;
+
+function downloadTemplate(format: "csv" | "xlsx" = "csv") {
+  const mime = format === "xlsx" ? "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" : "text/csv;charset=utf-8;";
+  const blob = new Blob([TEMPLATE_CSV], { type: mime });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = format === "xlsx" ? "candidates-template.xlsx" : "candidates-template.csv";
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  toast.success(`Template downloaded (${format.toUpperCase()})`);
+}
 
 export default function BulkAddCandidatesDialog({ open, onClose, workspaceSlug }: Props) {
   const router = useRouter();
@@ -109,7 +130,7 @@ export default function BulkAddCandidatesDialog({ open, onClose, workspaceSlug }
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+    <div className="absolute inset-0 z-30 flex items-center justify-center p-4">
       <div
         className="absolute inset-0 bg-black/60 backdrop-blur-sm animate-in fade-in duration-150"
         onClick={onClose}
@@ -128,13 +149,46 @@ export default function BulkAddCandidatesDialog({ open, onClose, workspaceSlug }
               </p>
             </div>
           </div>
-          <button
-            onClick={onClose}
-            className="w-7 h-7 rounded-md text-muted hover:text-fg hover:bg-panel/40 transition-colors flex items-center justify-center"
-            aria-label="Close"
-          >
-            <X className="w-4 h-4" />
-          </button>
+          <div className="flex items-center gap-1">
+            <div className="hidden sm:flex items-center gap-1">
+              <button
+                type="button"
+                onClick={() => downloadTemplate("csv")}
+                className="inline-flex items-center gap-1 px-2 py-1.5 rounded-md border border-border bg-bg hover:bg-panel/40 text-muted hover:text-fg transition-colors text-[11px] font-medium"
+                title="Download CSV template (name,email,phone,notes) — opens in Excel & Sheets"
+              >
+                <FileSpreadsheet className="w-3.5 h-3.5" />
+                CSV
+              </button>
+              <button
+                type="button"
+                onClick={() => downloadTemplate("xlsx")}
+                className="inline-flex items-center gap-1 px-2 py-1.5 rounded-md border border-border bg-bg hover:bg-panel/40 text-muted hover:text-fg transition-colors text-[11px] font-medium"
+                title="Download Excel template (.xlsx) — same columns"
+              >
+                <FileSpreadsheet className="w-3.5 h-3.5" />
+                XLSX
+              </button>
+            </div>
+            <div className="sm:hidden">
+              <button
+                type="button"
+                onClick={() => downloadTemplate("csv")}
+                className="inline-flex items-center gap-1 px-2 py-1.5 rounded-md border border-border bg-bg hover:bg-panel/40 text-muted hover:text-fg transition-colors text-[11px] font-medium"
+                title="Download template"
+              >
+                <Download className="w-3.5 h-3.5" />
+                Template
+              </button>
+            </div>
+            <button
+              onClick={onClose}
+              className="w-7 h-7 rounded-md text-muted hover:text-fg hover:bg-panel/40 transition-colors flex items-center justify-center"
+              aria-label="Close"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
         </div>
 
         <div className="px-5 py-4 space-y-3 overflow-y-auto flex-1 min-h-0">

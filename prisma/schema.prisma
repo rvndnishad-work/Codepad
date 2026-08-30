@@ -81,6 +81,7 @@ model User {
   prepJourneys         PrepJourney[]
   prepActivities       PrepActivity[]
   spaceMembers         SpaceMember[]
+  teamLicenses         TeamLicense[]
 }
 
 /// Admin-composed broadcast (IP-45). One row per admin send; the per-recipient
@@ -1618,6 +1619,7 @@ model CreatorSpace {
   versions    SpaceVersion[]
   members     SpaceMember[]
   domains     SpaceDomain[]
+  teamLicenses TeamLicense[]
 
   @@index([ownerId])
 }
@@ -1722,15 +1724,51 @@ model Entitlement {
   userId      String
   contentType String
   contentId   String
-  /// "PURCHASE" | "GRANT"
+  /// "PURCHASE" | "GRANT" | "GIFT"
   source      String
   /// The SpaceContent row this purchase was for (informational).
   spaceContentId String?
+  giftId      String?
   expiresAt   DateTime?
   createdAt   DateTime  @default(now())
+  gift        GiftEntitlement? @relation(fields: [giftId], references: [id])
 
   @@unique([userId, contentType, contentId])
   @@index([userId])
+  @@index([giftId])
+}
+
+model GiftEntitlement {
+  id             String    @id @default(cuid())
+  giverId        String?
+  recipientEmail String
+  contentType    String
+  contentId      String
+  spaceContentId String?
+  code           String    @unique
+  claimedById    String?
+  claimedAt      DateTime?
+  createdAt      DateTime  @default(now())
+  entitlements   Entitlement[]
+
+  @@index([recipientEmail])
+  @@index([code])
+  @@index([contentId])
+}
+
+model TeamLicense {
+  id              String   @id @default(cuid())
+  buyerId         String
+  spaceId         String
+  tierRank        Int
+  seats           Int
+  stripeCheckoutId String? @unique
+  createdAt       DateTime @default(now())
+  space           CreatorSpace @relation(fields: [spaceId], references: [id], onDelete: Cascade)
+  buyer           User         @relation(fields: [buyerId], references: [id], onDelete: Cascade)
+
+  @@index([buyerId])
+  @@index([spaceId])
 }
 
 /// A buyer's active subscription to a space at a given tier rank. While
@@ -2093,6 +2131,7 @@ model SpaceContent {
   previewLines       Int?
   /// Per-space SEO overrides for this content. Shape: { title?, description?, noindex? }.
   seo                Json?
+  meteredFree        Int?      @default(0)
   createdAt          DateTime @default(now())
   updatedAt          DateTime @updatedAt
 

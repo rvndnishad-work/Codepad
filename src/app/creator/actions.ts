@@ -8,6 +8,8 @@ import { z } from "zod";
 import { userCan } from "@/lib/permissions/access";
 import { OWNABLE_CONTENT_TYPES, type OwnableContentType } from "@/lib/permissions/permissions";
 import { getContentOwnerId } from "@/lib/marketplace/entitlements";
+import { createGiftCode, claimGift } from "@/lib/marketplace/gifts";
+import { createTeamLicense } from "@/lib/marketplace/teams";
 import { coverImageSchema } from "@/lib/blog-schema";
 import { normalizeLayout, SECTION_KEYS } from "@/lib/creator/layout";
 import { blocksDocSchema, type SpaceBlocksDoc } from "@/lib/creator/blocks";
@@ -316,6 +318,7 @@ const policySchema = z.object({
     .nullable()
     .optional(),
   coupon: z.string().max(32).nullable().optional(),
+  meteredFree: z.number().int().min(0).max(5).nullable().optional(),
 });
 
 /** Add content to the space (or update its access policy). Validates ownership. */
@@ -329,6 +332,7 @@ export async function setSpaceContentAction(
     previewLines?: number | null;
     seo?: { title?: string; description?: string; noindex?: boolean } | null;
     coupon?: string | null;
+    meteredFree?: number | null;
   }
 ) {
   const userId = await requireCreator();
@@ -353,6 +357,7 @@ export async function setSpaceContentAction(
       purchasePriceCents: data.purchasePriceCents,
       ...(data.previewLines !== undefined ? { previewLines: data.previewLines } : {}),
       ...(data.seo !== undefined ? { seo: (data.seo as unknown as object) ?? undefined } : {}),
+      ...(data.meteredFree !== undefined ? { meteredFree: data.meteredFree } : {}),
     },
     create: {
       spaceId: space.id,
@@ -362,6 +367,7 @@ export async function setSpaceContentAction(
       purchasePriceCents: data.purchasePriceCents,
       previewLines: data.previewLines ?? null,
       seo: (data.seo as unknown as object) ?? undefined,
+      meteredFree: data.meteredFree ?? 0,
     },
   });
   revalidatePath("/creator");
@@ -380,6 +386,28 @@ export async function removeSpaceContentAction(spaceId: string, spaceContentId: 
   await prisma.spaceContent.delete({ where: { id: spaceContentId } });
   revalidatePath("/creator");
   revalidatePath(`/creator/${space.handle}`);
+}
+
+export async function createGiftAction(input: { contentType: OwnableContentType; contentId: string; recipientEmail: string }) {
+  const userId = await requireCreator();
+  const ownerId = await getContentOwnerId(input.contentType, input.contentId);
+  if (ownerId !== userId) throw new Error("You can only gift content you own.");
+  const sc = await prisma.spaceContent.findUnique({ where: { contentType_contentId: { contentType: input.contentType, contentId: input.contentId } }, select: { id: true } });
+  const { code } = await createGiftCode({ giverId: userId, recipientEmail: input.recipientEmail, contentType: input.contentType, contentId: input.contentId, spaceContentId: sc?.id ?? null });
+  return { code };
+}
+
+export async function claimGiftAction(code: string) {
+  const session = await auth().catch(() => null);
+  const userId = session?.user?.id;
+  if (!userId) throw new Error("Sign in to claim.");
+  return claimGift(code, userId);
+}
+
+export async function createTeamLicenseAction(input: { spaceId: string; tierRank: number; seats: number }) {
+  const userId = await requireCreator();
+  const space = await requireMySpace(input.spaceId, userId);
+  return createTeamLicense({ buyerId: userId, spaceId: space.id, tierRank: input.tierRank, seats: input.seats });
 }
 
 // ── Tutorial authoring (replace-all sections) ────────────────────────────────

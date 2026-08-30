@@ -43,6 +43,7 @@ export type ContentItem = {
     purchasePriceCents: number | null;
     previewLines?: number | null;
     seo?: { title?: string; description?: string; noindex?: boolean } | null;
+    meteredFree?: number | null;
   } | null;
   /** Public URL path — used by the share button (UTM-tagged copy). */
   publicHref: string;
@@ -230,10 +231,13 @@ function ContentRow({
     item.policy?.purchasePriceCents != null ? (item.policy.purchasePriceCents / 100).toFixed(2) : "",
   );
   const [preview, setPreview] = useState<string>(item.policy?.previewLines != null ? String(item.policy.previewLines) : "");
+  const [metered, setMetered] = useState<string>(item.policy?.meteredFree != null ? String(item.policy.meteredFree) : "");
   const [seoTitle, setSeoTitle] = useState(item.policy?.seo?.title ?? "");
   const [seoDesc, setSeoDesc] = useState(item.policy?.seo?.description ?? "");
   const [noindex, setNoindex] = useState(!!item.policy?.seo?.noindex);
   const [coupon, setCoupon] = useState("");
+  const [giftEmail, setGiftEmail] = useState("");
+  const [teamSeats, setTeamSeats] = useState("5");
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [busy, setBusy] = useState(false);
   const [shared, setShared] = useState(false);
@@ -265,6 +269,7 @@ function ContentRow({
     rank !== (item.policy?.accessTierRank != null ? String(item.policy.accessTierRank) : "") ||
     price !== (item.policy?.purchasePriceCents != null ? (item.policy.purchasePriceCents / 100).toFixed(2) : "") ||
     preview !== (item.policy?.previewLines != null ? String(item.policy.previewLines) : "") ||
+    metered !== (item.policy?.meteredFree != null ? String(item.policy.meteredFree) : "") ||
     seoTitle !== (item.policy?.seo?.title ?? "") ||
     seoDesc !== (item.policy?.seo?.description ?? "") ||
     noindex !== !!item.policy?.seo?.noindex ||
@@ -279,6 +284,7 @@ function ContentRow({
         accessTierRank: rank === "" ? null : parseInt(rank, 10),
         purchasePriceCents: price.trim() === "" ? null : Math.round(parseFloat(price) * 100),
         previewLines: preview.trim() === "" ? null : parseInt(preview, 10),
+        meteredFree: metered.trim() === "" ? null : parseInt(metered, 10),
         seo: seoTitle.trim() || seoDesc.trim() || noindex ? { title: seoTitle.trim() || undefined, description: seoDesc.trim() || undefined, noindex: noindex || undefined } : null,
         coupon: coupon.trim() || null,
       });
@@ -287,6 +293,38 @@ function ContentRow({
       onChanged();
     } catch (err) {
       toast.error("Save failed", { description: err instanceof Error ? err.message : String(err) });
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function createGift() {
+    if (!giftEmail.trim() || !giftEmail.includes("@")) {
+      toast.error("Enter a valid recipient email.");
+      return;
+    }
+    setBusy(true);
+    try {
+      const { createGiftAction } = await import("../../actions");
+      const res = await createGiftAction({ contentType: item.contentType, contentId: item.contentId, recipientEmail: giftEmail.trim() });
+      toast.success(`Gift code: ${res.code} — share it`, { duration: 6000 });
+      setGiftEmail("");
+    } catch (err) {
+      toast.error("Gift failed", { description: err instanceof Error ? err.message : String(err) });
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function createTeam() {
+    setBusy(true);
+    try {
+      const { createTeamLicenseAction } = await import("../../actions");
+      const seats = parseInt(teamSeats, 10) || 5;
+      await createTeamLicenseAction({ spaceId, tierRank: rank ? parseInt(rank, 10) : 1, seats });
+      toast.success(`Team license for ${seats} seats created.`);
+    } catch (err) {
+      toast.error("Team failed", { description: err instanceof Error ? err.message : String(err) });
     } finally {
       setBusy(false);
     }
@@ -414,12 +452,16 @@ function ContentRow({
             />
             <span className="absolute -top-2 -right-1 text-[8px] font-bold uppercase tracking-wider text-muted bg-panel border border-border rounded px-1">preview</span>
           </div>
+          <div className="relative" title="Metered free views/month (0=off)">
+            <input value={metered} onChange={(e) => setMetered(e.target.value.replace(/\D/g, ""))} placeholder="0" className="w-14 px-2 py-1.5 rounded-lg border border-border bg-bg text-fg text-xs focus:outline-none focus:border-accent/50" />
+            <span className="absolute -top-2 -right-1 text-[8px] font-bold uppercase tracking-wider text-muted bg-panel border border-border rounded px-1">metered</span>
+          </div>
           <button
             onClick={() => setShowAdvanced((v) => !v)}
             className="text-[10px] font-bold text-muted hover:text-fg px-2 py-1 rounded hover:bg-panel/40"
-            title="SEO & coupon"
+            title="SEO & coupon + gift/team"
           >
-            {showAdvanced ? "Less" : "SEO & coupon"}
+            {showAdvanced ? "Less" : "SEO & gift/team"}
           </button>
           {dirty && (
             <button
@@ -460,6 +502,20 @@ function ContentRow({
                 <input type="checkbox" checked={noindex} onChange={(e) => setNoindex(e.target.checked)} className="rounded" /> noindex
               </label>
               <input value={coupon} onChange={(e) => setCoupon(e.target.value)} placeholder="Coupon code (optional)" className="flex-1 px-2.5 py-1.5 rounded-lg border border-border bg-bg text-fg text-xs focus:outline-none focus:border-accent/50" />
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+              <div className="flex gap-1">
+                <input value={giftEmail} onChange={(e) => setGiftEmail(e.target.value)} placeholder="Gift to email" className="flex-1 px-2.5 py-1.5 rounded-lg border border-border bg-bg text-fg text-xs" />
+                <button onClick={createGift} disabled={busy} className="px-2.5 py-1.5 rounded-lg bg-accent text-bg text-xs font-bold disabled:opacity-50">
+                  Gift
+                </button>
+              </div>
+              <div className="flex gap-1">
+                <input value={teamSeats} onChange={(e) => setTeamSeats(e.target.value.replace(/\D/g, ""))} placeholder="5" className="w-14 px-2.5 py-1.5 rounded-lg border border-border bg-bg text-fg text-xs" />
+                <button onClick={createTeam} disabled={busy} className="flex-1 px-2.5 py-1.5 rounded-lg border border-border bg-panel text-xs font-bold">
+                  Team seats
+                </button>
+              </div>
             </div>
           </div>
         )}

@@ -1,6 +1,11 @@
+"use client";
+
 import Link from "next/link";
-import { Lock, ArrowLeft, Check, Sparkles } from "lucide-react";
+import { useState } from "react";
+import { toast } from "sonner";
+import { Lock, ArrowLeft, Check, Sparkles, Gift } from "lucide-react";
 import { BuyContentButton, SubscribeButton } from "@/app/creator/BuyButton";
+import { claimGiftAction } from "@/app/creator/actions";
 import type { PaywallOptions } from "@/lib/marketplace/access";
 
 const money = (cents: number, currency = "usd") =>
@@ -23,6 +28,23 @@ export default function SpacePaywall({
   previewMarkdown?: string | null;
 }) {
   const recommendedId = options.tiers.length > 1 ? options.tiers[options.tiers.length - 1].id : null;
+  const [giftCode, setGiftCode] = useState("");
+  const [giftBusy, setGiftBusy] = useState(false);
+
+  async function claimGift() {
+    if (!giftCode.trim()) return;
+    setGiftBusy(true);
+    try {
+      await claimGiftAction(giftCode.trim());
+      toast.success("Gift claimed — refresh to view");
+      setGiftCode("");
+      window.location.reload();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Claim failed");
+    } finally {
+      setGiftBusy(false);
+    }
+  }
 
   return (
     <div className="max-w-3xl mx-auto px-4 py-12">
@@ -71,8 +93,21 @@ export default function SpacePaywall({
         )}
       </div>
 
+      {/* Gift code */}
+      <div className="mt-6 max-w-2xl mx-auto rounded-2xl border border-border bg-surface p-4 flex flex-col sm:flex-row gap-3 items-center">
+        <div className="flex items-center gap-2 text-sm font-bold">
+          <Gift className="w-4 h-4 text-accent" /> Have a gift code?
+        </div>
+        <div className="flex gap-2 flex-1 w-full">
+          <input value={giftCode} onChange={(e) => setGiftCode(e.target.value)} placeholder="ABC12..." className="flex-1 px-3 py-2 rounded-xl border border-border bg-bg text-sm font-mono" />
+          <button onClick={claimGift} disabled={giftBusy || !giftCode.trim()} className="px-4 py-2 rounded-xl bg-accent text-bg text-xs font-black disabled:opacity-50">
+            {giftBusy ? "..." : "Claim"}
+          </button>
+        </div>
+      </div>
+
       {/* Unlock options */}
-      <div className="mt-2 grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-2xl mx-auto">
+      <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-2xl mx-auto">
         {options.tiers.map((t) => {
           const recommended = t.id === recommendedId;
           return (

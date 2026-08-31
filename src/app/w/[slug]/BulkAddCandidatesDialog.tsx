@@ -1,9 +1,9 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { X, Upload, AlertTriangle, CheckCircle2, Download, FileSpreadsheet } from "lucide-react";
+import { X, Upload, AlertTriangle, CheckCircle2, Download, FileSpreadsheet, FileUp } from "lucide-react";
 
 type Props = {
   open: boolean;
@@ -22,26 +22,47 @@ type ParsedRow = {
 };
 
 function parseInput(text: string): ParsedRow[] {
-  return text
+  const lines = text
     .split(/\r?\n/)
     .map((l) => l.trim())
-    .filter((l) => l.length > 0 && !l.startsWith("#"))
-    .map<ParsedRow>((raw) => {
-      // Accept comma- OR tab-separated. Order: name, email, phone, notes
-      const parts = raw.includes("\t") ? raw.split("\t") : raw.split(",");
-      const [name = "", email = "", phone = "", ...rest] = parts.map((p) => p.trim());
-      const notes = rest.join(", ");
-      let valid = true;
-      let error: string | undefined;
-      if (!name) {
+    .filter((l) => l.length > 0 && !l.startsWith("#"));
+  // Skip header if first line looks like `name, email, ...`
+  const hasHeader = lines[0]?.toLowerCase().replace(/\s/g, "").startsWith("name,") && lines[0].toLowerCase().includes("email");
+  const dataLines = hasHeader ? lines.slice(1) : lines;
+  const seen = new Set<string>();
+  return dataLines.map<ParsedRow>((raw) => {
+    // Accept comma- OR tab-separated. Order: name, email, phone, notes
+    const parts = raw.includes("\t") ? raw.split("\t") : raw.split(",");
+    const [name = "", email = "", phone = "", ...rest] = parts.map((p) => p.trim());
+    const notes = rest.join(", ");
+    let valid = true;
+    let error: string | undefined;
+    if (!name) {
+      valid = false;
+      error = "Name required";
+    } else if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      valid = false;
+      error = "Invalid email";
+    } else if (email) {
+      const key = email.toLowerCase();
+      if (seen.has(key)) {
         valid = false;
-        error = "Name required";
-      } else if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-        valid = false;
-        error = "Invalid email";
+        error = "Duplicate email";
+      } else {
+        seen.add(key);
       }
-      return { raw, name, email, phone, notes, valid, error };
-    });
+    } else if (name) {
+      // still track name+email combo for duplicate check when email missing
+      const key = `__name__${name.toLowerCase()}`;
+      if (seen.has(key)) {
+        valid = false;
+        error = "Duplicate name";
+      } else {
+        seen.add(key);
+      }
+    }
+    return { raw, name, email, phone, notes, valid, error };
+  });
 }
 
 const SAMPLE = `# Paste rows below — one per line. Format:
@@ -75,10 +96,49 @@ export default function BulkAddCandidatesDialog({ open, onClose, workspaceSlug }
   const router = useRouter();
   const [text, setText] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const rows = useMemo(() => parseInput(text), [text]);
   const validRows = rows.filter((r) => r.valid);
   const invalidRows = rows.filter((r) => !r.valid);
+
+  async function handleFile(file: File) {
+    if (!file) return;
+    const lower = file.name.toLowerCase();
+    try {
+      if (lower.endsWith(".csv")) {
+        const txt = await file.text();
+        const lines = txt.split(/\r?\n/);
+        const first = lines[0]?.trim().toLowerCase() ?? "";
+        const hasHeader = first.startsWith("name,") && first.includes("email");
+        setText(hasHeader ? lines.slice(1).join("\n") : txt);
+        toast.success(`Loaded ${file.name} — ${hasHeader ? lines.length - 1 : lines.length} rows`);
+      } else if (lower.endsWith(".xlsx") || lower.endsWith(".xls")) {
+        const XLSX = await import("xlsx");
+        const buf = await file.arrayBuffer();
+        const wb = XLSX.read(buf, { type: "array" });
+        const sheet = wb.Sheets[wb.SheetNames[0]];
+        const json = XLSX.utils.sheet_to_json<string[]>(sheet, { header: 1, defval: "" }) as string[][];
+        let start = 0;
+        if (json[0] && String(json[0][0] ?? "").toLowerCase().includes("name") && String(json[0][1] ?? "").toLowerCase().includes("email")) start = 1;
+        const lines = json.slice(start).map((row) => row.map((c) => String(c ?? "").trim()).join(", "));
+        setText(lines.join("\n"));
+        toast.success(`Loaded ${file.name} — ${lines.length} rows`);
+      } else {
+        toast.error("Unsupported file", { description: "Please upload CSV or Excel (.xlsx, .xls)" });
+      }
+    } catch (err) {
+      toast.error("Failed to parse file", { description: err instanceof Error ? err.message : String(err) });
+    }
+  }
+
+  function onFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const f = e.target.files?.[0];
+    if (f) handleFile(f);
+    // reset so same file can be re-selected
+    e.target.value = "";
+  }
 
   useEffect(() => {
     if (!open) return;
@@ -193,18 +253,66 @@ export default function BulkAddCandidatesDialog({ open, onClose, workspaceSlug }
 
         <div className="px-5 py-4 space-y-3 overflow-y-auto flex-1 min-h-0">
           <div className="space-y-1">
-            <label className="text-[10px] font-semibold uppercase tracking-wider text-muted">
-              Paste candidates
-            </label>
-            <textarea
-              value={text}
-              onChange={(e) => setText(e.target.value)}
-              placeholder={SAMPLE}
-              rows={10}
-              spellCheck={false}
-              className="w-full px-3 py-2 rounded-md border border-border bg-bg text-fg text-sm font-mono focus:outline-none focus:border-accent/40 resize-y"
-              autoFocus
-            />
+            <div className="flex items-center justify-between gap-2">
+              <label className="text-[10px] font-semibold uppercase tracking-wider text-muted">
+                Paste candidates
+              </label>
+              <span className="text-[10px] text-muted/60 hidden sm:inline">Validated before import — invalid rows are skipped</span>
+            </div>
+
+            <div
+              onDragOver={(e) => {
+                e.preventDefault();
+                setIsDragging(true);
+              }}
+              onDragLeave={() => setIsDragging(false)}
+              onDrop={(e) => {
+                e.preventDefault();
+                setIsDragging(false);
+                const f = e.dataTransfer.files?.[0];
+                if (f) handleFile(f);
+              }}
+              className={`relative rounded-md border ${isDragging ? "border-accent bg-accent/5" : "border-border bg-bg"} transition-colors`}
+            >
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept=".csv,.xlsx,.xls"
+                onChange={onFileChange}
+                className="hidden"
+              />
+              <div className="flex items-center justify-between gap-2 px-3 py-2 border-b border-border/60 bg-elevated/20 rounded-t-md">
+                <span className="text-[11px] font-medium text-muted flex items-center gap-1.5">
+                  <FileUp className="w-3.5 h-3.5" /> Upload
+                </span>
+                <div className="flex items-center gap-1.5">
+                  <button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    className="inline-flex items-center gap-1 px-2 py-1 rounded-md border border-border bg-bg hover:bg-panel text-[11px] font-medium text-muted hover:text-fg transition-colors"
+                  >
+                    <FileUp className="w-3 h-3" /> CSV / Excel
+                  </button>
+                  <span className="text-[10px] text-muted/50 hidden sm:inline">or drag & drop here</span>
+                </div>
+              </div>
+              <textarea
+                value={text}
+                onChange={(e) => setText(e.target.value)}
+                placeholder={SAMPLE}
+                rows={10}
+                spellCheck={false}
+                className="w-full px-3 py-2 bg-transparent text-fg text-sm font-mono focus:outline-none resize-y min-h-[160px]"
+                autoFocus
+              />
+              {isDragging && (
+                <div className="absolute inset-0 bg-accent/10 backdrop-blur-[1px] rounded-md flex items-center justify-center pointer-events-none">
+                  <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-surface border border-border text-xs font-semibold shadow-sm">
+                    <FileUp className="w-3.5 h-3.5 text-accent" /> Drop CSV or Excel to load
+                  </span>
+                </div>
+              )}
+            </div>
             <p className="text-[10px] text-muted/70">
               Format: <code className="font-mono">name, email, phone, notes</code>. Email and later fields are optional.
               Lines starting with <code className="font-mono">#</code> are skipped.

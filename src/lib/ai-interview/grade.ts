@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { analyzeTelemetry, type TelemetryEvent } from "@/lib/proctoring/ai-detection";
-import { AI_INTERVIEW_GEMINI_MODEL } from "@/lib/ai-interview/scaffolds";
+import { AI_INTERVIEW_TOGETHER_MODEL } from "@/lib/ai-interview/scaffolds";
 import { sendRecruiterNotifyEmail } from "@/lib/ai-interview/submit-notify";
 import { resolveSessionRounds, type SessionRound } from "@/lib/ai-interview/rounds";
 import { STAFF_ROLES } from "@/lib/permissions/role-groups";
@@ -73,7 +73,7 @@ function clampRatingsForEffort(r: GraderResult, meaningfulLines: number): Grader
   return { ...r, score: clampedScore };
 }
 
-// Call Gemini API to perform programmatic grading — DIFF-AWARE.
+// Call LLM API (Together/GLM or Gemini fallback) to perform programmatic grading — DIFF-AWARE.
 async function callGeminiGrader(
   apiKey: string,
   positionTitle: string,
@@ -81,8 +81,6 @@ async function callGeminiGrader(
   diffBlock: string,
   changeSummary: string
 ): Promise<GraderResult> {
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/${AI_INTERVIEW_GEMINI_MODEL}:generateContent?key=${apiKey}`;
-
   const prompt = `You are the Interviewpad AI Grading Agent.
 Evaluate a candidate who took an automated AI technical coding interview for "${positionTitle}".
 
@@ -118,22 +116,49 @@ Output your response strictly as a JSON object containing precisely:
   "aiSummary": string (bulleted recap of strengths and flaws)
 }`;
 
+  // Prefer Together/GLM when GLM_API_KEY (or TOGETHER_API_KEY) is configured.
+  const hasTogetherKey = !!(process.env.GLM_API_KEY || process.env.TOGETHER_API_KEY);
+  // If apiKey matches the Together key, treat as Together call; otherwise keep Gemini path for explicit Gemini keys.
+  const isTogetherKey = hasTogetherKey && apiKey === (process.env.GLM_API_KEY || process.env.TOGETHER_API_KEY);
+
+  if (hasTogetherKey && isTogetherKey) {
+    const base = process.env.TOGETHER_BASE_URL || "https://api.together.xyz/v1";
+    const url = `${base}/chat/completions`;
+    const res = await fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
+      body: JSON.stringify({
+        model: AI_INTERVIEW_TOGETHER_MODEL,
+        messages: [
+          { role: "system", content: "You are a JSON-only grading agent. Output valid JSON per the requested schema." },
+          { role: "user", content: prompt },
+        ],
+        temperature: 0.2,
+        max_tokens: 1500,
+        response_format: { type: "json_object" },
+      }),
+    });
+    if (!res.ok) throw new Error(`Together HTTP error ${res.status}`);
+    const data = await res.json();
+    const rawText = data.choices?.[0]?.message?.content;
+    if (!rawText) throw new Error("Empty grader result");
+    return JSON.parse(rawText.trim()) as GraderResult;
+  }
+
+  // Fallback: Gemini
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${AI_INTERVIEW_TOGETHER_MODEL.includes("zai-org") ? "gemini-3.5-flash" : AI_INTERVIEW_TOGETHER_MODEL}:generateContent?key=${apiKey}`;
   const res = await fetch(url, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       contents: [{ parts: [{ text: prompt }] }],
-      generationConfig: {
-        responseMimeType: "application/json",
-      },
+      generationConfig: { responseMimeType: "application/json" },
     }),
   });
-
   if (!res.ok) throw new Error(`Gemini HTTP error ${res.status}`);
   const data = await res.json();
   const rawText = data.candidates?.[0]?.content?.parts?.[0]?.text;
   if (!rawText) throw new Error("Empty grader result");
-
   return JSON.parse(rawText.trim()) as GraderResult;
 }
 
@@ -338,7 +363,7 @@ export async function gradeSessionById(params: {
     chatHistory = [];
   }
 
-  const apiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY;
+  const apiKey = process.env.GLM_API_KEY || process.env.TOGETHER_API_KEY || process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY;
   const sessionRounds = resolveSessionRounds(session);
   const legacy = sessionRounds.length === 1 && sessionRounds[0].legacy;
 

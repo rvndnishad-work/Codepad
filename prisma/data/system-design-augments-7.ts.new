@@ -1,0 +1,228 @@
+import type { SystemDesignAugment } from "./system-design-augments.types";
+const augments: SystemDesignAugment[] = [
+  {
+    title: "How would you design a Web Crawler?",
+    answer:
+      "## Design a Web Crawler\n\nA crawler must fetch **billions of pages** politely, without overloading origins, while staying fresh and deduplicating.\n\n<svg class='iq-diagram' viewBox='0 0 480 220' role='img' aria-label='Web crawler pipeline'><rect class='d-box' x='12' y='90' width='72' height='40' rx='6'/><text class='d-sub' x='48' y='115' text-anchor='middle'>Seeds</text><rect class='d-box-accent' x='130' y='88' width='110' height='44' rx='8'/><text class='d-text' x='185' y='106' text-anchor='middle'>URL Frontier</text><text class='d-sub' x='185' y='122' text-anchor='middle'>priority queue</text><rect class='d-box' x='290' y='40' width='80' height='40' rx='6'/><text class='d-sub' x='330' y='64' text-anchor='middle'>Fetcher</text><rect class='d-box' x='290' y='140' width='80' height='40' rx='6'/><text class='d-sub' x='330' y='164' text-anchor='middle'>Parser</text><rect class='d-box' x='410' y='90' width='60' height='40' rx='6'/><text class='d-sub' x='440' y='115' text-anchor='middle'>Store</text></svg>\n\n| Concern | Choice | Why |\n|---|---|---|\n| Politeness | per-host queue + `robots.txt` + crawl-delay | avoid 429/ban |\n| Freshness | priority by PageRank / change rate | recrawl hot pages |\n| Scale | sharded frontier by host hash | `n` fetchers parallel |\n| Dedup | Bloom filter + seen set in Redis | `O(1)` mem |\n\n**Interview tip:** mention `ETag/Last-Modified` conditional fetch and `SimHash` near-dedup.",
+    examples: [
+      {
+        label: "URL frontier + Bloom dedup",
+        variants: [
+          { tech: "python", runnable: true, code: "from collections import deque\nimport hashlib\nseen=set()\nfrontier=deque(['https://example.com'])\nbloom={}\ndef seen_before(url):\n    h=hashlib.md5(url.encode()).hexdigest()[:8]\n    if h in bloom: return True\n    bloom[h]=1; return False\nwhile frontier:\n    url=frontier.popleft()\n    if seen_before(url): continue\n    print('fetch',url)\n    # fetcher -> parser -> push new urls\n    frontier.extend(['https://example.com/a','https://example.com/b'])\n    if len(bloom)>5: break" },
+          { tech: "javascript", runnable: true, code: "const seen=new Set();\nconst frontier=['https://example.com'];\nfunction seenBefore(url){\n  const h=url.split('').reduce((a,c)=>a+c.charCodeAt(0),0)%1000;\n  if(seen.has(h)) return true;\n  seen.add(h); return false;\n}\nwhile(frontier.length){\n  const url=frontier.shift();\n  if(seenBefore(url)) continue;\n  console.log('fetch',url);\n  frontier.push('https://example.com/a');\n  if(seen.size>5) break;\n}" },
+          { tech: "go", runnable: false, code: "package main\nimport \"fmt\"\nfunc main(){\n  seen:=map[string]bool{}\n  frontier:=[]string{\"https://example.com\"}\n  for len(frontier)>0{\n    url:=frontier[0]; frontier=frontier[1:]\n    if seen[url]{continue}\n    seen[url]=true\n    fmt.Println(\"fetch\",url)\n    frontier=append(frontier,\"https://example.com/a\")\n    if len(seen)>5{break}\n  }\n}" },
+          { tech: "java", runnable: false, code: "import java.util.*;\npublic class Main{\n  public static void main(String[] args){\n    Set<String> seen=new HashSet<>();\n    Queue<String> q=new LinkedList<>(List.of(\"https://example.com\"));\n    while(!q.isEmpty()){\n      String url=q.poll();\n      if(!seen.add(url)) continue;\n      System.out.println(\"fetch \"+url);\n      q.add(\"https://example.com/a\");\n      if(seen.size()>5) break;\n    }\n  }\n}" },
+        ],
+      },
+    ],
+  },
+  {
+    title: "How would you design YouTube?",
+    answer:
+      "## Design YouTube\n\nYouTube is **write-heavy ingest** (transcode once) + **read-heavy global delivery** (CDN) + **social graph** (feed, comments).\n\n<svg class='iq-diagram' viewBox='0 0 480 220' role='img' aria-label='YouTube ingest and delivery'><rect class='d-box' x='12' y='90' width='70' height='40' rx='6'/><text class='d-sub' x='47' y='115' text-anchor='middle'>Upload</text><rect class='d-box-accent' x='120' y='88' width='110' height='44' rx='8'/><text class='d-text' x='175' y='106' text-anchor='middle'>Transcoder</text><text class='d-sub' x='175' y='122' text-anchor='middle'>H.264/AV1</text><rect class='d-box' x='270' y='40' width='80' height='40' rx='6'/><text class='d-sub' x='310' y='64' text-anchor='middle'>S3 + CDN</text><rect class='d-box' x='270' y='140' width='80' height='40' rx='6'/><text class='d-sub' x='310' y='164' text-anchor='middle'>Metadata</text><rect class='d-box' x='390' y='90' width='80' height='40' rx='6'/><text class='d-sub' x='430' y='115' text-anchor='middle'>Player</text></svg>\n\n| Flow | Detail |\n|---|---|\n| Ingest | presigned S3 multipart + checksum; transcode to 144p–4K buffered queue |\n| Metadata | `videos` table (MySQL) + `thumbs` in S3, search via Elasticsearch |\n| Delivery | `HLS/DASH` segmented, edge CDN `Cache-Control: public, max-age=31536000, immutable` |\n| Social | like/comment via message queue fan-out |\n\n**Interview tip:** call out `adaptive bitrate` and `shot-based encoding` (Netflix) for quality/cost.",
+    examples: [
+      {
+        label: "Presigned upload + HLS",
+        variants: [
+          { tech: "python", runnable: true, code: "import boto3\ns3=boto3.client('s3')\nurl=s3.generate_presigned_url('put_object', Params={'Bucket':'videos','Key':'raw/123.mp4'}, ExpiresIn=3600)\nprint('presigned',url[:60])\n# client PUTs raw, then SQS triggers transcode to HLS 144p..4K\nprint('transcode -> HLS segments + m3u8')" },
+          { tech: "javascript", runnable: true, code: "const url = 'https://cdn.example.com/videos/123/720p.m3u8';\nconsole.log('HLS manifest',url);\n// <video src=\"720p.m3u8\"> adapts via hls.js\nconst levels=['144p','480p','720p','4K'];\nconsole.log('bitrates',levels.join(','));" },
+          { tech: "go", runnable: false, code: "package main\nimport \"fmt\"\nfunc main(){\n  fmt.Println(\"Generate presigned PUT for raw/123.mp4\")\n  fmt.Println(\"SQS -> transcode HLS 144p..4K\")\n  fmt.Println(\"CDN Cache-Control: immutable\")\n}" },
+          { tech: "java", runnable: false, code: "public class Main{\n  public static void main(String[] args){\n    System.out.println(\"Presigned PUT raw/123.mp4\");\n    System.out.println(\"Transcode HLS 144p..4K -> S3 + CDN\");\n  }\n}" },
+        ],
+      },
+    ],
+  },
+  {
+    title: "How would you design Google Drive?",
+    answer:
+      "## Design Google Drive\n\nDrive needs **large file sync**, **conflict resolution**, and **offline**.\n\n| Piece | Pattern |\n|---|---|\n| Chunking | `4MB` blocks + `SHA-256` per chunk; only changed blocks uploaded |\n| Sync | `Differential Sync` (Neil Fraser) — diff local vs server, 3-way merge |\n| Storage | `S3` multipart + `WAL` for resumable; metadata in `MySQL` |\n| Conflict | `LWW` + user prompt if concurrent edit on same block; tombstone on delete |\n\n**Interview tip:** mention `block vs file` dedup and `presigned URL` for direct browser↔S3.",
+    examples: [
+      {
+        label: "Chunked upload",
+        variants: [
+          { tech: "python", runnable: true, code: "import hashlib\ndef chunks(data, n=4):\n    return [data[i:i+n] for i in range(0,len(data),n)]\n\ndata=b'hello world file content here'\nfor c in chunks(data,4):\n    print(hashlib.sha256(c).hexdigest()[:8], c)\nprint('only changed chunks re-uploaded')" },
+          { tech: "javascript", runnable: true, code: "function chunks(data,n=4){\n  const out=[];\n  for(let i=0;i<data.length;i+=n) out.push(data.slice(i,i+n));\n  return out;\n}\nconst data='hello world file';\nchunks(data,4).forEach(c=> console.log(c));\nconsole.log('dedup by hash')" },
+          { tech: "go", runnable: false, code: "package main\nimport (\"crypto/sha256\"; \"fmt\")\nfunc main(){\n  data:=[]byte(\"hello world\")\n  for i:=0;i<len(data);i+=4{\n    end:=i+4; if(end>len(data)){end=len(data)}\n    h:=sha256.Sum256(data[i:end])\n    fmt.Printf(\"%x %s\\n\", h[:4], data[i:end])\n  }\n}" },
+          { tech: "java", runnable: false, code: "import java.security.*;\npublic class Main{\n  public static void main(String[] a) throws Exception{\n    byte[] data=\"hello world\".getBytes();\n    MessageDigest md=MessageDigest.getInstance(\"SHA-256\");\n    for(int i=0;i<data.length;i+=4){\n      int e=Math.min(i+4,data.length);\n      md.update(data,i,e-i);\n      System.out.printf(\"%x %s%n\", md.digest()[0], new String(data,i,e-i));\n    }\n  }\n}" },
+        ],
+      },
+    ],
+  },
+  {
+    title: "How would you design Nearby Friends?",
+    answer:
+      "## Design Nearby Friends\n\nShow friends within `r` km, updating as users move — **write-heavy location** + **read-heavy geosearch**.\n\n<svg class='iq-diagram' viewBox='0 0 480 200' role='img' aria-label='Nearby friends geohash'><rect class='d-box' x='12' y='80' width='80' height='44' rx='6'/><text class='d-sub' x='52' y='106' text-anchor='middle'>Mobile</text><rect class='d-box-accent' x='140' y='80' width='110' height='44' rx='8'/><text class='d-text' x='195' y='100' text-anchor='middle'>Geohash</text><text class='d-sub' x='195' y='116' text-anchor='middle'>6-char</text><rect class='d-box' x='300' y='40' width='80' height='40' rx='6'/><text class='d-sub' x='340' y='64' text-anchor='middle'>Redis GEO</text><rect class='d-box' x='300' y='140' width='80' height='40' rx='6'/><text class='d-sub' x='340' y='164' text-anchor='middle'>Social graph</text></svg>\n\n| Trade | Choice |\n|---|---|\n| Index | `Geohash` `6` chars (~1km cell) + `Redis GEOADD/GEORADIUS` | `O(log N)` |\n| Privacy | `share = explicit opt-in` + `TTL 5m` on location | auto-expire |\n| Fan-out | pull on open (query geohash neighbors) not push | scale |\n\n**Interview tip:** mention `Quadtree` vs `Geohash` and `Haversine` distance.",
+    examples: [
+      {
+        label: "Geohash + Redis GEO",
+        variants: [
+          { tech: "python", runnable: true, code: "import math\ndef geohash(lat,lon):\n    return f\"{int((lat+90)*100):04d}{int((lon+180)*100):04d}\"[:6]\nprint(geohash(37.77,-122.41))\nprint('GEOADD key lon lat member');\nprint('GEORADIUS key -122.41 37.77 1 km')" },
+          { tech: "javascript", runnable: true, code: "function geohash(lat,lon){ return `${Math.floor((lat+90)*100)}${Math.floor((lon+180)*100)}`.slice(0,6); }\nconsole.log(geohash(37.77,-122.41));\nconsole.log('redis GEOADD nearby lon lat user:42');" },
+          { tech: "go", runnable: false, code: "package main\nimport \"fmt\"\nfunc geohash(lat,lon float64) string{ return fmt.Sprintf(\"%04d%04d\", int((lat+90)*100), int((lon+180)*100)) }\nfunc main(){ fmt.Println(geohash(37.77,-122.41)) }" },
+          { tech: "java", runnable: false, code: "public class Main{\n  static String geohash(double lat,double lon){ return String.format(\"%04d%04d\", (int)((lat+90)*100),(int)((lon+180)*100)).substring(0,6);} \n  public static void main(String[] a){ System.out.println(geohash(37.77,-122.41)); }\n}" },
+        ],
+      },
+    ],
+  },
+  {
+    title: "How would you design Google Maps?",
+    answer:
+      "## Design Google Maps\n\nMaps needs **tiles**, **places search**, **routing**, and **live traffic**.\n\n| Layer | Stack |\n|---|---|\n| Tiles | `256×256` PNG/WebP pyramids `z/x/y` CDN `immutable` + client cache |\n| Places | `Elasticsearch` + `Geohash` inverted index |\n| Routing | `Graph` `A*` + `Contraction Hierarchies` precompute; `Dijkstra` not at scale |\n| Traffic | `Kafka` probe aggregation `window 1m` + `Bayesian` ETA |\n\n**Interview tip:** mention `map matching` and `vector tiles` vs raster.",
+    examples: [
+      {
+        label: "Tile + A*",
+        variants: [
+          { tech: "python", runnable: true, code: "def tile(x,y,z): return f\"/{z}/{x}/{y}.png\"\nprint(tile(10,15,5))\n# A* stub: f = g + h\nprint('A* needs Contraction Hierarchies at scale')" },
+          { tech: "javascript", runnable: true, code: "function tile(x,y,z){ return `/${z}/${x}/${y}.png`; }\nconsole.log(tile(10,15,5));\nconsole.log('Precompute CH for A*');" },
+          { tech: "go", runnable: false, code: "package main\nimport \"fmt\"\nfunc tile(x,y,z int) string{ return fmt.Sprintf(\"/%d/%d/%d.png\",z,x,y)}\nfunc main(){ fmt.Println(tile(10,15,5))}" },
+          { tech: "java", runnable: false, code: "public class Main{ static String tile(int x,int y,int z){return \"/\"+z+\"/\"+x+\"/\"+y+\".png\";} public static void main(String[] a){System.out.println(tile(10,15,5));}}" },
+        ],
+      },
+    ],
+  },
+  {
+    title: "How would you design a distributed message queue?",
+    answer:
+      "## Design a Distributed Message Queue\n\nA queue must **persist orders**, **scale consumers**, and **survive broker loss**.\n\n<svg class='iq-diagram' viewBox='0 0 480 200' role='img' aria-label='Message queue partitions'><rect class='d-box' x='12' y='80' width='70' height='44' rx='6'/><text class='d-sub' x='47' y='106' text-anchor='middle'>Producer</text><rect class='d-box-accent' x='130' y='88' width='110' height='44' rx='8'/><text class='d-text' x='185' y='106' text-anchor='middle'>Partitions</text><text class='d-sub' x='185' y='122' text-anchor='middle'>p0 p1 p2</text><rect class='d-box' x='290' y='40' width='80' height='40' rx='6'/><text class='d-sub' x='330' y='64' text-anchor='middle'>Consumers</text><rect class='d-box' x='290' y='140' width='80' height='40' rx='6'/><text class='d-sub' x='330' y='164' text-anchor='middle'>ZooKeeper</text></svg>\n\n| Choice | Detail |\n|---|---|\n| Partitions | hash `key % partitions` for ordering per key; scale by adding partitions |\n| Durability | `WAL` + `replication factor 3` + `acks=all` |\n| Consumer | `pull` + `offset` commit; `consumer group` rebalances |\n\n**Interview tip:** mention `Kafka vs SQS` (ordering, pull vs push).",
+    examples: [
+      {
+        label: "Partitions",
+        variants: [
+          { tech: "python", runnable: true, code: "partitions=3\ndef part(key): return hash(key)%partitions\nfor k in ['user:1','order:7','user:2']:\n    print(k, '-> p', part(k))" },
+          { tech: "javascript", runnable: true, code: "const P=3;\nfunction part(k){ let h=0; for(let i=0;i<k.length;i++) h=(h*31+k.charCodeAt(i))%P; return h; }\n['user:1','order:7'].forEach(k=> console.log(k,'-> p'+part(k)));" },
+          { tech: "go", runnable: false, code: "package main\nimport (\"fmt\"; \"hash/fnv\")\nfunc part(k string) int{ h:=fnv.New32a(); h.Write([]byte(k)); return int(h.Sum32()%3)}\nfunc main(){ fmt.Println(part(\"user:1\"))}" },
+          { tech: "java", runnable: false, code: "public class Main{ static int part(String k){return Math.abs(k.hashCode())%3;} public static void main(String[] a){System.out.println(part(\"user:1\"));}}" },
+        ],
+      },
+    ],
+  },
+  {
+    title: "How would you design a metrics monitoring and alerting system?",
+    answer:
+      "## Design Metrics Monitoring & Alerting\n\nIngest **10M metrics/s**, store for `90d`, alert in `<1m`.\n\n| Stage | Tech |\n|---|---|\n| Ingest | `Kafka` + `OpenTelemetry` `OTLP` + `throttle` |\n| Storage | `TSDB` `Prometheus/M3/ClickHouse` `sharded by metric+labels` |\n| Alerting | `SLO` `burn rate` `window 5m` `for 2m` + `Alertmanager` dedup/group/route |\n| Query | `PromQL` `rate(metric[5m])` + downsample `1m→1h` |\n\n**Interview tip:** mention ` cardinality explosion` and `head vs tail sampling`.",
+    examples: [
+      {
+        label: "PromQL alert",
+        variants: [
+          { tech: "python", runnable: true, code: "query='rate(http_requests_total[5m]) > 100'\nprint('PromQL:',query)\nprint('Alert for burn rate >2x for 2m')" },
+          { tech: "javascript", runnable: true, code: "const q='rate(metric[5m])';\nconsole.log('PromQL',q);\nconsole.log('Alert if >100 for 2m');" },
+          { tech: "go", runnable: false, code: "package main\nimport \"fmt\"\nfunc main(){ fmt.Println(\"rate(metric[5m]) > 100\")}" },
+          { tech: "java", runnable: false, code: "public class Main{ public static void main(String[] a){ System.out.println(\"rate(metric[5m])\");}}" },
+        ],
+      },
+    ],
+  },
+  {
+    title: "How would you design a hotel reservation system?",
+    answer:
+      "## Design Hotel Reservation System\n\nMust prevent **double-booking** under concurrency.\n\n| Step | Pattern |\n|---|---|\n| Availability | `rooms` table + `inventory` per `date` row, `SELECT … FOR UPDATE` or `optimistic version` |\n| Hold | `Redis` lock `SET NX EX 10m` on `hotel+date` → create `PENDING` reservation |\n| Payment | `Saga` `reserve → pay → confirm` + `outbox` for idempotency |\n| Search | `Elasticsearch` + `geohash` + `date` filter |\n\n**Interview tip:** mention `idempotency key` on reserve.",
+    examples: [
+      {
+        label: "Reserve with lock",
+        variants: [
+          { tech: "python", runnable: true, code: "import time\nlocks={}\ndef reserve(hotel,date):\n    key=f\"{hotel}:{date}\"\n    if locks.get(key): return False\n    locks[key]=time.time()+600\n    print('hold',key)\n    return True\nprint(reserve('h1','2025-08-31'))\nprint(reserve('h1','2025-08-31'))" },
+          { tech: "javascript", runnable: true, code: "const locks=new Map();\nfunction reserve(h,d){\n  const k=`${h}:${d}`;\n  if(locks.has(k)) return false;\n  locks.set(k,Date.now()+600000);\n  console.log('hold',k); return true;\n}\nconsole.log(reserve('h1','2025-08-31'));\nconsole.log(reserve('h1','2025-08-31'));" },
+          { tech: "go", runnable: false, code: "package main\nimport \"fmt\"\nvar locks=map[string]bool{}\nfunc reserve(h,d string) bool{ k:=h+\":\"+d; if locks[k]{return false}; locks[k]=true; fmt.Println(\"hold\",k); return true}\nfunc main(){ fmt.Println(reserve(\"h1\",\"2025-08-31\"))}" },
+          { tech: "java", runnable: false, code: "import java.util.*;\npublic class Main{ static Set<String> locks=new HashSet<>(); static boolean reserve(String h,String d){String k=h+\":\"+d; if(!locks.add(k)) return false; System.out.println(\"hold \"+k); return true;} public static void main(String[] a){System.out.println(reserve(\"h1\",\"2025-08-31\"));}}" },
+        ],
+      },
+    ],
+  },
+  {
+    title: "How would you design S3-like object storage?",
+    answer:
+      "## Design S3-like Object Storage\n\nS3 provides **11x9 durability** via `erasure coding` + **strong read-after-write**.\n\n| Layer | Detail |\n|---|---|\n| Data plane | `PUT` → `consistent hashing` to `shard` → `WAL` + `EC 6+3` across AZs |\n| Metadata | `MySQL` `bucket/key → shard` + `R/W quorum` |\n| Multipart | `CreateMultipartUpload` `uploadId` + parallel `UploadPart 5MB-5GB` + `Complete` |\n| Consistency | `read quorum` + `versioning` |\n\n**Interview tip:** mention `presigned URL` and `lifecycle` rules.",
+    examples: [
+      {
+        label: "Multipart upload",
+        variants: [
+          { tech: "python", runnable: true, code: "uploadId='abc123'\nparts=[('part1',1),('part2',2)]\nfor data, num in parts:\n    print(f'UploadPart {uploadId} part {num}')\nprint('CompleteMultipartUpload',uploadId)" },
+          { tech: "javascript", runnable: true, code: "const uploadId='abc123';\n['part1','part2'].forEach((p,i)=> console.log(`UploadPart ${uploadId} part ${i+1}`));\nconsole.log('Complete',uploadId);" },
+          { tech: "go", runnable: false, code: "package main\nimport \"fmt\"\nfunc main(){ fmt.Println(\"UploadPart abc123 part 1\"); fmt.Println(\"Complete\")}" },
+          { tech: "java", runnable: false, code: "public class Main{ public static void main(String[] a){ System.out.println(\"UploadPart abc123\");}}" },
+        ],
+      },
+    ],
+  },
+  {
+    title: "How would you design a distributed email service?",
+    answer:
+      "## Design Distributed Email Service\n\n| Stage | Detail |\n|---|---|\n| Send | `API` → `queue` → `workers` `pull` `10/s per IP` throttled |\n| Reputation | `IP warmup` + `SPF/DKIM/DMARC` + `feedback loop` |\n| Storage | `S3` raw + `MySQL` `status` (`queued/sent/bounced/complained`) |\n| Retry | `exponential backoff` `5m,30m,2h` + `DLQ` |\n\n**Interview tip:** mention `suppression list` on hard bounce.",
+    examples: [
+      {
+        label: "Throttled send",
+        variants: [
+          { tech: "python", runnable: true, code: "import time\nsent=0\ndef send(email):\n    global sent\n    if sent>=10: print('throttle'); return False\n    sent+=1; print('sent',email); return True\nfor e in ['a@x.com','b@x.com']:\n    send(e)" },
+          { tech: "javascript", runnable: true, code: "let sent=0;\nfunction send(e){ if(sent>=10){console.log('throttle'); return false;} sent++; console.log('sent',e); return true;}\n['a@x.com','b@x.com'].forEach(send);" },
+          { tech: "go", runnable: false, code: "package main\nimport \"fmt\"\nfunc main(){ fmt.Println(\"throttle 10/s per IP\")}" },
+          { tech: "java", runnable: false, code: "public class Main{ public static void main(String[] a){ System.out.println(\"throttle\");}}" },
+        ],
+      },
+    ],
+  },
+  {
+    title: "How would you design ad click event aggregation?",
+    answer:
+      "## Design Ad Click Event Aggregation\n\nCount `clicks/impressions` per `ad` per `minute` for billing, `late events` handled.\n\n| Layer | Tech |\n|---|---|\n| Ingest | `Kafka` `ad_clicks` `100K/s` |\n| Window | `Flink` `tumble 1m` `event-time` + `watermark 30s` + `allowed lateness 1m` |\n| Store | `ClickHouse` `AggregatingMergeTree` |\n| Dedup | `idempotency key` `ad+user+timestamp` `Bloom` |\n\n**Interview tip:** mention `exactly-once` via `idempotent consumer`.",
+    examples: [
+      {
+        label: "Tumble window",
+        variants: [
+          { tech: "python", runnable: true, code: "from collections import defaultdict\nwindows=defaultdict(int)\nfor ts, ad in [(0,'a1'),(10,'a1'),(70,'a1')]:\n    w=ts//60\n    windows[(ad,w)]+=1\nprint(windows)" },
+          { tech: "javascript", runnable: true, code: "const w=new Map();\nfor(const [ts,ad] of [[0,'a1'],[10,'a1'],[70,'a1']]){\n  const k=`${ad}:${Math.floor(ts/60)}`;\n  w.set(k,(w.get(k)||0)+1);\n}\nconsole.log([...w]);" },
+          { tech: "go", runnable: false, code: "package main\nimport \"fmt\"\nfunc main(){ fmt.Println(\"Flink tumble 1m\")}" },
+          { tech: "java", runnable: false, code: "public class Main{ public static void main(String[] a){ System.out.println(\"Flink\");}}" },
+        ],
+      },
+    ],
+  },
+  {
+    title: "How would you design a real-time gaming leaderboard?",
+    answer:
+      "## Design Real-time Gaming Leaderboard\n\nGlobal `top 100` + `around me` `O(log N)` updates at `10K/s`.\n\n<svg class='iq-diagram' viewBox='0 0 480 180' role='img' aria-label='Gaming leaderboard Redis sorted set'><rect class='d-box' x='12' y='70' width='80' height='40' rx='6'/><text class='d-sub' x='52' y='94' text-anchor='middle'>Game</text><rect class='d-box-accent' x='140' y='68' width='110' height='44' rx='8'/><text class='d-text' x='195' y='86' text-anchor='middle'>Redis</text><text class='d-sub' x='195' y='102' text-anchor='middle'>ZSET scores</text><rect class='d-box' x='300' y='40' width='80' height='40' rx='6'/><text class='d-sub' x='340' y='64' text-anchor='middle'>Top 100</text><rect class='d-box' x='300' y='100' width='80' height='40' rx='6'/><text class='d-sub' x='340' y='124' text-anchor='middle'>Around me</text></svg>\n\n| Query | Cmd |\n|---|---|\n| Update | `ZADD leaderboard score userId` |\n| Top N | `ZREVRANGE 0 N-1 WITHSCORES` |\n| Rank | `ZREVRANK userId` + `ZREVRANGE rank-2 rank+2` |\n| Shard | `hash(userId) % shards` |\n\n**Interview tip:** mention `TTL` season reset.",
+    examples: [
+      {
+        label: "ZSET",
+        variants: [
+          { tech: "python", runnable: true, code: "scores={'alice':100,'bob':150}\nsorted_scores=sorted(scores.items(), key=lambda x: x[1], reverse=True)\nprint('top',sorted_scores[:2])\nprint('rank bob', [k for k,v in sorted_scores].index('bob'))" },
+          { tech: "javascript", runnable: true, code: "const s={alice:100,bob:150};\nconst sorted=Object.entries(s).sort((a,b)=>b[1]-a[1]);\nconsole.log('top',sorted.slice(0,2));" },
+          { tech: "go", runnable: false, code: "package main\nimport \"fmt\"\nfunc main(){ fmt.Println(\"ZADD leaderboard 150 bob\")}" },
+          { tech: "java", runnable: false, code: "public class Main{ public static void main(String[] a){ System.out.println(\"ZADD\");}}" },
+        ],
+      },
+    ],
+  },
+  {
+    title: "How would you design a unique ID generator at scale?",
+    answer:
+      "## Design a Unique ID Generator\n\nNeed `64-bit` `k-sorted` `10K/s` without coordination per ID.\n\n| Approach | How | Trade |\n|---|---|---|\n| Snowflake | `41b timestamp + 10b shard + 12b seq` | clock skew needs `NTP` + `sequence` reset |\n| Ticket server | `MySQL AUTO_INCREMENT` | SPOF, `2K/s` |\n| UUID v4 | random 122b | not k-sorted, index fragment |\n\n**Interview tip:** mention `clock backward` handling (wait or throw).",
+    examples: [
+      {
+        label: "Snowflake",
+        variants: [
+          { tech: "python", runnable: true, code: "import time\nEPOCH=1609459200000\ndef snowflake(shard,seq):\n    ts=int(time.time()*1000)-EPOCH\n    return (ts<<22)|(shard<<12)|seq\nprint(snowflake(1,1))" },
+          { tech: "javascript", runnable: true, code: "const EPOCH=1609459200000n;\nfunction snowflake(shard,seq){\n  const ts=BigInt(Date.now())-EPOCH;\n  return (ts<<22n)|(BigInt(shard)<<12n)|BigInt(seq);\n}\nconsole.log(String(snowflake(1,1)));" },
+          { tech: "go", runnable: false, code: "package main\nimport (\"fmt\";\"time\")\nfunc snowflake(shard,seq int64) int64{ ts:=time.Now().UnixMilli()-1609459200000; return (ts<<22)|(shard<<12)|seq }\nfunc main(){ fmt.Println(snowflake(1,1))}" },
+          { tech: "java", runnable: false, code: "public class Main{ static long EPOCH=1609459200000L; static long snowflake(int shard,int seq){ long ts=System.currentTimeMillis()-EPOCH; return (ts<<22)|(shard<<12)|seq; } public static void main(String[] a){ System.out.println(snowflake(1,1));}}" },
+        ],
+      },
+    ],
+  },
+  {
+    title: "How would you design a payment system?",
+    answer:
+      "## Design a Payment System\n\nPayments require **exactly-once effect** despite at-least-once networks.\n\n| Concern | Pattern |\n|---|---|\n| Idempotency | `idempotency-key` `UNIQUE` on `payments` table; retry returns same result |\n| State | `PENDING → AUTHORIZED → CAPTURED → SETTLED` `Saga` + `outbox` |\n| Double spend | `optimistic locking` `version` on wallet `UPDATE … WHERE version=?` |\n| Reconciliation | `ledger` `double-entry` + nightly `batch` vs `Stripe` |\n\n**Interview tip:** mention `PCI DSS` tokenization.",
+    examples: [
+      {
+        label: "Idempotency",
+        variants: [
+          { tech: "python", runnable: true, code: "store={}\ndef pay(key, amt):\n    if key in store: return store[key]\n    store[key]=f'paid {amt}'\n    return store[key]\nprint(pay('idemp-1',100))\nprint(pay('idemp-1',100))" },
+          { tech: "javascript", runnable: true, code: "const store=new Map();\nfunction pay(k,amt){\n  if(store.has(k)) return store.get(k);\n  const v=`paid ${amt}`; store.set(k,v); return v;\n}\nconsole.log(pay('idemp-1',100));\nconsole.log(pay('idemp-1',100));" },
+          { tech: "go", runnable: false, code: "package main\nimport \"fmt\"\nvar store=map[string]string{}\nfunc pay(k string, amt int) string{ if v,ok:=store[k]; ok{return v}; v:=fmt.Sprintf(\"paid %d\",amt); store[k]=v; return v}\nfunc main(){ fmt.Println(pay(\"idemp-1\",100))}" },
+          { tech: "java", runnable: false, code: "import java.util.*;\npublic class Main{ static Map<String,String> s=new HashMap<>(); static String pay(String k,int a){ if(s.containsKey(k)) return s.get(k); String v=\"paid \"+a; s.put(k,v); return v; } public static void main(String[] a){ System.out.println(pay(\"idemp-1\",100));}}" },
+        ],
+      },
+    ],
+  },
+];
+export default augments;

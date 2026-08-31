@@ -1,0 +1,38 @@
+﻿{
+    "steps":  [
+                  {
+                      "label":  "tsc --noEmit",
+                      "ok":  true,
+                      "seconds":  9,
+                      "output":  ""
+                  },
+                  {
+                      "label":  "lint (scoped)",
+                      "ok":  false,
+                      "seconds":  77,
+                      "error":  "Exit 1\n\r\nC:\\Users\\arvin\\OneDrive\\Desktop\\claude\\code\\codepad\\src\\app\\admin\\creators\\[handle]\\page.tsx\r\n   5:51  warning  \u0027LayoutGrid\u0027 is defined but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     @typescript-eslint/no-unused-vars\r\n  38:32  error    Error: Cannot call impure function during render\r\n\r\n`Date.now` is an impure function. Calling an impure function can produce unstable results that update unpredictably when the component happens to re-render. (https://react.dev/reference/rules/components-and-hooks-must-be-pure#components-and-hooks-must-be-idempotent).\r\n\r\nC:\\Users\\arvin\\OneDrive\\Desktop\\claude\\code\\codepad\\src\\app\\admin\\creators\\[handle]\\page.tsx:38:32\r\n  36 |   if (!space) notFound();\r\n  37 |\r\n\u003e 38 |   const windowStart = new Date(Date.now() - WINDOW_DAYS * DAY_MS);\r\n     |                                ^^^^^^^^^^ Cannot call impure function\r\n  39 |\r\n  40 |   const [owner, tiers, account, contentCount, viewEvents, followRows30d, memberRows30d, earningsList, versions, recentEvents] = await Promise.all([\r\n  41 |     prisma.user.findUnique({ where: { id: space.ownerId }, select: { name: true, email: true, image: true } }),  react-hooks/purity\r\n\r\nΓ£û 2 problems (1 error, 1 warning)\r\n\r\n"
+                  },
+                  {
+                      "label":  "unit (all)",
+                      "ok":  true,
+                      "seconds":  4,
+                      "output":  "\r\n\u003e codepad@0.1.0 test:unit\r\n\u003e vitest run --run\r\n\r\n\r\n\u001b[1m\u001b[30m\u001b[46m RUN \u001b[49m\u001b[39m\u001b[22m \u001b[36mv4.1.8 \u001b[39m\u001b[90mC:/Users/arvin/OneDrive/Desktop/claude/code/codepad\u001b[39m\r\n\r\n \u001b[32mΓ£ô\u001b[39m tests/unit/proctor-agent.test.ts \u001b[2m(\u001b[22m\u001b[2m10 tests\u001b[22m\u001b[2m)\u001b[22m\u001b[32m 6\u001b[2mms\u001b[22m\u001b[39m\r\n \u001b[32mΓ£ô\u001b[39m tests/unit/review-grader.test.ts \u001b[2m(\u001b[22m\u001b[2m7 tests\u001b[22m\u001b[2m)\u001b[22m\u001b[32m 6\u001b[2mms\u001b[22m\u001b[39m\r\n \u001b[32mΓ£ô\u001b[39m tests/unit/srs.test.ts \u001b[2m(\u001b[22m\u001b[2m5 tests\u001b[22m\u001b[2m)\u001b[22m\u001b[32m 6\u001b[2mms\u001b[22m\u001b[39m\r\n \u001b[32mΓ£ô\u001b[39m tests/unit/route-guards.test.ts \u001b[2m(\u001b[22m\u001b[2m6 tests\u001b[22m\u001b[2m)\u001b[22m\u001b[32m 6\u001b[2mms\u001b[22m\u001b[39m\r\n \u001b[32mΓ£ô\u001b[39m tests/unit/tokens.test.ts \u001b[2m(\u001b[22m\u001b[2m16 tests\u001b[22m\u001b[2m)\u001b[22m\u001b[32m 16\u001b[2mms\u001b[22m\u001b[39m\r\n \u001b[32mΓ£ô\u001b[39m tests/unit/proctoring.test.ts \u001b[2m(\u001b[22m\u001b[2m8 tests\u001b[22m\u001b[2m)\u001b[22m\u001b[32m 9\u001b[2mms\u001b[22m\u001b[39m\r\n \u001b[32mΓ£ô\u001b[39m tests/unit/blocks.test.ts \u001b[2m(\u001b[22m\u001b[2m13 tests\u001b[22m\u001b[2m)\u001b[22m\u001b[32m 18\u001b[2mms\u001b[22m\u001b[39m\r\n \u001b[32mΓ£ô\u001b[39m tests/unit/security.test.ts \u001b[2m(\u001b[22m\u001b[2m12 tests\u001b[22m\u001b[2m)\u001b[22m\u001b[32m 18\u001b[2mms\u001b[22m\u001b[39m\r\n \u001b[32mΓ£ô\u001b[39m tests/unit/workspace-tenant.test.ts \u001b[2m(\u001b[22m\u001b[2m1 test\u001b[22m\u001b[2m)\u001b[22m\u001b[32m 4\u001b[2mms\u001b[22m\u001b[39m\r\n \u001b[32mΓ£ô\u001b[39m tests/unit/marketplace.test.ts \u001b[2m(\u001b[22m\u001b[2m4 tests\u001b[22m\u001b[2m)\u001b[22m\u001b[32m 4\u001b[2mms\u001b[22m\u001b[39m\r\n \u001b[32mΓ£ô\u001b[39m tests/unit/space-access.test.ts \u001b[2m(\u001b[22m\u001b[2m8 tests\u001b[22m\u001b[2m)\u001b[22m\u001b[32m 4\u001b[2mms\u001b[22m\u001b[39m\r\n \u001b[32mΓ£ô\u001b[39m tests/unit/permissions.test.ts \u001b[2m(\u001b[22m\u001b[2m27 tests\u001b[22m\u001b[2m)\u001b[22m\u001b[32m 9\u001b[2mms\u001b[22m\u001b[39m\r\n\r\n\u001b[2m Test Files \u001b[22m \u001b[1m\u001b[32m12 passed\u001b[39m\u001b[22m\u001b[90m (12)\u001b[39m\r\n\u001b[2m      Tests \u001b[22m \u001b[1m\u001b[32m117 passed\u001b[39m\u001b[22m\u001b[90m (117)\u001b[39m\r\n\u001b[2m   Start at \u001b[22m 09:35:51\r\n\u001b[2m   Duration \u001b[22m 2.30s\u001b[2m (transform 2.11s, setup 2.58s, import 2.43s, tests 108ms, environment 17.25s)\u001b[22m\r\n\r\n"
+                  },
+                  {
+                      "label":  "prisma migrate deploy (staging guard)",
+                      "ok":  true,
+                      "seconds":  4,
+                      "output":  "Environment variables loaded from .env\r\nPrisma schema loaded from prisma\\schema.prisma\r\nThe schema at prisma\\schema.prisma is valid ≡ƒÜÇ\r\n"
+                  },
+                  {
+                      "label":  "evidence stage8 probe",
+                      "ok":  true,
+                      "seconds":  0
+                  }
+              ],
+    "finishedAt":  "2026-08-30T09:35:58.2927717+05:30",
+    "seconds":  94,
+    "startedAt":  "2026-08-30T09:34:24.3160855+05:30",
+    "ok":  true,
+    "stage":  8
+}

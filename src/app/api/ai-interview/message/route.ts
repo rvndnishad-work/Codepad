@@ -644,11 +644,12 @@ export async function POST(req: NextRequest) {
     const apiKey = geminiApiKey();
     let aiResponse = "";
     let toolCallsThisTurn: string[] = [];
-    // Honest provenance for the client: "gemini" means a real model reply,
+    // Honest provenance for the client: "together"/"gemini" means a real model reply,
     // "mock" means the offline rules engine answered (upstream down, key
     // missing, or empty response). The UI surfaces this as a status chip +
     // banner instead of silently pretending the AI is fine.
-    let aiProvider: "gemini" | "mock" = "gemini";
+    const effectiveProvider: "together" | "gemini" = (process.env.GLM_API_KEY || process.env.TOGETHER_API_KEY) ? "together" : "gemini";
+    let aiProvider: "together" | "gemini" | "mock" = effectiveProvider;
     let degradedReason: string | null = null;
 
     if (apiKey) {
@@ -682,9 +683,9 @@ export async function POST(req: NextRequest) {
       } catch (err) {
         const detail =
           err instanceof GeminiUnavailableError
-            ? `gemini unavailable (${err.message})`
+            ? `${effectiveProvider} unavailable (${err.message})`
             : "unexpected error";
-        console.error(`[ai-interview] Gemini failed, degrading to mock agent: ${detail}`);
+        console.error(`[ai-interview] ${effectiveProvider} failed, degrading to mock agent: ${detail}`);
         aiProvider = "mock";
         degradedReason = err instanceof GeminiUnavailableError ? "upstream_unavailable" : "upstream_error";
         aiResponse = callMockAgent(message, files, history.length, session.templateId);

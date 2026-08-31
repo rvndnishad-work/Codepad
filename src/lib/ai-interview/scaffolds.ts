@@ -1,11 +1,15 @@
 /**
- * Centralized Gemini model name for AI Interview endpoints. Update here when
- * Google rotates models — touching one constant avoids per-route drift.
- * `gemini-1.5-flash` was retired; `gemini-2.5-flash` still works but 3.5 is
- * the current conversational generation.
+ * Centralized model for AI Interview endpoints. Now points at Together-hosted
+ * zai-org/GLM-5.3-Flash via `AI_INTERVIEW_TOGETHER_MODEL` / `GLM_API_KEY`.
+ * `AI_INTERVIEW_GEMINI_MODEL` kept as alias for backward compat.
  */
-export const AI_INTERVIEW_GEMINI_MODEL =
-  process.env.AI_INTERVIEW_GEMINI_MODEL || "gemini-3.5-flash";
+export const AI_INTERVIEW_TOGETHER_MODEL =
+  process.env.AI_INTERVIEW_TOGETHER_MODEL || "zai-org/GLM-5.3-Flash";
+
+export const AI_INTERVIEW_GLM_MODEL = AI_INTERVIEW_TOGETHER_MODEL;
+
+/** @deprecated use AI_INTERVIEW_TOGETHER_MODEL */
+export const AI_INTERVIEW_GEMINI_MODEL = AI_INTERVIEW_TOGETHER_MODEL;
 
 export interface AIInterviewTemplateDef {
   id: string;

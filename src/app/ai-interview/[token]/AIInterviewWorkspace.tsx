@@ -121,7 +121,7 @@ type AiStatus = {
 
 /** Metadata appended by /api/ai-interview/message on every turn. */
 type MessageTurnMeta = {
-  aiProvider?: "gemini" | "mock";
+  aiProvider?: "together" | "gemini" | "mock";
   degraded?: boolean;
   degradedReason?: string | null;
 };

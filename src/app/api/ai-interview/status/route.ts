@@ -5,7 +5,7 @@ import {
   creditCostForLevel,
   getWorkspaceCredits,
 } from "@/lib/ai-interview/credits";
-import { geminiApiKey, AI_INTERVIEW_GEMINI_MODEL } from "@/lib/ai-interview/gemini";
+import { geminiApiKey, togetherApiKey, AI_INTERVIEW_TOGETHER_MODEL } from "@/lib/ai-interview/gemini";
 
 /**
  * Candidate-facing health probe for an AI screening session.
@@ -53,8 +53,9 @@ export async function GET(req: NextRequest) {
 
   return NextResponse.json({
     ai: {
-      configured: !!geminiApiKey(),
-      model: AI_INTERVIEW_GEMINI_MODEL,
+      configured: !!(togetherApiKey() || geminiApiKey()),
+      model: AI_INTERVIEW_TOGETHER_MODEL,
+      provider: togetherApiKey() ? "together" : "gemini",
     },
     credits,
     deadline: deadline ? deadline.toISOString() : null,

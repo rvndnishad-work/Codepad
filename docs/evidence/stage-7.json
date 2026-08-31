@@ -1,0 +1,20 @@
+﻿{
+    "steps":  [
+                  {
+                      "label":  "tsc --noEmit",
+                      "ok":  true,
+                      "seconds":  15,
+                      "output":  ""
+                  },
+                  {
+                      "label":  "evidence stage7 probe",
+                      "ok":  true,
+                      "seconds":  0
+                  }
+              ],
+    "finishedAt":  "2026-08-29T13:57:09.5841333+05:30",
+    "seconds":  15,
+    "startedAt":  "2026-08-29T13:56:54.3733991+05:30",
+    "ok":  true,
+    "stage":  7
+}

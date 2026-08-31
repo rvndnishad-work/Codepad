@@ -1,4 +1,4 @@
-import { AI_INTERVIEW_GEMINI_MODEL } from "../ai-interview/scaffolds";
+import { AI_INTERVIEW_TOGETHER_MODEL } from "../ai-interview/scaffolds";
 
 export interface RubricScores {
   clarity: number;
@@ -216,13 +216,17 @@ export function runRulesBasedGrader(
   };
 }
 
-// Call Gemini API to perform programmatic grading of prompt writing
+// Call LLM API (Together/GLM preferred) to perform programmatic grading of prompt writing
 export async function callGeminiGrader(
   apiKey: string,
   scenario: ScenarioDetails,
   promptText: string
 ): Promise<GraderResult> {
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/${AI_INTERVIEW_GEMINI_MODEL}:generateContent?key=${apiKey}`;
+  const isTogetherKey = !!(process.env.GLM_API_KEY || process.env.TOGETHER_API_KEY) && apiKey === (process.env.GLM_API_KEY || process.env.TOGETHER_API_KEY);
+  const useTogether = isTogetherKey;
+  const url = useTogether
+    ? `${process.env.TOGETHER_BASE_URL || "https://api.together.xyz/v1"}/chat/completions`
+    : `https://generativelanguage.googleapis.com/v1beta/models/${AI_INTERVIEW_TOGETHER_MODEL.includes("zai-org") ? "gemini-3.5-flash" : AI_INTERVIEW_TOGETHER_MODEL}:generateContent?key=${apiKey}`;
 
   const graderPrompt = `You are the Expert Prompt Engineer Assessor AI.
 Evaluate a candidate's prompt-writing skill based on the following scenario details.
@@ -268,21 +272,40 @@ Output your response strictly as a JSON object containing precisely:
   "feedback": "string containing rich markdown feedback summarizing strengths and improvements"
 }`;
 
-  const res = await fetch(url, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      contents: [{ parts: [{ text: graderPrompt }] }],
-      generationConfig: {
-        responseMimeType: "application/json",
-      },
-    }),
-  });
-
-  if (!res.ok) throw new Error(`Gemini HTTP error ${res.status}`);
-  const data = await res.json();
-  const rawText = data.candidates?.[0]?.content?.parts?.[0]?.text;
-  if (!rawText) throw new Error("Empty grader result from Gemini API");
+  let rawText: string | null = null;
+  if (useTogether) {
+    const res = await fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
+      body: JSON.stringify({
+        model: AI_INTERVIEW_TOGETHER_MODEL,
+        messages: [
+          { role: "system", content: "You are a JSON-only grading agent. Output valid JSON per the requested schema." },
+          { role: "user", content: graderPrompt },
+        ],
+        temperature: 0.2,
+        max_tokens: 1500,
+        response_format: { type: "json_object" },
+      }),
+    });
+    if (!res.ok) throw new Error(`Together HTTP error ${res.status}`);
+    const data = await res.json();
+    rawText = data.choices?.[0]?.message?.content;
+    if (!rawText) throw new Error("Empty grader result from Together API");
+  } else {
+    const res = await fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        contents: [{ parts: [{ text: graderPrompt }] }],
+        generationConfig: { responseMimeType: "application/json" },
+      }),
+    });
+    if (!res.ok) throw new Error(`Gemini HTTP error ${res.status}`);
+    const data = await res.json();
+    rawText = data.candidates?.[0]?.content?.parts?.[0]?.text;
+    if (!rawText) throw new Error("Empty grader result from Gemini API");
+  }
 
   const parsed = JSON.parse(rawText.trim());
 

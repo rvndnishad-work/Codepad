@@ -539,7 +539,7 @@ export default function AIInterviewWorkspace({ session, rounds, initialChat }: P
         shouldRestartRef.current = false;
         finalTranscriptRef.current = "";
         interimTranscriptRef.current = "";
-        // Keep input as-is so user sees what will be sent, then send
+        setInput("");
         handleSendTextRef.current(toSend);
       }, 1400);
     };
@@ -585,6 +585,7 @@ export default function AIInterviewWorkspace({ session, rounds, initialChat }: P
       const toSend = (finalTranscriptRef.current + interimTranscriptRef.current).trim() || input.trim();
       finalTranscriptRef.current = "";
       interimTranscriptRef.current = "";
+      setInput("");
       if (toSend) {
         // Give onend a tick to settle UI before sending
         setTimeout(() => handleSendTextRef.current(toSend), 80);

@@ -102,7 +102,7 @@ export default async function WorkspaceDashboardPage({ params }: Props) {
     select: { id: true, email: true, role: true, expiresAt: true, createdAt: true },
   });
 
-  const [promptScenarios, promptAttempts, globalChallenges, takeHomeSessionRows] = await Promise.all([
+  const [promptScenarios, promptAttempts, globalChallenges, takeHomeSessionRows, aiInterviewRows] = await Promise.all([
     prisma.promptScenario.findMany({
       where: {
         OR: [
@@ -154,6 +154,26 @@ export default async function WorkspaceDashboardPage({ params }: Props) {
       orderBy: { createdAt: "desc" },
       take: 200,
     }),
+    // AI Screening sessions — previously unqueried, hence invisible on Overview
+    prisma.aIInterviewSession.findMany({
+      where: { workspaceId: workspace.id },
+      select: {
+        id: true,
+        candidateName: true,
+        candidateEmail: true,
+        positionTitle: true,
+        status: true,
+        score: true,
+        candidateId: true,
+        inviteToken: true,
+        createdAt: true,
+        startedAt: true,
+        finishedAt: true,
+        templateId: true,
+      },
+      orderBy: { createdAt: "desc" },
+      take: 200,
+    }),
   ]);
 
   const countIds = (raw: string | null | undefined): number => {
@@ -169,6 +189,21 @@ export default async function WorkspaceDashboardPage({ params }: Props) {
     candidateAccessToken: s.candidateAccessToken,
     questionCount: countIds(s.challengeIds) + countIds(s.playgroundIds) + countIds(s.promptScenarioIds),
     createdAt: s.createdAt.toISOString(),
+    finishedAt: s.finishedAt ? s.finishedAt.toISOString() : null,
+  }));
+
+  const aiInterviewSessions = aiInterviewRows.map((s) => ({
+    id: s.id,
+    candidateName: s.candidateName,
+    candidateEmail: s.candidateEmail,
+    positionTitle: s.positionTitle,
+    status: s.status,
+    score: s.score ?? null,
+    candidateId: s.candidateId ?? null,
+    inviteToken: s.inviteToken,
+    templateId: s.templateId,
+    createdAt: s.createdAt.toISOString(),
+    startedAt: s.startedAt ? s.startedAt.toISOString() : null,
     finishedAt: s.finishedAt ? s.finishedAt.toISOString() : null,
   }));
 
@@ -324,6 +359,7 @@ export default async function WorkspaceDashboardPage({ params }: Props) {
         pipelineChallenges={globalChallenges}
         takeHomes={formattedTakeHomes}
         takeHomeSessions={takeHomeSessions}
+        aiInterviewSessions={aiInterviewSessions}
         members={formattedMembers}
         currentUserId={currentUserId}
         roleBasePermissions={roleBasePermissions}

@@ -230,6 +230,21 @@ type TakeHomeSession = {
   finishedAt: string | null;
 };
 
+type AIInterviewSessionItem = {
+  id: string;
+  candidateName: string;
+  candidateEmail: string;
+  positionTitle: string;
+  status: string;
+  score: number | null;
+  candidateId: string | null;
+  inviteToken: string;
+  templateId: string;
+  createdAt: string;
+  startedAt: string | null;
+  finishedAt: string | null;
+};
+
 type Props = {
   workspace: {
     id: string;
@@ -241,6 +256,7 @@ type Props = {
   pipelineChallenges?: any[];
   takeHomes: TakeHome[];
   takeHomeSessions?: TakeHomeSession[];
+  aiInterviewSessions?: AIInterviewSessionItem[];
   members: Member[];
   currentUserId: string | null;
   /** Role key → its concrete workspace permissions (wildcards pre-expanded),
@@ -283,6 +299,7 @@ export default function WorkspaceDashboardClient({
   pipelineChallenges = [],
   takeHomes,
   takeHomeSessions = [],
+  aiInterviewSessions = [],
   members,
   currentUserId,
   roleBasePermissions,
@@ -955,7 +972,7 @@ export default function WorkspaceDashboardClient({
       })),
   ].sort((a, b) => (a.timestamp > b.timestamp ? -1 : 1));
 
-  // Aggregating Activity Data for the Area Chart
+  // Aggregating Activity Data for the Area Chart — now includes AI screenings
   const activityData = useMemo(() => {
     // Generate the last 14 days
     const days: { date: string; displayDate: string; interviews: number; takeHomes: number }[] = [];
@@ -971,11 +988,13 @@ export default function WorkspaceDashboardClient({
       });
     }
 
-    // Honest bucketing: events land on their real creation day; anything
-    // older than the 14-day window simply isn't in this chart. (This used to
-    // scatter out-of-range events onto Math.random() days, which made the
-    // chart non-deterministic and misrepresented when activity happened.)
     sessions.forEach(s => {
+      const dStr = (s.createdAt || "").split('T')[0];
+      const match = days.find(d => d.date === dStr);
+      if (match) match.interviews++;
+    });
+    // AI screenings — previously invisibly zero
+    aiInterviewSessions.forEach(s => {
       const dStr = (s.createdAt || "").split('T')[0];
       const match = days.find(d => d.date === dStr);
       if (match) match.interviews++;
@@ -994,34 +1013,28 @@ export default function WorkspaceDashboardClient({
     });
 
     return days;
-  }, [sessions, currentTakeHomes, takeHomeSessions]);
+  }, [sessions, aiInterviewSessions, currentTakeHomes, takeHomeSessions]);
 
-  // Candidate Pipeline Data
+  // Candidate Pipeline Data — now by pipeline STAGE (APPLIED..REJECTED) so dragging actually moves the bar.
+  // Previous grouped by status (active/hired) which never changed when stage changed.
   const pipelineData = useMemo(() => {
-    const counts: Record<string, number> = {
-      active: 0,
-      future_hire: 0,
-      do_not_hire: 0,
-      hired: 0,
-      rejected: 0,
-      archived: 0,
+    const stageCounts: Record<string, number> = {
+      APPLIED: 0, SCREENED: 0, TAKE_HOME: 0, ONSITE: 0, OFFER: 0, HIRED: 0, REJECTED: 0,
     };
     candidates.forEach(c => {
-      if (counts[c.status] !== undefined) {
-        counts[c.status]++;
-      } else {
-        counts[c.status] = 1;
-      }
+      const s = c.stage || "APPLIED";
+      if (stageCounts[s] !== undefined) stageCounts[s]++;
+      else stageCounts[s] = 1;
     });
-
-    return [
-      { name: "Active", count: counts.active, fill: "var(--color-primary, #8b5cf6)" },
-      { name: "Hired", count: counts.hired, fill: "#10b981" },
-      { name: "Future", count: counts.future_hire, fill: "#3b82f6" },
-      { name: "Rejected", count: counts.rejected, fill: "#f43f5e" },
-      { name: "No Hire", count: counts.do_not_hire, fill: "#f59e0b" },
-      { name: "Archived", count: counts.archived, fill: "#6b7280" },
-    ].filter(d => d.count > 0);
+    const STAGE_FILL: Record<string,string> = {
+      APPLIED: "#8b5cf6", SCREENED: "#6366f1", TAKE_HOME: "#a855f7", ONSITE: "#06b6d4", OFFER: "#f59e0b", HIRED: "#10b981", REJECTED: "#f43f5e",
+    };
+    const STAGE_LABEL: Record<string,string> = {
+      APPLIED: "Applied", SCREENED: "Screened", TAKE_HOME: "Take-Home", ONSITE: "Onsite", OFFER: "Offer", HIRED: "Hired", REJECTED: "Rejected",
+    };
+    return (Object.keys(stageCounts) as (keyof typeof stageCounts)[])
+      .map(k => ({ name: STAGE_LABEL[k], count: stageCounts[k], fill: STAGE_FILL[k] }))
+      .filter(d => d.count > 0);
   }, [candidates]);
   const currentStats = useMemo(() => {
     switch (activeTab) {
@@ -1035,11 +1048,11 @@ export default function WorkspaceDashboardClient({
         ];
       case "assessments":
         return [
-          { label: "Total Interviews", value: sessions.length, icon: Briefcase, colorClass: "text-violet-500", bgClass: "bg-violet-500/10", borderClass: "border-violet-500/20", gradClass: "from-violet-500/5" },
+          { label: "Total Interviews", value: sessions.length + aiInterviewSessions.length, icon: Briefcase, colorClass: "text-violet-500", bgClass: "bg-violet-500/10", borderClass: "border-violet-500/20", gradClass: "from-violet-500/5" },
           { label: "Total Take-homes", value: currentTakeHomes.length + takeHomeSessions.length, icon: Clock, colorClass: "text-indigo-500", bgClass: "bg-indigo-500/10", borderClass: "border-indigo-500/20", gradClass: "from-indigo-500/5" },
-          { label: "Live Sessions", value: sessions.filter(s => !!s.startedAt && !s.finishedAt).length, icon: Play, colorClass: "text-emerald-500", bgClass: "bg-emerald-500/10", borderClass: "border-emerald-500/20", gradClass: "from-emerald-500/5" },
-          { label: "Completed", value: sessions.filter(s => !!s.finishedAt).length + currentTakeHomes.filter(t => t.status === 'SUBMITTED').length, icon: CheckCircle2, colorClass: "text-blue-500", bgClass: "bg-blue-500/10", borderClass: "border-blue-500/20", gradClass: "from-blue-500/5" },
-          { label: "Pending", value: sessions.filter(s => !s.startedAt).length + currentTakeHomes.filter(t => t.status === 'PENDING').length, icon: Clock, colorClass: "text-amber-500", bgClass: "bg-amber-500/10", borderClass: "border-amber-500/20", gradClass: "from-amber-500/5" },
+          { label: "Live Sessions", value: sessions.filter(s => !!s.startedAt && !s.finishedAt).length + aiInterviewSessions.filter(s => !!s.startedAt && !s.finishedAt).length, icon: Play, colorClass: "text-emerald-500", bgClass: "bg-emerald-500/10", borderClass: "border-emerald-500/20", gradClass: "from-emerald-500/5" },
+          { label: "Completed", value: sessions.filter(s => !!s.finishedAt).length + aiInterviewSessions.filter(s => !!s.finishedAt).length + currentTakeHomes.filter(t => t.status === 'SUBMITTED').length + takeHomeSessions.filter(t => !!t.finishedAt).length, icon: CheckCircle2, colorClass: "text-blue-500", bgClass: "bg-blue-500/10", borderClass: "border-blue-500/20", gradClass: "from-blue-500/5" },
+          { label: "Pending", value: sessions.filter(s => !s.startedAt).length + aiInterviewSessions.filter(s => !s.startedAt && s.status === "PENDING").length + currentTakeHomes.filter(t => t.status === 'PENDING').length + takeHomeSessions.filter(t => t.status === "scheduled" || !t.finishedAt).length, icon: Clock, colorClass: "text-amber-500", bgClass: "bg-amber-500/10", borderClass: "border-amber-500/20", gradClass: "from-amber-500/5" },
         ];
       case "library":
         return [
@@ -1055,14 +1068,14 @@ export default function WorkspaceDashboardClient({
       case "overview":
       default:
         return [
-          { label: "Challenges", value: challenges.length, icon: Trophy, colorClass: "text-amber-500", bgClass: "bg-amber-500/10", borderClass: "border-amber-500/20", gradClass: "from-amber-500/5" },
-          { label: "Interviews", value: sessions.length, icon: Briefcase, colorClass: "text-violet-500", bgClass: "bg-violet-500/10", borderClass: "border-violet-500/20", gradClass: "from-violet-500/5" },
+          { label: "Challenges", value: Math.max(challenges.length, pipelineChallenges.length), icon: Trophy, colorClass: "text-amber-500", bgClass: "bg-amber-500/10", borderClass: "border-amber-500/20", gradClass: "from-amber-500/5" },
+          { label: "Interviews", value: sessions.length + aiInterviewSessions.length, icon: Briefcase, colorClass: "text-violet-500", bgClass: "bg-violet-500/10", borderClass: "border-violet-500/20", gradClass: "from-violet-500/5" },
           { label: "Take-homes", value: currentTakeHomes.length + takeHomeSessions.length, icon: Clock, colorClass: "text-indigo-500", bgClass: "bg-indigo-500/10", borderClass: "border-indigo-500/20", gradClass: "from-indigo-500/5" },
           { label: "Candidates", value: candidates.length, icon: UserCircle2, colorClass: "text-purple-500", bgClass: "bg-purple-500/10", borderClass: "border-purple-500/20", gradClass: "from-purple-500/5" },
           { label: "Members", value: currentMembers.length, icon: Users, colorClass: "text-emerald-500", bgClass: "bg-emerald-500/10", borderClass: "border-emerald-500/20", gradClass: "from-emerald-500/5" },
         ];
     }
-  }, [activeTab, challenges, sessions, currentTakeHomes, takeHomeSessions, candidates, currentMembers, currentPromptScenarios]);
+  }, [activeTab, challenges, pipelineChallenges, sessions, aiInterviewSessions, currentTakeHomes, takeHomeSessions, candidates, currentMembers, currentPromptScenarios]);
 
   return (
     <div className="space-y-6">
@@ -1300,17 +1313,21 @@ export default function WorkspaceDashboardClient({
                       View all
                     </Link>
                   </div>
-                  {currentTakeHomes.length === 0 ? (
+                  {currentTakeHomes.length === 0 && takeHomeSessions.length === 0 ? (
                     <div className="p-8 flex-1 flex items-center justify-center text-xs text-muted/60 italic text-center">No take-homes scheduled.</div>
                   ) : (
                     <ul className="divide-y divide-border">
-                      {currentTakeHomes.slice(0, 5).map((th) => (
+                      {/* Merge legacy + session-backed (new model) and sort by most recent */}
+                      {[...currentTakeHomes.map(th => ({ id: th.id, name: th.candidateName, sub: th.challengeTitle, status: th.status, at: th.createdAt || th.expiresAt })),
+                         ...takeHomeSessions.map(th => ({ id: th.id, name: th.candidateName || "Unknown", sub: th.title + ` · ${th.questionCount} Q`, status: th.status, at: th.createdAt }))]
+                        .sort((a,b) => (a.at > b.at ? -1 : 1))
+                        .slice(0, 5).map((th) => (
                         <li key={th.id} className="px-6 py-4 flex items-center justify-between gap-4 hover:bg-panel/50 transition-colors group">
                           <div className="min-w-0 flex-1">
-                            <div className="text-sm font-bold text-fg truncate group-hover:text-accent transition-colors">{th.candidateName}</div>
-                            <div className="text-[12px] text-muted truncate mt-0.5">{th.challengeTitle}</div>
+                            <div className="text-sm font-bold text-fg truncate group-hover:text-accent transition-colors">{th.name}</div>
+                            <div className="text-[12px] text-muted truncate mt-0.5">{th.sub}</div>
                           </div>
-                          <span className={`inline-flex items-center px-2.5 py-1 rounded-lg border text-[10px] font-bold uppercase tracking-widest shrink-0 ${statusBadgeColor[th.status]}`}>
+                          <span className={`inline-flex items-center px-2.5 py-1 rounded-lg border text-[10px] font-bold uppercase tracking-widest shrink-0 ${statusBadgeColor[th.status] ?? statusBadgeColor.PENDING}`}>
                             {th.status}
                           </span>
                         </li>
@@ -1333,11 +1350,14 @@ export default function WorkspaceDashboardClient({
                       View all
                     </Link>
                   </div>
-                  {sessions.length === 0 ? (
+                  {(sessions.length === 0 && aiInterviewSessions.length === 0) ? (
                     <div className="p-8 flex-1 flex items-center justify-center text-xs text-muted/60 italic text-center">No interviews scheduled.</div>
                   ) : (
                     <ul className="divide-y divide-border">
-                      {sessions.slice(0, 5).map((s) => {
+                      {[...sessions.map(s => ({ id: s.id, name: s.candidateName || "Unknown", sub: s.title, at: s.createdAt, startedAt: s.startedAt, finishedAt: s.finishedAt, kind: "Live" as const })),
+                         ...aiInterviewSessions.map(s => ({ id: s.id, name: s.candidateName, sub: s.positionTitle, at: s.createdAt, startedAt: s.startedAt, finishedAt: s.finishedAt, kind: "AI" as const }))]
+                        .sort((a,b) => (a.at > b.at ? -1 : 1))
+                        .slice(0, 5).map((s) => {
                         const isDone = !!s.finishedAt;
                         const isLive = !!s.startedAt && !isDone;
                         const statusColor = isDone
@@ -1348,8 +1368,8 @@ export default function WorkspaceDashboardClient({
                         return (
                           <li key={s.id} className="px-6 py-4 flex items-center justify-between gap-4 hover:bg-panel/50 transition-colors group">
                             <div className="min-w-0 flex-1">
-                              <div className="text-sm font-bold text-fg truncate group-hover:text-accent transition-colors">{s.candidateName || "Unknown"}</div>
-                              <div className="text-[12px] text-muted truncate mt-0.5">{s.title}</div>
+                              <div className="text-sm font-bold text-fg truncate group-hover:text-accent transition-colors flex items-center gap-1.5">{s.name} {s.kind === "AI" && <span className="text-[9px] px-1 py-0.5 rounded bg-violet-500/15 border border-violet-500/30 text-violet-500">AI</span>}</div>
+                              <div className="text-[12px] text-muted truncate mt-0.5">{s.sub}</div>
                             </div>
                             <span className={`inline-flex items-center px-2.5 py-1 rounded-lg border text-[10px] font-bold uppercase tracking-widest shrink-0 ${statusColor}`}>
                               {isDone ? "Done" : isLive ? "Live" : "Scheduled"}
@@ -2215,9 +2235,10 @@ export default function WorkspaceDashboardClient({
                   <LeaderboardClient
                     slug={workspace.slug}
                     workspaceName={workspace.name}
-                    challenges={challenges}
+                    challenges={[...challenges, ...takeHomeSessions.map(s => ({ id: s.id, title: s.title, difficulty: "mixed" as string }))]}
                     activeChallengeId={searchParams.get("challenge")}
-                    rows={takeHomes.map((a) => {
+                    rows={[
+                      ...takeHomes.map((a) => {
                       const dispatchedAt = a.createdAt || new Date().toISOString();
                       const submittedAt = a.submittedAt || null;
                       const startedAt = a.attemptStartedAt || null;
@@ -2244,7 +2265,36 @@ export default function WorkspaceDashboardClient({
                         candidateTags: a.candidateId ? (candidates.find((c) => c.id === a.candidateId)?.tags || []) : [],
                         tokenPreview: a.token.slice(0, 8) + "…",
                       };
-                    })}
+                    }),
+                      ...takeHomeSessions.map((s) => {
+                      const dispatchedAt = s.createdAt;
+                      const submittedAt = s.finishedAt;
+                      let timeToSubmitMin: number | null = null;
+                      if (dispatchedAt && submittedAt) {
+                        const ms = new Date(submittedAt).getTime() - new Date(dispatchedAt).getTime();
+                        timeToSubmitMin = Math.round(ms / 60000);
+                      }
+                      // Try to link session to a candidate by email to surface tags/stage
+                      const linked = s.candidateEmail ? candidates.find(c => c.email && c.email.toLowerCase() === s.candidateEmail!.toLowerCase()) : null;
+                      return {
+                        id: s.id,
+                        candidateName: s.candidateName || linked?.name || "Unknown",
+                        candidateEmail: s.candidateEmail || linked?.email || "",
+                        status: s.status === "completed" ? "SUBMITTED" : s.status === "scheduled" ? "PENDING" : s.status.toUpperCase(),
+                        score: null as number | null,
+                        challengeId: s.id,
+                        challengeTitle: s.title,
+                        challengeDifficulty: "mixed" as string,
+                        dispatchedAt,
+                        submittedAt,
+                        expiresAt: s.deadlineAt || dispatchedAt,
+                        timeToSubmitMin,
+                        candidateId: linked?.id ?? null,
+                        candidateStage: linked?.stage ?? null,
+                        candidateTags: linked?.tags || [],
+                        tokenPreview: (s.candidateAccessToken || s.id).slice(0, 8) + "…",
+                      };
+                    })]}
                   />
                 </div>
               )}

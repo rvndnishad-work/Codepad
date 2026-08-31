@@ -20,7 +20,7 @@ import { synthesizeSpeech, TTS_MAX_CHARS } from "@/lib/ai-interview/tts-provider
  * client falls back permanently to its own speechSynthesis for the page life.
  */
 export async function POST(req: NextRequest) {
-  let body: { inviteToken?: string; text?: string };
+  let body: { inviteToken?: string; text?: string; voice?: string };
   try {
     body = await req.json();
   } catch {
@@ -29,6 +29,7 @@ export async function POST(req: NextRequest) {
 
   const inviteToken = (body.inviteToken ?? "").trim();
   const text = (body.text ?? "").slice(0, TTS_MAX_CHARS).trim();
+  const voice = (body.voice ?? "").trim().slice(0, 40) || undefined;
   if (!inviteToken || !text) {
     return NextResponse.json({ error: "Missing inviteToken or text" }, { status: 400 });
   }
@@ -52,7 +53,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Too many requests" }, { status: 429 });
   }
 
-  const audio = await synthesizeSpeech(text);
+  const audio = await synthesizeSpeech(text, { voice });
   if (!audio) {
     return NextResponse.json(
       { error: "No cloud TTS provider configured." },

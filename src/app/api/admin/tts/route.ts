@@ -20,7 +20,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  let body: { text?: string };
+  let body: { text?: string; voice?: string };
   try {
     body = await req.json();
   } catch {
@@ -28,11 +28,12 @@ export async function POST(req: NextRequest) {
   }
 
   const text = (body.text ?? "").slice(0, TTS_MAX_CHARS).trim();
+  const voice = (body.voice ?? "").trim().slice(0, 40) || undefined;
   if (!text) {
     return NextResponse.json({ error: "Missing text" }, { status: 400 });
   }
 
-  const audio = await synthesizeSpeech(text);
+  const audio = await synthesizeSpeech(text, { voice });
   if (!audio) {
     return NextResponse.json(
       { error: "No cloud TTS provider configured." },

@@ -47,7 +47,7 @@ import dynamic from "next/dynamic";
 import { useTheme } from "next-themes";
 import { toast } from "sonner";
 import { getSandpackTheme } from "@/lib/sandpack-theme";
-import { speakNaturally, cancelSpeak, updateSpeechConfig, pickBestVoice, configureCloudTTS } from "@/lib/copilot-tts";
+import { speakNaturally, cancelSpeak, updateSpeechConfig, pickBestVoice, configureCloudTTS, OPENAI_CLOUD_VOICES, OPENAI_CLOUD_VOICE_LABELS } from "@/lib/copilot-tts";
 import ThemeToggle from "@/components/ThemeToggle";
 import FileExplorer from "@/components/FileExplorer";
 import { useResizable } from "@/hooks/useResizable";
@@ -171,6 +171,10 @@ export default function AIInterviewWorkspace({ session, rounds, initialChat }: P
   const [voiceSettingsOpen, setVoiceSettingsOpen] = useState(false);
   const [availableVoices, setAvailableVoices] = useState<SpeechSynthesisVoice[]>([]);
   const [selectedVoiceName, setSelectedVoiceName] = useState<string>("");
+  const [selectedCloudVoice, setSelectedCloudVoice] = useState<string>(() => {
+    if (typeof window === "undefined") return "alloy";
+    return localStorage.getItem("jarvis_cloud_voice") || "alloy";
+  });
   const [speechRate, setSpeechRate] = useState<number>(0.97);
   // Real AI health, probed on mount and refreshed after failed turns. Drives
   // the status chip + banners so the candidate always knows whether the
@@ -251,6 +255,13 @@ export default function AIInterviewWorkspace({ session, rounds, initialChat }: P
 
   // Load available speech synthesis voices and rate settings on mount
   useEffect(() => {
+    const savedCloud = localStorage.getItem("jarvis_cloud_voice");
+    if (savedCloud) {
+      setSelectedCloudVoice(savedCloud);
+      updateSpeechConfig({ cloudVoice: savedCloud });
+    } else {
+      updateSpeechConfig({ cloudVoice: selectedCloudVoice });
+    }
     if (typeof window === "undefined" || !window.speechSynthesis) return;
 
     const loadVoices = () => {
@@ -280,6 +291,11 @@ export default function AIInterviewWorkspace({ session, rounds, initialChat }: P
   const handleVoiceChange = (voiceName: string) => {
     setSelectedVoiceName(voiceName);
     updateSpeechConfig({ voiceName });
+  };
+
+  const handleCloudVoiceChange = (voiceName: string) => {
+    setSelectedCloudVoice(voiceName);
+    updateSpeechConfig({ cloudVoice: voiceName });
   };
 
   const handleRateChange = (rateVal: number) => {
@@ -1271,12 +1287,37 @@ export default function AIInterviewWorkspace({ session, rounds, initialChat }: P
             </button>
           </div>
 
-          {/* Voice select group */}
+          {/* Cloud voice select — now controls OpenAI TTS (alloy/coral/etc.) */}
           <div className="space-y-1.5">
             <label className="text-[11px] font-bold text-muted uppercase tracking-wider block">
-              AI Voice Profile
+              AI Voice Profile <span className="normal-case font-normal text-[10px] text-accent">(Cloud)</span>
             </label>
             <div className="relative">
+              <select
+                value={selectedCloudVoice}
+                onChange={(e) => handleCloudVoiceChange(e.target.value)}
+                className="w-full text-xs bg-panel/50 border border-border rounded-xl px-3 py-2 text-fg outline-none focus:border-accent/40 cursor-pointer appearance-none pr-8 transition"
+              >
+                {OPENAI_CLOUD_VOICES.map((v) => (
+                  <option key={v} value={v}>
+                    {OPENAI_CLOUD_VOICE_LABELS[v] ?? v}
+                  </option>
+                ))}
+              </select>
+              <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-muted select-none text-[8px]">
+                ▼
+              </div>
+            </div>
+            <p className="text-[10px] text-muted leading-tight">Cloud voice via OpenAI. Falls back to system voice if cloud is unavailable.</p>
+          </div>
+
+          {/* Local fallback voice — used only when cloud 503s */}
+          <details className="group">
+            <summary className="text-[11px] font-bold text-muted uppercase tracking-wider cursor-pointer list-none flex items-center justify-between">
+              Fallback System Voice
+              <span className="text-[10px] group-open:rotate-180 transition">▼</span>
+            </summary>
+            <div className="relative mt-2">
               <select
                 value={selectedVoiceName}
                 onChange={(e) => handleVoiceChange(e.target.value)}
@@ -1296,7 +1337,7 @@ export default function AIInterviewWorkspace({ session, rounds, initialChat }: P
                 ▼
               </div>
             </div>
-          </div>
+          </details>
 
           {/* Speech speed group */}
           <div className="space-y-1.5">

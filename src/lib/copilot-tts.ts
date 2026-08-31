@@ -62,10 +62,12 @@ export function configureCloudTTS(
 
 let selectedVoiceName: string | null = null;
 let selectedSpeechRate: number = 0.97;
+let selectedCloudVoice: string | null = null;
 
 if (typeof window !== "undefined") {
   try {
     selectedVoiceName = localStorage.getItem("jarvis_tts_voice");
+    selectedCloudVoice = localStorage.getItem("jarvis_cloud_voice");
     const storedRate = localStorage.getItem("jarvis_tts_rate");
     if (storedRate) {
       const parsed = parseFloat(storedRate);
@@ -78,10 +80,11 @@ export function getSpeechConfig() {
   return {
     voiceName: selectedVoiceName,
     rate: selectedSpeechRate,
+    cloudVoice: selectedCloudVoice,
   };
 }
 
-export function updateSpeechConfig(config: { voiceName?: string | null; rate?: number }) {
+export function updateSpeechConfig(config: { voiceName?: string | null; rate?: number; cloudVoice?: string | null }) {
   if (config.voiceName !== undefined) {
     selectedVoiceName = config.voiceName;
     if (typeof window !== "undefined") {
@@ -94,6 +97,20 @@ export function updateSpeechConfig(config: { voiceName?: string | null; rate?: n
       } catch { /* ignore */ }
     }
   }
+  if (config.cloudVoice !== undefined) {
+    selectedCloudVoice = config.cloudVoice;
+    if (typeof window !== "undefined") {
+      try {
+        if (selectedCloudVoice) {
+          localStorage.setItem("jarvis_cloud_voice", selectedCloudVoice);
+        } else {
+          localStorage.removeItem("jarvis_cloud_voice");
+        }
+      } catch { /* ignore */ }
+    }
+    // Cloud route may have been poisoned as unavailable — reset so new voice is probed.
+    cloudAvailable = null;
+  }
   if (config.rate !== undefined) {
     selectedSpeechRate = config.rate;
     if (typeof window !== "undefined") {
@@ -103,6 +120,21 @@ export function updateSpeechConfig(config: { voiceName?: string | null; rate?: n
     }
   }
 }
+
+// OpenAI cloud voice catalog — must match src/lib/ai-interview/tts-provider.ts OPENAI_VOICES
+export const OPENAI_CLOUD_VOICES = ["alloy","ash","ballad","coral","echo","fable","nova","onyx","sage","shimmer"] as const;
+export const OPENAI_CLOUD_VOICE_LABELS: Record<string,string> = {
+  alloy: "Alloy — Neutral balanced",
+  ash: "Ash — Warm studio",
+  ballad: "Ballad — Storyteller",
+  coral: "Coral — Warm & clear (recommended)",
+  echo: "Echo — Deep male",
+  fable: "Fable — Expressive narrative",
+  nova: "Nova — Bright female (legacy)",
+  onyx: "Onyx — Deep authoritative",
+  sage: "Sage — Calm professional",
+  shimmer: "Shimmer — Bright & energetic",
+};
 
 /**
  * Quality-token scoring: voices whose `name` contains any of these are
@@ -228,10 +260,12 @@ interface SpeakCallbacks {
 async function tryCloudTTS(text: string): Promise<HTMLAudioElement | null> {
   if (cloudAvailable === false) return null;
   try {
+    const body: Record<string, unknown> = { text, ...cloudExtraBody };
+    if (selectedCloudVoice) body.voice = selectedCloudVoice;
     const res = await fetch(cloudEndpoint, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ text, ...cloudExtraBody }),
+      body: JSON.stringify(body),
     });
     // Permanent fall-through for states that won't recover within this page
     // life: no provider configured (503), or the request isn't/can't be

@@ -20,6 +20,9 @@ import {
   Terminal,
   MessageSquare,
   PanelBottom,
+  PanelLeft,
+  PanelRight,
+  AlignCenter,
   Mic,
   MicOff,
   Briefcase,
@@ -165,6 +168,17 @@ export default function AIInterviewWorkspace({ session, rounds, initialChat }: P
   const [chatCollapsed, setChatCollapsed] = useState(false);
   const [outputView, setOutputView] = useState<"preview" | "both" | "console">("both");
   const [floatingChatOpen, setFloatingChatOpen] = useState(false);
+  const [chatDock, setChatDock] = useState<"left" | "center" | "right">("center");
+  // Hydrate dock position from localStorage without hydration mismatch
+  useEffect(() => {
+    try {
+      const v = localStorage.getItem("interview_chat_dock");
+      if (v === "left" || v === "right" || v === "center") setChatDock(v);
+    } catch {}
+  }, []);
+  useEffect(() => {
+    try { localStorage.setItem("interview_chat_dock", chatDock); } catch {}
+  }, [chatDock]);
   const [showControls, setShowControls] = useState(false);
   const [isListening, setIsListening] = useState(false);
   const [isAISpeaking, setIsAISpeaking] = useState(false);
@@ -471,43 +485,91 @@ export default function AIInterviewWorkspace({ session, rounds, initialChat }: P
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Native Speech Recognition Setup
+  // Native Speech Recognition — continuous + debounced send so natural pauses don't cut you off.
+  // Previous: continuous=false + instant send on first result => half-sentence cut on 600ms pause.
+  // Now: interim results stream live into the input, auto-send only after 1.4s of silence.
+  const interimTranscriptRef = useRef("");
+  const finalTranscriptRef = useRef("");
+  const silenceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const isListeningRef = useRef(false);
+  const shouldRestartRef = useRef(false);
+  useEffect(() => { isListeningRef.current = isListening; }, [isListening]);
+
   useEffect(() => {
-    if (typeof window !== "undefined") {
-      const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-      if (SpeechRecognition) {
-        const rec = new SpeechRecognition();
-        rec.continuous = false;
-        rec.interimResults = false;
-        rec.lang = "en-US";
+    if (typeof window === "undefined") return;
+    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (!SpeechRecognition) return;
 
-        rec.onstart = () => {
-          setIsListening(true);
-          toast.success("Holographic audio link active. Speak now...");
-        };
+    const rec = new SpeechRecognition();
+    rec.continuous = true;
+    rec.interimResults = true;
+    rec.lang = "en-US";
 
-        rec.onresult = (event: any) => {
-          const transcript = event.results[0][0].transcript;
-          if (transcript) {
-            console.log("Voice dictation transcript:", transcript);
-            toast.success(`Heard: "${transcript}"`);
-            setTimeout(() => handleSendTextRef.current(transcript), 30);
-          }
-        };
+    rec.onstart = () => {
+      setIsListening(true);
+      isListeningRef.current = true;
+      shouldRestartRef.current = true;
+      finalTranscriptRef.current = "";
+      interimTranscriptRef.current = "";
+      // Don't clear input completely — keep any typed draft, append dictation after it
+      toast.success("Listening… pause 1.4s to send, or tap mic to finish.");
+    };
 
-        rec.onerror = (err: any) => {
-          console.error("Dictation failure:", err);
-          setIsListening(false);
-          toast.error("Speech recognition failed. Please try again.");
-        };
-
-        rec.onend = () => {
-          setIsListening(false);
-        };
-
-        recognitionRef.current = rec;
+    rec.onresult = (event: any) => {
+      let interim = "";
+      for (let i = event.resultIndex; i < event.results.length; i++) {
+        const transcript: string = event.results[i][0].transcript;
+        if (event.results[i].isFinal) {
+          finalTranscriptRef.current += transcript + " ";
+        } else {
+          interim += transcript;
+        }
       }
-    }
+      interimTranscriptRef.current = interim;
+      const combined = (finalTranscriptRef.current + interim).trim();
+      if (combined) setInput(combined);
+
+      // Debounce: only send after silence
+      if (silenceTimerRef.current) clearTimeout(silenceTimerRef.current);
+      silenceTimerRef.current = setTimeout(() => {
+        const toSend = (finalTranscriptRef.current + interimTranscriptRef.current).trim();
+        if (!toSend) return;
+        console.log("Voice dictation commit (silence):", toSend);
+        // Lock restart so onend doesn't loop
+        shouldRestartRef.current = false;
+        finalTranscriptRef.current = "";
+        interimTranscriptRef.current = "";
+        // Keep input as-is so user sees what will be sent, then send
+        handleSendTextRef.current(toSend);
+      }, 1400);
+    };
+
+    rec.onerror = (err: any) => {
+      console.error("Dictation failure:", err);
+      // no-speech / audio-capture are transient — keep listening instead of hard stop
+      if (err?.error === "no-speech" || err?.error === "audio-capture") return;
+      setIsListening(false);
+      isListeningRef.current = false;
+      shouldRestartRef.current = false;
+      toast.error("Speech recognition failed. Please try again.");
+    };
+
+    rec.onend = () => {
+      // Browser auto-stops after ~10s of silence or on network blip — restart if user still intends to speak
+      if (shouldRestartRef.current && isListeningRef.current) {
+        try { rec.start(); } catch { setIsListening(false); isListeningRef.current = false; }
+        return;
+      }
+      setIsListening(false);
+      isListeningRef.current = false;
+    };
+
+    recognitionRef.current = rec;
+    return () => {
+      shouldRestartRef.current = false;
+      try { rec.stop(); } catch {}
+      if (silenceTimerRef.current) clearTimeout(silenceTimerRef.current);
+    };
   }, []);
 
   const toggleVoiceDictation = () => {
@@ -515,12 +577,34 @@ export default function AIInterviewWorkspace({ session, rounds, initialChat }: P
       toast.error("Native voice dictation is not supported in this browser. Try using Chrome or Edge.");
       return;
     }
-    if (isListening) {
-      recognitionRef.current.stop();
+    if (isListeningRef.current) {
+      // Manual stop — commit whatever is in the buffer/input immediately
+      shouldRestartRef.current = false;
+      if (silenceTimerRef.current) clearTimeout(silenceTimerRef.current);
+      try { recognitionRef.current.stop(); } catch {}
+      const toSend = (finalTranscriptRef.current + interimTranscriptRef.current).trim() || input.trim();
+      finalTranscriptRef.current = "";
+      interimTranscriptRef.current = "";
+      if (toSend) {
+        // Give onend a tick to settle UI before sending
+        setTimeout(() => handleSendTextRef.current(toSend), 80);
+      } else {
+        setIsListening(false);
+        isListeningRef.current = false;
+      }
     } else {
       cancelSpeak();
       setIsAISpeaking(false);
-      recognitionRef.current.start();
+      finalTranscriptRef.current = "";
+      interimTranscriptRef.current = "";
+      if (silenceTimerRef.current) clearTimeout(silenceTimerRef.current);
+      shouldRestartRef.current = true;
+      try {
+        recognitionRef.current.start();
+      } catch (e) {
+        console.error("rec.start failed", e);
+        toast.error("Could not start listening. Try again.");
+      }
     }
   };
 
@@ -1428,11 +1512,13 @@ export default function AIInterviewWorkspace({ session, rounds, initialChat }: P
         </div>
       )}
 
-      {/* Floating Chat Overlay Panel centered above the Dock */}
+      {/* Floating Chat Overlay Panel — user choosable dock: left / center / right */}
       {floatingChatOpen && (
         <div
           style={{ boxShadow: "0 24px 64px rgba(0, 0, 0, 0.3)" }}
-          className="fixed bottom-24 left-1/2 -translate-x-1/2 z-50 w-[400px] h-[560px] bg-surface/95 border border-border/80 backdrop-blur-lg rounded-3xl flex flex-col min-w-0 shadow-2xl animate-in fade-in slide-in-from-bottom-5 duration-300 overflow-hidden"
+          className={`fixed bottom-24 z-50 w-[400px] max-w-[92vw] h-[560px] bg-surface/95 border border-border/80 backdrop-blur-lg rounded-3xl flex flex-col min-w-0 shadow-2xl animate-in fade-in slide-in-from-bottom-5 duration-300 overflow-hidden ${
+            chatDock === "left" ? "left-6" : chatDock === "right" ? "right-6" : "left-1/2 -translate-x-1/2"
+          }`}
         >
           {/* Custom Scrollbar Styles for the Chat popup */}
           <style dangerouslySetInnerHTML={{ __html: `
@@ -1481,13 +1567,45 @@ export default function AIInterviewWorkspace({ session, rounds, initialChat }: P
                 </span>
               </div>
             </div>
-            <button
-              type="button"
-              onClick={() => setFloatingChatOpen(false)}
-              className="text-xs font-bold text-muted hover:text-fg p-1.5 rounded-lg hover:bg-bg transition cursor-pointer"
-            >
-              Hide
-            </button>
+            <div className="flex items-center gap-1">
+              {/* Dock position switcher — moves chat aside from editor */}
+              <div className="flex items-center gap-0.5 p-0.5 rounded-lg bg-bg border border-border/60 mr-1">
+                <button
+                  type="button"
+                  onClick={() => setChatDock("left")}
+                  title="Dock left"
+                  aria-pressed={chatDock === "left"}
+                  className={`p-1.5 rounded-md transition cursor-pointer ${chatDock === "left" ? "bg-accent text-bg shadow-sm" : "text-muted hover:text-fg hover:bg-surface"}`}
+                >
+                  <PanelLeft className="w-3.5 h-3.5" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setChatDock("center")}
+                  title="Dock center"
+                  aria-pressed={chatDock === "center"}
+                  className={`p-1.5 rounded-md transition cursor-pointer ${chatDock === "center" ? "bg-accent text-bg shadow-sm" : "text-muted hover:text-fg hover:bg-surface"}`}
+                >
+                  <AlignCenter className="w-3.5 h-3.5" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setChatDock("right")}
+                  title="Dock right"
+                  aria-pressed={chatDock === "right"}
+                  className={`p-1.5 rounded-md transition cursor-pointer ${chatDock === "right" ? "bg-accent text-bg shadow-sm" : "text-muted hover:text-fg hover:bg-surface"}`}
+                >
+                  <PanelRight className="w-3.5 h-3.5" />
+                </button>
+              </div>
+              <button
+                type="button"
+                onClick={() => setFloatingChatOpen(false)}
+                className="text-xs font-bold text-muted hover:text-fg p-1.5 rounded-lg hover:bg-bg transition cursor-pointer"
+              >
+                Hide
+              </button>
+            </div>
           </div>
 
           {/* Chat input — moved to TOP directly under header so it's adjacent to most recent message */}

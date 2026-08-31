@@ -202,6 +202,7 @@ export default function AIInterviewWorkspace({ session, rounds, initialChat }: P
   const activeFiles = roundFiles[activeRoundId] ?? {};
   const isMultiRound = rounds.length > 1;
 
+  const chatContainerRef = useRef<HTMLDivElement>(null);
   const chatEndRef = useRef<HTMLDivElement>(null);
 
   // ── AI health derivation ────────────────────────────────────────────────
@@ -447,10 +448,14 @@ export default function AIInterviewWorkspace({ session, rounds, initialChat }: P
     };
   }, []);
 
-  // Auto-scroll chat window.
+  // Auto-scroll chat window — now most recent is on TOP, so scroll to top on new messages.
   useEffect(() => {
-    chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [chat]);
+    if (chatContainerRef.current) {
+      chatContainerRef.current.scrollTo({ top: 0, behavior: "smooth" });
+    } else {
+      chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    }
+  }, [chat, sending]);
 
   // Initial greeting if history is empty.
   useEffect(() => {
@@ -1149,6 +1154,20 @@ export default function AIInterviewWorkspace({ session, rounds, initialChat }: P
             0%, 100% { box-shadow: 0 0 16px 2px rgba(168,85,247,0.42), 0 0 26px 4px rgba(236,72,153,0.18); }
             50% { box-shadow: 0 0 30px 7px rgba(168,85,247,0.65), 0 0 46px 10px rgba(236,72,153,0.32); }
           }
+          /* Thinking: slow amber pulse with breathing — clearly distinct from talking */
+          @keyframes thinking-pulse {
+            0%, 100% { transform: scale(1); box-shadow: 0 0 14px 2px rgba(245,158,11,0.38), 0 0 24px 4px rgba(251,113,133,0.18); }
+            50% { transform: scale(1.07); box-shadow: 0 0 26px 6px rgba(245,158,11,0.58), 0 0 38px 8px rgba(251,113,133,0.28); }
+          }
+          @keyframes thinking-dot {
+            0%, 80%, 100% { opacity: 0.3; transform: scale(0.8); }
+            40% { opacity: 1; transform: scale(1); }
+          }
+          /* Listening: emerald breathing — mic active */
+          @keyframes listening-pulse {
+            0%, 100% { transform: scale(1); box-shadow: 0 0 14px 2px rgba(16,185,129,0.38), 0 0 24px 4px rgba(52,211,153,0.18); }
+            50% { transform: scale(1.07); box-shadow: 0 0 26px 6px rgba(16,185,129,0.58), 0 0 38px 8px rgba(52,211,153,0.28); }
+          }
           /* Talking: an equalizer-like shake — quick scale/rotate jitter with a
              vibrant violet → fuchsia → cyan glow that reacts to the voice. */
           @keyframes eq-shake {
@@ -1182,41 +1201,72 @@ export default function AIInterviewWorkspace({ session, rounds, initialChat }: P
           )}
         </button>
 
-        {/* AI Orb — vibrant violet→fuchsia. The Bot icon stays visible at all
-            times; the equalizer bars sit BEHIND it as a translucent underlay
-            while the AI is listening / speaking / thinking. */}
-        <div
-          onClick={() => setFloatingChatOpen(!floatingChatOpen)}
-          className={`relative w-12 h-12 rounded-full bg-gradient-to-br from-indigo-500 via-violet-500 to-fuchsia-500 flex items-center justify-center cursor-pointer hover:scale-105 active:scale-95 transition-transform duration-300 ${
-            isListening || isAISpeaking || sending
-              ? "animate-[eq-shake_0.55s_infinite_ease-in-out]"
-              : "animate-[soft-glow_3s_infinite_ease-in-out]"
-          }`}
-          title="Toggle Chat Control Panel"
-        >
-          {/* Pulse ring — calm violet when idle, energetic fuchsia when talking. */}
-          <span
-            className={`absolute inset-0 rounded-full ${
-              isListening || isAISpeaking || sending
-                ? "bg-fuchsia-400/30 animate-ping"
-                : "bg-violet-400/15"
-            }`}
-          />
+        {/* AI Orb — 4 distinct states:
+              idle (soft-glow violet) | thinking (amber pulse + dots) | speaking (eq-shake violet/cyan) | listening (emerald pulse) */}
+        {(() => {
+          const orbState =
+            isListening ? "listening" :
+            isAISpeaking ? "speaking" :
+            sending ? "thinking" : "idle";
+          const orbAnim =
+            orbState === "listening" ? "animate-[listening-pulse_1.4s_infinite_ease-in-out]" :
+            orbState === "speaking" ? "animate-[eq-shake_0.55s_infinite_ease-in-out]" :
+            orbState === "thinking" ? "animate-[thinking-pulse_1.3s_infinite_ease-in-out]" :
+            "animate-[soft-glow_3s_infinite_ease-in-out]";
+          const orbGradient =
+            orbState === "thinking" ? "from-amber-500 via-orange-500 to-yellow-500" :
+            orbState === "listening" ? "from-emerald-500 via-teal-500 to-cyan-500" :
+            "from-indigo-500 via-violet-500 to-fuchsia-500";
+          const ringClass =
+            orbState === "thinking" ? "bg-amber-400/30 animate-ping" :
+            orbState === "listening" ? "bg-emerald-400/30 animate-ping" :
+            orbState === "speaking" ? "bg-fuchsia-400/30 animate-ping" :
+            "bg-violet-400/15";
+          const label =
+            orbState === "thinking" ? "AI is thinking…" :
+            orbState === "speaking" ? "AI is speaking" :
+            orbState === "listening" ? "Listening…" : "Toggle Chat Control Panel";
+          return (
+            <div
+              onClick={() => setFloatingChatOpen(!floatingChatOpen)}
+              className={`relative w-12 h-12 rounded-full bg-gradient-to-br ${orbGradient} flex items-center justify-center cursor-pointer hover:scale-105 active:scale-95 transition-all duration-300 ${orbAnim}`}
+              title={label}
+            >
+              {/* Pulse ring — color matches state */}
+              <span className={`absolute inset-0 rounded-full ${ringClass}`} />
 
-          {/* Equalizer bars — translucent underlay behind the icon while active. */}
-          {(isListening || isAISpeaking || sending) && (
-            <div className="absolute inset-0 flex items-end justify-center gap-0.5 pb-1.5 opacity-50 pointer-events-none">
-              <div className="w-0.5 rounded-full bg-white animate-[bounce-eq-1_1s_infinite_ease-in-out]" />
-              <div className="w-0.5 rounded-full bg-white animate-[bounce-eq-2_1s_infinite_ease-in-out]" style={{ animationDelay: "100ms" }} />
-              <div className="w-0.5 rounded-full bg-white animate-[bounce-eq-3_1s_infinite_ease-in-out]" style={{ animationDelay: "200ms" }} />
-              <div className="w-0.5 rounded-full bg-white animate-[bounce-eq-4_1s_infinite_ease-in-out]" style={{ animationDelay: "150ms" }} />
-              <div className="w-0.5 rounded-full bg-white animate-[bounce-eq-5_1s_infinite_ease-in-out]" style={{ animationDelay: "50ms" }} />
+              {/* Speaking: equalizer bars behind icon */}
+              {orbState === "speaking" && (
+                <div className="absolute inset-0 flex items-end justify-center gap-0.5 pb-1.5 opacity-55 pointer-events-none">
+                  <div className="w-0.5 rounded-full bg-white animate-[bounce-eq-1_1s_infinite_ease-in-out]" />
+                  <div className="w-0.5 rounded-full bg-white animate-[bounce-eq-2_1s_infinite_ease-in-out]" style={{ animationDelay: "100ms" }} />
+                  <div className="w-0.5 rounded-full bg-white animate-[bounce-eq-3_1s_infinite_ease-in-out]" style={{ animationDelay: "200ms" }} />
+                  <div className="w-0.5 rounded-full bg-white animate-[bounce-eq-4_1s_infinite_ease-in-out]" style={{ animationDelay: "150ms" }} />
+                  <div className="w-0.5 rounded-full bg-white animate-[bounce-eq-5_1s_infinite_ease-in-out]" style={{ animationDelay: "50ms" }} />
+                </div>
+              )}
+
+              {/* Thinking: three amber dots pulsing sequentially */}
+              {orbState === "thinking" && (
+                <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 flex items-center gap-1 opacity-90 pointer-events-none">
+                  <span className="w-1 h-1 rounded-full bg-white animate-[thinking-dot_1.2s_infinite_ease-in-out]" />
+                  <span className="w-1 h-1 rounded-full bg-white animate-[thinking-dot_1.2s_infinite_ease-in-out]" style={{ animationDelay: "200ms" }} />
+                  <span className="w-1 h-1 rounded-full bg-white animate-[thinking-dot_1.2s_infinite_ease-in-out]" style={{ animationDelay: "400ms" }} />
+                </div>
+              )}
+
+              {/* Listening: mic cue top-right */}
+              {orbState === "listening" && (
+                <span className="absolute -top-1 -right-1 w-3 h-3 rounded-full bg-emerald-400 border-2 border-surface flex items-center justify-center pointer-events-none">
+                  <Mic className="w-1.5 h-1.5 text-white" />
+                </span>
+              )}
+
+              {/* Bot icon — always on top, slightly dimmed while thinking */}
+              <Bot className={`w-5 h-5 text-white relative z-10 drop-shadow-[0_1px_3px_rgba(0,0,0,0.45)] ${orbState === "thinking" ? "opacity-90" : ""}`} />
             </div>
-          )}
-
-          {/* Bot icon — always on top. */}
-          <Bot className="w-5 h-5 text-white relative z-10 drop-shadow-[0_1px_3px_rgba(0,0,0,0.45)]" />
-        </div>
+          );
+        })()}
 
         {/* Floating Chat Overlay panel keyboard icon toggle */}
         <button
@@ -1440,12 +1490,47 @@ export default function AIInterviewWorkspace({ session, rounds, initialChat }: P
             </button>
           </div>
 
-          {/* Chat messages list with wrapping and custom thin scrollbars */}
-          <div className="flex-1 overflow-y-auto overflow-x-hidden px-5 py-4 space-y-4 custom-scrollbar max-w-full">
-            {chat.map((msg, idx) => {
+          {/* Chat input — moved to TOP directly under header so it's adjacent to most recent message */}
+          <form onSubmit={handleSend} className="p-3 border-b border-border bg-surface/80 shrink-0">
+            <div className="relative flex items-center">
+              <input
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                placeholder="Talk to the AI Interviewer..."
+                disabled={sending}
+                className="w-full pl-4 pr-12 py-3 rounded-xl border border-border bg-bg text-xs text-fg focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent/20 outline-none transition placeholder:text-muted/65"
+              />
+              <button
+                type="submit"
+                disabled={sending || !input.trim()}
+                className="absolute right-2 p-2 rounded-lg bg-accent text-bg hover:bg-accent-soft active:scale-95 disabled:opacity-30 transition cursor-pointer"
+              >
+                <Send className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          </form>
+
+          {/* Chat messages list — most recent on TOP so candidate sees latest without scrolling */}
+          <div ref={chatContainerRef} className="flex-1 overflow-y-auto overflow-x-hidden px-5 py-4 space-y-4 custom-scrollbar max-w-full">
+            {sending && (
+              <div className="flex gap-2.5 max-w-[88%]">
+                <div className="w-7 h-7 rounded-lg shrink-0 bg-amber-500/15 border border-amber-500/30 text-amber-500 flex items-center justify-center">
+                  <Bot className="w-3.5 h-3.5 animate-pulse" />
+                </div>
+                <div className="p-3 rounded-2xl border border-amber-500/20 bg-amber-500/10 flex items-center gap-1.5 shrink-0">
+                  <span className="text-[10px] font-bold text-amber-600 dark:text-amber-300 mr-1">Thinking</span>
+                  <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-bounce" />
+                  <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-bounce delay-75" />
+                  <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-bounce delay-150" />
+                </div>
+              </div>
+            )}
+
+            {[...chat].reverse().map((msg, revIdx) => {
               const isAI = msg.role === "assistant";
+              const origIdx = chat.length - 1 - revIdx;
               return (
-                <div key={idx} className={`flex gap-2.5 max-w-[88%] ${isAI ? "" : "ml-auto flex-row-reverse"}`}>
+                <div key={origIdx} className={`flex gap-2.5 max-w-[88%] ${isAI ? "" : "ml-auto flex-row-reverse"}`}>
                   <div className={`w-7 h-7 rounded-lg shrink-0 flex items-center justify-center text-xs font-bold ${
                     isAI ? "bg-accent/10 border border-accent/25 text-accent" : "bg-elevated/40 border border-border text-muted"
                   }`}>
@@ -1455,8 +1540,6 @@ export default function AIInterviewWorkspace({ session, rounds, initialChat }: P
                     isAI ? "bg-surface/80 border-border/80 text-fg" : "bg-surface border-border/40 text-muted"
                   }`}>
                     {isAI ? (
-                      // Interviewer replies are markdown (bold, lists, inline code) —
-                      // render them properly instead of leaking raw ** and ` markers.
                       <MarkdownRenderer
                         content={msg.text}
                         className="text-xs max-w-full break-words [overflow-wrap:anywhere]
@@ -1476,40 +1559,8 @@ export default function AIInterviewWorkspace({ session, rounds, initialChat }: P
               );
             })}
 
-            {sending && (
-              <div className="flex gap-2.5 max-w-[88%]">
-                <div className="w-7 h-7 rounded-lg shrink-0 bg-accent/10 border border-accent/25 text-accent flex items-center justify-center">
-                  <Bot className="w-3.5 h-3.5" />
-                </div>
-                <div className="p-3 rounded-2xl border border-border/80 bg-surface/80 flex items-center gap-1.5 shrink-0">
-                  <span className="w-1.5 h-1.5 rounded-full bg-accent animate-bounce" />
-                  <span className="w-1.5 h-1.5 rounded-full bg-accent animate-bounce delay-75" />
-                  <span className="w-1.5 h-1.5 rounded-full bg-accent animate-bounce delay-150" />
-                </div>
-              </div>
-            )}
-            <div ref={chatEndRef} />
+            <div ref={chatEndRef} className="h-0" />
           </div>
-
-          {/* Chat input form */}
-          <form onSubmit={handleSend} className="p-4 border-t border-border bg-surface/80 shrink-0 rounded-b-3xl">
-            <div className="relative flex items-center">
-              <input
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                placeholder="Talk to the AI Interviewer..."
-                disabled={sending}
-                className="w-full pl-4 pr-12 py-3 rounded-xl border border-border bg-bg text-xs text-fg focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent/20 outline-none transition placeholder:text-muted/65"
-              />
-              <button
-                type="submit"
-                disabled={sending || !input.trim()}
-                className="absolute right-2 p-2 rounded-lg bg-accent text-bg hover:bg-accent-soft active:scale-95 disabled:opacity-30 transition cursor-pointer"
-              >
-                <Send className="w-3.5 h-3.5" />
-              </button>
-            </div>
-          </form>
         </div>
       )}
     </div>

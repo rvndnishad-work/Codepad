@@ -22,7 +22,22 @@ interface MarkdownRendererProps {
   allowHtml?: boolean;
 }
 
+function normalizeSingleLineFences(md: string): string {
+  // Curated answers sometimes stored a multi-statement snippet as one line:
+  // "'use client' import { x } from 'react' import { y } from './actions' // trimmed"
+  // Rehype would then render a single overflowing line (screenshot). Split it.
+  return md.replace(/```(\w*)\n([^\n]*?import[^\n]*?)\n```/g, (_m, lang, code: string) => {
+    if (code.includes("\n")) return _m;
+    let s = code;
+    s = s.replace(/(['"]use client['"])\s*import/g, "$1\nimport");
+    s = s.replace(/;\s*import/g, ";\nimport");
+    s = s.replace(/;\s*export/g, ";\nexport");
+    return "```" + lang + "\n" + s.trim() + "\n```";
+  });
+}
+
 export default function MarkdownRenderer({ content, className = "", forceRunnable = false, allowHtml = false }: MarkdownRendererProps) {
+  const normalizedContent = normalizeSingleLineFences(content);
   const extractText = (node: any): string => {
     if (typeof node === 'string') return node;
     if (Array.isArray(node)) return node.map(extractText).join('');
@@ -70,7 +85,9 @@ export default function MarkdownRenderer({ content, className = "", forceRunnabl
               );
             }
 
-            return <code className={className} {...props}>{children}</code>;
+            // Ensure long single-line code (curated JSON flattened without \n) wraps instead of overflowing on one line.
+            const wrapClass = !inline ? " whitespace-pre-wrap break-words [overflow-wrap:anywhere]" : "";
+            return <code className={`${className ?? ""}${wrapClass}`} {...props}>{children}</code>;
           },
           // Render hand-authored inline SVG via the browser's native parser
           // (dangerouslySetInnerHTML) rather than through React element creation.
@@ -114,14 +131,14 @@ export default function MarkdownRenderer({ content, className = "", forceRunnabl
             }
 
             return (
-              <pre className="relative overflow-hidden group border border-border/50 bg-panel/50 rounded-xl my-8">
+              <pre className="relative overflow-auto whitespace-pre-wrap break-words [overflow-wrap:anywhere] group border border-border/50 bg-panel/50 rounded-xl my-8 max-w-full">
                 {children}
               </pre>
             );
           },
         }}
       >
-        {content}
+        {normalizedContent}
       </ReactMarkdown>
     </article>
   );

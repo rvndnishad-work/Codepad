@@ -740,28 +740,42 @@ portal-nextjs-toast,
 /* Hand-authored inline SVG diagrams embedded in interview-question answers.
    A single SVG works in light + dark by referencing theme CSS vars through
    these classes (so authors don't repeat colors). Use class="iq-diagram" on
-   the <svg>, then d-* classes on shapes/text. */
+   the <svg>, then d-* classes on shapes/text.
+   Red-box screenshot: d-sub was var(--muted) (#9ca3af in dark) on var(--surface)
+   (#1e2229) → contrast ~3:1 and tiny 11px, barely legible. Raise sub to fg
+   with opacity and lift box fills in dark for separation. */
 .iq-diagram {
   display: block;
   width: 100%;
   height: auto;
   margin: 1.5rem 0;
   overflow: visible;
+  /* Ensure currentColor-based legacy SVGs inherit the theme foreground, not a stale inherited color */
+  color: var(--fg);
 }
 .iq-diagram .d-box {
   fill: var(--surface);
   stroke: var(--border-strong);
   stroke-width: 1.5;
 }
+.dark .iq-diagram .d-box {
+  fill: #232a36; /* lift vs --surface (#1e2229) and page --bg (#16181d) */
+}
 .iq-diagram .d-box-accent {
-  fill: rgba(var(--accent-rgb), 0.12);
+  fill: rgba(var(--accent-rgb), 0.14);
   stroke: var(--accent);
   stroke-width: 1.5;
+}
+.dark .iq-diagram .d-box-accent {
+  fill: rgba(var(--accent-rgb), 0.22);
 }
 .iq-diagram .d-box-muted {
   fill: var(--panel);
   stroke: var(--border-strong);
   stroke-width: 1.5;
+}
+.dark .iq-diagram .d-box-muted {
+  fill: #2f3644; /* lift vs --panel (#282d36) */
 }
 .iq-diagram .d-text {
   fill: var(--fg);
@@ -770,10 +784,14 @@ portal-nextjs-toast,
   font-weight: 600;
 }
 .iq-diagram .d-sub {
-  fill: var(--muted);
+  fill: var(--fg);
+  opacity: 0.62;
   font-family: ui-sans-serif, system-ui, -apple-system, sans-serif;
   font-size: 11px;
   font-weight: 500;
+}
+.dark .iq-diagram .d-sub {
+  opacity: 0.78;
 }
 .iq-diagram .d-accent {
   fill: var(--accent);
@@ -782,6 +800,9 @@ portal-nextjs-toast,
   stroke: var(--muted);
   stroke-width: 1.5;
   fill: none;
+}
+.dark .iq-diagram .d-edge {
+  stroke: var(--subtle);
 }
 .iq-diagram .d-edge-accent {
   stroke: var(--accent);
@@ -794,11 +815,26 @@ portal-nextjs-toast,
   fill: none;
   stroke-dasharray: 5 4;
 }
+.dark .iq-diagram .d-edge-dashed {
+  stroke: var(--subtle);
+}
 .iq-diagram .d-arrow {
   fill: var(--muted);
 }
+.dark .iq-diagram .d-arrow {
+  fill: var(--subtle);
+}
 .iq-diagram .d-fill-bg {
   fill: var(--bg);
+}
+/* Legacy hard-coded fills (curated JSON with fill="#3b82f6" fill-opacity="0.06")
+   were nearly invisible in dark at 0.06. Lift opacity so boxes stay tinted. */
+.dark .iq-diagram [fill-opacity="0.06"],
+.dark .iq-diagram [fill-opacity="0.1"] {
+  fill-opacity: 0.18 !important;
+}
+.dark .iq-diagram [fill-opacity="0.04"] {
+  fill-opacity: 0.14 !important;
 }
 
 /* Legacy answer-diagram cards (React/DSA/curated-hard sets) were authored wrapped

@@ -33,6 +33,26 @@ function hljsForPath(path: string): string {
 }
 
 /**
+ * Single-line flattened code (e.g. "'use client' import { … } from 'react' // trimmed")
+ * was stored in curated JSON without line breaks — it renders as one overflowing
+ * line with a scrollbar (screenshot). If the variant has no "\n" but clearly
+ * contains multiple statements, re-insert breaks so highlight + pre-wrap show
+ * readable lines. Real multi-line code is returned untouched.
+ */
+function normalizeCode(code: string): string {
+  if (!code || code.includes("\n")) return code;
+  // Only split when we see multiple imports/exports on one line — otherwise a
+  // legitimate one-liner (e.g. "const x = 1") should stay as-is and just wrap via CSS.
+  if (!/(import|export)/.test(code)) return code;
+  let s = code;
+  s = s.replace(/(['"]use client['"])\s*import/g, "$1\nimport");
+  s = s.replace(/;\s*import/g, ";\nimport");
+  s = s.replace(/;\s*export/g, ";\nexport");
+  // Don't mangle "} from" inside a single import — keep it together
+  return s.trim();
+}
+
+/**
  * Renders a multi-file example (component-wise solution): a tab per file +
  * the active file highlighted, with one "Run Playground" that opens every file
  * in the Sandpack workspace (extra files show in the file explorer).
@@ -57,7 +77,7 @@ export function MultiFileExample({
   const [active, setActive] = useState(0);
   const path = paths[Math.min(active, paths.length - 1)];
   const highlighted = useMemo(
-    () => highlight((files[path] ?? "").trim(), hljsForPath(path)),
+    () => highlight(normalizeCode((files[path] ?? "").trim()), hljsForPath(path)),
     [files, path],
   );
 
@@ -100,15 +120,15 @@ export function MultiFileExample({
         ))}
       </div>
 
-      <pre className="iq-hl p-4 overflow-auto text-[13px] font-mono leading-[1.625] text-slate-200 bg-[#0a0b10] overflow-x-auto">
-        <code dangerouslySetInnerHTML={{ __html: highlighted }} />
+      <pre className="iq-hl p-4 overflow-auto whitespace-pre-wrap break-words [overflow-wrap:anywhere] text-[13px] font-mono leading-[1.625] text-slate-200 bg-[#0a0b10] overflow-x-auto">
+        <code className="whitespace-pre-wrap break-words [overflow-wrap:anywhere]" dangerouslySetInnerHTML={{ __html: highlighted }} />
       </pre>
     </div>
   );
 }
 
- /**
-  * Renders one code example as a syntax-highlighted (theme-aware `.iq-hl`) block.
+  /**
+   * Renders one code example as a syntax-highlighted (theme-aware `.iq-hl`) block.
   * If the example has multiple `variants` (e.g. the same algorithm in Python /
   * Go / Java, or a UI in React / Vue / Angular), a dropdown switches between them
   * and each variant's "Open in Playground" hands off to its own template.
@@ -144,7 +164,7 @@ export default function CodeExample({
   const backFrom = pathname?.startsWith("/interview-question") ? pathname : undefined;
 
   const highlighted = useMemo(
-    () => highlight(current.code.trim(), meta.hljs),
+    () => highlight(normalizeCode(current.code.trim()), meta.hljs),
     [current.code, meta.hljs],
   );
 
@@ -192,8 +212,8 @@ export default function CodeExample({
         )}
       </div>
 
-      <pre className="iq-hl p-4 overflow-auto text-[13px] font-mono leading-[1.625] text-slate-200 bg-[#0a0b10] overflow-x-auto">
-        <code dangerouslySetInnerHTML={{ __html: highlighted }} />
+      <pre className="iq-hl p-4 overflow-auto whitespace-pre-wrap break-words [overflow-wrap:anywhere] text-[13px] font-mono leading-[1.625] text-slate-200 bg-[#0a0b10] overflow-x-auto">
+        <code className="whitespace-pre-wrap break-words [overflow-wrap:anywhere]" dangerouslySetInnerHTML={{ __html: highlighted }} />
       </pre>
     </div>
   );

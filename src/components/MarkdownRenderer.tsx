@@ -25,13 +25,13 @@ interface MarkdownRendererProps {
 function normalizeSingleLineFences(md: string): string {
   // Curated answers sometimes stored a multi-statement snippet as one line:
   // "'use client' import { x } from 'react' import { y } from './actions' // trimmed"
-  // Rehype would then render a single overflowing line (screenshot). Split it.
+  // Rehype would then render a single overflowing line (screenshot). Split before
+  // each import/export when not already at line start. Keep // comments intact.
   return md.replace(/```(\w*)\n([^\n]*?import[^\n]*?)\n```/g, (_m, lang, code: string) => {
     if (code.includes("\n")) return _m;
     let s = code;
-    s = s.replace(/(['"]use client['"])\s*import/g, "$1\nimport");
-    s = s.replace(/;\s*import/g, ";\nimport");
-    s = s.replace(/;\s*export/g, ";\nexport");
+    s = s.replace(/(?<!\n)\s+import\s+(?=\{|\*|["']|\w)/g, "\nimport ");
+    s = s.replace(/(?<!\n)\s+export\s+/g, "\nexport ");
     return "```" + lang + "\n" + s.trim() + "\n```";
   });
 }

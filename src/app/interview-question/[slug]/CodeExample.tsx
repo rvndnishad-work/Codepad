@@ -45,9 +45,10 @@ function normalizeCode(code: string): string {
   // legitimate one-liner (e.g. "const x = 1") should stay as-is and just wrap via CSS.
   if (!/(import|export)/.test(code)) return code;
   let s = code;
-  s = s.replace(/(['"]use client['"])\s*import/g, "$1\nimport");
-  s = s.replace(/;\s*import/g, ";\nimport");
-  s = s.replace(/;\s*export/g, ";\nexport");
+  // Generic split before import/export when not already at line start — handles
+  // "'use client' import" and "// comment) import" without mangling the comment's quotes.
+  s = s.replace(/(?<!\n)\s+import\s+(?=\{|\*|["']|\w)/g, "\nimport ");
+  s = s.replace(/(?<!\n)\s+export\s+/g, "\nexport ");
   // Don't mangle "} from" inside a single import — keep it together
   return s.trim();
 }

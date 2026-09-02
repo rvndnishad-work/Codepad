@@ -202,6 +202,7 @@ export default function QuestionDetailClient({
   const [isAnswerExpanded, setIsAnswerExpanded] = useState(false);
   const [isCommentsExpanded, setIsCommentsExpanded] = useState(true);
   const [lightboxSvg, setLightboxSvg] = useState<string | null>(null);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
   // Reading progress — thin bar under the top edge, tinted to the technology.
   const { scrollYProgress } = useScroll();
@@ -617,11 +618,20 @@ export default function QuestionDetailClient({
         </div>
       </header>
 
-      {/* ============ BODY ============ */}
-      <div className="max-w-6xl mx-auto px-6 py-10">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-          {/* LEFT: guided study flow on a numbered rail */}
-          <div className="lg:col-span-8">
+      {/* ============ BODY — wider, sidebar takes 26% and collapses for wide tables/SVGs ============ */}
+      <div className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 py-10">
+        {/* collapse toggle — visible on xl where sidebar would steal width from BOE tables */}
+        <div className="hidden xl:flex justify-end mb-4">
+          <button
+            onClick={() => setSidebarCollapsed(v => !v)}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-border bg-surface/70 text-xs font-bold text-muted hover:text-fg hover:border-accent/30 transition"
+          >
+            {sidebarCollapsed ? <><ChevronRight className="w-3.5 h-3.5" /> Show details</> : <>Hide details <ChevronRight className="w-3.5 h-3.5 rotate-180" /></>}
+          </button>
+        </div>
+        <div className={`flex flex-col gap-8 items-start ${sidebarCollapsed ? "" : "xl:flex-row"}`}>
+          {/* LEFT: guided study flow on a numbered rail — grows to fill when sidebar hidden */}
+          <div className="flex-1 min-w-0 w-full">
             <div className="relative lg:pl-14 space-y-10">
               {/* Connecting rail line (desktop) */}
               <div aria-hidden className="hidden lg:block absolute left-4 top-3 bottom-3 w-px bg-border" />
@@ -938,8 +948,8 @@ export default function QuestionDetailClient({
             )}
           </div>
 
-          {/* RIGHT: sticky companion sidebar — offset by 3px progress bar */}
-          <aside className="lg:col-span-4 space-y-5 lg:sticky lg:top-8">
+          {/* RIGHT: sticky companion sidebar — collapsible, narrower (340px) so tables/SVGs get ~72% */}
+          <aside className={`${sidebarCollapsed ? "hidden" : "w-full xl:w-[340px] shrink-0"} space-y-5 xl:sticky xl:top-8`}>
             {/* Track card — where this question lives */}
             {q.technology && (
               <motion.div initial="hidden" animate="visible" variants={fadeInVariants}>

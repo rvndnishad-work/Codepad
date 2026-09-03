@@ -50,20 +50,19 @@ export default function ChallengesHero({ stats }: { stats: ChallengesHeroStats }
     <section className="relative overflow-hidden border-b border-border">
       {/* Soft accent halo — same visual language as the homepage hero glow */}
       <div className="absolute inset-0 pointer-events-none">
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[820px] h-[360px] bg-accent/5 rounded-full blur-[140px]" />
       </div>
 
       <div className="relative mx-auto max-w-6xl px-6 py-14 md:py-16">
         {/* Headline cluster — staggered reveal */}
         <RevealOnScroll className="mb-10 md:mb-12" stagger={0.09}>
           <RevealItem>
-            <div className="inline-flex items-center gap-2 text-[11px] font-black uppercase tracking-[0.2em] text-accent mb-4 bg-accent/10 px-3 py-1.5 rounded-full">
+            <div className="inline-flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.2em] text-accent mb-4 bg-accent/10 px-3 py-1.5 rounded-full">
               <Sparkles className="w-3.5 h-3.5" />
               Practice · Sharpen · Ship
             </div>
           </RevealItem>
           <RevealItem>
-            <h1 className="text-3xl md:text-5xl font-black tracking-tight text-fg leading-[1.05] max-w-3xl">
+            <h1 className="text-3xl md:text-5xl font-bold tracking-tight text-fg leading-[1.05] max-w-3xl">
               Challenges built for{" "}
               <span className="text-accent">real interviews.</span>
             </h1>
@@ -85,7 +84,7 @@ export default function ChallengesHero({ stats }: { stats: ChallengesHeroStats }
             stagger={0.08}
           >
             <RevealItem>
-              <SpotlightCard className="rounded-2xl h-full">
+              <SpotlightCard className="h-full">
                 <StatCard
                   tone="emerald"
                   icon={<Target className="w-5 h-5" />}
@@ -95,12 +94,12 @@ export default function ChallengesHero({ stats }: { stats: ChallengesHeroStats }
               </SpotlightCard>
             </RevealItem>
             <RevealItem>
-              <SpotlightCard className="rounded-2xl h-full">
+              <SpotlightCard className="h-full">
                 <DifficultyCard easy={easy} medium={medium} hard={hard} total={diffTotal} />
               </SpotlightCard>
             </RevealItem>
             <RevealItem>
-              <SpotlightCard className="rounded-2xl h-full">
+              <SpotlightCard className="h-full">
                 <StatCard
                   tone="amber"
                   icon={<Clock className="w-5 h-5" />}
@@ -110,7 +109,7 @@ export default function ChallengesHero({ stats }: { stats: ChallengesHeroStats }
               </SpotlightCard>
             </RevealItem>
             <RevealItem>
-              <SpotlightCard className="rounded-2xl h-full">
+              <SpotlightCard className="h-full">
                 {personal ? (
                   <ProgressCard
                     solved={personal.solved}

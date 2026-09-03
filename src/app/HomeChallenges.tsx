@@ -4,9 +4,9 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { ArrowRight, Clock, Layers, Sparkles, Target, Briefcase } from "lucide-react";
 import HomeChallengesFlow from "./HomeChallengesFlow";
-import RevealOnScroll, { RevealItem } from "@/components/scroll/RevealOnScroll";
-import { SpotlightGroup, SpotlightCard } from "@/components/scroll/SpotlightGroup";
+import RevealOnScroll from "@/components/scroll/RevealOnScroll";
 import CountUp from "@/components/scroll/CountUp";
+import SectionHeading from "@/components/home/SectionHeading";
 import { StatCard, DifficultyCard } from "@/components/stats/StatBlocks";
 
 type Stats = {
@@ -57,168 +57,91 @@ export default function HomeChallenges({ stats }: { stats: Stats }) {
   const diffTotal = Math.max(1, easy + medium + hard);
   const totalHours = Math.max(1, Math.round(totalMinutes / 60));
 
+  const stat = (
+    tone: "emerald" | "amber" | "accent" | "rose",
+    icon: React.ReactNode,
+    value: React.ReactNode,
+    label: string
+  ) => <StatCard tone={tone} icon={icon} value={value} label={label} />;
+
   return (
-    <section className="bg-bg py-20 md:py-28 relative overflow-hidden">
-      {/* Soft accent halo behind the headline */}
-      <div className="absolute inset-0 pointer-events-none">
-        <div className="absolute top-10 left-1/2 -translate-x-1/2 w-[820px] h-[420px] bg-accent/5 rounded-full blur-[140px]" />
-      </div>
+    <section className="relative border-b border-border py-20 md:py-28">
+      <div className="relative mx-auto max-w-6xl px-4">
+        <SectionHeading
+          index="07"
+          eyebrow={isRecruiter ? "Assess · Evaluate · Hire" : "Practice · Interview · Offer"}
+          eyebrowIcon={
+            isRecruiter ? <Briefcase className="h-3 w-3" /> : <Sparkles className="h-3 w-3" />
+          }
+          tone={isRecruiter ? "secondary" : "accent"}
+          title={isRecruiter ? "Evaluate developers," : "Practice, prepare,"}
+          highlight={isRecruiter ? "automate the review." : "perform."}
+          lede={
+            isRecruiter
+              ? "Production-grade test cases that auto-grade on submission, keystroke timelines with integrity alerts, and a decision you can defend."
+              : "Interviewpad isn't a sandbox with a landing page. It's an interview engine — curated challenges, live mock sessions, and a record of everything you solved."
+          }
+        />
 
-      <div className="mx-auto max-w-6xl px-4 relative">
-        {/* Headline — staggered reveal so eyebrow → title → subtext rise in sequence */}
-        <RevealOnScroll className="text-center mb-12 md:mb-16" stagger={0.1}>
-          <RevealItem>
-            <div className={`inline-flex items-center gap-2 text-[11px] font-black uppercase tracking-[0.2em] mb-4 px-3 py-1.5 rounded-full ${
-              isRecruiter ? "text-secondary bg-secondary/10" : "text-accent bg-accent/10"
-            }`}>
-              {isRecruiter ? <Briefcase className="w-3.5 h-3.5" /> : <Sparkles className="w-3.5 h-3.5" />}
-              {isRecruiter ? "Assess · Evaluate · Hire" : "Practice · Interview · Hire"}
-            </div>
-          </RevealItem>
-          <RevealItem>
-            <h2 className="text-3xl md:text-5xl font-black text-fg tracking-tight leading-[1.05] max-w-3xl mx-auto">
-              {isRecruiter ? (
-                <>
-                  Evaluate developers, <span className="text-secondary">automate reviews.</span>
-                </>
-              ) : (
-                <>
-                  Practice, prepare, <span className="text-accent">perform.</span>
-                </>
-              )}
-            </h2>
-          </RevealItem>
-          <RevealItem>
-            <p className="text-muted text-base md:text-lg leading-relaxed mt-5 max-w-2xl mx-auto font-medium">
-              {isRecruiter ? (
-                "Deploy production-grade test cases that auto-grade on submission, review timelines of candidate keystrokes with proctoring alerts, and make hiring decisions instantly."
-              ) : (
-                "Interviewpad isn't just a sandbox. It's a complete interview engine — from curated coding challenges to live mock sessions you can run with anyone, anywhere."
-              )}
-            </p>
-          </RevealItem>
-        </RevealOnScroll>
-
-        {/* Animated 3-step infographic */}
+        {/* The three-step flow */}
         <HomeChallengesFlow />
 
-        {/* Live stats strip — spotlight glows track the cursor across all
-            four cards as one light source. */}
-        <SpotlightGroup className="mt-8">
-          <RevealOnScroll
-            className="grid grid-cols-2 md:grid-cols-4 gap-3"
-            stagger={0.08}
-          >
-            {isRecruiter ? (
-              <>
-                <RevealItem>
-                  <SpotlightCard className="rounded-2xl h-full">
-                    <StatCard
-                      tone="emerald"
-                      icon={<Target className="w-5 h-5" />}
-                      value="Auto"
-                      label="Server-side grading on submit"
-                    />
-                  </SpotlightCard>
-                </RevealItem>
-                <RevealItem>
-                  <SpotlightCard className="rounded-2xl h-full">
-                    <StatCard
-                      tone="amber"
-                      icon={<Clock className="w-5 h-5" />}
-                      value="Replay"
-                      label="Full keystroke timelines"
-                    />
-                  </SpotlightCard>
-                </RevealItem>
-                <RevealItem>
-                  <SpotlightCard className="rounded-2xl h-full">
-                    <StatCard
-                      tone="rose"
-                      icon={<Sparkles className="w-5 h-5" />}
-                      value="Signals"
-                      label="Integrity & proctoring alerts"
-                    />
-                  </SpotlightCard>
-                </RevealItem>
-                <RevealItem>
-                  <SpotlightCard className="rounded-2xl h-full">
-                    <StatCard
-                      tone="accent"
-                      icon={<Layers className="w-5 h-5" />}
-                      value={<CountUp value={roundedNumber(interviewsRun)} suffix="+" />}
-                      label="Screenings completed"
-                    />
-                  </SpotlightCard>
-                </RevealItem>
-              </>
-            ) : (
-              <>
-                <RevealItem>
-                  <SpotlightCard className="rounded-2xl h-full">
-                    <StatCard
-                      tone="emerald"
-                      icon={<Target className="w-5 h-5" />}
-                      value={<CountUp value={totalChallenges} suffix="+" />}
-                      label="Curated challenges"
-                    />
-                  </SpotlightCard>
-                </RevealItem>
-                <RevealItem>
-                  <SpotlightCard className="rounded-2xl h-full">
-                    <DifficultyCard easy={easy} medium={medium} hard={hard} total={diffTotal} />
-                  </SpotlightCard>
-                </RevealItem>
-                <RevealItem>
-                  <SpotlightCard className="rounded-2xl h-full">
-                    <StatCard
-                      tone="amber"
-                      icon={<Clock className="w-5 h-5" />}
-                      value={<CountUp value={totalHours} suffix="h+" />}
-                      label="Of practice content"
-                    />
-                  </SpotlightCard>
-                </RevealItem>
-                <RevealItem>
-                  <SpotlightCard className="rounded-2xl h-full">
-                    <StatCard
-                      tone="accent"
-                      icon={<Layers className="w-5 h-5" />}
-                      value={<CountUp value={roundedNumber(interviewsRun)} suffix="+" />}
-                      label="Interview sessions run"
-                    />
-                  </SpotlightCard>
-                </RevealItem>
-              </>
-            )}
-          </RevealOnScroll>
-        </SpotlightGroup>
+        {/* Live readouts. Same ruled-sheet construction as the flow above —
+            `[&>*]:border-0` lets the shared StatCard keep its own border when
+            it is used standalone on /challenges while the sheet supplies the
+            rules here. */}
+        <RevealOnScroll className="ip-frame mt-5 grid grid-cols-2 gap-px bg-border [&>*]:border-0 md:grid-cols-4">
+          {isRecruiter ? (
+            <>
+              {stat("emerald", <Target className="h-4 w-4" />, "Auto", "Server-side grading on submit")}
+              {stat("amber", <Clock className="h-4 w-4" />, "Replay", "Full keystroke timelines")}
+              {stat("rose", <Sparkles className="h-4 w-4" />, "Signals", "Integrity & proctoring alerts")}
+              {stat(
+                "accent",
+                <Layers className="h-4 w-4" />,
+                <CountUp value={roundedNumber(interviewsRun)} suffix="+" />,
+                "Screenings completed"
+              )}
+            </>
+          ) : (
+            <>
+              {stat(
+                "emerald",
+                <Target className="h-4 w-4" />,
+                <CountUp value={totalChallenges} suffix="+" />,
+                "Curated challenges"
+              )}
+              <DifficultyCard easy={easy} medium={medium} hard={hard} total={diffTotal} />
+              {stat(
+                "amber",
+                <Clock className="h-4 w-4" />,
+                <CountUp value={totalHours} suffix="h+" />,
+                "Hours of practice content"
+              )}
+              {stat(
+                "accent",
+                <Layers className="h-4 w-4" />,
+                <CountUp value={roundedNumber(interviewsRun)} suffix="+" />,
+                "Interview sessions run"
+              )}
+            </>
+          )}
+        </RevealOnScroll>
 
-        {/* Dual CTAs */}
-        <RevealOnScroll
-          className="flex flex-col sm:flex-row gap-3 justify-center items-stretch sm:items-center mt-10"
-          stagger={0.08}
-        >
-          <RevealItem>
-            <Link
-              href={isRecruiter ? "/dashboard" : "/challenges"}
-              className={`group inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl font-black text-sm text-bg transition-all shadow-sm ${
-                isRecruiter ? "bg-secondary hover:brightness-110" : "bg-accent hover:bg-accent-soft"
-              }`}
-            >
-              {isRecruiter ? "Go to workspaces" : "Browse all challenges"}
-              <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-0.5" />
-            </Link>
-          </RevealItem>
-          <RevealItem>
-            <Link
-              href={isRecruiter ? "/dashboard" : "/interview/new"}
-              className="group inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl border border-border bg-panel hover:bg-elevated hover:border-border-strong text-fg font-black text-sm transition-colors"
-            >
-              {isRecruiter ? "Manage campaigns" : "Build your first interview"}
-              <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-0.5" />
-            </Link>
-          </RevealItem>
+        <RevealOnScroll className="mt-10 flex flex-col items-stretch gap-3 sm:flex-row sm:items-center">
+          <Link
+            href={isRecruiter ? "/dashboard" : "/challenges"}
+            className={`ip-btn ip-btn-primary group ${isRecruiter ? "ip-btn-armed-secondary" : ""}`}
+          >
+            {isRecruiter ? "Go to workspaces" : "Browse all challenges"}
+            <ArrowRight className="ip-arrow h-4 w-4" />
+          </Link>
+          <Link
+            href={isRecruiter ? "/dashboard" : "/interview/new"}
+            className="ip-btn ip-btn-ghost"
+          >
+            {isRecruiter ? "Manage campaigns" : "Build your first interview"}
+          </Link>
         </RevealOnScroll>
       </div>
     </section>

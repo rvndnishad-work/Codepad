@@ -321,24 +321,29 @@ export default async function HomePage() {
             - Compact "Most read" sidebar with numbered popular posts
           Total ~10 stories visible without scrolling on desktop. */}
       {hasAnyBlog && (
-        <section className="bg-bg py-24 relative overflow-hidden">
-          <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-accent/5 rounded-full blur-[120px] -mr-64 -mt-64" />
-          <div className="mx-auto max-w-6xl px-4 relative z-10">
-            <div className="flex items-end justify-between mb-10">
-              <div>
-                <div className="inline-flex items-center gap-2 text-[11px] font-black uppercase tracking-widest text-accent mb-2 bg-accent/10 px-3 py-1 rounded-full">
-                  <BookOpen className="w-3.5 h-3.5" />
+        <section className="relative border-b border-border py-20 md:py-28">
+          <div className="relative z-10 mx-auto max-w-6xl px-4">
+            {/* Same clause construction as every other section header, so the
+                editorial feed is part of the page rather than a blog widget
+                bolted onto the end of it. */}
+            <div className="mb-10">
+              <div className="flex items-center gap-3">
+                <span className="ip-index">08</span>
+                <span className="ip-label ip-label-accent flex items-center gap-1.5">
+                  <BookOpen className="h-3 w-3" />
                   Insights
-                </div>
-                <h2 className="text-3xl font-black text-fg tracking-tight">Latest Stories</h2>
+                </span>
+                <span className="ip-rule min-w-4 flex-1" aria-hidden />
               </div>
-              <Link
-                href="/blog"
-                className="text-sm font-bold text-muted hover:text-fg transition-colors flex items-center gap-2 group"
-              >
-                Read all articles
-                <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
-              </Link>
+              <div className="mt-6 flex flex-col gap-6 md:flex-row md:items-end md:justify-between">
+                <h2 className="ip-display ip-display-lg text-fg">
+                  Latest <span className="text-accent">stories.</span>
+                </h2>
+                <Link href="/blog" className="ip-link shrink-0 self-start text-[13px] md:self-end">
+                  Read all articles
+                  <span aria-hidden>→</span>
+                </Link>
+              </div>
             </div>
 
             {/* Pinned posts: full-width hero carousel above the editorial grid
@@ -375,12 +380,10 @@ export default async function HomePage() {
                   space as the hero + grid in the main column on desktop. */}
               <aside className="space-y-4">
                 {popularEntries.length > 0 && (
-                  <div className="rounded-2xl border border-border bg-surface p-5">
-                    <div className="flex items-center gap-2 mb-4">
-                      <TrendingUp className="w-3.5 h-3.5 text-emerald-500" />
-                      <h3 className="text-sm font-black tracking-tight text-fg">
-                        Most read
-                      </h3>
+                  <div className="ip-frame p-5">
+                    <div className="mb-4 flex items-center gap-2 border-b border-border pb-3">
+                      <TrendingUp className="h-3.5 w-3.5 text-emerald-500" />
+                      <h3 className="ip-label ip-label-fg">Most read</h3>
                     </div>
                     <div className="flex flex-col">
                       {popularEntries.map((blog, i) => (
@@ -389,7 +392,7 @@ export default async function HomePage() {
                     </div>
                     <Link
                       href="/blog?tab=top"
-                      className="mt-4 flex items-center justify-center gap-1.5 text-[11px] font-bold text-muted hover:text-fg transition-colors py-2 rounded-lg border border-border bg-bg hover:bg-elevated"
+                      className="ip-label mt-4 flex items-center justify-center gap-1.5 border border-border py-2.5 transition-colors hover:border-border-strong hover:text-fg"
                     >
                       See all popular
                       <ArrowRight className="w-3 h-3" />
@@ -401,19 +404,17 @@ export default async function HomePage() {
 
                 {/* Write CTA — points authenticated users straight at the
                     editor, prompts everyone else to sign in first. */}
-                <div className="rounded-2xl border border-accent/30 bg-accent/5 p-5">
-                  <div className="flex items-center gap-2 mb-2">
-                    <PenSquare className="w-4 h-4 text-accent" />
-                    <h3 className="text-sm font-black tracking-tight text-fg">
-                      Write on Interviewpad
-                    </h3>
+                <div className="ip-frame ip-ticks p-5">
+                  <div className="flex items-center gap-2 border-b border-border pb-3">
+                    <PenSquare className="h-3.5 w-3.5 text-accent" />
+                    <h3 className="ip-label ip-label-fg">Write on Interviewpad</h3>
                   </div>
-                  <p className="text-xs text-muted mb-3 leading-relaxed">
-                    Share what you learn. Embed runnable code, get reactions, grow your audience.
+                  <p className="mb-4 mt-3 text-[12.5px] leading-relaxed text-muted">
+                    Share what you learn. Embed runnable code, get reactions, grow an audience.
                   </p>
                   <Link
                     href={userId ? "/dashboard/blogs/new" : "/login?next=/dashboard/blogs/new"}
-                    className="block text-center px-4 py-2 rounded-lg bg-accent text-bg text-xs font-bold hover:bg-accent-soft transition"
+                    className="ip-btn ip-btn-primary ip-btn-sm w-full"
                   >
                     {userId ? "Start writing" : "Sign in to write"}
                   </Link>

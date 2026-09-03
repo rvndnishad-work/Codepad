@@ -1,6 +1,6 @@
 import Link from "next/link";
-import { ArrowRight, Check, Tag } from "lucide-react";
-import RevealOnScroll, { RevealItem } from "@/components/scroll/RevealOnScroll";
+import { ArrowRight, Tag } from "lucide-react";
+import RevealOnScroll from "@/components/scroll/RevealOnScroll";
 import SectionHeading from "@/components/home/SectionHeading";
 
 /**
@@ -33,67 +33,76 @@ const PLANS = [
 
 export default function PricingTeaser() {
   return (
-    <section className="mx-auto max-w-6xl px-4 py-24 md:py-32">
-      <SectionHeading
-        eyebrow="Pricing"
-        eyebrowIcon={<Tag className="w-3.5 h-3.5" />}
-        title="Per-seat plans."
-        highlight="Per-screening credits."
-        linkHref="/pricing"
-        linkLabel="Full pricing"
-        align="left"
-      />
+    <section className="border-b border-border py-20 md:py-28">
+      <div className="mx-auto max-w-6xl px-4">
+        <SectionHeading
+          index="08"
+          tone="secondary"
+          eyebrow="Pricing"
+          eyebrowIcon={<Tag className="h-3 w-3" />}
+          title="Per-seat plans."
+          highlight="Per-screening credits."
+          lede="Seats cover the workspace and everyone in it. AI screenings are credits on top, charged only when a candidate actually starts."
+          linkHref="/pricing"
+          linkLabel="Full pricing"
+        />
 
-      <RevealOnScroll stagger={0.1} amount={0.15} className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        {PLANS.map((plan) => (
-          <RevealItem key={plan.name}>
-            <div
-              className={`h-full rounded-3xl border p-6 flex flex-col transition-colors ${
-                plan.highlight
-                  ? "border-secondary/40 bg-secondary/5 shadow-tile-hover"
-                  : "border-border bg-panel shadow-tile hover:border-secondary/30"
-              }`}
-            >
-              <div className="flex items-center justify-between mb-1">
-                <h3 className="text-lg font-black text-fg">{plan.name}</h3>
+        {/* A price table, not three floating cards. The recommended plan is
+            marked by an ink header band — a change of surface, not a badge. */}
+        <RevealOnScroll className="ip-frame grid grid-cols-1 gap-px bg-border md:grid-cols-3">
+          {PLANS.map((plan) => (
+            <div key={plan.name} className="flex flex-col bg-surface">
+              <div
+                className={`flex items-center justify-between border-b border-border px-6 py-3 ${
+                  plan.highlight ? "bg-secondary text-secondary-ink" : ""
+                }`}
+              >
+                <span
+                  className="ip-label"
+                  style={plan.highlight ? { color: "inherit" } : undefined}
+                >
+                  {plan.name}
+                </span>
                 {plan.highlight && (
-                  <span className="text-[10px] font-black uppercase tracking-wider text-secondary bg-secondary/10 border border-secondary/25 px-2 py-0.5 rounded-full">
-                    Popular
+                  <span className="ip-label ip-label-xs" style={{ color: "inherit" }}>
+                    Recommended
                   </span>
                 )}
               </div>
-              <div className="mb-3">
-                <span className="text-3xl font-black text-fg">{plan.price}</span>
-                <span className="text-xs text-muted font-bold"> / seat / month</span>
+
+              <div className="flex flex-1 flex-col p-6">
+                <div className="flex items-baseline gap-1.5">
+                  <span className="ip-nums text-4xl font-bold text-fg">{plan.price}</span>
+                  <span className="ip-label">/ seat / month</span>
+                </div>
+                <p className="mt-4 text-[12.5px] leading-relaxed text-muted">{plan.blurb}</p>
+
+                <ul className="mt-5 divide-y divide-border border-t border-border">
+                  {plan.points.map((point) => (
+                    <li key={point} className="flex items-start gap-2.5 py-2.5">
+                      <span
+                        aria-hidden
+                        className="mt-[7px] h-[5px] w-[5px] shrink-0 bg-secondary"
+                      />
+                      <span className="text-[12.5px] leading-snug text-fg">{point}</span>
+                    </li>
+                  ))}
+                </ul>
+
+                <Link
+                  href="/pricing"
+                  className={`ip-link mt-6 self-start text-[13px] ${
+                    plan.highlight ? "text-secondary" : ""
+                  }`}
+                >
+                  Compare plans
+                  <ArrowRight className="h-3.5 w-3.5" />
+                </Link>
               </div>
-              <p className="text-muted text-sm mb-4">{plan.blurb}</p>
-              <ul className="space-y-2 mb-6">
-                {plan.points.map((p) => (
-                  <li key={p} className="flex items-start gap-2 text-sm text-muted">
-                    <Check className="w-4 h-4 text-secondary shrink-0 mt-0.5" />
-                    {p}
-                  </li>
-                ))}
-              </ul>
-              <Link
-                href="/pricing"
-                className={`mt-auto text-center px-4 py-2.5 rounded-xl text-sm font-bold transition-all ${
-                  plan.highlight
-                    ? "bg-secondary hover:brightness-110 text-white"
-                    : "bg-surface hover:bg-elevated text-fg border border-border"
-                }`}
-              >
-                Compare plans
-              </Link>
             </div>
-          </RevealItem>
-        ))}
-      </RevealOnScroll>
-      <RevealOnScroll delay={0.15}>
-        <p className="text-center text-xs text-muted/70 mt-6">
-          AI screenings are billed as credits on top of any plan — buy packs as you go, charged only when a candidate actually starts.
-        </p>
-      </RevealOnScroll>
+          ))}
+        </RevealOnScroll>
+      </div>
     </section>
   );
 }

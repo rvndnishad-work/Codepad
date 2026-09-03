@@ -17,9 +17,9 @@ export default function BlogPopularRow({
   return (
     <Link
       href={`/blog/${blog.slug}`}
-      className="group flex items-start gap-3 py-2.5 border-b border-border last:border-b-0 hover:bg-bg/40 -mx-2 px-2 rounded-lg transition-colors"
+      className="group flex items-start gap-3 py-2.5 border-b border-border last:border-b-0 hover:bg-bg/40 -mx-2 px-2 rounded-data transition-colors"
     >
-      <span className="text-2xl font-black leading-none text-accent/30 tabular-nums shrink-0 w-7 pt-0.5">
+      <span className="text-2xl font-bold leading-none text-accent/30 tabular-nums shrink-0 w-7 pt-0.5">
         {rank.toString().padStart(2, "0")}
       </span>
       <span className="flex-1 min-w-0">

@@ -1,96 +1,142 @@
 import Link from "next/link";
-import { Github, Twitter, Youtube, ShieldCheck, Cpu, Zap, Globe, Lock } from "lucide-react";
 import { LogoLockup } from "./Logo";
+
+/**
+ * The colophon.
+ *
+ * Footers are where template aesthetics go to die — four identical link
+ * columns, a bordered "SOC2" card, three rounded social buttons. This one is
+ * set as the back matter of a technical document: a brand statement in the
+ * editorial column, ruled link columns, and a monospaced RUNTIME STRIP that
+ * states the platform's actual guarantees as metadata rather than as badges.
+ */
+
+const PRODUCT_LINKS = [
+  { href: "/playgrounds", label: "Playgrounds" },
+  { href: "/challenges", label: "Challenges" },
+  { href: "/explore", label: "Explore" },
+  { href: "/play", label: "New sandbox" },
+];
+
+const PREPARE_LINKS = [
+  { href: "/interview-questions", label: "Interview questions" },
+  { href: "/prep", label: "Prep journeys" },
+  { href: "/creators", label: "Creators" },
+  { href: "/blog", label: "Blog" },
+];
+
+const HIRING_LINKS = [
+  { href: "/hire", label: "For hiring teams" },
+  { href: "/pricing", label: "Pricing" },
+  { href: "/dashboard", label: "Dashboard" },
+  { href: "/become-creator", label: "Become a creator" },
+];
+
+/** Every claim here maps to a shipped mechanism — keep it that way. */
+const RUNTIME_FACTS = [
+  "Network-isolated execution",
+  "Server-side grading",
+  "AES-256 secrets at rest",
+  "Append-only audit trails",
+  "SOC 2 in progress",
+  "GDPR compliant",
+];
 
 export default function Footer() {
   return (
-    <footer className="relative border-t border-border bg-bg pt-16 pb-8 overflow-hidden">
-      {/* Background Accents */}
-      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-px bg-gradient-to-r from-transparent via-accent/20 to-transparent" />
-      <div className="absolute -bottom-24 -left-24 w-64 h-64 bg-accent opacity-[0.02] blur-[100px] pointer-events-none" />
-      
-      <div className="mx-auto max-w-7xl px-4 relative z-10">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12 mb-16">
-          {/* Brand Column */}
-          <div className="space-y-6">
-            <Link href="/" className="inline-flex flex-col items-start gap-1.5 group">
-              <LogoLockup height={40} className="drop-shadow-[0_0_8px_rgba(var(--accent-rgb),0.35)] transition-transform group-hover:scale-[1.03] origin-left" />
-              <span className="text-[9px] font-bold text-accent uppercase tracking-[0.3em] pl-1">Pro Sandbox</span>
+    <footer className="border-t border-border bg-bg">
+      <div className="mx-auto max-w-7xl px-4">
+        {/* ── Editorial column + ruled link columns ── */}
+        <div className="grid grid-cols-1 gap-12 border-b border-border py-14 lg:grid-cols-12 lg:gap-8">
+          <div className="lg:col-span-5 lg:pr-12">
+            <Link href="/" className="inline-flex">
+              <LogoLockup height={44} />
             </Link>
-            <p className="text-muted text-sm leading-relaxed max-w-xs">
-              The next-generation JavaScript playground. Built for developers who demand speed, precision, and the ultimate "Pro" aesthetic.
+            <p className="mt-6 max-w-sm text-[13.5px] leading-relaxed text-muted">
+              An interview runtime. Candidates practise on the same
+              network-isolated sandbox that hiring teams grade on, so what
+              happens in preparation and what happens in the room are the
+              same system.
             </p>
-            <div className="flex items-center gap-4">
-              <a href="#" className="p-2 rounded-lg bg-surface border border-border text-muted hover:text-accent hover:border-accent/30 transition-all">
-                <Twitter className="w-4 h-4" />
-              </a>
-              <a href="#" className="p-2 rounded-lg bg-surface border border-border text-muted hover:text-accent hover:border-accent/30 transition-all">
-                <Github className="w-4 h-4" />
-              </a>
-              <a href="#" className="p-2 rounded-lg bg-surface border border-border text-muted hover:text-accent hover:border-accent/30 transition-all">
-                <Youtube className="w-4 h-4" />
-              </a>
+            <div className="mt-7 flex items-center gap-5">
+              {[
+                { label: "GitHub", href: "#" },
+                { label: "X", href: "#" },
+                { label: "YouTube", href: "#" },
+              ].map((s) => (
+                <a key={s.label} href={s.href} className="ip-link ip-label">
+                  {s.label}
+                </a>
+              ))}
             </div>
           </div>
 
-          {/* Product Column */}
-          <div>
-            <h4 className="text-xs font-black uppercase tracking-[0.2em] text-accent mb-6">Product</h4>
-            <ul className="space-y-4 text-sm font-bold">
-              <li><Link href="/playgrounds" className="text-muted hover:text-fg transition-colors">Playgrounds</Link></li>
-              <li><Link href="/explore" className="text-muted hover:text-fg transition-colors">Explore</Link></li>
-              <li><Link href="/play" className="text-muted hover:text-fg transition-colors">New Sandbox</Link></li>
-              <li><Link href="/dashboard" className="text-muted hover:text-fg transition-colors">Dashboard</Link></li>
-            </ul>
-          </div>
-
-          {/* Infrastructure Column */}
-          <div>
-            <h4 className="text-xs font-black uppercase tracking-[0.2em] text-accent mb-6">Security</h4>
-            <ul className="space-y-4">
-              <li className="flex items-center gap-3 text-sm text-muted">
-                <Lock className="w-4 h-4 text-emerald-500/60" />
-                <span>Isolated Containers</span>
-              </li>
-              <li className="flex items-center gap-3 text-sm text-muted">
-                <ShieldCheck className="w-4 h-4 text-emerald-500/60" />
-                <span>Local-first Runtime</span>
-              </li>
-              <li className="flex items-center gap-3 text-sm text-muted">
-                <Globe className="w-4 h-4 text-emerald-500/60" />
-                <span>Edge Optimized</span>
-              </li>
-            </ul>
-          </div>
-
-          {/* Compliance & Trust Column */}
-          <div className="bg-surface border border-border rounded-2xl p-6 flex flex-col justify-center gap-4 hover:border-emerald-500/20 transition-all">
-             <div className="flex items-center gap-3">
-                <ShieldCheck className="w-6 h-6 text-emerald-400" />
-                <div className="flex flex-col">
-                   <span className="text-sm font-black text-fg leading-none">SOC2 Type II</span>
-                   <span className="text-[9px] font-bold uppercase tracking-widest text-muted/40">In Progress / Compliant</span>
-                </div>
-             </div>
-             <div className="flex items-center gap-3">
-                <Lock className="w-6 h-6 text-emerald-400" />
-                <div className="flex flex-col">
-                   <span className="text-sm font-black text-fg leading-none">GDPR Compliant</span>
-                   <span className="text-[9px] font-bold uppercase tracking-widest text-muted/40">100% Data Protection</span>
-                </div>
-             </div>
-          </div>
+          <nav className="grid grid-cols-2 gap-8 sm:grid-cols-3 lg:col-span-7">
+            <FooterColumn title="Build" links={PRODUCT_LINKS} />
+            <FooterColumn title="Prepare" links={PREPARE_LINKS} />
+            <FooterColumn title="Hire" links={HIRING_LINKS} />
+          </nav>
         </div>
 
-        {/* Bottom Bar */}
-        <div className="pt-8 border-t border-border flex flex-col sm:flex-row items-center justify-between gap-4 text-xs font-bold text-muted/40 uppercase tracking-[0.1em]">
-          <p>© {new Date().getFullYear()} INTERVIEWPAD PRO. ALL RIGHTS RESERVED.</p>
+        {/* ── Runtime strip: the guarantees, as metadata ── */}
+        <div className="flex flex-wrap items-center gap-x-5 gap-y-2 border-b border-border py-4">
+          <span className="ip-label ip-label-accent flex items-center gap-2">
+            <span className="ip-live h-[5px] w-[5px] bg-accent" aria-hidden />
+            Runtime
+          </span>
+          {RUNTIME_FACTS.map((fact) => (
+            <span key={fact} className="ip-label ip-label-xs">
+              {fact}
+            </span>
+          ))}
+        </div>
+
+        {/* ── Bottom bar ── */}
+        <div className="flex flex-col items-start justify-between gap-3 py-6 sm:flex-row sm:items-center">
+          <span className="ip-label ip-label-xs">
+            © {new Date().getFullYear()} Interviewpad
+          </span>
           <div className="flex items-center gap-6">
-             <Link href="/privacy" className="hover:text-fg transition-colors">Privacy Policy</Link>
-             <Link href="/terms" className="hover:text-fg transition-colors">Terms of Service</Link>
+            <Link href="/privacy" className="ip-label ip-label-xs hover:text-fg">
+              Privacy
+            </Link>
+            <Link href="/terms" className="ip-label ip-label-xs hover:text-fg">
+              Terms
+            </Link>
+            <Link href="/docs" className="ip-label ip-label-xs hover:text-fg">
+              Docs
+            </Link>
           </div>
         </div>
       </div>
     </footer>
+  );
+}
+
+function FooterColumn({
+  title,
+  links,
+}: {
+  title: string;
+  links: { href: string; label: string }[];
+}) {
+  return (
+    <div>
+      <div className="flex items-center gap-2 border-b border-border pb-2.5">
+        <span className="ip-label ip-label-fg">{title}</span>
+      </div>
+      <ul className="mt-3.5 space-y-2.5">
+        {links.map((l) => (
+          <li key={l.href}>
+            <Link
+              href={l.href}
+              className="text-[13px] text-muted transition-colors hover:text-fg"
+            >
+              {l.label}
+            </Link>
+          </li>
+        ))}
+      </ul>
+    </div>
   );
 }

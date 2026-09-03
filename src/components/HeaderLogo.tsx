@@ -7,12 +7,16 @@ import { LogoLockup } from "./Logo";
 export default function HeaderLogo() {
   const pathname = usePathname();
   const isAdminPage = pathname?.startsWith("/admin");
+  // Recruiter/hiring view carries the indigo (secondary) brand mark.
+  const isRecruiter = pathname?.startsWith("/hire");
 
   return (
     <Link href={isAdminPage ? "/admin" : "/"} className="hidden md:flex items-center gap-2.5 group shrink-0 overflow-visible">
-      <LogoLockup height={58} className="drop-shadow-[0_0_8px_rgba(var(--accent-rgb),0.25)] transition-transform group-hover:scale-105" />
+      {/* No glow, no lift. The mark is the mark; hover is handled by the
+          nav's own rules, not by making the logo bloom. */}
+      <LogoLockup height={58} tone={isRecruiter ? "secondary" : "accent"} />
       {isAdminPage && (
-        <span className="text-[9px] font-black tracking-widest text-accent uppercase border-l border-border pl-2.5">
+        <span className="ip-label ip-label-accent border-l border-border pl-2.5">
           Admin Portal
         </span>
       )}

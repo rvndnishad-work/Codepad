@@ -4,7 +4,6 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { Zap, ShieldCheck, Share2, Code2, Laptop, Globe, Cpu, Play, RotateCcw, Loader2, ArrowRight } from "lucide-react";
 import RevealOnScroll, { RevealItem } from "@/components/scroll/RevealOnScroll";
-import { SpotlightGroup, SpotlightCard } from "@/components/scroll/SpotlightGroup";
 import SectionHeading from "@/components/home/SectionHeading";
 import {
   TemplateCardShell,
@@ -200,18 +199,20 @@ function CodeDemoCard() {
   return (
     <div
       ref={cardRef}
-      className="md:col-span-8 rounded-3xl border border-border bg-surface p-1 overflow-hidden group shadow-2xl hover:border-border-strong transition-colors"
+      className="md:col-span-8 border border-border bg-surface p-1 overflow-hidden group hover:border-border-strong transition-colors"
     >
-      <div className="bg-panel rounded-[22px] h-full overflow-hidden flex flex-col">
+      <div className="bg-panel h-full overflow-hidden flex flex-col">
         {/* Browser chrome with Run button */}
         <div className="flex items-center gap-3 px-4 py-2.5 border-b border-border bg-surface/50">
-          <div className="flex gap-1.5">
-            <div className="w-2.5 h-2.5 rounded-full bg-red-500/20" />
-            <div className="w-2.5 h-2.5 rounded-full bg-amber-500/20" />
-            <div className="w-2.5 h-2.5 rounded-full bg-green-500/20" />
+          {/* Window markers, not macOS traffic lights: three states of the
+              same square, reading left to right as the run progresses. */}
+          <div className="flex items-center gap-1.5" aria-hidden>
+            <span className="h-[6px] w-[6px] bg-border-strong" />
+            <span className="h-[6px] w-[6px] bg-border-strong" />
+            <span className="h-[6px] w-[6px] bg-accent" />
           </div>
           <div className="flex-1 flex justify-center min-w-0">
-            <div className="px-3 py-1 rounded-md bg-bg/40 text-[10px] font-mono text-muted flex items-center gap-2 truncate">
+            <div className="px-3 py-1 rounded-data bg-bg/40 text-[10px] font-mono text-muted flex items-center gap-2 truncate">
               <Globe className="w-3 h-3 shrink-0" />
               <span className="truncate">interviewpad.in/play/sum-function</span>
             </div>
@@ -220,7 +221,7 @@ function CodeDemoCard() {
             type="button"
             onClick={isDone ? reset : runCode}
             disabled={!canRun}
-            className="flex items-center gap-1.5 text-bg bg-accent font-bold text-[11px] uppercase tracking-wider px-2.5 py-1.5 rounded-md hover:brightness-95 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-sm shrink-0"
+            className="flex items-center gap-1.5 text-bg bg-accent font-bold text-[11px] uppercase tracking-wider px-2.5 py-1.5 rounded-data hover:brightness-95 disabled:opacity-50 disabled:cursor-not-allowed transition-all shrink-0"
             aria-label={isDone ? "Replay demo" : "Run code"}
           >
             {isRunning ? (
@@ -278,7 +279,7 @@ function CodeDemoCard() {
           {/* Console column */}
           <div className="px-5 py-5 font-mono text-xs bg-bg/30 border-t md:border-t-0 border-border">
             <div className="flex items-center gap-2 mb-3">
-              <div className={`w-1.5 h-1.5 rounded-full ${statusDot}`} />
+              <div className={`w-1.5 h-1.5 ${statusDot}`} />
               <span className="text-[10px] uppercase tracking-[0.18em] text-muted font-bold">
                 Console
               </span>
@@ -297,7 +298,7 @@ function CodeDemoCard() {
                   return (
                     <div
                       key={i}
-                      className={isResult ? "text-accent font-black text-base" : "text-muted"}
+                      className={isResult ? "text-accent font-bold text-base" : "text-muted"}
                     >
                       {line}
                     </div>
@@ -360,8 +361,10 @@ const QUICK_STARTS = [
 
 export default function HomeBento() {
   return (
-    <section className="mx-auto max-w-6xl px-4 py-24 md:py-32">
+    <section className="border-b border-border py-20 md:py-28">
+      <div className="mx-auto max-w-6xl px-4">
       <SectionHeading
+        index="04"
         eyebrow="Live demo"
         eyebrowIcon={<Play className="w-3.5 h-3.5" />}
         title="The sandbox,"
@@ -373,68 +376,52 @@ export default function HomeBento() {
         {/* Main Feature: Live Preview Lookalike */}
         <CodeDemoCard />
 
-        {/* Side Bento: Stats/Highlight */}
-        <RevealOnScroll className="md:col-span-4 grid grid-cols-1 gap-4" stagger={0.12}>
-          <RevealItem>
-            <div className="rounded-3xl border border-accent/20 bg-accent/5 p-6 flex flex-col justify-between group overflow-hidden relative h-full">
-              <div className="absolute -right-4 -bottom-4 opacity-[0.05] transition-transform group-hover:scale-110">
-                <Cpu className="w-32 h-32 text-accent" />
-              </div>
-              <h3 className="font-black uppercase tracking-widest text-xs mb-2 text-accent">Engine</h3>
-              <p className="text-fg text-xl md:text-2xl font-black leading-tight relative z-10">
-                Powered by the <br />
-                <span className="text-accent">Sandpack v2</span> <br />
-                Runtime.
-              </p>
-            </div>
-          </RevealItem>
-          <RevealItem>
-            <Link
-              href="/playgrounds"
-              className="rounded-3xl border border-border bg-panel p-6 flex flex-col justify-between group hover:border-accent/40 transition-colors h-full"
-            >
-              <div className="flex items-center justify-between mb-2">
-                <div className="w-10 h-10 rounded-xl bg-surface border border-accent/25 flex items-center justify-center">
-                  <Play className="w-5 h-5 text-accent" />
-                </div>
-                <ArrowRight className="w-4 h-4 text-muted group-hover:text-accent group-hover:translate-x-1 transition-all" />
-              </div>
-              <div>
-                <div className="text-2xl font-black text-fg">30+ starters</div>
-                <div className="text-xs text-muted">Open a playground and ship something in seconds</div>
-              </div>
-            </Link>
-          </RevealItem>
+        {/* Side column — two readouts stacked on one rule, no tinted panels. */}
+        <RevealOnScroll className="ip-frame grid grid-cols-1 gap-px bg-border md:col-span-4">
+          <div className="flex flex-col justify-center gap-3 bg-surface p-6">
+            <span className="ip-label ip-label-accent">Engine</span>
+            <p className="ip-display ip-display-md text-fg">
+              Powered by the <span className="text-accent">Sandpack&nbsp;v2</span> runtime.
+            </p>
+          </div>
+          <Link
+            href="/playgrounds"
+            className="group flex flex-col justify-center gap-2 bg-surface p-6"
+          >
+            <span className="ip-label ip-label-fg flex items-center gap-2">
+              Starters
+              <ArrowRight className="ip-arrow h-3.5 w-3.5" />
+            </span>
+            <span className="ip-nums text-3xl font-bold leading-none text-fg">30+</span>
+            <span className="text-[12.5px] leading-relaxed text-muted">
+              Open a playground and ship something in seconds.
+            </span>
+          </Link>
         </RevealOnScroll>
 
-        {/* Feature Matrix */}
-        <SpotlightGroup className="md:col-span-12">
-          <RevealOnScroll
-            className="grid grid-cols-1 md:grid-cols-3 gap-4"
-            stagger={0.08}
-          >
-            {FEATURES.map((f, i) => (
-              <RevealItem key={i}>
-                <SpotlightCard className="rounded-3xl h-full">
-                  <div className="rounded-3xl border border-border bg-panel p-6 hover:bg-elevated hover:border-accent/40 transition-colors group h-full">
-                    <div className="w-12 h-12 rounded-2xl bg-surface border border-accent/25 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
-                      <f.icon className="w-6 h-6 text-accent" />
-                    </div>
-                    <h4 className="text-fg font-black text-xl mb-2">{f.title}</h4>
-                    <p className="text-muted text-sm md:text-base leading-relaxed">{f.body}</p>
-                  </div>
-                </SpotlightCard>
-              </RevealItem>
-            ))}
-          </RevealOnScroll>
-        </SpotlightGroup>
+        {/* Capability matrix — one ruled sheet. The cursor-tracking spotlight
+            that used to light these panels is gone: structure carries them. */}
+        <RevealOnScroll className="ip-frame grid grid-cols-1 gap-px bg-border md:col-span-12 md:grid-cols-3">
+          {FEATURES.map((f, i) => (
+            <div key={i} className="flex flex-col gap-4 bg-surface p-6">
+              <div className="flex items-center gap-3">
+                <span className="ip-index">{String(i + 1).padStart(2, "0")}</span>
+                <f.icon className="h-4 w-4 text-subtle" />
+                <span className="ip-rule-soft min-w-2 flex-1" aria-hidden />
+              </div>
+              <h4 className="text-[15px] font-semibold tracking-[-0.015em] text-fg">{f.title}</h4>
+              <p className="text-[12.5px] leading-relaxed text-muted">{f.body}</p>
+            </div>
+          ))}
+        </RevealOnScroll>
 
         {/* Quick Starts Title */}
-        <RevealOnScroll className="md:col-span-12 mt-12 mb-6">
-          <h2 className="text-2xl md:text-3xl font-black text-fg tracking-tight flex items-center gap-3">
-            <div className="w-1.5 h-8 rounded-full bg-accent" />
-            Popular Starters
-          </h2>
+        <RevealOnScroll className="md:col-span-12 mb-5 mt-14">
+          <div className="flex items-center gap-3">
+            <span className="ip-index">04.1</span>
+            <span className="ip-label ip-label-fg">Popular starters</span>
+            <span className="ip-rule min-w-4 flex-1" aria-hidden />
+          </div>
         </RevealOnScroll>
 
         {/* Quick Start Grid */}
@@ -455,6 +442,7 @@ export default function HomeBento() {
           ))}
         </RevealOnScroll>
 
+      </div>
       </div>
     </section>
   );

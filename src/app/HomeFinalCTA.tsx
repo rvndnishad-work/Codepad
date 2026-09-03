@@ -1,142 +1,80 @@
-"use client";
-
 import Link from "next/link";
-import { Fragment } from "react";
 import { ArrowRight } from "lucide-react";
-import { motion, useReducedMotion, type Variants } from "framer-motion";
-import { EASE_EXPO_OUT } from "@/components/scroll/motion-config";
+import RevealOnScroll, { RevealItem } from "@/components/scroll/RevealOnScroll";
+import SignalStrip, {
+  CANDIDATE_STAGES,
+  RECRUITER_STAGES,
+} from "@/components/home/SignalStrip";
 
+/**
+ * The closing band.
+ *
+ * A full-bleed INK BLOCK rather than a rounded gradient panel floating inside
+ * a container. Inverting the page for one band is the loudest move the design
+ * system allows, so it is spent exactly once, at the end, on the ask: dark on
+ * a light page, light on a dark one. `.ip-invert` re-keys the tokens inside so
+ * the flip never strands a colour on the wrong ground. The blueprint field is
+ * drawn in the band's own text colour, and the closing signal strip repeats
+ * the motif the hero opened with — the page starts and ends on the same shape.
+ */
 export default function HomeFinalCTA({
   persona = "candidate",
 }: {
   persona?: "candidate" | "recruiter";
 }) {
-  const reduced = useReducedMotion();
   const isRecruiter = persona === "recruiter";
 
-  const headline = isRecruiter ? "Hire your next elite engineer." : "Walk in prepared.";
+  const headline = isRecruiter ? "Hire on evidence." : "Walk in prepared.";
   const subtitle = isRecruiter
-    ? "Live coding interviews, async take-homes, and AI screening at batch scale — one workspace for your whole hiring pipeline."
-    : "Practice in the same sandbox you'll be interviewed in — then let your work speak for itself with a shareable portfolio.";
-  const buttonText = isRecruiter ? "Start Screening Candidates" : "Get Started for Free";
+    ? "Live coding interviews, async take-homes and AI screening at batch scale — one workspace for the whole pipeline, with a replayable record behind every decision."
+    : "Practice in the same sandbox you'll be interviewed in, then let the work speak for itself with a portfolio anyone can open and run.";
+  const buttonText = isRecruiter ? "Create a workspace" : "Get started — free";
   const linkHref = isRecruiter ? "/login?next=/dashboard" : "/login";
-  // On-token gradients: brand accent (candidate) / secondary accent (recruiter).
-  const gradientClass = isRecruiter
-    ? "bg-gradient-to-r from-secondary to-secondary-soft shadow-secondary/10"
-    : "bg-gradient-to-r from-accent to-accent-soft shadow-accent/10";
-  // Both accent ramps are light in dark mode and mid-tone in light mode —
-  // dark text keeps contrast on both.
-  const textClass = "text-[#16181d]";
-  const subtextClass = "text-[#16181d]/75";
-
-  const words = headline.split(" ");
-
-  const containerVariants: Variants = {
-    hidden: {},
-    show: {
-      transition: { staggerChildren: 0.07, delayChildren: 0.05 },
-    },
-  };
-
-  const wordVariants: Variants = {
-    hidden: { opacity: 0, y: 32 },
-    show: {
-      opacity: 1,
-      y: 0,
-      transition: { duration: 0.7, ease: EASE_EXPO_OUT as unknown as [number, number, number, number] },
-    },
-  };
-
-  const tailVariants: Variants = {
-    hidden: { opacity: 0, y: 24 },
-    show: {
-      opacity: 1,
-      y: 0,
-      transition: { duration: 0.6, ease: EASE_EXPO_OUT as unknown as [number, number, number, number] },
-    },
-  };
-
-  if (reduced) {
-    return (
-      <section className="mx-auto max-w-6xl px-4 py-24">
-        <div className={`rounded-3xl ${gradientClass} p-12 text-center relative overflow-hidden group shadow-2xl transition-all duration-500`}>
-          <div className="absolute inset-0 bg-grid-pattern opacity-10 pointer-events-none" />
-          <div className="relative z-10 max-w-2xl mx-auto">
-            <h2 className={`text-3xl md:text-4xl font-black ${textClass} mb-4 tracking-tight`}>
-              {headline}
-            </h2>
-            <p className={`${subtextClass} font-medium mb-8 text-lg`}>
-              {subtitle}
-            </p>
-            <Link
-              href={linkHref}
-              className="inline-flex items-center gap-3 px-8 py-4 rounded-2xl bg-bg text-fg font-bold hover:bg-bg/80 transition-all transform hover:scale-105 active:scale-95 shadow-2xl"
-            >
-              {buttonText}
-              <ArrowRight className="w-5 h-5 animate-pulse" />
-            </Link>
-          </div>
-        </div>
-      </section>
-    );
-  }
+  const secondaryHref = isRecruiter ? "/pricing" : "/challenges";
+  const secondaryLabel = isRecruiter ? "See pricing" : "Browse challenges";
 
   return (
-    <section className="mx-auto max-w-6xl px-4 py-24">
-      <div className={`rounded-3xl ${gradientClass} p-12 text-center relative overflow-hidden group shadow-2xl transition-all duration-500`}>
-        <div className="absolute inset-0 bg-grid-pattern opacity-10 pointer-events-none" />
-        <div className="relative z-10 max-w-2xl mx-auto">
-          <motion.h2
-            className={`text-3xl md:text-4xl font-black ${textClass} mb-4 tracking-tight`}
-            initial="hidden"
-            whileInView="show"
-            viewport={{ once: true, amount: 0.5 }}
-            variants={containerVariants}
-            aria-label={headline}
-            key={headline} // Forces re-render and animation run on persona change
-          >
-            {words.map((word, i) => (
-              <Fragment key={i}>
-                <motion.span
-                  className="inline-block"
-                  variants={wordVariants}
-                  aria-hidden
-                >
-                  {word}
-                </motion.span>
-                {/* Space lives outside the inline-block so it isn't trimmed. */}
-                {i < words.length - 1 ? " " : null}
-              </Fragment>
-            ))}
-          </motion.h2>
+    <section className="ip-invert relative overflow-hidden bg-ink text-ink-fg">
+      <div
+        aria-hidden
+        className="ip-blueprint-current pointer-events-none absolute inset-0 opacity-[0.07]"
+      />
 
-          <motion.p
-            className={`${subtextClass} font-medium mb-8 text-lg`}
-            initial="hidden"
-            whileInView="show"
-            viewport={{ once: true, amount: 0.5 }}
-            variants={tailVariants}
-            transition={{ delay: words.length * 0.07 + 0.1 } as unknown as undefined}
-            key={subtitle}
-          >
-            {subtitle}
-          </motion.p>
+      <div className="relative mx-auto max-w-6xl px-4 py-20 md:py-28">
+        <RevealOnScroll stagger={0.08} className="grid grid-cols-1 gap-10 lg:grid-cols-12 lg:gap-14">
+          <RevealItem className="lg:col-span-7">
+            <div className="flex items-center gap-3">
+              <span className="h-[5px] w-[5px] bg-accent" aria-hidden />
+              <span className="ip-label" style={{ color: "inherit", opacity: 0.6 }}>
+                {isRecruiter ? "For hiring teams" : "For developers"}
+              </span>
+            </div>
+            <h2 className="ip-display ip-display-xl mt-6">{headline}</h2>
+          </RevealItem>
 
-          <motion.div
-            initial="hidden"
-            whileInView="show"
-            viewport={{ once: true, amount: 0.5 }}
-            variants={tailVariants}
-            transition={{ delay: words.length * 0.07 + 0.25 } as unknown as undefined}
-          >
-            <Link
-              href={linkHref}
-              className="inline-flex items-center gap-3 px-8 py-4 rounded-2xl bg-bg text-fg font-bold hover:bg-bg/80 transition-all transform hover:scale-105 active:scale-95 shadow-2xl"
-            >
-              {buttonText}
-              <ArrowRight className="w-5 h-5" />
-            </Link>
-          </motion.div>
+          <RevealItem className="flex flex-col justify-end lg:col-span-5">
+            <p className="max-w-[46ch] text-[15px] leading-relaxed opacity-75">{subtitle}</p>
+
+            <div className="mt-8 flex flex-col items-stretch gap-3 sm:flex-row sm:items-center">
+              <Link href={linkHref} className="ip-btn ip-btn-invert group">
+                {buttonText}
+                <ArrowRight className="ip-arrow h-4 w-4" />
+              </Link>
+              <Link href={secondaryHref} className="ip-btn ip-btn-ghost-invert">
+                {secondaryLabel}
+              </Link>
+            </div>
+          </RevealItem>
+        </RevealOnScroll>
+
+        {/* The motif again, at the close. */}
+        <div className="mt-16 opacity-80">
+          <div className="mb-6 h-px w-full bg-current opacity-20" aria-hidden />
+          <SignalStrip
+            stages={isRecruiter ? RECRUITER_STAGES : CANDIDATE_STAGES}
+            tone={isRecruiter ? "secondary" : "accent"}
+            className="max-w-2xl"
+          />
         </div>
       </div>
     </section>

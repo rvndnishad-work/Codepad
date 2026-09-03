@@ -104,11 +104,11 @@ export default function TracksCarousel({
       <!-- Background -->
       <rect width="100%" height="100%" fill="#0B0F19"/>
       <rect width="100%" height="100%" fill="url(#glow)"/>
-      
+
       <!-- Premium Borders -->
       <rect x="25" y="25" width="750" height="450" rx="24" fill="none" stroke="url(#border-grad)" stroke-width="2.5" opacity="0.35"/>
       <rect x="35" y="35" width="730" height="430" rx="18" fill="none" stroke="#ffffff" stroke-width="1" opacity="0.05"/>
-      
+
       <!-- Stamp Design Top Right -->
       <circle cx="700" cy="80" r="30" fill="none" stroke="#FFE600" stroke-width="1" stroke-dasharray="4 4" opacity="0.3"/>
       <path d="M 685 80 L 715 80 M 700 65 L 700 95" stroke="#FFE600" stroke-width="1" opacity="0.2"/>
@@ -117,30 +117,30 @@ export default function TracksCarousel({
       <g transform="translate(400, 110)">
         <text text-anchor="middle" fill="#FFE600" class="badge-text" font-size="12" font-weight="900" letter-spacing="5">INTERVIEWPAD ACADEMY</text>
       </g>
-      
+
       <!-- Certificate Icon Stamp -->
       <g transform="translate(400, 180) scale(1.5)">
         <path d="M -12 -5 L -8 -15 L 8 -15 L 12 -5 L 0 5 Z" fill="#FFE600" opacity="0.15"/>
         <circle cx="0" cy="0" r="10" fill="none" stroke="#FFE600" stroke-width="1.5"/>
         <path d="M -4 10 L -6 22 L 0 17 L 6 22 L 4 10" fill="none" stroke="#FFE600" stroke-width="1.5"/>
       </g>
-      
+
       <!-- Track Title -->
       <g transform="translate(400, 280)">
         <text text-anchor="middle" fill="#F3F4F6" class="badge-title" font-size="34" font-weight="900" letter-spacing="1">${trackTitle.toUpperCase()}</text>
       </g>
-      
+
       <!-- Subtitle -->
       <g transform="translate(400, 325)">
         <text text-anchor="middle" fill="#94A3B8" class="badge-text" font-size="13" font-weight="500">Has successfully completed the curriculum track requirements and code validations.</text>
       </g>
-      
+
       <!-- Footer details -->
       <g transform="translate(400, 420)">
         <text text-anchor="middle" fill="#64748B" class="badge-text" font-size="10" font-weight="800" letter-spacing="3.5">VERIFIED PLATFORM CREDENTIAL</text>
       </g>
     </svg>`;
-    
+
     const blob = new Blob([svg], { type: "image/svg+xml" });
     const url = URL.createObjectURL(blob);
     const trigger = document.createElement("a");
@@ -158,7 +158,7 @@ export default function TracksCarousel({
             <Sparkles className="w-3 h-3 text-violet-400" />
             Curated Paths
           </span>
-          <h2 className="text-xl md:text-2xl font-black text-fg tracking-tight">
+          <h2 className="text-xl md:text-2xl font-bold text-fg tracking-tight">
             Developer Career Tracks
           </h2>
         </div>
@@ -169,25 +169,24 @@ export default function TracksCarousel({
         {tracksWithProgress.map((track) => {
           // Premium dynamic backgrounds for both light and dark modes matching their specific track identities
           const trackCardStyles: Record<string, string> = {
-            "react-architect": "bg-gradient-to-br from-cyan-50/30 via-white to-white dark:bg-[#0c182c] dark:from-transparent hover:bg-cyan-50/60 hover:dark:bg-[#10233e] border border-cyan-100/70 dark:border-transparent shadow-[0_4px_20px_rgba(6,182,212,0.02)]",
-            "ts-performance": "bg-gradient-to-br from-indigo-50/30 via-white to-white dark:bg-[#16122d] dark:from-transparent hover:bg-indigo-50/60 hover:dark:bg-[#20193e] border border-indigo-100/70 dark:border-transparent shadow-[0_4px_20px_rgba(99,102,241,0.02)]",
-            "backend-system": "bg-gradient-to-br from-emerald-50/30 via-white to-white dark:bg-[#0b1c1e] dark:from-transparent hover:bg-emerald-50/60 hover:dark:bg-[#112d2d] border border-emerald-100/70 dark:border-transparent shadow-[0_4px_20px_rgba(16,185,129,0.02)]",
+            "react-architect": "bg-gradient-to-br from-cyan-50/30 via-white to-white dark:bg-[#0c182c] dark:from-transparent hover:bg-cyan-50/60 hover:dark:bg-[#10233e] border border-cyan-100/70 dark:border-transparent ",
+            "ts-performance": "bg-gradient-to-br from-indigo-50/30 via-white to-white dark:bg-[#16122d] dark:from-transparent hover:bg-indigo-50/60 hover:dark:bg-[#20193e] border border-indigo-100/70 dark:border-transparent ",
+            "backend-system": "bg-gradient-to-br from-emerald-50/30 via-white to-white dark:bg-[#0b1c1e] dark:from-transparent hover:bg-emerald-50/60 hover:dark:bg-[#112d2d] border border-emerald-100/70 dark:border-transparent ",
           };
           const cardClass = trackCardStyles[track.id] || "bg-slate-50 dark:bg-[#131522] border border-border dark:border-transparent";
 
           return (
             <div
               key={track.id}
-              className={`group relative rounded-2xl overflow-hidden flex flex-col justify-between hover:shadow-md hover:-translate-y-0.5 transition-all duration-300 ${cardClass}`}
+              className={`group relative  overflow-hidden flex flex-col justify-between   transition-all duration-300 ${cardClass}`}
             >
               {/* Background gradient washes */}
-              <div className={`absolute inset-0 bg-gradient-to-b ${track.color} opacity-40 group-hover:opacity-75 transition-opacity duration-300 -z-10`} />
-              
+
               <div className="p-5 space-y-3 flex-1">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <span className="w-1.5 h-4 rounded-full shrink-0" style={{ backgroundColor: track.accentColor }} />
-                    <span className="text-[10px] font-black uppercase tracking-wider text-muted">
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-muted">
                       {track.tags[0]} path
                     </span>
                   </div>
@@ -214,7 +213,7 @@ export default function TracksCarousel({
                   <span>Track progress</span>
                   <span className="font-mono text-fg">{track.progress}%</span>
                 </div>
-                
+
                 {/* Progress bar */}
                 <div className="w-full h-1.5 rounded-full bg-slate-200 dark:bg-[#202334] overflow-hidden">
                   <div
@@ -231,7 +230,7 @@ export default function TracksCarousel({
                   {track.completed ? (
                     <button
                       onClick={() => downloadBadge(track.title)}
-                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-500/10 border border-emerald-500/25 hover:bg-emerald-500 hover:text-bg text-[10px] font-black text-emerald-400 uppercase tracking-wider transition-all"
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-data bg-emerald-500/10 border border-emerald-500/25 hover:bg-emerald-500 hover:text-bg text-[10px] font-bold text-emerald-400 uppercase tracking-wider transition-all"
                     >
                       <Download className="w-3 h-3" />
                       Claim Badge

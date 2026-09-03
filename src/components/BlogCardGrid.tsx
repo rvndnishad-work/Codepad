@@ -12,7 +12,7 @@ export default function BlogCardGrid({ blog }: { blog: BlogFeedEntry }) {
   return (
     <Link
       href={`/blog/${blog.slug}`}
-      className="group flex flex-col rounded-2xl border border-border bg-surface hover:border-accent/30 transition-colors overflow-hidden"
+      className="group flex flex-col border border-border bg-surface hover:border-accent/30 transition-colors overflow-hidden"
     >
       <div className="aspect-[16/9] bg-panel relative overflow-hidden">
         {blog.coverImage ? (
@@ -26,7 +26,7 @@ export default function BlogCardGrid({ blog }: { blog: BlogFeedEntry }) {
           />
         ) : (
           <div className="w-full h-full bg-gradient-to-br from-accent/15 via-accent/5 to-transparent flex items-center justify-center">
-            <span className="text-[10px] font-black uppercase tracking-[0.2em] text-accent/60">
+            <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-accent/60">
               {blog.tags?.[0] ? `#${blog.tags[0]}` : "Article"}
             </span>
           </div>
@@ -39,7 +39,7 @@ export default function BlogCardGrid({ blog }: { blog: BlogFeedEntry }) {
             {blog.tags.slice(0, 2).map((t) => (
               <span
                 key={t}
-                className="px-1.5 py-0.5 rounded text-[9px] font-black uppercase tracking-[0.15em] bg-accent/10 text-accent/90"
+                className="px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-[0.15em] bg-accent/10 text-accent/90"
               >
                 {t}
               </span>
@@ -47,7 +47,7 @@ export default function BlogCardGrid({ blog }: { blog: BlogFeedEntry }) {
           </div>
         )}
 
-        <h3 className="text-base font-black text-fg leading-snug tracking-tight group-hover:text-accent transition-colors line-clamp-2">
+        <h3 className="text-base font-bold text-fg leading-snug tracking-tight group-hover:text-accent transition-colors line-clamp-2">
           {blog.title}
         </h3>
 

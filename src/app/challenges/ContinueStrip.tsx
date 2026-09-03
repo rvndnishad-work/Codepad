@@ -68,7 +68,7 @@ export default async function ContinueStrip({ userId }: { userId: string | null 
   return (
     <div className="mx-auto max-w-6xl px-6 pt-8">
       <div className="flex items-center justify-between mb-3">
-        <h2 className="text-[10px] font-black uppercase tracking-[0.2em] text-muted">
+        <h2 className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted">
           Continue where you left off
         </h2>
         <Link
@@ -84,14 +84,14 @@ export default async function ContinueStrip({ userId }: { userId: string | null 
           <Link
             key={c.slug}
             href={`/challenges/${c.slug}/attempt${c.isMulti ? `?step=${c.resumeStep}` : ""}`}
-            className="group rounded-xl border border-accent/30 bg-accent/5 hover:bg-accent/10 hover:border-accent/50 p-4 transition-colors flex flex-col"
+            className="group border border-accent/30 bg-accent/5 hover:bg-accent/10 hover:border-accent/50 p-4 transition-colors flex flex-col"
           >
             <div className="flex items-center gap-2 mb-2">
-              <span className="inline-flex items-center justify-center w-7 h-7 rounded-lg bg-accent text-bg">
+              <span className="inline-flex items-center justify-center w-7 h-7 rounded-data bg-accent text-bg">
                 <Play className="w-3 h-3 fill-current" />
               </span>
               {c.isMulti && (
-                <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-accent/15 border border-accent/30 text-[10px] font-bold uppercase tracking-wider text-accent">
+                <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-data bg-accent/15 border border-accent/30 text-[10px] font-bold uppercase tracking-wider text-accent">
                   <Layers className="w-2.5 h-2.5" />
                   {c.total} steps
                 </span>
@@ -100,7 +100,7 @@ export default async function ContinueStrip({ userId }: { userId: string | null 
                 {c.difficulty}
               </span>
             </div>
-            <h3 className="font-black text-fg text-sm line-clamp-2 mb-3">
+            <h3 className="font-bold text-fg text-sm line-clamp-2 mb-3">
               {c.title}
             </h3>
             {c.isMulti && (

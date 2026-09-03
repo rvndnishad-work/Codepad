@@ -363,7 +363,7 @@ export function RecruiterDemoCard() {
 
     return (
       <span className={`relative inline-block w-[2px] h-[1.25em] ${caretColor} ml-0.5 align-middle select-none`}>
-        <span className={`absolute bottom-[1.25em] left-[-4px] px-1.5 py-0.5 text-[9px] font-black ${tagText} ${tagBg} rounded-md whitespace-nowrap shadow-md z-10`}>
+        <span className={`absolute bottom-[1.25em] left-[-4px] px-1.5 py-0.5 text-[9px] font-bold ${tagText} ${tagBg} rounded-data whitespace-nowrap  z-10`}>
           {label}
         </span>
       </span>
@@ -382,17 +382,17 @@ export function RecruiterDemoCard() {
   const strokeDashoffset = circumference - (score / 100) * circumference;
 
   return (
-    <div className="md:col-span-8 rounded-3xl border border-secondary/25 bg-surface p-1 overflow-hidden group shadow-2xl hover:border-secondary/40 transition-colors">
-      <div className="bg-panel rounded-[22px] h-full overflow-hidden flex flex-col">
+    <div className="md:col-span-8 border border-secondary/25 bg-surface p-1 overflow-hidden group hover:border-secondary/40 transition-colors">
+      <div className="bg-panel h-full overflow-hidden flex flex-col">
         {/* Browser chrome with Replay button */}
         <div className="flex items-center gap-3 px-4 py-2.5 border-b border-border bg-surface/50">
-          <div className="flex gap-1.5">
-            <div className="w-2.5 h-2.5 rounded-full bg-secondary/20" />
-            <div className="w-2.5 h-2.5 rounded-full bg-blue-500/20" />
-            <div className="w-2.5 h-2.5 rounded-full bg-emerald-500/20" />
+          <div className="flex items-center gap-1.5" aria-hidden>
+            <span className="h-[6px] w-[6px] bg-border-strong" />
+            <span className="h-[6px] w-[6px] bg-border-strong" />
+            <span className="h-[6px] w-[6px] bg-secondary" />
           </div>
           <div className="flex-1 flex justify-center min-w-0">
-            <div className="px-3 py-1 rounded-md bg-bg/40 text-[10px] font-mono text-muted flex items-center gap-2 truncate">
+            <div className="px-3 py-1 rounded-data bg-bg/40 text-[10px] font-mono text-muted flex items-center gap-2 truncate">
               <Globe className="w-3 h-3 shrink-0 text-secondary" />
               <span className="truncate">interviewpad.in/arena/java-collab-session</span>
             </div>
@@ -400,7 +400,7 @@ export function RecruiterDemoCard() {
           <button
             type="button"
             onClick={reset}
-            className="flex items-center gap-1.5 text-secondary hover:text-white bg-secondary/10 hover:brightness-110 font-bold text-[10px] uppercase tracking-wider px-2.5 py-1.5 rounded-md transition-all shadow-sm shrink-0"
+            className="flex items-center gap-1.5 text-secondary hover:text-white bg-secondary/10 hover:brightness-110 font-bold text-[10px] uppercase tracking-wider px-2.5 py-1.5 rounded-data transition-all shrink-0"
             aria-label="Replay collaboration"
           >
             Replay Collab <RotateCcw className="w-3 h-3" />
@@ -448,7 +448,7 @@ export function RecruiterDemoCard() {
             <div className="space-y-4">
               {/* Status Header */}
               <div className="flex items-center gap-2">
-                <div className={`w-1.5 h-1.5 rounded-full ${statusDot}`} />
+                <div className={`w-1.5 h-1.5 ${statusDot}`} />
                 <span className="text-[9px] uppercase tracking-[0.18em] text-muted font-bold">
                   Proctor & Grader Logs
                 </span>
@@ -458,20 +458,20 @@ export function RecruiterDemoCard() {
               </div>
 
               {/* Dossier Card widget */}
-              <div className="bg-bg/40 border border-border/60 p-3 rounded-xl space-y-3">
+              <div className="bg-bg/40 border border-border/60 p-3 space-y-3">
                 <div className="flex items-center gap-3">
                   <div className="w-8 h-8 rounded-full bg-secondary/10 border border-secondary/30 flex items-center justify-center text-secondary font-extrabold text-[11px] shadow-inner select-none">
                     AN
                   </div>
                   <div className="min-w-0 flex-1">
-                    <h4 className="text-xs font-black text-fg truncate">{DEMO_CANDIDATE.name}</h4>
+                    <h4 className="text-xs font-bold text-fg truncate">{DEMO_CANDIDATE.name}</h4>
                     <p className="text-[9px] text-muted truncate">{DEMO_CANDIDATE.title}</p>
                   </div>
                 </div>
 
                 {/* Score & Plagiarism details */}
                 <div className="grid grid-cols-2 gap-2">
-                  <div className="bg-bg/20 border border-border p-2 rounded-lg flex items-center gap-2">
+                  <div className="bg-bg/20 border border-border p-2 rounded-data flex items-center gap-2">
                     {/* SVG circular gauge */}
                     <div className="relative w-8 h-8 shrink-0 flex items-center justify-center select-none">
                       <svg className="w-full h-full -rotate-90" viewBox="0 0 64 64">
@@ -489,23 +489,23 @@ export function RecruiterDemoCard() {
                           strokeDashoffset={strokeDashoffset}
                         />
                       </svg>
-                      <span className="absolute text-[8px] font-black text-fg">{score}</span>
+                      <span className="absolute text-[8px] font-bold text-fg">{score}</span>
                     </div>
                     <div>
                       <div className="text-[7px] text-muted uppercase font-bold tracking-wider leading-none">AI Score</div>
-                      <div className="text-xs font-black text-secondary">{score ? `${score}/100` : "--"}</div>
+                      <div className="text-xs font-bold text-secondary">{score ? `${score}/100` : "--"}</div>
                     </div>
                   </div>
 
-                  <div className="bg-bg/20 border border-border p-2 rounded-lg flex items-center gap-2">
-                    <div className={`w-8 h-8 rounded-lg flex items-center justify-center text-[10px] font-black select-none ${
+                  <div className="bg-bg/20 border border-border p-2 rounded-data flex items-center gap-2">
+                    <div className={`w-8 h-8 rounded-data flex items-center justify-center text-[10px] font-bold select-none ${
                       phase === "done" ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20" : "bg-bg/50 text-muted border border-border"
                     }`}>
                       {phase === "done" ? "2%" : "--"}
                     </div>
                     <div>
                       <div className="text-[7px] text-muted uppercase font-bold tracking-wider leading-none">Plagiarism</div>
-                      <div className="text-xs font-black text-emerald-400">{phase === "done" ? "Safe" : "--"}</div>
+                      <div className="text-xs font-bold text-emerald-400">{phase === "done" ? "Safe" : "--"}</div>
                     </div>
                   </div>
                 </div>

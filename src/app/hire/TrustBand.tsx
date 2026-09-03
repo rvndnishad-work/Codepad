@@ -1,5 +1,5 @@
 import { ShieldCheck, Lock, KeyRound, ScrollText, Network, History } from "lucide-react";
-import RevealOnScroll, { RevealItem } from "@/components/scroll/RevealOnScroll";
+import RevealOnScroll from "@/components/scroll/RevealOnScroll";
 import SectionHeading from "@/components/home/SectionHeading";
 
 /**
@@ -41,28 +41,38 @@ const ITEMS = [
 
 export default function TrustBand() {
   return (
-    <section className="mx-auto max-w-6xl px-4 py-24 md:py-32">
-      <SectionHeading
-        eyebrow="Built for trust"
-        eyebrowIcon={<ShieldCheck className="w-3.5 h-3.5" />}
-        title="Your candidates' work,"
-        highlight="handled seriously."
-        lede="Hiring data is sensitive. These aren't roadmap promises — they're how the platform works today."
-      />
+    <section className="border-b border-border py-20 md:py-28">
+      <div className="mx-auto max-w-6xl px-4">
+        <SectionHeading
+          index="06"
+          tone="secondary"
+          eyebrow="Built for trust"
+          eyebrowIcon={<ShieldCheck className="h-3 w-3" />}
+          title="Your candidates' work,"
+          highlight="handled seriously."
+          lede="Hiring data is sensitive. None of these are roadmap promises — each one names a mechanism that is running today."
+        />
 
-      <RevealOnScroll stagger={0.08} amount={0.15} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-        {ITEMS.map((item) => (
-          <RevealItem key={item.title}>
-            <div className="h-full rounded-3xl border border-border bg-panel shadow-tile p-6 hover:border-secondary/40 transition-colors">
-              <div className="w-11 h-11 rounded-2xl bg-secondary/10 border border-secondary/25 flex items-center justify-center mb-4">
-                <item.icon className="w-5 h-5 text-secondary" />
+        {/* Six clauses on one sheet. Each is numbered, because a security
+            claim you can cite is worth more than a security claim in a card. */}
+        <RevealOnScroll className="ip-frame grid grid-cols-1 gap-px bg-border sm:grid-cols-2 lg:grid-cols-3">
+          {ITEMS.map((item, i) => (
+            <div key={item.title} className="flex flex-col gap-3 bg-surface p-6">
+              <div className="flex items-center gap-3">
+                <span className="ip-index text-secondary">
+                  {String(i + 1).padStart(2, "0")}
+                </span>
+                <item.icon className="h-4 w-4 text-subtle" />
+                <span className="ip-rule-soft min-w-2 flex-1" aria-hidden />
               </div>
-              <h3 className="text-fg font-black text-base mb-1.5">{item.title}</h3>
-              <p className="text-muted text-sm leading-relaxed">{item.body}</p>
+              <h3 className="text-[15px] font-semibold tracking-[-0.015em] text-fg">
+                {item.title}
+              </h3>
+              <p className="text-[12.5px] leading-relaxed text-muted">{item.body}</p>
             </div>
-          </RevealItem>
-        ))}
-      </RevealOnScroll>
+          ))}
+        </RevealOnScroll>
+      </div>
     </section>
   );
 }

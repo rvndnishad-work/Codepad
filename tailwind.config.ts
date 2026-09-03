@@ -94,8 +94,9 @@ const config: Config = {
         "soft": "0 2px 8px rgba(0,0,0,0.15)",
         /* The one elevation the redesign allows: a hard-edged drop for
            command panels, so they read as a sheet placed on the page rather
-           than a blurred glass bubble. */
-        "panel": "0 1px 0 var(--border), 0 18px 40px -24px rgba(0,0,0,0.45)",
+           than a blurred glass bubble. Defined per theme in globals.css — on
+           dark a black drop is invisible, so the token swaps to an edge ring. */
+        "panel": "var(--shadow-panel)",
       },
       backgroundImage: {
         "grid-pattern":

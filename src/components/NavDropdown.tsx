@@ -406,7 +406,7 @@ export default function NavDropdown({
         >
           {/* Flush-docked architectural command panel with corner ticks */}
           <div
-            className={`ip-frame -mt-px shadow-panel animate-fade-in overflow-hidden ${
+            className={`ip-frame ip-panel-float -mt-px animate-fade-in overflow-hidden ${
               tone === "secondary" ? "ip-ticks-secondary" : "ip-ticks"
             }`}
           >

@@ -54,6 +54,15 @@
     --rule: rgba(22, 24, 28, 0.14);
     --grid: rgba(22, 24, 28, 0.05);
 
+    /* Elevation for panels that FLOAT over page content (nav dropdowns, the
+       mobile sheet). Everything else in the system gets its depth from the
+       rule; these are the exception, because the thing underneath them is
+       arbitrary. A hard drop, not a blur halo. */
+    --shadow-panel:
+      0 1px 0 var(--border),
+      0 2px 4px -1px rgba(22, 24, 28, 0.10),
+      0 24px 48px -20px rgba(22, 24, 28, 0.35);
+
     /* ACCENT = the signal. Live state, the active marker, the one word in a
        headline that carries weight. Never a decorative wash. */
     --accent: #ce362e;        /* 5.0:1 against white */
@@ -119,6 +128,15 @@
 
     --rule: rgba(245, 246, 247, 0.16);
     --grid: rgba(245, 246, 247, 0.05);
+
+    /* On dark, a drop shadow is nearly invisible — black on near-black. The
+       edge has to do the work instead: a hard outer ring one step brighter
+       than --border-strong, plus a deep well so the page beneath reads as
+       recessed rather than continuous with the panel. */
+    --shadow-panel:
+      0 0 0 1px rgba(245, 246, 247, 0.10),
+      0 24px 56px -12px rgba(0, 0, 0, 0.85),
+      0 8px 20px -8px rgba(0, 0, 0, 0.7);
 
     --accent: #FFE600;        /* 14.4:1 on --bg */
     --accent-rgb: 255, 230, 0;
@@ -1547,6 +1565,15 @@ body.sidebar-collapsed .workspace-content {
     border: 1px solid var(--border);
     background: transparent;
     border-radius: 0;
+  }
+
+  /* A frame that floats over arbitrary page content. Same square, flat
+   * language as .ip-frame, but with a stronger edge and a real drop, because
+   * what's behind it isn't the page stock — it's whatever the panel covers. */
+  .ip-panel-float {
+    border-color: var(--border-strong);
+    background: var(--surface);
+    box-shadow: var(--shadow-panel);
   }
 
   /* Corner ticks — a technical-drawing crop mark on the leading and trailing

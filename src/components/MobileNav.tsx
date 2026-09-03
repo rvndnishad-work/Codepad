@@ -166,7 +166,7 @@ export default function MobileNav({
         <div
           ref={panelRef}
           role="menu"
-          className="animate-fade-in absolute left-0 right-0 top-full mt-px border-b border-border bg-surface shadow-panel md:hidden max-h-[calc(100vh-4.5rem)] overflow-y-auto"
+          className="animate-fade-in absolute left-0 right-0 top-full mt-px border-b border-border-strong bg-surface ip-panel-float md:hidden max-h-[calc(100vh-4.5rem)] overflow-y-auto"
         >
           <nav className="mx-auto max-w-7xl">
             {(devsMenuStatus !== "hidden" || isAdmin) && (developerItems.length > 0 || isAdmin) && (

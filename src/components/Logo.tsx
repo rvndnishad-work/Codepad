@@ -59,7 +59,14 @@ export function LogoLockup({
   className,
   idSuffix = "lockup",
   tone = "accent",
-}: { height?: number; className?: string; idSuffix?: string; tone?: "accent" | "secondary" }) {
+  style,
+}: {
+  height?: number;
+  className?: string;
+  idSuffix?: string;
+  tone?: "accent" | "secondary";
+  style?: React.CSSProperties;
+}) {
   // viewBox is cropped tight to the artwork (tail tip reaches y≈128) so the
   // mark fills the box with no dead space. Width derives from height to keep
   // the aspect ratio. Origin is offset to leave just a hairline for the stroke.
@@ -82,7 +89,7 @@ export function LogoLockup({
       role="img"
       aria-label="Interviewpad"
       className={`shrink-0 ${className ?? ""}`}
-      style={{ marginTop: "10px" }}
+      style={style}
     >
       <style>{`
         @keyframes logo-cursor-blink {

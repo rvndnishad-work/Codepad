@@ -37,65 +37,63 @@ export default async function Header() {
     }
   }
 
-  // For developers menu group. /interview is signed-in-only; for visitors we
-  // surface a generic landing instead of a dead link.
-  // Icons are passed as string names because we're crossing the RSC server →
-  // client boundary — see NavDropdown.tsx ICON_MAP for the registry.
-  const developerItems = [
-    {
-      href: "/candidate/playgrounds",
-      label: "Playgrounds",
-      description: "Whiteboard-style code sandboxes — no setup.",
-      iconName: "Box" as const,
-      tint: "cyan",
-    },
+  // For developers menu group. Categorized into Practice & Code vs Knowledge & AI.
+  // Icons are passed as string names crossing RSC boundary (see NavDropdown.tsx ICON_MAP).
+  const developerItems: NavDropdownItem[] = [
     {
       href: "/candidate/challenges",
       label: "Challenges",
-      description: "Browse the public challenge catalog.",
+      description: "150+ runnable challenges in eight languages.",
       iconName: "Target" as const,
-      tint: "violet",
+      category: "Practice & Code",
     },
     {
-      href: "/candidate/prompt-practice",
-      label: "Prompt Arena",
-      description: "Evaluate and practice prompt engineering quality.",
-      iconName: "Sparkles" as const,
-      badge: "New",
-      tint: "amber",
-    },
-    {
-      href: "/candidate/ai-code-review",
-      label: "Review the AI's Code",
-      description: "Spot planted bugs, hallucinated APIs, and security holes in AI code.",
-      iconName: "Bug" as const,
-      badge: "New",
-      tint: "rose",
-    },
-    {
-      href: "/interview-questions",
-      label: "Interview Questions",
-      description: "Company & tech questions with answers.",
-      iconName: "BookOpen" as const,
-      badge: "New",
-      tint: "emerald",
-    },
-    {
-      href: "/creators",
-      label: "Creators",
-      description: "Exclusive prep from creators you follow.",
-      iconName: "Store" as const,
-      badge: "New",
-      tint: "amber",
+      href: "/candidate/playgrounds",
+      label: "Playgrounds",
+      description: "Zero-setup whiteboard code sandboxes.",
+      iconName: "Box" as const,
+      category: "Practice & Code",
     },
     {
       href: user ? "/candidate/interview" : "/login?next=/candidate/interview",
       label: "Mock Interviews",
       description: user
-        ? "Practice realistic mock interviews and review past sessions."
+        ? "Practice realistic mock interviews and review replays."
         : "Sign in to practice realistic mock interviews.",
       iconName: "Briefcase" as const,
-      tint: "blue",
+      category: "Practice & Code",
+    },
+    {
+      href: "/interview-questions",
+      label: "Interview Questions",
+      description: "1,600+ hand-curated Q&As across 14 technologies.",
+      iconName: "BookOpen" as const,
+      badge: "1.6k+",
+      category: "Knowledge & AI",
+    },
+    {
+      href: "/prep",
+      label: "Prep Journeys",
+      description: "Structured role-based roadmaps & study plans.",
+      iconName: "Compass" as const,
+      badge: "New",
+      category: "Knowledge & AI",
+    },
+    {
+      href: "/candidate/ai-code-review",
+      label: "Review the AI's Code",
+      description: "Detect hallucinated APIs, bugs, and security flaws.",
+      iconName: "Bug" as const,
+      badge: "New",
+      category: "Knowledge & AI",
+    },
+    {
+      href: "/candidate/prompt-practice",
+      label: "Prompt Arena",
+      description: "Benchmark and score prompt engineering skills.",
+      iconName: "Sparkles" as const,
+      badge: "New",
+      category: "Knowledge & AI",
     },
   ];
 
@@ -103,17 +101,38 @@ export default async function Header() {
     {
       href: workspaceHref,
       label: "Workspaces",
-      description: "Manage candidates, interviews, and your team.",
+      description: "Manage candidates, interview pipelines, and team seats.",
       iconName: "Building2" as const,
-      tint: "indigo",
+      category: "Evaluation Suite",
     },
     {
       href: aiScreeningHref,
       label: "AI Screening",
-      description: "Let an AI agent run first-round interviews.",
+      description: "Autonomous first-round technical interviews at scale.",
       iconName: "Sparkles" as const,
       badge: "New",
-      tint: "rose",
+      category: "Evaluation Suite",
+    },
+    {
+      href: "/hire#sandbox",
+      label: "Live Interviews",
+      description: "Real-time collaborative sandbox with full keystroke replay.",
+      iconName: "Video" as const,
+      category: "Evaluation Suite",
+    },
+    {
+      href: "/hire",
+      label: "Platform Overview",
+      description: "Evaluate candidates on proof of craft — not resumes.",
+      iconName: "ShieldCheck" as const,
+      category: "Platform",
+    },
+    {
+      href: "/pricing",
+      label: "Recruiter Pricing",
+      description: "Flexible plans tailored for startups to enterprise.",
+      iconName: "CreditCard" as const,
+      category: "Platform",
     },
   ];
 
@@ -122,15 +141,20 @@ export default async function Header() {
   // and coming_soon items get a visual badge + disabled state.
   const navLinks = await getNavLinks();
 
-  /** Map nav-link hrefs → status, supporting prefix matching for recruiter
-   *  routes (e.g. "/w" matches "/w/some-slug" workspace links). */
+  /** Map nav-link hrefs → status, supporting candidate prefixes and recruiter routes */
   const statusForHref = (href: string) => {
     // Exact match first
     const exact = navLinks.find((l) => l.href === href);
     if (exact) return exact.status;
+
+    // Normalize /candidate/foo -> /foo to match legacy admin setting hrefs
+    const normalizedHref = href.replace(/^\/candidate/, "");
+    const normalizedMatch = navLinks.find((l) => l.href === normalizedHref);
+    if (normalizedMatch) return normalizedMatch.status;
+
     // Prefix match (e.g. workspace links /w/slug → /w setting)
     const prefix = navLinks.find(
-      (l) => l.href !== "/" && href.startsWith(l.href)
+      (l) => l.href !== "/" && (href.startsWith(l.href) || normalizedHref.startsWith(l.href))
     );
     return prefix?.status ?? "visible";
   };
@@ -226,8 +250,8 @@ export default async function Header() {
                 <NavDropdown
                   label={devsMenuStatus === "hidden" && showAdmin ? "Developers (Hidden)" : "Developers"}
                   items={filteredDeveloperItems}
-                  railTitle="For practising"
-                  railBlurb="Everything a candidate needs between deciding to switch and signing the offer."
+                  railTitle="For developers"
+                  railBlurb="From daily practice to your dream offer — real sandboxes, curated questions, and AI skills."
                   railHref="/prep"
                   railHrefLabel="Start a prep journey"
                 />
@@ -238,10 +262,10 @@ export default async function Header() {
                   label={recruitersMenuStatus === "hidden" && showAdmin ? "Hiring teams (Hidden)" : "Hiring teams"}
                   items={filteredRecruiterItems}
                   tone="secondary"
-                  railTitle="For hiring"
-                  railBlurb="Screen, interview and decide on evidence — one workspace for the whole funnel."
+                  railTitle="For hiring teams"
+                  railBlurb="Screen, interview, and evaluate candidates on proof of craft with live replay."
                   railHref="/hire"
-                  railHrefLabel="See the platform"
+                  railHrefLabel="See recruiter platform"
                 />
               )}
 

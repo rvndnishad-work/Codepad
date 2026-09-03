@@ -85,7 +85,7 @@ function WelcomeStrip({ w }: { w: NonNullable<Welcome> }) {
               <TemplateLogo id={w.recent.template} size={16} />
             </div>
             <div className="min-w-0 flex-1">
-              <div className="text-[9px] font-black uppercase tracking-wider text-muted">
+              <div className="text-[11px] font-black uppercase tracking-wider text-muted">
                 Continue editing
               </div>
               <div className="text-xs font-bold truncate text-fg mt-0.5 max-w-[140px]">
@@ -116,7 +116,7 @@ function GuestWelcomeStrip() {
 
       <div className="flex items-center gap-4 relative">
         <div className="w-11 h-11 rounded-xl bg-violet-500/10 grid place-items-center shrink-0">
-          <Rocket className="w-5 h-5 text-violet-400 animate-pulse" />
+          <Rocket className="w-5 h-5 text-violet-800 dark:text-violet-400 animate-pulse" />
         </div>
         <div className="min-w-0">
           <div className="text-sm font-bold text-fg leading-snug">
@@ -236,7 +236,7 @@ function GroupPanel({
         <div className="flex items-center gap-3">
           <span className="w-1 h-5 rounded-full bg-violet-500" />
           <h3 className="text-base font-bold text-fg">{label}</h3>
-          <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-violet-500/10 text-violet-400 tabular-nums">
+          <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-violet-500/10 text-violet-800 dark:text-violet-400 tabular-nums">
             {count}
           </span>
         </div>
@@ -349,7 +349,7 @@ export default function PlaygroundsBrowser({ welcome }: { welcome: Welcome }) {
           Playgrounds
         </h1>
         <p className="mt-5 text-muted text-base md:text-lg max-w-xl mx-auto leading-relaxed">
-          Pick a sandbox, start coding instantly. Experience zero-latency runs with our new <strong className="text-violet-400 font-extrabold bg-violet-400/10 dark:bg-violet-400/15 px-1.5 py-0.5 rounded border border-violet-500/20">AuraSandbox™ JIT Engine</strong> for backend systems.
+          Pick a sandbox, start coding instantly. Experience zero-latency runs with our new <strong className="text-violet-800 dark:text-violet-400 font-extrabold bg-violet-400/10 dark:bg-violet-400/15 px-1.5 py-0.5 rounded border border-violet-500/20">AuraSandbox™ JIT Engine</strong> for backend systems.
         </p>
 
         {/* Pill search with ⌘K hint */}
@@ -362,7 +362,7 @@ export default function PlaygroundsBrowser({ welcome }: { welcome: Welcome }) {
             placeholder="Search sandboxes…"
             className="w-full pl-12 pr-16 py-3.5 rounded-full border border-border bg-surface/60 dark:bg-[#11131a]/70 text-sm outline-none placeholder:text-muted/60 backdrop-blur-md transition-all duration-300 shadow-[0_8px_30px_-12px_rgba(0,0,0,0.12)] dark:shadow-[0_0_30px_-10px_rgba(139,92,246,0.12)] hover:border-violet-500/30 dark:hover:border-violet-500/20 focus:border-violet-500/50 focus:ring-4 focus:ring-violet-500/10"
           />
-          <kbd className="hidden sm:inline-flex absolute right-4 top-1/2 -translate-y-1/2 items-center gap-0.5 px-2 py-1 rounded-md bg-bg/60 text-[10px] font-mono text-muted">
+          <kbd className="hidden sm:inline-flex absolute right-4 top-1/2 -translate-y-1/2 items-center gap-0.5 px-2 py-1 rounded-md bg-bg/60 text-[11px] font-mono text-muted">
             ⌘K
           </kbd>
         </div>
@@ -454,7 +454,7 @@ export default function PlaygroundsBrowser({ welcome }: { welcome: Welcome }) {
         <section className="mx-auto max-w-6xl px-4 mt-20">
           <div className="flex items-end justify-between mb-6">
             <div className="flex items-center gap-3 flex-wrap">
-              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-violet-500/10 border border-violet-500/30 text-violet-400 text-[11px] font-bold uppercase tracking-wider">
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-violet-500/10 border border-violet-500/30 text-violet-800 dark:text-violet-400 text-[11px] font-bold uppercase tracking-wider">
                 <Rocket className="w-3 h-3" />
                 Fast Track
               </span>
@@ -500,7 +500,7 @@ export default function PlaygroundsBrowser({ welcome }: { welcome: Welcome }) {
           <div className="mx-auto max-w-md text-center rounded-xl bg-surface/60 p-8 text-sm text-muted">
             No playgrounds match “{query}”.
             <button
-              className="block mx-auto mt-3 text-violet-400 hover:underline text-xs font-semibold"
+              className="block mx-auto mt-3 text-violet-800 dark:text-violet-400 hover:underline text-xs font-semibold"
               onClick={() => {
                 setQuery("");
                 setFilter("all");

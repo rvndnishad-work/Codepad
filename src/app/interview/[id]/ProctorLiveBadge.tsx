@@ -75,10 +75,10 @@ export default function ProctorLiveBadge({
   const risk = score > 60 ? "high" : score > 30 ? "medium" : "low";
   const tone =
     risk === "high"
-      ? "border-rose-500/30 bg-rose-500/10 text-rose-500"
+      ? "border-rose-500/30 bg-rose-500/10 text-rose-700 dark:text-rose-400"
       : risk === "medium"
-        ? "border-amber-500/30 bg-amber-500/10 text-amber-500"
-        : "border-emerald-500/30 bg-emerald-500/10 text-emerald-500";
+        ? "border-amber-500/30 bg-amber-500/10 text-amber-800 dark:text-amber-400"
+        : "border-emerald-500/30 bg-emerald-500/10 text-emerald-800 dark:text-emerald-400";
 
   return (
     <div className={`p-4 rounded-xl border ${tone} space-y-3`}>
@@ -88,12 +88,12 @@ export default function ProctorLiveBadge({
           <span className="text-xs font-black uppercase tracking-wider">Screen Proctor</span>
         </div>
         {status.connected ? (
-          <span className="flex items-center gap-1.5 text-[10px] font-bold">
+          <span className="flex items-center gap-1.5 text-[11px] font-bold">
             <span className="w-2 h-2 rounded-full bg-current animate-pulse" />
             LIVE
           </span>
         ) : (
-          <span className="flex items-center gap-1.5 text-[10px] font-bold text-muted">
+          <span className="flex items-center gap-1.5 text-[11px] font-bold text-muted">
             <WifiOff className="w-3 h-3" />
             {status.everConnected ? "DISCONNECTED" : "AWAITING AGENT"}
           </span>
@@ -107,10 +107,10 @@ export default function ProctorLiveBadge({
           </div>
           <div className="flex items-baseline gap-1">
             <span className="text-2xl font-black">{score}</span>
-            <span className="text-[10px] text-muted">/ 100</span>
+            <span className="text-[11px] text-muted">/ 100</span>
           </div>
         </div>
-        <div className="text-[10px] text-muted leading-tight pb-1">
+        <div className="text-[11px] text-muted leading-tight pb-1">
           {status.scannedWindows} windows scanned · {status.reportCount} reports
         </div>
       </div>
@@ -129,7 +129,7 @@ export default function ProctorLiveBadge({
         </div>
       ) : (
         <div className="flex items-center gap-2 text-[11px] text-muted pt-1 border-t border-current/15">
-          <ShieldCheck className="w-3.5 h-3.5 text-emerald-500" />
+          <ShieldCheck className="w-3.5 h-3.5 text-emerald-800 dark:text-emerald-400" />
           No overlay or capture-excluded windows detected.
         </div>
       )}

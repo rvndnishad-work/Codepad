@@ -201,7 +201,7 @@ export default function SessionTimer({
       <div
         className={`h-8 px-3 rounded-full border bg-surface/50 text-[11px] font-bold font-mono tracking-wider flex items-center gap-1.5 transition-all shadow-sm ${
           isTimeLow
-            ? "border-rose-500/50 text-rose-500 bg-rose-500/5 animate-pulse drop-shadow-[0_0_10px_rgba(244,63,94,0.15)]"
+            ? "border-rose-500/50 text-rose-700 dark:text-rose-400 bg-rose-500/5 animate-pulse drop-shadow-[0_0_10px_rgba(244,63,94,0.15)]"
             : "border-border/80 text-fg/95 hover:border-border-strong"
         }`}
         title={status === "in_progress" ? "Live remaining time" : "Interview status"}
@@ -237,28 +237,28 @@ export default function SessionTimer({
                 className="w-full text-left px-2.5 py-1.5 rounded-lg text-xs font-semibold text-fg/80 hover:bg-accent/10 hover:text-accent transition-all duration-150 flex items-center justify-between"
               >
                 <span>+5 minutes</span>
-                <span className="text-[10px] text-muted/60 font-mono">+5m</span>
+                <span className="text-[11px] text-muted/60 font-mono">+5m</span>
               </button>
               <button
                 onClick={() => extendTime(10)}
                 className="w-full text-left px-2.5 py-1.5 rounded-lg text-xs font-semibold text-fg/80 hover:bg-accent/10 hover:text-accent transition-all duration-150 flex items-center justify-between"
               >
                 <span>+10 minutes</span>
-                <span className="text-[10px] text-muted/60 font-mono">+10m</span>
+                <span className="text-[11px] text-muted/60 font-mono">+10m</span>
               </button>
               <button
                 onClick={() => extendTime(15)}
                 className="w-full text-left px-2.5 py-1.5 rounded-lg text-xs font-semibold text-fg/80 hover:bg-accent/10 hover:text-accent transition-all duration-150 flex items-center justify-between"
               >
                 <span>+15 minutes</span>
-                <span className="text-[10px] text-muted/60 font-mono">+15m</span>
+                <span className="text-[11px] text-muted/60 font-mono">+15m</span>
               </button>
               <button
                 onClick={() => extendTime(30)}
                 className="w-full text-left px-2.5 py-1.5 rounded-lg text-xs font-semibold text-fg/80 hover:bg-accent/10 hover:text-accent transition-all duration-150 flex items-center justify-between"
               >
                 <span>+30 minutes</span>
-                <span className="text-[10px] text-muted/60 font-mono">+30m</span>
+                <span className="text-[11px] text-muted/60 font-mono">+30m</span>
               </button>
               
               <div className="border-t border-border/40 my-1"></div>
@@ -267,10 +267,10 @@ export default function SessionTimer({
                   setIsDropdownOpen(false);
                   setIsModalOpen(true);
                 }}
-                className="w-full text-left px-2.5 py-1.5 rounded-lg text-xs font-bold text-rose-500 hover:bg-rose-500/10 transition-all duration-150 flex items-center justify-between"
+                className="w-full text-left px-2.5 py-1.5 rounded-lg text-xs font-bold text-rose-700 dark:text-rose-400 hover:bg-rose-500/10 transition-all duration-150 flex items-center justify-between"
               >
                 <span>End Session</span>
-                <span className="text-[10px] opacity-75 font-mono">End</span>
+                <span className="text-[11px] opacity-75 font-mono">End</span>
               </button>
             </div>
           )}
@@ -299,10 +299,10 @@ export default function SessionTimer({
             {/* Verdict Selection Grid */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1 relative z-10">
               {[
-                { id: "success", label: "Met Bar (Success)", desc: "Strong code design and problem-solving.", bg: "hover:bg-emerald-500/5 hover:border-emerald-500/20", activeBg: "bg-emerald-500/10 border-emerald-500/40 text-emerald-600 shadow-[0_2px_8px_rgba(16,185,129,0.08)]", icon: <CheckCircle2 className="w-4 h-4 text-emerald-500" /> },
-                { id: "failed", label: "Did Not Meet Bar", desc: "Failed to meet key coding standards.", bg: "hover:bg-rose-500/5 hover:border-rose-500/20", activeBg: "bg-rose-500/10 border-rose-500/40 text-rose-600 shadow-[0_2px_8px_rgba(244,63,94,0.08)]", icon: <XCircle className="w-4 h-4 text-rose-500" /> },
+                { id: "success", label: "Met Bar (Success)", desc: "Strong code design and problem-solving.", bg: "hover:bg-emerald-500/5 hover:border-emerald-500/20", activeBg: "bg-emerald-500/10 border-emerald-500/40 text-emerald-800 dark:text-emerald-400 shadow-[0_2px_8px_rgba(16,185,129,0.08)]", icon: <CheckCircle2 className="w-4 h-4 text-emerald-800 dark:text-emerald-400" /> },
+                { id: "failed", label: "Did Not Meet Bar", desc: "Failed to meet key coding standards.", bg: "hover:bg-rose-500/5 hover:border-rose-500/20", activeBg: "bg-rose-500/10 border-rose-500/40 text-rose-700 dark:text-rose-400 shadow-[0_2px_8px_rgba(244,63,94,0.08)]", icon: <XCircle className="w-4 h-4 text-rose-700 dark:text-rose-400" /> },
                 { id: "left_in_between", label: "Walkout", desc: "Candidate abandoned the round mid-way.", bg: "hover:bg-panel hover:border-border-strong", activeBg: "bg-panel border-border-strong text-fg shadow-[0_2px_8px_rgba(0,0,0,0.04)]", icon: <ArrowLeft className="w-4 h-4 text-muted" /> },
-                { id: "suspicious", label: "Flagged Suspicious", desc: "Suspected of cheating or plagiarism.", bg: "hover:bg-amber-500/5 hover:border-amber-500/20", activeBg: "bg-amber-500/10 border-amber-500/40 text-amber-600 shadow-[0_2px_8px_rgba(245,158,11,0.08)]", icon: <Radio className="w-4 h-4 text-amber-500 animate-pulse" /> },
+                { id: "suspicious", label: "Flagged Suspicious", desc: "Suspected of cheating or plagiarism.", bg: "hover:bg-amber-500/5 hover:border-amber-500/20", activeBg: "bg-amber-500/10 border-amber-500/40 text-amber-800 dark:text-amber-400 shadow-[0_2px_8px_rgba(245,158,11,0.08)]", icon: <Radio className="w-4 h-4 text-amber-800 dark:text-amber-400 animate-pulse" /> },
               ].map((v) => (
                 <button
                   key={v.id}
@@ -314,7 +314,7 @@ export default function SessionTimer({
                 >
                   <div className="mt-0.5 shrink-0">{v.icon}</div>
                   <div>
-                    <div className="text-[10px] font-bold uppercase tracking-wider">{v.label}</div>
+                    <div className="text-[11px] font-bold uppercase tracking-wider">{v.label}</div>
                     <div className="text-[11px] text-muted mt-0.5 leading-tight">{v.desc}</div>
                   </div>
                 </button>
@@ -323,7 +323,7 @@ export default function SessionTimer({
 
             {/* Evaluation Notes Area */}
             <div className="space-y-1.5 relative z-10">
-              <label htmlFor="notes" className="text-[10px] font-bold uppercase tracking-widest text-muted/80">
+              <label htmlFor="notes" className="text-[11px] font-bold uppercase tracking-widest text-muted/80">
                 Evaluation Notes / Comments
               </label>
               <textarea

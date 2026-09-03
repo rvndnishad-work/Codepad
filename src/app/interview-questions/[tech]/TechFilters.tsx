@@ -51,11 +51,11 @@ export default function TechFilters({
     }
     switch (d) {
       case "easy":
-        return "border-emerald-500/50 text-emerald-500 bg-emerald-500/10 dark:bg-emerald-500/5 shadow-[0_0_15px_-3px_rgba(16,185,129,0.15)]";
+        return "border-emerald-500/50 text-emerald-800 dark:text-emerald-400 bg-emerald-500/10 dark:bg-emerald-500/5 shadow-[0_0_15px_-3px_rgba(16,185,129,0.15)]";
       case "hard":
-        return "border-rose-500/50 text-rose-500 bg-rose-500/10 dark:bg-rose-500/5 shadow-[0_0_15px_-3px_rgba(244,63,94,0.15)]";
+        return "border-rose-500/50 text-rose-700 dark:text-rose-400 bg-rose-500/10 dark:bg-rose-500/5 shadow-[0_0_15px_-3px_rgba(244,63,94,0.15)]";
       default:
-        return "border-amber-500/50 text-amber-500 bg-amber-500/10 dark:bg-amber-500/5 shadow-[0_0_15px_-3px_rgba(245,158,11,0.15)]";
+        return "border-amber-500/50 text-amber-800 dark:text-amber-400 bg-amber-500/10 dark:bg-amber-500/5 shadow-[0_0_15px_-3px_rgba(245,158,11,0.15)]";
     }
   };
 
@@ -162,7 +162,7 @@ export default function TechFilters({
               setSearchVal("");
               navigate({ difficulty: "", company: "", round: "", q: "" });
             }}
-            className="inline-flex items-center justify-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold border border-rose-500/20 text-rose-500 bg-rose-500/5 hover:bg-rose-500/10 hover:border-rose-500/40 transition-all duration-300"
+            className="inline-flex items-center justify-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold border border-rose-500/20 text-rose-700 dark:text-rose-400 bg-rose-500/5 hover:bg-rose-500/10 hover:border-rose-500/40 transition-all duration-300"
           >
             <X className="w-3.5 h-3.5" />
             <span>Clear Filters</span>

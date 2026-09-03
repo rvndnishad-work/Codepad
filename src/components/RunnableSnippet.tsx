@@ -208,7 +208,7 @@ function PlaygroundBody({
               Playground
             </span>
             <div className={`h-4 w-px mx-1 ${isDark ? "bg-white/10" : "bg-black/10"}`} />
-            <span className={`text-[10px] font-mono lowercase truncate px-2.5 py-1 rounded-md border ${
+            <span className={`text-[11px] font-mono lowercase truncate px-2.5 py-1 rounded-md border ${
               isDark ? "text-white/30 bg-white/[0.03] border-white/5" : "text-black/40 bg-black/[0.03] border-black/5"
             }`}>
               {language}
@@ -266,7 +266,7 @@ function PlaygroundBody({
             <div className={`flex items-center justify-between px-4 py-1.5 border-b ${
               isDark ? "border-white/10 bg-white/[0.02]" : "border-black/10 bg-black/[0.01]"
             }`}>
-              <div className={`flex items-center gap-2 text-[9px] font-black uppercase tracking-[0.2em] ${
+              <div className={`flex items-center gap-2 text-[11px] font-black uppercase tracking-[0.2em] ${
                 isDark ? "text-white/50" : "text-black/50"
               }`}>
                 <Terminal className={`w-3 h-3 ${isDark ? "text-accent/40" : "text-accent/40"}`} />

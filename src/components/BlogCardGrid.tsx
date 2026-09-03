@@ -26,7 +26,7 @@ export default function BlogCardGrid({ blog }: { blog: BlogFeedEntry }) {
           />
         ) : (
           <div className="w-full h-full bg-gradient-to-br from-accent/15 via-accent/5 to-transparent flex items-center justify-center">
-            <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-accent/60">
+            <span className="text-[11px] font-bold uppercase tracking-[0.2em] text-muted">
               {blog.tags?.[0] ? `#${blog.tags[0]}` : "Article"}
             </span>
           </div>
@@ -39,7 +39,7 @@ export default function BlogCardGrid({ blog }: { blog: BlogFeedEntry }) {
             {blog.tags.slice(0, 2).map((t) => (
               <span
                 key={t}
-                className="px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-[0.15em] bg-accent/10 text-accent/90"
+                className="px-1.5 py-0.5 rounded text-[11px] font-bold uppercase tracking-[0.15em] bg-accent/10 text-accent/90"
               >
                 {t}
               </span>
@@ -57,7 +57,7 @@ export default function BlogCardGrid({ blog }: { blog: BlogFeedEntry }) {
           </p>
         )}
 
-        <div className="mt-auto pt-3 flex items-center gap-2 text-[10px] font-bold border-t border-border">
+        <div className="mt-auto pt-3 flex items-center gap-2 text-[11px] font-bold border-t border-border">
           <span className="relative w-4 h-4 rounded-full bg-bg overflow-hidden border border-border shrink-0">
             {blog.user.image ? (
               <SafeImage

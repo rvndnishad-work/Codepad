@@ -202,7 +202,7 @@ export default async function CandidateReportPage({
         <div className="p-8 border-b border-[#27272a] print:border-b-2 print:border-zinc-200 bg-gradient-to-r from-accent/5 via-transparent to-transparent print:from-transparent">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div>
-              <div className="text-[10px] font-black uppercase tracking-[0.25em] text-accent print:text-zinc-500">
+              <div className="text-[11px] font-black uppercase tracking-[0.25em] text-accent print:text-zinc-500">
                 Interviewpad Recruiter Platform
               </div>
               <h1 className="text-2xl sm:text-3xl font-extrabold text-fg tracking-tight mt-1 print:text-zinc-900">
@@ -215,10 +215,10 @@ export default async function CandidateReportPage({
             {interview.verdict && (
               <div className={`self-start sm:self-center px-4 py-2 rounded-xl border font-black uppercase tracking-wider text-xs shadow-md print:bg-zinc-100 print:text-zinc-800 ${
                 interview.verdict === "success"
-                  ? "bg-emerald-500/10 border-emerald-500/25 text-emerald-500 dark:text-emerald-400"
+                  ? "bg-emerald-500/10 border-emerald-500/25 text-emerald-800 dark:text-emerald-400 dark:text-emerald-400"
                   : interview.verdict === "failed"
-                    ? "bg-rose-500/10 border-rose-500/25 text-rose-500 dark:text-rose-400"
-                    : "bg-amber-500/10 border-amber-500/25 text-amber-500 dark:text-amber-400"
+                    ? "bg-rose-500/10 border-rose-500/25 text-rose-700 dark:text-rose-400 dark:text-rose-400"
+                    : "bg-amber-500/10 border-amber-500/25 text-amber-800 dark:text-amber-400 dark:text-amber-400"
               }`}>
                 Verdict: {interview.verdict.replace(/_/g, ' ')}
               </div>
@@ -291,7 +291,7 @@ export default async function CandidateReportPage({
                       />
                     ))}
                   </div>
-                  <p className="text-[10px] text-muted mt-3.5 leading-relaxed print:text-zinc-500">
+                  <p className="text-[11px] text-muted mt-3.5 leading-relaxed print:text-zinc-500">
                     {metric.desc}
                   </p>
                 </div>
@@ -300,7 +300,7 @@ export default async function CandidateReportPage({
 
             {rubricNotes && (
               <div className="p-5 rounded-2xl border border-[#27272a] bg-[#121214]/20 print:bg-zinc-50 print:border-zinc-200 space-y-2">
-                <span className="text-[10px] font-black uppercase tracking-[0.15em] text-muted block print:text-zinc-500">
+                <span className="text-[11px] font-black uppercase tracking-[0.15em] text-muted block print:text-zinc-500">
                   Comprehensive Notes & Performance Feedback
                 </span>
                 <p className="text-xs text-fg/80 italic leading-relaxed whitespace-pre-wrap print:text-zinc-800">
@@ -326,34 +326,34 @@ export default async function CandidateReportPage({
                   }`}>
                     {maxSuspicionScore}
                   </span>
-                  <span className="text-[10px] text-muted">/ 100</span>
+                  <span className="text-[11px] text-muted">/ 100</span>
                 </div>
               </div>
               <div className="p-4 rounded-2xl border border-[#27272a] bg-[#121214]/30 print:bg-zinc-50 print:border-zinc-200 flex flex-col justify-between">
                 <span className="text-[9px] font-black uppercase tracking-widest text-muted print:text-zinc-500">Out-Of-Tab Blurs</span>
                 <div className="mt-3.5 flex items-baseline gap-1">
                   <span className="text-2xl font-black text-fg print:text-zinc-900">{totalBlurCount}</span>
-                  <span className="text-[10px] text-muted">events</span>
+                  <span className="text-[11px] text-muted">events</span>
                 </div>
               </div>
               <div className="p-4 rounded-2xl border border-[#27272a] bg-[#121214]/30 print:bg-zinc-50 print:border-zinc-200 flex flex-col justify-between">
                 <span className="text-[9px] font-black uppercase tracking-widest text-muted print:text-zinc-500">Time spent Unfocused</span>
                 <div className="mt-3.5 flex items-baseline gap-1">
                   <span className="text-2xl font-black text-fg print:text-zinc-900">{totalBlurSec}</span>
-                  <span className="text-[10px] text-muted">seconds</span>
+                  <span className="text-[11px] text-muted">seconds</span>
                 </div>
               </div>
               <div className="p-4 rounded-2xl border border-[#27272a] bg-[#121214]/30 print:bg-zinc-50 print:border-zinc-200 flex flex-col justify-between">
                 <span className="text-[9px] font-black uppercase tracking-widest text-muted print:text-zinc-500">Clipboard Pastes</span>
                 <div className="mt-3.5 flex items-baseline gap-1">
                   <span className="text-2xl font-black text-fg print:text-zinc-900">{totalPasteCount}</span>
-                  <span className="text-[10px] text-muted">instances</span>
+                  <span className="text-[11px] text-muted">instances</span>
                 </div>
               </div>
             </div>
 
             {maxSuspicionScore > 30 && (
-              <div className="p-4 rounded-2xl border border-rose-500/20 bg-rose-500/5 print:bg-zinc-50 print:border-zinc-200 text-rose-500 dark:text-rose-400 flex items-start gap-3">
+              <div className="p-4 rounded-2xl border border-rose-500/20 bg-rose-500/5 print:bg-zinc-50 print:border-zinc-200 text-rose-700 dark:text-rose-400 flex items-start gap-3">
                 <AlertTriangle className="w-5 h-5 shrink-0 mt-0.5" />
                 <div>
                   <h4 className="text-xs font-black uppercase tracking-wider">High Suspicion Telemetry Event Flagged</h4>
@@ -382,28 +382,28 @@ export default async function CandidateReportPage({
                     }`}>
                       {proctor.peakSuspicion}
                     </span>
-                    <span className="text-[10px] text-muted">/ 100</span>
+                    <span className="text-[11px] text-muted">/ 100</span>
                   </div>
                 </div>
                 <div className="p-4 rounded-2xl border border-[#27272a] bg-[#121214]/30 print:bg-zinc-50 print:border-zinc-200 flex flex-col justify-between">
                   <span className="text-[9px] font-black uppercase tracking-widest text-muted print:text-zinc-500">Detections</span>
                   <div className="mt-3.5 flex items-baseline gap-1">
                     <span className="text-2xl font-black text-fg print:text-zinc-900">{proctorSignals.length}</span>
-                    <span className="text-[10px] text-muted">flagged</span>
+                    <span className="text-[11px] text-muted">flagged</span>
                   </div>
                 </div>
                 <div className="p-4 rounded-2xl border border-[#27272a] bg-[#121214]/30 print:bg-zinc-50 print:border-zinc-200 flex flex-col justify-between">
                   <span className="text-[9px] font-black uppercase tracking-widest text-muted print:text-zinc-500">Windows Scanned</span>
                   <div className="mt-3.5 flex items-baseline gap-1">
                     <span className="text-2xl font-black text-fg print:text-zinc-900">{proctor.scannedWindows}</span>
-                    <span className="text-[10px] text-muted">windows</span>
+                    <span className="text-[11px] text-muted">windows</span>
                   </div>
                 </div>
                 <div className="p-4 rounded-2xl border border-[#27272a] bg-[#121214]/30 print:bg-zinc-50 print:border-zinc-200 flex flex-col justify-between">
                   <span className="text-[9px] font-black uppercase tracking-widest text-muted print:text-zinc-500">Agent Reports</span>
                   <div className="mt-3.5 flex items-baseline gap-1">
                     <span className="text-2xl font-black text-fg print:text-zinc-900">{proctor.reportCount}</span>
-                    <span className="text-[10px] text-muted">received</span>
+                    <span className="text-[11px] text-muted">received</span>
                   </div>
                 </div>
               </div>
@@ -429,7 +429,7 @@ export default async function CandidateReportPage({
                             } print:bg-zinc-100 print:text-zinc-700`}>
                               {sig.severity}
                             </span>
-                            <span className="text-[10px] font-mono text-muted truncate print:text-zinc-500">
+                            <span className="text-[11px] font-mono text-muted truncate print:text-zinc-500">
                               {sig.process_name || "unknown process"}
                               {sig.window_title ? ` — ${sig.window_title}` : ""}
                             </span>
@@ -444,7 +444,7 @@ export default async function CandidateReportPage({
                 </div>
               ) : (
                 <div className="p-4 rounded-2xl border border-emerald-500/20 bg-emerald-500/5 print:bg-zinc-50 print:border-zinc-200 flex items-center gap-3">
-                  <CheckCircle2 className="w-5 h-5 shrink-0 text-emerald-500" />
+                  <CheckCircle2 className="w-5 h-5 shrink-0 text-emerald-800 dark:text-emerald-400" />
                   <p className="text-[11px] text-muted print:text-zinc-700">
                     The screen proctor agent ran and detected no overlay or capture-excluded
                     assist windows during this session.
@@ -464,7 +464,7 @@ export default async function CandidateReportPage({
             <div className="border border-[#27272a] rounded-2xl overflow-hidden print:border-zinc-200">
               <table className="w-full text-left border-collapse">
                 <thead>
-                  <tr className="bg-[#121214]/80 text-[10px] font-black uppercase tracking-wider text-muted border-b border-[#27272a] print:bg-zinc-50 print:border-zinc-200 print:text-zinc-700">
+                  <tr className="bg-[#121214]/80 text-[11px] font-black uppercase tracking-wider text-muted border-b border-[#27272a] print:bg-zinc-50 print:border-zinc-200 print:text-zinc-700">
                     <th className="p-4">Step Name</th>
                     <th className="p-4">Difficulty</th>
                     <th className="p-4">Execution Status</th>
@@ -479,7 +479,7 @@ export default async function CandidateReportPage({
                       <tr key={idx} className="hover:bg-bg/20 transition-all print:hover:bg-transparent">
                         <td className="p-4 font-bold">{summary.title}</td>
                         <td className="p-4 capitalize">
-                          <span className={`text-[10px] font-extrabold uppercase ${
+                          <span className={`text-[11px] font-extrabold uppercase ${
                             summary.difficulty === "easy" ? "text-emerald-500" : summary.difficulty === "hard" ? "text-rose-500" : "text-amber-500"
                           }`}>
                             {summary.difficulty}
@@ -489,13 +489,13 @@ export default async function CandidateReportPage({
                           <div className="flex items-center gap-1.5 font-bold">
                             {isPass ? (
                               <>
-                                <CheckCircle2 className="w-4 h-4 text-emerald-500" />
-                                <span className="text-emerald-500">Passed</span>
+                                <CheckCircle2 className="w-4 h-4 text-emerald-800 dark:text-emerald-400" />
+                                <span className="text-emerald-800 dark:text-emerald-400">Passed</span>
                               </>
                             ) : (
                               <>
-                                <XCircle className="w-4 h-4 text-rose-500" />
-                                <span className="text-rose-500">Did Not Pass</span>
+                                <XCircle className="w-4 h-4 text-rose-700 dark:text-rose-400" />
+                                <span className="text-rose-700 dark:text-rose-400">Did Not Pass</span>
                               </>
                             )}
                           </div>
@@ -523,7 +523,7 @@ export default async function CandidateReportPage({
         </div>
 
         {/* Footer Signature */}
-        <div className="p-6 bg-[#121214]/50 border-t border-[#27272a] flex flex-col sm:flex-row items-center justify-between gap-3 text-[10px] text-muted print:bg-transparent print:border-zinc-200 print:text-zinc-500">
+        <div className="p-6 bg-[#121214]/50 border-t border-[#27272a] flex flex-col sm:flex-row items-center justify-between gap-3 text-[11px] text-muted print:bg-transparent print:border-zinc-200 print:text-zinc-500">
           <span>Interviewpad Candidate Report • Confidential Evaluation Summary</span>
           <span>Generated: {new Date().toLocaleString()}</span>
         </div>

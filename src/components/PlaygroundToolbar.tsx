@@ -276,7 +276,7 @@ function ToolbarDropdown<T extends string>({
       </button>
 
       {open && (
-        <div className="absolute top-full left-0 mt-2 w-44 py-1 rounded-xl z-[100] animate-in fade-in slide-in-from-top-1 duration-150 border border-border shadow-2xl bg-panel"
+        <div className="absolute top-full left-0 mt-2 w-44 py-1 rounded-xl z-[100] animate-in fade-in slide-in-from-top-1 duration-150 border border-border-strong ip-panel-float bg-panel"
           style={{
             boxShadow: "0 16px 48px rgba(0,0,0,0.1), 0 0 0 1px var(--border) inset"
           }}
@@ -579,7 +579,7 @@ export default function PlaygroundToolbar({
               </button>
 
               {actionsOpen && (
-                <div className="absolute top-full right-0 mt-2 w-64 py-1 rounded-xl z-[100] animate-in fade-in slide-in-from-top-1 duration-150 border border-border shadow-2xl bg-panel"
+                <div className="absolute top-full right-0 mt-2 w-64 py-1 rounded-xl z-[100] animate-in fade-in slide-in-from-top-1 duration-150 border border-border-strong ip-panel-float bg-panel"
                   style={{
                     boxShadow: "0 16px 48px rgba(0,0,0,0.1), 0 0 0 1px var(--border) inset"
                   }}

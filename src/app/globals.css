@@ -35,8 +35,12 @@
 
     --muted: #4e525a;   /* 7.4:1 on --surface */
     --c-muted: 78 82 90;
-    --subtle: #6f747d;  /* 4.9:1 — always the quietest step */
-    --c-subtle: 111 116 125;
+    /* The quietest step. Was #6f747d, whose "4.9:1" only held against
+       --surface; on --panel it is 4.01:1 and on --elevated 3.60:1, so every
+       chip and footer label on a tinted ground failed AA. #5c616b clears it
+       on all four: bg 5.70, surface 6.06, panel 5.31, elevated 4.76. */
+    --subtle: #5c616b;
+    --c-subtle: 92 97 107;
     --fg: #16181c;      /* near-black with a blue undertone, 16.6:1 */
     --c-fg: 22 24 28;
 
@@ -85,11 +89,30 @@
     --accent-2-glow: rgba(63, 57, 201, 0.12);
     --accent-2-ink: #ffffff;
 
+    /* STATUS — pass/warn/fail. Separate from --accent, which means "live /
+       you are here" and must not double as a success colour. These are the
+       800/700 steps, not the 500s: a saturated mid-tone reads fine on the
+       near-black dark ground and collapses to ~2:1 on paper, which is how
+       difficulty badges ended up illegible in light theme. Verified on all
+       four light grounds (min: success 5.88, warning 5.43, danger 4.81). */
+    --success: #065f46;
+    --success-rgb: 6, 95, 70;
+    --c-success: 6 95 70;
+    --warning: #92400e;
+    --warning-rgb: 146, 64, 14;
+    --c-warning: 146 64 14;
+    --danger: #be123c;
+    --danger-rgb: 190, 18, 60;
+    --c-danger: 190 18 60;
+
     --ui-scale: 1;
     /* Fluid root type: every rem-based size (incl. the px→rem font sizes
        produced by postcss-pxtorem) scales with the viewport. Floor 16.5px so
        dense small text never shrinks below today's size; grows smoothly to
-       19.5px on wide screens. ~16.5px ≤480px → ~19.5px ≥1280px. */
+       19.5px on wide screens. Measured: the floor holds to ~1167px, then
+       16.5px → 17.32px @1440 → 18.76px @1919, and the ≥1920px rule below
+       takes it to 19.5px. (An earlier note here claimed 19.5px by 1280px —
+       that was wrong; 0.3vw only adds ~3.8px at that width.) */
     --base-font-size: clamp(16.5px, calc(13px + 0.3vw), 19.5px);
   }
 
@@ -153,6 +176,18 @@
     --c-accent-2-soft: 165 180 252;
     --accent-2-glow: rgba(139, 147, 255, 0.16);
     --accent-2-ink: #0f1115;
+
+    /* Status on the dark ground: the 400 steps, which are bright enough to
+       carry (min: success 7.30, warning 8.41, danger 5.22). */
+    --success: #34d399;
+    --success-rgb: 52, 211, 153;
+    --c-success: 52 211 153;
+    --warning: #fbbf24;
+    --warning-rgb: 251, 191, 36;
+    --c-warning: 251 191 36;
+    --danger: #fb7185;
+    --danger-rgb: 251, 113, 133;
+    --c-danger: 251 113 133;
   }
 
   /* Large external monitors (> 1920px wide): keep growing past the 18px cap so
@@ -754,7 +789,7 @@ portal-nextjs-toast,
    overrides reuse the pastel palette tuned for a dark surface. */
 .iq-hl .hljs-comment,
 .iq-hl .hljs-quote {
-  color: #64748b;
+  color: #475569;   /* was #64748b: 4.06:1 on --panel */
   font-style: italic;
 }
 .iq-hl .hljs-keyword,
@@ -764,11 +799,11 @@ portal-nextjs-toast,
 }
 .iq-hl .hljs-string,
 .iq-hl .hljs-attr {
-  color: #15803d;
+  color: #166534;   /* was #15803d: 4.28:1 on --panel */
 }
 .iq-hl .hljs-number,
 .iq-hl .hljs-built_in {
-  color: #c2410c;
+  color: #9a3412;   /* was #c2410c: 4.42:1 on --panel */
 }
 .iq-hl .hljs-title,
 .iq-hl .hljs-title.function_,
@@ -1819,6 +1854,28 @@ body.sidebar-collapsed .workspace-content {
     background: rgba(var(--accent-2-rgb), 0.07);
   }
 
+  /* Status chips — difficulty badges, pass/fail pills, plan callouts. Same
+   * shape as the accent chips above; only the token changes. Use these rather
+   * than `text-emerald-500` and friends: the raw Tailwind mid-tones are tuned
+   * for the dark ground and drop to ~2:1 on paper. */
+  .ip-chip-success {
+    border-color: rgba(var(--success-rgb), 0.4);
+    color: var(--success);
+    background: rgba(var(--success-rgb), 0.07);
+  }
+
+  .ip-chip-warning {
+    border-color: rgba(var(--warning-rgb), 0.4);
+    color: var(--warning);
+    background: rgba(var(--warning-rgb), 0.07);
+  }
+
+  .ip-chip-danger {
+    border-color: rgba(var(--danger-rgb), 0.4);
+    color: var(--danger);
+    background: rgba(var(--danger-rgb), 0.07);
+  }
+
   /* ── THE SIGNAL STRIP ──────────────────────────────────────────────────
    * Interviewpad's recurring motif. A run of square stage nodes threaded on
    * one hairline, with exactly one node live. It stands for whatever the
@@ -1883,6 +1940,15 @@ body.sidebar-collapsed .workspace-content {
     --accent-2-rgb: 139, 147, 255;
     --c-accent-2: 139 147 255;
     --accent-2-ink: #0f1115;
+    --success: #34d399;
+    --success-rgb: 52, 211, 153;
+    --c-success: 52 211 153;
+    --warning: #fbbf24;
+    --warning-rgb: 251, 191, 36;
+    --c-warning: 251 191 36;
+    --danger: #fb7185;
+    --danger-rgb: 251, 113, 133;
+    --c-danger: 251 113 133;
   }
 
   /* THE INVERTED BAND.
@@ -1913,6 +1979,15 @@ body.sidebar-collapsed .workspace-content {
     --accent-2-rgb: 139, 147, 255;
     --c-accent-2: 139 147 255;
     --accent-2-ink: #0f1115;
+    --success: #34d399;
+    --success-rgb: 52, 211, 153;
+    --c-success: 52 211 153;
+    --warning: #fbbf24;
+    --warning-rgb: 251, 191, 36;
+    --c-warning: 251 191 36;
+    --danger: #fb7185;
+    --danger-rgb: 251, 113, 133;
+    --c-danger: 251 113 133;
   }
 
   .dark .ip-invert {
@@ -1920,8 +1995,8 @@ body.sidebar-collapsed .workspace-content {
     --c-fg: 22 24 28;
     --muted: #4e525a;
     --c-muted: 78 82 90;
-    --subtle: #6f747d;
-    --c-subtle: 111 116 125;
+    --subtle: #5c616b;   /* 5.75:1 on this band's light ground; was 4.34:1 */
+    --c-subtle: 92 97 107;
     --border: #d5d6d8;
     --c-border: 213 214 216;
     --border-strong: #b0b2b5;
@@ -1935,6 +2010,15 @@ body.sidebar-collapsed .workspace-content {
     --accent-2-rgb: 63, 57, 201;
     --c-accent-2: 63 57 201;
     --accent-2-ink: #ffffff;
+    --success: #065f46;
+    --success-rgb: 6, 95, 70;
+    --c-success: 6 95 70;
+    --warning: #92400e;
+    --warning-rgb: 146, 64, 14;
+    --c-warning: 146 64 14;
+    --danger: #be123c;
+    --danger-rgb: 190, 18, 60;
+    --c-danger: 190 18 60;
   }
 
   /* ── MICRO-INTERACTION ─────────────────────────────────────────────────

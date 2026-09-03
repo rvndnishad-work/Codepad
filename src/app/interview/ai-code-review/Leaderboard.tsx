@@ -44,7 +44,7 @@ export default function Leaderboard({
   return (
     <div className="rounded-2xl border border-border bg-surface p-5 shadow-sm">
       <div className="flex items-center gap-2 mb-4">
-        <div className="w-8 h-8 rounded-lg bg-amber-500/10 flex items-center justify-center text-amber-500">
+        <div className="w-8 h-8 rounded-lg bg-amber-500/10 flex items-center justify-center text-amber-800 dark:text-amber-400">
           <Trophy className="w-4 h-4" />
         </div>
         <h3 className="text-sm font-bold uppercase tracking-widest text-muted">Hunt Leaderboard</h3>
@@ -69,7 +69,7 @@ export default function Leaderboard({
               <span
                 className={`w-6 text-center font-mono font-bold text-sm ${
                   r.rank === 1
-                    ? "text-amber-500"
+                    ? "text-amber-800 dark:text-amber-400"
                     : r.rank === 2
                       ? "text-slate-400"
                       : r.rank === 3
@@ -84,7 +84,7 @@ export default function Leaderboard({
                 {r.foundCount}/{r.totalFindings}
               </span>
               <span className="text-[11px] text-muted font-mono w-14 text-right">{fmtTime(r.durationSec)}</span>
-              <span className="text-sm font-mono font-bold text-emerald-500 w-10 text-right tabular-nums">
+              <span className="text-sm font-mono font-bold text-emerald-800 dark:text-emerald-400 w-10 text-right tabular-nums">
                 {r.score}
               </span>
             </li>

@@ -117,7 +117,7 @@ export default async function CompanyDetailPage({
 
         {roles.length > 0 && (
           <div className="mt-4">
-            <div className="text-[10px] font-black uppercase tracking-widest text-muted mb-2 flex items-center gap-1.5">
+            <div className="text-[11px] font-black uppercase tracking-widest text-muted mb-2 flex items-center gap-1.5">
               <Briefcase className="w-3.5 h-3.5" /> Frequently asked roles
             </div>
             <div className="flex flex-wrap gap-2">

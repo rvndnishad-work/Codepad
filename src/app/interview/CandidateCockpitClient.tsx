@@ -152,7 +152,7 @@ export default function CandidateCockpitClient({
         
         <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div className="space-y-3.5 flex-1 col-span-1">
-            <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-600 dark:text-indigo-400">
+            <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-800 dark:text-indigo-400">
               <span className="flex h-1.5 w-1.5 rounded-full bg-indigo-500 dark:bg-indigo-400 animate-pulse" />
               <span className="text-[11px] font-black uppercase tracking-widest font-mono">prep arena console</span>
             </div>
@@ -189,7 +189,7 @@ export default function CandidateCockpitClient({
                 className="absolute inset-0 rounded-full border-2 border-indigo-500 dark:border-indigo-400 border-t-transparent border-r-transparent animate-spin" 
                 style={{ animationDuration: "12s" }}
               />
-              <span className="text-sm font-mono font-black text-indigo-655 text-indigo-600 dark:text-indigo-400">{readinessIndex}%</span>
+              <span className="text-sm font-mono font-black text-indigo-655 text-indigo-800 dark:text-indigo-400">{readinessIndex}%</span>
             </div>
             <div className="space-y-0.5">
               <span className="text-[11px] font-black uppercase tracking-wider text-muted font-mono block">readiness rating</span>
@@ -209,12 +209,12 @@ export default function CandidateCockpitClient({
             <div className="absolute top-0 right-0 w-24 h-24 rounded-full bg-purple-500/5 blur-[30px] pointer-events-none" />
             
             <div className="space-y-4">
-              <div className="w-10 h-10 rounded-xl bg-purple-500/10 border border-purple-500/25 flex items-center justify-center text-purple-600 dark:text-purple-400 shrink-0 shadow-inner">
+              <div className="w-10 h-10 rounded-xl bg-purple-500/10 border border-purple-500/25 flex items-center justify-center text-purple-800 dark:text-purple-400 shrink-0 shadow-inner">
                 <Monitor className="w-5 h-5" />
               </div>
               <div className="space-y-1.5">
                 <h3 className="text-base font-extrabold text-fg tracking-tight">Interview Simulator</h3>
-                <span className="inline-flex items-center px-2.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-purple-500/15 text-purple-600 dark:text-purple-400 border border-purple-500/25 font-mono">
+                <span className="inline-flex items-center px-2.5 py-0.5 rounded text-[11px] font-bold uppercase tracking-wider bg-purple-500/15 text-purple-800 dark:text-purple-400 border border-purple-500/25 font-mono">
                   AI Proctoring • 45m - 90m
                 </span>
                 <p className="text-xs text-muted/90 leading-relaxed pt-1.5">
@@ -238,12 +238,12 @@ export default function CandidateCockpitClient({
           <div className="absolute top-0 right-0 w-24 h-24 rounded-full bg-emerald-500/5 blur-[30px] pointer-events-none" />
           
           <div className="space-y-4">
-            <div className="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/25 flex items-center justify-center text-emerald-600 dark:text-emerald-400 shrink-0 shadow-inner">
+            <div className="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/25 flex items-center justify-center text-emerald-800 dark:text-emerald-400 shrink-0 shadow-inner">
               <Terminal className="w-5 h-5" />
             </div>
             <div className="space-y-1.5">
               <h3 className="text-base font-extrabold text-fg tracking-tight">Algorithmic Gym</h3>
-              <span className="inline-flex items-center px-2.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/25 font-mono">
+              <span className="inline-flex items-center px-2.5 py-0.5 rounded text-[11px] font-bold uppercase tracking-wider bg-emerald-500/15 text-emerald-800 dark:text-emerald-400 border border-emerald-500/25 font-mono">
                 Curated Bank • Self-Paced
               </span>
               <p className="text-xs text-muted/90 leading-relaxed pt-1.5">
@@ -271,7 +271,7 @@ export default function CandidateCockpitClient({
             </div>
             <div className="space-y-1.5">
               <h3 className="text-base font-extrabold text-fg tracking-tight">Combat Sandbox</h3>
-              <span className="inline-flex items-center px-2.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-sky-500/15 text-sky-600 dark:text-sky-400 border border-sky-500/25 font-mono">
+              <span className="inline-flex items-center px-2.5 py-0.5 rounded text-[11px] font-bold uppercase tracking-wider bg-sky-500/15 text-sky-800 dark:text-sky-400 border border-sky-500/25 font-mono">
                 Multiplayer Canvas • Free Build
               </span>
               <p className="text-xs text-muted/90 leading-relaxed pt-1.5">
@@ -297,7 +297,7 @@ export default function CandidateCockpitClient({
         {/* COLUMN 1: READINESS WHEEL */}
         <div className="rounded-2xl border border-border dark:border-white/[0.06] bg-surface/30 dark:bg-white/[0.01] p-6 space-y-6 backdrop-blur-xl flex flex-col justify-between shadow-sm">
           <div className="space-y-1">
-            <h3 className="text-sm font-bold uppercase tracking-wider text-indigo-600 dark:text-indigo-400 flex items-center gap-2">
+            <h3 className="text-sm font-bold uppercase tracking-wider text-indigo-800 dark:text-indigo-400 flex items-center gap-2">
               <TrendingUp className="w-4 h-4" />
               Readiness Index
             </h3>
@@ -313,11 +313,11 @@ export default function CandidateCockpitClient({
               />
               <div className="text-center space-y-0.5 relative z-10">
                 <span className="text-4xl font-black text-fg font-mono">{readinessIndex}%</span>
-                <span className="text-[10px] font-black uppercase tracking-wider text-muted block font-mono">Calibrated</span>
+                <span className="text-[11px] font-black uppercase tracking-wider text-muted block font-mono">Calibrated</span>
               </div>
             </div>
             <div className="text-center">
-              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border border-indigo-500/20">
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-indigo-500/10 text-indigo-800 dark:text-indigo-400 border border-indigo-500/20">
                 {readinessIndex >= 85 
                   ? "Elite Level (Cleared)" 
                   : readinessIndex >= 70 
@@ -334,7 +334,7 @@ export default function CandidateCockpitClient({
           <div className="border-t border-border dark:border-white/[0.04] pt-4 grid grid-cols-2 gap-4 text-center">
             <div>
               <span className="text-[11px] font-black uppercase tracking-wider text-muted font-mono block">Pass Rate</span>
-              <span className="text-lg font-black text-emerald-600 dark:text-emerald-400 font-mono">{passRate}%</span>
+              <span className="text-lg font-black text-emerald-800 dark:text-emerald-400 font-mono">{passRate}%</span>
             </div>
             <div>
               <span className="text-[11px] font-black uppercase tracking-wider text-muted font-mono block">Completed</span>
@@ -346,7 +346,7 @@ export default function CandidateCockpitClient({
         {/* COLUMN 2: COGNITIVE PILLARS */}
         <div className="lg:col-span-2 rounded-2xl border border-border dark:border-white/[0.06] bg-surface/30 dark:bg-white/[0.01] p-6 space-y-6 backdrop-blur-xl flex flex-col justify-between shadow-sm">
           <div className="space-y-1">
-            <h3 className="text-sm font-bold uppercase tracking-wider text-indigo-600 dark:text-indigo-400 flex items-center gap-2">
+            <h3 className="text-sm font-bold uppercase tracking-wider text-indigo-800 dark:text-indigo-400 flex items-center gap-2">
               <Award className="w-4 h-4" />
               Cognitive Skill Pillars
             </h3>
@@ -358,7 +358,7 @@ export default function CandidateCockpitClient({
             <div className="space-y-2">
               <div className="flex items-center justify-between text-sm font-bold text-fg">
                 <span className="flex items-center gap-1.5">
-                  <Code className="w-4 h-4 text-purple-600 dark:text-purple-400" />
+                  <Code className="w-4 h-4 text-purple-800 dark:text-purple-400" />
                   Code Quality & Architecture
                 </span>
                 <span className="font-mono text-purple-650 dark:text-purple-400 font-black">{avgCodeQuality} / 5.0</span>
@@ -375,10 +375,10 @@ export default function CandidateCockpitClient({
             <div className="space-y-2">
               <div className="flex items-center justify-between text-sm font-bold text-fg">
                 <span className="flex items-center gap-1.5">
-                  <Zap className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                  <Zap className="w-4 h-4 text-emerald-800 dark:text-emerald-400" />
                   Algorithm & Problem Solving
                 </span>
-                <span className="font-mono text-emerald-600 dark:text-emerald-400 font-black">{avgProblemSolving} / 5.0</span>
+                <span className="font-mono text-emerald-800 dark:text-emerald-400 font-black">{avgProblemSolving} / 5.0</span>
               </div>
               <div className="h-2.5 w-full bg-bg/50 dark:bg-white/[0.03] border border-border dark:border-white/[0.04] rounded-full overflow-hidden">
                 <div 
@@ -392,10 +392,10 @@ export default function CandidateCockpitClient({
             <div className="space-y-2">
               <div className="flex items-center justify-between text-sm font-bold text-fg">
                 <span className="flex items-center gap-1.5">
-                  <Users className="w-4 h-4 text-sky-600 dark:text-sky-400" />
+                  <Users className="w-4 h-4 text-sky-800 dark:text-sky-400" />
                   Process Communication
                 </span>
-                <span className="font-mono text-sky-600 dark:text-sky-400 font-black">{avgCommunication} / 5.0</span>
+                <span className="font-mono text-sky-800 dark:text-sky-400 font-black">{avgCommunication} / 5.0</span>
               </div>
               <div className="h-2.5 w-full bg-bg/50 dark:bg-white/[0.03] border border-border dark:border-white/[0.04] rounded-full overflow-hidden">
                 <div 
@@ -425,7 +425,7 @@ export default function CandidateCockpitClient({
               Historical Practice Missions
             </h3>
           </div>
-          <span className="text-xs text-indigo-600 dark:text-indigo-400 font-bold font-mono px-2.5 py-0.5 rounded bg-indigo-500/10 border border-indigo-500/20">
+          <span className="text-xs text-indigo-800 dark:text-indigo-400 font-bold font-mono px-2.5 py-0.5 rounded bg-indigo-500/10 border border-indigo-500/20">
             {myPracticeSessions.length} total attempts
           </span>
         </div>
@@ -462,11 +462,11 @@ export default function CandidateCockpitClient({
                 let borderHighlight = "";
 
                 if (isScheduled) {
-                  statusColor = "text-amber-600 dark:text-amber-400 border-amber-500/20 bg-amber-500/10";
+                  statusColor = "text-amber-800 dark:text-amber-400 border-amber-500/20 bg-amber-500/10";
                   statusText = "Scheduled";
                   borderHighlight = "border-l-amber-500/40";
                 } else if (isInProgress) {
-                  statusColor = "text-sky-600 dark:text-sky-400 border-sky-500/20 bg-sky-500/10 animate-pulse";
+                  statusColor = "text-sky-800 dark:text-sky-400 border-sky-500/20 bg-sky-500/10 animate-pulse";
                   statusText = "In Flight";
                   borderHighlight = "border-l-sky-500/60";
                 } else {
@@ -508,7 +508,7 @@ export default function CandidateCockpitClient({
                                 session.verdict === "success"
                                   ? "text-emerald-650 dark:text-emerald-400"
                                   : session.verdict === "failed"
-                                  ? "text-rose-655 text-rose-600 dark:text-rose-400"
+                                  ? "text-rose-655 text-rose-700 dark:text-rose-400 dark:text-rose-400"
                                   : "text-amber-600 dark:text-amber-400"
                               }`}
                             >
@@ -525,7 +525,7 @@ export default function CandidateCockpitClient({
 
                     <div className="flex items-center gap-3 shrink-0">
                       <span
-                        className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-widest border ${statusColor}`}
+                        className={`inline-flex items-center px-2 py-0.5 rounded text-[11px] font-bold uppercase tracking-widest border ${statusColor}`}
                       >
                         {statusText}
                       </span>
@@ -535,7 +535,7 @@ export default function CandidateCockpitClient({
                         className={`inline-flex items-center justify-center gap-1.5 h-9 px-4 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${
                           isCompleted
                             ? "bg-surface border border-border text-fg hover:border-indigo-500/50 hover:text-indigo-600 dark:hover:text-indigo-400"
-                            : "bg-indigo-500/10 border border-indigo-500/20 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-500 hover:text-bg"
+                            : "bg-indigo-500/10 border border-indigo-500/20 text-indigo-800 dark:text-indigo-400 hover:bg-indigo-500 hover:text-bg"
                         }`}
                       >
                         {isCompleted ? "Revisit" : isInProgress ? "Resume" : "Engage"}

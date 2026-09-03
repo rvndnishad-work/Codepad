@@ -64,7 +64,7 @@ export default function PricingTeaser() {
                   {plan.name}
                 </span>
                 {plan.highlight && (
-                  <span className="ip-label ip-label-xs" style={{ color: "inherit" }}>
+                  <span className="ip-label" style={{ color: "inherit" }}>
                     Recommended
                   </span>
                 )}

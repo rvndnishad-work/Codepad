@@ -88,10 +88,10 @@ export default function CompanyGrid({ companies }: { companies: CompanyCard[] })
                     <div className="bg-amber-500" style={{ width: `${(c.medium / c.total) * 100}%` }} />
                     <div className="bg-rose-500" style={{ width: `${(c.hard / c.total) * 100}%` }} />
                   </div>
-                  <div className="flex gap-3 mt-1.5 text-[10px] text-muted">
-                    <span className="text-emerald-500">{c.easy} easy</span>
-                    <span className="text-amber-500">{c.medium} med</span>
-                    <span className="text-rose-500">{c.hard} hard</span>
+                  <div className="flex gap-3 mt-1.5 text-[11px] text-muted">
+                    <span className="text-emerald-800 dark:text-emerald-400">{c.easy} easy</span>
+                    <span className="text-amber-800 dark:text-amber-400">{c.medium} med</span>
+                    <span className="text-rose-700 dark:text-rose-400">{c.hard} hard</span>
                   </div>
                 </div>
               )}

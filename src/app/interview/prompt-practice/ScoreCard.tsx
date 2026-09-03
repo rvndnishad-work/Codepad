@@ -15,7 +15,7 @@ function Delta({ now, was }: { now: number; was: number }) {
   if (d === 0) return <span className="text-muted/50 font-mono tabular-nums">±0</span>;
   const up = d > 0;
   return (
-    <span className={`font-mono tabular-nums ${up ? "text-emerald-400" : "text-rose-400"}`}>
+    <span className={`font-mono tabular-nums ${up ? "text-emerald-800 dark:text-emerald-400" : "text-rose-700 dark:text-rose-400"}`}>
       {up ? "▲" : "▼"}
       {Math.abs(d)}
     </span>
@@ -34,7 +34,7 @@ export default function ScoreCard({ attempt, compareTo }: Props) {
   const circumference = 2 * Math.PI * radius;
   const strokeDashoffset = circumference - (score / 100) * circumference;
   
-  const scoreTone = score >= 75 ? "text-emerald-400" : score >= 50 ? "text-amber-400" : "text-rose-400";
+  const scoreTone = score >= 75 ? "text-emerald-800 dark:text-emerald-400" : score >= 50 ? "text-amber-800 dark:text-amber-400" : "text-rose-700 dark:text-rose-400";
   const scoreBg = score >= 75 ? "stroke-emerald-400" : score >= 50 ? "stroke-amber-400" : "stroke-rose-400";
 
   return (
@@ -62,11 +62,11 @@ export default function ScoreCard({ attempt, compareTo }: Props) {
 
           <div className="flex flex-wrap gap-3 mt-4">
             <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-panel/50 border border-border text-xs text-muted font-medium">
-              <Bot className="w-3.5 h-3.5 text-indigo-400" />
+              <Bot className="w-3.5 h-3.5 text-indigo-800 dark:text-indigo-400" />
               {attempt.graderType === "ai" ? "Gemini AI" : "Local rules"}
             </div>
             <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-panel/50 border border-border text-xs text-muted font-medium">
-              <Zap className="w-3.5 h-3.5 text-amber-400" />
+              <Zap className="w-3.5 h-3.5 text-amber-800 dark:text-amber-400" />
               {attempt.tokenEstimate} tokens
             </div>
           </div>
@@ -105,7 +105,7 @@ export default function ScoreCard({ attempt, compareTo }: Props) {
 
       <section className="relative space-y-5">
         <h4 className="text-xs font-bold uppercase tracking-widest text-muted flex items-center gap-2">
-          <BarChart2 className="w-4 h-4 text-indigo-400" />
+          <BarChart2 className="w-4 h-4 text-indigo-800 dark:text-indigo-400" />
           Dimension Breakdown
         </h4>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-4">
@@ -133,7 +133,7 @@ export default function ScoreCard({ attempt, compareTo }: Props) {
       {attempt.feedback ? (
         <section className="relative space-y-4 pt-2">
           <h4 className="text-xs font-bold uppercase tracking-widest text-muted flex items-center gap-2">
-            <MessageSquare className="w-4 h-4 text-indigo-400" />
+            <MessageSquare className="w-4 h-4 text-indigo-800 dark:text-indigo-400" />
             AI Feedback
           </h4>
           <div className="p-5 rounded-2xl bg-indigo-500/5 border border-indigo-500/10 text-sm text-fg/90 leading-relaxed whitespace-pre-wrap max-h-[300px] overflow-y-auto">

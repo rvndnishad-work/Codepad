@@ -122,7 +122,7 @@ export default function GlobalSearch() {
         <div className="absolute z-30 mt-2 w-full rounded-xl border border-border bg-surface shadow-2xl overflow-hidden">
           {q.trim().length < 2 ? (
             <div className="p-4">
-              <div className="text-[10px] font-black uppercase tracking-widest text-muted mb-2">Trending</div>
+              <div className="text-[11px] font-black uppercase tracking-widest text-muted mb-2">Trending</div>
               <div className="flex flex-wrap gap-2">
                 {TRENDING.map((t) => (
                   <button
@@ -191,7 +191,7 @@ export default function GlobalSearch() {
                         }}
                       >
                         <span className="truncate">{qq.title}</span>
-                        {qq.company && <span className="text-[10px] text-muted shrink-0 ml-2">{qq.company}</span>}
+                        {qq.company && <span className="text-[11px] text-muted shrink-0 ml-2">{qq.company}</span>}
                       </Row>
                     );
                   })}
@@ -208,7 +208,7 @@ export default function GlobalSearch() {
 function Section({ icon, label, children }: { icon: React.ReactNode; label: string; children: React.ReactNode }) {
   return (
     <div className="px-1.5 pb-1.5">
-      <div className="flex items-center gap-1.5 px-3 py-1.5 text-[10px] font-black uppercase tracking-widest text-muted">
+      <div className="flex items-center gap-1.5 px-3 py-1.5 text-[11px] font-black uppercase tracking-widest text-muted">
         {icon}
         {label}
       </div>

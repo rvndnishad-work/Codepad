@@ -48,7 +48,7 @@ export default async function FeaturedShelf() {
   return (
     <section className="mx-auto max-w-6xl px-6 pt-8">
       <div className="flex items-center justify-between mb-3">
-        <h2 className="inline-flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.2em] text-accent">
+        <h2 className="inline-flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.2em] text-accent">
           <Star className="w-3 h-3 fill-current" />
           Staff picks
         </h2>
@@ -82,7 +82,7 @@ export default async function FeaturedShelf() {
                     {c._count.steps} steps
                   </span>
                 )}
-                <span className="ml-auto inline-flex items-center gap-1 text-[10px] font-bold text-muted/70 tabular-nums">
+                <span className="ml-auto inline-flex items-center gap-1 text-[11px] font-bold text-muted/70 tabular-nums">
                   <Clock className="w-3 h-3" />
                   {c.estimatedMinutes}m
                 </span>

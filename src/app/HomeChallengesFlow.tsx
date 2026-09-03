@@ -79,9 +79,9 @@ function PickCard() {
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <div className="truncate text-[13.5px] font-semibold text-fg">Two Sum</div>
-          <div className="ip-label ip-label-xs mt-1">Algorithms</div>
+          <div className="ip-label mt-1">Algorithms</div>
         </div>
-        <span className="ip-label ip-label-xs flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400">
+        <span className="ip-label flex items-center gap-1.5 text-emerald-800 dark:text-emerald-400">
           <span className="h-[5px] w-[5px] bg-emerald-500" aria-hidden />
           easy
         </span>
@@ -104,9 +104,9 @@ function RecruiterPickCard() {
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <div className="truncate text-[13.5px] font-semibold text-fg">React Architect</div>
-          <div className="ip-label ip-label-xs mt-1">MCP autograded challenge</div>
+          <div className="ip-label mt-1">MCP autograded challenge</div>
         </div>
-        <span className="ip-label ip-label-xs ip-label-secondary flex items-center gap-1.5">
+        <span className="ip-label ip-label-secondary flex items-center gap-1.5">
           <span className="ip-live h-[5px] w-[5px] bg-secondary" aria-hidden />
           active
         </span>
@@ -128,9 +128,9 @@ function RecruiterPickCard() {
 function SolveCard() {
   return (
     <div className="ip-frame-bare min-h-[126px] p-3.5 font-mono">
-      <div className="ip-label ip-label-xs mb-2.5">solution.js</div>
+      <div className="ip-label mb-2.5">solution.js</div>
       <div className="whitespace-pre text-[11.5px] leading-[1.5] text-fg">
-        <span className="text-violet-600 dark:text-violet-400">function</span>{" "}
+        <span className="text-violet-800 dark:text-violet-400">function</span>{" "}
         <span className="text-accent">solve</span>(sum, target) {"{"}
       </div>
       <div className="whitespace-pre pl-3 text-[11.5px] leading-[1.5] text-fg">
@@ -141,7 +141,7 @@ function SolveCard() {
         <div className="h-1.5 flex-1 overflow-hidden bg-border" aria-hidden>
           <div className="h-full w-full bg-emerald-500" />
         </div>
-        <span className="ip-label ip-label-xs text-emerald-600 dark:text-emerald-400">
+        <span className="ip-label text-emerald-800 dark:text-emerald-400">
           3/3 passing
         </span>
       </div>
@@ -152,20 +152,20 @@ function SolveCard() {
 function RecruiterSolveCard() {
   return (
     <div className="ip-frame-bare min-h-[126px] p-3.5 font-mono">
-      <div className="ip-label ip-label-xs mb-2.5">proctoring_feed.log</div>
+      <div className="ip-label mb-2.5">proctoring_feed.log</div>
       <div className="flex justify-between text-[11.5px] leading-[1.6] text-muted">
         <span>› Tab switches</span>
-        <span className="text-amber-600 dark:text-amber-400">1 warning</span>
+        <span className="text-amber-800 dark:text-amber-400">1 warning</span>
       </div>
       <div className="flex justify-between text-[11.5px] leading-[1.6] text-muted">
         <span>› Clipboard</span>
-        <span className="text-rose-600 dark:text-rose-400">blocked paste</span>
+        <span className="text-rose-700 dark:text-rose-400">blocked paste</span>
       </div>
       <div className="mt-3.5 flex items-center gap-2.5">
         <div className="h-1.5 flex-1 overflow-hidden bg-border" aria-hidden>
           <div className="h-full w-full bg-secondary" />
         </div>
-        <span className="ip-label ip-label-xs ip-label-secondary">telemetry</span>
+        <span className="ip-label ip-label-secondary">telemetry</span>
       </div>
     </div>
   );
@@ -192,21 +192,21 @@ function BuildCard() {
   return (
     <div className="ip-frame-bare min-h-[126px] p-3.5">
       <div className="mb-2 flex items-center justify-between">
-        <span className="ip-label ip-label-xs">Session playlist</span>
-        <span className="ip-nums font-mono text-[10.5px] text-subtle">{totalMin} min</span>
+        <span className="ip-label">Session playlist</span>
+        <span className="ip-nums font-mono text-[11px] text-subtle">{totalMin} min</span>
       </div>
       <div className="divide-y divide-border border-y border-border">
         {SESSION.map((item) => (
           <div key={item.title} className="flex items-center gap-2.5 py-1.5">
             <span className={`h-[5px] w-[5px] shrink-0 ${TONE_DOT[item.tone]}`} aria-hidden />
             <span className="truncate text-[12px] text-fg">{item.title}</span>
-            <span className="ip-nums ml-auto font-mono text-[10.5px] text-subtle">
+            <span className="ip-nums ml-auto font-mono text-[11px] text-subtle">
               {item.min}m
             </span>
           </div>
         ))}
       </div>
-      <div className="ip-label ip-label-xs ip-label-accent mt-3">Share link ready</div>
+      <div className="ip-label ip-label-accent mt-3">Share link ready</div>
     </div>
   );
 }
@@ -220,8 +220,8 @@ function RecruiterBuildCard() {
   return (
     <div className="ip-frame-bare min-h-[126px] p-3.5">
       <div className="mb-2 flex items-center justify-between">
-        <span className="ip-label ip-label-xs">Candidate dossier</span>
-        <span className="ip-nums font-mono text-[10.5px] text-emerald-600 dark:text-emerald-400">
+        <span className="ip-label">Candidate dossier</span>
+        <span className="ip-nums font-mono text-[11px] text-emerald-800 dark:text-emerald-400">
           94/100
         </span>
       </div>
@@ -233,7 +233,7 @@ function RecruiterBuildCard() {
           </div>
         ))}
       </div>
-      <div className="ip-label ip-label-xs ip-label-secondary mt-3">Ready for review</div>
+      <div className="ip-label ip-label-secondary mt-3">Ready for review</div>
     </div>
   );
 }

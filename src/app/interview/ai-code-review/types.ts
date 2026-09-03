@@ -96,32 +96,32 @@ export const CATEGORY_META: Record<
     short: "Hallucination",
     emoji: "👻",
     className:
-      "bg-fuchsia-500/10 text-fuchsia-600 dark:text-fuchsia-400 border-fuchsia-500/20",
+      "bg-fuchsia-500/10 text-fuchsia-800 dark:text-fuchsia-400 border-fuchsia-500/20",
   },
   "logic-bug": {
     label: "Logic bug",
     short: "Logic bug",
     emoji: "🐞",
-    className: "bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/20",
+    className: "bg-rose-500/10 text-rose-700 dark:text-rose-400 border-rose-500/20",
   },
   security: {
     label: "Security hole",
     short: "Security",
     emoji: "🔓",
-    className: "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20",
+    className: "bg-amber-500/10 text-amber-800 dark:text-amber-400 border-amber-500/20",
   },
   performance: {
     label: "Performance",
     short: "Perf",
     emoji: "🐌",
-    className: "bg-sky-500/10 text-sky-600 dark:text-sky-400 border-sky-500/20",
+    className: "bg-sky-500/10 text-sky-800 dark:text-sky-400 border-sky-500/20",
   },
   "edge-case": {
     label: "Edge case",
     short: "Edge case",
     emoji: "🧩",
     className:
-      "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20",
+      "bg-emerald-500/10 text-emerald-800 dark:text-emerald-400 border-emerald-500/20",
   },
 };
 
@@ -134,9 +134,9 @@ export const CATEGORY_ORDER: ReviewCategory[] = [
 ];
 
 export const DIFFICULTY_STYLES: Record<string, string> = {
-  beginner: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20",
-  intermediate: "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20",
-  advanced: "bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/20",
+  beginner: "bg-emerald-500/10 text-emerald-800 dark:text-emerald-400 border-emerald-500/20",
+  intermediate: "bg-amber-500/10 text-amber-800 dark:text-amber-400 border-amber-500/20",
+  advanced: "bg-rose-500/10 text-rose-700 dark:text-rose-400 border-rose-500/20",
 };
 
 /** Map a challenge's stored language to a highlight.js language id. */
@@ -187,7 +187,7 @@ export const LANGUAGE_META: Record<
     tileClass: "bg-[#f7df1e] text-black",
     glowClass: "bg-amber-400/25",
     hoverClass: "hover:border-amber-400/50 hover:shadow-amber-500/15",
-    accentText: "text-amber-500 dark:text-amber-400",
+    accentText: "text-amber-800 dark:text-amber-400",
   },
   typescript: {
     label: "TypeScript",
@@ -196,7 +196,7 @@ export const LANGUAGE_META: Record<
     tileClass: "bg-[#3178c6] text-white",
     glowClass: "bg-sky-500/25",
     hoverClass: "hover:border-sky-400/50 hover:shadow-sky-500/15",
-    accentText: "text-sky-500 dark:text-sky-400",
+    accentText: "text-sky-800 dark:text-sky-400",
   },
   python: {
     label: "Python",
@@ -205,7 +205,7 @@ export const LANGUAGE_META: Record<
     tileClass: "bg-gradient-to-br from-teal-400 to-emerald-600 text-white",
     glowClass: "bg-emerald-500/25",
     hoverClass: "hover:border-emerald-400/50 hover:shadow-emerald-500/15",
-    accentText: "text-emerald-500 dark:text-emerald-400",
+    accentText: "text-emerald-800 dark:text-emerald-400",
   },
   sql: {
     label: "SQL",
@@ -214,7 +214,7 @@ export const LANGUAGE_META: Record<
     tileClass: "bg-gradient-to-br from-violet-500 to-fuchsia-600 text-white",
     glowClass: "bg-violet-500/25",
     hoverClass: "hover:border-violet-400/50 hover:shadow-violet-500/15",
-    accentText: "text-violet-500 dark:text-violet-400",
+    accentText: "text-violet-800 dark:text-violet-400",
   },
 };
 

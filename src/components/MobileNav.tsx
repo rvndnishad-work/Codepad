@@ -273,11 +273,11 @@ function MobileGroup({
           <span className="flex items-center gap-2">
             <span className="text-[13.5px] font-semibold text-fg">{item.label}</span>
             {isComingSoon ? (
-              <span className="ip-label ip-label-xs text-amber-600 dark:text-amber-400">Soon</span>
+              <span className="ip-label text-amber-800 dark:text-amber-400">Soon</span>
             ) : item.badge ? (
               <span
-                className={`ip-label ip-label-xs ${
-                  item.badge === "Hidden" ? "text-rose-600 dark:text-rose-400" : labelTone
+                className={`ip-label ${
+                  item.badge === "Hidden" ? "text-rose-700 dark:text-rose-400" : labelTone
                 }`}
               >
                 {item.badge}
@@ -285,7 +285,7 @@ function MobileGroup({
             ) : null}
           </span>
           {item.description && (
-            <span className="mt-0.5 block text-[11.5px] leading-snug text-subtle">
+            <span className="mt-0.5 block text-[12px] leading-snug text-subtle">
               {item.description}
             </span>
           )}
@@ -343,7 +343,7 @@ function MobileGroup({
                 <div key={cat} className="flex flex-col">
                   <div className="flex items-center gap-2 border-t border-border bg-panel/75 px-4 py-1.5 pl-6">
                     <span className={`h-1 w-1 ${markerBg}`} aria-hidden />
-                    <span className="ip-label ip-label-xs text-subtle">{cat}</span>
+                    <span className="ip-label text-[12px] text-subtle">{cat}</span>
                   </div>
                   {items.filter((i) => i.category === cat).map(renderMobileItem)}
                 </div>
@@ -384,7 +384,7 @@ function FlatLink({
         {label}
       </span>
       {isComingSoon && (
-        <span className="ip-label ip-label-xs text-amber-600 dark:text-amber-400">Soon</span>
+        <span className="ip-label text-amber-800 dark:text-amber-400">Soon</span>
       )}
     </Link>
   );

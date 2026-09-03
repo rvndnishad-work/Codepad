@@ -84,7 +84,7 @@ export default function TechCards({
                 {m.concepts.map((concept) => (
                   <span
                     key={concept}
-                    className="text-[10px] font-bold tracking-wide bg-bg/50 dark:bg-bg/40 text-muted border border-border rounded-full px-2.5 py-0.5"
+                    className="text-[11px] font-bold tracking-wide bg-bg/50 dark:bg-bg/40 text-muted border border-border rounded-full px-2.5 py-0.5"
                   >
                     {concept}
                   </span>
@@ -97,9 +97,9 @@ export default function TechCards({
               {stat.total > 0 ? (
                 <div>
                   {/* Progress Tracker */}
-                  <div className="flex justify-between items-center mb-1.5 text-[10px] font-bold text-muted">
+                  <div className="flex justify-between items-center mb-1.5 text-[11px] font-bold text-muted">
                     <span className="text-fg/80 flex items-center gap-1">
-                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />
+                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-800 dark:text-emerald-400" />
                       {solvedCount} / {stat.total} Solved
                     </span>
                     <span className="text-muted/80">{Math.round((solvedCount / stat.total) * 100)}%</span>
@@ -139,7 +139,7 @@ export default function TechCards({
                   </div>
 
                   {/* Legend */}
-                  <div className="flex justify-between items-center mt-2.5 text-[10px] font-bold text-muted">
+                  <div className="flex justify-between items-center mt-2.5 text-[11px] font-bold text-muted">
                     <div className="flex items-center gap-3">
                       {stat.easy > 0 && (
                         <span className="flex items-center gap-1">
@@ -164,7 +164,7 @@ export default function TechCards({
                   </div>
                 </div>
               ) : (
-                <div className="text-[10px] font-black tracking-widest text-muted/50 uppercase">
+                <div className="text-[11px] font-black tracking-widest text-muted/50 uppercase">
                   Coming soon
                 </div>
               )}

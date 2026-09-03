@@ -6,7 +6,7 @@ import { CheckCircle2, Loader2 } from "lucide-react";
 import { EXPERIENCE_LEVELS, DIFFICULTIES } from "@/lib/interview-questions/shared";
 
 const field = "w-full px-3 py-2 rounded-lg border border-border bg-bg text-sm focus:outline-none focus:border-accent/50";
-const label = "text-[10px] font-black uppercase tracking-widest text-muted mb-1.5 block";
+const label = "text-[11px] font-black uppercase tracking-widest text-muted mb-1.5 block";
 
 export default function ShareForm() {
   const [f, setF] = useState({
@@ -64,7 +64,7 @@ export default function ShareForm() {
   if (state === "done") {
     return (
       <div className="p-8 rounded-2xl border border-emerald-500/30 bg-emerald-500/5 text-center">
-        <CheckCircle2 className="w-10 h-10 text-emerald-500 mx-auto" />
+        <CheckCircle2 className="w-10 h-10 text-emerald-800 dark:text-emerald-400 mx-auto" />
         <h2 className="text-lg font-extrabold mt-3">Thanks for sharing!</h2>
         <p className="text-sm text-muted mt-1.5 max-w-md mx-auto">
           Your experience has been submitted for review. Once approved it&apos;ll appear on the company page to help other candidates.
@@ -78,21 +78,21 @@ export default function ShareForm() {
 
   return (
     <form onSubmit={submit} className="space-y-5 max-w-2xl">
-      {error && <div className="p-3 rounded-lg border border-rose-500/30 bg-rose-500/10 text-rose-500 text-sm">{error}</div>}
+      {error && <div className="p-3 rounded-lg border border-rose-500/30 bg-rose-500/10 text-rose-700 dark:text-rose-400 text-sm">{error}</div>}
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div>
           <label className={label}>Company *</label>
           <input value={f.company} onChange={set("company")} className={field} placeholder="Google" />
           {fieldErrors.company && (
-            <p className="text-[11px] text-rose-500 mt-1 font-bold">{fieldErrors.company.join(", ")}</p>
+            <p className="text-[11px] text-rose-700 dark:text-rose-400 mt-1 font-bold">{fieldErrors.company.join(", ")}</p>
           )}
         </div>
         <div>
           <label className={label}>Role</label>
           <input value={f.role} onChange={set("role")} className={field} placeholder="Software Engineer" />
           {fieldErrors.role && (
-            <p className="text-[11px] text-rose-500 mt-1 font-bold">{fieldErrors.role.join(", ")}</p>
+            <p className="text-[11px] text-rose-700 dark:text-rose-400 mt-1 font-bold">{fieldErrors.role.join(", ")}</p>
           )}
         </div>
         <div>
@@ -102,21 +102,21 @@ export default function ShareForm() {
             {EXPERIENCE_LEVELS.map((e) => <option key={e.slug} value={e.slug}>{e.label}</option>)}
           </select>
           {fieldErrors.experienceLevel && (
-            <p className="text-[11px] text-rose-500 mt-1 font-bold">{fieldErrors.experienceLevel.join(", ")}</p>
+            <p className="text-[11px] text-rose-700 dark:text-rose-400 mt-1 font-bold">{fieldErrors.experienceLevel.join(", ")}</p>
           )}
         </div>
         <div>
           <label className={label}>Location</label>
           <input value={f.location} onChange={set("location")} className={field} placeholder="Bangalore / Remote" />
           {fieldErrors.location && (
-            <p className="text-[11px] text-rose-500 mt-1 font-bold">{fieldErrors.location.join(", ")}</p>
+            <p className="text-[11px] text-rose-700 dark:text-rose-400 mt-1 font-bold">{fieldErrors.location.join(", ")}</p>
           )}
         </div>
         <div>
           <label className={label}>Year</label>
           <input value={f.year} onChange={set("year")} className={field} placeholder="2024" inputMode="numeric" />
           {fieldErrors.year && (
-            <p className="text-[11px] text-rose-500 mt-1 font-bold">{fieldErrors.year.join(", ")}</p>
+            <p className="text-[11px] text-rose-700 dark:text-rose-400 mt-1 font-bold">{fieldErrors.year.join(", ")}</p>
           )}
         </div>
         <div>
@@ -128,7 +128,7 @@ export default function ShareForm() {
             <option value="pending">Pending</option>
           </select>
           {fieldErrors.result && (
-            <p className="text-[11px] text-rose-500 mt-1 font-bold">{fieldErrors.result.join(", ")}</p>
+            <p className="text-[11px] text-rose-700 dark:text-rose-400 mt-1 font-bold">{fieldErrors.result.join(", ")}</p>
           )}
         </div>
       </div>
@@ -150,7 +150,7 @@ export default function ShareForm() {
           ))}
         </div>
         {fieldErrors.difficulty && (
-          <p className="text-[11px] text-rose-500 mt-1 font-bold">{fieldErrors.difficulty.join(", ")}</p>
+          <p className="text-[11px] text-rose-700 dark:text-rose-400 mt-1 font-bold">{fieldErrors.difficulty.join(", ")}</p>
         )}
       </div>
 
@@ -158,21 +158,21 @@ export default function ShareForm() {
         <label className={label}>Interview process</label>
         <textarea value={f.process} onChange={set("process")} rows={3} className={field} placeholder="Recruiter screen → online assessment → 4 onsite rounds…" />
         {fieldErrors.process && (
-          <p className="text-[11px] text-rose-500 mt-1 font-bold">{fieldErrors.process.join(", ")}</p>
+          <p className="text-[11px] text-rose-700 dark:text-rose-400 mt-1 font-bold">{fieldErrors.process.join(", ")}</p>
         )}
       </div>
       <div>
         <label className={label}>Rounds & questions asked</label>
         <textarea value={f.rounds} onChange={set("rounds")} rows={3} className={field} placeholder="DSA: two-pointers, graphs. System design: rate limiter…" />
         {fieldErrors.rounds && (
-          <p className="text-[11px] text-rose-500 mt-1 font-bold">{fieldErrors.rounds.join(", ")}</p>
+          <p className="text-[11px] text-rose-700 dark:text-rose-400 mt-1 font-bold">{fieldErrors.rounds.join(", ")}</p>
         )}
       </div>
       <div>
         <label className={label}>Tips for future candidates</label>
         <textarea value={f.tips} onChange={set("tips")} rows={2} className={field} placeholder="Think out loud, clarify constraints…" />
         {fieldErrors.tips && (
-          <p className="text-[11px] text-rose-500 mt-1 font-bold">{fieldErrors.tips.join(", ")}</p>
+          <p className="text-[11px] text-rose-700 dark:text-rose-400 mt-1 font-bold">{fieldErrors.tips.join(", ")}</p>
         )}
       </div>
 

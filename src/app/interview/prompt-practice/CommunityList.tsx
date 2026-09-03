@@ -64,7 +64,7 @@ export default function CommunityList({
                 </div>
               </button>
               <div className="flex items-center gap-2 shrink-0">
-                <span className="text-[11px] font-mono font-semibold tabular-nums text-emerald-400">
+                <span className="text-[11px] font-mono font-semibold tabular-nums text-emerald-800 dark:text-emerald-400">
                   {p.score ?? "—"}
                 </span>
                 <button

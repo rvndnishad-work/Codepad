@@ -188,7 +188,7 @@ function TechPicker({
 
       {/* Header */}
       <div className="text-center space-y-3">
-        <span className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-gradient-to-r from-indigo-500/10 to-fuchsia-500/10 border border-indigo-500/20 text-indigo-400 text-[11px] font-bold uppercase tracking-widest">
+        <span className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-gradient-to-r from-indigo-500/10 to-fuchsia-500/10 border border-indigo-500/20 text-indigo-800 dark:text-indigo-400 text-[11px] font-bold uppercase tracking-widest">
           <Target className="w-3.5 h-3.5" />
           Pick your stack
         </span>
@@ -211,7 +211,7 @@ function TechPicker({
             tileClass: "bg-indigo-600 text-white",
             glowClass: "bg-indigo-500/25",
             hoverClass: "hover:border-indigo-400/50 hover:shadow-indigo-500/15",
-            accentText: "text-indigo-500 dark:text-indigo-400",
+            accentText: "text-indigo-800 dark:text-indigo-400",
           };
           const hours = minutes >= 90 ? `${Math.round((minutes / 60) * 2) / 2} hrs` : `${minutes} min`;
           return (
@@ -262,7 +262,7 @@ function TechPicker({
                   {started > 0 && (
                     <>
                       <span className="text-muted/40">·</span>
-                      <span className="inline-flex items-center gap-1 text-emerald-500 dark:text-emerald-400">
+                      <span className="inline-flex items-center gap-1 text-emerald-800 dark:text-emerald-400">
                         <Award className="w-3 h-3" /> {started}/{total} attempted
                       </span>
                     </>
@@ -287,7 +287,7 @@ function TechPicker({
                       diff[d] > 0 ? (
                         <span
                           key={d}
-                          className="inline-flex items-center gap-1.5 text-[10px] font-bold text-muted"
+                          className="inline-flex items-center gap-1.5 text-[11px] font-bold text-muted"
                         >
                           <span className={`w-1.5 h-1.5 rounded-full ${DIFFICULTY_DOTS[d]}`} />
                           {diff[d]} {DIFFICULTY_LABELS[d]}
@@ -324,7 +324,7 @@ function Landing({ onEnter, challengeCount }: { onEnter: () => void; challengeCo
         <div className="absolute inset-0 bg-[linear-gradient(to_right,rgba(123,132,150,0.04)_1px,transparent_1px),linear-gradient(to_bottom,rgba(123,132,150,0.04)_1px,transparent_1px)] bg-[size:32px_32px] pointer-events-none" />
 
         <div className="relative max-w-3xl mx-auto space-y-6">
-          <div className="inline-flex items-center gap-2.5 px-4 py-1.5 rounded-full bg-gradient-to-r from-rose-500/10 to-indigo-500/10 border border-rose-500/20 text-rose-400 text-xs font-bold uppercase tracking-widest shadow-inner">
+          <div className="inline-flex items-center gap-2.5 px-4 py-1.5 rounded-full bg-gradient-to-r from-rose-500/10 to-indigo-500/10 border border-rose-500/20 text-rose-700 dark:text-rose-400 text-xs font-bold uppercase tracking-widest shadow-inner">
             <Bot className="w-4 h-4" />
             AI-Readiness Skill
           </div>
@@ -375,7 +375,7 @@ function Landing({ onEnter, challengeCount }: { onEnter: () => void; challengeCo
       {/* Two modes explainer */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div className="p-7 rounded-3xl border border-border bg-surface/40">
-          <div className="w-12 h-12 rounded-2xl bg-indigo-500/10 flex items-center justify-center text-indigo-400 mb-4">
+          <div className="w-12 h-12 rounded-2xl bg-indigo-500/10 flex items-center justify-center text-indigo-800 dark:text-indigo-400 mb-4">
             <Bug className="w-6 h-6" />
           </div>
           <h4 className="text-lg font-bold text-fg mb-2">Standard review</h4>
@@ -385,7 +385,7 @@ function Landing({ onEnter, challengeCount }: { onEnter: () => void; challengeCo
           </p>
         </div>
         <div className="p-7 rounded-3xl border border-border bg-surface/40">
-          <div className="w-12 h-12 rounded-2xl bg-rose-500/10 flex items-center justify-center text-rose-400 mb-4">
+          <div className="w-12 h-12 rounded-2xl bg-rose-500/10 flex items-center justify-center text-rose-700 dark:text-rose-400 mb-4">
             <Zap className="w-6 h-6" />
           </div>
           <h4 className="text-lg font-bold text-fg mb-2">Hallucination Hunt</h4>
@@ -512,7 +512,7 @@ function Lobby({
                 <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
                 <div className="relative flex items-center gap-2 mb-4">
                   <span
-                    className={`inline-flex items-center px-2.5 py-1 rounded-full border text-[10px] font-bold uppercase tracking-wider ${
+                    className={`inline-flex items-center px-2.5 py-1 rounded-full border text-[11px] font-bold uppercase tracking-wider ${
                       DIFFICULTY_STYLES[c.difficulty] ?? DIFFICULTY_STYLES.intermediate
                     }`}
                   >
@@ -535,7 +535,7 @@ function Lobby({
                     <Clock className="w-3.5 h-3.5 opacity-70" /> {c.estimatedMinutes} min
                   </span>
                   {stat ? (
-                    <span className="inline-flex items-center gap-1 font-mono tabular-nums text-emerald-400 bg-emerald-400/10 px-2 py-0.5 rounded-md">
+                    <span className="inline-flex items-center gap-1 font-mono tabular-nums text-emerald-800 dark:text-emerald-400 bg-emerald-400/10 px-2 py-0.5 rounded-md">
                       <Award className="w-3 h-3" /> {stat.best}
                     </span>
                   ) : null}
@@ -551,7 +551,7 @@ function Lobby({
                   <button
                     onClick={() => onOpen(c, true)}
                     title={`Timed hunt — ${c.timeLimitSec}s`}
-                    className="inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl border border-rose-500/30 bg-rose-500/10 hover:bg-rose-500/20 text-xs font-bold text-rose-500 transition-all active:scale-95"
+                    className="inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl border border-rose-500/30 bg-rose-500/10 hover:bg-rose-500/20 text-xs font-bold text-rose-700 dark:text-rose-400 transition-all active:scale-95"
                   >
                     <Zap className="w-3.5 h-3.5" /> Hunt
                   </button>

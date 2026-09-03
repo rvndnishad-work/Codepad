@@ -82,7 +82,7 @@ export function parseRubric(json: string | null | undefined): RubricScores {
 }
 
 export const DIFFICULTY_STYLES: Record<string, string> = {
-  beginner: "text-emerald-500 bg-emerald-500/10 border-emerald-500/20",
-  intermediate: "text-amber-500 bg-amber-500/10 border-amber-500/20",
-  advanced: "text-rose-500 bg-rose-500/10 border-rose-500/20",
+  beginner: "text-emerald-800 dark:text-emerald-400 bg-emerald-500/10 border-emerald-500/20",
+  intermediate: "text-amber-800 dark:text-amber-400 bg-amber-500/10 border-amber-500/20",
+  advanced: "text-rose-700 dark:text-rose-400 bg-rose-500/10 border-rose-500/20",
 };

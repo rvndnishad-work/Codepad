@@ -95,7 +95,7 @@ export function CardChip({
 }) {
   return (
     <span
-      className={`px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider border ${
+      className={`px-1.5 py-0.5 rounded text-[11px] font-bold uppercase tracking-wider border ${
         tone === "accent"
           ? "bg-accent/10 border-accent/30 text-accent"
           : "bg-bg/40 border-border text-muted/80"

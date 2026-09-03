@@ -87,7 +87,7 @@ export default function ProctorSetup({
             screen during this interview. The candidate must consent; the agent removes itself
             when the interview ends.
           </p>
-          {error && <p className="text-[11px] text-rose-500">{error}</p>}
+          {error && <p className="text-[11px] text-rose-700 dark:text-rose-400">{error}</p>}
           <button
             onClick={provision}
             disabled={busy}
@@ -99,7 +99,7 @@ export default function ProctorSetup({
         </>
       ) : (
         <>
-          <div className="flex items-center gap-2 text-[11px] text-emerald-500">
+          <div className="flex items-center gap-2 text-[11px] text-emerald-800 dark:text-emerald-400">
             <ShieldCheck className="w-3.5 h-3.5" />
             Enabled. Send the candidate both files below.
           </div>

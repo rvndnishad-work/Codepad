@@ -76,7 +76,7 @@ export default function TechMarquee() {
           <span className="ip-live h-[5px] w-[5px] bg-accent" aria-hidden />
           <span className="ip-label">Coverage</span>
           <span className="ip-rule min-w-4 flex-1" aria-hidden />
-          <span className="ip-label ip-label-xs">14 technologies · 8 runtimes</span>
+          <span className="ip-label">14 technologies · 8 runtimes</span>
         </div>
         <div className="divide-y divide-border">
           <MarqueeRow items={ROW_A} direction="left" />

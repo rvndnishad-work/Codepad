@@ -185,7 +185,7 @@ export default function ChallengeRunner({
             <div
               className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-xl border font-mono font-bold tabular-nums transition-colors ${
                 timeLow
-                  ? "border-rose-500/40 bg-rose-500/10 text-rose-500 animate-pulse"
+                  ? "border-rose-500/40 bg-rose-500/10 text-rose-700 dark:text-rose-400 animate-pulse"
                   : "border-border bg-bg text-fg"
               }`}
             >
@@ -380,11 +380,11 @@ function ReviewingPanel({
       <button
         onClick={onShowSolution}
         disabled={submitting}
-        className="group w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl border border-indigo-500/30 bg-gradient-to-r from-indigo-500/10 to-fuchsia-500/10 hover:from-indigo-500/15 hover:to-fuchsia-500/15 text-sm font-bold text-indigo-600 dark:text-indigo-300 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+        className="group w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl border border-indigo-500/30 bg-gradient-to-r from-indigo-500/10 to-fuchsia-500/10 hover:from-indigo-500/15 hover:to-fuchsia-500/15 text-sm font-bold text-indigo-800 dark:text-indigo-400 dark:text-indigo-300 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
       >
         <Sparkles className="w-4 h-4" />
         Show solution
-        <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-gradient-to-r from-amber-400 to-amber-500 text-[9px] font-black uppercase tracking-wider text-amber-950">
+        <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-gradient-to-r from-amber-400 to-amber-500 text-[11px] font-black uppercase tracking-wider text-amber-950">
           Pro
         </span>
       </button>
@@ -407,16 +407,16 @@ function RevealPanel({
 }) {
   const tone =
     result.score >= 75
-      ? "text-emerald-400"
+      ? "text-emerald-800 dark:text-emerald-400"
       : result.score >= 50
-        ? "text-amber-400"
-        : "text-rose-400";
+        ? "text-amber-800 dark:text-amber-400"
+        : "text-rose-700 dark:text-rose-400";
 
   return (
     <div className="space-y-4">
       <div className="rounded-2xl border border-border bg-surface p-6 shadow-sm text-center">
         <div className="flex items-center justify-center gap-2 mb-2 text-muted">
-          {huntMode ? <Trophy className="w-4 h-4 text-amber-500" /> : null}
+          {huntMode ? <Trophy className="w-4 h-4 text-amber-800 dark:text-amber-400" /> : null}
           <span className="text-xs font-bold uppercase tracking-widest">
             {huntMode ? "Hunt result" : "Review score"}
           </span>
@@ -488,14 +488,14 @@ function RevealPanel({
 function Stat({ label, value, tone }: { label: string; value: string; tone: string }) {
   const toneClass =
     tone === "emerald"
-      ? "text-emerald-400"
+      ? "text-emerald-800 dark:text-emerald-400"
       : tone === "amber"
-        ? "text-amber-400"
-        : "text-rose-400";
+        ? "text-amber-800 dark:text-amber-400"
+        : "text-rose-700 dark:text-rose-400";
   return (
     <div className="rounded-xl bg-bg/60 border border-border/50 py-2">
       <div className={`text-lg font-mono font-bold tabular-nums ${toneClass}`}>{value}</div>
-      <div className="text-[10px] uppercase tracking-wider text-muted font-bold">{label}</div>
+      <div className="text-[11px] uppercase tracking-wider text-muted font-bold">{label}</div>
     </div>
   );
 }

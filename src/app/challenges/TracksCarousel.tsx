@@ -154,8 +154,8 @@ export default function TracksCarousel({
     <section className="mx-auto max-w-6xl px-6 py-6 space-y-6">
       <div className="flex items-end justify-between border-b border-border/40 pb-4">
         <div className="space-y-1">
-          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-violet-500/10 border border-violet-500/30 text-violet-400 text-[11px] font-bold uppercase tracking-wider">
-            <Sparkles className="w-3 h-3 text-violet-400" />
+          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-violet-500/10 border border-violet-500/30 text-violet-800 dark:text-violet-400 text-[11px] font-bold uppercase tracking-wider">
+            <Sparkles className="w-3 h-3 text-violet-800 dark:text-violet-400" />
             Curated Paths
           </span>
           <h2 className="text-xl md:text-2xl font-bold text-fg tracking-tight">
@@ -186,7 +186,7 @@ export default function TracksCarousel({
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <span className="w-1.5 h-4 rounded-full shrink-0" style={{ backgroundColor: track.accentColor }} />
-                    <span className="text-[10px] font-bold uppercase tracking-wider text-muted">
+                    <span className="text-[11px] font-bold uppercase tracking-wider text-muted">
                       {track.tags[0]} path
                     </span>
                   </div>
@@ -223,20 +223,20 @@ export default function TracksCarousel({
                 </div>
 
                 <div className="mt-4 flex items-center justify-between gap-3 pt-2">
-                  <span className="text-[10px] font-bold font-mono text-muted/70">
+                  <span className="text-[11px] font-bold font-mono text-muted/70">
                     {track.solved} of {track.totalCount} completed
                   </span>
 
                   {track.completed ? (
                     <button
                       onClick={() => downloadBadge(track.title)}
-                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-data bg-emerald-500/10 border border-emerald-500/25 hover:bg-emerald-500 hover:text-bg text-[10px] font-bold text-emerald-400 uppercase tracking-wider transition-all"
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-data bg-emerald-500/10 border border-emerald-500/25 hover:bg-emerald-500 hover:text-bg text-[11px] font-bold text-emerald-800 dark:text-emerald-400 uppercase tracking-wider transition-all"
                     >
                       <Download className="w-3 h-3" />
                       Claim Badge
                     </button>
                   ) : (
-                    <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-white dark:bg-black/30 border border-border dark:border-transparent text-[9px] font-bold uppercase tracking-wider text-muted/60">
+                    <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-white dark:bg-black/30 border border-border dark:border-transparent text-[11px] font-bold uppercase tracking-wider text-muted/60">
                       Incomplete
                     </span>
                   )}

@@ -18,28 +18,28 @@ const CODE_LINES: CodeLine[] = [
   { tokens: [{ text: "// Interviewpad IntelliSense active", className: "text-muted/50", italic: true }] },
   { tokens: [] },
   { tokens: [
-    { text: "function", className: "text-purple-400" },
+    { text: "function", className: "text-purple-800 dark:text-purple-400" },
     { text: " " },
     { text: "sum", className: "text-accent" },
     { text: "(a, b) {" },
   ]},
   { tokens: [
     { text: "  " },
-    { text: "return", className: "text-purple-400" },
+    { text: "return", className: "text-purple-800 dark:text-purple-400" },
     { text: " a + b;" },
   ]},
   { tokens: [{ text: "}" }] },
   { tokens: [] },
   { tokens: [
-    { text: "console", className: "text-blue-400" },
+    { text: "console", className: "text-blue-800 dark:text-blue-400" },
     { text: "." },
     { text: "log", className: "text-accent" },
     { text: "(" },
     { text: "sum", className: "text-accent" },
     { text: "(" },
-    { text: "1", className: "text-orange-400" },
+    { text: "1", className: "text-orange-800 dark:text-orange-400" },
     { text: ", " },
-    { text: "2", className: "text-orange-400" },
+    { text: "2", className: "text-orange-800 dark:text-orange-400" },
     { text: "));" },
   ]},
 ];
@@ -212,7 +212,7 @@ function CodeDemoCard() {
             <span className="h-[6px] w-[6px] bg-accent" />
           </div>
           <div className="flex-1 flex justify-center min-w-0">
-            <div className="px-3 py-1 rounded-data bg-bg/40 text-[10px] font-mono text-muted flex items-center gap-2 truncate">
+            <div className="px-3 py-1 rounded-data bg-bg/40 text-[11px] font-mono text-muted flex items-center gap-2 truncate">
               <Globe className="w-3 h-3 shrink-0" />
               <span className="truncate">interviewpad.in/play/sum-function</span>
             </div>
@@ -245,7 +245,7 @@ function CodeDemoCard() {
           {/* Code column */}
           <div className="px-5 py-5 font-mono text-sm md:border-r border-border">
             <div className="flex items-center gap-2 mb-3">
-              <span className="text-[10px] uppercase tracking-[0.18em] text-muted font-bold">
+              <span className="text-[11px] uppercase tracking-[0.18em] text-muted font-bold">
                 index.js
               </span>
             </div>
@@ -280,10 +280,10 @@ function CodeDemoCard() {
           <div className="px-5 py-5 font-mono text-xs bg-bg/30 border-t md:border-t-0 border-border">
             <div className="flex items-center gap-2 mb-3">
               <div className={`w-1.5 h-1.5 ${statusDot}`} />
-              <span className="text-[10px] uppercase tracking-[0.18em] text-muted font-bold">
+              <span className="text-[11px] uppercase tracking-[0.18em] text-muted font-bold">
                 Console
               </span>
-              <span className="ml-auto text-[10px] text-muted/60">
+              <span className="ml-auto text-[11px] text-muted/60">
                 {isTyping ? "idle" : isRunning ? "running" : isDone ? "complete" : "ready"}
               </span>
             </div>
@@ -305,7 +305,7 @@ function CodeDemoCard() {
                   );
                 })}
                 {isDone && (
-                  <div className="pt-2 mt-2 border-t border-border text-[10px] text-muted/70 uppercase tracking-wider">
+                  <div className="pt-2 mt-2 border-t border-border text-[11px] text-muted/70 uppercase tracking-wider">
                     Returned in 0.04 ms
                   </div>
                 )}

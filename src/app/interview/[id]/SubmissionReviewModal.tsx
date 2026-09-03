@@ -121,7 +121,7 @@ export default function SubmissionReviewModal({
               {/* Live preview + console (frontend submissions only) */}
               {isFrontend && (
                 <div className="w-[38%] shrink-0 flex flex-col min-h-0 h-full border-l border-border">
-                  <div className="h-9 shrink-0 flex items-center gap-1.5 px-3 border-b border-border bg-surface/30 text-[10px] font-black uppercase tracking-wider text-fg">
+                  <div className="h-9 shrink-0 flex items-center gap-1.5 px-3 border-b border-border bg-surface/30 text-[11px] font-black uppercase tracking-wider text-fg">
                     <Eye className="w-3 h-3 text-accent" />
                     Live Preview
                   </div>

@@ -156,8 +156,8 @@ export default function PromptLabClient({
               <div className="absolute inset-0 bg-[linear-gradient(to_right,rgba(123,132,150,0.04)_1px,transparent_1px),linear-gradient(to_bottom,rgba(123,132,150,0.04)_1px,transparent_1px)] bg-[size:32px_32px] pointer-events-none" />
 
               <div className="relative max-w-4xl mx-auto space-y-6">
-                <div className="inline-flex items-center gap-2.5 px-4 py-1.5 rounded-full bg-gradient-to-r from-indigo-500/10 to-purple-500/10 border border-indigo-500/20 text-indigo-400 text-xs font-bold uppercase tracking-widest shadow-inner">
-                  <Sparkles className="w-4 h-4 text-indigo-400 animate-spin" style={{ animationDuration: '6s' }} />
+                <div className="inline-flex items-center gap-2.5 px-4 py-1.5 rounded-full bg-gradient-to-r from-indigo-500/10 to-purple-500/10 border border-indigo-500/20 text-indigo-800 dark:text-indigo-400 text-xs font-bold uppercase tracking-widest shadow-inner">
+                  <Sparkles className="w-4 h-4 text-indigo-800 dark:text-indigo-400 animate-spin" style={{ animationDuration: '6s' }} />
                   Next-Gen AI Laboratory
                 </div>
                 
@@ -171,9 +171,9 @@ export default function PromptLabClient({
                 </p>
                 
                 <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 pt-4 text-xs font-semibold text-muted">
-                  <span className="flex items-center gap-1.5"><Check className="w-4 h-4 text-indigo-400" /> Multi-Dim Rubric Grading</span>
+                  <span className="flex items-center gap-1.5"><Check className="w-4 h-4 text-indigo-800 dark:text-indigo-400" /> Multi-Dim Rubric Grading</span>
                   <span className="text-border-strong hidden sm:inline">•</span>
-                  <span className="flex items-center gap-1.5"><Check className="w-4 h-4 text-purple-400" /> Advanced Model Tuning</span>
+                  <span className="flex items-center gap-1.5"><Check className="w-4 h-4 text-purple-800 dark:text-purple-400" /> Advanced Model Tuning</span>
                 </div>
               </div>
             </div>
@@ -189,13 +189,13 @@ export default function PromptLabClient({
                 <div className="absolute -right-16 -top-16 w-48 h-48 bg-indigo-500/5 rounded-full blur-3xl pointer-events-none group-hover:bg-indigo-500/10 transition-colors" />
 
                 <div className="w-full flex items-center justify-between mb-8">
-                  <div className="w-16 h-16 rounded-2xl bg-indigo-500/10 flex items-center justify-center text-indigo-400 group-hover:scale-110 group-hover:bg-indigo-500/20 transition-all duration-500 shadow-md">
+                  <div className="w-16 h-16 rounded-2xl bg-indigo-500/10 flex items-center justify-center text-indigo-800 dark:text-indigo-400 group-hover:scale-110 group-hover:bg-indigo-500/20 transition-all duration-500 shadow-md">
                     <Beaker className="w-8 h-8" />
                   </div>
                   
                   {/* Animated Beaker SVG */}
                   <div className="opacity-85 group-hover:opacity-100 transition-opacity">
-                    <svg className="w-20 h-20 text-indigo-400 select-none drop-shadow-[0_0_8px_rgba(99,102,241,0.2)]" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <svg className="w-20 h-20 text-indigo-800 dark:text-indigo-400 select-none drop-shadow-[0_0_8px_rgba(99,102,241,0.2)]" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
                       <path d="M35 15H65M42 15V35L22 75C20 79 23 84 28 84H72C77 84 80 79 78 75L58 35V15H42Z" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
                       <path d="M26 65C38 61 62 69 74 65" stroke="url(#indigoGrad)" strokeWidth="1.5" strokeDasharray="3 3" strokeLinecap="round" />
                       <path d="M27 67L24 73C23.5 74 24 75 25 75H75C76 75 76.5 74 76 73L73 67C61 71 39 63 27 67Z" fill="url(#indigoGrad)" opacity="0.25" />
@@ -222,15 +222,15 @@ export default function PromptLabClient({
                 {/* Challenge Feature items */}
                 <div className="w-full space-y-3.5 border-t border-border/50 pt-5 mb-8">
                   <div className="flex items-center gap-3 text-sm text-muted group-hover:text-fg transition-colors font-semibold">
-                    <div className="w-5 h-5 rounded-full bg-indigo-500/10 flex items-center justify-center text-indigo-400 text-xs">🏆</div>
+                    <div className="w-5 h-5 rounded-full bg-indigo-500/10 flex items-center justify-center text-indigo-800 dark:text-indigo-400 text-xs">🏆</div>
                     <span>6-Dimensional Rubric Grading</span>
                   </div>
                   <div className="flex items-center gap-3 text-sm text-muted group-hover:text-fg transition-colors font-semibold">
-                    <div className="w-5 h-5 rounded-full bg-indigo-500/10 flex items-center justify-center text-indigo-400 text-xs">💡</div>
+                    <div className="w-5 h-5 rounded-full bg-indigo-500/10 flex items-center justify-center text-indigo-800 dark:text-indigo-400 text-xs">💡</div>
                     <span>Curated Expert Exemplars</span>
                   </div>
                   <div className="flex items-center gap-3 text-sm text-muted group-hover:text-fg transition-colors font-semibold">
-                    <div className="w-5 h-5 rounded-full bg-indigo-500/10 flex items-center justify-center text-indigo-400 text-xs">👥</div>
+                    <div className="w-5 h-5 rounded-full bg-indigo-500/10 flex items-center justify-center text-indigo-800 dark:text-indigo-400 text-xs">👥</div>
                     <span>Community Leaderboard & Shares</span>
                   </div>
                 </div>
@@ -249,13 +249,13 @@ export default function PromptLabClient({
                 <div className="absolute -right-16 -top-16 w-48 h-48 bg-purple-500/5 rounded-full blur-3xl pointer-events-none group-hover:bg-purple-500/10 transition-colors" />
 
                 <div className="w-full flex items-center justify-between mb-8">
-                  <div className="w-16 h-16 rounded-2xl bg-purple-500/10 flex items-center justify-center text-purple-400 group-hover:scale-110 group-hover:bg-purple-500/20 transition-all duration-500 shadow-md">
+                  <div className="w-16 h-16 rounded-2xl bg-purple-500/10 flex items-center justify-center text-purple-800 dark:text-purple-400 group-hover:scale-110 group-hover:bg-purple-500/20 transition-all duration-500 shadow-md">
                     <Play className="w-8 h-8 ml-1" />
                   </div>
                   
                   {/* Animated Terminal SVG */}
                   <div className="opacity-85 group-hover:opacity-100 transition-opacity">
-                    <svg className="w-20 h-20 text-purple-400 select-none drop-shadow-[0_0_8px_rgba(168,85,247,0.2)]" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <svg className="w-20 h-20 text-purple-800 dark:text-purple-400 select-none drop-shadow-[0_0_8px_rgba(168,85,247,0.2)]" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
                       <rect x="15" y="20" width="70" height="60" rx="6" stroke="currentColor" strokeWidth="2.5" />
                       <circle cx="23" cy="27" r="2.5" fill="#f87171" />
                       <circle cx="31" cy="27" r="2.5" fill="#fbbf24" />
@@ -284,15 +284,15 @@ export default function PromptLabClient({
                 {/* Playground Feature items */}
                 <div className="w-full space-y-3.5 border-t border-border/50 pt-5 mb-8">
                   <div className="flex items-center gap-3 text-sm text-muted group-hover:text-fg transition-colors font-semibold">
-                    <div className="w-5 h-5 rounded-full bg-purple-500/10 flex items-center justify-center text-purple-400 text-xs">🎛️</div>
+                    <div className="w-5 h-5 rounded-full bg-purple-500/10 flex items-center justify-center text-purple-800 dark:text-purple-400 text-xs">🎛️</div>
                     <span>Advanced Hyper-Parameters Tuning</span>
                   </div>
                   <div className="flex items-center gap-3 text-sm text-muted group-hover:text-fg transition-colors font-semibold">
-                    <div className="w-5 h-5 rounded-full bg-purple-500/10 flex items-center justify-center text-purple-400 text-xs">🤖</div>
+                    <div className="w-5 h-5 rounded-full bg-purple-500/10 flex items-center justify-center text-purple-800 dark:text-purple-400 text-xs">🤖</div>
                     <span>Latest Gemini 1.5 Pro & Flash Models</span>
                   </div>
                   <div className="flex items-center gap-3 text-sm text-muted group-hover:text-fg transition-colors font-semibold">
-                    <div className="w-5 h-5 rounded-full bg-purple-500/10 flex items-center justify-center text-purple-400 text-xs">⚡</div>
+                    <div className="w-5 h-5 rounded-full bg-purple-500/10 flex items-center justify-center text-purple-800 dark:text-purple-400 text-xs">⚡</div>
                     <span>Real-Time Word/Token Generation Streaming</span>
                   </div>
                 </div>
@@ -314,7 +314,7 @@ export default function PromptLabClient({
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <div className="p-6 rounded-2xl border border-border bg-surface/30 backdrop-blur-md space-y-4 hover:border-border-strong transition-colors duration-300">
-                  <div className="w-10 h-10 rounded-xl bg-indigo-500/10 flex items-center justify-center text-indigo-400 text-lg font-bold">
+                  <div className="w-10 h-10 rounded-xl bg-indigo-500/10 flex items-center justify-center text-indigo-800 dark:text-indigo-400 text-lg font-bold">
                     🎯
                   </div>
                   <h4 className="text-base font-bold text-fg">Precise Benchmarking</h4>
@@ -324,7 +324,7 @@ export default function PromptLabClient({
                 </div>
 
                 <div className="p-6 rounded-2xl border border-border bg-surface/30 backdrop-blur-md space-y-4 hover:border-border-strong transition-colors duration-300">
-                  <div className="w-10 h-10 rounded-xl bg-purple-500/10 flex items-center justify-center text-purple-400 text-lg font-bold">
+                  <div className="w-10 h-10 rounded-xl bg-purple-500/10 flex items-center justify-center text-purple-800 dark:text-purple-400 text-lg font-bold">
                     🤝
                   </div>
                   <h4 className="text-base font-bold text-fg">Collaborative Learning</h4>
@@ -334,7 +334,7 @@ export default function PromptLabClient({
                 </div>
 
                 <div className="p-6 rounded-2xl border border-border bg-surface/30 backdrop-blur-md space-y-4 hover:border-border-strong transition-colors duration-300">
-                  <div className="w-10 h-10 rounded-xl bg-emerald-500/10 flex items-center justify-center text-emerald-400 text-lg font-bold">
+                  <div className="w-10 h-10 rounded-xl bg-emerald-500/10 flex items-center justify-center text-emerald-800 dark:text-emerald-400 text-lg font-bold">
                     ⚙️
                   </div>
                   <h4 className="text-base font-bold text-fg">Iterative Fine-Tuning</h4>
@@ -485,7 +485,7 @@ function PracticeLobby({
           <div className="absolute -right-32 -top-32 w-96 h-96 bg-indigo-500/10 blur-[100px] rounded-full group-hover:bg-indigo-500/20 transition-colors duration-700" />
           
           <div className="relative flex-1 space-y-5">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 text-xs font-bold uppercase tracking-wide">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-800 dark:text-indigo-400 text-xs font-bold uppercase tracking-wide">
               <Sparkles className="w-3.5 h-3.5" /> Featured Scenario
             </div>
             <h2 className="text-3xl sm:text-4xl font-bold text-fg tracking-tight">{filtered[0].title}</h2>
@@ -563,13 +563,13 @@ function PracticeLobby({
                 <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                 <div className="relative flex items-center gap-2 mb-4">
                   <span
-                    className={`inline-flex items-center px-2.5 py-1 rounded-full border text-[10px] font-bold uppercase tracking-wider ${
+                    className={`inline-flex items-center px-2.5 py-1 rounded-full border text-[11px] font-bold uppercase tracking-wider ${
                       DIFFICULTY_STYLES[s.difficulty] ?? DIFFICULTY_STYLES.intermediate
                     }`}
                   >
                     {s.difficulty}
                   </span>
-                  <span className="inline-flex items-center px-2.5 py-1 rounded-full bg-panel/50 border border-border text-[10px] font-bold uppercase tracking-wider text-muted">
+                  <span className="inline-flex items-center px-2.5 py-1 rounded-full bg-panel/50 border border-border text-[11px] font-bold uppercase tracking-wider text-muted">
                     {s.category.replace("-", " ")}
                   </span>
                 </div>
@@ -586,11 +586,11 @@ function PracticeLobby({
                     <Clock className="w-3.5 h-3.5 opacity-70" /> {s.estimatedMinutes} min
                   </span>
                   {stats ? (
-                    <span className="inline-flex items-center gap-1.5 font-mono tabular-nums text-emerald-400 bg-emerald-400/10 px-2 py-1 rounded-md">
+                    <span className="inline-flex items-center gap-1.5 font-mono tabular-nums text-emerald-800 dark:text-emerald-400 bg-emerald-400/10 px-2 py-1 rounded-md">
                       Best {stats.best}
                     </span>
                   ) : (
-                    <span className="inline-flex items-center gap-1 text-indigo-400 font-semibold group-hover:translate-x-1 transition-transform">
+                    <span className="inline-flex items-center gap-1 text-indigo-800 dark:text-indigo-400 font-semibold group-hover:translate-x-1 transition-transform">
                       Start <ChevronRight className="w-3.5 h-3.5" />
                     </span>
                   )}
@@ -618,7 +618,7 @@ function PracticeLobby({
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {attempts.slice(0, 6).map((a) => {
               const score = a.score ?? 0;
-              const toneClass = score >= 75 ? "text-emerald-400 bg-emerald-400/10 border-emerald-400/20" : score >= 50 ? "text-amber-400 bg-amber-400/10 border-amber-400/20" : "text-rose-400 bg-rose-400/10 border-rose-400/20";
+              const toneClass = score >= 75 ? "text-emerald-800 dark:text-emerald-400 bg-emerald-400/10 border-emerald-400/20" : score >= 50 ? "text-amber-800 dark:text-amber-400 bg-amber-400/10 border-amber-400/20" : "text-rose-700 dark:text-rose-400 bg-rose-400/10 border-rose-400/20";
               const progressColor = score >= 75 ? "bg-emerald-400" : score >= 50 ? "bg-amber-400" : "bg-rose-400";
               return (
                 <div key={a.id} className="group rounded-2xl border border-border bg-surface p-5 hover:border-border-strong transition-colors flex flex-col justify-between">
@@ -626,7 +626,7 @@ function PracticeLobby({
                     <div className="flex items-start justify-between gap-2 mb-3">
                       <h4 className="font-semibold text-sm text-fg line-clamp-1 flex-1">{a.scenarioTitle}</h4>
                       {a.shared ? (
-                        <span className="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-indigo-400 bg-indigo-500/10 px-2 py-0.5 rounded-full shrink-0">
+                        <span className="inline-flex items-center gap-1 text-[11px] font-bold uppercase tracking-wider text-indigo-800 dark:text-indigo-400 bg-indigo-500/10 px-2 py-0.5 rounded-full shrink-0">
                           <Share2 className="w-3 h-3" /> Shared
                         </span>
                       ) : null}
@@ -888,7 +888,7 @@ function PracticeRunner({
             </div>
             <div className="p-6 bg-surface">
               <div className="flex items-center gap-2 mb-3">
-                <div className="w-8 h-8 rounded-lg bg-emerald-500/10 flex items-center justify-center text-emerald-400">
+                <div className="w-8 h-8 rounded-lg bg-emerald-500/10 flex items-center justify-center text-emerald-800 dark:text-emerald-400">
                   <Check className="w-4 h-4" />
                 </div>
                 <h3 className="text-sm font-bold uppercase tracking-widest text-emerald-400/80">Objective</h3>
@@ -966,7 +966,7 @@ function PracticeRunner({
                     >
                       {latest.shared ? (
                         <>
-                          <Check className="w-4 h-4 text-emerald-400" /> Shared
+                          <Check className="w-4 h-4 text-emerald-800 dark:text-emerald-400" /> Shared
                         </>
                       ) : (
                         <>
@@ -1065,7 +1065,7 @@ function PracticeRunner({
 
 function Count({ value }: { value: number }) {
   return (
-    <span className="inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full bg-panel/60 text-[10px] font-mono tabular-nums text-muted/80">
+    <span className="inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full bg-panel/60 text-[11px] font-mono tabular-nums text-muted/80">
       {value}
     </span>
   );

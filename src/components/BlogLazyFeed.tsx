@@ -204,7 +204,7 @@ export default function BlogLazyFeed({
             {loading ? (
               <span className="flex flex-col items-center gap-2 text-muted">
                 <Loader2 className="w-4 h-4 animate-spin text-accent" />
-                <span className="text-[10px] font-bold uppercase tracking-widest">
+                <span className="text-[11px] font-bold uppercase tracking-widest">
                   Loading
                 </span>
               </span>
@@ -212,14 +212,14 @@ export default function BlogLazyFeed({
               <button
                 type="button"
                 onClick={loadMore}
-                className="text-[10px] font-bold uppercase tracking-widest text-red-500 hover:text-red-400 px-2 text-center"
+                className="text-[11px] font-bold uppercase tracking-widest text-red-700 dark:text-red-400 hover:text-red-400 px-2 text-center"
               >
                 {error}
                 <br />
                 Tap to retry
               </button>
             ) : (
-              <span className="text-[10px] font-bold uppercase tracking-widest text-muted/60 text-center px-2 leading-tight">
+              <span className="text-[11px] font-bold uppercase tracking-widest text-muted/60 text-center px-2 leading-tight">
                 Scroll for more
               </span>
             )}

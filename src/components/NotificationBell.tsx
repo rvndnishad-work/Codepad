@@ -34,20 +34,20 @@ type ApiPayload = { unread: number; items: Notification[] };
 const POLL_INTERVAL_MS = 30_000;
 
 const ICON_FOR_TYPE: Record<string, { Icon: typeof Bell; tone: string }> = {
-  INTERVIEW_SCHEDULED: { Icon: Briefcase, tone: "text-indigo-400 bg-indigo-500/10" },
-  INTERVIEW_REPLAY_READY: { Icon: Sparkles, tone: "text-emerald-400 bg-emerald-500/10" },
-  TAKE_HOME_EXPIRING: { Icon: Clock, tone: "text-amber-400 bg-amber-500/10" },
-  TAKE_HOME_SUBMITTED: { Icon: Award, tone: "text-emerald-400 bg-emerald-500/10" },
-  SCORECARD_REQUESTED: { Icon: Award, tone: "text-rose-300 bg-rose-500/10" },
-  PROMPT_UPVOTED: { Icon: Heart, tone: "text-fuchsia-400 bg-fuchsia-500/10" },
-  AI_CREDITS_LOW: { Icon: CreditCard, tone: "text-amber-400 bg-amber-500/10" },
-  SECURITY_2FA_ENABLED: { Icon: ShieldCheck, tone: "text-emerald-400 bg-emerald-500/10" },
-  SECURITY_2FA_DISABLED: { Icon: ShieldAlert, tone: "text-amber-400 bg-amber-500/10" },
-  CREATOR_PUBLISH: { Icon: Sparkles, tone: "text-violet-400 bg-violet-500/10" },
-  CREATOR_NEW_FOLLOWER: { Icon: Heart, tone: "text-rose-400 bg-rose-500/10" },
+  INTERVIEW_SCHEDULED: { Icon: Briefcase, tone: "text-indigo-800 dark:text-indigo-400 bg-indigo-500/10" },
+  INTERVIEW_REPLAY_READY: { Icon: Sparkles, tone: "text-emerald-800 dark:text-emerald-400 bg-emerald-500/10" },
+  TAKE_HOME_EXPIRING: { Icon: Clock, tone: "text-amber-800 dark:text-amber-400 bg-amber-500/10" },
+  TAKE_HOME_SUBMITTED: { Icon: Award, tone: "text-emerald-800 dark:text-emerald-400 bg-emerald-500/10" },
+  SCORECARD_REQUESTED: { Icon: Award, tone: "text-rose-700 dark:text-rose-400 bg-rose-500/10" },
+  PROMPT_UPVOTED: { Icon: Heart, tone: "text-fuchsia-800 dark:text-fuchsia-400 bg-fuchsia-500/10" },
+  AI_CREDITS_LOW: { Icon: CreditCard, tone: "text-amber-800 dark:text-amber-400 bg-amber-500/10" },
+  SECURITY_2FA_ENABLED: { Icon: ShieldCheck, tone: "text-emerald-800 dark:text-emerald-400 bg-emerald-500/10" },
+  SECURITY_2FA_DISABLED: { Icon: ShieldAlert, tone: "text-amber-800 dark:text-amber-400 bg-amber-500/10" },
+  CREATOR_PUBLISH: { Icon: Sparkles, tone: "text-violet-800 dark:text-violet-400 bg-violet-500/10" },
+  CREATOR_NEW_FOLLOWER: { Icon: Heart, tone: "text-rose-700 dark:text-rose-400 bg-rose-500/10" },
   // IP-45: admin-composed broadcasts get a megaphone tone so users can
   // distinguish "system message" from event-driven rows at a glance.
-  ADMIN_BROADCAST: { Icon: Megaphone, tone: "text-sky-400 bg-sky-500/10" },
+  ADMIN_BROADCAST: { Icon: Megaphone, tone: "text-sky-800 dark:text-sky-400 bg-sky-500/10" },
 };
 
 function iconFor(type: string) {
@@ -158,19 +158,19 @@ export default function NotificationBell() {
           <Bell className="w-4 h-4" />
         )}
         {unread > 0 && (
-          <span className="absolute -top-1 -right-1 min-w-[16px] h-[16px] px-1 rounded-full bg-rose-500 text-white text-[9px] font-bold grid place-items-center tabular-nums">
+          <span className="absolute -top-1 -right-1 min-w-[16px] h-[16px] px-1 rounded-full bg-rose-500 text-white text-[11px] font-bold grid place-items-center tabular-nums">
             {unread > 99 ? "99+" : unread}
           </span>
         )}
       </button>
 
       {open && (
-        <div className="absolute right-0 top-full mt-2 w-[360px] max-h-[480px] rounded-xl border border-border bg-surface shadow-xl z-50 flex flex-col overflow-hidden">
+        <div className="absolute right-0 top-full mt-2 w-[360px] max-h-[480px] rounded-xl border border-border-strong bg-surface ip-panel-float z-50 flex flex-col overflow-hidden">
           <header className="px-3 py-2 flex items-center justify-between border-b border-border bg-panel/40">
             <div className="text-xs font-semibold text-fg">
               Notifications
               {unread > 0 && (
-                <span className="ml-2 text-[10px] font-mono text-muted">
+                <span className="ml-2 text-[11px] font-mono text-muted">
                   {unread} unread
                 </span>
               )}
@@ -179,7 +179,7 @@ export default function NotificationBell() {
               type="button"
               onClick={onMarkAllRead}
               disabled={loading || unread === 0}
-              className="inline-flex items-center gap-1 text-[10px] font-semibold text-muted hover:text-fg disabled:opacity-40 disabled:cursor-not-allowed"
+              className="inline-flex items-center gap-1 text-[11px] font-semibold text-muted hover:text-fg disabled:opacity-40 disabled:cursor-not-allowed"
             >
               <CheckCheck className="w-3 h-3" />
               Mark all read
@@ -235,7 +235,7 @@ export default function NotificationBell() {
                               {n.body}
                             </div>
                           )}
-                          <div className="text-[10px] text-muted/70 font-mono">
+                          <div className="text-[11px] text-muted/70 font-mono">
                             {relTime(n.createdAt)}
                           </div>
                         </div>

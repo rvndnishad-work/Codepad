@@ -51,20 +51,20 @@ export function techLabel(slug: string): string {
 export function difficultyClasses(d: string | null | undefined): string {
   switch (d) {
     case "easy":
-      return "text-emerald-500 bg-emerald-500/10 border-emerald-500/20";
+      return "text-emerald-800 dark:text-emerald-400 bg-emerald-500/10 border-emerald-500/20";
     case "hard":
-      return "text-rose-500 bg-rose-500/10 border-rose-500/20";
+      return "text-rose-700 dark:text-rose-400 bg-rose-500/10 border-rose-500/20";
     default:
-      return "text-amber-500 bg-amber-500/10 border-amber-500/20";
+      return "text-amber-800 dark:text-amber-400 bg-amber-500/10 border-amber-500/20";
   }
 }
 
 export function resultClasses(r: string | null | undefined): string {
   switch (r) {
     case "selected":
-      return "text-emerald-500 bg-emerald-500/10 border-emerald-500/20";
+      return "text-emerald-800 dark:text-emerald-400 bg-emerald-500/10 border-emerald-500/20";
     case "rejected":
-      return "text-rose-500 bg-rose-500/10 border-rose-500/20";
+      return "text-rose-700 dark:text-rose-400 bg-rose-500/10 border-rose-500/20";
     default:
       return "text-zinc-400 bg-zinc-500/10 border-zinc-500/20";
   }

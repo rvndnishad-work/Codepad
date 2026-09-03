@@ -40,9 +40,9 @@ function challengeKind(template: string): ChallengeKind {
 }
 
 const KIND_META: { key: ChallengeKind; label: string; icon: LucideIcon; bar: string; chip: string }[] = [
-  { key: "algorithms", label: "Algorithms", icon: Binary, bar: "bg-sky-500", chip: "text-sky-500 bg-sky-500/10 border-sky-500/25" },
-  { key: "ui", label: "UI & Frontend", icon: LayoutTemplate, bar: "bg-violet-500", chip: "text-violet-500 bg-violet-500/10 border-violet-500/25" },
-  { key: "js", label: "JavaScript", icon: Braces, bar: "bg-amber-500", chip: "text-amber-500 bg-amber-500/10 border-amber-500/25" },
+  { key: "algorithms", label: "Algorithms", icon: Binary, bar: "bg-sky-500", chip: "text-sky-800 dark:text-sky-400 bg-sky-500/10 border-sky-500/25" },
+  { key: "ui", label: "UI & Frontend", icon: LayoutTemplate, bar: "bg-violet-500", chip: "text-violet-800 dark:text-violet-400 bg-violet-500/10 border-violet-500/25" },
+  { key: "js", label: "JavaScript", icon: Braces, bar: "bg-amber-500", chip: "text-amber-800 dark:text-amber-400 bg-amber-500/10 border-amber-500/25" },
 ];
 
 function dateKey(d: Date): string {
@@ -262,9 +262,9 @@ export default async function CandidateChallengesPage() {
     hard: "bg-rose-500",
   };
   const difficultyTextColor: Record<string, string> = {
-    easy: "text-emerald-500",
-    medium: "text-amber-500",
-    hard: "text-rose-500",
+    easy: "text-emerald-800 dark:text-emerald-400",
+    medium: "text-amber-800 dark:text-amber-400",
+    hard: "text-rose-700 dark:text-rose-400",
   };
 
   return (
@@ -286,12 +286,12 @@ export default async function CandidateChallengesPage() {
             </h1>
           </div>
           {checkedInToday ? (
-            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-500 text-xs font-bold w-fit">
+            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-800 dark:text-emerald-400 text-xs font-bold w-fit">
               <CheckCircle2 className="w-3.5 h-3.5" />
               Checked in today
             </span>
           ) : (
-            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-600 dark:text-amber-400 text-xs font-bold w-fit">
+            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-800 dark:text-amber-400 text-xs font-bold w-fit">
               <Flame className="w-3.5 h-3.5" />
               Solve one challenge to keep your streak
             </span>
@@ -304,12 +304,12 @@ export default async function CandidateChallengesPage() {
           <div className="lg:col-span-5 relative overflow-hidden rounded-2xl border border-accent/30 bg-white dark:bg-[#0f111c] p-6 flex flex-col shadow-sm">
             <div className="absolute -top-10 -right-10 w-44 h-44 rounded-full bg-accent/10 blur-3xl pointer-events-none" />
             <div className="flex items-center justify-between gap-2 mb-4 relative">
-              <span className="inline-flex items-center gap-1.5 text-[10px] font-black uppercase tracking-[0.18em] text-accent">
+              <span className="inline-flex items-center gap-1.5 text-[11px] font-black uppercase tracking-[0.18em] text-accent">
                 <Sparkles className="w-3.5 h-3.5" />
                 Today&apos;s challenge
               </span>
               {dailySolved && (
-                <span className="inline-flex items-center gap-1 text-[10px] font-black uppercase tracking-wider text-emerald-500">
+                <span className="inline-flex items-center gap-1 text-[11px] font-black uppercase tracking-wider text-emerald-800 dark:text-emerald-400">
                   <CheckCircle2 className="w-3.5 h-3.5" />
                   Solved
                 </span>
@@ -320,15 +320,15 @@ export default async function CandidateChallengesPage() {
               <>
                 <h2 className="text-xl font-black tracking-tight text-fg leading-snug relative">{daily.title}</h2>
                 <div className="flex items-center gap-2 flex-wrap mt-3 relative">
-                  <span className={`px-2 py-0.5 rounded-md border text-[10px] font-bold uppercase tracking-wider bg-surface border-border ${difficultyTextColor[daily.difficulty]}`}>
+                  <span className={`px-2 py-0.5 rounded-md border text-[11px] font-bold uppercase tracking-wider bg-surface border-border ${difficultyTextColor[daily.difficulty]}`}>
                     {daily.difficulty}
                   </span>
-                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md border border-border bg-surface text-[10px] font-bold uppercase tracking-wider text-muted">
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md border border-border bg-surface text-[11px] font-bold uppercase tracking-wider text-muted">
                     <Clock className="w-3 h-3" />
                     {daily.estimatedMinutes}m
                   </span>
                   {daily.stepCount > 1 && (
-                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md border border-accent/30 bg-accent/10 text-[10px] font-bold uppercase tracking-wider text-accent">
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md border border-accent/30 bg-accent/10 text-[11px] font-bold uppercase tracking-wider text-accent">
                       <Layers className="w-3 h-3" />
                       {daily.stepCount} questions
                     </span>
@@ -364,7 +364,7 @@ export default async function CandidateChallengesPage() {
 
           {/* Streak & check-ins */}
           <div className="lg:col-span-3 rounded-2xl border border-border dark:border-transparent bg-white dark:bg-[#0f111c] p-6 flex flex-col shadow-sm">
-            <span className="text-[10px] font-black uppercase tracking-[0.18em] text-muted mb-4">Daily streak</span>
+            <span className="text-[11px] font-black uppercase tracking-[0.18em] text-muted mb-4">Daily streak</span>
             <div className="flex items-center gap-3">
               <div className={`w-12 h-12 rounded-2xl grid place-items-center border ${streak > 0 ? "bg-orange-500/10 border-orange-500/30 text-orange-500" : "bg-surface border-border text-muted/40"}`}>
                 <Flame className={`w-6 h-6 ${streak > 0 ? "fill-current" : ""}`} />
@@ -374,7 +374,7 @@ export default async function CandidateChallengesPage() {
                   {streak}
                   <span className="text-sm font-bold text-muted ml-1.5">day{streak === 1 ? "" : "s"}</span>
                 </div>
-                <div className="text-[10px] text-muted mt-1">
+                <div className="text-[11px] text-muted mt-1">
                   {checkedInToday
                     ? "You've practiced today — nice."
                     : streak > 0
@@ -388,9 +388,9 @@ export default async function CandidateChallengesPage() {
             <div className="mt-auto pt-5 flex items-center justify-between gap-1">
               {last7.map((d, i) => (
                 <div key={i} className="flex flex-col items-center gap-1.5 flex-1">
-                  <span className={`text-[8px] font-bold ${d.isToday ? "text-accent" : "text-muted/60"}`}>{d.letter}</span>
+                  <span className={`text-[11px] font-bold ${d.isToday ? "text-accent" : "text-muted/60"}`}>{d.letter}</span>
                   <div
-                    className={`w-6 h-6 rounded-lg grid place-items-center text-[10px] font-black border ${
+                    className={`w-6 h-6 rounded-lg grid place-items-center text-[11px] font-black border ${
                       d.active
                         ? "bg-orange-500/10 border-orange-500/35 text-orange-500"
                         : d.isToday
@@ -425,13 +425,13 @@ export default async function CandidateChallengesPage() {
               </svg>
               <div className="absolute inset-0 flex flex-col items-center justify-center">
                 <span className="text-xl font-black font-mono text-fg leading-none">{solvedCount}</span>
-                <span className="text-[9px] font-bold text-muted mt-0.5">/ {items.length} solved</span>
+                <span className="text-[11px] font-bold text-muted mt-0.5">/ {items.length} solved</span>
               </div>
             </div>
             <div className="flex-1 min-w-0 space-y-3">
               {byDifficulty.map((d) => (
                 <div key={d.key}>
-                  <div className="flex justify-between text-[10px] font-bold mb-1">
+                  <div className="flex justify-between text-[11px] font-bold mb-1">
                     <span className={`uppercase tracking-wider ${difficultyTextColor[d.key]}`}>{d.key}</span>
                     <span className="font-mono text-muted">
                       <span className="text-fg">{d.solved}</span> / {d.total}
@@ -461,7 +461,7 @@ export default async function CandidateChallengesPage() {
                 className="group rounded-2xl border border-border dark:border-transparent bg-white dark:bg-[#0f111c] p-5 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all"
               >
                 <div className="flex items-center justify-between gap-2 mb-3">
-                  <span className={`inline-flex items-center gap-1.5 px-2 py-1 rounded-lg border text-[10px] font-black uppercase tracking-wider ${k.chip}`}>
+                  <span className={`inline-flex items-center gap-1.5 px-2 py-1 rounded-lg border text-[11px] font-black uppercase tracking-wider ${k.chip}`}>
                     <Icon className="w-3.5 h-3.5" />
                     {k.label}
                   </span>
@@ -472,7 +472,7 @@ export default async function CandidateChallengesPage() {
                     {k.solved}
                     <span className="text-xs font-bold text-muted"> / {k.total}</span>
                   </span>
-                  <span className="text-[10px] font-bold text-muted font-mono">{pct}%</span>
+                  <span className="text-[11px] font-bold text-muted font-mono">{pct}%</span>
                 </div>
                 <div className="w-full h-1.5 rounded-full bg-slate-200 dark:bg-[#202334] overflow-hidden">
                   <div className={`h-full rounded-full ${k.bar}`} style={{ width: `${pct}%` }} />
@@ -486,11 +486,11 @@ export default async function CandidateChallengesPage() {
         {continueCards.length > 0 && (
           <div className="space-y-5">
             <div className="flex items-center justify-between border-b border-border/40 dark:border-border/10 pb-3">
-              <h2 className="text-[10px] font-black uppercase tracking-[0.2em] text-accent flex items-center gap-2">
+              <h2 className="text-[11px] font-black uppercase tracking-[0.2em] text-accent flex items-center gap-2">
                 <TrendingUp className="w-3.5 h-3.5" />
                 Continue where you left off
               </h2>
-              <span className="text-[10px] text-muted font-mono tracking-wider bg-white dark:bg-[#0f111c] border border-border/40 dark:border-transparent px-3 py-1 rounded-full shadow-sm">
+              <span className="text-[11px] text-muted font-mono tracking-wider bg-white dark:bg-[#0f111c] border border-border/40 dark:border-transparent px-3 py-1 rounded-full shadow-sm">
                 {continueCards.length} in progress
               </span>
             </div>
@@ -511,17 +511,17 @@ export default async function CandidateChallengesPage() {
                       </div>
 
                       {c.isMulti ? (
-                        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-accent/10 border border-accent/20 text-[9px] font-black uppercase tracking-wider text-accent font-mono">
+                        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-accent/10 border border-accent/20 text-[11px] font-black uppercase tracking-wider text-accent font-mono">
                           <Layers className="w-2.5 h-2.5" />
                           {c.total} Steps
                         </span>
                       ) : (
-                        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-slate-100 dark:bg-[#202334] text-[9px] font-bold uppercase tracking-wider text-muted font-mono">
+                        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-slate-100 dark:bg-[#202334] text-[11px] font-bold uppercase tracking-wider text-muted font-mono">
                           Single round
                         </span>
                       )}
 
-                      <span className="text-[9px] font-black uppercase px-2 py-0.5 rounded bg-slate-100 dark:bg-[#1c1f32] text-muted font-mono tracking-wider ml-auto">
+                      <span className="text-[11px] font-black uppercase px-2 py-0.5 rounded bg-slate-100 dark:bg-[#1c1f32] text-muted font-mono tracking-wider ml-auto">
                         {c.difficulty}
                       </span>
                     </div>
@@ -533,7 +533,7 @@ export default async function CandidateChallengesPage() {
 
                   {c.isMulti ? (
                     <div className="mt-6 pt-4 border-t border-border/40 dark:border-transparent relative z-10">
-                      <div className="flex items-center justify-between text-[10px] text-muted font-mono font-bold mb-2">
+                      <div className="flex items-center justify-between text-[11px] text-muted font-mono font-bold mb-2">
                         <span className="uppercase tracking-wider">Solved steps</span>
                         <span className="text-fg font-black">{c.passed} / {c.total}</span>
                       </div>
@@ -545,7 +545,7 @@ export default async function CandidateChallengesPage() {
                       </div>
                     </div>
                   ) : (
-                    <div className="mt-6 pt-4 border-t border-border/40 dark:border-transparent relative z-10 flex items-center justify-between text-[10px] text-muted font-mono font-bold">
+                    <div className="mt-6 pt-4 border-t border-border/40 dark:border-transparent relative z-10 flex items-center justify-between text-[11px] text-muted font-mono font-bold">
                       <span className="uppercase tracking-widest">Resume</span>
                       <ChevronRight className="w-3.5 h-3.5 text-accent transition-transform group-hover:translate-x-1" />
                     </div>
@@ -560,7 +560,7 @@ export default async function CandidateChallengesPage() {
         {recentAttempts.length > 0 && (
           <div className="space-y-5">
             <div className="flex items-center justify-between border-b border-border/40 dark:border-border/10 pb-3">
-              <h2 className="text-[10px] font-black uppercase tracking-[0.2em] text-accent flex items-center gap-2">
+              <h2 className="text-[11px] font-black uppercase tracking-[0.2em] text-accent flex items-center gap-2">
                 <History className="w-3.5 h-3.5" />
                 Recent activity
               </h2>
@@ -573,22 +573,22 @@ export default async function CandidateChallengesPage() {
                     className="flex items-center gap-3 px-4 py-3 hover:bg-elevated/50 transition"
                   >
                     {a.status === "passed" ? (
-                      <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" />
+                      <CheckCircle2 className="w-4 h-4 text-emerald-800 dark:text-emerald-400 shrink-0" />
                     ) : a.status === "failed" ? (
                       <XCircle className="w-4 h-4 text-rose-500/70 shrink-0" />
                     ) : (
                       <span className="w-4 h-4 rounded-full border-2 border-amber-500 shrink-0" />
                     )}
                     <span className="text-sm font-bold text-fg truncate">{a.challenge.title}</span>
-                    <span className="text-[10px] font-black uppercase tracking-wider text-muted/70 shrink-0">
+                    <span className="text-[11px] font-black uppercase tracking-wider text-muted/70 shrink-0">
                       {a.status.replace("_", " ")}
                     </span>
                     {a.durationSec != null && (
-                      <span className="hidden sm:inline text-[10px] text-muted font-mono tabular-nums shrink-0">
+                      <span className="hidden sm:inline text-[11px] text-muted font-mono tabular-nums shrink-0">
                         {Math.floor(a.durationSec / 60)}m {a.durationSec % 60}s
                       </span>
                     )}
-                    <span className="text-[10px] text-muted/60 ml-auto shrink-0">
+                    <span className="text-[11px] text-muted/60 ml-auto shrink-0">
                       <RelativeTime iso={a.startedAt.toISOString()} />
                     </span>
                   </Link>
@@ -602,7 +602,7 @@ export default async function CandidateChallengesPage() {
         {featuredChallenges.length > 0 && (
           <div className="space-y-5">
             <div className="flex items-center justify-between border-b border-border/40 dark:border-border/10 pb-3">
-              <h2 className="text-[10px] font-black uppercase tracking-[0.2em] text-accent flex items-center gap-2">
+              <h2 className="text-[11px] font-black uppercase tracking-[0.2em] text-accent flex items-center gap-2">
                 <Bookmark className="w-3.5 h-3.5 fill-current" />
                 Staff picks
               </h2>
@@ -632,17 +632,17 @@ export default async function CandidateChallengesPage() {
                     <div className="space-y-4 flex-1 flex flex-col justify-between">
                       <div>
                         <div className="relative flex items-center gap-2.5 mb-3.5">
-                          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-accent/10 border border-accent/25 text-[9px] font-black uppercase tracking-widest text-accent font-mono">
+                          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-accent/10 border border-accent/25 text-[11px] font-black uppercase tracking-widest text-accent font-mono">
                             <Sparkles className="w-2.5 h-2.5" />
                             {c.difficulty}
                           </span>
                           {isMulti && (
-                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-slate-100 dark:bg-[#202334] text-[9px] font-bold uppercase tracking-wider text-muted font-mono">
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-slate-100 dark:bg-[#202334] text-[11px] font-bold uppercase tracking-wider text-muted font-mono">
                               <Layers className="w-2.5 h-2.5" />
                               {c._count.steps} Steps
                             </span>
                           )}
-                          <span className="ml-auto inline-flex items-center gap-1 text-[10px] font-bold text-muted/70 font-mono tracking-wide">
+                          <span className="ml-auto inline-flex items-center gap-1 text-[11px] font-bold text-muted/70 font-mono tracking-wide">
                             <Clock className="w-3 h-3 text-muted/50" />
                             {c.estimatedMinutes}m
                           </span>
@@ -677,11 +677,11 @@ export default async function CandidateChallengesPage() {
         {/* ── 8. Full catalog ─────────────────────────────────────────── */}
         <div className="space-y-5 pt-4">
           <div className="flex items-center justify-between border-b border-border/40 dark:border-border/10 pb-3">
-            <h2 className="text-[10px] font-black uppercase tracking-[0.2em] text-accent flex items-center gap-2">
+            <h2 className="text-[11px] font-black uppercase tracking-[0.2em] text-accent flex items-center gap-2">
               <Award className="w-3.5 h-3.5" />
               All challenges
             </h2>
-            <span className="text-[10px] text-muted font-mono tracking-wider bg-white dark:bg-[#0f111c] border border-border/40 dark:border-transparent px-3 py-1 rounded-full shadow-sm">
+            <span className="text-[11px] text-muted font-mono tracking-wider bg-white dark:bg-[#0f111c] border border-border/40 dark:border-transparent px-3 py-1 rounded-full shadow-sm">
               {items.length} available
             </span>
           </div>

@@ -85,7 +85,7 @@ export default function MobileLobbyActions({ url, emailEnabled }: Props) {
         >
           {copied ? (
             <>
-              <Check className="w-4 h-4 text-emerald-400" />
+              <Check className="w-4 h-4 text-emerald-800 dark:text-emerald-400" />
               Copied
             </>
           ) : (
@@ -115,7 +115,7 @@ export default function MobileLobbyActions({ url, emailEnabled }: Props) {
           onSubmit={onSubmitEmail}
           className="rounded-xl border border-[#1f2738] bg-[#0F1422] p-3 space-y-2"
         >
-          <label className="text-[10px] font-semibold uppercase tracking-wider text-[#94a3b8] block">
+          <label className="text-[11px] font-semibold uppercase tracking-wider text-[#94a3b8] block">
             Send to
           </label>
           <div className="flex gap-2">
@@ -142,12 +142,12 @@ export default function MobileLobbyActions({ url, emailEnabled }: Props) {
             </button>
           </div>
           {emailStatus.kind === "ok" && (
-            <div className="text-[11px] text-emerald-400">
+            <div className="text-[11px] text-emerald-800 dark:text-emerald-400">
               Sent — check your inbox.
             </div>
           )}
           {emailStatus.kind === "error" && (
-            <div className="text-[11px] text-rose-300">{emailStatus.reason}</div>
+            <div className="text-[11px] text-rose-700 dark:text-rose-400">{emailStatus.reason}</div>
           )}
         </form>
       )}

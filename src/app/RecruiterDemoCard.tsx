@@ -247,7 +247,7 @@ export function RecruiterDemoCard() {
     if (lineIndex === 0 || lineIndex === 1) {
       return (
         <>
-          <span className="text-purple-400">import</span>{" "}
+          <span className="text-purple-800 dark:text-purple-400">import</span>{" "}
           <span className="text-fg/80">{text.slice(7)}</span>
         </>
       );
@@ -258,10 +258,10 @@ export function RecruiterDemoCard() {
         const rest = text.slice(13);
         rendered = (
           <>
-            <span className="text-purple-400">public class</span>{" "}
+            <span className="text-purple-800 dark:text-purple-400">public class</span>{" "}
             {rest.startsWith("Solution") ? (
               <>
-                <span className="text-cyan-400">Solution</span>
+                <span className="text-cyan-800 dark:text-cyan-400">Solution</span>
                 <span className="text-fg/80">{rest.slice(8)}</span>
               </>
             ) : (
@@ -272,7 +272,7 @@ export function RecruiterDemoCard() {
       } else if (text.startsWith("public")) {
         rendered = (
           <>
-            <span className="text-purple-400">{text.slice(0, 6)}</span>
+            <span className="text-purple-800 dark:text-purple-400">{text.slice(0, 6)}</span>
             <span className="text-fg/80">{text.slice(6)}</span>
           </>
         );
@@ -284,14 +284,14 @@ export function RecruiterDemoCard() {
         const rest = text.slice(23);
         return (
           <>
-            <span className="text-purple-400">    public static void</span>{" "}
+            <span className="text-purple-800 dark:text-purple-400">    public static void</span>{" "}
             {rest.startsWith("main") ? (
               <>
-                <span className="text-cyan-400">main</span>
+                <span className="text-cyan-800 dark:text-cyan-400">main</span>
                 {rest.slice(4).startsWith("(String") ? (
                   <>
                     <span className="text-fg/80">(</span>
-                    <span className="text-amber-400">String</span>
+                    <span className="text-amber-800 dark:text-amber-400">String</span>
                     <span className="text-fg/80">{rest.slice(11)}</span>
                   </>
                 ) : (
@@ -315,7 +315,7 @@ export function RecruiterDemoCard() {
             <span className="text-fg/80">
               {rest.split(/(5|10)/).map((part, index) => {
                 if (part === "5" || part === "10") {
-                  return <span key={index} className="text-orange-400">{part}</span>;
+                  return <span key={index} className="text-orange-800 dark:text-orange-400">{part}</span>;
                 }
                 return part;
               })}
@@ -324,7 +324,7 @@ export function RecruiterDemoCard() {
         }
         return (
           <>
-            <span className="text-purple-400">        int</span>{" "}
+            <span className="text-purple-800 dark:text-purple-400">        int</span>{" "}
             {restRendered}
           </>
         );
@@ -336,11 +336,11 @@ export function RecruiterDemoCard() {
         const rest = text.slice(26);
         return (
           <>
-            <span className="text-purple-400">        System</span>
+            <span className="text-purple-800 dark:text-purple-400">        System</span>
             <span className="text-fg/80">.</span>
-            <span className="text-cyan-400">out</span>
+            <span className="text-cyan-800 dark:text-cyan-400">out</span>
             <span className="text-fg/80">.</span>
-            <span className="text-cyan-400">println</span>
+            <span className="text-cyan-800 dark:text-cyan-400">println</span>
             <span className="text-fg/80">{rest}</span>
           </>
         );
@@ -358,12 +358,12 @@ export function RecruiterDemoCard() {
     const isMia = author === "Mia";
     const caretColor = isMia ? "bg-[#FFE500]" : "bg-[#EF4444]";
     const tagBg = isMia ? "bg-[#FFE500]" : "bg-[#EF4444]";
-    const tagText = isMia ? "text-black" : "text-white";
+    const tagText = "text-black";   // white on #EF4444 is only 3.76:1
     const label = isMia ? "Mia" : "Adam";
 
     return (
       <span className={`relative inline-block w-[2px] h-[1.25em] ${caretColor} ml-0.5 align-middle select-none`}>
-        <span className={`absolute bottom-[1.25em] left-[-4px] px-1.5 py-0.5 text-[9px] font-bold ${tagText} ${tagBg} rounded-data whitespace-nowrap  z-10`}>
+        <span className={`absolute bottom-[1.25em] left-[-4px] px-1.5 py-0.5 text-[11px] font-bold ${tagText} ${tagBg} rounded-data whitespace-nowrap  z-10`}>
           {label}
         </span>
       </span>
@@ -392,7 +392,7 @@ export function RecruiterDemoCard() {
             <span className="h-[6px] w-[6px] bg-secondary" />
           </div>
           <div className="flex-1 flex justify-center min-w-0">
-            <div className="px-3 py-1 rounded-data bg-bg/40 text-[10px] font-mono text-muted flex items-center gap-2 truncate">
+            <div className="px-3 py-1 rounded-data bg-bg/40 text-[11px] font-mono text-muted flex items-center gap-2 truncate">
               <Globe className="w-3 h-3 shrink-0 text-secondary" />
               <span className="truncate">interviewpad.in/arena/java-collab-session</span>
             </div>
@@ -400,7 +400,7 @@ export function RecruiterDemoCard() {
           <button
             type="button"
             onClick={reset}
-            className="flex items-center gap-1.5 text-secondary hover:text-white bg-secondary/10 hover:brightness-110 font-bold text-[10px] uppercase tracking-wider px-2.5 py-1.5 rounded-data transition-all shrink-0"
+            className="flex items-center gap-1.5 text-secondary hover:text-white bg-secondary/10 hover:brightness-110 font-bold text-[11px] uppercase tracking-wider px-2.5 py-1.5 rounded-data transition-all shrink-0"
             aria-label="Replay collaboration"
           >
             Replay Collab <RotateCcw className="w-3 h-3" />
@@ -413,10 +413,10 @@ export function RecruiterDemoCard() {
           <div className="px-5 py-5 font-mono text-sm md:border-r border-border flex flex-col justify-between min-h-[300px]">
             <div>
               <div className="flex items-center gap-2 mb-3">
-                <span className="text-[10px] uppercase tracking-[0.18em] text-secondary font-bold">
+                <span className="text-[11px] uppercase tracking-[0.18em] text-secondary font-bold">
                   Solution.java
                 </span>
-                <span className="text-[9px] bg-secondary/15 text-secondary px-2 py-0.5 rounded-full font-bold">
+                <span className="text-[11px] bg-secondary/15 text-secondary px-2 py-0.5 rounded-full font-bold">
                   WebRTC Active
                 </span>
               </div>
@@ -426,7 +426,7 @@ export function RecruiterDemoCard() {
                   const hasAdamCursor = adamCursorLine === i;
                   return (
                     <div key={i} className="min-h-[1.5em] leading-[1.5em] flex items-center whitespace-pre relative">
-                      <span className="text-muted/30 text-[9px] w-5 text-right tabular-nums select-none mr-3">
+                      <span className="text-muted/30 text-[11px] w-5 text-right tabular-nums select-none mr-3">
                         {i + 1}
                       </span>
                       {renderJavaLine(i, line)}
@@ -437,7 +437,7 @@ export function RecruiterDemoCard() {
                 })}
               </div>
             </div>
-            <div className="text-[9px] text-muted/50 border-t border-border/40 pt-2 mt-4 flex justify-between select-none">
+            <div className="text-[11px] text-muted/50 border-t border-border/40 pt-2 mt-4 flex justify-between select-none">
               <span>Java 17 Sandboxed SDK</span>
               <span>2 Multiplayers Active</span>
             </div>
@@ -449,10 +449,10 @@ export function RecruiterDemoCard() {
               {/* Status Header */}
               <div className="flex items-center gap-2">
                 <div className={`w-1.5 h-1.5 ${statusDot}`} />
-                <span className="text-[9px] uppercase tracking-[0.18em] text-muted font-bold">
+                <span className="text-[11px] uppercase tracking-[0.18em] text-muted font-bold">
                   Proctor & Grader Logs
                 </span>
-                <span className="ml-auto text-[9px] text-muted/60">
+                <span className="ml-auto text-[11px] text-muted/60">
                   {phase === "typing" ? "WebRTC typing" : phase === "ready" ? "compiling" : phase === "running" ? "grading" : "completed"}
                 </span>
               </div>
@@ -465,7 +465,7 @@ export function RecruiterDemoCard() {
                   </div>
                   <div className="min-w-0 flex-1">
                     <h4 className="text-xs font-bold text-fg truncate">{DEMO_CANDIDATE.name}</h4>
-                    <p className="text-[9px] text-muted truncate">{DEMO_CANDIDATE.title}</p>
+                    <p className="text-[11px] text-muted truncate">{DEMO_CANDIDATE.title}</p>
                   </div>
                 </div>
 
@@ -489,30 +489,30 @@ export function RecruiterDemoCard() {
                           strokeDashoffset={strokeDashoffset}
                         />
                       </svg>
-                      <span className="absolute text-[8px] font-bold text-fg">{score}</span>
+                      <span className="absolute text-[11px] font-bold text-fg">{score}</span>
                     </div>
                     <div>
-                      <div className="text-[7px] text-muted uppercase font-bold tracking-wider leading-none">AI Score</div>
+                      <div className="text-[11px] text-muted uppercase font-bold tracking-wider leading-none">AI Score</div>
                       <div className="text-xs font-bold text-secondary">{score ? `${score}/100` : "--"}</div>
                     </div>
                   </div>
 
                   <div className="bg-bg/20 border border-border p-2 rounded-data flex items-center gap-2">
-                    <div className={`w-8 h-8 rounded-data flex items-center justify-center text-[10px] font-bold select-none ${
-                      phase === "done" ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20" : "bg-bg/50 text-muted border border-border"
+                    <div className={`w-8 h-8 rounded-data flex items-center justify-center text-[11px] font-bold select-none ${
+                      phase === "done" ? "bg-emerald-500/10 text-emerald-800 dark:text-emerald-400 border border-emerald-500/20" : "bg-bg/50 text-muted border border-border"
                     }`}>
                       {phase === "done" ? "2%" : "--"}
                     </div>
                     <div>
-                      <div className="text-[7px] text-muted uppercase font-bold tracking-wider leading-none">Plagiarism</div>
-                      <div className="text-xs font-bold text-emerald-400">{phase === "done" ? "Safe" : "--"}</div>
+                      <div className="text-[11px] text-muted uppercase font-bold tracking-wider leading-none">Plagiarism</div>
+                      <div className="text-xs font-bold text-emerald-800 dark:text-emerald-400">{phase === "done" ? "Safe" : "--"}</div>
                     </div>
                   </div>
                 </div>
               </div>
 
               {/* Console log list */}
-              <div className="space-y-1.5 text-[9px] font-mono text-muted max-h-[110px] overflow-y-auto pr-1">
+              <div className="space-y-1.5 text-[11px] font-mono text-muted max-h-[110px] overflow-y-auto pr-1">
                 {logs.map((log, index) => (
                   <div key={index} className="leading-relaxed">
                     {log}
@@ -527,7 +527,7 @@ export function RecruiterDemoCard() {
               </div>
             </div>
 
-            <div className="pt-2 mt-4 border-t border-border/40 text-[9px] text-muted/50 flex justify-between select-none">
+            <div className="pt-2 mt-4 border-t border-border/40 text-[11px] text-muted/50 flex justify-between select-none">
               <span>PROCTORING: ON</span>
               <span>GRADED BY GRADER-02</span>
             </div>

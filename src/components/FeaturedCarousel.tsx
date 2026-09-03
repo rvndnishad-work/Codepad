@@ -149,7 +149,7 @@ export default function FeaturedCarousel({ items }: FeaturedCarouselProps) {
                   className="object-cover transition-transform duration-500 group-hover:scale-[1.03]"
                   priority
                 />
-                <span className="absolute top-4 left-4 inline-flex items-center gap-1.5 px-3 py-1 rounded-data bg-bg/85 border border-border text-[10px] font-bold uppercase tracking-[0.16em] text-accent">
+                <span className="absolute top-4 left-4 inline-flex items-center gap-1.5 px-3 py-1 rounded-data bg-bg/85 border border-border text-[11px] font-bold uppercase tracking-[0.16em] text-accent">
                   <Star className="w-2.5 h-2.5 fill-current" />
                   Featured
                 </span>
@@ -167,7 +167,7 @@ export default function FeaturedCarousel({ items }: FeaturedCarouselProps) {
                     {blog.tags.slice(0, 3).map((t) => (
                       <span
                         key={t}
-                        className="px-2 py-0.5 rounded-data text-[10px] font-bold uppercase tracking-[0.14em] bg-accent/10 border border-accent/20 text-accent"
+                        className="px-2 py-0.5 rounded-data text-[11px] font-bold uppercase tracking-[0.14em] bg-accent/10 border border-accent/20 text-accent"
                       >
                         {t}
                       </span>
@@ -206,7 +206,7 @@ export default function FeaturedCarousel({ items }: FeaturedCarouselProps) {
                   <span className="font-bold text-fg/80 truncate max-w-[140px]">
                     {blog.user.name ?? "Anonymous"}
                   </span>
-                  <span className="text-[10px] text-muted">
+                  <span className="text-[11px] text-muted">
                     <RelativeTime iso={blog.createdAt} />
                   </span>
                 </div>

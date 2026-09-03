@@ -82,7 +82,7 @@ export default function ShareButton({
       {open && (
         <div
           role="menu"
-          className={`absolute z-30 w-44 rounded-xl border border-border bg-surface shadow-2xl overflow-hidden animate-in fade-in slide-in-from-top-1 duration-150 ${
+          className={`absolute z-30 w-44 rounded-xl border border-border-strong bg-surface ip-panel-float overflow-hidden animate-in fade-in slide-in-from-top-1 duration-150 ${
             orientation === "vertical" ? "left-full ml-2 top-0" : "right-0 mt-2"
           }`}
         >

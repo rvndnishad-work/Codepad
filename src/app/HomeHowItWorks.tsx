@@ -49,7 +49,7 @@ const STAGES: Stage[] = [
     body: "Open a browser tab and you're in a full monaco-powered workspace backed by an in-memory file system. No installs, no containers, no setup screen.",
     icon: FileCode2,
     tone: {
-      text: "text-emerald-500",
+      text: "text-emerald-800 dark:text-emerald-400",
       border: "border-emerald-500/30",
       chipBg: "bg-emerald-500/10",
       glow: "bg-emerald-500/15",
@@ -64,7 +64,7 @@ const STAGES: Stage[] = [
     body: "Interviewer or teammate joins your room and edits merge conflict-free at the character level — everyone's cursor visible, every keystroke synced.",
     icon: Users,
     tone: {
-      text: "text-sky-500",
+      text: "text-sky-800 dark:text-sky-400",
       border: "border-sky-500/30",
       chipBg: "bg-sky-500/10",
       glow: "bg-sky-500/15",
@@ -79,7 +79,7 @@ const STAGES: Stage[] = [
     body: "Code executes in a two-layer isolated runtime across 8 languages. stdout, stderr and timing come back to the panel in milliseconds.",
     icon: ShieldCheck,
     tone: {
-      text: "text-amber-500",
+      text: "text-amber-800 dark:text-amber-400",
       border: "border-amber-500/30",
       chipBg: "bg-amber-500/10",
       glow: "bg-amber-500/15",
@@ -94,7 +94,7 @@ const STAGES: Stage[] = [
     body: "Every run, paste and replay is captured into an integrity-aware timeline — so recruiters see how you work, and you get a shareable proof of craft.",
     icon: Activity,
     tone: {
-      text: "text-rose-500",
+      text: "text-rose-700 dark:text-rose-400",
       border: "border-rose-500/30",
       chipBg: "bg-rose-500/10",
       glow: "bg-rose-500/15",
@@ -290,7 +290,7 @@ function StaticStack() {
                     {s.points.map((p) => (
                       <span
                         key={p}
-                        className={`inline-flex items-center rounded-data border px-2 py-0.5 font-mono text-[10.5px] text-fg ${s.tone.border} ${s.tone.chipBg}`}
+                        className={`inline-flex items-center rounded-data border px-2 py-0.5 font-mono text-[11px] text-fg ${s.tone.border} ${s.tone.chipBg}`}
                       >
                         {p}
                       </span>

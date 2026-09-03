@@ -57,7 +57,7 @@ export default function TrackHelpPanel({ context }: { context: TrackHelpContext 
             <ArrowLeft className="w-3.5 h-3.5" />
             <span className="truncate max-w-[260px]">{context.trackTitle}</span>
           </Link>
-          <span className="inline-flex items-center gap-1.5 text-[10px] font-black uppercase tracking-[0.18em] text-accent/70 bg-accent/10 px-2 py-0.5 rounded-full border border-accent/20">
+          <span className="inline-flex items-center gap-1.5 text-[11px] font-black uppercase tracking-[0.18em] text-accent/70 bg-accent/10 px-2 py-0.5 rounded-full border border-accent/20">
             <Sparkles className="w-3 h-3" />
             {context.positionLabel}
           </span>
@@ -76,7 +76,7 @@ export default function TrackHelpPanel({ context }: { context: TrackHelpContext 
             <button
               type="button"
               onClick={() => setHintOpen((v) => !v)}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-500/10 border border-amber-500/30 text-amber-500 text-xs font-bold hover:bg-amber-500/20 transition"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-500/10 border border-amber-500/30 text-amber-800 dark:text-amber-400 text-xs font-bold hover:bg-amber-500/20 transition"
               aria-expanded={hintOpen}
             >
               <Lightbulb className="w-3.5 h-3.5" />
@@ -92,7 +92,7 @@ export default function TrackHelpPanel({ context }: { context: TrackHelpContext 
             <button
               type="button"
               onClick={() => setVideoOpen((v) => !v)}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-rose-500/10 border border-rose-500/30 text-rose-500 text-xs font-bold hover:bg-rose-500/20 transition"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-rose-500/10 border border-rose-500/30 text-rose-700 dark:text-rose-400 text-xs font-bold hover:bg-rose-500/20 transition"
               aria-expanded={videoOpen}
             >
               <Play className="w-3.5 h-3.5 fill-current" />

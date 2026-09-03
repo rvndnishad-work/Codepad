@@ -41,7 +41,7 @@ const CARD_THEMES: Record<string, CardTheme> = {
     hoverBorder: "hover:border-cyan-500/40 dark:hover:border-cyan-500/30",
     hoverShadow: "hover:shadow-[0_8px_30px_rgba(6,182,212,0.08)]",
     textAccent: "group-hover:text-cyan-600 dark:group-hover:text-cyan-400",
-    tag: "bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 border-cyan-500/20",
+    tag: "bg-cyan-500/10 text-cyan-800 dark:text-cyan-400 border-cyan-500/20",
     tile: "bg-cyan-500/10 border-cyan-500/20 group-hover:border-cyan-500/40",
   },
   nodejs: {
@@ -52,7 +52,7 @@ const CARD_THEMES: Record<string, CardTheme> = {
     hoverBorder: "hover:border-green-500/40 dark:hover:border-green-500/30",
     hoverShadow: "hover:shadow-[0_8px_30px_rgba(34,197,94,0.08)]",
     textAccent: "group-hover:text-green-600 dark:group-hover:text-green-400",
-    tag: "bg-green-500/10 text-green-600 dark:text-green-400 border-green-500/20",
+    tag: "bg-green-500/10 text-green-800 dark:text-green-400 border-green-500/20",
     tile: "bg-green-500/10 border-green-500/20 group-hover:border-green-500/40",
   },
   nextjs: {
@@ -74,7 +74,7 @@ const CARD_THEMES: Record<string, CardTheme> = {
     hoverBorder: "hover:border-fuchsia-500/40 dark:hover:border-fuchsia-500/30",
     hoverShadow: "hover:shadow-[0_8px_30px_rgba(217,70,239,0.08)]",
     textAccent: "group-hover:text-fuchsia-600 dark:group-hover:text-fuchsia-400",
-    tag: "bg-fuchsia-500/10 text-fuchsia-600 dark:text-fuchsia-400 border-fuchsia-500/20",
+    tag: "bg-fuchsia-500/10 text-fuchsia-800 dark:text-fuchsia-400 border-fuchsia-500/20",
     tile: "bg-fuchsia-500/10 border-fuchsia-500/20 group-hover:border-fuchsia-500/40",
   },
   javascript: {
@@ -85,7 +85,7 @@ const CARD_THEMES: Record<string, CardTheme> = {
     hoverBorder: "hover:border-yellow-500/40 dark:hover:border-yellow-500/30",
     hoverShadow: "hover:shadow-[0_8px_30px_rgba(234,179,8,0.08)]",
     textAccent: "group-hover:text-amber-500 dark:group-hover:text-yellow-400",
-    tag: "bg-yellow-500/10 text-yellow-600 dark:text-yellow-400 border-yellow-500/20",
+    tag: "bg-yellow-500/10 text-yellow-800 dark:text-yellow-400 border-yellow-500/20",
     tile: "bg-yellow-500/10 border-yellow-500/20 group-hover:border-yellow-500/40",
   },
   angular: {
@@ -96,7 +96,7 @@ const CARD_THEMES: Record<string, CardTheme> = {
     hoverBorder: "hover:border-red-500/40 dark:hover:border-red-500/30",
     hoverShadow: "hover:shadow-[0_8px_30px_rgba(239,68,68,0.08)]",
     textAccent: "group-hover:text-red-600 dark:group-hover:text-red-400",
-    tag: "bg-red-500/10 text-red-600 dark:text-red-400 border-red-500/20",
+    tag: "bg-red-500/10 text-red-700 dark:text-red-400 border-red-500/20",
     tile: "bg-red-500/10 border-red-500/20 group-hover:border-red-500/40",
   },
   vuejs: {
@@ -107,7 +107,7 @@ const CARD_THEMES: Record<string, CardTheme> = {
     hoverBorder: "hover:border-emerald-500/40 dark:hover:border-emerald-500/30",
     hoverShadow: "hover:shadow-[0_8px_30px_rgba(16,185,129,0.08)]",
     textAccent: "group-hover:text-emerald-600 dark:group-hover:text-emerald-400",
-    tag: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20",
+    tag: "bg-emerald-500/10 text-emerald-800 dark:text-emerald-400 border-emerald-500/20",
     tile: "bg-emerald-500/10 border-emerald-500/20 group-hover:border-emerald-500/40",
   },
   typescript: {
@@ -118,7 +118,7 @@ const CARD_THEMES: Record<string, CardTheme> = {
     hoverBorder: "hover:border-blue-500/40 dark:hover:border-blue-500/30",
     hoverShadow: "hover:shadow-[0_8px_30px_rgba(59,130,246,0.08)]",
     textAccent: "group-hover:text-blue-600 dark:group-hover:text-blue-400",
-    tag: "bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20",
+    tag: "bg-blue-500/10 text-blue-800 dark:text-blue-400 border-blue-500/20",
     tile: "bg-blue-500/10 border-blue-500/20 group-hover:border-blue-500/40",
   },
   dsa: {
@@ -129,7 +129,7 @@ const CARD_THEMES: Record<string, CardTheme> = {
     hoverBorder: "hover:border-purple-500/40 dark:hover:border-purple-500/30",
     hoverShadow: "hover:shadow-[0_8px_30px_rgba(168,85,247,0.08)]",
     textAccent: "group-hover:text-purple-600 dark:group-hover:text-purple-400",
-    tag: "bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/20",
+    tag: "bg-purple-500/10 text-purple-800 dark:text-purple-400 border-purple-500/20",
     tile: "bg-purple-500/10 border-purple-500/20 group-hover:border-purple-500/40",
   },
   "system-design": {
@@ -140,7 +140,7 @@ const CARD_THEMES: Record<string, CardTheme> = {
     hoverBorder: "hover:border-orange-500/40 dark:hover:border-orange-500/30",
     hoverShadow: "hover:shadow-[0_8px_30px_rgba(249,115,22,0.08)]",
     textAccent: "group-hover:text-orange-600 dark:group-hover:text-orange-400",
-    tag: "bg-orange-500/10 text-orange-600 dark:text-orange-400 border-orange-500/20",
+    tag: "bg-orange-500/10 text-orange-800 dark:text-orange-400 border-orange-500/20",
     tile: "bg-orange-500/10 border-orange-500/20 group-hover:border-orange-500/40",
   },
   python: {
@@ -151,7 +151,7 @@ const CARD_THEMES: Record<string, CardTheme> = {
     hoverBorder: "hover:border-emerald-500/40 dark:hover:border-emerald-500/30",
     hoverShadow: "hover:shadow-[0_8px_30px_rgba(16,185,129,0.08)]",
     textAccent: "group-hover:text-emerald-600 dark:group-hover:text-emerald-400",
-    tag: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20",
+    tag: "bg-emerald-500/10 text-emerald-800 dark:text-emerald-400 border-emerald-500/20",
     tile: "bg-emerald-500/10 border-emerald-500/20 group-hover:border-emerald-500/40",
   },
   sql: {
@@ -162,7 +162,7 @@ const CARD_THEMES: Record<string, CardTheme> = {
     hoverBorder: "hover:border-sky-500/40 dark:hover:border-sky-500/30",
     hoverShadow: "hover:shadow-[0_8px_30px_rgba(56,189,248,0.08)]",
     textAccent: "group-hover:text-sky-600 dark:group-hover:text-sky-400",
-    tag: "bg-sky-500/10 text-sky-600 dark:text-sky-400 border-sky-500/20",
+    tag: "bg-sky-500/10 text-sky-800 dark:text-sky-400 border-sky-500/20",
     tile: "bg-sky-500/10 border-sky-500/20 group-hover:border-sky-500/40",
   },
   "machine-coding": {
@@ -173,7 +173,7 @@ const CARD_THEMES: Record<string, CardTheme> = {
     hoverBorder: "hover:border-indigo-500/40 dark:hover:border-indigo-500/30",
     hoverShadow: "hover:shadow-[0_8px_30px_rgba(99,102,241,0.10)]",
     textAccent: "group-hover:text-indigo-600 dark:group-hover:text-indigo-400",
-    tag: "bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border-indigo-500/20",
+    tag: "bg-indigo-500/10 text-indigo-800 dark:text-indigo-400 border-indigo-500/20",
     tile: "bg-indigo-500/10 border-indigo-500/20 group-hover:border-indigo-500/40",
   },
 };
@@ -225,8 +225,8 @@ export default function QuestionCard({ q, showCompany = true }: { q: QuestionCar
         {/* Meta chips — render only what exists */}
         <div className="flex items-center flex-wrap gap-x-2 gap-y-1 text-[11px] font-bold tracking-wide text-muted">
           {solved && (
-            <span className="inline-flex items-center gap-1 bg-emerald-500/10 dark:bg-emerald-500/5 text-emerald-600 dark:text-emerald-450 border border-emerald-500/20 px-2 py-0.5 rounded-md font-extrabold uppercase text-[9px] tracking-wider">
-              <Check className="w-3 h-3 text-emerald-500" /> Solved
+            <span className="inline-flex items-center gap-1 bg-emerald-500/10 dark:bg-emerald-500/5 text-emerald-800 dark:text-emerald-400 dark:text-emerald-450 border border-emerald-500/20 px-2 py-0.5 rounded-md font-extrabold uppercase text-[11px] tracking-wider">
+              <Check className="w-3 h-3 text-emerald-800 dark:text-emerald-400" /> Solved
             </span>
           )}
           {q.technology && (
@@ -272,7 +272,7 @@ export default function QuestionCard({ q, showCompany = true }: { q: QuestionCar
       {/* Right rail — difficulty + hover affordance */}
       <div className="shrink-0 self-stretch flex flex-col items-end justify-between">
         <span
-          className={`text-[10px] font-black uppercase tracking-wider px-2.5 py-0.5 rounded-lg border dark:bg-black/20 ${difficultyClasses(
+          className={`text-[11px] font-black uppercase tracking-wider px-2.5 py-0.5 rounded-lg border dark:bg-black/20 ${difficultyClasses(
             q.difficulty,
           )}`}
         >

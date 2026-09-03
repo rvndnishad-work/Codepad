@@ -214,7 +214,7 @@ export default function PlaygroundMode({ onBack, onPromote }: { onBack?: () => v
             <div className="space-y-2">
               <label className="text-xs font-bold uppercase tracking-widest text-muted flex items-center justify-between">
                 <span>System prompt</span>
-                <span className="text-[10px] bg-panel px-2 py-0.5 rounded-full normal-case">Optional</span>
+                <span className="text-[11px] bg-panel px-2 py-0.5 rounded-full normal-case">Optional</span>
               </label>
               <textarea
                 value={systemPrompt}
@@ -234,7 +234,7 @@ export default function PlaygroundMode({ onBack, onPromote }: { onBack?: () => v
               <h3 className="text-xs font-bold uppercase tracking-widest text-muted">
                 Session history
               </h3>
-              <span className="text-[10px] font-bold uppercase tracking-wider text-muted bg-panel px-2 py-0.5 rounded-full">{history.length} runs</span>
+              <span className="text-[11px] font-bold uppercase tracking-wider text-muted bg-panel px-2 py-0.5 rounded-full">{history.length} runs</span>
             </div>
             <div className="grid grid-cols-1 gap-2">
               {history.map((r, idx) => (
@@ -253,10 +253,10 @@ export default function PlaygroundMode({ onBack, onPromote }: { onBack?: () => v
                       <span className="text-muted/40">&bull;</span>
                       <span>{Math.round(r.durationMs / 100) / 10}s</span>
                       <span className="text-muted/40">&bull;</span>
-                      <span className="text-[10px] bg-surface px-1.5 rounded truncate">{r.model}</span>
+                      <span className="text-[11px] bg-surface px-1.5 rounded truncate">{r.model}</span>
                     </div>
                   </div>
-                  {r.error ? <AlertTriangle className="w-4 h-4 text-rose-400 shrink-0" /> : <RotateCcw className="w-4 h-4 text-muted opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />}
+                  {r.error ? <AlertTriangle className="w-4 h-4 text-rose-700 dark:text-rose-400 shrink-0" /> : <RotateCcw className="w-4 h-4 text-muted opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />}
                 </button>
               ))}
             </div>
@@ -315,7 +315,7 @@ export default function PlaygroundMode({ onBack, onPromote }: { onBack?: () => v
                 <button
                   type="button"
                   onClick={() => setShowDrawer(true)}
-                  className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border border-indigo-500/30 bg-indigo-500/10 hover:bg-indigo-500/20 text-xs font-semibold text-indigo-400 transition-colors"
+                  className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border border-indigo-500/30 bg-indigo-500/10 hover:bg-indigo-500/20 text-xs font-semibold text-indigo-800 dark:text-indigo-400 transition-colors"
                 >
                   View Output
                 </button>
@@ -373,7 +373,7 @@ export default function PlaygroundMode({ onBack, onPromote }: { onBack?: () => v
 
         <div className="flex-1 p-6 relative flex flex-col overflow-y-auto bg-bg m-4 rounded-2xl border border-border shadow-inner">
           {error ? (
-            <div className="rounded-2xl border border-rose-500/30 bg-rose-500/5 p-5 text-sm text-rose-400 mb-4 animate-in fade-in">
+            <div className="rounded-2xl border border-rose-500/30 bg-rose-500/5 p-5 text-sm text-rose-700 dark:text-rose-400 mb-4 animate-in fade-in">
               <div className="flex items-center gap-2 font-bold mb-2">
                 <AlertTriangle className="w-4 h-4" /> Execution Error
               </div>
@@ -387,7 +387,7 @@ export default function PlaygroundMode({ onBack, onPromote }: { onBack?: () => v
                 <div className="absolute inset-0 rounded-3xl border-4 border-indigo-500/20" />
                 <div className="absolute inset-0 rounded-3xl border-4 border-indigo-500 border-t-transparent animate-spin" />
                 <div className="absolute inset-0 flex items-center justify-center">
-                  <Sparkles className="w-5 h-5 text-indigo-400 animate-pulse" />
+                  <Sparkles className="w-5 h-5 text-indigo-800 dark:text-indigo-400 animate-pulse" />
                 </div>
               </div>
               <p className="text-sm font-bold text-fg animate-pulse">Waiting for first token...</p>

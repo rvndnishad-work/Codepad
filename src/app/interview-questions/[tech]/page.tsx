@@ -196,7 +196,7 @@ export default async function TechnologyPage({
 
           <div className="relative space-y-4">
             <div>
-              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest bg-bg border border-border mb-3 text-muted">
+              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-black uppercase tracking-widest bg-bg border border-border mb-3 text-muted">
                 <Award className="w-3.5 h-3.5 text-accent" />
                 Category Blueprint
               </div>
@@ -357,7 +357,7 @@ export default async function TechnologyPage({
                   {topTags.map((tag) => (
                     <span
                       key={tag}
-                      className="px-2.5 py-0.5 rounded-md border border-border/80 bg-bg/30 text-[10px] font-bold uppercase tracking-wide text-muted/80"
+                      className="px-2.5 py-0.5 rounded-md border border-border/80 bg-bg/30 text-[11px] font-bold uppercase tracking-wide text-muted/80"
                     >
                       #{tag}
                     </span>

@@ -32,12 +32,12 @@ export default function ExperienceCard({ e, showCompany = false }: { e: Experien
         </div>
         <div className="flex flex-col items-end gap-1.5 shrink-0">
           {e.result && (
-            <span className={`text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-md border ${resultClasses(e.result)}`}>
+            <span className={`text-[11px] font-black uppercase tracking-wider px-2 py-0.5 rounded-md border ${resultClasses(e.result)}`}>
               {e.result}
             </span>
           )}
           {e.difficulty && (
-            <span className={`text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-md border ${difficultyClasses(e.difficulty)}`}>
+            <span className={`text-[11px] font-black uppercase tracking-wider px-2 py-0.5 rounded-md border ${difficultyClasses(e.difficulty)}`}>
               {e.difficulty}
             </span>
           )}
@@ -46,19 +46,19 @@ export default function ExperienceCard({ e, showCompany = false }: { e: Experien
 
       {e.process && (
         <div>
-          <div className="text-[10px] font-black uppercase tracking-widest text-muted mb-1">Process</div>
+          <div className="text-[11px] font-black uppercase tracking-widest text-muted mb-1">Process</div>
           <p className="text-xs text-fg/80 leading-relaxed">{e.process}</p>
         </div>
       )}
       {e.rounds && (
         <div>
-          <div className="text-[10px] font-black uppercase tracking-widest text-muted mb-1">Rounds</div>
+          <div className="text-[11px] font-black uppercase tracking-widest text-muted mb-1">Rounds</div>
           <p className="text-xs text-fg/80 leading-relaxed">{e.rounds}</p>
         </div>
       )}
       {e.tips && (
         <div className="p-3 rounded-lg border border-accent/20 bg-accent/5">
-          <div className="text-[10px] font-black uppercase tracking-widest text-accent mb-1">Tips</div>
+          <div className="text-[11px] font-black uppercase tracking-widest text-accent mb-1">Tips</div>
           <p className="text-xs text-fg/80 leading-relaxed">{e.tips}</p>
         </div>
       )}

@@ -73,10 +73,10 @@ export default function PromptChallengeRunner({
   // Difficulty styling
   const diffClass =
     scenario.difficulty === "beginner"
-      ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-400"
+      ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-800 dark:text-emerald-400"
       : scenario.difficulty === "advanced"
-      ? "bg-rose-500/10 border-rose-500/20 text-rose-400"
-      : "bg-amber-500/10 border-amber-500/20 text-amber-400";
+      ? "bg-rose-500/10 border-rose-500/20 text-rose-700 dark:text-rose-400"
+      : "bg-amber-500/10 border-amber-500/20 text-amber-800 dark:text-amber-400";
 
   // Rubric mapping helper
   const parsedRubric = (): RubricBreakdown | null => {
@@ -148,7 +148,7 @@ export default function PromptChallengeRunner({
                 {scenario.difficulty}
               </span>
               <h2 className="text-base font-bold text-fg/90 mt-1.5">{scenario.title}</h2>
-              <p className="text-[10px] text-muted font-semibold uppercase tracking-widest">{scenario.category}</p>
+              <p className="text-[11px] text-muted font-semibold uppercase tracking-widest">{scenario.category}</p>
             </div>
             <div className="flex items-center gap-1 text-[11px] text-muted bg-panel border border-border px-2.5 py-1 rounded-xl shadow-inner">
               <Clock className="w-3.5 h-3.5 text-muted/80" />
@@ -189,7 +189,7 @@ export default function PromptChallengeRunner({
                     <Sparkles className="w-4 h-4 text-accent" />
                     Evaluation Complete
                   </h3>
-                  <p className="text-[10px] text-muted">
+                  <p className="text-[11px] text-muted">
                     Graded using <span className="font-semibold text-fg/75">{attempt.graderType === "ai" ? "Gemini AI" : "Local Grader"}</span>
                   </p>
                 </div>
@@ -198,7 +198,7 @@ export default function PromptChallengeRunner({
               {!interviewerView && (
                 <button
                   onClick={resetPrompt}
-                  className="px-3.5 py-1.5 rounded-xl border border-border hover:border-border-strong bg-panel hover:bg-surface text-[10px] font-bold uppercase tracking-widest transition-all flex items-center gap-1.5"
+                  className="px-3.5 py-1.5 rounded-xl border border-border hover:border-border-strong bg-panel hover:bg-surface text-[11px] font-bold uppercase tracking-widest transition-all flex items-center gap-1.5"
                 >
                   <RefreshCw className="w-3.5 h-3.5 text-muted" />
                   Try Again
@@ -259,8 +259,8 @@ export default function PromptChallengeRunner({
 
             {/* Submitted Prompt Preview */}
             <div className="border-t border-border pt-4">
-              <h4 className="text-[10px] font-bold uppercase tracking-wider text-muted mb-2">Submitted Prompt</h4>
-              <pre className="p-3.5 bg-panel border border-border rounded-xl text-[10px] font-mono whitespace-pre-wrap overflow-x-auto text-fg/75 shadow-inner leading-relaxed">
+              <h4 className="text-[11px] font-bold uppercase tracking-wider text-muted mb-2">Submitted Prompt</h4>
+              <pre className="p-3.5 bg-panel border border-border rounded-xl text-[11px] font-mono whitespace-pre-wrap overflow-x-auto text-fg/75 shadow-inner leading-relaxed">
                 {attempt.promptText}
               </pre>
             </div>
@@ -285,8 +285,8 @@ export default function PromptChallengeRunner({
           /* CANDIDATE WRITING EDITOR SCREEN */
           <div className="bg-surface/50 border border-border backdrop-blur-xl rounded-2xl p-6 flex flex-col h-full shadow-lg space-y-4">
             <div className="flex items-center justify-between border-b border-border pb-3 shrink-0">
-              <span className="text-[10px] font-extrabold uppercase tracking-widest text-fg/80">Prompt Engineering Console</span>
-              <span className="text-[10px] text-muted font-mono tracking-widest bg-panel px-2.5 py-0.5 rounded border border-border shadow-inner">
+              <span className="text-[11px] font-extrabold uppercase tracking-widest text-fg/80">Prompt Engineering Console</span>
+              <span className="text-[11px] text-muted font-mono tracking-widest bg-panel px-2.5 py-0.5 rounded border border-border shadow-inner">
                 Practice Console
               </span>
             </div>
@@ -303,7 +303,7 @@ export default function PromptChallengeRunner({
 
             {/* Metadata Bar */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-t border-border pt-4 shrink-0">
-              <div className="flex items-center gap-4 text-[10px] font-mono text-muted bg-panel border border-border px-3.5 py-1.5 rounded-xl shadow-inner">
+              <div className="flex items-center gap-4 text-[11px] font-mono text-muted bg-panel border border-border px-3.5 py-1.5 rounded-xl shadow-inner">
                 <div className="flex items-center gap-1">
                   <span>Chars:</span>
                   <span className="font-bold text-fg/75">{charCount}</span>
@@ -323,7 +323,7 @@ export default function PromptChallengeRunner({
               <button
                 onClick={handleSubmittingPrompt}
                 disabled={submitting || charCount === 0}
-                className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-violet-500 to-indigo-500 hover:opacity-95 text-[10px] font-black uppercase tracking-widest text-white transition flex items-center justify-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed shadow-[0_4px_15px_rgba(139,92,246,0.2)] active:scale-95 transform shrink-0"
+                className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-violet-500 to-indigo-500 hover:opacity-95 text-[11px] font-black uppercase tracking-widest text-white transition flex items-center justify-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed shadow-[0_4px_15px_rgba(139,92,246,0.2)] active:scale-95 transform shrink-0"
               >
                 {submitting ? (
                   <>

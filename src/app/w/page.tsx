@@ -25,17 +25,17 @@ export const metadata: Metadata = {
 };
 
 const PLAN_BADGES: Record<string, string> = {
-  FREE: "text-amber-600 dark:text-amber-400 border-amber-500/25 bg-amber-500/[0.06]",
-  GROWTH: "text-indigo-600 dark:text-indigo-300 border-indigo-500/25 bg-indigo-500/[0.08]",
-  ENTERPRISE: "text-emerald-600 dark:text-emerald-400 border-emerald-500/25 bg-emerald-500/[0.06]",
-  LOCKED: "text-rose-600 dark:text-rose-400 border-rose-500/25 bg-rose-500/[0.06]",
+  FREE: "text-amber-800 dark:text-amber-400 border-amber-500/25 bg-amber-500/[0.06]",
+  GROWTH: "text-indigo-800 dark:text-indigo-400 dark:text-indigo-300 border-indigo-500/25 bg-indigo-500/[0.08]",
+  ENTERPRISE: "text-emerald-800 dark:text-emerald-400 border-emerald-500/25 bg-emerald-500/[0.06]",
+  LOCKED: "text-rose-700 dark:text-rose-400 border-rose-500/25 bg-rose-500/[0.06]",
 };
 
 const ROLE_BADGES: Record<string, string> = {
   OWNER: "text-accent border-accent/25 bg-accent/[0.08]",
-  ADMIN: "text-violet-600 dark:text-violet-400 border-violet-500/25 bg-violet-500/[0.08]",
-  RECRUITER: "text-sky-600 dark:text-sky-400 border-sky-500/25 bg-sky-500/[0.08]",
-  INTERVIEWER: "text-teal-600 dark:text-teal-400 border-teal-500/25 bg-teal-500/[0.08]",
+  ADMIN: "text-violet-800 dark:text-violet-400 border-violet-500/25 bg-violet-500/[0.08]",
+  RECRUITER: "text-sky-800 dark:text-sky-400 border-sky-500/25 bg-sky-500/[0.08]",
+  INTERVIEWER: "text-teal-800 dark:text-teal-400 border-teal-500/25 bg-teal-500/[0.08]",
   VIEWER: "text-muted border-border bg-surface/60",
 };
 
@@ -45,37 +45,37 @@ const ROLE_BADGES: Record<string, string> = {
 const FEATURES = [
   {
     icon: ClipboardList,
-    tint: "text-indigo-500 dark:text-indigo-400 border-indigo-500/20 bg-indigo-500/10",
+    tint: "text-indigo-800 dark:text-indigo-400 border-indigo-500/20 bg-indigo-500/10",
     title: "Take-Home Assessments",
     desc: "Author custom coding tests and send asynchronous take-homes with deadlines and auto-graded test suites.",
   },
   {
     icon: Bot,
-    tint: "text-rose-500 dark:text-rose-400 border-rose-500/20 bg-rose-500/10",
+    tint: "text-rose-700 dark:text-rose-400 border-rose-500/20 bg-rose-500/10",
     title: "AI Screening",
     desc: "An AI agent runs structured first-round interviews and files a report with scores per candidate.",
   },
   {
     icon: MonitorPlay,
-    tint: "text-cyan-600 dark:text-cyan-400 border-cyan-500/20 bg-cyan-500/10",
+    tint: "text-cyan-800 dark:text-cyan-400 border-cyan-500/20 bg-cyan-500/10",
     title: "Live Interview Rooms",
     desc: "Collaborative coding panels with multi-cursor editing — every session is recorded for team replay.",
   },
   {
     icon: Users,
-    tint: "text-emerald-600 dark:text-emerald-400 border-emerald-500/20 bg-emerald-500/10",
+    tint: "text-emerald-800 dark:text-emerald-400 border-emerald-500/20 bg-emerald-500/10",
     title: "Candidate CRM",
     desc: "Track every candidate's stage, attempts, scores, and integrity signals in one shared pipeline.",
   },
   {
     icon: ShieldCheck,
-    tint: "text-amber-600 dark:text-amber-400 border-amber-500/20 bg-amber-500/10",
+    tint: "text-amber-800 dark:text-amber-400 border-amber-500/20 bg-amber-500/10",
     title: "Team Roles & Audit",
     desc: "Invite owners, recruiters, interviewers, and viewers with scoped permissions and a full audit log.",
   },
   {
     icon: Plug,
-    tint: "text-violet-600 dark:text-violet-400 border-violet-500/20 bg-violet-500/10",
+    tint: "text-violet-800 dark:text-violet-400 border-violet-500/20 bg-violet-500/10",
     title: "ATS & Integrations",
     desc: "Sync candidates with your ATS, mint scoped API keys, and wire up email templates and MCP tools.",
   },
@@ -284,7 +284,7 @@ export default async function WorkspaceHubPage() {
         {/* ── Hero ── */}
         <section className="grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-14 items-center">
           <div className="space-y-5">
-            <div className="inline-flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-indigo-500 dark:text-indigo-400 border border-indigo-500/20 bg-indigo-500/5 rounded-full px-3 py-1">
+            <div className="inline-flex items-center gap-2 text-[11px] font-black uppercase tracking-widest text-indigo-800 dark:text-indigo-400 border border-indigo-500/20 bg-indigo-500/5 rounded-full px-3 py-1">
               <Building2 className="w-3 h-3" />
               Recruiting Hubs
             </div>
@@ -368,7 +368,7 @@ export default async function WorkspaceHubPage() {
 
                   <div className="flex items-start justify-between gap-3">
                     <div className="flex items-center gap-3.5 min-w-0">
-                      <div className="w-11 h-11 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-500 dark:text-indigo-400 font-black text-base shrink-0 uppercase">
+                      <div className="w-11 h-11 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-800 dark:text-indigo-400 font-black text-base shrink-0 uppercase">
                         {ws.name.slice(0, 1)}
                       </div>
                       <div className="min-w-0">
@@ -381,7 +381,7 @@ export default async function WorkspaceHubPage() {
                       </div>
                     </div>
                     <span
-                      className={`text-[9px] font-black uppercase tracking-wider px-2 py-1 rounded-lg border shrink-0 ${
+                      className={`text-[11px] font-black uppercase tracking-wider px-2 py-1 rounded-lg border shrink-0 ${
                         PLAN_BADGES[ws.planName] || PLAN_BADGES.FREE
                       }`}
                     >
@@ -404,7 +404,7 @@ export default async function WorkspaceHubPage() {
 
                   <div className="flex items-center justify-between pt-4 border-t border-border">
                     <span
-                      className={`text-[9px] font-black uppercase tracking-wider px-2 py-1 rounded-lg border ${
+                      className={`text-[11px] font-black uppercase tracking-wider px-2 py-1 rounded-lg border ${
                         ROLE_BADGES[role] || ROLE_BADGES.VIEWER
                       }`}
                     >
@@ -495,7 +495,7 @@ export default async function WorkspaceHubPage() {
                     <step.icon className="w-6 h-6" />
                   </div>
                   <div
-                    className="text-[10px] font-black uppercase tracking-widest"
+                    className="text-[11px] font-black uppercase tracking-widest"
                     style={{ color: step.accent }}
                   >
                     Step {i + 1}

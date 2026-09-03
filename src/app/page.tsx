@@ -382,7 +382,7 @@ export default async function HomePage() {
                 {popularEntries.length > 0 && (
                   <div className="ip-frame p-5">
                     <div className="mb-4 flex items-center gap-2 border-b border-border pb-3">
-                      <TrendingUp className="h-3.5 w-3.5 text-emerald-500" />
+                      <TrendingUp className="h-3.5 w-3.5 text-emerald-800 dark:text-emerald-400" />
                       <h3 className="ip-label ip-label-fg">Most read</h3>
                     </div>
                     <div className="flex flex-col">

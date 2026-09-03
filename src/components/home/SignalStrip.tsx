@@ -57,7 +57,7 @@ export default function SignalStrip({
             />
             {labels && (
               <span
-                className={`ip-label ip-label-xs whitespace-nowrap -ml-px ${
+                className={`ip-label whitespace-nowrap -ml-px ${
                   stage.state === "live"
                     ? tone === "secondary"
                       ? "ip-label-secondary"

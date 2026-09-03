@@ -103,10 +103,10 @@ export default async function HomeCreators() {
                         {space.name}
                       </span>
                       {verified.has(space.ownerId) && (
-                        <BadgeCheck className="h-3.5 w-3.5 shrink-0 text-sky-500" />
+                        <BadgeCheck className="h-3.5 w-3.5 shrink-0 text-sky-800 dark:text-sky-400" />
                       )}
                     </div>
-                    <span className="ip-label ip-label-xs">/c/{space.handle}</span>
+                    <span className="ip-label">/c/{space.handle}</span>
                   </div>
                 </div>
 
@@ -117,7 +117,7 @@ export default async function HomeCreators() {
                 )}
 
                 {/* Metrics as a monospaced readout on one baseline. */}
-                <div className="mt-auto flex items-center gap-4 border-t border-border pt-3 font-mono text-[10.5px] text-subtle">
+                <div className="mt-auto flex items-center gap-4 border-t border-border pt-3 font-mono text-[11px] text-subtle">
                   <span className="ip-nums inline-flex items-center gap-1.5">
                     <Heart className="h-3 w-3" /> {count(followCounts, space.id).toLocaleString()}
                   </span>

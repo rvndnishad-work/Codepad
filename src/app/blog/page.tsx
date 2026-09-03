@@ -204,7 +204,7 @@ export default async function BlogListingPage({
       {/* Hero strip (compact) */}
       <div className="border-b border-border bg-bg/50">
         <div className="mx-auto max-w-6xl px-4 py-10">
-          <div className="inline-flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.2em] text-accent mb-3 bg-accent/10 border border-accent/20 px-4 py-1.5 rounded-full shadow-[0_0_15px_rgba(var(--accent-rgb),0.1)]">
+          <div className="inline-flex items-center gap-2 text-[11px] font-black uppercase tracking-[0.2em] text-accent mb-3 bg-accent/10 border border-accent/20 px-4 py-1.5 rounded-full shadow-[0_0_15px_rgba(var(--accent-rgb),0.1)]">
             <Flame className="w-3 h-3 fill-current animate-pulse" />
             Insights & Engineering
           </div>
@@ -351,7 +351,7 @@ export default async function BlogListingPage({
           {suggestedUsers.length > 0 && (
             <div className="rounded-2xl border border-border bg-surface p-5">
               <div className="flex items-center gap-2 mb-4">
-                <Users className="w-4 h-4 text-violet-500" />
+                <Users className="w-4 h-4 text-violet-800 dark:text-violet-400" />
                 <h3 className="text-sm font-black tracking-tight text-fg">
                   Who to follow
                 </h3>
@@ -367,7 +367,7 @@ export default async function BlogListingPage({
                         // eslint-disable-next-line @next/next/no-img-element
                         <img src={u.image} alt="" className="w-full h-full object-cover" />
                       ) : (
-                        <div className="w-full h-full bg-accent/10 flex items-center justify-center text-[10px] font-bold text-muted">
+                        <div className="w-full h-full bg-accent/10 flex items-center justify-center text-[11px] font-bold text-muted">
                           {(u.name ?? "?").slice(0, 1).toUpperCase()}
                         </div>
                       )}
@@ -400,7 +400,7 @@ export default async function BlogListingPage({
           {mostRead.length > 0 && (
             <div className="rounded-2xl border border-border bg-surface p-5">
               <div className="flex items-center gap-2 mb-4">
-                <TrendingUp className="w-4 h-4 text-emerald-500" />
+                <TrendingUp className="w-4 h-4 text-emerald-800 dark:text-emerald-400" />
                 <h3 className="text-sm font-black tracking-tight text-fg">
                   Most read
                 </h3>
@@ -432,7 +432,7 @@ export default async function BlogListingPage({
           {popularTags.length > 0 && (
             <div className="rounded-2xl border border-border bg-surface p-5">
               <div className="flex items-center gap-2 mb-4">
-                <Hash className="w-4 h-4 text-blue-500" />
+                <Hash className="w-4 h-4 text-blue-800 dark:text-blue-400" />
                 <h3 className="text-sm font-black tracking-tight text-fg">
                   Popular topics
                 </h3>

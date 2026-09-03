@@ -104,14 +104,14 @@ export function CodePeekCard({
           </span>
           <div className="ml-auto flex items-center gap-1.5 z-10">
             {t.group === "backend" && (
-              <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[8px] font-black uppercase tracking-wider bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 shadow-[0_0_10px_rgba(16,185,129,0.15)] animate-pulse">
+              <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[11px] font-black uppercase tracking-wider bg-emerald-500/10 text-emerald-800 dark:text-emerald-400 border border-emerald-500/20 shadow-[0_0_10px_rgba(16,185,129,0.15)] animate-pulse">
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
                 JIT 0ms
               </span>
             )}
             {showpiece && (
               <span
-                className="text-[9px] font-black px-2 py-0.5 rounded uppercase tracking-widest"
+                className="text-[11px] font-black px-2 py-0.5 rounded uppercase tracking-widest"
                 style={{
                   color: accent,
                   background: `rgba(${rgbAccent}, 0.15)`,
@@ -130,7 +130,7 @@ export function CodePeekCard({
           {/* Line gutter */}
           <div
             className={`shrink-0 select-none px-3 py-3 font-mono text-slate-700 leading-relaxed text-right ${
-              isFeatured ? "text-[11px]" : "text-[10px]"
+              isFeatured ? "text-[11px]" : "text-[11px]"
             }`}
           >
             {Array.from({ length: lineCount }, (_, i) => (

@@ -96,9 +96,9 @@ type FlatTest = {
 type LiveLog = { id: string; method: string; data: unknown[]; ts: number };
 
 const difficultyColor: Record<string, string> = {
-  easy: "text-emerald-500",
-  medium: "text-amber-500",
-  hard: "text-rose-500",
+  easy: "text-emerald-800 dark:text-emerald-400",
+  medium: "text-amber-800 dark:text-amber-400",
+  hard: "text-rose-700 dark:text-rose-400",
 };
 
 function extractDefaultExpression(starterFiles: Record<string, string>): string {
@@ -244,7 +244,7 @@ function CompetitorLanguageSelector({
             boxShadow: "0 16px 48px rgba(0,0,0,0.15), 0 0 0 1px var(--border) inset"
           }}
         >
-          <div className="px-3 py-1 text-[10px] font-black uppercase tracking-wider text-muted/40 border-b border-border/60 mb-1.5 flex justify-between select-none">
+          <div className="px-3 py-1 text-[11px] font-black uppercase tracking-wider text-muted/40 border-b border-border/60 mb-1.5 flex justify-between select-none">
             <span>Competitor Support</span>
             <span>Avg Score</span>
           </div>
@@ -267,7 +267,7 @@ function CompetitorLanguageSelector({
                 <span className="font-semibold">{opt.label}</span>
                 <span className="text-[9px] text-muted/60">({opt.pct})</span>
               </div>
-              <span className="font-mono text-[10px] bg-surface border border-border px-1.5 py-0.5 rounded text-muted font-bold">{opt.avg}/100</span>
+              <span className="font-mono text-[11px] bg-surface border border-border px-1.5 py-0.5 rounded text-muted font-bold">{opt.avg}/100</span>
             </button>
           ))}
         </div>
@@ -1671,7 +1671,7 @@ export default function ChallengeAttemptClient({
             className="flex-1 min-w-0 flex flex-col min-h-[20rem] lg:min-h-0 bg-bg lg:h-full overflow-hidden"
           >
             <div className="h-10 shrink-0 flex items-center justify-between gap-2 px-3 border-b border-border bg-surface/30">
-              <span className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-wider text-fg">
+              <span className="flex items-center gap-1.5 text-[11px] font-black uppercase tracking-wider text-fg">
                 <Monitor className="w-3 h-3 text-accent" />
                 Output
               </span>
@@ -1791,7 +1791,7 @@ export default function ChallengeAttemptClient({
                   : { flex: "1 1 0" }),
               }}
             >
-              <div className="h-9 shrink-0 flex items-center gap-1.5 px-3 border-b border-border bg-surface/30 text-[10px] font-black uppercase tracking-wider text-muted">
+              <div className="h-9 shrink-0 flex items-center gap-1.5 px-3 border-b border-border bg-surface/30 text-[11px] font-black uppercase tracking-wider text-muted">
                 <Terminal className="w-3 h-3 text-accent" />
                 Console
               </div>
@@ -1866,7 +1866,7 @@ export default function ChallengeAttemptClient({
                 <button
                   type="button"
                   onClick={() => setSidebarTab("console")}
-                  className={`flex items-center gap-1 px-2.5 py-1 rounded-md text-[10px] font-black uppercase tracking-wider transition ${
+                  className={`flex items-center gap-1 px-2.5 py-1 rounded-md text-[11px] font-black uppercase tracking-wider transition ${
                     sidebarTab === "console"
                       ? "bg-bg text-fg shadow-sm border border-border"
                       : "text-muted hover:text-fg hover:bg-surface/50"
@@ -1883,7 +1883,7 @@ export default function ChallengeAttemptClient({
                 <button
                   type="button"
                   onClick={() => setSidebarTab("tests")}
-                  className={`flex items-center gap-1 px-2.5 py-1 rounded-md text-[10px] font-black uppercase tracking-wider transition ${
+                  className={`flex items-center gap-1 px-2.5 py-1 rounded-md text-[11px] font-black uppercase tracking-wider transition ${
                     sidebarTab === "tests"
                       ? "bg-bg text-fg shadow-sm border border-border"
                       : "text-muted hover:text-fg hover:bg-surface/50"
@@ -1910,7 +1910,7 @@ export default function ChallengeAttemptClient({
                   type="button"
                   onClick={clearLiveLogs}
                   disabled={liveLogs.length === 0}
-                  className="px-2 py-0.5 rounded hover:bg-surface text-[10px] text-muted hover:text-fg transition disabled:opacity-40 disabled:cursor-not-allowed"
+                  className="px-2 py-0.5 rounded hover:bg-surface text-[11px] text-muted hover:text-fg transition disabled:opacity-40 disabled:cursor-not-allowed"
                 >
                   Clear
                 </button>
@@ -2296,13 +2296,13 @@ function LiveConsole({
                     <div className="absolute top-0 right-0 w-24 h-24 bg-emerald-500/10 rounded-full blur-xl pointer-events-none" />
                     <div className="flex items-center gap-2 mb-2">
                       <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-                      <span className="text-[10px] font-black uppercase tracking-wider text-emerald-400">
+                      <span className="text-[11px] font-black uppercase tracking-wider text-emerald-400">
                         Space-Time Execution Profile
                       </span>
                     </div>
                     <div className="grid grid-cols-2 gap-4">
                       <div>
-                        <div className="text-[10px] text-muted mb-0.5 font-sans">Execution Time</div>
+                        <div className="text-[11px] text-muted mb-0.5 font-sans">Execution Time</div>
                         <div className="text-xs font-bold text-fg font-mono">
                           {profileData.durationMs < 1 
                             ? `${profileData.durationMs.toFixed(3)} ms` 
@@ -2310,7 +2310,7 @@ function LiveConsole({
                         </div>
                       </div>
                       <div>
-                        <div className="text-[10px] text-muted mb-0.5 font-sans">Estimated Memory</div>
+                        <div className="text-[11px] text-muted mb-0.5 font-sans">Estimated Memory</div>
                         <div className="text-xs font-bold text-fg font-mono">
                           {profileData.memoryBytes !== null 
                             ? `${(profileData.memoryBytes / 1024).toFixed(1)} KB` 
@@ -2331,7 +2331,7 @@ function LiveConsole({
                     methodStyle[l.method] ?? methodStyle.log
                   }`}
                 >
-                  <span className="text-muted/40 mr-2 text-[10px] uppercase tabular-nums">
+                  <span className="text-muted/40 mr-2 text-[11px] uppercase tabular-nums">
                     {l.method}
                   </span>
                   {l.data.map((d, i) => (

@@ -167,7 +167,7 @@ export default function CodeViewer({
                       <span title="False positive — nothing wrong here">➖</span>
                     ) : studyMode && studyIdx ? (
                       <span
-                        className="inline-flex items-center justify-center w-4 h-4 rounded-full bg-indigo-500 text-white text-[9px] font-bold tabular-nums"
+                        className="inline-flex items-center justify-center w-4 h-4 rounded-full bg-indigo-500 text-white text-[11px] font-bold tabular-nums"
                         title={`Issue #${studyIdx}`}
                       >
                         {studyIdx}
@@ -214,7 +214,7 @@ export default function CodeViewer({
                               onMark(lineNo, null);
                               setOpenLine(null);
                             }}
-                            className="inline-flex items-center px-2.5 py-1 rounded-lg border border-border bg-bg text-[11px] font-bold text-rose-500 hover:bg-rose-500/10 transition"
+                            className="inline-flex items-center px-2.5 py-1 rounded-lg border border-border bg-bg text-[11px] font-bold text-rose-700 dark:text-rose-400 hover:bg-rose-500/10 transition"
                           >
                             Clear
                           </button>

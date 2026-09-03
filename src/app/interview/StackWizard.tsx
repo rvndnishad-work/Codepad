@@ -149,7 +149,7 @@ export default function StackWizard({ open, onClose, type = "mock", creatorRole 
             />
             {availableBackendFw.length > 0 && (
               <div className="mt-2.5">
-                <p className="text-[10px] font-bold uppercase tracking-wider text-muted/70 mb-1.5">
+                <p className="text-[11px] font-bold uppercase tracking-wider text-muted/70 mb-1.5">
                   Framework focus <span className="font-normal normal-case">(guides AI questions — not executed)</span>
                 </p>
                 <Chips
@@ -176,7 +176,7 @@ export default function StackWizard({ open, onClose, type = "mock", creatorRole 
           {/* Difficulty + length */}
           <div className="grid grid-cols-2 gap-4 pt-1">
             <div className="space-y-1.5">
-              <label className="text-[10px] font-bold uppercase tracking-wider text-muted">Difficulty</label>
+              <label className="text-[11px] font-bold uppercase tracking-wider text-muted">Difficulty</label>
               <select
                 value={difficulty}
                 onChange={(e) => setDifficulty(e.target.value as typeof difficulty)}
@@ -189,7 +189,7 @@ export default function StackWizard({ open, onClose, type = "mock", creatorRole 
               </select>
             </div>
             <div className="space-y-1.5">
-              <label className="text-[10px] font-bold uppercase tracking-wider text-muted">Length: {minutes} min</label>
+              <label className="text-[11px] font-bold uppercase tracking-wider text-muted">Length: {minutes} min</label>
               <input
                 type="range"
                 min={15}
@@ -261,7 +261,7 @@ function Chips({
             key={o.id}
             type="button"
             onClick={() => onToggle(o.id)}
-            className={`rounded-full border font-bold transition-all ${small ? "px-2.5 py-0.5 text-[10px]" : "px-3 py-1 text-[11px]"} ${
+            className={`rounded-full border font-bold transition-all ${small ? "px-2.5 py-0.5 text-[11px]" : "px-3 py-1 text-[11px]"} ${
               on ? TONE[tone].on : "bg-transparent border-border text-muted hover:border-border-strong hover:text-fg"
             }`}
           >

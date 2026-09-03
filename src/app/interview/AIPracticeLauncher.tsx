@@ -15,9 +15,9 @@ type PracticeTemplate = {
 };
 
 const KIND_META: Record<string, { label: string; icon: React.ReactNode; tone: string }> = {
-  frontend: { label: "Frontend", icon: <Monitor className="w-3.5 h-3.5" />, tone: "text-sky-600 dark:text-sky-400" },
-  backend: { label: "Backend", icon: <Server className="w-3.5 h-3.5" />, tone: "text-emerald-600 dark:text-emerald-400" },
-  dsa: { label: "DSA", icon: <Binary className="w-3.5 h-3.5" />, tone: "text-violet-600 dark:text-violet-400" },
+  frontend: { label: "Frontend", icon: <Monitor className="w-3.5 h-3.5" />, tone: "text-sky-800 dark:text-sky-400" },
+  backend: { label: "Backend", icon: <Server className="w-3.5 h-3.5" />, tone: "text-emerald-800 dark:text-emerald-400" },
+  dsa: { label: "DSA", icon: <Binary className="w-3.5 h-3.5" />, tone: "text-violet-800 dark:text-violet-400" },
 };
 
 /**
@@ -95,7 +95,7 @@ export default function AIPracticeLauncher({ open, onClose }: { open: boolean; o
                   className="w-full text-left p-4 rounded-xl border border-border bg-surface/50 hover:bg-surface hover:border-border-strong transition flex items-center justify-between gap-4 group disabled:opacity-50"
                 >
                   <div className="min-w-0">
-                    <div className={`flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider mb-1 ${meta.tone}`}>
+                    <div className={`flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider mb-1 ${meta.tone}`}>
                       {meta.icon}
                       {meta.label}
                       {t.language && <span className="text-muted/70 font-mono normal-case">· {t.language}</span>}

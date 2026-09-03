@@ -736,7 +736,7 @@ export default function FileExplorer({
       {showDeps && !readOnly && supportsNpm && (
         <div className="border-b border-border bg-panel/40 px-2 py-2 text-xs">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-[10px] uppercase tracking-wide text-muted">
+            <span className="text-[11px] uppercase tracking-wide text-muted">
               Dependencies
             </span>
             <button
@@ -814,12 +814,12 @@ export default function FileExplorer({
                     >
                       <div className="flex items-center justify-between gap-2">
                         <span className="font-medium truncate">{s.name}</span>
-                        <span className="text-[10px] text-muted shrink-0">
+                        <span className="text-[11px] text-muted shrink-0">
                           {s.version}
                         </span>
                       </div>
                       {s.description && (
-                        <div className="text-[10px] text-muted truncate mt-0.5">
+                        <div className="text-[11px] text-muted truncate mt-0.5">
                           {s.description}
                         </div>
                       )}
@@ -843,7 +843,7 @@ export default function FileExplorer({
                     className="group flex items-center gap-2 px-1.5 py-0.5 rounded hover:bg-elevated"
                   >
                     <span className="truncate flex-1 text-fg">{name}</span>
-                    <span className="text-muted text-[10px] shrink-0">
+                    <span className="text-muted text-[11px] shrink-0">
                       {version}
                     </span>
                     <button
@@ -958,7 +958,7 @@ export default function FileExplorer({
                 onClick={() =>
                   deletePath(contextMenu.path, contextMenu.isFolder)
                 }
-                className="w-full flex items-center gap-2 px-3 py-1.5 hover:bg-red-500/10 text-red-400"
+                className="w-full flex items-center gap-2 px-3 py-1.5 hover:bg-red-500/10 text-red-700 dark:text-red-400"
               >
                 <Trash2 className="w-3.5 h-3.5" />
                 Delete

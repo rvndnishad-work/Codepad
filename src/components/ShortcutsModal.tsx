@@ -72,7 +72,7 @@ export default function ShortcutsModal() {
           />
           <div
             onClick={(e) => e.stopPropagation()}
-            className="relative w-full max-w-md rounded-2xl border border-border bg-panel/95 backdrop-blur shadow-soft overflow-hidden"
+            className="relative w-full max-w-md rounded-2xl border border-border-strong bg-panel/95 backdrop-blur ip-panel-float overflow-hidden"
           >
             <div className="flex items-center justify-between px-5 py-3 border-b border-border">
               <div className="flex items-center gap-2">

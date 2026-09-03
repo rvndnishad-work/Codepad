@@ -161,7 +161,7 @@ export default function BlogStoriesList({
             <button
               type="button"
               onClick={loadMore}
-              className="text-xs font-bold uppercase tracking-widest text-red-500 hover:text-red-400"
+              className="text-xs font-bold uppercase tracking-widest text-red-700 dark:text-red-400 hover:text-red-400"
             >
               {error} · Tap to retry
             </button>

@@ -72,9 +72,9 @@ export type PromptScenarioOption = {
 type SourceType = "challenge" | "playground" | "prompt";
 
 const difficultyColor: Record<string, string> = {
-  easy: "text-emerald-600 dark:text-emerald-400",
-  medium: "text-amber-600 dark:text-amber-400",
-  hard: "text-rose-600 dark:text-rose-400",
+  easy: "text-emerald-800 dark:text-emerald-400",
+  medium: "text-amber-800 dark:text-amber-400",
+  hard: "text-rose-700 dark:text-rose-400",
 };
 
 const difficultyBg: Record<string, string> = {
@@ -88,127 +88,127 @@ const templateColors: Record<string, { border: string; glow: string; text: strin
   "react": { 
     border: "hover:border-sky-400 dark:hover:border-sky-400/60", 
     glow: "hover:shadow-[0_0_20px_rgba(56,189,248,0.08)] dark:hover:shadow-[0_0_20px_rgba(56,189,248,0.15)]", 
-    text: "text-sky-600 dark:text-sky-400", 
+    text: "text-sky-800 dark:text-sky-400", 
     bg: "bg-sky-500/10 border-sky-500/20 dark:bg-sky-400/10 dark:border-sky-400/20" 
   },
   "empty-react": { 
     border: "hover:border-sky-400 dark:hover:border-sky-400/60", 
     glow: "hover:shadow-[0_0_20px_rgba(56,189,248,0.08)] dark:hover:shadow-[0_0_20px_rgba(56,189,248,0.15)]", 
-    text: "text-sky-600 dark:text-sky-400", 
+    text: "text-sky-800 dark:text-sky-400", 
     bg: "bg-sky-500/10 border-sky-500/20 dark:bg-sky-400/10 dark:border-sky-400/20" 
   },
   "react-hooks": { 
     border: "hover:border-sky-400 dark:hover:border-sky-400/60", 
     glow: "hover:shadow-[0_0_20px_rgba(56,189,248,0.08)] dark:hover:shadow-[0_0_20px_rgba(56,189,248,0.15)]", 
-    text: "text-sky-600 dark:text-sky-400", 
+    text: "text-sky-800 dark:text-sky-400", 
     bg: "bg-sky-500/10 border-sky-500/20 dark:bg-sky-400/10 dark:border-sky-400/20" 
   },
   "react-classes": { 
     border: "hover:border-sky-400 dark:hover:border-sky-400/60", 
     glow: "hover:shadow-[0_0_20px_rgba(56,189,248,0.08)] dark:hover:shadow-[0_0_20px_rgba(56,189,248,0.15)]", 
-    text: "text-sky-600 dark:text-sky-400", 
+    text: "text-sky-800 dark:text-sky-400", 
     bg: "bg-sky-500/10 border-sky-500/20 dark:bg-sky-400/10 dark:border-sky-400/20" 
   },
   "empty-ts": { 
     border: "hover:border-blue-500 dark:hover:border-blue-500/60", 
     glow: "hover:shadow-[0_0_20px_rgba(59,130,246,0.08)] dark:hover:shadow-[0_0_20px_rgba(59,130,246,0.15)]", 
-    text: "text-blue-600 dark:text-blue-400", 
+    text: "text-blue-800 dark:text-blue-400", 
     bg: "bg-blue-500/10 border-blue-500/20 dark:bg-blue-400/10 dark:border-blue-400/20" 
   },
   "typescript": { 
     border: "hover:border-blue-500 dark:hover:border-blue-500/60", 
     glow: "hover:shadow-[0_0_20px_rgba(59,130,246,0.08)] dark:hover:shadow-[0_0_20px_rgba(59,130,246,0.15)]", 
-    text: "text-blue-600 dark:text-blue-400", 
+    text: "text-blue-800 dark:text-blue-400", 
     bg: "bg-blue-500/10 border-blue-500/20 dark:bg-blue-400/10 dark:border-blue-400/20" 
   },
   "empty-js": { 
     border: "hover:border-yellow-500 dark:hover:border-yellow-500/60", 
     glow: "hover:shadow-[0_0_20px_rgba(234,179,8,0.08)] dark:hover:shadow-[0_0_20px_rgba(234,179,8,0.15)]", 
-    text: "text-yellow-600 dark:text-yellow-500", 
+    text: "text-yellow-800 dark:text-yellow-400", 
     bg: "bg-yellow-500/10 border-yellow-500/20 dark:bg-yellow-400/10 dark:border-yellow-400/20" 
   },
   "javascript": { 
     border: "hover:border-yellow-500 dark:hover:border-yellow-500/60", 
     glow: "hover:shadow-[0_0_20px_rgba(234,179,8,0.08)] dark:hover:shadow-[0_0_20px_rgba(234,179,8,0.15)]", 
-    text: "text-yellow-600 dark:text-yellow-500", 
+    text: "text-yellow-800 dark:text-yellow-400", 
     bg: "bg-yellow-500/10 border-yellow-500/20 dark:bg-yellow-400/10 dark:border-yellow-400/20" 
   },
   "svelte": { 
     border: "hover:border-orange-500 dark:hover:border-orange-500/60", 
     glow: "hover:shadow-[0_0_20px_rgba(249,115,22,0.08)] dark:hover:shadow-[0_0_20px_rgba(249,115,22,0.15)]", 
-    text: "text-orange-600 dark:text-orange-400", 
+    text: "text-orange-800 dark:text-orange-400", 
     bg: "bg-orange-500/10 border-orange-500/20 dark:bg-orange-400/10 dark:border-orange-400/20" 
   },
   "vue": { 
     border: "hover:border-emerald-500 dark:hover:border-emerald-500/60", 
     glow: "hover:shadow-[0_0_20px_rgba(16,185,129,0.08)] dark:hover:shadow-[0_0_20px_rgba(16,185,129,0.15)]", 
-    text: "text-emerald-600 dark:text-emerald-400", 
+    text: "text-emerald-800 dark:text-emerald-400", 
     bg: "bg-emerald-500/10 border-emerald-500/20 dark:bg-emerald-400/10 dark:border-emerald-400/20" 
   },
   "solid": { 
     border: "hover:border-indigo-500 dark:hover:border-indigo-400/60", 
     glow: "hover:shadow-[0_0_20px_rgba(129,140,248,0.08)] dark:hover:shadow-[0_0_20px_rgba(129,140,248,0.15)]", 
-    text: "text-indigo-600 dark:text-indigo-400", 
+    text: "text-indigo-800 dark:text-indigo-400", 
     bg: "bg-indigo-500/10 border-indigo-500/20 dark:bg-indigo-400/10 dark:border-indigo-400/20" 
   },
   "angular": { 
     border: "hover:border-rose-500 dark:hover:border-rose-500/60", 
     glow: "hover:shadow-[0_0_20px_rgba(244,63,94,0.08)] dark:hover:shadow-[0_0_20px_rgba(244,63,94,0.15)]", 
-    text: "text-rose-600 dark:text-rose-400", 
+    text: "text-rose-700 dark:text-rose-400", 
     bg: "bg-rose-500/10 border-rose-500/20 dark:bg-rose-400/10 dark:border-rose-400/20" 
   },
   "redux-toolkit": { 
     border: "hover:border-purple-500 dark:hover:border-purple-500/60", 
     glow: "hover:shadow-[0_0_20px_rgba(168,85,247,0.08)] dark:hover:shadow-[0_0_20px_rgba(168,85,247,0.15)]", 
-    text: "text-purple-600 dark:text-purple-400", 
+    text: "text-purple-800 dark:text-purple-400", 
     bg: "bg-purple-500/10 border-purple-500/20 dark:bg-purple-400/10 dark:border-purple-400/20" 
   },
   "mobx": { 
     border: "hover:border-amber-600 dark:hover:border-amber-600/60", 
     glow: "hover:shadow-[0_0_20px_rgba(217,119,6,0.08)] dark:hover:shadow-[0_0_20px_rgba(217,119,6,0.15)]", 
-    text: "text-amber-600 dark:text-amber-500", 
+    text: "text-amber-800 dark:text-amber-400", 
     bg: "bg-amber-500/10 border-amber-500/20 dark:bg-amber-500/10 dark:border-amber-500/20" 
   },
   "framer-motion": { 
     border: "hover:border-pink-500 dark:hover:border-pink-500/60", 
     glow: "hover:shadow-[0_0_20px_rgba(236,72,153,0.08)] dark:hover:shadow-[0_0_20px_rgba(236,72,153,0.15)]", 
-    text: "text-pink-600 dark:text-pink-400", 
+    text: "text-pink-800 dark:text-pink-400", 
     bg: "bg-pink-500/10 border-pink-500/20 dark:bg-pink-400/10 dark:border-pink-400/20" 
   },
   "mui": { 
     border: "hover:border-sky-500 dark:hover:border-sky-500/60", 
     glow: "hover:shadow-[0_0_20px_rgba(14,165,233,0.08)] dark:hover:shadow-[0_0_20px_rgba(14,165,233,0.15)]", 
-    text: "text-sky-600 dark:text-sky-400", 
+    text: "text-sky-800 dark:text-sky-400", 
     bg: "bg-sky-500/10 border-sky-500/20 dark:bg-sky-400/10 dark:border-sky-400/20" 
   },
   "python": { 
     border: "hover:border-blue-400 dark:hover:border-blue-400/60", 
     glow: "hover:shadow-[0_0_20px_rgba(55,118,171,0.08)] dark:hover:shadow-[0_0_20px_rgba(55,118,171,0.15)]", 
-    text: "text-blue-600 dark:text-blue-400", 
+    text: "text-blue-800 dark:text-blue-400", 
     bg: "bg-blue-500/10 border-blue-500/20 dark:bg-blue-400/10 dark:border-blue-400/20" 
   },
   "go": { 
     border: "hover:border-cyan-400 dark:hover:border-cyan-400/60", 
     glow: "hover:shadow-[0_0_20px_rgba(0,173,216,0.08)] dark:hover:shadow-[0_0_20px_rgba(0,173,216,0.15)]", 
-    text: "text-cyan-600 dark:text-cyan-400", 
+    text: "text-cyan-800 dark:text-cyan-400", 
     bg: "bg-cyan-500/10 border-cyan-500/20 dark:bg-cyan-400/10 dark:border-cyan-400/20" 
   },
   "java": { 
     border: "hover:border-orange-400 dark:hover:border-orange-400/60", 
     glow: "hover:shadow-[0_0_20px_rgba(83,130,161,0.08)] dark:hover:shadow-[0_0_20px_rgba(83,130,161,0.15)]", 
-    text: "text-orange-600 dark:text-orange-400", 
+    text: "text-orange-800 dark:text-orange-400", 
     bg: "bg-orange-500/10 border-orange-500/20 dark:bg-orange-400/10 dark:border-orange-400/20" 
   },
   "cpp": { 
     border: "hover:border-indigo-400 dark:hover:border-indigo-400/60", 
     glow: "hover:shadow-[0_0_20px_rgba(0,89,156,0.08)] dark:hover:shadow-[0_0_20px_rgba(0,89,156,0.15)]", 
-    text: "text-indigo-600 dark:text-indigo-400", 
+    text: "text-indigo-800 dark:text-indigo-400", 
     bg: "bg-indigo-500/10 border-indigo-500/20 dark:bg-indigo-400/10 dark:border-indigo-400/20" 
   },
   "rust": { 
     border: "hover:border-red-500 dark:hover:border-red-500/60", 
     glow: "hover:shadow-[0_0_20px_rgba(228,55,22,0.08)] dark:hover:shadow-[0_0_20px_rgba(228,55,22,0.15)]", 
-    text: "text-red-600 dark:text-red-400", 
+    text: "text-red-700 dark:text-red-400", 
     bg: "bg-red-500/10 border-red-500/20 dark:bg-red-400/10 dark:border-red-400/20" 
   },
 };
@@ -499,12 +499,12 @@ export default function InterviewBuilder({
             <button
               type="button"
               onClick={() => setWizardOpen(true)}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-accent/10 border border-accent/30 text-accent text-[10px] font-bold uppercase tracking-wider hover:bg-accent/15 transition"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-accent/10 border border-accent/30 text-accent text-[11px] font-bold uppercase tracking-wider hover:bg-accent/15 transition"
             >
               <Layers className="w-3.5 h-3.5" />
               Quick start by stack
             </button>
-            <span className="text-[10px] font-mono tracking-widest text-accent uppercase font-bold bg-accent/10 border border-accent/20 px-2.5 py-1 rounded-full hidden sm:inline">
+            <span className="text-[11px] font-mono tracking-widest text-accent uppercase font-bold bg-accent/10 border border-accent/20 px-2.5 py-1 rounded-full hidden sm:inline">
               Ready for Provisioning
             </span>
           </div>
@@ -523,13 +523,13 @@ export default function InterviewBuilder({
                 </div>
                 <div>
                   <h2 className="text-xs font-bold text-fg uppercase tracking-wider">Session Details</h2>
-                  <p className="text-[10px] text-muted leading-none mt-1">Configure workspace rules</p>
+                  <p className="text-[11px] text-muted leading-none mt-1">Configure workspace rules</p>
                 </div>
               </div>
 
               {/* Title Input */}
               <div className="space-y-2">
-                <label className="block text-[10px] font-bold uppercase tracking-wider text-muted/80">
+                <label className="block text-[11px] font-bold uppercase tracking-wider text-muted/80">
                   Assessment Title
                 </label>
                 <div className="relative group">
@@ -545,7 +545,7 @@ export default function InterviewBuilder({
 
               {/* Candidate Input */}
               <div className="space-y-2">
-                <label className="block text-[10px] font-bold uppercase tracking-wider text-muted/80">
+                <label className="block text-[11px] font-bold uppercase tracking-wider text-muted/80">
                   Candidate Name <span className="text-muted/70 font-normal lowercase">(optional)</span>
                 </label>
                 <div className="relative group">
@@ -561,7 +561,7 @@ export default function InterviewBuilder({
 
               {/* Candidate Email Input */}
               <div className="space-y-2 animate-in fade-in duration-300">
-                <label className="block text-[10px] font-bold uppercase tracking-wider text-muted/80">
+                <label className="block text-[11px] font-bold uppercase tracking-wider text-muted/80">
                   Candidate Email <span className="text-muted/70 font-normal lowercase">(optional)</span>
                 </label>
                 <div className="relative group">
@@ -580,7 +580,7 @@ export default function InterviewBuilder({
               {/* Scheduled time (IP-90) — optional planned meeting slot. Goes
                   out in the candidate invite email + calendar copy. */}
               <div className="space-y-2 animate-in fade-in duration-300">
-                <label className="block text-[10px] font-bold uppercase tracking-wider text-muted/80">
+                <label className="block text-[11px] font-bold uppercase tracking-wider text-muted/80">
                   Scheduled For <span className="text-muted/70 font-normal lowercase">(optional)</span>
                 </label>
                 <div className="relative group">
@@ -598,7 +598,7 @@ export default function InterviewBuilder({
               {/* Timer & Presets */}
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
-                  <label className="block text-[10px] font-bold uppercase tracking-wider text-muted/80">
+                  <label className="block text-[11px] font-bold uppercase tracking-wider text-muted/80">
                     Allocated Timer
                   </label>
                   <span className="text-xs font-mono font-black text-accent tabular-nums bg-accent/5 px-2 py-0.5 rounded border border-accent/15">
@@ -613,7 +613,7 @@ export default function InterviewBuilder({
                       key={preset}
                       type="button"
                       onClick={() => setMinutes(preset)}
-                      className={`py-1.5 px-2 rounded-lg text-[10px] font-bold tracking-wider transition-all border ${
+                      className={`py-1.5 px-2 rounded-lg text-[11px] font-bold tracking-wider transition-all border ${
                         minutes === preset
                           ? "bg-accent/10 border-accent/40 text-accent font-black"
                           : "bg-panel border border-border text-muted hover:text-fg hover:border-border-strong"
@@ -650,18 +650,18 @@ export default function InterviewBuilder({
               {fromWorkspace ? (
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <label className="block text-[10px] font-bold uppercase tracking-wider text-muted/80">
+                    <label className="block text-[11px] font-bold uppercase tracking-wider text-muted/80">
                       Your Arena Role
                     </label>
-                    <div className="flex items-center gap-2 px-3 py-2.5 bg-panel border border-border rounded-xl text-[10px] font-bold uppercase tracking-wider text-fg">
+                    <div className="flex items-center gap-2 px-3 py-2.5 bg-panel border border-border rounded-xl text-[11px] font-bold uppercase tracking-wider text-fg">
                       <Shield className="w-3 h-3 text-accent" /> Interviewer
                     </div>
                   </div>
                   <div className="space-y-2">
-                    <label className="block text-[10px] font-bold uppercase tracking-wider text-muted/80">
+                    <label className="block text-[11px] font-bold uppercase tracking-wider text-muted/80">
                       Session Class
                     </label>
-                    <div className="flex items-center gap-2 px-3 py-2.5 bg-panel border border-border rounded-xl text-[10px] font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400">
+                    <div className="flex items-center gap-2 px-3 py-2.5 bg-panel border border-border rounded-xl text-[11px] font-bold uppercase tracking-wider text-emerald-800 dark:text-emerald-400">
                       <Zap className="w-3 h-3" /> Live Session
                     </div>
                   </div>
@@ -671,7 +671,7 @@ export default function InterviewBuilder({
 
                   {/* Role Toggle */}
                   <div className="space-y-2">
-                    <label className="block text-[10px] font-bold uppercase tracking-wider text-muted/80">
+                    <label className="block text-[11px] font-bold uppercase tracking-wider text-muted/80">
                       Your Arena Role
                     </label>
                     <div className="flex flex-col gap-1.5 p-1.5 bg-panel border border-border rounded-xl">
@@ -679,7 +679,7 @@ export default function InterviewBuilder({
                         <button
                           type="button"
                           onClick={() => setCreatorRole("interviewer")}
-                          className={`w-full py-2 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all duration-300 flex items-center justify-center gap-1.5 ${
+                          className={`w-full py-2 rounded-lg text-[11px] font-bold uppercase tracking-wider transition-all duration-300 flex items-center justify-center gap-1.5 ${
                             creatorRole === "interviewer"
                               ? "bg-accent text-bg shadow-md dark:shadow-lg dark:shadow-accent/10 font-extrabold"
                               : "text-muted hover:text-fg"
@@ -692,7 +692,7 @@ export default function InterviewBuilder({
                       <button
                         type="button"
                         onClick={() => setCreatorRole("candidate")}
-                        className={`w-full py-2 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all duration-300 flex items-center justify-center gap-1.5 ${
+                        className={`w-full py-2 rounded-lg text-[11px] font-bold uppercase tracking-wider transition-all duration-300 flex items-center justify-center gap-1.5 ${
                           creatorRole === "candidate"
                             ? "bg-accent text-bg shadow-md dark:shadow-lg dark:shadow-accent/10 font-extrabold"
                             : "text-muted hover:text-fg"
@@ -706,7 +706,7 @@ export default function InterviewBuilder({
 
                   {/* Classifier Toggle */}
                   <div className="space-y-2">
-                    <label className="block text-[10px] font-bold uppercase tracking-wider text-muted/80">
+                    <label className="block text-[11px] font-bold uppercase tracking-wider text-muted/80">
                       Session Class
                     </label>
                     <div className="flex flex-col gap-1.5 p-1.5 bg-panel border border-border rounded-xl">
@@ -714,9 +714,9 @@ export default function InterviewBuilder({
                         <button
                           type="button"
                           onClick={() => setType("mock")}
-                          className={`w-full py-2 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all duration-300 flex items-center justify-center gap-1.5 border border-transparent ${
+                          className={`w-full py-2 rounded-lg text-[11px] font-bold uppercase tracking-wider transition-all duration-300 flex items-center justify-center gap-1.5 border border-transparent ${
                             type === "mock"
-                              ? "bg-indigo-500/10 dark:bg-indigo-500/20 border-indigo-500/25 dark:border-indigo-500/40 text-indigo-600 dark:text-indigo-400 font-extrabold"
+                              ? "bg-indigo-500/10 dark:bg-indigo-500/20 border-indigo-500/25 dark:border-indigo-500/40 text-indigo-800 dark:text-indigo-400 font-extrabold"
                               : "text-muted hover:text-fg"
                           }`}
                         >
@@ -728,9 +728,9 @@ export default function InterviewBuilder({
                         <button
                           type="button"
                           onClick={() => setType("live")}
-                          className={`w-full py-2 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all duration-300 flex items-center justify-center gap-1.5 border border-transparent ${
+                          className={`w-full py-2 rounded-lg text-[11px] font-bold uppercase tracking-wider transition-all duration-300 flex items-center justify-center gap-1.5 border border-transparent ${
                             type === "live"
-                              ? "bg-emerald-500/10 dark:bg-emerald-500/20 border-emerald-500/25 dark:border-emerald-500/40 text-emerald-600 dark:text-emerald-400 font-extrabold"
+                              ? "bg-emerald-500/10 dark:bg-emerald-500/20 border-emerald-500/25 dark:border-emerald-500/40 text-emerald-800 dark:text-emerald-400 font-extrabold"
                               : "text-muted hover:text-fg"
                           }`}
                         >
@@ -746,12 +746,12 @@ export default function InterviewBuilder({
 
               {/* Scenario Note field — styled with specific background and custom note border in dark mode */}
               <div className="space-y-2 pt-2 border-t border-border animate-in fade-in duration-300">
-                <div className="flex items-center justify-between text-[10px] font-bold uppercase tracking-wider text-muted/80">
+                <div className="flex items-center justify-between text-[11px] font-bold uppercase tracking-wider text-muted/80">
                   <span className="flex items-center gap-1.5">
                     <FileText className="w-3.5 h-3.5 text-accent" />
                     Prompt / Guidelines (Note)
                   </span>
-                  <span className="text-[10px] text-muted font-mono tracking-wider font-semibold">
+                  <span className="text-[11px] text-muted font-mono tracking-wider font-semibold">
                     {scenario.length}/2000
                   </span>
                 </div>
@@ -777,7 +777,7 @@ export default function InterviewBuilder({
                 </div>
 
                 {sourceType === "challenge" && totalEstimate > minutes && (
-                  <div className="px-3 py-2 rounded-xl bg-rose-500/10 border border-rose-500/20 text-[10px] text-rose-600 dark:text-rose-400 font-semibold leading-relaxed flex gap-2 items-start animate-bounce">
+                  <div className="px-3 py-2 rounded-xl bg-rose-500/10 border border-rose-500/20 text-[11px] text-rose-700 dark:text-rose-400 font-semibold leading-relaxed flex gap-2 items-start animate-bounce">
                     <span className="text-sm">⚠️</span>
                     <span>
                       Alert: Curated sequence requires ~{totalEstimate}m which exceeds the allocated {minutes}m timer!
@@ -809,7 +809,7 @@ export default function InterviewBuilder({
                 <button
                   type="button"
                   onClick={() => setSourceType("challenge")}
-                  className={`flex-1 md:flex-none px-4 py-2 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all duration-300 flex items-center justify-center gap-1.5 border border-transparent ${
+                  className={`flex-1 md:flex-none px-4 py-2 rounded-lg text-[11px] font-bold uppercase tracking-wider transition-all duration-300 flex items-center justify-center gap-1.5 border border-transparent ${
                     sourceType === "challenge"
                       ? "bg-accent text-bg dark:text-bg shadow-md font-extrabold"
                       : "text-muted hover:text-fg dark:hover:bg-[#171b28]/60"
@@ -822,7 +822,7 @@ export default function InterviewBuilder({
                 <button
                   type="button"
                   onClick={() => setSourceType("playground")}
-                  className={`flex-1 md:flex-none px-4 py-2 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all duration-300 flex items-center justify-center gap-1.5 border border-transparent ${
+                  className={`flex-1 md:flex-none px-4 py-2 rounded-lg text-[11px] font-bold uppercase tracking-wider transition-all duration-300 flex items-center justify-center gap-1.5 border border-transparent ${
                     sourceType === "playground"
                       ? "bg-accent text-bg dark:text-bg shadow-md font-extrabold"
                       : "text-muted hover:text-fg dark:hover:bg-[#171b28]/60"
@@ -836,7 +836,7 @@ export default function InterviewBuilder({
                   <button
                     type="button"
                     onClick={() => setSourceType("prompt")}
-                    className={`flex-1 md:flex-none px-4 py-2 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all duration-300 flex items-center justify-center gap-1.5 border border-transparent ${
+                    className={`flex-1 md:flex-none px-4 py-2 rounded-lg text-[11px] font-bold uppercase tracking-wider transition-all duration-300 flex items-center justify-center gap-1.5 border border-transparent ${
                       sourceType === "prompt"
                         ? "bg-accent text-bg dark:text-bg shadow-md font-extrabold"
                         : "text-muted hover:text-fg dark:hover:bg-[#171b28]/60"
@@ -879,9 +879,9 @@ export default function InterviewBuilder({
                     <div className="flex items-center gap-1 overflow-x-auto scrollbar-none pt-1">
                       {[
                         { id: "all" as const, label: "All Stacks" },
-                        { id: "frontend" as const, label: "Frontend", active: "bg-sky-50 dark:bg-sky-500/10 border-sky-300 dark:border-sky-500/35 text-sky-600 dark:text-sky-400" },
-                        { id: "backend" as const, label: "Backend", active: "bg-emerald-50 dark:bg-emerald-500/10 border-emerald-300 dark:border-emerald-500/35 text-emerald-600 dark:text-emerald-400" },
-                        { id: "dsa" as const, label: "DSA", active: "bg-violet-50 dark:bg-violet-500/10 border-violet-300 dark:border-violet-500/35 text-violet-600 dark:text-violet-400" },
+                        { id: "frontend" as const, label: "Frontend", active: "bg-sky-50 dark:bg-sky-500/10 border-sky-300 dark:border-sky-500/35 text-sky-800 dark:text-sky-400" },
+                        { id: "backend" as const, label: "Backend", active: "bg-emerald-50 dark:bg-emerald-500/10 border-emerald-300 dark:border-emerald-500/35 text-emerald-800 dark:text-emerald-400" },
+                        { id: "dsa" as const, label: "DSA", active: "bg-violet-50 dark:bg-violet-500/10 border-violet-300 dark:border-violet-500/35 text-violet-800 dark:text-violet-400" },
                       ].map((btn) => (
                         <button
                           key={btn.id}
@@ -904,9 +904,9 @@ export default function InterviewBuilder({
                     <div className="flex items-center gap-1 overflow-x-auto scrollbar-none pt-1">
                       {[
                         { id: "all", label: "All Levels" },
-                        { id: "easy", label: "Easy", active: "bg-emerald-50 dark:bg-emerald-500/10 border-emerald-300 dark:border-emerald-500/35 text-emerald-600 dark:text-emerald-400" },
-                        { id: "medium", label: "Medium", active: "bg-amber-50 dark:bg-amber-500/10 border-amber-300 dark:border-amber-500/35 text-amber-600 dark:text-amber-400" },
-                        { id: "hard", label: "Hard", active: "bg-rose-50 dark:bg-rose-500/10 border-rose-300 dark:border-rose-500/35 text-rose-600 dark:text-rose-400" },
+                        { id: "easy", label: "Easy", active: "bg-emerald-50 dark:bg-emerald-500/10 border-emerald-300 dark:border-emerald-500/35 text-emerald-800 dark:text-emerald-400" },
+                        { id: "medium", label: "Medium", active: "bg-amber-50 dark:bg-amber-500/10 border-amber-300 dark:border-amber-500/35 text-amber-800 dark:text-amber-400" },
+                        { id: "hard", label: "Hard", active: "bg-rose-50 dark:bg-rose-500/10 border-rose-300 dark:border-rose-500/35 text-rose-700 dark:text-rose-400" },
                       ].map((btn) => (
                         <button
                           key={btn.id}
@@ -942,7 +942,7 @@ export default function InterviewBuilder({
                           <div className="space-y-1.5 min-w-0">
                             <div className="flex items-center gap-2">
                               {c.workspaceOwned && (
-                                <span className="text-[9px] font-bold uppercase px-2 py-0.5 rounded border leading-none tracking-wider bg-violet-500/10 border-violet-500/30 text-violet-600 dark:text-violet-400">
+                                <span className="text-[9px] font-bold uppercase px-2 py-0.5 rounded border leading-none tracking-wider bg-violet-500/10 border-violet-500/30 text-violet-800 dark:text-violet-400">
                                   Workspace
                                 </span>
                               )}
@@ -963,7 +963,7 @@ export default function InterviewBuilder({
                                 ))}
                               </div>
                             )}
-                            <div className="flex items-center gap-1.5 text-[10px] text-muted">
+                            <div className="flex items-center gap-1.5 text-[11px] text-muted">
                               <Clock className="w-3 h-3 text-muted/60" />
                               <span>{c.estimatedMinutes}m recommended</span>
                             </div>
@@ -972,7 +972,7 @@ export default function InterviewBuilder({
                           <button
                             type="button"
                             onClick={() => add(c.id)}
-                            className="px-3 py-1.5 rounded-lg bg-panel hover:bg-surface border border-border hover:border-border-strong text-[10px] font-bold text-fg group-hover:text-accent transition flex items-center gap-1 shrink-0 shadow-sm"
+                            className="px-3 py-1.5 rounded-lg bg-panel hover:bg-surface border border-border hover:border-border-strong text-[11px] font-bold text-fg group-hover:text-accent transition flex items-center gap-1 shrink-0 shadow-sm"
                           >
                             <Plus className="w-3.5 h-3.5 text-muted group-hover:text-accent" />
                             Add
@@ -1008,16 +1008,16 @@ export default function InterviewBuilder({
                                   {p.template}
                                 </span>
                                 {p.paradigm === "backend" ? (
-                                  <span className="text-[9px] font-bold uppercase px-1.5 py-0.5 rounded border leading-none bg-emerald-500/10 border-emerald-500/25 text-emerald-600 dark:text-emerald-400">Backend</span>
+                                  <span className="text-[9px] font-bold uppercase px-1.5 py-0.5 rounded border leading-none bg-emerald-500/10 border-emerald-500/25 text-emerald-800 dark:text-emerald-400">Backend</span>
                                 ) : p.paradigm === "frontend" ? (
-                                  <span className="text-[9px] font-bold uppercase px-1.5 py-0.5 rounded border leading-none bg-sky-500/10 border-sky-500/25 text-sky-600 dark:text-sky-400">Frontend</span>
+                                  <span className="text-[9px] font-bold uppercase px-1.5 py-0.5 rounded border leading-none bg-sky-500/10 border-sky-500/25 text-sky-800 dark:text-sky-400">Frontend</span>
                                 ) : null}
                                 {p.isTemplate ? (
-                                  <span className="text-[9px] font-bold text-amber-600 dark:text-amber-400 uppercase tracking-widest bg-amber-500/10 border border-amber-500/20 px-1.5 py-0.5 rounded">
+                                  <span className="text-[9px] font-bold text-amber-800 dark:text-amber-400 uppercase tracking-widest bg-amber-500/10 border border-amber-500/20 px-1.5 py-0.5 rounded">
                                     Template
                                   </span>
                                 ) : (
-                                  <span className="text-[9px] font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-widest bg-emerald-500/10 border border-emerald-500/20 px-1.5 py-0.5 rounded">
+                                  <span className="text-[9px] font-bold text-emerald-800 dark:text-emerald-400 uppercase tracking-widest bg-emerald-500/10 border border-emerald-500/20 px-1.5 py-0.5 rounded">
                                     Custom
                                   </span>
                                 )}
@@ -1033,7 +1033,7 @@ export default function InterviewBuilder({
                             <button
                               type="button"
                               onClick={() => add(p.id)}
-                              className="px-3 py-1.5 rounded-lg bg-panel hover:bg-surface border border-border hover:border-border-strong text-[10px] font-bold text-fg group-hover:text-accent transition flex items-center gap-1 shrink-0 shadow-sm"
+                              className="px-3 py-1.5 rounded-lg bg-panel hover:bg-surface border border-border hover:border-border-strong text-[11px] font-bold text-fg group-hover:text-accent transition flex items-center gap-1 shrink-0 shadow-sm"
                             >
                               <Plus className="w-3.5 h-3.5 text-muted group-hover:text-accent" />
                               Add
@@ -1059,7 +1059,7 @@ export default function InterviewBuilder({
                           <div className="space-y-1.5 min-w-0">
                             <div className="flex items-center gap-2">
                               {p.workspaceOwned && (
-                                <span className="text-[9px] font-bold uppercase px-2 py-0.5 rounded border leading-none tracking-wider bg-violet-500/10 border-violet-500/30 text-violet-600 dark:text-violet-400">
+                                <span className="text-[9px] font-bold uppercase px-2 py-0.5 rounded border leading-none tracking-wider bg-violet-500/10 border-violet-500/30 text-violet-800 dark:text-violet-400">
                                   Workspace
                                 </span>
                               )}
@@ -1069,7 +1069,7 @@ export default function InterviewBuilder({
                               <span className="text-[9px] font-bold text-muted uppercase tracking-widest bg-panel px-1.5 py-0.5 rounded border border-border">{p.category}</span>
                             </div>
                             <h3 className="text-xs font-bold text-fg/90 group-hover:text-fg truncate">{p.title}</h3>
-                            <div className="flex items-center gap-1.5 text-[10px] text-muted">
+                            <div className="flex items-center gap-1.5 text-[11px] text-muted">
                               <Clock className="w-3 h-3 text-muted/60" />
                               <span>{p.estimatedMinutes}m recommended</span>
                             </div>
@@ -1078,7 +1078,7 @@ export default function InterviewBuilder({
                           <button
                             type="button"
                             onClick={() => add(p.id)}
-                            className="px-3 py-1.5 rounded-lg bg-panel hover:bg-surface border border-border hover:border-border-strong text-[10px] font-bold text-fg group-hover:text-accent transition flex items-center gap-1 shrink-0 shadow-sm"
+                            className="px-3 py-1.5 rounded-lg bg-panel hover:bg-surface border border-border hover:border-border-strong text-[11px] font-bold text-fg group-hover:text-accent transition flex items-center gap-1 shrink-0 shadow-sm"
                           >
                             <Plus className="w-3.5 h-3.5 text-muted group-hover:text-accent" />
                             Add
@@ -1095,8 +1095,8 @@ export default function InterviewBuilder({
                 <div className="bg-surface border border-border backdrop-blur-xl rounded-2xl p-5 space-y-4 min-h-[300px] flex-1 flex flex-col">
                   
                   <div className="flex items-center justify-between border-b border-border pb-3 shrink-0">
-                    <span className="text-[10px] font-bold uppercase tracking-widest text-fg/80">Arena Timeline</span>
-                    <span className="text-[10px] font-mono text-muted tracking-wider bg-panel px-2 py-0.5 rounded border border-border">
+                    <span className="text-[11px] font-bold uppercase tracking-widest text-fg/80">Arena Timeline</span>
+                    <span className="text-[11px] font-mono text-muted tracking-wider bg-panel px-2 py-0.5 rounded border border-border">
                       {selectedTimeline.length} {selectedTimeline.length === 1 ? "Round" : "Rounds"}
                     </span>
                   </div>
@@ -1106,7 +1106,7 @@ export default function InterviewBuilder({
                       <BookOpen className="w-10 h-10 text-muted/50 animate-pulse" />
                       <div>
                         <h4 className="text-xs font-bold text-fg">Timeline is Empty</h4>
-                        <p className="text-[10px] text-muted leading-relaxed mt-1 max-w-[200px] mx-auto">
+                        <p className="text-[11px] text-muted leading-relaxed mt-1 max-w-[200px] mx-auto">
                           Browse and add DSA Challenges, Realworld Playgrounds, or Prompt Challenges to curate your session timeline.
                         </p>
                       </div>
@@ -1123,16 +1123,16 @@ export default function InterviewBuilder({
                         const isPrompt = item.type === "prompt";
 
                         let badgeText = "DSA Challenge";
-                        let badgeColor = "text-fuchsia-500 dark:text-fuchsia-400 border-fuchsia-500/20 bg-fuchsia-500/10";
+                        let badgeColor = "text-fuchsia-800 dark:text-fuchsia-400 border-fuchsia-500/20 bg-fuchsia-500/10";
                         let circleColor = "border-fuchsia-500";
                         
                         if (isPlayground) {
                           badgeText = "Playground";
-                          badgeColor = "text-violet-500 dark:text-violet-400 border-violet-500/20 bg-violet-500/10";
+                          badgeColor = "text-violet-800 dark:text-violet-400 border-violet-500/20 bg-violet-500/10";
                           circleColor = "border-violet-500";
                         } else if (isPrompt) {
                           badgeText = "Prompt Challenge";
-                          badgeColor = "text-indigo-500 dark:text-indigo-400 border-indigo-500/20 bg-indigo-500/10";
+                          badgeColor = "text-indigo-800 dark:text-indigo-400 border-indigo-500/20 bg-indigo-500/10";
                           circleColor = "border-indigo-500";
                         }
 
@@ -1162,7 +1162,7 @@ export default function InterviewBuilder({
                                     </span>
                                   )}
                                   {isPlayground && item.template && (
-                                    <span className="font-semibold uppercase tracking-wider font-mono text-violet-400">
+                                    <span className="font-semibold uppercase tracking-wider font-mono text-violet-800 dark:text-violet-400">
                                       {item.template}
                                     </span>
                                   )}
@@ -1202,7 +1202,7 @@ export default function InterviewBuilder({
                                 <button
                                   type="button"
                                   onClick={() => remove(item.id, item.type)}
-                                  className="w-full py-1 rounded bg-rose-500/10 border border-rose-500/20 text-rose-500 hover:bg-rose-500 hover:text-white transition flex items-center justify-center"
+                                  className="w-full py-1 rounded bg-rose-500/10 border border-rose-500/20 text-rose-700 dark:text-rose-400 hover:bg-rose-500 hover:text-white transition flex items-center justify-center"
                                   title="Remove round"
                                 >
                                   <Trash2 className="w-3 h-3" />

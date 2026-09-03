@@ -51,7 +51,7 @@ export default function ExemplarsList({ exemplars, onLoadIntoEditor }: Props) {
               </div>
               <div className="flex items-center gap-3 shrink-0">
                 {ex.rubricScores ? (
-                  <span className="text-[11px] font-mono font-semibold tabular-nums text-indigo-400">
+                  <span className="text-[11px] font-mono font-semibold tabular-nums text-indigo-800 dark:text-indigo-400">
                     {avgScore}
                   </span>
                 ) : null}

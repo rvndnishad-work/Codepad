@@ -9,6 +9,7 @@
     "build": "prisma generate && prisma migrate deploy && next build",
     "start": "next start -p 3000",
     "lint": "eslint .",
+    "audit:a11y": "node scripts/audit-a11y.mjs",
     "db:push": "prisma db push",
     "db:studio": "prisma studio",
     "seed:challenges": "npx tsx prisma/seed-all-challenges.ts",

@@ -70,7 +70,7 @@ export default async function MobileLobby({
       <main className="w-full max-w-md relative z-10 space-y-6">
         {/* Brand + intro */}
         <header className="text-center space-y-2">
-          <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded-full bg-amber-500/10 border border-amber-500/25 text-amber-300 text-[10px] font-semibold uppercase tracking-[0.18em]">
+          <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded-full bg-amber-500/10 border border-amber-500/25 text-amber-800 dark:text-amber-400 text-[11px] font-semibold uppercase tracking-[0.18em]">
             <Smartphone className="w-3 h-3" />
             Mobile device detected
           </div>
@@ -111,7 +111,7 @@ export default async function MobileLobby({
         {/* Reassurance copy */}
         <section className="rounded-xl border border-[#1f2738] bg-[#0F1422]/60 p-4 space-y-2.5">
           <div className="flex items-start gap-3">
-            <ShieldCheck className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
+            <ShieldCheck className="w-4 h-4 text-emerald-800 dark:text-emerald-400 shrink-0 mt-0.5" />
             <div className="text-[11px] text-[#94a3b8] leading-relaxed">
               <span className="text-[#F3F4F6] font-semibold">Your {TOKEN_LABELS[tokenLabel]} link is preserved.</span>{" "}
               Opening it on desktop drops you straight into the editor — no re-entry,
@@ -119,7 +119,7 @@ export default async function MobileLobby({
             </div>
           </div>
           <div className="flex items-start gap-3">
-            <Clock className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
+            <Clock className="w-4 h-4 text-amber-800 dark:text-amber-400 shrink-0 mt-0.5" />
             <div className="text-[11px] text-[#94a3b8] leading-relaxed">
               The clock starts when you open the editor, not now. Take your time
               switching devices.

@@ -38,20 +38,20 @@ export default function OnboardingShowcase() {
               <div className="w-[clamp(8px,1.2vh,12px)] h-[clamp(8px,1.2vh,12px)] rounded-full bg-amber-500/80" />
               <div className="w-[clamp(8px,1.2vh,12px)] h-[clamp(8px,1.2vh,12px)] rounded-full bg-emerald-500/80" />
             </div>
-            <span className="text-[clamp(0.65rem,1.2vh,0.875rem)] text-slate-400 font-sans font-medium">playground.tsx</span>
+            <span className="text-[clamp(0.65rem,1.2vh,0.875rem)] text-muted font-sans font-medium">playground.tsx</span>
           </div>
           <div 
             className="space-y-[clamp(4px,0.8vh,8px)] text-slate-300 leading-relaxed"
             style={{ transform: "translateZ(40px)" }}
           >
-            <div><span className="text-pink-400">const</span> <span className="text-blue-400">greeting</span> = () =&gt; &#123;</div>
-            <div className="pl-6"><span className="text-pink-400">return</span> <span className="text-amber-300">"Welcome to Interviewpad!"</span>;</div>
+            <div><span className="text-pink-800 dark:text-pink-400">const</span> <span className="text-blue-800 dark:text-blue-400">greeting</span> = () =&gt; &#123;</div>
+            <div className="pl-6"><span className="text-pink-800 dark:text-pink-400">return</span> <span className="text-amber-800 dark:text-amber-400">"Welcome to Interviewpad!"</span>;</div>
             <div>&#125;;</div>
-            <div className="pt-2 text-slate-500">// Run code instantly</div>
-            <div><span className="text-purple-400">console</span>.<span className="text-emerald-400">log</span>(<span className="text-blue-400">greeting</span>());</div>
+            <div className="pt-2 text-subtle">// Run code instantly</div>
+            <div><span className="text-purple-800 dark:text-purple-400">console</span>.<span className="text-emerald-800 dark:text-emerald-400">log</span>(<span className="text-blue-800 dark:text-blue-400">greeting</span>());</div>
           </div>
           <div 
-            className="pt-[clamp(0.5rem,1vh,1rem)] border-t border-white/5 mt-[clamp(0.5rem,1vh,1rem)] text-emerald-400 font-sans text-[clamp(0.7rem,1.4vh,0.875rem)] flex items-center gap-2 font-bold"
+            className="pt-[clamp(0.5rem,1vh,1rem)] border-t border-white/5 mt-[clamp(0.5rem,1vh,1rem)] text-emerald-800 dark:text-emerald-400 font-sans text-[clamp(0.7rem,1.4vh,0.875rem)] flex items-center gap-2 font-bold"
             style={{ transform: "translateZ(55px)" }}
           >
             <span className="w-[clamp(6px,1vh,10px)] h-[clamp(6px,1vh,10px)] rounded-full bg-emerald-400 animate-ping" />
@@ -74,12 +74,12 @@ export default function OnboardingShowcase() {
             className="flex items-center gap-[clamp(0.5rem,1.2vh,1rem)] pb-[clamp(0.5rem,1vh,1rem)] border-b border-white/5"
             style={{ transform: "translateZ(25px)" }}
           >
-            <div className="w-[clamp(2rem,4vh,3rem)] h-[clamp(2rem,4vh,3rem)] rounded-full bg-amber-400/20 flex items-center justify-center text-amber-300 shadow-lg shadow-amber-500/10">
+            <div className="w-[clamp(2rem,4vh,3rem)] h-[clamp(2rem,4vh,3rem)] rounded-full bg-amber-400/20 flex items-center justify-center text-amber-800 dark:text-amber-400 shadow-lg shadow-amber-500/10">
               <Sparkles className="w-[clamp(1rem,2.2vh,1.5rem)] h-[clamp(1rem,2.2vh,1.5rem)] animate-pulse" />
             </div>
             <div>
               <div className="font-bold text-slate-100 text-[clamp(0.95rem,2vh,1.25rem)] leading-tight">AI Interviewer</div>
-              <div className="text-[clamp(0.7rem,1.4vh,0.875rem)] text-slate-400">Interviewpad Agent</div>
+              <div className="text-[clamp(0.7rem,1.4vh,0.875rem)] text-muted">Interviewpad Agent</div>
             </div>
           </div>
           <div className="space-y-[clamp(0.5rem,1.5vh,1rem)]">
@@ -133,10 +133,10 @@ export default function OnboardingShowcase() {
             style={{ transform: "translateZ(45px)" }}
           >
             <div className="flex items-center gap-2">
-              <span className="text-pink-400">function</span> <span className="text-blue-400">calculateSum</span>(a, b) &#123;
+              <span className="text-pink-800 dark:text-pink-400">function</span> <span className="text-blue-800 dark:text-blue-400">calculateSum</span>(a, b) &#123;
             </div>
             <div className="pl-[clamp(1rem,2vw,1.5rem)] flex items-center gap-1.5 relative">
-              <span className="text-pink-400">return</span> a + b;
+              <span className="text-pink-800 dark:text-pink-400">return</span> a + b;
               <span className="w-0.5 h-[clamp(14px,2.2vh,20px)] bg-indigo-500 animate-pulse ml-1" />
               <span 
                 className="absolute -top-5 left-[clamp(80px,15vw,140px)] text-[clamp(8px,1.2vh,11px)] px-1.5 py-0.5 bg-indigo-500 text-white rounded font-sans shadow-lg flex items-center gap-1"
@@ -209,13 +209,13 @@ export default function OnboardingShowcase() {
   const getBadgeClass = () => {
     switch (activeSlide) {
       case 0:
-        return "bg-emerald-500/10 text-emerald-500 dark:text-emerald-400 ring-1 ring-emerald-500/20";
+        return "bg-emerald-500/10 text-emerald-800 dark:text-emerald-400 ring-1 ring-emerald-500/20";
       case 1:
-        return "bg-amber-500/10 text-amber-600 dark:text-amber-400 ring-1 ring-amber-500/25";
+        return "bg-amber-500/10 text-amber-800 dark:text-amber-400 ring-1 ring-amber-500/25";
       case 2:
-        return "bg-indigo-500/10 text-indigo-500 dark:text-indigo-400 ring-1 ring-indigo-500/20";
+        return "bg-indigo-500/10 text-indigo-800 dark:text-indigo-400 ring-1 ring-indigo-500/20";
       default:
-        return "bg-amber-500/10 text-amber-600 dark:text-amber-400 ring-1 ring-amber-500/25";
+        return "bg-amber-500/10 text-amber-800 dark:text-amber-400 ring-1 ring-amber-500/25";
     }
   };
 
@@ -334,10 +334,10 @@ export default function OnboardingShowcase() {
                   <Icon
                     className={`w-[clamp(1.5rem,3.2vh,2.5rem)] h-[clamp(1.5rem,3.2vh,2.5rem)] transition-colors duration-500 ${
                       activeSlide === 0
-                        ? "text-emerald-500 dark:text-emerald-400"
+                        ? "text-emerald-800 dark:text-emerald-400"
                         : activeSlide === 2
                         ? "text-indigo-500 dark:text-indigo-400"
-                        : "text-amber-500 dark:text-amber-400"
+                        : "text-amber-800 dark:text-amber-400"
                     }`}
                   />
                   {slide.title}

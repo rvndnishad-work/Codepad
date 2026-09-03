@@ -162,7 +162,7 @@ export default async function CreatorsDirectoryPage({ searchParams }: Props) {
                       <div className="w-full h-full bg-gradient-to-br from-accent/20 via-transparent to-violet-500/15" />
                     )}
                     {space.featured && (
-                      <span className="absolute top-2 right-2 inline-flex items-center gap-1 text-[9px] font-bold uppercase tracking-wider text-bg bg-accent rounded-full px-2 py-0.5">
+                      <span className="absolute top-2 right-2 inline-flex items-center gap-1 text-[11px] font-bold uppercase tracking-wider text-bg bg-accent rounded-full px-2 py-0.5">
                         <Sparkles className="w-2.5 h-2.5" /> Featured
                       </span>
                     )}
@@ -184,7 +184,7 @@ export default async function CreatorsDirectoryPage({ searchParams }: Props) {
                       <h2 className="text-sm font-black text-fg group-hover:text-accent transition-colors truncate">
                         {space.name}
                       </h2>
-                      {verified.has(space.ownerId) && <BadgeCheck className="w-3.5 h-3.5 text-sky-500 shrink-0" />}
+                      {verified.has(space.ownerId) && <BadgeCheck className="w-3.5 h-3.5 text-sky-800 dark:text-sky-400 shrink-0" />}
                     </div>
                     {space.tagline && (
                       <p className="text-[11px] text-muted mt-1 line-clamp-2 leading-relaxed">{space.tagline}</p>
@@ -194,14 +194,14 @@ export default async function CreatorsDirectoryPage({ searchParams }: Props) {
                         {space.topics.slice(0, 3).map((t) => (
                           <span
                             key={t}
-                            className="text-[9px] font-bold uppercase tracking-wider text-muted bg-panel/70 rounded px-1.5 py-0.5"
+                            className="text-[11px] font-bold uppercase tracking-wider text-muted bg-panel/70 rounded px-1.5 py-0.5"
                           >
                             {t}
                           </span>
                         ))}
                       </div>
                     )}
-                    <div className="mt-3.5 pt-3 border-t border-border/60 flex items-center gap-2 text-[10px] text-muted font-semibold">
+                    <div className="mt-3.5 pt-3 border-t border-border/60 flex items-center gap-2 text-[11px] text-muted font-semibold">
                       <span className="inline-flex items-center gap-1">
                         <Heart className="w-3 h-3 text-accent/60" /> {count(followCounts, space.id).toLocaleString()}
                       </span>
@@ -211,10 +211,10 @@ export default async function CreatorsDirectoryPage({ searchParams }: Props) {
                       <span className="inline-flex items-center gap-1">
                         <LayoutGrid className="w-3 h-3 text-accent/60" /> {count(contentCounts, space.id)}
                       </span>
-                      <span className="ml-auto inline-flex items-center gap-1 rounded-full border border-border bg-panel px-1.5 py-0.5 text-[9px] font-bold text-muted group-hover:border-accent/20 group-hover:text-accent" title="Gift membership — share this space">
+                      <span className="ml-auto inline-flex items-center gap-1 rounded-full border border-border bg-panel px-1.5 py-0.5 text-[11px] font-bold text-muted group-hover:border-accent/20 group-hover:text-accent" title="Gift membership — share this space">
                         <Gift className="w-3 h-3" /> Gift
                       </span>
-                      <span className="inline-flex items-center gap-1 rounded-full border border-border bg-panel px-1.5 py-0.5 text-[9px] font-bold text-muted group-hover:border-accent/20 group-hover:text-accent" title="Team plan">
+                      <span className="inline-flex items-center gap-1 rounded-full border border-border bg-panel px-1.5 py-0.5 text-[11px] font-bold text-muted group-hover:border-accent/20 group-hover:text-accent" title="Team plan">
                         <UsersRound className="w-3 h-3" /> Team
                       </span>
                       <ArrowRight className="w-3 h-3 text-muted/50 group-hover:text-accent group-hover:translate-x-0.5 transition-all" />

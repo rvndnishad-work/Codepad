@@ -141,7 +141,7 @@ export default function PricingClient({
           </button>
           <span className={`text-xs font-black uppercase tracking-wider flex items-center gap-1.5 transition-colors ${cadence === "annual" ? "text-fg" : "text-muted"}`}>
             Annual
-            <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[8px] font-black uppercase tracking-wider bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+            <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[11px] font-black uppercase tracking-wider bg-emerald-500/20 text-emerald-800 dark:text-emerald-400 border border-emerald-500/30">
               Save 20%
             </span>
           </span>
@@ -173,7 +173,7 @@ export default function PricingClient({
               </select>
             </div>
             {(isAlreadyGrowth || isAlreadyStarter) && (
-              <p className="text-[10px] text-emerald-400 mt-2.5 font-bold flex items-center justify-center gap-1">
+              <p className="text-[11px] text-emerald-800 dark:text-emerald-400 mt-2.5 font-bold flex items-center justify-center gap-1">
                 <CheckCircle className="w-3.5 h-3.5" />
                 This workspace is currently on the active {selectedWorkspace?.planName} tier.
               </p>
@@ -188,7 +188,7 @@ export default function PricingClient({
           <div className="rounded-3xl border border-border bg-panel/30 hover:border-border-strong transition-colors p-6 flex flex-col justify-between relative overflow-hidden">
             <div className="space-y-6">
               <div>
-                <div className="text-[10px] uppercase tracking-widest font-black text-muted mb-2">Sandbox Core</div>
+                <div className="text-[11px] uppercase tracking-widest font-black text-muted mb-2">Sandbox Core</div>
                 <h3 className="text-xl font-black text-fg">Free Trial</h3>
                 <p className="text-muted text-xs leading-relaxed mt-2 font-medium">
                   Standard in-browser coding playground and sandboxed sharing tools.
@@ -232,7 +232,7 @@ export default function PricingClient({
           <div className="rounded-3xl border border-border bg-panel/30 hover:border-border-strong transition-colors p-6 flex flex-col justify-between relative overflow-hidden">
             <div className="space-y-6">
               <div>
-                <div className="text-[10px] uppercase tracking-widest font-black text-muted mb-2">Solo Hiring</div>
+                <div className="text-[11px] uppercase tracking-widest font-black text-muted mb-2">Solo Hiring</div>
                 <h3 className="text-xl font-black text-fg">Starter</h3>
                 <p className="text-muted text-xs leading-relaxed mt-2 font-medium">
                   Ideal for solo recruiters and boutique agencies needing core screening.
@@ -298,13 +298,13 @@ export default function PricingClient({
 
           {/* Card 3: Growth Plan (Popular) */}
           <div className="rounded-3xl border border-accent/40 bg-gradient-to-b from-accent/[0.03] to-transparent p-6 flex flex-col justify-between relative overflow-hidden shadow-xl scale-[1.02]">
-            <div className="absolute top-0 right-0 bg-accent text-bg text-[8px] font-black tracking-widest uppercase px-3 py-1 rounded-bl-xl">
+            <div className="absolute top-0 right-0 bg-accent text-bg text-[11px] font-black tracking-widest uppercase px-3 py-1 rounded-bl-xl">
               Most Popular
             </div>
 
             <div className="space-y-6">
               <div>
-                <div className="text-[10px] uppercase tracking-widest font-black text-accent mb-2 flex items-center gap-1.5">
+                <div className="text-[11px] uppercase tracking-widest font-black text-accent mb-2 flex items-center gap-1.5">
                   <Sparkles className="w-3 h-3 animate-pulse" />
                   Enterprise SaaS
                 </div>
@@ -381,7 +381,7 @@ export default function PricingClient({
           <div className="rounded-3xl border border-border bg-panel/30 hover:border-border-strong transition-colors p-6 flex flex-col justify-between relative overflow-hidden">
             <div className="space-y-6">
               <div>
-                <div className="text-[10px] uppercase tracking-widest font-black text-muted mb-2">Enterprise Scale</div>
+                <div className="text-[11px] uppercase tracking-widest font-black text-muted mb-2">Enterprise Scale</div>
                 <h3 className="text-xl font-black text-fg">Enterprise</h3>
                 <p className="text-muted text-xs leading-relaxed mt-2 font-medium">
                   High-scale VM execution engines, SSO integrations, and custom SLAs.
@@ -467,8 +467,8 @@ export default function PricingClient({
                   <td className="p-4 font-bold text-fg">Session timeline replay</td>
                   <td className="p-4 text-center text-muted">—</td>
                   <td className="p-4 text-center text-muted bg-indigo-500/[0.02]">—</td>
-                  <td className="p-4 text-center text-emerald-400 font-bold bg-accent/[0.02]">Yes (Full Monaco Replay)</td>
-                  <td className="p-4 text-center text-emerald-400 font-bold">Yes (Full Monaco Replay)</td>
+                  <td className="p-4 text-center text-emerald-800 dark:text-emerald-400 font-bold bg-accent/[0.02]">Yes (Full Monaco Replay)</td>
+                  <td className="p-4 text-center text-emerald-800 dark:text-emerald-400 font-bold">Yes (Full Monaco Replay)</td>
                 </tr>
                 <tr>
                   <td className="p-4 font-bold text-fg">ATS sync integration</td>
@@ -482,7 +482,7 @@ export default function PricingClient({
                   <td className="p-4 text-center text-muted">—</td>
                   <td className="p-4 text-center text-muted bg-indigo-500/[0.02]">—</td>
                   <td className="p-4 text-center text-muted bg-accent/[0.02]">—</td>
-                  <td className="p-4 text-center text-emerald-400 font-bold">Yes (OIDC & SAML)</td>
+                  <td className="p-4 text-center text-emerald-800 dark:text-emerald-400 font-bold">Yes (OIDC & SAML)</td>
                 </tr>
                 <tr>
                   <td className="p-4 font-bold text-fg">Support tier</td>

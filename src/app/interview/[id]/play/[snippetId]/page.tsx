@@ -123,11 +123,11 @@ export default async function InterviewPlaygroundPage({
         />
 
         <div className="flex items-center gap-3 min-w-0">
-          <span className="text-[10px] font-bold uppercase tracking-wider text-accent shrink-0">
+          <span className="text-[11px] font-bold uppercase tracking-wider text-accent shrink-0">
             {isInterviewer ? "Interviewer view" : "Candidate view"}
           </span>
           <span className="text-xs text-fg/80 truncate">{snippet.title}</span>
-          <span className="text-[10px] font-mono text-muted/60 truncate hidden sm:inline">
+          <span className="text-[11px] font-mono text-muted/60 truncate hidden sm:inline">
             · {interview.title}
           </span>
         </div>

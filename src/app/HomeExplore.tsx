@@ -5,7 +5,7 @@ import { Eye } from "lucide-react";
 import RelativeTime from "@/components/RelativeTime";
 import RevealOnScroll from "@/components/scroll/RevealOnScroll";
 import SectionHeading from "@/components/home/SectionHeading";
-import { templateIcon, TemplateLogo } from "@/lib/icons";
+import { TemplateLogo } from "@/lib/icons";
 
 type Snippet = {
   id: string;
@@ -95,8 +95,6 @@ export default function HomeExplore({ featured }: { featured: Snippet[] }) {
             the hairlines apart on the way in. */}
         <RevealOnScroll className={`grid grid-cols-1 border-l border-t border-border ${cols}`}>
           {featured.map((s) => {
-            const meta = templateIcon[s.template];
-            const accent = meta?.color ?? "var(--accent)";
             return (
               <div key={s.id} className="flex border-b border-r border-border bg-surface">
                 <Link
@@ -106,13 +104,10 @@ export default function HomeExplore({ featured }: { featured: Snippet[] }) {
                   {/* Chrome: filename left, language right. No traffic lights
                       — those belong to macOS, not to this product. */}
                   <div className="flex items-center gap-2.5 border-b border-border px-3.5 py-2.5">
-                    <span className="ip-label ip-label-xs truncate">
+                    <span className="ip-label truncate">
                       {s.preview?.fileName ?? "snippet"}
                     </span>
-                    <span
-                      className="ip-label ip-label-xs ml-auto flex shrink-0 items-center gap-1.5"
-                      style={{ color: accent }}
-                    >
+                    <span className="ip-label ml-auto flex shrink-0 items-center gap-1.5 text-muted">
                       <TemplateLogo id={s.template} className="h-3 w-3" />
                       {templateLabel(s.template)}
                     </span>
@@ -132,7 +127,7 @@ export default function HomeExplore({ featured }: { featured: Snippet[] }) {
                     {/* Fade-out so cut-off code reads as intentional */}
                     <div className="pointer-events-none absolute inset-x-0 bottom-0 h-12 bg-gradient-to-t from-panel to-transparent dark:from-[#0b0d12]" />
                     {/* Run affordance — a mono label, revealed on hover */}
-                    <span className="ip-label ip-label-xs ip-label-accent absolute bottom-2.5 left-4 opacity-0 transition-opacity duration-200 group-hover:opacity-100">
+                    <span className="ip-label ip-label-accent absolute bottom-2.5 left-4 opacity-0 transition-opacity duration-200 group-hover:opacity-100">
                       ▸ Open &amp; run
                     </span>
                   </div>
@@ -142,7 +137,7 @@ export default function HomeExplore({ featured }: { featured: Snippet[] }) {
                     <span className="truncate text-[13.5px] font-semibold leading-tight tracking-[-0.01em] text-fg">
                       {s.title}
                     </span>
-                    <span className="flex min-w-0 items-center gap-2 font-mono text-[10.5px] text-subtle">
+                    <span className="flex min-w-0 items-center gap-2 font-mono text-[11px] text-subtle">
                       <span className="truncate">{s.author?.name ?? "anonymous"}</span>
                       {s.views > 0 && (
                         <span className="ip-nums inline-flex shrink-0 items-center gap-1">

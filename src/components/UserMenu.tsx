@@ -71,7 +71,7 @@ export default function UserMenu({
       {open && (
         <div
           role="menu"
-          className="absolute right-0 mt-2 w-60 rounded-xl border border-border bg-surface shadow-2xl overflow-hidden z-[110] animate-in fade-in slide-in-from-top-1 duration-150"
+          className="absolute right-0 mt-2 w-60 rounded-xl border border-border-strong bg-surface ip-panel-float overflow-hidden z-[110] animate-in fade-in slide-in-from-top-1 duration-150"
         >
           {/* Account block */}
           <div className="px-4 py-3 border-b border-border bg-surface/80">

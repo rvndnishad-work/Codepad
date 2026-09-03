@@ -328,10 +328,10 @@ export default function PipelineBoard() {
     <div ref={hostRef} className="ip-frame ip-ticks ip-ticks-secondary">
       {/* Chrome */}
       <div className="flex items-center gap-2.5 border-b border-border px-4 py-2.5">
-        <span className="ip-label ip-label-xs ip-label-fg">acme</span>
-        <span className="ip-label ip-label-xs">· engineering</span>
+        <span className="ip-label ip-label-fg">acme</span>
+        <span className="ip-label">· engineering</span>
         <span className="ip-rule-soft h-px flex-1" aria-hidden />
-        <span className="ip-label ip-label-xs flex items-center gap-1.5">
+        <span className="ip-label flex items-center gap-1.5">
           <span className="ip-live h-[5px] w-[5px] bg-emerald-500" aria-hidden />
           {liveCount} in flight
         </span>
@@ -348,7 +348,7 @@ export default function PipelineBoard() {
                 className={`shrink-0 px-3 py-2.5 ${i > 0 ? "border-l border-border" : ""}`}
               >
                 <div className="flex items-baseline justify-between gap-2">
-                  <span className="ip-label ip-label-xs truncate">{label}</span>
+                  <span className="ip-label truncate">{label}</span>
                   <span className="ip-nums font-mono text-[11px] text-fg">{countIn(i)}</span>
                 </div>
                 <div className="mt-2 flex items-center gap-[3px]" aria-hidden>
@@ -426,10 +426,10 @@ export default function PipelineBoard() {
                       {/* Monogram: identity without a stock avatar */}
                       <span
                         aria-hidden
-                        className={`grid h-7 w-7 shrink-0 place-items-center border font-mono text-[10px] ${rejected
-                          ? "border-rose-500/30 text-rose-500"
+                        className={`grid h-7 w-7 shrink-0 place-items-center border font-mono text-[11px] ${rejected
+                          ? "border-rose-500/30 text-rose-700 dark:text-rose-400"
                           : hired
-                            ? "border-emerald-500/35 text-emerald-600 dark:text-emerald-400"
+                            ? "border-emerald-500/35 text-emerald-800 dark:text-emerald-400"
                             : "border-border bg-panel text-subtle"
                           }`}
                       >
@@ -449,7 +449,7 @@ export default function PipelineBoard() {
                         </span>
                         <span className="mt-1 flex items-center gap-2">
                           {NOTABLE.has(card.status ?? "") ? (
-                            <span className="truncate font-mono text-[10px] text-subtle">
+                            <span className="truncate font-mono text-[11px] text-subtle">
                               {card.detail}
                             </span>
                           ) : (
@@ -470,9 +470,9 @@ export default function PipelineBoard() {
                           <span
                             className={`ip-nums ml-auto shrink-0 font-mono text-[11px] ${
                               rejected
-                                ? "text-rose-500"
+                                ? "text-rose-700 dark:text-rose-400"
                                 : hired
-                                  ? "text-emerald-600 dark:text-emerald-400"
+                                  ? "text-emerald-800 dark:text-emerald-400"
                                   : "text-fg"
                             }`}
                           >
@@ -491,7 +491,7 @@ export default function PipelineBoard() {
 
       {/* Trace line — what makes the movement a readout rather than an effect */}
       <div className="flex items-center gap-2.5 border-t border-border px-4 py-2.5">
-        <span className="ip-nums hidden font-mono text-[10px] text-subtle sm:inline">
+        <span className="ip-nums hidden font-mono text-[11px] text-subtle sm:inline">
           {clockAt(log.at)}
         </span>
         <span
@@ -506,12 +506,12 @@ export default function PipelineBoard() {
             animate={{ opacity: 1, y: 0 }}
             exit={reduced ? { opacity: 0 } : { opacity: 0, y: -4 }}
             transition={{ duration: 0.22 }}
-            className="ip-label ip-label-xs truncate"
+            className="ip-label truncate"
           >
             {log.text}
           </motion.span>
         </AnimatePresence>
-        <span className="ip-label ip-label-xs ip-label-secondary ml-auto hidden shrink-0 md:inline">
+        <span className="ip-label ip-label-secondary ml-auto hidden shrink-0 md:inline">
           Replay on every attempt
         </span>
       </div>

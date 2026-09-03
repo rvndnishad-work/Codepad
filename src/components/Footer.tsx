@@ -85,7 +85,7 @@ export default function Footer() {
             Runtime
           </span>
           {RUNTIME_FACTS.map((fact) => (
-            <span key={fact} className="ip-label ip-label-xs">
+            <span key={fact} className="ip-label">
               {fact}
             </span>
           ))}
@@ -93,17 +93,17 @@ export default function Footer() {
 
         {/* ── Bottom bar ── */}
         <div className="flex flex-col items-start justify-between gap-3 py-6 sm:flex-row sm:items-center">
-          <span className="ip-label ip-label-xs">
+          <span className="ip-label">
             © {new Date().getFullYear()} Interviewpad
           </span>
           <div className="flex items-center gap-6">
-            <Link href="/privacy" className="ip-label ip-label-xs hover:text-fg">
+            <Link href="/privacy" className="ip-label hover:text-fg">
               Privacy
             </Link>
-            <Link href="/terms" className="ip-label ip-label-xs hover:text-fg">
+            <Link href="/terms" className="ip-label hover:text-fg">
               Terms
             </Link>
-            <Link href="/docs" className="ip-label ip-label-xs hover:text-fg">
+            <Link href="/docs" className="ip-label hover:text-fg">
               Docs
             </Link>
           </div>

@@ -234,11 +234,11 @@ export default function NavDropdown({
               {item.label}
             </span>
             {isComingSoon ? (
-              <span className="ip-label ip-label-xs text-amber-600 dark:text-amber-400">Soon</span>
+              <span className="ip-label text-amber-800 dark:text-amber-400">Soon</span>
             ) : item.badge ? (
               <span
-                className={`ip-label ip-label-xs ${
-                  item.badge === "Hidden" ? "text-rose-600 dark:text-rose-400" : accentText
+                className={`ip-label ${
+                  item.badge === "Hidden" ? "text-rose-700 dark:text-rose-400" : accentText
                 }`}
               >
                 {item.badge}
@@ -246,7 +246,7 @@ export default function NavDropdown({
             ) : null}
           </span>
           {item.description && (
-            <span className="mt-0.5 block text-[11px] leading-snug text-subtle">
+            <span className="mt-0.5 block text-[12px] leading-snug text-subtle">
               {item.description}
             </span>
           )}
@@ -310,11 +310,11 @@ export default function NavDropdown({
               {item.label}
             </span>
             {isComingSoon ? (
-              <span className="ip-label ip-label-xs text-amber-600 dark:text-amber-400">Soon</span>
+              <span className="ip-label text-amber-800 dark:text-amber-400">Soon</span>
             ) : item.badge ? (
               <span
-                className={`ip-label ip-label-xs ${
-                  item.badge === "Hidden" ? "text-rose-600 dark:text-rose-400" : accentText
+                className={`ip-label ${
+                  item.badge === "Hidden" ? "text-rose-700 dark:text-rose-400" : accentText
                 }`}
               >
                 {item.badge}
@@ -322,7 +322,7 @@ export default function NavDropdown({
             ) : null}
           </span>
           {item.description && (
-            <span className="mt-1 block text-[11.5px] leading-snug text-subtle">
+            <span className="mt-1 block text-[12px] leading-snug text-subtle">
               {item.description}
             </span>
           )}
@@ -443,7 +443,7 @@ export default function NavDropdown({
                       <div key={cat} className="flex flex-col">
                         <div className="flex items-center gap-2 border-b border-border bg-panel/40 px-4 py-2">
                           <span className={`h-1.5 w-1.5 ${markerBg}`} aria-hidden />
-                          <span className="ip-label ip-label-xs text-subtle">{cat}</span>
+                          <span className="ip-label text-[12px] text-subtle">{cat}</span>
                         </div>
                         <div className="flex flex-col">
                           {catItems.map((item, idx) => renderCategorizedItem(item, idx))}
@@ -461,7 +461,7 @@ export default function NavDropdown({
 
             {/* ── Footer strip: the panel states its own size, in mono ── */}
             <div className="flex items-center justify-between border-t border-border bg-surface px-5 py-2.5">
-              <span className="ip-label ip-label-xs text-subtle">
+              <span className="ip-label text-subtle">
                 {String(items.length).padStart(2, "0")} destinations · {tone === "secondary" ? "Recruiter suite" : "Interview runtime"}
               </span>
               <span className="flex items-center gap-2" aria-hidden>

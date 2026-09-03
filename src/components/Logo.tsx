@@ -158,7 +158,7 @@ export function LogoWordmark({
         <span className="font-extrabold text-lg tracking-tight text-fg">
           Interview<span className="text-accent font-medium">pad</span>
         </span>
-        <span className="text-[9px] font-bold text-muted/50 uppercase tracking-[0.3em] mt-0.5">Pro Sandbox</span>
+        <span className="text-[11px] font-bold text-muted/50 uppercase tracking-[0.3em] mt-0.5">Pro Sandbox</span>
       </div>
     </span>
   );

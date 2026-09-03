@@ -141,9 +141,9 @@ function challengeFrameworks(c: ChallengeListItem): string[] {
 const SHELF_SIZE = 6;
 
 const difficultyChip: Record<string, string> = {
-  easy: "text-emerald-500 bg-emerald-500/10 border-emerald-500/30",
-  medium: "text-amber-500 bg-amber-500/10 border-amber-500/30",
-  hard: "text-rose-500 bg-rose-500/10 border-rose-500/30",
+  easy: "text-emerald-800 dark:text-emerald-400 bg-emerald-500/10 border-emerald-500/30",
+  medium: "text-amber-800 dark:text-amber-400 bg-amber-500/10 border-amber-500/30",
+  hard: "text-rose-700 dark:text-rose-400 bg-rose-500/10 border-rose-500/30",
 };
 
 export default function ChallengeList({
@@ -409,7 +409,7 @@ export default function ChallengeList({
                       <div className="min-w-0">
                         <h2 className="font-bold text-fg text-lg leading-tight flex items-center gap-2">
                           {meta.label}
-                          <span className="text-[10px] font-bold text-muted bg-surface border border-border rounded-full px-2 py-0.5 tabular-nums">
+                          <span className="text-[11px] font-bold text-muted bg-surface border border-border rounded-full px-2 py-0.5 tabular-nums">
                             {group.length}
                           </span>
                         </h2>
@@ -471,7 +471,7 @@ export default function ChallengeList({
         {/* Numbered Pagination Section */}
         {category !== "all" && totalPages > 1 && (
           <div className="mt-12 flex flex-col sm:flex-row items-center justify-between gap-4 border-t border-border/30 pt-8">
-            <span className="text-[10px] text-muted font-bold uppercase tracking-widest">
+            <span className="text-[11px] text-muted font-bold uppercase tracking-widest">
               Showing {(currentPage - 1) * itemsPerPage + 1} - {Math.min(currentPage * itemsPerPage, visible.length)} of {visible.length} challenges
             </span>
 
@@ -575,7 +575,7 @@ function CategoryTab({
         <span className="flex items-center gap-2 text-sm font-bold leading-tight text-fg">
           <span className="truncate">{label}</span>
           <span
-            className={`shrink-0 text-[10px] font-bold tabular-nums px-1.5 py-0.5 rounded-full border ${
+            className={`shrink-0 text-[11px] font-bold tabular-nums px-1.5 py-0.5 rounded-full border ${
               active
                 ? "bg-accent/15 text-accent border-accent/30"
                 : "bg-bg/40 text-muted border-border"
@@ -584,7 +584,7 @@ function CategoryTab({
             {count}
           </span>
         </span>
-        <span className="block text-[10px] text-muted truncate mt-0.5">{hint}</span>
+        <span className="block text-[11px] text-muted truncate mt-0.5">{hint}</span>
       </span>
     </button>
   );
@@ -600,24 +600,24 @@ const KIND_CARD: Record<
   algorithms: {
     label: "Algorithm",
     icon: Binary,
-    iconBox: "bg-sky-500/10 border-sky-500/25 text-sky-500",
-    eyebrow: "text-sky-500",
+    iconBox: "bg-sky-500/10 border-sky-500/25 text-sky-800 dark:text-sky-400",
+    eyebrow: "text-sky-800 dark:text-sky-400",
     hoverBorder: "hover:border-sky-500/40 dark:hover:border-sky-500/30",
     glow: "bg-sky-500/10",
   },
   ui: {
     label: "UI · Frontend",
     icon: LayoutTemplate,
-    iconBox: "bg-violet-500/10 border-violet-500/25 text-violet-500",
-    eyebrow: "text-violet-500",
+    iconBox: "bg-violet-500/10 border-violet-500/25 text-violet-800 dark:text-violet-400",
+    eyebrow: "text-violet-800 dark:text-violet-400",
     hoverBorder: "hover:border-violet-500/40 dark:hover:border-violet-500/30",
     glow: "bg-violet-500/10",
   },
   js: {
     label: "JavaScript",
     icon: Braces,
-    iconBox: "bg-amber-500/10 border-amber-500/25 text-amber-500",
-    eyebrow: "text-amber-500",
+    iconBox: "bg-amber-500/10 border-amber-500/25 text-amber-800 dark:text-amber-400",
+    eyebrow: "text-amber-800 dark:text-amber-400",
     hoverBorder: "hover:border-amber-500/40 dark:hover:border-amber-500/30",
     glow: "bg-amber-500/10",
   },
@@ -629,7 +629,7 @@ const KIND_CARD: Record<
 function StatusBadge({ status }: { status: ChallengeListItem["userStatus"] }) {
   if (status === "passed") {
     return (
-      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-500/15 border border-emerald-500/40 text-[9px] font-bold uppercase tracking-wider text-emerald-500 shrink-0">
+      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-500/15 border border-emerald-500/40 text-[11px] font-bold uppercase tracking-wider text-emerald-800 dark:text-emerald-400 shrink-0">
         <CheckCircle2 className="w-3 h-3" />
         Solved
       </span>
@@ -637,7 +637,7 @@ function StatusBadge({ status }: { status: ChallengeListItem["userStatus"] }) {
   }
   if (status === "in_progress") {
     return (
-      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-500/15 border border-amber-500/40 text-[9px] font-bold uppercase tracking-wider text-amber-500 shrink-0">
+      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-500/15 border border-amber-500/40 text-[11px] font-bold uppercase tracking-wider text-amber-800 dark:text-amber-400 shrink-0">
         <Flame className="w-3 h-3" />
         In progress
       </span>
@@ -645,7 +645,7 @@ function StatusBadge({ status }: { status: ChallengeListItem["userStatus"] }) {
   }
   if (status === "failed") {
     return (
-      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-rose-500/10 border border-rose-500/30 text-[9px] font-bold uppercase tracking-wider text-rose-500/80 shrink-0">
+      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-rose-500/10 border border-rose-500/30 text-[11px] font-bold uppercase tracking-wider text-rose-500/80 shrink-0">
         <XCircle className="w-3 h-3" />
         Attempted
       </span>
@@ -680,7 +680,7 @@ function ChallengeCard({ item: c }: { item: ChallengeListItem }) {
       {/* Diagonal "Solved" ribbon across the top-right corner */}
       {isPassed && (
         <div className="absolute top-0 right-0 w-[88px] h-[88px] overflow-hidden pointer-events-none z-10" aria-hidden>
-          <div className="absolute top-[16px] right-[-38px] w-[140px] rotate-45 bg-emerald-500 py-[3px] text-center text-[8px] font-bold uppercase tracking-[0.2em] text-white">
+          <div className="absolute top-[16px] right-[-38px] w-[140px] rotate-45 bg-emerald-500 py-[3px] text-center text-[11px] font-bold uppercase tracking-[0.2em] text-white">
             Solved
           </div>
         </div>
@@ -696,7 +696,7 @@ function ChallengeCard({ item: c }: { item: ChallengeListItem }) {
           <div className="flex items-center gap-2">
             {c.featured && (
               <span
-                className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-accent/15 border border-accent/30 text-[9px] font-bold uppercase tracking-wider text-accent"
+                className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-accent/15 border border-accent/30 text-[11px] font-bold uppercase tracking-wider text-accent"
                 aria-label="Staff pick"
               >
                 <Star className="w-2.5 h-2.5 fill-current" />
@@ -708,7 +708,7 @@ function ChallengeCard({ item: c }: { item: ChallengeListItem }) {
         )}
       </div>
 
-      <div className={`relative text-[9px] font-bold uppercase tracking-[0.18em] mb-1 ${t.eyebrow}`}>
+      <div className={`relative text-[11px] font-bold uppercase tracking-[0.18em] mb-1 ${t.eyebrow}`}>
         {t.label}
       </div>
       <h3 className={`relative font-bold text-[15px] leading-snug line-clamp-2 ${isPassed ? "text-fg/70" : "text-fg"}`}>
@@ -720,13 +720,13 @@ function ChallengeCard({ item: c }: { item: ChallengeListItem }) {
           {c.tags.slice(0, 3).map((tag) => (
             <span
               key={tag}
-              className="px-1.5 py-0.5 rounded bg-bg/40 border border-border text-[10px] text-muted group-hover:text-fg/70 transition-colors"
+              className="px-1.5 py-0.5 rounded bg-bg/40 border border-border text-[11px] text-muted group-hover:text-fg/70 transition-colors"
             >
               #{tag}
             </span>
           ))}
           {c.tags.length > 3 && (
-            <span className="text-[10px] text-muted/60">+{c.tags.length - 3}</span>
+            <span className="text-[11px] text-muted/60">+{c.tags.length - 3}</span>
           )}
         </div>
       )}
@@ -734,18 +734,18 @@ function ChallengeCard({ item: c }: { item: ChallengeListItem }) {
       {/* Footer meta: difficulty · time · steps */}
       <div className="relative mt-auto pt-4 flex items-center gap-2">
         <span
-          className={`px-2 py-0.5 rounded-data border text-[10px] font-bold uppercase tracking-wider ${
+          className={`px-2 py-0.5 rounded-data border text-[11px] font-bold uppercase tracking-wider ${
             difficultyChip[c.difficulty]
           }`}
         >
           {c.difficulty}
         </span>
-        <span className="inline-flex items-center gap-1 text-[10px] font-bold text-muted/60 tabular-nums">
+        <span className="inline-flex items-center gap-1 text-[11px] font-bold text-muted/60 tabular-nums">
           <Clock className="w-3 h-3" />
           {c.estimatedMinutes}m
         </span>
         {isMulti && (
-          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-data border border-accent/30 bg-accent/10 text-[10px] font-bold uppercase tracking-wider text-accent">
+          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-data border border-accent/30 bg-accent/10 text-[11px] font-bold uppercase tracking-wider text-accent">
             <Layers className="w-2.5 h-2.5" />
             {c.stepCount}
           </span>
@@ -779,7 +779,7 @@ function ChallengeListRow({ item: c }: { item: ChallengeListItem }) {
           <Icon className="w-4 h-4" />
         </div>
         <div className="min-w-0">
-          <div className={`text-[8px] font-bold uppercase tracking-[0.18em] ${t.eyebrow}`}>
+          <div className={`text-[11px] font-bold uppercase tracking-[0.18em] ${t.eyebrow}`}>
             {t.label}
           </div>
           <div className="flex items-center gap-2 mt-0.5 flex-wrap">
@@ -787,7 +787,7 @@ function ChallengeListRow({ item: c }: { item: ChallengeListItem }) {
               {c.title}
             </h3>
             {c.featured && (
-              <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full bg-accent/15 border border-accent/30 text-[8px] font-bold uppercase tracking-wider text-accent shrink-0">
+              <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full bg-accent/15 border border-accent/30 text-[11px] font-bold uppercase tracking-wider text-accent shrink-0">
                 <Star className="w-2 h-2 fill-current" />
                 Staff Pick
               </span>
@@ -800,24 +800,24 @@ function ChallengeListRow({ item: c }: { item: ChallengeListItem }) {
         {c.tags.slice(0, 2).map((tag) => (
           <span
             key={tag}
-            className="hidden md:inline px-1.5 py-0.5 rounded bg-bg/40 border border-border text-[9px] text-muted"
+            className="hidden md:inline px-1.5 py-0.5 rounded bg-bg/40 border border-border text-[11px] text-muted"
           >
             #{tag}
           </span>
         ))}
 
         {isMulti && (
-          <div className="inline-flex items-center gap-1 px-2 py-0.5 rounded-data border border-accent/25 bg-accent/5 text-[9px] font-bold uppercase tracking-wider text-accent shrink-0">
+          <div className="inline-flex items-center gap-1 px-2 py-0.5 rounded-data border border-accent/25 bg-accent/5 text-[11px] font-bold uppercase tracking-wider text-accent shrink-0">
             <Layers className="w-2.5 h-2.5" />
             {c.stepCount} steps
           </div>
         )}
 
-        <div className={`px-2 py-0.5 rounded-data border text-[9px] font-bold uppercase tracking-widest shrink-0 ${difficultyChip[c.difficulty]}`}>
+        <div className={`px-2 py-0.5 rounded-data border text-[11px] font-bold uppercase tracking-widest shrink-0 ${difficultyChip[c.difficulty]}`}>
           {c.difficulty}
         </div>
 
-        <div className="inline-flex items-center gap-1 text-[9px] font-bold text-muted/60 tabular-nums shrink-0">
+        <div className="inline-flex items-center gap-1 text-[11px] font-bold text-muted/60 tabular-nums shrink-0">
           <Clock className="w-3 h-3" />
           {c.estimatedMinutes}m
         </div>
@@ -849,7 +849,7 @@ function FilterSelect<T extends string>({
           : "border-border dark:border-transparent bg-surface dark:bg-[#131625]"
       }`}
     >
-      <span className="text-[10px] font-bold uppercase tracking-[0.15em] text-muted/60">
+      <span className="text-[11px] font-bold uppercase tracking-[0.15em] text-muted/60">
         {label}
       </span>
       <select
@@ -881,7 +881,7 @@ function Pillbar<T extends string>({
 }) {
   return (
     <div className="inline-flex items-center gap-1 bg-surface dark:bg-[#131625] border border-border dark:border-transparent p-1">
-      <span className="px-2 text-[10px] font-bold uppercase tracking-[0.15em] text-muted/60">
+      <span className="px-2 text-[11px] font-bold uppercase tracking-[0.15em] text-muted/60">
         {label}
       </span>
       {options.map((o) => (

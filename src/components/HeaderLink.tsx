@@ -33,9 +33,9 @@ export default function HeaderLink({
 
   const textTone =
     tone === "warn"
-      ? "text-amber-600 dark:text-amber-400"
+      ? "text-amber-800 dark:text-amber-400"
       : tone === "danger"
-        ? "text-rose-600 dark:text-rose-400"
+        ? "text-rose-700 dark:text-rose-400"
         : tone === "muted"
           ? "text-subtle hover:text-fg"
           : active
@@ -44,9 +44,9 @@ export default function HeaderLink({
 
   const badgeTone =
     badge === "Soon"
-      ? "text-amber-600 dark:text-amber-400"
+      ? "text-amber-800 dark:text-amber-400"
       : badge === "Hidden"
-        ? "text-rose-600 dark:text-rose-400"
+        ? "text-rose-700 dark:text-rose-400"
         : "ip-label-accent";
 
   return (
@@ -57,7 +57,7 @@ export default function HeaderLink({
     >
       {label}
       {badge && (
-        <span className={`ip-label ip-label-xs ${badgeTone}`} aria-hidden>
+        <span className={`ip-label ${badgeTone}`} aria-hidden>
           {badge}
         </span>
       )}

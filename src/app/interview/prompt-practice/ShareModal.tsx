@@ -58,7 +58,7 @@ export default function ShareModal({ attemptId, scenarioTitle, defaultTitle, onC
       <div className="w-full max-w-md bg-surface border border-border rounded-xl shadow-2xl overflow-hidden flex flex-col">
         <header className="px-5 py-4 border-b border-border flex items-center justify-between bg-panel/30">
           <div className="flex items-center gap-2">
-            <Share2 className="w-4 h-4 text-indigo-400" />
+            <Share2 className="w-4 h-4 text-indigo-800 dark:text-indigo-400" />
             <div>
               <h2 className="text-sm font-semibold text-fg">Share your prompt</h2>
               <p className="text-[11px] text-muted">

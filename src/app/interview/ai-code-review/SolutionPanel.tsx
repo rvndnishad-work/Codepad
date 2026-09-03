@@ -47,7 +47,7 @@ export default function SolutionPanel({
           <div>
             <div className="flex items-center gap-2">
               <h3 className="text-sm font-bold text-fg">Solution</h3>
-              <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-gradient-to-r from-amber-400 to-amber-500 text-[9px] font-black uppercase tracking-wider text-amber-950">
+              <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-gradient-to-r from-amber-400 to-amber-500 text-[11px] font-black uppercase tracking-wider text-amber-950">
                 <Crown className="w-2.5 h-2.5" /> Pro
               </span>
             </div>
@@ -89,7 +89,7 @@ export type SolutionState =
 function LoadingState() {
   return (
     <div className="flex flex-col items-center justify-center gap-3 py-14">
-      <Loader2 className="w-6 h-6 text-indigo-400 animate-spin" />
+      <Loader2 className="w-6 h-6 text-indigo-800 dark:text-indigo-400 animate-spin" />
       <span className="text-xs font-semibold text-muted">Unlocking the solution…</span>
     </div>
   );
@@ -98,7 +98,7 @@ function LoadingState() {
 function ErrorState({ message }: { message: string }) {
   return (
     <div className="px-5 py-10 text-center">
-      <p className="text-sm font-semibold text-rose-500">{message}</p>
+      <p className="text-sm font-semibold text-rose-700 dark:text-rose-400">{message}</p>
     </div>
   );
 }
@@ -142,7 +142,7 @@ function LockedState({
           "The corrected approach, spelled out",
         ].map((b) => (
           <li key={b} className="flex items-start gap-2 text-xs text-fg">
-            <span className="mt-0.5 flex-shrink-0 w-4 h-4 rounded-full bg-emerald-500/15 text-emerald-500 flex items-center justify-center">
+            <span className="mt-0.5 flex-shrink-0 w-4 h-4 rounded-full bg-emerald-500/15 text-emerald-800 dark:text-emerald-400 flex items-center justify-center">
               <Check className="w-2.5 h-2.5" strokeWidth={3} />
             </span>
             <span className="leading-relaxed">{b}</span>
@@ -157,7 +157,7 @@ function LockedState({
         <Crown className="w-4 h-4" /> Upgrade to Pro
         <ArrowRight className="w-4 h-4" />
       </Link>
-      <p className="text-center text-[10px] text-muted mt-2.5">
+      <p className="text-center text-[11px] text-muted mt-2.5">
         Included with any paid workspace plan.
       </p>
     </div>
@@ -205,7 +205,7 @@ function UnlockedState({
           return (
             <span
               key={cat}
-              className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md border text-[10px] font-bold ${meta.className}`}
+              className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md border text-[11px] font-bold ${meta.className}`}
               title={meta.label}
             >
               {meta.emoji} {n}
@@ -253,11 +253,11 @@ function FindingCard({
           <h4 className="text-sm font-bold text-fg leading-snug">{finding.title}</h4>
           <div className="flex items-center gap-2 mt-1.5">
             <span
-              className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md border text-[10px] font-bold ${meta.className}`}
+              className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md border text-[11px] font-bold ${meta.className}`}
             >
               {meta.emoji} {meta.label}
             </span>
-            <span className="font-mono text-[10px] text-muted/80 bg-panel px-1.5 py-0.5 rounded">
+            <span className="font-mono text-[11px] text-muted/80 bg-panel px-1.5 py-0.5 rounded">
               {lineLabel}
             </span>
           </div>
@@ -282,7 +282,7 @@ function FindingCard({
 
           {/* Explanation with a "fix" accent */}
           <div className="mt-2.5 flex items-start gap-2">
-            <Lightbulb className="w-3.5 h-3.5 text-amber-500 flex-shrink-0 mt-0.5" />
+            <Lightbulb className="w-3.5 h-3.5 text-amber-800 dark:text-amber-400 flex-shrink-0 mt-0.5" />
             <p className="text-xs text-muted leading-relaxed">
               <RichText text={finding.explanation} />
             </p>

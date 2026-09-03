@@ -16,7 +16,7 @@ const HeroRunner = dynamic(() => import("@/components/home/HeroRunner"), {
   ssr: false,
   loading: () => (
     <div className="ip-on-dark ip-frame flex h-[420px] items-center justify-center border-white/10 bg-[#0b0d12]">
-      <span className="ip-label ip-label-xs text-slate-500">Loading sandbox…</span>
+      <span className="ip-label text-subtle">Loading sandbox…</span>
     </div>
   ),
 });

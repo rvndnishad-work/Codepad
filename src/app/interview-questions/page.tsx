@@ -117,15 +117,15 @@ export default async function InterviewQuestionsPage() {
           <SpotlightGroup className="mt-8 grid grid-cols-3 gap-3 max-w-xl">
             <div className="rounded-2xl border border-border bg-surface/60 backdrop-blur-sm p-4 text-center">
               <div className="text-xl font-black text-fg"><CountUp value={publishedTotal} /></div>
-              <div className="text-[10px] font-bold uppercase tracking-wider text-muted">Questions</div>
+              <div className="text-[11px] font-bold uppercase tracking-wider text-muted">Questions</div>
             </div>
             <div className="rounded-2xl border border-border bg-surface/60 backdrop-blur-sm p-4 text-center">
               <div className="text-xl font-black text-fg"><CountUp value={TECHNOLOGIES.length} /></div>
-              <div className="text-[10px] font-bold uppercase tracking-wider text-muted">Stacks</div>
+              <div className="text-[11px] font-bold uppercase tracking-wider text-muted">Stacks</div>
             </div>
             <div className="rounded-2xl border border-border bg-surface/60 backdrop-blur-sm p-4 text-center">
               <div className="text-xl font-black text-fg"><CountUp value={companies.length} /></div>
-              <div className="text-[10px] font-bold uppercase tracking-wider text-muted">Companies</div>
+              <div className="text-[11px] font-bold uppercase tracking-wider text-muted">Companies</div>
             </div>
           </SpotlightGroup>
         </div>
@@ -155,7 +155,7 @@ export default async function InterviewQuestionsPage() {
         {popular.length > 0 && (
           <section>
             <h2 className="flex items-center gap-2 text-xs font-black uppercase tracking-[0.2em] text-muted mb-4">
-              <Flame className="w-4 h-4 text-orange-400" />
+              <Flame className="w-4 h-4 text-orange-800 dark:text-orange-400" />
               Most-asked questions
             </h2>
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">

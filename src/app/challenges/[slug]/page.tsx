@@ -75,9 +75,9 @@ export async function generateMetadata({ params }: Props) {
 }
 
 const difficultyColor: Record<string, string> = {
-  easy: "text-emerald-500",
-  medium: "text-amber-500",
-  hard: "text-rose-500",
+  easy: "text-emerald-800 dark:text-emerald-400",
+  medium: "text-amber-800 dark:text-amber-400",
+  hard: "text-rose-700 dark:text-rose-400",
 };
 
 const difficultyBg: Record<string, string> = {
@@ -106,25 +106,25 @@ const TYPE_THEME: Record<
   algorithms: {
     label: "Algorithm",
     icon: Binary,
-    text: "text-sky-500",
-    iconBox: "bg-sky-500/10 border-sky-500/25 text-sky-500",
-    chip: "bg-sky-500/10 border-sky-500/30 text-sky-600 dark:text-sky-400",
+    text: "text-sky-800 dark:text-sky-400",
+    iconBox: "bg-sky-500/10 border-sky-500/25 text-sky-800 dark:text-sky-400",
+    chip: "bg-sky-500/10 border-sky-500/30 text-sky-800 dark:text-sky-400",
     heroGrad: "from-sky-500/[0.07]",
   },
   ui: {
     label: "UI · Frontend",
     icon: LayoutTemplate,
-    text: "text-violet-500",
-    iconBox: "bg-violet-500/10 border-violet-500/25 text-violet-500",
-    chip: "bg-violet-500/10 border-violet-500/30 text-violet-600 dark:text-violet-400",
+    text: "text-violet-800 dark:text-violet-400",
+    iconBox: "bg-violet-500/10 border-violet-500/25 text-violet-800 dark:text-violet-400",
+    chip: "bg-violet-500/10 border-violet-500/30 text-violet-800 dark:text-violet-400",
     heroGrad: "from-violet-500/[0.07]",
   },
   js: {
     label: "JavaScript",
     icon: Braces,
-    text: "text-amber-500",
-    iconBox: "bg-amber-500/10 border-amber-500/25 text-amber-500",
-    chip: "bg-amber-500/10 border-amber-500/30 text-amber-600 dark:text-amber-400",
+    text: "text-amber-800 dark:text-amber-400",
+    iconBox: "bg-amber-500/10 border-amber-500/25 text-amber-800 dark:text-amber-400",
+    chip: "bg-amber-500/10 border-amber-500/30 text-amber-800 dark:text-amber-400",
     heroGrad: "from-amber-500/[0.07]",
   },
 };
@@ -408,22 +408,22 @@ export default async function ChallengeDetailPage({ params, searchParams }: Prop
 
               <div className="flex items-center gap-2 flex-wrap mt-4">
                 <div
-                  className={`px-2.5 py-1 rounded-md border text-[10px] font-bold uppercase tracking-wider ${difficultyBg[challenge.difficulty]} ${difficultyColor[challenge.difficulty]}`}
+                  className={`px-2.5 py-1 rounded-md border text-[11px] font-bold uppercase tracking-wider ${difficultyBg[challenge.difficulty]} ${difficultyColor[challenge.difficulty]}`}
                 >
                   {challenge.difficulty}
                 </div>
-                <div className="px-2.5 py-1 rounded-md border border-border bg-surface text-[10px] font-bold uppercase tracking-wider text-muted flex items-center gap-1.5">
+                <div className="px-2.5 py-1 rounded-md border border-border bg-surface text-[11px] font-bold uppercase tracking-wider text-muted flex items-center gap-1.5">
                   <Clock className="w-3 h-3" />
                   {totalMinutes}m
                 </div>
                 {isMulti && (
-                  <div className="px-2.5 py-1 rounded-md border border-accent/30 bg-accent/10 text-[10px] font-bold uppercase tracking-wider text-accent flex items-center gap-1.5">
+                  <div className="px-2.5 py-1 rounded-md border border-accent/30 bg-accent/10 text-[11px] font-bold uppercase tracking-wider text-accent flex items-center gap-1.5">
                     <Layers className="w-3 h-3" />
                     {challenge.steps.length} questions
                   </div>
                 )}
                 {challenge.visibility === "private" && (
-                  <div className="px-2.5 py-1 rounded-md border border-amber-500/30 bg-amber-500/10 text-[10px] font-bold uppercase tracking-wider text-amber-500 flex items-center gap-1.5">
+                  <div className="px-2.5 py-1 rounded-md border border-amber-500/30 bg-amber-500/10 text-[11px] font-bold uppercase tracking-wider text-amber-800 dark:text-amber-400 flex items-center gap-1.5">
                     <Lock className="w-3 h-3" />
                     Private
                   </div>
@@ -435,7 +435,7 @@ export default async function ChallengeDetailPage({ params, searchParams }: Prop
                   {tags.map((t) => (
                     <span
                       key={t}
-                      className="px-2 py-0.5 rounded bg-surface border border-border text-[10px] font-medium text-muted"
+                      className="px-2 py-0.5 rounded bg-surface border border-border text-[11px] font-medium text-muted"
                     >
                       #{t}
                     </span>
@@ -454,7 +454,7 @@ export default async function ChallengeDetailPage({ params, searchParams }: Prop
       {/* Status banner for returning users */}
       {bestStatus === "passed" && (
         <div className="mb-6 p-4 rounded-xl border border-emerald-500/30 bg-emerald-500/5 flex items-center gap-3">
-          <CheckCircle2 className="w-5 h-5 text-emerald-500 shrink-0" />
+          <CheckCircle2 className="w-5 h-5 text-emerald-800 dark:text-emerald-400 shrink-0" />
           <div className="flex-1">
             <div className="text-sm font-bold text-fg">You've solved this!</div>
             <div className="text-xs text-muted">Feel free to revisit and refactor.</div>
@@ -489,12 +489,12 @@ export default async function ChallengeDetailPage({ params, searchParams }: Prop
                     </div>
                     <div className="min-w-0 flex-1">
                       <div className="font-bold text-fg truncate">{label}</div>
-                      <div className="text-[10px] text-muted/70 uppercase tracking-wider mt-0.5">
+                      <div className="text-[11px] text-muted/70 uppercase tracking-wider mt-0.5">
                         {step.estimatedMinutes} min
                       </div>
                     </div>
                     {status === "passed" ? (
-                      <CheckCircle2 className="w-5 h-5 text-emerald-500 shrink-0" />
+                      <CheckCircle2 className="w-5 h-5 text-emerald-800 dark:text-emerald-400 shrink-0" />
                     ) : status === "failed" ? (
                       <XCircle className="w-5 h-5 text-rose-500/60 shrink-0" />
                     ) : status === "in_progress" ? (
@@ -527,9 +527,9 @@ export default async function ChallengeDetailPage({ params, searchParams }: Prop
                   className="flex items-center gap-3 p-3 rounded-lg border border-border bg-surface/50"
                 >
                   {passed ? (
-                    <CheckCircle2 className="w-4 h-4 text-emerald-500" />
+                    <CheckCircle2 className="w-4 h-4 text-emerald-800 dark:text-emerald-400" />
                   ) : failed ? (
-                    <XCircle className="w-4 h-4 text-rose-500" />
+                    <XCircle className="w-4 h-4 text-rose-700 dark:text-rose-400" />
                   ) : (
                     <div className="w-4 h-4 rounded-full border-2 border-amber-500 animate-pulse" />
                   )}
@@ -581,7 +581,7 @@ export default async function ChallengeDetailPage({ params, searchParams }: Prop
 
             {isMulti && passedSteps > 0 && passedSteps < challenge.steps.length && (
               <div className="mt-3.5">
-                <div className="flex items-center justify-between text-[10px] font-bold text-muted mb-1">
+                <div className="flex items-center justify-between text-[11px] font-bold text-muted mb-1">
                   <span className="uppercase tracking-wider">Progress</span>
                   <span className="tabular-nums">
                     {passedSteps} / {challenge.steps.length} solved
@@ -610,7 +610,7 @@ export default async function ChallengeDetailPage({ params, searchParams }: Prop
                 <>
                   {algoInfo.signature && (
                     <div>
-                      <div className="text-[10px] font-black uppercase tracking-[0.15em] text-muted mb-1.5">
+                      <div className="text-[11px] font-black uppercase tracking-[0.15em] text-muted mb-1.5">
                         Implement
                       </div>
                       <code className="block rounded-lg border border-border bg-bg px-3 py-2 text-[11px] font-mono text-muted overflow-x-auto whitespace-nowrap">
@@ -620,14 +620,14 @@ export default async function ChallengeDetailPage({ params, searchParams }: Prop
                   )}
                   {algoInfo.languages.length > 0 && (
                     <div>
-                      <div className="text-[10px] font-black uppercase tracking-[0.15em] text-muted mb-1.5">
+                      <div className="text-[11px] font-black uppercase tracking-[0.15em] text-muted mb-1.5">
                         Solve in {algoInfo.languages.length} languages
                       </div>
                       <div className="flex flex-wrap gap-1.5">
                         {algoInfo.languages.map((l) => (
                           <span
                             key={l}
-                            className={`px-2 py-0.5 rounded-md border text-[10px] font-bold ${theme.chip}`}
+                            className={`px-2 py-0.5 rounded-md border text-[11px] font-bold ${theme.chip}`}
                           >
                             {LANG_LABEL[l] ?? l}
                           </span>
@@ -650,10 +650,10 @@ export default async function ChallengeDetailPage({ params, searchParams }: Prop
               {kind === "ui" && uiInfo && (
                 <>
                   <div>
-                    <div className="text-[10px] font-black uppercase tracking-[0.15em] text-muted mb-1.5">
+                    <div className="text-[11px] font-black uppercase tracking-[0.15em] text-muted mb-1.5">
                       Build with
                     </div>
-                    <span className={`inline-block px-2 py-0.5 rounded-md border text-[10px] font-bold ${theme.chip}`}>
+                    <span className={`inline-block px-2 py-0.5 rounded-md border text-[11px] font-bold ${theme.chip}`}>
                       {uiInfo.framework}
                     </span>
                   </div>
@@ -671,14 +671,14 @@ export default async function ChallengeDetailPage({ params, searchParams }: Prop
               {kind === "js" && jsInfo && (
                 <>
                   <div>
-                    <div className="text-[10px] font-black uppercase tracking-[0.15em] text-muted mb-1.5">
+                    <div className="text-[11px] font-black uppercase tracking-[0.15em] text-muted mb-1.5">
                       Write in
                     </div>
                     <div className="flex flex-wrap gap-1.5">
                       {["TypeScript", "JavaScript"].map((l) => (
                         <span
                           key={l}
-                          className={`px-2 py-0.5 rounded-md border text-[10px] font-bold ${theme.chip}`}
+                          className={`px-2 py-0.5 rounded-md border text-[11px] font-bold ${theme.chip}`}
                         >
                           {l}
                         </span>

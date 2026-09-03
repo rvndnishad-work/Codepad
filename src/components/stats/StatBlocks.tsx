@@ -19,10 +19,10 @@ const markerClasses: Record<StatTone, string> = {
 };
 
 const iconClasses: Record<StatTone, string> = {
-  emerald: "text-emerald-500",
-  amber: "text-amber-500",
+  emerald: "text-emerald-800 dark:text-emerald-400",
+  amber: "text-amber-800 dark:text-amber-400",
   accent: "text-accent",
-  rose: "text-rose-500",
+  rose: "text-rose-700 dark:text-rose-400",
 };
 
 export function StatCard({
@@ -81,9 +81,9 @@ export function DifficultyCard({
           <div className="bg-rose-500" style={{ width: `${ph}%` }} />
         </div>
         <div className="mt-3 flex items-center justify-between font-mono text-[11px]">
-          <span className="text-emerald-600 dark:text-emerald-400">{easy} easy</span>
-          <span className="text-amber-600 dark:text-amber-400">{medium} med</span>
-          <span className="text-rose-600 dark:text-rose-400">{hard} hard</span>
+          <span className="text-emerald-800 dark:text-emerald-400">{easy} easy</span>
+          <span className="text-amber-800 dark:text-amber-400">{medium} med</span>
+          <span className="text-rose-700 dark:text-rose-400">{hard} hard</span>
         </div>
       </div>
     </div>

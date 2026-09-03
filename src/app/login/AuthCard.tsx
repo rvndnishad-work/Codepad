@@ -336,7 +336,7 @@ export default function AuthCard({
       {showOAuth && (mode === "signin" || userType) && (
         <div className="flex items-center gap-4 my-[clamp(0.75rem,2vh,1.25rem)] animate-in fade-in duration-500 delay-200 fill-mode-both">
           <div className="flex-1 h-px bg-gradient-to-r from-transparent via-border to-border" />
-          <span className="text-[10px] uppercase tracking-widest font-bold text-muted">or continue with email</span>
+          <span className="text-[11px] uppercase tracking-widest font-bold text-muted">or continue with email</span>
           <div className="flex-1 h-px bg-gradient-to-l from-transparent via-border to-border" />
         </div>
       )}
@@ -346,7 +346,7 @@ export default function AuthCard({
         {needsTotp ? (
           <div className="space-y-[clamp(0.5rem,1.1vh,0.85rem)]">
             <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/5 dark:bg-emerald-500/10 p-4 flex items-start gap-3 animate-in fade-in slide-in-from-top-2 duration-300">
-              <ShieldCheck className="w-5 h-5 text-emerald-500 dark:text-emerald-400 shrink-0 mt-0.5" />
+              <ShieldCheck className="w-5 h-5 text-emerald-800 dark:text-emerald-400 shrink-0 mt-0.5" />
               <div className="text-xs text-fg/80 leading-relaxed">
                 Two-factor authentication is on for{" "}
                 <span className="font-semibold text-fg">{email}</span>.
@@ -368,7 +368,7 @@ export default function AuthCard({
               />
             </label>
             {totpError && (
-              <div className="text-xs text-rose-500 dark:text-rose-400 font-semibold text-center">{totpError}</div>
+              <div className="text-xs text-rose-700 dark:text-rose-400 font-semibold text-center">{totpError}</div>
             )}
             <button
               type="button"
@@ -382,7 +382,7 @@ export default function AuthCard({
         ) : signupVerificationPending ? (
           <div className="space-y-[clamp(0.5rem,1.1vh,0.85rem)]">
             <div className="rounded-xl border border-indigo-500/20 bg-indigo-500/5 dark:bg-indigo-500/10 p-4 flex items-start gap-3 animate-in fade-in slide-in-from-top-2 duration-300">
-              <Mail className="w-5 h-5 text-indigo-500 dark:text-indigo-400 shrink-0 mt-0.5" />
+              <Mail className="w-5 h-5 text-indigo-800 dark:text-indigo-400 shrink-0 mt-0.5" />
               <div className="text-xs text-fg/80 leading-relaxed">
                 We've sent a 6-digit verification code to{" "}
                 <span className="font-semibold text-fg">{email}</span>.
@@ -408,7 +408,7 @@ export default function AuthCard({
               />
             </label>
             {signupOtpError && (
-              <div className="text-xs text-rose-500 dark:text-rose-400 font-semibold text-center">{signupOtpError}</div>
+              <div className="text-xs text-rose-700 dark:text-rose-400 font-semibold text-center">{signupOtpError}</div>
             )}
             <div className="flex items-center justify-between mt-2 px-1">
               <button
@@ -434,7 +434,7 @@ export default function AuthCard({
             {mode === "signup" && (
               <>
                 <div className="space-y-[clamp(0.25rem,0.6vh,0.5rem)] mb-[clamp(0.25rem,0.6vh,0.5rem)]">
-                  <div className="text-[10px] font-bold uppercase tracking-widest text-muted mb-[clamp(0.25rem,0.6vh,0.5rem)] pl-1">
+                  <div className="text-[11px] font-bold uppercase tracking-widest text-muted mb-[clamp(0.25rem,0.6vh,0.5rem)] pl-1">
                     Select Your Role
                   </div>
                   <div className="grid grid-cols-2 gap-[clamp(0.5rem,1vh,0.75rem)]">
@@ -466,8 +466,8 @@ export default function AuthCard({
                           : "border-border/85 dark:border-white/10 bg-surface/40 dark:bg-surface/20 hover:border-border-strong hover:bg-surface/60"
                       }`}
                     >
-                      <Briefcase className={`w-[clamp(1.1rem,2.2vh,1.4rem)] h-[clamp(1.1rem,2.2vh,1.4rem)] transition-transform duration-300 ${userType === "recruiter" ? "text-emerald-600 dark:text-emerald-400 scale-110" : "text-muted/70"}`} />
-                      <div className={`text-xs font-bold transition-colors ${userType === "recruiter" ? "text-emerald-600 dark:text-emerald-400" : "text-fg/80"}`}>
+                      <Briefcase className={`w-[clamp(1.1rem,2.2vh,1.4rem)] h-[clamp(1.1rem,2.2vh,1.4rem)] transition-transform duration-300 ${userType === "recruiter" ? "text-emerald-800 dark:text-emerald-400 scale-110" : "text-muted/70"}`} />
+                      <div className={`text-xs font-bold transition-colors ${userType === "recruiter" ? "text-emerald-800 dark:text-emerald-400" : "text-fg/80"}`}>
                         Recruiter
                       </div>
                       {userType === "recruiter" && (
@@ -579,7 +579,7 @@ export default function AuthCard({
                   />
                 </div>
                 {isRecruiterEmailInvalid() && (
-                  <div className="text-xs text-amber-500 dark:text-amber-400 pl-1 animate-in fade-in slide-in-from-top-1 duration-200">
+                  <div className="text-xs text-amber-800 dark:text-amber-400 pl-1 animate-in fade-in slide-in-from-top-1 duration-200">
                     Please register with your official company email address (e.g. name@company.com).
                   </div>
                 )}

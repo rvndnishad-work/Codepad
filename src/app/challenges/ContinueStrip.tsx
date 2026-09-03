@@ -68,7 +68,7 @@ export default async function ContinueStrip({ userId }: { userId: string | null 
   return (
     <div className="mx-auto max-w-6xl px-6 pt-8">
       <div className="flex items-center justify-between mb-3">
-        <h2 className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted">
+        <h2 className="text-[11px] font-bold uppercase tracking-[0.2em] text-muted">
           Continue where you left off
         </h2>
         <Link
@@ -91,12 +91,12 @@ export default async function ContinueStrip({ userId }: { userId: string | null 
                 <Play className="w-3 h-3 fill-current" />
               </span>
               {c.isMulti && (
-                <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-data bg-accent/15 border border-accent/30 text-[10px] font-bold uppercase tracking-wider text-accent">
+                <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-data bg-accent/15 border border-accent/30 text-[11px] font-bold uppercase tracking-wider text-accent">
                   <Layers className="w-2.5 h-2.5" />
                   {c.total} steps
                 </span>
               )}
-              <span className="ml-auto text-[10px] font-bold text-muted/70 uppercase tracking-wider">
+              <span className="ml-auto text-[11px] font-bold text-muted/70 uppercase tracking-wider">
                 {c.difficulty}
               </span>
             </div>
@@ -105,7 +105,7 @@ export default async function ContinueStrip({ userId }: { userId: string | null 
             </h3>
             {c.isMulti && (
               <div className="mt-auto">
-                <div className="flex items-center justify-between text-[10px] text-muted mb-1.5">
+                <div className="flex items-center justify-between text-[11px] text-muted mb-1.5">
                   <span className="uppercase tracking-wider font-bold">Progress</span>
                   <span className="font-mono tabular-nums">
                     {c.passed} / {c.total}

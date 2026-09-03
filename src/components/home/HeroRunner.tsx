@@ -122,9 +122,9 @@ export default function HeroRunner() {
     <div className="ip-on-dark ip-frame ip-ticks border-white/10 bg-[#0b0d12] text-left">
       {/* Chrome: a filename, a rule, a live marker, and the one armed action. */}
       <div className="flex items-center gap-3 border-b border-white/10 px-4 py-2.5">
-        <span className="ip-label ip-label-xs text-slate-400">sandbox.js</span>
+        <span className="ip-label text-slate-400">sandbox.js</span>
         <span className="h-px flex-1 bg-white/10" aria-hidden />
-        <span className="ip-label ip-label-xs flex items-center gap-1.5 text-slate-400">
+        <span className="ip-label flex items-center gap-1.5 text-slate-400">
           <span className="ip-live h-[5px] w-[5px] bg-emerald-400" aria-hidden />
           live
         </span>
@@ -132,7 +132,7 @@ export default function HeroRunner() {
           type="button"
           onClick={handleRun}
           disabled={run.phase === "running"}
-          className="ip-label ip-label-xs flex items-center gap-1.5 rounded-action bg-accent px-2.5 py-1.5 text-accent-ink transition-opacity hover:opacity-90 disabled:opacity-60"
+          className="ip-label flex items-center gap-1.5 rounded-action bg-accent px-2.5 py-1.5 text-accent-ink transition-opacity hover:opacity-90 disabled:opacity-60"
         >
           {run.phase === "running" ? (
             <>
@@ -175,11 +175,11 @@ export default function HeroRunner() {
               </span>
             ))}
           </span>
-          <span className="ip-label ip-label-xs text-slate-400">
+          <span className="ip-label text-slate-400">
             {run.phase === "running" ? "executing" : run.phase === "error" ? "failed" : "trace"}
           </span>
           {run.phase === "done" && (
-            <span className="ip-label ip-label-xs ml-auto text-slate-400">
+            <span className="ip-label ml-auto text-slate-400">
               {run.cacheHit ? "cached" : `${run.timeMs} ms`}
             </span>
           )}
@@ -205,7 +205,7 @@ export default function HeroRunner() {
         )}
       </div>
 
-      <div className="flex items-center gap-1.5 border-t border-white/10 px-4 py-2 text-[10px] leading-snug text-slate-400">
+      <div className="flex items-center gap-1.5 border-t border-white/10 px-4 py-2 text-[11px] leading-snug text-slate-400">
         <ShieldCheck className="h-3 w-3 shrink-0 text-emerald-500" aria-hidden />
         Real execution on a network-isolated sandbox — the same runner that grades interviews.
       </div>

@@ -155,7 +155,7 @@ export default function PrepTrackerClient({ overview }: { overview: JourneyOverv
             <button
               onClick={() => setJourneyStatus("active")}
               disabled={statusBusy}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold border border-emerald-500/40 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 transition"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold border border-emerald-500/40 bg-emerald-500/10 text-emerald-800 dark:text-emerald-400 transition"
             >
               <Play className="w-3.5 h-3.5" /> Resume
             </button>
@@ -171,19 +171,19 @@ export default function PrepTrackerClient({ overview }: { overview: JourneyOverv
 
       {/* Title block — aurora glass */}
       <motion.div initial="hidden" animate="visible" variants={fadeIn} className="mb-8 rounded-[1.5rem] border border-border bg-gradient-to-br from-accent/[0.08] via-surface to-violet-500/[0.06] backdrop-blur p-6 md:p-7">
-        <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest bg-white/70 dark:bg-white/10 backdrop-blur border border-border text-muted mb-3">
+        <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-black uppercase tracking-widest bg-white/70 dark:bg-white/10 backdrop-blur border border-border text-muted mb-3">
           <MapIcon className="w-3.5 h-3.5 text-accent" />
           Prep Journey
         </div>
         <div className="flex items-center flex-wrap gap-3">
           <h1 className="text-3xl sm:text-4xl font-black tracking-tight bg-gradient-to-br from-fg to-fg/70 bg-clip-text text-transparent">{overview.title}</h1>
           {overview.status === "paused" && (
-            <span className="text-[10px] font-black uppercase tracking-wider px-2.5 py-1 rounded-lg border border-amber-500/25 bg-amber-500/10 text-amber-600 dark:text-amber-400">
+            <span className="text-[11px] font-black uppercase tracking-wider px-2.5 py-1 rounded-lg border border-amber-500/25 bg-amber-500/10 text-amber-800 dark:text-amber-400">
               Paused
             </span>
           )}
           {overview.status === "completed" && (
-            <span className="text-[10px] font-black uppercase tracking-wider px-2.5 py-1 rounded-lg border border-emerald-500/25 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
+            <span className="text-[11px] font-black uppercase tracking-wider px-2.5 py-1 rounded-lg border border-emerald-500/25 bg-emerald-500/10 text-emerald-800 dark:text-emerald-400">
               Completed
             </span>
           )}
@@ -212,7 +212,7 @@ export default function PrepTrackerClient({ overview }: { overview: JourneyOverv
           className="mb-8 rounded-2xl border border-emerald-500/25 bg-emerald-500/[0.06] p-6 flex flex-col sm:flex-row items-center justify-between gap-4"
         >
           <div className="flex items-center gap-3">
-            <Sparkles className="w-6 h-6 text-emerald-500" />
+            <Sparkles className="w-6 h-6 text-emerald-800 dark:text-emerald-400" />
             <div>
               <div className="font-black tracking-tight">Journey complete — every item done. 🎉</div>
               <p className="text-xs text-muted mt-0.5">Keep the momentum with a fresh plan or a harder stack.</p>
@@ -273,7 +273,7 @@ export default function PrepTrackerClient({ overview }: { overview: JourneyOverv
                     className="shrink-0 text-muted hover:text-emerald-500 transition-colors"
                   >
                     {item.completed ? (
-                      <CheckCircle2 className="w-5 h-5 text-emerald-500" />
+                      <CheckCircle2 className="w-5 h-5 text-emerald-800 dark:text-emerald-400" />
                     ) : (
                       <Circle className="w-5 h-5" />
                     )}
@@ -290,7 +290,7 @@ export default function PrepTrackerClient({ overview }: { overview: JourneyOverv
                     >
                       {item.title}
                     </Link>
-                    <div className="flex items-center gap-2 mt-1 text-[10px] font-bold text-muted">
+                    <div className="flex items-center gap-2 mt-1 text-[11px] font-bold text-muted">
                       <span className="uppercase tracking-wider">{itemTypeLabel(item)}</span>
                       <span>·</span>
                       <span>~{item.estMinutes} min</span>
@@ -298,7 +298,7 @@ export default function PrepTrackerClient({ overview }: { overview: JourneyOverv
                   </div>
                   {item.difficulty && (
                     <span
-                      className={`shrink-0 text-[9px] font-black uppercase px-1.5 py-0.5 rounded border ${difficultyClasses(item.difficulty)}`}
+                      className={`shrink-0 text-[11px] font-black uppercase px-1.5 py-0.5 rounded border ${difficultyClasses(item.difficulty)}`}
                     >
                       {item.difficulty}
                     </span>
@@ -331,7 +331,7 @@ export default function PrepTrackerClient({ overview }: { overview: JourneyOverv
                 {upcoming.map(({ day, items }) => (
                   <div key={day} className="flex gap-4">
                     <div className="shrink-0 w-12 text-center">
-                      <div className="text-[9px] font-black uppercase tracking-wider text-muted/60">Day</div>
+                      <div className="text-[11px] font-black uppercase tracking-wider text-muted/60">Day</div>
                       <div className="text-lg font-black text-fg/80">{day}</div>
                     </div>
                     <div className="min-w-0 flex-1 space-y-1 pt-0.5">
@@ -403,14 +403,14 @@ export default function PrepTrackerClient({ overview }: { overview: JourneyOverv
                   <Flame className={`w-4 h-4 ${overview.streak > 0 ? "text-orange-500" : "text-muted/40"}`} />
                   {overview.streak}
                 </div>
-                <div className="text-[9px] font-black uppercase tracking-wider text-muted mt-0.5">Day streak</div>
+                <div className="text-[11px] font-black uppercase tracking-wider text-muted mt-0.5">Day streak</div>
               </div>
               <div className="rounded-xl border border-border bg-bg/40 p-3 text-center">
                 <div className="text-lg font-black">
                   {overview.minutesToday}
                   <span className="text-xs text-muted font-bold">/{overview.dailyMinutes}m</span>
                 </div>
-                <div className="text-[9px] font-black uppercase tracking-wider text-muted mt-0.5">Today</div>
+                <div className="text-[11px] font-black uppercase tracking-wider text-muted mt-0.5">Today</div>
               </div>
             </div>
           </motion.div>
@@ -438,7 +438,7 @@ export default function PrepTrackerClient({ overview }: { overview: JourneyOverv
               {overview.techStack.map((t) => (
                 <span
                   key={t}
-                  className="inline-flex items-center gap-1.5 px-2 py-1 rounded-lg border border-border bg-bg/40 text-[10px] font-bold"
+                  className="inline-flex items-center gap-1.5 px-2 py-1 rounded-lg border border-border bg-bg/40 text-[11px] font-bold"
                 >
                   <TechSvg tech={t} className="w-3.5 h-3.5" />
                   {techLabel(t)}
@@ -446,7 +446,7 @@ export default function PrepTrackerClient({ overview }: { overview: JourneyOverv
               ))}
             </div>
             <p className="text-[11px] text-muted leading-relaxed font-semibold pt-1 border-t border-border">
-              <Check className="w-3 h-3 inline mr-1 text-emerald-500" />
+              <Check className="w-3 h-3 inline mr-1 text-emerald-800 dark:text-emerald-400" />
               Items auto-complete when you mark questions solved or pass a challenge — anywhere on the site.
             </p>
           </motion.div>

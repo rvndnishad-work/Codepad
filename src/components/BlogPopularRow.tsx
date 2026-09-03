@@ -26,7 +26,7 @@ export default function BlogPopularRow({
         <span className="block text-sm font-bold text-fg leading-snug tracking-tight line-clamp-2 group-hover:text-accent transition-colors">
           {blog.title}
         </span>
-        <span className="flex items-center gap-2 text-[10px] text-muted mt-1 font-bold">
+        <span className="flex items-center gap-2 text-[11px] text-muted mt-1 font-bold">
           <span className="truncate max-w-[120px]">
             {blog.user.name ?? "Anonymous"}
           </span>

@@ -100,9 +100,9 @@ type Attempt = {
 };
 
 const difficultyColor: Record<string, string> = {
-  easy: "text-emerald-500",
-  medium: "text-amber-500",
-  hard: "text-rose-500",
+  easy: "text-emerald-800 dark:text-emerald-400",
+  medium: "text-amber-800 dark:text-amber-400",
+  hard: "text-rose-700 dark:text-rose-400",
 };
 
 const difficultyBg: Record<string, string> = {
@@ -115,91 +115,91 @@ const templateColors: Record<string, { border: string; glow: string; text: strin
   "react": { 
     border: "hover:border-sky-400 dark:hover:border-sky-400/60", 
     glow: "hover:shadow-[0_0_20px_rgba(56,189,248,0.08)] dark:hover:shadow-[0_0_20px_rgba(56,189,248,0.15)]", 
-    text: "text-sky-600 dark:text-sky-400", 
+    text: "text-sky-800 dark:text-sky-400", 
     bg: "bg-sky-500/10 border-sky-500/20 dark:bg-sky-400/10 dark:border-sky-400/20" 
   },
   "empty-react": { 
     border: "hover:border-sky-400 dark:hover:border-sky-400/60", 
     glow: "hover:shadow-[0_0_20px_rgba(56,189,248,0.08)] dark:hover:shadow-[0_0_20px_rgba(56,189,248,0.15)]", 
-    text: "text-sky-600 dark:text-sky-400", 
+    text: "text-sky-800 dark:text-sky-400", 
     bg: "bg-sky-500/10 border-sky-500/20 dark:bg-sky-400/10 dark:border-sky-400/20" 
   },
   "react-hooks": { 
     border: "hover:border-sky-400 dark:hover:border-sky-400/60", 
     glow: "hover:shadow-[0_0_20px_rgba(56,189,248,0.08)] dark:hover:shadow-[0_0_20px_rgba(56,189,248,0.15)]", 
-    text: "text-sky-600 dark:text-sky-400", 
+    text: "text-sky-800 dark:text-sky-400", 
     bg: "bg-sky-500/10 border-sky-500/20 dark:bg-sky-400/10 dark:border-sky-400/20" 
   },
   "react-classes": { 
     border: "hover:border-sky-400 dark:hover:border-sky-400/60", 
     glow: "hover:shadow-[0_0_20px_rgba(56,189,248,0.08)] dark:hover:shadow-[0_0_20px_rgba(56,189,248,0.15)]", 
-    text: "text-sky-600 dark:text-sky-400", 
+    text: "text-sky-800 dark:text-sky-400", 
     bg: "bg-sky-500/10 border-sky-500/20 dark:bg-sky-400/10 dark:border-sky-400/20" 
   },
   "empty-ts": { 
     border: "hover:border-blue-500 dark:hover:border-blue-500/60", 
     glow: "hover:shadow-[0_0_20px_rgba(59,130,246,0.08)] dark:hover:shadow-[0_0_20px_rgba(59,130,246,0.15)]", 
-    text: "text-blue-600 dark:text-blue-400", 
+    text: "text-blue-800 dark:text-blue-400", 
     bg: "bg-blue-500/10 border-blue-500/20 dark:bg-blue-400/10 dark:border-blue-400/20" 
   },
   "typescript": { 
     border: "hover:border-blue-500 dark:hover:border-blue-500/60", 
     glow: "hover:shadow-[0_0_20px_rgba(59,130,246,0.08)] dark:hover:shadow-[0_0_20px_rgba(59,130,246,0.15)]", 
-    text: "text-blue-600 dark:text-blue-400", 
+    text: "text-blue-800 dark:text-blue-400", 
     bg: "bg-blue-500/10 border-blue-500/20 dark:bg-blue-400/10 dark:border-blue-400/20" 
   },
   "empty-js": { 
     border: "hover:border-yellow-500 dark:hover:border-yellow-500/60", 
     glow: "hover:shadow-[0_0_20px_rgba(234,179,8,0.08)] dark:hover:shadow-[0_0_20px_rgba(234,179,8,0.15)]", 
-    text: "text-yellow-600 dark:text-yellow-500", 
+    text: "text-yellow-800 dark:text-yellow-400", 
     bg: "bg-yellow-500/10 border-yellow-500/20 dark:bg-yellow-400/10 dark:border-yellow-400/20" 
   },
   "javascript": { 
     border: "hover:border-yellow-500 dark:hover:border-yellow-500/60", 
     glow: "hover:shadow-[0_0_20px_rgba(234,179,8,0.08)] dark:hover:shadow-[0_0_20px_rgba(234,179,8,0.15)]", 
-    text: "text-yellow-600 dark:text-yellow-500", 
+    text: "text-yellow-800 dark:text-yellow-400", 
     bg: "bg-yellow-500/10 border-yellow-500/20 dark:bg-yellow-400/10 dark:border-yellow-400/20" 
   },
   "svelte": { 
     border: "hover:border-orange-500 dark:hover:border-orange-500/60", 
     glow: "hover:shadow-[0_0_20px_rgba(249,115,22,0.08)] dark:hover:shadow-[0_0_20px_rgba(249,115,22,0.15)]", 
-    text: "text-orange-600 dark:text-orange-400", 
+    text: "text-orange-800 dark:text-orange-400", 
     bg: "bg-orange-500/10 border-orange-500/20 dark:bg-orange-400/10 dark:border-orange-400/20" 
   },
   "vue": { 
     border: "hover:border-emerald-500 dark:hover:border-emerald-500/60", 
     glow: "hover:shadow-[0_0_20px_rgba(16,185,129,0.08)] dark:hover:shadow-[0_0_20px_rgba(16,185,129,0.15)]", 
-    text: "text-emerald-600 dark:text-emerald-400", 
+    text: "text-emerald-800 dark:text-emerald-400", 
     bg: "bg-emerald-500/10 border-emerald-500/20 dark:bg-emerald-400/10 dark:border-emerald-400/20" 
   },
   "solid": { 
     border: "hover:border-indigo-500 dark:hover:border-indigo-400/60", 
     glow: "hover:shadow-[0_0_20px_rgba(129,140,248,0.08)] dark:hover:shadow-[0_0_20px_rgba(129,140,248,0.15)]", 
-    text: "text-indigo-600 dark:text-indigo-400", 
+    text: "text-indigo-800 dark:text-indigo-400", 
     bg: "bg-indigo-500/10 border-indigo-500/20 dark:bg-indigo-400/10 dark:border-indigo-400/20" 
   },
   "angular": { 
     border: "hover:border-rose-500 dark:hover:border-rose-500/60", 
     glow: "hover:shadow-[0_0_20px_rgba(244,63,94,0.08)] dark:hover:shadow-[0_0_20px_rgba(244,63,94,0.15)]", 
-    text: "text-rose-600 dark:text-rose-400", 
+    text: "text-rose-700 dark:text-rose-400", 
     bg: "bg-rose-500/10 border-rose-500/20 dark:bg-rose-400/10 dark:border-rose-400/20" 
   },
   "redux-toolkit": { 
     border: "hover:border-purple-500 dark:hover:border-purple-500/60", 
     glow: "hover:shadow-[0_0_20px_rgba(168,85,247,0.08)] dark:hover:shadow-[0_0_20px_rgba(168,85,247,0.15)]", 
-    text: "text-purple-600 dark:text-purple-400", 
+    text: "text-purple-800 dark:text-purple-400", 
     bg: "bg-purple-500/10 border-purple-500/20 dark:bg-purple-400/10 dark:border-purple-400/20" 
   },
   "mobx": { 
     border: "hover:border-amber-600 dark:hover:border-amber-600/60", 
     glow: "hover:shadow-[0_0_20px_rgba(217,119,6,0.08)] dark:hover:shadow-[0_0_20px_rgba(217,119,6,0.15)]", 
-    text: "text-amber-600 dark:text-amber-500", 
+    text: "text-amber-800 dark:text-amber-400", 
     bg: "bg-amber-500/10 border-amber-500/20 dark:bg-amber-500/10 dark:border-amber-500/20" 
   },
   "framer-motion": { 
     border: "hover:border-pink-500 dark:hover:border-pink-500/60", 
     glow: "hover:shadow-[0_0_20px_rgba(236,72,153,0.08)] dark:hover:shadow-[0_0_20px_rgba(236,72,153,0.15)]", 
-    text: "text-pink-600 dark:text-pink-400", 
+    text: "text-pink-800 dark:text-pink-400", 
     bg: "bg-pink-500/10 border-pink-500/20 dark:bg-pink-400/10 dark:border-pink-400/20" 
   }
 };
@@ -691,7 +691,7 @@ export default function InterviewRunner({
                   try {
                     const label = describeStack(JSON.parse(interview.stackJson) as TechStack);
                     return label ? (
-                      <span className="text-[10px] md:text-xs font-bold bg-accent/10 border border-accent/25 text-accent px-2.5 py-1 rounded-full leading-none inline-flex items-center gap-1.5">
+                      <span className="text-[11px] md:text-xs font-bold bg-accent/10 border border-accent/25 text-accent px-2.5 py-1 rounded-full leading-none inline-flex items-center gap-1.5">
                         <Layers className="w-3 h-3" /> {label}
                       </span>
                     ) : null;
@@ -702,7 +702,7 @@ export default function InterviewRunner({
                 {interview.type && (
                   <>
                     <span className="text-muted/30 text-xs leading-none">•</span>
-                    <span className="text-[10px] md:text-xs font-black bg-bg/60 border border-border px-3 py-1 rounded-full text-muted uppercase tracking-widest leading-none">
+                    <span className="text-[11px] md:text-xs font-black bg-bg/60 border border-border px-3 py-1 rounded-full text-muted uppercase tracking-widest leading-none">
                       {interview.type}
                     </span>
                   </>
@@ -719,7 +719,7 @@ export default function InterviewRunner({
               onClick={() => setInCall(!inCall)}
               className={`px-3.5 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider transition-all duration-300 flex items-center gap-1.5 shadow-sm border active:scale-95 shrink-0 ${
                 inCall 
-                  ? "bg-rose-500/10 border-rose-500/30 text-rose-500 hover:bg-rose-500/20" 
+                  ? "bg-rose-500/10 border-rose-500/30 text-rose-700 dark:text-rose-400 hover:bg-rose-500/20" 
                   : "bg-accent/10 border border-accent/20 text-accent hover:bg-accent/20"
               }`}
             >
@@ -739,8 +739,8 @@ export default function InterviewRunner({
           
           <span className={`text-xs font-bold px-2.5 py-0.5 rounded-md uppercase tracking-wider border shadow-sm shrink-0 ${
             interviewerView 
-              ? "bg-indigo-500/10 border-indigo-500/20 text-indigo-500 dark:text-indigo-400" 
-              : "bg-amber-500/10 border-amber-500/20 text-amber-500 dark:text-amber-400"
+              ? "bg-indigo-500/10 border-indigo-500/20 text-indigo-800 dark:text-indigo-400 dark:text-indigo-400" 
+              : "bg-amber-500/10 border-amber-500/20 text-amber-800 dark:text-amber-400 dark:text-amber-400"
           }`}>
             {interviewerView ? "Interviewer" : "Candidate"}
           </span>
@@ -770,7 +770,7 @@ export default function InterviewRunner({
                   <button
                     onClick={() => setMicEnabled(!micEnabled)}
                     className={`p-2 rounded-full transition-all duration-300 hover:scale-110 active:scale-95 border ${
-                      micEnabled ? "bg-surface border-border text-accent shadow-sm" : "bg-rose-500/10 border-rose-500/20 text-rose-500 hover:bg-rose-500/20"
+                      micEnabled ? "bg-surface border-border text-accent shadow-sm" : "bg-rose-500/10 border-rose-500/20 text-rose-700 dark:text-rose-400 hover:bg-rose-500/20"
                     }`}
                     title={micEnabled ? "Mute Microphone" : "Unmute Microphone"}
                   >
@@ -779,7 +779,7 @@ export default function InterviewRunner({
                   <button
                     onClick={() => setCamEnabled(!camEnabled)}
                     className={`p-2 rounded-full transition-all duration-300 hover:scale-110 active:scale-95 border ${
-                      camEnabled ? "bg-surface border-border text-accent shadow-sm" : "bg-rose-500/10 border-rose-500/20 text-rose-500 hover:bg-rose-500/20"
+                      camEnabled ? "bg-surface border-border text-accent shadow-sm" : "bg-rose-500/10 border-rose-500/20 text-rose-700 dark:text-rose-400 hover:bg-rose-500/20"
                     }`}
                     title={camEnabled ? "Disable Video Camera" : "Enable Video Camera"}
                   >
@@ -903,7 +903,7 @@ export default function InterviewRunner({
                       <div className="absolute inset-0 bg-gradient-to-tr from-violet-500/5 via-transparent to-accent/5 flex items-center justify-center">
                         <div className="relative">
                           <div className="absolute inset-0 rounded-full bg-violet-500/20 animate-ping opacity-60" />
-                          <div className="w-16 h-16 rounded-full bg-violet-500/10 border border-violet-500/25 flex items-center justify-center text-violet-500 font-black text-2xl relative shadow-md">
+                          <div className="w-16 h-16 rounded-full bg-violet-500/10 border border-violet-500/25 flex items-center justify-center text-violet-800 dark:text-violet-400 font-black text-2xl relative shadow-md">
                             I
                           </div>
                         </div>
@@ -930,7 +930,7 @@ export default function InterviewRunner({
                       <div className="absolute inset-0 bg-gradient-to-tr from-violet-500/5 via-transparent to-accent/5 flex items-center justify-center">
                         <div className="text-center space-y-2.5">
                           <div className="relative mx-auto">
-                            <div className="w-16 h-16 rounded-full bg-violet-500/5 border border-violet-500/20 flex items-center justify-center text-violet-500 font-black text-xl relative shadow-md">
+                            <div className="w-16 h-16 rounded-full bg-violet-500/5 border border-violet-500/20 flex items-center justify-center text-violet-800 dark:text-violet-400 font-black text-xl relative shadow-md">
                               AN
                               <span className="absolute bottom-0 right-0 w-5 h-5 rounded-full bg-emerald-500 border-2 border-surface flex items-center justify-center shadow shadow-emerald-500/30">
                                 <Mic className="w-2.5 h-2.5 text-white" />
@@ -1091,7 +1091,7 @@ export default function InterviewRunner({
                               <div className="h-10 w-px bg-border mx-2" />
                               <div className="flex flex-col gap-1.5 shrink-0 pr-1">
                                 <button onClick={copyAccessCode} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wider bg-bg border border-border hover:bg-elevated hover:border-accent/40 hover:text-accent text-muted transition active:scale-95">
-                                  {codeCopied ? <Check className="w-3 h-3 text-emerald-500" /> : <Copy className="w-3 h-3" />} Code
+                                  {codeCopied ? <Check className="w-3 h-3 text-emerald-800 dark:text-emerald-400" /> : <Copy className="w-3 h-3" />} Code
                                 </button>
                                 <button onClick={copyCandidateLink} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wider bg-bg border border-border hover:bg-elevated hover:border-accent/40 hover:text-accent text-muted transition active:scale-95">
                                   <LinkIcon className="w-3 h-3" /> Link
@@ -1105,10 +1105,10 @@ export default function InterviewRunner({
 
                         <div className="md:w-48 shrink-0 flex flex-col gap-2 border-t md:border-t-0 md:border-l border-accent/10 pt-5 md:pt-0 md:pl-6">
                           <span className="text-xs font-black uppercase tracking-wider text-muted mb-1">Quick Share</span>
-                          <button onClick={() => { window.open(`https://wa.me/?text=${encodeURIComponent(`Join my coding interview as the candidate!\nLink: ${candidateLink}`)}`, "_blank"); }} className="w-full px-4 py-2.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 hover:bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 text-xs font-bold transition flex items-center gap-2.5">
+                          <button onClick={() => { window.open(`https://wa.me/?text=${encodeURIComponent(`Join my coding interview as the candidate!\nLink: ${candidateLink}`)}`, "_blank"); }} className="w-full px-4 py-2.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 hover:bg-emerald-500/15 text-emerald-800 dark:text-emerald-400 text-xs font-bold transition flex items-center gap-2.5">
                             <MessageCircle className="w-4 h-4" /> WhatsApp
                           </button>
-                          <button onClick={() => { window.open(`mailto:?subject=You are invited to a coding interview&body=${encodeURIComponent(`Join as the candidate:\n${candidateLink}`)}`, "_blank"); }} className="w-full px-4 py-2.5 rounded-xl bg-amber-500/10 border border-amber-500/20 hover:bg-amber-500/15 text-amber-600 dark:text-amber-400 text-xs font-bold transition flex items-center gap-2.5">
+                          <button onClick={() => { window.open(`mailto:?subject=You are invited to a coding interview&body=${encodeURIComponent(`Join as the candidate:\n${candidateLink}`)}`, "_blank"); }} className="w-full px-4 py-2.5 rounded-xl bg-amber-500/10 border border-amber-500/20 hover:bg-amber-500/15 text-amber-800 dark:text-amber-400 text-xs font-bold transition flex items-center gap-2.5">
                             <Mail className="w-4 h-4" /> Email
                           </button>
                         </div>
@@ -1116,7 +1116,7 @@ export default function InterviewRunner({
 
                       <div className="bg-surface/50 border-t border-accent/10 px-6 md:px-8 py-3.5 flex items-center justify-between gap-4">
                         <div className="flex items-center gap-2.5 min-w-0">
-                          <Share2 className="w-4 h-4 text-violet-500 shrink-0" />
+                          <Share2 className="w-4 h-4 text-violet-800 dark:text-violet-400 shrink-0" />
                           <span className="text-xs font-black uppercase tracking-wider text-muted shrink-0">Observer Link:</span>
                           <input type="text" readOnly value={coInterviewerLink} className="bg-transparent border-none outline-none text-xs font-mono text-fg/70 w-full truncate" />
                         </div>
@@ -1137,7 +1137,7 @@ export default function InterviewRunner({
 
                   <div className="p-6 md:p-8 rounded-3xl border border-border bg-surface/50 shadow-sm flex flex-col">
                     <div className="flex items-center gap-2.5 mb-6">
-                      <div className="w-7 h-7 rounded-lg bg-indigo-500/10 flex items-center justify-center text-indigo-500">
+                      <div className="w-7 h-7 rounded-lg bg-indigo-500/10 flex items-center justify-center text-indigo-800 dark:text-indigo-400">
                         <Layers className="w-4 h-4" />
                       </div>
                       <span className="text-xs font-black uppercase tracking-[0.2em] text-fg">Session Itinerary</span>
@@ -1211,11 +1211,11 @@ export default function InterviewRunner({
                   </span>
                   <span className={`text-xs font-extrabold px-3 py-1 rounded-full border uppercase tracking-wider shadow-sm ${
                     status === "completed"
-                      ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-500 dark:text-emerald-400"
+                      ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-800 dark:text-emerald-400 dark:text-emerald-400"
                       : status === "abandoned"
-                        ? "bg-rose-500/10 border-rose-500/20 text-rose-500 dark:text-rose-400"
+                        ? "bg-rose-500/10 border-rose-500/20 text-rose-700 dark:text-rose-400 dark:text-rose-400"
                         : status === "in_progress"
-                          ? "bg-indigo-500/15 border-indigo-500/25 text-indigo-500 dark:text-indigo-400 animate-pulse shadow-[0_0_12px_rgba(99,102,241,0.2)]"
+                          ? "bg-indigo-500/15 border-indigo-500/25 text-indigo-800 dark:text-indigo-400 animate-pulse shadow-[0_0_12px_rgba(99,102,241,0.2)]"
                           : "bg-bg/60 border-border text-muted"
                   }`}>
                     {status === "completed" ? "Concluded" : status === "abandoned" ? "Abandoned" : status === "in_progress" ? "Live" : "Standby"}
@@ -1281,26 +1281,26 @@ export default function InterviewRunner({
                 {interview.type === "mock" && status !== "completed" && status !== "abandoned" && (
                   <div className="p-4.5 rounded-2xl border border-indigo-500/20 bg-indigo-500/[0.03] space-y-3.5 shadow-sm animate-fade-in">
                     <div className="flex items-center gap-2 border-b border-indigo-500/10 pb-2">
-                      <Sparkles className="w-4 h-4 text-indigo-400" />
-                      <h4 className="text-xs font-bold uppercase tracking-wider text-indigo-400">Self-Practice Guide</h4>
+                      <Sparkles className="w-4 h-4 text-indigo-800 dark:text-indigo-400" />
+                      <h4 className="text-xs font-bold uppercase tracking-wider text-indigo-800 dark:text-indigo-400">Self-Practice Guide</h4>
                     </div>
                     <ul className="space-y-3 text-xs text-muted leading-relaxed font-sans">
                       <li className="flex items-start gap-2.5">
-                        <span className="w-4.5 h-4.5 rounded-full bg-indigo-500/10 text-indigo-400 flex items-center justify-center font-bold text-[10px] mt-0.5 border border-indigo-500/20 shrink-0">1</span>
+                        <span className="w-4.5 h-4.5 rounded-full bg-indigo-500/10 text-indigo-800 dark:text-indigo-400 flex items-center justify-center font-bold text-[11px] mt-0.5 border border-indigo-500/20 shrink-0">1</span>
                         <div className="space-y-0.5">
                           <p className="text-fg font-semibold">Start &amp; Attempt Challenges</p>
                           <p className="text-xs text-muted/70">Click &quot;Start Practice&quot; to begin, then solve challenges using the timeline on the right.</p>
                         </div>
                       </li>
                       <li className="flex items-start gap-2.5">
-                        <span className="w-4.5 h-4.5 rounded-full bg-indigo-500/10 text-indigo-400 flex items-center justify-center font-bold text-[10px] mt-0.5 border border-indigo-500/20 shrink-0">2</span>
+                        <span className="w-4.5 h-4.5 rounded-full bg-indigo-500/10 text-indigo-800 dark:text-indigo-400 flex items-center justify-center font-bold text-[11px] mt-0.5 border border-indigo-500/20 shrink-0">2</span>
                         <div className="space-y-0.5">
                           <p className="text-fg font-semibold">Think Aloud &amp; Simulate</p>
                           <p className="text-xs text-muted/70">Describe your logic out loud while writing code. It develops excellent muscle memory!</p>
                         </div>
                       </li>
                       <li className="flex items-start gap-2.5">
-                        <span className="w-4.5 h-4.5 rounded-full bg-indigo-500/10 text-indigo-400 flex items-center justify-center font-bold text-[10px] mt-0.5 border border-indigo-500/20 shrink-0">3</span>
+                        <span className="w-4.5 h-4.5 rounded-full bg-indigo-500/10 text-indigo-800 dark:text-indigo-400 flex items-center justify-center font-bold text-[11px] mt-0.5 border border-indigo-500/20 shrink-0">3</span>
                         <div className="space-y-0.5">
                           <p className="text-fg font-semibold">Self-Evaluation Rubric</p>
                           <p className="text-xs text-muted/70">When done, click &quot;Conclude round&quot; to score yourself on Code Quality, Problem Solving, and Communication.</p>
@@ -1323,13 +1323,13 @@ export default function InterviewRunner({
 
                 {(status === "completed" || status === "abandoned") && (
                   <div className="space-y-5 w-full">
-                    <div className="flex items-center gap-4 p-5 rounded-3xl border border-emerald-500/30 bg-gradient-to-r from-emerald-500/10 to-teal-500/5 text-emerald-600 dark:text-emerald-400 shadow-sm animate-fade-in relative overflow-hidden">
+                    <div className="flex items-center gap-4 p-5 rounded-3xl border border-emerald-500/30 bg-gradient-to-r from-emerald-500/10 to-teal-500/5 text-emerald-800 dark:text-emerald-400 shadow-sm animate-fade-in relative overflow-hidden">
                       <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,var(--color-emerald-500)_0%,transparent_40%)] opacity-[0.08]" />
                       <div className="w-10 h-10 rounded-xl bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center shrink-0 relative z-10 shadow-inner">
-                        <Trophy className="w-5 h-5 text-emerald-500" />
+                        <Trophy className="w-5 h-5 text-emerald-800 dark:text-emerald-400" />
                       </div>
                       <div className="relative z-10">
-                        <div className="text-xs font-black uppercase tracking-[0.2em] leading-none mb-1.5 text-emerald-500">Round Concluded</div>
+                        <div className="text-xs font-black uppercase tracking-[0.2em] leading-none mb-1.5 text-emerald-800 dark:text-emerald-400">Round Concluded</div>
                         {verdict && (
                           <div className="text-xs text-muted flex items-center gap-1.5">
                             Verdict: <span className="font-bold text-fg capitalize bg-bg/80 border border-border px-2 py-0.5 rounded-md shadow-sm">{verdict.replace(/_/g, ' ')}</span>
@@ -1343,7 +1343,7 @@ export default function InterviewRunner({
                       
                       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-border/50 pb-4 relative z-10">
                         <div className="flex items-center gap-2">
-                          <div className="w-6 h-6 rounded-md bg-indigo-500/10 flex items-center justify-center text-indigo-400 border border-indigo-500/20">
+                          <div className="w-6 h-6 rounded-md bg-indigo-500/10 flex items-center justify-center text-indigo-800 dark:text-indigo-400 border border-indigo-500/20">
                             <Sparkles className="w-3.5 h-3.5" />
                           </div>
                           <span className="text-xs font-black uppercase tracking-[0.2em] text-fg">Evaluation Rubric</span>
@@ -1352,7 +1352,7 @@ export default function InterviewRunner({
                           <Link
                             href={`/interview/${interview.id}/report?token=${interview.shareToken}`}
                             target="_blank"
-                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-indigo-500/10 text-indigo-400 hover:bg-indigo-500/20 transition-colors text-xs font-bold tracking-wider"
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-indigo-500/10 text-indigo-800 dark:text-indigo-400 hover:bg-indigo-500/20 transition-colors text-xs font-bold tracking-wider"
                           >
                             <FileText className="w-3.5 h-3.5" />
                             View PDF Report
@@ -1468,7 +1468,7 @@ export default function InterviewRunner({
                             <span className="w-1 h-1 rounded-full bg-border-strong shrink-0" />
                             <span className="font-extrabold text-fg truncate text-left">{c.title}</span>
                           </div>
-                          <span className={`text-[10px] font-black uppercase px-2.5 py-0.5 rounded border shrink-0 ${statusBadgeColor}`}>
+                          <span className={`text-[11px] font-black uppercase px-2.5 py-0.5 rounded border shrink-0 ${statusBadgeColor}`}>
                             {statusBadgeLabel}
                           </span>
                         </button>
@@ -1485,7 +1485,7 @@ export default function InterviewRunner({
                           onClick={() => setSelectedReview({ id: p.id, type: "playground" })}
                           className={`w-full flex items-center justify-between gap-4 px-4 py-3 rounded-xl border text-xs font-bold transition-all active:scale-[0.99] duration-200 relative overflow-hidden ${
                             isSelected
-                              ? "bg-indigo-500/10 border-indigo-500/40 text-indigo-500 shadow-[0_0_15px_rgba(99,102,241,0.1)]"
+                              ? "bg-indigo-500/10 border-indigo-500/40 text-indigo-800 dark:text-indigo-400 shadow-[0_0_15px_rgba(99,102,241,0.1)]"
                               : "bg-surface/50 border-border hover:bg-elevated hover:border-border-strong text-muted hover:text-fg"
                           }`}
                         >
@@ -1494,7 +1494,7 @@ export default function InterviewRunner({
                             <span className="w-1 h-1 rounded-full bg-border-strong shrink-0" />
                             <span className="font-extrabold text-fg truncate text-left">{p.title}</span>
                           </div>
-                          <span className="text-[10px] font-black uppercase px-2.5 py-0.5 rounded border text-muted bg-surface/50 border-border shrink-0">
+                          <span className="text-[11px] font-black uppercase px-2.5 py-0.5 rounded border text-muted bg-surface/50 border-border shrink-0">
                             Manual
                           </span>
                         </button>
@@ -1519,7 +1519,7 @@ export default function InterviewRunner({
                           onClick={() => setSelectedReview({ id: ps.id, type: "prompt" })}
                           className={`w-full flex items-center justify-between gap-4 px-4 py-3 rounded-xl border text-xs font-bold transition-all active:scale-[0.99] duration-200 relative overflow-hidden ${
                             isSelected
-                              ? "bg-amber-500/10 border-amber-500/40 text-amber-500 shadow-[0_0_15px_rgba(245,158,11,0.1)]"
+                              ? "bg-amber-500/10 border-amber-500/40 text-amber-800 dark:text-amber-400 shadow-[0_0_15px_rgba(245,158,11,0.1)]"
                               : "bg-surface/50 border-border hover:bg-elevated hover:border-border-strong text-muted hover:text-fg"
                           }`}
                         >
@@ -1528,7 +1528,7 @@ export default function InterviewRunner({
                             <span className="w-1 h-1 rounded-full bg-border-strong shrink-0" />
                             <span className="font-extrabold text-fg truncate text-left">{ps.title}</span>
                           </div>
-                          <span className={`text-[10px] font-black uppercase px-2.5 py-0.5 rounded border shrink-0 ${statusBadgeColor}`}>
+                          <span className={`text-[11px] font-black uppercase px-2.5 py-0.5 rounded border shrink-0 ${statusBadgeColor}`}>
                             {statusBadgeLabel}
                           </span>
                         </button>
@@ -1713,7 +1713,7 @@ export default function InterviewRunner({
                                         <span className="flex items-center gap-1.5 text-fg/80">
                                           <span className="text-accent">●</span> Active File: {activeFileKey}
                                         </span>
-                                        <span className="bg-bg/50 border border-border px-2 py-0.5 rounded-md font-mono text-[10px]">
+                                        <span className="bg-bg/50 border border-border px-2 py-0.5 rounded-md font-mono text-[11px]">
                                           {activeFileKey.split(".").pop() ?? "code"}
                                         </span>
                                       </div>
@@ -1778,7 +1778,7 @@ export default function InterviewRunner({
                                                 {t.name || `Test Case #${tIdx + 1}`}
                                               </span>
                                             </div>
-                                            <span className={`text-[10px] font-black uppercase px-2 py-0.5 rounded border ${
+                                            <span className={`text-[11px] font-black uppercase px-2 py-0.5 rounded border ${
                                               isPass ? "bg-emerald-500/10 border-emerald-500/25" : "bg-rose-500/10 border-rose-500/25"
                                             }`}>
                                               {isPass ? "Pass" : "Fail"}
@@ -1946,14 +1946,14 @@ export default function InterviewRunner({
               ) : (
                 <>
                   <div className="border-b border-border pb-3 flex items-center justify-between">
-                    <span className="text-[10px] font-black uppercase tracking-[0.2em] text-muted">
+                    <span className="text-[11px] font-black uppercase tracking-[0.2em] text-muted">
                       {isCombined
                         ? "Unified Interview Timeline"
                         : isPlayground
                         ? "Playground Rounds"
                         : "Challenge Sequence"}
                     </span>
-                    <span className="text-[10px] text-muted font-mono tracking-wider bg-bg/60 border border-border px-2 py-0.5 rounded-full">
+                    <span className="text-[11px] text-muted font-mono tracking-wider bg-bg/60 border border-border px-2 py-0.5 rounded-full">
                       {isCombined
                         ? `${challenges.length + playgrounds.length + promptScenarios.length} Rounds`
                         : isPlayground
@@ -2425,7 +2425,7 @@ export default function InterviewRunner({
                   <Users className="w-4 h-4" />
                 </div>
                 <div className="min-w-0">
-                  <div className="text-[10px] font-black uppercase tracking-[0.18em] text-muted">Candidate access code</div>
+                  <div className="text-[11px] font-black uppercase tracking-[0.18em] text-muted">Candidate access code</div>
                   {interview.shortCode ? (
                     <div className="flex items-center gap-2 mt-0.5">
                       <span className="font-mono font-black text-2xl md:text-3xl tracking-[0.2em] text-accent select-all leading-none">
@@ -2433,7 +2433,7 @@ export default function InterviewRunner({
                       </span>
                       <button
                         onClick={copyAccessCode}
-                        className="ml-1 inline-flex items-center gap-1 px-2 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider bg-bg border border-border hover:bg-elevated hover:border-accent/40 hover:text-accent text-muted transition active:scale-95"
+                        className="ml-1 inline-flex items-center gap-1 px-2 py-1 rounded-md text-[11px] font-bold uppercase tracking-wider bg-bg border border-border hover:bg-elevated hover:border-accent/40 hover:text-accent text-muted transition active:scale-95"
                         title="Copy access code"
                       >
                         {codeCopied ? (
@@ -2457,7 +2457,7 @@ export default function InterviewRunner({
               <div className="flex items-center gap-2 shrink-0 w-full md:w-auto">
                 <button
                   onClick={copyCandidateLink}
-                  className="flex-1 md:flex-none px-3 py-2 rounded-xl bg-bg border border-border hover:bg-elevated hover:border-accent/40 hover:text-accent text-muted text-[10px] font-bold uppercase tracking-wider transition active:scale-95 inline-flex items-center justify-center gap-1.5"
+                  className="flex-1 md:flex-none px-3 py-2 rounded-xl bg-bg border border-border hover:bg-elevated hover:border-accent/40 hover:text-accent text-muted text-[11px] font-bold uppercase tracking-wider transition active:scale-95 inline-flex items-center justify-center gap-1.5"
                   title="Copy candidate join link"
                 >
                   <LinkIcon className="w-3.5 h-3.5" />
@@ -2465,14 +2465,14 @@ export default function InterviewRunner({
                 </button>
                 <button
                   onClick={() => { window.open(`https://wa.me/?text=${encodeURIComponent(`Join my coding interview as the candidate!\nLink: ${candidateLink}`)}`, "_blank"); }}
-                  className="flex-1 md:flex-none px-3 py-2 rounded-xl bg-emerald-500/10 border border-emerald-500/20 hover:bg-emerald-500/15 text-emerald-500 text-[10px] font-bold uppercase tracking-wider transition active:scale-95 inline-flex items-center justify-center gap-1.5"
+                  className="flex-1 md:flex-none px-3 py-2 rounded-xl bg-emerald-500/10 border border-emerald-500/20 hover:bg-emerald-500/15 text-emerald-500 text-[11px] font-bold uppercase tracking-wider transition active:scale-95 inline-flex items-center justify-center gap-1.5"
                 >
                   <MessageCircle className="w-3.5 h-3.5" />
                   WhatsApp
                 </button>
                 <button
                   onClick={() => { window.open(`mailto:?subject=You are invited to a coding interview&body=${encodeURIComponent(`Join as the candidate:\n${candidateLink}`)}`, "_blank"); }}
-                  className="flex-1 md:flex-none px-3 py-2 rounded-xl bg-amber-500/10 border border-amber-500/20 hover:bg-amber-500/15 text-amber-500 text-[10px] font-bold uppercase tracking-wider transition active:scale-95 inline-flex items-center justify-center gap-1.5"
+                  className="flex-1 md:flex-none px-3 py-2 rounded-xl bg-amber-500/10 border border-amber-500/20 hover:bg-amber-500/15 text-amber-500 text-[11px] font-bold uppercase tracking-wider transition active:scale-95 inline-flex items-center justify-center gap-1.5"
                 >
                   <Mail className="w-3.5 h-3.5" />
                   Email
@@ -2484,7 +2484,7 @@ export default function InterviewRunner({
             <div className="border-t border-border">
               <button
                 onClick={() => setShowObserverLink((v) => !v)}
-                className="w-full flex items-center justify-between gap-3 px-5 py-2.5 text-[10px] font-bold uppercase tracking-wider text-muted hover:text-fg transition group"
+                className="w-full flex items-center justify-between gap-3 px-5 py-2.5 text-[11px] font-bold uppercase tracking-wider text-muted hover:text-fg transition group"
                 aria-expanded={showObserverLink}
               >
                 <span className="inline-flex items-center gap-2">
@@ -2612,7 +2612,7 @@ export default function InterviewRunner({
 
             {/* Structured Rubric Evaluation */}
             <div className="border-t border-border pt-4 mt-2 space-y-4 relative z-10 max-h-[300px] overflow-y-auto pr-1 scrollbar-thin">
-              <h4 className="text-[10px] font-black uppercase tracking-wider text-accent">Structured Rubric Evaluation</h4>
+              <h4 className="text-[11px] font-black uppercase tracking-wider text-accent">Structured Rubric Evaluation</h4>
               
               <div className="space-y-3">
                 {[
@@ -2645,7 +2645,7 @@ export default function InterviewRunner({
                         ))}
                       </div>
                     </div>
-                    <span className="text-[10px] text-muted/70">{metric.desc}</span>
+                    <span className="text-[11px] text-muted/70">{metric.desc}</span>
                   </div>
                 ))}
               </div>
@@ -2742,7 +2742,7 @@ function Stat({
             : "text-fg";
   return (
     <div className="p-4 rounded-xl border border-border bg-surface">
-      <div className="text-[10px] font-black uppercase tracking-[0.2em] text-muted mb-1">
+      <div className="text-[11px] font-black uppercase tracking-[0.2em] text-muted mb-1">
         {label}
       </div>
       <div className={`text-xl font-black tabular-nums ${color}`}>{value}</div>

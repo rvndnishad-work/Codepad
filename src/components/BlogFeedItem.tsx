@@ -74,7 +74,7 @@ export default function BlogFeedItem({ blog }: { blog: BlogFeedEntry }) {
             {blog.tags.slice(0, 4).map((t) => (
               <span
                 key={t}
-                className="px-2 py-0.5 rounded-data text-[10px] font-bold uppercase tracking-widest bg-accent/5 border border-accent/10 text-accent/80 hover:bg-accent/10 transition-colors"
+                className="px-2 py-0.5 rounded-data text-[11px] font-bold uppercase tracking-widest bg-accent/5 border border-accent/10 text-accent/80 hover:bg-accent/10 transition-colors"
               >
                 {t}
               </span>

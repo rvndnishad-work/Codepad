@@ -31,9 +31,9 @@ const LANG_EXT: Record<string, string> = {
 };
 
 const DIFFICULTY_CHIP: Record<string, string> = {
-  easy: "text-emerald-500 bg-emerald-500/10 border-emerald-500/30",
-  medium: "text-amber-500 bg-amber-500/10 border-amber-500/30",
-  hard: "text-rose-500 bg-rose-500/10 border-rose-500/30",
+  easy: "text-emerald-800 dark:text-emerald-400 bg-emerald-500/10 border-emerald-500/30",
+  medium: "text-amber-800 dark:text-amber-400 bg-amber-500/10 border-amber-500/30",
+  hard: "text-rose-700 dark:text-rose-400 bg-rose-500/10 border-rose-500/30",
 };
 
 function formatDuration(total: number): string {
@@ -176,7 +176,7 @@ export default function HarnessAttemptClient({
             type="button"
             onClick={handleExit}
             title="Exit the assessment"
-            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-rose-500/30 bg-rose-500/5 hover:bg-rose-500/10 text-rose-500 hover:text-rose-400 text-xs font-bold transition shrink-0"
+            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-rose-500/30 bg-rose-500/5 hover:bg-rose-500/10 text-rose-700 dark:text-rose-400 hover:text-rose-400 text-xs font-bold transition shrink-0"
           >
             <LogOut className="w-3.5 h-3.5" />
             <span className="hidden sm:inline">Exit</span>
@@ -185,7 +185,7 @@ export default function HarnessAttemptClient({
           <div className="min-w-0 flex items-center gap-2">
             <h2 className="font-black text-sm truncate">{title}</h2>
             <span
-              className={`shrink-0 text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded border ${
+              className={`shrink-0 text-[11px] font-black uppercase tracking-wider px-2 py-0.5 rounded border ${
                 DIFFICULTY_CHIP[difficulty] ?? DIFFICULTY_CHIP.easy
               }`}
             >
@@ -243,7 +243,7 @@ export default function HarnessAttemptClient({
               disabled={running || submitting}
               className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border border-border bg-surface text-fg text-xs font-bold hover:border-border-strong transition disabled:opacity-50 whitespace-nowrap shrink-0"
             >
-              {running ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Play className="w-3.5 h-3.5 text-emerald-500 fill-current" />}
+              {running ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Play className="w-3.5 h-3.5 text-emerald-800 dark:text-emerald-400 fill-current" />}
               Run
             </button>
             <button
@@ -276,7 +276,7 @@ export default function HarnessAttemptClient({
 
             {publicCases.length > 0 && (
               <div className="mt-6">
-                <div className="text-[10px] font-black uppercase tracking-[0.15em] text-muted mb-2">Sample cases</div>
+                <div className="text-[11px] font-black uppercase tracking-[0.15em] text-muted mb-2">Sample cases</div>
                 <div className="space-y-2">
                   {publicCases.map((c, i) => (
                     <div key={i} className="rounded-lg border border-border bg-surface p-2.5 text-xs font-mono">
@@ -380,7 +380,7 @@ export default function HarnessAttemptClient({
             }
           >
             <div className="h-10 shrink-0 flex items-center justify-between gap-2 px-3 border-b border-border bg-surface/30">
-              <span className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-wider text-fg">
+              <span className="flex items-center gap-1.5 text-[11px] font-black uppercase tracking-wider text-fg">
                 <Terminal className="w-3 h-3 text-accent" />
                 Output
               </span>
@@ -444,7 +444,7 @@ function OutputBody({ result, busy }: { result: GradeResponse | null; busy: bool
               {r.status === "pass" ? <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" /> : <XCircle className="w-3.5 h-3.5 text-rose-500" />}
               <span className="font-bold text-fg">{r.name}</span>
               {r.isHidden && <span className="text-[9px] text-muted/50 uppercase font-black inline-flex items-center gap-1"><EyeOff className="w-3 h-3" />hidden</span>}
-              <span className="ml-auto text-[10px] uppercase font-black text-muted">{r.status}</span>
+              <span className="ml-auto text-[11px] uppercase font-black text-muted">{r.status}</span>
             </div>
             {!r.isHidden && r.status !== "pass" && (
               <div className="mt-1 font-mono text-[11px] text-muted/80 space-y-0.5">

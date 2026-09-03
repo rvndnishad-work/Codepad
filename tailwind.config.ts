@@ -41,6 +41,12 @@ const config: Config = {
           glow: "var(--accent-2-glow)",
           ink: "var(--accent-2-ink)",
         },
+        /* Status. Theme-aware and AA-verified on every ground — reach for
+           these instead of `emerald-500`/`amber-500`/`rose-500`, which are
+           legible on the dark ground only. */
+        success: "rgb(var(--c-success) / <alpha-value>)",
+        warning: "rgb(var(--c-warning) / <alpha-value>)",
+        danger: "rgb(var(--c-danger) / <alpha-value>)",
         /* Ink is the structural primary (see globals.css "Runtime" notes):
            near-black on paper, paper on near-black. `ink-fg` is the only
            colour that belongs on top of it. */

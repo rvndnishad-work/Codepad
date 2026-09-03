@@ -79,7 +79,7 @@ export default function SignalStrip({
 
 /** The developer-side track. Kept here so both hero and footer stay in sync. */
 export const CANDIDATE_STAGES: SignalStage[] = [
-  { label: "Practise", state: "done" },
+  { label: "Practice", state: "done" },
   { label: "Build", state: "done" },
   { label: "Review", state: "live" },
   { label: "Interview" },

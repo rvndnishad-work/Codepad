@@ -11,7 +11,7 @@ import PricingTeaser from "./PricingTeaser";
 import HirePipeline from "./HirePipeline";
 import SectionHeading from "@/components/home/SectionHeading";
 import RevealOnScroll, { RevealItem } from "@/components/scroll/RevealOnScroll";
-import { Video, Sparkles, ShieldCheck, Users, Bot, Award } from "lucide-react";
+import { Video, ShieldCheck, Users, Bot, Award } from "lucide-react";
 import ScrollProgressBar from "./ScrollProgressBar";
 
 export const metadata: Metadata = {
@@ -120,18 +120,13 @@ export default async function HirePage() {
         <HomeInfographic persona="recruiter" />
       </div>
 
-      {/* ── Why teams switch ── */}
+      {/* ── Why teams switch ──
+             One clause, not two. This used to open with its own heading and
+             then hand straight to HomeRecruiterFeatures' 05.1 sub-heading with
+             nothing in between, so the page showed two stacked titles and a
+             gap. The feature run carries the whole section now. */}
       <section className="border-b border-border py-20 md:py-28">
         <div className="mx-auto max-w-6xl px-4">
-          <SectionHeading
-            index="05"
-            tone="secondary"
-            eyebrow="Why teams switch"
-            eyebrowIcon={<Sparkles className="h-3 w-3" />}
-            title="Everything for"
-            highlight="signal, not noise."
-            lede="Stop toggling between a video call, a coding pad and a spreadsheet. One workspace for every signal you actually hire on."
-          />
           <div className="grid grid-cols-1 gap-4 md:grid-cols-12">
             <HomeRecruiterFeatures />
           </div>
@@ -140,61 +135,57 @@ export default async function HirePage() {
 
       <TrustBand />
 
-      {/* ── Customer story ──
-             An editorial pull-quote hung off a rule, with the numbers as a
-             ruled readout beside it. No tinted gradient panel: the quote is
-             large enough to carry itself. */}
+      {/* ── The record ──
+             This slot used to hold a testimonial that was invented: a quote,
+             a "Series B SaaS" engineering manager, and a stock face fetched
+             live from pravatar.cc, presented as a real customer. On a page
+             whose entire argument is "decide on evidence", fabricated proof
+             is the one thing that cannot be here. It is replaced with what
+             the product genuinely leaves behind after an attempt — every line
+             below maps to a shipped mechanism. When there IS a real customer
+             quote, this is the slot for it. */}
       <section className="border-b border-border py-20 md:py-28">
         <div className="mx-auto max-w-6xl px-4">
-          <div className="flex items-center gap-3">
-            <span className="ip-index text-secondary">07</span>
-            <span className="ip-label ip-label-secondary flex items-center gap-1.5">
-              <Award className="h-3 w-3" />
-              Customer story
-            </span>
-            <span className="ip-rule min-w-4 flex-1" aria-hidden />
-          </div>
+          <SectionHeading
+            index="07"
+            tone="secondary"
+            eyebrow="The record"
+            eyebrowIcon={<Award className="h-3 w-3" />}
+            title="What you are left with,"
+            highlight="per candidate."
+            lede="A hiring decision is easy to make and hard to defend three months later. Every attempt closes into one record your team can reopen — and hand to the person who asks why."
+          />
 
-          <RevealOnScroll className="mt-10 grid grid-cols-1 gap-10 lg:grid-cols-12 lg:gap-14">
+          <RevealOnScroll className="grid grid-cols-1 gap-10 lg:grid-cols-12 lg:gap-14">
             <RevealItem className="lg:col-span-7">
-              <blockquote className="border-l-2 border-secondary pl-6">
-                <p className="ip-display ip-display-md text-fg">
-                  &ldquo;We cut screening time by <span className="text-secondary">60%</span> and
-                  finally trust our take-homes — server grading killed the copy-paste
-                  hires.&rdquo;
-                </p>
-              </blockquote>
-              <div className="mt-6 flex items-center gap-3 pl-6">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src="https://i.pravatar.cc/100?img=32"
-                  alt=""
-                  className="h-9 w-9 border border-border object-cover"
-                />
-                <div>
-                  <div className="text-[13.5px] font-semibold text-fg">
-                    Engineering Manager, Series B SaaS
-                  </div>
-                  <div className="ip-label ip-label-xs mt-0.5">Hired 12 engineers in 6 weeks</div>
-                </div>
-              </div>
-            </RevealItem>
-
-            <RevealItem className="lg:col-span-5">
-              <div className="ip-frame grid grid-cols-1 gap-px bg-border">
-                {[
-                  { k: "60%", v: "less screening time" },
-                  { k: "3x", v: "more qualified onsites" },
-                  { k: "100%", v: "replayable evidence" },
-                ].map((s) => (
-                  <div key={s.k} className="flex items-baseline gap-4 bg-surface px-5 py-4">
-                    <span className="ip-nums w-20 shrink-0 text-2xl font-bold text-secondary">
-                      {s.k}
+              <div className="ip-frame">
+                {RECORD.map((row, i) => (
+                  <div
+                    key={row.label}
+                    className={`flex flex-col gap-1.5 px-6 py-5 sm:flex-row sm:items-baseline sm:gap-6 ${
+                      i > 0 ? "border-t border-border" : ""
+                    }`}
+                  >
+                    <span className="ip-label ip-label-secondary shrink-0 sm:w-40">
+                      {row.label}
                     </span>
-                    <span className="ip-label">{s.v}</span>
+                    <span className="text-[13.5px] leading-relaxed text-muted">{row.body}</span>
                   </div>
                 ))}
               </div>
+            </RevealItem>
+
+            <RevealItem className="flex flex-col justify-between gap-6 lg:col-span-5">
+              <blockquote className="border-l-2 border-secondary pl-6">
+                <p className="ip-display ip-display-md text-fg">
+                  The candidate keeps the work. You keep the reasoning.
+                </p>
+              </blockquote>
+              <p className="pl-6 text-[13px] leading-relaxed text-subtle">
+                Records stay in the workspace under its retention policy, are written to an
+                append-only audit log, and travel to Greenhouse, Lever or Ashby with the verdict
+                attached.
+              </p>
             </RevealItem>
           </RevealOnScroll>
         </div>
@@ -206,6 +197,29 @@ export default async function HirePage() {
     </div>
   );
 }
+
+/**
+ * What a finished attempt actually leaves behind. Every row maps to a shipped
+ * mechanism — keep it that way, the same rule TrustBand is held to.
+ */
+const RECORD: { label: string; body: string }[] = [
+  {
+    label: "The attempt",
+    body: "Every keystroke, run and submission on a timeline you can scrub — not a final diff with no history behind it.",
+  },
+  {
+    label: "The result",
+    body: "Hidden tests executed on our servers in the candidate's language, with the pass/fail matrix that produced the score.",
+  },
+  {
+    label: "The signals",
+    body: "Tab switches, clipboard events and timing anomalies, disclosed to the candidate and presented for a human to read.",
+  },
+  {
+    label: "The judgement",
+    body: "Rubric scores per dimension from whoever sat in, side by side, so a panel disagreement is visible instead of averaged away.",
+  },
+];
 
 function buildStats(counts: {
   sessionCount: number;

@@ -76,7 +76,7 @@ const STAGES: Stage[] = [
     id: "execute",
     kicker: "03 · Execute",
     title: "Run anything, safely sandboxed",
-    body: "Code executes in a two-layer isolated runtime across eight languages. stdout, stderr and timing come back to the panel in milliseconds.",
+    body: "Code executes in a two-layer isolated runtime across 8 languages. stdout, stderr and timing come back to the panel in milliseconds.",
     icon: ShieldCheck,
     tone: {
       text: "text-amber-500",
@@ -118,7 +118,7 @@ export default function HomeHowItWorks() {
   const railFill = useTransform(smooth, [0, 1], ["0%", "100%"]);
 
   return (
-    <section className="relative border-b border-border bg-bg pt-20 md:pt-28">
+    <section className="relative border-b border-border bg-bg py-20 md:py-28">
       <div className="mx-auto max-w-6xl px-4">
         <SectionHeading
           index="03"
@@ -156,7 +156,7 @@ export default function HomeHowItWorks() {
                   </div>
 
                   {/* Crossfading stage panels */}
-                  <div className="col-span-9 relative h-[420px] [perspective:1200px]">
+                  <div className="col-span-9 relative h-[500px] xl:h-[560px] [perspective:1200px]">
                     {STAGES.map((s, i) => (
                       <StagePanel key={s.id} stage={s} index={i} progress={smooth} />
                     ))}
@@ -167,7 +167,7 @@ export default function HomeHowItWorks() {
           </div>
 
           {/* Tablet/mobile: animated stack, no pinning */}
-          <div className="lg:hidden pb-24">
+          <div className="lg:hidden">
             <StaticStack />
           </div>
         </>
@@ -238,22 +238,22 @@ function StagePanel({
   return (
     <motion.article
       style={{ opacity, y, rotateX, transformStyle: "preserve-3d" }}
-      className={`absolute inset-0  border ${stage.tone.border} bg-surface  p-10 flex flex-col justify-center overflow-hidden will-change-`}
+      className={`absolute inset-0 flex flex-col justify-center overflow-hidden border bg-surface p-10 xl:p-14 ${stage.tone.border}`}
     >
       <span
         aria-hidden
-        className="absolute -bottom-8 -right-4 text-[10rem] leading-none font-bold text-fg opacity-[0.03] select-none pointer-events-none"
+        className="pointer-events-none absolute -bottom-10 -right-6 select-none text-[14rem] font-bold leading-none text-fg opacity-[0.035]"
       >
         {String(index + 1).padStart(2, "0")}
       </span>
 
-      <div className="relative space-y-6 max-w-xl">
+      <div className="relative max-w-2xl space-y-6">
         <div className={`w-16 h-16  border ${stage.tone.border} ${stage.tone.chipBg} ${stage.tone.text} flex items-center justify-center`}>
           <Icon className="w-8 h-8" />
         </div>
-        <p className={`text-xs font-bold uppercase tracking-widest ${stage.tone.text}`}>{stage.kicker}</p>
-        <h3 className="text-3xl xl:text-4xl font-bold tracking-tight text-fg leading-tight">{stage.title}</h3>
-        <p className="text-muted text-base md:text-lg leading-relaxed font-medium">{stage.body}</p>
+        <p className={`ip-label ${stage.tone.text}`}>{stage.kicker}</p>
+        <h3 className="ip-display ip-display-lg text-fg">{stage.title}</h3>
+        <p className="max-w-[54ch] text-[15px] leading-relaxed text-muted xl:text-base">{stage.body}</p>
         <div className="flex flex-wrap gap-2 pt-1">
           {stage.points.map((p) => (
             <span

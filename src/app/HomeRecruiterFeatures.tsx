@@ -92,11 +92,15 @@ function SectionShell({ index, icon: Icon, title, titleAccent, desc, bullets, ch
             </ul>
           </div>
           {/* Demo side — mounted only while visible */}
-          <div ref={demoWrapRef} className="flex-1 min-w-0 w-full min-h-[340px] flex">
+          {/* Fixed box, not min-height: the demos animate content in and out,
+              and a panel that sizes to its own content makes the whole card
+              grow and shrink as it plays. The box is reserved once; the demo
+              reveals its content inside it. */}
+          <div ref={demoWrapRef} className="flex h-[440px] w-full min-w-0 flex-1">
             {demoInView ? (
               children
             ) : (
-              <div className="w-full min-h-[340px] border border-border bg-surface/50 animate-pulse" aria-hidden />
+              <div className="h-full w-full border border-border bg-surface/50 animate-pulse" aria-hidden />
             )}
           </div>
         </div>
@@ -158,7 +162,7 @@ function ProctoringDemo() {
   const trustColor = trust > 70 ? "text-emerald-400" : trust > 40 ? "text-amber-400" : "text-red-400";
 
   return (
-    <div className="relative bg-surface/50 border border-border/50 p-6 min-h-[340px] flex flex-col gap-4">
+    <div className="relative flex h-full w-full flex-col gap-4 overflow-hidden border border-border/50 bg-surface/50 p-6">
       <ReplayBtn onClick={start} />
       <div>
         <div className="flex items-center gap-2 mb-3.5">
@@ -188,7 +192,7 @@ function ProctoringDemo() {
       {/* Events Scroll Area */}
       <div
         ref={scrollRef}
-        className="space-y-2 h-[160px] overflow-y-auto pr-1 scrollbar-thin scrollbar-thumb-border scroll-smooth"
+        className="min-h-0 flex-1 space-y-2 overflow-y-auto pr-1 scrollbar-thin scrollbar-thumb-border scroll-smooth"
       >
         <AnimatePresence>
           {PROCTOR_EVENTS.slice(0, visibleCount).map((ev, i) => (
@@ -280,7 +284,7 @@ function McpDemo() {
   };
 
   return (
-    <div className="relative bg-surface/50 border border-border/50 p-6 min-h-[340px] flex flex-col gap-4">
+    <div className="relative flex h-full w-full flex-col gap-4 overflow-hidden border border-border/50 bg-surface/50 p-6">
       <ReplayBtn onClick={start} />
       <div>
         <div className="flex items-center gap-2 mb-3.5">
@@ -291,7 +295,7 @@ function McpDemo() {
       {/* Scrollable console view port */}
       <div
         ref={scrollRef}
-        className="font-mono text-[11px] space-y-3 h-[220px] overflow-y-auto pr-1 scrollbar-thin scrollbar-thumb-border scroll-smooth"
+        className="min-h-0 flex-1 space-y-3 overflow-y-auto pr-1 font-mono text-[11px] scrollbar-thin scrollbar-thumb-border scroll-smooth"
       >
         {MCP_STEPS.slice(0, step + 1).map((blk, i) => {
           const isCurrent = i === step;
@@ -367,7 +371,7 @@ function MultiplayerDemo() {
   useAutoLoop(start, done);
 
   return (
-    <div className="relative bg-surface/50 border border-border/50 p-5 min-h-[320px]">
+    <div className="relative flex h-full w-full flex-col overflow-hidden border border-border/50 bg-surface/50 p-5">
       <ReplayBtn onClick={start} />
       {/* Participant avatars */}
       <div className="flex items-center gap-2 mb-4">
@@ -388,7 +392,7 @@ function MultiplayerDemo() {
         </div>
       </div>
       {/* Editor mock */}
-      <div className="font-mono text-[11px] bg-bg/40 border border-border/40 p-3 space-y-0.5 mb-3">
+      <div className="min-h-0 flex-1 overflow-hidden border border-border/40 bg-bg/40 p-3 font-mono text-[11px] space-y-0.5 mb-3">
         {EDITOR_LINES.map((line, li) => {
           const activeCursors = PARTICIPANTS.filter((p, pi) => tick > pi && p.cursorLines[Math.min(tick - 1, 2)] === li + 1);
           return (
@@ -499,7 +503,7 @@ function GradingDemo() {
   const pct = ran > 0 ? (ran / TESTS.length) * 100 : 0;
 
   return (
-    <div className="relative bg-surface/50 border border-border/50 p-6 min-h-[340px] flex flex-col gap-4">
+    <div className="relative flex h-full w-full flex-col gap-4 overflow-hidden border border-border/50 bg-surface/50 p-6">
       <ReplayBtn onClick={start} />
       <div>
         <div className="flex items-center justify-between mb-3.5">
@@ -525,7 +529,7 @@ function GradingDemo() {
       {/* Test list Scroll Area */}
       <div
         ref={scrollRef}
-        className="space-y-1.5 h-[160px] overflow-y-auto pr-1 scrollbar-thin scrollbar-thumb-border scroll-smooth"
+        className="min-h-0 flex-1 space-y-1.5 overflow-y-auto pr-1 scrollbar-thin scrollbar-thumb-border scroll-smooth"
       >
         <AnimatePresence>
           {TESTS.slice(0, ran).map((test, i) => (
@@ -602,14 +606,14 @@ function RubricsDemo() {
   useAutoLoop(start, done);
 
   return (
-    <div className="relative bg-surface/50 border border-border/50 p-6 min-h-[340px] flex flex-col gap-4">
+    <div className="relative flex h-full w-full flex-col gap-4 overflow-hidden border border-border/50 bg-surface/50 p-6">
       <ReplayBtn onClick={start} />
-      <div className="flex items-center gap-2 mb-1">
+      <div className="flex items-center gap-2">
         <BarChart3 className="w-4 h-4 text-cyan-400" />
         <span className="text-[10px] font-bold uppercase tracking-widest text-muted">Evaluation Rubric</span>
       </div>
       {/* Overall score with elegant Pass indicator */}
-      <div className="flex items-center justify-between gap-4 p-4 bg-bg/40 border border-border/50 relative overflow-hidden">
+      <div className="flex items-center justify-between gap-4 p-3.5 bg-bg/40 border border-border/50 relative overflow-hidden">
         <div>
           <div className="text-3xl font-bold tabular-nums text-cyan-400 leading-none">
             {scoreNum}<span className="text-sm text-muted font-normal ml-0.5">/100</span>
@@ -624,7 +628,7 @@ function RubricsDemo() {
         </div>
       </div>
       {/* Dimension bars */}
-      <div className="space-y-2.5">
+      <div className="space-y-2">
         {DIMENSIONS.map((dim, i) => (
           <div key={i}>
             <div className="flex justify-between text-[10px] font-bold mb-1">
@@ -645,7 +649,7 @@ function RubricsDemo() {
       </div>
       {/* Export button */}
       <motion.div
-        className="mt-1.5 flex justify-center"
+        className="flex justify-center"
         animate={done ? { scale: [1, 1.03, 1] } : {}}
         transition={{ repeat: Infinity, duration: 2 }}
       >
@@ -722,7 +726,7 @@ function CreditsDemo() {
   const strokeDashoffset = circumference - (gaugePercent / 100) * circumference;
 
   return (
-    <div className="relative bg-surface/50 border border-border/50 p-6 min-h-[340px] flex flex-col gap-4 justify-between">
+    <div className="relative flex h-full w-full flex-col gap-4 overflow-hidden border border-border/50 bg-surface/50 p-6">
       <ReplayBtn onClick={start} />
       <div className="flex items-center gap-2 mb-1">
         <CreditCard className="w-4 h-4 text-lime-400" />
@@ -781,13 +785,13 @@ const SECTIONS: Omit<SectionShellProps, "children">[] = [
   {
     index: 0,
     icon: Brain,
-    title: "AI Proctoring &",
-    titleAccent: "Anti-Cheat",
-    desc: "Real-time behavioral analysis catches suspicious activity the moment it happens — tab switching, clipboard hijacking, and keystroke anomalies.",
+    title: "Integrity signals &",
+    titleAccent: "session replay",
+    desc: "Tab switches, clipboard events and keystroke timing are recorded during an attempt — with the candidate told up front — and surfaced as a timeline your team reads. The system flags; a person decides.",
     bullets: [
-      "Live trust-score gauge updated per violation event",
-      "Severity-tagged timeline with instant visual flagging",
-      "Automatic session reconstruction for post-review",
+      "Trust gauge that moves as signals arrive",
+      "Severity-tagged timeline, flagged inline",
+      "Full session reconstruction for post-review",
     ],
   },
   {
@@ -795,7 +799,7 @@ const SECTIONS: Omit<SectionShellProps, "children">[] = [
     icon: Cpu,
     title: "Model Context",
     titleAccent: "Protocol (MCP)",
-    desc: "Connect private LLMs and custom grading pipelines via the open JSON-RPC standard. Discover, invoke, and chain evaluation tools natively.",
+    desc: "Point the workspace at your own LLMs and grading pipelines over the open JSON-RPC standard, then discover, invoke and chain those tools like any built-in one.",
     bullets: [
       "Auto-discovery of available grading tools at runtime",
       "Structured JSON responses with complexity and style analysis",
@@ -806,8 +810,8 @@ const SECTIONS: Omit<SectionShellProps, "children">[] = [
     index: 2,
     icon: Users,
     title: "Multiplayer",
-    titleAccent: "Live Coding Panels",
-    desc: "Host collaborative coding sessions with real-time cursor tracking, integrated chat, and zero-latency WebRTC synchronization.",
+    titleAccent: "interview room",
+    desc: "Run the session together: live cursor tracking, in-editor chat, and peer-to-peer WebRTC keeping both sides in sync.",
     bullets: [
       "Multi-cursor editing with participant-colored indicators",
       "Live typing awareness and in-editor chat",
@@ -817,9 +821,9 @@ const SECTIONS: Omit<SectionShellProps, "children">[] = [
   {
     index: 3,
     icon: Workflow,
-    title: "Automated Grading",
-    titleAccent: "Runtimes",
-    desc: "Execute structured test-case matrices automatically on submission. Support for JUnit, Jest, PyTest and custom runners.",
+    title: "Automated grading",
+    titleAccent: "runtimes",
+    desc: "Test matrices execute on submission, on our infrastructure. JUnit, Jest, PyTest and custom runners.",
     bullets: [
       "Visual pass/fail timeline with progress tracking",
       "Performance and memory usage constraint checks",
@@ -829,21 +833,21 @@ const SECTIONS: Omit<SectionShellProps, "children">[] = [
   {
     index: 4,
     icon: FileText,
-    title: "Structured Rubrics &",
-    titleAccent: "Dossiers",
-    desc: "Standardize evaluations across five key dimensions with animated scoring breakdowns and one-click PDF export.",
+    title: "Structured rubrics &",
+    titleAccent: "scorecards",
+    desc: "Score every candidate against the same dimensions, so two interviewers reach comparable numbers — then export the whole scorecard as a PDF.",
     bullets: [
-      "Multi-dimensional scoring: quality, architecture, performance",
-      "Animated rubric breakdown with per-dimension percentages",
-      "Professional PDF dossier generation in one click",
+      "Scoring across quality, architecture and performance",
+      "Per-dimension breakdown, not a single blended number",
+      "One-click PDF export of the full scorecard",
     ],
   },
   {
     index: 5,
     icon: ShieldCheck,
-    title: "Credit-Based",
-    titleAccent: "Enterprise Economy",
-    desc: "Scalable per-screening billing with real-time credit tracking. Control seat bounds, allocate workspace limits, and manage spending.",
+    title: "Credit-based",
+    titleAccent: "billing",
+    desc: "Screenings are billed as credits on top of seats, tracked live. Set seat bounds, cap workspace limits, and watch spend as it happens.",
     bullets: [
       "Live credit gauge with usage-per-assessment breakdown",
       "Itemized recent usage history with cost tracking",
@@ -854,16 +858,20 @@ const SECTIONS: Omit<SectionShellProps, "children">[] = [
 
 const DEMOS = [ProctoringDemo, McpDemo, MultiplayerDemo, GradingDemo, RubricsDemo, CreditsDemo];
 
+// This run of six live demos IS section 05 on /hire — it owns the clause
+// heading rather than sitting under a second one. The section wrapper supplies
+// the vertical rhythm, so there is no margin here.
 export default function HomeRecruiterFeatures() {
   return (
-    <div className="md:col-span-12 pt-16 md:pt-24 mt-16 md:mt-24 border-t border-border/30 space-y-12 md:space-y-16">
+    <div className="md:col-span-12 space-y-12 md:space-y-16">
       <SectionHeading
         tone="secondary"
-        eyebrow="The arsenal"
-        eyebrowIcon={<Brain className="w-3.5 h-3.5" />}
-        title="Enterprise screening"
-        highlight="arsenal."
-        lede="Every tool you need to run world-class technical hiring, built into one platform — each demo below is live, right on the page."
+        index="05"
+        eyebrow="Why teams switch"
+        eyebrowIcon={<Brain className="h-3 w-3" />}
+        title="Six surfaces,"
+        highlight="all of them live."
+        lede="Proctoring, challenge authoring, the multiplayer room, grading, rubrics and credits. Every demo below is the real component, running on this page."
       />
 
       {/* 6 feature sections */}

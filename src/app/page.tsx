@@ -57,7 +57,7 @@ async function loadStats() {
 export const metadata: Metadata = {
   title: "Interviewpad — Interview Prep, Coding Challenges & Developer Portfolio",
   description:
-    "Prep with 1,000+ hand-written interview questions across 14 technologies, solve runnable challenges in eight languages, train AI-readiness skills, and turn it all into a shareable developer portfolio.",
+    "Prep with 1,000+ hand-written interview questions across 14 technologies, solve runnable challenges in 8 languages, train AI-readiness skills, and turn it all into a shareable developer portfolio.",
   alternates: { canonical: "/" },
 };
 
@@ -240,12 +240,15 @@ export default async function HomePage() {
     .filter((b) => !usedIds.has(b.id))
     .map((b) => toEntry(b as BlogRow));
 
-  // When admins haven't pinned anything, promote the freshest unused recent to
-  // a hero card so the section still has a focal point. With a pinned
-  // carousel above, the BlogCardHero is skipped — its role is filled.
+  // Promote the freshest unused post to a hero card at the head of the main
+  // column. This used to be skipped whenever admins had pinned anything, on
+  // the grounds that the carousel already played that role — but it left the
+  // column holding only the 369px scroller against a 695px sidebar, i.e. 326px
+  // of void. The hero is always a *different* post from the pinned set
+  // (usedIds dedupes), so it surfaces one more story rather than repeating one.
   let homeHero: BlogFeedEntry | null = null;
   let homeGrid = latestGridEntries;
-  if (pinnedEntries.length === 0 && homeGrid.length > 0) {
+  if (homeGrid.length > 0) {
     homeHero = homeGrid[0];
     homeGrid = homeGrid.slice(1);
   }
@@ -320,8 +323,10 @@ export default async function HomePage() {
             - 2x2 grid of recent stories beside / below it
             - Compact "Most read" sidebar with numbered popular posts
           Total ~10 stories visible without scrolling on desktop. */}
+      {/* No bottom rule on this section: the footer's own top border supplies
+          the seam, and two stacked hairlines read as one thick line. */}
       {hasAnyBlog && (
-        <section className="relative border-b border-border py-20 md:py-28">
+        <section className="relative py-20 md:py-28">
           <div className="relative z-10 mx-auto max-w-6xl px-4">
             {/* Same clause construction as every other section header, so the
                 editorial feed is part of the page rather than a blog widget
@@ -331,7 +336,7 @@ export default async function HomePage() {
                 <span className="ip-index">08</span>
                 <span className="ip-label ip-label-accent flex items-center gap-1.5">
                   <BookOpen className="h-3 w-3" />
-                  Insights
+                  Writing
                 </span>
                 <span className="ip-rule min-w-4 flex-1" aria-hidden />
               </div>
@@ -356,16 +361,11 @@ export default async function HomePage() {
             )}
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              {/* Main column — hero + a single row of 3 grid cards. Keeps the
-                  homepage section compact (the full feed lives on /blog) and
-                  matches the height of the stacked sidebar widgets on the
-                  right. Takes 2/3 of the width on desktop. */}
+              {/* Main column — a lead story then the horizontal card feed,
+                  which together stand roughly level with the stacked sidebar
+                  widgets. Takes 2/3 of the width on desktop. */}
               <div className="lg:col-span-2 space-y-6">
-                {/* BlogCardHero only appears when nothing is pinned — the
-                    carousel above takes its role when pinned posts exist. */}
-                {homeHero && pinnedEntries.length === 0 && (
-                  <BlogCardHero blog={homeHero} />
-                )}
+                {homeHero && <BlogCardHero blog={homeHero} />}
 
                 {homeGrid.length > 0 && (
                   <BlogLazyFeed
@@ -376,8 +376,8 @@ export default async function HomePage() {
                 )}
               </div>
 
-              {/* Sidebar — three stacked widgets so it fills the same vertical
-                  space as the hero + grid in the main column on desktop. */}
+              {/* Sidebar — stacked widgets, sized to stand level with the
+                  lead story plus the feed beside them. */}
               <aside className="space-y-4">
                 {popularEntries.length > 0 && (
                   <div className="ip-frame p-5">

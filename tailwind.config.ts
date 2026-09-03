@@ -12,24 +12,32 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        bg: "var(--bg)",
-        surface: "var(--surface)",
-        panel: "var(--panel)",
-        elevated: "var(--elevated)",
-        border: "var(--border)",
-        "border-strong": "var(--border-strong)",
-        muted: "var(--muted)",
-        subtle: "var(--subtle)",
-        fg: "var(--fg)",
+        /* Resolved from channel triplets, not from the hex vars directly.
+           Tailwind can only honour an opacity modifier (`bg-accent/10`,
+           `border-border/40`) when the colour exposes `<alpha-value>`; given a
+           bare `var(--accent)` it drops the declaration, which silently
+           renders tinted backgrounds transparent and bordered elements in the
+           default grey. These must be the SPACE-separated `--c-*` channels:
+           `rgb(1, 2, 3 / .4)` is invalid CSS and fails the same way. The hex
+           and comma `--*-rgb` vars remain for use in plain CSS. */
+        bg: "rgb(var(--c-bg) / <alpha-value>)",
+        surface: "rgb(var(--c-surface) / <alpha-value>)",
+        panel: "rgb(var(--c-panel) / <alpha-value>)",
+        elevated: "rgb(var(--c-elevated) / <alpha-value>)",
+        border: "rgb(var(--c-border) / <alpha-value>)",
+        "border-strong": "rgb(var(--c-border-strong) / <alpha-value>)",
+        muted: "rgb(var(--c-muted) / <alpha-value>)",
+        subtle: "rgb(var(--c-subtle) / <alpha-value>)",
+        fg: "rgb(var(--c-fg) / <alpha-value>)",
         accent: {
-          DEFAULT: "var(--accent)",
-          soft: "var(--accent-soft)",
+          DEFAULT: "rgb(var(--c-accent) / <alpha-value>)",
+          soft: "rgb(var(--c-accent-soft) / <alpha-value>)",
           glow: "var(--accent-glow)",
           ink: "var(--accent-ink)",
         },
         secondary: {
-          DEFAULT: "var(--accent-2)",
-          soft: "var(--accent-2-soft)",
+          DEFAULT: "rgb(var(--c-accent-2) / <alpha-value>)",
+          soft: "rgb(var(--c-accent-2-soft) / <alpha-value>)",
           glow: "var(--accent-2-glow)",
           ink: "var(--accent-2-ink)",
         },
@@ -37,11 +45,11 @@ const config: Config = {
            near-black on paper, paper on near-black. `ink-fg` is the only
            colour that belongs on top of it. */
         ink: {
-          DEFAULT: "var(--ink)",
-          fg: "var(--ink-fg)",
+          DEFAULT: "rgb(var(--c-ink) / <alpha-value>)",
+          fg: "rgb(var(--c-ink-fg) / <alpha-value>)",
         },
-        /* The editorial hairline and the blueprint field, exposed so
-           `border-rule` / `bg-grid` stay on-token. */
+        /* The editorial hairline and the blueprint field. Both already carry
+           their own alpha, so they stay as plain vars. */
         rule: "var(--rule)",
         grid: "var(--grid)",
       },

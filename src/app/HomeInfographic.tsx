@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import SectionHeading from "@/components/home/SectionHeading";
 import {
   Cpu,
   Database,
@@ -73,15 +74,15 @@ const RECRUITER_STAGES: StageInfo[] = [
     id: "mcp",
     number: "01",
     tag: "Design",
-    title: "MCP Challenge Authoring",
-    desc: "Create bespoke screening challenges. Connect your private custom prompts, rubrics, and autograders via Model Context Protocol.",
+    title: "MCP challenge authoring",
+    desc: "Author your own screening challenges, then wire in private prompts, rubrics and autograders over Model Context Protocol.",
     metrics: ["MCP integration", "Custom LLM rubrics", "JUnit/Jest autograders"]
   },
   {
     id: "ats",
     number: "02",
     tag: "Integrations",
-    title: "ATS Sync & Campaign Lobby",
+    title: "ATS sync & campaign lobby",
     desc: "Deploy screening lobbies and track candidate campaigns directly inside your ATS (Greenhouse, Lever, Ashby) with expiring tokens.",
     metrics: ["ATS sync webhooks", "Expiring link tokens", "ID verification lobby"]
   },
@@ -89,16 +90,16 @@ const RECRUITER_STAGES: StageInfo[] = [
     id: "antiCheat",
     number: "03",
     tag: "Security",
-    title: "Anti-Cheat Sandbox & Logs",
-    desc: "Monitor candidates in real-time. Detect browser tab changes, lock copy-pastes, and compile attempts with full playback logs.",
+    title: "Isolated sandbox & attempt logs",
+    desc: "Attempts run in a sandbox that records tab changes and clipboard events — disclosed to the candidate — and replays the whole session afterwards.",
     metrics: ["Tab change telemetry", "Clipboard block tracking", "Full timeline replay"]
   },
   {
     id: "dossier",
     number: "04",
     tag: "Evaluation",
-    title: "AI Dossier & Radar Reports",
-    desc: "AI automatically scores candidate code across custom rubrics (Problem Solving, Security, Speed) and compiles premium PDF dossiers.",
+    title: "AI scorecards & radar reports",
+    desc: "Code is scored against your rubric — problem solving, security, speed — and the result compiles into one PDF scorecard per candidate.",
     metrics: ["AI grading dossier", "Radar metric charts", "Standardized rubrics"]
   }
 ];
@@ -384,43 +385,26 @@ export default function HomeInfographic({
   const currentStages = isRecruiter ? RECRUITER_STAGES : STAGES;
 
   return (
-    <section className="mx-auto max-w-6xl px-4 py-24 relative overflow-hidden">
+    <section className="mx-auto max-w-6xl px-4 py-20 md:py-28 relative overflow-hidden">
       {/* Background visual styling */}
 
       <div className="relative z-10">
-        {/* Title */}
-        <RevealOnScroll className="mb-16 text-center" stagger={0.1}>
-          <RevealItem>
-            <div className={`inline-flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.2em] mb-3 px-3 py-1.5 rounded-full ${
-              isRecruiter ? "text-secondary bg-secondary/10" : "text-accent bg-accent/10"
-            }`}>
-              <Cpu className="w-3.5 h-3.5" />
-              {isRecruiter ? "Hiring Lifecycle Flow" : "Runtime Architecture"}
-            </div>
-          </RevealItem>
-          <RevealItem>
-            <h2 className="text-3xl md:text-5xl font-bold text-fg tracking-tight leading-[1.05] max-w-3xl mx-auto">
-              {isRecruiter ? (
-                <>
-                  Standardized evaluations, <span className="text-secondary">built on trust.</span>
-                </>
-              ) : (
-                <>
-                  From keystroke <span className="text-accent">to verdict.</span>
-                </>
-              )}
-            </h2>
-          </RevealItem>
-          <RevealItem>
-            <p className="text-muted text-base md:text-lg leading-relaxed mt-4 max-w-2xl mx-auto font-medium">
-              {isRecruiter ? (
-                "Author campaigns, sync ATS webhooks, monitor anti-cheat signals, and export premium AI radar scorecards instantly from a single dashboard."
-              ) : (
-                "Frontend previews build instantly in your browser; multi-language submissions run in an isolated sandbox and are graded server-side — so a pass actually means a pass."
-              )}
-            </p>
-          </RevealItem>
-        </RevealOnScroll>
+        {/* Title — routed through the shared SectionHeading so this section
+            carries a clause number like every other one. Without it the
+            hiring page's numbered sequence visibly skipped 04. */}
+        <SectionHeading
+          index="04"
+          tone={isRecruiter ? "secondary" : "accent"}
+          eyebrow={isRecruiter ? "Hiring lifecycle" : "Runtime architecture"}
+          eyebrowIcon={<Cpu className="h-3 w-3" />}
+          title={isRecruiter ? "Standardized evaluations," : "From keystroke"}
+          highlight={isRecruiter ? "built on trust." : "to verdict."}
+          lede={
+            isRecruiter
+              ? "Author campaigns, sync ATS webhooks, watch integrity signals and export scorecards — from one dashboard, without leaving the workspace."
+              : "Frontend previews build instantly in your browser; multi-language submissions run in an isolated sandbox and are graded server-side — so a pass actually means a pass."
+          }
+        />
 
         {/* Signature 3D moment (candidate page): code → sandbox → verdict.
             Lazily mounted; reduced-motion and mobile get the static poster. */}

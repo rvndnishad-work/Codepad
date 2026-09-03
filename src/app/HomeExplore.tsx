@@ -79,10 +79,10 @@ export default function HomeExplore({ featured }: { featured: Snippet[] }) {
       <div className="mx-auto max-w-6xl px-4">
         <SectionHeading
           index="05"
-          eyebrow="Discovery"
-          title="Trending in"
-          highlight="the sandbox."
-          lede="Real snippets from the community. Open one and it runs — no fork, no install, no signup wall."
+          eyebrow="From the community"
+          title="What people are"
+          highlight="building."
+          lede="Public snippets, exactly as their authors left them. Open one and it runs — no fork, no install, no signup wall."
           linkHref="/explore"
           linkLabel="Explore all snippets"
         />

@@ -22,7 +22,13 @@ function fib(n) {
   return a;
 }
 
-console.log("fib(50) =", fib(50).toString());
+// BigInt keeps every digit past 2^53, where Number quietly gives up
+console.log("fib(50)  =", fib(50).toString());
+console.log("fib(120) =", fib(120).toString());
+
+const digits = fib(500).toString().length;
+console.log(\`fib(500) has \${digits} digits\`);
+
 console.log("Try changing the code ↑");
 `;
 
@@ -141,10 +147,15 @@ export default function HeroRunner() {
       </div>
 
       {/* Editor */}
-      <div ref={hostRef} className="max-h-[240px] overflow-auto [&_.cm-editor]:bg-transparent" />
+      {/* A floor as well as a ceiling: the panel is a composition element, so
+          it must not shrink to fit a short buffer. */}
+      <div
+        ref={hostRef}
+        className="min-h-[300px] max-h-[360px] overflow-auto [&_.cm-editor]:bg-transparent [&_.cm-editor]:min-h-[300px]"
+      />
 
       {/* Execution trace + output */}
-      <div className="min-h-[92px] border-t border-white/10 bg-black/30 px-4 py-3 font-mono text-xs">
+      <div className="min-h-[128px] border-t border-white/10 bg-black/30 px-4 py-3.5 font-mono text-xs">
         <div className="mb-2.5 flex items-center gap-3">
           <span className="flex items-center" aria-label="execution trace">
             {["queue", "compile", "exec", "out"].map((stage, i) => (

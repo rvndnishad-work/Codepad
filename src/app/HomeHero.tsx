@@ -4,6 +4,7 @@ import { useEffect } from "react";
 import Link from "next/link";
 import dynamic from "next/dynamic";
 import { ArrowRight } from "lucide-react";
+import PipelineBoard from "@/components/home/PipelineBoard";
 import SignalStrip, {
   CANDIDATE_STAGES,
   RECRUITER_STAGES,
@@ -88,11 +89,15 @@ export default function HomeHero({
             </span>
           </div>
 
-          {/* Persona switch — two ruled destinations, not a pill toggle. The
-              active one is marked by a rule that meets the bar's border. */}
-          <nav aria-label="Choose your view" className="flex items-stretch">
-            <PersonaLink href="/" label="Developers" active={!isRecruiter} tone="accent" />
-            <PersonaLink href="/hire" label="Hiring teams" active={isRecruiter} tone="secondary" />
+          {/* Persona switch — segmented frame so it reads as a control, not
+              metadata. Square, hairline, on-token — the active segment is
+              filled with the persona colour (accent for devs, secondary for
+              hiring). */}
+          <nav aria-label="Choose your view" className="ml-auto flex items-center py-2 md:ml-0">
+            <div className="flex border border-border bg-surface p-0.5">
+              <PersonaLink href="/" label="Developers" active={!isRecruiter} tone="accent" />
+              <PersonaLink href="/hire" label="Hiring teams" active={isRecruiter} tone="secondary" />
+            </div>
           </nav>
         </div>
       </div>
@@ -100,7 +105,7 @@ export default function HomeHero({
       <div className="relative mx-auto max-w-7xl px-4">
         <div className="grid grid-cols-1 lg:grid-cols-12">
           {/* ══ Editorial column ══ */}
-          <div className="relative z-10 pb-4 pt-14 md:pt-20 lg:col-span-6 lg:pb-28 lg:pr-12">
+          <div className="relative z-10 pb-4 pt-14 md:pt-20 lg:col-span-6 lg:pb-20 lg:pr-16 xl:pr-24">
             <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
               <span className="ip-index">{isRecruiter ? "01 / HIRE" : "01 / PREP"}</span>
               <span className="ip-rule hidden w-10 sm:block" aria-hidden />
@@ -121,7 +126,7 @@ export default function HomeHero({
                     think
                     <span
                       aria-hidden
-                      className="absolute -bottom-1 left-0 h-[3px] w-full bg-secondary"
+                      className="absolute bottom-[0.12em] left-0 h-[0.055em] w-full bg-secondary"
                     />
                   </span>
                   ,
@@ -139,7 +144,7 @@ export default function HomeHero({
                     runtime
                     <span
                       aria-hidden
-                      className="absolute -bottom-1 left-0 h-[3px] w-full bg-accent"
+                      className="absolute bottom-[0.12em] left-0 h-[0.055em] w-full bg-accent"
                     />
                   </span>
                   <br />
@@ -153,7 +158,7 @@ export default function HomeHero({
             <p className="mt-7 max-w-[46ch] text-[15px] leading-relaxed text-muted md:text-base">
               {isRecruiter
                 ? "Live coding interviews with replay, async take-homes graded on our servers, AI screening at batch scale, and integrity signals on every attempt — in one workspace."
-                : "Hand-written question banks across 14 technologies, runnable challenges in eight languages, and an AI-readiness track — then a portfolio that shows the work, not a claim about it."}
+                : "Hand-written question banks across 14 technologies, challenges that really execute in 8 languages, and an AI-readiness track. Everything you solve becomes a portfolio someone can open and run."}
             </p>
 
             {/* Two different shapes, so the hierarchy is legible before the
@@ -204,7 +209,7 @@ export default function HomeHero({
                side by side. The overlap is what makes the composition
                asymmetric; the panel's right edge stays inside the container
                because its Run control lives there and must not be cropped. */}
-          <div className="relative pb-16 lg:col-span-6 lg:-ml-16 lg:mt-24 lg:pb-24 xl:-ml-24">
+          <div className="relative pb-16 lg:col-span-6 lg:-ml-4 lg:mt-20 lg:pb-20 xl:-ml-8">
             {isRecruiter ? <PipelineBoard /> : <HeroRunner />}
 
             {/* One annotation, positioned like a callout on a spec drawing. */}
@@ -247,111 +252,18 @@ function PersonaLink({
     <Link
       href={href}
       aria-current={active ? "page" : undefined}
-      className={`group relative flex items-center px-4 py-3 transition-colors ${
-        active ? "text-fg" : "text-subtle hover:text-fg"
+      className={`flex items-center gap-1.5 px-4 py-1.5 transition-colors ${
+        active
+          ? tone === "secondary"
+            ? "bg-secondary text-secondary-ink"
+            : "bg-accent text-accent-ink"
+          : "text-subtle hover:bg-panel hover:text-fg"
       }`}
     >
+      {active && <span aria-hidden className="h-[5px] w-[5px] shrink-0 bg-current" />}
       <span className="ip-label" style={active ? { color: "inherit" } : undefined}>
         {label}
       </span>
-      <span
-        aria-hidden
-        className={`absolute inset-x-3 -bottom-px h-px origin-left transition-transform duration-200 ${
-          tone === "secondary" ? "bg-secondary" : "bg-accent"
-        } ${active ? "scale-x-100" : "scale-x-0 group-hover:scale-x-100"}`}
-      />
     </Link>
-  );
-}
-
-/**
- * The hiring-side product surface: a workspace pipeline board rendered with
- * the site's own structural vocabulary. It replaces the previous abstract 3D
- * funnel because a funnel of floating rings is decoration — this shows the
- * thing recruiters actually look at, with real stage names and real signals.
- */
-function PipelineBoard() {
-  const COLUMNS: {
-    stage: string;
-    count: number;
-    rows: { name: string; meta: string; state?: "pass" | "flag" | "run" }[];
-  }[] = [
-    {
-      stage: "Screened",
-      count: 24,
-      rows: [
-        { name: "A. Okafor", meta: "AI screen · 8.4", state: "pass" },
-        { name: "M. Iyer", meta: "AI screen · 7.9", state: "pass" },
-        { name: "J. Park", meta: "AI screen · 6.1" },
-      ],
-    },
-    {
-      stage: "Challenge",
-      count: 9,
-      rows: [
-        { name: "R. Novak", meta: "12/12 tests · 41m", state: "pass" },
-        { name: "S. Haddad", meta: "running · 04:12", state: "run" },
-        { name: "T. Lund", meta: "paste burst ×3", state: "flag" },
-      ],
-    },
-    {
-      stage: "Interview",
-      count: 4,
-      rows: [
-        { name: "C. Mbeki", meta: "replay · 58m", state: "pass" },
-        { name: "D. Rossi", meta: "scheduled · Thu" },
-      ],
-    },
-  ];
-
-  return (
-    <div className="ip-frame ip-ticks ip-ticks-secondary">
-      <div className="flex items-center gap-3 border-b border-border px-4 py-2.5">
-        <span className="ip-label ip-label-xs">acme · engineering</span>
-        <span className="ip-rule-soft h-px flex-1" aria-hidden />
-        <span className="ip-label ip-label-xs flex items-center gap-1.5">
-          <span className="ip-live h-[5px] w-[5px] bg-emerald-500" aria-hidden />
-          37 active
-        </span>
-      </div>
-
-      <div className="grid grid-cols-3">
-        {COLUMNS.map((col, ci) => (
-          <div key={col.stage} className={ci > 0 ? "border-l border-border" : ""}>
-            <div className="flex items-baseline justify-between gap-1 border-b border-border px-3 py-2.5">
-              <span className="ip-label ip-label-xs">{col.stage}</span>
-              <span className="ip-nums font-mono text-[11px] text-fg">{col.count}</span>
-            </div>
-            <div className="flex flex-col">
-              {col.rows.map((row) => (
-                <div key={row.name} className="border-b border-border px-3 py-2.5 last:border-b-0">
-                  <div className="flex items-center gap-1.5">
-                    <span
-                      aria-hidden
-                      className={`h-[5px] w-[5px] shrink-0 ${
-                        row.state === "pass"
-                          ? "bg-emerald-500"
-                          : row.state === "flag"
-                            ? "bg-accent"
-                            : row.state === "run"
-                              ? "ip-live bg-amber-500"
-                              : "border border-border-strong"
-                      }`}
-                    />
-                    <span className="truncate text-[12px] font-semibold text-fg">{row.name}</span>
-                  </div>
-                  <div className="mt-1 truncate font-mono text-[10px] text-subtle">{row.meta}</div>
-                </div>
-              ))}
-            </div>
-          </div>
-        ))}
-      </div>
-
-      <div className="flex items-center justify-between border-t border-border px-4 py-2.5">
-        <span className="ip-label ip-label-xs">Integrity signals on</span>
-        <span className="ip-label ip-label-xs ip-label-secondary">Evidence, not vibes</span>
-      </div>
-    </div>
   );
 }

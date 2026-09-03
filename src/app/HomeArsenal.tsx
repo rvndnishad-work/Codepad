@@ -104,7 +104,7 @@ export default function HomeArsenal({ counts }: { counts: ArsenalCounts }) {
       <div className="relative mx-auto max-w-6xl px-4">
         <SectionHeading
           index="02"
-          eyebrow="The prep arsenal"
+          eyebrow="The catalogue"
           eyebrowIcon={<Target className="h-3 w-3" />}
           title="Everything between you"
           highlight="and the offer."

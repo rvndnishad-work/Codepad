@@ -67,9 +67,9 @@ export default async function HomeCreators() {
           index="06"
           eyebrow="Learn from creators"
           eyebrowIcon={<Store className="h-3 w-3" />}
-          title="Exclusive prep from people"
+          title="Prep from people"
           highlight="who've been in the room."
-          lede="Vetted creators publish tutorials, real interview loops and prep guides. Follow for free — get notified when they drop something new."
+          lede="Vetted creators publish tutorials, real interview loops and prep guides. Following is free, and you hear about new work first."
           linkHref="/creators"
           linkLabel="Browse all creators"
         />

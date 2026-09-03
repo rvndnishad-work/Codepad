@@ -69,17 +69,21 @@ export default function HomeChallenges({ stats }: { stats: Stats }) {
       <div className="relative mx-auto max-w-6xl px-4">
         <SectionHeading
           index="07"
-          eyebrow={isRecruiter ? "Assess · Evaluate · Hire" : "Practice · Interview · Offer"}
+          /* The headline names the three steps drawn directly beneath it, so
+             the diagram and the sentence are the same statement. The old
+             "Practice, prepare, perform" was an alliterative triplet that
+             described nothing on the page, and its eyebrow repeated it. */
+          eyebrow={isRecruiter ? "End to end" : "End to end"}
           eyebrowIcon={
             isRecruiter ? <Briefcase className="h-3 w-3" /> : <Sparkles className="h-3 w-3" />
           }
           tone={isRecruiter ? "secondary" : "accent"}
-          title={isRecruiter ? "Evaluate developers," : "Practice, prepare,"}
-          highlight={isRecruiter ? "automate the review." : "perform."}
+          title={isRecruiter ? "Assign it, watch it," : "Pick it, solve it,"}
+          highlight={isRecruiter ? "score it." : "share it."}
           lede={
             isRecruiter
-              ? "Production-grade test cases that auto-grade on submission, keystroke timelines with integrity alerts, and a decision you can defend."
-              : "Interviewpad isn't a sandbox with a landing page. It's an interview engine — curated challenges, live mock sessions, and a record of everything you solved."
+              ? "Test cases that grade on submission, keystroke timelines with integrity alerts, and a scorecard you can put in front of a hiring committee."
+              : "The whole loop lives here: curated challenges, a live room you can run with anyone, and a record of everything you solved."
           }
         />
 

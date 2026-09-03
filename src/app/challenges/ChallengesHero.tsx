@@ -104,7 +104,7 @@ export default function ChallengesHero({ stats }: { stats: ChallengesHeroStats }
                   tone="amber"
                   icon={<Clock className="w-5 h-5" />}
                   value={<CountUp value={totalHours} suffix="h+" />}
-                  label="Of practice content"
+                  label="Practice content"
                 />
               </SpotlightCard>
             </RevealItem>

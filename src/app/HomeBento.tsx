@@ -369,7 +369,7 @@ export default function HomeBento() {
         eyebrowIcon={<Play className="w-3.5 h-3.5" />}
         title="The sandbox,"
         highlight="running right here."
-        lede="No screenshots, no video loops — this is the actual editor experience, typing and executing code on the page."
+        lede="No screenshots, no video loop. The editor below is the real one, typing and executing on this page."
       />
       <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
 

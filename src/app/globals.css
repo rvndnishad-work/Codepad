@@ -11,24 +11,42 @@
        dev-tool site ships. The page is stock; surfaces are sheets laid on it.
        Every step is opaque so a hairline resolves identically wherever it
        crosses. */
+    /* Two channel notations, deliberately. `--x-rgb` is COMMA separated and
+       feeds the existing `rgba(var(--x-rgb), .4)` calls in this file and in
+       inline styles. `--c-x` is SPACE separated and feeds Tailwind, which
+       composes `rgb(var(--c-x) / <alpha-value>)` — the comma form is invalid
+       there (`rgb(1, 2, 3 / .4)` parses as nothing and the declaration is
+       dropped, which silently turns backgrounds transparent). Keep all three
+       representations of a colour in sync. */
     --bg: #f6f5f2;
     --bg-rgb: 246, 245, 242;
+    --c-bg: 246 245 242;
     --surface: #fdfcfa;
+    --c-surface: 253 252 250;
     --panel: #efede7;
+    --c-panel: 239 237 231;
     --elevated: #e4e1d9;
+    --c-elevated: 228 225 217;
 
     --border: #ddd9d0;
+    --c-border: 221 217 208;
     --border-strong: #c0bbae;
+    --c-border-strong: 192 187 174;
 
     --muted: #4e525a;   /* 7.4:1 on --surface */
+    --c-muted: 78 82 90;
     --subtle: #6f747d;  /* 4.9:1 — always the quietest step */
+    --c-subtle: 111 116 125;
     --fg: #16181c;      /* near-black with a blue undertone, 16.6:1 */
+    --c-fg: 22 24 28;
 
     /* INK — the structural primary. Primary CTAs, the loud end of the type
        scale, and every "this is the action" surface are ink, never brand
        colour. That frees the accent to mean exactly one thing (below). */
     --ink: #16181c;
+    --c-ink: 22 24 28;
     --ink-fg: #fdfcfa;
+    --c-ink-fg: 253 252 250;
 
     /* Hairline rule + blueprint grid. --rule is the editorial separator
        (visible, structural); --grid is the field behind a section and is
@@ -40,7 +58,9 @@
        headline that carries weight. Never a decorative wash. */
     --accent: #ce362e;        /* 5.0:1 against white */
     --accent-rgb: 206, 54, 46;
+    --c-accent: 206 54 46;
     --accent-soft: #f87171;   /* decorative only */
+    --c-accent-soft: 248 113 113;
     --accent-glow: rgba(206, 54, 46, 0.1);
 
     /* The text colour that belongs on top of --accent. */
@@ -50,7 +70,9 @@
        indigo; same discipline, different audience. */
     --accent-2: #3f39c9;      /* 7.0:1 against white */
     --accent-2-rgb: 63, 57, 201;
+    --c-accent-2: 63 57 201;
     --accent-2-soft: #6366f1;
+    --c-accent-2-soft: 99 102 241;
     --accent-2-glow: rgba(63, 57, 201, 0.12);
     --accent-2-ink: #ffffff;
 
@@ -68,34 +90,49 @@
        needing a shadow to prop it up. */
     --bg: #0f1115;
     --bg-rgb: 15, 17, 21;
+    --c-bg: 15 17 21;
     --surface: #16191f;
+    --c-surface: 22 25 31;
     --panel: #1d2128;
+    --c-panel: 29 33 40;
     --elevated: #272c34;
+    --c-elevated: 39 44 52;
 
     --border: #262b33;
+    --c-border: 38 43 51;
     --border-strong: #373d47;
+    --c-border-strong: 55 61 71;
 
     /* Order is always fg > muted > subtle, in both themes. */
     --muted: #cdd1d7;
+    --c-muted: 205 209 215;
     --subtle: #949aa3;  /* 6.3:1 on --surface */
+    --c-subtle: 148 154 163;
     --fg: #f5f6f7;
+    --c-fg: 245 246 247;
 
     /* Ink inverts: on a dark page the confident surface is paper. */
     --ink: #f5f6f7;
+    --c-ink: 245 246 247;
     --ink-fg: #0f1115;
+    --c-ink-fg: 15 17 21;
 
     --rule: rgba(245, 246, 247, 0.16);
     --grid: rgba(245, 246, 247, 0.05);
 
     --accent: #FFE600;        /* 14.4:1 on --bg */
     --accent-rgb: 255, 230, 0;
+    --c-accent: 255 230 0;
     --accent-soft: #FFD700;
+    --c-accent-soft: 255 215 0;
     --accent-glow: rgba(255, 230, 0, 0.15);
     --accent-ink: #0f1115;    /* dark ink on yellow */
 
     --accent-2: #8b93ff;
     --accent-2-rgb: 139, 147, 255;
+    --c-accent-2: 139 147 255;
     --accent-2-soft: #a5b4fc;
+    --c-accent-2-soft: 165 180 252;
     --accent-2-glow: rgba(139, 147, 255, 0.16);
     --accent-2-ink: #0f1115;
   }
@@ -1404,7 +1441,9 @@ body.sidebar-collapsed .workspace-content {
 
   .ip-display-xl {
     font-size: clamp(2.5rem, 1.35rem + 4.2vw, 4.75rem);
-    line-height: 0.95;
+    /* Tight, but with enough room between lines that a word can carry an
+       underline rule without it landing on the next line's ascenders. */
+    line-height: 1.02;
     letter-spacing: -0.048em;
   }
 
@@ -1799,16 +1838,23 @@ body.sidebar-collapsed .workspace-content {
    * on tokens — labels, chips, signal nodes, borders — then works unchanged. */
   .ip-on-dark {
     --fg: #f5f6f7;
-    --muted: rgba(245, 246, 247, 0.8);
-    --subtle: rgba(245, 246, 247, 0.66);
-    --border: rgba(245, 246, 247, 0.14);
-    --border-strong: rgba(245, 246, 247, 0.34);
+    --c-fg: 245 246 247;
+    --muted: #c6c8cb;
+    --c-muted: 198 200 203;
+    --subtle: #a5a7aa;
+    --c-subtle: 165 167 170;
+    --border: #2f3136;
+    --c-border: 47 49 54;
+    --border-strong: #5a5c60;
+    --c-border-strong: 90 92 96;
     --rule: rgba(245, 246, 247, 0.2);
     --accent: #ffe600;
     --accent-rgb: 255, 230, 0;
+    --c-accent: 255 230 0;
     --accent-ink: #0f1115;
     --accent-2: #8b93ff;
     --accent-2-rgb: 139, 147, 255;
+    --c-accent-2: 139 147 255;
     --accent-2-ink: #0f1115;
   }
 
@@ -1822,31 +1868,45 @@ body.sidebar-collapsed .workspace-content {
    * once, on the closing call to action, is what makes it read as loud. */
   .ip-invert {
     --fg: #f5f6f7;
-    --muted: rgba(245, 246, 247, 0.8);
-    --subtle: rgba(245, 246, 247, 0.66);
-    --border: rgba(245, 246, 247, 0.16);
-    --border-strong: rgba(245, 246, 247, 0.34);
+    --c-fg: 245 246 247;
+    --muted: #c6c8cb;
+    --c-muted: 198 200 203;
+    --subtle: #a5a7aa;
+    --c-subtle: 165 167 170;
+    --border: #33363b;
+    --c-border: 51 54 59;
+    --border-strong: #5a5c60;
+    --c-border-strong: 90 92 96;
     --rule: rgba(245, 246, 247, 0.2);
     --accent: #ffe600;
     --accent-rgb: 255, 230, 0;
+    --c-accent: 255 230 0;
     --accent-ink: #0f1115;
     --accent-2: #8b93ff;
     --accent-2-rgb: 139, 147, 255;
+    --c-accent-2: 139 147 255;
     --accent-2-ink: #0f1115;
   }
 
   .dark .ip-invert {
     --fg: #16181c;
+    --c-fg: 22 24 28;
     --muted: #4e525a;
+    --c-muted: 78 82 90;
     --subtle: #6f747d;
-    --border: rgba(22, 24, 28, 0.14);
-    --border-strong: rgba(22, 24, 28, 0.3);
+    --c-subtle: 111 116 125;
+    --border: #d5d6d8;
+    --c-border: 213 214 216;
+    --border-strong: #b0b2b5;
+    --c-border-strong: 176 178 181;
     --rule: rgba(22, 24, 28, 0.18);
     --accent: #ce362e;
     --accent-rgb: 206, 54, 46;
+    --c-accent: 206 54 46;
     --accent-ink: #ffffff;
     --accent-2: #3f39c9;
     --accent-2-rgb: 63, 57, 201;
+    --c-accent-2: 63 57 201;
     --accent-2-ink: #ffffff;
   }
 
@@ -1887,3 +1947,5 @@ body.sidebar-collapsed .workspace-content {
   .ip-row::before,
   .ip-arrow { transition: none; }
 }
+
+

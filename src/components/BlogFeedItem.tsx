@@ -25,7 +25,7 @@ export default function BlogFeedItem({ blog }: { blog: BlogFeedEntry }) {
   return (
     <Link
       href={`/blog/${blog.slug}`}
-      className="group relative flex gap-6 p-5 rounded-2xl border border-border bg-surface hover:bg-elevated hover:border-accent/20 transition-all duration-300 hover:shadow-[0_20px_40px_-15px_rgba(0,0,0,0.05)] dark:hover:shadow-[0_20px_40px_-15px_rgba(0,0,0,0.4)]"
+      className="group relative flex gap-6 p-5 border border-border bg-surface hover:bg-elevated hover:border-accent/20 transition-all duration-300 hover: dark:hover:"
     >
       {/* Left: text content */}
       <div className="flex-1 min-w-0 flex flex-col gap-2">
@@ -55,33 +55,33 @@ export default function BlogFeedItem({ blog }: { blog: BlogFeedEntry }) {
             <RelativeTime iso={blog.createdAt} />
           </span>
         </div>
- 
+
         {/* Title */}
-        <h3 className="text-xl md:text-2xl font-black text-fg tracking-tight leading-[1.2] group-hover:text-accent transition-colors line-clamp-2">
+        <h3 className="text-xl md:text-2xl font-bold text-fg tracking-tight leading-[1.2] group-hover:text-accent transition-colors line-clamp-2">
           {blog.title}
         </h3>
- 
+
         {/* Excerpt */}
         {blog.excerpt && (
           <p className="text-sm text-muted/80 leading-relaxed line-clamp-2 font-medium">
             {blog.excerpt}
           </p>
         )}
- 
+
         {/* Tags */}
         {blog.tags && blog.tags.length > 0 && (
           <div className="flex flex-wrap gap-1.5 mt-1.5">
             {blog.tags.slice(0, 4).map((t) => (
               <span
                 key={t}
-                className="px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-widest bg-accent/5 border border-accent/10 text-accent/80 hover:bg-accent/10 transition-colors"
+                className="px-2 py-0.5 rounded-data text-[10px] font-bold uppercase tracking-widest bg-accent/5 border border-accent/10 text-accent/80 hover:bg-accent/10 transition-colors"
               >
                 {t}
               </span>
             ))}
           </div>
         )}
- 
+
         {/* Meta row */}
         <div className="flex items-center gap-5 mt-2 text-[11px] font-bold">
           <span className="flex items-center gap-1.5 text-emerald-500/80">
@@ -111,13 +111,13 @@ export default function BlogFeedItem({ blog }: { blog: BlogFeedEntry }) {
       {/* Right: thumbnail (only if cover exists) */}
       {blog.coverImage && (
         <div className="shrink-0 hidden sm:block">
-          <div className="relative w-32 h-24 md:w-40 md:h-28 rounded-xl overflow-hidden border border-border bg-panel">
+          <div className="relative w-32 h-24 md:w-40 md:h-28 overflow-hidden border border-border bg-panel">
             <SafeImage
               src={blog.coverImage}
               alt=""
               fill
               sizes="(min-width: 768px) 160px, 128px"
-              className="object-cover group-hover:scale-105 transition-transform duration-500"
+              className="object-cover transition-transform duration-500"
               unoptimized={blog.coverImage.startsWith("data:")}
             />
           </div>

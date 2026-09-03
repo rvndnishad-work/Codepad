@@ -58,7 +58,8 @@ export function LogoLockup({
   height = 56,
   className,
   idSuffix = "lockup",
-}: { height?: number; className?: string; idSuffix?: string }) {
+  tone = "accent",
+}: { height?: number; className?: string; idSuffix?: string; tone?: "accent" | "secondary" }) {
   // viewBox is cropped tight to the artwork (tail tip reaches y≈128) so the
   // mark fills the box with no dead space. Width derives from height to keep
   // the aspect ratio. Origin is offset to leave just a hairline for the stroke.
@@ -68,6 +69,9 @@ export function LogoLockup({
   const VIEW_H = 123;
   const width = Math.round((height * VIEW_W) / VIEW_H);
   const blinkClass = `logo-cursor-${idSuffix}`;
+  // Brand mark follows the active persona: coral (accent) for developers,
+  // indigo (secondary) for the hiring/recruiter view.
+  const brand = tone === "secondary" ? "var(--accent-2)" : "var(--accent)";
   return (
     <svg
       width={width}
@@ -96,12 +100,12 @@ export function LogoLockup({
         fillRule="evenodd"
         clipRule="evenodd"
         d="M30 14 H330 a16 16 0 0 1 16 16 V84 a16 16 0 0 1 -16 16 H120 L76 128 L76 100 H30 a16 16 0 0 1 -16 -16 V30 a16 16 0 0 1 16 -16 Z M28 22 H332 a6 6 0 0 1 6 6 V88 a6 6 0 0 1 -6 6 H112 L84 114 L84 94 H28 a6 6 0 0 1 -6 -6 V28 a6 6 0 0 1 6 -6 Z"
-        fill="var(--accent)"
+        fill={brand}
       />
       {/* Code caret > */}
       <path
         d="M54 44 l16 13 -16 13"
-        stroke="var(--accent)"
+        stroke={brand}
         strokeWidth="5"
         strokeLinecap="round"
         strokeLinejoin="round"
@@ -117,7 +121,7 @@ export function LogoLockup({
         fill="var(--fg)"
       >
         interview
-        <tspan fill="var(--accent)">pad</tspan>
+        <tspan fill={brand}>pad</tspan>
       </text>
       {/* Blinking cursor underlining the "d" */}
       <rect
@@ -127,7 +131,7 @@ export function LogoLockup({
         width="22"
         height="5"
         rx="2.5"
-        fill="var(--accent)"
+        fill={brand}
       />
     </svg>
   );

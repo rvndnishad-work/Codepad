@@ -2,31 +2,34 @@
 
 import { useState, useEffect } from "react";
 import {
-  CheckCircle2,
-  ChevronRight,
   Clock,
   Code2,
   ListChecks,
-  Share2,
+  ShieldCheck,
   Target,
   Users,
-  ShieldCheck,
-  Briefcase
+  Briefcase,
 } from "lucide-react";
-import RevealOnScroll, { RevealItem } from "@/components/scroll/RevealOnScroll";
-import { SpotlightGroup, SpotlightCard } from "@/components/scroll/SpotlightGroup";
+import RevealOnScroll from "@/components/scroll/RevealOnScroll";
 
+/**
+ * The three-step flow, rendered as a SPEC SHEET rather than three glowing
+ * cards. One frame, two internal rules, and a step number set in the index
+ * voice. The old version wrapped each step in a rounded panel with a
+ * cursor-tracking spotlight glow; the structure now does that work, so the
+ * lighting effect is gone and nothing lifts, scales or blooms.
+ *
+ * Each step's body is a miniature of the real product surface it describes:
+ * a challenge row, an editor with a passing test bar, a session playlist.
+ */
 export default function HomeChallengesFlow() {
   const [persona, setPersona] = useState<"candidate" | "recruiter" | null>(null);
 
   useEffect(() => {
-    // Initial load
     const saved = localStorage.getItem("ipad.persona");
     if (saved === "candidate" || saved === "recruiter") {
       setPersona(saved as "candidate" | "recruiter");
     }
-
-    // Event listener for changes
     const handlePersonaChange = (e: Event) => {
       setPersona((e as CustomEvent).detail);
     };
@@ -36,100 +39,35 @@ export default function HomeChallengesFlow() {
 
   const isRecruiter = persona === "recruiter";
 
+  const steps = isRecruiter
+    ? [
+        { icon: <Briefcase className="h-3.5 w-3.5" />, title: "Author campaign", body: <RecruiterPickCard /> },
+        { icon: <ShieldCheck className="h-3.5 w-3.5" />, title: "Proctor sessions", body: <RecruiterSolveCard /> },
+        { icon: <Users className="h-3.5 w-3.5" />, title: "Evaluate candidates", body: <RecruiterBuildCard /> },
+      ]
+    : [
+        { icon: <Target className="h-3.5 w-3.5" />, title: "Pick a challenge", body: <PickCard /> },
+        { icon: <Code2 className="h-3.5 w-3.5" />, title: "Solve it live", body: <SolveCard /> },
+        { icon: <ListChecks className="h-3.5 w-3.5" />, title: "Build an interview", body: <BuildCard /> },
+      ];
+
   return (
-    <SpotlightGroup>
-      <RevealOnScroll
-        className="flex flex-col md:flex-row items-stretch gap-3 md:gap-2"
-        stagger={0.12}
-      >
-        <RevealItem className="flex-1 flex">
-          <SpotlightCard className="rounded-3xl w-full h-full">
-            <FlowCard
-              index={1}
-              icon={isRecruiter ? <Briefcase className="w-3.5 h-3.5" /> : <Target className="w-3.5 h-3.5" />}
-              title={isRecruiter ? "Author campaign" : "Pick a challenge"}
-              isRecruiter={isRecruiter}
-            >
-              {isRecruiter ? <RecruiterPickCard /> : <PickCard />}
-            </FlowCard>
-          </SpotlightCard>
-        </RevealItem>
-
-        <Connector />
-
-        <RevealItem className="flex-1 flex">
-          <SpotlightCard className="rounded-3xl w-full h-full">
-            <FlowCard
-              index={2}
-              icon={isRecruiter ? <ShieldCheck className="w-3.5 h-3.5" /> : <Code2 className="w-3.5 h-3.5" />}
-              title={isRecruiter ? "Proctor sessions" : "Solve it live"}
-              isRecruiter={isRecruiter}
-            >
-              {isRecruiter ? <RecruiterSolveCard /> : <SolveCard />}
-            </FlowCard>
-          </SpotlightCard>
-        </RevealItem>
-
-        <Connector />
-
-        <RevealItem className="flex-1 flex">
-          <SpotlightCard className="rounded-3xl w-full h-full">
-            <FlowCard
-              index={3}
-              icon={isRecruiter ? <Users className="w-3.5 h-3.5" /> : <ListChecks className="w-3.5 h-3.5" />}
-              title={isRecruiter ? "Evaluate candidates" : "Build an interview"}
-              isRecruiter={isRecruiter}
-            >
-              {isRecruiter ? <RecruiterBuildCard /> : <BuildCard />}
-            </FlowCard>
-          </SpotlightCard>
-        </RevealItem>
-      </RevealOnScroll>
-    </SpotlightGroup>
-  );
-}
-
-function FlowCard({
-  index,
-  icon,
-  title,
-  children,
-  isRecruiter
-}: {
-  index: number;
-  icon: React.ReactNode;
-  title: string;
-  children: React.ReactNode;
-  isRecruiter?: boolean;
-}) {
-  return (
-    <div className={`relative w-full h-full rounded-3xl border bg-panel p-5 transition-colors flex flex-col ${
-      isRecruiter ? "hover:border-indigo-500/40 border-border" : "hover:border-border-strong border-border"
-    }`}>
-      <div className="flex items-center gap-2 mb-4">
-        <div className={`w-7 h-7 rounded-lg flex items-center justify-center text-xs font-black bg-bg/40 border ${
-          isRecruiter ? "text-indigo-400 border-indigo-500/25" : "text-muted border-border"
-        }`}>
-          {index}
+    <RevealOnScroll className="ip-frame grid grid-cols-1 gap-px bg-border md:grid-cols-3">
+      {steps.map((step, i) => (
+        <div key={step.title} className="flex flex-col gap-4 bg-surface p-5">
+          <div className="flex items-center gap-3">
+            <span className={`ip-index ${isRecruiter ? "text-secondary" : "text-accent"}`}>
+              {String(i + 1).padStart(2, "0")}
+            </span>
+            <span className="text-subtle">{step.icon}</span>
+            <span className="ip-label ip-label-fg">{step.title}</span>
+            {/* The step's own rule, running to the cell edge. */}
+            <span className="ip-rule-soft min-w-2 flex-1" aria-hidden />
+          </div>
+          {step.body}
         </div>
-        <div className="flex items-center gap-1.5 text-fg">
-          <span className={isRecruiter ? "text-indigo-400" : "text-muted"}>{icon}</span>
-          <span className="font-black text-sm">{title}</span>
-        </div>
-      </div>
-      {children}
-    </div>
-  );
-}
-
-function Connector() {
-  return (
-    <div
-      aria-hidden
-      className="hidden md:flex items-center justify-center self-stretch w-5 text-border-strong"
-    >
-      <ChevronRight className="w-4 h-4" />
-    </div>
+      ))}
+    </RevealOnScroll>
   );
 }
 
@@ -137,74 +75,49 @@ function Connector() {
 
 function PickCard() {
   return (
-    <div className="rounded-xl border border-border bg-bg/40 p-4 relative min-h-[120px]">
-      <div className="flex items-start justify-between gap-3 mb-3">
+    <div className="ip-frame-bare min-h-[126px] p-3.5">
+      <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <div className="text-fg font-bold text-sm truncate">Two Sum</div>
-          <div className="text-muted text-[10px] mt-0.5 uppercase tracking-wider">
-            Algorithms
-          </div>
+          <div className="truncate text-[13.5px] font-semibold text-fg">Two Sum</div>
+          <div className="ip-label ip-label-xs mt-1">Algorithms</div>
         </div>
-        <div className="text-[10px] font-black uppercase tracking-wider px-2 py-1 rounded-md border text-emerald-500 bg-emerald-500/10 border-emerald-500/30">
+        <span className="ip-label ip-label-xs flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400">
+          <span className="h-[5px] w-[5px] bg-emerald-500" aria-hidden />
           easy
-        </div>
+        </span>
       </div>
-      <div className="flex flex-wrap items-center gap-1.5 text-[11px] text-muted">
-        <span className="inline-flex items-center gap-1">
-          <Clock className="w-3 h-3" />
+      <div className="mt-3.5 flex flex-wrap items-center gap-1.5">
+        <span className="ip-chip">
+          <Clock className="h-3 w-3" />
           15 min
         </span>
-        <span className="text-muted/30">·</span>
-        <span className="px-1.5 py-0.5 rounded bg-bg/60 border border-border text-[10px] text-fg/80">
-          arrays
-        </span>
-        <span className="px-1.5 py-0.5 rounded bg-bg/60 border border-border text-[10px] text-fg/80">
-          hashmap
-        </span>
-      </div>
-      <div
-        className="absolute -top-2 -right-2 w-7 h-7 rounded-full bg-emerald-500 flex items-center justify-center shadow-md"
-        aria-hidden
-      >
-        <CheckCircle2 className="w-4 h-4 text-white" />
+        <span className="ip-chip">arrays</span>
+        <span className="ip-chip">hashmap</span>
       </div>
     </div>
   );
 }
 
-/* ────────── Step 1: Recruiter Pick Card ────────── */
 function RecruiterPickCard() {
   return (
-    <div className="rounded-xl border border-indigo-500/30 bg-bg/40 p-4 relative min-h-[120px]">
-      <div className="flex items-start justify-between gap-3 mb-3">
+    <div className="ip-frame-bare min-h-[126px] p-3.5">
+      <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <div className="text-fg font-bold text-sm truncate">React Architect</div>
-          <div className="text-muted text-[10px] mt-0.5 uppercase tracking-wider">
-            MCP autograded challenge
-          </div>
+          <div className="truncate text-[13.5px] font-semibold text-fg">React Architect</div>
+          <div className="ip-label ip-label-xs mt-1">MCP autograded challenge</div>
         </div>
-        <div className="text-[10px] font-black uppercase tracking-wider px-2 py-1 rounded-md border text-indigo-400 bg-indigo-500/10 border-indigo-500/30">
-          Active
-        </div>
+        <span className="ip-label ip-label-xs ip-label-secondary flex items-center gap-1.5">
+          <span className="ip-live h-[5px] w-[5px] bg-secondary" aria-hidden />
+          active
+        </span>
       </div>
-      <div className="flex flex-wrap items-center gap-1.5 text-[11px] text-muted">
-        <span className="inline-flex items-center gap-1">
-          <Clock className="w-3 h-3 text-indigo-400 animate-pulse" />
+      <div className="mt-3.5 flex flex-wrap items-center gap-1.5">
+        <span className="ip-chip">
+          <Clock className="h-3 w-3" />
           60 min
         </span>
-        <span className="text-muted/30">·</span>
-        <span className="px-1.5 py-0.5 rounded bg-bg/60 border border-border text-[10px] text-fg/80">
-          AI Proctoring
-        </span>
-        <span className="px-1.5 py-0.5 rounded bg-bg/60 border border-border text-[10px] text-fg/80">
-          Jest Grader
-        </span>
-      </div>
-      <div
-        className="absolute -top-2 -right-2 w-7 h-7 rounded-full bg-indigo-500 flex items-center justify-center shadow-md animate-pulse"
-        aria-hidden
-      >
-        <CheckCircle2 className="w-4 h-4 text-white" />
+        <span className="ip-chip">AI proctoring</span>
+        <span className="ip-chip">Jest grader</span>
       </div>
     </div>
   );
@@ -212,48 +125,47 @@ function RecruiterPickCard() {
 
 /* ────────── Step 2: Solve it live ────────── */
 
-const SOLUTION = "return target - sum;";
-
 function SolveCard() {
   return (
-    <div className="rounded-xl border border-border bg-bg/40 p-4 font-mono min-h-[120px]">
-      <div className="text-[10px] uppercase tracking-wider text-muted mb-2">solution.js</div>
-      <div className="text-fg text-xs min-h-[1.4em] leading-[1.4em] whitespace-pre">
-        <span className="text-purple-400">function</span>{" "}
+    <div className="ip-frame-bare min-h-[126px] p-3.5 font-mono">
+      <div className="ip-label ip-label-xs mb-2.5">solution.js</div>
+      <div className="whitespace-pre text-[11.5px] leading-[1.5] text-fg">
+        <span className="text-violet-600 dark:text-violet-400">function</span>{" "}
         <span className="text-accent">solve</span>(sum, target) {"{"}
       </div>
-      <div className="text-fg text-xs min-h-[1.4em] leading-[1.4em] whitespace-pre pl-3">
-        {SOLUTION}
+      <div className="whitespace-pre pl-3 text-[11.5px] leading-[1.5] text-fg">
+        return target - sum;
       </div>
-      <div className="text-fg text-xs min-h-[1.4em] leading-[1.4em] whitespace-pre">{"}"}</div>
-      <div className="mt-3 flex items-center gap-2">
-        <div className="flex-1 h-1.5 bg-border rounded-full overflow-hidden">
-          <div className="h-full bg-emerald-500 w-full" />
+      <div className="whitespace-pre text-[11.5px] leading-[1.5] text-fg">{"}"}</div>
+      <div className="mt-3.5 flex items-center gap-2.5">
+        <div className="h-1.5 flex-1 overflow-hidden bg-border" aria-hidden>
+          <div className="h-full w-full bg-emerald-500" />
         </div>
-        <span className="text-[10px] font-bold text-emerald-500">3/3 passing</span>
+        <span className="ip-label ip-label-xs text-emerald-600 dark:text-emerald-400">
+          3/3 passing
+        </span>
       </div>
     </div>
   );
 }
 
-/* ────────── Step 2: Recruiter Solve Card ────────── */
 function RecruiterSolveCard() {
   return (
-    <div className="rounded-xl border border-indigo-500/30 bg-bg/40 p-4 font-mono min-h-[120px] text-[10px]">
-      <div className="text-[10px] uppercase tracking-wider text-muted mb-2 font-mono">proctoring_feed.log</div>
-      <div className="text-slate-300 min-h-[1.4em] leading-[1.4em] whitespace-pre flex justify-between">
-        <span>› Tab switches:</span>
-        <span className="text-amber-400 font-bold">1 warning</span>
+    <div className="ip-frame-bare min-h-[126px] p-3.5 font-mono">
+      <div className="ip-label ip-label-xs mb-2.5">proctoring_feed.log</div>
+      <div className="flex justify-between text-[11.5px] leading-[1.6] text-muted">
+        <span>› Tab switches</span>
+        <span className="text-amber-600 dark:text-amber-400">1 warning</span>
       </div>
-      <div className="text-slate-300 min-h-[1.4em] leading-[1.4em] whitespace-pre flex justify-between">
-        <span>› Clipboard:</span>
-        <span className="text-rose-400 font-bold">Blocked paste</span>
+      <div className="flex justify-between text-[11.5px] leading-[1.6] text-muted">
+        <span>› Clipboard</span>
+        <span className="text-rose-600 dark:text-rose-400">blocked paste</span>
       </div>
-      <div className="mt-3 flex items-center gap-2">
-        <div className="flex-1 h-1.5 bg-slate-800 rounded-full overflow-hidden">
-          <div className="h-full bg-indigo-500 w-full animate-pulse" />
+      <div className="mt-3.5 flex items-center gap-2.5">
+        <div className="h-1.5 flex-1 overflow-hidden bg-border" aria-hidden>
+          <div className="h-full w-full bg-secondary" />
         </div>
-        <span className="text-[10px] font-bold text-indigo-400">Keystroke telemetry</span>
+        <span className="ip-label ip-label-xs ip-label-secondary">telemetry</span>
       </div>
     </div>
   );
@@ -269,11 +181,6 @@ const SESSION: PlaylistItem[] = [
   { title: "Tree Diff", min: 30, tone: "rose" },
 ];
 
-const TONE_BORDER: Record<PlaylistItem["tone"], string> = {
-  emerald: "border-emerald-500/40",
-  amber: "border-amber-500/40",
-  rose: "border-rose-500/40",
-};
 const TONE_DOT: Record<PlaylistItem["tone"], string> = {
   emerald: "bg-emerald-500",
   amber: "bg-amber-500",
@@ -283,68 +190,50 @@ const TONE_DOT: Record<PlaylistItem["tone"], string> = {
 function BuildCard() {
   const totalMin = SESSION.reduce((s, i) => s + i.min, 0);
   return (
-    <div className="rounded-xl border border-border bg-bg/40 p-4 min-h-[120px]">
-      <div className="flex items-center justify-between mb-2.5">
-        <div className="text-[10px] uppercase tracking-wider text-muted">
-          Session playlist
-        </div>
-        <div className="text-[10px] text-muted font-mono tabular-nums">
-          {totalMin} min
-        </div>
+    <div className="ip-frame-bare min-h-[126px] p-3.5">
+      <div className="mb-2 flex items-center justify-between">
+        <span className="ip-label ip-label-xs">Session playlist</span>
+        <span className="ip-nums font-mono text-[10.5px] text-subtle">{totalMin} min</span>
       </div>
-      <div className="space-y-1.5 mb-3">
-        {SESSION.map((item, i) => (
-          <div
-            key={i}
-            className={`flex items-center gap-2 px-2.5 py-1.5 rounded-md border bg-bg/50 ${TONE_BORDER[item.tone]}`}
-          >
-            <span
-              className={`w-1.5 h-1.5 rounded-full ${TONE_DOT[item.tone]}`}
-              aria-hidden
-            />
-            <span className="text-xs text-fg font-medium truncate">{item.title}</span>
-            <span className="ml-auto text-[10px] text-muted font-mono">{item.min}m</span>
+      <div className="divide-y divide-border border-y border-border">
+        {SESSION.map((item) => (
+          <div key={item.title} className="flex items-center gap-2.5 py-1.5">
+            <span className={`h-[5px] w-[5px] shrink-0 ${TONE_DOT[item.tone]}`} aria-hidden />
+            <span className="truncate text-[12px] text-fg">{item.title}</span>
+            <span className="ip-nums ml-auto font-mono text-[10.5px] text-subtle">
+              {item.min}m
+            </span>
           </div>
         ))}
       </div>
-      <div className="flex items-center gap-2 text-[11px] font-bold">
-        <Share2 className="w-3 h-3 text-accent" />
-        <span className="text-accent">Share link ready</span>
-      </div>
+      <div className="ip-label ip-label-xs ip-label-accent mt-3">Share link ready</div>
     </div>
   );
 }
 
-/* ────────── Step 3: Recruiter Build Card ────────── */
 function RecruiterBuildCard() {
+  const ROWS = [
+    { k: "Problem solving", v: "94%" },
+    { k: "Code quality", v: "96%" },
+    { k: "Integrity flag", v: "clean" },
+  ];
   return (
-    <div className="rounded-xl border border-indigo-500/30 bg-bg/40 p-4 min-h-[120px]">
-      <div className="flex items-center justify-between mb-2.5">
-        <div className="text-[10px] uppercase tracking-wider text-muted">
-          AI Candidate Dossier
-        </div>
-        <div className="text-[10px] text-emerald-400 font-mono font-bold">
+    <div className="ip-frame-bare min-h-[126px] p-3.5">
+      <div className="mb-2 flex items-center justify-between">
+        <span className="ip-label ip-label-xs">Candidate dossier</span>
+        <span className="ip-nums font-mono text-[10.5px] text-emerald-600 dark:text-emerald-400">
           94/100
-        </div>
+        </span>
       </div>
-      <div className="space-y-2 mb-3 text-[11px] text-slate-300">
-        <div className="flex justify-between">
-          <span>Problem Solving:</span>
-          <span className="text-fg font-bold">94%</span>
-        </div>
-        <div className="flex justify-between">
-          <span>Code Quality:</span>
-          <span className="text-fg font-bold">96%</span>
-        </div>
-        <div className="flex justify-between">
-          <span>Proctoring Flag:</span>
-          <span className="text-emerald-400 font-bold uppercase text-[9px]">Clean</span>
-        </div>
+      <div className="divide-y divide-border border-y border-border">
+        {ROWS.map((r) => (
+          <div key={r.k} className="flex items-center justify-between py-1.5">
+            <span className="text-[12px] text-muted">{r.k}</span>
+            <span className="ip-nums font-mono text-[11px] text-fg">{r.v}</span>
+          </div>
+        ))}
       </div>
-      <div className="flex items-center gap-2 text-[11px] font-bold text-indigo-400">
-        <Share2 className="w-3.5 h-3.5 text-indigo-400" />
-        <span>Dossier ready for review</span>
-      </div>
+      <div className="ip-label ip-label-xs ip-label-secondary mt-3">Ready for review</div>
     </div>
   );
 }

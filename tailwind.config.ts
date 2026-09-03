@@ -3,6 +3,12 @@ import type { Config } from "tailwindcss";
 const config: Config = {
   darkMode: "class",
   content: ["./src/**/*.{ts,tsx,mdx}"],
+  // The `ip-*` design-language classes live in `@layer components` in
+  // globals.css, and Tailwind tree-shakes that layer against the content
+  // scan. Safelisting the prefix keeps the system whole in production even
+  // when a class is only referenced from a variable, and lets us ship
+  // vocabulary (e.g. `ip-chip-accent`) ahead of its first use.
+  safelist: [{ pattern: /^ip-/ }],
   theme: {
     extend: {
       colors: {
@@ -19,12 +25,25 @@ const config: Config = {
           DEFAULT: "var(--accent)",
           soft: "var(--accent-soft)",
           glow: "var(--accent-glow)",
+          ink: "var(--accent-ink)",
         },
         secondary: {
           DEFAULT: "var(--accent-2)",
           soft: "var(--accent-2-soft)",
           glow: "var(--accent-2-glow)",
+          ink: "var(--accent-2-ink)",
         },
+        /* Ink is the structural primary (see globals.css "Runtime" notes):
+           near-black on paper, paper on near-black. `ink-fg` is the only
+           colour that belongs on top of it. */
+        ink: {
+          DEFAULT: "var(--ink)",
+          fg: "var(--ink-fg)",
+        },
+        /* The editorial hairline and the blueprint field, exposed so
+           `border-rule` / `bg-grid` stay on-token. */
+        rule: "var(--rule)",
+        grid: "var(--grid)",
       },
       fontFamily: {
         sans: [
@@ -47,14 +66,28 @@ const config: Config = {
         ],
       },
       borderRadius: {
+        /* Shape is semantic here. `sharp` (0) is the default for structure,
+           `data` (2px) marks a datum, `action` (4px) marks a control. The
+           legacy xl/2xl steps stay for the app shell, which is not part of
+           the marketing redesign. */
+        sharp: "0",
+        data: "2px",
+        action: "4px",
         xl: "0.875rem",
         "2xl": "1.125rem",
       },
       boxShadow: {
+        /* Marketing surfaces do not use shadows — depth comes from the rule
+           system. These remain for the app shell (menus, toasts, overlays)
+           where a floating layer genuinely leaves the page. */
         "tile": "0 1px 0 rgba(var(--accent-rgb),0.04) inset, 0 1px 2px rgba(0,0,0,0.12)",
         "tile-hover":
           "0 0 0 1px rgba(var(--accent-rgb),0.45), 0 8px 24px -8px rgba(var(--accent-rgb),0.3)",
         "soft": "0 2px 8px rgba(0,0,0,0.15)",
+        /* The one elevation the redesign allows: a hard-edged drop for
+           command panels, so they read as a sheet placed on the page rather
+           than a blurred glass bubble. */
+        "panel": "0 1px 0 var(--border), 0 18px 40px -24px rgba(0,0,0,0.45)",
       },
       backgroundImage: {
         "grid-pattern":
@@ -73,6 +106,7 @@ const config: Config = {
         },
         shimmer: { "0%": { backgroundPosition: "-200% 0" }, "100%": { backgroundPosition: "200% 0" } },
         "marquee-left": { from: { transform: "translateX(0)" }, to: { transform: "translateX(-50%)" } },
+        "rule-in": { from: { transform: "scaleX(0)" }, to: { transform: "scaleX(1)" } },
         "marquee-right": { from: { transform: "translateX(-50%)" }, to: { transform: "translateX(0)" } },
       },
       animation: {
@@ -82,6 +116,7 @@ const config: Config = {
         "pop-in": "pop-in 260ms cubic-bezier(0.16,1,0.3,1)",
         shimmer: "shimmer 2.6s linear infinite",
         "marquee-left": "marquee-left 42s linear infinite",
+        "rule-in": "rule-in 520ms cubic-bezier(0.16,1,0.3,1) both",
         "marquee-right": "marquee-right 48s linear infinite",
       },
     },

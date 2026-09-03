@@ -57,7 +57,7 @@ export default function BlogRowCompact({ blog }: { blog: BlogFeedEntry }) {
             )}
           </div>
 
-          <div className="relative w-20 h-20 sm:w-28 sm:h-28 md:w-32 md:h-32 shrink-0 rounded-md overflow-hidden bg-panel border border-border">
+          <div className="relative w-20 h-20 sm:w-28 sm:h-28 md:w-32 md:h-32 shrink-0 rounded-data overflow-hidden bg-panel border border-border">
             {blog.coverImage ? (
               <SafeImage
                 src={blog.coverImage}
@@ -105,13 +105,13 @@ export default function BlogRowCompact({ blog }: { blog: BlogFeedEntry }) {
 
           <span className="ml-auto flex items-center gap-1 text-muted/60">
             <span
-              className="p-1.5 rounded-full hover:bg-elevated hover:text-fg transition-colors"
+              className="p-1.5 rounded-data hover:bg-elevated hover:text-fg transition-colors"
               aria-hidden="true"
             >
               <Bookmark className="w-4 h-4" />
             </span>
             <span
-              className="p-1.5 rounded-full hover:bg-elevated hover:text-fg transition-colors"
+              className="p-1.5 rounded-data hover:bg-elevated hover:text-fg transition-colors"
               aria-hidden="true"
             >
               <MoreHorizontal className="w-4 h-4" />

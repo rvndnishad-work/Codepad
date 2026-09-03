@@ -1,13 +1,10 @@
 import Link from "next/link";
 import {
   ArrowRight,
-  BookOpenCheck,
   Bot,
   Building2,
-  FlaskConical,
   Map as MapIcon,
   MessagesSquare,
-  Sparkles,
   Swords,
   Target,
 } from "lucide-react";
@@ -15,14 +12,15 @@ import RevealOnScroll, { RevealItem } from "@/components/scroll/RevealOnScroll";
 import SectionHeading from "@/components/home/SectionHeading";
 
 /**
- * "The prep arsenal" — the interview-prep universe in one bento, fed with real
- * DB counts (never invented numbers; cards hide themselves when a feature has
- * no content yet). Sits right under the developer hero so the breadth of the
- * platform is the first thing a visitor scrolls into.
+ * "The prep arsenal" — the interview-prep universe, fed with real DB counts
+ * (never invented numbers; blocks hide themselves when a feature has no
+ * content yet).
  *
- * Revamp notes: entrance reveals via the shared RevealOnScroll rhythm, and a
- * single tokenized card treatment (accent-tinted tiles instead of the old
- * per-card rainbow gradients) so the section reads as one system.
+ * Structurally this is ONE ruled table, not five floating cards. Every block
+ * shares outer edges with its neighbours and is divided by a single hairline,
+ * so the section reads as a specification sheet — which is also why the
+ * densities differ: the flagship gets air, the trailing row is compact. That
+ * contrast in rhythm is the point.
  */
 
 export interface ArsenalCounts {
@@ -54,258 +52,205 @@ const TECH_LABELS: Record<string, string> = {
 
 export default function HomeArsenal({ counts }: { counts: ArsenalCounts }) {
   const topTechs = [...counts.techs].sort((a, b) => b.count - a.count);
-  const shownTechs = topTechs.slice(0, 9);
+  const shownTechs = topTechs.slice(0, 10);
   const moreTechs = Math.max(0, topTechs.length - shownTechs.length);
 
-  return (
-    <section className="relative overflow-hidden py-24 md:py-32">
-      {/* Ambient background — accent-tinted, on-token */}
-      <div className="absolute top-0 left-1/3 w-[600px] h-[600px] bg-accent/5 rounded-full blur-[140px] pointer-events-none" />
-      <div className="absolute bottom-0 right-0 w-[500px] h-[500px] bg-secondary/5 rounded-full blur-[140px] pointer-events-none" />
+  const trailing: {
+    href: string;
+    icon: React.ReactNode;
+    title: string;
+    stat: string;
+    statLabel: string;
+    blurb: string;
+  }[] = [];
 
-      <div className="relative mx-auto max-w-6xl px-4 space-y-12">
+  if (counts.challenges > 0) {
+    trailing.push({
+      href: "/challenges",
+      icon: <Swords className="h-4 w-4" />,
+      title: "Coding challenges",
+      stat: String(counts.challenges),
+      statLabel: "server-graded",
+      blurb:
+        "Real execution in 8 languages, hidden tests, instant verdicts — the take-home, before the take-home.",
+    });
+  }
+  if (counts.promptScenarios > 0) {
+    trailing.push({
+      href: "/interview/prompt-practice",
+      icon: <MessagesSquare className="h-4 w-4" />,
+      title: "Prompt Arena",
+      stat: String(counts.promptScenarios),
+      statLabel: "scenarios",
+      blurb:
+        "Write prompts against real scenarios and get scored — the skill every AI-era JD quietly expects.",
+    });
+  }
+  trailing.push({
+    href: counts.journeys > 0 ? "/prep" : "/interview-questions",
+    icon: <MapIcon className="h-4 w-4" />,
+    title: "Prep journeys",
+    stat: "Day-by-day",
+    statLabel: "role-based plans",
+    blurb:
+      "Pick a target role — the plan sequences banks, challenges and scenarios into a phased track.",
+  });
+
+  const trailingCols =
+    trailing.length === 1 ? "md:grid-cols-1" : trailing.length === 2 ? "md:grid-cols-2" : "md:grid-cols-3";
+
+  return (
+    <section className="relative border-b border-border py-20 md:py-28">
+      <div className="relative mx-auto max-w-6xl px-4">
         <SectionHeading
+          index="02"
           eyebrow="The prep arsenal"
-          eyebrowIcon={<Target className="w-3.5 h-3.5" />}
+          eyebrowIcon={<Target className="h-3 w-3" />}
           title="Everything between you"
           highlight="and the offer."
-          lede="Question banks, runnable challenges, AI-readiness training, and company-specific prep — one account, zero setup."
+          lede="Question banks, runnable challenges, AI-readiness training and company-specific prep — one account, zero setup."
         />
 
-        {/* Bento */}
-        <RevealOnScroll stagger={0.1} amount={0.15} className="grid grid-cols-1 md:grid-cols-12 gap-5">
-          {/* ── Question banks — the flagship card ── */}
-          {counts.prepQuestions > 0 && (
-            <RevealItem className="md:col-span-7">
-              <Link
-                href="/interview-questions"
-                className="group relative block h-full rounded-3xl border border-border bg-surface shadow-tile overflow-hidden p-7 transition-all duration-300 hover:-translate-y-1 hover:border-accent/45 hover:shadow-tile-hover"
-              >
-                <div className="absolute -top-24 -right-24 w-72 h-72 rounded-full bg-accent/10 blur-[100px] opacity-60 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
-                <span
-                  aria-hidden
-                  className="absolute -bottom-10 -right-2 text-[9rem] leading-none font-black text-fg opacity-[0.04] select-none pointer-events-none"
-                >
-                  ?
-                </span>
+        <RevealOnScroll amount={0.12} stagger={0.08}>
+          {/* ══ The flagship band — asymmetric 7/5 split inside one frame ══ */}
+          {(counts.prepQuestions > 0 || counts.reviewChallenges > 0) && (
+            <RevealItem>
+              <div className="ip-frame ip-ticks grid grid-cols-1 lg:grid-cols-12">
+                {counts.prepQuestions > 0 && (
+                  <Link
+                    href="/interview-questions"
+                    className="group relative flex flex-col justify-between gap-8 p-7 md:p-9 lg:col-span-7"
+                  >
+                    <div>
+                      <div className="flex items-center gap-3">
+                        <span className="ip-label ip-label-accent">Question banks</span>
+                        <span className="ip-rule w-8" aria-hidden />
+                      </div>
 
-                <div className="relative space-y-5">
-                  <div className="flex items-start justify-between gap-4">
-                    <div className="flex items-center gap-4">
-                      <div className="w-14 h-14 rounded-2xl border border-accent/25 bg-accent/10 text-accent flex items-center justify-center">
-                        <BookOpenCheck className="w-7 h-7" />
+                      {/* The number leads. It is the largest thing in the
+                          section after the section title — a measurement,
+                          set in the display voice with tabular figures. */}
+                      <div className="mt-6 flex items-baseline gap-3">
+                        <span className="ip-display ip-display-lg ip-nums text-fg">
+                          {formatK(counts.prepQuestions)}
+                        </span>
+                        <span className="ip-label">
+                          questions · {counts.techs.length} technologies
+                        </span>
                       </div>
-                      <div>
-                        <h3 className="text-xl font-extrabold text-fg tracking-tight">
-                          Interview question banks
-                        </h3>
-                        <p className="text-xs text-muted font-medium mt-0.5">
-                          Every answer hand-written: diagrams, tables & runnable examples
-                        </p>
-                      </div>
+
+                      <p className="mt-5 max-w-md text-[14px] leading-relaxed text-muted">
+                        Every answer hand-written — diagrams, comparison tables and runnable
+                        examples, not a scraped paragraph with a code block bolted on.
+                      </p>
                     </div>
-                    <ArrowChip />
-                  </div>
 
-                  <div className="flex items-baseline gap-2">
-                    <span className="text-4xl font-black text-fg tabular-nums">
-                      {formatK(counts.prepQuestions)}
-                    </span>
-                    <span className="text-sm font-bold text-muted">
-                      questions · {counts.techs.length} technologies
-                    </span>
-                  </div>
-
-                  <div className="flex flex-wrap gap-1.5">
-                    {shownTechs.map((t) => (
-                      <span
-                        key={t.technology}
-                        className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg border border-border bg-bg/60 text-[11px] font-bold text-fg"
-                      >
-                        {TECH_LABELS[t.technology] ?? t.technology}
-                        <span className="text-muted/70 font-mono tabular-nums">{t.count}</span>
-                      </span>
-                    ))}
-                    {moreTechs > 0 && (
-                      <span className="inline-flex items-center px-2.5 py-1 rounded-lg border border-dashed border-border text-[11px] font-bold text-muted">
-                        +{moreTechs} more
-                      </span>
-                    )}
-                  </div>
-
-                  {counts.companies > 0 && (
-                    <div className="flex items-center gap-2 text-xs font-semibold text-muted pt-1">
-                      <Building2 className="w-3.5 h-3.5 opacity-70" />
-                      Plus company-wise questions & real interview experiences
-                    </div>
-                  )}
-                </div>
-              </Link>
-            </RevealItem>
-          )}
-
-          {/* ── Review the AI's Code ── */}
-          {counts.reviewChallenges > 0 && (
-            <RevealItem className="md:col-span-5">
-              <Link
-                href="/interview/ai-code-review"
-                className="group relative flex h-full flex-col rounded-3xl border border-border bg-surface shadow-tile overflow-hidden p-7 transition-all duration-300 hover:-translate-y-1 hover:border-accent/45 hover:shadow-tile-hover"
-              >
-                <div className="absolute -top-24 -right-24 w-72 h-72 rounded-full bg-accent/10 blur-[100px] opacity-60 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
-                <span
-                  aria-hidden
-                  className="absolute -bottom-9 -right-1 text-[8rem] leading-none font-black text-fg opacity-[0.04] select-none pointer-events-none"
-                >
-                  {"</>"}
-                </span>
-
-                <div className="relative space-y-5 h-full flex flex-col">
-                  <div className="flex items-start justify-between gap-4">
-                    <div className="flex items-center gap-4">
-                      <div className="w-14 h-14 rounded-2xl border border-accent/25 bg-accent/10 text-accent flex items-center justify-center">
-                        <Bot className="w-7 h-7" />
-                      </div>
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <h3 className="text-xl font-extrabold text-fg tracking-tight">
-                            Review the AI&apos;s code
-                          </h3>
-                          <span className="px-1.5 py-0.5 rounded-md bg-emerald-500/15 border border-emerald-500/30 text-emerald-500 text-[9px] font-black uppercase tracking-wider">
-                            New
+                    <div>
+                      <div className="flex flex-wrap gap-1.5">
+                        {shownTechs.map((t) => (
+                          <span key={t.technology} className="ip-chip">
+                            {TECH_LABELS[t.technology] ?? t.technology}
+                            <span className="text-subtle">{t.count}</span>
                           </span>
-                        </div>
-                        <p className="text-xs text-muted font-medium mt-0.5">
-                          The AI-readiness skill interviews now test
-                        </p>
+                        ))}
+                        {moreTechs > 0 && (
+                          <span className="ip-chip border-dashed">+{moreTechs}</span>
+                        )}
+                      </div>
+
+                      <div className="mt-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                        {counts.companies > 0 && (
+                          <span className="flex items-center gap-2 text-[12px] text-subtle">
+                            <Building2 className="h-3.5 w-3.5 shrink-0" />
+                            Company-wise sets &amp; real interview experiences
+                          </span>
+                        )}
+                        <span className="ip-link shrink-0 self-start text-[13px] sm:ml-auto">
+                          Browse the bank
+                          <ArrowRight className="ip-arrow h-3.5 w-3.5" />
+                        </span>
                       </div>
                     </div>
-                    <ArrowChip />
+                  </Link>
+                )}
+
+                {counts.reviewChallenges > 0 && (
+                  <Link
+                    href="/interview/ai-code-review"
+                    className="group relative flex flex-col justify-between gap-8 border-t border-border bg-panel/40 p-7 md:p-9 lg:col-span-5 lg:border-l lg:border-t-0"
+                  >
+                    <div>
+                      <div className="flex items-center gap-3">
+                        <span className="ip-label ip-label-accent">New</span>
+                        <span className="ip-label">AI-readiness</span>
+                      </div>
+
+                      <h3 className="ip-display ip-display-md mt-6 text-fg">
+                        Review the AI&apos;s code.
+                      </h3>
+
+                      <p className="mt-4 text-[14px] leading-relaxed text-muted">
+                        Plausible AI-generated answers with planted flaws — hallucinated APIs,
+                        logic bugs, security holes. Find them all before shipping, or race the
+                        clock in Hallucination Hunt.
+                      </p>
+                    </div>
+
+                    <div className="flex items-end justify-between gap-4">
+                      <div>
+                        <div className="ip-display ip-display-md ip-nums text-fg">
+                          {counts.reviewChallenges}
+                        </div>
+                        <div className="ip-label mt-1.5">challenges · JS TS PY SQL</div>
+                      </div>
+                      <Bot className="h-8 w-8 shrink-0 text-border-strong transition-colors group-hover:text-accent" />
+                    </div>
+                  </Link>
+                )}
+              </div>
+            </RevealItem>
+          )}
+
+          {/* ══ Trailing row — compact, fused to the band above ══ */}
+          <RevealItem>
+            <div className={`ip-frame grid grid-cols-1 border-t-0 ${trailingCols}`}>
+              {trailing.map((card, i) => (
+                <Link
+                  key={card.title}
+                  href={card.href}
+                  className={`group flex flex-col gap-3 p-6 ${
+                    i > 0 ? "border-t border-border md:border-l md:border-t-0" : ""
+                  }`}
+                >
+                  <div className="flex items-center gap-2.5 text-subtle transition-colors group-hover:text-accent">
+                    {card.icon}
+                    <span className="ip-label ip-label-fg">{card.title}</span>
                   </div>
-
-                  <p className="text-sm text-muted leading-relaxed">
-                    Plausible AI-generated answers with planted flaws — hallucinated
-                    APIs, logic bugs, security holes. Find them all before shipping,
-                    or race the clock in Hallucination Hunt.
-                  </p>
-
-                  <div className="mt-auto flex items-baseline gap-2">
-                    <span className="text-4xl font-black text-fg tabular-nums">
-                      {counts.reviewChallenges}
+                  <div className="flex items-baseline gap-2">
+                    <span className="ip-nums text-2xl font-bold tracking-tight text-fg">
+                      {card.stat}
                     </span>
-                    <span className="text-sm font-bold text-muted">
-                      challenges · JS, TS, Python & SQL
-                    </span>
+                    <span className="ip-label">{card.statLabel}</span>
                   </div>
-                </div>
-              </Link>
-            </RevealItem>
-          )}
-
-          {/* ── Row 2: three equal cards ── */}
-          {counts.challenges > 0 && (
-            <RevealItem className="md:col-span-4">
-              <SmallCard
-                href="/challenges"
-                icon={<Swords className="w-6 h-6" />}
-                title="Coding challenges"
-                stat={`${counts.challenges}`}
-                statLabel="server-graded"
-                blurb="Real execution in 8 languages, hidden tests, and instant verdicts — like the take-home, before the take-home."
-              />
-            </RevealItem>
-          )}
-          {counts.promptScenarios > 0 && (
-            <RevealItem className="md:col-span-4">
-              <SmallCard
-                href="/interview/prompt-practice"
-                icon={<MessagesSquare className="w-6 h-6" />}
-                title="Prompt Arena"
-                stat={`${counts.promptScenarios}`}
-                statLabel="scenarios"
-                blurb="Write prompts against real scenarios and get scored — the skill every AI-era JD quietly expects."
-              />
-            </RevealItem>
-          )}
-          <RevealItem className="md:col-span-4">
-            <SmallCard
-              href={counts.journeys > 0 ? "/prep" : "/interview-questions"}
-              icon={<MapIcon className="w-6 h-6" />}
-              title="Prep journeys"
-              stat="Day-by-day"
-              statLabel="role-based plans"
-              blurb="Pick a target role — the plan sequences banks, challenges and scenarios into a phased track you can check off."
-            />
+                  <p className="text-[12.5px] leading-relaxed text-muted">{card.blurb}</p>
+                </Link>
+              ))}
+            </div>
           </RevealItem>
         </RevealOnScroll>
 
-        {/* AI-readiness ribbon */}
-        <RevealOnScroll delay={0.15} className="flex justify-center">
-          <div className="flex items-center justify-center gap-2 text-xs font-semibold text-muted">
-            <Sparkles className="w-3.5 h-3.5 text-accent" />
-            <span>
-              New here?{" "}
-              <Link
-                href="/prep"
-                className="text-fg font-bold underline decoration-accent/50 underline-offset-4 hover:decoration-accent transition-colors"
-              >
-                Take the AI-Ready journey
-              </Link>{" "}
-              — question bank, prompt drills and code-review challenges in one track.
-            </span>
-            <FlaskConical className="w-3.5 h-3.5 text-accent" />
-          </div>
+        {/* A single closing line, set as a footnote rather than a banner. */}
+        <RevealOnScroll delay={0.1}>
+          <p className="mt-6 text-[12.5px] text-subtle">
+            New here?{" "}
+            <Link href="/prep" className="ip-link text-[12.5px]">
+              Take the AI-Ready journey
+            </Link>{" "}
+            — question bank, prompt drills and code-review challenges in one track.
+          </p>
         </RevealOnScroll>
       </div>
     </section>
-  );
-}
-
-function SmallCard({
-  href,
-  icon,
-  title,
-  stat,
-  statLabel,
-  blurb,
-}: {
-  href: string;
-  icon: React.ReactNode;
-  title: string;
-  stat: string;
-  statLabel: string;
-  blurb: string;
-}) {
-  return (
-    <Link
-      href={href}
-      className="group relative flex h-full flex-col rounded-3xl border border-border bg-surface shadow-tile overflow-hidden p-6 transition-all duration-300 hover:-translate-y-1 hover:border-accent/45 hover:shadow-tile-hover"
-    >
-      <div className="absolute -top-20 -right-20 w-56 h-56 rounded-full bg-accent/10 blur-[90px] opacity-50 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
-      <div className="relative space-y-4">
-        <div className="flex items-start justify-between gap-3">
-          <div className="w-12 h-12 rounded-2xl border border-accent/25 bg-accent/10 text-accent flex items-center justify-center">
-            {icon}
-          </div>
-          <ArrowChip />
-        </div>
-        <div>
-          <h3 className="text-base font-extrabold text-fg tracking-tight">{title}</h3>
-          <div className="flex items-baseline gap-1.5 mt-1">
-            <span className="text-2xl font-black text-fg tabular-nums">{stat}</span>
-            <span className="text-xs font-bold text-muted">{statLabel}</span>
-          </div>
-        </div>
-        <p className="text-xs text-muted leading-relaxed">{blurb}</p>
-      </div>
-    </Link>
-  );
-}
-
-function ArrowChip() {
-  return (
-    <span className="flex-shrink-0 w-8 h-8 rounded-full border border-border bg-bg/60 flex items-center justify-center text-muted group-hover:text-fg group-hover:translate-x-1 transition-all duration-300">
-      <ArrowRight className="w-4 h-4" />
-    </span>
   );
 }
 

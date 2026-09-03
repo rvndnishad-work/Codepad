@@ -101,7 +101,7 @@ export default function FeaturedCarousel({ items }: FeaturedCarouselProps) {
       onMouseLeave={() => setIsHovered(false)}
     >
       <div className="flex items-center justify-between mb-4">
-        <div className="flex items-center gap-2 text-[11px] font-black uppercase tracking-[0.18em] text-accent">
+        <div className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.18em] text-accent">
           <Star className="w-3 h-3 fill-current" />
           Featured stories
         </div>
@@ -112,7 +112,7 @@ export default function FeaturedCarousel({ items }: FeaturedCarouselProps) {
               onClick={() => nudge("left")}
               disabled={!canLeft}
               aria-label="Previous featured story"
-              className="w-9 h-9 rounded-full border border-border bg-surface flex items-center justify-center text-fg hover:bg-elevated transition disabled:opacity-30 disabled:cursor-not-allowed"
+              className="w-9 h-9 border border-border bg-surface flex items-center justify-center text-fg hover:border-border-strong hover:bg-elevated transition disabled:opacity-30 disabled:cursor-not-allowed"
             >
               <ChevronLeft className="w-4 h-4" />
             </button>
@@ -121,7 +121,7 @@ export default function FeaturedCarousel({ items }: FeaturedCarouselProps) {
               onClick={() => nudge("right")}
               disabled={!canRight}
               aria-label="Next featured story"
-              className="w-9 h-9 rounded-full border border-border bg-surface flex items-center justify-center text-fg hover:bg-elevated transition disabled:opacity-30 disabled:cursor-not-allowed"
+              className="w-9 h-9 border border-border bg-surface flex items-center justify-center text-fg hover:border-border-strong hover:bg-elevated transition disabled:opacity-30 disabled:cursor-not-allowed"
             >
               <ChevronRight className="w-4 h-4" />
             </button>
@@ -137,7 +137,7 @@ export default function FeaturedCarousel({ items }: FeaturedCarouselProps) {
           <Link
             key={blog.id}
             href={`/blog/${blog.slug}`}
-            className="group snap-start shrink-0 w-full rounded-2xl border border-border bg-surface hover:border-accent/30 transition-colors overflow-hidden flex flex-col md:flex-row"
+            className="group snap-start shrink-0 w-full border border-border bg-surface hover:border-accent/30 transition-colors overflow-hidden flex flex-col md:flex-row"
           >
             {blog.coverImage ? (
               <div className="relative w-full aspect-[16/10] md:w-[50%] lg:w-[55%] md:aspect-auto shrink-0 overflow-hidden bg-panel md:border-r border-border">
@@ -149,7 +149,7 @@ export default function FeaturedCarousel({ items }: FeaturedCarouselProps) {
                   className="object-cover transition-transform duration-500 group-hover:scale-[1.03]"
                   priority
                 />
-                <span className="absolute top-4 left-4 inline-flex items-center gap-1.5 px-3 py-1 rounded-md bg-bg/85 backdrop-blur border border-border text-[10px] font-black uppercase tracking-[0.16em] text-accent">
+                <span className="absolute top-4 left-4 inline-flex items-center gap-1.5 px-3 py-1 rounded-data bg-bg/85 border border-border text-[10px] font-bold uppercase tracking-[0.16em] text-accent">
                   <Star className="w-2.5 h-2.5 fill-current" />
                   Featured
                 </span>
@@ -167,7 +167,7 @@ export default function FeaturedCarousel({ items }: FeaturedCarouselProps) {
                     {blog.tags.slice(0, 3).map((t) => (
                       <span
                         key={t}
-                        className="px-2 py-0.5 rounded-md text-[10px] font-black uppercase tracking-[0.14em] bg-accent/10 border border-accent/20 text-accent"
+                        className="px-2 py-0.5 rounded-data text-[10px] font-bold uppercase tracking-[0.14em] bg-accent/10 border border-accent/20 text-accent"
                       >
                         {t}
                       </span>
@@ -234,7 +234,7 @@ export default function FeaturedCarousel({ items }: FeaturedCarouselProps) {
               type="button"
               onClick={() => jumpTo(i)}
               aria-label={`Featured story ${i + 1}`}
-              className={`h-1.5 rounded-full transition-all ${
+              className={`h-1.5 transition-all ${
                 i === activeIndex
                   ? "w-6 bg-accent"
                   : "w-1.5 bg-border hover:bg-muted/50"

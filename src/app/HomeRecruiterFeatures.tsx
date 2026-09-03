@@ -28,10 +28,10 @@ function ReplayBtn({ onClick }: { onClick: () => void }) {
     <button
       type="button"
       onClick={onClick}
-      className="absolute top-3 right-3 z-10 flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-muted hover:text-fg bg-surface/80 backdrop-blur border border-border hover:border-border-strong px-2.5 py-1.5 rounded-lg transition-all group/replay"
+      className="absolute top-3 right-3 z-10 flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-muted hover:text-fg bg-surface/80 border border-border hover:border-border-strong px-2.5 py-1.5 rounded-data transition-all group/replay"
     >
       Replay
-      <RotateCcw className="w-3 h-3 group-hover/replay:rotate-[-360deg] transition-transform duration-500" />
+      <RotateCcw className="w-3 h-3 group-hover/replay:rotate-[-360deg] transition- duration-500" />
     </button>
   );
 }
@@ -65,23 +65,20 @@ function SectionShell({ index, icon: Icon, title, titleAccent, desc, bullets, ch
 
   return (
     <RevealOnScroll>
-      <div className="group bg-panel border border-border/80 hover:border-secondary/40 rounded-3xl p-6 md:p-10 relative overflow-hidden transition-all duration-500 hover:shadow-tile-hover">
+      <div className="group bg-panel border border-border/80 hover:border-secondary/40 p-6 md:p-10 relative overflow-hidden transition-all duration-500 hover:">
         {/* Soft background ambient glow */}
-        <div
-          className="absolute -right-32 -top-32 w-96 h-96 rounded-full bg-secondary/5 opacity-50 group-hover:opacity-100 blur-[100px] pointer-events-none transition-all duration-700"
-        />
         <div className={`flex flex-col ${isEven ? "md:flex-row-reverse" : "md:flex-row"} gap-8 md:gap-12 items-center relative z-10`}>
           {/* Text side */}
           <div className="flex-1 min-w-0 space-y-5">
             <div className="flex items-center gap-3">
-              <div className="w-11 h-11 rounded-xl border border-secondary/25 bg-secondary/10 flex items-center justify-center shrink-0 transition-transform duration-500 group-hover:scale-110">
+              <div className="w-11 h-11 border border-secondary/25 bg-secondary/10 flex items-center justify-center shrink-0 transition- duration-500">
                 <Icon className="w-5 h-5 text-secondary" />
               </div>
-              <div className="text-[10px] font-black uppercase tracking-widest px-2.5 py-1 rounded-full text-secondary bg-secondary/10">
+              <div className="text-[10px] font-bold uppercase tracking-widest px-2.5 py-1 rounded-full text-secondary bg-secondary/10">
                 Feature {index + 1}
               </div>
             </div>
-            <h3 className="text-2xl md:text-3xl font-black text-fg tracking-tight leading-tight">
+            <h3 className="text-2xl md:text-3xl font-bold text-fg tracking-tight leading-tight">
               {title} <span className="text-secondary">{titleAccent}</span>
             </h3>
             <p className="text-muted text-sm md:text-base leading-relaxed max-w-md">{desc}</p>
@@ -99,7 +96,7 @@ function SectionShell({ index, icon: Icon, title, titleAccent, desc, bullets, ch
             {demoInView ? (
               children
             ) : (
-              <div className="w-full min-h-[340px] rounded-2xl border border-border bg-surface/50 animate-pulse" aria-hidden />
+              <div className="w-full min-h-[340px] border border-border bg-surface/50 animate-pulse" aria-hidden />
             )}
           </div>
         </div>
@@ -161,25 +158,25 @@ function ProctoringDemo() {
   const trustColor = trust > 70 ? "text-emerald-400" : trust > 40 ? "text-amber-400" : "text-red-400";
 
   return (
-    <div className="relative bg-surface/50 rounded-2xl border border-border/50 p-6 min-h-[340px] flex flex-col gap-4">
+    <div className="relative bg-surface/50 border border-border/50 p-6 min-h-[340px] flex flex-col gap-4">
       <ReplayBtn onClick={start} />
       <div>
         <div className="flex items-center gap-2 mb-3.5">
           <Shield className="w-4 h-4 text-red-400" />
-          <span className="text-[10px] font-black uppercase tracking-widest text-muted">Live Proctor Feed</span>
+          <span className="text-[10px] font-bold uppercase tracking-widest text-muted">Live Proctor Feed</span>
         </div>
         {/* Trust Score */}
-        <div className="flex items-center gap-3 p-3 rounded-xl bg-bg/40 border border-border">
+        <div className="flex items-center gap-3 p-3 bg-bg/40 border border-border">
           <span className="text-[10px] font-bold text-muted uppercase">Trust Score</span>
-          <div className="flex-1 h-2 bg-border rounded-full overflow-hidden">
+          <div className="flex-1 h-2 bg-border overflow-hidden">
             <motion.div
-              className={`h-full rounded-full ${trust > 70 ? "bg-emerald-500" : trust > 40 ? "bg-amber-500" : "bg-red-500"}`}
+              className={`h-full ${trust > 70 ? "bg-emerald-500" : trust > 40 ? "bg-amber-500" : "bg-red-500"}`}
               animate={{ width: `${trust}%` }}
               transition={{ duration: 0.5, ease: "easeOut" }}
             />
           </div>
           <motion.span
-            className={`text-lg font-black tabular-nums ${trustColor}`}
+            className={`text-lg font-bold tabular-nums ${trustColor}`}
             key={trust}
             initial={{ scale: 1.3, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
@@ -189,8 +186,8 @@ function ProctoringDemo() {
         </div>
       </div>
       {/* Events Scroll Area */}
-      <div 
-        ref={scrollRef} 
+      <div
+        ref={scrollRef}
         className="space-y-2 h-[160px] overflow-y-auto pr-1 scrollbar-thin scrollbar-thumb-border scroll-smooth"
       >
         <AnimatePresence>
@@ -199,7 +196,7 @@ function ProctoringDemo() {
               key={i}
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
-              className="flex items-center gap-2 text-xs p-2 rounded-lg bg-bg/30 border border-border/40 hover:bg-bg/50 transition-colors"
+              className="flex items-center gap-2 text-xs p-2 rounded-data bg-bg/30 border border-border/40 hover:bg-bg/50 transition-colors"
             >
               <Clock className="w-3 h-3 text-muted/50 shrink-0" />
               <span className="text-muted/50 tabular-nums text-[10px] font-mono">00:{String((i + 1) * 4).padStart(2, "0")}</span>
@@ -283,17 +280,17 @@ function McpDemo() {
   };
 
   return (
-    <div className="relative bg-surface/50 rounded-2xl border border-border/50 p-6 min-h-[340px] flex flex-col gap-4">
+    <div className="relative bg-surface/50 border border-border/50 p-6 min-h-[340px] flex flex-col gap-4">
       <ReplayBtn onClick={start} />
       <div>
         <div className="flex items-center gap-2 mb-3.5">
           <Cpu className="w-4 h-4 text-yellow-400" />
-          <span className="text-[10px] font-black uppercase tracking-widest text-muted">MCP Console</span>
+          <span className="text-[10px] font-bold uppercase tracking-widest text-muted">MCP Console</span>
         </div>
       </div>
       {/* Scrollable console view port */}
-      <div 
-        ref={scrollRef} 
+      <div
+        ref={scrollRef}
         className="font-mono text-[11px] space-y-3 h-[220px] overflow-y-auto pr-1 scrollbar-thin scrollbar-thumb-border scroll-smooth"
       >
         {MCP_STEPS.slice(0, step + 1).map((blk, i) => {
@@ -304,9 +301,9 @@ function McpDemo() {
               key={i}
               initial={{ opacity: 0, y: 8 }}
               animate={{ opacity: 1, y: 0 }}
-              className="rounded-lg bg-bg/40 border border-border/40 p-3 overflow-hidden"
+              className="rounded-data bg-bg/40 border border-border/40 p-3 overflow-hidden"
             >
-              <div className={`text-[9px] font-black uppercase tracking-widest mb-1.5 ${labelColor[blk.label] ?? "text-muted"}`}>
+              <div className={`text-[9px] font-bold uppercase tracking-widest mb-1.5 ${labelColor[blk.label] ?? "text-muted"}`}>
                 ← {blk.label}
               </div>
               <pre className="text-fg/80 whitespace-pre-wrap break-all leading-relaxed">
@@ -370,20 +367,20 @@ function MultiplayerDemo() {
   useAutoLoop(start, done);
 
   return (
-    <div className="relative bg-surface/50 rounded-2xl border border-border/50 p-5 min-h-[320px]">
+    <div className="relative bg-surface/50 border border-border/50 p-5 min-h-[320px]">
       <ReplayBtn onClick={start} />
       {/* Participant avatars */}
       <div className="flex items-center gap-2 mb-4">
         {PARTICIPANTS.map((p, i) => (
           <div key={i} className="flex items-center gap-1.5">
             <div
-              className="w-7 h-7 rounded-full flex items-center justify-center text-[9px] font-black text-white border-2"
+              className="w-7 h-7 rounded-full flex items-center justify-center text-[9px] font-bold text-white border-2"
               style={{ background: `${p.color}30`, borderColor: p.color }}
             >
               {p.initials}
             </div>
             <span className="text-[10px] font-bold text-muted hidden sm:inline">{p.name}</span>
-            <div className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+            <div className="w-1.5 h-1.5 bg-emerald-400" />
           </div>
         ))}
         <div className="ml-auto text-[9px] font-bold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full flex items-center gap-1">
@@ -391,7 +388,7 @@ function MultiplayerDemo() {
         </div>
       </div>
       {/* Editor mock */}
-      <div className="font-mono text-[11px] bg-bg/40 border border-border/40 rounded-xl p-3 space-y-0.5 mb-3">
+      <div className="font-mono text-[11px] bg-bg/40 border border-border/40 p-3 space-y-0.5 mb-3">
         {EDITOR_LINES.map((line, li) => {
           const activeCursors = PARTICIPANTS.filter((p, pi) => tick > pi && p.cursorLines[Math.min(tick - 1, 2)] === li + 1);
           return (
@@ -405,7 +402,7 @@ function MultiplayerDemo() {
                   animate={{ opacity: 1, scale: 1 }}
                   className="absolute right-2 flex items-center gap-1"
                 >
-                  <div className="w-[2px] h-4 animate-pulse rounded-full" style={{ background: c.color }} />
+                  <div className="w-[2px] h-4 animate-pulse" style={{ background: c.color }} />
                   <span className="text-[8px] font-bold px-1 rounded" style={{ color: c.color, background: `${c.color}20` }}>
                     {c.name}
                   </span>
@@ -425,7 +422,7 @@ function MultiplayerDemo() {
               {[0, 1, 2].map(d => (
                 <motion.span
                   key={d}
-                  className="w-1 h-1 rounded-full bg-muted"
+                  className="w-1 h-1 bg-muted"
                   animate={{ opacity: [0.3, 1, 0.3] }}
                   transition={{ repeat: Infinity, duration: 0.8, delay: d * 0.2 }}
                 />
@@ -438,9 +435,9 @@ function MultiplayerDemo() {
             <motion.div
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
-              className="flex items-center gap-2 bg-bg/40 border border-border/40 rounded-lg px-3 py-1.5 text-[10px]"
+              className="flex items-center gap-2 bg-bg/40 border border-border/40 rounded-data px-3 py-1.5 text-[10px]"
             >
-              <span className="font-black" style={{ color: PARTICIPANTS[1].color }}>Bob:</span>
+              <span className="font-bold" style={{ color: PARTICIPANTS[1].color }}>Bob:</span>
               <span className="text-fg/70">Should we use a min-heap here?</span>
             </motion.div>
           )}
@@ -502,31 +499,31 @@ function GradingDemo() {
   const pct = ran > 0 ? (ran / TESTS.length) * 100 : 0;
 
   return (
-    <div className="relative bg-surface/50 rounded-2xl border border-border/50 p-6 min-h-[340px] flex flex-col gap-4">
+    <div className="relative bg-surface/50 border border-border/50 p-6 min-h-[340px] flex flex-col gap-4">
       <ReplayBtn onClick={start} />
       <div>
         <div className="flex items-center justify-between mb-3.5">
           <div className="flex items-center gap-2">
             <Workflow className="w-4 h-4 text-purple-400" />
-            <span className="text-[10px] font-black uppercase tracking-widest text-muted">Test Runner</span>
+            <span className="text-[10px] font-bold uppercase tracking-widest text-muted">Test Runner</span>
           </div>
-          <div className="text-sm font-black tabular-nums">
+          <div className="text-sm font-bold tabular-nums">
             <span className="text-emerald-400">{passed}</span>
             <span className="text-muted">/{ran > 0 ? TESTS.length : "-"}</span>
             <span className="text-muted text-[10px] ml-1">passed</span>
           </div>
         </div>
         {/* Progress bar */}
-        <div className="h-2 bg-border rounded-full overflow-hidden mb-2">
+        <div className="h-2 bg-border overflow-hidden mb-2">
           <motion.div
-            className="h-full rounded-full bg-gradient-to-r bg-secondary"
+            className="h-full bg-secondary"
             animate={{ width: `${pct}%` }}
             transition={{ duration: 0.3, ease: "easeOut" }}
           />
         </div>
       </div>
       {/* Test list Scroll Area */}
-      <div 
+      <div
         ref={scrollRef}
         className="space-y-1.5 h-[160px] overflow-y-auto pr-1 scrollbar-thin scrollbar-thumb-border scroll-smooth"
       >
@@ -536,7 +533,7 @@ function GradingDemo() {
               key={i}
               initial={{ opacity: 0, x: -16 }}
               animate={{ opacity: 1, x: 0 }}
-              className="flex items-center gap-2 text-xs p-2 rounded-lg bg-bg/30 border border-border/40 hover:bg-bg/50 transition-colors"
+              className="flex items-center gap-2 text-xs p-2 rounded-data bg-bg/30 border border-border/40 hover:bg-bg/50 transition-colors"
             >
               {test.pass ? (
                 <Check className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
@@ -605,23 +602,22 @@ function RubricsDemo() {
   useAutoLoop(start, done);
 
   return (
-    <div className="relative bg-surface/50 rounded-2xl border border-border/50 p-6 min-h-[340px] flex flex-col gap-4">
+    <div className="relative bg-surface/50 border border-border/50 p-6 min-h-[340px] flex flex-col gap-4">
       <ReplayBtn onClick={start} />
       <div className="flex items-center gap-2 mb-1">
         <BarChart3 className="w-4 h-4 text-cyan-400" />
-        <span className="text-[10px] font-black uppercase tracking-widest text-muted">Evaluation Rubric</span>
+        <span className="text-[10px] font-bold uppercase tracking-widest text-muted">Evaluation Rubric</span>
       </div>
       {/* Overall score with elegant Pass indicator */}
-      <div className="flex items-center justify-between gap-4 p-4 rounded-xl bg-bg/40 border border-border/50 relative overflow-hidden">
-        <div className="absolute right-0 top-0 bottom-0 w-24 bg-gradient-to-l from-cyan-500/[0.03] to-transparent pointer-events-none" />
+      <div className="flex items-center justify-between gap-4 p-4 bg-bg/40 border border-border/50 relative overflow-hidden">
         <div>
-          <div className="text-3xl font-black tabular-nums text-cyan-400 leading-none">
+          <div className="text-3xl font-bold tabular-nums text-cyan-400 leading-none">
             {scoreNum}<span className="text-sm text-muted font-normal ml-0.5">/100</span>
           </div>
-          <div className="text-[9px] font-black text-muted uppercase tracking-widest mt-1.5">Overall Score</div>
+          <div className="text-[9px] font-bold text-muted uppercase tracking-widest mt-1.5">Overall Score</div>
         </div>
         <div className="text-right">
-          <div className="text-emerald-400 text-xs font-black tracking-wide bg-emerald-500/10 px-2.5 py-1 rounded-md border border-emerald-500/20 inline-block uppercase">
+          <div className="text-emerald-400 text-xs font-bold tracking-wide bg-emerald-500/10 px-2.5 py-1 rounded-data border border-emerald-500/20 inline-block uppercase">
             Strong Pass
           </div>
           <div className="text-[9px] font-bold text-muted/60 uppercase tracking-widest mt-1">DOSSIER GENERATED</div>
@@ -635,9 +631,9 @@ function RubricsDemo() {
               <span className="text-muted">{dim.label}</span>
               <span className="text-fg tabular-nums">{progress ? dim.value : 0}%</span>
             </div>
-            <div className="h-2 bg-border/50 rounded-full overflow-hidden">
+            <div className="h-2 bg-border/50 overflow-hidden">
               <motion.div
-                className="h-full rounded-full shadow-[0_0_8px_rgba(6,182,212,0.15)]"
+                className="h-full"
                 style={{ background: dim.color }}
                 initial={{ width: "0%" }}
                 animate={{ width: progress ? `${dim.value}%` : "0%" }}
@@ -655,7 +651,7 @@ function RubricsDemo() {
       >
         <button
           type="button"
-          className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-cyan-400 bg-cyan-500/10 hover:bg-cyan-500/15 border border-cyan-500/20 hover:border-cyan-500/40 px-5 py-2.5 rounded-lg transition-all duration-300 shadow-sm cursor-pointer"
+          className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-cyan-400 bg-cyan-500/10 hover:bg-cyan-500/15 border border-cyan-500/20 hover:border-cyan-500/40 px-5 py-2.5 rounded-data transition-all duration-300 cursor-pointer"
         >
           <FileText className="w-3.5 h-3.5" />
           Export PDF Dossier
@@ -726,11 +722,11 @@ function CreditsDemo() {
   const strokeDashoffset = circumference - (gaugePercent / 100) * circumference;
 
   return (
-    <div className="relative bg-surface/50 rounded-2xl border border-border/50 p-6 min-h-[340px] flex flex-col gap-4 justify-between">
+    <div className="relative bg-surface/50 border border-border/50 p-6 min-h-[340px] flex flex-col gap-4 justify-between">
       <ReplayBtn onClick={start} />
       <div className="flex items-center gap-2 mb-1">
         <CreditCard className="w-4 h-4 text-lime-400" />
-        <span className="text-[10px] font-black uppercase tracking-widest text-muted">Enterprise Billing</span>
+        <span className="text-[10px] font-bold uppercase tracking-widest text-muted">Enterprise Billing</span>
       </div>
       <div className="flex flex-col sm:flex-row items-center gap-6 flex-1 justify-center">
         {/* Circular gauge */}
@@ -746,7 +742,7 @@ function CreditsDemo() {
             />
           </svg>
           <div className="absolute inset-0 flex flex-col items-center justify-center">
-            <span className="text-xl font-black tabular-nums text-fg">{creditAnim}</span>
+            <span className="text-xl font-bold tabular-nums text-fg">{creditAnim}</span>
             <span className="text-[9px] font-bold text-muted">/1000 credits</span>
           </div>
         </div>
@@ -758,17 +754,17 @@ function CreditsDemo() {
                 key={i}
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="flex items-center gap-2 text-xs p-2.5 rounded-lg bg-bg/30 border border-border/40 hover:bg-bg/50 transition-colors"
+                className="flex items-center gap-2 text-xs p-2.5 rounded-data bg-bg/30 border border-border/40 hover:bg-bg/50 transition-colors"
               >
                 <item.icon className="w-3.5 h-3.5 text-lime-400 shrink-0" />
                 <span className="flex-1 text-fg/80 font-medium">{item.name}</span>
-                <span className="text-[10px] font-black text-lime-400 tabular-nums">{item.credits} cr</span>
+                <span className="text-[10px] font-bold text-lime-400 tabular-nums">{item.credits} cr</span>
               </motion.div>
             ))}
           </AnimatePresence>
-          <div className="flex items-center justify-between p-3 rounded-xl bg-bg/40 border border-border/60 mt-1">
+          <div className="flex items-center justify-between p-3 bg-bg/40 border border-border/60 mt-1">
             <span className="text-[10px] font-bold text-muted uppercase">Monthly Spend</span>
-            <span className="text-lg font-black tabular-nums text-fg">
+            <span className="text-lg font-bold tabular-nums text-fg">
               ${spend.toLocaleString()}
             </span>
           </div>
@@ -862,6 +858,7 @@ export default function HomeRecruiterFeatures() {
   return (
     <div className="md:col-span-12 pt-16 md:pt-24 mt-16 md:mt-24 border-t border-border/30 space-y-12 md:space-y-16">
       <SectionHeading
+        tone="secondary"
         eyebrow="The arsenal"
         eyebrowIcon={<Brain className="w-3.5 h-3.5" />}
         title="Enterprise screening"

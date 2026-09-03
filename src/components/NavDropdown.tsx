@@ -3,10 +3,7 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { motion } from "framer-motion";
 import {
-  ChevronDown,
-  ArrowUpRight,
   ArrowRight,
   Box,
   Target,
@@ -37,23 +34,6 @@ const ICON_MAP: Record<string, React.ComponentType<{ className?: string }>> = {
   Store,
 };
 
-/**
- * Per-product icon-tile tints (static class strings — Tailwind JIT needs the
- * full literal). Each nav item gets its own color identity so the menu reads
- * as a product suite instead of a gray list.
- */
-export const NAV_TINTS: Record<string, string> = {
-  cyan: "bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 border-cyan-500/20",
-  violet: "bg-violet-500/10 text-violet-600 dark:text-violet-400 border-violet-500/20",
-  amber: "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20",
-  emerald: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20",
-  blue: "bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20",
-  indigo: "bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border-indigo-500/20",
-  rose: "bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/20",
-};
-
-const FALLBACK_TINT = "bg-elevated/60 text-muted border-border";
-
 // useLayoutEffect warns during SSR; this client component is still
 // server-rendered by Next, so fall back to useEffect on the server.
 const useIsomorphicLayoutEffect =
@@ -66,50 +46,55 @@ export type NavDropdownItem = {
   label: string;
   description?: string;
   iconName: IconKey;
-  /** Optional small accent shown next to the label, e.g. "New" or "Beta". */
+  /** Optional small mono marker next to the label, e.g. "New" or "Beta". */
   badge?: string;
-  /** Color identity for the icon tile — a key of NAV_TINTS. */
+  /** Retained for callers; the command panel no longer tints per item. */
   tint?: string;
-  /** When set to "coming_soon", the item renders muted with a badge and is non-interactive. */
+  /** When set to "coming_soon", the item renders muted and is non-interactive. */
   status?: "visible" | "coming_soon";
 };
 
 type Props = {
   label: string;
   items: NavDropdownItem[];
-  /** Micro section label rendered at the top of the panel, e.g. "Build & practice". */
-  kicker?: string;
-  /** href of the item to pull out of the list into a gradient spotlight card. */
-  featuredHref?: string;
+  /** Vertical rail heading, e.g. "For practising". */
+  railTitle?: string;
+  /** One sentence of context under the rail heading. */
+  railBlurb?: string;
+  /** Optional destination pinned to the bottom of the rail. */
+  railHref?: string;
+  railHrefLabel?: string;
+  tone?: "accent" | "secondary";
 };
 
-function Badge({ text }: { text: string }) {
-  const toneClass =
-    text === "Hidden"
-      ? "bg-rose-500/10 text-rose-500 dark:text-rose-400"
-      : text === "Coming Soon" || text === "Soon"
-        ? "bg-amber-500/10 text-amber-600 dark:text-amber-400"
-        : "bg-amber-500/15 text-amber-600 dark:text-amber-400";
-  return (
-    <span className={`text-[9px] px-1.5 py-0.5 rounded-md uppercase tracking-wider font-black ${toneClass}`}>
-      {text}
-    </span>
-  );
-}
-
 /**
- * Hover-on-desktop, click-on-touch dropdown for navbar groupings.
+ * A COMMAND PANEL, not a mega menu.
  *
- * Why both interactions: hover-only menus are inaccessible to keyboard users
- * and touch devices. We open on `mouseenter` for fast desktop discovery, and
- * also bind click + Enter/Space + Escape for everyone else. Outside-click
- * closes via a document-level listener that's only attached while open.
+ * The old version was the shape every AI-drafted nav lands on: a rounded,
+ * blurred, shadowed sheet full of rounded tiles with coloured icon chips. This
+ * is built the other way round —
  *
- * The popover is positioned absolutely below the trigger and uses a small
- * invisible "hover bridge" so the user can swipe from button to panel without
- * the menu snapping shut mid-traverse.
+ *   • a square sheet with one hard edge and a single hard drop, so it reads as
+ *     paper placed on the page rather than glass floating above it;
+ *   • a LEFT RAIL that names the audience ("FOR PRACTISING") and gives it one
+ *     sentence of context plus a single onward destination;
+ *   • a RIGHT COLUMN of destinations separated by hairlines, with no card
+ *     around any of them. Hover draws an accent rule down the left edge of the
+ *     row instead of lighting up a rounded rectangle;
+ *   • a FOOTER STRIP carrying the count as monospaced metadata.
+ *
+ * Interaction is unchanged: hover on desktop, click/Enter/Escape everywhere,
+ * with a grace window so the pointer can cross from trigger to panel.
  */
-export default function NavDropdown({ label, items, kicker, featuredHref }: Props) {
+export default function NavDropdown({
+  label,
+  items,
+  railTitle,
+  railBlurb,
+  railHref,
+  railHrefLabel,
+  tone = "accent",
+}: Props) {
   const [open, setOpen] = useState(false);
   const pathname = usePathname();
   const closeTimerRef = useRef<number | null>(null);
@@ -129,19 +114,13 @@ export default function NavDropdown({ label, items, kicker, featuredHref }: Prop
     (item.href === pathname ||
       (item.href !== "/" && pathname.startsWith(`${item.href}/`)));
 
-  // Whether one of the items in this group is currently the active route —
-  // used to highlight the trigger button.
   const isGroupActive = items.some(isItemActive);
 
-  // The spotlight card only claims an item that's actually clickable; if the
-  // featured item is hidden or coming-soon it stays in the plain list.
-  const featuredItem = featuredHref
-    ? items.find((i) => i.href === featuredHref && i.status !== "coming_soon")
-    : undefined;
-  const listItems = featuredItem ? items.filter((i) => i !== featuredItem) : items;
+  // Two columns once the list is long enough that a single column would run
+  // past a laptop viewport. Below that, one column reads better.
+  const twoUp = items.length >= 5;
 
   // Close on route change (Link click) — pathname change is the cleanest signal.
-  // Syncing menu state to the router (an external system) is a valid effect use.
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setOpen(false);
@@ -212,34 +191,53 @@ export default function NavDropdown({ label, items, kicker, featuredHref }: Prop
     closeTimerRef.current = window.setTimeout(() => setOpen(false), 120);
   };
 
-  function renderItem(item: NavDropdownItem) {
+  const accentText = tone === "secondary" ? "ip-label-secondary" : "ip-label-accent";
+  const markerBg = tone === "secondary" ? "bg-secondary" : "bg-accent";
+  const rowTone = tone === "secondary" ? "ip-row-secondary" : "";
+
+  function renderItem(item: NavDropdownItem, index: number) {
     const Icon = ICON_MAP[item.iconName] ?? Code2;
     const isComingSoon = item.status === "coming_soon";
     const active = isItemActive(item);
-    const tintClass = (item.tint && NAV_TINTS[item.tint]) || FALLBACK_TINT;
+    // In two-column mode the second item of each pair carries the vertical
+    // rule, so the grid is ruled rather than gapped.
+    const colRule = twoUp && index % 2 === 1 ? "md:border-l md:border-border" : "";
+    // The rows in the first band sit flush against the panel's own top edge —
+    // their rule would double it up.
+    const topRule = index < (twoUp ? 2 : 1) ? "border-t-0 md:border-t-0" : "";
 
-    const content = (
+    const body = (
       <>
-        <div
-          className={`w-9 h-9 rounded-xl border flex items-center justify-center shrink-0 transition-transform duration-200 group-hover/item:scale-105 ${
-            isComingSoon ? "bg-amber-500/10 text-amber-400/60 border-amber-500/15" : tintClass
+        <Icon
+          className={`mt-[3px] h-4 w-4 shrink-0 transition-colors duration-150 ${
+            active ? (tone === "secondary" ? "text-secondary" : "text-accent") : "text-subtle"
           }`}
-        >
-          <Icon className="w-4 h-4" />
-        </div>
-        <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-1.5">
-            <span className="text-sm font-semibold">{item.label}</span>
-            {isComingSoon ? <Badge text="Coming Soon" /> : item.badge ? <Badge text={item.badge} /> : null}
-          </div>
+        />
+        <span className="min-w-0 flex-1">
+          <span className="flex items-center gap-2">
+            <span className="text-[13.5px] font-semibold leading-tight text-fg">
+              {item.label}
+            </span>
+            {isComingSoon ? (
+              <span className="ip-label ip-label-xs text-amber-600 dark:text-amber-400">Soon</span>
+            ) : item.badge ? (
+              <span
+                className={`ip-label ip-label-xs ${
+                  item.badge === "Hidden" ? "text-rose-600 dark:text-rose-400" : accentText
+                }`}
+              >
+                {item.badge}
+              </span>
+            ) : null}
+          </span>
           {item.description && (
-            <div className="text-[11.5px] text-muted/80 mt-0.5 leading-relaxed">
+            <span className="mt-1 block text-[11.5px] leading-snug text-subtle">
               {item.description}
-            </div>
+            </span>
           )}
-        </div>
+        </span>
         {!isComingSoon && (
-          <ArrowUpRight className="w-3.5 h-3.5 shrink-0 self-center text-muted opacity-0 -translate-x-1 group-hover/item:opacity-100 group-hover/item:translate-x-0 transition-all duration-200" />
+          <ArrowRight className="ip-arrow mt-[3px] h-3.5 w-3.5 shrink-0 text-subtle opacity-0 transition-opacity duration-150 group-hover/item:opacity-100" />
         )}
       </>
     );
@@ -248,9 +246,9 @@ export default function NavDropdown({ label, items, kicker, featuredHref }: Prop
       return (
         <div
           key={item.label}
-          className="flex items-start gap-3 px-3 py-2.5 rounded-xl opacity-50 cursor-not-allowed select-none"
+          className={`flex select-none items-start gap-3 border-t border-border px-5 py-3.5 opacity-45 ${colRule} ${topRule}`}
         >
-          {content}
+          {body}
         </div>
       );
     }
@@ -260,21 +258,23 @@ export default function NavDropdown({ label, items, kicker, featuredHref }: Prop
         key={item.label}
         href={item.href}
         role="menuitem"
-        className={`group/item flex items-start gap-3 px-3 py-2.5 rounded-xl transition-colors duration-150 ${
-          active ? "bg-elevated text-fg" : "text-fg/85 hover:bg-elevated hover:text-fg"
+        aria-current={active ? "page" : undefined}
+        className={`ip-row ${rowTone} group/item flex items-start gap-3 px-5 py-3.5 ${colRule} ${topRule} ${
+          active ? "bg-panel" : ""
         }`}
       >
-        {content}
+        {active && (
+          <span aria-hidden className={`absolute inset-y-[-1px] left-0 w-[2px] ${markerBg}`} />
+        )}
+        {body}
       </Link>
     );
   }
 
-  const FeaturedIcon = featuredItem ? ICON_MAP[featuredItem.iconName] ?? Code2 : null;
-
   return (
     <div
       ref={wrapperRef}
-      className="relative h-full flex items-center"
+      className="relative flex h-full items-center"
       onMouseEnter={() => {
         cancelClose();
         setOpen(true);
@@ -286,19 +286,24 @@ export default function NavDropdown({ label, items, kicker, featuredHref }: Prop
         aria-haspopup="menu"
         aria-expanded={open}
         onClick={() => setOpen((o) => !o)}
-        className={`flex items-center gap-1.5 h-9 px-3.5 rounded-full text-[13px] font-semibold transition-all duration-200 ${
-          open
-            ? "bg-elevated text-fg"
-            : isGroupActive
-              ? "text-fg hover:bg-elevated/60"
-              : "text-fg/60 hover:text-fg hover:bg-elevated/60"
+        className={`group relative flex h-16 items-center gap-2 px-3.5 text-[13px] font-medium tracking-[-0.005em] transition-colors duration-150 ${
+          open || isGroupActive ? "text-fg" : "text-muted hover:text-fg"
         }`}
       >
-        {isGroupActive && <span className="w-1 h-1 rounded-full bg-accent" aria-hidden />}
         <span>{label}</span>
-        <ChevronDown
-          className={`w-3.5 h-3.5 transition-transform duration-200 ${open ? "rotate-180" : ""}`}
+        {/* A caret that rotates a quarter turn — a disclosure marker, not a
+            chevron icon sitting inside a pill. */}
+        <span
           aria-hidden
+          className={`h-[5px] w-[5px] border-b border-r border-current transition-transform duration-200 ${
+            open ? "-translate-y-px rotate-[225deg]" : "-translate-y-[2px] rotate-45"
+          }`}
+        />
+        <span
+          aria-hidden
+          className={`absolute inset-x-2.5 -bottom-px h-px origin-left transition-transform duration-200 ease-out ${markerBg} ${
+            open || isGroupActive ? "scale-x-100" : "scale-x-0 group-hover:scale-x-100"
+          }`}
         />
       </button>
 
@@ -306,65 +311,48 @@ export default function NavDropdown({ label, items, kicker, featuredHref }: Prop
         <div
           ref={panelRef}
           role="menu"
-          className={`absolute top-full left-0 pt-2 z-50 ${
-            featuredItem ? "w-[560px]" : listItems.length >= 4 ? "w-[560px]" : "min-w-[330px]"
-          }`}
+          className={`absolute left-0 top-full z-50 ${twoUp ? "w-[41rem]" : "w-[33rem]"}`}
         >
-          <motion.div
-            initial={{ opacity: 0, y: 8, scale: 0.97 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            transition={{ duration: 0.18, ease: [0.16, 1, 0.3, 1] }}
-            className="rounded-2xl border border-border bg-surface shadow-2xl backdrop-blur-md overflow-hidden p-2"
-          >
-            {kicker && (
-              <div className="px-3 pt-2 pb-1.5 text-[10px] font-black uppercase tracking-[0.18em] text-muted/70">
-                {kicker}
-              </div>
-            )}
-
-            {/* Featured as compact top banner — balances the menu, no tall empty column */}
-            {featuredItem && FeaturedIcon && (
-              <Link
-                href={featuredItem.href}
-                role="menuitem"
-                className="group/feat relative flex items-center gap-4 rounded-xl border border-accent/20 bg-gradient-to-br from-accent/[0.14] via-accent/[0.06] to-transparent p-3.5 mb-2 overflow-hidden transition-colors duration-200 hover:border-accent/40"
-              >
-                <div
-                  aria-hidden
-                  className="absolute -top-8 -right-8 w-24 h-24 rounded-full bg-accent/20 blur-xl opacity-60 group-hover/feat:opacity-100 transition-opacity duration-300"
-                />
-                <div className="relative w-10 h-10 rounded-xl border border-accent/25 bg-accent/10 text-accent flex items-center justify-center shrink-0 group-hover/feat:scale-105 transition-transform duration-200">
-                  <FeaturedIcon className="w-5 h-5" />
-                </div>
-                <div className="relative min-w-0 flex-1">
-                  <div className="flex items-center gap-1.5">
-                    <span className="text-sm font-bold text-fg">{featuredItem.label}</span>
-                    {featuredItem.badge && <Badge text={featuredItem.badge} />}
-                  </div>
-                  {featuredItem.description && (
-                    <p className="text-[11.5px] text-muted leading-relaxed truncate">
-                      {featuredItem.description}
-                    </p>
+          <div className="ip-frame shadow-panel animate-fade-in overflow-hidden">
+            <div className="grid grid-cols-1 sm:grid-cols-[13.5rem_1fr]">
+              {/* ── The rail: who this menu is for ── */}
+              <div className="flex flex-col justify-between gap-6 border-b border-border bg-panel/70 px-5 py-5 sm:border-b-0 sm:border-r">
+                <div>
+                  <div className={`ip-label ${accentText}`}>{railTitle ?? label}</div>
+                  {railBlurb && (
+                    <p className="mt-3 text-[12px] leading-relaxed text-muted">{railBlurb}</p>
                   )}
                 </div>
-                <span className="relative hidden sm:inline-flex items-center gap-1 text-xs font-bold text-accent shrink-0">
-                  Explore
-                  <ArrowRight className="w-3.5 h-3.5 group-hover/feat:translate-x-0.5 transition-transform duration-200" />
-                </span>
-              </Link>
-            )}
+                {railHref && railHrefLabel && (
+                  <Link
+                    href={railHref}
+                    role="menuitem"
+                    className="ip-link self-start text-[12.5px]"
+                  >
+                    {railHrefLabel}
+                    <ArrowRight className="h-3.5 w-3.5" />
+                  </Link>
+                )}
+              </div>
 
-            {/* Balanced 2-column grid — was 6 rows single column (tall) + 1 empty spotlight column */}
-            <div
-              className={
-                listItems.length >= 4
-                  ? "grid grid-cols-2 gap-1"
-                  : "flex flex-col gap-0.5"
-              }
-            >
-              {listItems.map(renderItem)}
+              {/* ── The destinations: hairline-ruled rows, no cards ── */}
+              <div className={twoUp ? "grid grid-cols-1 md:grid-cols-2" : "flex flex-col"}>
+                {items.map(renderItem)}
+              </div>
             </div>
-          </motion.div>
+
+            {/* ── Footer strip: the panel states its own size, in mono ── */}
+            <div className="flex items-center justify-between border-t border-border px-5 py-2.5">
+              <span className="ip-label ip-label-xs">
+                {String(items.length).padStart(2, "0")} destinations
+              </span>
+              <span className="flex items-center gap-1.5" aria-hidden>
+                <span className={`h-[5px] w-[5px] ${markerBg}`} />
+                <span className="h-px w-6 bg-border-strong" />
+                <span className="h-[5px] w-[5px] border border-border-strong" />
+              </span>
+            </div>
+          </div>
         </div>
       )}
     </div>

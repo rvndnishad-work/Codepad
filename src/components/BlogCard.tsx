@@ -24,7 +24,7 @@ export default function BlogCard({ blog }: BlogCardProps) {
   return (
     <Link
       href={`/blog/${blog.slug}`}
-      className="group relative flex flex-col rounded-3xl border border-border bg-surface overflow-hidden hover:border-border-strong transition-all shadow-xl hover:-translate-y-1"
+      className="group relative flex flex-col border border-border bg-surface overflow-hidden hover:border-border-strong transition-all"
     >
       {blog.coverImage ? (
         <div className="relative aspect-[16/9] w-full overflow-hidden border-b border-border">
@@ -33,7 +33,7 @@ export default function BlogCard({ blog }: BlogCardProps) {
             alt={blog.title}
             fill
             sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
-            className="object-cover group-hover:scale-105 transition-transform duration-500"
+            className="object-cover transition-transform duration-500"
             unoptimized={blog.coverImage.startsWith("data:")}
           />
         </div>
@@ -44,12 +44,12 @@ export default function BlogCard({ blog }: BlogCardProps) {
       )}
 
       <div className="p-6 flex flex-col flex-1">
-        <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-accent mb-3">
+        <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-accent mb-3">
           <Calendar className="w-3 h-3" />
           <RelativeTime iso={blog.createdAt} />
         </div>
 
-        <h3 className="text-xl font-black text-fg mb-3 group-hover:text-accent transition-colors line-clamp-2 leading-tight">
+        <h3 className="text-xl font-bold text-fg mb-3 group-hover:text-accent transition-colors line-clamp-2 leading-tight">
           {blog.title}
         </h3>
 

@@ -118,14 +118,17 @@ export default function HomeHowItWorks() {
   const railFill = useTransform(smooth, [0, 1], ["0%", "100%"]);
 
   return (
-    <section className="relative bg-bg">
-      <SectionHeading
-        eyebrow="Under the hood"
-        eyebrowIcon={<ShieldCheck className="w-3.5 h-3.5" />}
-        title="From keystroke"
-        highlight="to verdict."
-        lede="Four systems working as one — scroll through what happens before, during, and after every line you write."
-      />
+    <section className="relative border-b border-border bg-bg pt-20 md:pt-28">
+      <div className="mx-auto max-w-6xl px-4">
+        <SectionHeading
+          index="03"
+          eyebrow="Under the hood"
+          eyebrowIcon={<ShieldCheck className="h-3 w-3" />}
+          title="From keystroke"
+          highlight="to verdict."
+          lede="Four systems working as one — what happens before, during and after every line you write."
+        />
+      </div>
 
       {/* Mobile / reduced-motion: simple animated stack */}
       {reduced ? (
@@ -194,11 +197,11 @@ function RailItem({
     <li className="relative pl-10">
       <motion.span
         style={{ scale: dotScale, opacity: dotOpacity }}
-        className={`absolute left-0 top-1.5 w-[15px] h-[15px] rounded-full border-2 ${stage.tone.bar} ${stage.tone.border} bg-bg`}
+        className={`absolute left-0 top-1.5 w-[11px] h-[11px] border-2 ${stage.tone.bar} ${stage.tone.border} bg-bg`}
         aria-hidden
       />
       <motion.div style={{ opacity: titleOpacity }}>
-        <p className={`text-[11px] font-black uppercase tracking-widest ${stage.tone.text}`}>
+        <p className={`text-[11px] font-bold uppercase tracking-widest ${stage.tone.text}`}>
           {stage.kicker}
         </p>
         <h3 className="text-lg font-extrabold text-fg tracking-tight mt-1">{stage.title}</h3>
@@ -235,28 +238,27 @@ function StagePanel({
   return (
     <motion.article
       style={{ opacity, y, rotateX, transformStyle: "preserve-3d" }}
-      className={`absolute inset-0 rounded-3xl border ${stage.tone.border} bg-surface shadow-tile p-10 flex flex-col justify-center overflow-hidden will-change-transform`}
+      className={`absolute inset-0  border ${stage.tone.border} bg-surface  p-10 flex flex-col justify-center overflow-hidden will-change-`}
     >
-      <div className={`absolute -top-32 -right-32 w-96 h-96 rounded-full blur-[110px] ${stage.tone.glow}`} aria-hidden />
       <span
         aria-hidden
-        className="absolute -bottom-8 -right-4 text-[10rem] leading-none font-black text-fg opacity-[0.03] select-none pointer-events-none"
+        className="absolute -bottom-8 -right-4 text-[10rem] leading-none font-bold text-fg opacity-[0.03] select-none pointer-events-none"
       >
         {String(index + 1).padStart(2, "0")}
       </span>
 
       <div className="relative space-y-6 max-w-xl">
-        <div className={`w-16 h-16 rounded-2xl border ${stage.tone.border} ${stage.tone.chipBg} ${stage.tone.text} flex items-center justify-center`}>
+        <div className={`w-16 h-16  border ${stage.tone.border} ${stage.tone.chipBg} ${stage.tone.text} flex items-center justify-center`}>
           <Icon className="w-8 h-8" />
         </div>
-        <p className={`text-xs font-black uppercase tracking-widest ${stage.tone.text}`}>{stage.kicker}</p>
-        <h3 className="text-3xl xl:text-4xl font-black tracking-tight text-fg leading-tight">{stage.title}</h3>
+        <p className={`text-xs font-bold uppercase tracking-widest ${stage.tone.text}`}>{stage.kicker}</p>
+        <h3 className="text-3xl xl:text-4xl font-bold tracking-tight text-fg leading-tight">{stage.title}</h3>
         <p className="text-muted text-base md:text-lg leading-relaxed font-medium">{stage.body}</p>
         <div className="flex flex-wrap gap-2 pt-1">
           {stage.points.map((p) => (
             <span
               key={p}
-              className={`inline-flex items-center px-3 py-1.5 rounded-full border ${stage.tone.border} ${stage.tone.chipBg} text-xs font-bold text-fg`}
+              className={`inline-flex items-center rounded-data border px-2.5 py-1 font-mono text-[11px] text-fg ${stage.tone.border} ${stage.tone.chipBg}`}
             >
               {p}
             </span>
@@ -276,20 +278,19 @@ function StaticStack() {
           const Icon = s.icon;
           return (
             <RevealItem key={s.id}>
-              <article className={`relative h-full rounded-3xl border ${s.tone.border} bg-surface shadow-tile p-7 overflow-hidden`}>
-                <div className={`absolute -top-24 -right-24 w-64 h-64 rounded-full blur-[100px] ${s.tone.glow}`} aria-hidden />
+              <article className={`relative h-full  border ${s.tone.border} bg-surface  p-7 overflow-hidden`}>
                 <div className="relative space-y-4">
-                  <div className={`w-12 h-12 rounded-2xl border ${s.tone.border} ${s.tone.chipBg} ${s.tone.text} flex items-center justify-center`}>
+                  <div className={`w-12 h-12  border ${s.tone.border} ${s.tone.chipBg} ${s.tone.text} flex items-center justify-center`}>
                     <Icon className="w-6 h-6" />
                   </div>
-                  <p className={`text-[11px] font-black uppercase tracking-widest ${s.tone.text}`}>{s.kicker}</p>
+                  <p className={`text-[11px] font-bold uppercase tracking-widest ${s.tone.text}`}>{s.kicker}</p>
                   <h3 className="text-xl font-extrabold text-fg tracking-tight">{s.title}</h3>
                   <p className="text-sm text-muted leading-relaxed font-medium">{s.body}</p>
                   <div className="flex flex-wrap gap-2">
                     {s.points.map((p) => (
                       <span
                         key={p}
-                        className={`inline-flex items-center px-2.5 py-1 rounded-full border ${s.tone.border} ${s.tone.chipBg} text-[11px] font-bold text-fg`}
+                        className={`inline-flex items-center rounded-data border px-2 py-0.5 font-mono text-[10.5px] text-fg ${s.tone.border} ${s.tone.chipBg}`}
                       >
                         {p}
                       </span>

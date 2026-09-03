@@ -198,7 +198,7 @@ export default function BlogLazyFeed({
         {!done && (
           <div
             ref={sentinelRef}
-            className="snap-start shrink-0 flex items-center justify-center rounded-2xl border border-dashed border-border bg-surface/40"
+            className="snap-start shrink-0 flex items-center justify-center border border-dashed border-border bg-surface/40"
             style={{ width: `${CARD_WIDTH_PX / 2}px` }}
           >
             {loading ? (
@@ -233,7 +233,7 @@ export default function BlogLazyFeed({
         type="button"
         onClick={() => nudge("left")}
         aria-label="Previous stories"
-        className={`absolute left-0 top-1/2 -translate-y-1/2 -translate-x-1/2 w-9 h-9 rounded-full border border-border bg-surface/95 backdrop-blur shadow-lg items-center justify-center text-fg hover:bg-elevated transition-all hidden md:flex ${
+        className={`absolute left-0 top-1/2 -translate-y-1/2 -translate-x-1/2 w-9 h-9 border border-border bg-surface items-center justify-center text-fg hover:border-border-strong hover:bg-elevated transition-all hidden md:flex ${
           canLeft
             ? "opacity-100 pointer-events-auto"
             : "opacity-0 pointer-events-none"
@@ -245,7 +245,7 @@ export default function BlogLazyFeed({
         type="button"
         onClick={() => nudge("right")}
         aria-label="Next stories"
-        className={`absolute right-0 top-1/2 -translate-y-1/2 translate-x-1/2 w-9 h-9 rounded-full border border-border bg-surface/95 backdrop-blur shadow-lg items-center justify-center text-fg hover:bg-elevated transition-all hidden md:flex ${
+        className={`absolute right-0 top-1/2 -translate-y-1/2 translate-x-1/2 w-9 h-9 border border-border bg-surface items-center justify-center text-fg hover:border-border-strong hover:bg-elevated transition-all hidden md:flex ${
           canRight
             ? "opacity-100 pointer-events-auto"
             : "opacity-0 pointer-events-none"

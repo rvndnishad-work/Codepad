@@ -13,7 +13,7 @@ export default function BlogCardHero({ blog }: { blog: BlogFeedEntry }) {
   return (
     <Link
       href={`/blog/${blog.slug}`}
-      className="group grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8 rounded-3xl border border-border bg-surface hover:border-accent/30 transition-colors overflow-hidden"
+      className="group grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8 border border-border bg-surface hover:border-accent/30 transition-colors overflow-hidden"
     >
       {blog.coverImage ? (
         <div className="relative aspect-[16/10] md:aspect-auto md:h-full overflow-hidden bg-panel">
@@ -26,13 +26,13 @@ export default function BlogCardHero({ blog }: { blog: BlogFeedEntry }) {
             className="object-cover transition-transform duration-700 group-hover:scale-[1.03]"
             unoptimized={blog.coverImage.startsWith("data:")}
           />
-          <span className="absolute top-3 left-3 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-bg/80 backdrop-blur border border-border text-[9px] font-black uppercase tracking-[0.18em] text-accent">
+          <span className="absolute top-3 left-3 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-data bg-bg/80 border border-border text-[9px] font-bold uppercase tracking-[0.18em] text-accent">
             Featured
           </span>
         </div>
       ) : (
         <div className="aspect-[16/10] md:aspect-auto md:h-full bg-gradient-to-br from-accent/20 via-accent/5 to-transparent border-r border-border flex items-center justify-center">
-          <span className="text-[10px] font-black uppercase tracking-[0.2em] text-accent/70">
+          <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-accent/70">
             Featured story
           </span>
         </div>
@@ -44,7 +44,7 @@ export default function BlogCardHero({ blog }: { blog: BlogFeedEntry }) {
             {blog.tags.slice(0, 3).map((t) => (
               <span
                 key={t}
-                className="px-2 py-0.5 rounded-md text-[10px] font-black uppercase tracking-[0.15em] bg-accent/10 border border-accent/20 text-accent"
+                className="px-2 py-0.5 rounded-data text-[10px] font-bold uppercase tracking-[0.15em] bg-accent/10 border border-accent/20 text-accent"
               >
                 #{t}
               </span>
@@ -52,7 +52,7 @@ export default function BlogCardHero({ blog }: { blog: BlogFeedEntry }) {
           </div>
         )}
 
-        <h2 className="text-2xl md:text-3xl lg:text-4xl font-black text-fg leading-[1.1] tracking-tight group-hover:text-accent transition-colors line-clamp-3">
+        <h2 className="text-2xl md:text-3xl lg:text-4xl font-bold text-fg leading-[1.1] tracking-tight group-hover:text-accent transition-colors line-clamp-3">
           {blog.title}
         </h2>
 

@@ -160,7 +160,7 @@ export default function ChallengeList({
   const [langFilter, setLangFilter] = useState<string>("all");
   const [fwFilter, setFwFilter] = useState<string>("all");
   const [hideSolved, setHideSolved] = useState(false);
-  
+
   // Pagination & Layout states
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [currentPage, setCurrentPage] = useState(1);
@@ -292,16 +292,16 @@ export default function ChallengeList({
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 placeholder="Search by title, tag, or category…"
-                className="w-full pl-11 pr-4 py-3 rounded-xl bg-surface dark:bg-[#131625] border border-border dark:border-transparent focus:border-accent/40 dark:focus:border-accent/40 focus:bg-elevated dark:focus:bg-[#1b1f32] text-sm text-fg outline-none placeholder:text-muted transition-all duration-200"
+                className="w-full pl-11 pr-4 py-3 bg-surface dark:bg-[#131625] border border-border dark:border-transparent focus:border-accent/40 dark:focus:border-accent/40 focus:bg-elevated dark:focus:bg-[#1b1f32] text-sm text-fg outline-none placeholder:text-muted transition-all duration-200"
               />
             </div>
-            
+
             {/* Grid/List Toggle Switcher */}
-            <div className="inline-flex items-center gap-1 rounded-xl bg-surface dark:bg-[#131625] border border-border dark:border-transparent p-1">
+            <div className="inline-flex items-center gap-1 bg-surface dark:bg-[#131625] border border-border dark:border-transparent p-1">
               <button
                 type="button"
                 onClick={() => handleViewModeChange("grid")}
-                className={`p-2 rounded-lg transition-all ${
+                className={`p-2 rounded-data transition-all ${
                   viewMode === "grid"
                     ? "bg-accent text-bg"
                     : "text-muted hover:text-fg hover:bg-elevated"
@@ -313,7 +313,7 @@ export default function ChallengeList({
               <button
                 type="button"
                 onClick={() => handleViewModeChange("list")}
-                className={`p-2 rounded-lg transition-all ${
+                className={`p-2 rounded-data transition-all ${
                   viewMode === "list"
                     ? "bg-accent text-bg"
                     : "text-muted hover:text-fg hover:bg-elevated"
@@ -382,11 +382,11 @@ export default function ChallengeList({
 
         {/* Challenge list container */}
         {visible.length === 0 ? (
-          <div className="rounded-2xl border border-border bg-surface p-16 text-center">
-            <div className="mx-auto w-14 h-14 rounded-2xl bg-accent/10 border border-accent/20 grid place-items-center mb-5">
+          <div className="border border-border bg-surface p-16 text-center">
+            <div className="mx-auto w-14 h-14 bg-accent/10 border border-accent/20 grid place-items-center mb-5">
               <Target className="w-6 h-6 text-accent" />
             </div>
-            <h2 className="font-black text-fg text-lg">No matching challenges</h2>
+            <h2 className="font-bold text-fg text-lg">No matching challenges</h2>
             <p className="text-muted text-sm mt-2 max-w-sm mx-auto leading-relaxed">
               Try clearing your filters or search query.
             </p>
@@ -403,13 +403,13 @@ export default function ChallengeList({
                 <section key={meta.key}>
                   <div className="flex items-end justify-between gap-3 mb-4">
                     <div className="flex items-center gap-3 min-w-0">
-                      <div className="w-10 h-10 rounded-xl bg-accent/10 border border-accent/20 grid place-items-center shrink-0">
+                      <div className="w-10 h-10 bg-accent/10 border border-accent/20 grid place-items-center shrink-0">
                         <Icon className="w-4 h-4 text-accent" />
                       </div>
                       <div className="min-w-0">
-                        <h2 className="font-black text-fg text-lg leading-tight flex items-center gap-2">
+                        <h2 className="font-bold text-fg text-lg leading-tight flex items-center gap-2">
                           {meta.label}
-                          <span className="text-[10px] font-black text-muted bg-surface border border-border rounded-full px-2 py-0.5 tabular-nums">
+                          <span className="text-[10px] font-bold text-muted bg-surface border border-border rounded-full px-2 py-0.5 tabular-nums">
                             {group.length}
                           </span>
                         </h2>
@@ -420,7 +420,7 @@ export default function ChallengeList({
                       <button
                         type="button"
                         onClick={() => setCategory(meta.key)}
-                        className="shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-border bg-surface hover:bg-elevated hover:border-border-strong text-xs font-bold text-muted hover:text-fg transition cursor-pointer whitespace-nowrap"
+                        className="shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 border border-border bg-surface hover:bg-elevated hover:border-border-strong text-xs font-bold text-muted hover:text-fg transition cursor-pointer whitespace-nowrap"
                       >
                         View all {group.length}
                         <ArrowRight className="w-3.5 h-3.5" />
@@ -481,7 +481,7 @@ export default function ChallengeList({
                 type="button"
                 onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
                 disabled={currentPage === 1}
-                className="p-2 rounded-xl bg-surface border border-border hover:border-border-strong disabled:opacity-40 disabled:cursor-not-allowed hover:bg-elevated transition cursor-pointer"
+                className="p-2 bg-surface border border-border hover:border-border-strong disabled:opacity-40 disabled:cursor-not-allowed hover:bg-elevated transition cursor-pointer"
                 aria-label="Previous Page"
               >
                 <ChevronLeft className="w-4 h-4 text-fg" />
@@ -493,7 +493,7 @@ export default function ChallengeList({
                 // Standard visual logic: show first, last, and pages close to active
                 const isNearActive = Math.abs(currentPage - pageNum) <= 1;
                 const isEdge = pageNum === 1 || pageNum === totalPages;
-                
+
                 if (!isNearActive && !isEdge) {
                   if (pageNum === 2 || pageNum === totalPages - 1) {
                     return <span key={pageNum} className="px-1 text-muted text-xs font-mono select-none">...</span>;
@@ -506,7 +506,7 @@ export default function ChallengeList({
                     key={pageNum}
                     type="button"
                     onClick={() => setCurrentPage(pageNum)}
-                    className={`w-9 h-9 rounded-xl text-xs font-black font-mono transition-all cursor-pointer ${
+                    className={`w-9 h-9  text-xs font-bold font-mono transition-all cursor-pointer ${
                       currentPage === pageNum
                         ? "bg-accent text-bg"
                         : "bg-surface border border-border hover:border-border-strong text-muted hover:text-fg hover:bg-elevated"
@@ -522,7 +522,7 @@ export default function ChallengeList({
                 type="button"
                 onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
                 disabled={currentPage === totalPages}
-                className="p-2 rounded-xl bg-surface border border-border hover:border-border-strong disabled:opacity-40 disabled:cursor-not-allowed hover:bg-elevated transition cursor-pointer"
+                className="p-2 bg-surface border border-border hover:border-border-strong disabled:opacity-40 disabled:cursor-not-allowed hover:bg-elevated transition cursor-pointer"
                 aria-label="Next Page"
               >
                 <ChevronRight className="w-4 h-4 text-fg" />
@@ -556,14 +556,14 @@ function CategoryTab({
       type="button"
       onClick={onClick}
       aria-pressed={active}
-      className={`group flex items-center gap-3 rounded-2xl border p-3.5 text-left transition-all duration-200 cursor-pointer ${
+      className={`group flex items-center gap-3  border p-3.5 text-left transition-all duration-200 cursor-pointer ${
         active
-          ? "border-accent/50 bg-accent/10 shadow-[0_0_20px_rgba(var(--accent-rgb),0.08)]"
+          ? "border-accent/50 bg-accent/10 "
           : "border-border dark:border-transparent bg-surface dark:bg-[#131625] hover:bg-elevated hover:dark:bg-[#1b1f32] hover:border-border-strong"
       }`}
     >
       <span
-        className={`w-9 h-9 rounded-xl grid place-items-center shrink-0 border transition ${
+        className={`w-9 h-9  grid place-items-center shrink-0 border transition ${
           active
             ? "bg-accent text-bg border-accent"
             : "bg-bg/40 border-border text-muted group-hover:text-fg"
@@ -572,10 +572,10 @@ function CategoryTab({
         <Icon className="w-4 h-4" />
       </span>
       <span className="min-w-0">
-        <span className="flex items-center gap-2 text-sm font-black leading-tight text-fg">
+        <span className="flex items-center gap-2 text-sm font-bold leading-tight text-fg">
           <span className="truncate">{label}</span>
           <span
-            className={`shrink-0 text-[10px] font-black tabular-nums px-1.5 py-0.5 rounded-full border ${
+            className={`shrink-0 text-[10px] font-bold tabular-nums px-1.5 py-0.5 rounded-full border ${
               active
                 ? "bg-accent/15 text-accent border-accent/30"
                 : "bg-bg/40 text-muted border-border"
@@ -629,7 +629,7 @@ const KIND_CARD: Record<
 function StatusBadge({ status }: { status: ChallengeListItem["userStatus"] }) {
   if (status === "passed") {
     return (
-      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-500/15 border border-emerald-500/40 text-[9px] font-black uppercase tracking-wider text-emerald-500 shrink-0">
+      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-500/15 border border-emerald-500/40 text-[9px] font-bold uppercase tracking-wider text-emerald-500 shrink-0">
         <CheckCircle2 className="w-3 h-3" />
         Solved
       </span>
@@ -637,7 +637,7 @@ function StatusBadge({ status }: { status: ChallengeListItem["userStatus"] }) {
   }
   if (status === "in_progress") {
     return (
-      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-500/15 border border-amber-500/40 text-[9px] font-black uppercase tracking-wider text-amber-500 shrink-0">
+      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-500/15 border border-amber-500/40 text-[9px] font-bold uppercase tracking-wider text-amber-500 shrink-0">
         <Flame className="w-3 h-3" />
         In progress
       </span>
@@ -645,7 +645,7 @@ function StatusBadge({ status }: { status: ChallengeListItem["userStatus"] }) {
   }
   if (status === "failed") {
     return (
-      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-rose-500/10 border border-rose-500/30 text-[9px] font-black uppercase tracking-wider text-rose-500/80 shrink-0">
+      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-rose-500/10 border border-rose-500/30 text-[9px] font-bold uppercase tracking-wider text-rose-500/80 shrink-0">
         <XCircle className="w-3 h-3" />
         Attempted
       </span>
@@ -663,7 +663,7 @@ function ChallengeCard({ item: c }: { item: ChallengeListItem }) {
   return (
     <Link
       href={`/challenges/${c.slug}`}
-      className={`group relative flex flex-col h-full rounded-2xl border p-5 overflow-hidden transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg ${
+      className={`group relative flex flex-col h-full  border p-5 overflow-hidden transition-all duration-300   ${
         isPassed
           ? "bg-emerald-500/[0.04] dark:bg-emerald-500/[0.06] border-emerald-500/40 dark:border-emerald-500/25 hover:border-emerald-500/60"
           : c.featured
@@ -680,7 +680,7 @@ function ChallengeCard({ item: c }: { item: ChallengeListItem }) {
       {/* Diagonal "Solved" ribbon across the top-right corner */}
       {isPassed && (
         <div className="absolute top-0 right-0 w-[88px] h-[88px] overflow-hidden pointer-events-none z-10" aria-hidden>
-          <div className="absolute top-[16px] right-[-38px] w-[140px] rotate-45 bg-emerald-500 py-[3px] text-center text-[8px] font-black uppercase tracking-[0.2em] text-white shadow-[0_2px_8px_rgba(16,185,129,0.45)]">
+          <div className="absolute top-[16px] right-[-38px] w-[140px] rotate-45 bg-emerald-500 py-[3px] text-center text-[8px] font-bold uppercase tracking-[0.2em] text-white">
             Solved
           </div>
         </div>
@@ -689,14 +689,14 @@ function ChallengeCard({ item: c }: { item: ChallengeListItem }) {
       {/* Header: type icon tile · staff pick · status (ribbon replaces the
           pills once solved) */}
       <div className="relative flex items-start justify-between gap-3 mb-3.5">
-        <div className={`w-10 h-10 rounded-xl border grid place-items-center shrink-0 ${t.iconBox}`}>
+        <div className={`w-10 h-10  border grid place-items-center shrink-0 ${t.iconBox}`}>
           <Icon className="w-4 h-4" />
         </div>
         {!isPassed && (
           <div className="flex items-center gap-2">
             {c.featured && (
               <span
-                className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-accent/15 border border-accent/30 text-[9px] font-black uppercase tracking-wider text-accent"
+                className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-accent/15 border border-accent/30 text-[9px] font-bold uppercase tracking-wider text-accent"
                 aria-label="Staff pick"
               >
                 <Star className="w-2.5 h-2.5 fill-current" />
@@ -708,10 +708,10 @@ function ChallengeCard({ item: c }: { item: ChallengeListItem }) {
         )}
       </div>
 
-      <div className={`relative text-[9px] font-black uppercase tracking-[0.18em] mb-1 ${t.eyebrow}`}>
+      <div className={`relative text-[9px] font-bold uppercase tracking-[0.18em] mb-1 ${t.eyebrow}`}>
         {t.label}
       </div>
-      <h3 className={`relative font-black text-[15px] leading-snug line-clamp-2 ${isPassed ? "text-fg/70" : "text-fg"}`}>
+      <h3 className={`relative font-bold text-[15px] leading-snug line-clamp-2 ${isPassed ? "text-fg/70" : "text-fg"}`}>
         {c.title}
       </h3>
 
@@ -734,7 +734,7 @@ function ChallengeCard({ item: c }: { item: ChallengeListItem }) {
       {/* Footer meta: difficulty · time · steps */}
       <div className="relative mt-auto pt-4 flex items-center gap-2">
         <span
-          className={`px-2 py-0.5 rounded-md border text-[10px] font-bold uppercase tracking-wider ${
+          className={`px-2 py-0.5 rounded-data border text-[10px] font-bold uppercase tracking-wider ${
             difficultyChip[c.difficulty]
           }`}
         >
@@ -745,7 +745,7 @@ function ChallengeCard({ item: c }: { item: ChallengeListItem }) {
           {c.estimatedMinutes}m
         </span>
         {isMulti && (
-          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md border border-accent/30 bg-accent/10 text-[10px] font-bold uppercase tracking-wider text-accent">
+          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-data border border-accent/30 bg-accent/10 text-[10px] font-bold uppercase tracking-wider text-accent">
             <Layers className="w-2.5 h-2.5" />
             {c.stepCount}
           </span>
@@ -765,21 +765,21 @@ function ChallengeListRow({ item: c }: { item: ChallengeListItem }) {
   return (
     <Link
       href={`/challenges/${c.slug}`}
-      className={`group relative flex flex-col sm:flex-row sm:items-center justify-between gap-4 rounded-xl border p-4 transition-all duration-300 ${
+      className={`group relative flex flex-col sm:flex-row sm:items-center justify-between gap-4  border p-4 transition-all duration-300 ${
         isPassed
           ? "bg-emerald-500/[0.04] dark:bg-emerald-500/[0.06] border-emerald-500/40 dark:border-emerald-500/25 hover:border-emerald-500/60"
           : c.featured
-            ? "bg-surface dark:bg-[#131625] hover:bg-elevated hover:dark:bg-[#1b1f32] border-accent/40 hover:border-accent/60 dark:border-accent/20 dark:hover:border-accent/40 shadow-[0_2px_12px_rgba(var(--accent-rgb),0.02)]"
+            ? "bg-surface dark:bg-[#131625] hover:bg-elevated hover:dark:bg-[#1b1f32] border-accent/40 hover:border-accent/60 dark:border-accent/20 dark:hover:border-accent/40 "
             : `bg-surface dark:bg-[#131625] hover:bg-elevated hover:dark:bg-[#1b1f32] border-border dark:border-transparent ${t.hoverBorder}`
       }`}
     >
       <div className="flex items-center gap-3.5 min-w-0">
         {/* Type icon tile */}
-        <div className={`w-9 h-9 rounded-lg border grid place-items-center shrink-0 ${t.iconBox}`}>
+        <div className={`w-9 h-9 rounded-data border grid place-items-center shrink-0 ${t.iconBox}`}>
           <Icon className="w-4 h-4" />
         </div>
         <div className="min-w-0">
-          <div className={`text-[8px] font-black uppercase tracking-[0.18em] ${t.eyebrow}`}>
+          <div className={`text-[8px] font-bold uppercase tracking-[0.18em] ${t.eyebrow}`}>
             {t.label}
           </div>
           <div className="flex items-center gap-2 mt-0.5 flex-wrap">
@@ -787,7 +787,7 @@ function ChallengeListRow({ item: c }: { item: ChallengeListItem }) {
               {c.title}
             </h3>
             {c.featured && (
-              <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full bg-accent/15 border border-accent/30 text-[8px] font-black uppercase tracking-wider text-accent shrink-0">
+              <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full bg-accent/15 border border-accent/30 text-[8px] font-bold uppercase tracking-wider text-accent shrink-0">
                 <Star className="w-2 h-2 fill-current" />
                 Staff Pick
               </span>
@@ -807,13 +807,13 @@ function ChallengeListRow({ item: c }: { item: ChallengeListItem }) {
         ))}
 
         {isMulti && (
-          <div className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md border border-accent/25 bg-accent/5 text-[9px] font-bold uppercase tracking-wider text-accent shrink-0">
+          <div className="inline-flex items-center gap-1 px-2 py-0.5 rounded-data border border-accent/25 bg-accent/5 text-[9px] font-bold uppercase tracking-wider text-accent shrink-0">
             <Layers className="w-2.5 h-2.5" />
             {c.stepCount} steps
           </div>
         )}
 
-        <div className={`px-2 py-0.5 rounded-md border text-[9px] font-bold uppercase tracking-widest shrink-0 ${difficultyChip[c.difficulty]}`}>
+        <div className={`px-2 py-0.5 rounded-data border text-[9px] font-bold uppercase tracking-widest shrink-0 ${difficultyChip[c.difficulty]}`}>
           {c.difficulty}
         </div>
 
@@ -843,13 +843,13 @@ function FilterSelect<T extends string>({
   const active = value !== "all";
   return (
     <label
-      className={`inline-flex items-center gap-2 rounded-xl border pl-3 pr-2 py-2 cursor-pointer transition ${
+      className={`inline-flex items-center gap-2  border pl-3 pr-2 py-2 cursor-pointer transition ${
         active
           ? "border-accent/40 bg-accent/10"
           : "border-border dark:border-transparent bg-surface dark:bg-[#131625]"
       }`}
     >
-      <span className="text-[10px] font-black uppercase tracking-[0.15em] text-muted/60">
+      <span className="text-[10px] font-bold uppercase tracking-[0.15em] text-muted/60">
         {label}
       </span>
       <select
@@ -880,8 +880,8 @@ function Pillbar<T extends string>({
   onChange: (next: T) => void;
 }) {
   return (
-    <div className="inline-flex items-center gap-1 rounded-xl bg-surface dark:bg-[#131625] border border-border dark:border-transparent p-1">
-      <span className="px-2 text-[10px] font-black uppercase tracking-[0.15em] text-muted/60">
+    <div className="inline-flex items-center gap-1 bg-surface dark:bg-[#131625] border border-border dark:border-transparent p-1">
+      <span className="px-2 text-[10px] font-bold uppercase tracking-[0.15em] text-muted/60">
         {label}
       </span>
       {options.map((o) => (
@@ -889,7 +889,7 @@ function Pillbar<T extends string>({
           key={o.key}
           type="button"
           onClick={() => onChange(o.key)}
-          className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition cursor-pointer ${
+          className={`px-2.5 py-1 rounded-data text-[11px] font-bold transition cursor-pointer ${
             value === o.key
               ? "bg-accent text-bg"
               : "text-muted hover:text-fg hover:bg-elevated"

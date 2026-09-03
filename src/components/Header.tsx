@@ -5,8 +5,8 @@ import { userCan } from "@/lib/permissions/access";
 import { getPrimaryWorkspaceSlug } from "@/lib/workspace-nav";
 import { getNavLinks } from "@/lib/settings";
 import type { NavDropdownItem } from "./NavDropdown";
-import { BookOpen, CreditCard, Store } from "lucide-react";
 import HeaderLogo from "./HeaderLogo";
+import HeaderLink from "./HeaderLink";
 import NavDropdown from "./NavDropdown";
 
 import ThemeToggle from "./ThemeToggle";
@@ -199,8 +199,11 @@ export default async function Header() {
   const filteredRecruiterItems = applyNavStatus(recruiterItems, true);
 
   return (
-    <header className="sticky top-0 z-[100] bg-surface/80 backdrop-blur-xl border-b border-border relative">
-      <div className="mx-auto max-w-7xl px-4 h-16 flex items-center justify-between gap-3">
+    /* The header is chrome, not a component: solid surface, one hairline, no
+       glass and no shadow. Everything inside it sits on the same 64px band so
+       the tab-style active rule can meet the bottom border exactly. */
+    <header className="sticky top-0 z-[100] border-b border-border bg-surface">
+      <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-3 px-4">
         {/* Mobile: logo doubles as menu trigger (collapsed into MobileNav) */}
         <MobileNav
           signedIn={!!user}
@@ -216,115 +219,92 @@ export default async function Header() {
         {/* Desktop: logo links to home */}
         <HeaderLogo />
 
-        {/* Navigation & Auth */}
-        <div className="flex items-center gap-4">
-          <nav className="flex items-center">
-            <div className="hidden md:flex items-center gap-1 mr-4 h-16">
-              {(devsMenuStatus !== "hidden" || showAdmin) && (filteredDeveloperItems.length > 0 || showAdmin) && (
+        <div className="flex items-center">
+          <nav aria-label="Primary" className="hidden h-16 items-stretch md:flex">
+            {(devsMenuStatus !== "hidden" || showAdmin) &&
+              (filteredDeveloperItems.length > 0 || showAdmin) && (
                 <NavDropdown
-                  label={devsMenuStatus === "hidden" && showAdmin ? "For Developers (Hidden)" : "For Developers"}
+                  label={devsMenuStatus === "hidden" && showAdmin ? "Developers (Hidden)" : "Developers"}
                   items={filteredDeveloperItems}
-                  kicker="Build & practice"
-                  featuredHref="/interview-questions"
+                  railTitle="For practising"
+                  railBlurb="Everything a candidate needs between deciding to switch and signing the offer."
+                  railHref="/prep"
+                  railHrefLabel="Start a prep journey"
                 />
               )}
-              {(recruitersMenuStatus !== "hidden" || showAdmin) && (filteredRecruiterItems.length > 0 || showAdmin) && (
+            {(recruitersMenuStatus !== "hidden" || showAdmin) &&
+              (filteredRecruiterItems.length > 0 || showAdmin) && (
                 <NavDropdown
-                  label={recruitersMenuStatus === "hidden" && showAdmin ? "For Recruiters (Hidden)" : "For Recruiters"}
+                  label={recruitersMenuStatus === "hidden" && showAdmin ? "Hiring teams (Hidden)" : "Hiring teams"}
                   items={filteredRecruiterItems}
-                  kicker="Hire & screen"
+                  tone="secondary"
+                  railTitle="For hiring"
+                  railBlurb="Screen, interview and decide on evidence — one workspace for the whole funnel."
+                  railHref="/hire"
+                  railHrefLabel="See the platform"
                 />
               )}
 
-              <Link
-                href="/creators"
-                className="flex items-center gap-1.5 h-9 px-3.5 rounded-full text-[13px] font-semibold transition-all duration-200 text-fg/60 hover:text-fg hover:bg-elevated/60"
-              >
-                <Store className="w-3.5 h-3.5" />
-                Creators
-                <span className="text-[9px] px-1.5 py-0.5 rounded-md bg-accent/10 text-accent font-black uppercase tracking-wider">
-                  New
-                </span>
-              </Link>
+            <HeaderLink href="/creators" label="Creators" badge="New" />
 
-              {(blogStatus !== "hidden" || showAdmin) && (
-                <Link
-                  href={blogStatus === "coming_soon" && !showAdmin ? "/coming-soon?feature=Blog" : "/blog"}
-                  className={`flex items-center gap-1.5 h-9 px-3.5 rounded-full text-[13px] font-semibold transition-all duration-200 ${
-                    blogStatus === "coming_soon" && !showAdmin
-                      ? "opacity-50 text-fg/50 hover:text-amber-400 hover:bg-elevated/60"
-                      : blogStatus === "hidden" && showAdmin
-                        ? "opacity-75 text-rose-400 hover:text-rose-300 hover:bg-elevated/60"
-                        : "text-fg/60 hover:text-fg hover:bg-elevated/60"
-                  }`}
-                >
-                  <BookOpen className="w-3.5 h-3.5" />
-                  Blog
-                  {blogStatus === "coming_soon" && (
-                    <span className="text-[9px] px-1.5 py-0.5 rounded-md bg-amber-500/10 text-amber-500 font-black uppercase tracking-wider animate-fade-in">
-                      Soon
-                    </span>
-                  )}
-                  {blogStatus === "hidden" && showAdmin && (
-                    <span className="text-[9px] px-1.5 py-0.5 rounded-md bg-rose-500/10 text-rose-400 font-black uppercase tracking-wider animate-fade-in">
-                      Hidden
-                    </span>
-                  )}
-                </Link>
-              )}
+            {(blogStatus !== "hidden" || showAdmin) && (
+              <HeaderLink
+                href={blogStatus === "coming_soon" && !showAdmin ? "/coming-soon?feature=Blog" : "/blog"}
+                matchPrefix="/blog"
+                label="Blog"
+                tone={
+                  blogStatus === "coming_soon" ? "warn" : blogStatus === "hidden" && showAdmin ? "danger" : "default"
+                }
+                badge={
+                  blogStatus === "coming_soon" ? "Soon" : blogStatus === "hidden" && showAdmin ? "Hidden" : undefined
+                }
+              />
+            )}
 
-              {(pricingStatus !== "hidden" || showAdmin) && (
-                <Link
-                  href={pricingStatus === "coming_soon" && !showAdmin ? "/coming-soon?feature=Pricing" : "/pricing"}
-                  className={`flex items-center gap-1.5 h-9 px-3.5 rounded-full text-[13px] font-semibold transition-all duration-200 ${
-                    pricingStatus === "coming_soon" && !showAdmin
-                      ? "opacity-50 text-fg/50 hover:text-amber-400 hover:bg-elevated/60"
-                      : pricingStatus === "hidden" && showAdmin
-                        ? "opacity-75 text-rose-400 hover:text-rose-300 hover:bg-elevated/60"
-                        : "text-fg/60 hover:text-fg hover:bg-elevated/60"
-                  }`}
-                >
-                  <CreditCard className="w-3.5 h-3.5" />
-                  Pricing
-                  {pricingStatus === "coming_soon" && (
-                    <span className="text-[9px] px-1.5 py-0.5 rounded-md bg-amber-500/10 text-amber-500 font-black uppercase tracking-wider animate-fade-in">
-                      Soon
-                    </span>
-                  )}
-                  {pricingStatus === "hidden" && showAdmin && (
-                    <span className="text-[9px] px-1.5 py-0.5 rounded-md bg-rose-500/10 text-rose-400 font-black uppercase tracking-wider animate-fade-in">
-                      Hidden
-                    </span>
-                  )}
-                </Link>
-              )}
-            </div>
-
-            <div className="flex items-center gap-4">
-              <ThemeToggle />
-              {/* Bell shows for any authenticated user — both candidates and
-                  recruiters get the same notification model (IP-40). The bell
-                  silently no-ops when unauthenticated (API returns 401). */}
-              {user ? <NotificationBell /> : null}
-
-              <div className="flex items-center gap-4 pl-4 border-l border-border h-8">
-                {user ? (
-                  <UserMenu
-                    user={{ name: user.name, email: user.email, image: user.image }}
-                    isAdmin={showAdmin}
-                    isCreator={showCreator}
-                  />
-                ) : (
-                  <Link
-                    href="/login"
-                    className="px-5 py-2 rounded-full bg-fg text-bg text-sm font-semibold hover:bg-fg/90 transition-all shadow-soft active:scale-95"
-                  >
-                    Sign In
-                  </Link>
-                )}
-              </div>
-            </div>
+            {(pricingStatus !== "hidden" || showAdmin) && (
+              <HeaderLink
+                href={pricingStatus === "coming_soon" && !showAdmin ? "/coming-soon?feature=Pricing" : "/pricing"}
+                matchPrefix="/pricing"
+                label="Pricing"
+                tone={
+                  pricingStatus === "coming_soon"
+                    ? "warn"
+                    : pricingStatus === "hidden" && showAdmin
+                      ? "danger"
+                      : "default"
+                }
+                badge={
+                  pricingStatus === "coming_soon"
+                    ? "Soon"
+                    : pricingStatus === "hidden" && showAdmin
+                      ? "Hidden"
+                      : undefined
+                }
+              />
+            )}
           </nav>
+
+          {/* Utilities sit behind a single hairline divider — the one piece of
+              structure in the bar, so nav and account never read as one list. */}
+          <div className="ml-1 flex h-8 items-center gap-3 border-l border-border pl-4 md:ml-5 md:pl-5">
+            <ThemeToggle />
+            {/* Bell shows for any authenticated user — both candidates and
+                recruiters get the same notification model (IP-40). The bell
+                silently no-ops when unauthenticated (API returns 401). */}
+            {user ? <NotificationBell /> : null}
+
+            {user ? (
+              <UserMenu
+                user={{ name: user.name, email: user.email, image: user.image }}
+                isAdmin={showAdmin}
+                isCreator={showCreator}
+              />
+            ) : (
+              <Link href="/login" className="ip-btn ip-btn-primary ip-btn-sm">
+                Sign in
+              </Link>
+            )}
+          </div>
         </div>
       </div>
     </header>

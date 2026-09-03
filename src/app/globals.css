@@ -6,27 +6,53 @@
 
 @layer base {
   :root {
-    --bg: #ffffff;
-    --bg-rgb: 255, 255, 255;
-    --surface: #f8fafc;
-    --panel: #f1f5f9;
-    --elevated: #e2e8f0;
-    --border: rgba(0, 0, 0, 0.08);
-    --border-strong: rgba(0, 0, 0, 0.15);
-    --muted: #4b5563;
-    --subtle: #6b7280;
-    --fg: #111827;
-    --accent: #f87171;
-    --accent-rgb: 248, 113, 113;
-    --accent-soft: #fca5a5;
-    --accent-glow: rgba(248, 113, 113, 0.1);
+    /* ── Interviewpad "Runtime" palette ──────────────────────────────────
+       Neutrals are warm-tinted paper rather than the generic blue-gray every
+       dev-tool site ships. The page is stock; surfaces are sheets laid on it.
+       Every step is opaque so a hairline resolves identically wherever it
+       crosses. */
+    --bg: #f6f5f2;
+    --bg-rgb: 246, 245, 242;
+    --surface: #fdfcfa;
+    --panel: #efede7;
+    --elevated: #e4e1d9;
 
-    /* Secondary (recruiter/hiring) accent — one semantic token instead of
-       hardcoded indigo-* classes scattered across sections. */
-    --accent-2: #6366f1;
-    --accent-2-rgb: 99, 102, 241;
-    --accent-2-soft: #818cf8;
-    --accent-2-glow: rgba(99, 102, 241, 0.12);
+    --border: #ddd9d0;
+    --border-strong: #c0bbae;
+
+    --muted: #4e525a;   /* 7.4:1 on --surface */
+    --subtle: #6f747d;  /* 4.9:1 — always the quietest step */
+    --fg: #16181c;      /* near-black with a blue undertone, 16.6:1 */
+
+    /* INK — the structural primary. Primary CTAs, the loud end of the type
+       scale, and every "this is the action" surface are ink, never brand
+       colour. That frees the accent to mean exactly one thing (below). */
+    --ink: #16181c;
+    --ink-fg: #fdfcfa;
+
+    /* Hairline rule + blueprint grid. --rule is the editorial separator
+       (visible, structural); --grid is the field behind a section and is
+       meant to be felt rather than seen. */
+    --rule: rgba(22, 24, 28, 0.14);
+    --grid: rgba(22, 24, 28, 0.05);
+
+    /* ACCENT = the signal. Live state, the active marker, the one word in a
+       headline that carries weight. Never a decorative wash. */
+    --accent: #ce362e;        /* 5.0:1 against white */
+    --accent-rgb: 206, 54, 46;
+    --accent-soft: #f87171;   /* decorative only */
+    --accent-glow: rgba(206, 54, 46, 0.1);
+
+    /* The text colour that belongs on top of --accent. */
+    --accent-ink: #ffffff;
+
+    /* Secondary — the hiring/recruiter side of the product. Deep technical
+       indigo; same discipline, different audience. */
+    --accent-2: #3f39c9;      /* 7.0:1 against white */
+    --accent-2-rgb: 63, 57, 201;
+    --accent-2-soft: #6366f1;
+    --accent-2-glow: rgba(63, 57, 201, 0.12);
+    --accent-2-ink: #ffffff;
 
     --ui-scale: 1;
     /* Fluid root type: every rem-based size (incl. the px→rem font sizes
@@ -34,31 +60,44 @@
        dense small text never shrinks below today's size; grows smoothly to
        19.5px on wide screens. ~16.5px ≤480px → ~19.5px ≥1280px. */
     --base-font-size: clamp(16.5px, calc(13px + 0.3vw), 19.5px);
-    --accent-brightness: brightness(0.7);
   }
 
   .dark {
-    --bg: #16181d;
-    --bg-rgb: 22, 24, 29;
-    --surface: #1e2229;
-    --panel: #282d36;
-    --elevated: #343b47;
-    --border: rgba(255, 255, 255, 0.12);
-    --border-strong: rgba(255, 255, 255, 0.22);
-    --muted: #9ca3af;
-    --subtle: #d1d5db;
-    --fg: #f9fafb;
-    --accent: #FFE600;
+    /* Dark is the theme this product is used in. Near-black with a blue
+       undertone, and wider steps between surfaces so a frame reads without
+       needing a shadow to prop it up. */
+    --bg: #0f1115;
+    --bg-rgb: 15, 17, 21;
+    --surface: #16191f;
+    --panel: #1d2128;
+    --elevated: #272c34;
+
+    --border: #262b33;
+    --border-strong: #373d47;
+
+    /* Order is always fg > muted > subtle, in both themes. */
+    --muted: #cdd1d7;
+    --subtle: #949aa3;  /* 6.3:1 on --surface */
+    --fg: #f5f6f7;
+
+    /* Ink inverts: on a dark page the confident surface is paper. */
+    --ink: #f5f6f7;
+    --ink-fg: #0f1115;
+
+    --rule: rgba(245, 246, 247, 0.16);
+    --grid: rgba(245, 246, 247, 0.05);
+
+    --accent: #FFE600;        /* 14.4:1 on --bg */
     --accent-rgb: 255, 230, 0;
     --accent-soft: #FFD700;
     --accent-glow: rgba(255, 230, 0, 0.15);
-    --accent-brightness: none;
+    --accent-ink: #0f1115;    /* dark ink on yellow */
 
-    /* Secondary (recruiter/hiring) accent. */
-    --accent-2: #818cf8;
-    --accent-2-rgb: 129, 140, 248;
+    --accent-2: #8b93ff;
+    --accent-2-rgb: 139, 147, 255;
     --accent-2-soft: #a5b4fc;
-    --accent-2-glow: rgba(129, 140, 248, 0.16);
+    --accent-2-glow: rgba(139, 147, 255, 0.16);
+    --accent-2-ink: #0f1115;
   }
 
   /* Large external monitors (> 1920px wide): keep growing past the 18px cap so
@@ -100,11 +139,13 @@
     /* Fira Code programming ligatures */
   }
 
-  /* Prettier focus ring */
+  /* Focus ring. Square like everything else structural — a 6px pill ring
+     around a square control was the one place the old system contradicted
+     itself. 2px of offset keeps it clear of the control's own border. */
   :focus-visible {
     outline: 2px solid var(--accent);
     outline-offset: 2px;
-    border-radius: 6px;
+    border-radius: 0;
   }
 
   /* Scrollbar polish */
@@ -1326,4 +1367,523 @@ body.sidebar-collapsed .workspace-content {
 .ai-surface > .sp-wrapper > .sp-layout {
   height: 100%;
   min-height: 0;
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+ * INTERVIEWPAD DESIGN LANGUAGE — "Runtime"
+ *
+ * A small, deliberate vocabulary shared by every marketing surface. Four
+ * rules hold it together:
+ *
+ *   1. SHAPE IS SEMANTIC. Square by default. A radius is earned: 4px means
+ *      "this is the action", 2px means "this is a datum". Structure — frames,
+ *      rows, panels, nav — is never rounded.
+ *   2. INK CARRIES WEIGHT, ACCENT CARRIES MEANING. Ink is the confident
+ *      surface; the brand accent only ever marks live / active / now.
+ *   3. THE RULE REPLACES THE CARD. Grouping is done with hairlines, aligned
+ *      grids and negative space before it is done with a bordered box, and
+ *      never with a shadow.
+ *   4. TYPE IS THE IDENTITY. A display voice (tight, set, ink) against a
+ *      monospaced metadata voice (wide-tracked, uppercase, quiet).
+ *
+ * Everything below is plain CSS on tokens, so it themes automatically and
+ * Tailwind utilities can still override it.
+ * ═════════════════════════════════════════════════════════════════════════ */
+
+@layer components {
+  /* ── TYPE ──────────────────────────────────────────────────────────────
+   * The display voice. Weight 700 (never 900 — "black" everywhere is the
+   * tell of a generated landing page) with heavy negative tracking, so a
+   * headline reads as set type rather than as a large font-size. */
+  .ip-display {
+    font-weight: 700;
+    letter-spacing: -0.042em;
+    line-height: 0.98;
+    text-wrap: balance;
+  }
+
+  .ip-display-xl {
+    font-size: clamp(2.5rem, 1.35rem + 4.2vw, 4.75rem);
+    line-height: 0.95;
+    letter-spacing: -0.048em;
+  }
+
+  .ip-display-lg {
+    font-size: clamp(1.95rem, 1.3rem + 2.4vw, 3.15rem);
+    line-height: 1;
+    letter-spacing: -0.04em;
+  }
+
+  .ip-display-md {
+    font-size: clamp(1.45rem, 1.15rem + 1.2vw, 2rem);
+    line-height: 1.06;
+    letter-spacing: -0.032em;
+  }
+
+  /* The metadata voice: monospaced, wide-tracked, uppercase, quiet. Every
+   * technical label, stage name, index and unit on the site is one of these.
+   * Ligatures off — labels are not code. */
+  .ip-label {
+    font-family: var(--font-mono), "Fira Code", ui-monospace, SFMono-Regular, monospace;
+    font-size: 0.6875rem;
+    font-weight: 500;
+    line-height: 1.2;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--subtle);
+    font-feature-settings: "calt" 0, "liga" 0;
+  }
+
+  .ip-label-xs {
+    font-size: 0.625rem;
+    letter-spacing: 0.2em;
+  }
+
+  .ip-label-fg { color: var(--fg); }
+  .ip-label-accent { color: var(--accent); }
+  .ip-label-secondary { color: var(--accent-2); }
+
+  /* Section index — the "01 —" that opens a section, the way a spec numbers
+   * its clauses. */
+  .ip-index {
+    font-family: var(--font-mono), ui-monospace, monospace;
+    font-size: 0.6875rem;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    font-variant-numeric: tabular-nums;
+    color: var(--accent);
+  }
+
+  .ip-nums {
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.02em;
+  }
+
+  /* ── STRUCTURE ─────────────────────────────────────────────────────────
+   * The hairline is the primary grouping device. */
+  .ip-rule {
+    height: 1px;
+    background: var(--rule);
+    border: 0;
+  }
+
+  .ip-rule-soft {
+    height: 1px;
+    background: var(--border);
+    border: 0;
+  }
+
+  /* Blueprint field. Sits behind a section at 1px and should register only
+   * once you look for it. 72px column, matching the page's own rhythm. */
+  .ip-blueprint {
+    background-image:
+      linear-gradient(to right, var(--grid) 1px, transparent 1px),
+      linear-gradient(to bottom, var(--grid) 1px, transparent 1px);
+    background-size: 72px 72px;
+  }
+
+  .ip-blueprint-fine {
+    background-image:
+      linear-gradient(to right, var(--grid) 1px, transparent 1px),
+      linear-gradient(to bottom, var(--grid) 1px, transparent 1px);
+    background-size: 24px 24px;
+  }
+
+  /* Vertical column rules only — the engineering-drawing register behind
+   * editorial columns. */
+  .ip-columns {
+    background-image: linear-gradient(to right, var(--grid) 1px, transparent 1px);
+    background-size: 12.5% 100%;
+  }
+
+  /* A structural frame: border-only, square, flat. This replaces the
+   * white/rounded/shadowed card as the default container. */
+  .ip-frame {
+    border: 1px solid var(--border);
+    background: var(--surface);
+    border-radius: 0;
+  }
+
+  .ip-frame-bare {
+    border: 1px solid var(--border);
+    background: transparent;
+    border-radius: 0;
+  }
+
+  /* Corner ticks — a technical-drawing crop mark on the leading and trailing
+   * corners of a frame. The recurring Interviewpad "selection" motif: it says
+   * the thing inside is a measured region, not a floating bubble. */
+  .ip-ticks { position: relative; }
+
+  .ip-ticks::before,
+  .ip-ticks::after {
+    content: "";
+    position: absolute;
+    width: 8px;
+    height: 8px;
+    border-color: var(--accent);
+    border-style: solid;
+    border-width: 0;
+    pointer-events: none;
+  }
+
+  .ip-ticks::before {
+    top: -1px;
+    left: -1px;
+    border-top-width: 1px;
+    border-left-width: 1px;
+  }
+
+  .ip-ticks::after {
+    bottom: -1px;
+    right: -1px;
+    border-bottom-width: 1px;
+    border-right-width: 1px;
+  }
+
+  .ip-ticks-secondary::before,
+  .ip-ticks-secondary::after { border-color: var(--accent-2); }
+
+  /* Ticks that appear on hover — hovering reveals structure rather than
+   * lifting the element off the page. */
+  .ip-ticks-hover::before,
+  .ip-ticks-hover::after {
+    opacity: 0;
+    transition: opacity 200ms ease;
+  }
+
+  .group:hover .ip-ticks-hover::before,
+  .group:hover .ip-ticks-hover::after,
+  .ip-ticks-hover:hover::before,
+  .ip-ticks-hover:hover::after { opacity: 1; }
+
+  /* A list row. Rows separated by hairlines, with a left marker that grows in
+   * on hover — no background card, no lift, no shadow. */
+  .ip-row {
+    position: relative;
+    border-top: 1px solid var(--border);
+    transition: background-color 160ms ease;
+  }
+
+  .ip-row::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: -1px;
+    bottom: -1px;
+    width: 2px;
+    background: var(--accent);
+    transform: scaleY(0);
+    transform-origin: top;
+    transition: transform 220ms cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  .ip-row:hover { background: var(--panel); }
+  .ip-row:hover::before { transform: scaleY(1); }
+  .ip-row-secondary::before { background: var(--accent-2); }
+  .ip-row-last { border-bottom: 1px solid var(--border); }
+
+  /* ── CONTROLS ──────────────────────────────────────────────────────────
+   * Three shapes, so hierarchy is legible before a single word is read:
+   * an ink block, a ruled box, and bare text on a travelling underline. */
+  .ip-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    font-size: 0.875rem;
+    font-weight: 600;
+    letter-spacing: -0.006em;
+    white-space: nowrap;
+    transition:
+      background-color 160ms ease,
+      border-color 160ms ease,
+      color 160ms ease,
+      transform 110ms ease;
+  }
+
+  .ip-btn:active { transform: translateY(1px); }
+
+  /* PRIMARY — a confident ink block. The only radius on the page that means
+   * "press me". The accent rule sweeping the bottom edge on hover is the
+   * execution-bar motif: the action is armed. */
+  .ip-btn-primary {
+    position: relative;
+    overflow: hidden;
+    background: var(--ink);
+    color: var(--ink-fg);
+    border-radius: 4px;
+    padding: 0.8125rem 1.375rem;
+  }
+
+  .ip-btn-primary::after {
+    content: "";
+    position: absolute;
+    inset: auto 0 0 0;
+    height: 2px;
+    background: var(--accent);
+    transform: scaleX(0);
+    transform-origin: left;
+    transition: transform 300ms cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  .ip-btn-primary:hover::after { transform: scaleX(1); }
+  .ip-btn-armed-secondary::after { background: var(--accent-2); }
+
+  /* SECONDARY — architectural: square, ruled, no fill. Deliberately a
+   * different shape, not just a lighter colour. */
+  .ip-btn-ghost {
+    background: transparent;
+    color: var(--fg);
+    border: 1px solid var(--border-strong);
+    border-radius: 0;
+    padding: 0.8125rem 1.25rem;
+  }
+
+  .ip-btn-ghost:hover {
+    border-color: var(--fg);
+    background: var(--panel);
+  }
+
+  /* Controls for an inverted band. Because the band's ground is --ink and
+   * its type is --ink-fg, swapping the two is all a button needs: it lands
+   * light-on-dark on a light page and dark-on-light on a dark one. */
+  .ip-btn-invert {
+    position: relative;
+    overflow: hidden;
+    background: var(--ink-fg);
+    color: var(--ink);
+    border-radius: 4px;
+    padding: 0.8125rem 1.375rem;
+  }
+
+  .ip-btn-invert::after {
+    content: "";
+    position: absolute;
+    inset: auto 0 0 0;
+    height: 2px;
+    background: var(--accent);
+    transform: scaleX(0);
+    transform-origin: left;
+    transition: transform 300ms cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  .ip-btn-invert:hover::after { transform: scaleX(1); }
+
+  .ip-btn-ghost-invert {
+    background: transparent;
+    color: currentColor;
+    border: 1px solid;
+    border-color: color-mix(in srgb, currentColor 35%, transparent);
+    border-radius: 0;
+    padding: 0.8125rem 1.25rem;
+  }
+
+  .ip-btn-ghost-invert:hover {
+    border-color: currentColor;
+    background: color-mix(in srgb, currentColor 8%, transparent);
+  }
+
+  /* A blueprint field drawn in the current text colour — for bands that
+   * invert the page (ink on paper, or paper on ink). */
+  .ip-blueprint-current {
+    background-image:
+      linear-gradient(to right, currentColor 1px, transparent 1px),
+      linear-gradient(to bottom, currentColor 1px, transparent 1px);
+    background-size: 72px 72px;
+  }
+
+  /* Compact variant for dense areas. */
+  .ip-btn-sm { font-size: 0.8125rem; padding: 0.5rem 0.875rem; }
+
+  /* TERTIARY — text plus a rule that travels under it. */
+  .ip-link {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+    font-weight: 600;
+    color: var(--fg);
+    padding-bottom: 3px;
+  }
+
+  .ip-link::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: 1px;
+    background: currentColor;
+    transform: scaleX(0);
+    transform-origin: right;
+    transition: transform 260ms cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  .ip-link:hover::after {
+    transform: scaleX(1);
+    transform-origin: left;
+  }
+
+  /* A datum: monospaced, 2px radius, minimal. Counts, versions, languages. */
+  .ip-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+    border: 1px solid var(--border);
+    border-radius: 2px;
+    padding: 0.1875rem 0.4375rem;
+    font-family: var(--font-mono), ui-monospace, monospace;
+    font-size: 0.6875rem;
+    line-height: 1.3;
+    color: var(--muted);
+    background: var(--surface);
+    white-space: nowrap;
+  }
+
+  .ip-chip-accent {
+    border-color: rgba(var(--accent-rgb), 0.4);
+    color: var(--accent);
+    background: rgba(var(--accent-rgb), 0.07);
+  }
+
+  .ip-chip-secondary {
+    border-color: rgba(var(--accent-2-rgb), 0.4);
+    color: var(--accent-2);
+    background: rgba(var(--accent-2-rgb), 0.07);
+  }
+
+  /* ── THE SIGNAL STRIP ──────────────────────────────────────────────────
+   * Interviewpad's recurring motif. A run of square stage nodes threaded on
+   * one hairline, with exactly one node live. It stands for whatever the
+   * surface is about — the hiring funnel (APPLIED, SCREENED, CHALLENGE,
+   * INTERVIEW, HIRED), a prep track, or an execution trace — so the same
+   * shape means "stages, and where you are in them" everywhere on the site.
+   * Square on purpose: a pipeline is not a bubble. */
+  .ip-signal-node {
+    width: 7px;
+    height: 7px;
+    flex: none;
+    border: 1px solid var(--border-strong);
+    background: transparent;
+  }
+
+  .ip-signal-node[data-state="done"] {
+    background: var(--border-strong);
+    border-color: var(--border-strong);
+  }
+
+  .ip-signal-node[data-state="live"] {
+    background: var(--accent);
+    border-color: var(--accent);
+  }
+
+  .ip-signal-secondary[data-state="live"] {
+    background: var(--accent-2);
+    border-color: var(--accent-2);
+  }
+
+  .ip-signal-wire {
+    height: 1px;
+    background: var(--border-strong);
+    flex: 1 1 auto;
+    min-width: 10px;
+  }
+
+  /* Scope for the terminal band and any other fixed-dark surface.
+   *
+   * Rather than overriding a list of classes, this RE-KEYS THE TOKENS inside
+   * the band: the page's light-tuned neutrals and accent would go dim or
+   * illegible on black, so within `.ip-on-dark` they take their dark-theme
+   * values regardless of which theme the page itself is in. Everything built
+   * on tokens — labels, chips, signal nodes, borders — then works unchanged. */
+  .ip-on-dark {
+    --fg: #f5f6f7;
+    --muted: rgba(245, 246, 247, 0.8);
+    --subtle: rgba(245, 246, 247, 0.66);
+    --border: rgba(245, 246, 247, 0.14);
+    --border-strong: rgba(245, 246, 247, 0.34);
+    --rule: rgba(245, 246, 247, 0.2);
+    --accent: #ffe600;
+    --accent-rgb: 255, 230, 0;
+    --accent-ink: #0f1115;
+    --accent-2: #8b93ff;
+    --accent-2-rgb: 139, 147, 255;
+    --accent-2-ink: #0f1115;
+  }
+
+  /* THE INVERTED BAND.
+   *
+   * `.ip-on-dark` above is for surfaces that are dark in every theme (the
+   * sandbox, code panels). This one is for a band that flips WITH the theme —
+   * `bg-ink text-ink-fg` paints it dark on a light page and light on a dark
+   * one, and these re-keyed tokens hand it the other theme's neutrals and
+   * accent so nothing inside it goes illegible on the way over. Spending this
+   * once, on the closing call to action, is what makes it read as loud. */
+  .ip-invert {
+    --fg: #f5f6f7;
+    --muted: rgba(245, 246, 247, 0.8);
+    --subtle: rgba(245, 246, 247, 0.66);
+    --border: rgba(245, 246, 247, 0.16);
+    --border-strong: rgba(245, 246, 247, 0.34);
+    --rule: rgba(245, 246, 247, 0.2);
+    --accent: #ffe600;
+    --accent-rgb: 255, 230, 0;
+    --accent-ink: #0f1115;
+    --accent-2: #8b93ff;
+    --accent-2-rgb: 139, 147, 255;
+    --accent-2-ink: #0f1115;
+  }
+
+  .dark .ip-invert {
+    --fg: #16181c;
+    --muted: #4e525a;
+    --subtle: #6f747d;
+    --border: rgba(22, 24, 28, 0.14);
+    --border-strong: rgba(22, 24, 28, 0.3);
+    --rule: rgba(22, 24, 28, 0.18);
+    --accent: #ce362e;
+    --accent-rgb: 206, 54, 46;
+    --accent-ink: #ffffff;
+    --accent-2: #3f39c9;
+    --accent-2-rgb: 63, 57, 201;
+    --accent-2-ink: #ffffff;
+  }
+
+  /* ── MICRO-INTERACTION ─────────────────────────────────────────────────
+   * Engineered, not playful: a state blink, a caret, a rule that travels.
+   * Nothing floats, bounces, glows or scales. */
+  .ip-live { animation: ip-blink 1.4s steps(1, end) infinite; }
+
+  /* Terminal caret — the brand's smallest recognisable unit. Append to a
+   * headline or a label to mark the live edge of the text. */
+  .ip-caret::after {
+    content: "";
+    display: inline-block;
+    width: 0.5em;
+    height: 0.92em;
+    margin-left: 0.1em;
+    background: var(--accent);
+    vertical-align: -0.1em;
+    animation: ip-blink 1.05s steps(1, end) infinite;
+  }
+
+  /* An arrow that steps rather than slides. */
+  .ip-arrow { transition: transform 200ms cubic-bezier(0.16, 1, 0.3, 1); }
+  .group:hover .ip-arrow { transform: translateX(3px); }
+}
+
+@keyframes ip-blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.2; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ip-live,
+  .ip-caret::after { animation: none; }
+
+  .ip-btn-primary::after,
+  .ip-link::after,
+  .ip-row::before,
+  .ip-arrow { transition: none; }
 }

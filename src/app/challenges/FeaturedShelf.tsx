@@ -48,7 +48,7 @@ export default async function FeaturedShelf() {
   return (
     <section className="mx-auto max-w-6xl px-6 pt-8">
       <div className="flex items-center justify-between mb-3">
-        <h2 className="inline-flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.2em] text-accent">
+        <h2 className="inline-flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.2em] text-accent">
           <Star className="w-3 h-3 fill-current" />
           Staff picks
         </h2>
@@ -63,7 +63,7 @@ export default async function FeaturedShelf() {
             <Link
               key={c.id}
               href={`/challenges/${c.slug}`}
-              className="group relative flex flex-col h-full overflow-hidden rounded-2xl border border-accent/40 bg-gradient-to-br from-accent/10 via-accent/[0.04] to-transparent hover:border-accent/60 hover:from-accent/15 transition-colors p-5"
+              className="group relative flex flex-col h-full overflow-hidden border border-accent/40 bg-gradient-to-br from-accent/10 via-accent/[0.04] to-transparent hover:border-accent/60 hover:from-accent/15 transition-colors p-5"
             >
               {/* Accent corner glow — purely decorative, sits behind content */}
               <div
@@ -72,7 +72,7 @@ export default async function FeaturedShelf() {
               />
 
               <div className="relative flex items-center gap-2 mb-3">
-                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-accent/15 border border-accent/30 text-[9px] font-black uppercase tracking-wider text-accent">
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-accent/15 border border-accent/30 text-[9px] font-bold uppercase tracking-wider text-accent">
                   <Sparkles className="w-2.5 h-2.5" />
                   {c.difficulty}
                 </span>
@@ -88,7 +88,7 @@ export default async function FeaturedShelf() {
                 </span>
               </div>
 
-              <h3 className="relative font-black text-fg text-lg leading-tight line-clamp-2 mb-2">
+              <h3 className="relative font-bold text-fg text-lg leading-tight line-clamp-2 mb-2">
                 {c.title}
               </h3>
 
@@ -96,7 +96,7 @@ export default async function FeaturedShelf() {
                 {teaser(c.description)}
               </p>
 
-              <div className="relative mt-auto inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-accent text-bg text-[11px] font-black w-fit group-hover:bg-accent-soft transition-colors">
+              <div className="relative mt-auto inline-flex items-center gap-2 px-3 py-1.5 rounded-data bg-accent text-bg text-[11px] font-bold w-fit group-hover:bg-accent-soft transition-colors">
                 <Play className="w-3 h-3 fill-current" />
                 Open challenge
               </div>

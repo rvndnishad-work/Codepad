@@ -1,22 +1,22 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { 
-  Cpu, 
-  Database, 
-  FolderTree, 
-  GitBranch, 
-  Globe, 
-  KeyRound, 
-  Laptop, 
-  Layers, 
-  Lock, 
-  Network, 
-  Play, 
-  RefreshCw, 
-  ShieldCheck, 
-  Terminal, 
-  Users 
+import {
+  Cpu,
+  Database,
+  FolderTree,
+  GitBranch,
+  Globe,
+  KeyRound,
+  Laptop,
+  Layers,
+  Lock,
+  Network,
+  Play,
+  RefreshCw,
+  ShieldCheck,
+  Terminal,
+  Users
 } from "lucide-react";
 import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 import RevealOnScroll, { RevealItem } from "@/components/scroll/RevealOnScroll";
@@ -110,13 +110,13 @@ function McpSimulator() {
   const [activeTool, setActiveTool] = useState("grade_structure");
 
   return (
-    <motion.div 
+    <motion.div
       initial={{ opacity: 0, scale: 0.95 }}
       animate={{ opacity: 1, scale: 1 }}
       exit={{ opacity: 0, scale: 0.95 }}
       className="w-full grid grid-cols-1 sm:grid-cols-5 gap-4 font-mono text-[10px] text-slate-200"
     >
-      <div className="sm:col-span-2 border border-slate-800 bg-slate-950/60 rounded-xl p-3 flex flex-col gap-1.5">
+      <div className="sm:col-span-2 border border-slate-800 bg-slate-950/60 p-3 flex flex-col gap-1.5">
         <div className="text-[9px] font-bold uppercase text-slate-500 tracking-wider mb-1 flex items-center gap-1.5">
           <Network className="w-3 h-3 text-secondary" /> MCP Catalog
         </div>
@@ -139,11 +139,11 @@ function McpSimulator() {
         ))}
       </div>
 
-      <div className="sm:col-span-3 border border-slate-800 bg-slate-950/40 rounded-xl p-3 flex flex-col justify-between min-h-[160px] text-slate-400">
+      <div className="sm:col-span-3 border border-slate-800 bg-slate-950/40 p-3 flex flex-col justify-between min-h-[160px] text-slate-400">
         <div>
           <div className="flex items-center justify-between border-b border-slate-900 pb-2 mb-2">
             <span className="text-[8px] uppercase tracking-wider text-slate-500">JSON-RPC Session</span>
-            <span className="w-1.5 h-1.5 rounded-full bg-secondary" />
+            <span className="w-1.5 h-1.5 bg-secondary" />
           </div>
           {activeTool === "grade_structure" && (
             <div className="space-y-1">
@@ -189,28 +189,28 @@ function AtsSimulator() {
   ]);
 
   return (
-    <motion.div 
+    <motion.div
       initial={{ opacity: 0, scale: 0.95 }}
       animate={{ opacity: 1, scale: 1 }}
       exit={{ opacity: 0, scale: 0.95 }}
       className="w-full flex flex-col gap-4 font-mono text-[10px] text-slate-200"
     >
-      <div className="border border-slate-800 bg-slate-950/60 rounded-xl p-4 relative min-h-[160px] flex flex-col justify-between">
+      <div className="border border-slate-800 bg-slate-950/60 p-4 relative min-h-[160px] flex flex-col justify-between">
         <div className="space-y-3">
           <div className="text-[9px] font-bold uppercase text-slate-500 tracking-wider flex items-center gap-1.5">
             <Users className="w-3.5 h-3.5 text-secondary" /> ATS Campaign Lobby
           </div>
           <div className="space-y-2">
             {candidates.map((c, i) => (
-              <div key={i} className="flex justify-between items-center bg-slate-900/60 p-2.5 rounded-lg border border-slate-800">
+              <div key={i} className="flex justify-between items-center bg-slate-900/60 p-2.5 rounded-data border border-slate-800">
                 <div className="flex items-center gap-2">
-                  <div className="w-2.5 h-2.5 rounded-full bg-secondary" />
+                  <div className="w-2.5 h-2.5 bg-secondary" />
                   <div>
                     <div className="font-bold text-white">{c.name}</div>
                     <div className="text-[8px] text-slate-500">{c.role}</div>
                   </div>
                 </div>
-                <span className={`px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-wider ${
+                <span className={`px-2 py-0.5 rounded text-[8px] font-bold uppercase tracking-wider ${
                   c.badge === "LOBBY" ? "bg-secondary/10 text-secondary border border-secondary/20 animate-pulse" : "bg-slate-800 text-slate-500"
                 }`}>
                   {c.status}
@@ -269,21 +269,21 @@ function AntiCheatSimulator() {
   }, []);
 
   return (
-    <motion.div 
+    <motion.div
       initial={{ opacity: 0, scale: 0.95 }}
       animate={{ opacity: 1, scale: 1 }}
       exit={{ opacity: 0, scale: 0.95 }}
       className="w-full flex flex-col gap-4 font-mono text-[10px] text-slate-200"
     >
-      <div className="border border-slate-800 bg-slate-950/60 rounded-xl p-4 relative min-h-[160px] flex flex-col justify-between">
+      <div className="border border-slate-800 bg-slate-950/60 p-4 relative min-h-[160px] flex flex-col justify-between">
         <div className="space-y-3">
           <div className="flex justify-between items-center">
             <div className="text-[9px] font-bold uppercase text-slate-500 tracking-wider flex items-center gap-1.5">
               <ShieldCheck className="w-3.5 h-3.5 text-secondary" /> Live Proctoring Feed
             </div>
-            <span className={`px-2 py-0.5 rounded text-[8px] font-black ${
-              status === "ACTIVE" 
-                ? "bg-emerald-500/10 text-emerald-400" 
+            <span className={`px-2 py-0.5 rounded text-[8px] font-bold ${
+              status === "ACTIVE"
+                ? "bg-emerald-500/10 text-emerald-400"
                 : status === "BLOCKED" || status === "CLIPBOARD_WARN"
                 ? "bg-rose-500/10 text-rose-400 animate-pulse"
                 : "bg-amber-500/10 text-amber-400"
@@ -329,7 +329,7 @@ function DossierSimulator() {
   ];
 
   return (
-    <motion.div 
+    <motion.div
       initial={{ opacity: 0, scale: 0.95 }}
       animate={{ opacity: 1, scale: 1 }}
       exit={{ opacity: 0, scale: 0.95 }}
@@ -337,25 +337,25 @@ function DossierSimulator() {
     >
       <div className="sm:col-span-5 flex flex-col gap-3 justify-center">
         {metrics.map((m, idx) => (
-          <div key={idx} className="border border-slate-800 bg-slate-950/60 p-2.5 rounded-xl">
+          <div key={idx} className="border border-slate-800 bg-slate-950/60 p-2.5">
             <div className="flex justify-between text-[8px] uppercase tracking-wider text-slate-500 mb-1">
               <span>{m.name}</span>
               <span className="text-secondary font-bold">{m.score}%</span>
             </div>
-            <div className="h-1 bg-slate-800 rounded-full overflow-hidden">
+            <div className="h-1 bg-slate-800 overflow-hidden">
               <div className="h-full bg-secondary" style={{ width: `${m.score}%` }} />
             </div>
           </div>
         ))}
       </div>
 
-      <div className="sm:col-span-7 border border-slate-800 bg-slate-950/40 rounded-xl p-3 flex flex-col min-h-[160px] justify-between text-slate-400">
+      <div className="sm:col-span-7 border border-slate-800 bg-slate-950/40 p-3 flex flex-col min-h-[160px] justify-between text-slate-400">
         <div>
           <div className="flex justify-between items-center border-b border-slate-900 pb-2 mb-2">
             <span className="text-[8px] uppercase tracking-wider text-slate-500">AI Scoring Output</span>
             <span className="text-[8px] text-emerald-400 font-bold">STABLE PROFILE</span>
           </div>
-          <div className="text-2xl font-black text-secondary py-1 flex items-baseline gap-1 leading-none select-none">
+          <div className="text-2xl font-bold text-secondary py-1 flex items-baseline gap-1 leading-none select-none">
             94 <span className="text-xs font-medium text-slate-500">/ 100 overall score</span>
           </div>
           <p className="text-[7.5px] text-slate-500 leading-normal mt-2">
@@ -386,14 +386,12 @@ export default function HomeInfographic({
   return (
     <section className="mx-auto max-w-6xl px-4 py-24 relative overflow-hidden">
       {/* Background visual styling */}
-      <div className="absolute top-1/2 left-0 w-[400px] h-[400px] bg-accent/5 rounded-full blur-[100px] -ml-64 pointer-events-none" />
-      <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-accent/5 rounded-full blur-[120px] -mr-64 pointer-events-none" />
 
       <div className="relative z-10">
         {/* Title */}
         <RevealOnScroll className="mb-16 text-center" stagger={0.1}>
           <RevealItem>
-            <div className={`inline-flex items-center gap-2 text-[11px] font-black uppercase tracking-[0.2em] mb-3 px-3 py-1.5 rounded-full ${
+            <div className={`inline-flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.2em] mb-3 px-3 py-1.5 rounded-full ${
               isRecruiter ? "text-secondary bg-secondary/10" : "text-accent bg-accent/10"
             }`}>
               <Cpu className="w-3.5 h-3.5" />
@@ -401,14 +399,14 @@ export default function HomeInfographic({
             </div>
           </RevealItem>
           <RevealItem>
-            <h2 className="text-3xl md:text-5xl font-black text-fg tracking-tight leading-[1.05] max-w-3xl mx-auto">
+            <h2 className="text-3xl md:text-5xl font-bold text-fg tracking-tight leading-[1.05] max-w-3xl mx-auto">
               {isRecruiter ? (
                 <>
-                  Standardized evaluations, <span className="text-transparent bg-clip-text bg-gradient-to-br from-secondary to-secondary-soft">built on trust.</span>
+                  Standardized evaluations, <span className="text-secondary">built on trust.</span>
                 </>
               ) : (
                 <>
-                  From keystroke <span className="text-transparent bg-clip-text bg-gradient-to-br from-accent to-accent-soft">to verdict.</span>
+                  From keystroke <span className="text-accent">to verdict.</span>
                 </>
               )}
             </h2>
@@ -452,17 +450,17 @@ export default function HomeInfographic({
                   key={stage.id}
                   type="button"
                   onClick={() => setActiveStage(stage.id)}
-                  className={`text-left rounded-2xl border p-5 transition-all relative overflow-hidden flex gap-4 ${
-                    isActive 
+                  className={`text-left  border p-5 transition-all relative overflow-hidden flex gap-4 ${
+                    isActive
                       ? isRecruiter
-                        ? "bg-surface border-secondary/30 shadow-tile-hover"
-                        : "bg-surface border-accent/30 shadow-[0_4px_20px_-5px_rgba(var(--accent-rgb),0.12)]" 
+                        ? "bg-surface border-secondary/30 "
+                        : "bg-surface border-accent/30 "
                       : "bg-bg/40 border-border hover:border-border-strong hover:bg-surface/30"
                   }`}
                 >
                   {/* Accent Highlight Indicator */}
                   {isActive && (
-                    <motion.div 
+                    <motion.div
                       layoutId="active-accent-bar"
                       className={`absolute left-0 top-0 bottom-0 w-1 ${isRecruiter ? "bg-secondary" : "bg-accent"}`}
                       transition={reducedMotion ? { duration: 0 } : { type: "spring", stiffness: 300, damping: 30 }}
@@ -470,7 +468,7 @@ export default function HomeInfographic({
                   )}
 
                   {/* Stage number */}
-                  <div className={`font-mono text-xs font-black select-none ${
+                  <div className={`font-mono text-xs font-bold select-none ${
                     isActive ? isRecruiter ? "text-secondary" : "text-accent" : "text-muted/50"
                   }`}>
                     {stage.number}
@@ -478,8 +476,8 @@ export default function HomeInfographic({
 
                   <div className="space-y-1">
                     <div className="flex items-center gap-2">
-                      <span className={`text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded ${
-                        isActive 
+                      <span className={`text-[9px] font-bold uppercase tracking-widest px-2 py-0.5 rounded ${
+                        isActive
                           ? isRecruiter
                             ? "bg-secondary/10 text-secondary border border-secondary/20"
                             : "bg-accent/10 text-accent border border-accent/20"
@@ -487,7 +485,7 @@ export default function HomeInfographic({
                       }`}>
                         {stage.tag}
                       </span>
-                      <h3 className={`font-black text-sm transition-colors ${isActive ? "text-fg" : "text-fg/70"}`}>
+                      <h3 className={`font-bold text-sm transition-colors ${isActive ? "text-fg" : "text-fg/70"}`}>
                         {stage.title}
                       </h3>
                     </div>
@@ -503,7 +501,7 @@ export default function HomeInfographic({
                         <div className="flex flex-wrap gap-x-3 gap-y-1.5 mt-3 pt-3 border-t border-border">
                           {stage.metrics.map((m, i) => (
                             <span key={i} className="inline-flex items-center gap-1 text-[10px] text-muted/80 font-mono">
-                              <span className={`w-1.5 h-1.5 rounded-full ${isRecruiter ? "bg-secondary" : "bg-accent"}`} />
+                              <span className={`w-1.5 h-1.5 ${isRecruiter ? "bg-secondary" : "bg-accent"}`} />
                               {m}
                             </span>
                           ))}
@@ -517,18 +515,17 @@ export default function HomeInfographic({
           </div>
 
           {/* Right Column: Visual HUD Simulator Panel */}
-          <div className="lg:col-span-7 rounded-3xl border border-border bg-slate-950 p-6 flex flex-col justify-between shadow-2xl relative overflow-hidden min-h-[380px] text-slate-200">
+          <div className="lg:col-span-7 border border-border bg-slate-950 p-6 flex flex-col justify-between relative overflow-hidden min-h-[380px] text-slate-200">
             {/* Background grid overlays for HUD Cockpit */}
             <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.015)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.015)_1px,transparent_1px)] bg-[size:24px_24px] pointer-events-none" />
-            <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-transparent to-transparent pointer-events-none" />
 
             {/* Simulated Chrome Header */}
             <div className="flex items-center justify-between border-b border-slate-800 pb-3 mb-4 relative z-10">
               <div className="flex items-center gap-2">
                 <div className="flex gap-1.5">
-                  <div className="w-2.5 h-2.5 rounded-full bg-rose-500/30" />
-                  <div className="w-2.5 h-2.5 rounded-full bg-amber-500/30" />
-                  <div className="w-2.5 h-2.5 rounded-full bg-emerald-500/30" />
+                  <div className="w-2.5 h-2.5 bg-rose-500/30" />
+                  <div className="w-2.5 h-2.5 bg-amber-500/30" />
+                  <div className="w-2.5 h-2.5 bg-emerald-500/30" />
                 </div>
                 <span className="text-[10px] uppercase font-mono text-slate-500 tracking-wider">
                   {isRecruiter ? "campaign_telemetry.sh" : "runtime_debugger.sh"}
@@ -537,7 +534,7 @@ export default function HomeInfographic({
               <div className={`text-[10px] font-mono bg-slate-900 border border-slate-800 px-2 py-0.5 rounded flex items-center gap-1.5 ${
                 isRecruiter ? "text-secondary" : "text-accent"
               }`}>
-                <span className={`w-1.5 h-1.5 rounded-full animate-pulse ${isRecruiter ? "bg-secondary" : "bg-accent"}`} />
+                <span className={`w-1.5 h-1.5 animate-pulse ${isRecruiter ? "bg-secondary" : "bg-accent"}`} />
                 LIVE VIEW
               </div>
             </div>
@@ -549,7 +546,7 @@ export default function HomeInfographic({
                 {activeStage === "yjs" && <YjsSimulator key="yjs" />}
                 {activeStage === "sandbox" && <SandboxSimulator key="sandbox" />}
                 {activeStage === "telemetry" && <TelemetrySimulator key="telemetry" />}
-                
+
                 {activeStage === "mcp" && <McpSimulator key="mcp" />}
                 {activeStage === "ats" && <AtsSimulator key="ats" />}
                 {activeStage === "antiCheat" && <AntiCheatSimulator key="antiCheat" />}
@@ -589,14 +586,14 @@ function VFSSimulator() {
   ];
 
   return (
-    <motion.div 
+    <motion.div
       initial={{ opacity: 0, scale: 0.95 }}
       animate={{ opacity: 1, scale: 1 }}
       exit={{ opacity: 0, scale: 0.95 }}
       className="w-full grid grid-cols-1 sm:grid-cols-5 gap-4"
     >
       {/* File Explorer Sidebar Column */}
-      <div className="sm:col-span-2 border border-slate-800 bg-slate-950/60 rounded-xl p-3 flex flex-col gap-1.5">
+      <div className="sm:col-span-2 border border-slate-800 bg-slate-950/60 p-3 flex flex-col gap-1.5">
         <div className="text-[9px] font-bold uppercase text-slate-500 tracking-wider mb-1 flex items-center gap-1.5">
           <FolderTree className="w-3 h-3" /> Workspace VFS
         </div>
@@ -623,11 +620,11 @@ function VFSSimulator() {
       </div>
 
       {/* Editor preview frame */}
-      <div className="sm:col-span-3 border border-slate-800 bg-slate-950/40 rounded-xl p-3 flex flex-col justify-between font-mono text-[10px] min-h-[160px]">
+      <div className="sm:col-span-3 border border-slate-800 bg-slate-950/40 p-3 flex flex-col justify-between font-mono text-[10px] min-h-[160px]">
         <div>
           <div className="flex items-center justify-between border-b border-slate-900 pb-2 mb-2">
             <span className="text-[8px] uppercase tracking-wider text-slate-500">vfs_buffer: {selectedFile}</span>
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+            <span className="w-1.5 h-1.5 bg-emerald-500" />
           </div>
           {selectedFile === "index.js" && (
             <div className="space-y-1 text-slate-400">
@@ -667,7 +664,7 @@ function VFSSimulator() {
         <div className="mt-2 pt-2 border-t border-slate-900 flex justify-between items-center text-[8px] text-slate-500">
           <span>STATE: MEMORY_CACHED</span>
           <div className="flex items-center gap-1">
-            <span className={`w-1 h-1 rounded-full bg-accent ${pulse ? "scale-150 animate-ping" : ""}`} />
+            <span className={`w-1 h-1 bg-accent ${pulse ? "scale-150 animate-ping" : ""}`} />
             <span>VFS INSTANT READ</span>
           </div>
         </div>
@@ -709,13 +706,13 @@ function YjsSimulator() {
   }, []);
 
   return (
-    <motion.div 
+    <motion.div
       initial={{ opacity: 0, scale: 0.95 }}
       animate={{ opacity: 1, scale: 1 }}
       exit={{ opacity: 0, scale: 0.95 }}
       className="w-full flex flex-col gap-4 font-mono"
     >
-      <div className="border border-slate-800 bg-slate-950/60 rounded-xl p-4 relative min-h-[170px] overflow-hidden">
+      <div className="border border-slate-800 bg-slate-950/60 p-4 relative min-h-[170px] overflow-hidden">
         {/* Network nodes background drawing */}
         <div className="absolute inset-0 pointer-events-none opacity-[0.08]">
           <svg className="w-full h-full" xmlns="http://www.w3.org/2000/svg">
@@ -739,37 +736,37 @@ function YjsSimulator() {
         </div>
 
         {/* Collaborative Cursor 1: You */}
-        <motion.div 
+        <motion.div
           className="absolute pointer-events-none z-20 flex flex-col items-start gap-1"
           style={{ left: cursorPos.x, top: cursorPos.y }}
           transition={{ type: "spring", stiffness: 120, damping: 14 }}
         >
           {/* Neon typing pointer */}
           <div className="w-0.5 h-4 bg-accent relative">
-            <div className="absolute top-0 left-0 w-2 h-2 bg-accent rounded-full -translate-x-[3px] -translate-y-[2px]" />
+            <div className="absolute top-0 left-0 w-2 h-2 bg-accent -translate-x-[3px] -translate-y-[2px]" />
           </div>
-          <span className="bg-accent text-bg text-[7px] font-black px-1 py-0.2 rounded font-sans leading-none uppercase select-none shadow">
+          <span className="bg-accent text-bg text-[7px] font-bold px-1 py-0.2 rounded font-sans leading-none uppercase select-none shadow">
             Candidate (You)
           </span>
         </motion.div>
 
         {/* Collaborative Cursor 2: Lead Dev */}
-        <motion.div 
+        <motion.div
           className="absolute pointer-events-none z-20 flex flex-col items-start gap-1"
           style={{ left: leadCursorPos.x, top: leadCursorPos.y }}
           transition={{ type: "spring", stiffness: 100, damping: 12 }}
         >
           {/* Blue collaborator cursor */}
           <div className="w-0.5 h-4 bg-blue-500 relative">
-            <div className="absolute top-0 left-0 w-2 h-2 bg-blue-500 rounded-full -translate-x-[3px] -translate-y-[2px]" />
+            <div className="absolute top-0 left-0 w-2 h-2 bg-blue-500 -translate-x-[3px] -translate-y-[2px]" />
           </div>
-          <span className="bg-blue-500 text-white text-[7px] font-black px-1 py-0.2 rounded font-sans leading-none uppercase select-none shadow">
+          <span className="bg-blue-500 text-white text-[7px] font-bold px-1 py-0.2 rounded font-sans leading-none uppercase select-none shadow">
             Interviewer
           </span>
         </motion.div>
       </div>
 
-      <div className="flex justify-between items-center text-[9px] text-slate-500 border border-slate-900 bg-slate-950/20 px-3 py-2 rounded-lg">
+      <div className="flex justify-between items-center text-[9px] text-slate-500 border border-slate-900 bg-slate-950/20 px-3 py-2 rounded-data">
         <span className="flex items-center gap-1">
           <Users className="w-3 h-3 text-accent" />
           <span>PEERS CONNECTED: 2</span>
@@ -788,7 +785,7 @@ function YjsSimulator() {
    ──────────────────────────────────────────────────────────────── */
 function SandboxSimulator() {
   return (
-    <motion.div 
+    <motion.div
       initial={{ opacity: 0, scale: 0.95 }}
       animate={{ opacity: 1, scale: 1 }}
       exit={{ opacity: 0, scale: 0.95 }}
@@ -796,9 +793,9 @@ function SandboxSimulator() {
     >
       {/* Visual illustration of sandbox secure barrier */}
       <div className="w-full flex items-center justify-between gap-2 max-w-sm">
-        
+
         {/* Left Side: Host Monaco scope */}
-        <div className="border border-slate-800 bg-slate-900/60 p-3 rounded-xl flex flex-col items-center gap-1 shrink-0 w-24">
+        <div className="border border-slate-800 bg-slate-900/60 p-3 flex flex-col items-center gap-1 shrink-0 w-24">
           <Laptop className="w-5 h-5 text-slate-500" />
           <span className="font-bold text-[9px]">HOST SITE</span>
           <span className="text-[7px] text-slate-600 text-center">interviewpad.in</span>
@@ -806,35 +803,35 @@ function SandboxSimulator() {
 
         {/* Center line with moving particles representing CSP blocks & isolation */}
         <div className="flex-1 h-0.5 bg-slate-800 relative flex items-center justify-center">
-          <div className="absolute w-2 h-2 bg-accent rounded-full animate-ping" />
+          <div className="absolute w-2 h-2 bg-accent animate-ping" />
           <svg className="absolute w-full h-8 overflow-visible" xmlns="http://www.w3.org/2000/svg">
-            <motion.circle 
-              r="3" 
-              fill="#FFE600" 
-              initial={{ cx: "5%" }} 
+            <motion.circle
+              r="3"
+              fill="#FFE600"
+              initial={{ cx: "5%" }}
               animate={{ cx: "95%" }}
-              transition={{ repeat: Infinity, duration: 1.5, ease: "linear" }} 
+              transition={{ repeat: Infinity, duration: 1.5, ease: "linear" }}
             />
-            <motion.circle 
-              r="3" 
-              fill="#FFE600" 
-              initial={{ cx: "5%" }} 
+            <motion.circle
+              r="3"
+              fill="#FFE600"
+              initial={{ cx: "5%" }}
               animate={{ cx: "95%" }}
-              transition={{ repeat: Infinity, duration: 1.5, ease: "linear", delay: 0.5 }} 
+              transition={{ repeat: Infinity, duration: 1.5, ease: "linear", delay: 0.5 }}
             />
-            <motion.circle 
-              r="3" 
-              fill="#FFE600" 
-              initial={{ cx: "5%" }} 
+            <motion.circle
+              r="3"
+              fill="#FFE600"
+              initial={{ cx: "5%" }}
               animate={{ cx: "95%" }}
-              transition={{ repeat: Infinity, duration: 1.5, ease: "linear", delay: 1 }} 
+              transition={{ repeat: Infinity, duration: 1.5, ease: "linear", delay: 1 }}
             />
           </svg>
         </div>
 
         {/* Right Side: Strictly Sandboxed compilation iframe */}
-        <div className="border border-accent/40 bg-accent/5 p-3 rounded-xl flex flex-col items-center gap-1 shrink-0 w-28 relative">
-          <div className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-accent rounded-full flex items-center justify-center shadow">
+        <div className="border border-accent/40 bg-accent/5 p-3 flex flex-col items-center gap-1 shrink-0 w-28 relative">
+          <div className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-accent flex items-center justify-center shadow">
             <Lock className="w-2.5 h-2.5 text-bg" />
           </div>
           <ShieldCheck className="w-6 h-6 text-accent animate-pulse" />
@@ -846,14 +843,14 @@ function SandboxSimulator() {
 
       {/* Strict Attributes List details */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-6 w-full max-w-sm">
-        <div className="border border-slate-900 bg-slate-950/60 p-2.5 rounded-lg flex items-start gap-2">
+        <div className="border border-slate-900 bg-slate-950/60 p-2.5 rounded-data flex items-start gap-2">
           <KeyRound className="w-3.5 h-3.5 text-rose-500 shrink-0 mt-0.5" />
           <div>
             <div className="font-bold text-[9px] uppercase tracking-wider text-slate-300">Sandbox Isolation</div>
             <p className="text-[8px] text-slate-500 leading-tight">sandbox=&quot;allow-scripts&quot; denies cookie and local-storage reads.</p>
           </div>
         </div>
-        <div className="border border-slate-900 bg-slate-950/60 p-2.5 rounded-lg flex items-start gap-2">
+        <div className="border border-slate-900 bg-slate-950/60 p-2.5 rounded-data flex items-start gap-2">
           <Globe className="w-3.5 h-3.5 text-emerald-500 shrink-0 mt-0.5" />
           <div>
             <div className="font-bold text-[9px] uppercase tracking-wider text-slate-300">Network Restriction</div>
@@ -883,7 +880,7 @@ function TelemetrySimulator() {
       const last = pointsRef.current[pointsRef.current.length - 1];
       const diff = (Math.random() - 0.48) * 0.12;
       const nextVal = Math.min(22.0, Math.max(17.5, Number((last + diff).toFixed(2))));
-      
+
       pointsRef.current.push(nextVal);
       if (pointsRef.current.length > 15) {
         pointsRef.current.shift();
@@ -904,7 +901,7 @@ function TelemetrySimulator() {
   }).join(" ");
 
   return (
-    <motion.div 
+    <motion.div
       initial={{ opacity: 0, scale: 0.95 }}
       animate={{ opacity: 1, scale: 1 }}
       exit={{ opacity: 0, scale: 0.95 }}
@@ -913,24 +910,24 @@ function TelemetrySimulator() {
       {/* Clock stats tickers column */}
       <div className="sm:col-span-5 flex flex-col gap-3 justify-center">
         {/* Timing HUD */}
-        <div className="border border-slate-800 bg-slate-950/60 p-3.5 rounded-xl">
+        <div className="border border-slate-800 bg-slate-950/60 p-3.5">
           <div className="text-[8px] uppercase tracking-wider text-slate-500 mb-1 flex items-center justify-between">
             <span>Timing Telemetry</span>
-            <span className="w-1.5 h-1.5 rounded-full bg-accent animate-pulse" />
+            <span className="w-1.5 h-1.5 bg-accent animate-pulse" />
           </div>
-          <div className="text-2xl font-black text-accent tabular-nums flex items-baseline gap-1 leading-none py-1">
+          <div className="text-2xl font-bold text-accent tabular-nums flex items-baseline gap-1 leading-none py-1">
             {execTime} <span className="text-xs font-medium text-slate-400">ms</span>
           </div>
           <p className="text-[7.5px] text-slate-500 leading-tight mt-1">CPU execution speed compiled inside strictly isolated V8 engine thread.</p>
         </div>
 
         {/* Memory HUD */}
-        <div className="border border-slate-800 bg-slate-950/60 p-3.5 rounded-xl">
+        <div className="border border-slate-800 bg-slate-950/60 p-3.5">
           <div className="text-[8px] uppercase tracking-wider text-slate-500 mb-1 flex items-center justify-between">
             <span>Memory Telemetry</span>
-            <span className="w-1.5 h-1.5 rounded-full bg-blue-400 animate-pulse" />
+            <span className="w-1.5 h-1.5 bg-blue-400 animate-pulse" />
           </div>
-          <div className="text-2xl font-black text-blue-400 tabular-nums flex items-baseline gap-1 leading-none py-1">
+          <div className="text-2xl font-bold text-blue-400 tabular-nums flex items-baseline gap-1 leading-none py-1">
             {memoryUsage} <span className="text-xs font-medium text-slate-400">MB</span>
           </div>
           <p className="text-[7.5px] text-slate-500 leading-tight mt-1">V8 engine heap utilization estimated via browser precision memory channels.</p>
@@ -938,17 +935,17 @@ function TelemetrySimulator() {
       </div>
 
       {/* Live Oscilloscope Memory footprint graph column */}
-      <div className="sm:col-span-7 border border-slate-800 bg-slate-950/40 rounded-xl p-3 flex flex-col min-h-[170px] justify-between">
+      <div className="sm:col-span-7 border border-slate-800 bg-slate-950/40 p-3 flex flex-col min-h-[170px] justify-between">
         <div className="text-[8px] uppercase tracking-wider text-slate-500 border-b border-slate-900 pb-2 mb-2 flex justify-between items-center">
           <span>HEAP_OSCILLOSCOPE_STREAM</span>
           <span className="text-[7.5px] text-slate-600 font-bold">GRID: 0.5 MB</span>
         </div>
 
         {/* SVG Graph Frame */}
-        <div className="flex-1 bg-slate-950 border border-slate-900 rounded-lg relative overflow-hidden p-2 flex items-stretch">
+        <div className="flex-1 bg-slate-950 border border-slate-900 rounded-data relative overflow-hidden p-2 flex items-stretch">
           {/* Oscilloscope Grid drawing overlay */}
           <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.02)_1px,transparent_1px)] bg-[size:16px_16px]" />
-          
+
           <div className="w-full h-full relative z-10 flex items-stretch">
             {/* Draw active line */}
             <svg className="w-full h-full overflow-visible" viewBox="0 0 100 100" preserveAspectRatio="none">
@@ -986,13 +983,13 @@ function TelemetrySimulator() {
 function PipelinePoster() {
   return (
     <div className="h-full w-full flex items-center justify-center gap-6 md:gap-10" aria-hidden>
-      <div className="w-24 h-28 rounded-xl border border-border bg-surface/60 p-3 space-y-2">
+      <div className="w-24 h-28 border border-border bg-surface/60 p-3 space-y-2">
         {[70, 50, 85, 40, 60].map((w, i) => (
           <div key={i} className="h-1.5 rounded bg-muted/30" style={{ width: `${w}%` }} />
         ))}
       </div>
       <div className="text-muted/50 font-mono">→</div>
-      <div className="w-20 h-20 rotate-12 rounded-lg border-2 border-accent/60 bg-accent/5" />
+      <div className="w-20 h-20 rotate-12 rounded-data border-2 border-accent/60 bg-accent/5" />
       <div className="text-muted/50 font-mono">→</div>
       <div className="grid grid-cols-4 gap-1.5">
         {Array.from({ length: 12 }).map((_, i) => (

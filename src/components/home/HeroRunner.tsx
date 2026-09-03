@@ -99,29 +99,42 @@ export default function HeroRunner() {
     }
   }
 
+  // The four stages a submission actually passes through. Rendering them as
+  // the site-wide signal strip means the hero is showing the product's real
+  // execution trace, not an illustration of one.
+  const traceState = (index: number): "done" | "live" | undefined => {
+    if (run.phase === "idle") return undefined;
+    if (run.phase === "running") return index === 0 ? "done" : index === 1 ? "live" : undefined;
+    return "done";
+  };
+
   return (
-    <div className="rounded-3xl border border-border bg-[#0d1117] shadow-2xl overflow-hidden text-left">
-      {/* Chrome bar */}
-      <div className="flex items-center gap-3 px-4 py-2.5 border-b border-white/10 bg-white/[0.03]">
-        <div className="flex gap-1.5" aria-hidden>
-          <div className="w-2.5 h-2.5 rounded-full bg-red-500/30" />
-          <div className="w-2.5 h-2.5 rounded-full bg-amber-500/30" />
-          <div className="w-2.5 h-2.5 rounded-full bg-green-500/30" />
-        </div>
-        <span className="text-[10px] font-mono text-slate-500 uppercase tracking-wider">sandbox.js — live</span>
+    /* Square, ruled, unshadowed — the panel is a window cut into the page
+       rather than a card floating over it. The near-black ground holds in
+       both themes on purpose: it is the one solid colour block in the
+       composition, and it is the product's own colour. */
+    <div className="ip-on-dark ip-frame ip-ticks border-white/10 bg-[#0b0d12] text-left">
+      {/* Chrome: a filename, a rule, a live marker, and the one armed action. */}
+      <div className="flex items-center gap-3 border-b border-white/10 px-4 py-2.5">
+        <span className="ip-label ip-label-xs text-slate-400">sandbox.js</span>
+        <span className="h-px flex-1 bg-white/10" aria-hidden />
+        <span className="ip-label ip-label-xs flex items-center gap-1.5 text-slate-400">
+          <span className="ip-live h-[5px] w-[5px] bg-emerald-400" aria-hidden />
+          live
+        </span>
         <button
           type="button"
           onClick={handleRun}
           disabled={run.phase === "running"}
-          className="ml-auto flex items-center gap-1.5 text-bg bg-accent font-bold text-[11px] uppercase tracking-wider px-3 py-1.5 rounded-md hover:brightness-95 disabled:opacity-60 transition-all"
+          className="ip-label ip-label-xs flex items-center gap-1.5 rounded-action bg-accent px-2.5 py-1.5 text-accent-ink transition-opacity hover:opacity-90 disabled:opacity-60"
         >
           {run.phase === "running" ? (
             <>
-              Running <Loader2 className="w-3 h-3 animate-spin" />
+              Running <Loader2 className="h-3 w-3 animate-spin" />
             </>
           ) : (
             <>
-              Run <Play className="w-3 h-3 fill-current" />
+              Run <Play className="h-3 w-3 fill-current" />
             </>
           )}
         </button>
@@ -130,46 +143,59 @@ export default function HeroRunner() {
       {/* Editor */}
       <div ref={hostRef} className="max-h-[240px] overflow-auto [&_.cm-editor]:bg-transparent" />
 
-      {/* Output */}
-      <div className="border-t border-white/10 bg-black/30 px-4 py-3 font-mono text-xs min-h-[84px]">
-        <div className="flex items-center gap-2 mb-2">
-          <span
-            className={`w-1.5 h-1.5 rounded-full ${
-              run.phase === "running"
-                ? "bg-amber-400 animate-pulse"
-                : run.phase === "done"
-                  ? "bg-emerald-400"
-                  : run.phase === "error"
-                    ? "bg-rose-400"
-                    : "bg-slate-600"
-            }`}
-          />
-          <span className="text-[10px] uppercase tracking-[0.18em] text-slate-500 font-bold">Output</span>
+      {/* Execution trace + output */}
+      <div className="min-h-[92px] border-t border-white/10 bg-black/30 px-4 py-3 font-mono text-xs">
+        <div className="mb-2.5 flex items-center gap-3">
+          <span className="flex items-center" aria-label="execution trace">
+            {["queue", "compile", "exec", "out"].map((stage, i) => (
+              <span key={stage} className="flex items-center">
+                {i > 0 && <span className="h-px w-4 bg-white/15" aria-hidden />}
+                <span
+                  aria-hidden
+                  data-state={traceState(i)}
+                  className={`ip-signal-node border-white/25 bg-transparent ${
+                    traceState(i) === "done"
+                      ? "!border-emerald-400 !bg-emerald-400"
+                      : traceState(i) === "live"
+                        ? "ip-live !border-amber-400 !bg-amber-400"
+                        : ""
+                  }`}
+                />
+              </span>
+            ))}
+          </span>
+          <span className="ip-label ip-label-xs text-slate-400">
+            {run.phase === "running" ? "executing" : run.phase === "error" ? "failed" : "trace"}
+          </span>
           {run.phase === "done" && (
-            <span className="ml-auto text-[10px] text-slate-500">
+            <span className="ip-label ip-label-xs ml-auto text-slate-400">
               {run.cacheHit ? "cached" : `${run.timeMs} ms`}
             </span>
           )}
         </div>
-        {run.phase === "idle" && <div className="text-slate-500 italic">Press Run — this executes for real.</div>}
-        {run.phase === "running" && <div className="text-slate-400">Executing in the sandbox…</div>}
+        {run.phase === "idle" && (
+          <div className="text-slate-400">Press Run — this executes for real.</div>
+        )}
+        {run.phase === "running" && <div className="text-slate-300">Executing in the sandbox…</div>}
         {run.phase === "error" && <div className="text-rose-300">{run.message}</div>}
         {run.phase === "done" && (
-          <div className="space-y-0.5 max-h-[120px] overflow-auto">
+          <div className="max-h-[120px] space-y-0.5 overflow-auto">
             {run.stdout
               .split("\n")
               .filter(Boolean)
               .map((l, i) => (
-                <div key={i} className="text-slate-200 whitespace-pre-wrap">{l}</div>
+                <div key={i} className="whitespace-pre-wrap text-slate-200">
+                  {l}
+                </div>
               ))}
-            {run.stderr && <div className="text-rose-300 whitespace-pre-wrap">{run.stderr}</div>}
-            {!run.stdout && !run.stderr && <div className="text-slate-500 italic">(no output)</div>}
+            {run.stderr && <div className="whitespace-pre-wrap text-rose-300">{run.stderr}</div>}
+            {!run.stdout && !run.stderr && <div className="text-slate-400">(no output)</div>}
           </div>
         )}
       </div>
 
-      <div className="flex items-center gap-1.5 px-4 py-2 border-t border-white/10 text-[10px] text-slate-500">
-        <ShieldCheck className="w-3 h-3 text-emerald-500" aria-hidden />
+      <div className="flex items-center gap-1.5 border-t border-white/10 px-4 py-2 text-[10px] leading-snug text-slate-400">
+        <ShieldCheck className="h-3 w-3 shrink-0 text-emerald-500" aria-hidden />
         Real execution on a network-isolated sandbox — the same runner that grades interviews.
       </div>
     </div>

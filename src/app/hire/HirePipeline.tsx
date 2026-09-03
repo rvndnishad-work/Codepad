@@ -1,5 +1,4 @@
 import {
-  ArrowRight,
   Bot,
   ClipboardCheck,
   FileCode2,
@@ -13,7 +12,8 @@ import {
   Users,
   Workflow,
 } from "lucide-react";
-import RevealOnScroll, { RevealItem } from "@/components/scroll/RevealOnScroll";
+import RevealOnScroll from "@/components/scroll/RevealOnScroll";
+import SignalStrip from "@/components/home/SignalStrip";
 import SectionHeading from "@/components/home/SectionHeading";
 
 /**
@@ -78,78 +78,59 @@ const STAGES: {
 
 export default function HirePipeline() {
   return (
-    <section className="relative overflow-hidden py-24 md:py-32">
-      <div className="absolute top-0 left-1/4 w-[500px] h-[500px] bg-secondary/5 rounded-full blur-[140px] pointer-events-none" />
-      <div className="absolute bottom-0 right-1/4 w-[500px] h-[500px] bg-accent/5 rounded-full blur-[140px] pointer-events-none" />
-
-      <div className="relative mx-auto max-w-6xl px-4 space-y-12">
+    <section className="relative border-b border-border py-20 md:py-28">
+      <div className="relative mx-auto max-w-6xl px-4">
         <SectionHeading
+          index="02"
+          tone="secondary"
           eyebrow="The pipeline"
-          eyebrowIcon={<Workflow className="w-3.5 h-3.5" />}
+          eyebrowIcon={<Workflow className="h-3 w-3" />}
           title="One workspace,"
           highlight="every stage of the funnel."
-          lede='From the first screen to the signed offer — no tool-hopping, no "can you see my screen?", no lost context between stages.'
+          lede="From the first screen to the signed offer — no tool-hopping, no lost context between stages, and one record you can point at afterwards."
         />
 
-        {/* Stage cards */}
-        <RevealOnScroll stagger={0.1} amount={0.15} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-          {STAGES.map((stage, i) => {
+        {/* The motif, at full width, standing in for the funnel itself. */}
+        <RevealOnScroll className="mb-8">
+          <SignalStrip
+            tone="secondary"
+            stages={STAGES.map((s, i) => ({
+              label: s.title,
+              state: i === 0 ? "done" : i === 1 ? "live" : undefined,
+            }))}
+          />
+        </RevealOnScroll>
+
+        {/* Stage sheet: four columns divided by hairlines, each one a clause
+            with its number, its claim, and the mechanisms under it. */}
+        <RevealOnScroll className="ip-frame ip-ticks ip-ticks-secondary grid grid-cols-1 gap-px bg-border sm:grid-cols-2 lg:grid-cols-4">
+          {STAGES.map((stage) => {
             const StageIcon = stage.icon;
             return (
-              <RevealItem key={stage.step}>
-                <div className="group relative h-full rounded-3xl border border-border bg-surface shadow-tile overflow-hidden p-6 transition-all duration-300 hover:-translate-y-1 hover:border-secondary/45 hover:shadow-tile-hover">
-                  <div
-                    className="absolute -top-20 -right-20 w-52 h-52 rounded-full bg-secondary/10 blur-[80px] opacity-50 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"
-                  />
-                  {/* Ghost step number */}
-                  <span
-                    aria-hidden
-                    className="absolute -bottom-6 -right-1 text-[6.5rem] leading-none font-black text-fg opacity-[0.04] select-none pointer-events-none"
-                  >
-                    {stage.step}
-                  </span>
-
-                  <div className="relative space-y-4">
-                    <div className="flex items-center justify-between">
-                      <div className="w-12 h-12 rounded-2xl border border-secondary/25 bg-secondary/10 text-secondary flex items-center justify-center">
-                        <StageIcon className="w-6 h-6" />
-                      </div>
-                      {/* Connector to the next stage (desktop only) */}
-                      {i < STAGES.length - 1 && (
-                        <ArrowRight className="hidden lg:block w-5 h-5 text-muted/30 group-hover:text-muted/70 group-hover:translate-x-1 transition-all" />
-                      )}
-                    </div>
-
-                    <div>
-                      <div className="text-[10px] font-black uppercase tracking-widest text-muted/60">
-                        Step {stage.step}
-                      </div>
-                      <h3 className="text-lg font-extrabold text-fg tracking-tight">
-                        {stage.title}
-                      </h3>
-                      <p className="text-[11px] text-muted font-semibold mt-0.5">
-                        {stage.tagline}
-                      </p>
-                    </div>
-
-                    <ul className="space-y-2.5 pt-1">
-                      {stage.features.map((f) => {
-                        const FeatureIcon = f.icon;
-                        return (
-                          <li key={f.text} className="flex items-start gap-2.5">
-                            <span className="flex-shrink-0 mt-0.5 w-5 h-5 rounded-md bg-panel border border-border/60 flex items-center justify-center text-muted">
-                              <FeatureIcon className="w-3 h-3" />
-                            </span>
-                            <span className="text-xs text-fg/90 font-medium leading-relaxed">
-                              {f.text}
-                            </span>
-                          </li>
-                        );
-                      })}
-                    </ul>
-                  </div>
+              <div key={stage.step} className="flex flex-col gap-5 bg-surface p-6">
+                <div className="flex items-center gap-3">
+                  <span className="ip-index text-secondary">{stage.step}</span>
+                  <span className="ip-rule-soft min-w-2 flex-1" aria-hidden />
+                  <StageIcon className="h-4 w-4 shrink-0 text-subtle" />
                 </div>
-              </RevealItem>
+
+                <div>
+                  <h3 className="ip-display ip-display-md text-fg">{stage.title}</h3>
+                  <p className="mt-2 text-[12.5px] leading-relaxed text-muted">{stage.tagline}</p>
+                </div>
+
+                <ul className="mt-auto divide-y divide-border border-t border-border">
+                  {stage.features.map((f) => (
+                    <li key={f.text} className="flex items-start gap-2.5 py-2.5">
+                      <span
+                        aria-hidden
+                        className="mt-[7px] h-[5px] w-[5px] shrink-0 border border-secondary"
+                      />
+                      <span className="text-[12.5px] leading-snug text-fg">{f.text}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
             );
           })}
         </RevealOnScroll>

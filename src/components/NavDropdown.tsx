@@ -15,6 +15,10 @@ import {
   Code2,
   Bug,
   Store,
+  Compass,
+  Map,
+  Video,
+  ShieldCheck,
 } from "lucide-react";
 
 /**
@@ -30,8 +34,13 @@ const ICON_MAP: Record<string, React.ComponentType<{ className?: string }>> = {
   Sparkles,
   BookOpen,
   CreditCard,
+  Code2,
   Bug,
   Store,
+  Compass,
+  Map,
+  Video,
+  ShieldCheck,
 };
 
 // useLayoutEffect warns during SSR; this client component is still
@@ -46,6 +55,8 @@ export type NavDropdownItem = {
   label: string;
   description?: string;
   iconName: IconKey;
+  /** Grouping category (e.g. "Practice & Code", "Knowledge & Prep", "AI Skills"). */
+  category?: string;
   /** Optional small mono marker next to the label, e.g. "New" or "Beta". */
   badge?: string;
   /** Retained for callers; the command panel no longer tints per item. */
@@ -195,6 +206,86 @@ export default function NavDropdown({
   const markerBg = tone === "secondary" ? "bg-secondary" : "bg-accent";
   const rowTone = tone === "secondary" ? "ip-row-secondary" : "";
 
+  // Distinct category groupings if specified on items
+  const categories = Array.from(
+    new Set(items.map((i) => i.category).filter(Boolean))
+  ) as string[];
+  const hasCategories = categories.length > 0;
+
+  function renderCategorizedItem(item: NavDropdownItem, index: number) {
+    const Icon = ICON_MAP[item.iconName] ?? Code2;
+    const isComingSoon = item.status === "coming_soon";
+    const active = isItemActive(item);
+
+    const body = (
+      <>
+        <Icon
+          className={`mt-[2px] h-4 w-4 shrink-0 transition-colors duration-150 ${
+            active
+              ? tone === "secondary"
+                ? "text-secondary"
+                : "text-accent"
+              : "text-subtle group-hover/item:text-fg"
+          }`}
+        />
+        <span className="min-w-0 flex-1">
+          <span className="flex items-center gap-2">
+            <span className="text-[13px] font-semibold leading-tight text-fg">
+              {item.label}
+            </span>
+            {isComingSoon ? (
+              <span className="ip-label ip-label-xs text-amber-600 dark:text-amber-400">Soon</span>
+            ) : item.badge ? (
+              <span
+                className={`ip-label ip-label-xs ${
+                  item.badge === "Hidden" ? "text-rose-600 dark:text-rose-400" : accentText
+                }`}
+              >
+                {item.badge}
+              </span>
+            ) : null}
+          </span>
+          {item.description && (
+            <span className="mt-0.5 block text-[11px] leading-snug text-subtle">
+              {item.description}
+            </span>
+          )}
+        </span>
+        {!isComingSoon && (
+          <ArrowRight className="ip-arrow mt-[2px] h-3.5 w-3.5 shrink-0 text-subtle opacity-0 transition-opacity duration-150 group-hover/item:opacity-100" />
+        )}
+      </>
+    );
+
+    if (isComingSoon) {
+      return (
+        <div
+          key={item.label}
+          className="flex select-none items-start gap-2.5 border-b border-border px-4 py-2.5 opacity-45 last:border-b-0"
+        >
+          {body}
+        </div>
+      );
+    }
+
+    return (
+      <Link
+        key={item.label}
+        href={item.href}
+        role="menuitem"
+        aria-current={active ? "page" : undefined}
+        className={`ip-row ${rowTone} group/item flex items-start gap-2.5 border-b border-border px-4 py-2.5 last:border-b-0 ${
+          active ? "bg-panel" : ""
+        }`}
+      >
+        {active && (
+          <span aria-hidden className={`absolute inset-y-[-1px] left-0 w-[2px] ${markerBg}`} />
+        )}
+        {body}
+      </Link>
+    );
+  }
+
   function renderItem(item: NavDropdownItem, index: number) {
     const Icon = ICON_MAP[item.iconName] ?? Code2;
     const isComingSoon = item.status === "coming_soon";
@@ -311,14 +402,22 @@ export default function NavDropdown({
         <div
           ref={panelRef}
           role="menu"
-          className={`absolute left-0 top-full z-50 ${twoUp ? "w-[41rem]" : "w-[33rem]"}`}
+          className={`absolute left-0 top-full z-50 ${hasCategories || twoUp ? "w-[43rem]" : "w-[32rem]"}`}
         >
-          <div className="ip-frame shadow-panel animate-fade-in overflow-hidden">
-            <div className="grid grid-cols-1 sm:grid-cols-[13.5rem_1fr]">
+          {/* Flush-docked architectural command panel with corner ticks */}
+          <div
+            className={`ip-frame -mt-px shadow-panel animate-fade-in overflow-hidden ${
+              tone === "secondary" ? "ip-ticks-secondary" : "ip-ticks"
+            }`}
+          >
+            <div className="grid grid-cols-1 sm:grid-cols-[12.5rem_1fr]">
               {/* ── The rail: who this menu is for ── */}
-              <div className="flex flex-col justify-between gap-6 border-b border-border bg-panel/70 px-5 py-5 sm:border-b-0 sm:border-r">
+              <div className="flex flex-col justify-between gap-6 border-b border-border bg-panel/60 p-5 sm:border-b-0 sm:border-r">
                 <div>
-                  <div className={`ip-label ${accentText}`}>{railTitle ?? label}</div>
+                  <div className="flex items-center gap-2">
+                    <span className={`h-1.5 w-1.5 ${markerBg}`} aria-hidden />
+                    <span className={`ip-label ${accentText}`}>{railTitle ?? label}</span>
+                  </div>
                   {railBlurb && (
                     <p className="mt-3 text-[12px] leading-relaxed text-muted">{railBlurb}</p>
                   )}
@@ -327,29 +426,48 @@ export default function NavDropdown({
                   <Link
                     href={railHref}
                     role="menuitem"
-                    className="ip-link self-start text-[12.5px]"
+                    className="ip-link self-start text-[12px] font-medium"
                   >
                     {railHrefLabel}
-                    <ArrowRight className="h-3.5 w-3.5" />
+                    <ArrowRight className="h-3 w-3" />
                   </Link>
                 )}
               </div>
 
-              {/* ── The destinations: hairline-ruled rows, no cards ── */}
-              <div className={twoUp ? "grid grid-cols-1 md:grid-cols-2" : "flex flex-col"}>
-                {items.map(renderItem)}
-              </div>
+              {/* ── The destinations ── */}
+              {hasCategories ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 divide-y md:divide-y-0 md:divide-x divide-border">
+                  {categories.map((cat) => {
+                    const catItems = items.filter((i) => i.category === cat);
+                    return (
+                      <div key={cat} className="flex flex-col">
+                        <div className="flex items-center gap-2 border-b border-border bg-panel/40 px-4 py-2">
+                          <span className={`h-1.5 w-1.5 ${markerBg}`} aria-hidden />
+                          <span className="ip-label ip-label-xs text-subtle">{cat}</span>
+                        </div>
+                        <div className="flex flex-col">
+                          {catItems.map((item, idx) => renderCategorizedItem(item, idx))}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div className={twoUp ? "grid grid-cols-1 md:grid-cols-2" : "flex flex-col"}>
+                  {items.map(renderItem)}
+                </div>
+              )}
             </div>
 
             {/* ── Footer strip: the panel states its own size, in mono ── */}
-            <div className="flex items-center justify-between border-t border-border px-5 py-2.5">
-              <span className="ip-label ip-label-xs">
-                {String(items.length).padStart(2, "0")} destinations
+            <div className="flex items-center justify-between border-t border-border bg-surface px-5 py-2.5">
+              <span className="ip-label ip-label-xs text-subtle">
+                {String(items.length).padStart(2, "0")} destinations · {tone === "secondary" ? "Recruiter suite" : "Interview runtime"}
               </span>
-              <span className="flex items-center gap-1.5" aria-hidden>
-                <span className={`h-[5px] w-[5px] ${markerBg}`} />
-                <span className="h-px w-6 bg-border-strong" />
-                <span className="h-[5px] w-[5px] border border-border-strong" />
+              <span className="flex items-center gap-2" aria-hidden>
+                <span className={`h-1.5 w-1.5 ${markerBg}`} />
+                <span className="h-px w-6 bg-border" />
+                <span className="h-1.5 w-1.5 border border-border-strong" />
               </span>
             </div>
           </div>

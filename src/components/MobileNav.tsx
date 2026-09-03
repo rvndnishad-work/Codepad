@@ -15,6 +15,12 @@ import {
   Sparkles,
   Bug,
   Store,
+  Compass,
+  Map,
+  Video,
+  ShieldCheck,
+  Menu,
+  X,
 } from "lucide-react";
 import { LogoLockup } from "./Logo";
 import type { NavStatus } from "@/lib/settings-constants";
@@ -28,8 +34,13 @@ const ICON_MAP: Record<string, React.ComponentType<{ className?: string }>> = {
   Sparkles,
   BookOpen,
   CreditCard,
+  Code2,
   Bug,
   Store,
+  Compass,
+  Map,
+  Video,
+  ShieldCheck,
 };
 
 export type MobileNavItem = {
@@ -37,6 +48,7 @@ export type MobileNavItem = {
   label: string;
   description?: string;
   iconName: string;
+  category?: string;
   badge?: string;
   /** Retained for callers; the sheet no longer tints per item. */
   tint?: string;
@@ -113,34 +125,48 @@ export default function MobileNav({
     }
   }, [open, pathname, developerItems, recruiterItems]);
 
+  const isRecruiterRoute = pathname?.startsWith("/hire") || pathname?.startsWith("/w");
+
   return (
     <>
-      <button
-        ref={buttonRef}
-        type="button"
-        onClick={() => setOpen((o) => !o)}
-        aria-haspopup="menu"
-        aria-expanded={open}
-        aria-label={open ? "Close navigation" : "Open navigation"}
-        className="group flex min-w-0 shrink-0 items-center gap-2 overflow-visible p-1 -m-1 transition-colors md:hidden"
-      >
-        <LogoLockup
-          height={48}
-          tone={pathname?.startsWith("/hire") ? "secondary" : "accent"}
-        />
-        <span
-          aria-hidden
-          className={`h-[5px] w-[5px] border-b border-r border-muted transition-transform duration-200 ${
-            open ? "-translate-y-px rotate-[225deg]" : "-translate-y-[2px] rotate-45"
-          }`}
-        />
-      </button>
+      <div className="flex items-center gap-2.5 md:hidden">
+        {/* Dedicated architectural hamburger toggle */}
+        <button
+          ref={buttonRef}
+          type="button"
+          onClick={() => setOpen((o) => !o)}
+          aria-haspopup="menu"
+          aria-expanded={open}
+          aria-label={open ? "Close navigation" : "Open navigation"}
+          className="flex h-9 w-9 items-center justify-center border border-border bg-surface text-fg transition-colors hover:bg-panel focus-visible:outline-none"
+        >
+          {open ? (
+            <X className="h-4 w-4" />
+          ) : (
+            <div className="flex flex-col gap-1 w-3.5" aria-hidden>
+              <span className="h-0.5 w-full bg-current" />
+              <span className="h-0.5 w-2/3 bg-current" />
+            </div>
+          )}
+        </button>
+
+        {/* Logo links directly to home */}
+        <Link
+          href={isAdmin ? "/admin" : "/"}
+          className="flex items-center group shrink-0"
+        >
+          <LogoLockup
+            height={38}
+            tone={isRecruiterRoute ? "secondary" : "accent"}
+          />
+        </Link>
+      </div>
 
       {open && (
         <div
           ref={panelRef}
           role="menu"
-          className="animate-fade-in absolute left-0 right-0 top-full mt-px border-b border-border bg-surface shadow-panel md:hidden"
+          className="animate-fade-in absolute left-0 right-0 top-full mt-px border-b border-border bg-surface shadow-panel md:hidden max-h-[calc(100vh-4.5rem)] overflow-y-auto"
         >
           <nav className="mx-auto max-w-7xl">
             {(devsMenuStatus !== "hidden" || isAdmin) && (developerItems.length > 0 || isAdmin) && (
@@ -227,6 +253,73 @@ function MobileGroup({
   const labelTone = tone === "secondary" ? "ip-label-secondary" : "ip-label-accent";
   const markerBg = tone === "secondary" ? "bg-secondary" : "bg-accent";
 
+  const categories = Array.from(
+    new Set(items.map((i) => i.category).filter(Boolean))
+  ) as string[];
+
+  function renderMobileItem(item: MobileNavItem) {
+    const Icon = ICON_MAP[item.iconName] ?? Code2;
+    const isComingSoon = item.status === "coming_soon";
+    const active = !isComingSoon && matchesActive(pathname, item.href);
+
+    const body = (
+      <>
+        <Icon
+          className={`mt-[3px] h-4 w-4 shrink-0 ${
+            active ? (tone === "secondary" ? "text-secondary" : "text-accent") : "text-subtle"
+          }`}
+        />
+        <span className="min-w-0 flex-1">
+          <span className="flex items-center gap-2">
+            <span className="text-[13.5px] font-semibold text-fg">{item.label}</span>
+            {isComingSoon ? (
+              <span className="ip-label ip-label-xs text-amber-600 dark:text-amber-400">Soon</span>
+            ) : item.badge ? (
+              <span
+                className={`ip-label ip-label-xs ${
+                  item.badge === "Hidden" ? "text-rose-600 dark:text-rose-400" : labelTone
+                }`}
+              >
+                {item.badge}
+              </span>
+            ) : null}
+          </span>
+          {item.description && (
+            <span className="mt-0.5 block text-[11.5px] leading-snug text-subtle">
+              {item.description}
+            </span>
+          )}
+        </span>
+      </>
+    );
+
+    if (isComingSoon) {
+      return (
+        <div
+          key={item.label}
+          className="flex select-none items-start gap-3 border-t border-border px-4 py-3 pl-6 opacity-45"
+        >
+          {body}
+        </div>
+      );
+    }
+
+    return (
+      <Link
+        key={item.label}
+        href={item.href}
+        role="menuitem"
+        aria-current={active ? "page" : undefined}
+        className="relative flex items-start gap-3 border-t border-border px-4 py-3 pl-6"
+      >
+        {active && (
+          <span aria-hidden className={`absolute inset-y-0 left-0 w-[2px] ${markerBg}`} />
+        )}
+        {body}
+      </Link>
+    );
+  }
+
   return (
     <div className="border-t border-border first:border-t-0">
       <button
@@ -245,68 +338,17 @@ function MobileGroup({
 
       {expanded && (
         <div className="flex flex-col bg-panel/50">
-          {items.map((item) => {
-            const Icon = ICON_MAP[item.iconName] ?? Code2;
-            const isComingSoon = item.status === "coming_soon";
-            const active = !isComingSoon && matchesActive(pathname, item.href);
-
-            const body = (
-              <>
-                <Icon
-                  className={`mt-[3px] h-4 w-4 shrink-0 ${
-                    active ? (tone === "secondary" ? "text-secondary" : "text-accent") : "text-subtle"
-                  }`}
-                />
-                <span className="min-w-0 flex-1">
-                  <span className="flex items-center gap-2">
-                    <span className="text-[13.5px] font-semibold text-fg">{item.label}</span>
-                    {isComingSoon ? (
-                      <span className="ip-label ip-label-xs text-amber-600 dark:text-amber-400">Soon</span>
-                    ) : item.badge ? (
-                      <span
-                        className={`ip-label ip-label-xs ${
-                          item.badge === "Hidden" ? "text-rose-600 dark:text-rose-400" : labelTone
-                        }`}
-                      >
-                        {item.badge}
-                      </span>
-                    ) : null}
-                  </span>
-                  {item.description && (
-                    <span className="mt-0.5 block text-[11.5px] leading-snug text-subtle">
-                      {item.description}
-                    </span>
-                  )}
-                </span>
-              </>
-            );
-
-            if (isComingSoon) {
-              return (
-                <div
-                  key={item.label}
-                  className="flex select-none items-start gap-3 border-t border-border px-4 py-3 pl-6 opacity-45"
-                >
-                  {body}
+          {categories.length > 0
+            ? categories.map((cat) => (
+                <div key={cat} className="flex flex-col">
+                  <div className="flex items-center gap-2 border-t border-border bg-panel/75 px-4 py-1.5 pl-6">
+                    <span className={`h-1 w-1 ${markerBg}`} aria-hidden />
+                    <span className="ip-label ip-label-xs text-subtle">{cat}</span>
+                  </div>
+                  {items.filter((i) => i.category === cat).map(renderMobileItem)}
                 </div>
-              );
-            }
-
-            return (
-              <Link
-                key={item.label}
-                href={item.href}
-                role="menuitem"
-                aria-current={active ? "page" : undefined}
-                className="relative flex items-start gap-3 border-t border-border px-4 py-3 pl-6"
-              >
-                {active && (
-                  <span aria-hidden className={`absolute inset-y-0 left-0 w-[2px] ${markerBg}`} />
-                )}
-                {body}
-              </Link>
-            );
-          })}
+              ))
+            : items.map(renderMobileItem)}
         </div>
       )}
     </div>

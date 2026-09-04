@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LogoLockup } from "./Logo";
+import LogoDynamic from "./LogoDynamic";
 
 export default function HeaderLogo() {
   const pathname = usePathname();
@@ -14,8 +14,9 @@ export default function HeaderLogo() {
     <Link
       href={isAdminPage ? "/admin" : "/"}
       className="hidden md:flex items-center gap-3 group shrink-0 overflow-visible"
+      aria-label="Interviewpad home"
     >
-      <LogoLockup tone={isRecruiter ? "secondary" : "accent"} />
+      <LogoDynamic tone={isRecruiter ? "secondary" : "accent"} />
       {isAdminPage && (
         <span className="ip-label ip-label-accent border-l border-border pl-2.5">
           Admin Portal

@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { SandpackProvider, SandpackPreview } from "@codesandbox/sandpack-react";
+import { SandpackPreview } from "@codesandbox/sandpack-react";
+import ShimmedSandpackProvider from "@/components/ShimmedSandpackProvider";
 import { RotateCcw, Loader2 } from "lucide-react";
 
 /**
@@ -27,7 +28,7 @@ export default function RunPreview({ files }: { files: Record<string, string> })
         </button>
       </div>
       <div className="rounded-xl overflow-hidden border border-border bg-[#0d1117] h-[420px] relative">
-        <SandpackProvider
+        <ShimmedSandpackProvider
           key={runKey}
           template={isReact ? "react" : "vanilla"}
           theme="dark"
@@ -43,7 +44,7 @@ export default function RunPreview({ files }: { files: Record<string, string> })
             showRefreshButton={false}
             style={{ height: "100%" }}
           />
-        </SandpackProvider>
+        </ShimmedSandpackProvider>
       </div>
     </div>
   );

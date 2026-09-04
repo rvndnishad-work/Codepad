@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
+import { useEffect, useMemo, useRef, useState, useSyncExternalStore, useCallback } from "react";
 import { useTheme } from "next-themes";
 
 function useIsMobile(breakpoint = 768) {
@@ -23,6 +23,7 @@ import FileExplorer from "./FileExplorer";
 import { ErrorBridge, ErrorOverlay, type ErrorData } from "./ErrorOverlay";
 import PromptSidebar from "./PromptSidebar";
 import { useResizable } from "@/hooks/useResizable";
+import { useResizableHeight } from "@/hooks/useResizableHeight";
 import { toast } from "sonner";
 import {
   GitFork,
@@ -47,6 +48,8 @@ import {
   ChevronRight,
 } from "lucide-react";
 import { templatesById } from "@/lib/templates";
+import { buildNodeBuiltinShims } from "@/lib/node-builtin-shims";
+import { MissingDepBridge } from "./bridges/MissingDepBridge";
 import { decodePlaygroundCode, decodePlaygroundFiles } from "@/lib/playground-handoff";
 import { getSandpackTheme } from "@/lib/sandpack-theme";
 import { TemplateLogo } from "@/lib/icons";
@@ -84,31 +87,6 @@ type Props = {
   backHref?: string;
 };
 
-function SegBtn({
-  active,
-  children,
-  onClick,
-  title,
-}: {
-  active?: boolean;
-  children: React.ReactNode;
-  onClick?: () => void;
-  title?: string;
-}) {
-  return (
-    <button
-      onClick={onClick}
-      title={title}
-      className={`inline-flex items-center gap-1.5 px-2.5 py-1 text-xs transition ${active
-        ? "bg-accent text-bg"
-        : "text-subtle hover:text-fg hover:bg-elevated"
-        }`}
-    >
-      {children}
-    </button>
-  );
-}
-
 function ReadOnlyToolbar({ editable }: { editable: boolean }) {
   if (editable) return null;
   return (
@@ -145,6 +123,23 @@ function simpleHash(str: string): string {
 /** Languages that execute server-side via /api/execute */
 const BACKEND_LANGUAGES = new Set(["python", "go", "java", "cpp", "rust", "node", "ts-node"]);
 
+/**
+ * Dependency names declared in a file map's /package.json, so we never shadow a
+ * real npm package the user installed under a Node-builtin name (`events`,
+ * `buffer`, `url`, `path`… all exist on npm).
+ */
+function readDeclaredDependencies(files: SandpackFiles): string[] {
+  const pkg = files["/package.json"];
+  if (!pkg) return [];
+  const code = typeof pkg === "string" ? pkg : (pkg as { code: string }).code;
+  try {
+    const parsed = JSON.parse(code);
+    return Object.keys(parsed?.dependencies ?? {});
+  } catch {
+    return [];
+  }
+}
+
 function getLanguageFromPath(filePath: string, fallback: string): string {
   const ext = filePath.split(".").pop()?.toLowerCase() ?? "";
   if (ext === "py") return "python";
@@ -153,7 +148,7 @@ function getLanguageFromPath(filePath: string, fallback: string): string {
   if (ext === "cpp" || ext === "h" || ext === "hpp") return "cpp";
   if (ext === "rs") return "rust";
   if (ext === "js" || ext === "jsx") return fallback === "node" ? "node" : "javascript";
-  if (ext === "ts" || ext === "tsx") return fallback === "ts-node" ? "typescript" : "typescript";
+  if (ext === "ts" || ext === "tsx") return "typescript";
   return fallback;
 }
 
@@ -188,7 +183,7 @@ export default function Playground({
   const [visibility, setVisibility] = useState<Visibility>(snippet?.visibility ?? "private");
   const [saving, setSaving] = useState(false);
   const [forking, setForking] = useState(false);
-  const [view, setView] = useState<"preview" | "console" | "both">(
+  const [view, setView] = useState<"preview" | "console" | "both" | "columns">(
     tpl.mode === "console" ? "console" : "preview"
   );
   const [fontSize, setFontSize] = useState(14);
@@ -207,10 +202,20 @@ export default function Playground({
   const [promptOpen, setPromptOpen] = useState(false);
   const [explorerCollapsed, setExplorerCollapsed] = useState(false);
   const [autoRun, setAutoRun] = useState(true);
-  const [consoleKey, setConsoleKey] = useState(0);
+  // Handle the hook's own reset() drains the client's log store directly,
+  // so clearing can never desync from what the bundler holds.
+  const consoleResetRef = useRef<(() => void) | null>(null);
+
+  // Console clear that actually works: JsConsole registers the Sandpack
+  // hook's own reset() here, which drains the client's log store directly.
+  // (Index baselines were tried and abandoned — they race the async
+  // bundler and can hide fresh output after a manual Run.)
+  const clearConsole = useCallback(() => {
+    consoleResetRef.current?.();
+    setBackendLogs([]);
+  }, []);
   const [uiScale, setUiScale] = useState(1);
   const [mounted, setMounted] = useState(false);
-  const explorerCollapsedRef = useRef(false);
 
   // One-shot code handoff from an "Open in Playground" link (#code=… in the
   // URL hash). Read once on mount; the hash is then cleared (effect below) so a
@@ -270,15 +275,29 @@ export default function Playground({
       }
       return next;
     }
-    return files;
-  }, [initialFiles, templateId, tpl.files, prefillCode, prefillFiles]);
+    // Everything below bundles in-browser through Sandpack's v2 bundler, which
+    // ships no Node core polyfills AND eagerly resolves the dependencies of
+    // every installed package (not just the ones the user imports). So a single
+    // `npm i axios` used to kill the preview with
+    //   Cannot find module 'http' from '/node_modules/follow-redirects/index.js'
+    // even with no `import axios` anywhere. Ship hidden shim packages so every
+    // Node builtin at least resolves. See lib/node-builtin-shims.ts.
+    const declaredDeps = [
+      ...Object.keys(tpl.dependencies ?? {}),
+      ...readDeclaredDependencies(files),
+    ];
+    // Shims go first so a real user file at the same path always wins.
+    return { ...buildNodeBuiltinShims(declaredDeps), ...files };
+  }, [initialFiles, templateId, tpl.files, tpl.dependencies, prefillCode, prefillFiles]);
 
   const initialFilesRef = useRef<SandpackFiles>(cleanFiles);
   const filesRef = useRef<SandpackFiles>(cleanFiles);
   const activeFileRef = useRef<string>("");
+  const saveSeqRef = useRef(0);
+  const committedSeqRef = useRef(0);
+  const backendFetchRef = useRef(false);
   const runRef = useRef<(() => void) | null>(null);
   const formatRef = useRef<(() => Promise<void>) | null>(null);
-  const codeChangedRef = useRef(false);
   const customSetup = useMemo(() => {
     const setup: any = tpl.dependencies ? { dependencies: tpl.dependencies } : {};
     return setup;
@@ -333,8 +352,11 @@ export default function Playground({
   const isMobile = useIsMobile(768);
   // Default wide enough for the "Files" label + all header buttons (new file,
   // new folder, deps, sort, download, divider, close) to show without clipping.
-  const { width: explorerW, onPointerDown: onExplorerDrag } = useResizable(280, 200, 400);
+  const { width: explorerW, onPointerDown: onExplorerDrag, setWidth: setExplorerW } = useResizable(280, 200, 400);
   const { width: editorW, onPointerDown: onEditorDrag, setWidth: setEditorW } = useResizable(500, 200, 2000);
+  const { width: promptW, onPointerDown: onPromptDrag } = useResizable(384, 280, 640, false);
+  const { height: consoleH, onPointerDown: onConsoleDrag } = useResizableHeight(300, 120, 900);
+  const { width: consoleW, onPointerDown: onConsoleColDrag } = useResizable(420, 240, 900, true);
 
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -344,6 +366,28 @@ export default function Playground({
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // When the AI panel docks, steal its width from explorer + editor
+  // proportionally so the output pane keeps a usable share. Widths are
+  // restored when it closes. Below lg the panel overlays content flow, so
+  // no redistribution happens there.
+  const prevWidths = useRef<{ explorer: number; editor: number } | null>(null);
+  useEffect(() => {
+    if (typeof window === "undefined" || window.innerWidth < 1024) return;
+    if (promptOpen) {
+      if (prevWidths.current) return;
+      prevWidths.current = { explorer: explorerW, editor: editorW };
+      const freed = Math.min(promptW, window.innerWidth - 900);
+      const total = Math.max(1, explorerW + editorW);
+      setExplorerW(Math.max(200, Math.round(explorerW - freed * (explorerW / total))));
+      setEditorW(Math.max(200, Math.round(editorW - freed * (editorW / total))));
+    } else if (prevWidths.current) {
+      setExplorerW(prevWidths.current.explorer);
+      setEditorW(prevWidths.current.editor);
+      prevWidths.current = null;
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [promptOpen]);
 
   // Whether this template runs code server-side (Python, Go, Java, etc.)
   const isBackend = useMemo(() => BACKEND_LANGUAGES.has(templateId), [templateId]);
@@ -389,6 +433,7 @@ export default function Playground({
   }, [dirty, templateId, isBackend]);
 
   async function handleRun() {
+    if (backendFetchRef.current) return; // rapid clicks: one execution at a time
     setRunning(true);
     try {
       const activeFilePath = activeFileRef.current || (filesRef.current ? Object.keys(filesRef.current)[0] : "/index.ts");
@@ -405,6 +450,7 @@ export default function Playground({
 
         // Clear console before execution
         setBackendLogs([]);
+        backendFetchRef.current = true;
 
         const res = await fetch("/api/execute", {
           method: "POST",
@@ -426,6 +472,7 @@ export default function Playground({
         );
       } else {
         // Frontend languages (JS, TS, React, etc.) — use Sandpack's in-browser bundler
+        clearConsole();
         runRef.current?.();
       }
     } catch (err) {
@@ -436,6 +483,7 @@ export default function Playground({
         log: { method: "error", data: [String(err)] }
       }, "*");
     } finally {
+      backendFetchRef.current = false;
       setRunning(false);
     }
   }
@@ -448,6 +496,10 @@ export default function Playground({
       return;
     }
     if (!editable) return;
+    // Overlapping saves (manual Ctrl+S racing the silent auto-save) resolve
+    // in any order — only the latest finisher may clear dirty/saving, so a
+    // stale response can never wipe a newer edit.
+    const seq = ++saveSeqRef.current;
     setSaving(true);
     try {
       const payload: Record<string, unknown> = {
@@ -456,7 +508,7 @@ export default function Playground({
         files: filesRef.current,
         visibility,
       };
-      if (snippetId) payload.tags = tags;
+      if (tags.length > 0) payload.tags = tags;
       const url = snippetId ? `/api/snippets/${snippetId}` : "/api/snippets";
       const method = snippetId ? "PATCH" : "POST";
       const res = await fetch(url, {
@@ -477,13 +529,16 @@ export default function Playground({
         setCurrentSlug(data.slug);
         window.history.replaceState(null, "", `/play/${data.slug}`);
       }
-      setDirty(false);
-      setLastSavedAt(Date.now());
+      committedSeqRef.current = seq;
+      if (saveSeqRef.current === seq) {
+        setDirty(false);
+        setLastSavedAt(Date.now());
+      }
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err);
       if (!opts.silent) toast.error("Save failed", { description: msg });
     } finally {
-      setSaving(false);
+      if (saveSeqRef.current === committedSeqRef.current) setSaving(false);
     }
   }
 
@@ -492,10 +547,15 @@ export default function Playground({
       toast.error("Sign in to fork.");
       return;
     }
-    if (!snippet) return;
+    const targetId = snippetId ?? snippet?.id;
+    if (!targetId) {
+      toast.info("Save first to fork.");
+      return;
+    }
+    if (forking || saving) return;
     setForking(true);
     try {
-      const res = await fetch(`/api/snippets/${snippet.id}/fork`, { method: "POST", cache: "no-store" });
+      const res = await fetch(`/api/snippets/${targetId}/fork`, { method: "POST", cache: "no-store" });
       if (!res.ok) throw new Error((await res.text()) || `HTTP ${res.status}`);
       const data = await res.json();
       toast.success("Fork created â€” openingâ€¦");
@@ -593,7 +653,7 @@ export default function Playground({
     const savedFontSize = localStorage.getItem("interviewpad_fontSize");
     if (savedFontSize) {
       const parsed = parseInt(savedFontSize, 10);
-      if (!isNaN(parsed) && parsed >= 10 && parsed <= 24) setFontSize(parsed);
+      if (!isNaN(parsed) && parsed >= 10 && parsed <= 32) setFontSize(parsed);
     }
 
     const savedAutoRun = localStorage.getItem("interviewpad_autoRun");
@@ -630,6 +690,10 @@ export default function Playground({
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
+      // Let text fields handle their own keys — shortcuts must not fire
+      // while typing in the title, tags, prompt box or the editor itself.
+      const target = e.target as HTMLElement | null;
+      if (target && (target.tagName === "INPUT" || target.tagName === "TEXTAREA" || target.isContentEditable)) return;
       if ((e.ctrlKey || e.metaKey) && e.key === "s") {
         e.preventDefault();
         void handleSaveRef.current();
@@ -645,7 +709,7 @@ export default function Playground({
       if ((e.ctrlKey || e.metaKey) && (e.key === "=" || e.key === "+" || e.code === "Equal" || e.code === "NumpadAdd")) {
         e.preventDefault();
         e.stopPropagation();
-        setFontSize((f) => Math.min(24, f + 1));
+        setFontSize((f) => Math.min(32, f + 1));
       }
       if ((e.ctrlKey || e.metaKey) && (e.key === "-" || e.code === "Minus" || e.code === "NumpadSubtract")) {
         e.preventDefault();
@@ -659,7 +723,7 @@ export default function Playground({
         e.preventDefault();
         e.stopPropagation();
         if (e.deltaY < 0) {
-          setFontSize((f) => Math.min(24, f + 1));
+          setFontSize((f) => Math.min(32, f + 1));
         } else {
           setFontSize((f) => Math.max(10, f - 1));
         }
@@ -719,17 +783,46 @@ export default function Playground({
         background: var(--bg);
       }
 
-      /* Thin divider between panels */
+      /* Thin divider between panels — indigo flare on grab */
       .ide-divider {
-        background: var(--border);
-        transition: background 0.2s ease;
+        background: rgba(255, 255, 255, 0.07);
+        transition: background 0.2s ease, box-shadow 0.2s ease;
         flex-shrink: 0;
         position: relative;
         z-index: 10;
       }
       .ide-divider:hover {
-        background: var(--accent);
-        opacity: 0.4;
+        background: linear-gradient(180deg, #8b93ff, #ff2fb3);
+        opacity: 1;
+        box-shadow: 0 0 14px rgba(139, 147, 255, 0.65);
+      }
+      /* Horizontal divider between preview (top) and console (bottom) */
+      .ide-divider-h {
+        background: rgba(255, 255, 255, 0.07);
+        transition: background 0.2s ease, box-shadow 0.2s ease;
+        flex-shrink: 0;
+        position: relative;
+        z-index: 10;
+      }
+      .ide-divider-h:hover {
+        background: linear-gradient(90deg, #8b93ff, #ff2fb3);
+        opacity: 1;
+        box-shadow: 0 0 14px rgba(139, 147, 255, 0.65);
+      }
+      /* Sonar rings for standby empty states */
+      .ide-sonar { position: relative; }
+      .ide-sonar::before, .ide-sonar::after {
+        content: "";
+        position: absolute;
+        inset: 0;
+        border-radius: 9999px;
+        border: 1px solid rgba(139, 147, 255, 0.55);
+        animation: ide-sonar-ping 2.4s cubic-bezier(0, 0, 0.2, 1) infinite;
+      }
+      .ide-sonar::after { animation-delay: 1.2s; }
+      @keyframes ide-sonar-ping {
+        0% { transform: scale(0.55); opacity: 0.9; }
+        100% { transform: scale(1.9); opacity: 0; }
       }
       /* Custom Scrollbar */
       ::-webkit-scrollbar { width: 5px; height: 5px; }
@@ -777,7 +870,7 @@ export default function Playground({
               snippet={snippet} isOwner={isOwner} forking={forking}
               handleSave={() => handleSave()} handleFork={handleFork} handleShare={handleShare}
               handleCopyEmbed={handleCopyEmbed} handlePopout={handlePopout} handleRun={handleRun}
-              running={running} tags={tags} setTags={setTags} tagInput={tagInput} setTagInput={setTagInput}
+              running={running} showRun={isBackend} tags={tags} setTags={setTags} tagInput={tagInput} setTagInput={setTagInput}
               onToggleFiles={() => setMobileFilesOpen((prev) => !prev)}
               onTogglePrompt={() => setPromptOpen((prev) => !prev)}
               autoRun={autoRun} setAutoRun={setAutoRun}
@@ -837,6 +930,14 @@ export default function Playground({
                       <div className="flex-1" onClick={() => setMobileFilesOpen(false)} />
                     </div>
                   )}
+                  {isMobile && promptOpen && (
+                    <div className="fixed inset-0 z-[100] flex justify-end bg-black/60 backdrop-blur-sm">
+                      <div className="flex-1" onClick={() => setPromptOpen(false)} />
+                      <div className="h-full w-4/5 max-w-sm border-l border-white/10 bg-[#0d0f16] shadow-2xl">
+                        <PromptSidebar onClose={() => setPromptOpen(false)} />
+                      </div>
+                    </div>
+                  )}
 
                   <div className="flex h-full w-full overflow-hidden relative">
                     <div className="flex-1 min-w-0 h-full">
@@ -869,16 +970,19 @@ export default function Playground({
                               borderTop: effectiveView === "both" ? "1px solid var(--border)" : undefined,
                             }}>
                               {effectiveView !== "preview" && (
-                                <div className="flex items-center justify-between px-3 h-9 bg-surface shrink-0 border-b border-border">
-                                  <div className="flex items-center gap-2">
-                                    <Terminal className="w-3 h-3 text-accent/60" />
-                                    <span className="text-[11px] font-semibold text-fg tracking-wide uppercase">Console</span>
+                                <div className="flex h-9 shrink-0 items-center justify-between gap-2 overflow-hidden border-b border-white/10 bg-[#0d0f16]/90 px-3">
+                                  <div className="flex min-w-0 items-center gap-2 overflow-hidden">
+                                    <span className="h-1.5 w-1.5 shrink-0 animate-pulse rounded-full bg-[#8b93ff]" aria-hidden />
+                                    <span className="truncate font-mono text-[11px] font-bold uppercase tracking-[0.18em] text-white/80">Console</span>
                                   </div>
-                                  <div className="flex items-center gap-1.5">
-                                    <button onClick={() => { setConsoleKey(k => k + 1); setBackendLogs([]); }} className="p-1 hover:bg-elevated rounded transition text-muted/50 hover:text-fg" title="Clear Console">
+                                  <div className="flex shrink-0 items-center gap-1.5 whitespace-nowrap">
+                                    <button onClick={clearConsole} className="grid h-6 w-6 shrink-0 place-items-center rounded-full text-white/40 transition hover:bg-white/10 hover:text-white" title="Clear Console">
                                       <Ban className="w-3 h-3" />
                                     </button>
-                                    <div className="text-[10px] font-normal text-muted/30">Live</div>
+                                    <div className="flex shrink-0 items-center gap-1 whitespace-nowrap font-mono text-[10px] uppercase tracking-widest text-white/35">
+                                      <span className="h-1.5 w-1.5 shrink-0 animate-pulse rounded-full bg-emerald-400" />
+                                      Live
+                                    </div>
                                   </div>
                                 </div>
                               )}
@@ -886,7 +990,7 @@ export default function Playground({
                                 {isBackend ? (
                                   <BackendConsole logs={backendLogs} />
                                 ) : (
-                                  <JsConsole key={consoleKey} />
+                                  <JsConsole resetRef={consoleResetRef} />
                                 )}
                               </div>
                             </div>
@@ -895,6 +999,16 @@ export default function Playground({
                         </div>
                       ) : (
                         <div className="flex h-full w-full">
+                          {promptOpen && (
+                            <>
+                              <div style={{ width: promptW, minWidth: 0 }} className="h-full shrink-0">
+                                <PromptSidebar onClose={() => setPromptOpen(false)} />
+                              </div>
+                              <div className="ide-divider h-full w-px cursor-col-resize" onPointerDown={onPromptDrag}>
+                                <div className="absolute inset-y-0 -left-1.5 -right-1.5" />
+                              </div>
+                            </>
+                          )}
                           {!explorerCollapsed && (
                             <>
                               <div style={{ width: explorerW, minWidth: 0 }} className="h-full shrink-0 flex flex-col ide-panel">
@@ -906,8 +1020,8 @@ export default function Playground({
                             </>
                           )}
                           {explorerCollapsed && (
-                            <div className="h-full shrink-0 w-10 flex flex-col items-center py-4 bg-surface border-r border-border">
-                              <button onClick={() => setExplorerCollapsed(false)} className="p-2 rounded-xl bg-bg hover:bg-elevated text-muted transition" title="Expand Files">
+                            <div className="flex h-full w-10 shrink-0 flex-col items-center border-r border-white/10 bg-[#0d0f16]/90 py-4">
+                              <button onClick={() => setExplorerCollapsed(false)} className="grid h-8 w-8 place-items-center rounded-full border border-white/10 bg-white/5 text-white/50 transition hover:border-[#8b93ff]/50 hover:text-white" title="Expand Files">
                                 <PanelBottom className="w-4 h-4 rotate-90" />
                               </button>
                             </div>
@@ -924,35 +1038,32 @@ export default function Playground({
                             <div className="absolute inset-y-0 -left-2 -right-2" />
                           </div>
                           <div className="flex-1 min-w-0 h-full flex flex-col relative ide-panel">
-                            <div className="flex items-center justify-between px-3 h-9 border-b border-border shrink-0 bg-surface/50">
-                              <div className="flex items-center gap-2">
+                            <div className="flex h-9 shrink-0 items-center justify-between gap-2 overflow-hidden border-b border-white/10 bg-[#0d0f16]/90 px-3">
+                              <div className="flex min-w-0 items-center gap-2 overflow-hidden">
                                 {effectiveView === "console" ? (
-                                  <Terminal className="w-3.5 h-3.5 text-accent animate-pulse" />
+                                  <Terminal className="h-3.5 w-3.5 shrink-0 animate-pulse text-[#8b93ff]" />
                                 ) : isBackend ? (
-                                  <Terminal className="w-3.5 h-3.5 text-accent/60" />
+                                  <Terminal className="h-3.5 w-3.5 shrink-0 text-[#8b93ff]/70" />
                                 ) : (
                                   <StatusDot />
                                 )}
-                                <span className="text-[11px] font-semibold text-fg tracking-wide uppercase">
+                                <span className="truncate font-mono text-[11px] font-bold uppercase tracking-[0.18em] text-white/80">
                                   {effectiveView === "console" || isBackend ? "Console" : "Output"}
                                 </span>
                               </div>
                               {effectiveView === "console" || isBackend ? (
-                                <div className="flex items-center gap-2">
+                                <div className="flex shrink-0 items-center gap-2 whitespace-nowrap">
                                   <button
-                                    onClick={() => {
-                                      setConsoleKey((k) => k + 1);
-                                      setBackendLogs([]);
-                                    }}
-                                    className="p-1 hover:bg-elevated rounded transition text-muted/50 hover:text-fg flex items-center gap-1"
+                                    onClick={clearConsole}
+                                    className="flex shrink-0 items-center gap-1 whitespace-nowrap rounded-full px-2 py-1 text-white/40 transition hover:bg-white/10 hover:text-white"
                                     title="Clear Console"
                                   >
-                                    <Ban className="w-3 h-3" />
-                                    <span className="text-[10px] font-medium">Clear</span>
+                                    <Ban className="w-3 h-3 shrink-0" />
+                                    <span className="text-[10px] font-bold uppercase tracking-wider">Clear</span>
                                   </button>
-                                  <div className="tb-sep h-3 my-0" />
-                                  <div className="text-[10px] font-normal text-muted/30 flex items-center gap-1">
-                                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400/80 animate-pulse" />
+                                  <div className="h-3 w-px shrink-0 bg-white/10" aria-hidden />
+                                  <div className="flex shrink-0 items-center gap-1 whitespace-nowrap font-mono text-[10px] uppercase tracking-widest text-white/35">
+                                    <span className="h-1.5 w-1.5 shrink-0 animate-pulse rounded-full bg-emerald-400" />
                                     Live
                                   </div>
                                 </div>
@@ -964,32 +1075,47 @@ export default function Playground({
                                 )
                               )}
                             </div>
-                            <div className="flex-1 flex flex-col min-h-0">
+                            <div className={`flex-1 flex min-h-0 ${effectiveView === "columns" ? "flex-row" : "flex-col"}`}>
                               <div style={{
                                 display: effectiveView === "console" ? "none" : "flex",
-                                flex: effectiveView === "both" ? "0 0 60%" : 1,
-                                minHeight: 0, overflow: "hidden",
+                                flex: 1,
+                                minHeight: 0, minWidth: 0, overflow: "hidden",
                               }}>
                                 <SandpackPreview showNavigator showOpenInCodeSandbox={false} showRefreshButton={false} style={{ height: "100%", width: "100%" }} />
                               </div>
+                              {(effectiveView === "both" || effectiveView === "columns") && (
+                                effectiveView === "columns" ? (
+                                  <div className="ide-divider h-full w-px cursor-col-resize" onPointerDown={onConsoleColDrag}>
+                                    <div className="absolute inset-y-0 -left-1.5 -right-1.5" />
+                                  </div>
+                                ) : (
+                                  <div className="ide-divider-h w-full h-px cursor-row-resize" onPointerDown={onConsoleDrag}>
+                                    <div className="absolute inset-x-0 -top-1.5 -bottom-1.5" />
+                                  </div>
+                                )
+                              )}
                               <div style={{
                                 display: effectiveView === "preview" ? "none" : "flex",
-                                flex: effectiveView === "both" ? "0 0 40%" : 1,
+                                ...(effectiveView === "columns"
+                                  ? { width: consoleW, minWidth: 0 }
+                                  : effectiveView === "both"
+                                    ? { height: consoleH }
+                                    : { flex: 1 }),
                                 minHeight: 0, overflow: "hidden",
                                 flexDirection: "column",
                                 borderTop: effectiveView === "both" ? "1px solid var(--border)" : undefined,
                               }}>
-                                {effectiveView === "both" && (
-                                  <div className="flex items-center justify-between px-3 h-9 bg-surface shrink-0 border-b border-border">
-                                    <div className="flex items-center gap-2">
-                                      <Terminal className="w-3 h-3 text-accent/60" />
-                                      <span className="text-[11px] font-medium text-muted tracking-wide">Console</span>
+                                {(effectiveView === "both" || effectiveView === "columns") && (
+                                  <div className="flex h-9 shrink-0 items-center justify-between gap-2 overflow-hidden border-b border-white/10 bg-[#0d0f16]/90 px-3">
+                                    <div className="flex min-w-0 items-center gap-2 overflow-hidden">
+                                      <span className="h-1.5 w-1.5 shrink-0 animate-pulse rounded-full bg-[#8b93ff]" aria-hidden />
+                                      <span className="truncate font-mono text-[11px] font-bold uppercase tracking-[0.18em] text-white/80">Console</span>
                                     </div>
-                                    <div className="flex items-center gap-1.5">
-                                      <button onClick={() => { setConsoleKey(k => k + 1); setBackendLogs([]); }} className="p-1 hover:bg-elevated rounded transition text-muted/50 hover:text-fg" title="Clear Console">
+                                    <div className="flex shrink-0 items-center gap-1.5 whitespace-nowrap">
+                                      <button onClick={clearConsole} className="grid h-6 w-6 shrink-0 place-items-center rounded-full text-white/40 transition hover:bg-white/10 hover:text-white" title="Clear Console">
                                         <Ban className="w-3 h-3" />
                                       </button>
-                                      <div className="text-[10px] font-normal text-muted/30">Live</div>
+                                      <div className="shrink-0 whitespace-nowrap font-mono text-[10px] uppercase tracking-widest text-white/35">Live</div>
                                     </div>
                                   </div>
                                 )}
@@ -997,7 +1123,7 @@ export default function Playground({
                                   {isBackend ? (
                                     <BackendConsole logs={backendLogs} />
                                   ) : (
-                                    <JsConsole key={consoleKey} />
+                                    <JsConsole resetRef={consoleResetRef} />
                                   )}
                                 </div>
                               </div>
@@ -1007,16 +1133,33 @@ export default function Playground({
                         </div>
                       )}
                     </div>
-                    {promptOpen && <PromptSidebar onClose={() => setPromptOpen(false)} />}
                   </div>
-                  <FilesBridge templateId={templateId} filesRef={filesRef} activeFileRef={activeFileRef} templateFiles={cleanFiles} onChange={() => { setDirty(true); codeChangedRef.current = true; }} />
+                  <FilesBridge templateId={templateId} filesRef={filesRef} activeFileRef={activeFileRef} templateFiles={cleanFiles} onChange={() => { if (!previewOnly) setDirty(true); }} />
                   <ErrorBridge onError={setBundlerError} />
+                  <MissingDepBridge enabled={editable && !isBackend} />
                   <RunBridge runRef={runRef} onStatusChange={(s) => { if (s === "idle" || s === "done") setRunning(false); }} />
                   <ConsoleEntryBridge active={tpl.mode === "console"} isBackend={isBackend} />
-                  <ConsoleClearBridge onClear={() => setConsoleKey((k) => k + 1)} />
+                  <ConsoleClearBridge onClear={clearConsole} />
                   <FormatBridge formatRef={formatRef} />
                 </SandpackProvider>
               )}
+            </div>
+            {/* Status bar — readonly readout of template, save, runtime, view */}
+            <div className="flex h-7 shrink-0 items-center justify-between gap-2 overflow-hidden border-t border-white/10 bg-[#0d0f16] px-3 font-mono text-[10px] uppercase tracking-[0.16em] text-white/40">
+              <div className="flex min-w-0 flex-1 items-center gap-2.5 overflow-hidden">
+                <span className={`h-1.5 w-1.5 shrink-0 rounded-full ${running ? "animate-pulse bg-[#8b93ff]" : dirty ? "bg-amber-400/80" : "bg-emerald-400/80"}`} aria-hidden />
+                <span className="truncate font-bold text-white/70">{tpl.title}</span>
+                <span className="hidden shrink-0 sm:inline">{saving ? "Saving…" : dirty ? "Unsaved" : "Saved"}</span>
+              </div>
+              <div className="flex shrink-0 items-center gap-3 whitespace-nowrap">
+                <span className="hidden rounded-full border border-white/10 bg-white/5 px-2 py-0.5 md:inline">
+                  {isBackend ? "JIT runtime" : "Browser runtime"}
+                </span>
+                <span className="hidden sm:inline">{effectiveView}</span>
+                <span aria-live="polite" className={`inline-block min-w-[92px] shrink-0 text-right font-bold tabular-nums ${running ? "animate-pulse text-[#8b93ff]" : "text-emerald-400/80"}`}>
+                  {running ? "● Executing" : "○ Ready"}
+                </span>
+              </div>
             </div>
           </div>
         </div>
@@ -1103,30 +1246,84 @@ function ConsoleArg({ value }: { value: unknown }): React.ReactNode {
   return String(value);
 }
 
+/** Signature of one console entry, for consecutive-duplicate collapsing. */
+function logSignature(log: { method: string; data: unknown }): string {
+  try {
+    return `${log.method}::${JSON.stringify(log.data)}`;
+  } catch {
+    return `${log.method}::${String(log.data)}`;
+  }
+}
+
 /** Console for browser/JS templates. Joins each console call's arguments on a
  *  single line (Sandpack's built-in console splits them per argument) and
- *  syntax-colors values + adds row dividers to feel like a real devtools console. */
-function JsConsole() {
-  const { logs } = useSandpackConsole({ resetOnPreviewRestart: true });
+ *  syntax-colors values + adds row dividers to feel like a real devtools console.
+ *
+ *  The Sandpack log store is the single source of truth: Run / Clear drain it
+ *  through the hook's own reset(). Auto-wipe on recompile is OFF — wiping on
+ *  every keystroke flashed the standby state between updates. Consecutive
+ *  identical entries collapse into one row with a ×N badge, exactly like
+ *  Chrome DevTools. */
+function JsConsole({ resetRef }: { resetRef: React.MutableRefObject<(() => void) | null> }) {
+  // NOTE: resetOnPreviewRestart is deliberately OFF. When true, Sandpack
+  // emits a "start" message on every keystroke-driven recompile and the hook
+  // wipes the store — flashing the standby state between updates. Clearing
+  // happens only through reset() (Run / Clear button), so messages stream
+  // in seamlessly while typing.
+  const { logs, reset } = useSandpackConsole({ resetOnPreviewRestart: false });
+  const listRef = useRef<HTMLDivElement>(null);
+  // Expose the store's own reset so Run / Clear drain it directly.
+  useEffect(() => {
+    resetRef.current = reset;
+  });
   // The evergreen Sandpack bundler doesn't recognize the vanilla "parcel" preset
   // and emits "Unknown preset parcel, falling back to React". That fallback is
   // harmless — it's exactly what gives us modern-JS (ES2020 ??/?.) support — but
   // it's noise in a candidate-facing JS console, so hide just that one warning.
+  const isBundlerNoise = (text: string) => {
+    const t = text.trim().toLowerCase();
+    return t.startsWith("unknown preset") && t.includes("falling back");
+  };
   const visibleLogs = logs.filter((log) => {
     const text = Array.isArray(log.data)
       ? log.data.map((d) => (typeof d === "string" ? d : "")).join(" ")
       : "";
-    return !/unknown preset\b.*falling back/i.test(text);
+    return !isBundlerNoise(text);
   });
-  if (visibleLogs.length === 0) {
+
+  // The store is the single source of truth — Run / Clear drain it via
+  // reset(), restarts drain it via resetOnPreviewRestart. No index math.
+  const shown = visibleLogs;
+
+  const rows: { log: (typeof visibleLogs)[number]; count: number }[] = [];
+  for (const log of shown) {
+    const last = rows[rows.length - 1];
+    if (last && logSignature(last.log) === logSignature(log)) last.count += 1;
+    else rows.push({ log, count: 1 });
+  }
+  // Unbounded sessions could grow this list forever — render the tail.
+  const renderRows = rows.length > 300 ? rows.slice(-300) : rows;
+
+  // Follow the tail like a real console.
+  useEffect(() => {
+    const el = listRef.current;
+    if (el) el.scrollTop = el.scrollHeight;
+  }, [rows.length]);
+  if (renderRows.length === 0) {
     return (
-      <div className="flex flex-col h-full bg-[#0a0b0d]">
-        <div className="flex-1 flex items-center justify-center text-neutral-500 text-[12px] font-medium font-mono">
-          Ready for execution
+      <div className="flex h-full flex-col bg-[#0a0b0d]">
+        <div className="flex flex-1 flex-col items-center justify-center gap-4">
+          <span className="ide-sonar grid h-16 w-16 place-items-center" aria-hidden>
+            <span className="h-2 w-2 rounded-full bg-[#8b93ff] shadow-[0_0_16px_3px_rgba(139,147,255,0.8)]" />
+          </span>
+          <p className="font-mono text-[12px] font-bold uppercase tracking-[0.3em] text-white/70">
+            Standby
+          </p>
+          <p className="font-mono text-[11px] text-white/35">awaiting signal — press Run</p>
         </div>
-        <div className="flex items-center gap-1.5 px-3 py-2 border-t border-neutral-900/40 font-mono text-[11px] text-neutral-600 bg-black/20 select-none">
-          <span className="text-accent font-bold">›</span>
-          <span className="animate-pulse w-1 h-3 bg-accent/60" />
+        <div className="flex items-center gap-1.5 border-t border-neutral-900/40 bg-black/20 px-3 py-2 font-mono text-[11px] text-neutral-600 select-none">
+          <span className="font-bold text-[#8b93ff]">›</span>
+          <span className="h-3 w-1 animate-pulse bg-[#8b93ff]/70" />
           <span className="italic">Console active. Waiting for logs...</span>
         </div>
       </div>
@@ -1134,8 +1331,8 @@ function JsConsole() {
   }
   return (
     <div className="flex flex-col h-full bg-[#0a0b0d] text-[#e3e4e6] font-mono text-[13px] leading-relaxed">
-      <div className="flex-1 overflow-y-auto">
-        {visibleLogs.map((log) => {
+      <div ref={listRef} className="flex-1 overflow-y-auto">
+        {renderRows.map(({ log, count }, i) => {
           const args = Array.isArray(log.data) ? log.data : [];
           const isError = log.method === "error";
           const isWarn = log.method === "warn";
@@ -1161,7 +1358,7 @@ function JsConsole() {
 
           return (
             <div
-              key={log.id}
+              key={`${String((log as { id?: unknown }).id ?? `row-${i}`)}-${count}`}
               className={`px-3 py-1.5 border-b border-neutral-900/40 whitespace-pre-wrap break-words transition-colors flex items-start gap-2.5 ${borderClass} ${rowBg}`}
             >
               {icon}
@@ -1175,6 +1372,11 @@ function JsConsole() {
                       </span>
                     ))}
               </div>
+              {count > 1 && (
+                <span className="mt-0.5 shrink-0 rounded-full border border-[#8b93ff]/40 bg-[#8b93ff]/10 px-1.5 py-px font-mono text-[10px] font-bold tabular-nums text-[#c7d2fe]">
+                  ×{count}
+                </span>
+              )}
             </div>
           );
         })}
@@ -1189,15 +1391,26 @@ function JsConsole() {
 }
 
 function BackendConsole({ logs }: { logs: { method: string; data: string[] }[] }) {
+  const listRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const el = listRef.current;
+    if (el) el.scrollTop = el.scrollHeight;
+  }, [logs.length]);
   if (logs.length === 0) {
     return (
-      <div className="flex flex-col h-full bg-[#0a0b0d]">
-        <div className="flex-1 flex items-center justify-center text-neutral-500 text-[12px] font-medium font-mono">
-          Ready for execution
+      <div className="flex h-full flex-col bg-[#0a0b0d]">
+        <div className="flex flex-1 flex-col items-center justify-center gap-4">
+          <span className="ide-sonar grid h-16 w-16 place-items-center" aria-hidden>
+            <span className="h-2 w-2 rounded-full bg-[#22d3ee] shadow-[0_0_16px_3px_rgba(34,211,238,0.8)]" />
+          </span>
+          <p className="font-mono text-[12px] font-bold uppercase tracking-[0.3em] text-white/70">
+            Standby
+          </p>
+          <p className="font-mono text-[11px] text-white/35">compiler ready — awaiting run</p>
         </div>
-        <div className="flex items-center gap-1.5 px-3 py-2 border-t border-neutral-900/40 font-mono text-[11px] text-neutral-600 bg-black/20 select-none">
-          <span className="text-accent font-bold">›</span>
-          <span className="animate-pulse w-1 h-3 bg-accent/60" />
+        <div className="flex items-center gap-1.5 border-t border-neutral-900/40 bg-black/20 px-3 py-2 font-mono text-[11px] text-neutral-600 select-none">
+          <span className="font-bold text-[#8b93ff]">›</span>
+          <span className="h-3 w-1 animate-pulse bg-[#8b93ff]/70" />
           <span className="italic">Compiler ready. Waiting for run...</span>
         </div>
       </div>
@@ -1205,7 +1418,7 @@ function BackendConsole({ logs }: { logs: { method: string; data: string[] }[] }
   }
   return (
     <div className="flex flex-col h-full bg-[#0a0b0d] text-[#e3e4e6] font-mono text-[13px] leading-relaxed">
-      <div className="flex-1 overflow-y-auto p-3 space-y-1.5">
+      <div ref={listRef} className="flex-1 overflow-y-auto p-3 space-y-1.5">
         {logs.map((log, i) => {
           const isError = log.method === "error";
           const borderClass = isError ? "border-l-[3px] border-red-500 pl-2.5 bg-red-500/[0.02]" : "pl-2.5 border-l-[3px] border-transparent";

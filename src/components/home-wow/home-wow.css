@@ -1,0 +1,75 @@
+/* ── WOW theme tokens: light + dark ───────────────────────────────────
+   The /wow prototype was hardcoded for dark. These tokens let the new home
+   sections render on both themes. Components consume them as arbitrary
+   values: bg-[var(--wow-bg)] text-[var(--wow-fg)] etc.
+   The cinematic 3D hero stays dark in both themes (intentional). */
+
+:root {
+  --wow-bg: #f1eefb;
+  --wow-bg-2: #e7e2f7;
+  --wow-fg: #17142b;
+  --wow-muted: rgba(23, 20, 43, 0.68);
+  --wow-faint: rgba(23, 20, 43, 0.52);
+  --wow-card: rgba(255, 255, 255, 0.78);
+  --wow-card-border: rgba(45, 38, 110, 0.14);
+  --wow-chip: rgba(255, 255, 255, 0.85);
+  --wow-stage: rgba(255, 255, 255, 0.6);
+  --wow-glow-a: rgba(124, 58, 237, 0.16);
+  --wow-glow-b: rgba(34, 211, 238, 0.14);
+  --wow-glow-c: rgba(255, 47, 179, 0.12);
+  --wow-img-veil: linear-gradient(to top, rgba(241,238,251,0.96), rgba(241,238,251,0.25));
+}
+
+.dark {
+  --wow-bg: #08080f;
+  --wow-bg-2: #0b0b16;
+  --wow-fg: #ffffff;
+  --wow-muted: rgba(255, 255, 255, 0.68);
+  --wow-faint: rgba(255, 255, 255, 0.52);
+  --wow-card: rgba(255, 255, 255, 0.05);
+  --wow-card-border: rgba(255, 255, 255, 0.12);
+  --wow-chip: rgba(255, 255, 255, 0.07);
+  --wow-stage: rgba(255, 255, 255, 0.04);
+  --wow-glow-a: rgba(139, 147, 255, 0.16);
+  --wow-glow-b: rgba(34, 211, 238, 0.12);
+  --wow-glow-c: rgba(255, 47, 179, 0.18);
+  --wow-img-veil: linear-gradient(to top, rgba(8,8,15,0.96), rgba(8,8,15,0.25));
+}
+
+/* Light-theme corrections for shared wow classes */
+:root .wow-text-stroke {
+  -webkit-text-stroke-color: rgba(23, 20, 43, 0.9);
+}
+.dark .wow-text-stroke {
+  -webkit-text-stroke-color: rgba(255, 255, 255, 0.85);
+}
+:root .wow-grid-bg {
+  background-image:
+    linear-gradient(rgba(45, 38, 110, 0.08) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(45, 38, 110, 0.08) 1px, transparent 1px);
+}
+
+/* Flowing connector between feature cards: a pulse of indigo travelling
+   down the pipe, looping. Pure CSS, runs forever at negligible cost. */
+@keyframes wow-drop {
+  0% { transform: translateY(-110%); opacity: 0; }
+  25% { opacity: 1; }
+  100% { transform: translateY(420%); opacity: 0; }
+}
+.wow-flow-pipe { position: relative; overflow: hidden; }
+.wow-flow-pipe::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 0;
+  width: 2px;
+  height: 22%;
+  margin-left: -1px;
+  border-radius: 2px;
+  background: linear-gradient(to bottom, #8b93ff, rgba(139, 147, 255, 0));
+  box-shadow: 0 0 12px 1px rgba(139, 147, 255, 0.7);
+  animation: wow-drop 2.2s cubic-bezier(0.45, 0, 0.35, 1) infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .wow-flow-pipe::after { animation: none; opacity: 0; }
+}

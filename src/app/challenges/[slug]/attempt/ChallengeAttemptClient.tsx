@@ -3,7 +3,6 @@
 import { useEffect, useMemo, useRef, useState, useCallback } from "react";
 import { useTheme } from "next-themes";
 import {
-  SandpackProvider,
   SandpackCodeEditor,
   SandpackTests,
   SandpackPreview,
@@ -11,6 +10,7 @@ import {
   useSandpack,
   type SandpackFiles,
 } from "@codesandbox/sandpack-react";
+import ShimmedSandpackProvider from "@/components/ShimmedSandpackProvider";
 import { javascript } from "@codemirror/lang-javascript";
 import * as Y from "yjs";
 import { WebrtcProvider } from "y-webrtc";
@@ -68,7 +68,6 @@ import { toast } from "sonner";
 import ChallengeDescription from "../../ChallengeDescription";
 import SessionTimer from "@/components/SessionTimer";
 import FileExplorer from "@/components/FileExplorer";
-import ThemeToggle from "@/components/ThemeToggle";
 import { getSignalingUrls } from "@/lib/signaling";
 import { challengeSurface } from "@/lib/templates";
 import { getSandpackTheme } from "@/lib/sandpack-theme";
@@ -1343,7 +1342,7 @@ export default function ChallengeAttemptClient({
   }
 
   return (
-    <SandpackProvider
+    <ShimmedSandpackProvider
       key={`${challenge.id}_${selectedLanguage}`}
       template={currentTemplate as any}
       theme={getSandpackTheme(isDark)}
@@ -1493,8 +1492,6 @@ export default function ChallengeAttemptClient({
             {!isFrontend && (
               <CompetitorLanguageSelector value={selectedLanguage} onChange={setSelectedLanguage} />
             )}
-            <ThemeToggle />
-
             <button
               onClick={handleViewSolution}
               className="px-3 py-2 rounded-lg border border-border bg-surface hover:bg-elevated text-xs font-bold text-fg flex items-center gap-1.5 transition shadow-sm whitespace-nowrap shrink-0"
@@ -2083,7 +2080,7 @@ export default function ChallengeAttemptClient({
           </div>
         )}
       </div>
-    </SandpackProvider>
+    </ShimmedSandpackProvider>
   );
 }
 

@@ -67,11 +67,11 @@ import {
   type Completion,
 } from "@codemirror/autocomplete";
 import {
-  SandpackProvider,
   SandpackPreview,
   SandpackConsole,
   useSandpack,
 } from "@codesandbox/sandpack-react";
+import ShimmedSandpackProvider from "./ShimmedSandpackProvider";
 import type { SandpackFiles } from "@codesandbox/sandpack-react";
 import { Users, Wifi, WifiOff, Play, Terminal, PanelBottom, Folder, MessageSquare, Send, X, GripHorizontal } from "lucide-react";
 import FileExplorer from "./FileExplorer";
@@ -277,7 +277,7 @@ export default function CollaborativePlayground({
   }, [roomId, yDoc]);
 
   return (
-    <SandpackProvider
+    <ShimmedSandpackProvider
       template={template as any}
       files={initialFiles}
       theme={sandpackTheme}
@@ -294,7 +294,7 @@ export default function CollaborativePlayground({
         initialFiles={initialFiles}
         template={template}
       />
-    </SandpackProvider>
+    </ShimmedSandpackProvider>
   );
 }
 

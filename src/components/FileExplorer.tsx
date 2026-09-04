@@ -326,13 +326,12 @@ export default function FileExplorer({
     newDepInput,
     setNewDepInput,
     npmSuggestions,
-    setNpmSuggestions,
     npmActiveIdx,
     setNpmActiveIdx,
-    addDependency,
-    addDep,
+    commitDepInput,
+    dismissSuggestions,
     removeDependency,
-  } = useNpmSearch(packageJsonPath);
+  } = useNpmSearch(packageJsonPath, true);
 
   function renderNode(node: TreeNode, depth: number): React.ReactNode {
     const isExpanded = expanded.has(node.path);
@@ -594,7 +593,7 @@ export default function FileExplorer({
 
   return (
     <div
-      className="h-full w-full border-r border-border bg-surface text-xs overflow-y-auto select-none relative flex flex-col"
+      className="h-full w-full border-r border-border bg-surface text-xs overflow-hidden select-none relative flex flex-col"
       onContextMenu={(e) => {
         if (readOnly) return;
         e.preventDefault();
@@ -626,8 +625,11 @@ export default function FileExplorer({
         setDropPosition(null);
       }}
     >
-      <div className="sticky top-0 z-10 flex items-center justify-between px-3 h-9 border-b border-border bg-transparent shrink-0">
-        <span className="text-[11px] font-medium text-muted tracking-wide">Files</span>
+      <div className="sticky top-0 z-10 flex h-9 shrink-0 items-center justify-between border-b border-white/10 bg-[#0d0f16]/90 px-3">
+        <span className="flex items-center gap-2 font-mono text-[11px] font-bold uppercase tracking-[0.18em] text-white/80">
+          <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-[#8b93ff]" aria-hidden />
+          Files
+        </span>
         <div className="flex items-center gap-0.5">
           {!readOnly && (
             <>
@@ -642,7 +644,7 @@ export default function FileExplorer({
                   });
                 }}
                 title="New file"
-                className="p-1.5 hover:bg-elevated rounded transition text-muted/50 hover:text-fg"
+                className="grid h-6 w-6 place-items-center rounded-full text-white/40 transition hover:bg-white/10 hover:text-white"
               >
                 <FilePlus className="w-3.5 h-3.5" />
               </button>
@@ -652,7 +654,7 @@ export default function FileExplorer({
                   startNew("/", "folder");
                 }}
                 title="New folder"
-                className="p-1.5 hover:bg-elevated rounded transition text-muted/50 hover:text-fg"
+                className="grid h-6 w-6 place-items-center rounded-full text-white/40 transition hover:bg-white/10 hover:text-white"
               >
                 <FolderPlus className="w-3.5 h-3.5" />
               </button>
@@ -663,8 +665,8 @@ export default function FileExplorer({
                     setShowDeps((v) => !v);
                   }}
                   title="Dependencies"
-                  className={`p-1.5 rounded transition ${
-                    showDeps ? "bg-accent/20 text-accent" : "text-muted/50 hover:bg-elevated hover:text-fg"
+                  className={`grid h-6 w-6 place-items-center rounded-full transition ${
+                    showDeps ? "bg-[#8b93ff]/20 text-[#8b93ff]" : "text-white/40 hover:bg-white/10 hover:text-white"
                   }`}
                 >
                   <Package className="w-3.5 h-3.5" />
@@ -680,10 +682,10 @@ export default function FileExplorer({
                     ? "Sort: manual (creation order). Click for A–Z."
                     : "Sort: A–Z. Click for manual."
                 }
-                className={`p-1.5 rounded transition ${
+                className={`grid h-6 w-6 place-items-center rounded-full transition ${
                   sortMode === "name"
-                    ? "bg-accent/20 text-accent"
-                    : "text-muted/50 hover:bg-elevated hover:text-fg"
+                    ? "bg-[#8b93ff]/20 text-[#8b93ff]"
+                    : "text-white/40 hover:bg-white/10 hover:text-white"
                 }`}
               >
                 {sortMode === "manual" ? (
@@ -701,7 +703,7 @@ export default function FileExplorer({
                 void downloadZip();
               }}
               title="Download ZIP"
-              className="p-1.5 hover:bg-elevated rounded transition text-muted/50 hover:text-fg"
+              className="grid h-6 w-6 place-items-center rounded-full text-white/40 transition hover:bg-white/10 hover:text-white"
             >
               <Download className="w-3.5 h-3.5" />
             </button>
@@ -733,140 +735,163 @@ export default function FileExplorer({
         </div>
       </div>
 
-      {showDeps && !readOnly && supportsNpm && (
-        <div className="border-b border-border bg-panel/40 px-2 py-2 text-xs">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-[11px] uppercase tracking-wide text-muted">
-              Dependencies
-            </span>
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                setShowDeps(false);
-              }}
-              className="text-muted hover:text-fg transition"
-              title="Close"
-            >
-              <X className="w-3 h-3" />
-            </button>
-          </div>
-          <div className="relative mb-2">
-            <div className="flex items-center gap-1">
-              <input
-                value={newDepInput}
-                onChange={(e) => setNewDepInput(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === "ArrowDown" && npmSuggestions.length) {
-                    e.preventDefault();
-                    setNpmActiveIdx((i) =>
-                      Math.min(i + 1, npmSuggestions.length - 1)
-                    );
-                  } else if (e.key === "ArrowUp" && npmSuggestions.length) {
-                    e.preventDefault();
-                    setNpmActiveIdx((i) => Math.max(i - 1, 0));
-                  } else if (e.key === "Enter") {
-                    e.preventDefault();
-                    if (npmSuggestions.length) {
-                      const pick = npmSuggestions[npmActiveIdx];
-                      addDep(pick.name, pick.version);
-                      setNewDepInput("");
-                      setNpmSuggestions([]);
-                    } else {
-                      addDependency();
-                    }
-                  } else if (e.key === "Escape") {
-                    setNpmSuggestions([]);
-                  }
-                }}
-                placeholder="package or pkg@version"
-                className="flex-1 min-w-0 bg-surface border border-border rounded px-2 py-1 text-xs outline-none focus:border-accent/60"
-              />
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  addDependency();
-                }}
-                disabled={!newDepInput.trim()}
-                title="Add dependency"
-                className="px-2 py-1 rounded bg-accent hover:bg-accent-soft text-bg disabled:opacity-40 transition"
-              >
-                <Plus className="w-3 h-3" />
-              </button>
-            </div>
-            {npmSuggestions.length > 0 && (
-              <ul className="absolute z-20 left-0 right-0 mt-1 max-h-56 overflow-y-auto rounded-lg border border-border bg-panel shadow-soft">
-                {npmSuggestions.map((s, i) => (
-                  <li key={s.name}>
-                    <button
-                      onMouseDown={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        addDep(s.name, s.version);
-                        setNewDepInput("");
-                        setNpmSuggestions([]);
-                      }}
-                      onMouseEnter={() => setNpmActiveIdx(i)}
-                      className={`w-full text-left px-2 py-1.5 text-xs ${
-                        i === npmActiveIdx
-                          ? "bg-elevated text-fg"
-                          : "text-subtle hover:text-fg"
-                      }`}
-                    >
-                      <div className="flex items-center justify-between gap-2">
-                        <span className="font-medium truncate">{s.name}</span>
-                        <span className="text-[11px] text-muted shrink-0">
-                          {s.version}
-                        </span>
-                      </div>
-                      {s.description && (
-                        <div className="text-[11px] text-muted truncate mt-0.5">
-                          {s.description}
-                        </div>
-                      )}
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </div>
-          {Object.keys(dependencies).length === 0 ? (
-            <div className="text-[11px] text-muted italic py-1">
-              No dependencies yet.
-            </div>
-          ) : (
-            <ul className="space-y-0.5 max-h-48 overflow-y-auto">
-              {Object.entries(dependencies)
-                .sort(([a], [b]) => a.localeCompare(b))
-                .map(([name, version]) => (
-                  <li
-                    key={name}
-                    className="group flex items-center gap-2 px-1.5 py-0.5 rounded hover:bg-elevated"
-                  >
-                    <span className="truncate flex-1 text-fg">{name}</span>
-                    <span className="text-muted text-[11px] shrink-0">
-                      {version}
-                    </span>
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        removeDependency(name);
-                      }}
-                      title={`Remove ${name}`}
-                      className="opacity-0 group-hover:opacity-100 text-muted hover:text-red-400 transition"
-                    >
-                      <X className="w-3 h-3" />
-                    </button>
-                  </li>
-                ))}
-            </ul>
-          )}
-        </div>
-      )}
-
-      <div className="py-1">
+      <div className="flex-1 min-h-0 overflow-y-auto py-1">
         {tree.map((n) => renderNode(n, 0))}
         {pendingNew?.parentPath === "/" && renderNewInput(0)}
       </div>
+
+      {!readOnly && supportsNpm && (
+        <div className="shrink-0 border-t border-border bg-panel/40">
+          <button
+            type="button"
+            onClick={() => setShowDeps((v) => !v)}
+            aria-expanded={showDeps}
+            className="flex w-full items-center gap-2 px-3 py-2 text-left transition hover:bg-elevated/50"
+          >
+            <ChevronDown
+              className={`w-3.5 h-3.5 text-muted transition-transform duration-200 ${showDeps ? "" : "-rotate-90"}`}
+            />
+            <span className="text-[11px] font-bold uppercase tracking-wide text-muted">
+              Dependencies
+            </span>
+            <span className="rounded-full bg-accent/10 px-1.5 py-px font-mono text-[10px] font-bold tabular-nums text-accent">
+              {Object.keys(dependencies).length}
+            </span>
+          </button>
+          {showDeps && (
+            <div className="px-2 pb-2">
+              <div className="relative mb-2">
+                <div className="flex items-center gap-1">
+                  <input
+                    value={newDepInput}
+                    onChange={(e) => setNewDepInput(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "ArrowDown" && npmSuggestions.length) {
+                        e.preventDefault();
+                        setNpmActiveIdx((i) =>
+                          Math.min(i + 1, npmSuggestions.length - 1)
+                        );
+                      } else if (e.key === "ArrowUp" && npmSuggestions.length) {
+                        e.preventDefault();
+                        setNpmActiveIdx((i) => Math.max(i - 1, 0));
+                      } else if (e.key === "Enter") {
+                        e.preventDefault();
+                        // Hand the highlighted row to the hook, which prefers an
+                        // explicitly typed pkg@version over it. Index is clamped
+                        // in case a shorter suggestion list just landed.
+                        commitDepInput(
+                          npmSuggestions[npmActiveIdx] ?? npmSuggestions[0] ?? null
+                        );
+                      } else if (e.key === "Escape") {
+                        dismissSuggestions();
+                      }
+                    }}
+                    placeholder="package or pkg@version"
+                    role="combobox"
+                    aria-expanded={npmSuggestions.length > 0}
+                    aria-controls="npm-suggestion-list"
+                    aria-autocomplete="list"
+                    aria-label="Add an npm dependency"
+                    aria-activedescendant={
+                      npmSuggestions.length ? `npm-suggestion-${npmActiveIdx}` : undefined
+                    }
+                    className="flex-1 min-w-0 bg-surface border border-border rounded px-2 py-1 text-xs outline-none focus:border-accent/60"
+                  />
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      // The button means "add exactly what I typed", so it never
+                      // defers to a highlighted suggestion.
+                      commitDepInput(null);
+                    }}
+                    disabled={!newDepInput.trim()}
+                    title="Add dependency"
+                    className="px-2 py-1 rounded bg-accent hover:bg-accent-soft text-bg disabled:opacity-40 transition"
+                  >
+                    <Plus className="w-3 h-3" />
+                  </button>
+                </div>
+                {npmSuggestions.length > 0 && (
+                  <ul
+                    id="npm-suggestion-list"
+                    role="listbox"
+                    aria-label="npm package suggestions"
+                    className="absolute z-20 left-0 right-0 bottom-full mb-1 max-h-56 overflow-y-auto rounded-lg border border-border bg-panel shadow-soft"
+                  >
+                    {npmSuggestions.map((s, i) => (
+                      <li
+                        key={s.name}
+                        id={`npm-suggestion-${i}`}
+                        role="option"
+                        aria-selected={i === npmActiveIdx}
+                      >
+                        <div
+                          onMouseDown={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            // Clicking a row picks that row, but an explicitly
+                            // typed version still wins — same rule as Enter.
+                            commitDepInput(s);
+                          }}
+                          onMouseEnter={() => setNpmActiveIdx(i)}
+                          className={`w-full cursor-pointer text-left px-2 py-1.5 text-xs ${
+                            i === npmActiveIdx
+                              ? "bg-elevated text-fg"
+                              : "text-subtle hover:text-fg"
+                          }`}
+                        >
+                          <div className="flex items-center justify-between gap-2">
+                            <span className="font-medium truncate">{s.name}</span>
+                            <span className="text-[11px] text-muted shrink-0">
+                              {s.version}
+                            </span>
+                          </div>
+                          {s.description && (
+                            <div className="text-[11px] text-muted truncate mt-0.5">
+                              {s.description}
+                            </div>
+                          )}
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+              {Object.keys(dependencies).length === 0 ? (
+                <div className="text-[11px] text-muted italic py-1 px-1">
+                  No dependencies yet.
+                </div>
+              ) : (
+                <ul className="space-y-0.5 max-h-40 overflow-y-auto">
+                  {Object.entries(dependencies)
+                    .sort(([a], [b]) => a.localeCompare(b))
+                    .map(([name, version]) => (
+                      <li
+                        key={name}
+                        className="group flex items-center gap-2 px-1.5 py-0.5 rounded hover:bg-elevated"
+                      >
+                        <span className="truncate flex-1 text-fg">{name}</span>
+                        <span className="text-muted text-[11px] shrink-0">
+                          {version}
+                        </span>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            removeDependency(name);
+                          }}
+                          title={`Remove ${name}`}
+                          className="opacity-0 group-hover:opacity-100 text-muted hover:text-red-400 transition"
+                        >
+                          <X className="w-3 h-3" />
+                        </button>
+                      </li>
+                    ))}
+                </ul>
+              )}
+            </div>
+          )}
+        </div>
+      )}
 
       {contextMenu && !readOnly && (
         <div

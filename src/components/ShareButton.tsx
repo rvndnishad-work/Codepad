@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Share2, Link2, Check, Twitter } from "lucide-react";
+import { Share2, Link2, Check } from "lucide-react";
+import { FaTwitter as Twitter } from "react-icons/fa6";
 import { toast } from "sonner";
 
 export default function ShareButton({

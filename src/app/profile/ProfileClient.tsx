@@ -6,8 +6,6 @@ import {
   Mail,
   MapPin,
   Link as LinkIcon,
-  Github,
-  Twitter,
   Camera,
   Save,
   ArrowLeft,
@@ -19,6 +17,7 @@ import {
   Code,
   Briefcase,
 } from "lucide-react";
+import { FaGithub as Github, FaTwitter as Twitter } from "react-icons/fa6";
 import Link from "next/link";
 import { toast } from "sonner";
 

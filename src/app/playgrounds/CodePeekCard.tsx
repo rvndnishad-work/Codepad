@@ -89,29 +89,29 @@ export function CodePeekCard({
           "--theme-accent-rgb": rgbAccent,
         } as React.CSSProperties
       }
-      className="group relative flex flex-col rounded-2xl border border-border bg-surface dark:bg-panel overflow-hidden transition-all duration-300 ease-out will-change-transform hover:scale-[1.02] hover:-translate-y-1 hover:border-border-strong hover:shadow-[0_12px_28px_-10px_rgba(0,0,0,0.12)] dark:hover:shadow-[0_12px_28px_-10px_rgba(0,0,0,0.45)]"
+      className="wow-card-glow group relative flex h-full flex-col overflow-hidden rounded-3xl border border-[var(--wow-card-border)] bg-[var(--wow-card)] backdrop-blur-sm transition-all duration-300 hover:-translate-y-1"
     >
       {/* Window chrome — dots left, file name centered, lang pill right */}
       {!compact && (
-        <div className="relative flex items-center px-4 py-2.5 bg-bg/40 border-b border-black/[0.06] dark:border-white/[0.06]">
-          <div className="flex items-center gap-1.5 shrink-0">
-            <span className="w-2.5 h-2.5 rounded-full bg-rose-500/60" />
-            <span className="w-2.5 h-2.5 rounded-full bg-amber-500/60" />
-            <span className="w-2.5 h-2.5 rounded-full bg-emerald-500/60" />
+        <div className="relative flex items-center bg-black/30 px-4 py-2.5">
+          <div className="flex shrink-0 items-center gap-1.5">
+            <span className="h-2.5 w-2.5 rounded-full bg-[#ff5f57]" />
+            <span className="h-2.5 w-2.5 rounded-full bg-[#febc2e]" />
+            <span className="h-2.5 w-2.5 rounded-full bg-[#28c840]" />
           </div>
-          <span className="absolute left-1/2 -translate-x-1/2 text-[11px] font-mono text-muted truncate max-w-[140px]">
+          <span className="absolute left-1/2 max-w-[140px] -translate-x-1/2 truncate font-mono text-[11px] text-white/50">
             {showpiece ? basename(showpiece.path) : "sandbox"}
           </span>
-          <div className="ml-auto flex items-center gap-1.5 z-10">
+          <div className="z-10 ml-auto flex items-center gap-1.5">
             {t.group === "backend" && (
-              <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[11px] font-black uppercase tracking-wider bg-emerald-500/10 text-emerald-800 dark:text-emerald-400 border border-emerald-500/20 shadow-[0_0_10px_rgba(16,185,129,0.15)] animate-pulse">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+              <span className="inline-flex items-center gap-1 rounded-full border border-emerald-400/30 bg-emerald-400/10 px-1.5 py-0.5 text-[11px] font-black uppercase tracking-wider text-emerald-300">
+                <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-400" />
                 JIT 0ms
               </span>
             )}
             {showpiece && (
               <span
-                className="text-[11px] font-black px-2 py-0.5 rounded uppercase tracking-widest"
+                className="rounded-full px-2 py-0.5 text-[11px] font-black uppercase tracking-widest"
                 style={{
                   color: accent,
                   background: `rgba(${rgbAccent}, 0.15)`,
@@ -126,30 +126,26 @@ export function CodePeekCard({
 
       {/* Code body with line-number gutter and trailing cursor block */}
       {!compact && (
-        <div className="relative flex bg-[#07090e] dark:bg-[#07090e] overflow-hidden">
+        <div className="relative flex overflow-hidden bg-[#07090e]">
           {/* Line gutter */}
-          <div
-            className={`shrink-0 select-none px-3 py-3 font-mono text-slate-700 leading-relaxed text-right ${
-              isFeatured ? "text-[11px]" : "text-[11px]"
-            }`}
-          >
+          <div className="shrink-0 select-none px-3 py-3 text-right font-mono text-[11px] leading-relaxed text-slate-700">
             {Array.from({ length: lineCount }, (_, i) => (
               <div key={i}>{i + 1}</div>
             ))}
           </div>
 
           {/* Code column */}
-          <div className="relative flex-1 min-w-0 py-3 pr-4">
+          <div className="relative min-w-0 flex-1 py-3 pr-4">
             {showpiece ? (
               <pre
-                className={`code-peek font-mono leading-relaxed text-slate-300 m-0 whitespace-pre overflow-hidden ${
+                className={`code-peek m-0 whitespace-pre font-mono leading-relaxed text-slate-300 overflow-hidden ${
                   isFeatured ? "text-[12px]" : "text-[11px]"
                 }`}
               >
                 <code dangerouslySetInnerHTML={{ __html: highlighted }} />
               </pre>
             ) : (
-              <pre className="font-mono leading-relaxed text-slate-600 italic text-[11px] m-0">
+              <pre className="m-0 font-mono text-[11px] italic leading-relaxed text-slate-600">
                 // empty sandbox
               </pre>
             )}
@@ -158,7 +154,7 @@ export function CodePeekCard({
                 feels like an open editor waiting for input. */}
             <span
               aria-hidden
-              className={`absolute left-0 inline-block bg-violet-500/80 ${
+              className={`absolute left-0 inline-block bg-[#8b93ff]/90 ${
                 isFeatured ? "w-[7px] h-[14px]" : "w-[6px] h-[12px]"
               }`}
               style={{
@@ -166,39 +162,37 @@ export function CodePeekCard({
               }}
             />
           </div>
+          {/* bottom fade into the footer */}
+          <div aria-hidden className="pointer-events-none absolute inset-x-0 bottom-0 h-8 bg-gradient-to-t from-[#07090e] to-transparent" />
         </div>
       )}
 
       {/* Accent-tinted hover glow */}
       <div
-        className="absolute -left-8 -bottom-8 w-32 h-32 rounded-full blur-[50px] opacity-0 group-hover:opacity-20 transition-opacity duration-500 pointer-events-none z-0"
+        className="pointer-events-none absolute -bottom-8 -left-8 z-0 h-32 w-32 rounded-full opacity-0 blur-[50px] transition-opacity duration-500 group-hover:opacity-30"
         style={{ background: accent }}
       />
 
-      {/* Footer — mirrors the home-page TemplateCardShell card bottom:
-          a blob-shaped icon stage whose accent color glows on hover, then
-          the title row with an inline arrow and a subtitle below. */}
-      <div className={`relative flex items-center gap-4 p-4 bg-surface/90 dark:bg-[#11131a]/95 z-10 group-hover:bg-elevated/40 transition-colors ${compact ? "" : "border-t border-black/[0.06] dark:border-white/[0.06]"}`}>
-        <div className="relative w-14 h-14 shrink-0 flex items-center justify-center">
+      {/* Footer: gradient icon stage + title row + subtitle */}
+      <div className="relative z-10 flex items-center gap-4 p-4">
+        <div className="relative flex h-14 w-14 shrink-0 items-center justify-center">
           <div
-            className="absolute inset-0 rounded-[30%_70%_70%_30%_/_30%_30%_70%_70%] opacity-20 group-hover:opacity-40 transition-opacity duration-500 blur-[1px]"
-            style={{ background: accent }}
+            className="absolute inset-0 opacity-25 blur-[1px] transition-opacity duration-500 group-hover:opacity-50"
+            style={{ background: accent, borderRadius: "30% 70% 70% 30% / 30% 30% 70% 70%" }}
           />
-          <div className="relative w-1/2 h-1/2 flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
-            <TemplateLogo id={t.id} className="w-full h-full" />
+          <div className="relative flex h-1/2 w-1/2 items-center justify-center transition-transform duration-300 group-hover:scale-110">
+            <TemplateLogo id={t.id} className="h-full w-full" />
           </div>
         </div>
 
-        <div className="flex-1 min-w-0 flex flex-col gap-1">
+        <div className="flex min-w-0 flex-1 flex-col gap-1">
           <div className="flex items-center justify-between gap-2">
-            <div className="flex items-center gap-1.5 min-w-0">
-              <span className="text-base font-black text-fg tracking-tight leading-tight truncate dark:group-hover:text-[rgba(var(--theme-accent-rgb),1)] transition-colors">
-                {t.title}
-              </span>
-            </div>
-            <ArrowUpRight className="w-3.5 h-3.5 text-muted/30 group-hover:text-fg group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-all shrink-0" />
+            <span className="truncate text-base font-black leading-tight tracking-tight text-[var(--wow-fg)]">
+              {t.title}
+            </span>
+            <ArrowUpRight className="h-3.5 w-3.5 shrink-0 text-[var(--wow-faint)] transition-all group-hover:-translate-y-0.5 group-hover:translate-x-0.5 group-hover:text-[#8b93ff]" />
           </div>
-          <p className="text-[11px] text-muted leading-relaxed line-clamp-1">
+          <p className="line-clamp-1 text-[11px] leading-relaxed text-[var(--wow-faint)]">
             {t.subtitle ??
               (depCount > 0
                 ? `${depCount} ${depCount === 1 ? "dep" : "deps"}`

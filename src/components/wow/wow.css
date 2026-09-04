@@ -1,0 +1,104 @@
+/* WOW prototype — maximalist counterpoint to the Runtime system.
+   Scoped under .wow-* so it never leaks into the real app. */
+
+.wow-font-display {
+  font-weight: 900;
+  letter-spacing: -0.055em;
+  line-height: 0.9;
+  text-wrap: balance;
+}
+.wow-text-stroke {
+  -webkit-text-stroke: 2px rgba(255,255,255,0.85);
+  color: transparent;
+}
+@media (max-width: 768px) {
+  .wow-text-stroke { -webkit-text-stroke-width: 1.2px; }
+}
+
+.wow-gradient-text {
+  background: linear-gradient(92deg, #ffe600 0%, #ff7a18 28%, #ff2fb3 55%, #8b93ff 80%, #22d3ee 100%);
+  background-size: 220% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: wow-gradient-pan 7s ease-in-out infinite alternate;
+}
+/* Boss-mode gradient: restrained indigo → cyan → ice. Professional, not playful. */
+.wow-gradient-boss {
+  background: linear-gradient(92deg, #a5b4fc 0%, #8b93ff 35%, #22d3ee 75%, #e0f2fe 100%);
+  background-size: 220% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: wow-gradient-pan 8s ease-in-out infinite alternate;
+}
+@keyframes wow-gradient-pan {
+  from { background-position: 0% 50%; }
+  to { background-position: 100% 50%; }
+}
+
+.wow-glass {
+  background: rgba(255,255,255,0.06);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  border: 1px solid rgba(255,255,255,0.14);
+}
+.wow-card-glow { transition: transform .35s cubic-bezier(.16,1,.3,1), box-shadow .35s, border-color .35s; }
+.wow-card-glow:hover {
+  transform: translateY(-6px) rotate(-0.4deg);
+  border-color: rgba(255,230,0,0.55);
+  box-shadow: 0 0 0 1px rgba(255,230,0,.35), 0 24px 70px -18px rgba(255,47,179,.45), 0 12px 40px -12px rgba(139,147,255,.5);
+}
+
+.wow-marquee-track { display: flex; width: max-content; animation: wow-marquee 28s linear infinite; }
+.wow-marquee-track.slow { animation-duration: 46s; }
+.wow-marquee-track.reverse { animation-direction: reverse; }
+@keyframes wow-marquee { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+
+.wow-float { animation: wow-float 6s ease-in-out infinite; }
+.wow-float-2 { animation: wow-float 7.5s ease-in-out infinite reverse; }
+.wow-float-3 { animation: wow-float 9s ease-in-out infinite; animation-delay: -3s; }
+@keyframes wow-float { 0%,100% { transform: translateY(0) rotate(var(--wow-rot, 0deg)); } 50% { transform: translateY(-16px) rotate(var(--wow-rot, 0deg)); } }
+
+.wow-spin-slow { animation: wow-spin 22s linear infinite; }
+.wow-spin-slower { animation: wow-spin 40s linear infinite reverse; }
+@keyframes wow-spin { to { transform: rotate(360deg); } }
+
+.wow-orbit-dot { animation: wow-orbit 12s linear infinite; }
+@keyframes wow-orbit { from { transform: rotate(0deg) translateX(var(--orbit-r, 120px)) rotate(0deg); } to { transform: rotate(360deg) translateX(var(--orbit-r, 120px)) rotate(-360deg); } }
+
+.wow-blink { animation: wow-blink 1.1s steps(2) infinite; }
+@keyframes wow-blink { 50% { opacity: 0; } }
+
+.wow-grid-bg {
+  background-image:
+    linear-gradient(rgba(255,255,255,0.055) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,0.055) 1px, transparent 1px);
+  background-size: 56px 56px;
+  mask-image: radial-gradient(ellipse 90% 70% at 50% 30%, black 30%, transparent 75%);
+  -webkit-mask-image: radial-gradient(ellipse 90% 70% at 50% 30%, black 30%, transparent 75%);
+}
+
+.wow-noise::after {
+  content: "";
+  position: absolute; inset: 0; pointer-events: none; opacity: .5;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.06'/%3E%3C/svg%3E");
+}
+
+.wow-tilt { transform-style: preserve-3d; will-change: transform; }
+.wow-tilt-inner { transform: translateZ(40px); }
+
+.wow-scroll-hint-line { position: relative; width: 1px; height: 56px; background: rgba(255,255,255,.2); overflow: hidden; }
+.wow-scroll-hint-line::after {
+  content: ""; position: absolute; left: 0; top: -40%; width: 100%; height: 40%;
+  background: #ffe600; animation: wow-scroll-dot 1.8s cubic-bezier(.65,0,.35,1) infinite;
+}
+@keyframes wow-scroll-dot { to { top: 110%; } }
+
+.wow-svg-dash { stroke-dasharray: 6 8; animation: wow-dash 1.4s linear infinite; }
+@keyframes wow-dash { to { stroke-dashoffset: -28; } }
+
+@media (prefers-reduced-motion: reduce) {
+  .wow-marquee-track, .wow-float, .wow-float-2, .wow-float-3,
+  .wow-spin-slow, .wow-spin-slower, .wow-orbit-dot, .wow-gradient-text { animation: none !important; }
+}

@@ -6,7 +6,10 @@ import { useActiveCode, useSandpack } from "@codesandbox/sandpack-react";
 import { X, FileCode2, Lock } from "lucide-react";
 import { useTheme } from "next-themes";
 import { setupTypeAcquisition } from "@typescript/ata";
-import typescript from "typescript";
+// Not the real `typescript` package: TS 7 is the native port and no longer
+// ships the JS compiler API, so `ts.preProcessFile` (all that ata needs) is
+// gone. See lib/ata-typescript-shim.ts.
+import { ataTypeScript } from "@/lib/ata-typescript-shim";
 import type { Monaco } from "@monaco-editor/react";
 import { customSnippets } from "@/lib/snippets";
 
@@ -165,23 +168,34 @@ export default function MonacoEditor({ fontSize, readOnly = false }: { fontSize:
   const ata = useMemo(() => {
     if (!monacoInstance) return null;
 
-    return setupTypeAcquisition({
-      projectName: "interviewpad",
-      typescript: typescript,
-      logger: console,
-      delegate: {
-        receivedFile: (code: string, path: string) => {
-          monacoInstance.languages.typescript.typescriptDefaults.addExtraLib(code, `file://${path}`);
-          monacoInstance.languages.typescript.javascriptDefaults.addExtraLib(code, `file://${path}`);
+    try {
+      return setupTypeAcquisition({
+        projectName: "interviewpad",
+        typescript: ataTypeScript as unknown as typeof import("typescript"),
+        logger: console,
+        delegate: {
+          receivedFile: (code: string, path: string) => {
+            monacoInstance.languages.typescript.typescriptDefaults.addExtraLib(code, `file://${path}`);
+            monacoInstance.languages.typescript.javascriptDefaults.addExtraLib(code, `file://${path}`);
+          },
         },
-      },
-    });
+      });
+    } catch (err) {
+      // Type acquisition is a nicety — Monaco's own IntelliSense works without
+      // it. Never let a broken ATA take the editor down with it.
+      console.warn("[MonacoEditor] type acquisition unavailable:", err);
+      return null;
+    }
   }, [monacoInstance]);
 
   useEffect(() => {
     if (ata && code) {
       const timer = setTimeout(() => {
-        ata(code);
+        try {
+          ata(code);
+        } catch (err) {
+          console.warn("[MonacoEditor] type acquisition failed:", err);
+        }
       }, 1500); // 1.5s debounce for type acquisition (heavy task)
       return () => clearTimeout(timer);
     }

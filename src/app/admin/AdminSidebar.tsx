@@ -78,6 +78,7 @@ export default function AdminSidebar({ session, persona }: AdminSidebarProps) {
         <>
           <AdminLink href="/admin/users/recruiters" icon="Users" label="Users" />
           <AdminLink href="/admin/workspaces" icon="Building2" label="Workspaces" />
+          <AdminLink href="/admin/pricing" icon="CreditCard" label="Pricing" />
           <AdminLink href="/admin/interviews" icon="Briefcase" label="Interviews" />
           <AdminLink href="/admin/ai-interviews" icon="Coins" label="AI Credits" />
         </>

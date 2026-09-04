@@ -116,7 +116,7 @@ export const blockSchema = z
     type: z.string().refine((v) => (BLOCK_TYPES as readonly string[]).includes(v), {
       message: "Unknown block type",
     }),
-    props: z.record(z.unknown()).default({}),
+    props: z.record(z.string(), z.unknown()).default({}),
     cols: z.number().int().min(1).max(12),
     visible: z.boolean(),
     tierGate: z.number().int().min(0).nullable().optional(),

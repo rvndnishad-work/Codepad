@@ -1,10 +1,10 @@
 "use client";
 
 import {
-  SandpackProvider,
   SandpackPreview,
   SandpackConsole,
 } from "@codesandbox/sandpack-react";
+import ShimmedSandpackProvider from "@/components/ShimmedSandpackProvider";
 import { useTheme } from "next-themes";
 import { getSandpackTheme } from "@/lib/sandpack-theme";
 
@@ -32,7 +32,7 @@ export default function SubmissionPreview({
   }
 
   return (
-    <SandpackProvider
+    <ShimmedSandpackProvider
       template={template as never}
       theme={getSandpackTheme(isDark)}
       files={files}
@@ -57,6 +57,6 @@ export default function SubmissionPreview({
           <SandpackConsole resetOnPreviewRestart style={{ height: "100%" }} />
         </div>
       </div>
-    </SandpackProvider>
+    </ShimmedSandpackProvider>
   );
 }

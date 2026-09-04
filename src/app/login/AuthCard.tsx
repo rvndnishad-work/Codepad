@@ -4,8 +4,9 @@ import { useState, useTransition } from "react";
 import { signIn } from "next-auth/react";
 import { LogoLockup } from "@/components/Logo";
 import { toast } from "sonner";
-import { Github, Mail, Lock, User as UserIcon, Loader2, UserCheck, Briefcase, Check, ShieldCheck, ArrowLeft, Tag, Users } from "lucide-react";
+import { Mail, Lock, User as UserIcon, Loader2, UserCheck, Briefcase, Check, ShieldCheck, ArrowLeft, Tag, Users } from "lucide-react";
 import { SiGoogle, SiFacebook } from "react-icons/si";
+import { FaGithub as Github } from "react-icons/fa6";
 
 type Providers = {
   github: boolean;

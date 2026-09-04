@@ -3,7 +3,8 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { ExternalLink, Youtube, Linkedin, Check, X } from "lucide-react";
+import { ExternalLink, Check, X } from "lucide-react";
+import { FaYoutube as Youtube, FaLinkedin as Linkedin } from "react-icons/fa6";
 import { approveCreatorApplicationAction, rejectCreatorApplicationAction } from "./actions";
 
 export type AppRow = {

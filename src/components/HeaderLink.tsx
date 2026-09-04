@@ -4,13 +4,12 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 /**
- * A top-level nav item.
+ * A top-level nav pill.
  *
- * The header is an editor tab bar, not a row of pills: items are bare text on
- * the full header height, and the only state indicator is a 1px rule that
- * meets the header's own bottom border. Hover draws it in from the left;
- * active leaves it drawn. No container, no fill, no radius — so the nav
- * carries no visual weight until you interact with it.
+ * WOW bar, not an editor tab strip: bare-text tabs belonged to the old
+ * Runtime chrome. Items are rounded pills that tint on hover; the active
+ * route gets a ring + glow. Colors ride the bar's --nav-* vars so pills
+ * read white over the hero and themed once the bar condenses.
  */
 export default function HeaderLink({
   href,
@@ -30,43 +29,34 @@ export default function HeaderLink({
   const pathname = usePathname() ?? "";
   const prefix = matchPrefix ?? href;
   const active = prefix !== "/" && (pathname === prefix || pathname.startsWith(`${prefix}/`));
-
-  const textTone =
-    tone === "warn"
-      ? "text-amber-800 dark:text-amber-400"
-      : tone === "danger"
-        ? "text-rose-700 dark:text-rose-400"
-        : tone === "muted"
-          ? "text-subtle hover:text-fg"
-          : active
-            ? "text-fg"
-            : "text-muted hover:text-fg";
-
-  const badgeTone =
-    badge === "Soon"
-      ? "text-amber-800 dark:text-amber-400"
-      : badge === "Hidden"
-        ? "text-rose-700 dark:text-rose-400"
-        : "ip-label-accent";
+  const toneClass = tone === "warn" ? "text-amber-500" : tone === "danger" ? "text-rose-400" : "";
 
   return (
     <Link
       href={href}
       aria-current={active ? "page" : undefined}
-      className={`group relative flex h-16 items-center gap-2 px-3.5 text-[13px] font-medium tracking-[-0.005em] transition-colors duration-150 ${textTone}`}
+      className={`nav-pill group relative flex h-9 items-center gap-1.5 rounded-full px-4 text-[13px] font-semibold tracking-[-0.005em] transition-all duration-200 ${
+        active ? "nav-pill-active" : ""
+      } ${toneClass}`}
     >
       {label}
       {badge && (
-        <span className={`ip-label ${badgeTone}`} aria-hidden>
+        <span
+          className={`font-mono text-[9px] font-bold uppercase tracking-[0.14em] ${
+            badge === "Soon"
+              ? "text-amber-500"
+              : badge === "Hidden"
+                ? "text-rose-400"
+                : "text-[#8b93ff]"
+          }`}
+          aria-hidden
+        >
           {badge}
         </span>
       )}
-      <span
-        aria-hidden
-        className={`absolute inset-x-2.5 -bottom-px h-px origin-left bg-accent transition-transform duration-200 ease-out ${
-          active ? "scale-x-100" : "scale-x-0 group-hover:scale-x-100"
-        }`}
-      />
+      {active && (
+        <span aria-hidden className="absolute -bottom-[1px] left-1/2 h-1 w-1 -translate-x-1/2 rounded-full bg-gradient-to-r from-[#8b93ff] to-[#ff2fb3]" />
+      )}
     </Link>
   );
 }

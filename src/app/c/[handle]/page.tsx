@@ -9,14 +9,11 @@ import {
   Heart,
   LayoutGrid,
   Check,
-  Youtube,
-  Linkedin,
-  Twitter,
-  Github,
   Globe,
   ArrowRight,
   type LucideIcon,
 } from "lucide-react";
+import { FaYoutube as Youtube, FaLinkedin as Linkedin, FaTwitter as Twitter, FaGithub as Github } from "react-icons/fa6";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import MarkdownRenderer from "@/components/MarkdownRenderer";
@@ -68,7 +65,7 @@ function isSafeImageUrl(url: string): boolean {
 
 /* ── socials ──────────────────────────────────────────────────────────────── */
 
-const SOCIAL_META: { key: string; label: string; Icon: LucideIcon }[] = [
+const SOCIAL_META: { key: string; label: string; Icon: React.ComponentType<{ className?: string }> }[] = [
   { key: "youtube", label: "YouTube", Icon: Youtube },
   { key: "linkedin", label: "LinkedIn", Icon: Linkedin },
   { key: "x", label: "X (Twitter)", Icon: Twitter },
@@ -76,7 +73,7 @@ const SOCIAL_META: { key: string; label: string; Icon: LucideIcon }[] = [
   { key: "website", label: "Website", Icon: Globe },
 ];
 
-function parseSocials(raw: unknown): { key: string; label: string; Icon: LucideIcon; url: string }[] {
+function parseSocials(raw: unknown): { key: string; label: string; Icon: React.ComponentType<{ className?: string }>; url: string }[] {
   if (!raw || typeof raw !== "object") return [];
   const obj = raw as Record<string, unknown>;
   return SOCIAL_META.flatMap((m) => {

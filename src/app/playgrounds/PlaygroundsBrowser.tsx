@@ -11,6 +11,7 @@ import {
   ChevronDown,
   User,
   List,
+  FlaskConical,
 } from "lucide-react";
 import {
   templates,
@@ -20,6 +21,7 @@ import {
 } from "@/lib/templates";
 import { TemplateLogo } from "@/lib/icons";
 import { CodePeekCard } from "./CodePeekCard";
+import WowReveal from "@/components/wow/WowReveal";
 
 type Welcome = {
   name: string | null;
@@ -34,11 +36,8 @@ function WelcomeStrip({ w }: { w: NonNullable<Welcome> }) {
   const firstName = w.name?.split(" ")[0] ?? "Developer";
 
   return (
-    <div className="group/welcome relative rounded-2xl border border-border bg-surface/50 dark:bg-[#11131a]/60 backdrop-blur-xl p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 overflow-hidden shadow-soft dark:shadow-[0_0_50px_-12px_rgba(139,92,246,0.12)] hover:border-violet-500/30 dark:hover:border-violet-500/20 transition-all duration-300">
-      <div className="absolute -top-20 -left-20 w-44 h-44 rounded-full bg-violet-500/10 dark:bg-violet-500/15 blur-3xl pointer-events-none group-hover/welcome:scale-110 transition-transform duration-500" />
-      <div className="absolute -bottom-20 -right-20 w-44 h-44 rounded-full bg-fuchsia-500/5 dark:bg-fuchsia-500/10 blur-3xl pointer-events-none group-hover/welcome:scale-110 transition-transform duration-500" />
-
-      <div className="flex items-center gap-4 relative">
+    <div className="relative flex flex-col justify-between gap-4 overflow-hidden rounded-3xl border border-white/12 bg-white/[0.04] p-4 backdrop-blur-md sm:flex-row sm:items-center sm:p-5">
+      <div className="flex items-center gap-4">
         <div className="relative">
           {w.image ? (
             <Image
@@ -46,26 +45,26 @@ function WelcomeStrip({ w }: { w: NonNullable<Welcome> }) {
               alt={w.name ?? ""}
               width={44}
               height={44}
-              className="rounded-xl shrink-0"
+              className="shrink-0 rounded-2xl border border-white/20"
             />
           ) : (
-            <div className="w-11 h-11 rounded-xl bg-bg grid place-items-center shrink-0">
-              <User className="w-5 h-5 text-muted" />
+            <div className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl border border-white/15 bg-white/10">
+              <User className="h-5 w-5 text-white/60" />
             </div>
           )}
-          <span className="absolute -bottom-1 -right-1 w-3 h-3 rounded-full bg-emerald-500" />
+          <span className="absolute -bottom-1 -right-1 h-3 w-3 rounded-full border-2 border-[#0b0d16] bg-emerald-400" />
         </div>
 
         <div className="min-w-0">
-          <div className="text-sm font-bold text-fg leading-snug">
+          <div className="text-sm font-bold leading-snug text-white">
             Welcome back, {firstName}
           </div>
-          <div className="text-xs text-muted mt-0.5">
+          <div className="mt-0.5 text-xs text-white/60">
             {w.snippetCount === 0 ? (
               <span className="italic">No saved sandboxes yet.</span>
             ) : (
               <span>
-                <strong className="text-fg font-black tabular-nums">
+                <strong className="font-black tabular-nums text-white">
                   {w.snippetCount}
                 </strong>{" "}
                 saved sandbox{w.snippetCount === 1 ? "" : "es"}
@@ -75,32 +74,32 @@ function WelcomeStrip({ w }: { w: NonNullable<Welcome> }) {
         </div>
       </div>
 
-      <div className="flex items-center gap-3 shrink-0">
+      <div className="flex shrink-0 items-center gap-3">
         {w.recent && (
           <Link
             href={`/play/${w.recent.slug}`}
-            className="flex items-center gap-3 rounded-xl border border-border bg-bg/50 hover:bg-elevated hover:border-border-strong px-3 py-2 transition-all shrink-0 max-w-xs group/continue"
+            className="group/continue flex max-w-xs shrink-0 items-center gap-3 rounded-2xl border border-white/12 bg-black/30 px-3 py-2 transition hover:border-[#8b93ff]/60"
           >
-            <div className="w-8 h-8 rounded-md bg-panel border border-border grid place-items-center shrink-0">
+            <div className="grid h-8 w-8 shrink-0 place-items-center rounded-lg border border-white/10 bg-white/5">
               <TemplateLogo id={w.recent.template} size={16} />
             </div>
             <div className="min-w-0 flex-1">
-              <div className="text-[11px] font-black uppercase tracking-wider text-muted">
+              <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-white/50">
                 Continue editing
               </div>
-              <div className="text-xs font-bold truncate text-fg mt-0.5 max-w-[140px]">
+              <div className="mt-0.5 max-w-[140px] truncate text-xs font-bold text-white">
                 {w.recent.title}
               </div>
             </div>
-            <ArrowRight className="w-4 h-4 text-muted group-hover/continue:text-fg group-hover/continue:translate-x-0.5 transition-all shrink-0" />
+            <ArrowRight className="h-4 w-4 shrink-0 text-white/40 transition-all group-hover/continue:translate-x-0.5 group-hover/continue:text-white" />
           </Link>
         )}
 
         <Link
           href="/dashboard"
-          className="inline-flex items-center gap-2 px-3 py-2 rounded-xl border border-border bg-bg/60 hover:bg-fg hover:text-bg text-xs font-bold text-fg transition-all"
+          className="inline-flex items-center gap-2 rounded-full bg-white px-4 py-2 text-xs font-black uppercase tracking-wider text-black transition hover:scale-105"
         >
-          <LayoutGrid className="w-3.5 h-3.5" />
+          <LayoutGrid className="h-3.5 w-3.5" />
           Dashboard
         </Link>
       </div>
@@ -110,31 +109,28 @@ function WelcomeStrip({ w }: { w: NonNullable<Welcome> }) {
 
 function GuestWelcomeStrip() {
   return (
-    <div className="group/welcome relative rounded-2xl border border-border bg-surface/50 dark:bg-[#11131a]/60 backdrop-blur-xl p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 overflow-hidden shadow-soft dark:shadow-[0_0_50px_-12px_rgba(139,92,246,0.12)] hover:border-violet-500/30 dark:hover:border-violet-500/20 transition-all duration-300">
-      <div className="absolute -top-20 -left-20 w-44 h-44 rounded-full bg-violet-500/10 dark:bg-violet-500/15 blur-3xl pointer-events-none group-hover/welcome:scale-110 transition-transform duration-500" />
-      <div className="absolute -bottom-20 -right-20 w-44 h-44 rounded-full bg-fuchsia-500/5 dark:bg-fuchsia-500/10 blur-3xl pointer-events-none group-hover/welcome:scale-110 transition-transform duration-500" />
-
-      <div className="flex items-center gap-4 relative">
-        <div className="w-11 h-11 rounded-xl bg-violet-500/10 grid place-items-center shrink-0">
-          <Rocket className="w-5 h-5 text-violet-800 dark:text-violet-400 animate-pulse" />
+    <div className="relative flex flex-col justify-between gap-4 overflow-hidden rounded-3xl border border-white/12 bg-white/[0.04] p-4 backdrop-blur-md sm:flex-row sm:items-center sm:p-5">
+      <div className="flex items-center gap-4">
+        <div className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-gradient-to-br from-[#8b93ff] to-[#ff2fb3]">
+          <Rocket className="h-5 w-5 animate-pulse text-white" />
         </div>
         <div className="min-w-0">
-          <div className="text-sm font-bold text-fg leading-snug">
+          <div className="text-sm font-bold leading-snug text-white">
             Save and share your custom sandboxes
           </div>
-          <div className="text-xs text-muted mt-0.5">
+          <div className="mt-0.5 text-xs text-white/60">
             Sign in to persist your modifications, fork popular templates, and build your portfolio.
           </div>
         </div>
       </div>
 
-      <div className="flex items-center gap-3 shrink-0 relative">
+      <div className="relative shrink-0">
         <Link
           href="/login"
-          className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-violet-500 hover:bg-violet-600 text-xs font-bold text-white transition-all shadow-md shadow-violet-500/10 hover:shadow-violet-500/20"
+          className="inline-flex items-center gap-1.5 rounded-full bg-[#ffe600] px-5 py-2.5 text-xs font-black uppercase tracking-wider text-black transition hover:scale-105"
         >
           Sign In / Sign Up
-          <ArrowRight className="w-3.5 h-3.5" />
+          <ArrowRight className="h-3.5 w-3.5" />
         </Link>
       </div>
     </div>
@@ -143,11 +139,9 @@ function GuestWelcomeStrip() {
 
 
 /**
- * Soft mouse-tracked "bulb" that washes the grid in a violet glow and
- * brightens whatever cards happen to sit under the cursor. The overlay sits
- * above the grid with `pointer-events-none` so card clicks/hover still work,
- * and uses `plus-lighter` blending so dark cards get a real lift rather than
- * just a tinted veil.
+ * Mouse-tracked glow that washes the grid and brightens whatever card sits
+ * under the cursor. DOM-driven at ~60fps (no re-renders), pointer-events-none
+ * so clicks still land, plus-lighter blending for real lift on dark cards.
  */
 function SpotlightGrid({
   children,
@@ -159,9 +153,6 @@ function SpotlightGrid({
   const ref = useRef<HTMLDivElement>(null);
   const overlayRef = useRef<HTMLDivElement>(null);
 
-  // We drive position, color, and opacity straight onto the DOM so the
-  // ~60fps mousemove never triggers a re-render. The CSS transition
-  // (opacity) and the bulb position respond instantly.
   const handleMove = (e: React.MouseEvent) => {
     const el = ref.current;
     const overlay = overlayRef.current;
@@ -171,9 +162,6 @@ function SpotlightGrid({
     el.style.setProperty("--spot-x", `${e.clientX - rect.left}px`);
     el.style.setProperty("--spot-y", `${e.clientY - rect.top}px`);
 
-    // Hit-test the cursor; only light the bulb when it's actually over a
-    // card. In an empty grid cell or a wide gap, the bulb fades out so it
-    // doesn't read as a stray container.
     const hit = document.elementFromPoint(e.clientX, e.clientY);
     const card = hit?.closest<HTMLElement>("[data-accent-rgb]");
     if (card) {
@@ -200,10 +188,10 @@ function SpotlightGrid({
       <div
         ref={overlayRef}
         aria-hidden
-        className="pointer-events-none absolute inset-0 opacity-0 transition-opacity duration-300 z-10"
+        className="pointer-events-none absolute inset-0 z-10 opacity-0 transition-opacity duration-300"
         style={{
           background:
-            "radial-gradient(440px circle at var(--spot-x, 50%) var(--spot-y, 50%), rgba(var(--spot-color, 167, 139, 250), 0.3), rgba(var(--spot-color, 167, 139, 250), 0.1) 28%, transparent 55%)",
+            "radial-gradient(440px circle at var(--spot-x, 50%) var(--spot-y, 50%), rgba(var(--spot-color, 139, 147, 255), 0.3), rgba(var(--spot-color, 139, 147, 255), 0.1) 28%, transparent 55%)",
           mixBlendMode: "plus-lighter",
         }}
       />
@@ -226,28 +214,23 @@ function GroupPanel({
 }) {
   const [open, setOpen] = useState(defaultOpen);
   return (
-    <section>
+    <section className="overflow-hidden rounded-3xl border border-[var(--wow-card-border)] bg-[var(--wow-card)] backdrop-blur-sm">
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        className="w-full flex items-center justify-between gap-3 py-2 hover:opacity-80 transition-opacity"
+        className="flex w-full items-center justify-between gap-3 px-5 py-4 transition hover:bg-[var(--wow-stage)] md:px-6"
         aria-expanded={open}
       >
         <div className="flex items-center gap-3">
-          <span className="w-1 h-5 rounded-full bg-violet-500" />
-          <h3 className="text-base font-bold text-fg">{label}</h3>
-          <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-violet-500/10 text-violet-800 dark:text-violet-400 tabular-nums">
-            {count}
-          </span>
+          <span className="wow-font-display text-2xl tabular-nums text-[var(--wow-fg)]">{String(count).padStart(2, "0")}</span>
+          <h3 className="text-base font-extrabold tracking-tight text-[var(--wow-fg)]">{label}</h3>
         </div>
-        <ChevronDown
-          className={`w-4 h-4 text-muted transition-transform duration-300 ${
-            open ? "rotate-180" : ""
-          }`}
-        />
+        <span className={`grid h-8 w-8 place-items-center rounded-full border border-[var(--wow-card-border)] transition-transform duration-300 ${open ? "rotate-180" : ""}`}>
+          <ChevronDown className="h-4 w-4 text-[var(--wow-faint)]" />
+        </span>
       </button>
       {open && (
-        <div className="mt-4">
+        <div className="px-4 pb-4 md:px-5 md:pb-5">
           <SpotlightGrid gridClassName={gridClassName}>
             {children}
           </SpotlightGrid>
@@ -328,194 +311,180 @@ export default function PlaygroundsBrowser({ welcome }: { welcome: Welcome }) {
     : "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4";
 
   return (
-    <div className="bg-bg min-h-screen pb-32 relative overflow-hidden">
-      {/* Ambient background — subtle dot grid + soft accent blobs, matches
-          the launchpad reference. Sits behind every section. */}
-      <div
-        className="absolute inset-0 pointer-events-none -z-10 opacity-[0.35] dark:opacity-[0.18]"
-        style={{
-          backgroundImage:
-            "radial-gradient(currentColor 1px, transparent 1px)",
-          backgroundSize: "24px 24px",
-          color: "rgb(148 163 184)",
-        }}
-      />
-      <div className="absolute top-[-200px] left-1/2 -translate-x-1/2 w-[900px] h-[600px] rounded-full bg-violet-500/10 blur-[140px] pointer-events-none -z-10" />
-      <div className="absolute top-[300px] right-[-150px] w-[500px] h-[500px] rounded-full bg-fuchsia-500/[0.04] blur-[120px] pointer-events-none -z-10" />
-
-      {/* Centered hero */}
-      <header className="mx-auto max-w-3xl px-4 pt-16 md:pt-24 text-center relative">
-        <h1 className="text-5xl md:text-7xl lg:text-8xl font-black tracking-tight leading-[0.95] bg-clip-text text-transparent bg-gradient-to-b from-fg via-fg to-violet-400">
-          Playgrounds
-        </h1>
-        <p className="mt-5 text-muted text-base md:text-lg max-w-xl mx-auto leading-relaxed">
-          Pick a sandbox, start coding instantly. Experience zero-latency runs with our new <strong className="text-violet-800 dark:text-violet-400 font-extrabold bg-violet-400/10 dark:bg-violet-400/15 px-1.5 py-0.5 rounded border border-violet-500/20">AuraSandbox™ JIT Engine</strong> for backend systems.
-        </p>
-
-        {/* Pill search with ⌘K hint */}
-        <div className="mt-9 relative max-w-xl mx-auto">
-          <Search className="absolute left-5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted" />
-          <input
-            id="playgrounds-search"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search sandboxes…"
-            className="w-full pl-12 pr-16 py-3.5 rounded-full border border-border bg-surface/60 dark:bg-[#11131a]/70 text-sm outline-none placeholder:text-muted/60 backdrop-blur-md transition-all duration-300 shadow-[0_8px_30px_-12px_rgba(0,0,0,0.12)] dark:shadow-[0_0_30px_-10px_rgba(139,92,246,0.12)] hover:border-violet-500/30 dark:hover:border-violet-500/20 focus:border-violet-500/50 focus:ring-4 focus:ring-violet-500/10"
-          />
-          <kbd className="hidden sm:inline-flex absolute right-4 top-1/2 -translate-y-1/2 items-center gap-0.5 px-2 py-1 rounded-md bg-bg/60 text-[11px] font-mono text-muted">
-            ⌘K
-          </kbd>
+    <div className="min-h-screen bg-[var(--wow-bg)] pb-32 transition-colors">
+      {/* ── Dark cinematic hero (starts under the transparent bar) ── */}
+      <header className="wow-noise relative -mt-16 overflow-hidden bg-[#08080f] text-white">
+        <div aria-hidden className="pointer-events-none absolute inset-0">
+          <div className="absolute left-1/2 top-[-200px] h-[480px] w-[860px] -translate-x-1/2 rounded-full bg-[#8b93ff]/20 blur-[130px]" />
+          <div className="absolute right-[-140px] top-1/3 h-[380px] w-[380px] rounded-full bg-[#ff2fb3]/10 blur-[110px]" />
+          <div className="wow-grid-bg absolute inset-0" />
         </div>
+        <div aria-hidden className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-[#08080f]" />
 
-        {/* Inline stats row */}
-        <div className="mt-7 flex items-center justify-center gap-6 sm:gap-8 text-sm text-muted flex-wrap">
-          <span>
-            <strong className="text-fg font-black tabular-nums">
-              {stats.total}+
+        <div className="relative mx-auto max-w-3xl px-4 pb-14 pt-24 text-center md:pt-28">
+          <p className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/[0.06] px-4 py-1.5 font-mono text-[11px] uppercase tracking-[0.2em] text-white/75 backdrop-blur-md">
+            <FlaskConical className="h-3.5 w-3.5 text-[#8b93ff]" />
+            Zero-install sandboxes
+          </p>
+          <h1 className="wow-font-display mt-6 text-6xl md:text-8xl">
+            PICK A BOX.<br /><span className="wow-gradient-text">START CODING.</span>
+          </h1>
+          <p className="mx-auto mt-5 max-w-xl text-[15px] leading-relaxed text-white/65 md:text-base">
+            Pick a sandbox, start coding instantly. Experience zero-latency runs with our new{" "}
+            <strong className="rounded border border-[#8b93ff]/30 bg-[#8b93ff]/15 px-1.5 py-0.5 font-extrabold text-[#c7d2fe]">
+              AuraSandbox™ JIT Engine
             </strong>{" "}
-            Sandboxes
-          </span>
-          <span>
-            <strong className="text-fg font-black tabular-nums">
-              {stats.languages}
-            </strong>{" "}
-            Languages
-          </span>
-          <span>
-            <strong className="text-fg font-black">100%</strong> Zero config
-          </span>
-        </div>
+            for backend systems.
+          </p>
 
-        {/* Category Filters Bar */}
-        <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-4">
-          <div className="flex flex-wrap items-center justify-center gap-2.5">
-            <button
-              onClick={() => setFilter("all")}
-              className={`px-4 py-2 rounded-full text-xs font-bold transition-all duration-300 border ${
-                filter === "all"
-                  ? "bg-violet-500 text-white border-violet-500 shadow-md shadow-violet-500/15"
-                  : "bg-surface/40 hover:bg-surface/75 border-border text-muted hover:text-fg hover:border-border-strong backdrop-blur-sm"
-              }`}
-            >
-              All Sandboxes
-            </button>
-            {groups.map((g) => (
+          {/* Pill search with ⌘K hint */}
+          <div className="relative mx-auto mt-9 max-w-xl">
+            <Search className="absolute left-5 top-1/2 h-4 w-4 -translate-y-1/2 text-white/40" />
+            <input
+              id="playgrounds-search"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Search sandboxes…"
+              className="w-full rounded-full border border-white/15 bg-white/[0.06] py-3.5 pl-12 pr-16 text-sm text-white outline-none backdrop-blur-md transition placeholder:text-white/40 hover:border-white/25 focus:border-[#8b93ff]/60 focus:shadow-[0_0_40px_-10px_rgba(139,147,255,0.5)]"
+            />
+            <kbd className="absolute right-4 top-1/2 hidden -translate-y-1/2 items-center gap-0.5 rounded-md bg-black/40 px-2 py-1 font-mono text-[11px] text-white/50 sm:inline-flex">
+              ⌘K
+            </kbd>
+          </div>
+
+          {/* Inline stats row */}
+          <div className="mt-7 flex flex-wrap items-center justify-center gap-6 font-mono text-[11px] uppercase tracking-[0.18em] text-white/55 sm:gap-8">
+            <span><strong className="wow-font-display text-xl tabular-nums normal-case tracking-normal text-white">{stats.total}+</strong> Sandboxes</span>
+            <span><strong className="wow-font-display text-xl tabular-nums normal-case tracking-normal text-white">{stats.languages}</strong> Languages</span>
+            <span><strong className="wow-font-display text-xl tabular-nums normal-case tracking-normal text-[#ffe600]">100%</strong> Zero config</span>
+          </div>
+
+          {/* Category Filters Bar */}
+          <div className="mt-8 flex flex-col items-center justify-center gap-4">
+            <div className="flex flex-wrap items-center justify-center gap-2">
               <button
-                key={g.key}
-                onClick={() => setFilter(g.key)}
-                className={`px-4 py-2 rounded-full text-xs font-bold transition-all duration-300 border ${
-                  filter === g.key
-                    ? "bg-violet-500 text-white border-violet-500 shadow-md shadow-violet-500/15"
-                    : "bg-surface/40 hover:bg-surface/75 border-border text-muted hover:text-fg hover:border-border-strong backdrop-blur-sm"
+                onClick={() => setFilter("all")}
+                className={`rounded-full px-4 py-2 font-mono text-[11px] uppercase tracking-[0.14em] transition ${
+                  filter === "all"
+                    ? "bg-[#ffe600] font-bold text-black shadow-[0_0_30px_-8px_#ffe600]"
+                    : "border border-white/15 bg-white/[0.06] text-white/60 backdrop-blur hover:border-white/30 hover:text-white"
                 }`}
               >
-                {g.label}
+                All Sandboxes
               </button>
-            ))}
+              {groups.map((g) => (
+                <button
+                  key={g.key}
+                  onClick={() => setFilter(g.key)}
+                  className={`rounded-full px-4 py-2 font-mono text-[11px] uppercase tracking-[0.14em] transition ${
+                    filter === g.key
+                      ? "bg-[#ffe600] font-bold text-black shadow-[0_0_30px_-8px_#ffe600]"
+                      : "border border-white/15 bg-white/[0.06] text-white/60 backdrop-blur hover:border-white/30 hover:text-white"
+                  }`}
+                >
+                  {g.label}
+                </button>
+              ))}
+            </div>
+
+            <div className="flex items-center gap-3">
+              <div className="flex shrink-0 items-center rounded-full border border-white/15 bg-white/[0.06] p-1 backdrop-blur">
+                <button
+                  onClick={() => setViewMode("card")}
+                  className={`rounded-full p-1.5 transition ${viewMode === "card" ? "bg-white text-black" : "text-white/50 hover:text-white"}`}
+                  title="Card View"
+                >
+                  <LayoutGrid className="h-3.5 w-3.5" />
+                </button>
+                <button
+                  onClick={() => setViewMode("compact")}
+                  className={`rounded-full p-1.5 transition ${viewMode === "compact" ? "bg-white text-black" : "text-white/50 hover:text-white"}`}
+                  title="Compact View"
+                >
+                  <List className="h-3.5 w-3.5" />
+                </button>
+              </div>
+            </div>
           </div>
 
-          <div className="flex items-center bg-surface/40 p-1 rounded-full border border-border backdrop-blur-sm shadow-sm shrink-0">
-            <button
-              onClick={() => setViewMode("card")}
-              className={`p-1.5 rounded-full flex items-center gap-1.5 transition-all ${
-                viewMode === "card"
-                  ? "bg-bg text-fg shadow-sm border border-border"
-                  : "text-muted hover:text-fg hover:bg-surface"
-              }`}
-              title="Card View"
-            >
-              <LayoutGrid className="w-3.5 h-3.5" />
-            </button>
-            <button
-              onClick={() => setViewMode("compact")}
-              className={`p-1.5 rounded-full flex items-center gap-1.5 transition-all ${
-                viewMode === "compact"
-                  ? "bg-bg text-fg shadow-sm border border-border"
-                  : "text-muted hover:text-fg hover:bg-surface"
-              }`}
-              title="Compact View"
-            >
-              <List className="w-3.5 h-3.5" />
-            </button>
+          <div className="mt-10 text-left">
+            {welcome ? (
+              <WelcomeStrip w={welcome} />
+            ) : (
+              <GuestWelcomeStrip />
+            )}
           </div>
-        </div>
-
-        <div className="mt-10 text-left">
-          {welcome ? (
-            <WelcomeStrip w={welcome} />
-          ) : (
-            <GuestWelcomeStrip />
-          )}
         </div>
       </header>
 
-      {/* Most Popular — Fast Track section */}
-      {!isBrowsing && (
-        <section className="mx-auto max-w-6xl px-4 mt-20">
-          <div className="flex items-end justify-between mb-6">
-            <div className="flex items-center gap-3 flex-wrap">
-              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-violet-500/10 border border-violet-500/30 text-violet-800 dark:text-violet-400 text-[11px] font-bold uppercase tracking-wider">
-                <Rocket className="w-3 h-3" />
-                Fast Track
-              </span>
-              <h2 className="text-2xl font-black text-fg tracking-tight">
-                Most Popular
-              </h2>
-            </div>
-            <span className="text-xs text-muted">Top picks</span>
-          </div>
-          <SpotlightGrid gridClassName={gridClasses}>
-            {featured.map((t) => (
-              <CodePeekCard key={t.id} t={t} variant="featured" compact={viewMode === "compact"} />
-            ))}
-          </SpotlightGrid>
-        </section>
-      )}
-
-      {/* Catalog — grouped collapsible panels, or flat filtered grid */}
-      <section className="mx-auto max-w-6xl px-4 mt-12 space-y-6">
-        {!isBrowsing ? (
-          groupedItems.map(({ group, items }) => {
-            if (!items.length) return null;
-            return (
-              <GroupPanel
-                key={group.key}
-                label={group.label}
-                count={items.length}
-                gridClassName={gridClasses}
-              >
-                {items.map((t) => (
-                  <CodePeekCard key={t.id} t={t} compact={viewMode === "compact"} />
-                ))}
-              </GroupPanel>
-            );
-          })
-        ) : filtered.length > 0 ? (
-          <SpotlightGrid gridClassName={gridClasses}>
-            {filtered.map((t) => (
-              <CodePeekCard key={t.id} t={t} compact={viewMode === "compact"} />
-            ))}
-          </SpotlightGrid>
-        ) : (
-          <div className="mx-auto max-w-md text-center rounded-xl bg-surface/60 p-8 text-sm text-muted">
-            No playgrounds match “{query}”.
-            <button
-              className="block mx-auto mt-3 text-violet-800 dark:text-violet-400 hover:underline text-xs font-semibold"
-              onClick={() => {
-                setQuery("");
-                setFilter("all");
-              }}
-            >
-              Clear filters
-            </button>
-          </div>
+      <main className="mx-auto max-w-6xl px-4">
+        {/* Most Popular — Fast Track section */}
+        {!isBrowsing && (
+          <section className="mt-14">
+            <WowReveal>
+              <div className="mb-6 flex flex-wrap items-end justify-between gap-3">
+                <div>
+                  <p className="flex items-center gap-2 font-mono text-[11px] uppercase tracking-[0.25em] text-[#ff2fb3]">
+                    <Rocket className="h-3.5 w-3.5" /> Fast track
+                  </p>
+                  <h2 className="wow-font-display mt-2 text-4xl text-[var(--wow-fg)] md:text-5xl">MOST POPULAR.</h2>
+                </div>
+                <span className="font-mono text-[11px] uppercase tracking-[0.2em] text-[var(--wow-faint)]">Top picks</span>
+              </div>
+            </WowReveal>
+            <SpotlightGrid gridClassName={gridClasses}>
+              {featured.map((t) => (
+                <CodePeekCard key={t.id} t={t} variant="featured" compact={viewMode === "compact"} />
+              ))}
+            </SpotlightGrid>
+          </section>
         )}
-      </section>
 
-      {/* Subtle footer note */}
-      <div className="mx-auto max-w-6xl px-4 mt-20 text-center text-xs text-muted/70">
-        Missing a stack? We&apos;re adding new playgrounds every release.
-      </div>
+        {/* Catalog — grouped collapsible panels, or flat filtered grid */}
+        <section className="mt-10 space-y-5">
+          {!isBrowsing ? (
+            groupedItems.map(({ group, items }) => {
+              if (!items.length) return null;
+              return (
+                <GroupPanel
+                  key={group.key}
+                  label={group.label}
+                  count={items.length}
+                  gridClassName={gridClasses}
+                >
+                  {items.map((t) => (
+                    <CodePeekCard key={t.id} t={t} compact={viewMode === "compact"} />
+                  ))}
+                </GroupPanel>
+              );
+            })
+          ) : filtered.length > 0 ? (
+            <SpotlightGrid gridClassName={gridClasses}>
+              {filtered.map((t) => (
+                <CodePeekCard key={t.id} t={t} compact={viewMode === "compact"} />
+              ))}
+            </SpotlightGrid>
+          ) : (
+            <div className="mx-auto max-w-md rounded-3xl border border-[var(--wow-card-border)] bg-[var(--wow-card)] p-8 text-center text-sm text-[var(--wow-muted)]">
+              No playgrounds match “{query}”.
+              <button
+                className="mx-auto mt-3 block text-xs font-bold text-[#8b93ff] hover:underline"
+                onClick={() => {
+                  setQuery("");
+                  setFilter("all");
+                }}
+              >
+                Clear filters
+              </button>
+            </div>
+          )}
+        </section>
+
+        {/* Subtle footer note */}
+        <div className="mt-16 text-center font-mono text-[11px] uppercase tracking-[0.2em] text-[var(--wow-faint)]">
+          Missing a stack? New playgrounds ship every release.
+        </div>
+      </main>
     </div>
   );
 }

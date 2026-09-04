@@ -2,6 +2,8 @@ import { Metadata } from "next";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { timed, pingDb } from "@/lib/timing";
+import "@/components/wow/wow.css";
+import "@/components/home-wow/home-wow.css";
 import PlaygroundsBrowser from "./PlaygroundsBrowser";
 
 export const metadata: Metadata = {

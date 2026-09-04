@@ -2059,4 +2059,84 @@ body.sidebar-collapsed .workspace-content {
   .ip-arrow { transition: none; }
 }
 
+/* ==========================================================================
+ * WOW NAVBAR — transparent full-bleed at top, floating pill on scroll.
+ * The header element itself is always chrome-free; the inner container
+ * morphs into a detached rounded pill once scrolled. Content colors ride
+ * --nav-* vars (white over the dark hero, themed once condensed).
+ * Dropdown panels and the mobile sheet stay fully opaque always.
+ * ========================================================================== */
+.site-nav {
+  --nav-fg: var(--fg);
+  --nav-muted: var(--muted);
+  --nav-pill-hover: var(--panel);
+  --nav-ring: var(--border);
+  background: transparent;
+}
+.site-nav .nav-inner {
+  border: 1px solid transparent;
+  transition:
+    background-color 300ms ease,
+    border-color 300ms ease,
+    box-shadow 300ms ease,
+    border-radius 300ms ease,
+    margin-top 300ms ease,
+    max-width 300ms ease;
+}
+.site-nav[data-scrolled="true"] .nav-inner {
+  margin-top: 12px;
+  max-width: min(72rem, calc(100% - 24px));
+  border-radius: 999px;
+  background: var(--bg);
+  border-color: var(--border);
+  box-shadow: 0 18px 50px -18px rgba(0, 0, 0, 0.45);
+}
+/* Floating state: white content over the dark hero. */
+.site-nav[data-scrolled="false"] {
+  --nav-fg: #fff;
+  --nav-muted: rgba(255, 255, 255, 0.68);
+  --nav-pill-hover: rgba(255, 255, 255, 0.12);
+  --nav-ring: rgba(255, 255, 255, 0.18);
+}
+/* The full-width hairline is retired — the pill carries its own edge. */
+.site-nav .nav-hairline {
+  opacity: 0;
+}
 
+/* Dynamic logo wordmark follows the bar state (overrides its var(--fg)). */
+.site-nav[data-scrolled="false"] .ld-word { color: #fff !important; }
+.site-nav[data-scrolled="false"] .ld-sub { color: rgba(255, 255, 255, 0.6) !important; }
+
+/* Utility island + divider adapt to the floating state. */
+.site-nav[data-scrolled="false"] .nav-divider { border-color: rgba(255, 255, 255, 0.16) !important; }
+.site-nav[data-scrolled="false"] .nav-utils button {
+  border-color: rgba(255, 255, 255, 0.18) !important;
+  background: rgba(255, 255, 255, 0.08) !important;
+  color: #fff !important;
+}
+.site-nav[data-scrolled="false"] .mobile-menu-btn {
+  border-color: rgba(255, 255, 255, 0.18) !important;
+  background: rgba(255, 255, 255, 0.08) !important;
+  color: #fff !important;
+}
+
+/* Pill triggers + links */
+.nav-pill {
+  color: var(--nav-muted);
+  border: 1px solid transparent;
+}
+.nav-pill:hover {
+  color: var(--nav-fg);
+  background: var(--nav-pill-hover);
+}
+.nav-pill-active {
+  color: var(--nav-fg) !important;
+  background: var(--nav-pill-hover);
+  border-color: var(--nav-ring);
+  box-shadow: 0 0 16px -6px rgba(139, 147, 255, 0.6);
+}
+
+/* Dropdown panel tiles */
+.nav-tile { transition: background-color 150ms ease, transform 150ms ease; }
+.nav-tile:hover { background: var(--panel); }
+.nav-tile:active { transform: scale(0.99); }

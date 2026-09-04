@@ -33,6 +33,7 @@ export function useResizable(initialWidth: number, minWidth = 80, maxWidth = 600
         dragging.current = false;
         document.removeEventListener("pointermove", onPointerMove);
         document.removeEventListener("pointerup", onPointerUp);
+        document.removeEventListener("pointercancel", onPointerUp);
         document.body.style.cursor = "";
         document.body.style.userSelect = "";
 
@@ -43,6 +44,7 @@ export function useResizable(initialWidth: number, minWidth = 80, maxWidth = 600
 
       document.addEventListener("pointermove", onPointerMove);
       document.addEventListener("pointerup", onPointerUp);
+      document.addEventListener("pointercancel", onPointerUp);
       document.body.style.cursor = "col-resize";
       document.body.style.userSelect = "none";
 

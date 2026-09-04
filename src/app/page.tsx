@@ -3,27 +3,22 @@ import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { validatePageAccess } from "@/lib/settings";
-import HomeHero from "./HomeHero";
-import HomeArsenal, { type ArsenalCounts } from "./HomeArsenal";
-import HomeHowItWorks from "./HomeHowItWorks";
-import TechMarquee from "@/components/home/TechMarquee";
-import HomeBento from "./HomeBento";
-import HomeExplore from "./HomeExplore";
-import HomeCreators from "./HomeCreators";
-import HomeChallenges from "./HomeChallenges";
-import HomeFinalCTA from "./HomeFinalCTA";
-import Link from "next/link";
-import { ArrowRight, BookOpen, TrendingUp, PenSquare } from "lucide-react";
+import "@/components/wow/wow.css";
+import "@/components/home-wow/home-wow.css";
+import HomeWowHero from "@/components/home-wow/HomeWowHero";
+import HomeWowPortals, { type PortalCounts } from "@/components/home-wow/HomeWowPortals";
+import WowJourney from "@/components/wow/WowJourney";
+import WowStrip from "@/components/wow/WowStrip";
+import HomeWowArena from "@/components/home-wow/HomeWowArena";
+import HomeWowCreators from "@/components/home-wow/HomeWowCreators";
+import HomeWowStories from "@/components/home-wow/HomeWowStories";
+import SnippetTicker from "@/components/home-wow/SnippetTicker";
+import WowFinal from "@/components/wow/WowFinal";
 import { type BlogFeedEntry } from "@/components/BlogFeedItem";
-import BlogCardHero from "@/components/BlogCardHero";
-import BlogLazyFeed from "@/components/BlogLazyFeed";
-import { snippetPeek } from "@/lib/snippet-peek";
-import FeaturedCarousel from "@/components/FeaturedCarousel";
-import BlogPopularRow from "@/components/BlogPopularRow";
 
 async function loadStats() {
   try {
-    const [total, byDifficulty, sumMinutes, sessions] = await Promise.all([
+    const [total, byDifficulty, sumMinutes, sessions, prepQuestions] = await Promise.all([
       prisma.challenge.count({ where: { published: true } }),
       prisma.challenge.groupBy({
         by: ["difficulty"],
@@ -35,6 +30,7 @@ async function loadStats() {
         _sum: { estimatedMinutes: true },
       }),
       prisma.interviewSession.count(),
+      prisma.prepQuestion.count({ where: { status: "published" } }),
     ]);
     const counts: Record<string, number> = {};
     for (const g of byDifficulty) {
@@ -48,25 +44,14 @@ async function loadStats() {
       hard: counts.hard ?? 0,
       totalMinutes: sumMinutes._sum.estimatedMinutes ?? 0,
       interviewsRun: sessions,
+      prepQuestions,
     };
   } catch {
-    return { totalChallenges: 0, easy: 0, medium: 0, hard: 0, totalMinutes: 0, interviewsRun: 0 };
+    return { totalChallenges: 0, easy: 0, medium: 0, hard: 0, totalMinutes: 0, interviewsRun: 0, prepQuestions: 0 };
   }
 }
 
-export const metadata: Metadata = {
-  title: "Interviewpad — Interview Prep, Coding Challenges & Developer Portfolio",
-  description:
-    "Prep with 1,000+ hand-written interview questions across 14 technologies, solve runnable challenges in 8 languages, train AI-readiness skills, and turn it all into a shareable developer portfolio.",
-  alternates: { canonical: "/" },
-};
-
-/**
- * Real content counts for the prep-arsenal bento. Every number rendered on the
- * homepage comes from the DB — cards for features with no content hide
- * themselves rather than show zeros.
- */
-async function loadArsenalCounts(): Promise<ArsenalCounts> {
+async function loadArsenalCounts(): Promise<PortalCounts> {
   try {
     const [prepQuestions, techGroups, companies, reviewChallenges, promptScenarios, challenges, journeys] =
       await Promise.all([
@@ -84,9 +69,7 @@ async function loadArsenalCounts(): Promise<ArsenalCounts> {
       ]);
     return {
       prepQuestions,
-      techs: techGroups
-        .filter((g): g is typeof g & { technology: string } => g.technology !== null)
-        .map((g) => ({ technology: g.technology, count: g._count._all })),
+      techCount: techGroups.filter((g) => g.technology !== null).length,
       companies,
       reviewChallenges,
       promptScenarios,
@@ -94,24 +77,21 @@ async function loadArsenalCounts(): Promise<ArsenalCounts> {
       journeys,
     };
   } catch {
-    return {
-      prepQuestions: 0,
-      techs: [],
-      companies: 0,
-      reviewChallenges: 0,
-      promptScenarios: 0,
-      challenges: 0,
-      journeys: 0,
-    };
+    return { prepQuestions: 0, techCount: 0, companies: 0, reviewChallenges: 0, promptScenarios: 0, challenges: 0, journeys: 0 };
   }
 }
+
+export const metadata: Metadata = {
+  title: "Interviewpad — Interview Prep, Coding Challenges & Developer Portfolio",
+  description:
+    "Prep with 1,000+ hand-written interview questions across 14 technologies, solve runnable challenges in 8 languages, train AI-readiness skills, and turn it all into a shareable developer portfolio.",
+  alternates: { canonical: "/" },
+};
 
 export default async function HomePage() {
   const session = await auth().catch(() => null);
   await validatePageAccess("/", session);
 
-  // Recruiters get the hiring-focused homepage. The hero toggle on /hire
-  // links straight back here, so this is a default — not a wall.
   const userType = (session?.user as { userType?: string | null } | undefined)?.userType;
   if (userType === "recruiter") redirect("/hire");
 
@@ -120,57 +100,42 @@ export default async function HomePage() {
 
   let welcomeData: {
     name: string | null;
-    image: string | null;
-    snippetCount: number;
-    recent: { slug: string; title: string; template: string } | null;
+    recent: { slug: string; title: string } | null;
   } | null = null;
 
   if (userId) {
-    const [count, recent] = await Promise.all([
-      prisma.snippet.count({ where: { userId } }),
-      prisma.snippet.findFirst({
-        where: { userId },
-        orderBy: { updatedAt: "desc" },
-        select: { slug: true, title: true, template: true },
-      }),
-    ]);
-    welcomeData = {
-      name: session.user?.name ?? null,
-      image: session.user?.image ?? null,
-      snippetCount: count,
-      recent,
-    };
+    const recent = await prisma.snippet.findFirst({
+      where: { userId },
+      orderBy: { updatedAt: "desc" },
+      select: { slug: true, title: true },
+    }).catch(() => null);
+    welcomeData = { name: session.user?.name ?? null, recent };
   }
 
-  // Top public snippets — admin-pinned ones lead the section; remaining slots
-  // fill by view count so the grid is never empty even when nothing is pinned.
+  // Community ticker: admin-pinned snippets lead, most-viewed fill the rest.
   const pinnedRows = await prisma.snippet.findMany({
     where: { visibility: "public", pinned: true },
     orderBy: { updatedAt: "desc" },
     take: 6,
-    include: { user: { select: { name: true, image: true } } },
-  });
+    select: { slug: true, title: true, template: true },
+  }).catch(() => []);
   const fillRows =
     pinnedRows.length < 6
       ? await prisma.snippet.findMany({
-        where: { visibility: "public", pinned: false },
-        orderBy: [{ viewCount: "desc" }, { updatedAt: "desc" }],
-        take: 6 - pinnedRows.length,
-        include: { user: { select: { name: true, image: true } } },
-      })
+          where: { visibility: "public", pinned: false },
+          orderBy: [{ viewCount: "desc" }, { updatedAt: "desc" }],
+          take: 6 - pinnedRows.length,
+          select: { slug: true, title: true, template: true },
+        }).catch(() => [])
       : [];
-  const featuredRows = [...pinnedRows, ...fillRows];
+  const tickerSnippets = [...pinnedRows, ...fillRows];
 
-  // Editorial homepage feed: 1 admin-pinned hero, 4 latest cards, 5 popular
-  // rows on the sidebar — all three sets deduped so the same story never
-  // appears twice. We fetch wider-than-needed and trim after merging.
+  // ── Editorial blog feed (same honest dedupe as before) ──
   function safeTags(raw: string | null): string[] {
     if (!raw) return [];
     try {
       const parsed = JSON.parse(raw);
-      return Array.isArray(parsed)
-        ? parsed.filter((t): t is string => typeof t === "string")
-        : [];
+      return Array.isArray(parsed) ? parsed.filter((t): t is string => typeof t === "string") : [];
     } catch {
       return [];
     }
@@ -196,32 +161,24 @@ export default async function HomePage() {
   }
 
   const [pinnedBlogRows, popularRows, recentRows] = await Promise.all([
-    // Admin-pinned hero rail — show all featured posts in a carousel above the
-    // editorial grid. Capped at 8 to keep the carousel sensible to swipe.
     prisma.blogPost.findMany({
       where: { published: true, featured: true },
       orderBy: { updatedAt: "desc" },
       take: 8,
       include: { user: { select: { name: true, image: true } } },
-    }),
-    // Popular sidebar: top 6 by all-time views (over-fetch by 1 in case the
-    // featured post also tops viewCount).
+    }).catch(() => []),
     prisma.blogPost.findMany({
       where: { published: true },
       orderBy: [{ viewCount: "desc" }, { createdAt: "desc" }],
       take: 6,
       include: { user: { select: { name: true, image: true } } },
-    }),
-    // Latest cards: seed the horizontal scroller with the first 8 — enough
-    // to fill the visible row twice on desktop without weighing down the
-    // initial page payload. The client fetches more lazily (in batches of 8)
-    // as the user scrolls toward the right edge.
+    }).catch(() => []),
     prisma.blogPost.findMany({
       where: { published: true },
       orderBy: { createdAt: "desc" },
       take: 8,
       include: { user: { select: { name: true, image: true } } },
-    }),
+    }).catch(() => []),
   ]);
 
   const usedIds = new Set<string>();
@@ -240,12 +197,6 @@ export default async function HomePage() {
     .filter((b) => !usedIds.has(b.id))
     .map((b) => toEntry(b as BlogRow));
 
-  // Promote the freshest unused post to a hero card at the head of the main
-  // column. This used to be skipped whenever admins had pinned anything, on
-  // the grounds that the carousel already played that role — but it left the
-  // column holding only the 369px scroller against a 695px sidebar, i.e. 326px
-  // of void. The hero is always a *different* post from the pinned set
-  // (usedIds dedupes), so it surfaces one more story rather than repeating one.
   let homeHero: BlogFeedEntry | null = null;
   let homeGrid = latestGridEntries;
   if (homeGrid.length > 0) {
@@ -253,177 +204,50 @@ export default async function HomePage() {
     homeGrid = homeGrid.slice(1);
   }
 
-  // Cursor for the horizontal scroller's "load more": the createdAt of the
-  // last card the SSR run included. null when we've already shown every
-  // published post.
-  const totalPublished = await prisma.blogPost.count({
-    where: { published: true },
-  });
+  const totalPublished = await prisma.blogPost.count({ where: { published: true } }).catch(() => 0);
   const idsAlreadyShown = new Set<string>();
   if (homeHero) idsAlreadyShown.add(homeHero.id);
   pinnedEntries.forEach((p) => idsAlreadyShown.add(p.id));
   popularEntries.forEach((p) => idsAlreadyShown.add(p.id));
   homeGrid.forEach((g) => idsAlreadyShown.add(g.id));
   const scrollerCursor: string | null =
-    idsAlreadyShown.size >= totalPublished
-      ? null
-      : (homeGrid[homeGrid.length - 1]?.createdAt ?? null);
+    idsAlreadyShown.size >= totalPublished ? null : (homeGrid[homeGrid.length - 1]?.createdAt ?? null);
 
-
-
-  const hasAnyBlog =
-    !!homeHero ||
-    pinnedEntries.length > 0 ||
-    homeGrid.length > 0 ||
-    popularEntries.length > 0;
-
-  const featured = featuredRows.map((s) => ({
-    id: s.id,
-    slug: s.slug,
-    title: s.title,
-    template: s.template,
-    updatedAt: s.updatedAt.toISOString(),
-    author: s.user ? { name: s.user.name, image: s.user.image } : null,
-    views: s.viewCount,
-    // Highlighted server-side so the section ships no hljs to the client.
-    preview: snippetPeek(s.files),
-  }));
+  const hasAnyBlog = !!homeHero || pinnedEntries.length > 0 || homeGrid.length > 0 || popularEntries.length > 0;
 
   return (
-    <div className="bg-bg min-h-screen">
-      <HomeHero
-        persona="candidate"
-        sessionName={welcomeData?.name}
-        snippetCount={welcomeData?.snippetCount ?? 0}
+    <div className="min-h-screen bg-[var(--wow-bg)] transition-colors">
+      <HomeWowHero
+        stats={{ questions: stats.prepQuestions, challenges: stats.totalChallenges, sessions: stats.interviewsRun }}
+        userName={welcomeData?.name}
         recentSnippet={welcomeData?.recent}
       />
 
-      {/* Breadth first: everything you can practice, with live DB counts. */}
-      <HomeArsenal counts={arsenal} />
+      <HomeWowPortals counts={arsenal} />
 
-      {/* THE one pinned scroll moment: how the platform works under the hood. */}
-      <HomeHowItWorks />
+      <WowJourney />
 
-      {/* Breather: stack coverage as a lightweight marquee (no scroll-jacking). */}
-      <TechMarquee />
+      <WowStrip />
 
-      {/* Live proof: the actual editor demo running on the page. */}
-      <HomeBento />
+      <HomeWowArena />
 
-      <HomeExplore featured={featured} />
+      <HomeWowCreators />
 
-      <HomeCreators />
+      {tickerSnippets.length > 0 && <SnippetTicker snippets={tickerSnippets} />}
 
-      <HomeChallenges stats={stats} />
-
-      <HomeFinalCTA />
-
-      {/* Latest Stories — editorial mix:
-            - Big hero card (admin-pinned via BlogPost.featured, else freshest)
-            - 2x2 grid of recent stories beside / below it
-            - Compact "Most read" sidebar with numbered popular posts
-          Total ~10 stories visible without scrolling on desktop. */}
-      {/* No bottom rule on this section: the footer's own top border supplies
-          the seam, and two stacked hairlines read as one thick line. */}
       {hasAnyBlog && (
-        <section className="relative py-20 md:py-28">
-          <div className="relative z-10 mx-auto max-w-6xl px-4">
-            {/* Same clause construction as every other section header, so the
-                editorial feed is part of the page rather than a blog widget
-                bolted onto the end of it. */}
-            <div className="mb-10">
-              <div className="flex items-center gap-3">
-                <span className="ip-index">08</span>
-                <span className="ip-label ip-label-accent flex items-center gap-1.5">
-                  <BookOpen className="h-3 w-3" />
-                  Writing
-                </span>
-                <span className="ip-rule min-w-4 flex-1" aria-hidden />
-              </div>
-              <div className="mt-6 flex flex-col gap-6 md:flex-row md:items-end md:justify-between">
-                <h2 className="ip-display ip-display-lg text-fg">
-                  Latest <span className="text-accent">stories.</span>
-                </h2>
-                <Link href="/blog" className="ip-link shrink-0 self-start text-[13px] md:self-end">
-                  Read all articles
-                  <span aria-hidden>→</span>
-                </Link>
-              </div>
-            </div>
-
-            {/* Pinned posts: full-width hero carousel above the editorial grid
-                so it doesn't squeeze the sidebar. Renders only when admins
-                have pinned at least one post. */}
-            {pinnedEntries.length > 0 && (
-              <div className="mb-8">
-                <FeaturedCarousel items={pinnedEntries} />
-              </div>
-            )}
-
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              {/* Main column — a lead story then the horizontal card feed,
-                  which together stand roughly level with the stacked sidebar
-                  widgets. Takes 2/3 of the width on desktop. */}
-              <div className="lg:col-span-2 space-y-6">
-                {homeHero && <BlogCardHero blog={homeHero} />}
-
-                {homeGrid.length > 0 && (
-                  <BlogLazyFeed
-                    initialItems={homeGrid}
-                    initialCursor={scrollerCursor}
-                    excludeIds={Array.from(idsAlreadyShown)}
-                  />
-                )}
-              </div>
-
-              {/* Sidebar — stacked widgets, sized to stand level with the
-                  lead story plus the feed beside them. */}
-              <aside className="space-y-4">
-                {popularEntries.length > 0 && (
-                  <div className="ip-frame p-5">
-                    <div className="mb-4 flex items-center gap-2 border-b border-border pb-3">
-                      <TrendingUp className="h-3.5 w-3.5 text-emerald-800 dark:text-emerald-400" />
-                      <h3 className="ip-label ip-label-fg">Most read</h3>
-                    </div>
-                    <div className="flex flex-col">
-                      {popularEntries.map((blog, i) => (
-                        <BlogPopularRow key={blog.id} blog={blog} rank={i + 1} />
-                      ))}
-                    </div>
-                    <Link
-                      href="/blog?tab=top"
-                      className="ip-label mt-4 flex items-center justify-center gap-1.5 border border-border py-2.5 transition-colors hover:border-border-strong hover:text-fg"
-                    >
-                      See all popular
-                      <ArrowRight className="w-3 h-3" />
-                    </Link>
-                  </div>
-                )}
-
-
-
-                {/* Write CTA — points authenticated users straight at the
-                    editor, prompts everyone else to sign in first. */}
-                <div className="ip-frame ip-ticks p-5">
-                  <div className="flex items-center gap-2 border-b border-border pb-3">
-                    <PenSquare className="h-3.5 w-3.5 text-accent" />
-                    <h3 className="ip-label ip-label-fg">Write on Interviewpad</h3>
-                  </div>
-                  <p className="mb-4 mt-3 text-[12.5px] leading-relaxed text-muted">
-                    Share what you learn. Embed runnable code, get reactions, grow an audience.
-                  </p>
-                  <Link
-                    href={userId ? "/dashboard/blogs/new" : "/login?next=/dashboard/blogs/new"}
-                    className="ip-btn ip-btn-primary ip-btn-sm w-full"
-                  >
-                    {userId ? "Start writing" : "Sign in to write"}
-                  </Link>
-                </div>
-              </aside>
-            </div>
-          </div>
-        </section>
+        <HomeWowStories
+          hero={homeHero}
+          grid={homeGrid}
+          popular={popularEntries}
+          pinned={pinnedEntries}
+          cursor={scrollerCursor}
+          excludeIds={Array.from(idsAlreadyShown)}
+          signedIn={!!userId}
+        />
       )}
+
+      <WowFinal />
     </div>
   );
 }

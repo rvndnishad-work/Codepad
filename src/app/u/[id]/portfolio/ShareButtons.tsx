@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Linkedin, Twitter, Link as LinkIcon, Check, Printer } from "lucide-react";
+import { Link as LinkIcon, Check, Printer } from "lucide-react";
+import { FaLinkedin as Linkedin, FaTwitter as Twitter } from "react-icons/fa6";
 
 type Props = {
   name: string;

@@ -3,9 +3,14 @@
 import React, { useState, useRef, useEffect } from "react";
 import {
   Pencil,
-  Sparkles,
+  Bot,
   Play,
   Save,
+  Square,
+  Timer,
+  Columns2,
+  Rows2,
+  PanelLeft,
   ChevronDown,
   Eye,
   Layout as LayoutIcon,
@@ -19,11 +24,12 @@ import {
   Link as LinkIcon,
   Code2,
   ExternalLink,
-  ArrowLeft
+  ArrowLeft,
+  X
 } from "lucide-react";
 import Link from "next/link";
 import { TemplateLogo } from "@/lib/icons";
-import ChallengeTimer from "./ChallengeTimer";
+import ChallengeTimer, { useChallengeTimer, type ChallengeTimerController } from "./ChallengeTimer";
 import type { Snippet, Visibility } from "./Playground";
 
 /* â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
@@ -230,6 +236,113 @@ const toolbarCSS = `
       inset 0 1px 0 rgba(255,255,255,0.06),
       0 1px 2px rgba(0,0,0,0.2);
   }
+
+  /* ── WOW reskin: glass command bar + neon accents ────────────────────
+     Unlayered CSS beats Tailwind utilities, so this whole pass applies
+     without touching a single line of JSX or behavior below. */
+  .toolbar-3d {
+    background: linear-gradient(180deg, #101322 0%, #0b0d16 100%);
+    border-bottom: 1px solid rgba(139, 147, 255, 0.14);
+    box-shadow: 0 10px 36px -14px rgba(0, 0, 0, 0.65);
+  }
+  .toolbar-3d::after {
+    height: 2px;
+    background: linear-gradient(90deg,
+      transparent 0%,
+      rgba(139, 147, 255, 0.55) 22%,
+      rgba(255, 47, 179, 0.55) 50%,
+      rgba(34, 211, 238, 0.55) 78%,
+      transparent 100%
+    );
+  }
+  .tb-btn {
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.05);
+    border-color: rgba(255, 255, 255, 0.09);
+    color: rgba(255, 255, 255, 0.65);
+  }
+  .tb-btn:hover {
+    background: rgba(255, 255, 255, 0.09);
+    border-color: rgba(139, 147, 255, 0.45);
+    color: #fff;
+    box-shadow: 0 0 18px -6px rgba(139, 147, 255, 0.6);
+  }
+  .tb-run {
+    border-radius: 999px;
+    background: linear-gradient(135deg, #8b93ff 0%, #ff2fb3 100%);
+    color: #fff;
+    border: none;
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.35),
+      0 4px 18px -4px rgba(255, 47, 179, 0.65),
+      0 2px 8px -2px rgba(139, 147, 255, 0.5);
+  }
+  .tb-run:hover {
+    opacity: 1;
+    transform: translateY(-1px);
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.35),
+      0 8px 26px -6px rgba(255, 47, 179, 0.8),
+      0 4px 14px -4px rgba(139, 147, 255, 0.6);
+    filter: brightness(1.08);
+  }
+  .tb-ai {
+    border-radius: 999px;
+    background: rgba(139, 147, 255, 0.12);
+    border-color: rgba(139, 147, 255, 0.35);
+  }
+  .tb-ai:hover {
+    background: rgba(139, 147, 255, 0.2);
+    border-color: rgba(139, 147, 255, 0.6);
+    box-shadow: 0 0 20px -6px rgba(139, 147, 255, 0.7);
+    transform: translateY(-0.5px);
+  }
+  .tb-tabs {
+    border-radius: 999px;
+    background: rgba(0, 0, 0, 0.35);
+    border-color: rgba(255, 255, 255, 0.08);
+  }
+  .tb-tab[data-active="true"] {
+    border-radius: 999px;
+    background: linear-gradient(135deg, rgba(139, 147, 255, 0.9), rgba(255, 47, 179, 0.9));
+    color: #fff;
+    box-shadow: 0 2px 12px -4px rgba(255, 47, 179, 0.6);
+  }
+  .tb-tab[data-active="true"] .tb-tab-icon {
+    color: #fff;
+  }
+  .tb-stepper {
+    border-radius: 999px;
+    background: rgba(0, 0, 0, 0.35);
+    border-color: rgba(255, 255, 255, 0.08);
+  }
+  .tb-sep {
+    background: linear-gradient(180deg, transparent, rgba(139, 147, 255, 0.35) 30%, rgba(139, 147, 255, 0.35) 70%, transparent);
+  }
+  .tb-icon-btn {
+    border-radius: 999px;
+  }
+  .tb-icon-btn:hover {
+    background: rgba(255, 255, 255, 0.08);
+    color: #fff;
+    box-shadow: 0 0 16px -6px rgba(139, 147, 255, 0.6);
+  }
+  /* Techy corner-bracket frame for control groups */
+  .tb-frame {
+    --tb-c: rgba(139, 147, 255, 0.5);
+    background:
+      linear-gradient(var(--tb-c), var(--tb-c)) left top / 10px 2px,
+      linear-gradient(var(--tb-c), var(--tb-c)) left top / 2px 10px,
+      linear-gradient(var(--tb-c), var(--tb-c)) right top / 10px 2px,
+      linear-gradient(var(--tb-c), var(--tb-c)) right top / 2px 10px,
+      linear-gradient(var(--tb-c), var(--tb-c)) left bottom / 10px 2px,
+      linear-gradient(var(--tb-c), var(--tb-c)) left bottom / 2px 10px,
+      linear-gradient(var(--tb-c), var(--tb-c)) right bottom / 10px 2px,
+      linear-gradient(var(--tb-c), var(--tb-c)) right bottom / 2px 10px;
+    background-repeat: no-repeat;
+    border-radius: 8px;
+    padding: 3px 10px;
+  }
 `;
 
 /* â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
@@ -316,6 +429,7 @@ function ToolbarDropdown<T extends string>({
 const VIEW_OPTIONS = [
   { value: "preview" as const, label: "Preview", icon: Eye },
   { value: "both" as const, label: "Split", icon: LayoutIcon },
+  { value: "columns" as const, label: "Columns", icon: Columns2 },
   { value: "console" as const, label: "Console", icon: Terminal },
 ];
 
@@ -330,6 +444,13 @@ function ViewLayoutControl({
   onChange: (v: ViewValue) => void;
   disabled?: boolean;
 }) {
+  // Console remembers its last split direction (rows vs columns) so the
+  // Console button returns to it instead of always resetting to rows.
+  const [lastSplit, setLastSplit] = useState<"both" | "columns">("both");
+  useEffect(() => {
+    if (value === "both" || value === "columns") setLastSplit(value);
+  }, [value]);
+  const splitActive = value === "both" || value === "columns";
   return (
     <>
       {/* Dropdown â€” shown below the lg breakpoint (< 1024px) */}
@@ -340,13 +461,14 @@ function ViewLayoutControl({
           onChange={onChange}
           disabled={disabled}
           icon={
-            value === "preview" ? Eye : value === "both" ? LayoutIcon : Terminal
+            value === "preview" ? Eye : value === "both" ? LayoutIcon : value === "columns" ? Columns2 : Terminal
           }
           options={VIEW_OPTIONS}
         />
       </div>
 
       {/* Segmented tabs â€” shown at lg and above (â‰¥ 1024px) */}
+      {/* Two-button switch + direction toggle — lg and above */}
       <div
         className={`hidden lg:flex tb-tabs items-center rounded-md h-7 p-0.5 gap-0.5 ${
           disabled ? "opacity-30 pointer-events-none" : ""
@@ -354,25 +476,57 @@ function ViewLayoutControl({
         role="tablist"
         aria-label="View layout"
       >
-        {VIEW_OPTIONS.map((opt) => {
-          const active = opt.value === value;
-          const Icon = opt.icon;
-          return (
+        <button
+          type="button"
+          role="tab"
+          aria-selected={value === "preview"}
+          data-active={value === "preview"}
+          onClick={() => onChange("preview")}
+          disabled={disabled}
+          title="Preview only"
+          className="tb-tab h-6 px-2.5 rounded-sm flex items-center gap-1.5 text-[11px] font-medium cursor-pointer"
+        >
+          <Eye className="tb-tab-icon w-3 h-3 opacity-70" />
+          <span>Preview</span>
+        </button>
+        <button
+          type="button"
+          role="tab"
+          aria-selected={value === "both" || value === "columns"}
+          data-active={value === "both" || value === "columns"}
+          onClick={() => onChange(lastSplit)}
+          disabled={disabled}
+          title="Split: preview + console"
+          className="tb-tab h-6 px-2.5 rounded-sm flex items-center gap-1.5 text-[11px] font-medium cursor-pointer"
+        >
+          <Terminal className="tb-tab-icon w-3 h-3 opacity-70" />
+          <span>Console</span>
+        </button>
+        {(value === "both" || value === "columns") && (
+          <>
+            <span aria-hidden className="mx-0.5 h-4 w-px bg-white/10" />
             <button
-              key={opt.value}
               type="button"
-              role="tab"
-              aria-selected={active}
-              data-active={active}
-              onClick={() => onChange(opt.value)}
+              onClick={() => onChange("both")}
               disabled={disabled}
-              className="tb-tab h-6 px-2.5 rounded-sm flex items-center gap-1.5 text-[11px] font-medium cursor-pointer"
+              title="Stacked: preview above console"
+              aria-pressed={value === "both"}
+              className={`grid h-6 w-6 place-items-center rounded-sm transition ${value === "both" ? "bg-white/10 text-white" : "text-white/40 hover:text-white"}`}
             >
-              <Icon className="tb-tab-icon w-3 h-3 opacity-70" />
-              <span>{opt.label}</span>
+              <Rows2 className="h-3 w-3" />
             </button>
-          );
-        })}
+            <button
+              type="button"
+              onClick={() => onChange("columns")}
+              disabled={disabled}
+              title="Side by side"
+              aria-pressed={value === "columns"}
+              className={`grid h-6 w-6 place-items-center rounded-sm transition ${value === "columns" ? "bg-white/10 text-white" : "text-white/40 hover:text-white"}`}
+            >
+              <Columns2 className="h-3 w-3" />
+            </button>
+          </>
+        )}
       </div>
     </>
   );
@@ -397,8 +551,8 @@ function NumericStepper({
 }) {
   return (
     <div className="tb-stepper flex items-center gap-0.5 rounded-md h-7">
-      <button 
-        onClick={onDecrease} 
+      <button
+        onClick={onDecrease}
         className="w-6 h-full flex items-center justify-center text-muted/30 hover:text-fg rounded-l-md"
       >
         <Minus className="w-3 h-3" />
@@ -407,11 +561,59 @@ function NumericStepper({
         {Icon && <Icon className="w-3 h-3 text-muted/25" />}
         <span className="text-[11px] font-mono font-medium text-fg/80 tabular-nums">{value}{suffix}</span>
       </div>
-      <button 
-        onClick={onIncrease} 
+      <button
+        onClick={onIncrease}
         className="w-6 h-full flex items-center justify-center text-muted/30 hover:text-fg rounded-r-md"
       >
         <Plus className="w-3 h-3" />
+      </button>
+    </div>
+  );
+}
+
+/* ── Persistent timer chip: live readout + stop only ── */
+
+function TimerChip({ t }: { t: ChallengeTimerController }) {
+  const frac = t.total > 0 ? Math.max(0, Math.min(1, t.timeLeft / t.total)) : 0;
+  const R = 9;
+  const C = 2 * Math.PI * R;
+  const ring =
+    t.isFinished ? "#34d399" : t.isCritical && t.isRunning ? "#fb7185" : "#8b93ff";
+  return (
+    <div
+      className={`flex items-center gap-1.5 rounded-full border py-1 pl-1 pr-1.5 transition-colors ${
+        t.isFinished
+          ? "border-emerald-400/40 bg-emerald-400/10"
+          : t.isCritical && t.isRunning
+            ? "border-red-400/40 bg-red-400/10"
+            : "border-white/10 bg-white/5"
+      }`}
+      title={t.isFinished ? "Time's up" : t.isRunning ? "Timer running" : "Timer idle"}
+    >
+      <span className="relative grid h-6 w-6 place-items-center">
+        <svg viewBox="0 0 22 22" className="h-6 w-6 -rotate-90">
+          <circle cx="11" cy="11" r={R} fill="none" stroke="rgba(255,255,255,0.12)" strokeWidth="2.5" />
+          <circle
+            cx="11" cy="11" r={R} fill="none" stroke={ring} strokeWidth="2.5" strokeLinecap="round"
+            strokeDasharray={C} strokeDashoffset={C * (1 - frac)}
+            className="transition-[stroke-dashoffset] duration-1000 ease-linear"
+          />
+        </svg>
+        <span className={`absolute h-1 w-1 rounded-full ${t.isRunning ? "animate-pulse bg-white" : "bg-white/40"}`} />
+      </span>
+      <span className={`font-mono text-[12px] font-bold tabular-nums ${
+        t.isFinished ? "text-emerald-300" : t.isCritical && t.isRunning ? "text-red-300" : "text-white/85"
+      }`}>
+        {t.minutes}:{t.seconds.toString().padStart(2, "0")}
+      </span>
+      <button
+        type="button"
+        onClick={t.pause}
+        disabled={!t.isRunning && !t.isFinished && t.timeLeft === t.total}
+        className="grid h-5 w-5 place-items-center rounded-full text-white/40 transition hover:bg-white/10 hover:text-white disabled:opacity-30"
+        title="Pause timer"
+      >
+        <Square className="h-2.5 w-2.5 fill-current" />
       </button>
     </div>
   );
@@ -426,12 +628,48 @@ export default function PlaygroundToolbar({
   fontSize, setFontSize, view, setView,
   visibility, setVisibility, snippet, snippetId, forking,
   handleSave, handleFork, handleShare, handleCopyEmbed, handlePopout,
-  handleRun, running, onTogglePrompt, tplMode,
-  uiScale, setUiScale, backHref
+  handleRun, running, onTogglePrompt, tplMode, showRun = true,
+  uiScale, setUiScale, backHref, onToggleFiles
 }: any) {
   const [actionsOpen, setActionsOpen] = useState(false);
   const actionsRef = useRef<HTMLDivElement>(null);
   const actionsBtnRef = useRef<HTMLButtonElement>(null);
+  // Toolbar extras are opt-in (persisted): the bar stays minimal until the
+  // user pins the timer and/or AI assist from the popover.
+  const readFlag = (key: string) => {
+    try {
+      return typeof window !== "undefined" && window.localStorage.getItem(key) === "1";
+    } catch {
+      return false;
+    }
+  };
+  const [showTimer, setShowTimer] = useState(() => readFlag("play:tb:timer"));
+  const [showAi, setShowAi] = useState(() => readFlag("play:tb:ai"));
+  const toggleExtra = (which: "timer" | "ai") => {
+    if (which === "timer") {
+      setShowTimer((v) => {
+        try {
+          window.localStorage.setItem("play:tb:timer", v ? "0" : "1");
+        } catch {
+          /* private mode / blocked storage — preference just won't persist */
+        }
+        return !v;
+      });
+    } else {
+      setShowAi((v) => {
+        try {
+          window.localStorage.setItem("play:tb:ai", v ? "0" : "1");
+        } catch {
+          /* private mode / blocked storage — preference just won't persist */
+        }
+        return !v;
+      });
+    }
+  };
+  // Shared countdown brain: the toolbar chip below and the full controls in
+  // the popover drink from this one instance, so closing the menu never
+  // kills a running timer.
+  const challengeTimer = useChallengeTimer();
 
   useEffect(() => {
     const handleClick = (e: MouseEvent) => {
@@ -439,67 +677,82 @@ export default function PlaygroundToolbar({
         setActionsOpen(false);
       }
     };
+    const handleKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setActionsOpen(false);
+    };
     window.addEventListener("mousedown", handleClick);
-    return () => window.removeEventListener("mousedown", handleClick);
+    window.addEventListener("keydown", handleKey);
+    return () => {
+      window.removeEventListener("mousedown", handleClick);
+      window.removeEventListener("keydown", handleKey);
+    };
   }, []);
 
   return (
     <>
       <style dangerouslySetInnerHTML={{ __html: toolbarCSS }} />
-      <div className="toolbar-3d h-14 px-2 sm:px-4 flex items-center justify-between gap-2 overflow-hidden">
+      <div className="toolbar-3d relative flex h-14 items-center justify-between gap-2 overflow-visible px-2 sm:px-4">
         {/* â”€â”€ Left: Identity + Run â”€â”€ */}
         <div className="flex items-center gap-3">
+          {onToggleFiles && (
+            <button
+              onClick={onToggleFiles}
+              className="grid h-9 w-9 flex-shrink-0 place-items-center rounded-full border border-white/10 bg-white/5 text-white/70 transition hover:border-[#8b93ff]/50 hover:text-white md:hidden"
+              title="Files"
+            >
+              <PanelLeft className="h-4 w-4" />
+            </button>
+          )}
           {/* Back to the originating question (only when arrived from there) */}
           {backHref && (
-            <>
-              <Link
-                href={backHref}
-                className="h-8 pl-2 pr-2.5 rounded-lg flex items-center gap-1.5 text-[12px] font-medium text-fg/70 hover:text-fg hover:bg-fg/5 transition-colors flex-shrink-0"
-                title="Back to question"
-              >
-                <ArrowLeft className="w-4 h-4" />
-                <span className="hidden sm:inline">Back to question</span>
-              </Link>
-              <div className="tb-sep" />
-            </>
+            <Link
+              href={backHref}
+              className="grid h-9 w-9 flex-shrink-0 place-items-center rounded-full border border-white/10 bg-white/5 text-white/70 transition hover:border-[#8b93ff]/50 hover:text-white"
+              title="Back to question"
+            >
+              <ArrowLeft className="h-4 w-4" />
+            </Link>
           )}
 
           {/* Project Identity — responsive: truncate aggressively on small */}
-          <div className="flex items-center gap-1.5 sm:gap-2 group/meta min-w-0">
-            <div className="w-6 h-6 rounded grid place-items-center flex-shrink-0 opacity-60">
-              <TemplateLogo id={templateId} size={16} />
+          <div className="group/meta flex min-w-0 items-center gap-2 rounded-full border border-white/10 bg-white/5 py-1 pl-1 pr-3">
+            <div className="grid h-7 w-7 flex-shrink-0 place-items-center rounded-full border border-white/10 bg-black/40">
+              <TemplateLogo id={templateId} size={14} />
             </div>
             <input
               value={title}
               onChange={(e) => { setTitle(e.target.value); setDirty(true); }}
               disabled={!editable}
-              className="bg-transparent outline-none font-medium text-[13px] text-fg/80 hover:text-fg transition-colors w-20 sm:w-28 lg:w-32 xl:w-40 truncate focus:text-accent min-w-0"
+              placeholder="Untitled sandbox"
+              className="w-20 min-w-0 truncate bg-transparent text-[13px] font-semibold text-white/90 outline-none transition-colors placeholder:text-white/30 hover:text-white focus:text-white sm:w-28 lg:w-32 xl:w-40"
             />
-            {editable && <Pencil className="hidden sm:block w-2.5 h-2.5 text-muted/10 group-hover/meta:text-muted/25 transition-colors flex-shrink-0" />}
-            <div className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${saving ? "bg-muted/20 animate-pulse" : dirty ? "bg-amber-400/70" : "bg-emerald-400/50"}`}
+            {editable && <Pencil className="hidden h-2.5 w-2.5 flex-shrink-0 text-white/10 transition-colors group-hover/meta:text-white/30 sm:block" />}
+            <div className={`h-1.5 w-1.5 flex-shrink-0 rounded-full ${saving ? "animate-pulse bg-white/20" : dirty ? "bg-amber-400/80" : "bg-emerald-400/70"}`}
               title={saving ? "Saving…" : dirty ? "Unsaved" : "Saved"}
             />
           </div>
 
-          <div className="tb-sep hidden sm:block" />
-
           {/* Run Button â€” 3D raised */}
+          {showRun && (
           <button
             onClick={handleRun}
             disabled={running}
-            className={`h-8 px-4 rounded-lg flex items-center gap-2 ${
+            aria-live="polite"
+            aria-busy={running}
+            className={`tb-run flex h-9 min-w-[108px] shrink-0 items-center justify-center gap-2 whitespace-nowrap rounded-full px-5 tabular-nums ${
               running
-                ? "tb-btn text-muted/40 cursor-wait"
-                : "tb-run"
+                ? "cursor-wait opacity-80"
+                : ""
             }`}
           >
             {running ? (
-              <div className="w-3.5 h-3.5 border-2 border-muted/20 border-t-fg rounded-full animate-spin" />
+              <div className="h-3.5 w-3.5 shrink-0 animate-spin rounded-full border-2 border-white/25 border-t-white" />
             ) : (
-              <Play className="w-3.5 h-3.5 fill-current" />
+              <Play className="h-3.5 w-3.5 shrink-0 fill-current" />
             )}
-            <span className="text-[12px] font-bold">{running ? "Running" : "Run"}</span>
+            <span className="inline-block min-w-[54px] text-center text-[12px] font-black uppercase tracking-wider">{running ? "Running" : "Run"}</span>
           </button>
+          )}
         </div>
 
         {/* â”€â”€ Center: Editor Config â”€â”€
@@ -508,59 +761,34 @@ export default function PlaygroundToolbar({
             secondary, so they stay gated to xl+ to keep narrower toolbars
             uncluttered. The Editor Engine selector is gone â€” Monaco is the
             sole editor now. */}
-        <div className="flex items-center gap-1 sm:gap-1.5 min-w-0 flex-shrink-0">
+        <div className="tb-frame flex min-w-0 flex-shrink-0 items-center gap-1 sm:gap-1.5">
           <ViewLayoutControl
             value={view}
             onChange={setView}
             disabled={tplMode === "console"}
           />
-
-          <div className="hidden xl:flex items-center gap-1.5">
-            <div className="tb-sep" />
-
-            <NumericStepper
-              value={String(fontSize)}
-              onDecrease={() => setFontSize(Math.max(10, fontSize - 1))}
-              onIncrease={() => setFontSize(Math.min(32, fontSize + 1))}
-              suffix="px"
-            />
-
-            <div className="tb-sep" />
-
-            <NumericStepper
-              value={`${Math.round(uiScale * 100)}%`}
-              onDecrease={() => setUiScale(Math.max(0.8, uiScale - 0.1))}
-              onIncrease={() => setUiScale(Math.min(1.5, uiScale + 0.1))}
-              icon={Type}
-            />
-          </div>
         </div>
 
         {/* â”€â”€ Right: Actions â”€â”€ */}
         <div className="flex items-center gap-2">
-          {/* AI Assist â€” uses accent */}
+          {showTimer && <TimerChip t={challengeTimer} />}
+          {showAi && (
           <button
             onClick={onTogglePrompt}
-            className="tb-ai h-8 px-3 rounded-lg hidden sm:flex items-center gap-1.5 text-accent group/ai shrink-0"
+            className="tb-ai group/ai flex h-9 shrink-0 items-center gap-1.5 rounded-full px-4 text-white/85"
+            title="AI Assist"
           >
-            <Sparkles className="w-3.5 h-3.5 group-hover/ai:scale-110 transition-transform" />
-            <span className="text-[11px] font-semibold tracking-wide">AI</span>
+            <Bot className="h-3.5 w-3.5 transition-transform group-hover/ai:scale-110" />
+            <span className="hidden text-[11px] font-black uppercase tracking-wider md:inline">AI Assist</span>
           </button>
-
-          {/* Challenge Timer */}
-          <div className="hidden lg:block">
-            <ChallengeTimer />
-          </div>
-
-          <div className="tb-sep" />
-
-          {/* Save + More â€” ghost with 3D hover */}
+          )}
+          {/* Save + More + Exit */}
           <div className="flex items-center gap-1">
             {editable && signedIn && (
               <button 
                 onClick={handleSave}
                 disabled={saving}
-                className="tb-icon-btn w-8 h-8 rounded-lg flex items-center justify-center text-muted/30 hover:text-fg"
+                className="tb-icon-btn grid h-9 w-9 place-items-center rounded-full text-white/40 hover:text-white"
                 title="Save (Ctrl+S)"
               >
                 <Save className="w-4 h-4" />
@@ -570,8 +798,10 @@ export default function PlaygroundToolbar({
               <button
                 ref={actionsBtnRef}
                 onClick={() => setActionsOpen(!actionsOpen)}
-                className={`tb-btn h-8 px-2 rounded-lg flex items-center justify-center gap-1.5 transition-all ${
-                  actionsOpen ? "bg-surface text-fg" : "text-muted hover:text-fg"
+                aria-expanded={actionsOpen}
+                aria-haspopup="menu"
+                className={`tb-btn flex h-9 w-9 items-center justify-center rounded-full transition-all ${
+                  actionsOpen ? "text-white" : ""
                 }`}
                 title="More options"
               >
@@ -579,15 +809,38 @@ export default function PlaygroundToolbar({
               </button>
 
               {actionsOpen && (
-                <div className="absolute top-full right-0 mt-2 w-64 py-1 rounded-xl z-[100] animate-in fade-in slide-in-from-top-1 duration-150 border border-border-strong ip-panel-float bg-panel"
+                <div className="absolute right-0 top-full z-[100] mt-2 w-64 animate-in rounded-2xl border border-white/10 bg-[#12141f]/95 py-1.5 backdrop-blur-xl duration-150 fade-in slide-in-from-top-1"
                   style={{
-                    boxShadow: "0 16px 48px rgba(0,0,0,0.1), 0 0 0 1px var(--border) inset"
+                    boxShadow: "0 24px 64px -12px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.06) inset"
                   }}
                 >
-                  {/* Responsive overflow — editor controls hidden on smaller viewports */}
-                  <div className="xl:hidden px-3 py-2 space-y-2 border-b border-border mb-1">
+                  {/* Toolbar extras — pin timer / AI to the bar (persisted) */}
+                  <div className="space-y-1 border-b border-white/10 px-3 pb-2 pt-1">
+                    {(
+                      [
+                        { key: "timer", label: "Timer", icon: Timer, on: showTimer },
+                        { key: "ai", label: "AI Assist", icon: Bot, on: showAi },
+                      ] as const
+                    ).map((row) => (
+                      <button
+                        key={row.key}
+                        type="button"
+                        onClick={() => toggleExtra(row.key)}
+                        aria-pressed={row.on}
+                        className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-[12px] font-semibold text-white/70 transition hover:bg-white/5 hover:text-white"
+                      >
+                        <row.icon className="h-3.5 w-3.5 text-[#8b93ff]" />
+                        <span className="flex-1 text-left">{row.label}</span>
+                        <span className={`relative h-5 w-9 shrink-0 rounded-full transition ${row.on ? "bg-[#8b93ff]" : "bg-white/10"}`}>
+                          <span className={`absolute top-0.5 block h-4 w-4 rounded-full bg-white shadow transition-all ${row.on ? "left-[18px]" : "left-0.5"}`} />
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                  {/* Editor controls — font, zoom, AI assist, timer */}
+                  <div className="space-y-2 border-b border-white/10 px-3 py-2">
                     <div className="flex items-center justify-between">
-                      <span className="text-[11px] font-medium text-muted flex items-center gap-1.5"><Type className="w-3 h-3" /> Font</span>
+                      <span className="flex items-center gap-1.5 text-[11px] font-medium text-white/50"><Type className="w-3 h-3" /> Font</span>
                       <NumericStepper
                         value={String(fontSize)}
                         onDecrease={() => setFontSize(Math.max(10, fontSize - 1))}
@@ -596,40 +849,31 @@ export default function PlaygroundToolbar({
                       />
                     </div>
                     <div className="flex items-center justify-between">
-                      <span className="text-[11px] font-medium text-muted flex items-center gap-1.5"><Type className="w-3 h-3" /> Zoom</span>
+                      <span className="flex items-center gap-1.5 text-[11px] font-medium text-white/50"><Type className="w-3 h-3" /> Zoom</span>
                       <NumericStepper
                         value={`${Math.round(uiScale * 100)}%`}
-                        onDecrease={() => setUiScale(Math.max(0.8, uiScale - 0.1))}
-                        onIncrease={() => setUiScale(Math.min(1.5, uiScale + 0.1))}
+                        onDecrease={() => setUiScale(Math.max(0.8, Math.round((uiScale - 0.1) * 10) / 10))}
+                        onIncrease={() => setUiScale(Math.min(2, Math.round((uiScale + 0.1) * 10) / 10))}
                         icon={Type}
                       />
                     </div>
                   </div>
-                  <div className="sm:hidden px-3 py-2 border-b border-border mb-1">
-                    <button
-                      onClick={() => { onTogglePrompt(); setActionsOpen(false); }}
-                      className="w-full flex items-center gap-2.5 px-3 py-2 text-[12px] text-accent hover:bg-accent/10 rounded-lg transition"
-                    >
-                      <Sparkles className="w-3.5 h-3.5" />
-                      <span className="flex-1 text-left font-medium">AI Assist</span>
-                    </button>
-                  </div>
-                  <div className="lg:hidden px-3 py-2 border-b border-border mb-1 flex justify-center">
-                    <ChallengeTimer />
+                  <div className="flex justify-center border-b border-white/10 px-3 py-2">
+                    <ChallengeTimer controller={challengeTimer} />
                   </div>
                   <button
                     onClick={() => { handleFork(); setActionsOpen(false); }}
-                    className="w-full flex items-center gap-2.5 px-3 py-2.5 text-[12px] text-muted/70 hover:text-fg hover:bg-elevated transition-all"
+                    className="w-full flex items-center gap-2.5 px-3 py-2 text-[12px] text-white/60 hover:text-white hover:bg-white/5 rounded-xl mx-1.5 transition-all"
                   >
                     <GitFork className="w-3.5 h-3.5 opacity-60" />
                     <span className="flex-1 text-left">Fork Snippet</span>
                   </button>
                   
-                  <div className="h-px bg-border my-1 mx-2" />
+                  <div className="h-px bg-white/10 my-1 mx-2" />
 
                   <button
                     onClick={() => { handleShare(); setActionsOpen(false); }}
-                    className="w-full flex items-center gap-2.5 px-3 py-2.5 text-[12px] text-muted/70 hover:text-fg hover:bg-elevated transition-all"
+                    className="w-full flex items-center gap-2.5 px-3 py-2 text-[12px] text-white/60 hover:text-white hover:bg-white/5 rounded-xl mx-1.5 transition-all"
                   >
                     <LinkIcon className="w-3.5 h-3.5 opacity-60" />
                     <span className="flex-1 text-left">Copy Public Link</span>
@@ -637,17 +881,17 @@ export default function PlaygroundToolbar({
 
                   <button
                     onClick={() => { handleCopyEmbed(); setActionsOpen(false); }}
-                    className="w-full flex items-center gap-2.5 px-3 py-2.5 text-[12px] text-muted/70 hover:text-fg hover:bg-elevated transition-all"
+                    className="w-full flex items-center gap-2.5 px-3 py-2 text-[12px] text-white/60 hover:text-white hover:bg-white/5 rounded-xl mx-1.5 transition-all"
                   >
                     <Code2 className="w-3.5 h-3.5 opacity-60" />
                     <span className="flex-1 text-left">Copy Embed Link</span>
                   </button>
 
-                  <div className="h-px bg-border my-1 mx-2" />
+                  <div className="h-px bg-white/10 my-1 mx-2" />
 
                   <button
                     onClick={() => { handlePopout(); setActionsOpen(false); }}
-                    className="w-full flex items-center gap-2.5 px-3 py-2.5 text-[12px] text-muted/70 hover:text-fg hover:bg-elevated transition-all"
+                    className="w-full flex items-center gap-2.5 px-3 py-2 text-[12px] text-white/60 hover:text-white hover:bg-white/5 rounded-xl mx-1.5 transition-all"
                   >
                     <ExternalLink className="w-3.5 h-3.5 opacity-60" />
                     <span className="flex-1 text-left">Pop out Preview</span>
@@ -655,6 +899,19 @@ export default function PlaygroundToolbar({
                 </div>
               )}
             </div>
+            {/* Exit — the global nav is hidden inside the IDE, so this is the
+                way back to the sandbox browser. */}
+            <div className="h-5 w-px shrink-0 bg-gradient-to-b from-transparent via-white/15 to-transparent" aria-hidden />
+            <Link
+              href="/playgrounds"
+              onClick={(e) => {
+                if (dirty && !window.confirm("Unsaved changes will be lost. Exit anyway?")) e.preventDefault();
+              }}
+              className="tb-icon-btn grid h-9 w-9 shrink-0 place-items-center rounded-full text-white/40 transition hover:border-red-400/50 hover:text-red-300"
+              title="Exit to playgrounds"
+            >
+              <X className="h-4 w-4" />
+            </Link>
           </div>
         </div>
       </div>

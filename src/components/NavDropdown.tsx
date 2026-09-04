@@ -79,23 +79,12 @@ type Props = {
 };
 
 /**
- * A COMMAND PANEL, not a mega menu.
+ * A WOW MENU — glass panel, icon tiles, pill trigger.
  *
- * The old version was the shape every AI-drafted nav lands on: a rounded,
- * blurred, shadowed sheet full of rounded tiles with coloured icon chips. This
- * is built the other way round —
- *
- *   • a square sheet with one hard edge and a single hard drop, so it reads as
- *     paper placed on the page rather than glass floating above it;
- *   • a LEFT RAIL that names the audience ("FOR PRACTISING") and gives it one
- *     sentence of context plus a single onward destination;
- *   • a RIGHT COLUMN of destinations separated by hairlines, with no card
- *     around any of them. Hover draws an accent rule down the left edge of the
- *     row instead of lighting up a rounded rectangle;
- *   • a FOOTER STRIP carrying the count as monospaced metadata.
- *
- * Interaction is unchanged: hover on desktop, click/Enter/Escape everywhere,
- * with a grace window so the pointer can cross from trigger to panel.
+ * Same interaction contract as before (hover/click/Enter/Escape, grace
+ * window, viewport clamping, route-change close), reskinned: the trigger is
+ * a pill riding the bar's --nav-* vars, the panel is a rounded glass sheet
+ * with gradient icon tiles instead of hairline rows.
  */
 export default function NavDropdown({
   label,
@@ -202,9 +191,11 @@ export default function NavDropdown({
     closeTimerRef.current = window.setTimeout(() => setOpen(false), 120);
   };
 
-  const accentText = tone === "secondary" ? "ip-label-secondary" : "ip-label-accent";
-  const markerBg = tone === "secondary" ? "bg-secondary" : "bg-accent";
-  const rowTone = tone === "secondary" ? "ip-row-secondary" : "";
+  const accentText = tone === "secondary" ? "text-[#8b93ff]" : "text-[#ff2fb3]";
+  const tileGradient =
+    tone === "secondary"
+      ? "from-[#6366f1]/25 to-[#22d3ee]/15 text-[#a5b4fc]"
+      : "from-[#ff2fb3]/25 to-[#8b93ff]/20 text-[#ff8ac2]";
 
   // Distinct category groupings if specified on items
   const categories = Array.from(
@@ -219,26 +210,20 @@ export default function NavDropdown({
 
     const body = (
       <>
-        <Icon
-          className={`mt-[2px] h-4 w-4 shrink-0 transition-colors duration-150 ${
-            active
-              ? tone === "secondary"
-                ? "text-secondary"
-                : "text-accent"
-              : "text-subtle group-hover/item:text-fg"
-          }`}
-        />
+        <span className={`grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-gradient-to-br ${tileGradient}`}>
+          <Icon className="h-4 w-4" />
+        </span>
         <span className="min-w-0 flex-1">
           <span className="flex items-center gap-2">
             <span className="text-[13px] font-semibold leading-tight text-fg">
               {item.label}
             </span>
             {isComingSoon ? (
-              <span className="ip-label text-amber-800 dark:text-amber-400">Soon</span>
+              <span className="font-mono text-[10px] font-bold uppercase tracking-[0.14em] text-amber-500">Soon</span>
             ) : item.badge ? (
               <span
-                className={`ip-label ${
-                  item.badge === "Hidden" ? "text-rose-700 dark:text-rose-400" : accentText
+                className={`font-mono text-[10px] font-bold uppercase tracking-[0.14em] ${
+                  item.badge === "Hidden" ? "text-rose-400" : accentText
                 }`}
               >
                 {item.badge}
@@ -252,7 +237,7 @@ export default function NavDropdown({
           )}
         </span>
         {!isComingSoon && (
-          <ArrowRight className="ip-arrow mt-[2px] h-3.5 w-3.5 shrink-0 text-subtle opacity-0 transition-opacity duration-150 group-hover/item:opacity-100" />
+          <ArrowRight className="mt-1 h-3.5 w-3.5 shrink-0 text-subtle opacity-0 transition-all duration-150 group-hover/item:translate-x-0.5 group-hover/item:opacity-100" />
         )}
       </>
     );
@@ -261,7 +246,7 @@ export default function NavDropdown({
       return (
         <div
           key={item.label}
-          className="flex select-none items-start gap-2.5 border-b border-border px-4 py-2.5 opacity-45 last:border-b-0"
+          className="flex select-none items-start gap-3 rounded-xl px-3 py-2.5 opacity-45"
         >
           {body}
         </div>
@@ -274,13 +259,10 @@ export default function NavDropdown({
         href={item.href}
         role="menuitem"
         aria-current={active ? "page" : undefined}
-        className={`ip-row ${rowTone} group/item flex items-start gap-2.5 border-b border-border px-4 py-2.5 last:border-b-0 ${
-          active ? "bg-panel" : ""
+        className={`nav-tile group/item flex items-start gap-3 rounded-xl px-3 py-2.5 ${
+          active ? "bg-panel ring-1 ring-inset ring-border" : ""
         }`}
       >
-        {active && (
-          <span aria-hidden className={`absolute inset-y-[-1px] left-0 w-[2px] ${markerBg}`} />
-        )}
         {body}
       </Link>
     );
@@ -290,31 +272,23 @@ export default function NavDropdown({
     const Icon = ICON_MAP[item.iconName] ?? Code2;
     const isComingSoon = item.status === "coming_soon";
     const active = isItemActive(item);
-    // In two-column mode the second item of each pair carries the vertical
-    // rule, so the grid is ruled rather than gapped.
-    const colRule = twoUp && index % 2 === 1 ? "md:border-l md:border-border" : "";
-    // The rows in the first band sit flush against the panel's own top edge —
-    // their rule would double it up.
-    const topRule = index < (twoUp ? 2 : 1) ? "border-t-0 md:border-t-0" : "";
 
     const body = (
       <>
-        <Icon
-          className={`mt-[3px] h-4 w-4 shrink-0 transition-colors duration-150 ${
-            active ? (tone === "secondary" ? "text-secondary" : "text-accent") : "text-subtle"
-          }`}
-        />
+        <span className={`grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-gradient-to-br ${tileGradient}`}>
+          <Icon className="h-4 w-4" />
+        </span>
         <span className="min-w-0 flex-1">
           <span className="flex items-center gap-2">
             <span className="text-[13.5px] font-semibold leading-tight text-fg">
               {item.label}
             </span>
             {isComingSoon ? (
-              <span className="ip-label text-amber-800 dark:text-amber-400">Soon</span>
+              <span className="font-mono text-[10px] font-bold uppercase tracking-[0.14em] text-amber-500">Soon</span>
             ) : item.badge ? (
               <span
-                className={`ip-label ${
-                  item.badge === "Hidden" ? "text-rose-700 dark:text-rose-400" : accentText
+                className={`font-mono text-[10px] font-bold uppercase tracking-[0.14em] ${
+                  item.badge === "Hidden" ? "text-rose-400" : accentText
                 }`}
               >
                 {item.badge}
@@ -328,7 +302,7 @@ export default function NavDropdown({
           )}
         </span>
         {!isComingSoon && (
-          <ArrowRight className="ip-arrow mt-[3px] h-3.5 w-3.5 shrink-0 text-subtle opacity-0 transition-opacity duration-150 group-hover/item:opacity-100" />
+          <ArrowRight className="mt-1 h-3.5 w-3.5 shrink-0 text-subtle opacity-0 transition-all duration-150 group-hover/item:translate-x-0.5 group-hover/item:opacity-100" />
         )}
       </>
     );
@@ -337,7 +311,7 @@ export default function NavDropdown({
       return (
         <div
           key={item.label}
-          className={`flex select-none items-start gap-3 border-t border-border px-5 py-3.5 opacity-45 ${colRule} ${topRule}`}
+          className="flex select-none items-start gap-3 rounded-xl px-3 py-3 opacity-45"
         >
           {body}
         </div>
@@ -350,13 +324,10 @@ export default function NavDropdown({
         href={item.href}
         role="menuitem"
         aria-current={active ? "page" : undefined}
-        className={`ip-row ${rowTone} group/item flex items-start gap-3 px-5 py-3.5 ${colRule} ${topRule} ${
-          active ? "bg-panel" : ""
+        className={`nav-tile group/item flex items-start gap-3 rounded-xl px-3 py-3 ${
+          active ? "bg-panel ring-1 ring-inset ring-border" : ""
         }`}
       >
-        {active && (
-          <span aria-hidden className={`absolute inset-y-[-1px] left-0 w-[2px] ${markerBg}`} />
-        )}
         {body}
       </Link>
     );
@@ -377,23 +348,15 @@ export default function NavDropdown({
         aria-haspopup="menu"
         aria-expanded={open}
         onClick={() => setOpen((o) => !o)}
-        className={`group relative flex h-16 items-center gap-2 px-3.5 text-[13px] font-medium tracking-[-0.005em] transition-colors duration-150 ${
-          open || isGroupActive ? "text-fg" : "text-muted hover:text-fg"
+        className={`nav-pill group flex h-9 items-center gap-1.5 rounded-full px-4 text-[13px] font-semibold tracking-[-0.005em] transition-all duration-200 ${
+          open || isGroupActive ? "nav-pill-active" : ""
         }`}
       >
         <span>{label}</span>
-        {/* A caret that rotates a quarter turn — a disclosure marker, not a
-            chevron icon sitting inside a pill. */}
         <span
           aria-hidden
           className={`h-[5px] w-[5px] border-b border-r border-current transition-transform duration-200 ${
             open ? "-translate-y-px rotate-[225deg]" : "-translate-y-[2px] rotate-45"
-          }`}
-        />
-        <span
-          aria-hidden
-          className={`absolute inset-x-2.5 -bottom-px h-px origin-left transition-transform duration-200 ease-out ${markerBg} ${
-            open || isGroupActive ? "scale-x-100" : "scale-x-0 group-hover:scale-x-100"
           }`}
         />
       </button>
@@ -402,21 +365,17 @@ export default function NavDropdown({
         <div
           ref={panelRef}
           role="menu"
-          className={`absolute left-0 top-full z-50 ${hasCategories || twoUp ? "w-[43rem]" : "w-[32rem]"}`}
+          className={`absolute left-0 top-[calc(100%+10px)] z-50 ${hasCategories || twoUp ? "w-[43rem]" : "w-[32rem]"}`}
         >
-          {/* Flush-docked architectural command panel with corner ticks */}
-          <div
-            className={`ip-frame ip-panel-float -mt-px animate-fade-in overflow-hidden ${
-              tone === "secondary" ? "ip-ticks-secondary" : "ip-ticks"
-            }`}
-          >
-            <div className="grid grid-cols-1 sm:grid-cols-[12.5rem_1fr]">
+          {/* Glass-free command panel — fully opaque in every theme */}
+          <div className="animate-fade-in overflow-hidden rounded-2xl border border-border bg-surface shadow-[0_32px_80px_-20px_rgba(0,0,0,0.5)]">
+            <div className="grid grid-cols-1 gap-2 p-2 sm:grid-cols-[12.5rem_1fr]">
               {/* ── The rail: who this menu is for ── */}
-              <div className="flex flex-col justify-between gap-6 border-b border-border bg-panel/60 p-5 sm:border-b-0 sm:border-r">
+              <div className="flex flex-col justify-between gap-6 rounded-xl bg-panel/60 p-5">
                 <div>
                   <div className="flex items-center gap-2">
-                    <span className={`h-1.5 w-1.5 ${markerBg}`} aria-hidden />
-                    <span className={`ip-label ${accentText}`}>{railTitle ?? label}</span>
+                    <span aria-hidden className={`h-1.5 w-1.5 rounded-full bg-gradient-to-r ${tone === "secondary" ? "from-[#6366f1] to-[#22d3ee]" : "from-[#ff2fb3] to-[#8b93ff]"}`} />
+                    <span className={`font-mono text-[11px] font-bold uppercase tracking-[0.18em] ${accentText}`}>{railTitle ?? label}</span>
                   </div>
                   {railBlurb && (
                     <p className="mt-3 text-[12px] leading-relaxed text-muted">{railBlurb}</p>
@@ -426,24 +385,23 @@ export default function NavDropdown({
                   <Link
                     href={railHref}
                     role="menuitem"
-                    className="ip-link self-start text-[12px] font-medium"
+                    className="group/rail inline-flex items-center gap-1.5 self-start text-[12px] font-semibold text-fg"
                   >
-                    {railHrefLabel}
-                    <ArrowRight className="h-3 w-3" />
+                    <span className="underline decoration-[#8b93ff] decoration-2 underline-offset-4">{railHrefLabel}</span>
+                    <ArrowRight className="h-3 w-3 transition-transform group-hover/rail:translate-x-0.5" />
                   </Link>
                 )}
               </div>
 
               {/* ── The destinations ── */}
               {hasCategories ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 divide-y md:divide-y-0 md:divide-x divide-border">
+                <div className="grid grid-cols-1 gap-4 p-1 md:grid-cols-2 md:gap-2">
                   {categories.map((cat) => {
                     const catItems = items.filter((i) => i.category === cat);
                     return (
-                      <div key={cat} className="flex flex-col">
-                        <div className="flex items-center gap-2 border-b border-border bg-panel/40 px-4 py-2">
-                          <span className={`h-1.5 w-1.5 ${markerBg}`} aria-hidden />
-                          <span className="ip-label text-[12px] text-subtle">{cat}</span>
+                      <div key={cat} className="flex min-w-0 flex-col">
+                        <div className="flex items-center gap-2 px-3 pb-1 pt-1">
+                          <span className="font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-subtle">{cat}</span>
                         </div>
                         <div className="flex flex-col">
                           {catItems.map((item, idx) => renderCategorizedItem(item, idx))}
@@ -453,21 +411,21 @@ export default function NavDropdown({
                   })}
                 </div>
               ) : (
-                <div className={twoUp ? "grid grid-cols-1 md:grid-cols-2" : "flex flex-col"}>
+                <div className={twoUp ? "grid grid-cols-1 gap-1 p-1 md:grid-cols-2" : "flex flex-col gap-1 p-1"}>
                   {items.map(renderItem)}
                 </div>
               )}
             </div>
 
             {/* ── Footer strip: the panel states its own size, in mono ── */}
-            <div className="flex items-center justify-between border-t border-border bg-surface px-5 py-2.5">
-              <span className="ip-label text-subtle">
+            <div className="flex items-center justify-between border-t border-border bg-surface/60 px-5 py-2.5">
+              <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-subtle">
                 {String(items.length).padStart(2, "0")} destinations · {tone === "secondary" ? "Recruiter suite" : "Interview runtime"}
               </span>
               <span className="flex items-center gap-2" aria-hidden>
-                <span className={`h-1.5 w-1.5 ${markerBg}`} />
+                <span className={`h-1.5 w-1.5 rounded-full bg-gradient-to-r ${tone === "secondary" ? "from-[#6366f1] to-[#22d3ee]" : "from-[#ff2fb3] to-[#8b93ff]"}`} />
                 <span className="h-px w-6 bg-border" />
-                <span className="h-1.5 w-1.5 border border-border-strong" />
+                <span className="h-1.5 w-1.5 rounded-full border border-border-strong" />
               </span>
             </div>
           </div>

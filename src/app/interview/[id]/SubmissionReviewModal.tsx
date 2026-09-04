@@ -4,11 +4,11 @@ import { useEffect } from "react";
 import { createPortal } from "react-dom";
 import { useTheme } from "next-themes";
 import {
-  SandpackProvider,
   SandpackCodeEditor,
   SandpackPreview,
   SandpackConsole,
 } from "@codesandbox/sandpack-react";
+import ShimmedSandpackProvider from "@/components/ShimmedSandpackProvider";
 import { javascript } from "@codemirror/lang-javascript";
 import { X, Eye, Code2, Lock } from "lucide-react";
 import FileExplorer from "@/components/FileExplorer";
@@ -86,7 +86,7 @@ export default function SubmissionReviewModal({
 
         {/* Body */}
         {hasFiles ? (
-          <SandpackProvider
+          <ShimmedSandpackProvider
             template={template as never}
             theme={getSandpackTheme(isDark)}
             files={files}
@@ -139,7 +139,7 @@ export default function SubmissionReviewModal({
                 </div>
               )}
             </div>
-          </SandpackProvider>
+          </ShimmedSandpackProvider>
         ) : (
           <div className="flex-1 grid place-items-center text-sm text-muted italic">
             No files submitted.

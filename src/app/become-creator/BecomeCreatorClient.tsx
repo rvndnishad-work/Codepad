@@ -12,14 +12,13 @@ import {
   CheckCircle2,
   Clock,
   XCircle,
-  Youtube,
-  Linkedin,
   ArrowRight,
   Users,
   Link2,
   BadgeCheck,
   Rocket,
 } from "lucide-react";
+import { FaYoutube as Youtube, FaLinkedin as Linkedin } from "react-icons/fa6";
 import { submitCreatorApplicationAction } from "./actions";
 import { CREATOR_FOLLOWER_MINIMUM } from "./constants";
 

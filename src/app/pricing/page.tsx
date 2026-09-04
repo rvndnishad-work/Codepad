@@ -2,6 +2,9 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { validatePageAccess } from "@/lib/settings";
 import { MANAGER_ROLES } from "@/lib/permissions/role-groups";
+import { getPricingConfig } from "@/lib/pricing-plans";
+import "@/components/wow/wow.css";
+import "@/components/home-wow/home-wow.css";
 import PricingClient from "./PricingClient";
 
 export const metadata = {
@@ -15,29 +18,33 @@ export default async function PricingPage() {
   const userId = session?.user?.id;
 
   // Fetch workspaces where the current user is an OWNER or ADMIN
-  const workspaces = userId
-    ? await prisma.workspace.findMany({
-        where: {
-          members: {
-            some: {
-              userId,
-              role: { in: [...MANAGER_ROLES] },
+  const [workspaces, pricing] = await Promise.all([
+    userId
+      ? prisma.workspace.findMany({
+          where: {
+            members: {
+              some: {
+                userId,
+                role: { in: [...MANAGER_ROLES] },
+              },
             },
           },
-        },
-        select: {
-          id: true,
-          name: true,
-          slug: true,
-          planName: true,
-        },
-      })
-    : [];
+          select: {
+            id: true,
+            name: true,
+            slug: true,
+            planName: true,
+          },
+        })
+      : Promise.resolve([]),
+    getPricingConfig(),
+  ]);
 
   return (
     <PricingClient 
       workspaces={workspaces} 
-      isSignedIn={!!userId} 
+      isSignedIn={!!userId}
+      config={pricing}
     />
   );
 }

@@ -40,18 +40,17 @@ function formatRemaining(ms: number): string {
   return `${m}:${s.toString().padStart(2, "0")}`;
 }
 import {
-  SandpackProvider,
   SandpackCodeEditor,
   SandpackPreview,
   useSandpack,
   SandpackConsole,
 } from "@codesandbox/sandpack-react";
+import ShimmedSandpackProvider from "@/components/ShimmedSandpackProvider";
 import dynamic from "next/dynamic";
 import { useTheme } from "next-themes";
 import { toast } from "sonner";
 import { getSandpackTheme } from "@/lib/sandpack-theme";
 import { speakNaturally, cancelSpeak, updateSpeechConfig, pickBestVoice, configureCloudTTS, OPENAI_CLOUD_VOICES, OPENAI_CLOUD_VOICE_LABELS } from "@/lib/copilot-tts";
-import ThemeToggle from "@/components/ThemeToggle";
 import FileExplorer from "@/components/FileExplorer";
 import { useResizable } from "@/hooks/useResizable";
 import { useResizableHeight } from "@/hooks/useResizableHeight";
@@ -1013,7 +1012,6 @@ export default function AIInterviewWorkspace({ session, rounds, initialChat }: P
             </div>
           )}
 
-          <ThemeToggle />
           <button
             onClick={() => handleSubmitAssessment()}
             disabled={submitting}
@@ -1754,7 +1752,7 @@ function RoundSurface({
 
   return (
     <div className="h-full min-h-0 flex flex-col overflow-hidden ai-surface">
-      <SandpackProvider
+      <ShimmedSandpackProvider
         key={`${previewKey}-${isDark ? "dark" : "light"}`}
         template={isFrontend ? "react" : "vanilla"}
         theme={getSandpackTheme(isDark)}
@@ -1949,7 +1947,7 @@ function RoundSurface({
       ) : (
         <ConsoleSurface language={round.language ?? "node"} kind={round.kind as "backend" | "dsa"} onRun={onRun} />
       )}
-      </SandpackProvider>
+      </ShimmedSandpackProvider>
     </div>
   );
 }

@@ -22,7 +22,7 @@ import {
   Menu,
   X,
 } from "lucide-react";
-import { LogoLockup } from "./Logo";
+import LogoDynamic from "./LogoDynamic";
 import type { NavStatus } from "@/lib/settings-constants";
 
 /** Icon names are passed across the RSC boundary as strings. See NavDropdown for rationale. */
@@ -62,7 +62,6 @@ type Props = {
   developerItems: MobileNavItem[];
   recruiterItems: MobileNavItem[];
   blogStatus?: NavStatus;
-  pricingStatus?: NavStatus;
   devsMenuStatus?: NavStatus;
   recruitersMenuStatus?: NavStatus;
 };
@@ -79,7 +78,6 @@ export default function MobileNav({
   developerItems,
   recruiterItems,
   blogStatus,
-  pricingStatus,
   devsMenuStatus,
   recruitersMenuStatus,
 }: Props) {
@@ -138,7 +136,7 @@ export default function MobileNav({
           aria-haspopup="menu"
           aria-expanded={open}
           aria-label={open ? "Close navigation" : "Open navigation"}
-          className="flex h-9 w-9 items-center justify-center border border-border bg-surface text-fg transition-colors hover:bg-panel focus-visible:outline-none"
+          className="mobile-menu-btn flex h-9 w-9 items-center justify-center rounded-full border border-border bg-surface text-fg transition-all hover:bg-panel focus-visible:outline-none"
         >
           {open ? (
             <X className="h-4 w-4" />
@@ -155,8 +153,8 @@ export default function MobileNav({
           href={isAdmin ? "/admin" : "/"}
           className="flex items-center group shrink-0"
         >
-          <LogoLockup
-            height={38}
+          <LogoDynamic
+            compact
             tone={isRecruiterRoute ? "secondary" : "accent"}
           />
         </Link>
@@ -166,9 +164,9 @@ export default function MobileNav({
         <div
           ref={panelRef}
           role="menu"
-          className="animate-fade-in absolute left-0 right-0 top-full mt-px border-b border-border-strong bg-surface ip-panel-float md:hidden max-h-[calc(100vh-4.5rem)] overflow-y-auto"
+          className="animate-fade-in absolute left-3 right-3 top-[calc(100%+8px)] z-50 overflow-hidden rounded-3xl border border-border bg-surface shadow-[0_32px_80px_-20px_rgba(0,0,0,0.5)] md:hidden max-h-[calc(100vh-5rem)] overflow-y-auto"
         >
-          <nav className="mx-auto max-w-7xl">
+          <nav className="mx-auto max-w-7xl p-2">
             {(devsMenuStatus !== "hidden" || isAdmin) && (developerItems.length > 0 || isAdmin) && (
               <MobileGroup
                 title={devsMenuStatus === "hidden" && isAdmin ? "For practising (Hidden)" : "For practising"}
@@ -198,14 +196,6 @@ export default function MobileNav({
                 status={blogStatus}
               />
             )}
-            {pricingStatus !== "hidden" && (
-              <FlatLink
-                href={pricingStatus === "coming_soon" ? "/coming-soon?feature=Pricing" : "/pricing"}
-                label="Pricing"
-                active={pathname.startsWith("/pricing")}
-                status={pricingStatus}
-              />
-            )}
             {isAdmin && (
               <FlatLink
                 href="/admin"
@@ -217,11 +207,11 @@ export default function MobileNav({
 
             {/* Auth nudge for visitors so they don't get stuck. */}
             {!signedIn && (
-              <div className="border-t border-border p-4">
+              <div className="p-2 pt-3">
                 <Link
                   href="/login"
                   onClick={() => setOpen(false)}
-                  className="ip-btn ip-btn-primary w-full"
+                  className="block rounded-full bg-gradient-to-r from-[#8b93ff] via-[#ff2fb3] to-[#22d3ee] bg-[length:180%_100%] bg-left px-5 py-3 text-center text-sm font-bold text-white transition-all duration-300 hover:bg-right active:translate-y-px"
                 >
                   Sign in
                 </Link>
@@ -264,20 +254,18 @@ function MobileGroup({
 
     const body = (
       <>
-        <Icon
-          className={`mt-[3px] h-4 w-4 shrink-0 ${
-            active ? (tone === "secondary" ? "text-secondary" : "text-accent") : "text-subtle"
-          }`}
-        />
+        <span className={`grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-gradient-to-br ${tone === "secondary" ? "from-[#6366f1]/25 to-[#22d3ee]/15 text-[#a5b4fc]" : "from-[#ff2fb3]/25 to-[#8b93ff]/20 text-[#ff8ac2]"}`}>
+          <Icon className="h-4 w-4" />
+        </span>
         <span className="min-w-0 flex-1">
           <span className="flex items-center gap-2">
             <span className="text-[13.5px] font-semibold text-fg">{item.label}</span>
             {isComingSoon ? (
-              <span className="ip-label text-amber-800 dark:text-amber-400">Soon</span>
+              <span className="font-mono text-[10px] font-bold uppercase tracking-[0.14em] text-amber-500">Soon</span>
             ) : item.badge ? (
               <span
-                className={`ip-label ${
-                  item.badge === "Hidden" ? "text-rose-700 dark:text-rose-400" : labelTone
+                className={`font-mono text-[10px] font-bold uppercase tracking-[0.14em] ${
+                  item.badge === "Hidden" ? "text-rose-400" : labelTone
                 }`}
               >
                 {item.badge}
@@ -285,7 +273,7 @@ function MobileGroup({
             ) : null}
           </span>
           {item.description && (
-            <span className="mt-0.5 block text-[12px] leading-snug text-subtle">
+            <span className="mt-0.5 block truncate text-[12px] leading-snug text-subtle">
               {item.description}
             </span>
           )}
@@ -297,7 +285,7 @@ function MobileGroup({
       return (
         <div
           key={item.label}
-          className="flex select-none items-start gap-3 border-t border-border px-4 py-3 pl-6 opacity-45"
+          className="flex select-none items-center gap-3 rounded-2xl px-3 py-2.5 opacity-45"
         >
           {body}
         </div>
@@ -310,40 +298,43 @@ function MobileGroup({
         href={item.href}
         role="menuitem"
         aria-current={active ? "page" : undefined}
-        className="relative flex items-start gap-3 border-t border-border px-4 py-3 pl-6"
+        className={`flex items-center gap-3 rounded-2xl px-3 py-2.5 transition-colors hover:bg-panel ${
+          active ? "bg-panel ring-1 ring-inset ring-border" : ""
+        }`}
       >
-        {active && (
-          <span aria-hidden className={`absolute inset-y-0 left-0 w-[2px] ${markerBg}`} />
-        )}
         {body}
       </Link>
     );
   }
 
   return (
-    <div className="border-t border-border first:border-t-0">
+    <div className="overflow-hidden rounded-2xl">
       <button
         type="button"
         onClick={onToggle}
-        className="flex w-full items-center justify-between px-4 py-4 text-left"
+        className={`flex w-full items-center justify-between rounded-2xl px-4 py-3.5 text-left transition-colors hover:bg-panel ${
+          expanded ? "bg-panel/60" : ""
+        }`}
       >
-        <span className={`ip-label ${expanded || groupActive ? labelTone : ""}`}>{title}</span>
+        <span className={`font-mono text-[11px] font-bold uppercase tracking-[0.2em] ${expanded || groupActive ? labelTone : "text-muted"}`}>{title}</span>
         <span
           aria-hidden
-          className={`h-[5px] w-[5px] border-b border-r border-muted transition-transform duration-200 ${
-            expanded ? "-translate-y-px rotate-[225deg]" : "-translate-y-[2px] rotate-45"
+          className={`grid h-6 w-6 place-items-center rounded-full border border-border text-muted transition-transform duration-200 ${
+            expanded ? "rotate-180" : ""
           }`}
-        />
+        >
+          <span className="block h-[5px] w-[5px] -translate-y-[1px] rotate-45 border-b border-r border-current" />
+        </span>
       </button>
 
       {expanded && (
-        <div className="flex flex-col bg-panel/50">
+        <div className="flex flex-col gap-0.5 px-1 pb-2">
           {categories.length > 0
             ? categories.map((cat) => (
                 <div key={cat} className="flex flex-col">
-                  <div className="flex items-center gap-2 border-t border-border bg-panel/75 px-4 py-1.5 pl-6">
-                    <span className={`h-1 w-1 ${markerBg}`} aria-hidden />
-                    <span className="ip-label text-[12px] text-subtle">{cat}</span>
+                  <div className="flex items-center gap-2 px-3 pb-1 pt-2">
+                    <span className={`h-1 w-1 rounded-full ${markerBg}`} aria-hidden />
+                    <span className="font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-subtle">{cat}</span>
                   </div>
                   {items.filter((i) => i.category === cat).map(renderMobileItem)}
                 </div>
@@ -374,17 +365,16 @@ function FlatLink({
       href={href}
       role="menuitem"
       aria-current={active ? "page" : undefined}
-      className={`relative flex items-center justify-between border-t border-border px-4 py-4 text-[13.5px] font-semibold ${
-        isComingSoon ? "text-subtle" : "text-fg"
+      className={`flex items-center justify-between rounded-2xl px-4 py-3.5 text-[13.5px] font-semibold transition-colors hover:bg-panel ${
+        active ? "bg-panel ring-1 ring-inset ring-border" : isComingSoon ? "text-subtle" : "text-fg"
       }`}
     >
-      {active && <span aria-hidden className="absolute inset-y-0 left-0 w-[2px] bg-accent" />}
       <span className="flex items-center gap-2.5">
         {Icon && <Icon className="h-4 w-4 text-subtle" />}
         {label}
       </span>
       {isComingSoon && (
-        <span className="ip-label text-amber-800 dark:text-amber-400">Soon</span>
+        <span className="font-mono text-[10px] font-bold uppercase tracking-[0.14em] text-amber-500">Soon</span>
       )}
     </Link>
   );

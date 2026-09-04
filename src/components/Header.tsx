@@ -8,8 +8,7 @@ import type { NavDropdownItem } from "./NavDropdown";
 import HeaderLogo from "./HeaderLogo";
 import HeaderLink from "./HeaderLink";
 import NavDropdown from "./NavDropdown";
-
-import ThemeToggle from "./ThemeToggle";
+import NavChrome from "./NavChrome";
 import UserMenu from "./UserMenu";
 import MobileNav from "./MobileNav";
 import NotificationBell from "./NotificationBell";
@@ -69,7 +68,7 @@ export default async function Header() {
       description: "1,600+ hand-curated Q&As across 14 technologies.",
       iconName: "BookOpen" as const,
       badge: "1.6k+",
-      category: "Knowledge & AI",
+      category: "Practice & Code",
     },
     {
       href: "/prep",
@@ -92,6 +91,14 @@ export default async function Header() {
       label: "Prompt Arena",
       description: "Benchmark and score prompt engineering skills.",
       iconName: "Sparkles" as const,
+      badge: "New",
+      category: "Knowledge & AI",
+    },
+    {
+      href: "/creators",
+      label: "Creators",
+      description: "Learn from vetted creators — tutorials, real loops, prep guides.",
+      iconName: "Store" as const,
       badge: "New",
       category: "Knowledge & AI",
     },
@@ -215,7 +222,6 @@ export default async function Header() {
   }
 
   const blogStatus = statusForHref("/blog");
-  const pricingStatus = statusForHref("/pricing");
   const devsMenuStatus = statusForHref("menu:developers");
   const recruitersMenuStatus = statusForHref("menu:recruiters");
 
@@ -223,11 +229,8 @@ export default async function Header() {
   const filteredRecruiterItems = applyNavStatus(recruiterItems, true);
 
   return (
-    /* The header is chrome, not a component: solid surface, one hairline, no
-       glass and no shadow. Everything inside it sits on the same 64px band so
-       the tab-style active rule can meet the bottom border exactly. */
-    <header className="sticky top-0 z-[100] border-b border-border bg-surface">
-      <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-3 px-4">
+    <NavChrome>
+      <div className="nav-inner relative mx-auto flex h-16 max-w-7xl items-center justify-between gap-3 px-4">
         {/* Mobile: logo doubles as menu trigger (collapsed into MobileNav) */}
         <MobileNav
           signedIn={!!user}
@@ -235,7 +238,6 @@ export default async function Header() {
           developerItems={filteredDeveloperItems}
           recruiterItems={filteredRecruiterItems}
           blogStatus={blogStatus}
-          pricingStatus={pricingStatus}
           devsMenuStatus={devsMenuStatus}
           recruitersMenuStatus={recruitersMenuStatus}
         />
@@ -244,7 +246,7 @@ export default async function Header() {
         <HeaderLogo />
 
         <div className="flex items-center">
-          <nav aria-label="Primary" className="hidden h-16 items-stretch md:flex">
+          <nav aria-label="Primary" className="hidden h-16 items-center gap-1 md:flex">
             {(devsMenuStatus !== "hidden" || showAdmin) &&
               (filteredDeveloperItems.length > 0 || showAdmin) && (
                 <NavDropdown
@@ -269,8 +271,6 @@ export default async function Header() {
                 />
               )}
 
-            <HeaderLink href="/creators" label="Creators" badge="New" />
-
             {(blogStatus !== "hidden" || showAdmin) && (
               <HeaderLink
                 href={blogStatus === "coming_soon" && !showAdmin ? "/coming-soon?feature=Blog" : "/blog"}
@@ -285,33 +285,10 @@ export default async function Header() {
               />
             )}
 
-            {(pricingStatus !== "hidden" || showAdmin) && (
-              <HeaderLink
-                href={pricingStatus === "coming_soon" && !showAdmin ? "/coming-soon?feature=Pricing" : "/pricing"}
-                matchPrefix="/pricing"
-                label="Pricing"
-                tone={
-                  pricingStatus === "coming_soon"
-                    ? "warn"
-                    : pricingStatus === "hidden" && showAdmin
-                      ? "danger"
-                      : "default"
-                }
-                badge={
-                  pricingStatus === "coming_soon"
-                    ? "Soon"
-                    : pricingStatus === "hidden" && showAdmin
-                      ? "Hidden"
-                      : undefined
-                }
-              />
-            )}
           </nav>
 
-          {/* Utilities sit behind a single hairline divider — the one piece of
-              structure in the bar, so nav and account never read as one list. */}
-          <div className="ml-1 flex h-8 items-center gap-3 border-l border-border pl-4 md:ml-5 md:pl-5">
-            <ThemeToggle />
+          {/* Utility island — divider + buttons flip with the bar state. */}
+          <div className="nav-utils ml-1 flex h-8 items-center gap-2.5 border-l border-border pl-4 md:ml-5 md:pl-5 nav-divider">
             {/* Bell shows for any authenticated user — both candidates and
                 recruiters get the same notification model (IP-40). The bell
                 silently no-ops when unauthenticated (API returns 401). */}
@@ -324,13 +301,16 @@ export default async function Header() {
                 isCreator={showCreator}
               />
             ) : (
-              <Link href="/login" className="ip-btn ip-btn-primary ip-btn-sm">
+              <Link
+                href="/login"
+                className="inline-flex items-center justify-center gap-1.5 whitespace-nowrap rounded-full bg-gradient-to-r from-[#8b93ff] via-[#ff2fb3] to-[#22d3ee] bg-[length:180%_100%] bg-left px-5 py-2 text-[13px] font-bold text-white shadow-[0_6px_24px_-8px_rgba(139,147,255,0.7)] transition-all duration-300 hover:bg-right hover:shadow-[0_8px_30px_-6px_rgba(255,47,179,0.6)] active:translate-y-px"
+              >
                 Sign in
               </Link>
             )}
           </div>
         </div>
       </div>
-    </header>
+    </NavChrome>
   );
 }

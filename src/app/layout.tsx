@@ -85,7 +85,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         // cover our own components; they're still hydration-checked normally.
         suppressHydrationWarning
       >
-        <ThemeProvider attribute="class" defaultTheme="dark" enableSystem={false}>
+        {/* Dark-only product: forcedTheme locks it even for visitors with a
+            stored light preference from before the switch was removed. */}
+        <ThemeProvider attribute="class" defaultTheme="dark" forcedTheme="dark" enableSystem={false}>
           <Suspense fallback={null}>
             <RouteProgress />
           </Suspense>

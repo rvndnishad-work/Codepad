@@ -43,11 +43,18 @@ export default function SafeImage(props: Props) {
     );
   }
 
+  // A custom identity loader can't feed next/image's responsive srcset (it
+  // ignores width), which trips the missing-loader-width warning for `fill`
+  // images. Remote covers arrive pre-sized (Unsplash URLs carry their own
+  // w/q params), so bypass optimization for `fill` and keep lazy-loading +
+  // fill layout. Sized (non-fill) images keep the identity loader path.
+  const skipOptimize = isDataUrl || props.fill;
+
   return (
     <Image
       {...props}
-      loader={isDataUrl ? undefined : ({ src }) => src}
-      unoptimized={isDataUrl ? true : props.unoptimized}
+      loader={skipOptimize ? undefined : ({ src }) => src}
+      unoptimized={skipOptimize ? true : props.unoptimized}
       onError={() => setFailed(true)}
     />
   );

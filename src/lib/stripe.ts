@@ -28,7 +28,7 @@ export function getStripe(): Stripe {
     );
   }
   cached = new Stripe(key, {
-    apiVersion: "2026-04-22.dahlia",
+    apiVersion: "2026-08-26.dahlia",
     typescript: true,
   });
   return cached;

@@ -3,11 +3,11 @@
 import { useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 import {
-  SandpackProvider,
   SandpackCodeEditor,
   SandpackTests,
   type SandpackFiles,
 } from "@codesandbox/sandpack-react";
+import ShimmedSandpackProvider from "@/components/ShimmedSandpackProvider";
 import { FlaskConical, Info, X } from "lucide-react";
 
 /**
@@ -135,7 +135,7 @@ export default function ChallengePreview({
             Add at least one starter file and one test file to preview.
           </div>
         ) : (
-          <SandpackProvider
+          <ShimmedSandpackProvider
             template={template as any}
             files={files}
             theme="dark"
@@ -167,7 +167,7 @@ export default function ChallengePreview({
                 />
               </div>
             </div>
-          </SandpackProvider>
+          </ShimmedSandpackProvider>
         )}
       </div>
     </div>

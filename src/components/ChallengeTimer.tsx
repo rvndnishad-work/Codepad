@@ -3,60 +3,123 @@
 import React, { useState, useEffect, useRef } from "react";
 import { Timer, Play, RotateCcw, Pause, Trophy, Minus, Plus } from "lucide-react";
 
-export default function ChallengeTimer() {
+export type ChallengeTimerController = {
+  minutes: number;
+  seconds: number;
+  timeLeft: number;
+  total: number;
+  isRunning: boolean;
+  isFinished: boolean;
+  isCritical: boolean;
+  toggle: () => void;
+  reset: () => void;
+  pause: () => void;
+  adjust: (deltaSec: number) => void;
+};
+
+/**
+ * Challenge countdown brain. Lives outside any popover so closing a menu
+ * never unmounts the interval — the toolbar chip and the full controls
+ * below both drink from this one instance.
+ */
+export function useChallengeTimer(): ChallengeTimerController {
   const [timeLeft, setTimeLeft] = useState(300); // 5 minutes default
+  const [total, setTotal] = useState(300);
   const [isRunning, setIsRunning] = useState(false);
   const [isFinished, setIsFinished] = useState(false);
-  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const totalRef = useRef(300);
+  const leftRef = useRef(300);
 
   const minutes = Math.floor(timeLeft / 60);
   const seconds = timeLeft % 60;
   const isCritical = timeLeft < 60;
 
+  // Mirror state into refs so adjust() never needs setState-in-updater.
   useEffect(() => {
-    if (isRunning && timeLeft > 0) {
-      timerRef.current = setInterval(() => {
-        setTimeLeft((prev) => prev - 1);
-      }, 1000);
-    } else if (timeLeft === 0) {
-      setIsRunning(false);
-      setIsFinished(true);
-      if (timerRef.current) clearInterval(timerRef.current);
+    leftRef.current = timeLeft;
+  }, [timeLeft]);
+
+  // Deadline-driven ticking: one interval per run (no per-second teardown),
+  // immune to throttled-tab drift, floored at zero so the display can never
+  // show negative time.
+  const deadlineRef = useRef(0);
+  useEffect(() => {
+    if (!isRunning) return;
+    if (deadlineRef.current <= Date.now()) {
+      deadlineRef.current = Date.now() + leftRef.current * 1000;
     }
+    const id = setInterval(() => {
+      const remain = Math.max(0, Math.round((deadlineRef.current - Date.now()) / 1000));
+      leftRef.current = remain;
+      setTimeLeft(remain);
+      if (remain <= 0) {
+        setIsRunning(false);
+        setIsFinished(true);
+      }
+    }, 250);
+    return () => clearInterval(id);
+  }, [isRunning]);
 
-    return () => {
-      if (timerRef.current) clearInterval(timerRef.current);
-    };
-  }, [isRunning, timeLeft]);
-
-  const toggleTimer = () => {
+  const toggle = () => {
     if (isFinished) return;
-    setIsRunning(!isRunning);
+    if (!isRunning) deadlineRef.current = 0; // recompute from current timeLeft
+    setIsRunning((r) => !r);
   };
 
   const resetTimer = () => {
+    deadlineRef.current = 0;
     setIsRunning(false);
     setIsFinished(false);
-    setTimeLeft(300);
-    if (timerRef.current) clearInterval(timerRef.current);
+    leftRef.current = totalRef.current;
+    setTimeLeft(totalRef.current);
   };
 
+  return {
+    minutes,
+    seconds,
+    timeLeft,
+    total,
+    isRunning,
+    isFinished,
+    isCritical,
+    toggle,
+    reset: resetTimer,
+    pause: () => {
+      deadlineRef.current = 0;
+      setIsRunning(false);
+    },
+    adjust: (deltaSec: number) => {
+      const next = Math.min(3599, Math.max(60, leftRef.current + deltaSec));
+      leftRef.current = next;
+      totalRef.current = Math.max(totalRef.current, next);
+      if (isRunning) deadlineRef.current += deltaSec * 1000;
+      setTimeLeft(next);
+      setTotal(totalRef.current);
+    },
+  };
+}
+
+export default function ChallengeTimer({ controller }: { controller?: ChallengeTimerController }) {
+  const internal = useChallengeTimer();
+  const t = controller ?? internal;
+  const { minutes, seconds, isRunning, isFinished, isCritical, toggle, reset, adjust } = t;
+
   return (
-    <div className="flex items-center gap-1.5 h-8 relative">
+    <div className="relative flex items-center gap-1.5">
       {/* Timer Icon */}
-      <div className={`p-1.5 rounded-lg transition-all duration-200 ${
+      <div className={`rounded-lg p-1.5 transition-all duration-200 ${
         isFinished ? "text-emerald-400" :
         isCritical && isRunning ? "text-red-400" :
-        isRunning ? "text-accent" : "text-muted/50"
+        isRunning ? "text-[#8b93ff]" : "text-white/40"
       }`}>
         {isFinished ? <Trophy className="w-3.5 h-3.5" /> : <Timer className="w-3.5 h-3.5" />}
       </div>
 
       {/* Time Adjust (-) */}
       {!isRunning && !isFinished && (
-        <button 
-          onClick={() => setTimeLeft(prev => Math.max(60, prev - 60))}
-          className="w-6 h-6 rounded-md flex items-center justify-center bg-surface border border-border text-muted hover:text-fg hover:bg-elevated hover:border-border-strong transition-all duration-150"
+        <button
+          onClick={() => adjust(-60)}
+          className="grid h-6 w-6 place-items-center rounded-full text-white/40 transition hover:bg-white/10 hover:text-white"
           title="Remove 1 minute"
         >
           <Minus className="w-3 h-3" />
@@ -64,24 +127,24 @@ export default function ChallengeTimer() {
       )}
 
       {/* Time Display */}
-      <div className="flex flex-col items-center min-w-[48px]">
-        <span className={`text-[14px] font-mono font-semibold tabular-nums leading-none transition-colors ${
+      <div className="flex min-w-[52px] flex-col items-center">
+        <span className={`font-mono text-[14px] font-bold leading-none tabular-nums transition-colors ${
           isFinished ? "text-emerald-400" :
           isCritical && isRunning ? "text-red-400" :
-          isRunning ? "text-fg" : "text-fg/50"
+          isRunning ? "text-white" : "text-white/60"
         }`}>
           {minutes}:{seconds.toString().padStart(2, "0")}
         </span>
-        <span className="text-[8px] font-medium text-muted/30 mt-0.5 tracking-wider">
-          {isFinished ? "Done" : "Timer"}
+        <span className="mt-0.5 font-mono text-[8px] uppercase tracking-[0.18em] text-white/30">
+          {isFinished ? "Done" : isRunning ? "Live" : "Timer"}
         </span>
       </div>
 
       {/* Time Adjust (+) */}
       {!isRunning && !isFinished && (
-        <button 
-          onClick={() => setTimeLeft(prev => prev + 60)}
-          className="w-6 h-6 rounded-md flex items-center justify-center bg-surface border border-border text-muted hover:text-fg hover:bg-elevated hover:border-border-strong transition-all duration-150"
+        <button
+          onClick={() => adjust(60)}
+          className="grid h-6 w-6 place-items-center rounded-full text-white/40 transition hover:bg-white/10 hover:text-white"
           title="Add 1 minute"
         >
           <Plus className="w-3 h-3" />
@@ -89,43 +152,43 @@ export default function ChallengeTimer() {
       )}
 
       {/* Separator */}
-      <div className="h-4 w-px bg-border mx-0.5" />
+      <div className="mx-0.5 h-4 w-px bg-white/10" />
 
       {/* Play/Pause */}
       <button
-        onClick={toggleTimer}
+        onClick={toggle}
         disabled={isFinished}
-        className={`w-7 h-7 rounded-lg flex items-center justify-center transition-all duration-200 ${
-          isRunning 
-            ? "text-muted hover:text-fg hover:bg-elevated" 
-            : "text-accent bg-accent/10 hover:bg-accent/20"
+        className={`grid h-7 w-7 place-items-center rounded-full transition-all duration-200 ${
+          isRunning
+            ? "text-white/60 hover:bg-white/10 hover:text-white"
+            : "bg-gradient-to-br from-[#8b93ff] to-[#ff2fb3] text-white shadow-[0_4px_14px_-4px_rgba(255,47,179,0.7)] hover:scale-105"
         }`}
       >
         {isRunning ? <Pause className="w-3.5 h-3.5" /> : <Play className="w-3.5 h-3.5 fill-current" />}
       </button>
 
       {/* Reset */}
-      <button 
-        onClick={resetTimer} 
-        className="w-7 h-7 rounded-lg flex items-center justify-center text-muted/40 hover:text-fg hover:bg-elevated transition-all duration-200"
+      <button
+        onClick={reset}
+        className="grid h-7 w-7 place-items-center rounded-full text-white/40 transition-all duration-200 hover:bg-white/10 hover:text-white"
       >
         <RotateCcw className="w-3.5 h-3.5" />
       </button>
 
       {/* Finishing Alert */}
       {isFinished && (
-        <div className="absolute inset-0 bg-bg/80 backdrop-blur-[2px] flex items-center justify-center gap-2 px-3 animate-in fade-in zoom-in duration-300 border border-emerald-500/20 rounded-lg">
-           <Trophy className="w-3.5 h-3.5 text-emerald-400" />
-           <span className="text-[11px] font-medium text-fg">Time's up!</span>
-           <button onClick={resetTimer} className="ml-auto p-1 rounded-md hover:bg-elevated text-muted hover:text-fg transition-all">
-             <RotateCcw className="w-3 h-3" />
-           </button>
+        <div className="absolute inset-0 flex items-center justify-center gap-2 rounded-2xl border border-emerald-400/25 bg-[#0d0f16]/90 px-3 backdrop-blur animate-in fade-in zoom-in duration-300">
+          <Trophy className="w-3.5 h-3.5 text-emerald-400" />
+          <span className="text-[11px] font-bold text-white">Time's up!</span>
+          <button onClick={reset} className="ml-auto grid h-6 w-6 place-items-center rounded-full text-white/50 transition hover:bg-white/10 hover:text-white">
+            <RotateCcw className="w-3 h-3" />
+          </button>
         </div>
       )}
 
       {/* Critical pulse background */}
       {isRunning && isCritical && (
-        <div className="absolute inset-0 rounded-lg bg-red-500/[0.06] animate-pulse pointer-events-none" />
+        <div className="pointer-events-none absolute inset-0 animate-pulse rounded-2xl bg-red-500/[0.07]" />
       )}
     </div>
   );

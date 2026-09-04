@@ -6,7 +6,6 @@ import { useTheme } from "next-themes";
 import { toast } from "sonner";
 import { Play, Send, CheckCircle2, XCircle, Loader2, EyeOff, Clock, LogOut, FileCode, Terminal, Rows2, Columns2 } from "lucide-react";
 import MarkdownRenderer from "@/components/MarkdownRenderer";
-import ThemeToggle from "@/components/ThemeToggle";
 import { useResizable } from "@/hooks/useResizable";
 import { useResizableHeight } from "@/hooks/useResizableHeight";
 
@@ -235,8 +234,6 @@ export default function HarnessAttemptClient({
                 </button>
               ))}
             </div>
-
-            <ThemeToggle />
 
             <button
               onClick={() => run(true)}

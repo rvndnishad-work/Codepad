@@ -17,11 +17,11 @@ const STAGES = [
     ],
   },
   {
-    step: "02", title: "Screen", tagline: "Volume handled before your calendar is", icon: Bot,
+    step: "02", title: "Screen", tagline: "The whole pile, scored in parallel", icon: Bot,
     features: [
-      { icon: Bot, text: "AI screening interviews at batch scale" },
+      { icon: Bot, text: "AI screening interviews, hundreds in parallel" },
       { icon: Timer, text: "Take-homes with server-side grading" },
-      { icon: Gauge, text: "Auto-scored attempts, instant shortlists" },
+      { icon: Gauge, text: "Ranked shortlist, best-first, by morning" },
     ],
   },
   {
@@ -50,8 +50,9 @@ export default function HireWowPipeline() {
           <p className="flex items-center gap-2 font-mono text-[11px] uppercase tracking-[0.3em] text-[#8b93ff]"><Workflow className="h-3.5 w-3.5" /> the pipeline</p>
           <h2 className="wow-font-display mt-3 max-w-4xl text-5xl md:text-7xl">ONE WORKSPACE,<br /><span className="wow-gradient-boss">EVERY STAGE.</span></h2>
           <p className="mt-4 max-w-xl text-[15px] leading-relaxed text-[var(--wow-muted)]">
-            From the first screen to the signed offer — no tool-hopping, no lost
-            context between stages, and one record you can point at afterwards.
+            From a thousand applicants down to the signed offer — no
+            tool-hopping, no lost context between stages, and one record per
+            candidate you can point at afterwards.
           </p>
         </WowReveal>
 

@@ -74,11 +74,9 @@ export default function LogoDynamic({ tone = "accent", compact = false, classNam
           <span className="ld-word text-[17px] font-extrabold tracking-tight" style={{ color: "var(--fg)" }}>
             interview
             <span
+              className="inline-block bg-clip-text text-transparent"
               style={{
-                background: `linear-gradient(92deg, ${a}, ${c})`,
-                WebkitBackgroundClip: "text",
-                backgroundClip: "text",
-                color: "transparent",
+                backgroundImage: `linear-gradient(92deg, ${a}, ${c})`,
               }}
             >
               pad

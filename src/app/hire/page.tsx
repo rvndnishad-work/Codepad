@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import "@/components/wow/wow.css";
 import "@/components/home-wow/home-wow.css";
 import HireWowHero from "@/components/hire-wow/HireWowHero";
+import HireWowFlood from "@/components/hire-wow/HireWowFlood";
 import HireWowPipeline from "@/components/hire-wow/HireWowPipeline";
 import HireWowRoom from "@/components/hire-wow/HireWowRoom";
 import HireWowRadar from "@/components/hire-wow/HireWowRadar";
@@ -16,14 +17,14 @@ import HireWowFinal from "@/components/hire-wow/HireWowFinal";
 import ScrollProgressBar from "./ScrollProgressBar";
 
 export const metadata: Metadata = {
-  title: "Interviewpad for Hiring Teams — Technical Interviews, Take-Homes & AI Screening",
+  title: "Screen 1,000 Applicants Without Reading 1,000 Resumes — Interviewpad for Hiring Teams",
   description:
-    "Run live coding interviews with replay, send server-graded take-homes, and screen candidates at scale with AI — with integrity signals on every attempt.",
+    "One opening brings hundreds of applications. Send them all the same take-home or AI screening interview, let our servers grade every attempt with anti-cheat signals attached, and get a shortlist ranked by evidence instead of arrival order.",
   alternates: { canonical: "/hire" },
   openGraph: {
-    title: "Interviewpad for Hiring Teams",
+    title: "Rank every applicant, not just the first forty",
     description:
-      "Live coding interviews, server-graded take-homes, and AI screening at batch scale — in one workspace.",
+      "Server-graded take-homes, AI screening interviews and built-in anti-cheat turn an unreadable applicant pile into a ranked shortlist.",
   },
 };
 
@@ -47,6 +48,8 @@ export default async function HirePage() {
         ctaHref={ctaHref}
         signedIn={!!session?.user}
       />
+
+      <HireWowFlood />
 
       <HireWowPipeline />
 

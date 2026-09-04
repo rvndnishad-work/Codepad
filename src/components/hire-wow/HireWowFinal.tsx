@@ -32,7 +32,7 @@ export default function HireWowFinal({ ctaHref, signedIn }: { ctaHref: string; s
 
       <div className="relative mx-auto max-w-7xl px-4 pb-10 pt-20 md:pt-28">
         <WowReveal>
-          <p className="font-mono text-[11px] uppercase tracking-[0.3em] text-[#a5b4fc]">◆ workspaces open in minutes</p>
+          <p className="font-mono text-[11px] uppercase tracking-[0.3em] text-[#a5b4fc]">◆ your next opening, minus the pile</p>
         </WowReveal>
         <h2 className="wow-hire-final-title wow-font-display mt-4 text-[13vw] leading-[0.9] md:text-[6.5rem]">
           <span className="block overflow-hidden"><span className="block">MAKE YOUR NEXT</span></span>

@@ -83,16 +83,16 @@ export default function HireWowHero({
       {/* floating proof chips */}
       <div aria-hidden className="pointer-events-none absolute inset-0 z-10 hidden lg:block">
         <div className="wow-hire-chip wow-float absolute left-[3%] top-[24%] -rotate-6 rounded-2xl border border-emerald-300/30 bg-[#0a1024]/85 px-4 py-3 shadow-[0_16px_50px_-16px_rgba(52,211,153,0.5)]">
-          <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-emerald-300">✓ integrity pass</p>
-          <p className="mt-0.5 text-sm font-bold text-white">0 pastes · 0 exits</p>
+          <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-emerald-300">✓ 900 attempts graded</p>
+          <p className="mt-0.5 text-sm font-bold text-white">While you slept</p>
         </div>
         <div className="wow-hire-chip wow-float-2 absolute right-[3%] top-[22%] rotate-3 rounded-2xl border border-[#8b93ff]/40 bg-[#0a1024]/85 px-4 py-3 shadow-[0_16px_50px_-16px_rgba(139,147,255,0.6)]">
-          <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-[#c7d2fe]">auto-graded</p>
+          <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-[#c7d2fe]">applicant #612 · now rank 1</p>
           <p className="wow-font-display mt-0.5 text-2xl text-white">92<span className="text-white/40">/100</span></p>
         </div>
         <div className="wow-hire-chip wow-float-3 absolute bottom-[20%] right-[5%] -rotate-2 rounded-2xl border border-white/15 bg-[#0a1024]/85 px-4 py-3">
-          <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-white/55">▶ replay clipped</p>
-          <p className="mt-0.5 text-sm font-bold text-white">Panel-ready in 1 click</p>
+          <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-white/55">▶ replay attached</p>
+          <p className="mt-0.5 text-sm font-bold text-white">Shortlist in 1 click</p>
         </div>
       </div>
 
@@ -108,14 +108,15 @@ export default function HireWowHero({
         </div>
 
         <h1 className="wow-font-display mt-8 text-[13vw] leading-[0.9] drop-shadow-[0_2px_16px_rgba(0,0,0,0.95)] sm:text-[9vw] lg:text-[5.6rem]">
-          <span className="block overflow-hidden pb-1"><span className="wow-hire-line block">SEE HOW THEY</span></span>
-          <span className="block overflow-hidden pb-2"><span className="wow-hire-line block">ACTUALLY <span className="wow-gradient-boss">THINK.</span></span></span>
+          <span className="block overflow-hidden pb-1"><span className="wow-hire-line block">YOUR BEST HIRE</span></span>
+          <span className="block overflow-hidden pb-2"><span className="wow-hire-line block"><span className="wow-gradient-boss">NEVER GOT READ.</span></span></span>
         </h1>
 
-        <p className="wow-hire-fade mt-6 max-w-xl text-balance text-base font-medium leading-relaxed text-white/85 [text-shadow:0_2px_18px_rgba(0,0,0,0.9)] md:text-lg">
-          Live coding interviews with full replay, async take-homes graded on
-          our servers, and an integrity signal on every attempt — one
-          workspace, one scorecard, zero guesswork.
+        <p className="wow-hire-fade mt-6 max-w-2xl text-balance text-base font-medium leading-relaxed text-white/85 [text-shadow:0_2px_18px_rgba(0,0,0,0.9)] md:text-lg">
+          Nine hundred applications, opened in the order they landed,
+          shortlist closed at forty. Send all nine hundred a take-home or an AI
+          interview instead — our servers grade every attempt, anti-cheat rides
+          along, and by morning the list is sorted by who can actually do the job.
         </p>
 
         <div className="wow-hire-fade mt-8 flex flex-col items-center gap-3 sm:flex-row">
@@ -138,7 +139,7 @@ export default function HireWowHero({
         </div>
 
         <p className="wow-hire-fade mt-6 flex items-center gap-1.5 font-mono text-[11px] uppercase tracking-[0.18em] text-white/55">
-          <ShieldCheck className="h-3.5 w-3.5 text-emerald-300" /> Capgemini · SakSoft · and more hire on evidence
+          <ShieldCheck className="h-3.5 w-3.5 text-emerald-300" /> Capgemini · SakSoft · and more screen on evidence, not order
         </p>
       </div>
     </section>

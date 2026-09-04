@@ -5,6 +5,7 @@ import Link from "next/link";
 import dynamic from "next/dynamic";
 import gsap from "gsap";
 import { ArrowRight, Building2, ShieldCheck } from "lucide-react";
+import HireHeroTypewriter from "./HireHeroTypewriter";
 
 const CodeVerse3D = dynamic(() => import("@/components/wow/CodeVerse3D"), { ssr: false });
 
@@ -107,9 +108,9 @@ export default function HireWowHero({
           </span>
         </div>
 
-        <h1 className="wow-font-display mt-8 text-[13vw] leading-[0.9] drop-shadow-[0_2px_16px_rgba(0,0,0,0.95)] sm:text-[9vw] lg:text-[5.6rem]">
-          <span className="block overflow-hidden pb-1"><span className="wow-hire-line block">YOUR BEST HIRE</span></span>
-          <span className="block overflow-hidden pb-2"><span className="wow-hire-line block"><span className="wow-gradient-boss">NEVER GOT READ.</span></span></span>
+        <h1 className="wow-font-display mt-8 text-[9vw] leading-[0.9] drop-shadow-[0_2px_16px_rgba(0,0,0,0.95)] sm:text-[7.5vw] lg:text-[5rem]">
+          <span className="block overflow-hidden pb-1"><span className="wow-hire-line block">1,000 APPLIED.</span></span>
+          <span className="block overflow-hidden pb-2"><span className="wow-hire-line block whitespace-nowrap"><HireHeroTypewriter /></span></span>
         </h1>
 
         <p className="wow-hire-fade mt-6 max-w-2xl text-balance text-base font-medium leading-relaxed text-white/85 [text-shadow:0_2px_18px_rgba(0,0,0,0.9)] md:text-lg">

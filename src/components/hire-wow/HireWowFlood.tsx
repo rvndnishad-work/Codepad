@@ -17,7 +17,8 @@ function scoreFor(i: number): number {
 
 const APPLICANTS = 120;
 const READ_DEPTH = 34; // how far a human scan realistically gets
-const HIDDEN_GEM = 71; // the applicant nobody ever opens
+const HIDDEN_GEM = 71; // grid position of the applicant nobody ever opens
+const GEM_LABEL = 612; // ...and their number in the real 900-deep pile
 
 const RANKED = Array.from({ length: APPLICANTS }, (_, i) => i).sort((a, b) => {
   if (a === HIDDEN_GEM) return -1;
@@ -108,7 +109,7 @@ export default function HireWowFlood() {
                 <span className="font-mono text-[10px] uppercase tracking-[0.2em] text-rose-400">today</span>
               </header>
               <p className="mt-1.5 text-[13px] text-[var(--wow-muted)]">
-                Attention runs out long before the pile does.
+                Attention runs out long before the pile does. Each square is an applicant.
               </p>
 
               <div className="mt-5 grid grid-cols-[repeat(20,minmax(0,1fr))] gap-1.5">
@@ -128,7 +129,7 @@ export default function HireWowFlood() {
                     >
                       {gem && (
                         <span className="pointer-events-none absolute bottom-full left-1/2 z-10 mb-2 -translate-x-1/2 whitespace-nowrap rounded-full border border-emerald-400/30 bg-[#05081a] px-2.5 py-1 font-mono text-[10px] text-emerald-200 opacity-0 transition group-hover:opacity-100">
-                          #{HIDDEN_GEM + 1} · never opened
+                          #{GEM_LABEL} · never opened
                         </span>
                       )}
                     </span>
@@ -180,7 +181,7 @@ export default function HireWowFlood() {
                     >
                       {gem && (
                         <span className="pointer-events-none absolute bottom-full left-1/2 z-10 mb-2 -translate-x-1/2 whitespace-nowrap rounded-full border border-emerald-400/30 bg-[#05081a] px-2.5 py-1 font-mono text-[10px] text-emerald-200 opacity-0 transition group-hover:opacity-100">
-                          #{HIDDEN_GEM + 1} · now rank {gemRank} · 92/100
+                          #{GEM_LABEL} · now rank {gemRank} · 92/100
                         </span>
                       )}
                     </span>

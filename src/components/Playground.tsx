@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState, useSyncExternalStore, useCallback } from "react";
+import { useEffect, useMemo, useRef, useState, useSyncExternalStore, useCallback, type PointerEvent as ReactPointerEvent } from "react";
 import { useTheme } from "next-themes";
 
 function useIsMobile(breakpoint = 768) {
@@ -156,6 +156,73 @@ function isBackendLanguage(lang: string, templateId?: string): boolean {
   const l = lang.toLowerCase();
   if (templateId === "ts-node" && l === "typescript") return true;
   return BACKEND_LANGUAGES.has(l);
+}
+
+/**
+ * Percentage-based vertical split for the stacked mobile layout (<768px).
+ * The px-based useResizableHeight hook doesn't fit small screens, and the
+ * mobile panes previously had no drag handle at all (fixed 55/45). Tracks a
+ * pointer drag as a % of the container height so it works with mouse AND
+ * touch (the handle itself carries `touch-none` so the browser doesn't steal
+ * the gesture for scrolling).
+ */
+function useVerticalSplit(initialPct: number, min = 12, max = 88) {
+  const [split, setSplit] = useState(initialPct);
+  const splitRef = useRef(initialPct);
+  splitRef.current = split;
+
+  const onPointerDown = useCallback(
+    (e: ReactPointerEvent<HTMLDivElement>) => {
+      const container = e.currentTarget.parentElement;
+      if (!container) return;
+      e.preventDefault();
+      const total = container.getBoundingClientRect().height;
+      const startY = e.clientY;
+      const startSplit = splitRef.current;
+      try {
+        e.currentTarget.setPointerCapture(e.pointerId);
+      } catch {
+        /* pointer capture unsupported — document listeners still track */
+      }
+
+      const onPointerMove = (ev: globalThis.PointerEvent) => {
+        const pct = startSplit + ((ev.clientY - startY) / Math.max(1, total)) * 100;
+        const next = Math.min(max, Math.max(min, pct));
+        splitRef.current = next;
+        setSplit(next);
+      };
+      const onPointerUp = () => {
+        document.removeEventListener("pointermove", onPointerMove);
+        document.removeEventListener("pointerup", onPointerUp);
+        document.removeEventListener("pointercancel", onPointerUp);
+        document.body.style.userSelect = "";
+      };
+
+      document.addEventListener("pointermove", onPointerMove);
+      document.addEventListener("pointerup", onPointerUp);
+      document.addEventListener("pointercancel", onPointerUp);
+      document.body.style.userSelect = "none";
+    },
+    [min, max]
+  );
+
+  return { split, onPointerDown };
+}
+
+/** Visible grab handle between stacked mobile panes — a bottom-sheet style grip. */
+function MobileSplitHandle({ onPointerDown, label }: { onPointerDown: (e: ReactPointerEvent<HTMLDivElement>) => void; label: string }) {
+  return (
+    <div
+      onPointerDown={onPointerDown}
+      role="separator"
+      aria-orientation="horizontal"
+      aria-label={label}
+      title="Drag to resize"
+      className="flex h-7 shrink-0 cursor-row-resize touch-none select-none items-center justify-center bg-[#0d0f16] transition-colors active:bg-[#8b93ff]/20"
+    >
+      <span className="h-1 w-12 rounded-full bg-white/20" aria-hidden />
+    </div>
+  );
 }
 
 export default function Playground({
@@ -357,6 +424,9 @@ export default function Playground({
   const { width: promptW, onPointerDown: onPromptDrag } = useResizable(384, 280, 640, false);
   const { height: consoleH, onPointerDown: onConsoleDrag } = useResizableHeight(300, 120, 900);
   const { width: consoleW, onPointerDown: onConsoleColDrag } = useResizable(420, 240, 900, true);
+  // Mobile stacked-pane splits (editor/output 55%, preview/console 60%).
+  const { split: mobileSplit, onPointerDown: onMobileSplitDrag } = useVerticalSplit(55);
+  const { split: mobileInnerSplit, onPointerDown: onMobileInnerSplitDrag } = useVerticalSplit(60);
 
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -870,7 +940,7 @@ export default function Playground({
               snippet={snippet} isOwner={isOwner} forking={forking}
               handleSave={() => handleSave()} handleFork={handleFork} handleShare={handleShare}
               handleCopyEmbed={handleCopyEmbed} handlePopout={handlePopout} handleRun={handleRun}
-              running={running} showRun={isBackend} tags={tags} setTags={setTags} tagInput={tagInput} setTagInput={setTagInput}
+              running={running} showRun={isBackend} showDirectionToggle={!isMobile} tags={tags} setTags={setTags} tagInput={tagInput} setTagInput={setTagInput}
               onToggleFiles={() => setMobileFilesOpen((prev) => !prev)}
               onTogglePrompt={() => setPromptOpen((prev) => !prev)}
               autoRun={autoRun} setAutoRun={setAutoRun}
@@ -948,23 +1018,27 @@ export default function Playground({
                         </div>
                       ) : isMobile ? (
                         <div className="flex flex-col h-full bg-bg">
-                          <div className="flex-[0_0_55%] min-h-0 overflow-hidden flex flex-col ide-panel">
+                          <div style={{ flex: `0 0 ${mobileSplit}%` }} className="min-h-0 overflow-hidden flex flex-col ide-panel">
                             <div className="flex-1 min-h-0">
                               <MonacoEditor fontSize={fontSize} readOnly={!editable} />
                             </div>
                             <ReadOnlyToolbar editable={editable} />
                           </div>
-                          <div className="flex-[0_0_45%] min-h-0 flex flex-col relative ide-panel border-t border-border">
+                          <MobileSplitHandle onPointerDown={onMobileSplitDrag} label="Resize editor and output" />
+                          <div className="flex-1 min-h-0 flex flex-col relative ide-panel border-t border-border">
                             <div style={{
                               display: effectiveView === "console" ? "none" : "flex",
-                              flex: effectiveView === "both" ? "0 0 60%" : 1,
+                              flex: effectiveView === "both" ? `0 0 ${mobileInnerSplit}%` : 1,
                               minHeight: 0, overflow: "hidden",
                             }}>
                               <SandpackPreview showNavigator showOpenInCodeSandbox={false} showRefreshButton={false} style={{ height: "100%", width: "100%" }} />
                             </div>
+                            {effectiveView === "both" && (
+                              <MobileSplitHandle onPointerDown={onMobileInnerSplitDrag} label="Resize preview and console" />
+                            )}
                             <div style={{
                               display: effectiveView === "preview" ? "none" : "flex",
-                              flex: effectiveView === "both" ? "0 0 40%" : 1,
+                              flex: 1,
                               minHeight: 0, overflow: "hidden",
                               flexDirection: "column",
                               borderTop: effectiveView === "both" ? "1px solid var(--border)" : undefined,
@@ -1004,7 +1078,7 @@ export default function Playground({
                               <div style={{ width: promptW, minWidth: 0 }} className="h-full shrink-0">
                                 <PromptSidebar onClose={() => setPromptOpen(false)} />
                               </div>
-                              <div className="ide-divider h-full w-px cursor-col-resize" onPointerDown={onPromptDrag}>
+                              <div className="ide-divider h-full w-px cursor-col-resize touch-none select-none" onPointerDown={onPromptDrag}>
                                 <div className="absolute inset-y-0 -left-1.5 -right-1.5" />
                               </div>
                             </>
@@ -1014,7 +1088,7 @@ export default function Playground({
                               <div style={{ width: explorerW, minWidth: 0 }} className="h-full shrink-0 flex flex-col ide-panel">
                                 <FileExplorer templateId={templateId} readOnly={!editable} onCollapse={() => setExplorerCollapsed(true)} />
                               </div>
-                              <div className="ide-divider h-full w-px cursor-col-resize" onPointerDown={onExplorerDrag}>
+                              <div className="ide-divider h-full w-px cursor-col-resize touch-none select-none" onPointerDown={onExplorerDrag}>
                                 <div className="absolute inset-y-0 -left-1.5 -right-1.5" />
                               </div>
                             </>
@@ -1034,7 +1108,7 @@ export default function Playground({
                             </div>
                             <ReadOnlyToolbar editable={editable} />
                           </div>
-                          <div className="ide-divider h-full w-px cursor-col-resize" onPointerDown={onEditorDrag}>
+                          <div className="ide-divider h-full w-px cursor-col-resize touch-none select-none" onPointerDown={onEditorDrag}>
                             <div className="absolute inset-y-0 -left-2 -right-2" />
                           </div>
                           <div className="flex-1 min-w-0 h-full flex flex-col relative ide-panel">
@@ -1085,11 +1159,11 @@ export default function Playground({
                               </div>
                               {(effectiveView === "both" || effectiveView === "columns") && (
                                 effectiveView === "columns" ? (
-                                  <div className="ide-divider h-full w-px cursor-col-resize" onPointerDown={onConsoleColDrag}>
+                                  <div className="ide-divider h-full w-px cursor-col-resize touch-none select-none" onPointerDown={onConsoleColDrag}>
                                     <div className="absolute inset-y-0 -left-1.5 -right-1.5" />
                                   </div>
                                 ) : (
-                                  <div className="ide-divider-h w-full h-px cursor-row-resize" onPointerDown={onConsoleDrag}>
+                                  <div className="ide-divider-h w-full h-px cursor-row-resize touch-none select-none" onPointerDown={onConsoleDrag}>
                                     <div className="absolute inset-x-0 -top-1.5 -bottom-1.5" />
                                   </div>
                                 )

@@ -11,21 +11,18 @@ import {
   Columns2,
   Rows2,
   PanelLeft,
-  ChevronDown,
   Eye,
-  Layout as LayoutIcon,
   Terminal,
   MoreHorizontal,
   Type,
   Minus,
   Plus,
-  Check,
   GitFork,
   Link as LinkIcon,
+  LogOut,
   Code2,
   ExternalLink,
-  ArrowLeft,
-  X
+  ArrowLeft
 } from "lucide-react";
 import Link from "next/link";
 import { TemplateLogo } from "@/lib/icons";
@@ -345,104 +342,22 @@ const toolbarCSS = `
   }
 `;
 
-/* â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-   Toolbar Dropdown â€” 3D elevated
-â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* View Layout selector — unified responsive segmented control (same on all breakpoints). */
 
-type ToolbarDropdownProps<T extends string> = {
-  value: T;
-  options: { value: T; label: string; icon?: React.ComponentType<{ className?: string; style?: React.CSSProperties }> }[];
-  onChange: (v: T) => void;
-  icon: React.ComponentType<{ className?: string; style?: React.CSSProperties }>;
-  disabled?: boolean;
-  label?: string;
-};
-
-function ToolbarDropdown<T extends string>({ 
-  value, options, onChange, icon: Icon, disabled, label 
-}: ToolbarDropdownProps<T>) {
-  const [open, setOpen] = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const handleClick = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
-    };
-    window.addEventListener("mousedown", handleClick);
-    return () => window.removeEventListener("mousedown", handleClick);
-  }, []);
-
-  const selected = options.find(o => o.value === value);
-
-  return (
-    <div className="relative" ref={ref}>
-      <button 
-        onClick={() => !disabled && setOpen(!open)}
-        disabled={disabled}
-        className={`tb-btn flex items-center gap-2 px-2.5 h-7 rounded-md transition-colors ${
-          open ? "text-fg bg-elevated" : "text-muted hover:text-fg"
-        } ${disabled ? "opacity-20 cursor-not-allowed" : "cursor-pointer"}`}
-      >
-        <Icon className={`w-3.5 h-3.5 ${open ? "text-accent" : "opacity-60"}`} />
-        <span className="text-[11px] font-medium">{selected?.label}</span>
-        <ChevronDown className={`w-3 h-3 opacity-40 transition-transform duration-200 ${open ? "rotate-180" : ""}`} />
-      </button>
-
-      {open && (
-        <div className="absolute top-full left-0 mt-2 w-44 py-1 rounded-xl z-[100] animate-in fade-in slide-in-from-top-1 duration-150 border border-border-strong ip-panel-float bg-panel"
-          style={{
-            boxShadow: "0 16px 48px rgba(0,0,0,0.1), 0 0 0 1px var(--border) inset"
-          }}
-        >
-          {label && (
-            <div className="px-3 py-2 text-[10px] font-medium uppercase tracking-wider text-muted/30 border-b border-border mb-1">
-              {label}
-            </div>
-          )}
-          {options.map((opt) => (
-            <button
-              key={opt.value}
-              onClick={() => { onChange(opt.value); setOpen(false); }}
-              className={`w-full flex items-center gap-2.5 px-3 py-2 text-[12px] transition-all duration-100 ${
-                opt.value === value 
-                  ? "text-accent bg-accent/10" 
-                  : "text-muted/60 hover:text-fg hover:bg-elevated"
-              }`}
-            >
-              {opt.icon && <opt.icon className={`w-3.5 h-3.5 ${opt.value === value ? "text-accent" : "opacity-40"}`} />}
-              <span className="flex-1 text-left">{opt.label}</span>
-              {opt.value === value && <Check className="w-3 h-3 text-accent" />}
-            </button>
-          ))}
-        </div>
-      )}
-    </div>
-  );
-}
-
-/* â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-   View Layout selector â€” segmented tabs on lg+, dropdown below.
-   The two variants share the same options list so behavior stays
-   identical across breakpoints.
-â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
-
-const VIEW_OPTIONS = [
-  { value: "preview" as const, label: "Preview", icon: Eye },
-  { value: "both" as const, label: "Split", icon: LayoutIcon },
-  { value: "columns" as const, label: "Columns", icon: Columns2 },
-  { value: "console" as const, label: "Console", icon: Terminal },
-];
-
-type ViewValue = (typeof VIEW_OPTIONS)[number]["value"];
+type ViewValue = "preview" | "both" | "columns" | "console";
 
 function ViewLayoutControl({
   value,
   onChange,
   disabled,
+  showDirectionToggle = true,
 }: {
   value: ViewValue;
   onChange: (v: ViewValue) => void;
   disabled?: boolean;
+  /** Hidden on mobile/tablet stacked layout — console is always bottom
+      there, so the rows/columns switch has no visible effect. */
+  showDirectionToggle?: boolean;
 }) {
   // Console remembers its last split direction (rows vs columns) so the
   // Console button returns to it instead of always resetting to rows.
@@ -450,32 +365,17 @@ function ViewLayoutControl({
   useEffect(() => {
     if (value === "both" || value === "columns") setLastSplit(value);
   }, [value]);
-  const splitActive = value === "both" || value === "columns";
+  // Single responsive control on every breakpoint: icon-only on phones,
+  // labels from ~480px up. Previously <lg used a dropdown with different
+  // option names (Split/Columns/Console) than desktop — now identical.
   return (
-    <>
-      {/* Dropdown â€” shown below the lg breakpoint (< 1024px) */}
-      <div className="lg:hidden">
-        <ToolbarDropdown
-          label="View Layout"
-          value={value}
-          onChange={onChange}
-          disabled={disabled}
-          icon={
-            value === "preview" ? Eye : value === "both" ? LayoutIcon : value === "columns" ? Columns2 : Terminal
-          }
-          options={VIEW_OPTIONS}
-        />
-      </div>
-
-      {/* Segmented tabs â€” shown at lg and above (â‰¥ 1024px) */}
-      {/* Two-button switch + direction toggle — lg and above */}
-      <div
-        className={`hidden lg:flex tb-tabs items-center rounded-md h-7 p-0.5 gap-0.5 ${
-          disabled ? "opacity-30 pointer-events-none" : ""
-        }`}
-        role="tablist"
-        aria-label="View layout"
-      >
+    <div
+      className={`tb-tabs flex h-7 shrink-0 items-center gap-0.5 rounded-md p-0.5 ${
+        disabled ? "opacity-30 pointer-events-none" : ""
+      }`}
+      role="tablist"
+      aria-label="View layout"
+    >
         <button
           type="button"
           role="tab"
@@ -484,10 +384,10 @@ function ViewLayoutControl({
           onClick={() => onChange("preview")}
           disabled={disabled}
           title="Preview only"
-          className="tb-tab h-6 px-2.5 rounded-sm flex items-center gap-1.5 text-[11px] font-medium cursor-pointer"
+          className="tb-tab h-6 px-1.5 min-[480px]:px-2.5 rounded-sm flex items-center gap-1.5 text-[11px] font-medium cursor-pointer whitespace-nowrap"
         >
-          <Eye className="tb-tab-icon w-3 h-3 opacity-70" />
-          <span>Preview</span>
+          <Eye className="tb-tab-icon w-3 h-3 shrink-0 opacity-70" />
+          <span className="hidden min-[480px]:inline">Preview</span>
         </button>
         <button
           type="button"
@@ -497,23 +397,23 @@ function ViewLayoutControl({
           onClick={() => onChange(lastSplit)}
           disabled={disabled}
           title="Split: preview + console"
-          className="tb-tab h-6 px-2.5 rounded-sm flex items-center gap-1.5 text-[11px] font-medium cursor-pointer"
+          className="tb-tab h-6 px-1.5 min-[480px]:px-2.5 rounded-sm flex items-center gap-1.5 text-[11px] font-medium cursor-pointer whitespace-nowrap"
         >
-          <Terminal className="tb-tab-icon w-3 h-3 opacity-70" />
-          <span>Console</span>
+          <Terminal className="tb-tab-icon w-3 h-3 shrink-0 opacity-70" />
+          <span className="hidden min-[480px]:inline">Console</span>
         </button>
-        {(value === "both" || value === "columns") && (
+        {(value === "both" || value === "columns") && showDirectionToggle && (
           <>
-            <span aria-hidden className="mx-0.5 h-4 w-px bg-white/10" />
+            <span aria-hidden className="mx-0.5 h-4 w-px shrink-0 bg-white/10" />
             <button
               type="button"
               onClick={() => onChange("both")}
               disabled={disabled}
               title="Stacked: preview above console"
               aria-pressed={value === "both"}
-              className={`grid h-6 w-6 place-items-center rounded-sm transition ${value === "both" ? "bg-white/10 text-white" : "text-white/40 hover:text-white"}`}
+              className={`grid h-6 w-6 shrink-0 place-items-center rounded-sm transition ${value === "both" ? "bg-white/10 text-white" : "text-white/40 hover:text-white"}`}
             >
-              <Rows2 className="h-3 w-3" />
+              <Rows2 className="h-3 w-3 shrink-0" />
             </button>
             <button
               type="button"
@@ -521,14 +421,13 @@ function ViewLayoutControl({
               disabled={disabled}
               title="Side by side"
               aria-pressed={value === "columns"}
-              className={`grid h-6 w-6 place-items-center rounded-sm transition ${value === "columns" ? "bg-white/10 text-white" : "text-white/40 hover:text-white"}`}
+              className={`grid h-6 w-6 shrink-0 place-items-center rounded-sm transition ${value === "columns" ? "bg-white/10 text-white" : "text-white/40 hover:text-white"}`}
             >
-              <Columns2 className="h-3 w-3" />
+              <Columns2 className="h-3 w-3 shrink-0" />
             </button>
           </>
         )}
-      </div>
-    </>
+    </div>
   );
 }
 
@@ -629,6 +528,7 @@ export default function PlaygroundToolbar({
   visibility, setVisibility, snippet, snippetId, forking,
   handleSave, handleFork, handleShare, handleCopyEmbed, handlePopout,
   handleRun, running, onTogglePrompt, tplMode, showRun = true,
+  showDirectionToggle = true,
   uiScale, setUiScale, backHref, onToggleFiles
 }: any) {
   const [actionsOpen, setActionsOpen] = useState(false);
@@ -766,6 +666,7 @@ export default function PlaygroundToolbar({
             value={view}
             onChange={setView}
             disabled={tplMode === "console"}
+            showDirectionToggle={showDirectionToggle}
           />
         </div>
 
@@ -900,17 +801,20 @@ export default function PlaygroundToolbar({
               )}
             </div>
             {/* Exit — the global nav is hidden inside the IDE, so this is the
-                way back to the sandbox browser. */}
+                way back to the sandbox browser. Styled as an explicit red
+                exit action (not a generic close X) so its meaning is clear. */}
             <div className="h-5 w-px shrink-0 bg-gradient-to-b from-transparent via-white/15 to-transparent" aria-hidden />
             <Link
               href="/playgrounds"
               onClick={(e) => {
                 if (dirty && !window.confirm("Unsaved changes will be lost. Exit anyway?")) e.preventDefault();
               }}
-              className="tb-icon-btn grid h-9 w-9 shrink-0 place-items-center rounded-full text-white/40 transition hover:border-red-400/50 hover:text-red-300"
+              aria-label="Exit to playgrounds"
               title="Exit to playgrounds"
+              className="flex h-9 shrink-0 items-center gap-1.5 rounded-full border border-red-400/30 bg-red-500/10 px-3 text-red-300 transition hover:border-red-400/60 hover:bg-red-500/20 hover:text-red-200"
             >
-              <X className="h-4 w-4" />
+              <LogOut className="h-4 w-4 shrink-0" />
+              <span className="hidden text-[11px] font-black uppercase tracking-wider sm:inline">Exit</span>
             </Link>
           </div>
         </div>

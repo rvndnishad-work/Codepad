@@ -13,8 +13,9 @@ type Results = {
 const EMPTY: Results = { questions: [], companies: [], technologies: [] };
 const TRENDING = ["React", "System Design", "Google", "Node.js", "DSA"];
 
-/** Debounced instant-search box with a results dropdown. */
-export default function GlobalSearch() {
+/** Debounced instant-search box with a results dropdown. `hero` renders the
+ *  dark-glass pill used over cinematic heroes; default matches themed pages. */
+export default function GlobalSearch({ variant = "default" }: { variant?: "default" | "hero" }) {
   const router = useRouter();
   const [q, setQ] = useState("");
   const [res, setRes] = useState<Results>(EMPTY);
@@ -102,33 +103,46 @@ export default function GlobalSearch() {
   };
 
   const hasResults = res.questions.length + res.companies.length + res.technologies.length > 0;
+  const hero = variant === "hero";
 
   return (
     <div ref={boxRef} className="relative">
       <div className="relative">
-        <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-muted" />
-        {loading && <Loader2 className="w-4 h-4 absolute right-3.5 top-1/2 -translate-y-1/2 text-muted animate-spin" />}
+        <Search className={`w-4 h-4 absolute top-1/2 -translate-y-1/2 ${hero ? "left-5 text-white/40" : "left-3.5 text-muted"}`} />
+        {loading && <Loader2 className={`w-4 h-4 absolute top-1/2 -translate-y-1/2 animate-spin ${hero ? "right-5 text-white/40" : "right-3.5 text-muted"}`} />}
         <input
           value={q}
           onChange={(e) => updateQuery(e.target.value)}
           onFocus={() => setOpen(true)}
           onKeyDown={handleKeyDown}
           placeholder="Search questions, companies, technologies…"
-          className="w-full pl-10 pr-10 py-3 rounded-xl border border-border bg-surface text-sm focus:outline-none focus:border-accent/50 shadow-sm"
+          className={
+            hero
+              ? "w-full rounded-full border border-white/15 bg-white/[0.06] py-3.5 pl-12 pr-12 text-sm text-white outline-none backdrop-blur-md transition placeholder:text-white/40 hover:border-white/25 focus:border-[#8b93ff]/60 focus:shadow-[0_0_40px_-10px_rgba(139,147,255,0.5)]"
+              : "w-full pl-10 pr-10 py-3 rounded-xl border border-border bg-surface text-sm focus:outline-none focus:border-accent/50 shadow-sm"
+          }
         />
       </div>
 
       {open && (
-        <div className="absolute z-30 mt-2 w-full rounded-xl border border-border bg-surface shadow-2xl overflow-hidden">
+        <div className={
+          hero
+            ? "absolute z-30 mt-2 w-full overflow-hidden rounded-2xl border border-white/10 bg-[#0d0f16]/95 shadow-[0_24px_70px_-20px_rgba(0,0,0,0.9)] backdrop-blur-xl"
+            : "absolute z-30 mt-2 w-full rounded-xl border border-border bg-surface shadow-2xl overflow-hidden"
+        }>
           {q.trim().length < 2 ? (
             <div className="p-4">
-              <div className="text-[11px] font-black uppercase tracking-widest text-muted mb-2">Trending</div>
+              <div className={`text-[11px] font-black uppercase tracking-widest mb-2 ${hero ? "text-white/50" : "text-muted"}`}>Trending</div>
               <div className="flex flex-wrap gap-2">
                 {TRENDING.map((t) => (
                   <button
                     key={t}
                     onClick={() => updateQuery(t)}
-                    className="px-2.5 py-1 rounded-lg border border-border text-xs font-bold text-muted hover:text-accent hover:border-accent/40 transition"
+                    className={
+                      hero
+                        ? "px-2.5 py-1 rounded-full border border-white/15 text-xs font-bold text-white/60 hover:text-white hover:border-[#8b93ff]/50 transition"
+                        : "px-2.5 py-1 rounded-lg border border-border text-xs font-bold text-muted hover:text-accent hover:border-accent/40 transition"
+                    }
                   >
                     {t}
                   </button>
@@ -136,17 +150,18 @@ export default function GlobalSearch() {
               </div>
             </div>
           ) : !hasResults && !loading ? (
-            <div className="p-4 text-sm text-muted">No results for “{q}”.</div>
+            <div className={`p-4 text-sm ${hero ? "text-white/60" : "text-muted"}`}>No results for “{q}”.</div>
           ) : (
             <div className="max-h-[60vh] overflow-y-auto py-1.5">
               {res.companies.length > 0 && (
-                <Section icon={<Building2 className="w-3.5 h-3.5" />} label="Companies">
+                <Section icon={<Building2 className="w-3.5 h-3.5" />} label="Companies" dark={hero}>
                   {res.companies.map((c, idx) => {
                     const flatIdx = idx;
                     return (
                       <Row
                         key={c.slug}
                         active={activeIndex === flatIdx}
+                        dark={hero}
                         onClick={() => {
                           router.push(`/interview-questions/company/${c.slug}`);
                           setOpen(false);
@@ -159,13 +174,14 @@ export default function GlobalSearch() {
                 </Section>
               )}
               {res.technologies.length > 0 && (
-                <Section icon={<Layers className="w-3.5 h-3.5" />} label="Technologies">
+                <Section icon={<Layers className="w-3.5 h-3.5" />} label="Technologies" dark={hero}>
                   {res.technologies.map((t, idx) => {
                     const flatIdx = res.companies.length + idx;
                     return (
                       <Row
                         key={t.slug}
                         active={activeIndex === flatIdx}
+                        dark={hero}
                         onClick={() => {
                           router.push(`/interview-questions/${t.slug}`);
                           setOpen(false);
@@ -178,20 +194,21 @@ export default function GlobalSearch() {
                 </Section>
               )}
               {res.questions.length > 0 && (
-                <Section icon={<FileText className="w-3.5 h-3.5" />} label="Questions">
+                <Section icon={<FileText className="w-3.5 h-3.5" />} label="Questions" dark={hero}>
                   {res.questions.map((qq, idx) => {
                     const flatIdx = res.companies.length + res.technologies.length + idx;
                     return (
                       <Row
                         key={qq.slug}
                         active={activeIndex === flatIdx}
+                        dark={hero}
                         onClick={() => {
                           router.push(`/interview-question/${qq.slug}`);
                           setOpen(false);
                         }}
                       >
                         <span className="truncate">{qq.title}</span>
-                        {qq.company && <span className="text-[11px] text-muted shrink-0 ml-2">{qq.company}</span>}
+                        {qq.company && <span className={`text-[11px] shrink-0 ml-2 ${hero ? "text-white/40" : "text-muted"}`}>{qq.company}</span>}
                       </Row>
                     );
                   })}
@@ -205,10 +222,10 @@ export default function GlobalSearch() {
   );
 }
 
-function Section({ icon, label, children }: { icon: React.ReactNode; label: string; children: React.ReactNode }) {
+function Section({ icon, label, children, dark = false }: { icon: React.ReactNode; label: string; children: React.ReactNode; dark?: boolean }) {
   return (
     <div className="px-1.5 pb-1.5">
-      <div className="flex items-center gap-1.5 px-3 py-1.5 text-[11px] font-black uppercase tracking-widest text-muted">
+      <div className={`flex items-center gap-1.5 px-3 py-1.5 text-[11px] font-black uppercase tracking-widest ${dark ? "text-white/40" : "text-muted"}`}>
         {icon}
         {label}
       </div>
@@ -221,18 +238,24 @@ function Row({
   children,
   onClick,
   active,
+  dark = false,
 }: {
   children: React.ReactNode;
   onClick: () => void;
   active?: boolean;
+  dark?: boolean;
 }) {
   return (
     <button
       onClick={onClick}
       className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-sm font-medium text-left transition ${
         active
-          ? "bg-accent/10 text-accent font-bold shadow-sm"
-          : "hover:bg-bg text-fg/90"
+          ? dark
+            ? "bg-[#8b93ff]/20 text-white font-bold shadow-sm"
+            : "bg-accent/10 text-accent font-bold shadow-sm"
+          : dark
+            ? "hover:bg-white/10 text-white/85"
+            : "hover:bg-bg text-fg/90"
       }`}
     >
       {children}

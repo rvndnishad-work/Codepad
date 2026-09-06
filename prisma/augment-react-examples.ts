@@ -26,6 +26,14 @@ const prisma = new PrismaClient();
 type Augment = {
   title: string;
   answer?: string;
+  /**
+   * The Question Body: the interviewer-facing prompt + grading rubric. Rendered
+   * in the "Understand the problem" step WITHOUT rehype-raw, so keep it plain
+   * markdown — no HTML, no inline SVG.
+   */
+  description?: string;
+  /** One plain sentence, <=155 chars. Without it the meta tag falls back to a description slice. */
+  seoDescription?: string;
   examples?: { label?: string; code: string; runnable?: boolean }[];
 };
 
@@ -68,6 +76,8 @@ async function main() {
       where: { id: q.id },
       data: {
         ...(a.answer ? { answer: a.answer } : {}),
+        ...(a.description ? { description: a.description } : {}),
+        ...(a.seoDescription ? { seoDescription: a.seoDescription } : {}),
         ...(a.examples ? { examplesData: JSON.stringify(a.examples) } : {}),
       },
     });

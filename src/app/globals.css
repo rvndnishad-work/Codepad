@@ -2060,10 +2060,11 @@ body.sidebar-collapsed .workspace-content {
 }
 
 /* ==========================================================================
- * WOW NAVBAR — transparent full-bleed at top, floating pill on scroll.
- * The header element itself is always chrome-free; the inner container
- * morphs into a detached rounded pill once scrolled. Content colors ride
- * --nav-* vars (white over the dark hero, themed once condensed).
+ * WOW NAVBAR — stretched bar at top, floating pill on scroll (every route,
+ * like the homepage; short pages simply stay stretched). Immersive
+ * dark-hero routes float transparent with white content; all other routes
+ * get an opaque themed bar so page colors never bleed through the nav.
+ * The inner container morphs into a detached rounded pill once scrolled.
  * Dropdown panels and the mobile sheet stay fully opaque always.
  * ========================================================================== */
 .site-nav {
@@ -2091,12 +2092,21 @@ body.sidebar-collapsed .workspace-content {
   border-color: var(--border);
   box-shadow: 0 18px 50px -18px rgba(0, 0, 0, 0.45);
 }
-/* Floating state: white content over the dark hero. */
-.site-nav[data-scrolled="false"] {
+/* Floating state (immersive dark-hero routes only): white content over the hero.
+   Non-immersive routes keep themed content when stretched so light pages
+   stay readable. */
+.site-nav[data-scrolled="false"][data-immersive="true"] {
   --nav-fg: #fff;
   --nav-muted: rgba(255, 255, 255, 0.68);
   --nav-pill-hover: rgba(255, 255, 255, 0.12);
   --nav-ring: rgba(255, 255, 255, 0.18);
+}
+/* Non-immersive routes at top: opaque full-width bar (stretched) so page
+   colors never show through the transparent header. Falls away on scroll
+   when the pill takes over (base transparent applies again). */
+.site-nav[data-scrolled="false"][data-immersive="false"] {
+  background: var(--bg);
+  border-bottom: 1px solid var(--border);
 }
 /* The full-width hairline is retired — the pill carries its own edge. */
 .site-nav .nav-hairline {
@@ -2104,17 +2114,17 @@ body.sidebar-collapsed .workspace-content {
 }
 
 /* Dynamic logo wordmark follows the bar state (overrides its var(--fg)). */
-.site-nav[data-scrolled="false"] .ld-word { color: #fff !important; }
-.site-nav[data-scrolled="false"] .ld-sub { color: rgba(255, 255, 255, 0.6) !important; }
+.site-nav[data-scrolled="false"][data-immersive="true"] .ld-word { color: #fff !important; }
+.site-nav[data-scrolled="false"][data-immersive="true"] .ld-sub { color: rgba(255, 255, 255, 0.6) !important; }
 
 /* Utility island + divider adapt to the floating state. */
-.site-nav[data-scrolled="false"] .nav-divider { border-color: rgba(255, 255, 255, 0.16) !important; }
-.site-nav[data-scrolled="false"] .nav-utils button {
+.site-nav[data-scrolled="false"][data-immersive="true"] .nav-divider { border-color: rgba(255, 255, 255, 0.16) !important; }
+.site-nav[data-scrolled="false"][data-immersive="true"] .nav-utils button {
   border-color: rgba(255, 255, 255, 0.18) !important;
   background: rgba(255, 255, 255, 0.08) !important;
   color: #fff !important;
 }
-.site-nav[data-scrolled="false"] .mobile-menu-btn {
+.site-nav[data-scrolled="false"][data-immersive="true"] .mobile-menu-btn {
   border-color: rgba(255, 255, 255, 0.18) !important;
   background: rgba(255, 255, 255, 0.08) !important;
   color: #fff !important;

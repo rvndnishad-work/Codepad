@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import { motion, useReducedMotion } from "framer-motion";
 import { Eye, Heart, Calendar, Building2, ArrowUpRight, Check } from "lucide-react";
 import TechSvg from "@/components/TechSvg";
 import { difficultyClasses, techLabel, parseJsonArray, compactNumber } from "@/lib/interview-questions/shared";
@@ -201,6 +202,7 @@ export default function QuestionCard({ q, showCompany = true }: { q: QuestionCar
   const theme = CARD_THEMES[q.technology ?? ""] ?? FALLBACK_THEME;
 
   const [solved, setSolved] = useState(false);
+  const reduceMotion = useReducedMotion();
   useEffect(() => {
     setSolved(isSolved(q.slug));
     const refresh = () => setSolved(isSolved(q.slug));
@@ -209,6 +211,12 @@ export default function QuestionCard({ q, showCompany = true }: { q: QuestionCar
   }, [q.slug]);
 
   return (
+    <motion.div
+      initial={reduceMotion ? false : { opacity: 0, y: 24 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, margin: "-30px" }}
+      transition={{ duration: 0.5, ease: "easeOut" }}
+    >
     <Link
       href={`/interview-question/${q.slug}`}
       className={`group relative flex items-center gap-4 p-4 sm:p-5 rounded-2xl border ${theme.border} border-l-[3px] ${theme.leftBorder} ${theme.bg} backdrop-blur-sm ${theme.hoverBg} hover:-translate-y-0.5 transition-all duration-300 ${theme.hoverBorder} ${theme.hoverShadow}`}
@@ -281,5 +289,6 @@ export default function QuestionCard({ q, showCompany = true }: { q: QuestionCar
         <ArrowUpRight className="w-4 h-4 text-muted group-hover:text-accent group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-all duration-300" />
       </div>
     </Link>
+    </motion.div>
   );
 }

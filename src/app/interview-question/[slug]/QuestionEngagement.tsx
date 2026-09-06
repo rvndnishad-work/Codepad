@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { Heart } from "lucide-react";
 
 /** Pings the view counter once on mount and renders a like toggle. */
-export default function QuestionEngagement({ slug, initialLikes }: { slug: string; initialLikes: number }) {
+export default function QuestionEngagement({ slug, initialLikes, tone = "default" }: { slug: string; initialLikes: number; tone?: "default" | "dark" }) {
   const [likes, setLikes] = useState(initialLikes);
   const [liked, setLiked] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -53,13 +53,15 @@ export default function QuestionEngagement({ slug, initialLikes }: { slug: strin
     <button
       onClick={toggle}
       disabled={busy}
-      className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl border text-sm font-bold transition ${
+      className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl border text-sm font-bold transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#8b93ff] ${
         liked
           ? "border-rose-500/40 bg-rose-500/10 text-rose-500"
-          : "border-border text-muted hover:text-fg hover:border-fg/30"
+          : tone === "dark"
+            ? "border-white/25 bg-white/[0.07] text-white/85 hover:text-white hover:border-white/50"
+            : "border-border text-muted hover:text-fg hover:border-fg/30"
       }`}
     >
-      <Heart className={`w-4 h-4 ${liked ? "fill-current" : ""}`} />
+      <Heart className={`w-4 h-4 text-rose-500 ${liked ? "fill-current" : ""}`} />
       {likes}
     </button>
   );

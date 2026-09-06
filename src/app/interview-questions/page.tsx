@@ -2,15 +2,13 @@ import { prisma } from "@/lib/prisma";
 import Link from "next/link";
 import { parseJsonArray, TECHNOLOGIES } from "@/lib/interview-questions/shared";
 import CompanyGrid, { type CompanyCard } from "./CompanyGrid";
-import GlobalSearch from "./GlobalSearch";
 import TechCards from "./TechCards";
 import QuestionCard from "./_components/QuestionCard";
-import { Building2, Layers, Sparkles, Flame, Bookmark, Users } from "lucide-react";
+import { Building2, Layers, Sparkles, Flame, Bookmark, Users, RadioTower } from "lucide-react";
 import ScrollProgressBar from "@/app/hire/ScrollProgressBar";
-import { SpotlightGroup } from "@/components/scroll/SpotlightGroup";
-import KineticText from "@/components/scroll/KineticText";
-import CountUp from "@/components/scroll/CountUp";
-import TechMarquee from "@/components/home/TechMarquee";
+import WowReveal from "@/components/wow/WowReveal";
+import QuestionVerseHero from "./_wow/QuestionVerseHero";
+import SignalTicker from "./_wow/SignalTicker";
 
 export const metadata = {
   title: "Interview Questions by Company & Technology — Interviewpad",
@@ -92,73 +90,58 @@ export default async function InterviewQuestionsPage() {
   });
 
   return (
-    <div className="min-h-screen bg-bg text-fg">
+    <div className="min-h-screen bg-[var(--wow-bg)] pb-32 text-[var(--wow-fg)] transition-colors">
       <ScrollProgressBar />
-      {/* Hero — Spotlight + Kinetic + CountUp (hire cohesion: secondary indigo, 24px reveal) */}
-      <section className="relative border-b border-border bg-gradient-to-b from-accent/5 via-transparent to-transparent overflow-hidden">
-        <div className="absolute inset-0 pointer-events-none">
-          <div className="absolute inset-0 bg-[linear-gradient(rgba(var(--accent-rgb),0.015)_1px,transparent_1px),linear-gradient(90deg,rgba(var(--accent-rgb),0.015)_1px,transparent_1px)] bg-[size:32px_32px]" />
-          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[900px] h-[400px] bg-accent/5 blur-[120px] rounded-full" />
-        </div>
-        <div className="relative max-w-6xl mx-auto px-6 py-14 sm:py-20">
-          <div className="inline-flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.08em] text-accent mb-4 px-3 py-1 rounded-full border border-accent/20 bg-accent/10">
-            <Sparkles className="w-3.5 h-3.5" />
-            Interview Prep Library
-          </div>
-          <KineticText className="text-3xl sm:text-5xl font-black tracking-tight max-w-3xl" text="Real interview questions, by company & technology" />
-          <p className="text-muted mt-4 max-w-2xl text-sm sm:text-base leading-relaxed font-medium">
-            <CountUp value={publishedTotal} /> questions and counting across {TECHNOLOGIES.length} technologies
-            and <CountUp value={companies.length} /> companies. Search, filter by difficulty and round, and learn from real
-            interview experiences.
-          </p>
-          <div className="mt-7 max-w-xl">
-            <GlobalSearch />
-          </div>
-          <SpotlightGroup className="mt-8 grid grid-cols-3 gap-3 max-w-xl">
-            <div className="rounded-2xl border border-border bg-surface/60 backdrop-blur-sm p-4 text-center">
-              <div className="text-xl font-black text-fg"><CountUp value={publishedTotal} /></div>
-              <div className="text-[11px] font-bold uppercase tracking-wider text-muted">Questions</div>
-            </div>
-            <div className="rounded-2xl border border-border bg-surface/60 backdrop-blur-sm p-4 text-center">
-              <div className="text-xl font-black text-fg"><CountUp value={TECHNOLOGIES.length} /></div>
-              <div className="text-[11px] font-bold uppercase tracking-wider text-muted">Stacks</div>
-            </div>
-            <div className="rounded-2xl border border-border bg-surface/60 backdrop-blur-sm p-4 text-center">
-              <div className="text-xl font-black text-fg"><CountUp value={companies.length} /></div>
-              <div className="text-[11px] font-bold uppercase tracking-wider text-muted">Companies</div>
-            </div>
-          </SpotlightGroup>
-        </div>
-      </section>
 
-      <TechMarquee />
+      {/* ── Cinematic signal-deck hero (starts under the transparent bar) ── */}
+      <QuestionVerseHero
+        total={publishedTotal}
+        stacks={TECHNOLOGIES.length}
+        companies={companies.length}
+        featured={popular}
+      />
 
-      <div className="max-w-6xl mx-auto px-6 py-10 space-y-12">
-        {/* Browse by technology — the primary, dev-first entry point */}
+      {/* ── Live transmission strip ── */}
+      <SignalTicker items={popular.map((q) => ({ title: q.title, slug: q.slug, company: q.company?.name ?? null }))} />
+
+      <main className="mx-auto max-w-6xl space-y-20 px-4 pt-14">
+        {/* Tech constellation — the primary, dev-first entry point */}
         <section>
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="flex items-center gap-2 text-xs font-black uppercase tracking-[0.2em] text-muted">
-              <Layers className="w-4 h-4" />
-              Browse by technology
-            </h2>
-            <Link
-              href="/interview-questions/saved"
-              className="inline-flex items-center gap-1.5 text-xs font-bold text-muted hover:text-accent transition"
-            >
-              <Bookmark className="w-3.5 h-3.5" /> Saved
-            </Link>
-          </div>
+          <WowReveal>
+            <div className="mb-6 flex flex-wrap items-end justify-between gap-3">
+              <div>
+                <p className="flex items-center gap-2 font-mono text-[11px] uppercase tracking-[0.25em] text-[#ff2fb3]">
+                  <Layers className="h-3.5 w-3.5" /> Tech constellation
+                </p>
+                <h2 className="wow-font-display mt-2 text-4xl text-[var(--wow-fg)] md:text-5xl">
+                  PICK YOUR ARENA.
+                </h2>
+              </div>
+              <Link
+                href="/interview-questions/saved"
+                className="inline-flex items-center gap-1.5 rounded-full border border-[var(--wow-card-border)] bg-[var(--wow-card)] px-4 py-2 text-xs font-bold text-muted backdrop-blur-sm transition hover:border-[#8b93ff]/50 hover:text-[var(--wow-fg)]"
+              >
+                <Bookmark className="h-3.5 w-3.5" /> Saved signals
+              </Link>
+            </div>
+          </WowReveal>
           <TechCards stats={techStats} />
         </section>
 
-        {/* Most-asked questions — surface real questions upfront */}
+        {/* Most-intercepted transmissions */}
         {popular.length > 0 && (
           <section>
-            <h2 className="flex items-center gap-2 text-xs font-black uppercase tracking-[0.2em] text-muted mb-4">
-              <Flame className="w-4 h-4 text-orange-800 dark:text-orange-400" />
-              Most-asked questions
-            </h2>
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+            <WowReveal>
+              <div className="mb-6">
+                <p className="flex items-center gap-2 font-mono text-[11px] uppercase tracking-[0.25em] text-[#ff2fb3]">
+                  <Flame className="h-3.5 w-3.5" /> Hot signals
+                </p>
+                <h2 className="wow-font-display mt-2 text-4xl text-[var(--wow-fg)] md:text-5xl">
+                  MOST INTERCEPTED.
+                </h2>
+              </div>
+            </WowReveal>
+            <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
               {popular.map((q) => (
                 <QuestionCard key={q.slug} q={q} />
               ))}
@@ -166,29 +149,59 @@ export default async function InterviewQuestionsPage() {
           </section>
         )}
 
-        {/* Companies */}
+        {/* Target list — companies */}
         <section>
-          <h2 className="flex items-center gap-2 text-xs font-black uppercase tracking-[0.2em] text-muted mb-4">
-            <Building2 className="w-4 h-4" />
-            Browse by company
-          </h2>
+          <WowReveal>
+            <div className="mb-6">
+              <p className="flex items-center gap-2 font-mono text-[11px] uppercase tracking-[0.25em] text-[#ff2fb3]">
+                <Building2 className="h-3.5 w-3.5" /> Target list
+              </p>
+              <h2 className="wow-font-display mt-2 text-4xl text-[var(--wow-fg)] md:text-5xl">
+                KNOW THEIR PLAYBOOK.
+              </h2>
+            </div>
+          </WowReveal>
           <CompanyGrid companies={cards} />
         </section>
 
-        {/* Community CTA */}
-        <section className="rounded-2xl border border-accent/20 bg-gradient-to-r from-accent/10 to-transparent p-6 sm:p-8 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div>
-            <h2 className="text-lg font-extrabold">Interviewed recently?</h2>
-            <p className="text-sm text-muted mt-1">Share your experience and help the next candidate prepare.</p>
-          </div>
-          <Link
-            href="/interview-questions/share"
-            className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-accent text-bg text-sm font-black uppercase tracking-wider hover:bg-accent-soft transition shrink-0"
-          >
-            <Users className="w-4 h-4" /> Share your experience
-          </Link>
-        </section>
-      </div>
+        {/* Transmission CTA */}
+        <WowReveal>
+          <section className="wow-noise relative overflow-hidden rounded-[2rem] bg-[#0c1030] px-6 py-14 text-center text-white md:py-16">
+            <div aria-hidden className="pointer-events-none absolute inset-0">
+              <div className="absolute left-1/2 top-[-160px] h-[380px] w-[720px] -translate-x-1/2 rounded-full bg-[#8b93ff]/25 blur-[120px]" />
+              <div className="absolute bottom-[-140px] right-[-100px] h-[300px] w-[300px] rounded-full bg-[#ff2fb3]/20 blur-[100px]" />
+              <div className="wow-grid-bg absolute inset-0 opacity-60" />
+            </div>
+            <div className="relative">
+              <p className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/[0.06] px-4 py-1.5 font-mono text-[11px] uppercase tracking-[0.2em] text-white/75 backdrop-blur-md">
+                <RadioTower className="h-3.5 w-3.5 text-[#ffe600]" />
+                Open channel
+              </p>
+              <h2 className="wow-font-display mx-auto mt-6 max-w-2xl text-4xl md:text-6xl">
+                GOT SIGNAL?<br /><span className="wow-gradient-text">TRANSMIT IT.</span>
+              </h2>
+              <p className="mx-auto mt-4 max-w-xl text-[15px] leading-relaxed text-white/65">
+                Interviewed recently? Beam your experience back to the deck and
+                arm the next candidate walking into that room.
+              </p>
+              <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
+                <Link
+                  href="/interview-questions/share"
+                  className="inline-flex items-center justify-center gap-2 rounded-full bg-gradient-to-r from-[#8b93ff] via-[#ff2fb3] to-[#22d3ee] bg-[length:180%_100%] bg-left px-7 py-3 text-[13px] font-black uppercase tracking-wider text-white shadow-[0_6px_24px_-8px_rgba(139,147,255,0.7)] transition-all duration-300 hover:bg-right hover:shadow-[0_8px_30px_-6px_rgba(255,47,179,0.6)] active:translate-y-px"
+                >
+                  <Sparkles className="h-4 w-4" /> Share your experience
+                </Link>
+                <Link
+                  href="/interview-questions/saved"
+                  className="inline-flex items-center justify-center gap-2 rounded-full border border-white/20 bg-white/[0.06] px-7 py-3 text-[13px] font-black uppercase tracking-wider text-white/80 backdrop-blur-md transition hover:border-white/40 hover:text-white"
+                >
+                  <Users className="h-4 w-4" /> Saved signals
+                </Link>
+              </div>
+            </div>
+          </section>
+        </WowReveal>
+      </main>
     </div>
   );
 }

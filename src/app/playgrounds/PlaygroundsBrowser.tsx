@@ -2,7 +2,10 @@
 
 import Link from "next/link";
 import Image from "next/image";
+import dynamic from "next/dynamic";
 import { useEffect, useMemo, useRef, useState } from "react";
+import gsap from "gsap";
+import { ScrollTrigger } from "gsap/ScrollTrigger";
 import {
   ArrowRight,
   LayoutGrid,
@@ -22,6 +25,10 @@ import {
 import { TemplateLogo } from "@/lib/icons";
 import { CodePeekCard } from "./CodePeekCard";
 import WowReveal from "@/components/wow/WowReveal";
+
+gsap.registerPlugin(ScrollTrigger);
+
+const BlackHoleScene3D = dynamic(() => import("./_wow/BlackHoleScene3D"), { ssr: false });
 
 type Welcome = {
   name: string | null;
@@ -244,6 +251,52 @@ export default function PlaygroundsBrowser({ welcome }: { welcome: Welcome }) {
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState<string>("all");
   const [viewMode, setViewMode] = useState<"card" | "compact">("compact");
+  const heroRef = useRef<HTMLElement>(null);
+
+  // Black-hole loop freezes offscreen / while scrolling / on reduced motion
+  // (same perf contract as the other 3D heroes).
+  const [paused, setPaused] = useState(false);
+  const [scrolling, setScrolling] = useState(false);
+
+  useEffect(() => {
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      setPaused(true);
+      return;
+    }
+    const el = heroRef.current;
+    if (!el) return;
+    const obs = new IntersectionObserver(([e]) => setPaused(!e.isIntersecting), { threshold: 0.02 });
+    obs.observe(el);
+    let t: ReturnType<typeof setTimeout>;
+    const onScroll = () => {
+      setScrolling(true);
+      clearTimeout(t);
+      t = setTimeout(() => setScrolling(false), 160);
+    };
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => {
+      obs.disconnect();
+      window.removeEventListener("scroll", onScroll);
+      clearTimeout(t);
+    };
+  }, []);
+
+  // Masked-line entrance + backdrop parallax. Skipped for reduced motion
+  // (content stays visible — gsap.from only hides when the timeline runs).
+  useEffect(() => {
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    const ctx = gsap.context(() => {
+      gsap.timeline({ defaults: { ease: "expo.out" } })
+        .from(".ph-line", { yPercent: 115, duration: 1.05, stagger: 0.12 })
+        .from(".ph-fade", { y: 24, opacity: 0, duration: 0.85, stagger: 0.07 }, "-=0.65")
+        .from(".ph-3d", { opacity: 0, scale: 1.05, duration: 1.6 }, 0);
+      gsap.to(".ph-bg", {
+        yPercent: 12, ease: "none",
+        scrollTrigger: { trigger: heroRef.current, start: "top top", end: "bottom top", scrub: true },
+      });
+    }, heroRef);
+    return () => ctx.revert();
+  }, []);
 
   // ⌘K / Ctrl+K focuses the search box, matching the kbd hint in the hero.
   useEffect(() => {
@@ -313,23 +366,40 @@ export default function PlaygroundsBrowser({ welcome }: { welcome: Welcome }) {
   return (
     <div className="min-h-screen bg-[var(--wow-bg)] pb-32 transition-colors">
       {/* ── Dark cinematic hero (starts under the transparent bar) ── */}
-      <header className="wow-noise relative -mt-16 overflow-hidden bg-[#08080f] text-white">
-        <div aria-hidden className="pointer-events-none absolute inset-0">
+      <header ref={heroRef} data-dark-hero className="wow-noise relative -mt-16 overflow-hidden bg-[#08080f] text-white">
+        <div aria-hidden className="ph-bg pointer-events-none absolute inset-0">
           <div className="absolute left-1/2 top-[-200px] h-[480px] w-[860px] -translate-x-1/2 rounded-full bg-[#8b93ff]/20 blur-[130px]" />
           <div className="absolute right-[-140px] top-1/3 h-[380px] w-[380px] rounded-full bg-[#ff2fb3]/10 blur-[110px]" />
           <div className="wow-grid-bg absolute inset-0" />
         </div>
+        {/* black-hole backdrop, sunk low behind the search/filters */}
+        <div aria-hidden className="ph-3d absolute inset-0 transform-gpu opacity-90 will-change-transform">
+          <BlackHoleScene3D paused={paused || scrolling} />
+        </div>
         <div aria-hidden className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-[#08080f]" />
+        <div aria-hidden className="absolute inset-0 bg-[radial-gradient(ellipse_58%_46%_at_50%_40%,rgba(8,8,15,0.82),transparent_70%)]" />
+        {/* HUD corners */}
+        <div aria-hidden className="pointer-events-none absolute inset-4 z-[5] hidden sm:block">
+          <span className="absolute left-0 top-0 h-5 w-5 border-l-2 border-t-2 border-[#ffb64d]/50" />
+          <span className="absolute right-0 top-0 h-5 w-5 border-r-2 border-t-2 border-[#ffb64d]/50" />
+          <span className="absolute left-10 top-0.5 font-mono text-[10px] uppercase tracking-[0.3em] text-white/35">
+            Singularity // stable
+          </span>
+          <span className="absolute right-10 top-0.5 font-mono text-[10px] uppercase tracking-[0.3em] text-white/35">
+            Escape velocity: c
+          </span>
+        </div>
 
-        <div className="relative mx-auto max-w-3xl px-4 pb-14 pt-24 text-center md:pt-28">
-          <p className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/[0.06] px-4 py-1.5 font-mono text-[11px] uppercase tracking-[0.2em] text-white/75 backdrop-blur-md">
+        <div className="relative z-10 mx-auto max-w-3xl px-4 pb-14 pt-24 text-center md:pt-28">
+          <p className="ph-fade inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/[0.06] px-4 py-1.5 font-mono text-[11px] uppercase tracking-[0.2em] text-white/75 backdrop-blur-md">
             <FlaskConical className="h-3.5 w-3.5 text-[#8b93ff]" />
             Zero-install sandboxes
           </p>
           <h1 className="wow-font-display mt-6 text-6xl md:text-8xl">
-            PICK A BOX.<br /><span className="wow-gradient-text">START CODING.</span>
+            <span className="block overflow-hidden pb-1"><span className="ph-line block">PICK A BOX.</span></span>
+            <span className="block overflow-hidden pb-2"><span className="ph-line wow-gradient-text block pb-2">START CODING.</span></span>
           </h1>
-          <p className="mx-auto mt-5 max-w-xl text-[15px] leading-relaxed text-white/65 md:text-base">
+          <p className="ph-fade mx-auto mt-5 max-w-xl text-[15px] leading-relaxed text-white/65 md:text-base">
             Pick a sandbox, start coding instantly. Experience zero-latency runs with our new{" "}
             <strong className="rounded border border-[#8b93ff]/30 bg-[#8b93ff]/15 px-1.5 py-0.5 font-extrabold text-[#c7d2fe]">
               AuraSandbox™ JIT Engine
@@ -338,7 +408,7 @@ export default function PlaygroundsBrowser({ welcome }: { welcome: Welcome }) {
           </p>
 
           {/* Pill search with ⌘K hint */}
-          <div className="relative mx-auto mt-9 max-w-xl">
+          <div className="ph-fade relative mx-auto mt-9 max-w-xl">
             <Search className="absolute left-5 top-1/2 h-4 w-4 -translate-y-1/2 text-white/40" />
             <input
               id="playgrounds-search"
@@ -353,14 +423,14 @@ export default function PlaygroundsBrowser({ welcome }: { welcome: Welcome }) {
           </div>
 
           {/* Inline stats row */}
-          <div className="mt-7 flex flex-wrap items-center justify-center gap-6 font-mono text-[11px] uppercase tracking-[0.18em] text-white/55 sm:gap-8">
+          <div className="ph-fade mt-7 flex flex-wrap items-center justify-center gap-6 font-mono text-[11px] uppercase tracking-[0.18em] text-white/55 sm:gap-8">
             <span><strong className="wow-font-display text-xl tabular-nums normal-case tracking-normal text-white">{stats.total}+</strong> Sandboxes</span>
             <span><strong className="wow-font-display text-xl tabular-nums normal-case tracking-normal text-white">{stats.languages}</strong> Languages</span>
             <span><strong className="wow-font-display text-xl tabular-nums normal-case tracking-normal text-[#ffe600]">100%</strong> Zero config</span>
           </div>
 
           {/* Category Filters Bar */}
-          <div className="mt-8 flex flex-col items-center justify-center gap-4">
+          <div className="ph-fade mt-8 flex flex-col items-center justify-center gap-4">
             <div className="flex flex-wrap items-center justify-center gap-2">
               <button
                 onClick={() => setFilter("all")}
@@ -407,7 +477,7 @@ export default function PlaygroundsBrowser({ welcome }: { welcome: Welcome }) {
             </div>
           </div>
 
-          <div className="mt-10 text-left">
+          <div className="ph-fade mt-10 text-left">
             {welcome ? (
               <WelcomeStrip w={welcome} />
             ) : (

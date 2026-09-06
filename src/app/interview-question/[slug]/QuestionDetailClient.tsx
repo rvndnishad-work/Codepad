@@ -1,8 +1,12 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import Link from "next/link";
+import dynamic from "next/dynamic";
+import { useRouter } from "next/navigation";
 import { motion, AnimatePresence, useScroll, useSpring } from "framer-motion";
+import gsap from "gsap";
+import { ScrollTrigger } from "gsap/ScrollTrigger";
 import {
   Eye,
   ArrowLeft,
@@ -12,6 +16,7 @@ import {
   Hash,
   ChevronDown,
   ChevronRight,
+  ChevronLeft,
   MessageSquare,
   Calendar,
   Layers,
@@ -19,6 +24,7 @@ import {
   CheckCircle2,
   Lock,
   X,
+  Keyboard,
 } from "lucide-react";
 import { isSolved, toggleSolved } from "@/lib/interview-questions/progress";
 import { isSaved, toggleSaved } from "@/lib/interview-questions/saved";
@@ -26,6 +32,7 @@ import MarkdownRenderer from "@/components/MarkdownRenderer";
 import CodeExample, { MultiFileExample, type ExampleData } from "./CodeExample";
 import { CODE_VARIANTS } from "@/lib/interview-questions/code-variants";
 import CommentSection, { type CommentNode } from "@/components/CommentSection";
+import WowReveal from "@/components/wow/WowReveal";
 import {
   difficultyClasses,
   techLabel,
@@ -38,6 +45,10 @@ import HintBox from "./HintBox";
 import JsPlayground from "./JsPlayground";
 import SqlPlayground from "./SqlPlayground";
 import TechSvg from "@/components/TechSvg";
+
+gsap.registerPlugin(ScrollTrigger);
+
+const OrbitScene3D = dynamic(() => import("./_wow/OrbitScene3D"), { ssr: false });
 
 interface QuestionData {
   id: string;
@@ -64,6 +75,11 @@ interface SuggestionItem {
   title: string;
   slug: string;
   difficulty: string;
+}
+
+export interface TrackPosition {
+  index: number;
+  total: number;
 }
 
 /**
@@ -175,10 +191,25 @@ const FALLBACK_THEME: TechTheme = {
 /** Translucent tint helpers so ambient glows work for any theme hex (or var). */
 const tint = (hex: string, pct: number) => `color-mix(in srgb, ${hex} ${pct}%, transparent)`;
 
+const DIFF_DOT: Record<string, string> = {
+  easy: "bg-emerald-400",
+  medium: "bg-amber-400",
+  hard: "bg-rose-400",
+};
+
 const fadeInVariants = {
   hidden: { opacity: 0, y: 12 },
   visible: { opacity: 1, y: 0, transition: { duration: 0.4, ease: "easeOut" as const } },
 };
+
+const SHORTCUTS: { keys: string[]; label: string }[] = [
+  { keys: ["←", "→"], label: "Previous / next question in track" },
+  { keys: ["E"], label: "Reveal / hide the solution" },
+  { keys: ["M"], label: "Mark as solved" },
+  { keys: ["S"], label: "Save to library" },
+  { keys: ["?"], label: "Toggle this cheatsheet" },
+  { keys: ["Esc"], label: "Close dialogs" },
+];
 
 export default function QuestionDetailClient({
   q,
@@ -186,6 +217,7 @@ export default function QuestionDetailClient({
   similar,
   prevQuestion,
   nextQuestion,
+  track,
   initialComments,
   isAdmin,
   currentUserId,
@@ -195,14 +227,27 @@ export default function QuestionDetailClient({
   similar: SuggestionItem[];
   prevQuestion: { slug: string; title: string } | null;
   nextQuestion: { slug: string; title: string } | null;
+  track: TrackPosition | null;
   initialComments: CommentNode[];
   isAdmin: boolean;
   currentUserId: string | null;
 }) {
+  const router = useRouter();
   const [isAnswerExpanded, setIsAnswerExpanded] = useState(false);
   const [isCommentsExpanded, setIsCommentsExpanded] = useState(true);
   const [lightboxSvg, setLightboxSvg] = useState<string | null>(null);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [showKeys, setShowKeys] = useState(false);
+  const [notice, setNotice] = useState("");
+  // Park the sticky track dock once the page finale scrolls into view so it
+  // never slides over the site footer.
+  const [dockParked, setDockParked] = useState(false);
+  const endRef = useRef<HTMLDivElement>(null);
+  const heroRef = useRef<HTMLElement>(null);
+  const lightboxCloseRef = useRef<HTMLButtonElement>(null);
+  const cheatsheetCloseRef = useRef<HTMLButtonElement>(null);
+  const [orbitPaused, setOrbitPaused] = useState(false);
+  const [orbitScrolling, setOrbitScrolling] = useState(false);
 
   // Reading progress — thin bar under the top edge, tinted to the technology.
   const { scrollYProgress } = useScroll();
@@ -357,9 +402,63 @@ export default function QuestionDetailClient({
     return () => document.removeEventListener("click", handler);
   }, [isAnswerExpanded]);
 
+  // Freeze the orbit sculpture offscreen / while scrolling / on reduced motion.
+  useEffect(() => {
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      setOrbitPaused(true);
+      return;
+    }
+    const el = heroRef.current;
+    if (!el) return;
+    const obs = new IntersectionObserver(([e]) => setOrbitPaused(!e.isIntersecting), { threshold: 0.02 });
+    obs.observe(el);
+    let t: ReturnType<typeof setTimeout>;
+    const onScroll = () => {
+      setOrbitScrolling(true);
+      clearTimeout(t);
+      t = setTimeout(() => setOrbitScrolling(false), 160);
+    };
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => {
+      obs.disconnect();
+      window.removeEventListener("scroll", onScroll);
+      clearTimeout(t);
+    };
+  }, []);
+
+  // GSAP dossier entrance (skipped for reduced motion — content stays visible).
+  useEffect(() => {
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    const ctx = gsap.context(() => {
+      gsap.timeline({ defaults: { ease: "expo.out" } })
+        .from(".qd-line", { yPercent: 115, duration: 1, stagger: 0.1 })
+        .from(".qd-fade", { y: 22, opacity: 0, duration: 0.8, stagger: 0.07 }, "-=0.6")
+        .from(".qd-orbit", { opacity: 0, scale: 0.92, duration: 1.2 }, "-=0.8");
+    }, heroRef);
+    return () => ctx.revert();
+  }, []);
+
+  // Focus the dialog close buttons when they open (a11y).
+  useEffect(() => {
+    if (lightboxSvg) lightboxCloseRef.current?.focus();
+  }, [lightboxSvg]);
+  useEffect(() => {
+    if (showKeys) cheatsheetCloseRef.current?.focus();
+  }, [showKeys]);
+
+  // Watch the end-of-content sentinel: park the dock before the footer.
+  useEffect(() => {
+    const el = endRef.current;
+    if (!el) return;
+    const obs = new IntersectionObserver(([e]) => setDockParked(e.isIntersecting), { threshold: 0 });
+    obs.observe(el);
+    return () => obs.disconnect();
+  }, []);
+
   async function handleToggleSaved() {
     const nextSaved = !saved;
     setSaved(nextSaved);
+    setNotice(nextSaved ? "Saved to your library." : "Removed from your saved library.");
 
     if (currentUserId) {
       try {
@@ -391,6 +490,7 @@ export default function QuestionDetailClient({
   async function handleToggleSolved() {
     const nextSolved = !solved;
     setSolved(nextSolved);
+    setNotice(nextSolved ? "Marked as solved. Nice work." : "Marked as unsolved.");
 
     if (currentUserId) {
       try {
@@ -442,8 +542,54 @@ export default function QuestionDetailClient({
   let stepCount = 0;
   const nextStep = () => String(++stepCount).padStart(2, "0");
 
+  // Global keyboard shortcuts — skipped while typing, and modifiers opt out
+  // (so browser / playground shortcuts keep working). Rebound every render
+  // so closures never go stale.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      const t = e.target as HTMLElement | null;
+      if (t && (t.tagName === "INPUT" || t.tagName === "TEXTAREA" || t.tagName === "SELECT" || t.isContentEditable)) return;
+      if (e.metaKey || e.ctrlKey || e.altKey) return;
+      if (e.key === "Escape") {
+        if (showKeys) setShowKeys(false);
+        else if (lightboxSvg) setLightboxSvg(null);
+        return;
+      }
+      if (e.key === "ArrowLeft" && prevQuestion) {
+        e.preventDefault();
+        router.push(`/interview-question/${prevQuestion.slug}`);
+      } else if (e.key === "ArrowRight" && nextQuestion) {
+        e.preventDefault();
+        router.push(`/interview-question/${nextQuestion.slug}`);
+      } else if ((e.key === "e" || e.key === "E") && hasAnswer) {
+        setIsAnswerExpanded((v) => !v);
+      } else if (e.key === "m" || e.key === "M") {
+        void handleToggleSolved();
+      } else if (e.key === "s" || e.key === "S") {
+        void handleToggleSaved();
+      } else if (e.key === "?") {
+        setShowKeys((v) => !v);
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  });
+
   return (
-    <div className="min-h-screen bg-bg text-fg">
+    <div className="min-h-screen bg-[var(--wow-bg)] text-[var(--wow-fg)] transition-colors">
+      {/* Skip link + polite announcements (a11y) */}
+      {hasAnswer && (
+        <a
+          href="#solution"
+          className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[100] focus:rounded-full focus:bg-white focus:px-4 focus:py-2 focus:text-sm focus:font-bold focus:text-black"
+        >
+          Skip to solution
+        </a>
+      )}
+      <div aria-live="polite" role="status" className="sr-only">
+        {notice}
+      </div>
+
       {/* Reading progress bar */}
       <motion.div
         aria-hidden
@@ -451,143 +597,91 @@ export default function QuestionDetailClient({
         style={{ scaleX: progress, background: theme.hex }}
       />
 
-      {/* ============ HERO — full-bleed, tech-tinted ============ */}
-      <header className="relative overflow-hidden border-b border-border">
-        {/* Ambient glows + faint dividing gradient */}
-        <div aria-hidden className="absolute inset-0 pointer-events-none">
+      {/* ============ DOSSIER HERO — dark interrogation chamber ============ */}
+      <header ref={heroRef} data-dark-hero className="wow-noise relative -mt-16 overflow-hidden bg-[#08080f] text-white">
+        <div aria-hidden className="pointer-events-none absolute inset-0">
           <div
-            className="absolute -top-28 -right-20 w-[420px] h-[420px] rounded-full blur-3xl"
-            style={{ background: tint(theme.hex, 12) }}
+            className="absolute -top-28 right-[12%] w-[420px] h-[420px] rounded-full blur-[130px]"
+            style={{ background: tint(theme.hex, 16) }}
           />
-          <div
-            className="absolute -bottom-36 -left-24 w-[360px] h-[360px] rounded-full blur-3xl"
-            style={{ background: tint(theme.hex, 7) }}
-          />
+          <div className="absolute -bottom-36 -left-24 w-[360px] h-[360px] rounded-full bg-[#8b93ff]/10 blur-[120px]" />
+          {/* Grid dissolves before the hero edge so no cutoff line meets the body */}
+          <div className="wow-grid-bg absolute inset-0 [mask-image:linear-gradient(to_bottom,black_55%,transparent_97%)]" />
         </div>
+        <div aria-hidden className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-[var(--wow-bg)]" />
+        {/* Soft landing: blurs any residual texture edge into the body */}
+        <div aria-hidden className="absolute inset-x-0 bottom-0 h-16 bg-gradient-to-b from-transparent to-[var(--wow-bg)]" />
 
-        {/* Giant watermark icon drifting off the right edge */}
+        {/* Orbital sculpture — tech-tinted, xl screens only */}
         {q.technology && (
-          <div aria-hidden className="absolute -right-8 -bottom-10 opacity-[0.06] dark:opacity-[0.05] pointer-events-none rotate-6">
-            <TechSvg tech={q.technology} className="w-56 h-56 sm:w-72 sm:h-72" />
+          <div aria-hidden className="qd-orbit pointer-events-none absolute -right-6 top-1/2 hidden h-[400px] w-[400px] -translate-y-1/2 opacity-80 xl:block">
+            <OrbitScene3D paused={orbitPaused || orbitScrolling} hex={theme.hex} />
           </div>
         )}
 
-        <div className="relative max-w-6xl mx-auto px-6 pt-6 pb-9">
-          {/* Breadcrumb + track navigation */}
-          <div className="flex items-center justify-between gap-4">
-            <nav className="flex items-center gap-1.5 text-xs font-bold text-muted min-w-0">
-              <Link href="/interview-questions" className="hover:text-fg transition-colors shrink-0">
-                Prep Library
-              </Link>
-              {q.technology && (
-                <>
-                  <ChevronRight className="w-3.5 h-3.5 text-muted/50 shrink-0" />
-                  <Link
-                    href={`/interview-questions/${q.technology}`}
-                    className={`${theme.text} hover:opacity-80 transition-opacity shrink-0`}
-                  >
-                    {techLabel(q.technology)}
-                  </Link>
-                </>
-              )}
-              <ChevronRight className="w-3.5 h-3.5 text-muted/50 shrink-0 hidden sm:block" />
-              <span className="truncate text-muted/60 hidden sm:block">{q.title}</span>
-            </nav>
-
-            {(prevQuestion || nextQuestion) && (
-              <div className="flex items-center gap-2 shrink-0">
-                {prevQuestion ? (
-                  <Link
-                    href={`/interview-question/${prevQuestion.slug}`}
-                    title={prevQuestion.title}
-                    className="group inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold text-muted hover:text-fg border border-border hover:border-accent/40 bg-surface/60 transition-colors duration-200"
-                  >
-                    <ArrowLeft className="w-3.5 h-3.5 group-hover:-translate-x-0.5 transition-transform duration-200" />
-                    <span className="hidden sm:inline">Previous</span>
-                  </Link>
-                ) : (
-                  <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold text-muted/40 border border-border/60 cursor-not-allowed select-none">
-                    <ArrowLeft className="w-3.5 h-3.5" />
-                    <span className="hidden sm:inline">Previous</span>
-                  </span>
-                )}
-                {nextQuestion ? (
-                  <Link
-                    href={`/interview-question/${nextQuestion.slug}`}
-                    title={nextQuestion.title}
-                    className="group inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold text-muted hover:text-fg border border-border hover:border-accent/40 bg-surface/60 transition-colors duration-200"
-                  >
-                    <span className="hidden sm:inline">Next</span>
-                    <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform duration-200" />
-                  </Link>
-                ) : (
-                  <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold text-muted/40 border border-border/60 cursor-not-allowed select-none">
-                    <span className="hidden sm:inline">Next</span>
-                    <ArrowRight className="w-3.5 h-3.5" />
-                  </span>
-                )}
-              </div>
+        <div className="relative z-10 mx-auto max-w-6xl px-4 pb-10 pt-32">
+          {/* Breadcrumb — prev/next lives in the sticky dock, shortcuts + finale */}
+          <nav aria-label="Breadcrumb" className="qd-fade flex min-w-0 items-center gap-1.5 font-mono text-[11px] uppercase tracking-[0.18em] text-white/45">
+            <Link href="/interview-questions" className="shrink-0 transition-colors hover:text-white">
+              Questionverse
+            </Link>
+            {q.technology && (
+              <>
+                <ChevronRight className="h-3 w-3 shrink-0 text-white/25" />
+                <Link
+                  href={`/interview-questions/${q.technology}`}
+                  className="shrink-0 transition-colors hover:text-white"
+                >
+                  {techLabel(q.technology)}
+                </Link>
+              </>
             )}
-          </div>
+            <ChevronRight className="hidden h-3 w-3 shrink-0 text-white/25 sm:block" />
+            <span className="hidden truncate text-white/70 sm:block">{q.title}</span>
+          </nav>
 
           {/* Meta chips */}
-          <motion.div
-            initial="hidden"
-            animate="visible"
-            variants={fadeInVariants}
-            className="flex items-center flex-wrap gap-2 mt-7"
-          >
-            <span
-              className={`text-[10px] font-black uppercase tracking-wider px-2.5 py-1 rounded-lg border dark:bg-black/20 ${difficultyClasses(q.difficulty)}`}
-            >
+          <div className="qd-fade mt-7 flex flex-wrap items-center gap-2">
+            <span className="inline-flex items-center gap-1.5 rounded-lg border border-white/15 bg-white/[0.06] px-2.5 py-1 text-[10px] font-black uppercase tracking-wider text-white backdrop-blur-md">
+              <span className={`h-1.5 w-1.5 rounded-full ${DIFF_DOT[q.difficulty] ?? "bg-white/60"}`} />
               {q.difficulty}
             </span>
             {solved && (
-              <span className="inline-flex items-center gap-1 text-[10px] font-black uppercase tracking-wider px-2.5 py-1 rounded-lg border border-emerald-500/25 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
-                <CheckCircle2 className="w-3 h-3" /> Solved
+              <span className="inline-flex items-center gap-1 rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-2.5 py-1 text-[10px] font-black uppercase tracking-wider text-emerald-400">
+                <CheckCircle2 className="h-3 w-3" /> Solved
               </span>
             )}
             {q.company && (
               <Link
                 href={`/interview-questions/company/${q.company.slug}`}
-                className="inline-flex items-center gap-1.5 text-[11px] font-bold px-2.5 py-1 rounded-lg border border-border bg-surface/70 text-fg/85 hover:border-accent/40 hover:text-accent transition-colors"
+                className="inline-flex items-center gap-1.5 rounded-lg border border-white/15 bg-white/[0.06] px-2.5 py-1 text-[11px] font-bold text-white/85 backdrop-blur-md transition hover:border-white/40 hover:text-white"
               >
-                <Building2 className="w-3.5 h-3.5 text-muted" />
+                <Building2 className="h-3.5 w-3.5 text-white/50" />
                 {q.company.name}
               </Link>
             )}
             {q.round && (
-              <span className="inline-flex items-center gap-1.5 text-[11px] font-bold px-2.5 py-1 rounded-lg border border-border bg-surface/70 text-muted">
-                <Layers className="w-3.5 h-3.5 text-muted/60" />
+              <span className="inline-flex items-center gap-1.5 rounded-lg border border-white/15 bg-white/[0.06] px-2.5 py-1 text-[11px] font-bold text-white/70 backdrop-blur-md">
+                <Layers className="h-3.5 w-3.5 text-white/50" />
                 {q.round}
               </span>
             )}
             {years.length > 0 && (
-              <span className="inline-flex items-center gap-1.5 text-[11px] font-bold px-2.5 py-1 rounded-lg border border-border bg-surface/70 text-muted">
-                <Calendar className="w-3.5 h-3.5 text-muted/60" />
+              <span className="inline-flex items-center gap-1.5 rounded-lg border border-white/15 bg-white/[0.06] px-2.5 py-1 text-[11px] font-bold text-white/70 backdrop-blur-md">
+                <Calendar className="h-3.5 w-3.5 text-white/50" />
                 {years.slice(0, 3).join(" · ")}
               </span>
             )}
-          </motion.div>
+          </div>
 
           {/* Title — the star of the page */}
-          <motion.h1
-            initial="hidden"
-            animate="visible"
-            variants={fadeInVariants}
-            className="mt-4 max-w-3xl text-3xl sm:text-[2.75rem] font-black tracking-tight leading-[1.12] text-fg"
-          >
-            {q.title}
-          </motion.h1>
+          <h1 className="mt-4 max-w-3xl text-3xl font-black leading-[1.12] tracking-tight text-white drop-shadow-[0_2px_16px_rgba(0,0,0,0.9)] sm:text-[2.75rem]">
+            <span className="block overflow-hidden pb-1"><span className="qd-line block">{q.title}</span></span>
+          </h1>
 
-          {/* Action row: engage + track progress, right where the reading starts */}
-          <motion.div
-            initial="hidden"
-            animate="visible"
-            variants={fadeInVariants}
-            className="mt-7 flex items-center flex-wrap gap-2.5"
-          >
-            <QuestionEngagement slug={q.slug} initialLikes={q.likes} />
+          {/* Action deck */}
+          <div className="qd-fade mt-7 flex flex-wrap items-center gap-2.5">
+            <QuestionEngagement slug={q.slug} initialLikes={q.likes} tone="dark" />
             <SaveButton
               question={{
                 slug: q.slug,
@@ -598,43 +692,55 @@ export default function QuestionDetailClient({
               }}
               saved={saved}
               onClick={handleToggleSaved}
+              tone="dark"
             />
             <button
               onClick={handleToggleSolved}
-              className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl border text-sm font-bold transition duration-200 ${
+              aria-pressed={solved}
+              title="Shortcut: M"
+              className={`inline-flex items-center gap-2 rounded-xl border px-4 py-2 text-sm font-bold transition duration-200 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#8b93ff] ${
                 solved
-                  ? "border-emerald-500/40 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
-                  : "border-border text-muted hover:text-fg hover:border-fg/30"
+                  ? "border-emerald-500/50 bg-emerald-500/15 text-emerald-300"
+                  : "border-white/25 bg-white/[0.07] text-white/85 hover:border-white/50 hover:text-white"
               }`}
             >
-              <CheckCircle2 className="w-4 h-4" />
+              <CheckCircle2 className={`h-4 w-4 ${solved ? "text-emerald-400" : "text-rose-400"}`} />
               {solved ? "Solved" : "Mark Solved"}
             </button>
-            <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-muted pl-2">
-              <Eye className="w-3.5 h-3.5" />
+            <button
+              onClick={() => setShowKeys(true)}
+              title="Keyboard shortcuts (?)"
+              aria-label="Show keyboard shortcuts"
+              className="inline-flex items-center gap-2 rounded-xl border border-white/25 bg-white/[0.07] px-3 py-2 text-xs font-bold text-white/70 transition hover:border-white/50 hover:text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#8b93ff]"
+            >
+              <Keyboard className="h-4 w-4 text-[#8b93ff]" />
+              <span className="hidden sm:inline">Shortcuts</span>
+            </button>
+            <span className="inline-flex items-center gap-1.5 pl-2 text-xs font-bold tabular-nums text-white/75">
+              <Eye className="h-3.5 w-3.5 text-cyan-300" />
               {compactNumber(q.views)} views
             </span>
-          </motion.div>
+          </div>
         </div>
       </header>
 
-      {/* ============ BODY — wider, sidebar takes 26% and collapses for wide tables/SVGs ============ */}
-      <div className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 py-10">
+      {/* ============ BODY — study flow on the numbered rail ============ */}
+      <div className="mx-auto max-w-[1440px] px-4 pb-36 pt-10 sm:px-6 lg:px-8">
         {/* collapse toggle — visible on xl where sidebar would steal width from BOE tables */}
-        <div className="hidden xl:flex justify-end mb-4">
+        <div className="mb-4 hidden justify-end xl:flex">
           <button
             onClick={() => setSidebarCollapsed(v => !v)}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-border bg-surface/70 text-xs font-bold text-muted hover:text-fg hover:border-accent/30 transition"
+            className="inline-flex items-center gap-1.5 rounded-full border border-black/[0.06] dark:border-white/[0.07] bg-[var(--wow-card)] px-3 py-1.5 text-xs font-bold text-muted backdrop-blur-sm transition hover:text-[var(--wow-fg)] hover:border-[#8b93ff]/40 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#8b93ff]"
           >
-            {sidebarCollapsed ? <><ChevronRight className="w-3.5 h-3.5" /> Show details</> : <>Hide details <ChevronRight className="w-3.5 h-3.5 rotate-180" /></>}
+            {sidebarCollapsed ? <><ChevronRight className="h-3.5 w-3.5" /> Show details</> : <>Hide details <ChevronRight className="h-3.5 w-3.5 rotate-180" /></>}
           </button>
         </div>
-        <div className={`flex flex-col gap-8 items-start ${sidebarCollapsed ? "" : "xl:flex-row"}`}>
-          {/* LEFT: guided study flow on a numbered rail — grows to fill when sidebar hidden */}
-          <div className="flex-1 min-w-0 w-full">
-            <div className="relative lg:pl-14 space-y-10">
+        <div className={`flex flex-col items-start gap-8 ${sidebarCollapsed ? "" : "xl:flex-row"}`}>
+          {/* LEFT: guided study flow — grows to fill when sidebar hidden */}
+          <div className="w-full min-w-0 flex-1">
+            <div className="relative space-y-10 lg:pl-14">
               {/* Connecting rail line (desktop) */}
-              <div aria-hidden className="hidden lg:block absolute left-4 top-3 bottom-3 w-px bg-border" />
+              <div aria-hidden className="absolute bottom-3 left-4 top-3 hidden w-px bg-[var(--wow-card-border)] lg:block" />
 
               {/* Step: understand the problem */}
               {hasProblem && (
@@ -643,21 +749,21 @@ export default function QuestionDetailClient({
                     initial="hidden"
                     animate="visible"
                     variants={fadeInVariants}
-                    className="rounded-2xl border border-border bg-surface/70 dark:bg-surface/20 backdrop-blur-sm p-6 sm:p-7 shadow-sm"
+                    className="rounded-2xl border border-black/[0.06] dark:border-white/[0.07] bg-[var(--wow-card)] p-6 shadow-sm backdrop-blur-sm sm:p-7"
                   >
                     {cleanDescription && (
-                      <div className="prose dark:prose-invert max-w-none text-sm text-fg/90 leading-relaxed">
+                      <div className="prose max-w-none text-sm leading-relaxed text-[var(--wow-fg)]/90 dark:prose-invert">
                         <MarkdownRenderer content={cleanDescription} />
                       </div>
                     )}
                     {tags.length > 0 && (
-                      <div className={`flex items-center flex-wrap gap-2 ${cleanDescription ? "mt-6 pt-5 border-t border-border" : ""}`}>
+                      <div className={`flex flex-wrap items-center gap-2 ${cleanDescription ? "mt-6 border-t border-black/[0.06] dark:border-white/[0.07] pt-5" : ""}`}>
                         {tags.map((t) => (
                           <span
                             key={t}
-                            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg border border-border bg-bg/40 text-[10px] font-black tracking-wider uppercase text-muted"
+                            className="inline-flex items-center gap-1 rounded-lg border border-black/[0.06] dark:border-white/[0.07] bg-[var(--wow-stage)] px-2.5 py-1 font-mono text-[10px] font-bold uppercase tracking-wider text-muted"
                           >
-                            <Hash className={`w-3 h-3 ${theme.text}`} />
+                            <Hash className="h-3 w-3 opacity-60" />
                             {t}
                           </span>
                         ))}
@@ -679,7 +785,7 @@ export default function QuestionDetailClient({
 
               {/* Step: the solution */}
               {hasAnswer && (
-                <StudyStep num={nextStep()} title="Study the solution" hex={theme.hex}>
+                <StudyStep num={nextStep()} title="Study the solution" hex={theme.hex} id="solution">
                   <div className="space-y-4">
                     {/* Framework selector — swaps the tutorial + solution (machine-coding). */}
                     {hasFrameworks && (
@@ -687,20 +793,22 @@ export default function QuestionDetailClient({
                         initial="hidden"
                         animate="visible"
                         variants={fadeInVariants}
-                        className="flex flex-wrap items-center gap-2 p-3 rounded-2xl border border-border bg-surface/70 dark:bg-surface/20 shadow-sm"
+                        className="flex flex-wrap items-center gap-2 rounded-2xl border border-black/[0.06] dark:border-white/[0.07] bg-[var(--wow-card)] p-3 shadow-sm backdrop-blur-sm"
                       >
-                        <span className="text-[11px] font-black uppercase tracking-wider text-muted px-1.5">
+                        <span className="px-1.5 font-mono text-[11px] font-bold uppercase tracking-[0.2em] text-muted">
                           Solve in
                         </span>
-                        <div className="flex flex-wrap gap-1.5">
+                        <div className="flex flex-wrap gap-1.5" role="tablist" aria-label="Solution framework">
                           {frameworkKeys.map((fw) => (
                             <button
                               key={fw}
+                              role="tab"
+                              aria-selected={fw === activeFw}
                               onClick={() => selectFramework(fw)}
-                              className={`px-3.5 py-1.5 rounded-xl text-xs font-bold border transition ${
+                              className={`rounded-full px-3.5 py-1.5 text-xs font-bold transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#8b93ff] ${
                                 fw === activeFw
-                                  ? "bg-accent text-bg border-accent shadow-sm"
-                                  : "bg-bg border-border text-muted hover:text-fg hover:border-accent/40"
+                                  ? "bg-white text-black shadow-sm"
+                                  : "border border-black/[0.06] dark:border-white/[0.07] text-muted hover:border-[#8b93ff]/50 hover:text-[var(--wow-fg)]"
                               }`}
                             >
                               {CODE_VARIANTS[fw]?.label ?? fw}
@@ -712,48 +820,49 @@ export default function QuestionDetailClient({
 
                     <AnimatePresence initial={false} mode="wait">
                       {!isAnswerExpanded ? (
-                        /* Spoiler gate — an honest, calm "peek when ready" panel */
+                        /* Spoiler gate — classified drawer, calm "peek when ready" */
                         <motion.div
                           key="answer-gate"
                           initial={{ opacity: 0 }}
                           animate={{ opacity: 1 }}
                           exit={{ opacity: 0 }}
                           transition={{ duration: 0.25 }}
-                          className="relative rounded-2xl border border-border overflow-hidden bg-surface/70 dark:bg-surface/20"
+                          className="relative overflow-hidden rounded-2xl border border-white/10 bg-[#0d0f16] text-white shadow-[0_24px_70px_-24px_rgba(0,0,0,0.8)]"
                         >
                           <div
                             aria-hidden
-                            className="absolute -top-16 right-0 w-64 h-64 rounded-full blur-3xl pointer-events-none"
-                            style={{ background: tint(theme.hex, 10) }}
+                            className="pointer-events-none absolute -top-16 right-0 h-64 w-64 rounded-full blur-3xl"
+                            style={{ background: tint(theme.hex, 14) }}
                           />
                           <div className="relative">
                             {/* Drawer handle */}
                             <div className="flex justify-center pt-3">
-                              <div className="w-12 h-1.5 rounded-full bg-border" />
+                              <div className="h-1.5 w-12 rounded-full bg-white/15" />
                             </div>
                             {/* Blurred preview of answer */}
                             {answerContent && (
-                              <div className="px-6 pt-4 pb-2 overflow-hidden max-h-24 relative">
-                                <div className="prose dark:prose-invert max-w-none text-sm text-fg/90 leading-relaxed blur-[3px] select-none opacity-60">
+                              <div className="relative max-h-24 overflow-hidden px-6 pb-2 pt-4">
+                                <div className="prose prose-invert max-w-none text-sm leading-relaxed text-white/90 opacity-60 blur-[3px] select-none">
                                   <MarkdownRenderer content={answerContent.slice(0, 320)} allowHtml />
                                 </div>
-                                <div className="absolute inset-0 bg-gradient-to-t from-surface via-surface/80 to-transparent pointer-events-none" />
+                                <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-[#0d0f16] via-[#0d0f16]/80 to-transparent" />
                               </div>
                             )}
-                            <div className="px-6 pb-6 sm:pb-7 flex flex-col items-center text-center">
+                            <div className="flex flex-col items-center px-6 pb-6 text-center sm:pb-7">
                               <div
-                                className="grid place-items-center w-10 h-10 rounded-xl border mb-3"
-                                style={{ background: tint(theme.hex, 10), borderColor: tint(theme.hex, 25) }}
+                                className="mb-3 grid h-10 w-10 place-items-center rounded-xl border"
+                                style={{ background: tint(theme.hex, 12), borderColor: tint(theme.hex, 30) }}
                               >
-                                <Lock className={`w-4 h-4 ${theme.text}`} />
+                                <Lock className="h-4 w-4" style={{ color: theme.hex.startsWith("#") ? theme.hex : undefined }} />
                               </div>
-                              <h3 className="text-base font-black tracking-tight text-fg">Solution ready — 2 min read</h3>
-                              <p className="text-xs text-muted mt-1 max-w-sm leading-relaxed">
-                                Drawer • progress syncs with the top bar • Mark as solved is primary
+                              <h3 className="text-base font-black tracking-tight text-white">Solution ready — 2 min read</h3>
+                              <p className="mt-1 max-w-sm font-mono text-[11px] uppercase leading-relaxed tracking-[0.18em] text-white/45">
+                                Classified // press E to declassify
                               </p>
                               <button
                                 onClick={() => setIsAnswerExpanded(true)}
-                                className="mt-4 inline-flex items-center gap-2 px-6 py-2.5 rounded-xl bg-accent text-bg text-xs font-black uppercase tracking-wider hover:bg-accent-soft shadow-lg transition duration-200"
+                                aria-expanded={false}
+                                className="mt-4 inline-flex items-center gap-2 rounded-full bg-white px-6 py-2.5 text-xs font-black uppercase tracking-wider text-black shadow-lg transition duration-200 hover:scale-105 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#8b93ff]"
                               >
                                 Reveal the solution
                               </button>
@@ -767,9 +876,21 @@ export default function QuestionDetailClient({
                           animate={{ opacity: 1, y: 0 }}
                           exit={{ opacity: 0 }}
                           transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
-                          className={`rounded-2xl border ${theme.border} ${theme.bg} shadow-md overflow-hidden`}
+                          className="overflow-hidden rounded-2xl border border-black/[0.06] dark:border-white/[0.07] bg-[var(--wow-card)] shadow-md backdrop-blur-sm"
                         >
-                          <div className="p-6 sm:p-7 prose dark:prose-invert max-w-none text-sm text-fg/90 leading-relaxed">
+                          <div className="flex items-center justify-between gap-3 border-b border-black/[0.06] dark:border-white/[0.07] px-6 py-3">
+                            <span className="font-mono text-[11px] font-bold uppercase tracking-[0.2em] text-muted">
+                              Declassified // solution
+                            </span>
+                            <button
+                              onClick={() => setIsAnswerExpanded(false)}
+                              aria-expanded={true}
+                              className="rounded-full border border-black/[0.06] dark:border-white/[0.07] px-3 py-1 font-mono text-[10px] font-bold uppercase tracking-wider text-muted transition hover:border-[#8b93ff]/50 hover:text-[var(--wow-fg)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#8b93ff]"
+                            >
+                              Seal it (E)
+                            </button>
+                          </div>
+                          <div className="prose max-w-none p-6 text-sm leading-relaxed text-[var(--wow-fg)]/90 dark:prose-invert sm:p-7">
                             {/* allowHtml: answers are admin-curated and may embed
                                 hand-authored inline SVG diagrams. */}
                             <MarkdownRenderer content={answerContent!} allowHtml />
@@ -777,20 +898,21 @@ export default function QuestionDetailClient({
 
                           {/* Post-read nudge: close the loop on progress */}
                           <div className="px-6 pb-6">
-                            <div className="flex flex-col sm:flex-row items-center justify-between gap-3 rounded-xl border border-emerald-500/25 bg-emerald-500/[0.06] px-4 py-3.5">
+                            <div className="flex flex-col items-center justify-between gap-3 rounded-xl border border-emerald-500/25 bg-emerald-500/[0.06] px-4 py-3.5 sm:flex-row">
                               <p className="text-xs font-semibold text-muted">
                                 {solved ? "Nice — this one's in your solved list." : "Understood it end to end? Log your progress."}
                               </p>
                               <button
                                 onClick={handleToggleSolved}
-                                className={`shrink-0 inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg border text-xs font-bold transition duration-200 ${
+                                aria-pressed={solved}
+                                className={`inline-flex shrink-0 items-center gap-1.5 rounded-lg border px-3.5 py-1.5 text-xs font-bold transition duration-200 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#8b93ff] ${
                                   solved
                                     ? "border-emerald-500/40 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
-                                    : "border-border bg-bg/50 text-muted hover:text-emerald-600 dark:hover:text-emerald-400 hover:border-emerald-500/40"
+                                    : "border-black/[0.06] dark:border-white/[0.07] text-muted hover:border-emerald-500/40 hover:text-emerald-600 dark:hover:text-emerald-400"
                                 }`}
                               >
-                                <CheckCircle2 className="w-3.5 h-3.5" />
-                                {solved ? "Solved" : "Mark as solved"}
+                                <CheckCircle2 className="h-3.5 w-3.5" />
+                                {solved ? "Solved" : "Mark as solved (M)"}
                               </button>
                             </div>
                           </div>
@@ -864,20 +986,21 @@ export default function QuestionDetailClient({
                   initial="hidden"
                   animate="visible"
                   variants={fadeInVariants}
-                  className="rounded-2xl border border-border bg-surface/70 dark:bg-surface/20 backdrop-blur-sm overflow-hidden shadow-sm"
+                  className="overflow-hidden rounded-2xl border border-black/[0.06] dark:border-white/[0.07] bg-[var(--wow-card)] shadow-sm backdrop-blur-sm"
                 >
                   <button
                     onClick={() => setIsCommentsExpanded(!isCommentsExpanded)}
-                    className="flex items-center justify-between w-full px-6 py-5 text-left hover:bg-surface/50 transition-colors duration-200 focus:outline-none"
+                    aria-expanded={isCommentsExpanded}
+                    className="flex w-full items-center justify-between px-6 py-5 text-left transition-colors duration-200 hover:bg-[var(--wow-stage)] focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-[#8b93ff]"
                   >
                     <div className="flex items-center gap-2.5">
-                      <MessageSquare className="w-5 h-5 text-muted" />
-                      <span className="text-sm font-bold text-fg">
+                      <MessageSquare className="h-5 w-5 text-muted" />
+                      <span className="text-sm font-bold text-[var(--wow-fg)]">
                         Approaches, follow-ups & war stories from other candidates
                       </span>
                     </div>
                     <ChevronDown
-                      className={`w-5 h-5 text-muted transition-transform duration-300 shrink-0 ${
+                      className={`h-5 w-5 shrink-0 text-muted transition-transform duration-300 ${
                         isCommentsExpanded ? "rotate-180" : ""
                       }`}
                     />
@@ -892,7 +1015,7 @@ export default function QuestionDetailClient({
                         transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
                         className="overflow-hidden"
                       >
-                        <div className="px-6 pb-6 pt-2 border-t border-border">
+                        <div className="border-t border-black/[0.06] dark:border-white/[0.07] px-6 pb-6 pt-2">
                           <CommentSection
                             postId={q.id}
                             initialComments={initialComments}
@@ -911,159 +1034,413 @@ export default function QuestionDetailClient({
                 </motion.div>
               </StudyStep>
             </div>
-
-            {/* Bottom Previous / Next question navigation — continue the track
-                without scrolling back up. Same order as the top nav / list page. */}
-            {(prevQuestion || nextQuestion) && (
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-10">
-                {prevQuestion ? (
-                  <Link
-                    href={`/interview-question/${prevQuestion.slug}`}
-                    className="group flex items-center gap-3 p-4 rounded-2xl border border-border hover:border-accent/40 bg-surface/60 hover:bg-surface transition-colors duration-200"
-                  >
-                    <ArrowLeft className="w-4 h-4 text-muted group-hover:text-accent group-hover:-translate-x-0.5 transition-all duration-200 shrink-0" />
-                    <div className="min-w-0">
-                      <div className="text-[10px] font-black uppercase tracking-widest text-muted/70">Previous</div>
-                      <div className="text-sm font-bold text-fg truncate group-hover:text-accent transition-colors duration-200">{prevQuestion.title}</div>
-                    </div>
-                  </Link>
-                ) : (
-                  <div className="hidden sm:block" />
-                )}
-                {nextQuestion ? (
-                  <Link
-                    href={`/interview-question/${nextQuestion.slug}`}
-                    className="group flex items-center justify-end gap-3 p-4 rounded-2xl border border-border hover:border-accent/40 bg-surface/60 hover:bg-surface transition-colors duration-200 text-right"
-                  >
-                    <div className="min-w-0">
-                      <div className="text-[10px] font-black uppercase tracking-widest text-muted/70">Next</div>
-                      <div className="text-sm font-bold text-fg truncate group-hover:text-accent transition-colors duration-200">{nextQuestion.title}</div>
-                    </div>
-                    <ArrowRight className="w-4 h-4 text-muted group-hover:text-accent group-hover:translate-x-0.5 transition-all duration-200 shrink-0" />
-                  </Link>
-                ) : (
-                  <div className="hidden sm:block" />
-                )}
-              </div>
-            )}
           </div>
 
           {/* RIGHT: sticky companion sidebar — collapsible, narrower (340px) so tables/SVGs get ~72% */}
-          <aside className={`${sidebarCollapsed ? "hidden" : "w-full xl:w-[340px] shrink-0"} space-y-5 xl:sticky xl:top-8`}>
+          <aside aria-label="Question details" className={`${sidebarCollapsed ? "hidden" : "w-full shrink-0 space-y-5 xl:w-[340px]"} xl:sticky xl:top-8`}>
             {/* Track card — where this question lives */}
             {q.technology && (
-              <motion.div initial="hidden" animate="visible" variants={fadeInVariants}>
+              <WowReveal>
                 <Link
                   href={`/interview-questions/${q.technology}`}
-                  className={`group flex items-center gap-4 p-4 rounded-2xl border ${theme.border} ${theme.bg} backdrop-blur-sm shadow-sm hover:shadow-md transition-all duration-300`}
+                  className="group flex items-center gap-4 rounded-2xl border border-black/[0.06] dark:border-white/[0.07] bg-[var(--wow-card)] p-4 shadow-sm backdrop-blur-sm transition-all duration-300 hover:-translate-y-0.5 hover:border-[#8b93ff]/50"
                 >
                   <div
-                    className="shrink-0 grid place-items-center w-12 h-12 rounded-xl border transition-colors"
+                    className="grid h-12 w-12 shrink-0 place-items-center rounded-xl border transition-colors"
                     style={{ background: tint(theme.hex, 10), borderColor: tint(theme.hex, 25) }}
                   >
-                    <TechSvg tech={q.technology} className="w-7 h-7 group-hover:scale-110 transition-transform duration-300" />
+                    <TechSvg tech={q.technology} className="h-7 w-7 transition-transform duration-300 group-hover:scale-110" />
                   </div>
                   <div className="min-w-0 flex-1">
-                    <div className="text-[10px] font-black uppercase tracking-widest text-muted/70">Track</div>
-                    <div className="text-sm font-black tracking-tight text-fg group-hover:text-accent transition-colors truncate">
+                    <div className="font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-muted">Track</div>
+                    <div className="truncate text-sm font-black tracking-tight text-[var(--wow-fg)] transition-colors group-hover:text-[#8b93ff]">
                       {techLabel(q.technology)} questions
                     </div>
                   </div>
-                  <ArrowUpRight className="w-4 h-4 text-muted group-hover:text-accent group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-all duration-300 shrink-0" />
+                  <ArrowUpRight className="h-4 w-4 shrink-0 text-muted transition-all duration-300 group-hover:-translate-y-0.5 group-hover:translate-x-0.5 group-hover:text-[#8b93ff]" />
                 </Link>
-              </motion.div>
+              </WowReveal>
             )}
 
             {/* At a glance */}
-            <motion.div
-              initial="hidden"
-              animate="visible"
-              variants={fadeInVariants}
-              className="p-5 rounded-2xl border border-border bg-surface/70 dark:bg-surface/20 backdrop-blur-sm space-y-3.5 shadow-sm"
-            >
-              <h3 className="text-xs font-black uppercase tracking-wider text-muted">At a glance</h3>
-              <div className="space-y-3 text-xs">
-                {q.company && (
-                  <div className="flex items-center justify-between gap-3">
-                    <span className="text-muted flex items-center gap-1.5">
-                      <Building2 className="w-3.5 h-3.5 text-muted/50" /> Company
-                    </span>
-                    <Link
-                      href={`/interview-questions/company/${q.company.slug}`}
-                      className="font-bold hover:text-accent truncate"
-                    >
-                      {q.company.name}
-                    </Link>
-                  </div>
-                )}
-                {q.round && (
-                  <div className="flex items-center justify-between gap-3">
-                    <span className="text-muted flex items-center gap-1.5">
-                      <Layers className="w-3.5 h-3.5 text-muted/50" /> Round
-                    </span>
-                    <span className="font-bold">{q.round}</span>
-                  </div>
-                )}
-                <div className="flex items-center justify-between gap-3">
-                  <span className="text-muted flex items-center gap-1.5">
-                    <Eye className="w-3.5 h-3.5 text-muted/50" /> Views
-                  </span>
-                  <span className="font-bold">{compactNumber(q.views)}</span>
-                </div>
-                {years.length > 0 && (
-                  <div className="flex flex-col gap-2 pt-2.5 border-t border-border">
-                    <span className="text-muted flex items-center gap-1.5">
-                      <Calendar className="w-3.5 h-3.5 text-muted/50" /> Years asked
-                    </span>
-                    <div className="flex flex-wrap gap-1.5">
-                      {years.map((yr) => (
-                        <span
-                          key={yr}
-                          className="px-2 py-0.5 rounded bg-bg border border-border font-bold text-[10px] text-fg/80"
-                        >
-                          {yr}
-                        </span>
-                      ))}
+            <WowReveal delay={0.06}>
+              <div className="space-y-3.5 rounded-2xl border border-black/[0.06] dark:border-white/[0.07] bg-[var(--wow-card)] p-5 shadow-sm backdrop-blur-sm">
+                <h3 className="flex items-center gap-2 font-mono text-[11px] font-bold uppercase tracking-[0.2em] text-muted">
+                  <span className="h-1.5 w-1.5 rounded-full bg-[#8b93ff]" />
+                  At a glance
+                </h3>
+                <div className="space-y-3 text-xs">
+                  {q.company && (
+                    <div className="flex items-center justify-between gap-3">
+                      <span className="flex items-center gap-1.5 text-muted">
+                        <Building2 className="h-3.5 w-3.5 text-muted/50" /> Company
+                      </span>
+                      <Link
+                        href={`/interview-questions/company/${q.company.slug}`}
+                        className="truncate font-bold hover:text-[#8b93ff]"
+                      >
+                        {q.company.name}
+                      </Link>
                     </div>
+                  )}
+                  {q.round && (
+                    <div className="flex items-center justify-between gap-3">
+                      <span className="flex items-center gap-1.5 text-muted">
+                        <Layers className="h-3.5 w-3.5 text-muted/50" /> Round
+                      </span>
+                      <span className="font-bold">{q.round}</span>
+                    </div>
+                  )}
+                  <div className="flex items-center justify-between gap-3">
+                    <span className="flex items-center gap-1.5 text-muted">
+                      <Eye className="h-3.5 w-3.5 text-muted/50" /> Views
+                    </span>
+                    <span className="font-bold tabular-nums">{compactNumber(q.views)}</span>
                   </div>
-                )}
+                  {years.length > 0 && (
+                    <div className="flex flex-col gap-2 border-t border-black/[0.06] dark:border-white/[0.07] pt-2.5">
+                      <span className="flex items-center gap-1.5 text-muted">
+                        <Calendar className="h-3.5 w-3.5 text-muted/50" /> Years asked
+                      </span>
+                      <div className="flex flex-wrap gap-1.5">
+                        {years.map((yr) => (
+                          <span
+                            key={yr}
+                            className="rounded bg-[var(--wow-stage)] px-2 py-0.5 font-mono text-[10px] font-bold text-[var(--wow-fg)]/80"
+                          >
+                            {yr}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
               </div>
-            </motion.div>
+            </WowReveal>
 
             {/* Related questions */}
             {(followUps.length > 0 || similar.length > 0) && (
-              <motion.div initial="hidden" animate="visible" variants={fadeInVariants} className="space-y-5">
+              <div className="space-y-5">
                 {followUps.length > 0 && (
-                  <RelatedList
-                    title={q.company ? `Asked at ${q.company.name}` : "Follow-ups"}
-                    items={followUps}
-                  />
+                  <WowReveal delay={0.1}>
+                    <RelatedList
+                      title={q.company ? `Asked at ${q.company.name}` : "Follow-ups"}
+                      items={followUps}
+                    />
+                  </WowReveal>
                 )}
                 {similar.length > 0 && (
-                  <RelatedList
-                    title={`Similar ${q.technology ? techLabel(q.technology) : ""} questions`}
-                    items={similar}
-                  />
+                  <WowReveal delay={0.14}>
+                    <RelatedList
+                      title={`Similar ${q.technology ? techLabel(q.technology) : ""} questions`}
+                      items={similar}
+                    />
+                  </WowReveal>
                 )}
-              </motion.div>
+              </div>
             )}
           </aside>
         </div>
+
+        {/* ── Finale: end of dossier (fills the void above the site footer) ── */}
+        <WowReveal>
+          <EndCap
+            nextQuestion={nextQuestion}
+            track={track}
+            techSlug={q.technology}
+            techName={q.technology ? techLabel(q.technology) : null}
+            solved={solved}
+            onToggleSolved={handleToggleSolved}
+            hex={theme.hex}
+          />
+        </WowReveal>
+        {/* Sentinel: when this enters view the sticky dock parks itself. */}
+        <div ref={endRef} aria-hidden className="h-px" />
       </div>
+
+      {/* Sticky track navigator — prev/next without scrolling, with progress.
+          Parks itself once the finale is on screen (never over the footer). */}
+      <TrackNavigator
+        techSlug={q.technology}
+        techName={q.technology ? techLabel(q.technology) : null}
+        track={track}
+        prevQuestion={prevQuestion}
+        nextQuestion={nextQuestion}
+        visible={!dockParked}
+      />
+
+      {/* Keyboard cheatsheet */}
+      <AnimatePresence>
+        {showKeys && (
+          <div
+            className="fixed inset-0 z-[100] flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm"
+            onClick={() => setShowKeys(false)}
+          >
+            <div
+              role="dialog"
+              aria-modal="true"
+              aria-label="Keyboard shortcuts"
+              className="w-full max-w-sm rounded-2xl border border-black/[0.06] dark:border-white/[0.07] bg-[#0d0f16] p-6 shadow-2xl"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="mb-4 flex items-center justify-between">
+                <h2 className="flex items-center gap-2 font-mono text-[12px] font-bold uppercase tracking-[0.2em] text-white">
+                  <Keyboard className="h-4 w-4 text-[#8b93ff]" /> Shortcuts
+                </h2>
+                <button
+                  ref={cheatsheetCloseRef}
+                  onClick={() => setShowKeys(false)}
+                  aria-label="Close shortcuts"
+                  className="grid h-7 w-7 place-items-center rounded-full border border-white/10 text-white/50 transition hover:border-white/40 hover:text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#8b93ff]"
+                >
+                  <X className="h-3.5 w-3.5" />
+                </button>
+              </div>
+              <ul className="space-y-2.5">
+                {SHORTCUTS.map((s) => (
+                  <li key={s.label} className="flex items-center justify-between gap-3 text-sm">
+                    <span className="text-white/60">{s.label}</span>
+                    <span className="flex gap-1">
+                      {s.keys.map((k) => (
+                        <kbd key={k} className="rounded-md border border-white/15 bg-white/[0.07] px-2 py-0.5 font-mono text-[11px] font-bold text-white">
+                          {k}
+                        </kbd>
+                      ))}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* SVG lightbox */}
       {lightboxSvg && (
-        <div className="fixed inset-0 z-[100] bg-black/80 backdrop-blur-sm flex items-center justify-center p-4" onClick={() => setLightboxSvg(null)}>
-          <div className="relative w-full max-w-4xl bg-surface border border-border rounded-2xl shadow-2xl p-6 max-h-[85vh] overflow-auto" onClick={(e) => e.stopPropagation()}>
-            <button onClick={() => setLightboxSvg(null)} className="absolute top-3 right-3 p-1.5 rounded-lg border border-border bg-bg hover:bg-elevated text-muted hover:text-fg transition">
-              <X className="w-4 h-4" />
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 p-4 backdrop-blur-sm" onClick={() => setLightboxSvg(null)}>
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-label="Diagram viewer"
+            className="relative max-h-[85vh] w-full max-w-4xl overflow-auto rounded-2xl border border-black/[0.06] dark:border-white/[0.07] bg-[#0d0f16] p-6 shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              ref={lightboxCloseRef}
+              onClick={() => setLightboxSvg(null)}
+              aria-label="Close diagram viewer"
+              className="absolute right-3 top-3 rounded-lg border border-white/10 bg-white/5 p-1.5 text-white/60 transition hover:bg-white/10 hover:text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#8b93ff]"
+            >
+              <X className="h-4 w-4" />
             </button>
-            <div className="pr-8 overflow-auto max-h-[70vh] p-2" dangerouslySetInnerHTML={{ __html: lightboxSvg }} />
+            <div className="max-h-[70vh] overflow-auto p-2 pr-8" dangerouslySetInnerHTML={{ __html: lightboxSvg }} />
             <div className="mt-3 flex justify-center">
-              <span className="px-3 py-1 rounded-full bg-panel border border-border text-[10px] font-bold uppercase tracking-wider text-muted">Pan & zoom • Click outside to close</span>
+              <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1 font-mono text-[10px] font-bold uppercase tracking-wider text-white/50">Pan & zoom • Esc to close</span>
             </div>
           </div>
         </div>
       )}
     </div>
+  );
+}
+
+/**
+ * Sticky track navigator — the better prev/next. A glass dock pinned to the
+ * viewport bottom: previous question, track position + progress, next
+ * question. Always one tap away, no scrolling back up.
+ */
+function TrackNavigator({
+  techSlug,
+  techName,
+  track,
+  prevQuestion,
+  nextQuestion,
+  visible,
+}: {
+  techSlug: string | null;
+  techName: string | null;
+  track: TrackPosition | null;
+  prevQuestion: { slug: string; title: string } | null;
+  nextQuestion: { slug: string; title: string } | null;
+  visible: boolean;
+}) {
+  if (!prevQuestion && !nextQuestion) return null;
+  const pct = track && track.total > 0 ? ((track.index + 1) / track.total) * 100 : 0;
+  return (
+    <motion.nav
+      aria-label="Track navigation"
+      aria-hidden={!visible}
+      inert={!visible}
+      initial={{ y: 80, opacity: 0 }}
+      animate={visible ? { y: 0, opacity: 1 } : { y: 80, opacity: 0 }}
+      transition={{ duration: 0.45, ease: [0.16, 1, 0.3, 1] }}
+      className={`fixed inset-x-0 bottom-0 z-40 px-3 pb-3 sm:px-4 sm:pb-4 ${visible ? "" : "pointer-events-none"}`}
+    >
+      <div className="mx-auto flex max-w-6xl items-stretch gap-2 rounded-2xl border border-white/10 bg-[#0d0f16]/85 p-2 shadow-[0_18px_60px_-12px_rgba(0,0,0,0.8)] backdrop-blur-xl">
+        {prevQuestion ? (
+          <Link
+            href={`/interview-question/${prevQuestion.slug}`}
+            aria-label={`Previous question: ${prevQuestion.title}`}
+            className="group flex min-w-0 flex-1 items-center gap-2.5 rounded-xl px-3 py-2 transition hover:bg-white/[0.07] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#8b93ff]"
+          >
+            <ArrowLeft className="h-4 w-4 shrink-0 text-white/40 transition-all duration-200 group-hover:-translate-x-0.5 group-hover:text-white" />
+            <span className="min-w-0 text-left">
+              <span className="block font-mono text-[9px] font-bold uppercase tracking-[0.2em] text-white/35">Prev</span>
+              <span className="block truncate text-[13px] font-bold text-white/80 transition-colors group-hover:text-white">{prevQuestion.title}</span>
+            </span>
+          </Link>
+        ) : (
+          <span aria-disabled="true" className="flex min-w-0 flex-1 cursor-not-allowed select-none items-center gap-2.5 rounded-xl px-3 py-2 opacity-40">
+            <ArrowLeft className="h-4 w-4 shrink-0 text-white/40" />
+            <span className="block font-mono text-[9px] font-bold uppercase tracking-[0.2em] text-white/35">Track start</span>
+          </span>
+        )}
+
+        {track && track.total > 0 && (
+          <div className="hidden w-44 shrink-0 flex-col justify-center gap-1.5 border-x border-white/10 px-4 sm:flex" aria-hidden>
+            <div className="text-center font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-white/50 tabular-nums">
+              {track.index + 1} / {track.total}
+            </div>
+            <div className="h-1 overflow-hidden rounded-full bg-white/10">
+              <div className="h-full rounded-full bg-gradient-to-r from-[#8b93ff] to-[#ff2fb3]" style={{ width: `${pct}%` }} />
+            </div>
+            {techSlug && (
+              <div className="truncate text-center font-mono text-[9px] uppercase tracking-[0.18em] text-white/35">
+                {techName ?? techSlug}
+              </div>
+            )}
+          </div>
+        )}
+
+        {nextQuestion ? (
+          <Link
+            href={`/interview-question/${nextQuestion.slug}`}
+            aria-label={`Next question: ${nextQuestion.title}`}
+            className="group flex min-w-0 flex-1 items-center justify-end gap-2.5 rounded-xl px-3 py-2 text-right transition hover:bg-white/[0.07] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#8b93ff]"
+          >
+            <span className="min-w-0">
+              <span className="block font-mono text-[9px] font-bold uppercase tracking-[0.2em] text-white/35">Next →</span>
+              <span className="block truncate text-[13px] font-bold text-white/80 transition-colors group-hover:text-white">{nextQuestion.title}</span>
+            </span>
+            <ArrowRight className="h-4 w-4 shrink-0 text-white/40 transition-all duration-200 group-hover:translate-x-0.5 group-hover:text-white" />
+          </Link>
+        ) : (
+          <span aria-disabled="true" className="flex min-w-0 flex-1 cursor-not-allowed select-none items-center justify-end gap-2.5 rounded-xl px-3 py-2 opacity-40">
+            <span className="block font-mono text-[9px] font-bold uppercase tracking-[0.2em] text-white/35">Track complete</span>
+            <ArrowRight className="h-4 w-4 shrink-0 text-white/40" />
+          </span>
+        )}
+      </div>
+    </motion.nav>
+  );
+}
+
+/**
+ * Finale — end of dossier. Fills the void above the site footer with a lit
+ * send-off: streak status, the next transmission spotlighted, and a way back
+ * to the track. Doubles as the sentinel zone that parks the sticky dock.
+ */
+function EndCap({
+  nextQuestion,
+  track,
+  techSlug,
+  techName,
+  solved,
+  onToggleSolved,
+  hex,
+}: {
+  nextQuestion: { slug: string; title: string } | null;
+  track: TrackPosition | null;
+  techSlug: string | null;
+  techName: string | null;
+  solved: boolean;
+  onToggleSolved: () => void;
+  hex: string;
+}) {
+  return (
+    <section aria-label="Continue your streak" className="wow-noise relative mx-auto mt-16 max-w-6xl overflow-hidden rounded-[2rem] bg-[#0b0d16] px-6 py-12 text-white md:px-10 md:py-14">
+      <div aria-hidden className="pointer-events-none absolute inset-0">
+        <div
+          className="absolute -top-24 left-1/4 h-[300px] w-[480px] rounded-full blur-[110px]"
+          style={{ background: tint(hex, 18) }}
+        />
+        <div className="absolute -bottom-28 right-[8%] h-[260px] w-[380px] rounded-full bg-[#8b93ff]/15 blur-[100px]" />
+        <div className="wow-grid-bg absolute inset-0 opacity-70" />
+      </div>
+      <div aria-hidden className="pointer-events-none absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-[#0b0d16]" />
+
+      <div className="relative grid items-center gap-8 lg:grid-cols-[1fr_1.1fr]">
+        <div>
+          <p className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/[0.06] px-4 py-1.5 font-mono text-[10px] font-bold uppercase tracking-[0.22em] text-white/70 backdrop-blur-md">
+            <span className={`h-1.5 w-1.5 rounded-full ${solved ? "bg-emerald-400" : "bg-[#ffe600]"}`} />
+            Transmission complete // {solved ? "logged as solved" : "awaiting log"}
+          </p>
+          <h2 className="wow-font-display mt-4 text-4xl leading-[0.95] md:text-5xl">
+            KEEP THE<br /><span className="wow-gradient-text">STREAK ALIVE.</span>
+          </h2>
+          <p className="mt-3 max-w-md text-sm leading-relaxed text-white/60">
+            {track && track.total > 0
+              ? `Dossier ${track.index + 1} of ${track.total} decoded${techName ? ` in the ${techName} track` : ""}. One more won't hurt.`
+              : "One dossier down. The track keeps going."}
+          </p>
+          <div className="mt-6 flex flex-wrap items-center gap-2.5">
+            {!solved && (
+              <button
+                onClick={onToggleSolved}
+                className="inline-flex items-center gap-2 rounded-full bg-white px-5 py-2.5 text-[11px] font-black uppercase tracking-wider text-black shadow-lg transition hover:scale-105 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#8b93ff]"
+              >
+                <CheckCircle2 className="h-3.5 w-3.5" /> Log as solved
+              </button>
+            )}
+            {techSlug && (
+              <Link
+                href={`/interview-questions/${techSlug}`}
+                className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/[0.06] px-5 py-2.5 text-[11px] font-black uppercase tracking-wider text-white/80 backdrop-blur-md transition hover:border-white/40 hover:text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#8b93ff]"
+              >
+                Back to track
+              </Link>
+            )}
+          </div>
+        </div>
+
+        <div>
+          {nextQuestion ? (
+            <Link
+              href={`/interview-question/${nextQuestion.slug}`}
+              className="group block overflow-hidden rounded-2xl border border-white/12 bg-white/[0.05] p-6 backdrop-blur-md transition-all duration-300 hover:-translate-y-1 hover:border-[#ffe600]/50 hover:shadow-[0_24px_70px_-24px_rgba(255,230,0,0.35)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#8b93ff]"
+            >
+              <div className="flex items-center justify-between gap-3">
+                <span className="font-mono text-[10px] font-bold uppercase tracking-[0.25em] text-[#ffe600]">
+                  Next up
+                </span>
+                <kbd className="rounded-md border border-white/15 bg-white/[0.07] px-2 py-0.5 font-mono text-[11px] font-bold text-white/70">→</kbd>
+              </div>
+              <p className="mt-3 text-xl font-black leading-snug tracking-tight text-white transition-colors group-hover:text-[#ffe600] md:text-2xl">
+                {nextQuestion.title}
+              </p>
+              <span className="mt-4 inline-flex items-center gap-1.5 text-[12px] font-black uppercase tracking-wider text-white/60 transition-colors group-hover:text-white">
+                Continue <ArrowRight className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-1" />
+              </span>
+            </Link>
+          ) : (
+            <div className="rounded-2xl border border-emerald-500/25 bg-emerald-500/[0.07] p-6 backdrop-blur-md">
+              <p className="font-mono text-[10px] font-bold uppercase tracking-[0.25em] text-emerald-400">
+                Track complete
+              </p>
+              <p className="mt-3 text-xl font-black leading-snug tracking-tight text-white md:text-2xl">
+                You decoded the whole {techName ?? "track"}. Legend.
+              </p>
+              <Link
+                href="/interview-questions"
+                className="mt-4 inline-flex items-center gap-1.5 text-[12px] font-black uppercase tracking-wider text-white/60 transition-colors hover:text-white"
+              >
+                Pick another arena <ArrowRight className="h-4 w-4" />
+              </Link>
+            </div>
+          )}
+        </div>
+      </div>
+    </section>
   );
 }
 
@@ -1076,29 +1453,31 @@ function StudyStep({
   title,
   sub,
   hex,
+  id,
   children,
 }: {
   num: string;
   title: string;
   sub?: string;
   hex: string;
+  id?: string;
   children: React.ReactNode;
 }) {
   return (
-    <section className="relative">
+    <section id={id} className="relative scroll-mt-24">
       <div
-        className="hidden lg:grid absolute -left-14 top-0 place-items-center w-8 h-8 rounded-full border bg-bg text-[10px] font-black"
-        style={{ borderColor: tint(hex, 35), color: hex }}
+        className="absolute -left-14 top-0 hidden h-8 w-8 place-items-center rounded-full border bg-[var(--wow-bg)] text-[10px] font-black lg:grid"
+        style={{ borderColor: tint(hex, 35), color: hex.startsWith("#") ? hex : undefined }}
       >
         {num}
       </div>
       <div className="mb-3.5 flex items-baseline gap-2">
-        <span className="lg:hidden text-[11px] font-black" style={{ color: hex }}>
+        <span className="text-[11px] font-black lg:hidden" style={{ color: hex.startsWith("#") ? hex : undefined }}>
           {num}
         </span>
         <div>
-          <h2 className="text-sm font-black uppercase tracking-[0.15em] text-fg">{title}</h2>
-          {sub && <p className="text-xs text-muted mt-1 leading-relaxed">{sub}</p>}
+          <h2 className="font-mono text-[13px] font-black uppercase tracking-[0.18em] text-[var(--wow-fg)]">{title}</h2>
+          {sub && <p className="mt-1 text-xs leading-relaxed text-muted">{sub}</p>}
         </div>
       </div>
       {children}
@@ -1108,9 +1487,9 @@ function StudyStep({
 
 function RelatedList({ title, items }: { title: string; items: SuggestionItem[] }) {
   return (
-    <div className="p-5 rounded-2xl border border-border bg-surface/70 dark:bg-surface/20 backdrop-blur-sm space-y-3 shadow-sm">
-      <div className="flex items-center gap-1.5 text-xs font-black uppercase tracking-wider text-muted">
-        <Award className="w-3.5 h-3.5 text-accent" />
+    <div className="space-y-3 rounded-2xl border border-black/[0.06] dark:border-white/[0.07] bg-[var(--wow-card)] p-5 shadow-sm backdrop-blur-sm">
+      <div className="flex items-center gap-1.5 font-mono text-[11px] font-bold uppercase tracking-[0.2em] text-muted">
+        <Award className="h-3.5 w-3.5 text-[#8b93ff]" />
         {title}
       </div>
       <div className="space-y-1.5">
@@ -1118,14 +1497,14 @@ function RelatedList({ title, items }: { title: string; items: SuggestionItem[] 
           <Link
             key={it.slug}
             href={`/interview-question/${it.slug}`}
-            className="group flex items-center gap-3 p-3 rounded-xl border border-transparent hover:border-accent/30 hover:bg-surface/60 transition duration-200 text-xs font-semibold"
+            className="group flex items-center gap-3 rounded-xl border border-transparent p-3 text-xs font-semibold transition duration-200 hover:border-[#8b93ff]/30 hover:bg-[var(--wow-stage)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#8b93ff]"
           >
-            <span className="shrink-0 w-5 text-right font-black text-muted/40 group-hover:text-accent/70 transition-colors tabular-nums">
+            <span className="w-5 shrink-0 text-right font-mono font-black tabular-nums text-muted/40 transition-colors group-hover:text-[#8b93ff]">
               {i + 1}
             </span>
-            <span className="truncate flex-1 text-fg/85 group-hover:text-accent transition-colors">{it.title}</span>
+            <span className="flex-1 truncate text-[var(--wow-fg)]/85 transition-colors group-hover:text-[var(--wow-fg)]">{it.title}</span>
             <span
-              className={`shrink-0 text-[9px] font-black uppercase px-1.5 py-0.5 rounded border ${difficultyClasses(
+              className={`shrink-0 rounded border px-1.5 py-0.5 text-[9px] font-black uppercase ${difficultyClasses(
                 it.difficulty,
               )}`}
             >

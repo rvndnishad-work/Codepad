@@ -8,10 +8,12 @@ interface SaveButtonProps {
   question: Omit<SavedQuestion, "savedAt">;
   saved?: boolean;
   onClick?: () => void;
+  /** Dark glass styling for use over cinematic heroes. */
+  tone?: "default" | "dark";
 }
 
 /** Save / unsave a question for later (localStorage-backed / database-synced). */
-export default function SaveButton({ question, saved: controlledSaved, onClick }: SaveButtonProps) {
+export default function SaveButton({ question, saved: controlledSaved, onClick, tone = "default" }: SaveButtonProps) {
   const [saved, setSaved] = useState(false);
 
   useEffect(() => {
@@ -33,13 +35,15 @@ export default function SaveButton({ question, saved: controlledSaved, onClick }
   return (
     <button
       onClick={handlePress}
-      className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl border text-sm font-bold transition ${
+      className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl border text-sm font-bold transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#8b93ff] ${
         displaySaved
           ? "border-accent/40 bg-accent/10 text-accent"
-          : "border-border text-muted hover:text-fg hover:border-fg/30"
+          : tone === "dark"
+            ? "border-white/25 bg-white/[0.07] text-white/85 hover:text-white hover:border-white/50"
+            : "border-border text-muted hover:text-fg hover:border-fg/30"
       }`}
     >
-      {displaySaved ? <BookmarkCheck className="w-4 h-4" /> : <Bookmark className="w-4 h-4" />}
+      {displaySaved ? <BookmarkCheck className="w-4 h-4 text-blue-500 dark:text-blue-400" /> : <Bookmark className="w-4 h-4 text-blue-500 dark:text-blue-400" />}
       {displaySaved ? "Saved" : "Save"}
     </button>
   );

@@ -105,7 +105,7 @@ export default function HomeWowHero({
   }, []);
 
   return (
-    <section ref={root} className="wow-noise relative -mt-16 overflow-hidden bg-[#08080f] text-white">
+    <section ref={root} data-dark-hero className="wow-noise relative -mt-16 overflow-hidden bg-[#08080f] text-white">
       <div aria-hidden className="pointer-events-none absolute inset-0">
         <div className="absolute left-1/2 top-24 h-[480px] w-[900px] -translate-x-1/2 rounded-full bg-[#ff2fb3]/10 blur-[140px]" />
         <div className="absolute right-[-160px] top-1/3 h-[420px] w-[420px] rounded-full bg-[#22d3ee]/15 blur-[120px]" />

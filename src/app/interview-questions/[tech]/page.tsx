@@ -1,14 +1,15 @@
 import { prisma } from "@/lib/prisma";
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, Eye, Heart, BarChart3, Award, MessageSquare } from "lucide-react";
+import { Radar, Send } from "lucide-react";
 import { TECHNOLOGIES, RESERVED_TECH_SLUGS, techLabel, parseJsonArray, compactNumber } from "@/lib/interview-questions/shared";
 import { getTechTheme } from "@/lib/interview-questions/techTheme";
 import QuestionCard from "../_components/QuestionCard";
 import JsonLd, { breadcrumb, faqPage } from "../_components/JsonLd";
 import TechFilters from "./TechFilters";
 import FrameworkPreference from "./FrameworkPreference";
-import TechSvg from "@/components/TechSvg";
+import TechDossierHero from "./_wow/TechDossierHero";
+import WowReveal from "@/components/wow/WowReveal";
 import type { Prisma } from "@prisma/client";
 
 export const dynamic = "force-dynamic";
@@ -161,7 +162,7 @@ export default async function TechnologyPage({
   };
 
   return (
-    <div className="min-h-screen bg-bg text-fg">
+    <div className="min-h-screen bg-[var(--wow-bg)] pb-32 text-[var(--wow-fg)] transition-colors">
       <JsonLd
         data={[
           breadcrumb([
@@ -174,68 +175,31 @@ export default async function TechnologyPage({
         ]}
       />
 
-      <div className="max-w-6xl mx-auto px-6 py-10">
-        {/* Animated Back Arrow Link */}
-        <Link
-          href="/interview-questions"
-          className="group inline-flex items-center gap-2 text-xs font-bold text-muted hover:text-fg transition-colors duration-200 mb-6"
-        >
-          <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1.5 transition-transform duration-200" />
-          <span>Back to Prep Library</span>
-        </Link>
-
-        {/* Immersive Insights Dashboard Banner */}
-        <div className={`group relative rounded-3xl border ${theme.border} ${theme.bg} backdrop-blur-md p-6 sm:p-8 overflow-hidden transition-all duration-500 mb-8 ${theme.hoverBorder} ${theme.glow}`}>
-          {/* Radial Decorative Glow */}
-          <div className={`absolute -right-10 -bottom-10 w-48 h-48 rounded-full blur-3xl opacity-20 transition-opacity duration-500 bg-current ${theme.text}`} />
-
-          {/* Floating Massive Icon */}
-          <div className="absolute right-6 top-1/2 -translate-y-1/2 opacity-10 sm:opacity-20 pointer-events-none transform group-hover:scale-105 group-hover:rotate-6 transition-transform duration-500">
-            <TechSvg tech={tech} className="w-24 h-24 sm:w-36 sm:h-36" />
-          </div>
-
-          <div className="relative space-y-4">
-            <div>
-              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-black uppercase tracking-widest bg-bg border border-border mb-3 text-muted">
-                <Award className="w-3.5 h-3.5 text-accent" />
-                Category Blueprint
-              </div>
-              <h1 className="text-3xl sm:text-4xl font-black tracking-tight">{label} Interview Library</h1>
-              <p className="text-sm text-muted mt-2 max-w-2xl leading-relaxed">{theme.tagline}</p>
-              {tech === "machine-coding" && <FrameworkPreference />}
-            </div>
-
-            {/* Stats row */}
-            <div className="flex items-center flex-wrap gap-4 pt-1">
-              <div className="flex items-center gap-4 bg-bg/60 border border-border rounded-xl px-4 py-2.5 backdrop-blur-sm text-xs">
-                <span className="text-muted font-bold uppercase tracking-wider flex items-center gap-1">
-                  <BarChart3 className="w-3.5 h-3.5" /> Questions
-                </span>
-                <span className="font-extrabold text-fg">{total}</span>
-              </div>
-              <div className="flex items-center gap-4 bg-bg/60 border border-border rounded-xl px-4 py-2.5 backdrop-blur-sm text-xs">
-                <span className="text-muted font-bold uppercase tracking-wider flex items-center gap-1">
-                  <Eye className="w-3.5 h-3.5" /> Views
-                </span>
-                <span className="font-extrabold text-fg">{compactNumber(totalViews)}</span>
-              </div>
-              <div className="flex items-center gap-4 bg-bg/60 border border-border rounded-xl px-4 py-2.5 backdrop-blur-sm text-xs">
-                <span className="text-muted font-bold uppercase tracking-wider flex items-center gap-1">
-                  <Heart className="w-3.5 h-3.5" /> Upvotes
-                </span>
-                <span className="font-extrabold text-fg">{compactNumber(totalLikes)}</span>
-              </div>
-            </div>
-          </div>
+      {/* ── Sector dossier sub-hero ── */}
+      <TechDossierHero
+        tech={tech}
+        label={label}
+        tagline={theme.tagline}
+        hex={theme.hex}
+        total={total}
+        views={totalViews}
+        likes={totalLikes}
+        diff={diffCounts}
+      />
+      {tech === "machine-coding" && (
+        <div className="mx-auto max-w-6xl px-4 pt-6">
+          <FrameworkPreference />
         </div>
+      )}
 
+      <div className="mx-auto max-w-6xl px-4 pt-10">
         {/* 2-Column Responsive Dashboard Layout */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-          
+
           {/* LEFT COLUMN: Main catalog list with filters */}
           <div className="lg:col-span-8 space-y-6">
-            {/* Filters Panel — sticky glass (hire cohesion) */}
-            <div className="sticky top-[64px] z-20 bg-surface/60 dark:bg-surface/40 backdrop-blur-xl border border-white/10 shadow-soft rounded-2xl p-4 supports-[backdrop-filter]:bg-surface/60">
+            {/* Filter console — sticky glass */}
+            <div className="sticky top-[64px] z-20 rounded-2xl border border-[var(--wow-card-border)] bg-[var(--wow-card)] p-4 shadow-[0_18px_50px_-24px_rgba(0,0,0,0.5)] backdrop-blur-xl">
               <TechFilters
                 tech={tech}
                 companies={companiesInTech}
@@ -252,11 +216,11 @@ export default async function TechnologyPage({
             {/* Question Catalog List */}
             <div className="space-y-4">
               <div className="flex items-center gap-2">
-                <MessageSquare className="w-4 h-4 text-muted" />
-                <h2 className="text-xs font-black uppercase tracking-[0.2em] text-muted">
-                  Question Catalog
+                <Radar className="h-4 w-4 text-[#ff2fb3]" />
+                <h2 className="font-mono text-[11px] font-bold uppercase tracking-[0.25em] text-muted">
+                  Transmission log
                 </h2>
-                <span className="text-xs text-muted/60 font-semibold">({questions.length} visible)</span>
+                <span className="font-mono text-[11px] tabular-nums text-muted/60">// {questions.length} visible</span>
               </div>
 
               {/* Questions stack */}
@@ -264,8 +228,8 @@ export default async function TechnologyPage({
                 {questions.length > 0 ? (
                   questions.map((q) => <QuestionCard key={q.slug} q={q} />)
                 ) : (
-                  <div className="rounded-2xl border border-dashed border-border py-12 text-center bg-surface/30">
-                    <p className="text-sm text-muted">No questions match the selected filters.</p>
+                  <div className="rounded-2xl border border-dashed border-[var(--wow-card-border)] bg-[var(--wow-card)] py-12 text-center">
+                    <p className="font-mono text-sm uppercase tracking-[0.18em] text-muted">No signals on this frequency.</p>
                     <p className="text-xs text-muted/60 mt-1">Try clearing filters or searching for something else.</p>
                   </div>
                 )}
@@ -273,111 +237,137 @@ export default async function TechnologyPage({
             </div>
           </div>
 
-          {/* RIGHT COLUMN: Sticky insights sidebar */}
-          <div className="lg:col-span-4 space-y-6 lg:sticky lg:top-6">
-            
-            {/* Sidebar Widget 1: Difficulty Distribution */}
-            <div className="p-5 rounded-2xl border border-border bg-surface/45 backdrop-blur-sm space-y-4 shadow-sm">
-              <h3 className="text-xs font-black uppercase tracking-wider text-muted flex items-center gap-1.5">
-                <BarChart3 className="w-3.5 h-3.5 text-accent" />
-                Difficulty Distribution
-              </h3>
-              <div className="space-y-3.5">
-                {/* Visual track */}
-                <div className="flex h-3 w-full rounded-full overflow-hidden bg-bg border border-border gap-0.5 p-[1px]">
-                  {diffCounts.easy > 0 && (
-                    <div style={{ width: `${easyPct}%` }} className="bg-emerald-500 rounded-full animate-all duration-300" title={`Easy: ${diffCounts.easy}`} />
-                  )}
-                  {diffCounts.medium > 0 && (
-                    <div style={{ width: `${mediumPct}%` }} className="bg-amber-500 rounded-full animate-all duration-300" title={`Medium: ${diffCounts.medium}`} />
-                  )}
-                  {diffCounts.hard > 0 && (
-                    <div style={{ width: `${hardPct}%` }} className="bg-rose-500 rounded-full animate-all duration-300" title={`Hard: ${diffCounts.hard}`} />
-                  )}
-                </div>
+          {/* RIGHT COLUMN: Sticky intel sidebar */}
+          <div className="lg:col-span-4 space-y-5 lg:sticky lg:top-24">
 
-                {/* Values list */}
-                <div className="space-y-2 text-xs font-semibold">
-                  <div className="flex items-center justify-between">
-                    <span className="flex items-center gap-1.5 text-muted">
-                      <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                      Easy
-                    </span>
-                    <span className="text-fg">{diffCounts.easy} ({Math.round(easyPct)}%)</span>
+            {/* Widget 1: Difficulty mix */}
+            <WowReveal>
+              <div className="space-y-4 rounded-2xl border border-[var(--wow-card-border)] bg-[var(--wow-card)] p-5 shadow-sm backdrop-blur-sm">
+                <h3 className="flex items-center gap-2 font-mono text-[11px] font-bold uppercase tracking-[0.2em] text-muted">
+                  <span className="h-1.5 w-1.5 rounded-full bg-[#8b93ff]" />
+                  Difficulty mix
+                </h3>
+                <div className="space-y-3.5">
+                  <div className="flex h-2.5 w-full gap-1 overflow-hidden">
+                    {diffCounts.easy > 0 && (
+                      <span style={{ flexGrow: diffCounts.easy }} className="min-w-3 rounded-full bg-emerald-500" title={`Easy: ${diffCounts.easy}`} />
+                    )}
+                    {diffCounts.medium > 0 && (
+                      <span style={{ flexGrow: diffCounts.medium }} className="min-w-3 rounded-full bg-amber-500" title={`Medium: ${diffCounts.medium}`} />
+                    )}
+                    {diffCounts.hard > 0 && (
+                      <span style={{ flexGrow: diffCounts.hard }} className="min-w-3 rounded-full bg-rose-500" title={`Hard: ${diffCounts.hard}`} />
+                    )}
                   </div>
-                  <div className="flex items-center justify-between">
-                    <span className="flex items-center gap-1.5 text-muted">
-                      <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
-                      Medium
-                    </span>
-                    <span className="text-fg">{diffCounts.medium} ({Math.round(mediumPct)}%)</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="flex items-center gap-1.5 text-muted">
-                      <span className="w-2 h-2 rounded-full bg-rose-500 animate-pulse" />
-                      Hard
-                    </span>
-                    <span className="text-fg">{diffCounts.hard} ({Math.round(hardPct)}%)</span>
+                  <div className="space-y-2 font-mono text-[11px]">
+                    <div className="flex items-center justify-between">
+                      <span className="flex items-center gap-1.5 text-muted">
+                        <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+                        Easy
+                      </span>
+                      <span className="tabular-nums text-[var(--wow-fg)]">{diffCounts.easy} ({Math.round(easyPct)}%)</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="flex items-center gap-1.5 text-muted">
+                        <span className="h-1.5 w-1.5 rounded-full bg-amber-500" />
+                        Medium
+                      </span>
+                      <span className="tabular-nums text-[var(--wow-fg)]">{diffCounts.medium} ({Math.round(mediumPct)}%)</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="flex items-center gap-1.5 text-muted">
+                        <span className="h-1.5 w-1.5 rounded-full bg-rose-500" />
+                        Hard
+                      </span>
+                      <span className="tabular-nums text-[var(--wow-fg)]">{diffCounts.hard} ({Math.round(hardPct)}%)</span>
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
+            </WowReveal>
 
-            {/* Sidebar Widget 2: Hiring Companies */}
+            {/* Widget 2: Intercepted at */}
             {companiesInTech.length > 0 && (
-              <div className="p-5 rounded-2xl border border-border bg-surface/45 backdrop-blur-sm space-y-3 shadow-sm">
-                <h3 className="text-xs font-black uppercase tracking-wider text-muted">
-                  Hiring Companies
-                </h3>
-                <div className="flex flex-wrap gap-1.5">
-                  {companiesInTech.map((c) => (
-                    <Link
-                      key={c.slug}
-                      href={buildCompanyUrl(c.slug)}
-                      className={`px-2.5 py-1 rounded-lg border text-[11px] font-bold transition duration-200 ${
-                        company === c.slug
-                          ? "border-accent bg-accent/10 text-accent"
-                          : "border-border bg-bg/40 text-muted/90 hover:border-accent hover:text-accent"
-                      }`}
-                    >
-                      {c.name}
-                    </Link>
-                  ))}
+              <WowReveal delay={0.08}>
+                <div className="space-y-3 rounded-2xl border border-[var(--wow-card-border)] bg-[var(--wow-card)] p-5 shadow-sm backdrop-blur-sm">
+                  <h3 className="flex items-center gap-2 font-mono text-[11px] font-bold uppercase tracking-[0.2em] text-muted">
+                    <span className="h-1.5 w-1.5 rounded-full bg-[#22d3ee]" />
+                    Intercepted at
+                  </h3>
+                  <div className="flex flex-wrap gap-1.5">
+                    {companiesInTech.map((c) => (
+                      <Link
+                        key={c.slug}
+                        href={buildCompanyUrl(c.slug)}
+                        className={`rounded-full px-3 py-1 text-[11px] font-bold transition duration-200 ${
+                          company === c.slug
+                            ? "bg-white font-black text-black"
+                            : "border border-[var(--wow-card-border)] text-muted hover:border-[#8b93ff]/50 hover:text-[var(--wow-fg)]"
+                        }`}
+                      >
+                        {c.name}
+                      </Link>
+                    ))}
+                  </div>
                 </div>
-              </div>
+              </WowReveal>
             )}
 
-            {/* Sidebar Widget 3: Tested Topics (dynamic cloud) */}
+            {/* Widget 3: Tested Topics */}
             {topTags.length > 0 && (
-              <div className="p-5 rounded-2xl border border-border bg-surface/45 backdrop-blur-sm space-y-3 shadow-sm">
-                <h3 className="text-xs font-black uppercase tracking-wider text-muted">
-                  Tested Topics
-                </h3>
-                <div className="flex flex-wrap gap-1.5">
-                  {topTags.map((tag) => (
-                    <span
-                      key={tag}
-                      className="px-2.5 py-0.5 rounded-md border border-border/80 bg-bg/30 text-[11px] font-bold uppercase tracking-wide text-muted/80"
-                    >
-                      #{tag}
-                    </span>
-                  ))}
+              <WowReveal delay={0.16}>
+                <div className="space-y-3 rounded-2xl border border-[var(--wow-card-border)] bg-[var(--wow-card)] p-5 shadow-sm backdrop-blur-sm">
+                  <h3 className="flex items-center gap-2 font-mono text-[11px] font-bold uppercase tracking-[0.2em] text-muted">
+                    <span className="h-1.5 w-1.5 rounded-full bg-[#ff2fb3]" />
+                    Tested topics
+                  </h3>
+                  <div className="flex flex-wrap gap-1.5">
+                    {topTags.map((tag) => (
+                      <span
+                        key={tag}
+                        className="rounded-md border border-[var(--wow-card-border)] bg-[var(--wow-stage)] px-2 py-0.5 font-mono text-[10px] font-bold uppercase tracking-wider text-muted"
+                      >
+                        #{tag}
+                      </span>
+                    ))}
+                  </div>
                 </div>
-              </div>
+              </WowReveal>
             )}
 
-            {/* Sidebar Widget 4: Study Guide */}
-            <div className="p-5 rounded-2xl border border-border bg-surface/45 backdrop-blur-sm space-y-3 shadow-sm">
-              <h3 className="text-xs font-black uppercase tracking-wider text-muted flex items-center gap-1.5">
-                <Award className="w-3.5 h-3.5 text-accent" />
-                Study Guide
-              </h3>
-              <p className="text-xs text-muted leading-relaxed font-semibold">
-                {studyTip}
-              </p>
-            </div>
+            {/* Widget 4: Decryption key (study guide) */}
+            <WowReveal delay={0.24}>
+              <div className="space-y-3 rounded-2xl border border-[#8b93ff]/25 bg-gradient-to-b from-[#8b93ff]/10 to-transparent p-5 shadow-sm backdrop-blur-sm">
+                <h3 className="flex items-center gap-2 font-mono text-[11px] font-bold uppercase tracking-[0.2em] text-muted">
+                  <span className="h-1.5 w-1.5 rounded-full bg-[#ffe600]" />
+                  Decryption key
+                </h3>
+                <p className="text-xs font-semibold leading-relaxed text-muted">
+                  {studyTip}
+                </p>
+              </div>
+            </WowReveal>
           </div>
         </div>
+
+        {/* Slim uplink banner */}
+        <WowReveal>
+          <div className="mt-12 flex flex-col items-start justify-between gap-4 rounded-2xl border border-[var(--wow-card-border)] bg-[var(--wow-card)] p-5 backdrop-blur-sm sm:flex-row sm:items-center sm:px-6">
+            <p className="font-mono text-[11px] uppercase leading-relaxed tracking-[0.18em] text-muted">
+              Intercepted something new? <span className="text-[var(--wow-fg)]">Beam it into the archive.</span>
+            </p>
+            <Link
+              href="/interview-questions/share"
+              className="inline-flex shrink-0 items-center gap-2 rounded-full bg-white px-5 py-2.5 text-[11px] font-black uppercase tracking-wider text-black transition hover:scale-105"
+            >
+              <Send className="h-3.5 w-3.5" /> Share intel
+            </Link>
+          </div>
+        </WowReveal>
+
+        <p className="mt-8 font-mono text-[11px] tabular-nums text-muted/60">
+          // {compactNumber(totalViews)} total views · {compactNumber(totalLikes)} upvotes · {total} decoded
+        </p>
       </div>
     </div>
   );

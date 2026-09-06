@@ -116,6 +116,7 @@ export default async function QuestionDetailPage({ params }: { params: Promise<{
         similar={similar}
         prevQuestion={prevQuestion}
         nextQuestion={nextQuestion}
+        track={idx >= 0 ? { index: idx, total: ordered.length } : null}
         initialComments={comments}
         isAdmin={isAdmin}
         currentUserId={session?.user?.id ?? null}

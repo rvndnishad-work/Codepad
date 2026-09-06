@@ -11,7 +11,7 @@ import { usePathname } from "next/navigation";
  * The pathname lists below are only a fast path so known routes paint
  * correctly on the very first render; runtime detection covers everything.
  */
-const IMMERSIVE_EXACT = ["/", "/hire", "/playgrounds", "/candidate/playgrounds"];
+const IMMERSIVE_EXACT = ["/", "/hire", "/playgrounds"];
 const IMMERSIVE_PREFIX = ["/interview-question/"];
 
 function isImmersive(pathname: string | null): boolean {

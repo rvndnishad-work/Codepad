@@ -6,8 +6,8 @@ import {
   SandpackCodeEditor,
   SandpackTests,
   SandpackPreview,
-  SandpackConsole,
   useSandpack,
+  useSandpackConsole,
   type SandpackFiles,
 } from "@codesandbox/sandpack-react";
 import ShimmedSandpackProvider from "@/components/ShimmedSandpackProvider";
@@ -57,11 +57,16 @@ import {
   PanelBottom,
   LogOut,
   ChevronDown,
+  PanelLeftClose,
+  PanelLeftOpen,
+  BookOpen,
+  Code2,
   Rows2,
   Columns2,
   Sparkles,
   Lock,
   Loader2,
+  Ban,
 } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { toast } from "sonner";
@@ -275,6 +280,160 @@ function CompetitorLanguageSelector({
   );
 }
 
+/** Segmented chrono digits — minutes and seconds ride in sunken cells and
+ *  each cell pops (remount via key) the moment its value ticks over. */
+function ChronoDigits({ totalSec }: { totalSec: number }) {
+  const mm = Math.floor(totalSec / 60);
+  const ss = totalSec % 60;
+  return (
+    <span className="relative flex items-center gap-1">
+      <span key={`m-${mm}`} className="tick-pop rounded-lg bg-black/30 px-1.5 py-0.5 text-lg font-bold leading-none tabular-nums shadow-[inset_0_1px_3px_rgba(0,0,0,0.5)]">
+        {mm}
+      </span>
+      <span aria-hidden className="font-bold text-white/40">:</span>
+      <span key={`s-${ss}`} className="tick-pop rounded-lg bg-black/30 px-1.5 py-0.5 text-lg font-bold leading-none tabular-nums shadow-[inset_0_1px_3px_rgba(0,0,0,0.5)]">
+        {String(ss).padStart(2, "0")}
+      </span>
+    </span>
+  );
+}
+
+/** Clamp a zero-sum split change between two neighbours. Returns the
+ *  adjusted pair so the total never drifts. */
+function pairClamp(a: number, b: number, d: number, aMin: number, aMax: number, bMin: number, bMax: number): [number, number] {
+  let na = Math.min(aMax, Math.max(aMin, a + d));
+  let nb = b - (na - a);
+  nb = Math.min(bMax, Math.max(bMin, nb));
+  na = a + (b - nb);
+  return [Math.round(na * 100) / 100, Math.round(nb * 100) / 100];
+}
+
+/** Percentage-based pane dragging for the frontend surface. Deltas are
+ *  measured in % of the handle's container, so splits track the viewport
+ *  (narrow laptop ↔ ultrawide) instead of freezing in px. Each handle only
+ *  trades space between its two neighbours — the row total stays 100. */
+function usePaneDrag() {
+  const dragRef = useRef<{ startX: number; total: number; apply: (dPct: number) => void } | null>(null);
+
+  const onMove = useCallback((ev: PointerEvent) => {
+    const d = dragRef.current;
+    if (!d) return;
+    d.apply(((ev.clientX - d.startX) / Math.max(1, d.total)) * 100);
+  }, []);
+
+  const onUp = useCallback(() => {
+    dragRef.current = null;
+    document.removeEventListener("pointermove", onMove);
+    document.removeEventListener("pointerup", onUp);
+    document.removeEventListener("pointercancel", onUp);
+    document.body.style.cursor = "";
+    document.body.style.userSelect = "";
+    document.getElementById("pane-resize-overlay")?.remove();
+  }, [onMove]);
+
+  const start = useCallback((e: React.PointerEvent, container: HTMLElement | null, apply: (dPct: number) => void) => {
+    if (!container) return;
+    e.preventDefault();
+    try {
+      e.currentTarget.setPointerCapture(e.pointerId);
+    } catch {
+      /* pointer capture unsupported — document listeners still track */
+    }
+    dragRef.current = { startX: e.clientX, total: container.getBoundingClientRect().width, apply };
+    document.addEventListener("pointermove", onMove);
+    document.addEventListener("pointerup", onUp);
+    document.addEventListener("pointercancel", onUp);
+    document.body.style.cursor = "col-resize";
+    document.body.style.userSelect = "none";
+    // Overlay blocks the preview iframe from swallowing the gesture mid-drag.
+    const overlay = document.createElement("div");
+    overlay.id = "pane-resize-overlay";
+    overlay.style.cssText = "position:fixed;inset:0;z-index:9999;cursor:col-resize;";
+    document.body.appendChild(overlay);
+  }, [onMove, onUp]);
+
+  return { start };
+}
+
+/** Signature of one console entry, for consecutive-duplicate collapsing
+ *  (same approach as the /play JsConsole — Chrome DevTools behavior). */
+function logSignature(log: { method: string; data: unknown }): string {
+  try {
+    return `${log.method}::${JSON.stringify(log.data)}`;
+  } catch {
+    return `${log.method}::${String(log.data)}`;
+  }
+}
+
+/** Deduping Sandpack console for the attempt workspace. The built-in
+ *  SandpackConsole renders every log the bundler emits — including the
+ *  double-execution echo that shows one console.log as two identical rows.
+ *  This reads the same log store but collapses consecutive identical entries
+ *  into one row with a ×N badge. resetOnPreviewRestart stays OFF so typing
+ *  doesn't flash the console; clearing happens only through reset(), wired
+ *  to the header Clear button via resetRef. */
+function AttemptConsole({ resetRef }: { resetRef: React.MutableRefObject<(() => void) | null> }) {
+  const { logs, reset } = useSandpackConsole({ resetOnPreviewRestart: false });
+  const listRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    resetRef.current = reset;
+  });
+
+  const rows: { log: (typeof logs)[number]; count: number }[] = [];
+  for (const log of logs) {
+    const last = rows[rows.length - 1];
+    if (last && logSignature(last.log) === logSignature(log)) last.count += 1;
+    else rows.push({ log, count: 1 });
+  }
+  const renderRows = rows.length > 300 ? rows.slice(-300) : rows;
+
+  useEffect(() => {
+    const el = listRef.current;
+    if (el) el.scrollTop = el.scrollHeight;
+  }, [rows.length]);
+
+  if (renderRows.length === 0) {
+    return (
+      <div className="flex h-full flex-col items-center justify-center gap-2 bg-transparent">
+        <p className="font-mono text-[11px] uppercase tracking-[0.2em] text-muted/50">Console idle</p>
+        <p className="font-mono text-[10px] text-muted/35">run code to see output here</p>
+      </div>
+    );
+  }
+  return (
+    <div ref={listRef} className="h-full overflow-y-auto px-3 py-2 font-mono text-[12.5px] leading-relaxed">
+      {renderRows.map(({ log, count }, i) => {
+        const args = Array.isArray(log.data) ? log.data : [];
+        const isError = log.method === "error";
+        const isWarn = log.method === "warn";
+        return (
+          <div
+            key={`${i}-${count}`}
+            className={`flex items-start gap-2 border-b border-black/[0.04] py-1.5 whitespace-pre-wrap break-words dark:border-white/[0.05] ${
+              isError ? "text-rose-500" : isWarn ? "text-amber-500" : "text-[var(--wow-fg)]/85"
+            }`}
+          >
+            <span className="mt-0.5 shrink-0 select-none text-muted/40">›</span>
+            <span className="min-w-0 flex-1">
+              {args.map((arg, idx) => (
+                <span key={idx}>
+                  {idx > 0 ? " " : ""}
+                  {typeof arg === "string" ? arg : JSON.stringify(arg, (_k, v) => (typeof v === "bigint" ? v.toString() : v)) ?? String(arg)}
+                </span>
+              ))}
+            </span>
+            {count > 1 && (
+              <span className="mt-0.5 shrink-0 rounded-full border border-[#8b93ff]/40 bg-[#8b93ff]/10 px-1.5 py-px font-mono text-[10px] font-bold tabular-nums text-[#8b93ff]">
+                ×{count}
+              </span>
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 export default function ChallengeAttemptClient({
   challenge,
   starterFiles,
@@ -329,8 +488,17 @@ export default function ChallengeAttemptClient({
   const isFrontend = challengeSurface(challenge.template) === "frontend";
   // Frontend file tree can collapse to an icon-only rail to free up editor room.
   const [fileTreeCollapsed, setFileTreeCollapsed] = useState(false);
-  // Drag-resizable panels (frontend surface): editor-area width + console height.
-  const { width: editorW, onPointerDown: onEditorDrag, setWidth: setEditorW } = useResizable(520, 280, 2000);
+  // Question brief panel: collapsible to a slim rail + drag-resizable width.
+  const [questionCollapsed, setQuestionCollapsed] = useState(false);
+  // Mobile (<lg) shows one pane at a time via the pane switcher.
+  const [mobilePane, setMobilePane] = useState<"brief" | "code" | "output">("code");
+  // Frontend surface splits as % of the row — brief 25 / files 10 /
+  // editor 40 / output 25 — so every screen size gets the same proportions.
+  // Handles trade space between neighbours only (row total stays 100).
+  const [panes, setPanes] = useState({ brief: 25, files: 10, editor: 40, output: 25 });
+  const { start: startPaneDrag } = usePaneDrag();
+  const rowRef = useRef<HTMLDivElement | null>(null);
+  // Drag-resizable panels (frontend surface): console height.
   const { height: consoleH, onPointerDown: onConsoleDrag, setHeight: setConsoleH } = useResizableHeight(180, 80, 900);
   // Drag-resizable panels (DSA surface): description width + console/tests sidebar
   // width (the sidebar sits right of its handle, so its drag is inverted).
@@ -338,6 +506,37 @@ export default function ChallengeAttemptClient({
   const { width: dsaSideW, onPointerDown: onDsaSideDrag } = useResizable(380, 300, 720, true);
   // Output view: preview only / split / console only.
   const [outputView, setOutputView] = useState<"preview" | "both" | "console">("both");
+
+  // Percent-drag handlers (container = the row the two neighbours share).
+  // brief ↔ rest of row
+  const onBriefDrag = (e: React.PointerEvent) =>
+    startPaneDrag(e, rowRef.current, (d) =>
+      setPanes((s) => {
+        const [brief] = pairClamp(s.brief, 100 - s.brief, d, 15, 55, 40, 85);
+        return { ...s, brief };
+      })
+    );
+  // files ↔ editor (delta measured in % of the rest row, converted to row %)
+  const onFilesDrag = (e: React.PointerEvent) =>
+    startPaneDrag(e, splitRowRef.current, (dRest) =>
+      setPanes((s) => {
+        const rest = 100 - s.brief;
+        const [files, editor] = pairClamp(s.files, s.editor, (dRest * rest) / 100, 4, 22, 15, 70);
+        return { ...s, files, editor };
+      })
+    );
+  // editor ↔ output (delta measured in % of the rest row)
+  const onCodeDrag = (e: React.PointerEvent) =>
+    startPaneDrag(e, splitRowRef.current, (dRest) =>
+      setPanes((s) => {
+        const rest = 100 - s.brief;
+        const [editor, output] = pairClamp(s.editor, s.output, (dRest * rest) / 100, 15, 70, 8, 50);
+        return { ...s, editor, output };
+      })
+    );
+  // Inner basis values are % of the rest row (files+editor+output).
+  const restTotal = panes.files + panes.editor + panes.output;
+  const innerBasis = (v: number) => `${((v / Math.max(1, restTotal)) * 100).toFixed(2)}%`;
   // Split orientation: preview above console (stack) or beside it (side).
   const [outputSplit, setOutputSplit] = useState<"stack" | "side">(() => {
     if (typeof window !== "undefined") {
@@ -353,22 +552,23 @@ export default function ChallengeAttemptClient({
   // Console width for the side-by-side split (the console sits right of its
   // handle, so its drag is inverted).
   const { width: consoleW, onPointerDown: onConsoleWDrag, setWidth: setConsoleW } = useResizable(360, 160, 1200, true);
-  // Default the splits to code↔output = 50/50 and preview↔console = 70/30, and
-  // keep that ratio as the layout settles / the window resizes — until the user
-  // drags a handle, which locks in their chosen sizes (userResizedRef).
+  // Default the preview↔console split and keep it proportional as the
+  // layout settles / the window resizes — until the user drags a handle,
+  // which locks in their chosen sizes (userResizedRef). Row splits are %
+  // based, so they track the viewport with no JS.
   const splitRowRef = useRef<HTMLDivElement | null>(null);
   const outputPaneRef = useRef<HTMLElement | null>(null);
   const userResizedRef = useRef(false);
+  // Exposed by AttemptConsole below so the header Clear button drains the
+  // Sandpack log store directly (same pattern as the /play JsConsole).
+  const consoleResetRef = useRef<(() => void) | null>(null);
   useEffect(() => {
     if (!mounted || !isFrontend) return;
     if (typeof window !== "undefined" && window.matchMedia("(max-width: 1023px)").matches) return;
     const recompute = () => {
       if (userResizedRef.current) return;
-      const splitW = splitRowRef.current?.clientWidth ?? 0;
       const outH = outputPaneRef.current?.clientHeight ?? 0;
       const outW = outputPaneRef.current?.clientWidth ?? 0;
-      // Code editor = 60% of the post-description region (minus the ~6px handle).
-      if (splitW > 0) setEditorW(Math.round((splitW - 6) * 0.6));
       // Console = 30% of the output area below its header (~40px) + handle (~6px).
       if (outH > 0) setConsoleH(Math.max(80, Math.round((outH - 46) * 0.3)));
       // Side-by-side split: console = 40% of the output pane width.
@@ -376,10 +576,9 @@ export default function ChallengeAttemptClient({
     };
     recompute();
     const ro = new ResizeObserver(recompute);
-    if (splitRowRef.current) ro.observe(splitRowRef.current);
     if (outputPaneRef.current) ro.observe(outputPaneRef.current);
     return () => ro.disconnect();
-  }, [mounted, isFrontend, setEditorW, setConsoleH, setConsoleW]);
+  }, [mounted, isFrontend, setConsoleH, setConsoleW]);
   // Exit-assessment flow.
   const [exitConfirmOpen, setExitConfirmOpen] = useState(false);
   function handleExit() {
@@ -1420,43 +1619,77 @@ export default function ChallengeAttemptClient({
       />
 
       <div className="flex flex-col h-screen bg-bg overflow-hidden">
-        {/* Top bar */}
-        <header className="flex items-center justify-between gap-3 px-4 py-2.5 border-b border-border bg-surface shrink-0">
+        {/* Top bar — mission-control chrome. Wraps on small screens with the
+            timer dropping to its own centered row. */}
+        <header className="relative flex flex-wrap items-center gap-x-3 gap-y-2 px-4 py-2.5 border-b border-border bg-surface shrink-0 overflow-hidden">
+          <style>{`
+            @property --orb-angle { syntax: '<angle>'; initial-value: 0deg; inherits: false; }
+            .chrono-orb { background: conic-gradient(from var(--orb-angle), transparent 0%, rgba(139,147,255,0.55) 18%, rgba(255,47,179,0.55) 32%, transparent 48%); animation: orb-spin 7s linear infinite; }
+            @keyframes orb-spin { to { --orb-angle: 360deg; } }
+            .spin-slower { animation: spin 9s linear infinite; }
+            @keyframes spin { to { transform: rotate(360deg); } }
+            .tick-pop { animation: tick-pop 0.35s ease-out; }
+            @keyframes tick-pop { 0% { transform: scale(1.18); filter: brightness(1.7); } 100% { transform: scale(1); filter: brightness(1); } }
+            .energy-line { background: linear-gradient(90deg, transparent, rgba(139,147,255,0.75), rgba(255,47,179,0.75), rgba(34,211,238,0.75), transparent); background-size: 220% 100%; animation: energy-flow 6s linear infinite; }
+            @keyframes energy-flow { from { background-position: 200% 0; } to { background-position: -200% 0; } }
+            @media (prefers-reduced-motion: reduce) {
+              .chrono-orb, .energy-line, .spin-slower, .tick-pop { animation: none; }
+            }
+          `}</style>
+          {/* flowing energy hairline along the bar's bottom edge */}
+          <div aria-hidden className="pointer-events-none absolute inset-x-0 bottom-0 h-px">
+            <div className="energy-line h-full w-full" />
+          </div>
           {/* Left: exit + title + difficulty */}
           <div className="flex items-center gap-3 min-w-0 flex-1">
             <button
               type="button"
               onClick={handleExit}
               title="Exit the assessment"
-              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-rose-500/30 bg-rose-500/5 hover:bg-rose-500/10 text-rose-500 hover:text-rose-400 text-xs font-bold transition shrink-0"
+              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-rose-500/30 bg-rose-500/5 hover:bg-rose-500/15 hover:shadow-[0_0_16px_-4px_rgba(244,63,94,0.6)] text-rose-500 hover:text-rose-400 text-xs font-bold transition shrink-0"
             >
               <LogOut className="w-3.5 h-3.5" />
               <span className="hidden sm:inline">Exit</span>
             </button>
+            <span aria-hidden className="h-8 w-px shrink-0 bg-gradient-to-b from-transparent via-black/15 to-transparent dark:via-white/15" />
             <div className="min-w-0">
+              <p className="font-mono text-[9px] font-bold uppercase tracking-[0.25em] text-muted/70 leading-none mb-0.5">Live challenge</p>
               <h1 className="font-black text-[15px] leading-tight text-fg truncate">{challenge.title}</h1>
-              <span className={`text-[11px] uppercase font-black tracking-wider ${difficultyColor[challenge.difficulty]}`}>
+              <span className={`inline-flex items-center gap-1 text-[11px] uppercase font-black tracking-wider ${difficultyColor[challenge.difficulty]}`}>
+                <span className="h-1 w-1 rounded-full bg-current" />
                 {challenge.difficulty}
               </span>
             </div>
           </div>
 
           {/* Center: countdown (take-home) / session timer / elapsed — prominent */}
-          <div className="flex items-center justify-center shrink-0 gap-2">
+          <div className="flex items-center justify-center shrink-0 gap-2 max-sm:order-3 max-sm:basis-full">
             {isTakeHome ? (
               <div className="flex items-center gap-2">
                 <div
-                  className={`flex items-center gap-2 px-3.5 py-1.5 rounded-xl border font-mono tabular-nums shadow-sm ${
+                  className={`relative flex items-center gap-2.5 rounded-2xl border px-3.5 py-1.5 font-mono tabular-nums overflow-hidden ${
                     remainingTakeHomeSec < 60
-                      ? "text-rose-700 dark:text-rose-300 border-rose-500/35 bg-rose-500/15 animate-pulse"
+                      ? "text-rose-700 dark:text-rose-300 border-rose-500/40 bg-rose-500/15 animate-pulse shadow-[0_0_24px_-6px_rgba(244,63,94,0.7)]"
                       : remainingTakeHomeSec < 300
-                      ? "text-amber-700 dark:text-amber-300 border-amber-500/35 bg-amber-500/15"
-                      : "text-emerald-700 dark:text-emerald-300 border-emerald-500/35 bg-emerald-500/15"
+                      ? "text-amber-700 dark:text-amber-300 border-amber-500/35 bg-amber-500/15 shadow-[0_0_20px_-8px_rgba(245,158,11,0.6)]"
+                      : "text-emerald-700 dark:text-emerald-300 border-emerald-500/35 bg-emerald-500/15 shadow-[0_0_20px_-8px_rgba(16,185,129,0.5)]"
                   }`}
                   title="Time remaining"
                 >
-                  <Clock className="w-4 h-4 shrink-0" />
-                  <span className="text-lg font-bold leading-none">{formatDuration(remainingTakeHomeSec)}</span>
+                  <span aria-hidden className="chrono-orb pointer-events-none absolute -inset-px rounded-2xl opacity-60" />
+                  <span className="relative grid h-7 w-7 shrink-0 place-items-center">
+                    <svg viewBox="0 0 24 24" aria-hidden className="spin-slower absolute inset-0 h-7 w-7 opacity-70">
+                      <circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" strokeWidth="1.5" strokeDasharray="4 5" />
+                    </svg>
+                    <Clock className="h-3 w-3 shrink-0" />
+                  </span>
+                  <ChronoDigits totalSec={remainingTakeHomeSec} />
+                  <span className="relative flex items-center gap-1.5 text-[9px] font-bold uppercase tracking-[0.2em] opacity-70">
+                    {remainingTakeHomeSec < 60 && (
+                      <span className="h-1.5 w-1.5 animate-ping rounded-full bg-rose-400" aria-hidden />
+                    )}
+                    Left
+                  </span>
                 </div>
 
                 <button
@@ -1476,17 +1709,25 @@ export default function ChallengeAttemptClient({
               />
             ) : (
               <div
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-border bg-bg text-muted font-mono tabular-nums text-sm"
+                className="relative flex items-center gap-2.5 rounded-2xl border border-black/[0.06] bg-[var(--wow-card)] px-3.5 py-1.5 font-mono tabular-nums text-sm text-muted backdrop-blur-sm overflow-hidden dark:border-white/[0.07]"
                 title="Elapsed time"
               >
-                <Clock className="w-3.5 h-3.5 shrink-0" />
-                <span>{formatDuration(elapsedSec)}</span>
+                <span aria-hidden className="chrono-orb pointer-events-none absolute -inset-px rounded-2xl opacity-40" />
+                <span className="relative grid h-7 w-7 shrink-0 place-items-center">
+                  <svg viewBox="0 0 24 24" aria-hidden className="spin-slower absolute inset-0 h-7 w-7 opacity-60">
+                    <circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" strokeWidth="1.5" strokeDasharray="4 5" />
+                  </svg>
+                  <Clock className="h-3 w-3 shrink-0" />
+                </span>
+                <ChronoDigits totalSec={elapsedSec} />
+                <span className="relative text-[9px] font-bold uppercase tracking-[0.2em] opacity-60">Elapsed</span>
               </div>
             )}
           </div>
 
           {/* Toolbar Center/Right buttons */}
-          <div className="flex items-center gap-2.5 shrink-0 flex-1 justify-end">
+          <div className="flex flex-wrap items-center gap-2 shrink-0 flex-1 justify-end">
+            <span aria-hidden className="hidden h-6 w-px shrink-0 bg-gradient-to-b from-transparent via-black/15 to-transparent sm:block dark:via-white/15" />
             {/* Language picker is only meaningful for code challenges — a
                 React/UI challenge has no language choice. */}
             {!isFrontend && (
@@ -1494,11 +1735,11 @@ export default function ChallengeAttemptClient({
             )}
             <button
               onClick={handleViewSolution}
-              className="px-3 py-2 rounded-lg border border-border bg-surface hover:bg-elevated text-xs font-bold text-fg flex items-center gap-1.5 transition shadow-sm whitespace-nowrap shrink-0"
+              className="px-4 py-2 rounded-full border border-black/[0.06] bg-[var(--wow-card)] hover:border-[#8b93ff]/50 text-xs font-bold text-[var(--wow-fg)] flex items-center gap-1.5 transition backdrop-blur-sm whitespace-nowrap shrink-0 dark:border-white/[0.07]"
               title="View reference solution"
             >
               <Sparkles className="w-3.5 h-3.5 text-amber-500" />
-              View Solution
+              <span className="hidden sm:inline">View Solution</span>
             </button>
 
             {!isFrontend && testRun && (
@@ -1525,11 +1766,11 @@ export default function ChallengeAttemptClient({
                   setSidebarTab("console");
                   runDebug();
                 }}
-                className="px-3 py-2 rounded-lg border border-border bg-surface hover:bg-elevated text-xs font-bold text-fg flex items-center gap-1.5 transition shadow-sm whitespace-nowrap shrink-0"
+                className="px-4 py-2 rounded-full border border-emerald-500/30 bg-emerald-500/[0.07] hover:bg-emerald-500/[0.12] text-xs font-bold text-emerald-700 dark:text-emerald-400 flex items-center gap-1.5 transition whitespace-nowrap shrink-0"
                 title="Execute index.ts script immediately and view logs"
               >
                 <Play className="w-3.5 h-3.5 text-emerald-500 fill-current" />
-                Run code
+                <span className="hidden sm:inline">Run code</span>
               </button>
             )}
 
@@ -1540,11 +1781,11 @@ export default function ChallengeAttemptClient({
                   runTests();
                 }}
                 disabled={runningTests}
-                className="px-3 py-2 rounded-lg border border-border bg-surface hover:bg-elevated text-xs font-bold text-fg flex items-center gap-1.5 transition disabled:opacity-50 disabled:cursor-not-allowed shadow-sm whitespace-nowrap shrink-0"
+                className="px-4 py-2 rounded-full border border-[#8b93ff]/30 bg-[#8b93ff]/[0.07] hover:bg-[#8b93ff]/[0.14] text-xs font-bold text-[#8b93ff] flex items-center gap-1.5 transition disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap shrink-0"
                 title="Run the full test suite against your code"
               >
                 <FlaskConical className="w-3.5 h-3.5 text-accent" />
-                {runningTests ? "Running…" : "Run tests"}
+                <span className="hidden sm:inline">{runningTests ? "Running…" : "Run tests"}</span>
               </button>
             )}
 
@@ -1557,7 +1798,7 @@ export default function ChallengeAttemptClient({
               <button
                 onClick={isFrontend ? handleSubmitForReview : handleSubmit}
                 disabled={submitting}
-                className="px-4 py-2 rounded-lg bg-accent hover:bg-accent-soft text-bg text-xs font-bold flex items-center gap-1.5 transition disabled:opacity-50 disabled:cursor-not-allowed shadow-[0_0_16px_rgba(var(--accent-rgb),0.2)] whitespace-nowrap shrink-0"
+                className="group px-5 py-2 rounded-full bg-emerald-500 hover:bg-emerald-400 text-white text-xs font-black uppercase tracking-wider flex items-center gap-1.5 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed shadow-[0_6px_24px_-8px_rgba(16,185,129,0.8)] whitespace-nowrap shrink-0 active:translate-y-px relative overflow-hidden"
                 title={
                   isFrontend
                     ? "Submit your work for manual review"
@@ -1567,6 +1808,7 @@ export default function ChallengeAttemptClient({
                 }
               >
                 <Send className="w-3.5 h-3.5" />
+                <span aria-hidden className="pointer-events-none absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/30 to-transparent transition-transform duration-700 group-hover:translate-x-full" />
                 {submitting
                   ? "Submitting…"
                   : isFrontend
@@ -1583,11 +1825,11 @@ export default function ChallengeAttemptClient({
                   startedAtRef.current = Date.now();
                   setElapsedSec(0);
                 }}
-                className="px-3 py-2 rounded-lg border border-border bg-surface hover:bg-elevated text-xs font-bold text-muted hover:text-fg transition flex items-center gap-1.5 shadow-sm"
+                className="px-4 py-2 rounded-full border border-black/[0.06] hover:border-white/30 text-xs font-bold text-muted hover:text-[var(--wow-fg)] transition flex items-center gap-1.5 dark:border-white/[0.07]"
                 title="Try again"
               >
                 <RotateCcw className="w-3.5 h-3.5" />
-                Retry
+                <span className="hidden sm:inline">Retry</span>
               </button>
             )}
           </div>
@@ -1596,11 +1838,82 @@ export default function ChallengeAttemptClient({
         {/* Body: layout depends on challenge type — frontend/playground gets a
             file tree + editor + live preview; DSA gets editor + console/tests. */}
         {isFrontend ? (
-        <div className="flex-1 flex flex-col lg:flex-row min-h-0 h-full overflow-hidden">
-          {/* Description */}
-          <aside className="w-full lg:w-[21rem] lg:shrink-0 overflow-y-auto border-b lg:border-b-0 lg:border-r border-border bg-bg p-5 lg:h-full max-h-[38vh] lg:max-h-none">
-            <ChallengeDescription markdown={challenge.description} />
+        <div ref={rowRef} className="flex-1 flex flex-col lg:flex-row min-h-0 h-full overflow-hidden">
+          {/* Mobile pane switcher — one pane at a time below lg */}
+          <div className="shrink-0 lg:hidden flex items-center gap-1 border-b border-border bg-surface/70 px-3 py-2 backdrop-blur" role="tablist" aria-label="Workspace panes">
+            {([
+              { key: "brief", label: "Brief", icon: BookOpen },
+              { key: "code", label: "Code", icon: Code2 },
+              { key: "output", label: "Output", icon: Monitor },
+            ] as const).map(({ key, label, icon: Icon }) => (
+              <button
+                key={key}
+                type="button"
+                role="tab"
+                aria-selected={mobilePane === key}
+                onClick={() => setMobilePane(key)}
+                className={`flex flex-1 items-center justify-center gap-1.5 rounded-full px-3 py-1.5 text-[11px] font-black uppercase tracking-wider transition ${
+                  mobilePane === key
+                    ? "bg-white text-black shadow"
+                    : "text-muted hover:text-[var(--wow-fg)]"
+                }`}
+              >
+                <Icon className="h-3.5 w-3.5" />
+                {label}
+              </button>
+            ))}
+          </div>
+          {/* Description — collapsible to a slim rail + drag-resizable on desktop */}
+          {questionCollapsed ? (
+            <div className="hidden lg:flex w-10 shrink-0 flex-col items-center gap-3 border-r border-border bg-bg py-3">
+              <button
+                type="button"
+                onClick={() => setQuestionCollapsed(false)}
+                title="Show question brief"
+                aria-label="Show question brief"
+                className="grid h-8 w-8 place-items-center rounded-full border border-black/[0.06] text-muted transition hover:border-[#8b93ff]/50 hover:text-[var(--wow-fg)] dark:border-white/[0.07]"
+              >
+                <PanelLeftOpen className="h-4 w-4" />
+              </button>
+              <span className="font-mono text-[10px] font-bold uppercase tracking-[0.25em] text-muted/50 [writing-mode:vertical-rl]">
+                Brief
+              </span>
+            </div>
+          ) : (
+          <aside
+            style={{ "--pane-basis": `${panes.brief}%` } as React.CSSProperties}
+            className={`${mobilePane === "brief" ? "flex h-full" : "hidden"} ${questionCollapsed ? "lg:hidden" : "lg:flex"} w-full min-h-0 flex-col overflow-hidden border-b lg:border-b-0 lg:border-r border-border bg-bg lg:h-full lg:basis-[var(--pane-basis)] lg:shrink-0`}
+          >
+            <div className="flex h-9 shrink-0 items-center justify-between border-b border-black/[0.06] px-3 dark:border-white/[0.07]">
+              <span className="font-mono text-[10px] font-bold uppercase tracking-[0.22em] text-muted">
+                Question brief
+              </span>
+              <button
+                type="button"
+                onClick={() => setQuestionCollapsed(true)}
+                title="Hide question brief"
+                aria-label="Hide question brief"
+                className="hidden lg:grid h-6 w-6 place-items-center rounded-full text-muted transition hover:bg-black/5 hover:text-[var(--wow-fg)] dark:hover:bg-white/10"
+              >
+                <PanelLeftClose className="h-3.5 w-3.5" />
+              </button>
+            </div>
+            <div className="flex-1 min-h-0 overflow-y-auto p-5">
+              <ChallengeDescription markdown={challenge.description} />
+            </div>
           </aside>
+          )}
+
+          {/* Drag handle: brief ↔ code (desktop, expanded only) */}
+          {!questionCollapsed && (
+            <div
+              onPointerDown={onBriefDrag}
+              title="Drag to resize"
+              role="separator"
+              aria-orientation="vertical"
+              className="hidden lg:block w-1.5 shrink-0 cursor-col-resize touch-none select-none bg-border/40 hover:bg-accent/60 active:bg-accent/70 transition-colors"
+            />
+          )}
 
           {/* Split region (editor | output) — measured on load so code/output
               defaults to 50/50 of the space after the description. */}
@@ -1609,13 +1922,16 @@ export default function ChallengeAttemptClient({
             className="flex-1 min-w-0 flex flex-col lg:flex-row min-h-0 lg:h-full overflow-hidden"
           >
 
-          {/* File tree + editor — width is drag-resizable on desktop. Reuses the
-              same <FileExplorer> as the /play playground & interview rounds. */}
+          {/* File tree + editor — percent-split on desktop (files 10 / editor 40
+              of the row). Reuses the same <FileExplorer> as /play. */}
           <div
-            className="w-full lg:w-[var(--ide-editor-w)] lg:shrink-0 min-h-[18rem] lg:min-h-0 flex border-b lg:border-b-0 border-border lg:h-full overflow-hidden"
-            style={{ "--ide-editor-w": `${editorW}px` } as React.CSSProperties}
+            className={`${mobilePane === "code" ? "flex h-full" : "hidden"} lg:flex w-full min-w-0 min-h-0 border-b lg:border-b-0 border-border lg:h-full overflow-hidden ${fileTreeCollapsed ? "lg:flex-1" : "lg:basis-[var(--pane-basis)] lg:shrink-0"}`}
+            style={fileTreeCollapsed ? undefined : ({ "--pane-basis": innerBasis(panes.files + panes.editor) } as React.CSSProperties)}
           >
-            <div className={`${fileTreeCollapsed ? "w-12" : "w-48"} shrink-0 hidden sm:block h-full transition-[width] duration-200`}>
+            <div
+              style={fileTreeCollapsed ? undefined : ({ "--pane-basis": innerBasis(panes.files) } as React.CSSProperties)}
+              className={`${fileTreeCollapsed ? "w-12" : "sm:w-[220px] lg:w-auto lg:basis-[var(--pane-basis)] lg:shrink-0"} hidden sm:block h-full`}
+            >
               <FileExplorer
                 templateId={currentTemplate}
                 readOnly={isInterviewer}
@@ -1625,6 +1941,16 @@ export default function ChallengeAttemptClient({
                 plainFolders
               />
             </div>
+            {/* Drag handle: files ↔ editor (desktop, expanded tree only) */}
+            {!fileTreeCollapsed && (
+              <div
+                onPointerDown={onFilesDrag}
+                title="Drag to resize file explorer"
+                role="separator"
+                aria-orientation="vertical"
+                className="hidden sm:block w-1.5 shrink-0 cursor-col-resize touch-none select-none bg-transparent hover:bg-accent/60 active:bg-accent/70 transition-colors"
+              />
+            )}
             <div className="flex-1 min-w-0 min-h-0 h-full relative flex flex-col border-l border-border">
               {multiplayer ? (
                 <SyncingEditor
@@ -1647,17 +1973,15 @@ export default function ChallengeAttemptClient({
             </div>
           </div>
 
-          {/* Drag handle: code ↔ output (desktop). The hooks add a full-screen
-              overlay during drag so it works over the preview iframe. */}
+          {/* Drag handle: code ↔ output (desktop). Percent-based: trades space
+              between the editor block and output so the 25/10/40/25 split
+              tracks the viewport. Overlay blocks the preview iframe mid-drag. */}
           <div
-            onPointerDown={(e) => {
-              userResizedRef.current = true;
-              onEditorDrag(e);
-            }}
+            onPointerDown={onCodeDrag}
             title="Drag to resize"
             role="separator"
             aria-orientation="vertical"
-            className="hidden lg:block w-1.5 shrink-0 cursor-col-resize bg-border/40 hover:bg-accent/60 active:bg-accent/70 transition-colors"
+            className="hidden lg:block w-1.5 shrink-0 cursor-col-resize touch-none select-none bg-border/40 hover:bg-accent/60 active:bg-accent/70 transition-colors"
           />
 
           {/* Output: preview + console with a view toggle (preview / split /
@@ -1665,17 +1989,18 @@ export default function ChallengeAttemptClient({
               (toggled via display) so they don't reload/lose state on switch. */}
           <aside
             ref={outputPaneRef}
-            className="flex-1 min-w-0 flex flex-col min-h-[20rem] lg:min-h-0 bg-bg lg:h-full overflow-hidden"
+            style={{ "--pane-basis": innerBasis(panes.output) } as React.CSSProperties}
+            className={`${mobilePane === "output" ? "flex h-full" : "hidden"} lg:flex min-w-0 flex-col min-h-0 bg-bg lg:h-full overflow-hidden lg:basis-[var(--pane-basis)] lg:shrink-0`}
           >
-            <div className="h-10 shrink-0 flex items-center justify-between gap-2 px-3 border-b border-border bg-surface/30">
-              <span className="flex items-center gap-1.5 text-[11px] font-black uppercase tracking-wider text-fg">
-                <Monitor className="w-3 h-3 text-accent" />
+            <div className="h-10 shrink-0 flex items-center justify-between gap-2 px-3 border-b border-black/[0.06] bg-[var(--wow-card)]/60 backdrop-blur-sm dark:border-white/[0.07]">
+              <span className="flex items-center gap-1.5 font-mono text-[11px] font-bold uppercase tracking-[0.2em] text-[var(--wow-fg)]">
+                <Monitor className="w-3 h-3 text-[#8b93ff]" />
                 Output
               </span>
               <div className="flex items-center gap-1.5">
                 {/* Stack / side-by-side orientation — only relevant in split view */}
                 {outputView === "both" && (
-                  <div className="flex items-center gap-0.5 rounded-lg border border-border bg-bg p-0.5">
+                  <div className="flex items-center gap-0.5 rounded-full border border-black/[0.06] bg-[var(--wow-stage)] p-0.5 dark:border-white/[0.07]">
                     {([
                       { key: "stack", title: "Console below preview", icon: Rows2 },
                       { key: "side", title: "Console beside preview (2 columns)", icon: Columns2 },
@@ -1686,10 +2011,10 @@ export default function ChallengeAttemptClient({
                         onClick={() => setOutputSplit(key)}
                         title={title}
                         aria-pressed={outputSplit === key}
-                        className={`p-1 rounded-md transition ${
+                        className={`grid h-6 w-6 place-items-center rounded-full transition ${
                           outputSplit === key
-                            ? "bg-accent text-bg"
-                            : "text-muted hover:text-fg hover:bg-surface"
+                            ? "bg-white text-black shadow dark:bg-white"
+                            : "text-muted hover:text-[var(--wow-fg)]"
                         }`}
                       >
                         <Icon className="w-3.5 h-3.5" />
@@ -1697,7 +2022,7 @@ export default function ChallengeAttemptClient({
                     ))}
                   </div>
                 )}
-                <div className="flex items-center gap-0.5 rounded-lg border border-border bg-bg p-0.5">
+                <div className="flex items-center gap-0.5 rounded-full border border-black/[0.06] bg-[var(--wow-stage)] p-0.5 dark:border-white/[0.07]">
                 {([
                   { key: "preview", title: "Preview only", icon: Monitor },
                   { key: "both", title: "Split — preview + console", icon: PanelBottom },
@@ -1709,10 +2034,10 @@ export default function ChallengeAttemptClient({
                     onClick={() => setOutputView(key)}
                     title={title}
                     aria-pressed={outputView === key}
-                    className={`p-1 rounded-md transition ${
+                    className={`grid h-6 w-6 place-items-center rounded-full transition ${
                       outputView === key
-                        ? "bg-accent text-bg"
-                        : "text-muted hover:text-fg hover:bg-surface"
+                        ? "bg-white text-black shadow dark:bg-white"
+                        : "text-muted hover:text-[var(--wow-fg)]"
                     }`}
                   >
                     <Icon className="w-3.5 h-3.5" />
@@ -1756,7 +2081,7 @@ export default function ChallengeAttemptClient({
                 title="Drag to resize"
                 role="separator"
                 aria-orientation="vertical"
-                className="w-1.5 shrink-0 cursor-col-resize bg-border/40 hover:bg-accent/60 active:bg-accent/70 transition-colors"
+                className="w-1.5 shrink-0 cursor-col-resize touch-none select-none bg-border/40 hover:bg-accent/60 active:bg-accent/70 transition-colors"
               />
             ) : (
               <div
@@ -1768,7 +2093,7 @@ export default function ChallengeAttemptClient({
                 role="separator"
                 aria-orientation="horizontal"
                 style={{ display: outputView === "both" ? "block" : "none" }}
-                className="h-1.5 shrink-0 cursor-row-resize bg-border/40 hover:bg-accent/60 active:bg-accent/70 transition-colors"
+                className="h-1.5 shrink-0 cursor-row-resize touch-none select-none bg-border/40 hover:bg-accent/60 active:bg-accent/70 transition-colors"
               />
             )}
 
@@ -1788,12 +2113,21 @@ export default function ChallengeAttemptClient({
                   : { flex: "1 1 0" }),
               }}
             >
-              <div className="h-9 shrink-0 flex items-center gap-1.5 px-3 border-b border-border bg-surface/30 text-[11px] font-black uppercase tracking-wider text-muted">
-                <Terminal className="w-3 h-3 text-accent" />
+              <div className="h-9 shrink-0 flex items-center gap-1.5 px-3 border-b border-black/[0.06] bg-[var(--wow-card)]/60 backdrop-blur-sm font-mono text-[11px] font-bold uppercase tracking-[0.2em] text-muted dark:border-white/[0.07]">
+                <Terminal className="w-3 h-3 text-[#8b93ff]" />
                 Console
+                <button
+                  type="button"
+                  onClick={() => consoleResetRef.current?.()}
+                  title="Clear console"
+                  aria-label="Clear console"
+                  className="ml-auto grid h-6 w-6 shrink-0 place-items-center rounded-full text-muted transition hover:bg-black/5 hover:text-[var(--wow-fg)] dark:hover:bg-white/10"
+                >
+                  <Ban className="h-3 w-3" />
+                </button>
               </div>
               <div className="flex-1 min-h-0">
-                <SandpackConsole resetOnPreviewRestart style={{ height: "100%" }} />
+                <AttemptConsole resetRef={consoleResetRef} />
               </div>
             </div>
           </div>
@@ -1816,7 +2150,7 @@ export default function ChallengeAttemptClient({
             title="Drag to resize"
             role="separator"
             aria-orientation="vertical"
-            className="hidden lg:block w-1.5 shrink-0 cursor-col-resize bg-border/40 hover:bg-accent/60 active:bg-accent/70 transition-colors"
+            className="hidden lg:block w-1.5 shrink-0 cursor-col-resize touch-none select-none bg-border/40 hover:bg-accent/60 active:bg-accent/70 transition-colors"
           />
 
           {/* Center Editor Panel — takes the remaining space */}
@@ -1849,7 +2183,7 @@ export default function ChallengeAttemptClient({
             title="Drag to resize"
             role="separator"
             aria-orientation="vertical"
-            className="hidden lg:block w-1.5 shrink-0 cursor-col-resize bg-border/40 hover:bg-accent/60 active:bg-accent/70 transition-colors"
+            className="hidden lg:block w-1.5 shrink-0 cursor-col-resize touch-none select-none bg-border/40 hover:bg-accent/60 active:bg-accent/70 transition-colors"
           />
 
           {/* Console and Tests sidebar — drag-resizable width on desktop */}
@@ -1858,21 +2192,21 @@ export default function ChallengeAttemptClient({
             style={{ "--dsa-side-w": `${dsaSideW}px` } as React.CSSProperties}
           >
             {/* Tab Switcher Header */}
-            <div className="h-10 shrink-0 flex items-center justify-between px-3 border-b border-border bg-surface/30">
-              <div className="flex items-center gap-1.5">
+            <div className="h-10 shrink-0 flex items-center justify-between px-3 border-b border-black/[0.06] bg-[var(--wow-card)]/60 backdrop-blur-sm dark:border-white/[0.07]">
+              <div className="flex items-center gap-1 rounded-full border border-black/[0.06] bg-[var(--wow-stage)] p-0.5 dark:border-white/[0.07]">
                 <button
                   type="button"
                   onClick={() => setSidebarTab("console")}
-                  className={`flex items-center gap-1 px-2.5 py-1 rounded-md text-[11px] font-black uppercase tracking-wider transition ${
+                  className={`flex items-center gap-1 rounded-full px-2.5 py-1 font-mono text-[11px] font-bold uppercase tracking-wider transition ${
                     sidebarTab === "console"
-                      ? "bg-bg text-fg shadow-sm border border-border"
-                      : "text-muted hover:text-fg hover:bg-surface/50"
+                      ? "bg-white text-black shadow"
+                      : "text-muted hover:text-[var(--wow-fg)]"
                   }`}
                 >
-                  <Terminal className="w-3 h-3 text-accent" />
+                  <Terminal className="w-3 h-3 text-[#8b93ff]" />
                   Console
                   {liveLogs.length > 0 && (
-                    <span className="px-1 py-0.5 rounded text-[8px] bg-accent/15 text-accent font-mono ml-1">
+                    <span className="px-1 py-0.5 rounded text-[8px] bg-[#8b93ff]/20 text-[#8b93ff] font-mono ml-1">
                       {liveLogs.length}
                     </span>
                   )}
@@ -1880,13 +2214,13 @@ export default function ChallengeAttemptClient({
                 <button
                   type="button"
                   onClick={() => setSidebarTab("tests")}
-                  className={`flex items-center gap-1 px-2.5 py-1 rounded-md text-[11px] font-black uppercase tracking-wider transition ${
+                  className={`flex items-center gap-1 rounded-full px-2.5 py-1 font-mono text-[11px] font-bold uppercase tracking-wider transition ${
                     sidebarTab === "tests"
-                      ? "bg-bg text-fg shadow-sm border border-border"
-                      : "text-muted hover:text-fg hover:bg-surface/50"
+                      ? "bg-white text-black shadow"
+                      : "text-muted hover:text-[var(--wow-fg)]"
                   }`}
                 >
-                  <FlaskConical className="w-3 h-3 text-accent" />
+                  <FlaskConical className="w-3 h-3 text-[#8b93ff]" />
                   Tests
                   {testRun && (
                     <span

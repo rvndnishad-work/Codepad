@@ -21,6 +21,28 @@ export const python: LanguageHarness = {
     return `
 import json as _json
 import sys as _sys
+import builtins as _builtins
+
+# Console capture: candidate prints are buffered and flushed AFTER the case
+# result lines (tagged __JLOG__), so stray prints can neither shift case
+# alignment nor vanish — the client renders them in a Console tab.
+_jlogs = []
+_orig_print = _builtins.print
+
+def _judge_print(*a, **k):
+    _sep = k.get("sep", " ")
+    _parts = []
+    for _x in a:
+        if isinstance(_x, str):
+            _parts.append(_x)
+        else:
+            try:
+                _parts.append(_json.dumps(_x, default=str))
+            except Exception:
+                _parts.append(str(_x))
+    _jlogs.append(_sep.join(_parts))
+
+_builtins.print = _judge_print
 
 def _judge_main():
     _cases = _json.loads(_sys.stdin.read())
@@ -31,7 +53,9 @@ def _judge_main():
             _out.append(_json.dumps(_r, separators=(",", ":")))
         except Exception as _e:
             _out.append(_json.dumps({"__judge_error__": str(_e)}))
-    print("\\n".join(_out))
+    _orig_print("\\n".join(_out))
+    for _l in _jlogs:
+        _orig_print("__JLOG__" + _json.dumps(_l))
 
 _judge_main()
 `;

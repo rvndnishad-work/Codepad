@@ -19,6 +19,22 @@ function ${c.functionName}(${params}) {
 
   genDriver(c: Contract): string {
     return `
+// Console capture: candidate prints are buffered and flushed AFTER the case
+// result lines (tagged __JLOG__), so stray prints can neither shift case
+// alignment nor vanish — the client renders them in a Console tab.
+const __jlogOrig = console.log.bind(console);
+const __jlogs = [];
+const __jfmt = (x) => {
+  if (typeof x === "string") return x;
+  try {
+    const s = JSON.stringify(x);
+    return s === undefined ? String(x) : s;
+  } catch {
+    return String(x);
+  }
+};
+for (const __m of ["log", "info", "warn", "error", "debug"])
+  console[__m] = (...__a) => { __jlogs.push("[" + __m + "] " + __a.map(__jfmt).join(" ")); };
 const __cases = JSON.parse(require("fs").readFileSync(0, "utf8"));
 const __out = [];
 for (const __c of __cases) {
@@ -28,7 +44,8 @@ for (const __c of __cases) {
     __out.push(JSON.stringify({ __judge_error__: String((__e && __e.message) || __e) }));
   }
 }
-console.log(__out.join("\\n"));
+__jlogOrig(__out.join("\\n"));
+for (const __l of __jlogs) __jlogOrig("__JLOG__" + JSON.stringify(__l));
 `;
   },
 };

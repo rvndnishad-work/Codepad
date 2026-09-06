@@ -28,15 +28,13 @@ export default async function CandidateInterviewPage() {
   });
 
   return (
-    <div className="min-h-screen bg-bg text-fg py-10 px-6 lg:px-8">
-      <div className="mx-auto max-w-6xl">
-        <CandidateCockpitClient
-          userId={userId}
-          userName={session.user?.name ?? null}
-          arenaSettings={arenaSettings}
-          myPracticeSessions={myPracticeSessions}
-        />
-      </div>
+    <div className="min-h-screen bg-[var(--wow-bg)] text-[var(--wow-fg)] transition-colors">
+      <CandidateCockpitClient
+        userId={userId}
+        userName={session.user?.name ?? null}
+        arenaSettings={arenaSettings}
+        myPracticeSessions={myPracticeSessions}
+      />
     </div>
   );
 }

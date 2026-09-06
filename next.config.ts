@@ -40,6 +40,13 @@ const nextConfig: NextConfig = {
         destination: "/playgrounds",
         permanent: true,
       },
+      // Collapsed duplicate: /candidate/playgrounds was a byte-identical
+      // alias of /playgrounds. Single canonical home + redirect for bookmarks.
+      {
+        source: "/candidate/playgrounds",
+        destination: "/playgrounds",
+        permanent: true,
+      },
       {
         source: "/j",
         destination: "/join",

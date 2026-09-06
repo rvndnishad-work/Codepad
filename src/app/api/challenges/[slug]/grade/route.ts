@@ -40,6 +40,8 @@ type Graded = {
   score: number;
   compileError: boolean;
   stderr?: string;
+  /** Captured candidate console output (dynamic harnesses only). */
+  logs: string[];
   /** Redacted, client-facing per-test results. */
   clientResults: Array<{ name: string; isHidden: boolean; status: string; got?: string; expected?: string; error?: string }>;
   /** Persisted testResults.tests shape (legacy-compatible). */
@@ -167,6 +169,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ slug: s
         score: result.score,
         compileError: result.compileError ?? false,
         stderr: result.stderr,
+        logs: result.logs ?? [],
         clientResults: result.results.map((r) =>
           r.isHidden
             ? { name: r.name, isHidden: true, status: r.status }
@@ -196,6 +199,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ slug: s
         score: result.score,
         compileError: result.compileError ?? false,
         stderr: result.stderr,
+        logs: [],
         clientResults: result.results.map((r) => ({ name: r.name, isHidden: false, status: r.status, error: r.error })),
         testTests: result.results.map((r) => ({ path: "", name: r.name, status: r.status, error: r.error ?? null })),
         filesForRecord: files,
@@ -238,6 +242,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ slug: s
       compileError: graded.compileError,
       stderr: graded.compileError ? graded.stderr : undefined,
       results: graded.clientResults,
+      console: graded.logs,
     });
   }
 
@@ -383,5 +388,6 @@ export async function POST(req: Request, { params }: { params: Promise<{ slug: s
     compileError: graded.compileError,
     stderr: graded.compileError ? graded.stderr : undefined,
     results: graded.clientResults,
+    console: graded.logs,
   });
 }

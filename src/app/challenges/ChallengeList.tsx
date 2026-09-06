@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState, useEffect } from "react";
+import { useMemo, useState, useEffect, type ReactNode } from "react";
+import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 import {
   Search,
   Target,
@@ -19,6 +20,8 @@ import {
   Braces,
   LayoutTemplate,
   ArrowRight,
+  X,
+  RotateCcw,
   type LucideIcon,
 } from "lucide-react";
 
@@ -255,12 +258,32 @@ export default function ChallengeList({
   }, [visible, currentPage]);
 
   const totalPages = Math.ceil(visible.length / itemsPerPage);
+  const reduceMotion = useReducedMotion();
+
+  // Active-filter chips (everything except the category rail, which is
+  // always visible above) + one-tap reset back to the full catalog.
+  const activeChips: { key: string; label: string; clear: () => void }[] = [];
+  if (query.trim()) activeChips.push({ key: "q", label: `“${query.trim().slice(0, 24)}”`, clear: () => setQuery("") });
+  if (difficulty !== "all") activeChips.push({ key: "d", label: difficulty, clear: () => setDifficulty("all") });
+  if (kind !== "all") activeChips.push({ key: "k", label: kind === "single" ? "single" : "multi-step", clear: () => setKind("all") });
+  if (category === "algorithms" && langFilter !== "all") activeChips.push({ key: "l", label: LANG_LABEL[langFilter] ?? langFilter, clear: () => setLangFilter("all") });
+  if (category === "ui" && fwFilter !== "all") activeChips.push({ key: "f", label: FRAMEWORK_LABEL[fwFilter as (typeof FRAMEWORKS)[number]] ?? fwFilter, clear: () => setFwFilter("all") });
+  if (hideSolved) activeChips.push({ key: "h", label: "hiding solved", clear: () => setHideSolved(false) });
+  const clearAllFilters = () => {
+    setQuery("");
+    setDifficulty("all");
+    setKind("all");
+    setLangFilter("all");
+    setFwFilter("all");
+    setHideSolved(false);
+    setCategory("all");
+  };
 
   return (
     <div className="relative">
       <div className="mx-auto max-w-6xl px-6 py-10">
-        {/* Category tabs — the primary way the catalog is split */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 mb-7">
+        {/* Category rails — the primary way the catalog is split */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 mb-7" role="tablist" aria-label="Challenge category">
           <CategoryTab
             icon={Layers}
             label="All"
@@ -282,114 +305,158 @@ export default function ChallengeList({
           ))}
         </div>
 
-        {/* Toolbar */}
-        <div className="flex flex-col gap-4 mb-8">
-          <div className="flex flex-wrap items-center gap-3">
-            {/* Search Input */}
-            <div className="relative flex-1 min-w-[220px] max-w-md">
-              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-subtle" />
-              <input
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-                placeholder="Search by title, tag, or category…"
-                className="w-full pl-11 pr-4 py-3 bg-surface dark:bg-[#131625] border border-border dark:border-transparent focus:border-accent/40 dark:focus:border-accent/40 focus:bg-elevated dark:focus:bg-[#1b1f32] text-sm text-fg outline-none placeholder:text-muted transition-all duration-200"
-              />
-            </div>
-
-            {/* Grid/List Toggle Switcher */}
-            <div className="inline-flex items-center gap-1 bg-surface dark:bg-[#131625] border border-border dark:border-transparent p-1">
-              <button
-                type="button"
-                onClick={() => handleViewModeChange("grid")}
-                className={`p-2 rounded-data transition-all ${
-                  viewMode === "grid"
-                    ? "bg-accent text-bg"
-                    : "text-muted hover:text-fg hover:bg-elevated"
-                }`}
-                title="Grid view"
-              >
-                <Grid className="w-4 h-4" />
-              </button>
-              <button
-                type="button"
-                onClick={() => handleViewModeChange("list")}
-                className={`p-2 rounded-data transition-all ${
-                  viewMode === "list"
-                    ? "bg-accent text-bg"
-                    : "text-muted hover:text-fg hover:bg-elevated"
-                }`}
-                title="List view"
-              >
-                <List className="w-4 h-4" />
-              </button>
-            </div>
-
-            <span className="text-xs text-muted font-mono ml-auto tabular-nums">
-              {category === "all"
-                ? `${visible.length} ${visible.length === 1 ? "challenge" : "challenges"}`
-                : `Showing ${displayed.length > 0 ? (currentPage - 1) * itemsPerPage + 1 : 0} - ${Math.min(currentPage * itemsPerPage, visible.length)} of ${visible.length} ${visible.length === 1 ? "challenge" : "challenges"}`}
-            </span>
-          </div>
-
-          <div className="flex flex-wrap items-center gap-2">
-            <Pillbar
-              label="Difficulty"
-              options={DIFFICULTIES}
-              value={difficulty}
-              onChange={setDifficulty}
-            />
-            {category === "algorithms" && availableLangs.length > 1 && (
-              <FilterSelect
-                label="Language"
-                options={[
-                  { key: "all", label: "All languages" },
-                  ...availableLangs.map((l) => ({ key: l, label: LANG_LABEL[l] })),
-                ]}
-                value={langFilter}
-                onChange={setLangFilter}
-              />
-            )}
-            {category === "ui" && availableFrameworks.length > 1 && (
-              <FilterSelect
-                label="Framework"
-                options={[
-                  { key: "all", label: "All frameworks" },
-                  ...availableFrameworks.map((f) => ({ key: f, label: FRAMEWORK_LABEL[f] })),
-                ]}
-                value={fwFilter}
-                onChange={setFwFilter}
-              />
-            )}
-            <FilterSelect
-              label="Kind"
-              options={KINDS}
-              value={kind}
-              onChange={setKind}
-            />
-            {signedIn && (
-              <label className="ml-auto inline-flex items-center gap-1.5 text-xs text-muted hover:text-fg cursor-pointer">
+        {/* ── Mission-control deck ── */}
+        <div className="mb-8 rounded-2xl border border-black/[0.06] bg-[var(--wow-card)] p-4 backdrop-blur-sm dark:border-white/[0.07] sm:p-5">
+          <div className="flex flex-col gap-3">
+            <div className="flex flex-wrap items-center gap-3">
+              {/* Search Input */}
+              <div className="relative min-w-[220px] flex-1">
+                <Search className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted" />
                 <input
-                  type="checkbox"
-                  checked={hideSolved}
-                  onChange={(e) => setHideSolved(e.target.checked)}
-                  className="w-3.5 h-3.5 accent-accent"
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                  placeholder="Search by title, tag, or category…"
+                  aria-label="Search challenges"
+                  className="w-full rounded-full border border-black/[0.06] bg-[var(--wow-stage)] py-3 pl-11 pr-10 text-sm text-[var(--wow-fg)] outline-none transition placeholder:text-muted/60 focus:border-[#8b93ff]/60 focus:shadow-[0_0_30px_-10px_rgba(139,147,255,0.5)] dark:border-white/[0.07]"
                 />
-                Hide solved
-              </label>
+                {query && (
+                  <button
+                    type="button"
+                    onClick={() => setQuery("")}
+                    aria-label="Clear search"
+                    className="absolute right-3 top-1/2 grid h-6 w-6 -translate-y-1/2 place-items-center rounded-full text-muted transition hover:bg-black/5 hover:text-[var(--wow-fg)] dark:hover:bg-white/10"
+                  >
+                    <X className="h-3.5 w-3.5" />
+                  </button>
+                )}
+              </div>
+
+              {/* Grid/List Toggle Switcher */}
+              <div className="inline-flex shrink-0 items-center gap-1 rounded-full border border-black/[0.06] bg-[var(--wow-stage)] p-1 dark:border-white/[0.07]" role="tablist" aria-label="Layout">
+                {(["grid", "list"] as const).map((m) => (
+                  <button
+                    key={m}
+                    type="button"
+                    role="tab"
+                    aria-selected={viewMode === m}
+                    onClick={() => handleViewModeChange(m)}
+                    className={`relative grid h-8 w-8 place-items-center rounded-full transition ${viewMode === m ? "text-white" : "text-muted hover:text-[var(--wow-fg)]"}`}
+                    title={m === "grid" ? "Grid view" : "List view"}
+                  >
+                    {viewMode === m && (
+                      <motion.span
+                        layoutId="cl-view-pill"
+                        transition={reduceMotion ? { duration: 0 } : { type: "spring", stiffness: 500, damping: 35 }}
+                        className="absolute inset-0 rounded-full bg-gradient-to-r from-[#8b93ff] to-[#ff2fb3]"
+                      />
+                    )}
+                    <span className="relative">{m === "grid" ? <Grid className="h-4 w-4" /> : <List className="h-4 w-4" />}</span>
+                  </button>
+                ))}
+              </div>
+
+              <span className="ml-auto font-mono text-xs tabular-nums text-muted">
+                {category === "all"
+                  ? `${visible.length} ${visible.length === 1 ? "challenge" : "challenges"}`
+                  : `Showing ${displayed.length > 0 ? (currentPage - 1) * itemsPerPage + 1 : 0} - ${Math.min(currentPage * itemsPerPage, visible.length)} of ${visible.length}`}
+              </span>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-2 border-t border-black/[0.06] pt-3 dark:border-white/[0.07]">
+              <DifficultySeg value={difficulty} onChange={setDifficulty} />
+              {category === "algorithms" && availableLangs.length > 1 && (
+                <FilterSelect
+                  label="Language"
+                  options={[
+                    { key: "all", label: "All languages" },
+                    ...availableLangs.map((l) => ({ key: l, label: LANG_LABEL[l] })),
+                  ]}
+                  value={langFilter}
+                  onChange={setLangFilter}
+                />
+              )}
+              {category === "ui" && availableFrameworks.length > 1 && (
+                <FilterSelect
+                  label="Framework"
+                  options={[
+                    { key: "all", label: "All frameworks" },
+                    ...availableFrameworks.map((f) => ({ key: f, label: FRAMEWORK_LABEL[f] })),
+                  ]}
+                  value={fwFilter}
+                  onChange={setFwFilter}
+                />
+              )}
+              <FilterSelect
+                label="Kind"
+                options={KINDS}
+                value={kind}
+                onChange={setKind}
+              />
+              {signedIn && (
+                <button
+                  type="button"
+                  role="switch"
+                  aria-checked={hideSolved}
+                  onClick={() => setHideSolved((v) => !v)}
+                  className="ml-auto inline-flex items-center gap-2 text-xs font-bold text-muted transition hover:text-[var(--wow-fg)]"
+                >
+                  <span className={`relative h-5 w-9 shrink-0 rounded-full transition-colors ${hideSolved ? "bg-emerald-500" : "bg-black/15 dark:bg-white/15"}`}>
+                    <span className={`absolute top-0.5 h-4 w-4 rounded-full bg-white shadow transition-all ${hideSolved ? "left-[18px]" : "left-0.5"}`} />
+                  </span>
+                  Hide solved
+                </button>
+              )}
+            </div>
+
+            {activeChips.length > 0 && (
+              <div className="flex flex-wrap items-center gap-1.5 border-t border-black/[0.06] pt-3 dark:border-white/[0.07]">
+                <span className="font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-muted/70">Active</span>
+                <AnimatePresence>
+                  {activeChips.map((chip) => (
+                    <motion.button
+                      key={chip.key}
+                      type="button"
+                      initial={reduceMotion ? false : { opacity: 0, scale: 0.85 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      exit={reduceMotion ? undefined : { opacity: 0, scale: 0.85 }}
+                      onClick={chip.clear}
+                      title={`Clear ${chip.label}`}
+                      className="inline-flex items-center gap-1.5 rounded-full border border-[#8b93ff]/40 bg-[#8b93ff]/10 px-2.5 py-1 text-[11px] font-bold text-[#8b93ff] transition hover:bg-[#8b93ff]/20"
+                    >
+                      {chip.label}
+                      <X className="h-3 w-3" />
+                    </motion.button>
+                  ))}
+                </AnimatePresence>
+                <button
+                  type="button"
+                  onClick={clearAllFilters}
+                  className="inline-flex items-center gap-1 rounded-full px-2 py-1 font-mono text-[10px] font-bold uppercase tracking-[0.15em] text-muted transition hover:text-rose-500"
+                >
+                  <RotateCcw className="h-3 w-3" /> Reset all
+                </button>
+              </div>
             )}
           </div>
         </div>
 
         {/* Challenge list container */}
         {visible.length === 0 ? (
-          <div className="border border-border bg-surface p-16 text-center">
-            <div className="mx-auto w-14 h-14 bg-accent/10 border border-accent/20 grid place-items-center mb-5">
-              <Target className="w-6 h-6 text-accent" />
+          <div className="rounded-3xl border border-dashed border-black/15 bg-[var(--wow-card)] p-16 text-center backdrop-blur-sm dark:border-white/15">
+            <div className="mx-auto mb-5 grid h-14 w-14 place-items-center rounded-2xl border border-[#8b93ff]/30 bg-[#8b93ff]/10">
+              <Target className="h-6 w-6 text-[#8b93ff]" />
             </div>
-            <h2 className="font-bold text-fg text-lg">No matching challenges</h2>
-            <p className="text-muted text-sm mt-2 max-w-sm mx-auto leading-relaxed">
-              Try clearing your filters or search query.
+            <h2 className="wow-font-display text-2xl text-[var(--wow-fg)]">NOTHING ON THIS FREQUENCY.</h2>
+            <p className="mx-auto mt-2 max-w-sm text-sm leading-relaxed text-muted">
+              No challenges match those filters. Widen the net and try again.
             </p>
+            <button
+              type="button"
+              onClick={clearAllFilters}
+              className="mt-5 inline-flex items-center gap-2 rounded-full bg-white px-5 py-2.5 text-[11px] font-black uppercase tracking-wider text-black transition hover:scale-105"
+            >
+              <RotateCcw className="h-3.5 w-3.5" /> Reset all filters
+            </button>
           </div>
         ) : category === "all" ? (
           /* ALL TAB — one labeled shelf per category, separation at a glance */
@@ -401,47 +468,51 @@ export default function ChallengeList({
               const Icon = meta.icon;
               return (
                 <section key={meta.key}>
-                  <div className="flex items-end justify-between gap-3 mb-4">
-                    <div className="flex items-center gap-3 min-w-0">
-                      <div className="w-10 h-10 bg-accent/10 border border-accent/20 grid place-items-center shrink-0">
-                        <Icon className="w-4 h-4 text-accent" />
+                  <div className="mb-4 flex items-end justify-between gap-3">
+                    <div className="flex min-w-0 items-center gap-3">
+                      <div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl border border-[#8b93ff]/30 bg-[#8b93ff]/10">
+                        <Icon className="h-4 w-4 text-[#8b93ff]" />
                       </div>
                       <div className="min-w-0">
-                        <h2 className="font-bold text-fg text-lg leading-tight flex items-center gap-2">
-                          {meta.label}
-                          <span className="text-[11px] font-bold text-muted bg-surface border border-border rounded-full px-2 py-0.5 tabular-nums">
+                        <h2 className="wow-font-display flex items-center gap-2 text-2xl leading-tight text-[var(--wow-fg)]">
+                          {meta.label.toUpperCase()}
+                          <span className="rounded-full bg-black/[0.05] px-2 py-0.5 font-mono text-[11px] font-bold tabular-nums text-muted dark:bg-white/[0.07]">
                             {group.length}
                           </span>
                         </h2>
-                        <p className="text-xs text-muted truncate">{meta.blurb}</p>
+                        <p className="truncate text-xs text-muted">{meta.blurb}</p>
                       </div>
                     </div>
                     {group.length > preview.length && (
                       <button
                         type="button"
                         onClick={() => setCategory(meta.key)}
-                        className="shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 border border-border bg-surface hover:bg-elevated hover:border-border-strong text-xs font-bold text-muted hover:text-fg transition cursor-pointer whitespace-nowrap"
+                        className="inline-flex shrink-0 cursor-pointer items-center gap-1.5 whitespace-nowrap rounded-full border border-black/[0.06] px-3 py-1.5 text-xs font-bold text-muted transition hover:border-[#8b93ff]/50 hover:text-[var(--wow-fg)] dark:border-white/[0.07]"
                       >
                         View all {group.length}
-                        <ArrowRight className="w-3.5 h-3.5" />
+                        <ArrowRight className="h-3.5 w-3.5" />
                       </button>
                     )}
                   </div>
                   {viewMode === "grid" ? (
                     <ul className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                      {preview.map((c) => (
-                        <li key={c.id}>
-                          <ChallengeCard item={c} />
-                        </li>
-                      ))}
+                      <AnimatePresence mode="popLayout" initial={false}>
+                        {preview.map((c, i) => (
+                          <MotionLi key={c.id} index={i}>
+                            <ChallengeCard item={c} />
+                          </MotionLi>
+                        ))}
+                      </AnimatePresence>
                     </ul>
                   ) : (
                     <ul className="space-y-3">
-                      {preview.map((c) => (
-                        <li key={c.id}>
-                          <ChallengeListRow item={c} />
-                        </li>
-                      ))}
+                      <AnimatePresence mode="popLayout" initial={false}>
+                        {preview.map((c, i) => (
+                          <MotionLi key={c.id} index={i}>
+                            <ChallengeListRow item={c} />
+                          </MotionLi>
+                        ))}
+                      </AnimatePresence>
                     </ul>
                   )}
                 </section>
@@ -451,27 +522,31 @@ export default function ChallengeList({
         ) : viewMode === "grid" ? (
           /* GRID VIEW */
           <ul className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {displayed.map((c) => (
-              <li key={c.id}>
-                <ChallengeCard item={c} />
-              </li>
-            ))}
+            <AnimatePresence mode="popLayout" initial={false}>
+              {displayed.map((c, i) => (
+                <MotionLi key={c.id} index={i}>
+                  <ChallengeCard item={c} />
+                </MotionLi>
+              ))}
+            </AnimatePresence>
           </ul>
         ) : (
           /* LIST VIEW */
           <ul className="space-y-3">
-            {displayed.map((c) => (
-              <li key={c.id}>
-                <ChallengeListRow item={c} />
-              </li>
-            ))}
+            <AnimatePresence mode="popLayout" initial={false}>
+              {displayed.map((c, i) => (
+                <MotionLi key={c.id} index={i}>
+                  <ChallengeListRow item={c} />
+                </MotionLi>
+              ))}
+            </AnimatePresence>
           </ul>
         )}
 
         {/* Numbered Pagination Section */}
         {category !== "all" && totalPages > 1 && (
-          <div className="mt-12 flex flex-col sm:flex-row items-center justify-between gap-4 border-t border-border/30 pt-8">
-            <span className="text-[11px] text-muted font-bold uppercase tracking-widest">
+          <div className="mt-12 flex flex-col items-center justify-between gap-4 rounded-2xl border border-black/[0.06] bg-[var(--wow-card)] px-5 py-4 backdrop-blur-sm dark:border-white/[0.07] sm:flex-row">
+            <span className="font-mono text-[11px] font-bold uppercase tracking-[0.18em] text-muted tabular-nums">
               Showing {(currentPage - 1) * itemsPerPage + 1} - {Math.min(currentPage * itemsPerPage, visible.length)} of {visible.length} challenges
             </span>
 
@@ -481,10 +556,10 @@ export default function ChallengeList({
                 type="button"
                 onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
                 disabled={currentPage === 1}
-                className="p-2 bg-surface border border-border hover:border-border-strong disabled:opacity-40 disabled:cursor-not-allowed hover:bg-elevated transition cursor-pointer"
+                className="grid h-9 w-9 place-items-center rounded-full border border-black/[0.06] text-[var(--wow-fg)] transition hover:border-[#8b93ff]/50 disabled:cursor-not-allowed disabled:opacity-40 dark:border-white/[0.07]"
                 aria-label="Previous Page"
               >
-                <ChevronLeft className="w-4 h-4 text-fg" />
+                <ChevronLeft className="h-4 w-4" />
               </button>
 
               {/* Numbered Page Buttons */}
@@ -496,7 +571,7 @@ export default function ChallengeList({
 
                 if (!isNearActive && !isEdge) {
                   if (pageNum === 2 || pageNum === totalPages - 1) {
-                    return <span key={pageNum} className="px-1 text-muted text-xs font-mono select-none">...</span>;
+                    return <span key={pageNum} className="select-none px-1 font-mono text-xs text-muted">...</span>;
                   }
                   return null;
                 }
@@ -506,10 +581,11 @@ export default function ChallengeList({
                     key={pageNum}
                     type="button"
                     onClick={() => setCurrentPage(pageNum)}
-                    className={`w-9 h-9  text-xs font-bold font-mono transition-all cursor-pointer ${
+                    aria-current={currentPage === pageNum ? "page" : undefined}
+                    className={`h-9 w-9 rounded-full font-mono text-xs font-bold tabular-nums transition-all cursor-pointer ${
                       currentPage === pageNum
-                        ? "bg-accent text-bg"
-                        : "bg-surface border border-border hover:border-border-strong text-muted hover:text-fg hover:bg-elevated"
+                        ? "bg-gradient-to-r from-[#8b93ff] to-[#ff2fb3] text-white shadow-[0_0_20px_-6px_rgba(139,147,255,0.7)]"
+                        : "border border-black/[0.06] text-muted hover:border-[#8b93ff]/50 hover:text-[var(--wow-fg)] dark:border-white/[0.07]"
                     }`}
                   >
                     {pageNum}
@@ -522,10 +598,10 @@ export default function ChallengeList({
                 type="button"
                 onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
                 disabled={currentPage === totalPages}
-                className="p-2 bg-surface border border-border hover:border-border-strong disabled:opacity-40 disabled:cursor-not-allowed hover:bg-elevated transition cursor-pointer"
+                className="grid h-9 w-9 place-items-center rounded-full border border-black/[0.06] text-[var(--wow-fg)] transition hover:border-[#8b93ff]/50 disabled:cursor-not-allowed disabled:opacity-40 dark:border-white/[0.07]"
                 aria-label="Next Page"
               >
-                <ChevronRight className="w-4 h-4 text-fg" />
+                <ChevronRight className="h-4 w-4" />
               </button>
             </div>
           </div>
@@ -535,7 +611,28 @@ export default function ChallengeList({
   );
 }
 
-/* ─── CATEGORY TAB COMPONENT ─── */
+/* ─── CATEGORY RAIL COMPONENT ───
+   Launch rails with a sliding active indicator (shared layoutId): the
+   selected rail fills with an indigo→magenta wash and glows. */
+/* ─── ANIMATED LIST ITEM ───
+   Layout-animated so filtering/pagination reshuffles glide; entrance
+   rises once per mount; exit shrinks out. All disabled for reduced motion. */
+function MotionLi({ index, children }: { index: number; children: ReactNode }) {
+  const reduceMotion = useReducedMotion();
+  return (
+    <motion.li
+      layout={!reduceMotion}
+      initial={reduceMotion ? false : { opacity: 0, y: 22 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, margin: "-20px" }}
+      exit={reduceMotion ? undefined : { opacity: 0, scale: 0.97 }}
+      transition={{ duration: 0.35, delay: reduceMotion ? 0 : (index % 9) * 0.04, ease: "easeOut" }}
+    >
+      {children}
+    </motion.li>
+  );
+}
+
 function CategoryTab({
   icon: Icon,
   label,
@@ -554,37 +651,43 @@ function CategoryTab({
   return (
     <button
       type="button"
+      role="tab"
+      aria-selected={active}
       onClick={onClick}
-      aria-pressed={active}
-      className={`group flex items-center gap-3  border p-3.5 text-left transition-all duration-200 cursor-pointer ${
+      className={`group relative flex items-center gap-3 overflow-hidden rounded-2xl border p-3.5 text-left transition-all duration-300 cursor-pointer ${
         active
-          ? "border-accent/50 bg-accent/10 "
-          : "border-border dark:border-transparent bg-surface dark:bg-[#131625] hover:bg-elevated hover:dark:bg-[#1b1f32] hover:border-border-strong"
+          ? "border-transparent text-white shadow-[0_12px_40px_-12px_rgba(139,147,255,0.6)]"
+          : "border-black/[0.06] bg-[var(--wow-card)] hover:-translate-y-0.5 hover:border-[#8b93ff]/40 dark:border-white/[0.07]"
       }`}
     >
+      {active && (
+        <motion.span
+          layoutId="cl-rail-fill"
+          transition={{ type: "spring", stiffness: 420, damping: 34 }}
+          className="absolute inset-0 bg-gradient-to-r from-[#5b5ff0] via-[#8b5cf6] to-[#d63ba8]"
+        />
+      )}
       <span
-        className={`w-9 h-9  grid place-items-center shrink-0 border transition ${
+        className={`relative grid h-9 w-9 shrink-0 place-items-center rounded-xl border transition ${
           active
-            ? "bg-accent text-bg border-accent"
-            : "bg-bg/40 border-border text-muted group-hover:text-fg"
+            ? "border-white/30 bg-white/15 text-white"
+            : "border-black/[0.06] bg-[var(--wow-stage)] text-muted group-hover:text-[var(--wow-fg)] dark:border-white/[0.07]"
         }`}
       >
-        <Icon className="w-4 h-4" />
+        <Icon className="h-4 w-4" />
       </span>
-      <span className="min-w-0">
-        <span className="flex items-center gap-2 text-sm font-bold leading-tight text-fg">
+      <span className="relative min-w-0">
+        <span className={`flex items-center gap-2 text-sm font-extrabold leading-tight ${active ? "text-white" : "text-[var(--wow-fg)]"}`}>
           <span className="truncate">{label}</span>
           <span
-            className={`shrink-0 text-[11px] font-bold tabular-nums px-1.5 py-0.5 rounded-full border ${
-              active
-                ? "bg-accent/15 text-accent border-accent/30"
-                : "bg-bg/40 text-muted border-border"
+            className={`shrink-0 rounded-full px-1.5 py-0.5 font-mono text-[11px] font-bold tabular-nums ${
+              active ? "bg-black/25 text-white" : "bg-black/[0.05] text-muted dark:bg-white/[0.07]"
             }`}
           >
             {count}
           </span>
         </span>
-        <span className="block text-[11px] text-muted truncate mt-0.5">{hint}</span>
+        <span className={`mt-0.5 block truncate text-[11px] ${active ? "text-white/70" : "text-muted"}`}>{hint}</span>
       </span>
     </button>
   );
@@ -663,14 +766,19 @@ function ChallengeCard({ item: c }: { item: ChallengeListItem }) {
   return (
     <Link
       href={`/challenges/${c.slug}`}
-      className={`group relative flex flex-col h-full  border p-5 overflow-hidden transition-all duration-300   ${
+      className={`group relative flex flex-col h-full rounded-2xl border p-5 overflow-hidden backdrop-blur-sm transition-all duration-300 hover:-translate-y-1 ${
         isPassed
-          ? "bg-emerald-500/[0.04] dark:bg-emerald-500/[0.06] border-emerald-500/40 dark:border-emerald-500/25 hover:border-emerald-500/60"
+          ? "bg-emerald-500/[0.05] dark:bg-emerald-500/[0.07] border-emerald-500/40 dark:border-emerald-500/25 hover:border-emerald-500/60 hover:shadow-[0_18px_50px_-20px_rgba(16,185,129,0.5)]"
           : c.featured
-            ? "bg-surface dark:bg-[#131625] border-accent/40 hover:border-accent/60 dark:border-accent/20 dark:hover:border-accent/40"
-            : `bg-surface dark:bg-[#131625] border-border dark:border-transparent ${t.hoverBorder}`
+            ? "bg-[var(--wow-card)] border-[#8b93ff]/40 hover:border-[#8b93ff]/60 dark:border-[#8b93ff]/25 dark:hover:border-[#8b93ff]/45 hover:shadow-[0_18px_50px_-20px_rgba(139,147,255,0.5)]"
+            : `bg-[var(--wow-card)] border-black/[0.06] dark:border-white/[0.07] ${t.hoverBorder} hover:shadow-[0_18px_50px_-20px_rgba(0,0,0,0.35)]`
       }`}
     >
+      {/* Sheen sweep */}
+      <span
+        aria-hidden
+        className="pointer-events-none absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/[0.06] to-transparent transition-transform duration-700 group-hover:translate-x-full"
+      />
       {/* Corner glow — emerald once solved, type-tinted otherwise */}
       <div
         className={`absolute -top-14 -right-14 w-36 h-36 rounded-full ${isPassed ? "bg-emerald-500/10" : t.glow} blur-3xl pointer-events-none opacity-60 group-hover:opacity-100 transition-opacity`}
@@ -689,7 +797,7 @@ function ChallengeCard({ item: c }: { item: ChallengeListItem }) {
       {/* Header: type icon tile · staff pick · status (ribbon replaces the
           pills once solved) */}
       <div className="relative flex items-start justify-between gap-3 mb-3.5">
-        <div className={`w-10 h-10  border grid place-items-center shrink-0 ${t.iconBox}`}>
+        <div className={`w-10 h-10 rounded-xl border grid place-items-center shrink-0 transition-transform duration-300 group-hover:scale-105 group-hover:-rotate-3 ${t.iconBox}`}>
           <Icon className="w-4 h-4" />
         </div>
         {!isPassed && (
@@ -711,7 +819,7 @@ function ChallengeCard({ item: c }: { item: ChallengeListItem }) {
       <div className={`relative text-[11px] font-bold uppercase tracking-[0.18em] mb-1 ${t.eyebrow}`}>
         {t.label}
       </div>
-      <h3 className={`relative font-bold text-[15px] leading-snug line-clamp-2 ${isPassed ? "text-fg/70" : "text-fg"}`}>
+      <h3 className={`relative font-extrabold text-[15px] leading-snug line-clamp-2 ${isPassed ? "text-[var(--wow-fg)]/60" : "text-[var(--wow-fg)]"}`}>
         {c.title}
       </h3>
 
@@ -720,13 +828,13 @@ function ChallengeCard({ item: c }: { item: ChallengeListItem }) {
           {c.tags.slice(0, 3).map((tag) => (
             <span
               key={tag}
-              className="px-1.5 py-0.5 rounded bg-bg/40 border border-border text-[11px] text-muted group-hover:text-fg/70 transition-colors"
+              className="px-1.5 py-0.5 rounded-md bg-black/[0.04] border border-black/[0.06] text-[11px] text-muted group-hover:text-[var(--wow-fg)]/70 transition-colors dark:bg-white/[0.05] dark:border-white/[0.07]"
             >
               #{tag}
             </span>
           ))}
           {c.tags.length > 3 && (
-            <span className="text-[11px] text-muted/60">+{c.tags.length - 3}</span>
+            <span className="font-mono text-[11px] tabular-nums text-muted/60">+{c.tags.length - 3}</span>
           )}
         </div>
       )}
@@ -734,7 +842,7 @@ function ChallengeCard({ item: c }: { item: ChallengeListItem }) {
       {/* Footer meta: difficulty · time · steps */}
       <div className="relative mt-auto pt-4 flex items-center gap-2">
         <span
-          className={`px-2 py-0.5 rounded-data border text-[11px] font-bold uppercase tracking-wider ${
+          className={`px-2 py-0.5 rounded-lg border text-[11px] font-bold uppercase tracking-wider ${
             difficultyChip[c.difficulty]
           }`}
         >
@@ -745,12 +853,12 @@ function ChallengeCard({ item: c }: { item: ChallengeListItem }) {
           {c.estimatedMinutes}m
         </span>
         {isMulti && (
-          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-data border border-accent/30 bg-accent/10 text-[11px] font-bold uppercase tracking-wider text-accent">
+          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg border border-[#8b93ff]/30 bg-[#8b93ff]/10 text-[11px] font-bold uppercase tracking-wider text-[#8b93ff]">
             <Layers className="w-2.5 h-2.5" />
             {c.stepCount}
           </span>
         )}
-        <ArrowRight className="w-3.5 h-3.5 text-muted/30 group-hover:text-fg group-hover:translate-x-0.5 transition ml-auto" />
+        <ArrowRight className="w-3.5 h-3.5 text-muted/30 group-hover:text-[var(--wow-fg)] group-hover:translate-x-0.5 transition ml-auto" />
       </div>
     </Link>
   );
@@ -765,17 +873,17 @@ function ChallengeListRow({ item: c }: { item: ChallengeListItem }) {
   return (
     <Link
       href={`/challenges/${c.slug}`}
-      className={`group relative flex flex-col sm:flex-row sm:items-center justify-between gap-4  border p-4 transition-all duration-300 ${
+      className={`group relative flex flex-col sm:flex-row sm:items-center justify-between gap-4 rounded-xl border p-4 backdrop-blur-sm transition-all duration-300 hover:translate-x-1 ${
         isPassed
-          ? "bg-emerald-500/[0.04] dark:bg-emerald-500/[0.06] border-emerald-500/40 dark:border-emerald-500/25 hover:border-emerald-500/60"
+          ? "bg-emerald-500/[0.05] dark:bg-emerald-500/[0.07] border-emerald-500/40 dark:border-emerald-500/25 hover:border-emerald-500/60"
           : c.featured
-            ? "bg-surface dark:bg-[#131625] hover:bg-elevated hover:dark:bg-[#1b1f32] border-accent/40 hover:border-accent/60 dark:border-accent/20 dark:hover:border-accent/40 "
-            : `bg-surface dark:bg-[#131625] hover:bg-elevated hover:dark:bg-[#1b1f32] border-border dark:border-transparent ${t.hoverBorder}`
+            ? "bg-[var(--wow-card)] hover:bg-[var(--wow-stage)] border-[#8b93ff]/40 hover:border-[#8b93ff]/60 dark:border-[#8b93ff]/25 dark:hover:border-[#8b93ff]/45 "
+            : `bg-[var(--wow-card)] hover:bg-[var(--wow-stage)] border-black/[0.06] dark:border-white/[0.07] ${t.hoverBorder}`
       }`}
     >
       <div className="flex items-center gap-3.5 min-w-0">
         {/* Type icon tile */}
-        <div className={`w-9 h-9 rounded-data border grid place-items-center shrink-0 ${t.iconBox}`}>
+        <div className={`w-9 h-9 rounded-lg border grid place-items-center shrink-0 transition-transform duration-300 group-hover:scale-105 ${t.iconBox}`}>
           <Icon className="w-4 h-4" />
         </div>
         <div className="min-w-0">
@@ -783,11 +891,11 @@ function ChallengeListRow({ item: c }: { item: ChallengeListItem }) {
             {t.label}
           </div>
           <div className="flex items-center gap-2 mt-0.5 flex-wrap">
-            <h3 className={`font-extrabold text-sm sm:text-base truncate ${isPassed ? "text-fg/70" : "text-fg"}`}>
+            <h3 className={`font-extrabold text-sm sm:text-base truncate ${isPassed ? "text-[var(--wow-fg)]/60" : "text-[var(--wow-fg)]"}`}>
               {c.title}
             </h3>
             {c.featured && (
-              <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full bg-accent/15 border border-accent/30 text-[11px] font-bold uppercase tracking-wider text-accent shrink-0">
+              <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full bg-[#ffe600]/10 border border-[#ffe600]/30 text-[11px] font-bold uppercase tracking-wider text-[#9a8200] dark:text-[#ffe600] shrink-0">
                 <Star className="w-2 h-2 fill-current" />
                 Staff Pick
               </span>
@@ -800,20 +908,20 @@ function ChallengeListRow({ item: c }: { item: ChallengeListItem }) {
         {c.tags.slice(0, 2).map((tag) => (
           <span
             key={tag}
-            className="hidden md:inline px-1.5 py-0.5 rounded bg-bg/40 border border-border text-[11px] text-muted"
+            className="hidden md:inline px-1.5 py-0.5 rounded-md bg-black/[0.04] border border-black/[0.06] text-[11px] text-muted dark:bg-white/[0.05] dark:border-white/[0.07]"
           >
             #{tag}
           </span>
         ))}
 
         {isMulti && (
-          <div className="inline-flex items-center gap-1 px-2 py-0.5 rounded-data border border-accent/25 bg-accent/5 text-[11px] font-bold uppercase tracking-wider text-accent shrink-0">
+          <div className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg border border-[#8b93ff]/25 bg-[#8b93ff]/[0.07] text-[11px] font-bold uppercase tracking-wider text-[#8b93ff] shrink-0">
             <Layers className="w-2.5 h-2.5" />
             {c.stepCount} steps
           </div>
         )}
 
-        <div className={`px-2 py-0.5 rounded-data border text-[11px] font-bold uppercase tracking-widest shrink-0 ${difficultyChip[c.difficulty]}`}>
+        <div className={`px-2 py-0.5 rounded-lg border text-[11px] font-bold uppercase tracking-widest shrink-0 ${difficultyChip[c.difficulty]}`}>
           {c.difficulty}
         </div>
 
@@ -823,6 +931,7 @@ function ChallengeListRow({ item: c }: { item: ChallengeListItem }) {
         </div>
 
         <StatusBadge status={c.userStatus} />
+        <ArrowRight className="hidden h-3.5 w-3.5 text-muted/30 transition-all group-hover:translate-x-0.5 group-hover:text-[var(--wow-fg)] sm:block" />
       </div>
     </Link>
   );
@@ -843,22 +952,22 @@ function FilterSelect<T extends string>({
   const active = value !== "all";
   return (
     <label
-      className={`inline-flex items-center gap-2  border pl-3 pr-2 py-2 cursor-pointer transition ${
+      className={`inline-flex cursor-pointer items-center gap-2 rounded-full border py-1.5 pl-3 pr-2 transition ${
         active
-          ? "border-accent/40 bg-accent/10"
-          : "border-border dark:border-transparent bg-surface dark:bg-[#131625]"
+          ? "border-[#8b93ff]/50 bg-[#8b93ff]/10"
+          : "border-black/[0.06] bg-[var(--wow-stage)] dark:border-white/[0.07]"
       }`}
     >
-      <span className="text-[11px] font-bold uppercase tracking-[0.15em] text-muted/60">
+      <span className="font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-muted/70">
         {label}
       </span>
       <select
         value={value}
         onChange={(e) => onChange(e.target.value as T)}
-        className="bg-transparent text-[12px] font-bold text-fg outline-none cursor-pointer"
+        className="cursor-pointer bg-transparent text-[12px] font-bold text-[var(--wow-fg)] outline-none"
       >
         {options.map((o) => (
-          <option key={o.key} value={o.key} className="bg-surface text-fg">
+          <option key={o.key} value={o.key} className="bg-white text-black dark:bg-[#131625] dark:text-white">
             {o.label}
           </option>
         ))}
@@ -867,34 +976,39 @@ function FilterSelect<T extends string>({
   );
 }
 
-/* ─── PILLBAR HELPERS ─── */
-function Pillbar<T extends string>({
-  label,
-  options,
+/* ─── DIFFICULTY SEGMENTED CONTROL ───
+   Each option lights up in its own difficulty color when active. */
+const DIFF_SEG: Record<DiffKey, { dot: string; active: string }> = {
+  all: { dot: "bg-muted", active: "bg-white text-black shadow" },
+  easy: { dot: "bg-emerald-500", active: "bg-emerald-500 text-white shadow-[0_0_18px_-4px_rgba(16,185,129,0.8)]" },
+  medium: { dot: "bg-amber-500", active: "bg-amber-500 text-white shadow-[0_0_18px_-4px_rgba(245,158,11,0.8)]" },
+  hard: { dot: "bg-rose-500", active: "bg-rose-500 text-white shadow-[0_0_18px_-4px_rgba(244,63,94,0.8)]" },
+};
+
+function DifficultySeg({
   value,
   onChange,
 }: {
-  label: string;
-  options: { key: T; label: string }[];
-  value: T;
-  onChange: (next: T) => void;
+  value: DiffKey;
+  onChange: (next: DiffKey) => void;
 }) {
   return (
-    <div className="inline-flex items-center gap-1 bg-surface dark:bg-[#131625] border border-border dark:border-transparent p-1">
-      <span className="px-2 text-[11px] font-bold uppercase tracking-[0.15em] text-muted/60">
-        {label}
+    <div className="inline-flex items-center gap-1 rounded-full border border-black/[0.06] bg-[var(--wow-stage)] p-1 dark:border-white/[0.07]" role="tablist" aria-label="Difficulty">
+      <span className="hidden px-2 font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-muted/70 sm:inline">
+        Difficulty
       </span>
-      {options.map((o) => (
+      {DIFFICULTIES.map((o) => (
         <button
           key={o.key}
           type="button"
+          role="tab"
+          aria-selected={value === o.key}
           onClick={() => onChange(o.key)}
-          className={`px-2.5 py-1 rounded-data text-[11px] font-bold transition cursor-pointer ${
-            value === o.key
-              ? "bg-accent text-bg"
-              : "text-muted hover:text-fg hover:bg-elevated"
+          className={`flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-bold transition-all cursor-pointer ${
+            value === o.key ? DIFF_SEG[o.key].active : "text-muted hover:text-[var(--wow-fg)] hover:bg-black/[0.04] dark:hover:bg-white/[0.07]"
           }`}
         >
+          <span className={`h-1.5 w-1.5 rounded-full ${value === o.key && o.key !== "all" ? "bg-white" : DIFF_SEG[o.key].dot}`} />
           {o.label}
         </button>
       ))}

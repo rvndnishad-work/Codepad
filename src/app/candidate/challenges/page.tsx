@@ -5,20 +5,19 @@ import { validatePageAccess } from "@/lib/settings";
 import ChallengeList from "../../challenges/ChallengeList";
 import TracksCarousel from "../../challenges/TracksCarousel";
 import RelativeTime from "@/components/RelativeTime";
+import WowReveal from "@/components/wow/WowReveal";
+import RogueHero from "./_wow/RogueHero";
+import FieldLogMarquee from "./_wow/FieldLogMarquee";
+import OrbitDivider from "./_wow/OrbitDivider";
 import {
   Clock,
   Layers,
   Play,
   Sparkles,
   Flame,
-  Award,
   ChevronRight,
-  Bookmark,
-  TrendingUp,
-  CalendarDays,
   CheckCircle2,
   XCircle,
-  History,
   Binary,
   Braces,
   LayoutTemplate,
@@ -268,113 +267,45 @@ export default async function CandidateChallengesPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#fafbfc] dark:bg-[#07080c] text-fg font-sans py-10 px-4 sm:px-6 lg:px-8 relative overflow-hidden transition-colors duration-300">
-      {/* Subtle grid background */}
-      <div className="absolute inset-0 bg-[linear-gradient(to_right,rgba(0,0,0,0.015)_1px,transparent_1px),linear-gradient(to_bottom,rgba(0,0,0,0.015)_1px,transparent_1px)] dark:bg-[linear-gradient(to_right,rgba(255,230,0,0.012)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,230,0,0.012)_1px,transparent_1px)] bg-[size:32px_32px] pointer-events-none" />
-      <div className="absolute top-[-10%] right-[-10%] w-[550px] h-[550px] rounded-full bg-accent/5 blur-[130px] pointer-events-none" />
+    <div className="min-h-screen bg-[var(--wow-bg)] pb-32 text-[var(--wow-fg)] transition-colors">
+      {/* ── Rogue hero ── */}
+      <RogueHero
+        firstName={firstName}
+        todayLabel={todayLabel}
+        checkedIn={checkedInToday}
+        streak={streak}
+        daily={daily ? {
+          slug: daily.slug,
+          title: daily.title,
+          difficulty: daily.difficulty,
+          minutes: daily.estimatedMinutes,
+          steps: daily.stepCount,
+          solved: dailySolved,
+        } : null}
+        nextUnsolved={nextUnsolved ? { slug: nextUnsolved.slug, title: nextUnsolved.title } : null}
+        total={items.length}
+        solvedCount={solvedCount}
+      />
 
-      <div className="mx-auto max-w-6xl space-y-10 relative z-10">
-        {/* ── 1. Greeting + today ─────────────────────────────────────── */}
-        <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3">
-          <div>
-            <div className="flex items-center gap-2 text-[11px] font-bold text-muted mb-1.5">
-              <CalendarDays className="w-3.5 h-3.5" />
-              {todayLabel}
-            </div>
-            <h1 className="text-2xl md:text-3xl font-black tracking-tight text-fg">
-              Welcome back, <span className="text-accent">{firstName}</span>
-            </h1>
-          </div>
-          {checkedInToday ? (
-            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-800 dark:text-emerald-400 text-xs font-bold w-fit">
-              <CheckCircle2 className="w-3.5 h-3.5" />
-              Checked in today
-            </span>
-          ) : (
-            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-800 dark:text-amber-400 text-xs font-bold w-fit">
-              <Flame className="w-3.5 h-3.5" />
-              Solve one challenge to keep your streak
-            </span>
-          )}
-        </div>
-
-        {/* ── 2. Daily challenge · streak · progress ──────────────────── */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-stretch">
-          {/* Daily challenge */}
-          <div className="lg:col-span-5 relative overflow-hidden rounded-2xl border border-accent/30 bg-white dark:bg-[#0f111c] p-6 flex flex-col shadow-sm">
-            <div className="absolute -top-10 -right-10 w-44 h-44 rounded-full bg-accent/10 blur-3xl pointer-events-none" />
-            <div className="flex items-center justify-between gap-2 mb-4 relative">
-              <span className="inline-flex items-center gap-1.5 text-[11px] font-black uppercase tracking-[0.18em] text-accent">
-                <Sparkles className="w-3.5 h-3.5" />
-                Today&apos;s challenge
-              </span>
-              {dailySolved && (
-                <span className="inline-flex items-center gap-1 text-[11px] font-black uppercase tracking-wider text-emerald-800 dark:text-emerald-400">
-                  <CheckCircle2 className="w-3.5 h-3.5" />
-                  Solved
-                </span>
-              )}
-            </div>
-
-            {daily ? (
-              <>
-                <h2 className="text-xl font-black tracking-tight text-fg leading-snug relative">{daily.title}</h2>
-                <div className="flex items-center gap-2 flex-wrap mt-3 relative">
-                  <span className={`px-2 py-0.5 rounded-md border text-[11px] font-bold uppercase tracking-wider bg-surface border-border ${difficultyTextColor[daily.difficulty]}`}>
-                    {daily.difficulty}
-                  </span>
-                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md border border-border bg-surface text-[11px] font-bold uppercase tracking-wider text-muted">
-                    <Clock className="w-3 h-3" />
-                    {daily.estimatedMinutes}m
-                  </span>
-                  {daily.stepCount > 1 && (
-                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md border border-accent/30 bg-accent/10 text-[11px] font-bold uppercase tracking-wider text-accent">
-                      <Layers className="w-3 h-3" />
-                      {daily.stepCount} questions
-                    </span>
-                  )}
-                </div>
-                <div className="mt-auto pt-5 flex items-center gap-3 relative">
-                  {dailySolved && nextUnsolved ? (
-                    <>
-                      <Link
-                        href={`/challenges/${nextUnsolved.slug}`}
-                        className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-accent hover:bg-accent-soft text-bg text-sm font-bold transition shadow-[0_0_16px_rgba(var(--accent-rgb),0.25)]"
-                      >
-                        <Play className="w-4 h-4 fill-current" />
-                        Try another: {nextUnsolved.title.length > 22 ? `${nextUnsolved.title.slice(0, 22)}…` : nextUnsolved.title}
-                      </Link>
-                      <span className="text-[11px] text-muted">Come back tomorrow for a new pick.</span>
-                    </>
-                  ) : (
-                    <Link
-                      href={`/challenges/${daily.slug}`}
-                      className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-accent hover:bg-accent-soft text-bg text-sm font-bold transition shadow-[0_0_16px_rgba(var(--accent-rgb),0.25)]"
-                    >
-                      <Play className="w-4 h-4 fill-current" />
-                      {dailySolved ? "Solve it again" : "Solve today's challenge"}
-                    </Link>
-                  )}
-                </div>
-              </>
-            ) : (
-              <p className="text-sm text-muted">No challenges published yet — check back soon.</p>
-            )}
-          </div>
-
+      <div className="mx-auto max-w-6xl space-y-14 px-4 pt-12">
+        {/* ── 1. Today's briefing: streak + progress ─────────────────── */}
+        <section className="space-y-5">
+          <OrbitDivider label="Today's briefing" />
+          <div className="grid grid-cols-1 gap-5 lg:grid-cols-12 items-stretch">
           {/* Streak & check-ins */}
-          <div className="lg:col-span-3 rounded-2xl border border-border dark:border-transparent bg-white dark:bg-[#0f111c] p-6 flex flex-col shadow-sm">
-            <span className="text-[11px] font-black uppercase tracking-[0.18em] text-muted mb-4">Daily streak</span>
+          <WowReveal className="lg:col-span-4">
+          <div className="flex h-full flex-col rounded-2xl border border-black/[0.06] bg-[var(--wow-card)] p-6 backdrop-blur-sm dark:border-white/[0.07]">
+            <span className="mb-4 font-mono text-[11px] font-bold uppercase tracking-[0.2em] text-muted">Daily streak</span>
             <div className="flex items-center gap-3">
-              <div className={`w-12 h-12 rounded-2xl grid place-items-center border ${streak > 0 ? "bg-orange-500/10 border-orange-500/30 text-orange-500" : "bg-surface border-border text-muted/40"}`}>
-                <Flame className={`w-6 h-6 ${streak > 0 ? "fill-current" : ""}`} />
+              <div className={`grid h-12 w-12 place-items-center rounded-2xl border ${streak > 0 ? "border-orange-500/30 bg-orange-500/10 text-orange-500" : "border-black/[0.06] bg-[var(--wow-stage)] text-muted/40 dark:border-white/[0.07]"}`}>
+                <Flame className={`h-6 w-6 ${streak > 0 ? "fill-current" : ""}`} />
               </div>
               <div>
-                <div className="text-2xl font-black font-mono text-fg leading-none">
+                <div className="font-mono text-2xl font-black leading-none text-[var(--wow-fg)] tabular-nums">
                   {streak}
-                  <span className="text-sm font-bold text-muted ml-1.5">day{streak === 1 ? "" : "s"}</span>
+                  <span className="ml-1.5 text-sm font-bold text-muted">day{streak === 1 ? "" : "s"}</span>
                 </div>
-                <div className="text-[11px] text-muted mt-1">
+                <div className="mt-1 text-[11px] text-muted">
                   {checkedInToday
                     ? "You've practiced today — nice."
                     : streak > 0
@@ -385,17 +316,17 @@ export default async function CandidateChallengesPage() {
             </div>
 
             {/* Last-7-days check-in strip (today highlighted) */}
-            <div className="mt-auto pt-5 flex items-center justify-between gap-1">
+            <div className="mt-auto flex items-center justify-between gap-1 pt-5">
               {last7.map((d, i) => (
-                <div key={i} className="flex flex-col items-center gap-1.5 flex-1">
-                  <span className={`text-[11px] font-bold ${d.isToday ? "text-accent" : "text-muted/60"}`}>{d.letter}</span>
+                <div key={i} className="flex flex-1 flex-col items-center gap-1.5">
+                  <span className={`text-[11px] font-bold ${d.isToday ? "text-[#8b93ff]" : "text-muted/60"}`}>{d.letter}</span>
                   <div
-                    className={`w-6 h-6 rounded-lg grid place-items-center text-[11px] font-black border ${
+                    className={`grid h-6 w-6 place-items-center rounded-lg border text-[11px] font-black ${
                       d.active
-                        ? "bg-orange-500/10 border-orange-500/35 text-orange-500"
+                        ? "border-orange-500/35 bg-orange-500/10 text-orange-500"
                         : d.isToday
-                          ? "bg-surface border-accent/40 border-dashed text-muted/40"
-                          : "bg-surface border-border text-muted/30"
+                          ? "border-dashed border-[#8b93ff]/50 text-muted/40"
+                          : "border-black/[0.06] text-muted/30 dark:border-white/[0.07]"
                     }`}
                   >
                     {d.active ? "✓" : "·"}
@@ -404,40 +335,41 @@ export default async function CandidateChallengesPage() {
               ))}
             </div>
           </div>
+          </WowReveal>
 
-          {/* Solved progress (LeetCode-style ring + difficulty split) */}
-          <div className="lg:col-span-4 rounded-2xl border border-border dark:border-transparent bg-white dark:bg-[#0f111c] p-6 flex items-center gap-6 shadow-sm">
+          {/* Solved progress (ring + difficulty split) */}
+          <WowReveal delay={0.08} className="lg:col-span-8">
+          <div className="flex h-full flex-col items-center gap-6 rounded-2xl border border-black/[0.06] bg-[var(--wow-card)] p-6 backdrop-blur-sm dark:border-white/[0.07] sm:flex-row">
             <div className="relative shrink-0 grid place-items-center">
-              <svg className="w-28 h-28 -rotate-90" viewBox="0 0 120 120">
-                <circle cx="60" cy="60" r="48" fill="none" className="stroke-slate-200 dark:stroke-[#202334]" strokeWidth="9" />
+              <svg className="h-28 w-28 -rotate-90" viewBox="0 0 120 120">
+                <circle cx="60" cy="60" r="48" fill="none" className="stroke-black/10 dark:stroke-white/10" strokeWidth="9" />
                 <circle
                   cx="60"
                   cy="60"
                   r="48"
-                  fill="none"
-                  className="stroke-accent"
+                  fill="none" stroke="#8b93ff"
                   strokeWidth="9"
                   strokeDasharray={2 * Math.PI * 48}
                   strokeDashoffset={2 * Math.PI * 48 * (1 - Math.max(0.02, solvedPct))}
                   strokeLinecap="round"
-                  style={{ filter: "drop-shadow(0 0 6px rgba(var(--accent-rgb), 0.4))" }}
+                  style={{ filter: "drop-shadow(0 0 6px rgba(139,147,255,0.4))" }}
                 />
               </svg>
               <div className="absolute inset-0 flex flex-col items-center justify-center">
-                <span className="text-xl font-black font-mono text-fg leading-none">{solvedCount}</span>
-                <span className="text-[11px] font-bold text-muted mt-0.5">/ {items.length} solved</span>
+                <span className="font-mono text-xl font-black leading-none text-[var(--wow-fg)] tabular-nums">{solvedCount}</span>
+                <span className="mt-0.5 text-[11px] font-bold text-muted">/ {items.length} solved</span>
               </div>
             </div>
-            <div className="flex-1 min-w-0 space-y-3">
+            <div className="w-full min-w-0 flex-1 space-y-3">
               {byDifficulty.map((d) => (
                 <div key={d.key}>
-                  <div className="flex justify-between text-[11px] font-bold mb-1">
+                  <div className="mb-1 flex justify-between text-[11px] font-bold">
                     <span className={`uppercase tracking-wider ${difficultyTextColor[d.key]}`}>{d.key}</span>
-                    <span className="font-mono text-muted">
-                      <span className="text-fg">{d.solved}</span> / {d.total}
+                    <span className="font-mono tabular-nums text-muted">
+                      <span className="text-[var(--wow-fg)]">{d.solved}</span> / {d.total}
                     </span>
                   </div>
-                  <div className="w-full h-1.5 rounded-full bg-slate-200 dark:bg-[#202334] overflow-hidden">
+                  <div className="h-1.5 w-full overflow-hidden rounded-full bg-black/[0.06] dark:bg-white/[0.07]">
                     <div
                       className={`h-full rounded-full ${difficultyBarColor[d.key]}`}
                       style={{ width: d.total > 0 ? `${Math.round((d.solved / d.total) * 100)}%` : "0%" }}
@@ -447,139 +379,131 @@ export default async function CandidateChallengesPage() {
               ))}
             </div>
           </div>
+          </WowReveal>
         </div>
+        </section>
 
-        {/* ── 3. Progress by category ─────────────────────────────────── */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
-          {byKind.map((k) => {
+        {/* ── 2. Progress by category ─────────────────────────────────── */}
+        <section className="grid grid-cols-1 gap-5 sm:grid-cols-3">
+          {byKind.map((k, i) => {
             const Icon = k.icon;
             const pct = k.total > 0 ? Math.round((k.solved / k.total) * 100) : 0;
             return (
+              <WowReveal key={k.key} delay={i * 0.07} className="h-full">
               <Link
-                key={k.key}
                 href="/challenges"
-                className="group rounded-2xl border border-border dark:border-transparent bg-white dark:bg-[#0f111c] p-5 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all"
+                className="group flex h-full flex-col rounded-2xl border border-black/[0.06] bg-[var(--wow-card)] p-5 backdrop-blur-sm transition-all duration-300 hover:-translate-y-1 hover:border-[#8b93ff]/40 hover:shadow-[0_18px_50px_-20px_rgba(139,147,255,0.45)] dark:border-white/[0.07]"
               >
-                <div className="flex items-center justify-between gap-2 mb-3">
-                  <span className={`inline-flex items-center gap-1.5 px-2 py-1 rounded-lg border text-[11px] font-black uppercase tracking-wider ${k.chip}`}>
-                    <Icon className="w-3.5 h-3.5" />
+                <div className="mb-3 flex items-center justify-between gap-2">
+                  <span className={`inline-flex items-center gap-1.5 rounded-lg border px-2 py-1 text-[11px] font-black uppercase tracking-wider ${k.chip}`}>
+                    <Icon className="h-3.5 w-3.5" />
                     {k.label}
                   </span>
-                  <ArrowRight className="w-3.5 h-3.5 text-muted/40 group-hover:text-fg group-hover:translate-x-0.5 transition" />
+                  <ArrowRight className="h-3.5 w-3.5 text-muted/40 transition group-hover:translate-x-0.5 group-hover:text-[var(--wow-fg)]" />
                 </div>
-                <div className="flex items-baseline justify-between mb-1.5">
-                  <span className="text-lg font-black font-mono text-fg">
+                <div className="mb-1.5 flex items-baseline justify-between">
+                  <span className="font-mono text-lg font-black tabular-nums text-[var(--wow-fg)]">
                     {k.solved}
                     <span className="text-xs font-bold text-muted"> / {k.total}</span>
                   </span>
-                  <span className="text-[11px] font-bold text-muted font-mono">{pct}%</span>
+                  <span className="font-mono text-[11px] font-bold tabular-nums text-muted">{pct}%</span>
                 </div>
-                <div className="w-full h-1.5 rounded-full bg-slate-200 dark:bg-[#202334] overflow-hidden">
+                <div className="h-1.5 w-full overflow-hidden rounded-full bg-black/[0.06] dark:bg-white/[0.07]">
                   <div className={`h-full rounded-full ${k.bar}`} style={{ width: `${pct}%` }} />
                 </div>
               </Link>
+              </WowReveal>
             );
           })}
-        </div>
+        </section>
 
-        {/* ── 4. Continue where you left off ──────────────────────────── */}
+        {/* ── 3. Continue where you left off ──────────────────────────── */}
         {continueCards.length > 0 && (
-          <div className="space-y-5">
-            <div className="flex items-center justify-between border-b border-border/40 dark:border-border/10 pb-3">
-              <h2 className="text-[11px] font-black uppercase tracking-[0.2em] text-accent flex items-center gap-2">
-                <TrendingUp className="w-3.5 h-3.5" />
-                Continue where you left off
-              </h2>
-              <span className="text-[11px] text-muted font-mono tracking-wider bg-white dark:bg-[#0f111c] border border-border/40 dark:border-transparent px-3 py-1 rounded-full shadow-sm">
-                {continueCards.length} in progress
-              </span>
-            </div>
+          <section className="space-y-5">
+            <OrbitDivider label={`Continue · ${continueCards.length} in progress`} />
 
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-              {continueCards.map((c) => (
+              {continueCards.map((c, i) => (
+                <WowReveal key={c.slug} delay={i * 0.07} className="h-full">
                 <Link
-                  key={c.slug}
                   href={`/challenges/${c.slug}/attempt${c.isMulti ? `?step=${c.resumeStep}` : ""}`}
-                  className="group relative rounded-2xl border border-slate-100 dark:border-transparent bg-white dark:bg-[#121526] hover:dark:bg-[#161a30] p-5 transition-all duration-300 flex flex-col justify-between shadow-sm hover:shadow-md hover:-translate-y-0.5 overflow-hidden"
+                  className="group relative rounded-2xl border border-black/[0.06] bg-[var(--wow-card)] p-5 transition-all duration-300 flex flex-col justify-between backdrop-blur-sm overflow-hidden h-full hover:-translate-y-1 hover:border-[#8b93ff]/40 hover:shadow-[0_18px_50px_-20px_rgba(139,147,255,0.45)] dark:border-white/[0.07]"
                 >
-                  <div className="absolute top-0 right-0 w-24 h-24 bg-accent/5 rounded-full blur-2xl pointer-events-none" />
+                  <div className="absolute top-0 right-0 w-24 h-24 bg-[#8b93ff]/10 rounded-full blur-2xl pointer-events-none" />
 
                   <div className="space-y-4">
                     <div className="flex items-center justify-between gap-3 relative z-10">
-                      <div className="w-8 h-8 rounded-lg bg-accent/10 dark:bg-accent/15 border border-accent/20 dark:border-transparent flex items-center justify-center text-accent shrink-0 group-hover:scale-105 transition-transform">
-                        <Play className="w-3 h-3 text-accent fill-current translate-x-0.5" />
+                      <div className="w-8 h-8 rounded-lg bg-[#8b93ff]/10 border border-[#8b93ff]/25 flex items-center justify-center text-[#8b93ff] shrink-0 group-hover:scale-105 transition-transform">
+                        <Play className="w-3 h-3 fill-current translate-x-px" />
                       </div>
 
                       {c.isMulti ? (
-                        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-accent/10 border border-accent/20 text-[11px] font-black uppercase tracking-wider text-accent font-mono">
+                        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-[#8b93ff]/10 border border-[#8b93ff]/25 text-[11px] font-black uppercase tracking-wider text-[#8b93ff] font-mono">
                           <Layers className="w-2.5 h-2.5" />
                           {c.total} Steps
                         </span>
                       ) : (
-                        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-slate-100 dark:bg-[#202334] text-[11px] font-bold uppercase tracking-wider text-muted font-mono">
+                        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-[var(--wow-stage)] text-[11px] font-bold uppercase tracking-wider text-muted font-mono">
                           Single round
                         </span>
                       )}
 
-                      <span className="text-[11px] font-black uppercase px-2 py-0.5 rounded bg-slate-100 dark:bg-[#1c1f32] text-muted font-mono tracking-wider ml-auto">
+                      <span className="text-[11px] font-black uppercase px-2 py-0.5 rounded bg-[var(--wow-stage)] text-muted font-mono tracking-wider ml-auto">
                         {c.difficulty}
                       </span>
                     </div>
 
-                    <h3 className="font-extrabold text-fg text-sm leading-snug line-clamp-2 group-hover:text-accent transition-colors">
+                    <h3 className="font-extrabold text-[var(--wow-fg)] text-sm leading-snug line-clamp-2 group-hover:text-[#8b93ff] transition-colors">
                       {c.title}
                     </h3>
                   </div>
 
                   {c.isMulti ? (
-                    <div className="mt-6 pt-4 border-t border-border/40 dark:border-transparent relative z-10">
+                    <div className="mt-6 pt-4 border-t border-black/[0.06] dark:border-white/[0.07] relative z-10">
                       <div className="flex items-center justify-between text-[11px] text-muted font-mono font-bold mb-2">
                         <span className="uppercase tracking-wider">Solved steps</span>
-                        <span className="text-fg font-black">{c.passed} / {c.total}</span>
+                        <span className="text-[var(--wow-fg)] font-black tabular-nums">{c.passed} / {c.total}</span>
                       </div>
-                      <div className="w-full h-1.5 rounded-full bg-slate-100 dark:bg-[#202334] overflow-hidden">
+                      <div className="w-full h-1.5 rounded-full bg-black/[0.06] dark:bg-white/[0.07] overflow-hidden">
                         <div
-                          className="h-full bg-accent rounded-full transition-all duration-500 shadow-[0_0_8px_rgba(var(--accent-rgb),0.4)]"
+                          className="h-full bg-gradient-to-r from-[#8b93ff] to-[#22d3ee] rounded-full transition-all duration-500"
                           style={{ width: `${(c.passed / c.total) * 100}%` }}
                         />
                       </div>
                     </div>
                   ) : (
-                    <div className="mt-6 pt-4 border-t border-border/40 dark:border-transparent relative z-10 flex items-center justify-between text-[11px] text-muted font-mono font-bold">
+                    <div className="mt-6 pt-4 border-t border-black/[0.06] dark:border-white/[0.07] relative z-10 flex items-center justify-between text-[11px] text-muted font-mono font-bold">
                       <span className="uppercase tracking-widest">Resume</span>
-                      <ChevronRight className="w-3.5 h-3.5 text-accent transition-transform group-hover:translate-x-1" />
+                      <ChevronRight className="w-3.5 h-3.5 text-[#8b93ff] transition-transform group-hover:translate-x-1" />
                     </div>
                   )}
                 </Link>
+                </WowReveal>
               ))}
             </div>
-          </div>
+          </section>
         )}
 
-        {/* ── 5. Recent activity ──────────────────────────────────────── */}
+        {/* ── 4. Recent activity ──────────────────────────────────────── */}
         {recentAttempts.length > 0 && (
-          <div className="space-y-5">
-            <div className="flex items-center justify-between border-b border-border/40 dark:border-border/10 pb-3">
-              <h2 className="text-[11px] font-black uppercase tracking-[0.2em] text-accent flex items-center gap-2">
-                <History className="w-3.5 h-3.5" />
-                Recent activity
-              </h2>
-            </div>
-            <ul className="rounded-2xl border border-border dark:border-transparent bg-white dark:bg-[#0f111c] divide-y divide-border/40 dark:divide-border/10 shadow-sm overflow-hidden">
+          <section className="space-y-5">
+            <OrbitDivider label="Recent activity" />
+            <WowReveal>
+            <ul className="rounded-2xl border border-black/[0.06] bg-[var(--wow-card)] backdrop-blur-sm divide-y divide-black/[0.06] dark:divide-white/[0.06] dark:border-white/[0.07] overflow-hidden">
               {recentAttempts.map((a) => (
                 <li key={a.id}>
                   <Link
                     href={`/challenges/${a.challenge.slug}`}
-                    className="flex items-center gap-3 px-4 py-3 hover:bg-elevated/50 transition"
+                    className="flex items-center gap-3 px-4 py-3 transition hover:bg-[var(--wow-stage)]"
                   >
                     {a.status === "passed" ? (
-                      <CheckCircle2 className="w-4 h-4 text-emerald-800 dark:text-emerald-400 shrink-0" />
+                      <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
                     ) : a.status === "failed" ? (
                       <XCircle className="w-4 h-4 text-rose-500/70 shrink-0" />
                     ) : (
                       <span className="w-4 h-4 rounded-full border-2 border-amber-500 shrink-0" />
                     )}
-                    <span className="text-sm font-bold text-fg truncate">{a.challenge.title}</span>
+                    <span className="text-sm font-bold text-[var(--wow-fg)] truncate">{a.challenge.title}</span>
                     <span className="text-[11px] font-black uppercase tracking-wider text-muted/70 shrink-0">
                       {a.status.replace("_", " ")}
                     </span>
@@ -595,21 +519,17 @@ export default async function CandidateChallengesPage() {
                 </li>
               ))}
             </ul>
-          </div>
+            </WowReveal>
+          </section>
         )}
 
-        {/* ── 6. Staff picks ──────────────────────────────────────────── */}
+        {/* ── 5. Staff picks ──────────────────────────────────────────── */}
         {featuredChallenges.length > 0 && (
-          <div className="space-y-5">
-            <div className="flex items-center justify-between border-b border-border/40 dark:border-border/10 pb-3">
-              <h2 className="text-[11px] font-black uppercase tracking-[0.2em] text-accent flex items-center gap-2">
-                <Bookmark className="w-3.5 h-3.5 fill-current" />
-                Staff picks
-              </h2>
-            </div>
+          <section className="space-y-5">
+            <OrbitDivider label="Staff picks" />
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-stretch">
-              {featuredChallenges.map((c) => {
+              {featuredChallenges.map((c, i) => {
                 const isMulti = c._count.steps > 1;
                 const teaserText = c.description
                   .replace(/^\s*#{1,6}\s.*$/gm, "")
@@ -619,36 +539,36 @@ export default async function CandidateChallengesPage() {
                   .slice(0, 120) + "…";
 
                 return (
+                  <WowReveal key={c.id} delay={i * 0.07} className="h-full">
                   <Link
-                    key={c.id}
                     href={`/challenges/${c.slug}`}
-                    className="group relative flex flex-col justify-between overflow-hidden rounded-2xl p-5 transition-all duration-300 shadow-sm hover:-translate-y-0.5 bg-white dark:bg-[#14182b] hover:dark:bg-[#181d35] border border-border dark:border-transparent"
+                    className="group relative flex flex-col justify-between overflow-hidden rounded-2xl p-5 transition-all duration-300 hover:-translate-y-1 bg-[var(--wow-card)] border border-black/[0.06] dark:border-white/[0.07] backdrop-blur-sm hover:border-[#ffe600]/50 hover:shadow-[0_18px_50px_-20px_rgba(255,230,0,0.3)] h-full"
                   >
                     <div
-                      className="absolute -top-12 -right-12 w-40 h-40 rounded-full bg-accent/5 blur-3xl pointer-events-none"
+                      className="absolute -top-12 -right-12 w-40 h-40 rounded-full bg-[#ffe600]/[0.07] blur-3xl pointer-events-none"
                       aria-hidden
                     />
 
                     <div className="space-y-4 flex-1 flex flex-col justify-between">
                       <div>
                         <div className="relative flex items-center gap-2.5 mb-3.5">
-                          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-accent/10 border border-accent/25 text-[11px] font-black uppercase tracking-widest text-accent font-mono">
+                          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-[#ffe600]/10 border border-[#ffe600]/30 text-[11px] font-black uppercase tracking-widest text-[#9a8200] dark:text-[#ffe600] font-mono">
                             <Sparkles className="w-2.5 h-2.5" />
                             {c.difficulty}
                           </span>
                           {isMulti && (
-                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-slate-100 dark:bg-[#202334] text-[11px] font-bold uppercase tracking-wider text-muted font-mono">
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-[var(--wow-stage)] text-[11px] font-bold uppercase tracking-wider text-muted font-mono">
                               <Layers className="w-2.5 h-2.5" />
                               {c._count.steps} Steps
                             </span>
                           )}
-                          <span className="ml-auto inline-flex items-center gap-1 text-[11px] font-bold text-muted/70 font-mono tracking-wide">
+                          <span className="ml-auto inline-flex items-center gap-1 text-[11px] font-bold text-muted/70 font-mono tracking-wide tabular-nums">
                             <Clock className="w-3 h-3 text-muted/50" />
                             {c.estimatedMinutes}m
                           </span>
                         </div>
 
-                        <h3 className="relative font-extrabold text-fg text-base tracking-tight leading-snug line-clamp-2 mb-2 group-hover:text-accent transition-colors">
+                        <h3 className="relative font-extrabold text-[var(--wow-fg)] text-base tracking-tight leading-snug line-clamp-2 mb-2 group-hover:text-[#9a8200] dark:group-hover:text-[#ffe600] transition-colors">
                           {c.title}
                         </h3>
 
@@ -658,43 +578,42 @@ export default async function CandidateChallengesPage() {
                       </div>
                     </div>
 
-                    <div className="relative inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-accent text-bg text-[11px] font-black tracking-widest uppercase w-fit group-hover:bg-accent-soft transition-colors shadow shadow-accent/25 mt-auto">
-                      <Play className="w-3 h-3 fill-current translate-x-0.5" />
+                    <div className="relative inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-white text-black text-[11px] font-black tracking-widest uppercase w-fit transition group-hover:scale-105 mt-auto">
+                      <Play className="w-3 h-3 fill-current translate-x-px" />
                       Start challenge
                     </div>
                   </Link>
+                  </WowReveal>
                 );
               })}
             </div>
-          </div>
+          </section>
         )}
 
-        {/* ── 7. Career tracks ────────────────────────────────────────── */}
-        <div className="pt-2">
+        {/* ── Field log: signals from real practice ── */}
+        <section className="space-y-5">
+          <OrbitDivider label="Field log" />
+          <FieldLogMarquee />
+        </section>
+
+        {/* ── 6. Career tracks ────────────────────────────────────────── */}
+        <section className="space-y-5 pt-2">
+          <OrbitDivider label="Career tracks" />
           <TracksCarousel items={items} signedIn={!!userId} />
-        </div>
+        </section>
 
-        {/* ── 8. Full catalog ─────────────────────────────────────────── */}
-        <div className="space-y-5 pt-4">
-          <div className="flex items-center justify-between border-b border-border/40 dark:border-border/10 pb-3">
-            <h2 className="text-[11px] font-black uppercase tracking-[0.2em] text-accent flex items-center gap-2">
-              <Award className="w-3.5 h-3.5" />
-              All challenges
-            </h2>
-            <span className="text-[11px] text-muted font-mono tracking-wider bg-white dark:bg-[#0f111c] border border-border/40 dark:border-transparent px-3 py-1 rounded-full shadow-sm">
-              {items.length} available
-            </span>
-          </div>
+        {/* ── 7. Full catalog ─────────────────────────────────────────── */}
+        <section id="catalog" className="scroll-mt-24 space-y-5 pt-4">
+          <OrbitDivider label={`Full catalog · ${items.length} available`} />
 
-          <div className="bg-slate-50/50 dark:bg-[#0c0d15] rounded-3xl p-4 sm:p-6 border border-border/40 dark:border-transparent transition-all duration-300">
+          <div className="rounded-3xl border border-black/[0.06] bg-[var(--wow-card)] p-4 backdrop-blur-sm transition-all duration-300 dark:border-white/[0.07] sm:p-6">
             <ChallengeList items={items} signedIn={!!userId} />
           </div>
-        </div>
+        </section>
       </div>
     </div>
   );
 }
-
 function parseTags(raw: string | null): string[] {
   if (!raw) return [];
   try {

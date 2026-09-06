@@ -31,6 +31,22 @@ ${c.returnType === "void" ? "" : "  return undefined as any;\n"}}
   genDriver(c: Contract): string {
     return `
 declare const require: any;
+// Console capture: candidate prints are buffered and flushed AFTER the case
+// result lines (tagged __JLOG__), so stray prints can neither shift case
+// alignment nor vanish — the client renders them in a Console tab.
+const __jlogOrig: (...a: any[]) => void = console.log.bind(console);
+const __jlogs: string[] = [];
+const __jfmt = (x: any): string => {
+  if (typeof x === "string") return x;
+  try {
+    const s = JSON.stringify(x);
+    return s === undefined ? String(x) : s;
+  } catch {
+    return String(x);
+  }
+};
+for (const __m of ["log", "info", "warn", "error", "debug"])
+  (console as any)[__m] = (...__a: any[]) => { __jlogs.push("[" + __m + "] " + __a.map(__jfmt).join(" ")); };
 const __cases: any[] = JSON.parse(require("fs").readFileSync(0, "utf8"));
 const __out: string[] = [];
 for (const __c of __cases) {
@@ -40,7 +56,8 @@ for (const __c of __cases) {
     __out.push(JSON.stringify({ __judge_error__: String((__e && __e.message) || __e) }));
   }
 }
-console.log(__out.join("\\n"));
+__jlogOrig(__out.join("\\n"));
+for (const __l of __jlogs) __jlogOrig("__JLOG__" + JSON.stringify(__l));
 `;
   },
 };

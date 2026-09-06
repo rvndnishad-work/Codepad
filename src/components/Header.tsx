@@ -47,7 +47,7 @@ export default async function Header() {
       category: "Practice & Code",
     },
     {
-      href: "/candidate/playgrounds",
+      href: "/playgrounds",
       label: "Playgrounds",
       description: "Zero-setup whiteboard code sandboxes.",
       iconName: "Box" as const,

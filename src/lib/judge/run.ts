@@ -51,6 +51,9 @@ export type JudgeResult = {
   score: number;
   compileError?: boolean;
   stderr?: string;
+  /** Candidate console output captured by the driver (`__JLOG__` lines),
+   *  in emission order. Only dynamic harnesses (JS/TS/Python) capture. */
+  logs: string[];
 };
 
 const judgeSem = new Semaphore(Number(process.env.JUDGE_MAX_CONCURRENT ?? 4));
@@ -70,6 +73,9 @@ export type BatchOutcome = {
   compileError?: boolean;
   stderr?: string;
   signal?: string | null;
+  /** Captured candidate console lines (`__JLOG__`-tagged trailer lines),
+   *  capped for payload safety. Empty when the harness doesn't capture. */
+  logs: string[];
 };
 
 /**
@@ -90,16 +96,31 @@ export async function executeBatch(
   // Defensive cap on the (author-controlled) batch payload.
   const MAX_BATCH_BYTES = 1024 * 1024;
   if (Buffer.byteLength(batchInput, "utf8") > MAX_BATCH_BYTES) {
-    return { outputs: argsList.map(() => ({ raw: null, error: "Test batch too large." })), stderr: "Test batch exceeds size limit." };
+    return { outputs: argsList.map(() => ({ raw: null, error: "Test batch too large." })), stderr: "Test batch exceeds size limit.", logs: [] };
   }
 
   const run = await judgeSem.run(() => runOnPiston(language, program, batchInput));
 
   if (run.compileError) {
-    return { outputs: argsList.map(() => ({ raw: null })), compileError: true, stderr: run.stderr };
+    return { outputs: argsList.map(() => ({ raw: null })), compileError: true, stderr: run.stderr, logs: [] };
   }
 
   const lines = splitDriverOutput(run.stdout);
+  // Trailer lines tagged __JLOG__ carry buffered candidate prints (emitted
+  // after the case lines, so alignment above is untouched). Cap the take.
+  const JLOG_TAG = "__JLOG__";
+  const logs = lines
+    .slice(argsList.length)
+    .filter((l) => l.startsWith(JLOG_TAG))
+    .slice(0, 200)
+    .map((l) => {
+      const payload = l.slice(JLOG_TAG.length);
+      try {
+        return String(JSON.parse(payload)).slice(0, 2000);
+      } catch {
+        return payload.slice(0, 2000);
+      }
+    });
   const outputs: CaseOutput[] = argsList.map((_, i) => {
     const line = lines[i] ?? null;
     if (line == null) {
@@ -120,7 +141,7 @@ export async function executeBatch(
       return { raw: line, error: `Unparseable output: ${line.slice(0, 200)}` };
     }
   });
-  return { outputs, stderr: run.stderr, signal: run.signal };
+  return { outputs, logs, stderr: run.stderr, signal: run.signal };
 }
 
 export async function judge(opts: {
@@ -147,6 +168,7 @@ export async function judge(opts: {
       score: 0,
       compileError: true,
       stderr: batch.stderr,
+      logs: [],
     };
   }
 
@@ -194,5 +216,5 @@ export async function judge(opts: {
         ? Math.round((passed / cases.length) * 100)
         : 0;
 
-  return { results, passed, total: cases.length, score, stderr: batch.stderr };
+  return { results, passed, total: cases.length, score, stderr: batch.stderr, logs: batch.logs };
 }

@@ -1,6 +1,20 @@
 import { vi } from "vitest";
 import "@testing-library/jest-dom/vitest";
 
+// jsdom has no matchMedia — stub it so GSAP/reduced-motion branches run.
+if (typeof window !== "undefined" && typeof window.matchMedia !== "function") {
+  window.matchMedia = ((query: string) => ({
+    matches: false,
+    media: query,
+    onchange: null,
+    addEventListener: () => {},
+    removeEventListener: () => {},
+    addListener: () => {},
+    removeListener: () => {},
+    dispatchEvent: () => false,
+  }) as unknown as MediaQueryList) as typeof window.matchMedia;
+}
+
 // Mock Next.js Navigation hooks
 vi.mock("next/navigation", () => {
   return {

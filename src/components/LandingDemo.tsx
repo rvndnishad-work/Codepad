@@ -1,11 +1,11 @@
 "use client";
 
 import {
-  SandpackProvider,
   SandpackLayout,
   SandpackCodeEditor,
   SandpackPreview,
 } from "@codesandbox/sandpack-react";
+import ShimmedSandpackProvider from "./ShimmedSandpackProvider";
 import { atomDark } from "@codesandbox/sandpack-themes";
 import { useEffect, useRef, useState } from "react";
 
@@ -116,7 +116,7 @@ export default function LandingDemo() {
         </div>
         <div style={{ height: 380 }} className="bg-[#1e1e1e]">
           {active ? (
-            <SandpackProvider
+            <ShimmedSandpackProvider
               theme={atomDark}
               template="react"
               files={FILES}
@@ -137,7 +137,7 @@ export default function LandingDemo() {
                   style={{ height: "100%" }}
                 />
               </SandpackLayout>
-            </SandpackProvider>
+            </ShimmedSandpackProvider>
           ) : (
             <div className="h-full grid place-items-center text-xs text-muted">
               Loading sandbox…

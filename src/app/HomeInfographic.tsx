@@ -20,6 +20,7 @@ import {
   Users
 } from "lucide-react";
 import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
+import { REACT_VERSION } from "@/lib/templates";
 import RevealOnScroll, { RevealItem } from "@/components/scroll/RevealOnScroll";
 import Lazy3D from "@/components/home/Lazy3D";
 
@@ -622,7 +623,7 @@ function VFSSimulator() {
               <div>{"{"}</div>
               <div className="pl-3"><span className="text-emerald-400">&quot;name&quot;</span>: <span className="text-amber-400">&quot;codepad-sandbox&quot;</span>,</div>
               <div className="pl-3"><span className="text-emerald-400">&quot;dependencies&quot;</span>: {"{"}</div>
-              <div className="pl-6"><span className="text-emerald-400">&quot;react&quot;</span>: <span className="text-amber-400">&quot;^19.0.0&quot;</span></div>
+              <div className="pl-6"><span className="text-emerald-400">&quot;react&quot;</span>: <span className="text-amber-400">&quot;{REACT_VERSION}&quot;</span></div>
               <div className="pl-3">{"}"}</div>
               <div>{"}"}</div>
             </div>

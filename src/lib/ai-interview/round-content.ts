@@ -13,7 +13,7 @@
  */
 
 import { prisma } from "@/lib/prisma";
-import { templates } from "@/lib/templates";
+import { templates, REACT_SANDBOX_DEPS } from "@/lib/templates";
 import { resolveTemplate } from "./template-resolver";
 import { resolveSessionRounds, type SessionRound, type Paradigm } from "./rounds";
 
@@ -53,7 +53,7 @@ export const REACT_SANDBOX_BASE: Record<string, string> = {
   "/index.js": `import React, { StrictMode } from "react";\nimport { createRoot } from "react-dom/client";\nimport "./styles.css";\n\nimport App from "./App";\n\nconst root = createRoot(document.getElementById("root"));\nroot.render(\n  <StrictMode>\n    <App />\n  </StrictMode>\n);`,
   "/public/index.html": `<!DOCTYPE html>\n<html lang="en">\n  <head>\n    <meta charset="UTF-8">\n    <meta name="viewport" content="width=device-width, initial-scale=1.0">\n    <title>Document</title>\n  </head>\n  <body>\n    <div id="root"></div>\n  </body>\n</html>`,
   "/package.json": JSON.stringify({
-    dependencies: { react: "^19.0.0", "react-dom": "^19.0.0", "react-scripts": "^5.0.0" },
+    dependencies: { ...REACT_SANDBOX_DEPS },
     main: "/index.js",
   }),
   "/styles.css": `body {\n  font-family: sans-serif;\n  -webkit-font-smoothing: auto;\n  -moz-font-smoothing: auto;\n  -moz-osx-font-smoothing: grayscale;\n  font-smoothing: auto;\n  text-rendering: optimizeLegibility;\n  font-smooth: always;\n  -webkit-tap-highlight-color: transparent;\n  -webkit-touch-callout: none;\n}\n\nh1 {\n  font-size: 1.5rem;\n}`,

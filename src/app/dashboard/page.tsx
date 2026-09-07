@@ -1,6 +1,7 @@
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { redirect } from "next/navigation";
+import GalaxyBackdrop from "./galaxy/GalaxyBackdrop";
 import DashboardHero from "./DashboardHero";
 import DashboardJourney from "./DashboardJourney";
 import DashboardStats from "./DashboardStats";
@@ -218,35 +219,39 @@ export default async function DashboardPage() {
   });
 
   return (
-    <div className="mx-auto max-w-7xl px-4 py-8 md:py-12">
-      <DashboardHero userName={session.user?.name ?? null} />
+    // Milky Way command deck is a dark-space experience in every theme.
+    <div className="dark relative min-h-screen bg-[#02030a]">
+      <GalaxyBackdrop />
+      <div className="relative z-10 mx-auto max-w-7xl px-4 py-8 md:py-12">
+        <DashboardHero userName={session.user?.name ?? null} />
 
-      <DashboardJourney userId={userId} />
+        <DashboardJourney userId={userId} />
 
-      <DashboardStats stats={stats} />
+        <DashboardStats stats={stats} />
 
-      <DashboardCreatorFeed userId={userId} />
+        <DashboardCreatorFeed userId={userId} />
 
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-        <div className="lg:col-span-8">
-          <DashboardWorkspace
-            snippets={snippets}
-            blogs={blogs}
-            challenges={challenges}
-            following={feedSnippets.map(mapToFeed)}
-            trending={trendingSnippets.map(mapToFeed)}
-          />
+        <div id="gx-deck" className="grid grid-cols-1 lg:grid-cols-12 gap-8 scroll-mt-8">
+          <div className="lg:col-span-8">
+            <DashboardWorkspace
+              snippets={snippets}
+              blogs={blogs}
+              challenges={challenges}
+              following={feedSnippets.map(mapToFeed)}
+              trending={trendingSnippets.map(mapToFeed)}
+            />
+          </div>
+          <aside className="lg:col-span-4 space-y-8">
+            <DashboardSidebar
+              workspaces={myWorkspaces.map((m) => ({
+                name: m.workspace.name,
+                slug: m.workspace.slug,
+                plan: m.workspace.planName,
+              }))}
+              takeHomes={myTakeHomes}
+            />
+          </aside>
         </div>
-        <aside className="lg:col-span-4 space-y-8">
-          <DashboardSidebar
-            workspaces={myWorkspaces.map((m) => ({
-              name: m.workspace.name,
-              slug: m.workspace.slug,
-              plan: m.workspace.planName,
-            }))}
-            takeHomes={myTakeHomes}
-          />
-        </aside>
       </div>
     </div>
   );

@@ -11,6 +11,8 @@
  * plenty.
  */
 
+import { REACT_SANDBOX_DEPS } from "@/lib/templates";
+
 export type FileDiff = {
   path: string;
   /** Lines the candidate added (excluding starter content). */
@@ -75,7 +77,7 @@ function isJsonEqual(a: string, b: string): boolean {
 // Package.json boilerplate is JSON-stringified without pretty-print in some sandpack versions.
 // Add explicit entry for detection via parsed compare above; keep raw string for completeness.
 SANDBOX_BOILERPLATE["/package.json"] = JSON.stringify({
-  dependencies: { react: "^19.0.0", "react-dom": "^19.0.0", "react-scripts": "^5.0.0" },
+  dependencies: { ...REACT_SANDBOX_DEPS },
   main: "/index.js",
 });
 

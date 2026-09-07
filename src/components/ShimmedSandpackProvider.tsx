@@ -3,6 +3,7 @@
 import { useMemo } from "react";
 import { SandpackProvider, type SandpackFiles } from "@codesandbox/sandpack-react";
 import { buildNodeBuiltinShims } from "@/lib/node-builtin-shims";
+import { REACT_TEMPLATE_DEPS } from "@/lib/templates";
 
 type SandpackProviderProps = React.ComponentProps<typeof SandpackProvider>;
 
@@ -32,8 +33,22 @@ export default function ShimmedSandpackProvider({
 }: SandpackProviderProps) {
   // Skip builtins the sandbox installs for real from npm (`events`, `buffer`,
   // `url`, `path`… all exist as packages), so the real one always wins.
+  //
+  // React-family sandboxes also get the repo's React pin merged in:
+  // Sandpack's built-in `react`/`react-ts` templates still declare ^19.0.0,
+  // so without this every surface that mounts without an explicit
+  // customSetup (challenge attempts, interview workspace, previews) would
+  // resolve the stale default. Consumer-provided deps always win on conflict.
+  const mergedSetup = useMemo(() => {
+    if (typeof template !== "string" || !template.startsWith("react")) return customSetup;
+    return {
+      ...customSetup,
+      dependencies: { ...REACT_TEMPLATE_DEPS, ...customSetup?.dependencies },
+    };
+  }, [customSetup, template]);
+
   const declaredDeps = useMemo(() => {
-    const fromSetup = Object.keys(customSetup?.dependencies ?? {});
+    const fromSetup = Object.keys(mergedSetup?.dependencies ?? {});
     const pkg = (files as SandpackFiles | undefined)?.["/package.json"];
     if (!pkg) return fromSetup;
     const code = typeof pkg === "string" ? pkg : (pkg as { code: string }).code;
@@ -42,7 +57,7 @@ export default function ShimmedSandpackProvider({
     } catch {
       return fromSetup;
     }
-  }, [customSetup, files]);
+  }, [mergedSetup, files]);
 
   const filesWithShims = useMemo(() => {
     // A `static` sandbox serves HTML without running the JS bundler, so there
@@ -56,7 +71,7 @@ export default function ShimmedSandpackProvider({
     <SandpackProvider
       {...rest}
       template={template}
-      customSetup={customSetup}
+      customSetup={mergedSetup}
       files={filesWithShims}
     />
   );

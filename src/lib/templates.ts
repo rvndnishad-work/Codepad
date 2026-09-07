@@ -1,5 +1,32 @@
 import type { SandpackPredefinedTemplate, SandpackFiles } from "@codesandbox/sandpack-react";
 
+/**
+ * Single source of truth for the React version shipped in every sandbox.
+ * Tracks the app's own react/react-dom (package.json) so candidates always
+ * get the latest stable APIs — 19.2 adds `useEffectEvent`, `<Activity>`,
+ * `cacheSignal`, plus the 19.0 set (`use`, ref-as-prop, Context-as-provider).
+ *
+ * Sandpack's built-in `react` template still declares ^19.0.0, so every
+ * `base: "react"` entry below pins this explicitly: Playground forwards
+ * `dependencies` via `customSetup`, which overrides the bundler default.
+ */
+export const REACT_VERSION = "^19.2.8";
+export const REACT_DOM_VERSION = "^19.2.8";
+export const REACT_SCRIPTS_VERSION = "^5.0.0";
+
+/** Full deps block for Sandpack react sandbox package.json files. */
+export const REACT_SANDBOX_DEPS: Record<string, string> = {
+  react: REACT_VERSION,
+  "react-dom": REACT_DOM_VERSION,
+  "react-scripts": REACT_SCRIPTS_VERSION,
+};
+
+/** Minimal pin merged into each `base: "react"` template's `dependencies`. */
+export const REACT_TEMPLATE_DEPS: Record<string, string> = {
+  react: REACT_VERSION,
+  "react-dom": REACT_DOM_VERSION,
+};
+
 export type TemplateCategory = "empty" | "core" | "framework" | "react-ecosystem";
 
 export type TemplateDef = {
@@ -67,6 +94,7 @@ export const templates: TemplateDef[] = [
     base: "react",
     label: "Empty React",
     accent: "#61dafb",
+    dependencies: { ...REACT_TEMPLATE_DEPS },
     files: {
       "/App.js": `export default function App() {\n  return <h1>Hello, React!</h1>;\n}\n`,
       "/styles.css": { code: "", hidden: true },
@@ -127,6 +155,7 @@ export const templates: TemplateDef[] = [
     base: "react",
     label: "React",
     accent: "#61dafb",
+    dependencies: { ...REACT_TEMPLATE_DEPS },
     files: {
       "/App.js": `import Header from "./components/Header";
 import Counter from "./components/Counter";
@@ -324,6 +353,7 @@ body {
     base: "react",
     label: "Hooks",
     accent: "#61dafb",
+    dependencies: { ...REACT_TEMPLATE_DEPS },
     files: {
       "/App.js": `import Timer from "./components/Timer";\nimport SearchBox from "./components/SearchBox";\nimport "./styles/App.css";\n\nexport default function App() {\n  return (\n    <div className="app">\n      <h1>⚛️ React Hooks Demo</h1>\n      <SearchBox />\n      <Timer />\n    </div>\n  );\n}\n`,
       "/components/Timer.js": `import { useTimer } from "../hooks/useTimer";\n\nexport default function Timer() {\n  const seconds = useTimer();\n  return <div className="card"><strong>useEffect</strong> — {seconds}s elapsed</div>;\n}\n`,
@@ -341,6 +371,7 @@ body {
     base: "react",
     label: "Class",
     accent: "#61dafb",
+    dependencies: { ...REACT_TEMPLATE_DEPS },
     files: {
       "/App.js": `import { Component } from "react";\n\nexport default class App extends Component {\n  state = { count: 0 };\n  render() {\n    return (\n      <div style={{ fontFamily: "system-ui", padding: 24 }}>\n        <h1>Class Component</h1>\n        <button onClick={() => this.setState({ count: this.state.count + 1 })}>\n          Clicked {this.state.count} times\n        </button>\n      </div>\n    );\n  }\n}\n`,
     },
@@ -353,7 +384,7 @@ body {
     base: "react",
     label: "RTK",
     accent: "#764abc",
-    dependencies: { "@reduxjs/toolkit": "^2.3.0", "react-redux": "^9.1.2" },
+    dependencies: { ...REACT_TEMPLATE_DEPS, "@reduxjs/toolkit": "^2.3.0", "react-redux": "^9.1.2" },
     files: {
       "/App.js": `import { Provider } from "react-redux";\nimport { store } from "./store/store";\nimport Counter from "./components/Counter";\nimport "./styles/App.css";\n\nexport default function App() {\n  return (\n    <Provider store={store}>\n      <div className="app">\n        <h1>🟣 Redux Toolkit</h1>\n        <Counter />\n      </div>\n    </Provider>\n  );\n}\n`,
       "/store/store.js": `import { configureStore } from "@reduxjs/toolkit";\nimport counterReducer from "./counterSlice";\n\nexport const store = configureStore({\n  reducer: { counter: counterReducer },\n});\n`,
@@ -370,7 +401,7 @@ body {
     base: "react",
     label: "MobX",
     accent: "#ff9955",
-    dependencies: { mobx: "^6.13.5", "mobx-react-lite": "^4.0.7" },
+    dependencies: { ...REACT_TEMPLATE_DEPS, mobx: "^6.13.5", "mobx-react-lite": "^4.0.7" },
     files: {
       "/App.js": `import Counter from "./components/Counter";\nimport "./styles/App.css";\n\nexport default function App() {\n  return (\n    <div className="app">\n      <h1>🟠 MobX</h1>\n      <Counter />\n    </div>\n  );\n}\n`,
       "/store/counterStore.js": `import { makeAutoObservable } from "mobx";\n\nclass CounterStore {\n  value = 0;\n  constructor() { makeAutoObservable(this); }\n  inc() { this.value += 1; }\n  dec() { this.value -= 1; }\n  reset() { this.value = 0; }\n}\n\nexport const counterStore = new CounterStore();\n`,
@@ -386,7 +417,7 @@ body {
     base: "react",
     label: "Motion",
     accent: "#e535ab",
-    dependencies: { "framer-motion": "^11.15.0" },
+    dependencies: { ...REACT_TEMPLATE_DEPS, "framer-motion": "^11.15.0" },
     files: {
       "/App.js": `import AnimatedBox from "./components/AnimatedBox";\nimport "./styles/App.css";\n\nexport default function App() {\n  return (\n    <div className="app">\n      <h1>\u2728 Framer Motion</h1>\n      <p className="subtitle">Click the box or the button</p>\n      <AnimatedBox />\n    </div>\n  );\n}\n`,
       "/components/AnimatedBox.js": `import { motion } from "framer-motion";\nimport { useState } from "react";\n\nexport default function AnimatedBox() {\n  const [on, setOn] = useState(false);\n  return (\n    <div className="demo">\n      <motion.div\n        className="box"\n        animate={{ x: on ? 160 : 0, rotate: on ? 180 : 0, scale: on ? 1.1 : 1 }}\n        transition={{ type: "spring", stiffness: 200, damping: 15 }}\n        onClick={() => setOn(!on)}\n        whileHover={{ scale: 1.05 }}\n        whileTap={{ scale: 0.95 }}\n      />\n      <button className="toggle" onClick={() => setOn(!on)}>\n        {on ? "Reset" : "Animate"}\n      </button>\n    </div>\n  );\n}\n`,
@@ -402,6 +433,7 @@ body {
     label: "MUI",
     accent: "#007fff",
     dependencies: {
+      ...REACT_TEMPLATE_DEPS,
       "@mui/material": "^6.2.1",
       "@emotion/react": "^11.14.0",
       "@emotion/styled": "^11.14.0",

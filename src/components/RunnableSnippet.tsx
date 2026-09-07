@@ -2,12 +2,12 @@
 
 import { useEffect, useState } from "react";
 import {
-  SandpackProvider,
   SandpackCodeEditor,
   SandpackPreview,
   SandpackConsole,
   useSandpack,
 } from "@codesandbox/sandpack-react";
+import ShimmedSandpackProvider from "./ShimmedSandpackProvider";
 import { useTheme } from "next-themes";
 import { Play, RotateCw, X, Terminal } from "lucide-react";
 import MonacoEditor from "./MonacoEditor";
@@ -137,7 +137,7 @@ export default function RunnableSnippet({ code, language, autorun = false }: Run
         ? "border-accent/25 bg-white/[0.04] shadow-xl shadow-black/40"
         : "border-accent/30 bg-[#fcfdfe] shadow-lg shadow-black/5"
     }`}>
-      <SandpackProvider
+      <ShimmedSandpackProvider
         template={template}
         theme={isDark ? nbpDarkTheme : nbpLightTheme}
         files={{ 
@@ -154,7 +154,7 @@ export default function RunnableSnippet({ code, language, autorun = false }: Run
         }}
       >
         <PlaygroundBody language={language} kind={kind} editorHeight={editorHeight} isDark={isDark} autorun={autorun} />
-      </SandpackProvider>
+      </ShimmedSandpackProvider>
     </div>
   );
 }

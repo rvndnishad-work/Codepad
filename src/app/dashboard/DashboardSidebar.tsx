@@ -1,8 +1,16 @@
 "use client";
 
+import { useLayoutEffect, useRef, type ComponentType, type ReactNode } from "react";
 import Link from "next/link";
-import { Newspaper, Keyboard, Info, ExternalLink, MessageSquare, Building2, Plus, Sparkles, ArrowRight, Clock, CheckCircle2 } from "lucide-react";
+import gsap from "gsap";
+import { ScrollTrigger } from "gsap/ScrollTrigger";
+import {
+  Newspaper, Keyboard, MessageSquare, Building2, Plus,
+  ArrowRight, Clock, Satellite, Radio, ExternalLink,
+} from "lucide-react";
 import JoinInterviewBox from "../interview/JoinInterviewBox";
+
+gsap.registerPlugin(ScrollTrigger);
 
 const NEWS = [
   { title: "Monaco Editor Intelligence Boost", date: "May 2", href: "#" },
@@ -22,6 +30,22 @@ type WorkspaceItem = {
   plan: string;
 };
 
+function RailTitle({ icon: Icon, children, accent = "#8b93ff" }: { icon: ComponentType<{ className?: string }>; children: ReactNode; accent?: string }) {
+  return (
+    <h3 className="mb-4 flex items-center gap-2 font-mono text-[11px] font-bold uppercase tracking-[0.24em] text-[rgba(238,240,255,0.75)]">
+      <span className="grid h-7 w-7 place-items-center rounded-xl border border-white/10" style={{ background: `${accent}1f`, color: accent }}>
+        <Icon className="h-3.5 w-3.5" />
+      </span>
+      {children}
+    </h3>
+  );
+}
+
+/**
+ * Deep-space relay rail: same routes and data as before (assessments,
+ * workspaces, news, shortcuts, help) dressed as station modules with a
+ * staggered GSAP ascent on scroll.
+ */
 export default function DashboardSidebar({
   workspaces = [],
   takeHomes = [],
@@ -29,54 +53,60 @@ export default function DashboardSidebar({
   workspaces?: WorkspaceItem[];
   takeHomes?: any[];
 }) {
+  const root = useRef<HTMLDivElement>(null);
+
+  useLayoutEffect(() => {
+    if (!root.current) return;
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    const ctx = gsap.context(() => {
+      gsap.from("[data-gx-module]", {
+        y: 28,
+        opacity: 0,
+        duration: 0.65,
+        ease: "power3.out",
+        stagger: 0.1,
+        scrollTrigger: { trigger: root.current, start: "top 85%" },
+      });
+    }, root);
+    return () => ctx.revert();
+  }, []);
+
   return (
-    <div className="space-y-6">
-      {/* Join scheduled recruiter interview box */}
-      <JoinInterviewBox />
+    <div ref={root} className="gx space-y-5">
+      <div data-gx-module>
+        <JoinInterviewBox />
+      </div>
 
-      {/* Take-Home Assignments */}
       {takeHomes.length > 0 && (
-        <div className="rounded-3xl border border-border bg-gradient-to-br from-panel/90 to-surface/40 p-6 overflow-hidden shadow-sm relative">
-          <div className="absolute top-0 right-0 w-32 h-32 rounded-full bg-indigo-500/10 blur-[50px] pointer-events-none" />
-          
-          <div className="flex items-center gap-2 mb-4">
-            <Clock className="w-4 h-4 text-indigo-400" />
-            <h3 className="text-xs font-black uppercase tracking-widest text-fg">
-              Assigned Assessments
-            </h3>
-          </div>
-
+        <div data-gx-module className="gx-panel relative overflow-hidden rounded-3xl p-6">
+          <div aria-hidden className="pointer-events-none absolute -right-10 -top-10 h-32 w-32 rounded-full bg-[radial-gradient(circle,rgba(255,209,102,0.3),transparent_65%)] blur-xl" />
+          <RailTitle icon={Clock} accent="#ffd166">Inbound Missions</RailTitle>
           <div className="space-y-3">
             {takeHomes.map((th) => {
               const statusColor =
-                th.status === "SUBMITTED" ? "text-emerald-500 border-emerald-500/25 bg-emerald-500/10"
-                : th.status === "ACTIVE" ? "text-indigo-400 border-indigo-500/25 bg-indigo-500/10"
-                : th.status === "EXPIRED" ? "text-rose-400 border-rose-500/25 bg-rose-500/10"
-                : "text-amber-400 border-amber-500/25 bg-amber-500/10";
+                th.status === "SUBMITTED" ? "text-emerald-300 border-emerald-400/30 bg-emerald-400/10"
+                : th.status === "ACTIVE" ? "text-[#8b93ff] border-[#8b93ff]/30 bg-[#8b93ff]/10"
+                : th.status === "EXPIRED" ? "text-rose-300 border-rose-400/30 bg-rose-400/10"
+                : "text-amber-300 border-amber-400/30 bg-amber-400/10";
               const expired = th.expiresAt && new Date(th.expiresAt).getTime() < Date.now();
               const href = th.status === "SUBMITTED" ? "#" : expired ? "#" : `/take-home/${th.token}`;
-              
               return (
-                <div key={th.id} className="p-3 rounded-xl border border-border bg-surface/50 hover:bg-surface transition-colors space-y-2">
+                <div key={th.id} className="space-y-2 rounded-2xl border border-white/10 bg-black/30 p-3.5 transition-colors hover:border-[rgba(255,209,102,0.4)]">
                   <div className="flex items-start justify-between gap-2">
-                    <Link href={href} className="font-bold text-xs text-fg hover:text-indigo-400 transition-colors line-clamp-1">
+                    <Link href={href} className="line-clamp-1 text-xs font-bold text-white hover:text-[#ffd166]">
                       {th.challenge.title}
                     </Link>
-                    <span className={`shrink-0 inline-flex items-center px-1.5 py-0.5 rounded border text-[8px] font-black uppercase tracking-wider ${statusColor}`}>
+                    <span className={`inline-flex shrink-0 items-center rounded border px-1.5 py-0.5 text-[8px] font-black uppercase tracking-wider ${statusColor}`}>
                       {th.status}
                     </span>
                   </div>
-                  
-                  <div className="flex items-center justify-between mt-1">
-                    <div className="text-[10px] text-muted">
-                      From <span className="font-semibold text-fg/80">{th.workspace?.name ?? "—"}</span>
+                  <div className="mt-1 flex items-center justify-between">
+                    <div className="text-[10px] text-[rgba(238,240,255,0.5)]">
+                      From <span className="font-semibold text-white/80">{th.workspace?.name ?? "—"}</span>
                     </div>
                     {th.status !== "SUBMITTED" && !expired && (
-                      <Link
-                        href={href}
-                        className="inline-flex items-center gap-1 text-[10px] font-bold text-indigo-400 hover:text-indigo-300 transition-colors group"
-                      >
-                        Start <ArrowRight className="w-3 h-3 group-hover:translate-x-0.5 transition-transform" />
+                      <Link href={href} className="group inline-flex items-center gap-1 text-[10px] font-bold text-[#ffd166]">
+                        Start <ArrowRight className="h-3 w-3 transition-transform group-hover:translate-x-0.5" />
                       </Link>
                     )}
                   </div>
@@ -87,94 +117,83 @@ export default function DashboardSidebar({
         </div>
       )}
 
-      {/* Corporate Hubs Section */}
-      <div className="rounded-3xl border border-indigo-500/20 bg-indigo-500/5 p-6 relative overflow-hidden">
-        {/* Background shine */}
-        <div className="absolute top-0 right-0 w-24 h-24 bg-accent/10 rounded-full blur-2xl pointer-events-none" />
-        
-        <h3 className="text-xs font-black text-indigo-400 uppercase tracking-widest flex items-center justify-between mb-4">
+      <div data-gx-module className="gx-panel relative overflow-hidden rounded-3xl p-6">
+        <div aria-hidden className="pointer-events-none absolute -left-10 -top-10 h-32 w-32 rounded-full bg-[radial-gradient(circle,rgba(139,147,255,0.35),transparent_65%)] blur-xl" />
+        <h3 className="mb-4 flex items-center justify-between font-mono text-[11px] font-bold uppercase tracking-[0.24em] text-[rgba(238,240,255,0.75)]">
           <span className="flex items-center gap-2">
-            <Building2 className="w-4 h-4 text-indigo-400" />
-            Recruitment Hubs
+            <span className="grid h-7 w-7 place-items-center rounded-xl border border-white/10 bg-[#8b93ff]/15 text-[#8b93ff]">
+              <Building2 className="h-3.5 w-3.5" />
+            </span>
+            Space Stations
           </span>
-          <span className="text-[9px] font-black uppercase bg-indigo-500/10 px-1.5 py-0.5 rounded border border-indigo-500/15">
+          <span className="rounded border border-[#8b93ff]/25 bg-[#8b93ff]/10 px-1.5 py-0.5 text-[9px] font-black uppercase">
             B2B SaaS
           </span>
         </h3>
-
         {workspaces.length === 0 ? (
           <div className="space-y-3.5">
-            <p className="text-xs text-muted/90 leading-relaxed">
-              Unlock developer asynchronous screening, automated test builders, and collaborative candidate review panels.
+            <p className="text-xs leading-relaxed text-[rgba(238,240,255,0.6)]">
+              Dock a recruitment hub for async screening, automated test builders and candidate review panels.
             </p>
             <Link
               href="/w/create"
-              className="w-full py-2.5 rounded-xl bg-accent hover:bg-accent-soft text-bg text-[10px] font-black uppercase tracking-wider transition-colors shadow-soft flex items-center justify-center gap-1"
+              className="gx-btn-star flex w-full items-center justify-center gap-1 rounded-xl bg-gradient-to-r from-[#ffd166] to-[#ff2fb3] py-2.5 text-[10px] font-black uppercase tracking-wider text-[#14092b]"
             >
-              <Plus className="w-3.5 h-3.5 stroke-[3px]" />
-              <span>Create Workspace</span>
+              <Plus className="h-3.5 w-3.5" strokeWidth={3} />
+              <span>Found a Station</span>
             </Link>
           </div>
         ) : (
           <div className="space-y-3">
-            <div className="space-y-1.5 max-h-48 overflow-y-auto pr-1">
+            <div className="gx-scroll max-h-48 space-y-1.5 overflow-y-auto pr-1">
               {workspaces.map((ws) => (
                 <Link
                   key={ws.slug}
                   href={`/w/${ws.slug}`}
-                  className="flex items-center justify-between gap-2 p-2.5 rounded-xl border border-border bg-surface/30 hover:border-indigo-500/30 hover:bg-surface/60 transition-all text-xs font-bold text-muted hover:text-fg group"
+                  className="group flex items-center justify-between gap-2 rounded-xl border border-white/10 bg-black/20 p-2.5 text-xs font-bold text-[rgba(238,240,255,0.65)] transition-all hover:border-[#8b93ff]/40 hover:text-white"
                 >
                   <span className="truncate">{ws.name}</span>
-                  <span className="text-[8px] font-black uppercase text-indigo-400 shrink-0 px-1 rounded bg-indigo-500/10 border border-indigo-500/15">
+                  <span className="shrink-0 rounded border border-[#8b93ff]/25 bg-[#8b93ff]/10 px-1 text-[8px] font-black uppercase text-[#8b93ff]">
                     {ws.plan}
                   </span>
                 </Link>
               ))}
             </div>
-            
             <Link
               href="/w/create"
-              className="flex items-center justify-center gap-1.5 w-full py-2 rounded-xl border border-dashed border-border hover:border-indigo-400 hover:text-indigo-400 text-muted/70 text-[10px] font-black uppercase tracking-wider transition-colors"
+              className="flex w-full items-center justify-center gap-1.5 rounded-xl border border-dashed border-white/15 py-2 text-[10px] font-black uppercase tracking-wider text-[rgba(238,240,255,0.5)] transition-colors hover:border-[#ffd166]/60 hover:text-[#ffd166]"
             >
-              <Plus className="w-3.5 h-3.5" />
-              <span>Add Workspace</span>
+              <Plus className="h-3.5 w-3.5" />
+              <span>Dock Station</span>
             </Link>
           </div>
         )}
       </div>
 
-      {/* News Section */}
-      <div className="rounded-3xl border border-border bg-panel p-6">
-        <h3 className="text-sm font-semibold text-fg flex items-center gap-2 mb-4">
-          <Newspaper className="w-4 h-4 text-accent" />
-          Platform News
-        </h3>
+      <div data-gx-module className="gx-panel rounded-3xl p-6">
+        <RailTitle icon={Satellite} accent="#22d3ee">Deep-Space Signals</RailTitle>
         <div className="space-y-4">
           {NEWS.map((item, i) => (
             <a key={i} href={item.href} className="group block">
-              <div className="text-[10px] text-accent font-bold uppercase mb-0.5 tracking-wider">{item.date}</div>
-              <div className="text-sm text-subtle group-hover:text-fg transition-colors flex items-center justify-between">
+              <div className="mb-0.5 text-[10px] font-bold uppercase tracking-wider text-[#ffd166]">{item.date}</div>
+              <div className="flex items-center justify-between text-sm text-[rgba(238,240,255,0.7)] transition-colors group-hover:text-white">
                 {item.title}
-                <ExternalLink className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity" />
+                <ExternalLink className="h-3 w-3 opacity-0 transition-opacity group-hover:opacity-100" />
               </div>
             </a>
           ))}
         </div>
       </div>
 
-      {/* Shortcuts Section */}
-      <div className="rounded-3xl border border-border bg-panel p-6">
-        <h3 className="text-sm font-semibold text-fg flex items-center gap-2 mb-4">
-          <Keyboard className="w-4 h-4 text-accent" />
-          Quick Shortcuts
-        </h3>
+      <div data-gx-module className="gx-panel rounded-3xl p-6">
+        <RailTitle icon={Keyboard} accent="#ff2fb3">Flight Controls</RailTitle>
         <div className="space-y-3">
           {SHORTCUTS.map((s, i) => (
             <div key={i} className="flex items-center justify-between">
-              <span className="text-xs text-muted">{s.label}</span>
+              <span className="text-xs text-[rgba(238,240,255,0.6)]">{s.label}</span>
               <div className="flex gap-1">
                 {s.keys.map((k) => (
-                  <kbd key={k} className="px-1.5 py-0.5 rounded border border-border bg-surface text-[9px] font-mono text-muted">
+                  <kbd key={k} className="rounded border border-white/15 bg-black/40 px-1.5 py-0.5 font-mono text-[9px] text-[rgba(238,240,255,0.7)]">
                     {k}
                   </kbd>
                 ))}
@@ -184,16 +203,14 @@ export default function DashboardSidebar({
         </div>
       </div>
 
-      {/* Support Section */}
-      <div className="rounded-3xl border border-border bg-accent-glow p-6 border-accent/20">
-        <h3 className="text-sm font-semibold text-accent flex items-center gap-2 mb-2">
-          <MessageSquare className="w-4 h-4" />
-          Need Help?
-        </h3>
-        <p className="text-xs text-subtle leading-relaxed mb-4">
-          Join our Discord community or check the documentation for pro tips.
+      <div data-gx-module className="gx-panel relative overflow-hidden rounded-3xl p-6">
+        <div aria-hidden className="pointer-events-none absolute -bottom-12 -right-12 h-36 w-36 rounded-full bg-[radial-gradient(circle,rgba(34,211,238,0.3),transparent_65%)] blur-xl" />
+        <RailTitle icon={Radio} accent="#22d3ee">Hail Control</RailTitle>
+        <p className="mb-4 text-xs leading-relaxed text-[rgba(238,240,255,0.6)]">
+          Join our Discord crew or check the star charts for pro tips.
         </p>
-        <button className="w-full py-2 rounded-xl bg-surface hover:bg-elevated text-fg text-xs font-medium border border-border transition-all">
+        <button className="gx-btn-star flex w-full items-center justify-center gap-2 rounded-xl border border-[rgba(34,211,238,0.4)] bg-[rgba(34,211,238,0.1)] py-2 text-xs font-bold text-white">
+          <MessageSquare className="h-3.5 w-3.5" />
           Join Community
         </button>
       </div>

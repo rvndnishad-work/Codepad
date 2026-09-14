@@ -15,6 +15,20 @@ if (typeof window !== "undefined" && typeof window.matchMedia !== "function") {
   }) as unknown as MediaQueryList) as typeof window.matchMedia;
 }
 
+// jsdom has no IntersectionObserver — stub it so hero components mount.
+if (typeof window !== "undefined" && typeof window.IntersectionObserver === "undefined") {
+  window.IntersectionObserver = class IntersectionObserver {
+    readonly root: Element | null = null;
+    readonly rootMargin: string = "";
+    readonly thresholds: ReadonlyArray<number> = [];
+    constructor(private callback: IntersectionObserverCallback) {}
+    observe() { this.callback([{ isIntersecting: true, target: document.createElement("div") }] as any); }
+    unobserve() {}
+    disconnect() {}
+    takeRecords() { return []; }
+  } as unknown as typeof IntersectionObserver;
+}
+
 // Mock Next.js Navigation hooks
 vi.mock("next/navigation", () => {
   return {

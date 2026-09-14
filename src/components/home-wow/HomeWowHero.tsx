@@ -184,8 +184,9 @@ export default function HomeWowHero({
           </Link>
         </div>
 
-        <Link href="/hire" className="wow-hero-fade mt-5 font-mono text-[11px] uppercase tracking-[0.2em] text-white/55 underline-offset-4 transition hover:text-white hover:underline">
-          Hiring? Enter boss mode →
+        <Link href="/hire" className="wow-hero-fade group mt-5 inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/[0.06] px-6 py-3 font-mono text-[11px] uppercase tracking-[0.2em] text-white/80 backdrop-blur-md transition hover:border-white/40 hover:text-white">
+          Looking to hire
+          <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
         </Link>
 
         {/* live stat strip — every number from the DB */}

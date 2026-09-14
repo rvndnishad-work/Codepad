@@ -22,7 +22,7 @@ if (typeof window !== "undefined" && typeof window.IntersectionObserver === "und
     readonly rootMargin: string = "";
     readonly thresholds: ReadonlyArray<number> = [];
     constructor(private callback: IntersectionObserverCallback) {}
-    observe() { this.callback([{ isIntersecting: true, target: document.createElement("div") }] as any); }
+    observe() { this.callback([{ isIntersecting: true, target: document.createElement("div") }] as unknown as IntersectionObserverEntry[], this as unknown as globalThis.IntersectionObserver); }
     unobserve() {}
     disconnect() {}
     takeRecords() { return []; }

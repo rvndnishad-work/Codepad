@@ -1866,6 +1866,368 @@
         "devops"
       ],
       "technology": "nodejs"
+    },
+    {
+      "title": "Explain the phases of the Node.js event loop.",
+      "description": "Tests deep understanding of libuv's event loop internals beyond the basic definition.",
+      "answer": "The Node.js event loop, implemented via libuv, cycles through six phases on every tick: **timers** (runs `setTimeout`/`setInterval` callbacks whose threshold has elapsed), **pending callbacks** (deferred I/O callbacks like certain TCP errors), **idle/prepare** (internal use only), **poll** (retrieves new I/O events and runs their callbacks, blocking here if nothing else is scheduled), **check** (runs `setImmediate` callbacks), and **close callbacks** (e.g., `socket.on('close', ...)`). Between phases, Node drains the microtask queue (`process.nextTick` and resolved Promises) before moving on. This explains why `setImmediate` fires before `setTimeout(fn, 0)` inside an I/O callback, even though ordering is less deterministic at the top level.",
+      "difficulty": "hard",
+      "round": "Low-Level Design",
+      "tags": [
+        "event-loop",
+        "libuv",
+        "internals"
+      ],
+      "technology": "nodejs"
+    },
+    {
+      "title": "What is the difference between the microtask queue and the macrotask queue in Node.js?",
+      "description": "Probes understanding of task scheduling priority between Promises and the event loop phases.",
+      "answer": "Macrotasks are queued by the event loop's phases—timers, I/O callbacks, `setImmediate`—and only one runs per loop iteration before the loop checks other phases. Microtasks, which include `process.nextTick` callbacks and resolved Promise `.then()` handlers, run immediately after the current operation finishes and before the loop proceeds to the next phase; the entire microtask queue, including any microtasks it schedules, is drained first. `process.nextTick` has even higher priority than Promise microtasks in Node.js. This ordering matters because chaining many Promises can starve I/O callbacks if not managed carefully, since microtasks always run to completion before macrotasks resume.",
+      "difficulty": "hard",
+      "round": "Low-Level Design",
+      "tags": [
+        "event-loop",
+        "promises",
+        "microtasks"
+      ],
+      "technology": "nodejs"
+    },
+    {
+      "title": "What are the different types of Streams in Node.js (Readable, Writable, Duplex, Transform)?",
+      "description": "Checks knowledge of the stream type hierarchy beyond just knowing streams exist.",
+      "answer": "Node.js has four fundamental stream types: **Readable** streams produce data to be consumed (e.g., `fs.createReadStream`), **Writable** streams accept data to be written (e.g., `fs.createWriteStream`), **Duplex** streams are both readable and writable independently (e.g., a TCP socket), and **Transform** streams are duplex streams that modify data as it passes through (e.g., `zlib.createGzip`). All of them extend `EventEmitter` and support both flowing and paused modes for consuming data. Choosing the right stream type lets you process large amounts of data in constant memory instead of buffering it all at once.",
+      "difficulty": "medium",
+      "round": "Phone Screen",
+      "tags": [
+        "streams",
+        "io"
+      ],
+      "technology": "nodejs"
+    },
+    {
+      "title": "What is the difference between fs.readFile and fs.readFileSync?",
+      "description": "A common warm-up question on blocking vs non-blocking file system APIs.",
+      "answer": "`fs.readFile` is asynchronous and non-blocking: it takes a callback and lets the event loop continue processing other work while the read happens via the thread pool. `fs.readFileSync` is synchronous and blocks the entire event loop until the read completes, so no other requests or timers can be processed in the meantime. The async version is almost always preferred in server code to avoid blocking concurrent requests, while the sync version is acceptable for one-off scripts or startup-time configuration loading where blocking is harmless.",
+      "difficulty": "easy",
+      "round": "Phone Screen",
+      "tags": [
+        "fs",
+        "async",
+        "sync"
+      ],
+      "technology": "nodejs"
+    },
+    {
+      "title": "What is the difference between module.exports and exports in Node.js?",
+      "description": "A classic CommonJS gotcha that trips up many developers.",
+      "answer": "`exports` is simply a reference to the same object as `module.exports` that Node.js provides as a shorthand for attaching properties, e.g. `exports.foo = bar`. Reassigning `exports` itself (e.g., `exports = { foo: bar }`) breaks that reference and does not change what the module actually exports, since `module.exports` still points to the original object. To export a single value, function, or class directly, you must assign to `module.exports` explicitly. This subtlety is a common source of bugs for developers new to CommonJS.",
+      "difficulty": "medium",
+      "round": "Phone Screen",
+      "tags": [
+        "modules",
+        "commonjs"
+      ],
+      "technology": "nodejs"
+    },
+    {
+      "title": "How do try/catch blocks behave with asynchronous code in Node.js?",
+      "description": "Tests whether the candidate understands why errors in callbacks aren't caught by a surrounding try/catch.",
+      "answer": "A synchronous `try/catch` only catches errors thrown during the synchronous execution of the code inside it; once a callback is queued to run later (e.g., via `setTimeout` or an I/O callback), it executes outside that call stack, so an error thrown inside it is not caught and instead becomes an uncaught exception. Promises solve this by capturing errors into the rejection channel, handled with `.catch()` or, with `async/await`, wrapped back into a `try/catch` around the `await` expression since a rejected Promise re-throws synchronously at that point. This is why the error-first callback convention (`(err, data) => {}`) exists—it propagates errors explicitly rather than relying on exceptions crossing async boundaries.",
+      "difficulty": "medium",
+      "round": "Low-Level Design",
+      "tags": [
+        "error-handling",
+        "async",
+        "promises"
+      ],
+      "technology": "nodejs"
+    },
+    {
+      "title": "What are Node.js native addons and when would you use N-API?",
+      "description": "Assesses awareness of extending Node.js with compiled native code.",
+      "answer": "Native addons are compiled C/C++ modules that expose native code to JavaScript, typically used for CPU-intensive work, wrapping existing C/C++ libraries, or low-level system access that pure JavaScript can't provide efficiently. N-API (Node-API) is a stable, ABI-stable C API introduced to decouple addons from specific V8 or Node.js versions, so an addon built against N-API doesn't need to be recompiled for every Node.js release. Tools like `node-gyp` compile the native code, and libraries like `node-addon-api` provide C++ wrappers over the C-based N-API. You'd reach for a native addon only when JavaScript performance is a genuine bottleneck, since they add build complexity and platform-specific compilation steps.",
+      "difficulty": "hard",
+      "round": "System Design",
+      "tags": [
+        "native-addons",
+        "n-api",
+        "internals"
+      ],
+      "technology": "nodejs"
+    },
+    {
+      "title": "How would you implement real-time communication (e.g., WebSockets) in a Node.js application?",
+      "description": "Checks practical knowledge of building bidirectional, low-latency features.",
+      "answer": "Node.js's built-in `http`/`https` modules can be upgraded to WebSocket connections manually, but most applications use a library like `ws` for a lightweight raw WebSocket server or `Socket.IO`, which adds automatic reconnection, room/namespace support, and fallback transports. A typical setup attaches the WebSocket server to the same HTTP server instance, handles the `connection` event per client, and uses `send()`/`on('message')` for bidirectional communication. For scaling across multiple Node.js instances, you need a shared pub/sub layer (e.g., a Redis adapter) so messages broadcast from one instance reach clients connected to another.",
+      "difficulty": "medium",
+      "round": "System Design",
+      "tags": [
+        "websockets",
+        "realtime",
+        "socket-io"
+      ],
+      "technology": "nodejs"
+    },
+    {
+      "title": "How do you handle file uploads in a Node.js/Express application?",
+      "description": "Tests knowledge of multipart form handling and large-file best practices.",
+      "answer": "File uploads in Express are typically handled with middleware like `multer`, which parses `multipart/form-data` requests and either buffers the file in memory or streams it directly to disk or cloud storage (e.g., S3) based on the configured storage engine. For large files, it's important to stream directly to the destination rather than buffering the entire file in memory, and to validate file size, MIME type, and enforce upload limits to prevent abuse. Direct-to-S3 uploads using pre-signed URLs are a common pattern to avoid routing large file traffic through the Node.js server entirely.",
+      "difficulty": "medium",
+      "round": "Low-Level Design",
+      "tags": [
+        "express",
+        "multer",
+        "file-upload"
+      ],
+      "technology": "nodejs"
+    },
+    {
+      "title": "What is the purpose of the --max-old-space-size flag in Node.js?",
+      "description": "Probes familiarity with tuning V8's heap for memory-intensive processes.",
+      "answer": "`--max-old-space-size` sets the maximum size (in MB) of V8's old generation heap, where long-lived objects live after surviving garbage collection cycles. By default, V8 caps this heap based on available system memory, which can be too conservative on containers with more memory available, or cause out-of-memory crashes if the app's working set genuinely needs more. Raising it (e.g., `node --max-old-space-size=4096 app.js`) is a common fix for `JavaScript heap out of memory` errors, though the real fix is often addressing memory leaks rather than just raising the ceiling.",
+      "difficulty": "medium",
+      "round": "Phone Screen",
+      "tags": [
+        "memory",
+        "v8",
+        "flags"
+      ],
+      "technology": "nodejs"
+    },
+    {
+      "title": "How does Node.js support HTTPS/TLS for secure servers?",
+      "description": "Covers the built-in https module and common production TLS termination patterns.",
+      "answer": "Node.js's `https` module wraps the `http` module's server/client with TLS encryption, requiring a certificate and private key (`cert`/`key` options) to establish secure connections. In production, TLS termination is often handled by a reverse proxy or load balancer (like Nginx or a cloud load balancer) in front of the Node.js process rather than in the app itself, simplifying certificate management and renewal. When Node.js does terminate TLS directly, tools like Let's Encrypt/certbot automate certificate issuance and renewal, and it's important to keep the `tls` module's cipher suites and minimum protocol version configured securely.",
+      "difficulty": "medium",
+      "round": "Low-Level Design",
+      "tags": [
+        "https",
+        "tls",
+        "security"
+      ],
+      "technology": "nodejs"
+    },
+    {
+      "title": "What is API idempotency and how would you design idempotent endpoints in a Node.js REST API?",
+      "description": "Tests system design thinking around safe request retries.",
+      "answer": "An idempotent endpoint produces the same result no matter how many times an identical request is made—GET, PUT, and DELETE are naturally idempotent by HTTP semantics, but POST (typically used for creation) is not by default. To make a POST endpoint idempotent, clients send a unique idempotency key header, the server stores it (e.g., in Redis) alongside the result of the first request, and returns the cached result for any duplicate key instead of re-processing. This is essential for operations like payments, where network retries could otherwise cause duplicate charges.",
+      "difficulty": "hard",
+      "round": "System Design",
+      "tags": [
+        "api-design",
+        "idempotency",
+        "rest"
+      ],
+      "technology": "nodejs"
+    },
+    {
+      "title": "How would you approach versioning a Node.js REST API?",
+      "description": "Assesses awareness of common API evolution strategies.",
+      "answer": "Common approaches include URI versioning (`/api/v1/users`), header-based versioning (a custom `Accept` or `X-API-Version` header), and query-parameter versioning, with URI versioning being the most discoverable and widely adopted for public APIs. In Express, this is often implemented by mounting separate routers per version (`app.use('/api/v1', v1Router)`) so breaking changes live in isolated route handlers rather than branching logic inside shared ones. A good versioning strategy also includes a deprecation policy—communicating timelines and sunset headers before removing an old version.",
+      "difficulty": "medium",
+      "round": "System Design",
+      "tags": [
+        "api-design",
+        "versioning",
+        "rest"
+      ],
+      "technology": "nodejs"
+    },
+    {
+      "title": "How does GraphQL compare to REST when building a Node.js backend?",
+      "description": "Compares two common API paradigms and their trade-offs.",
+      "answer": "REST exposes multiple fixed endpoints that each return a predetermined shape of data, which can lead to over-fetching or under-fetching and require multiple round trips for related resources. GraphQL exposes a single endpoint with a strongly-typed schema, letting clients request exactly the fields they need in one query, including nested/related data, reducing round trips for complex UIs. The trade-off is added server-side complexity—resolvers, N+1 query risks (often solved with `DataLoader`), and different caching strategies, since GraphQL doesn't benefit from HTTP-level caching the way REST's GET requests do by default.",
+      "difficulty": "medium",
+      "round": "System Design",
+      "tags": [
+        "graphql",
+        "rest",
+        "api-design"
+      ],
+      "technology": "nodejs"
+    },
+    {
+      "title": "What is the difference between the net and dgram modules in Node.js?",
+      "description": "Tests understanding of Node's lower-level networking APIs.",
+      "answer": "The `net` module provides an API for TCP (and Unix domain socket) servers and clients, offering a reliable, ordered, connection-oriented byte stream—used for custom TCP servers or lower-level protocol implementations. The `dgram` module provides an API for UDP sockets, which are connectionless and unreliable (no delivery or ordering guarantees) but have lower overhead, making them suitable for use cases like DNS, video streaming, or real-time telemetry where occasional packet loss is acceptable. Choosing between them depends on whether the application needs guaranteed delivery (`net`/TCP) or can tolerate loss in exchange for lower latency (`dgram`/UDP).",
+      "difficulty": "hard",
+      "round": "Low-Level Design",
+      "tags": [
+        "net",
+        "dgram",
+        "tcp-udp"
+      ],
+      "technology": "nodejs"
+    },
+    {
+      "title": "How does the cluster module distribute incoming connections across worker processes?",
+      "description": "Digs deeper into clustering internals beyond the basic 'how clustering works' question.",
+      "answer": "The `cluster` module forks multiple worker processes that share the same server port, with the primary process handling incoming connections and distributing them to workers. On most platforms (except Windows), Node.js uses a round-robin scheduler by default (`cluster.schedulingPolicy = cluster.SCHED_RR`) where the primary accepts connections and hands them out to workers in turn; the alternative, `SCHED_NONE`, lets the OS kernel handle load distribution directly. Clustering lets a Node.js app utilize multiple CPU cores despite being single-threaded per process, though workers don't share memory, so shared state needs an external store like Redis.",
+      "difficulty": "hard",
+      "round": "Low-Level Design",
+      "tags": [
+        "cluster",
+        "scaling",
+        "load-balancing"
+      ],
+      "technology": "nodejs"
+    },
+    {
+      "title": "How do you implement structured logging in a production Node.js application?",
+      "description": "Assesses operational maturity around observability.",
+      "answer": "Production Node.js apps typically use structured logging libraries like `pino` or `winston` instead of `console.log`, emitting JSON-formatted logs with consistent fields (timestamp, level, request ID, service name) that are easy to parse and query in log aggregation tools like ELK or Datadog. Log levels (debug, info, warn, error) let you control verbosity per environment, and correlation/request IDs threaded through a request's lifecycle make it possible to trace a single request across distributed services. `pino` is favored in performance-sensitive paths since it's significantly faster than alternatives due to its asynchronous, low-overhead serialization.",
+      "difficulty": "medium",
+      "round": "Phone Screen",
+      "tags": [
+        "logging",
+        "observability",
+        "pino"
+      ],
+      "technology": "nodejs"
+    },
+    {
+      "title": "What is the difference between horizontal and vertical scaling for a Node.js application?",
+      "description": "Tests architectural thinking around growing a Node.js service.",
+      "answer": "Vertical scaling means increasing the resources (CPU, memory) of a single Node.js instance/machine, which is simple but has hard limits and creates a single point of failure. Horizontal scaling means running multiple instances of the app—via the `cluster` module on one machine or across multiple machines/containers behind a load balancer—which improves both capacity and fault tolerance but requires the app to be stateless (sessions, caches, and file storage externalized) since requests can land on any instance. Most production Node.js systems favor horizontal scaling for resilience, combined with some vertical scaling per instance for cost efficiency.",
+      "difficulty": "medium",
+      "round": "System Design",
+      "tags": [
+        "scaling",
+        "architecture",
+        "performance"
+      ],
+      "technology": "nodejs"
+    },
+    {
+      "title": "What testing strategies and tools would you use for a Node.js application?",
+      "description": "A broad question assessing familiarity with the testing ecosystem.",
+      "answer": "A typical Node.js testing pyramid includes unit tests for individual functions/modules (using frameworks like Jest or Mocha with Chai/Sinon for assertions and mocking), integration tests that exercise multiple modules together (e.g., hitting a real or in-memory database), and end-to-end tests that verify full request/response flows using tools like `supertest` against Express routes. Test doubles (mocks, stubs, spies) isolate units from external dependencies like databases or third-party APIs. Code coverage tools (like `nyc`/Istanbul) and CI integration ensure tests run consistently before merging changes.",
+      "difficulty": "easy",
+      "round": "Phone Screen",
+      "tags": [
+        "testing",
+        "jest",
+        "mocha"
+      ],
+      "technology": "nodejs"
+    },
+    {
+      "title": "How would you implement request validation in a Node.js/Express API?",
+      "description": "Checks practical knowledge of input validation at the API boundary.",
+      "answer": "Request validation is commonly implemented with schema-validation libraries like `Joi`, `zod`, or `express-validator`, which define the expected shape, types, and constraints of request bodies, query parameters, or headers, and reject malformed requests with a 400 before they reach business logic. This is usually applied as Express middleware that runs early in the request pipeline, keeping validation logic separate from route handlers and consistent across endpoints. Validating input at the boundary also serves as a first line of defense against injection attacks and malformed data corrupting downstream systems.",
+      "difficulty": "easy",
+      "round": "Low-Level Design",
+      "tags": [
+        "validation",
+        "express",
+        "security"
+      ],
+      "technology": "nodejs"
+    },
+    {
+      "title": "What is the purpose of a reverse proxy (e.g., Nginx) in front of a Node.js application?",
+      "description": "Tests understanding of common production deployment architecture.",
+      "answer": "A reverse proxy like Nginx sits in front of a Node.js application to handle concerns better suited to a dedicated, battle-tested layer: TLS termination, load balancing across multiple Node.js instances, serving static assets directly without hitting Node.js, request buffering/rate limiting, and compression. It also shields the Node.js process from slow or malicious clients (slowloris-style attacks) by buffering incoming requests before passing them through. This separation of concerns lets Node.js focus purely on application logic while the proxy handles infrastructure-level cross-cutting concerns.",
+      "difficulty": "medium",
+      "round": "System Design",
+      "tags": [
+        "reverse-proxy",
+        "nginx",
+        "deployment"
+      ],
+      "technology": "nodejs"
+    },
+    {
+      "title": "How do you handle retries and timeouts when a Node.js service calls another downstream service?",
+      "description": "Assesses resilience-engineering knowledge for service-to-service calls.",
+      "answer": "Every outbound call should have an explicit timeout (via the HTTP client's config, e.g., `axios`'s `timeout` option) so a slow dependency can't hold a request open indefinitely and exhaust resources. Retries should use exponential backoff with jitter to avoid overwhelming a struggling downstream service, be limited to a small number of attempts, and only apply to idempotent operations or requests carrying an idempotency key. Circuit breaker patterns (e.g., via `opossum`) complement this by temporarily short-circuiting calls to a downstream service that's consistently failing, giving it time to recover instead of piling on more requests.",
+      "difficulty": "hard",
+      "round": "System Design",
+      "tags": [
+        "resilience",
+        "retries",
+        "timeouts"
+      ],
+      "technology": "nodejs"
+    },
+    {
+      "title": "What is the difference between require() and dynamic import() in Node.js?",
+      "description": "Tests understanding of module loading semantics across CommonJS and ESM.",
+      "answer": "`require()` is CommonJS's synchronous module-loading function—it resolves and executes the module immediately, blocking until it's loaded, and supports conditional/lazy loading anywhere in the code. `import()` (dynamic import) is the ES Modules equivalent but is asynchronous, returning a Promise that resolves to the module's namespace object; it works in both CommonJS and ESM contexts and is the standard way to lazy-load a module or conditionally load one at runtime in ESM, where static `import` statements must be top-level. Static `import` is preferred when a dependency is always needed, since it enables tree-shaking and is statically analyzable.",
+      "difficulty": "medium",
+      "round": "Phone Screen",
+      "tags": [
+        "modules",
+        "esm",
+        "commonjs"
+      ],
+      "technology": "nodejs"
+    },
+    {
+      "title": "How would you design a job queue / background task processor in Node.js?",
+      "description": "Covers offloading long-running work outside the request/response cycle.",
+      "answer": "A background job system typically decouples request handling from long-running or resource-intensive work by pushing jobs onto a queue (e.g., Redis-backed with `BullMQ`) and processing them in separate worker processes, so the API stays responsive. Producers add jobs with relevant payload data and options like priority, delay, or retry count; workers pull jobs off the queue, process them, and BullMQ handles concerns like retries with backoff, concurrency limits, rate limiting, and dead-letter queues for jobs that repeatedly fail. This pattern is common for use cases like sending emails, generating reports, image processing, or any task that shouldn't block the request/response cycle.",
+      "difficulty": "hard",
+      "round": "System Design",
+      "tags": [
+        "queues",
+        "bullmq",
+        "background-jobs"
+      ],
+      "technology": "nodejs"
+    },
+    {
+      "title": "What is the purpose of health check and readiness/liveness endpoints in a Node.js service?",
+      "description": "Assesses operational readiness for containerized/orchestrated deployments.",
+      "answer": "A liveness endpoint tells the orchestrator (e.g., Kubernetes) whether the process itself is still running correctly and should be restarted if it fails repeatedly, while a readiness endpoint indicates whether the app is ready to accept traffic—e.g., it has established its database connection and warmed up any caches. Separating these matters because a temporarily overloaded but otherwise healthy process should fail readiness (so traffic is routed elsewhere) without being restarted, whereas a genuinely deadlocked process should fail liveness and get restarted. These endpoints are typically simple, fast, unauthenticated routes that check critical dependencies without doing heavy work themselves.",
+      "difficulty": "easy",
+      "round": "Low-Level Design",
+      "tags": [
+        "health-check",
+        "kubernetes",
+        "observability"
+      ],
+      "technology": "nodejs"
+    },
+    {
+      "title": "How do you prevent prototype pollution vulnerabilities in a Node.js application?",
+      "description": "Tests awareness of a Node.js-specific class of security vulnerability.",
+      "answer": "Prototype pollution occurs when attacker-controlled input (e.g., from `JSON.parse`d request data) is merged into another object using a vulnerable deep-merge or object-assignment function that doesn't guard against keys like `__proto__`, `constructor`, or `prototype`, letting the attacker inject properties onto `Object.prototype` itself and affect every object in the application. Prevention includes using `Object.create(null)` for objects that will hold untrusted keys, validating/sanitizing input keys before merging, using libraries with known protections, and keeping dependencies patched since several popular npm packages have had prototype pollution CVEs. Modern schema validators like `zod` also help by rejecting unexpected keys outright.",
+      "difficulty": "hard",
+      "round": "Low-Level Design",
+      "tags": [
+        "security",
+        "prototype-pollution",
+        "vulnerabilities"
+      ],
+      "technology": "nodejs"
+    },
+    {
+      "title": "What is the difference between synchronous and asynchronous middleware error handling in Express.js?",
+      "description": "A practical gotcha question for anyone who has hit unhandled rejections in Express.",
+      "answer": "In Express, synchronous errors thrown inside a regular middleware or route handler are automatically caught by Express and forwarded to the error-handling middleware. Errors thrown inside an `async` function, however, are NOT automatically caught prior to Express 5—since the rejected Promise isn't awaited by Express itself—so you must either wrap async handlers in a try/catch that calls `next(err)`, or use a wrapper utility (like `express-async-handler`) that does this automatically. Express 5 changes this by natively catching rejected Promises returned from async handlers and forwarding them to `next()`.",
+      "difficulty": "medium",
+      "round": "Low-Level Design",
+      "tags": [
+        "express",
+        "middleware",
+        "error-handling"
+      ],
+      "technology": "nodejs"
+    },
+    {
+      "title": "How would you implement pagination for a large dataset in a Node.js REST API?",
+      "description": "Compares offset-based and cursor-based pagination strategies.",
+      "answer": "Offset-based pagination (`LIMIT`/`OFFSET` with `page`/`pageSize` query params) is simple to implement but suffers from performance degradation on large offsets and can return inconsistent results if rows are inserted or deleted between requests. Cursor-based (keyset) pagination instead uses a stable, indexed column (like an ID or timestamp) as a cursor, fetching rows after that cursor value, which scales better on large datasets and stays consistent under concurrent writes. The API response typically includes a `nextCursor` (or `next` link) rather than a total page count, since computing total counts can itself be expensive on large tables.",
+      "difficulty": "easy",
+      "round": "Low-Level Design",
+      "tags": [
+        "pagination",
+        "rest",
+        "api-design"
+      ],
+      "technology": "nodejs"
     }
   ],
   "javascript": [

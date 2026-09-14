@@ -229,6 +229,17 @@ export default async function DashboardPage() {
 
         <DashboardStats stats={stats} />
 
+        {/* constellation rule: breathing room between the instruments and the deck */}
+        <div aria-hidden className="gx mb-10 flex items-center gap-4 px-1">
+          <span className="h-px flex-1 bg-gradient-to-r from-transparent via-[rgba(139,147,255,0.35)] to-[rgba(139,147,255,0.35)]" />
+          <span className="gx-twinkle h-1.5 w-1.5 rotate-45 bg-[#ffd166]" style={{ boxShadow: "0 0 12px #ffd166" }} />
+          <span className="h-px w-16 bg-[rgba(139,147,255,0.35)]" />
+          <span className="gx-twinkle h-1 w-1 rounded-full bg-white" style={{ animationDelay: "1.2s" }} />
+          <span className="h-px w-16 bg-[rgba(139,147,255,0.35)]" />
+          <span className="gx-twinkle h-1.5 w-1.5 rotate-45 bg-[#ff2fb3]" style={{ boxShadow: "0 0 12px #ff2fb3", animationDelay: "0.6s" }} />
+          <span className="h-px flex-1 bg-gradient-to-l from-transparent via-[rgba(139,147,255,0.35)] to-[rgba(139,147,255,0.35)]" />
+        </div>
+
         <DashboardCreatorFeed userId={userId} />
 
         <div id="gx-deck" className="grid grid-cols-1 lg:grid-cols-12 gap-8 scroll-mt-8">

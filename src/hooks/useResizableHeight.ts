@@ -13,6 +13,9 @@ export function useResizableHeight(initialHeight: number, minHeight = 80, maxHei
   const dragging = useRef(false);
   const startY = useRef(0);
   const startH = useRef(0);
+  // Coalesce high-frequency trackpad streams to one update per frame.
+  const raf = useRef(0);
+  const pending = useRef<number | null>(null);
 
   const onPointerDown = useCallback(
     (e: React.PointerEvent) => {
@@ -21,14 +24,32 @@ export function useResizableHeight(initialHeight: number, minHeight = 80, maxHei
       startY.current = e.clientY;
       startH.current = height;
 
+      const apply = () => {
+        if (pending.current === null) return;
+        setHeight(Math.min(maxHeight, Math.max(minHeight, startH.current - pending.current)));
+      };
+
       const onPointerMove = (ev: PointerEvent) => {
         if (!dragging.current) return;
-        const dy = ev.clientY - startY.current;
-        setHeight(Math.min(maxHeight, Math.max(minHeight, startH.current - dy)));
+        pending.current = ev.clientY - startY.current;
+        if (!raf.current) {
+          raf.current = requestAnimationFrame(() => {
+            raf.current = 0;
+            apply();
+          });
+        }
       };
 
       const onPointerUp = () => {
         dragging.current = false;
+        if (raf.current) {
+          cancelAnimationFrame(raf.current);
+          raf.current = 0;
+        }
+        // Flush the last pointer position so the panel lands exactly where it
+        // was released instead of one (cancelled) frame short.
+        apply();
+        pending.current = null;
         document.removeEventListener("pointermove", onPointerMove);
         document.removeEventListener("pointerup", onPointerUp);
         document.body.style.cursor = "";

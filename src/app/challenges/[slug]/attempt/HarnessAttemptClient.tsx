@@ -7,7 +7,7 @@ import { toast } from "sonner";
 import { Play, Send, CheckCircle2, XCircle, Loader2, EyeOff, Clock, LogOut, FileCode, Terminal, Rows2, Columns2, PanelLeftClose, PanelLeftOpen, Minus, Plus } from "lucide-react";
 import MarkdownRenderer from "@/components/MarkdownRenderer";
 import { defineNanoBananaThemes, WORKBENCH_DARK, WORKBENCH_LIGHT } from "@/lib/monaco-themes";
-import { useResizable } from "@/hooks/useResizable";
+import { useResizable, RESIZE_RAIL_X, RESIZE_RAIL_Y } from "@/hooks/useResizable";
 import { useResizableHeight } from "@/hooks/useResizableHeight";
 
 const Editor = dynamic(() => import("@monaco-editor/react"), { ssr: false });
@@ -436,7 +436,7 @@ export default function HarnessAttemptClient({
           title="Drag to resize"
           role="separator"
           aria-orientation="vertical"
-          className="hidden lg:block w-1.5 shrink-0 cursor-col-resize touch-none select-none bg-border/40 hover:bg-accent/60 active:bg-accent/70 transition-colors"
+          className={`hidden lg:block w-1.5 shrink-0 cursor-col-resize touch-none select-none bg-border/40 hover:bg-accent/60 active:bg-accent/70 transition-colors ${RESIZE_RAIL_X}`}
         />
 
         {/* ── Right: editor + output, docked below (row) or beside (column) ── */}
@@ -519,7 +519,7 @@ export default function HarnessAttemptClient({
               title="Drag to resize"
               role="separator"
               aria-orientation="vertical"
-              className="hidden lg:block w-1.5 shrink-0 cursor-col-resize touch-none select-none bg-border/40 hover:bg-accent/60 active:bg-accent/70 transition-colors"
+              className={`hidden lg:block w-1.5 shrink-0 cursor-col-resize touch-none select-none bg-border/40 hover:bg-accent/60 active:bg-accent/70 transition-colors ${RESIZE_RAIL_X}`}
             />
           ) : (
             <div
@@ -527,7 +527,7 @@ export default function HarnessAttemptClient({
               title="Drag to resize"
               role="separator"
               aria-orientation="horizontal"
-              className="hidden lg:block h-1.5 shrink-0 cursor-row-resize touch-none select-none bg-border/40 hover:bg-accent/60 active:bg-accent/70 transition-colors"
+              className={`hidden lg:block h-1.5 shrink-0 cursor-row-resize touch-none select-none bg-border/40 hover:bg-accent/60 active:bg-accent/70 transition-colors ${RESIZE_RAIL_Y}`}
             />
           )}
 

@@ -26,6 +26,10 @@ export type NodeExample = {
 
 export type NodeAugment = {
   title: string;
+  /** Question Body (§6 rubric). Renders WITHOUT rehype-raw — plain markdown only, no HTML/SVG. */
+  description?: string;
+  /** Plain-sentence meta description, <=155 chars. */
+  seoDescription?: string;
   answer?: string;
   examples?: NodeExample[];
 };

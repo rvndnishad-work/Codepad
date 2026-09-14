@@ -923,20 +923,6 @@
       "technology": "nodejs"
     },
     {
-      "title": "Explain the Node.js event loop.",
-      "description": "A core concept in Node.js, this question tests understanding of its asynchronous nature.",
-      "answer": "The Node.js event loop is a crucial part of its non-blocking I/O model. It's a continuous loop that checks the call stack for tasks, and if empty, processes callbacks from the event queue. When asynchronous operations complete (like file I/O or network requests), their callbacks are placed in the event queue to be picked up by the event loop. This allows Node.js to handle many concurrent operations without creating a thread for each, making it very efficient.",
-      "difficulty": "medium",
-      "round": "DSA",
-      "tags": [
-        "event loop",
-        "asynchronous",
-        "concurrency",
-        "architecture"
-      ],
-      "technology": "nodejs"
-    },
-    {
       "title": "What is the difference between blocking and non-blocking I/O in Node.js?",
       "description": "This question delves into the core I/O model of Node.js.",
       "answer": "Blocking I/O operations halt the execution of the entire program until the operation completes, preventing other code from running. Non-blocking I/O operations, on the other hand, allow the program to continue executing other code while the I/O operation runs in the background. Node.js primarily uses a non-blocking, asynchronous I/O model, leveraging the event loop and callback functions to handle operations without pausing the main thread, leading to higher scalability and responsiveness.",

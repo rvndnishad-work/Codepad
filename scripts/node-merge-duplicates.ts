@@ -40,6 +40,9 @@ const MERGES: Record<string, string[]> = {
   "How do you handle uncaught exceptions and unhandled promise rejections in Node.js?": [
     "What are 'unhandledRejections' and how do they differ from 'uncaughtExceptions'?",
   ],
+  "How does the Node.js event loop work?": [
+    "Explain the Node.js event loop.",
+  ],
 };
 
 const slugify = (s: string) =>

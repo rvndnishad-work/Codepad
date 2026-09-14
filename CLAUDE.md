@@ -34,13 +34,15 @@ Not every section is mandatory for every question — vary structure where a sec
 11. **Conclusion** — one paragraph tying it together
 12. **Cross-links** — see `## 5. Cross-Linking Convention`
 
-## 2. Answer Body Structure (React/Frontend Questions)
+## 2. Answer Body Structure ( Node.js / JavaScript Questions)
 
-Same spirit, adapted:
+Same spirit as system design, adapted:
 
 - Drop "Questions to Ask Your Interviewer" — doesn't fit definitional/technical questions. Skip straight to the concept.
-- Add a **"How to Answer in an Interview"** section as the second-to-last section (before Glossary) — see `## 7` for the exact styling.
-- Prefer code examples that are **actually executed** — see `## 4`.
+- Add a **"How to Answer in an Interview"** section as the second-to-last section (before Glossary) — see `## 7` for the exact styling. This applies to **React, Node.js, and general JavaScript questions alike**, not just React.
+- Prefer code examples that are **actually executed** — see `## 4`. For Node.js specifically, this is the easy case: no jsdom, no esbuild/JSX transform, no `react-dom` — just run `node file.js` directly and capture real output.
+- Node.js questions commonly hinge on *ordering* and *timing* claims (event loop phases, microtask vs. macrotask queues, when a callback actually fires relative to another). Never assert an ordering claim from memory — write the smallest reproducing snippet, run it with `console.log` markers at each step, and quote the actual observed output, exactly as done for React's effect-timing and cleanup-ordering claims.
+- Node version-specific facts (when a feature stabilized, when something was deprecated, current LTS behavior) go through the same fact-checking rule in `## 10` — verify via search, don't assume from training data.
 
 ## 3. SVG Rules (Hard Requirements — Violations Break Rendering)
 
@@ -65,6 +67,7 @@ These were each discovered by actually breaking the platform's renderer. Follow 
 - For React/DOM code: don't just assert "this is standard, well-documented syntax" as a substitute for execution. It's possible to actually verify React code — install `react`, `react-dom`, `jsdom`, and `esbuild` in a sandbox, compile JSX with `esbuild --jsx=automatic`, and either:
   - Server-render with `react-dom/server`'s `renderToStaticMarkup` for stateless output checks, or
   - Mount into a real jsdom document with `react-dom/client`'s `createRoot` + React's `act()` for effect timing, event simulation, and lifecycle behavior.
+- For plain Node.js code: this is the easiest case — no toolchain setup at all. Write the snippet to a file and run `node file.js` directly. There is no excuse for an unverified Node.js code example; if it's in the doc, it was actually run.
 - If something genuinely cannot be verified (e.g., a claim depends on a real browser API absent in jsdom), say so explicitly rather than presenting it as confirmed. Precision about what was and wasn't checked is part of the deliverable.
 
 ## 5. Multi-Language Code Examples (JSON Schema)
@@ -107,7 +110,7 @@ The Question Body is short and rubric-shaped, not another teaching doc:
 **Code / implementation expected:** [Yes/No/Optional, with a one-line note on what kind]
 ```
 
-## 7. "How to Answer in an Interview" Card (React/Frontend Questions Only)
+## 7. "How to Answer in an Interview" Card (React, Node.js & JavaScript Questions)
 
 A distinct visual block, placed near the end of the Answer Body (before Glossary). Exact styling — dark-mode-native, not a light card on a dark page:
 
@@ -135,7 +138,8 @@ Don't force identical structure on every doc. Where it genuinely helps:
 - **System design ("design a...", "how would you build...")**: full template including clarifying questions
 - **Conceptual/comparison ("X vs Y", "what is the difference between...")**: skip clarifying questions, lead with the core distinction
 - **Definitional/technical ("what is X", "what does Y do")**: skip clarifying questions, can be shorter overall, lean on precise verified facts over broad architecture discussion
-- **React/frontend**: always include the "How to Answer in an Interview" card; verify code by actually executing it, not just writing plausible syntax
+- **React/frontend**: always include the "How to Answer in an Interview" card; verify code by actually executing it (jsdom + esbuild for anything touching the DOM), not just writing plausible syntax
+- **Node.js/backend JavaScript** (event loop, streams, `EventEmitter`, `cluster`/`worker_threads`, CJS vs. ESM, error handling patterns, `process`, buffers): always include the "How to Answer in an Interview" card. Verification is simpler than React here — run the snippet directly with `node`, no DOM simulation needed. Be especially rigorous about ordering/timing claims (event loop phases, microtask vs. macrotask) — these are the single most common source of confidently-wrong answers on this topic, and are cheap to actually verify with a `console.log`-instrumented snippet before writing the claim into the doc.
 
 ## 10. Fact-Checking Rule
 

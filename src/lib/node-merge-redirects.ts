@@ -28,6 +28,10 @@ export const nodeMergeRedirects = [
   {
     "from": "/interview-question/what-are-unhandledrejections-and-how-do-they-differ-from-uncaughtexceptions",
     "to": "/interview-question/how-do-you-handle-uncaught-exceptions-and-unhandled-promise-rejections-in-node-j"
+  },
+  {
+    "from": "/interview-question/explain-the-node-js-event-loop",
+    "to": "/interview-question/how-does-the-node-js-event-loop-work"
   }
 ].map((r) => ({
   source: r.from,

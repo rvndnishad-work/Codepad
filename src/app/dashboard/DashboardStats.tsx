@@ -170,7 +170,7 @@ export default function DashboardStats({ stats }: { stats: Stats }) {
   }, [stats.total, stats.blogsCount, stats.challengesCount, stats.totalViews, stats.pinnedCount]);
 
   return (
-    <div ref={root} className="gx mb-8 grid grid-cols-2 items-stretch gap-3 sm:grid-cols-3 lg:grid-cols-5 lg:gap-4">
+    <div ref={root} className="gx mb-10 grid grid-cols-2 items-stretch gap-3 sm:grid-cols-3 lg:grid-cols-5 lg:gap-4">
       {CARDS.map(({ key, label, sub, Icon, accent, viz }) => {
         const value = values[key] ?? 0;
         return (

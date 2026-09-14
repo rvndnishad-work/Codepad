@@ -77,7 +77,7 @@ import { getSignalingUrls } from "@/lib/signaling";
 import { challengeSurface } from "@/lib/templates";
 import { getSandpackTheme } from "@/lib/sandpack-theme";
 import { describeExecution } from "@/lib/exec-result";
-import { useResizable } from "@/hooks/useResizable";
+import { useResizable, RESIZE_RAIL_X, RESIZE_RAIL_Y, onResizeKey } from "@/hooks/useResizable";
 import { useResizableHeight } from "@/hooks/useResizableHeight";
 
 type Challenge = {
@@ -311,17 +311,45 @@ function pairClamp(a: number, b: number, d: number, aMin: number, aMax: number, 
 /** Percentage-based pane dragging for the frontend surface. Deltas are
  *  measured in % of the handle's container, so splits track the viewport
  *  (narrow laptop ↔ ultrawide) instead of freezing in px. Each handle only
- *  trades space between its two neighbours — the row total stays 100. */
+ *  trades space between its two neighbours — the row total stays 100.
+ *
+ *  Two rules keep the gesture 1:1 with the pointer:
+ *  - `apply` receives the TOTAL displacement since dragstart and must combine
+ *    it with values snapshotted at dragstart (callers capture their base via
+ *    `panesRef` before calling `start`). Feeding a from-start delta into
+ *    *current* state double-counts every move and the pane races the cursor.
+ *  - updates are coalesced to one per animation frame so high-frequency
+ *    trackpad streams can't queue a re-render (and Monaco relayout) per event.
+ */
 function usePaneDrag() {
-  const dragRef = useRef<{ startX: number; total: number; apply: (dPct: number) => void } | null>(null);
+  const dragRef = useRef<{
+    startX: number;
+    total: number;
+    apply: (dPct: number) => void;
+    raf: number;
+    pending: number | null;
+  } | null>(null);
 
   const onMove = useCallback((ev: PointerEvent) => {
     const d = dragRef.current;
     if (!d) return;
-    d.apply(((ev.clientX - d.startX) / Math.max(1, d.total)) * 100);
+    d.pending = ((ev.clientX - d.startX) / Math.max(1, d.total)) * 100;
+    if (!d.raf) {
+      d.raf = requestAnimationFrame(() => {
+        const cur = dragRef.current;
+        if (!cur) return;
+        cur.raf = 0;
+        if (cur.pending !== null) cur.apply(cur.pending);
+      });
+    }
   }, []);
 
   const onUp = useCallback(() => {
+    const d = dragRef.current;
+    if (d?.raf) cancelAnimationFrame(d.raf);
+    // Flush the last displacement so the split lands exactly where it was
+    // released instead of one (cancelled) frame short.
+    if (d && d.pending !== null) d.apply(d.pending);
     dragRef.current = null;
     document.removeEventListener("pointermove", onMove);
     document.removeEventListener("pointerup", onUp);
@@ -339,7 +367,7 @@ function usePaneDrag() {
     } catch {
       /* pointer capture unsupported — document listeners still track */
     }
-    dragRef.current = { startX: e.clientX, total: container.getBoundingClientRect().width, apply };
+    dragRef.current = { startX: e.clientX, total: container.getBoundingClientRect().width, apply, raf: 0, pending: null };
     document.addEventListener("pointermove", onMove);
     document.addEventListener("pointerup", onUp);
     document.addEventListener("pointercancel", onUp);
@@ -497,43 +525,92 @@ export default function ChallengeAttemptClient({
   // Handles trade space between neighbours only (row total stays 100).
   const [panes, setPanes] = useState({ brief: 25, files: 10, editor: 40, output: 25 });
   const { start: startPaneDrag } = usePaneDrag();
+  // Live mirror so drag handlers can snapshot the split at dragstart.
+  // Deltas are applied to THAT snapshot (never to live state) so the pane
+  // tracks the pointer 1:1 instead of racing ahead of it.
+  const panesRef = useRef(panes);
+  panesRef.current = panes;
   const rowRef = useRef<HTMLDivElement | null>(null);
   // Drag-resizable panels (frontend surface): console height.
   const { height: consoleH, onPointerDown: onConsoleDrag, setHeight: setConsoleH } = useResizableHeight(180, 80, 900);
   // Drag-resizable panels (DSA surface): description width + console/tests sidebar
   // width (the sidebar sits right of its handle, so its drag is inverted).
-  const { width: dsaDescW, onPointerDown: onDsaDescDrag } = useResizable(340, 260, 640);
-  const { width: dsaSideW, onPointerDown: onDsaSideDrag } = useResizable(380, 300, 720, true);
+  const { width: dsaDescW, onPointerDown: onDsaDescDrag, setWidth: setDsaDescW } = useResizable(340, 260, 640);
+  const { width: dsaSideW, onPointerDown: onDsaSideDrag, setWidth: setDsaSideW } = useResizable(380, 300, 720, true);
   // Output view: preview only / split / console only.
   const [outputView, setOutputView] = useState<"preview" | "both" | "console">("both");
 
   // Percent-drag handlers (container = the row the two neighbours share).
-  // brief ↔ rest of row
-  const onBriefDrag = (e: React.PointerEvent) =>
+  // Each snapshots its base split at dragstart; the rAF-throttled apply
+  // below combines the TOTAL from-start delta with that base.
+  // brief ↔ rest of row. The three "rest" panes (files/editor/output) are
+  // rescaled proportionally so brief+files+editor+output always sums to 100.
+  // Keeping that invariant is what makes every OTHER handle stay 1:1 with the
+  // pointer: the files/editor/output drags convert their pointer delta using
+  // `100 - brief` as the rest-row width, which only matches the innerBasis
+  // denominator (files+editor+output) while the four values sum to 100.
+  const onBriefDrag = (e: React.PointerEvent) => {
+    const base = panesRef.current;
+    const rest0 = base.files + base.editor + base.output;
     startPaneDrag(e, rowRef.current, (d) =>
-      setPanes((s) => {
-        const [brief] = pairClamp(s.brief, 100 - s.brief, d, 15, 55, 40, 85);
-        return { ...s, brief };
+      setPanes(() => {
+        const [brief, rest] = pairClamp(base.brief, rest0, d, 15, 55, 45, 85);
+        const k = rest / rest0;
+        return { brief, files: base.files * k, editor: base.editor * k, output: base.output * k };
       })
     );
-  // files ↔ editor (delta measured in % of the rest row, converted to row %)
-  const onFilesDrag = (e: React.PointerEvent) =>
+  };
+  // files ↔ editor (delta measured in % of the rest row, converted to row %).
+  // rest0 is the rest row width in row %; using the actual pane sum keeps it
+  // exactly equal to the innerBasis denominator so the drag stays 1:1.
+  const onFilesDrag = (e: React.PointerEvent) => {
+    const b = panesRef.current;
+    const rest0 = b.files + b.editor + b.output;
     startPaneDrag(e, splitRowRef.current, (dRest) =>
       setPanes((s) => {
-        const rest = 100 - s.brief;
-        const [files, editor] = pairClamp(s.files, s.editor, (dRest * rest) / 100, 4, 22, 15, 70);
+        const [files, editor] = pairClamp(b.files, b.editor, (dRest * rest0) / 100, 4, 22, 15, 70);
         return { ...s, files, editor };
       })
     );
+  };
   // editor ↔ output (delta measured in % of the rest row)
-  const onCodeDrag = (e: React.PointerEvent) =>
+  const onCodeDrag = (e: React.PointerEvent) => {
+    const b = panesRef.current;
+    const rest0 = b.files + b.editor + b.output;
     startPaneDrag(e, splitRowRef.current, (dRest) =>
       setPanes((s) => {
-        const rest = 100 - s.brief;
-        const [editor, output] = pairClamp(s.editor, s.output, (dRest * rest) / 100, 15, 70, 8, 50);
+        const [editor, output] = pairClamp(b.editor, b.output, (dRest * rest0) / 100, 15, 70, 8, 50);
         return { ...s, editor, output };
       })
     );
+  };
+  // Keyboard stepping for focused handles (ArrowLeft/Right or Up/Down).
+  // Same splits as the drags above, in fixed increments.
+  const nudgeBrief = (dir: 1 | -1) =>
+    setPanes((s) => {
+      const rest0 = s.files + s.editor + s.output;
+      const [brief, rest] = pairClamp(s.brief, rest0, dir * 2, 15, 55, 45, 85);
+      const k = rest / rest0;
+      return { brief, files: s.files * k, editor: s.editor * k, output: s.output * k };
+    });
+  const nudgeFiles = (dir: 1 | -1) =>
+    setPanes((s) => {
+      const [files, editor] = pairClamp(s.files, s.editor, dir * 2, 4, 22, 15, 70);
+      return { ...s, files, editor };
+    });
+  const nudgeCode = (dir: 1 | -1) =>
+    setPanes((s) => {
+      const [editor, output] = pairClamp(s.editor, s.output, dir * 2, 15, 70, 8, 50);
+      return { ...s, editor, output };
+    });
+  const nudgeDsaDesc = (dir: 1 | -1) => setDsaDescW((w) => Math.min(640, Math.max(260, w + dir * 24)));
+  // Inverted handles (panel sits right of the rail): moving the rail right
+  // shrinks the panel.
+  const nudgeDsaSide = (dir: 1 | -1) => setDsaSideW((w) => Math.min(720, Math.max(300, w - dir * 24)));
+  const nudgeConsoleW = (dir: 1 | -1) => setConsoleW((w) => Math.min(1200, Math.max(160, w - dir * 24)));
+  // Row handle (preview above, console below): moving the rail down shrinks
+  // the console.
+  const nudgeConsoleH = (dir: 1 | -1) => setConsoleH((h) => Math.min(900, Math.max(80, h - dir * 24)));
   // Inner basis values are % of the rest row (files+editor+output).
   const restTotal = panes.files + panes.editor + panes.output;
   const innerBasis = (v: number) => `${((v / Math.max(1, restTotal)) * 100).toFixed(2)}%`;
@@ -1908,10 +1985,13 @@ export default function ChallengeAttemptClient({
           {!questionCollapsed && (
             <div
               onPointerDown={onBriefDrag}
-              title="Drag to resize"
+              onKeyDown={(e) => onResizeKey(e, nudgeBrief)}
+              tabIndex={0}
+              title="Drag to resize (arrow keys work too)"
               role="separator"
               aria-orientation="vertical"
-              className="hidden lg:block w-1.5 shrink-0 cursor-col-resize touch-none select-none bg-border/40 hover:bg-accent/60 active:bg-accent/70 transition-colors"
+              aria-label="Resize question brief and code"
+              className={`hidden lg:block w-1.5 shrink-0 cursor-col-resize touch-none select-none bg-border/40 hover:bg-accent/60 active:bg-accent/70 transition-colors ${RESIZE_RAIL_X}`}
             />
           )}
 
@@ -1945,10 +2025,13 @@ export default function ChallengeAttemptClient({
             {!fileTreeCollapsed && (
               <div
                 onPointerDown={onFilesDrag}
-                title="Drag to resize file explorer"
+                onKeyDown={(e) => onResizeKey(e, nudgeFiles)}
+                tabIndex={0}
+                title="Drag to resize file explorer (arrow keys work too)"
                 role="separator"
                 aria-orientation="vertical"
-                className="hidden sm:block w-1.5 shrink-0 cursor-col-resize touch-none select-none bg-transparent hover:bg-accent/60 active:bg-accent/70 transition-colors"
+                aria-label="Resize file explorer and editor"
+                className={`hidden sm:block w-1.5 shrink-0 cursor-col-resize touch-none select-none bg-transparent hover:bg-accent/60 active:bg-accent/70 transition-colors ${RESIZE_RAIL_X}`}
               />
             )}
             <div className="flex-1 min-w-0 min-h-0 h-full relative flex flex-col border-l border-border">
@@ -1978,10 +2061,13 @@ export default function ChallengeAttemptClient({
               tracks the viewport. Overlay blocks the preview iframe mid-drag. */}
           <div
             onPointerDown={onCodeDrag}
-            title="Drag to resize"
+            onKeyDown={(e) => onResizeKey(e, nudgeCode)}
+            tabIndex={0}
+            title="Drag to resize (arrow keys work too)"
             role="separator"
             aria-orientation="vertical"
-            className="hidden lg:block w-1.5 shrink-0 cursor-col-resize touch-none select-none bg-border/40 hover:bg-accent/60 active:bg-accent/70 transition-colors"
+            aria-label="Resize editor and output"
+            className={`hidden lg:block w-1.5 shrink-0 cursor-col-resize touch-none select-none bg-border/40 hover:bg-accent/60 active:bg-accent/70 transition-colors ${RESIZE_RAIL_X}`}
           />
 
           {/* Output: preview + console with a view toggle (preview / split /
@@ -2078,10 +2164,13 @@ export default function ChallengeAttemptClient({
                   userResizedRef.current = true;
                   onConsoleWDrag(e);
                 }}
-                title="Drag to resize"
+                onKeyDown={(e) => onResizeKey(e, nudgeConsoleW)}
+                tabIndex={0}
+                title="Drag to resize (arrow keys work too)"
                 role="separator"
                 aria-orientation="vertical"
-                className="w-1.5 shrink-0 cursor-col-resize touch-none select-none bg-border/40 hover:bg-accent/60 active:bg-accent/70 transition-colors"
+                aria-label="Resize preview and console"
+                className={`w-1.5 shrink-0 cursor-col-resize touch-none select-none bg-border/40 hover:bg-accent/60 active:bg-accent/70 transition-colors ${RESIZE_RAIL_X}`}
               />
             ) : (
               <div
@@ -2089,11 +2178,14 @@ export default function ChallengeAttemptClient({
                   userResizedRef.current = true;
                   onConsoleDrag(e);
                 }}
-                title="Drag to resize"
+                onKeyDown={(e) => onResizeKey(e, nudgeConsoleH)}
+                tabIndex={0}
+                title="Drag to resize (arrow keys work too)"
                 role="separator"
                 aria-orientation="horizontal"
+                aria-label="Resize preview and console"
                 style={{ display: outputView === "both" ? "block" : "none" }}
-                className="h-1.5 shrink-0 cursor-row-resize touch-none select-none bg-border/40 hover:bg-accent/60 active:bg-accent/70 transition-colors"
+                className={`h-1.5 shrink-0 cursor-row-resize touch-none select-none bg-border/40 hover:bg-accent/60 active:bg-accent/70 transition-colors ${RESIZE_RAIL_Y}`}
               />
             )}
 
@@ -2147,10 +2239,13 @@ export default function ChallengeAttemptClient({
           {/* Drag handle: description ↔ editor (desktop) */}
           <div
             onPointerDown={onDsaDescDrag}
-            title="Drag to resize"
+            onKeyDown={(e) => onResizeKey(e, nudgeDsaDesc)}
+            tabIndex={0}
+            title="Drag to resize (arrow keys work too)"
             role="separator"
             aria-orientation="vertical"
-            className="hidden lg:block w-1.5 shrink-0 cursor-col-resize touch-none select-none bg-border/40 hover:bg-accent/60 active:bg-accent/70 transition-colors"
+            aria-label="Resize description and editor"
+            className={`hidden lg:block w-1.5 shrink-0 cursor-col-resize touch-none select-none bg-border/40 hover:bg-accent/60 active:bg-accent/70 transition-colors ${RESIZE_RAIL_X}`}
           />
 
           {/* Center Editor Panel — takes the remaining space */}
@@ -2180,10 +2275,13 @@ export default function ChallengeAttemptClient({
           {/* Drag handle: editor ↔ console/tests sidebar (desktop) */}
           <div
             onPointerDown={onDsaSideDrag}
-            title="Drag to resize"
+            onKeyDown={(e) => onResizeKey(e, nudgeDsaSide)}
+            tabIndex={0}
+            title="Drag to resize (arrow keys work too)"
             role="separator"
             aria-orientation="vertical"
-            className="hidden lg:block w-1.5 shrink-0 cursor-col-resize touch-none select-none bg-border/40 hover:bg-accent/60 active:bg-accent/70 transition-colors"
+            aria-label="Resize editor and console sidebar"
+            className={`hidden lg:block w-1.5 shrink-0 cursor-col-resize touch-none select-none bg-border/40 hover:bg-accent/60 active:bg-accent/70 transition-colors ${RESIZE_RAIL_X}`}
           />
 
           {/* Console and Tests sidebar — drag-resizable width on desktop */}

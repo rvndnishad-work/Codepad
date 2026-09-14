@@ -38,7 +38,7 @@ export default function DashboardHero({ userName }: { userName: string | null })
   }, []);
 
   return (
-    <section ref={root} className="gx relative -mx-4 -mt-8 md:-mt-12">
+    <section ref={root} data-dark-hero className="gx relative -mx-4 -mt-8 md:-mt-12">
       <div className="relative flex min-h-[88vh] items-center overflow-hidden px-4 py-20 md:px-8">
         {/* warm core-light washing the headline from behind */}
         <div aria-hidden className="pointer-events-none absolute left-[8%] top-1/2 h-[34rem] w-[34rem] -translate-y-1/2 rounded-full bg-[radial-gradient(circle,rgba(255,232,190,0.09),transparent_62%)] blur-2xl" />

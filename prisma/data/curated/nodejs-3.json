@@ -1,0 +1,137 @@
+[
+  {
+    "title": "What does the Node.js `--env-file` flag do, and does it replace dotenv?",
+    "description": "Loading .env files without the dotenv package.",
+    "answer": "Placeholder — filled in by prisma/data/node-augments-ultra-1.ts via `npm run augment:node`.",
+    "difficulty": "easy",
+    "round": "Backend",
+    "tags": ["env-file", "dotenv", "configuration", "cli-flags"],
+    "technology": "nodejs"
+  },
+  {
+    "title": "What is Corepack and how does it manage npm, Yarn, and pnpm versions?",
+    "description": "Pinning the exact package manager version a project needs.",
+    "answer": "Placeholder — filled in by prisma/data/node-augments-ultra-1.ts via `npm run augment:node`.",
+    "difficulty": "easy",
+    "round": "Backend",
+    "tags": ["corepack", "npm", "yarn", "pnpm", "tooling"],
+    "technology": "nodejs"
+  },
+  {
+    "title": "What is `node:sqlite`, Node's built-in SQLite module?",
+    "description": "A database driver shipped with Node itself, no dependency required.",
+    "answer": "Placeholder — filled in by prisma/data/node-augments-ultra-1.ts via `npm run augment:node`.",
+    "difficulty": "medium",
+    "round": "Backend",
+    "tags": ["node:sqlite", "database", "sqlite", "built-in-modules"],
+    "technology": "nodejs"
+  },
+  {
+    "title": "How does CommonJS `require()` an ES Module in modern Node.js?",
+    "description": "Synchronous require() across the CJS/ESM boundary, and where it fails.",
+    "answer": "Placeholder — filled in by prisma/data/node-augments-ultra-1.ts via `npm run augment:node`.",
+    "difficulty": "hard",
+    "round": "Backend",
+    "tags": ["commonjs", "esm", "require", "modules", "interop"],
+    "technology": "nodejs"
+  },
+  {
+    "title": "Fastify vs Express — how do they differ in architecture and performance?",
+    "description": "Schema-based validation/serialization and plugin encapsulation vs middleware.",
+    "answer": "Placeholder — filled in by prisma/data/node-augments-ultra-1.ts via `npm run augment:node`.",
+    "difficulty": "medium",
+    "round": "Backend",
+    "tags": ["fastify", "express", "frameworks", "performance"],
+    "technology": "nodejs"
+  },
+  {
+    "title": "How do you build a GraphQL API in Node.js, and what is the N+1 problem?",
+    "description": "Resolvers, schemas, and batching database calls with DataLoader.",
+    "answer": "Placeholder — filled in by prisma/data/node-augments-ultra-1.ts via `npm run augment:node`.",
+    "difficulty": "medium",
+    "round": "Backend",
+    "tags": ["graphql", "n+1", "dataloader", "resolvers", "api-design"],
+    "technology": "nodejs"
+  },
+  {
+    "title": "What is CSRF and how do you protect a Node.js API against it?",
+    "description": "Cross-Site Request Forgery, and why it is a different problem from CORS.",
+    "answer": "Placeholder — filled in by prisma/data/node-augments-ultra-1.ts via `npm run augment:node`.",
+    "difficulty": "medium",
+    "round": "Backend",
+    "tags": ["csrf", "cors", "security", "cookies", "same-site"],
+    "technology": "nodejs"
+  },
+  {
+    "title": "Why does a containerized Node.js process need special signal handling as PID 1?",
+    "description": "Zombie processes, SIGTERM forwarding, and why tini or dumb-init gets added to a Dockerfile.",
+    "answer": "Placeholder — filled in by prisma/data/node-augments-ultra-1.ts via `npm run augment:node`.",
+    "difficulty": "hard",
+    "round": "Backend",
+    "tags": ["docker", "pid-1", "signals", "sigterm", "containers"],
+    "technology": "nodejs"
+  },
+  {
+    "title": "What is the difference between operational and programmer errors in Node.js?",
+    "description": "Errors you should recover from vs bugs that should crash the process.",
+    "answer": "Placeholder — filled in by prisma/data/node-augments-ultra-1.ts via `npm run augment:node`.",
+    "difficulty": "medium",
+    "round": "Backend",
+    "tags": ["error-handling", "custom-errors", "best-practices"],
+    "technology": "nodejs"
+  },
+  {
+    "title": "`Buffer.alloc` vs `Buffer.allocUnsafe` vs `Buffer.from` — what are the security implications?",
+    "description": "Zero-filled vs uninitialized memory, and when the faster call is actually dangerous.",
+    "answer": "Placeholder — filled in by prisma/data/node-augments-ultra-1.ts via `npm run augment:node`.",
+    "difficulty": "medium",
+    "round": "Low-Level Design",
+    "tags": ["buffer", "security", "memory", "performance"],
+    "technology": "nodejs"
+  },
+  {
+    "title": "Why is `stream.pipeline()` preferred over `.pipe()` for chaining streams?",
+    "description": "Error propagation and automatic cleanup across a chain of streams.",
+    "answer": "Placeholder — filled in by prisma/data/node-augments-ultra-1.ts via `npm run augment:node`.",
+    "difficulty": "medium",
+    "round": "Low-Level Design",
+    "tags": ["streams", "pipeline", "pipe", "error-handling"],
+    "technology": "nodejs"
+  },
+  {
+    "title": "How do you consume a readable stream with `for await...of` versus the `data` event?",
+    "description": "Async iteration over streams and how it interacts with backpressure.",
+    "answer": "Placeholder — filled in by prisma/data/node-augments-ultra-1.ts via `npm run augment:node`.",
+    "difficulty": "medium",
+    "round": "Low-Level Design",
+    "tags": ["streams", "async-iteration", "for-await-of", "backpressure"],
+    "technology": "nodejs"
+  },
+  {
+    "title": "How do you design REST API versioning in a Node.js service?",
+    "description": "URI, header, and content-negotiation versioning, and when to deprecate a version.",
+    "answer": "Placeholder — filled in by prisma/data/node-augments-ultra-1.ts via `npm run augment:node`.",
+    "difficulty": "medium",
+    "round": "System Design",
+    "tags": ["api-design", "versioning", "rest", "breaking-changes"],
+    "technology": "nodejs"
+  },
+  {
+    "title": "What changes for a Node.js app running on AWS Lambda vs a long-running server?",
+    "description": "Cold starts, connection reuse across invocations, and the handler execution model.",
+    "answer": "Placeholder — filled in by prisma/data/node-augments-ultra-1.ts via `npm run augment:node`.",
+    "difficulty": "hard",
+    "round": "System Design",
+    "tags": ["serverless", "aws-lambda", "cold-start", "architecture"],
+    "technology": "nodejs"
+  },
+  {
+    "title": "What do `unref()` and `ref()` do on a Node.js Timeout, and why do timers drift?",
+    "description": "Letting a timer stop the event loop from exiting, and why setInterval is not a stopwatch.",
+    "answer": "Placeholder — filled in by prisma/data/node-augments-ultra-1.ts via `npm run augment:node`.",
+    "difficulty": "hard",
+    "round": "Backend",
+    "tags": ["timers", "event-loop", "unref", "setinterval"],
+    "technology": "nodejs"
+  }
+]

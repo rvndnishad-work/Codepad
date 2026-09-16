@@ -28,6 +28,7 @@
     "augment:ng": "npx tsx prisma/augment-angular.ts",
     "augment:node": "npx tsx prisma/augment-node.ts",
     "augment:js-ultra": "npx tsx prisma/augment-js-ultra.ts",
+    "augment:js-coding": "npx tsx prisma/augment-js-coding.ts",
     "augment:next": "npx tsx prisma/augment-nextjs.ts",
     "augment:ai": "npx tsx prisma/augment-ai.ts",
     "augment:py": "npx tsx prisma/augment-python.ts",

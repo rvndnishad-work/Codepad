@@ -1,53 +1,5 @@
 [
   {
-    "title": "Valid Parentheses / Balanced Brackets",
-    "description": "Given a string containing just the characters (){}[], determine if the input string is valid — every opening bracket has a matching closing bracket of the same type, in the correct order.",
-    "technology": "javascript-coding",
-    "round": "DSA",
-    "difficulty": "easy",
-    "tags": ["stack", "string", "warm-up"]
-  },
-  {
-    "title": "Longest Substring Without Repeating Characters",
-    "description": "Given a string, find the length of the longest substring that contains no repeating characters.",
-    "technology": "javascript-coding",
-    "round": "DSA",
-    "difficulty": "medium",
-    "tags": ["sliding-window", "string", "hash-map"]
-  },
-  {
-    "title": "Group Anagrams",
-    "description": "Given an array of strings, group the anagrams together. Two strings are anagrams if they contain the same characters in a different order.",
-    "technology": "javascript-coding",
-    "round": "DSA",
-    "difficulty": "medium",
-    "tags": ["hashing", "sorting", "string"]
-  },
-  {
-    "title": "Maximum Subarray (Kadane's Algorithm)",
-    "description": "Given an array of integers, find the contiguous subarray with the largest sum and return that sum.",
-    "technology": "javascript-coding",
-    "round": "DSA",
-    "difficulty": "medium",
-    "tags": ["dynamic-programming", "array"]
-  },
-  {
-    "title": "Merge Overlapping Intervals",
-    "description": "Given an array of intervals where each interval is [start, end], merge all overlapping intervals and return an array of the non-overlapping intervals that cover all the intervals in the input.",
-    "technology": "javascript-coding",
-    "round": "DSA",
-    "difficulty": "medium",
-    "tags": ["intervals", "sorting", "array"]
-  },
-  {
-    "title": "Valid Anagram",
-    "description": "Given two strings, determine if the second is an anagram of the first — the same characters, in any order, used exactly once each.",
-    "technology": "javascript-coding",
-    "round": "DSA",
-    "difficulty": "easy",
-    "tags": ["hashing", "string", "warm-up"]
-  },
-  {
     "title": "Implement Array.prototype.some() and every() From Scratch",
     "description": "Write your own implementation of Array.prototype.some() and Array.prototype.every(), matching the real methods' short-circuiting behavior and edge cases (sparse arrays, thisArg support).",
     "technology": "javascript-coding",
@@ -112,11 +64,83 @@
     "tags": ["state-management", "system-design"]
   },
   {
-    "title": "Implement a Basic Regular-Expression Matcher (., *, Backtracking)",
-    "description": "Implement a simplified regular-expression matcher supporting '.' (matches any single character) and '*' (matches zero or more of the preceding element), matching the entire input string.",
+    "title": "Implement a Minimal useState Hook Using Closures (How React's State Actually Persists Between Renders)",
+    "description": "Implement a simplified version of React's useState — a closure-based hook that persists state across repeated 'render' function calls and triggers a re-render when the state setter is called.",
+    "technology": "javascript-coding",
+    "round": "Frontend",
+    "difficulty": "medium",
+    "tags": ["react", "closures", "hooks"]
+  },
+  {
+    "title": "Implement a Debounced Search Input With Race-Condition-Safe Request Cancellation",
+    "description": "Wire up a search input that debounces keystrokes before firing a fetch request, and correctly cancels or ignores any in-flight request that a newer keystroke has superseded — so a slow earlier response can never overwrite a faster later one.",
+    "technology": "javascript-coding",
+    "round": "Frontend",
+    "difficulty": "medium",
+    "tags": ["debounce", "async", "race-condition", "fetch"]
+  },
+  {
+    "title": "Build an Undo/Redo Command Stack for a Text Editor",
+    "description": "Implement an undo/redo system for a simple text editor: every edit is recorded as a command that can be undone and redone, with correct behavior when a new edit happens after an undo (the redo stack should be discarded).",
+    "technology": "javascript-coding",
+    "round": "Frontend",
+    "difficulty": "medium",
+    "tags": ["command-pattern", "stack", "editor"]
+  },
+  {
+    "title": "Build a Toast/Notification Queue That Shows One at a Time With Auto-Dismiss",
+    "description": "Implement a toast notification queue: multiple toasts can be enqueued at once, but only one shows at a time, each auto-dismissing after a delay before the next one appears.",
+    "technology": "javascript-coding",
+    "round": "Frontend",
+    "difficulty": "easy",
+    "tags": ["queue", "timers", "ui-pattern"]
+  },
+  {
+    "title": "Implement a Memoized Selector That Only Recomputes When Its Specific Inputs Change (Reselect-Style)",
+    "description": "Implement a createSelector-style memoized selector: given one or more input selectors and a combiner function, the combiner should only re-run when the specific values returned by the input selectors actually change, not on every call.",
+    "technology": "javascript-coding",
+    "round": "Frontend",
+    "difficulty": "medium",
+    "tags": ["memoization", "redux", "state-management"]
+  },
+  {
+    "title": "Build a Deterministic Feature-Flag Bucketing Function (Consistent Hash-Based A/B Assignment)",
+    "description": "Implement a function that deterministically assigns a given user ID to an experiment bucket (e.g. 'control' or 'variant') based on a target rollout percentage — the same user ID must always land in the same bucket.",
+    "technology": "javascript-coding",
+    "round": "Low-Level Design",
+    "difficulty": "medium",
+    "tags": ["hashing", "experimentation", "system-design"]
+  },
+  {
+    "title": "Implement a Drag-and-Drop List Reordering Utility Without a Library",
+    "description": "Implement drag-and-drop reordering for a list of items using only native pointer/drag events — no external library — correctly computing the new order as the user drags an item to a new position.",
+    "technology": "javascript-coding",
+    "round": "Frontend",
+    "difficulty": "hard",
+    "tags": ["dom", "drag-and-drop", "events"]
+  },
+  {
+    "title": "Build a Form Validation Utility Supporting Field-Level and Cross-Field Rules",
+    "description": "Implement a small form-validation utility: each field has its own validation rules, plus some rules depend on more than one field (e.g. 'confirm password must match password'), producing a map of field-level error messages.",
+    "technology": "javascript-coding",
+    "round": "Frontend",
+    "difficulty": "medium",
+    "tags": ["validation", "forms"]
+  },
+  {
+    "title": "Implement a Theme Toggle That Persists Choice and Respects prefers-color-scheme",
+    "description": "Implement a light/dark theme toggle: it should default to the user's OS-level color-scheme preference, let the user explicitly override it, and remember that explicit choice across page reloads.",
+    "technology": "javascript-coding",
+    "round": "Frontend",
+    "difficulty": "easy",
+    "tags": ["css", "media-query", "localstorage"]
+  },
+  {
+    "title": "Implement Your Own Array.prototype.reduceRight()",
+    "description": "Write your own implementation of Array.prototype.reduceRight(), matching the real method's right-to-left iteration order and its behavior when no initial value is provided.",
     "technology": "javascript-coding",
     "round": "DSA",
-    "difficulty": "hard",
-    "tags": ["backtracking", "dynamic-programming", "string"]
+    "difficulty": "easy",
+    "tags": ["polyfill", "array"]
   }
 ]

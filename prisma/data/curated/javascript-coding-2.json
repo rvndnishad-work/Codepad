@@ -1,0 +1,122 @@
+[
+  {
+    "title": "Valid Parentheses / Balanced Brackets",
+    "description": "Given a string containing just the characters (){}[], determine if the input string is valid — every opening bracket has a matching closing bracket of the same type, in the correct order.",
+    "technology": "javascript-coding",
+    "round": "DSA",
+    "difficulty": "easy",
+    "tags": ["stack", "string", "warm-up"]
+  },
+  {
+    "title": "Longest Substring Without Repeating Characters",
+    "description": "Given a string, find the length of the longest substring that contains no repeating characters.",
+    "technology": "javascript-coding",
+    "round": "DSA",
+    "difficulty": "medium",
+    "tags": ["sliding-window", "string", "hash-map"]
+  },
+  {
+    "title": "Group Anagrams",
+    "description": "Given an array of strings, group the anagrams together. Two strings are anagrams if they contain the same characters in a different order.",
+    "technology": "javascript-coding",
+    "round": "DSA",
+    "difficulty": "medium",
+    "tags": ["hashing", "sorting", "string"]
+  },
+  {
+    "title": "Maximum Subarray (Kadane's Algorithm)",
+    "description": "Given an array of integers, find the contiguous subarray with the largest sum and return that sum.",
+    "technology": "javascript-coding",
+    "round": "DSA",
+    "difficulty": "medium",
+    "tags": ["dynamic-programming", "array"]
+  },
+  {
+    "title": "Merge Overlapping Intervals",
+    "description": "Given an array of intervals where each interval is [start, end], merge all overlapping intervals and return an array of the non-overlapping intervals that cover all the intervals in the input.",
+    "technology": "javascript-coding",
+    "round": "DSA",
+    "difficulty": "medium",
+    "tags": ["intervals", "sorting", "array"]
+  },
+  {
+    "title": "Valid Anagram",
+    "description": "Given two strings, determine if the second is an anagram of the first — the same characters, in any order, used exactly once each.",
+    "technology": "javascript-coding",
+    "round": "DSA",
+    "difficulty": "easy",
+    "tags": ["hashing", "string", "warm-up"]
+  },
+  {
+    "title": "Implement Array.prototype.some() and every() From Scratch",
+    "description": "Write your own implementation of Array.prototype.some() and Array.prototype.every(), matching the real methods' short-circuiting behavior and edge cases (sparse arrays, thisArg support).",
+    "technology": "javascript-coding",
+    "round": "DSA",
+    "difficulty": "easy",
+    "tags": ["polyfill", "array"]
+  },
+  {
+    "title": "Implement Array.prototype.includes() Handling NaN Correctly",
+    "description": "Write your own implementation of Array.prototype.includes(), correctly handling the real method's SameValueZero comparison — including the case that trips up a naive === based implementation: finding NaN in an array.",
+    "technology": "javascript-coding",
+    "round": "DSA",
+    "difficulty": "medium",
+    "tags": ["polyfill", "array", "edge-cases"]
+  },
+  {
+    "title": "Design a Simple In-Memory Key-Value Store With TTL Expiry (Mini-Redis)",
+    "description": "Design and implement a small in-memory key-value store supporting get/set/delete plus a per-key TTL (time to live) after which a key automatically expires, without leaking memory for expired entries.",
+    "technology": "javascript-coding",
+    "round": "Low-Level Design",
+    "difficulty": "medium",
+    "tags": ["system-design", "cache", "ttl"]
+  },
+  {
+    "title": "Implement a Circuit Breaker for Flaky API Calls",
+    "description": "Implement a circuit breaker wrapper around an async function that calls a flaky API — after enough consecutive failures it should 'open' and fail fast without calling the underlying function, then attempt to 'half-open' and recover after a cooldown.",
+    "technology": "javascript-coding",
+    "round": "Low-Level Design",
+    "difficulty": "hard",
+    "tags": ["resilience", "async", "system-design"]
+  },
+  {
+    "title": "Build a Minimal State Machine Runner (States, Transitions, Guards)",
+    "description": "Design and implement a small finite-state-machine runner: given a configuration of states, events, and transitions (with optional guard functions), drive an object through valid state changes and reject invalid ones.",
+    "technology": "javascript-coding",
+    "round": "Low-Level Design",
+    "difficulty": "hard",
+    "tags": ["state-machine", "system-design"]
+  },
+  {
+    "title": "Build a Simple Client-Side Router That Matches Path Patterns",
+    "description": "Implement a minimal client-side router that registers path patterns (including dynamic segments like /users/:id) against handler functions, and matches a given URL to the correct handler with its parsed parameters.",
+    "technology": "javascript-coding",
+    "round": "Frontend",
+    "difficulty": "medium",
+    "tags": ["routing", "spa", "pattern-matching"]
+  },
+  {
+    "title": "Implement a Virtualized List That Renders Only Visible Rows",
+    "description": "You have a list of 100,000 rows to render. Implement list virtualization: only the rows currently visible in the scroll viewport (plus a small buffer) should exist in the DOM at any time.",
+    "technology": "javascript-coding",
+    "round": "Frontend",
+    "difficulty": "hard",
+    "tags": ["performance", "dom", "virtualization"]
+  },
+  {
+    "title": "Build a Minimal createStore() (Redux-Lite: dispatch, subscribe, reducers)",
+    "description": "Implement a minimal state-management store from scratch: createStore(reducer) returning getState, dispatch, and subscribe, with the same core contract as Redux's own createStore.",
+    "technology": "javascript-coding",
+    "round": "Low-Level Design",
+    "difficulty": "medium",
+    "tags": ["state-management", "system-design"]
+  },
+  {
+    "title": "Implement a Basic Regular-Expression Matcher (., *, Backtracking)",
+    "description": "Implement a simplified regular-expression matcher supporting '.' (matches any single character) and '*' (matches zero or more of the preceding element), matching the entire input string.",
+    "technology": "javascript-coding",
+    "round": "DSA",
+    "difficulty": "hard",
+    "tags": ["backtracking", "dynamic-programming", "string"]
+  }
+]

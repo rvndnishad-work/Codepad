@@ -51,6 +51,7 @@ import {
   Cell
 } from "recharts";
 import { describeExecution } from "@/lib/exec-result";
+import { postExecute } from "@/lib/execute-client";
 import AddCandidateDialog from "./AddCandidateDialog";
 import BulkAddCandidatesDialog from "./BulkAddCandidatesDialog";
 import { bulkCreateTakeHomeSessions } from "./candidates/actions";
@@ -535,18 +536,13 @@ export default function WorkspaceDashboardClient({
     setSandboxRunning(true);
     setSandboxOutput("Executing script on secure container pool...\n");
     try {
-      const res = await fetch(`/api/execute`, {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({
-          language: sandboxLang,
-          code: sandboxCode,
-          stdin: sandboxInput,
-        }),
+      const { status, data } = await postExecute({
+        language: sandboxLang,
+        code: sandboxCode,
+        stdin: sandboxInput,
       });
 
-      const data = await res.json().catch(() => null);
-      const output = describeExecution(res.status, data)
+      const output = describeExecution(status, data)
         .map((line) => (line.method === "error" ? `[stderr] ${line.text}` : line.text))
         .join("\n");
       setSandboxOutput(output);

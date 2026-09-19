@@ -77,6 +77,7 @@ import { getSignalingUrls } from "@/lib/signaling";
 import { challengeSurface } from "@/lib/templates";
 import { getSandpackTheme } from "@/lib/sandpack-theme";
 import { describeExecution } from "@/lib/exec-result";
+import { postExecute, executeBodyForFiles } from "@/lib/execute-client";
 import { useResizable, RESIZE_RAIL_X, RESIZE_RAIL_Y, onResizeKey } from "@/hooks/useResizable";
 import { useResizableHeight } from "@/hooks/useResizableHeight";
 
@@ -1350,19 +1351,16 @@ export default function ChallengeAttemptClient({
       const hashHex = hashArray.map(b => b.toString(16).padStart(2, "0")).join("");
 
       try {
-        const res = await fetch("/api/execute", {
-          method: "POST",
-          headers: { "content-type": "application/json" },
-          body: JSON.stringify({
+        const { status, data: runResult } = await postExecute(
+          executeBodyForFiles({
             language: selectedLanguage,
-            code: rawCode,
+            activeFilePath: activeFile,
+            files: bridge?.files ?? {},
             speculative: false,
             codeHash: hashHex,
           }),
-        });
-
-        const runResult = await res.json().catch(() => null);
-        for (const line of describeExecution(res.status, runResult)) {
+        );
+        for (const line of describeExecution(status, runResult)) {
           window.postMessage({
             type: "console",
             codesandbox: true,
@@ -2600,16 +2598,15 @@ function FilesTracker({
         const hashArray = Array.from(new Uint8Array(hashBuffer));
         const hashHex = hashArray.map(b => b.toString(16).padStart(2, "0")).join("");
 
-        await fetch("/api/execute", {
-          method: "POST",
-          headers: { "content-type": "application/json" },
-          body: JSON.stringify({
+        await postExecute(
+          executeBodyForFiles({
             language: inferredLang,
-            code: activeCode,
+            activeFilePath: sandpack.activeFile,
+            files: sandpack.files,
             speculative: true,
             codeHash: hashHex,
           }),
-        });
+        );
         console.info(`[AuraSandbox] Challenge Speculator queued (Language: ${inferredLang}, Hash: ${hashHex})`);
       } catch (err) {
         console.warn("[AuraSandbox] Challenge Speculator warning:", err);

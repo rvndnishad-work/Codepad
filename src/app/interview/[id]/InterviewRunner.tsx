@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState, useRef } from "react";
 import Link from "next/link";
 import dynamic from "next/dynamic";
+import "@/lib/monaco-loader";
 import PromptChallengeRunner from "./PromptChallengeRunner";
 import SubmissionPreview from "./SubmissionPreview";
 import SubmissionReviewModal from "./SubmissionReviewModal";

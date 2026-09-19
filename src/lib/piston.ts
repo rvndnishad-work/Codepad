@@ -50,10 +50,14 @@ export type PistonResult = {
   stderr: string;
   exitCode: number;
   timeMs: number;
+  /** Resolved runtime version (e.g. "3.12.0") — surfaced in the run footer. */
+  version: string;
   /** Set when the program never ran because compilation failed. */
   compileError?: boolean;
   /** Set when the run was killed by a signal (timeout / OOM / limit). */
   signal?: string | null;
+  /** Set when stdout/stderr were truncated to the output cap. */
+  truncated?: boolean;
 };
 
 export class PistonUnavailableError extends Error {}
@@ -191,6 +195,7 @@ export async function runOnPiston(
       stderr: data.compile.stderr || "Compilation failed.",
       exitCode: data.compile.code ?? 1,
       timeMs,
+      version,
       compileError: true,
       signal: data.compile.signal,
     };
@@ -201,6 +206,7 @@ export async function runOnPiston(
     stderr: data.run.stderr ?? "",
     exitCode: data.run.code ?? (data.run.signal ? 137 : 0),
     timeMs,
+    version,
     signal: data.run.signal,
   };
 }

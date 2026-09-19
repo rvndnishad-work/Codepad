@@ -20,6 +20,7 @@ import {
   type SandpackFiles,
 } from "@codesandbox/sandpack-react";
 import FileExplorer from "./FileExplorer";
+import type { ExplorerOps } from "./FileExplorer";
 import { ErrorBridge, ErrorOverlay, type ErrorData } from "./ErrorOverlay";
 import PromptSidebar from "./PromptSidebar";
 import { useResizable } from "@/hooks/useResizable";
@@ -53,7 +54,17 @@ import { MissingDepBridge } from "./bridges/MissingDepBridge";
 import { decodePlaygroundCode, decodePlaygroundFiles } from "@/lib/playground-handoff";
 import { getSandpackTheme } from "@/lib/sandpack-theme";
 import { TemplateLogo } from "@/lib/icons";
-import { describeExecution } from "@/lib/exec-result";
+import {
+  BACKEND_LANGUAGES,
+  getLanguageFromPath,
+  isBackendLanguage,
+} from "@/lib/playground-languages";
+import { describeExecution, formatRunMeta } from "@/lib/exec-result";
+import { stdinKey } from "@/lib/run-payload";
+import { postExecute, executeBodyForFiles } from "@/lib/execute-client";
+import { snapshotFiles } from "@/lib/file-dirty";
+import { readBoolPref, writeBoolPref, PREF_KEYS } from "@/lib/prefs";
+import type { FormatResult } from "./bridges/FormatBridge";
 import MonacoEditor from "./MonacoEditor";
 import ShortcutsModal from "./ShortcutsModal";
 import PlaygroundToolbar from "./PlaygroundToolbar";
@@ -120,9 +131,6 @@ function simpleHash(str: string): string {
   return (hash >>> 0).toString(16);
 }
 
-/** Languages that execute server-side via /api/execute */
-const BACKEND_LANGUAGES = new Set(["python", "go", "java", "cpp", "rust", "node", "ts-node"]);
-
 /**
  * Dependency names declared in a file map's /package.json, so we never shadow a
  * real npm package the user installed under a Node-builtin name (`events`,
@@ -138,24 +146,6 @@ function readDeclaredDependencies(files: SandpackFiles): string[] {
   } catch {
     return [];
   }
-}
-
-function getLanguageFromPath(filePath: string, fallback: string): string {
-  const ext = filePath.split(".").pop()?.toLowerCase() ?? "";
-  if (ext === "py") return "python";
-  if (ext === "go") return "go";
-  if (ext === "java") return "java";
-  if (ext === "cpp" || ext === "h" || ext === "hpp") return "cpp";
-  if (ext === "rs") return "rust";
-  if (ext === "js" || ext === "jsx") return fallback === "node" ? "node" : "javascript";
-  if (ext === "ts" || ext === "tsx") return "typescript";
-  return fallback;
-}
-
-function isBackendLanguage(lang: string, templateId?: string): boolean {
-  const l = lang.toLowerCase();
-  if (templateId === "ts-node" && l === "typescript") return true;
-  return BACKEND_LANGUAGES.has(l);
 }
 
 /**
@@ -264,11 +254,40 @@ export default function Playground({
   const [tagInput, setTagInput] = useState("");
   const [running, setRunning] = useState(false);
   const [backendLogs, setBackendLogs] = useState<{ method: string; data: string[] }[]>([]);
+  // Provenance of the last explicit run for the console footer.
+  const [runMeta, setRunMeta] = useState<string | null>(null);
+  // Program input for backend runs. Local-only draft per template — it rides
+  // the run request but never enters saved snippets.
+  const [stdin, setStdin] = useState("");
+  const [stdinOpen, setStdinOpen] = useState(false);
+  const stdinRef = useRef("");
+  useEffect(() => {
+    try {
+      const saved = window.localStorage.getItem(stdinKey(templateId));
+      setStdin(saved ?? "");
+      stdinRef.current = saved ?? "";
+      // A restored draft opens the bar so the applied input is visible.
+      if (saved && saved.trim()) setStdinOpen(true);
+    } catch {
+      /* private mode — run without a draft */
+    }
+  }, [templateId]);
+  useEffect(() => {
+    stdinRef.current = stdin;
+    try {
+      window.localStorage.setItem(stdinKey(templateId), stdin);
+    } catch {
+      /* ignore */
+    }
+  }, [stdin, templateId]);
   const [bundlerError, setBundlerError] = useState<ErrorData | null>(null);
   const [mobileFilesOpen, setMobileFilesOpen] = useState(false);
   const [promptOpen, setPromptOpen] = useState(false);
   const [explorerCollapsed, setExplorerCollapsed] = useState(false);
   const [autoRun, setAutoRun] = useState(true);
+  // Format-on-save is opt-in (default off): rewriting code on save must be
+  // the user's explicit choice, never a surprise.
+  const [formatOnSave, setFormatOnSave] = useState(false);
   // Handle the hook's own reset() drains the client's log store directly,
   // so clearing can never desync from what the bundler holds.
   const consoleResetRef = useRef<(() => void) | null>(null);
@@ -364,7 +383,16 @@ export default function Playground({
   const committedSeqRef = useRef(0);
   const backendFetchRef = useRef(false);
   const runRef = useRef<(() => void) | null>(null);
-  const formatRef = useRef<(() => Promise<void>) | null>(null);
+  const explorerOpsRef = useRef<ExplorerOps | null>(null);
+  const formatRef = useRef<
+    ((opts?: { quiet?: boolean }) => Promise<FormatResult | null>) | null
+  >(null);
+  // Last-saved code snapshot for per-tab dirty dots. Seeded from the initial
+  // files so a fresh playground starts clean; refreshed on every save.
+  const savedSnapshotRef = useRef<SandpackFiles | null>(null);
+  if (savedSnapshotRef.current === null) {
+    savedSnapshotRef.current = snapshotFiles(initialFilesRef.current);
+  }
   const customSetup = useMemo(() => {
     const setup: any = tpl.dependencies ? { dependencies: tpl.dependencies } : {};
     return setup;
@@ -419,17 +447,23 @@ export default function Playground({
   const isMobile = useIsMobile(768);
   // Default wide enough for the "Files" label + all header buttons (new file,
   // new folder, deps, sort, download, divider, close) to show without clipping.
-  const { width: explorerW, onPointerDown: onExplorerDrag, setWidth: setExplorerW } = useResizable(280, 200, 400);
-  const { width: editorW, onPointerDown: onEditorDrag, setWidth: setEditorW } = useResizable(500, 200, 2000);
-  const { width: promptW, onPointerDown: onPromptDrag } = useResizable(384, 280, 640, false);
-  const { height: consoleH, onPointerDown: onConsoleDrag } = useResizableHeight(300, 120, 900);
-  const { width: consoleW, onPointerDown: onConsoleColDrag } = useResizable(420, 240, 900, true);
+  const { width: explorerW, onPointerDown: onExplorerDrag, setWidth: setExplorerW } = useResizable(280, 200, 400, false, PREF_KEYS.layout("explorer"));
+  const { width: editorW, onPointerDown: onEditorDrag, setWidth: setEditorW } = useResizable(500, 200, 2000, false, PREF_KEYS.layout("editor"));
+  const { width: promptW, onPointerDown: onPromptDrag } = useResizable(384, 280, 640, false, PREF_KEYS.layout("prompt"));
+  const { height: consoleH, onPointerDown: onConsoleDrag } = useResizableHeight(300, 120, 900, PREF_KEYS.layout("consoleH"));
+  const { width: consoleW, onPointerDown: onConsoleColDrag } = useResizable(420, 240, 900, true, PREF_KEYS.layout("consoleW"));
   // Mobile stacked-pane splits (editor/output 55%, preview/console 60%).
   const { split: mobileSplit, onPointerDown: onMobileSplitDrag } = useVerticalSplit(55);
   const { split: mobileInnerSplit, onPointerDown: onMobileInnerSplitDrag } = useVerticalSplit(60);
 
   useEffect(() => {
+    // A persisted editor width is the user's explicit choice — keep it.
     if (typeof window !== "undefined") {
+      try {
+        if (window.localStorage.getItem(PREF_KEYS.layout("editor")) !== null) return;
+      } catch {
+        /* fall through to defaults */
+      }
       const explorerWidth = explorerCollapsed ? 40 : explorerW;
       const remainingW = window.innerWidth - explorerWidth;
       setEditorW(Math.max(200, Math.floor(remainingW * 0.5)));
@@ -467,6 +501,8 @@ export default function Playground({
   // Speculative pre-compilation — only for backend languages
   useEffect(() => {
     if (!dirty || !templateId || !isBackend) return;
+    // No background executor spend for background tabs.
+    if (typeof document !== "undefined" && document.hidden) return;
 
     const timer = setTimeout(async () => {
       try {
@@ -484,16 +520,18 @@ export default function Playground({
         // Only pre-compile backend languages
         if (!isBackendLanguage(executionLanguage, templateId)) return;
 
-        await fetch("/api/execute", {
-          method: "POST",
-          headers: { "content-type": "application/json" },
-          body: JSON.stringify({
+        // Warm the same cache key the explicit run will read: siblings ride
+        // along so the pre-compiled result matches a multi-file run.
+        await postExecute(
+          executeBodyForFiles({
             language: executionLanguage,
-            code: activeCode,
+            activeFilePath,
+            files: filesRef.current,
             speculative: true,
             codeHash: hashHex,
+            stdin: stdinRef.current,
           }),
-        });
+        );
       } catch (err) {
         console.warn("[Speculative] Pre-compilation background warning:", err);
       }
@@ -520,22 +558,24 @@ export default function Playground({
 
         // Clear console before execution
         setBackendLogs([]);
+        setRunMeta(null);
         backendFetchRef.current = true;
 
-        const res = await fetch("/api/execute", {
-          method: "POST",
-          headers: { "content-type": "application/json" },
-          body: JSON.stringify({
+        // Multi-file workspaces travel whole: sibling modules ride as Piston
+        // extra files so imports resolve server-side.
+        const { status, data: runResult } = await postExecute(
+          executeBodyForFiles({
             language: executionLanguage,
-            code: activeCode,
+            activeFilePath,
+            files: filesRef.current,
             speculative: false,
             codeHash: hashHex,
+            stdin,
           }),
-        });
-
-        const runResult = await res.json().catch(() => null);
+        );
+        setRunMeta(formatRunMeta(runResult));
         setBackendLogs(
-          describeExecution(res.status, runResult).map((line) => ({
+          describeExecution(status, runResult).map((line) => ({
             method: line.method,
             data: [line.text],
           }))
@@ -572,10 +612,25 @@ export default function Playground({
     const seq = ++saveSeqRef.current;
     setSaving(true);
     try {
+      // Format-on-save formats the active file first. The formatted code is
+      // folded into the payload directly: the bridge sync back to filesRef is
+      // async, so reading filesRef here would save the unformatted code.
+      let files: SandpackFiles = filesRef.current;
+      if (formatOnSave) {
+        try {
+          const formatted = await formatRef.current?.({ quiet: true });
+          const atPath = activeFileRef.current || Object.keys(files)[0];
+          if (formatted?.changed && atPath) {
+            files = { ...files, [atPath]: formatted.code };
+          }
+        } catch {
+          /* formatting is best-effort — never block a save */
+        }
+      }
       const payload: Record<string, unknown> = {
         title,
         template: templateId,
-        files: filesRef.current,
+        files,
         visibility,
       };
       if (tags.length > 0) payload.tags = tags;
@@ -603,6 +658,7 @@ export default function Playground({
       if (saveSeqRef.current === seq) {
         setDirty(false);
         setLastSavedAt(Date.now());
+        savedSnapshotRef.current = snapshotFiles(files);
       }
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err);
@@ -728,6 +784,8 @@ export default function Playground({
 
     const savedAutoRun = localStorage.getItem("interviewpad_autoRun");
     if (savedAutoRun !== null) setAutoRun(savedAutoRun === "true");
+
+    setFormatOnSave(readBoolPref(PREF_KEYS.formatOnSave, false));
   }, []);
 
   useEffect(() => {
@@ -737,6 +795,10 @@ export default function Playground({
   useEffect(() => {
     localStorage.setItem("interviewpad_autoRun", autoRun.toString());
   }, [autoRun]);
+
+  useEffect(() => {
+    writeBoolPref(PREF_KEYS.formatOnSave, formatOnSave);
+  }, [formatOnSave]);
 
   useEffect(() => {
     const savedUiScale = localStorage.getItem("interviewpad_uiScale");
@@ -760,6 +822,13 @@ export default function Playground({
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
+      // F2 renames the active file from anywhere (VS Code parity) — it has
+      // no text-editing meaning in inputs, so it runs ahead of the guard.
+      if (e.key === "F2") {
+        e.preventDefault();
+        explorerOpsRef.current?.renameActiveFile();
+        return;
+      }
       // Let text fields handle their own keys — shortcuts must not fire
       // while typing in the title, tags, prompt box or the editor itself.
       const target = e.target as HTMLElement | null;
@@ -767,6 +836,14 @@ export default function Playground({
       if ((e.ctrlKey || e.metaKey) && e.key === "s") {
         e.preventDefault();
         void handleSaveRef.current();
+      }
+      // Delete removes the active file (files only — folders stay on the
+      // context menu). Guarded by the text-field check above so typing,
+      // including Monaco's own textarea, is never affected.
+      if (e.key === "Delete" && !e.ctrlKey && !e.metaKey && !e.altKey) {
+        e.preventDefault();
+        explorerOpsRef.current?.deleteActiveFile();
+        return;
       }
       if ((e.ctrlKey || e.metaKey) && e.key === "Enter") {
         e.preventDefault();
@@ -879,12 +956,15 @@ export default function Playground({
         opacity: 1;
         box-shadow: 0 0 14px rgba(139, 147, 255, 0.65);
       }
-      /* Sonar rings for standby empty states */
-      .ide-sonar { position: relative; }
+      /* Sonar rings for standby empty states. Decorative only: the ping
+         radiates past its box and must never steal taps from nearby
+         controls (on small screens the standby art overflows its pane). */
+      .ide-sonar { position: relative; pointer-events: none; }
       .ide-sonar::before, .ide-sonar::after {
         content: "";
         position: absolute;
         inset: 0;
+        pointer-events: none;
         border-radius: 9999px;
         border: 1px solid rgba(139, 147, 255, 0.55);
         animation: ide-sonar-ping 2.4s cubic-bezier(0, 0, 0.2, 1) infinite;
@@ -944,6 +1024,7 @@ export default function Playground({
               onToggleFiles={() => setMobileFilesOpen((prev) => !prev)}
               onTogglePrompt={() => setPromptOpen((prev) => !prev)}
               autoRun={autoRun} setAutoRun={setAutoRun}
+              formatOnSave={formatOnSave} setFormatOnSave={setFormatOnSave}
               uiScale={uiScale} setUiScale={setUiScale}
               tplMode={tpl.mode}
             />
@@ -994,7 +1075,7 @@ export default function Playground({
                     <div className="fixed inset-0 z-[100] flex bg-black/60 backdrop-blur-sm">
                       <div className="w-4/5 max-w-sm h-full bg-panel border-r border-border shadow-2xl flex flex-col">
                         <div className="flex-1 min-h-0 overflow-y-auto">
-                          <FileExplorer templateId={templateId} readOnly={!editable} onCollapse={() => setMobileFilesOpen(false)} />
+                          <FileExplorer templateId={templateId} readOnly={!editable} onCollapse={() => setMobileFilesOpen(false)} opsRef={explorerOpsRef} />
                         </div>
                       </div>
                       <div className="flex-1" onClick={() => setMobileFilesOpen(false)} />
@@ -1020,7 +1101,7 @@ export default function Playground({
                         <div className="flex flex-col h-full bg-bg">
                           <div style={{ flex: `0 0 ${mobileSplit}%` }} className="min-h-0 overflow-hidden flex flex-col ide-panel">
                             <div className="flex-1 min-h-0">
-                              <MonacoEditor fontSize={fontSize} readOnly={!editable} />
+                              <MonacoEditor fontSize={fontSize} readOnly={!editable} savedSnapshotRef={savedSnapshotRef} />
                             </div>
                             <ReadOnlyToolbar editable={editable} />
                           </div>
@@ -1060,9 +1141,17 @@ export default function Playground({
                                   </div>
                                 </div>
                               )}
+                              {isBackend && (
+                                <StdinBar
+                                  value={stdin}
+                                  open={stdinOpen}
+                                  onToggle={() => setStdinOpen((v) => !v)}
+                                  onChange={setStdin}
+                                />
+                              )}
                               <div className="flex-1 min-h-0">
                                 {isBackend ? (
-                                  <BackendConsole logs={backendLogs} />
+                                  <BackendConsole logs={backendLogs} meta={runMeta} />
                                 ) : (
                                   <JsConsole resetRef={consoleResetRef} />
                                 )}
@@ -1086,7 +1175,7 @@ export default function Playground({
                           {!explorerCollapsed && (
                             <>
                               <div style={{ width: explorerW, minWidth: 0 }} className="h-full shrink-0 flex flex-col ide-panel">
-                                <FileExplorer templateId={templateId} readOnly={!editable} onCollapse={() => setExplorerCollapsed(true)} />
+                                <FileExplorer templateId={templateId} readOnly={!editable} onCollapse={() => setExplorerCollapsed(true)} opsRef={explorerOpsRef} />
                               </div>
                               <div className="ide-divider h-full w-px cursor-col-resize touch-none select-none" onPointerDown={onExplorerDrag}>
                                 <div className="absolute inset-y-0 -left-1.5 -right-1.5" />
@@ -1103,7 +1192,7 @@ export default function Playground({
                           <div style={{ width: editorW, minWidth: 0 }} className="h-full shrink-0 flex flex-col ide-panel">
                             <div className="flex-1 min-h-0">
                               <div className="h-full w-full min-w-0">
-                                <MonacoEditor fontSize={fontSize} readOnly={!editable} />
+                                <MonacoEditor fontSize={fontSize} readOnly={!editable} savedSnapshotRef={savedSnapshotRef} />
                               </div>
                             </div>
                             <ReadOnlyToolbar editable={editable} />
@@ -1193,9 +1282,17 @@ export default function Playground({
                                     </div>
                                   </div>
                                 )}
+                                {isBackend && (
+                                  <StdinBar
+                                    value={stdin}
+                                    open={stdinOpen}
+                                    onToggle={() => setStdinOpen((v) => !v)}
+                                    onChange={setStdin}
+                                  />
+                                )}
                                 <div className="flex-1 min-h-0">
                                   {isBackend ? (
-                                    <BackendConsole logs={backendLogs} />
+                                    <BackendConsole logs={backendLogs} meta={runMeta} />
                                   ) : (
                                     <JsConsole resetRef={consoleResetRef} />
                                   )}
@@ -1464,8 +1561,62 @@ function JsConsole({ resetRef }: { resetRef: React.MutableRefObject<(() => void)
   );
 }
 
-function BackendConsole({ logs }: { logs: { method: string; data: string[] }[] }) {
-  const listRef = useRef<HTMLDivElement>(null);
+/**
+ * Collapsible program-input (stdin) strip above backend consoles.
+ * Closed by default unless a draft was restored; the dot shows stdin will
+ * ride along on Run. Drafts are local-only and never enter saved snippets.
+ */
+function StdinBar({
+  value,
+  open,
+  onToggle,
+  onChange,
+}: {
+  value: string;
+  open: boolean;
+  onToggle: () => void;
+  onChange: (v: string) => void;
+}) {
+  return (
+    <div className="shrink-0 border-b border-white/10 bg-[#0d0f16]/90">
+      <button
+        type="button"
+        onClick={onToggle}
+        aria-expanded={open}
+        title="Program input (stdin)"
+        className="flex w-full items-center gap-2 px-3 py-1.5 text-left"
+      >
+        <Terminal className="h-3 w-3 shrink-0 text-white/40" />
+        <span className="font-mono text-[10px] font-bold uppercase tracking-[0.18em] text-white/60">
+          Input
+        </span>
+        {value.trim() ? (
+          <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" aria-label="stdin set" />
+        ) : (
+          <span className="font-mono text-[10px] text-white/30">stdin — optional</span>
+        )}
+        <ChevronRight
+          className={`ml-auto h-3 w-3 shrink-0 text-white/40 transition-transform ${open ? "rotate-90" : ""}`}
+        />
+      </button>
+      {open && (
+        <div className="px-3 pb-2">
+          <textarea
+            value={value}
+            onChange={(e) => onChange(e.target.value)}
+            placeholder="program input, fed to stdin on Run…"
+            aria-label="Program input text"
+            rows={3}
+            spellCheck={false}
+            className="w-full resize-y rounded-md border border-white/10 bg-black/40 px-2 py-1.5 font-mono text-[12px] text-white/85 placeholder:text-white/25 outline-none focus:border-[#8b93ff]/60"
+          />
+        </div>
+      )}
+    </div>
+  );
+}
+
+function BackendConsole({ logs, meta }: { logs: { method: string; data: string[] }[]; meta?: string | null }) {  const listRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
     const el = listRef.current;
     if (el) el.scrollTop = el.scrollHeight;
@@ -1490,10 +1641,13 @@ function BackendConsole({ logs }: { logs: { method: string; data: string[] }[] }
       </div>
     );
   }
+  // Unbounded sessions could grow this list forever — render the tail,
+  // matching the JsConsole cap.
+  const renderLogs = logs.length > 300 ? logs.slice(-300) : logs;
   return (
     <div className="flex flex-col h-full bg-[#0a0b0d] text-[#e3e4e6] font-mono text-[13px] leading-relaxed">
       <div ref={listRef} className="flex-1 overflow-y-auto p-3 space-y-1.5">
-        {logs.map((log, i) => {
+        {renderLogs.map((log, i) => {
           const isError = log.method === "error";
           const borderClass = isError ? "border-l-[3px] border-red-500 pl-2.5 bg-red-500/[0.02]" : "pl-2.5 border-l-[3px] border-transparent";
           const textClass = isError ? "text-red-400" : "text-[#e3e4e6]/90";
@@ -1513,6 +1667,11 @@ function BackendConsole({ logs }: { logs: { method: string; data: string[] }[] }
         <span className="text-accent font-bold">›</span>
         <span className="animate-pulse w-1 h-3 bg-accent/60" />
         <span className="italic">Execution complete.</span>
+        {meta && (
+          <span data-testid="run-meta" className="ml-auto not-italic tabular-nums text-white/40">
+            {meta}
+          </span>
+        )}
       </div>
     </div>
   );

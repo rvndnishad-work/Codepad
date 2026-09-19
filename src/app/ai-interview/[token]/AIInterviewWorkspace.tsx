@@ -50,6 +50,8 @@ import dynamic from "next/dynamic";
 import { useTheme } from "next-themes";
 import { toast } from "sonner";
 import { getSandpackTheme } from "@/lib/sandpack-theme";
+import "@/lib/monaco-loader";
+import { aiExplorerTemplateId } from "@/lib/template-filetypes";
 import { speakNaturally, cancelSpeak, updateSpeechConfig, pickBestVoice, configureCloudTTS, OPENAI_CLOUD_VOICES, OPENAI_CLOUD_VOICE_LABELS } from "@/lib/copilot-tts";
 import FileExplorer from "@/components/FileExplorer";
 import { useResizable } from "@/hooks/useResizable";
@@ -1787,7 +1789,7 @@ function RoundSurface({
             ) : (
               <div className="w-48 border-r border-border shrink-0 hidden sm:block h-full transition-all duration-300">
                 <FileExplorer
-                  templateId="react"
+                  templateId={aiExplorerTemplateId(round)}
                   readOnly={false}
                   showDownload={false}
                   collapsed={fileTreeCollapsed}

@@ -156,3 +156,13 @@ Any claim tied to a **specific version, release date, or product-specific behavi
 - Explain for someone with **no prior system design/React knowledge** by default — define every term the first time it's used, then tag it with `📌 Interview term:` so the reader also learns the vocabulary an interviewer expects
 - Never present speculation as fact; flag genuine uncertainty explicitly
 - Prefer concrete, worked numbers (a real capacity estimate, a real simulated hit-rate) over hand-wavy claims wherever the topic allows it
+
+<!-- BEGIN:nextjs-agent-rules -->
+
+# This is NOT the Next.js you know
+
+This version has breaking changes — APIs, conventions, and file structure may all differ from your training data. Read the relevant guide in `node_modules/next/dist/docs/` (resolved from this file's directory; in monorepos the `next` package may not be visible from the repo root) before writing any code. Heed deprecation notices.
+
+This block is written and re-added by `next dev` — verify at `node_modules/next/dist/server/lib/generate-agent-files.js`. Removing it from a diff only re-creates the uncommitted change; committing it with your work keeps the tree clean.
+
+<!-- END:nextjs-agent-rules -->

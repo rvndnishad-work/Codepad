@@ -26,6 +26,13 @@ import {
   PanelLeftOpen,
 } from "lucide-react";
 import { useFileSystem, FILE_TYPES, type TreeNode, parentDir } from "@/hooks/useFileSystem";
+import {
+  allowedExtsForTemplate,
+  defaultExtForTemplate,
+  supportsNpm as supportsNpmForTemplate,
+  isCoarsePointer,
+  newFileRowAction,
+} from "@/lib/template-filetypes";
 import { toast } from "sonner";
 import {
   SiJavascript,
@@ -207,6 +214,93 @@ function FolderNodeIcon({ name, open, plain }: { name: string; open: boolean; pl
 
 
 
+/**
+ * VS Code-style delete confirmation. There is no recycle bin here, so the
+ * copy says plainly that deletion is permanent. "Do not ask me again"
+ * persists (re-enable from More options → Confirm before delete).
+ */
+function DeleteConfirmDialog({
+  path,
+  isFolder,
+  fileCount,
+  onConfirm,
+  onCancel,
+}: {
+  path: string;
+  isFolder: boolean;
+  fileCount: number;
+  onConfirm: (doNotAskAgain: boolean) => void;
+  onCancel: () => void;
+}) {
+  const [doNotAsk, setDoNotAsk] = useState(false);
+  const name = path.split("/").filter(Boolean).pop() ?? path;
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onCancel();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [onCancel]);
+
+  const headline = isFolder
+    ? fileCount > 0
+      ? `Are you sure you want to delete '${name}' and its ${fileCount} file${fileCount === 1 ? "" : "s"}?`
+      : `Are you sure you want to delete empty folder '${name}'?`
+    : `Are you sure you want to delete '${name}'?`;
+
+  return (
+    <div
+      className="fixed inset-0 z-[200] grid place-items-center bg-black/60 p-4 backdrop-blur-sm"
+      onMouseDown={(e) => {
+        if (e.target === e.currentTarget) onCancel();
+      }}
+      role="alertdialog"
+      aria-modal="true"
+      aria-label={isFolder ? "Delete folder" : "Delete file"}
+    >
+      <div className="w-full max-w-sm rounded-2xl border border-border bg-panel shadow-soft">
+        <div className="flex items-center gap-3 px-5 pt-4">
+          <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-red-500/10 text-red-400">
+            <Trash2 className="w-4 h-4" />
+          </span>
+          <h2 className="text-sm font-semibold text-fg">
+            {isFolder ? "Delete folder" : "Delete file"}
+          </h2>
+        </div>
+        <p className="px-5 pt-2 text-[13px] text-subtle">{headline}</p>
+        <p className="px-5 pt-1 text-[12px] text-muted">
+          This cannot be undone.
+        </p>
+        <label className="flex cursor-pointer items-center gap-2 px-5 pt-3 text-[12px] text-muted transition hover:text-fg">
+          <input
+            type="checkbox"
+            checked={doNotAsk}
+            onChange={(e) => setDoNotAsk(e.target.checked)}
+            className="h-3.5 w-3.5 accent-[var(--accent)]"
+          />
+          Do not ask me again
+        </label>
+        <div className="flex justify-end gap-2 px-5 py-4">
+          <button
+            autoFocus
+            onClick={onCancel}
+            className="rounded-full px-4 py-1.5 text-[12px] font-semibold text-subtle transition hover:bg-elevated hover:text-fg"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={() => onConfirm(doNotAsk)}
+            className="rounded-full bg-red-500/90 px-4 py-1.5 text-[12px] font-semibold text-white transition hover:bg-red-500"
+          >
+            Delete
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 type Props = {
   readOnly?: boolean;
   onCollapse?: () => void;
@@ -220,6 +314,14 @@ type Props = {
    *  VS Code per-name folder colors. */
   plainFolders?: boolean;
   templateId?: string;
+  /** Publishes keyboard-driven ops (F2 rename, Del delete) to hosts. */
+  opsRef?: React.MutableRefObject<ExplorerOps | null>;
+};
+
+/** Keyboard-driven explorer ops a host (e.g. Playground) can trigger. */
+export type ExplorerOps = {
+  renameActiveFile: () => void;
+  deleteActiveFile: () => void;
 };
 
 export default function FileExplorer({
@@ -230,42 +332,24 @@ export default function FileExplorer({
   onToggleCollapse,
   plainFolders = false,
   templateId,
+  opsRef,
 }: Props) {
   const contextFileTypes = useMemo(() => {
-    if (!templateId) return FILE_TYPES.filter(t => [".js", ".ts", ".jsx", ".tsx", ".css", ".html", ".json", ".md"].includes(t.ext));
-    
-    const id = templateId.toLowerCase();
-    if (id === "python") {
-      return FILE_TYPES.filter(t => [".py", ".json", ".md"].includes(t.ext));
-    }
-    if (id === "go") {
-      return FILE_TYPES.filter(t => [".go", ".json", ".md"].includes(t.ext));
-    }
-    if (id === "java") {
-      return FILE_TYPES.filter(t => [".java", ".json", ".md"].includes(t.ext));
-    }
-    if (id === "rust") {
-      return FILE_TYPES.filter(t => [".rs", ".toml", ".md"].includes(t.ext));
-    }
-    if (id === "cpp") {
-      return FILE_TYPES.filter(t => [".cpp", ".h", ".c", ".json", ".md"].includes(t.ext));
-    }
-    if (id === "node" || id === "ts-node" || id === "empty-js" || id === "empty-ts") {
-      return FILE_TYPES.filter(t => [".js", ".ts", ".json", ".md"].includes(t.ext));
-    }
-    
-    // Default frontend list
-    return FILE_TYPES.filter(t => [".js", ".ts", ".jsx", ".tsx", ".css", ".html", ".json", ".md"].includes(t.ext));
+    const allowed = allowedExtsForTemplate(templateId);
+    return FILE_TYPES.filter((t) => allowed.includes(t.ext));
   }, [templateId]);
 
+  const defaultExt = defaultExtForTemplate(templateId);
+
   // npm dependencies only do something for templates that execute through the
-  // in-browser JS bundler. Native runtimes (Python, Go, Java, C++, Rust) run
-  // elsewhere and have their own package managers, so the npm panel is a no-op
-  // there — hide it to avoid misleading users.
-  const supportsNpm = useMemo(() => {
-    const nativeRuntimes = new Set(["python", "go", "java", "cpp", "rust"]);
-    return !templateId || !nativeRuntimes.has(templateId.toLowerCase());
-  }, [templateId]);
+  // in-browser JS bundler. Server-side runtimes run elsewhere and have their
+  // own package managers, so the npm panel is a no-op there — hide it to
+  // avoid misleading users.
+  const supportsNpm = supportsNpmForTemplate(templateId);
+
+  // Touch devices have no hover, so the "New File" type flyout can never
+  // open for them — the row tap toggles an inline list instead (see below).
+  const coarsePointer = useMemo(() => isCoarsePointer(), []);
 
   const {
     expanded,
@@ -299,7 +383,10 @@ export default function FileExplorer({
     startNew,
     commitNew,
     cancelNew,
-    deletePath,
+    requestDelete,
+    confirmDelete,
+    cancelDelete,
+    pendingDelete,
     movePath,
     startRename,
     commitRename,
@@ -307,7 +394,30 @@ export default function FileExplorer({
     uploadFiles,
     downloadZip,
     duplicateFile
-  } = useFileSystem();
+  } = useFileSystem(templateId);
+
+  // Publish keyboard-driven ops to the host. The active file is always a
+  // file (never a folder), so Delete needs no folder handling — folders stay
+  // on the context menu. Both go through the delete confirmation; deleting
+  // the last visible file is refused outright (Sandpack must always have an
+  // active file for the editor to bind to).
+  useEffect(() => {
+    if (!opsRef) return;
+    opsRef.current = {
+      renameActiveFile: () => {
+        if (readOnly || !activeFile) return;
+        startRename(activeFile);
+      },
+      deleteActiveFile: () => {
+        if (readOnly || !activeFile) return;
+        if (filePaths.length <= 1) {
+          toast("Cannot delete the last file");
+          return;
+        }
+        requestDelete(activeFile, false);
+      },
+    };
+  });
 
   const packageJsonPath = useMemo(
     () => filePaths.find((p) => p.endsWith("/package.json")) ?? "/package.json",
@@ -543,6 +653,11 @@ export default function FileExplorer({
               ? `name${pendingNew.ext ?? ""}`
               : "folder name"
           }
+          title={
+            pendingNew.kind === "file"
+              ? "Tip: type a path like components/Header.js to create nested files"
+              : undefined
+          }
           onKeyDown={(e) => {
             if (e.key === "Enter") commitNew();
             else if (e.key === "Escape") cancelNew();
@@ -552,6 +667,29 @@ export default function FileExplorer({
         />
       </div>
     );
+  }
+
+  /** File-type rows shared by the desktop flyout and the touch inline list. */
+  function renderTypeButtons(): React.ReactNode {
+    if (!contextMenu) return null;
+    return contextFileTypes.map((t) => (
+      <button
+        key={t.ext}
+        onClick={() => {
+          const parent = contextMenu.isFolder
+            ? contextMenu.path
+            : parentDir(contextMenu.path);
+          startNew(parent, "file", t.ext);
+        }}
+        className="w-full text-left flex items-center justify-between gap-3 px-3 py-1.5 hover:bg-elevated text-subtle hover:text-fg"
+      >
+        <span className="flex items-center gap-2">
+          <FileNodeIcon name={`x${t.ext}`} />
+          {t.label}
+        </span>
+        <span className="text-muted">{t.ext}</span>
+      </button>
+    ));
   }
 
   // Collapsed: a narrow rail of file icons only. Click an icon to open the
@@ -636,12 +774,7 @@ export default function FileExplorer({
               <button
                 onClick={(e) => {
                   e.stopPropagation();
-                  setContextMenu({
-                    x: e.currentTarget.getBoundingClientRect().left,
-                    y: e.currentTarget.getBoundingClientRect().bottom + 4,
-                    path: "/",
-                    isFolder: true,
-                  });
+                  startNew("/", "file", defaultExt);
                 }}
                 title="New file"
                 className="grid h-6 w-6 place-items-center rounded-full text-white/40 transition hover:bg-white/10 hover:text-white"
@@ -908,43 +1041,48 @@ export default function FileExplorer({
         >
           <div
             className="relative"
-            onMouseEnter={() => setShowFileTypes(true)}
-            onMouseLeave={() => setShowFileTypes(false)}
+            onMouseEnter={coarsePointer ? undefined : () => setShowFileTypes(true)}
+            onMouseLeave={coarsePointer ? undefined : () => setShowFileTypes(false)}
           >
-            <button className="w-full flex items-center justify-between gap-2 px-3 py-1.5 hover:bg-elevated text-subtle hover:text-fg">
+            <button
+              onClick={() => {
+                // Touch has no hover: the first tap opens the type list
+                // inline instead of committing to the default extension.
+                if (newFileRowAction(coarsePointer) === "toggle") {
+                  setShowFileTypes((v) => !v);
+                  return;
+                }
+                const parent = contextMenu.isFolder
+                  ? contextMenu.path
+                  : parentDir(contextMenu.path);
+                startNew(parent, "file", defaultExt);
+              }}
+              className="w-full flex items-center justify-between gap-2 px-3 py-1.5 hover:bg-elevated text-subtle hover:text-fg"
+            >
               <span className="flex items-center gap-2">
                 <FilePlus className="w-3.5 h-3.5" />
                 New File
               </span>
               <ChevronRight className="w-3 h-3" />
             </button>
-            {showFileTypes && (
-              <div
-                style={{ left: "100%", top: -4 }}
-                className="absolute pl-1 z-50"
-              >
-                <div className="min-w-[180px] rounded-lg border border-border bg-panel shadow-soft py-1">
-                  {contextFileTypes.map((t) => (
-                    <button
-                      key={t.ext}
-                      onClick={() => {
-                        const parent = contextMenu.isFolder
-                          ? contextMenu.path
-                          : parentDir(contextMenu.path);
-                        startNew(parent, "file", t.ext);
-                      }}
-                      className="w-full text-left flex items-center justify-between gap-3 px-3 py-1.5 hover:bg-elevated text-subtle hover:text-fg"
-                    >
-                      <span className="flex items-center gap-2">
-                        <FileNodeIcon name={`x${t.ext}`} />
-                        {t.label}
-                      </span>
-                      <span className="text-muted">{t.ext}</span>
-                    </button>
-                  ))}
+            {showFileTypes &&
+              (coarsePointer ? (
+                // Touch: inline list (a right-side flyout would clip off-screen).
+                <div className="px-2 pb-1">
+                  <div className="rounded-lg border border-border bg-surface py-1">
+                    {renderTypeButtons()}
+                  </div>
                 </div>
-              </div>
-            )}
+              ) : (
+                <div
+                  style={{ left: "100%", top: -4 }}
+                  className="absolute pl-1 z-50"
+                >
+                  <div className="min-w-[180px] rounded-lg border border-border bg-panel shadow-soft py-1">
+                    {renderTypeButtons()}
+                  </div>
+                </div>
+              ))}
           </div>
 
           <button
@@ -981,7 +1119,7 @@ export default function FileExplorer({
               )}
               <button
                 onClick={() =>
-                  deletePath(contextMenu.path, contextMenu.isFolder)
+                  requestDelete(contextMenu.path, contextMenu.isFolder)
                 }
                 className="w-full flex items-center gap-2 px-3 py-1.5 hover:bg-red-500/10 text-red-700 dark:text-red-400"
               >
@@ -991,6 +1129,22 @@ export default function FileExplorer({
             </>
           )}
         </div>
+      )}
+
+      {pendingDelete && !readOnly && (
+        <DeleteConfirmDialog
+          path={pendingDelete.path}
+          isFolder={pendingDelete.isFolder}
+          fileCount={
+            pendingDelete.isFolder
+              ? filePaths.filter((p) =>
+                  p.startsWith(pendingDelete!.path + "/"),
+                ).length
+              : 0
+          }
+          onConfirm={confirmDelete}
+          onCancel={cancelDelete}
+        />
       )}
     </div>
   );

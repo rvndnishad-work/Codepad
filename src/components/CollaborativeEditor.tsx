@@ -48,6 +48,7 @@ import {
 } from "@codemirror/autocomplete";
 import { Users, Wifi, WifiOff } from "lucide-react";
 import { getSignalingUrls } from "@/lib/signaling";
+import { postExecute } from "@/lib/execute-client";
 
 type Language = "javascript" | "typescript" | "python" | "css" | "html";
 
@@ -333,15 +334,11 @@ export default function CollaborativeEditor({
           const hashArray = Array.from(new Uint8Array(hashBuffer));
           const hashHex = hashArray.map(b => b.toString(16).padStart(2, "0")).join("");
 
-          await fetch("/api/execute", {
-            method: "POST",
-            headers: { "content-type": "application/json" },
-            body: JSON.stringify({
-              language: languageRef.current,
-              code: activeCode,
-              speculative: true,
-              codeHash: hashHex,
-            }),
+          await postExecute({
+            language: languageRef.current,
+            code: activeCode,
+            speculative: true,
+            codeHash: hashHex,
           });
           console.info(`[AuraSandbox] Editor Speculator queued (Language: ${languageRef.current}, Hash: ${hashHex})`);
         } catch (err) {

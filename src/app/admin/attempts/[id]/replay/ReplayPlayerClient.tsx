@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef, useMemo } from "react";
 import MonacoEditor from "@monaco-editor/react";
+import "@/lib/monaco-loader";
 import Link from "next/link";
 import {
   ArrowLeft,

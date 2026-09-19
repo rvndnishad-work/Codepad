@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useRef, useState, type KeyboardEvent } from "react";
+import { useCallback, useEffect, useRef, useState, type KeyboardEvent } from "react";
 
 /**
  * Shared drag-rail chrome: the visible rail stays 6px, but an invisible
@@ -27,8 +27,36 @@ export function onResizeKey(e: KeyboardEvent, nudge: (dir: 1 | -1) => void) {
  * Pass `invert: true` for panels anchored to the RIGHT of their drag handle
  * (dragging left should then grow the panel instead of shrinking it).
  */
-export function useResizable(initialWidth: number, minWidth = 80, maxWidth = 600, invert = false) {
+export function useResizable(
+  initialWidth: number,
+  minWidth = 80,
+  maxWidth = 600,
+  invert = false,
+  /** When set, the width persists across sessions under this localStorage key. */
+  storageKey?: string,
+) {
   const [width, setWidth] = useState(initialWidth);
+  // Load the persisted width after mount (post-mount avoids SSR mismatches).
+  useEffect(() => {
+    if (!storageKey) return;
+    try {
+      const raw = window.localStorage.getItem(storageKey);
+      if (raw === null) return;
+      const n = Number(raw);
+      if (Number.isFinite(n)) setWidth(Math.min(maxWidth, Math.max(minWidth, n)));
+    } catch {
+      /* private mode — run with defaults */
+    }
+  }, [storageKey, minWidth, maxWidth]);
+  // Persist on change. Drags write per frame; the value is tiny.
+  useEffect(() => {
+    if (!storageKey) return;
+    try {
+      window.localStorage.setItem(storageKey, String(width));
+    } catch {
+      /* ignore */
+    }
+  }, [width, storageKey]);
   const dragging = useRef(false);
   const startX = useRef(0);
   const startW = useRef(0);

@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import { Play, Send, CheckCircle2, XCircle, Loader2, EyeOff, Clock, LogOut, FileCode, Terminal, Rows2, Columns2, PanelLeftClose, PanelLeftOpen, Minus, Plus } from "lucide-react";
 import MarkdownRenderer from "@/components/MarkdownRenderer";
 import { defineNanoBananaThemes, WORKBENCH_DARK, WORKBENCH_LIGHT } from "@/lib/monaco-themes";
+import "@/lib/monaco-loader";
 import { useResizable, RESIZE_RAIL_X, RESIZE_RAIL_Y } from "@/hooks/useResizable";
 import { useResizableHeight } from "@/hooks/useResizableHeight";
 

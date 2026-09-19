@@ -13,60 +13,24 @@ import { ataTypeScript } from "@/lib/ata-typescript-shim";
 import type { Monaco } from "@monaco-editor/react";
 import { customSnippets } from "@/lib/snippets";
 import { defineNanoBananaThemes } from "@/lib/monaco-themes";
+import "@/lib/monaco-loader";
+import { languageFor, extColorFor } from "@/lib/monaco-langs";
+import { runTypeAcquisition } from "@/lib/type-acquisition";
+import { isFileDirty } from "@/lib/file-dirty";
+import type { SandpackFiles } from "@codesandbox/sandpack-react";
 
 const Editor = dynamic(() => import("@monaco-editor/react"), { ssr: false });
 
-const EXT_LANG: Record<string, string> = {
-  js: "javascript",
-  jsx: "javascript",
-  ts: "typescript",
-  tsx: "typescript",
-  json: "json",
-  html: "html",
-  css: "css",
-  scss: "scss",
-  svelte: "html",
-  vue: "html",
-  py: "python",
-  go: "go",
-  java: "java",
-  cpp: "cpp",
-  h: "cpp",
-  hpp: "cpp",
-  rs: "rust",
-};
-
-const EXT_COLOR: Record<string, string> = {
-  js: "#F7DF1E",
-  jsx: "#61DAFB",
-  ts: "#3178C6",
-  tsx: "#3178C6",
-  json: "#6D8086",
-  html: "#E34F26",
-  css: "#1572B6",
-  scss: "#CF649A",
-  svelte: "#FF3E00",
-  vue: "#42B883",
-  py: "#3776AB",
-  go: "#00ADD8",
-  java: "#007396",
-  cpp: "#00599C",
-  h: "#00599C",
-  hpp: "#00599C",
-  rs: "#CE412B",
-};
-
-function languageFor(path: string) {
-  const ext = path.split(".").pop()?.toLowerCase() ?? "";
-  return EXT_LANG[ext] ?? "plaintext";
-}
-
-function extColorFor(path: string) {
-  const ext = path.split(".").pop()?.toLowerCase() ?? "";
-  return EXT_COLOR[ext] ?? "#8b8b8b";
-}
-
-export default function MonacoEditor({ fontSize, readOnly = false }: { fontSize: number; readOnly?: boolean }) {
+export default function MonacoEditor({
+  fontSize,
+  readOnly = false,
+  savedSnapshotRef,
+}: {
+  fontSize: number;
+  readOnly?: boolean;
+  /** Last-saved code snapshot; tabs differing from it get a dirty dot. */
+  savedSnapshotRef?: React.RefObject<SandpackFiles | null>;
+}) {
   const { code, updateCode } = useActiveCode();
   const { sandpack } = useSandpack();
   const { activeFile, visibleFiles, setActiveFile } = sandpack;
@@ -192,11 +156,12 @@ export default function MonacoEditor({ fontSize, readOnly = false }: { fontSize:
   useEffect(() => {
     if (ata && code) {
       const timer = setTimeout(() => {
-        try {
-          ata(code);
-        } catch (err) {
-          console.warn("[MonacoEditor] type acquisition failed:", err);
-        }
+        runTypeAcquisition(
+          ata,
+          code,
+          typeof navigator === "undefined" ? true : navigator.onLine,
+          (err) => console.warn("[MonacoEditor] type acquisition failed:", err),
+        );
       }, 1500); // 1.5s debounce for type acquisition (heavy task)
       return () => clearTimeout(timer);
     }
@@ -493,26 +458,42 @@ export default function MonacoEditor({ fontSize, readOnly = false }: { fontSize:
 
       {/* Tab Bar */}
       <div className="monaco-tab-bar">
-        {visibleFiles.map((f: string) => (
+        {visibleFiles.map((f: string) => {
+          const dirty = isFileDirty(
+            savedSnapshotRef?.current,
+            sandpack.files,
+            f,
+          );
+          return (
           <div
             key={f}
             className={`monaco-tab ${f === activeFile ? "active" : ""}`}
             onClick={() => setActiveFile(f)}
+            {...(dirty ? { "data-dirty": "true" } : {})}
+            title={dirty ? `${f.replace(/^\//, "")} (unsaved changes)` : f.replace(/^\//, "")}
           >
-            <div className="tab-dot" style={{ background: extColorFor(f) }} />
+            <div
+              className="tab-dot"
+              style={{ background: dirty ? "#f59e0b" : extColorFor(f) }}
+            />
             <span>{f.replace(/^\//, "")}</span>
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                sandpack.closeFile(f);
-              }}
-              className="tab-close"
-              title="Close file"
-            >
-              <X className="w-3 h-3" />
-            </button>
+            {/* Never close the last tab: Sandpack must always have an active
+                file, and the editor's `path` prop must always resolve. */}
+            {visibleFiles.length > 1 && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  sandpack.closeFile(f);
+                }}
+                className="tab-close"
+                title="Close file"
+              >
+                <X className="w-3 h-3" />
+              </button>
+            )}
           </div>
-        ))}
+          );
+        })}
       </div>
 
       {/* Editor */}
@@ -541,6 +522,8 @@ export default function MonacoEditor({ fontSize, readOnly = false }: { fontSize:
             lineNumbersMinChars: 3,
             folding: true,
             padding: { top: 12, bottom: 12 },
+            // ── Readability: sticky scroll keeps the enclosing scope visible ──
+            stickyScroll: { enabled: true },
             // ── Semantic Highlighting ──
             'semanticHighlighting.enabled': true,
             // ── IntelliSense enhancements ──

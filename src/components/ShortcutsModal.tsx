@@ -7,8 +7,10 @@ import { Keyboard, X } from "lucide-react";
 const SHORTCUTS: Array<{ keys: string[]; label: string }> = [
   { keys: ["Ctrl/Cmd", "Enter"], label: "Run code" },
   { keys: ["Ctrl/Cmd", "S"], label: "Save snippet" },
-  { keys: ["Ctrl/Cmd", "Shift", "F"], label: "Format active file (Prettier)" },
+  { keys: ["Ctrl/Cmd", "Shift", "F"], label: "Format active file (Prettier — not VS Code find-in-files)" },
   { keys: ["Ctrl/Cmd", "F"], label: "Find in current file" },
+  { keys: ["F2"], label: "Rename active file" },
+  { keys: ["Del"], label: "Delete active file" },
   { keys: ["Right click"], label: "File explorer menu (rename, delete, new file…)" },
   { keys: ["?"], label: "Show this cheatsheet" },
   { keys: ["Esc"], label: "Close dialog / dismiss menu" },

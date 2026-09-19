@@ -73,6 +73,7 @@ import {
 } from "@codesandbox/sandpack-react";
 import ShimmedSandpackProvider from "./ShimmedSandpackProvider";
 import type { SandpackFiles } from "@codesandbox/sandpack-react";
+import { postExecute, executeBodyForFiles } from "@/lib/execute-client";
 import { Users, Wifi, WifiOff, Play, Terminal, PanelBottom, Folder, MessageSquare, Send, X, GripHorizontal } from "lucide-react";
 import FileExplorer from "./FileExplorer";
 import { getSandpackTheme } from "@/lib/sandpack-theme";
@@ -349,16 +350,15 @@ function Bridge({
         const hashArray = Array.from(new Uint8Array(hashBuffer));
         const hashHex = hashArray.map(b => b.toString(16).padStart(2, "0")).join("");
 
-        await fetch("/api/execute", {
-          method: "POST",
-          headers: { "content-type": "application/json" },
-          body: JSON.stringify({
+        await postExecute(
+          executeBodyForFiles({
             language: template,
-            code: activeCode,
+            activeFilePath: activePath,
+            files: sandpack.files,
             speculative: true,
             codeHash: hashHex,
           }),
-        });
+        );
         console.info(`[AuraSandbox] Collab Speculator queued (Hash: ${hashHex})`);
       } catch (err) {
         console.warn("[AuraSandbox] Collab Speculator background warning:", err);

@@ -22,10 +22,14 @@ import {
   LogOut,
   Code2,
   ExternalLink,
-  ArrowLeft
+  ArrowLeft,
+  Zap,
+  Wand2,
+  ShieldAlert
 } from "lucide-react";
 import Link from "next/link";
 import { TemplateLogo } from "@/lib/icons";
+import { readBoolPref, writeBoolPref, PREF_KEYS } from "@/lib/prefs";
 import ChallengeTimer, { useChallengeTimer, type ChallengeTimerController } from "./ChallengeTimer";
 import type { Snippet, Visibility } from "./Playground";
 
@@ -529,7 +533,8 @@ export default function PlaygroundToolbar({
   handleSave, handleFork, handleShare, handleCopyEmbed, handlePopout,
   handleRun, running, onTogglePrompt, tplMode, showRun = true,
   showDirectionToggle = true,
-  uiScale, setUiScale, backHref, onToggleFiles
+  uiScale, setUiScale, backHref, onToggleFiles,
+  autoRun, setAutoRun, formatOnSave, setFormatOnSave
 }: any) {
   const [actionsOpen, setActionsOpen] = useState(false);
   const actionsRef = useRef<HTMLDivElement>(null);
@@ -545,6 +550,17 @@ export default function PlaygroundToolbar({
   };
   const [showTimer, setShowTimer] = useState(() => readFlag("play:tb:timer"));
   const [showAi, setShowAi] = useState(() => readFlag("play:tb:ai"));
+  // Delete confirmation (default on). Shares its pref with the explorer's
+  // "Do not ask me again" checkbox, which is the off-ramp back here.
+  const [confirmDelete, setConfirmDelete] = useState(
+    () => !readBoolPref(PREF_KEYS.skipDeleteConfirm, false),
+  );
+  const toggleConfirmDelete = () => {
+    setConfirmDelete((v) => {
+      writeBoolPref(PREF_KEYS.skipDeleteConfirm, v);
+      return !v;
+    });
+  };
   const toggleExtra = (which: "timer" | "ai") => {
     if (which === "timer") {
       setShowTimer((v) => {
@@ -715,18 +731,23 @@ export default function PlaygroundToolbar({
                     boxShadow: "0 24px 64px -12px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.06) inset"
                   }}
                 >
-                  {/* Toolbar extras — pin timer / AI to the bar (persisted) */}
+                  {/* Toolbar extras — pin timer / AI to the bar (persisted).
+                      Auto-run and format-on-save live here too: their state +
+                      persistence live in Playground, the menu only flips them. */}
                   <div className="space-y-1 border-b border-white/10 px-3 pb-2 pt-1">
                     {(
                       [
-                        { key: "timer", label: "Timer", icon: Timer, on: showTimer },
-                        { key: "ai", label: "AI Assist", icon: Bot, on: showAi },
+                        { key: "timer", label: "Timer", icon: Timer, on: showTimer, toggle: () => toggleExtra("timer") },
+                        { key: "ai", label: "AI Assist", icon: Bot, on: showAi, toggle: () => toggleExtra("ai") },
+                        { key: "autorun", label: "Auto-run", icon: Zap, on: autoRun, toggle: () => setAutoRun(!autoRun) },
+                        { key: "format", label: "Format on save", icon: Wand2, on: formatOnSave, toggle: () => setFormatOnSave(!formatOnSave) },
+                        { key: "confirm", label: "Confirm before delete", icon: ShieldAlert, on: confirmDelete, toggle: toggleConfirmDelete },
                       ] as const
                     ).map((row) => (
                       <button
                         key={row.key}
                         type="button"
-                        onClick={() => toggleExtra(row.key)}
+                        onClick={row.toggle}
                         aria-pressed={row.on}
                         className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-[12px] font-semibold text-white/70 transition hover:bg-white/5 hover:text-white"
                       >

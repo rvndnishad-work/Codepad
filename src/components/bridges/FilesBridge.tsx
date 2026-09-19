@@ -3,6 +3,11 @@
 import { useEffect, useRef } from "react";
 import { useSandpack, type SandpackFiles } from "@codesandbox/sandpack-react";
 import { isNodeShimPath } from "@/lib/node-builtin-shims";
+import {
+  isRevealed,
+  clearRevealed,
+  resolveHidden,
+} from "@/lib/revealed-paths";
 
 export function FilesBridge({
   templateId,
@@ -48,14 +53,23 @@ export function FilesBridge({
       const tplFile = templateFiles[path];
       const isHidden = tplFile && typeof tplFile !== "string" && (tplFile as any).hidden;
       const currentlyHidden = typeof file !== "string" && (file as any).hidden;
+      // A path the user explicitly revealed (by creating a file over hidden
+      // template scaffolding) stays visible — never force-hide it again.
+      const revealed = isRevealed(templateId, path);
 
-      if (isHidden && !currentlyHidden) {
+      if (isHidden && !currentlyHidden && !revealed) {
         needsUpdate = true;
         updatePayload[path] = updatePayload[path] || { code };
         updatePayload[path].hidden = true;
       }
 
-      map[path] = isHidden ? { code, hidden: true } : { code };
+      const effectiveHidden = resolveHidden(
+        isHidden,
+        currentlyHidden,
+        templateId,
+        path,
+      );
+      map[path] = effectiveHidden ? { code, hidden: true } : { code };
     }
 
     filesRef.current = map;
@@ -69,6 +83,10 @@ export function FilesBridge({
 
     if (!initialized.current) {
       initialized.current = true;
+      // Drop stale reveal marks from a previous mount of this template so a
+      // fresh snippet starts from the template's own hidden flags. Reveals
+      // made during this mount happen strictly after init.
+      clearRevealed(templateId);
       return;
     }
 

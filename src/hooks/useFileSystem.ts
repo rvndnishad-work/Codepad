@@ -1,5 +1,9 @@
 import { useState, useMemo, useEffect, useRef } from "react";
 import { useSandpack } from "@codesandbox/sandpack-react";
+import { toast } from "sonner";
+import { markRevealed, classifyCollision } from "@/lib/revealed-paths";
+import { classifyUpload } from "@/lib/upload-files";
+import { readBoolPref, writeBoolPref, PREF_KEYS } from "@/lib/prefs";
 import JSZip from "jszip";
 
 export type FileType = { ext: string; label: string; template: string };
@@ -141,6 +145,94 @@ export function normalizePath(p: string): string {
   return p.startsWith("/") ? p : "/" + p;
 }
 
+/**
+ * Resolve the final file name for the "new file" input. When the input was
+ * opened for a specific extension (toolbar button, type submenu) and the
+ * typed name has no extension of its own, the extension is appended —
+ * otherwise the typed name (with its own extension) wins verbatim.
+ */
+export function resolveNewFileName(name: string, ext?: string): string {
+  const trimmed = name.trim();
+  if (ext && !/\.[^./]+$/.test(trimmed)) return trimmed + ext;
+  return trimmed;
+}
+
+function baseName(path: string): string {
+  return path.split("/").filter(Boolean).pop() ?? "";
+}
+
+/**
+ * Ancestor folder paths of a file path, e.g. "/a/b/c.js" → ["/a", "/a/b"].
+ * Creating a nested file expands these so the new file is visible.
+ */
+export function ancestorDirs(fullPath: string): string[] {
+  const segs = fullPath.split("/").filter(Boolean);
+  const out: string[] = [];
+  let cur = "";
+  for (let i = 0; i < segs.length - 1; i++) {
+    cur += `/${segs[i]}`;
+    out.push(cur);
+  }
+  return out;
+}
+
+/**
+ * Drop ordering state for a deleted path: the deleted name leaves its
+ * parent's order, and explicit orders rooted at/below the path die with it.
+ * Without this, re-creating the same name later resurrects a stale position.
+ */
+export function pruneCustomOrderAfterDelete(
+  order: CustomOrder,
+  deletedPath: string,
+): CustomOrder {
+  const parent = parentDir(deletedPath);
+  const name = baseName(deletedPath);
+  const next: CustomOrder = {};
+  for (const [key, names] of Object.entries(order)) {
+    if (key === deletedPath || key.startsWith(deletedPath + "/")) continue;
+    next[key] = key === parent ? names.filter((n) => n !== name) : names;
+  }
+  return next;
+}
+
+/**
+ * Carry ordering state across a move/rename: descendant orders are re-rooted
+ * at the new path, the old name leaves the old parent (an in-place rename
+ * keeps its slot), and a move into a parent with an explicit order appends
+ * at the end per the newcomer rule.
+ */
+export function rekeyCustomOrderAfterMove(
+  order: CustomOrder,
+  fromPath: string,
+  toPath: string,
+): CustomOrder {
+  if (fromPath === toPath) return order;
+  const fromParent = parentDir(fromPath);
+  const toParent = parentDir(toPath);
+  const fromName = baseName(fromPath);
+  const toName = baseName(toPath);
+  const next: CustomOrder = {};
+  for (const [key, names] of Object.entries(order)) {
+    let newKey = key;
+    if (key === fromPath) newKey = toPath;
+    else if (key.startsWith(fromPath + "/")) newKey = toPath + key.slice(fromPath.length);
+    let list = names;
+    if (key === fromParent) {
+      const idx = names.indexOf(fromName);
+      if (idx !== -1) {
+        list = [...names];
+        if (fromParent === toParent) list[idx] = toName;
+        else list.splice(idx, 1);
+      }
+    }
+    next[newKey] = list;
+  }
+  if (fromParent !== toParent && next[toParent] && !next[toParent].includes(toName)) {
+    next[toParent] = [...next[toParent], toName];
+  }
+  return next;
+}
+
 export type ContextMenu = {
   x: number;
   y: number;
@@ -154,7 +246,12 @@ export type PendingNew = {
   ext?: string;
 } | null;
 
-export function useFileSystem() {
+export type PendingDelete = {
+  path: string;
+  isFolder: boolean;
+} | null;
+
+export function useFileSystem(templateId?: string) {
   const { sandpack } = useSandpack();
   const { files, activeFile } = sandpack;
 
@@ -180,6 +277,7 @@ export function useFileSystem() {
   const [dropTarget, setDropTarget] = useState<string | null>(null);
   const [renamingPath, setRenamingPath] = useState<string | null>(null);
   const [renameValue, setRenameValue] = useState("");
+  const [pendingDelete, setPendingDelete] = useState<PendingDelete>(null);
 
   // Sort mode is persisted across sessions. Default to "manual" so files keep
   // the order the user (or template) created them, instead of being shuffled
@@ -267,16 +365,57 @@ export function useFileSystem() {
     if (!name) return;
     const parent = pending.parentPath === "/" ? "" : pending.parentPath;
     if (pending.kind === "file") {
-      const finalName =
-        pending.ext && !/\.[^./]+$/.test(name) ? name + pending.ext : name;
-      const fullPath = `${parent}/${finalName}`;
-      if (files[fullPath]) return;
+      const finalName = resolveNewFileName(name, pending.ext);
+      const fullPath = normalizePath(`${parent}/${finalName}`);
+      const existing = files[fullPath];
+      if (classifyCollision(existing, filePaths, fullPath) === "hidden-scaffold") {
+        // Hidden template scaffolding (e.g. empty-react's empty /styles.css)
+        // exists in the bundler but is filtered out of the tree. Creating a
+        // file at that path reveals it instead of erroring on a file the
+        // user cannot see. Preserve any scaffolded content; otherwise seed
+        // with the new-file template for the typed extension.
+        const existingCode =
+          typeof existing === "string"
+            ? existing
+            : ((existing as { code?: string }).code ?? "");
+        const actualExt =
+          finalName.match(/\.[^./]+$/)?.[0] ?? pending.ext ?? ".js";
+        const tpl =
+          FILE_TYPES.find((t) => t.ext === actualExt)?.template ?? "";
+        const codeToUse = existingCode.trim() ? existingCode : tpl;
+        markRevealed(templateId, fullPath);
+        const payload: Record<string, any> = {
+          [fullPath]: { code: codeToUse, hidden: false },
+        };
+        sandpack.updateFile(payload);
+        setTimeout(() => sandpack.openFile(fullPath), 0);
+        return;
+      }
+      if (existing || filePaths.includes(fullPath)) {
+        toast.error(`"${finalName}" already exists`);
+        return;
+      }
+      const actualExt = finalName.match(/\.[^./]+$/)?.[0] ?? pending.ext ?? ".js";
       const tpl =
-        FILE_TYPES.find((t) => t.ext === pending.ext)?.template ?? "";
+        FILE_TYPES.find((t) => t.ext === actualExt)?.template ?? "";
       sandpack.addFile(fullPath, tpl);
+      // Expand ancestors so a nested quick-create is visible right away.
+      const ancestors = ancestorDirs(fullPath);
+      if (ancestors.length > 0) {
+        setExpanded((prev) => new Set([...prev, ...ancestors]));
+      }
       setTimeout(() => sandpack.openFile(fullPath), 0);
     } else {
-      const fullPath = `${parent}/${name}`;
+      const fullPath = normalizePath(`${parent}/${name}`);
+      if (
+        files[fullPath] ||
+        filePaths.includes(fullPath) ||
+        filePaths.some((p) => p.startsWith(fullPath + "/")) ||
+        emptyFolders.has(fullPath)
+      ) {
+        toast.error(`"${name}" already exists`);
+        return;
+      }
       setEmptyFolders((prev) => new Set(prev).add(fullPath));
       setExpanded((prev) => new Set(prev).add(fullPath));
     }
@@ -303,7 +442,34 @@ export function useFileSystem() {
     } else {
       sandpack.deleteFile(path);
     }
+    setCustomOrder((prev) => pruneCustomOrderAfterDelete(prev, path));
     setContextMenu(null);
+  }
+
+  /**
+   * Delete confirmation flow (VS Code-style). destructive deletes go through
+   * `requestDelete`, which either deletes immediately (user checked "Do not
+   * ask me again") or stages `pendingDelete` for the confirm dialog.
+   */
+  function requestDelete(path: string, isFolder: boolean) {
+    setContextMenu(null);
+    if (readBoolPref(PREF_KEYS.skipDeleteConfirm, false)) {
+      deletePath(path, isFolder);
+      return;
+    }
+    setPendingDelete({ path, isFolder });
+  }
+
+  function confirmDelete(doNotAskAgain: boolean) {
+    const pending = pendingDelete;
+    if (!pending) return;
+    if (doNotAskAgain) writeBoolPref(PREF_KEYS.skipDeleteConfirm, true);
+    setPendingDelete(null);
+    deletePath(pending.path, pending.isFolder);
+  }
+
+  function cancelDelete() {
+    setPendingDelete(null);
   }
 
   /**
@@ -378,6 +544,7 @@ export function useFileSystem() {
       sandpack.deleteFile(fromPath);
       sandpack.addFile(newPath, code);
       if (activeFile === fromPath) sandpack.openFile(newPath);
+      setCustomOrder((prev) => rekeyCustomOrderAfterMove(prev, fromPath, newPath));
       return;
     }
 
@@ -403,6 +570,7 @@ export function useFileSystem() {
       }
       return next;
     });
+    setCustomOrder((prev) => rekeyCustomOrderAfterMove(prev, fromPath, newPath));
   }
 
   function startRename(path: string) {
@@ -431,6 +599,7 @@ export function useFileSystem() {
       sandpack.deleteFile(path);
       sandpack.addFile(newPath, code);
       if (activeFile === path) sandpack.openFile(newPath);
+      setCustomOrder((prev) => rekeyCustomOrderAfterMove(prev, path, newPath));
       return;
     }
 
@@ -469,6 +638,7 @@ export function useFileSystem() {
       }
       return next;
     });
+    setCustomOrder((prev) => rekeyCustomOrderAfterMove(prev, path, newPath));
   }
 
   function cancelRename() {
@@ -478,16 +648,15 @@ export function useFileSystem() {
 
   async function uploadFiles(fileList: FileList | File[], destFolder: string) {
     const folder = destFolder === "/" ? "" : destFolder;
-    const textExts = new Set([
-      "js", "mjs", "cjs", "ts", "jsx", "tsx", "vue", "svelte",
-      "html", "htm", "css", "scss", "sass", "less", "json",
-      "md", "mdx", "txt", "yml", "yaml", "xml", "svg",
-    ]);
-    const imageExts = new Set(["png", "jpg", "jpeg", "gif", "webp", "ico"]);
     let firstAdded: string | null = null;
+    let skipped = 0;
 
     for (const f of Array.from(fileList)) {
-      const ext = f.name.toLowerCase().match(/\.([a-z0-9]+)$/)?.[1] ?? "";
+      const kind = classifyUpload(f.name, f.type ?? "");
+      if (kind === "skip") {
+        skipped++;
+        continue;
+      }
       let target = `${folder}/${f.name}`;
       let i = 2;
       while (files[target] || filePaths.includes(target)) {
@@ -498,10 +667,10 @@ export function useFileSystem() {
         i++;
       }
 
-      if (textExts.has(ext) || f.type.startsWith("text/")) {
+      if (kind === "text") {
         const code = await f.text();
         sandpack.addFile(target, code);
-      } else if (imageExts.has(ext) || f.type.startsWith("image/")) {
+      } else {
         const dataUrl = await new Promise<string>((resolve, reject) => {
           const reader = new FileReader();
           reader.onload = () => resolve(reader.result as string);
@@ -509,11 +678,14 @@ export function useFileSystem() {
           reader.readAsDataURL(f);
         });
         sandpack.addFile(target, dataUrl);
-      } else {
-        // Skip unknown binary types
-        continue;
       }
       if (!firstAdded) firstAdded = target;
+    }
+    if (skipped > 0) {
+      toast.error(
+        `Skipped ${skipped} unsupported file${skipped === 1 ? "" : "s"}`,
+        { description: "Only code, text, markdown and image files can be uploaded." },
+      );
     }
     if (firstAdded) {
       const target = firstAdded;
@@ -601,6 +773,10 @@ export function useFileSystem() {
     commitNew,
     cancelNew,
     deletePath,
+    requestDelete,
+    confirmDelete,
+    cancelDelete,
+    pendingDelete,
     movePath,
     startRename,
     commitRename,

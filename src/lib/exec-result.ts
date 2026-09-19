@@ -17,17 +17,43 @@ export type ExecResponse = {
   signal?: string | null;
   /** Served from the speculative cache. */
   cacheHit?: boolean;
+  /** Output was truncated to the server cap. */
+  truncated?: boolean;
   /** Present on error responses (4xx/5xx). */
   error?: string;
 };
 
-export type ExecLine = { method: "log" | "error"; text: string };
+export type ExecLine = { method: "log" | "error" | "info"; text: string };
 
 /**
  * Turn an HTTP status + parsed body into ordered console lines. `data` may be
- * null when the body wasn't JSON.
+ * null when the body wasn't JSON. A truncation notice is appended whenever
+ * the server capped the output, so consoles never silently cut.
  */
 export function describeExecution(status: number, data: ExecResponse | null): ExecLine[] {
+  const lines = describeInner(status, data);
+  if (data?.truncated) {
+    lines.push({ method: "info", text: "Output truncated at 256KB." });
+  }
+  return lines;
+}
+
+/**
+ * Short run provenance for console footers, e.g. "3.12.0 · 42ms" or
+ * "3.12.0 · cached". Null when the response carries nothing to show.
+ */
+export function formatRunMeta(data: {
+  version?: string;
+  timeMs?: number;
+  cacheHit?: boolean;
+} | null): string | null {
+  if (!data || !data.version) return null;
+  if (data.cacheHit) return `${data.version} · cached`;
+  if (typeof data.timeMs === "number") return `${data.version} · ${data.timeMs}ms`;
+  return data.version;
+}
+
+function describeInner(status: number, data: ExecResponse | null): ExecLine[] {
   // ── Transport / server errors ──────────────────────────────────────────
   if (status === 429) {
     return [{ method: "error", text: data?.error ?? "Too many runs — please wait a moment and try again." }];

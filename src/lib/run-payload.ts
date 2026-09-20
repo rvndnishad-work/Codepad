@@ -159,3 +159,66 @@ export function applyOutputCap<
 export function stdinKey(templateId: string): string {
   return `interviewpad_stdin:${templateId}`;
 }
+
+export type HarnessSubmission =
+  | { ok: true; code: string; extraFiles: PistonExtraFile[] }
+  | { ok: false; status: 400 | 413; error: string };
+
+/**
+ * Resolve a harness-mode judge submission into entry code + sibling extras.
+ *
+ * Without `files` this is the legacy single-file path. With `files` (the
+ * full workspace map), `entryPath` is required and must name a submitted
+ * file; everything else validated becomes Piston extra files. Names are
+ * traversal-checked before anything else touches them. Verified against
+ * live Piston: nested extra paths (e.g. `pkg/helpers.py`) import fine.
+ */
+export function resolveHarnessSubmission(args: {
+  code?: string;
+  files?: Record<string, string> | null;
+  entryPath?: string;
+}): HarnessSubmission {
+  const { code = "", files, entryPath } = args;
+  if (!files || Object.keys(files).length === 0) {
+    return { ok: true, code, extraFiles: [] };
+  }
+  if (!entryPath) {
+    return {
+      ok: false,
+      status: 400,
+      error: "entryPath is required when files are submitted.",
+    };
+  }
+  const normEntry = entryPath.replace(/^\/+/, "");
+  const entryKey = Object.keys(files).find(
+    (k) => k.replace(/^\/+/, "") === normEntry,
+  );
+  if (entryKey === undefined) {
+    return {
+      ok: false,
+      status: 400,
+      error: `Entry file "${entryPath}" not found in submission.`,
+    };
+  }
+  const entryCode = files[entryKey];
+  if (typeof entryCode !== "string" || !entryCode) {
+    return {
+      ok: false,
+      status: 400,
+      error: `Entry file "${entryPath}" not found in submission.`,
+    };
+  }
+  const validated = validateExtraFiles(
+    Object.entries(files).map(([p, content]) => ({
+      name: p.replace(/^\/+/, ""),
+      content,
+    })),
+  );
+  if (!validated.ok) return validated;
+  // Split entry/extras with the same rules as interactive runs; the exact
+  // map key guarantees the entry itself never lands in extras.
+  const workspace: WorkspaceFiles = {};
+  for (const [p, content] of Object.entries(files)) workspace[p] = content;
+  const { extraFiles } = buildRunPayload(entryKey, workspace);
+  return { ok: true, code: entryCode, extraFiles };
+}

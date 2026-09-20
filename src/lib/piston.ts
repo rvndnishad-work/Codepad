@@ -64,14 +64,49 @@ export class PistonUnavailableError extends Error {}
 
 type RuntimesResponse = Array<{ language: string; version: string; aliases: string[] }>;
 
-let runtimesCache: { at: number; versions: Map<string, string> } | null = null;
+let runtimesCache: {
+  at: number;
+  versions: Map<string, string>;
+  all: Map<string, string[]>;
+} | null = null;
 const RUNTIMES_TTL = 5 * 60_000;
 
 /**
- * Resolve (and cache) the installed version for each Piston language. Piston's
- * /execute requires an explicit version; we pick the highest one installed.
+ * Explicit per-language version pins from PISTON_VERSIONS_JSON, e.g.
+ * {"python":"3.12.0","node":"20.11.1"}. Keys accept our language ids
+ * (python, node, cpp, …) or Piston's (javascript, c++, …); ours win.
+ * Malformed JSON throws loudly — a silent misconfig would be worse.
  */
-async function resolveVersion(pistonLang: string): Promise<string> {
+function versionPins(): Map<string, string> {
+  const raw = (process.env.PISTON_VERSIONS_JSON ?? "").trim();
+  if (!raw) return new Map();
+  let obj: unknown;
+  try {
+    obj = JSON.parse(raw);
+  } catch (err) {
+    throw new Error(
+      `PISTON_VERSIONS_JSON is not valid JSON: ${(err as Error).message}`,
+    );
+  }
+  const pins = new Map<string, string>();
+  if (obj && typeof obj === "object") {
+    for (const [k, v] of Object.entries(obj as Record<string, unknown>)) {
+      if (typeof v === "string" && v.trim()) pins.set(k.toLowerCase(), v.trim());
+    }
+  }
+  return pins;
+}
+
+/**
+ * Resolve (and cache) the installed version for each Piston language. Piston's
+ * /execute requires an explicit version; without a pin we pick the highest
+ * one installed, with a pin we use it when installed and fall back (with a
+ * warning, never a failure) when it isn't.
+ */
+async function resolveVersion(
+  pistonLang: string,
+  ourLang?: string,
+): Promise<string> {
   const now = Date.now();
   if (!runtimesCache || now - runtimesCache.at > RUNTIMES_TTL) {
     let res: Response;
@@ -90,26 +125,49 @@ async function resolveVersion(pistonLang: string): Promise<string> {
     }
     const runtimes = (await res.json()) as RuntimesResponse;
     const versions = new Map<string, string>();
+    const all = new Map<string, string[]>();
+    const track = (key: string, version: string) => {
+      const list = all.get(key) ?? [];
+      if (!list.includes(version)) list.push(version);
+      all.set(key, list);
+    };
     for (const rt of runtimes) {
       const key = rt.language;
       const existing = versions.get(key);
       if (!existing || compareSemver(rt.version, existing) > 0) {
         versions.set(key, rt.version);
       }
+      track(key, rt.version);
       // Index aliases too (e.g. "node" -> javascript runtime, "gcc"/"g++").
       for (const alias of rt.aliases ?? []) {
         const ex = versions.get(alias);
         if (!ex || compareSemver(rt.version, ex) > 0) versions.set(alias, rt.version);
+        track(alias, rt.version);
       }
     }
-    runtimesCache = { at: now, versions };
+    runtimesCache = { at: now, versions, all };
   }
 
-  const version = runtimesCache.versions.get(pistonLang);
-  if (!version) {
+  const available = runtimesCache.versions.get(pistonLang);
+  if (!available) {
     throw new PistonUnavailableError(`Runtime "${pistonLang}" is not installed on the Piston server`);
   }
-  return version;
+  const pins = versionPins();
+  const pin =
+    (ourLang && pins.get(ourLang.toLowerCase())) ??
+    pins.get(pistonLang.toLowerCase());
+  if (pin) {
+    if (
+      pin === available ||
+      runtimesCache.all.get(pistonLang)?.includes(pin)
+    ) {
+      return pin;
+    }
+    console.warn(
+      `[piston] pinned version "${pin}" for "${pistonLang}" is not installed; falling back to ${available}`,
+    );
+  }
+  return available;
 }
 
 function compareSemver(a: string, b: string): number {
@@ -140,7 +198,7 @@ export async function runOnPiston(
   const mapping = LANGUAGE_MAP[language.toLowerCase()];
   if (!mapping) throw new Error(`Language ${language} not supported.`);
 
-  const version = await resolveVersion(mapping.piston);
+  const version = await resolveVersion(mapping.piston, language.toLowerCase());
 
   const body = {
     language: mapping.piston,

@@ -22,6 +22,7 @@ import {
   templatesById,
   type TemplateDef,
 } from "@/lib/templates";
+import { FALLBACK_POPULAR_IDS } from "@/lib/popular-templates";
 import { TemplateLogo } from "@/lib/icons";
 import { CodePeekCard } from "./CodePeekCard";
 import WowReveal from "@/components/wow/WowReveal";
@@ -36,8 +37,6 @@ type Welcome = {
   snippetCount: number;
   recent: { slug: string; title: string; template: string } | null;
 } | null;
-
-const FEATURED_IDS = ["react", "python", "typescript", "empty-js"] as const;
 
 function WelcomeStrip({ w }: { w: NonNullable<Welcome> }) {
   const firstName = w.name?.split(" ")[0] ?? "Developer";
@@ -247,7 +246,14 @@ function GroupPanel({
   );
 }
 
-export default function PlaygroundsBrowser({ welcome }: { welcome: Welcome }) {
+export default function PlaygroundsBrowser({
+  welcome,
+  popularIds = [...FALLBACK_POPULAR_IDS],
+}: {
+  welcome: Welcome;
+  /** Usage-ranked template ids for "Most Popular" (server-computed). */
+  popularIds?: string[];
+}) {
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState<string>("all");
   const [viewMode, setViewMode] = useState<"card" | "compact">("compact");
@@ -316,10 +322,10 @@ export default function PlaygroundsBrowser({ welcome }: { welcome: Welcome }) {
 
   const featured = useMemo(
     () =>
-      FEATURED_IDS.map((id) => templatesById[id]).filter(
-        (t): t is TemplateDef => Boolean(t)
-      ),
-    []
+      popularIds
+        .map((id) => templatesById[id])
+        .filter((t): t is TemplateDef => Boolean(t)),
+    [popularIds],
   );
 
   const filtered = useMemo(() => {
@@ -348,7 +354,9 @@ export default function PlaygroundsBrowser({ welcome }: { welcome: Welcome }) {
   }, []);
 
   const isBrowsing = filter !== "all" || query.trim().length > 0;
-  const featuredIds = new Set<string>(FEATURED_IDS);
+  // Featured ids are excluded from the grouped catalog below so a
+  // usage-promoted template never renders twice on the page.
+  const featuredIds = useMemo(() => new Set<string>(popularIds), [popularIds]);
 
   const groupedItems = useMemo(() => {
     return groups.map((g) => ({

@@ -20,6 +20,17 @@ async function pistonUp(): Promise<boolean> {
   }
 }
 
+// CI sets PISTON_REQUIRED=1 (executor service + language packs): backend
+// specs must then assert real output — never pass silently on the graceful
+// "executor unavailable" branch.
+async function requirePiston(): Promise<boolean> {
+  const up = await pistonUp();
+  if (!up && process.env.PISTON_REQUIRED === "1") {
+    throw new Error("PISTON_REQUIRED=1 but the executor is unreachable");
+  }
+  return up;
+}
+
 const isMobileSafari = (projectName: string) => projectName === "Mobile Safari";
 
 /** Files live in a slide-over drawer on touch layouts — close it if open. */
@@ -81,9 +92,9 @@ test.describe("playground file lifecycle", () => {
 
   test("backend: Run always ends with a definitive console line", async ({
     page,
-  }) => {    const hasPiston = await pistonUp();
+  }) => {
+    const hasPiston = await requirePiston();
     await page.goto("/play?template=python");
-
     await expect(
       page.getByText("index.py", { exact: true }).first(),
     ).toBeVisible();
@@ -95,6 +106,8 @@ test.describe("playground file lifecycle", () => {
       await expect(
         page.getByText("Hello, Python!").first(),
       ).toBeVisible({ timeout: 60000 });
+      // Run provenance footer carries the resolved runtime version.
+      await expect(page.getByTestId("run-meta")).toContainText(/\d+\.\d+/);
     } else {
       // No executor in this environment: the UI must say so, never hang blank.
       await expect(
@@ -103,9 +116,12 @@ test.describe("playground file lifecycle", () => {
     }
   });
 
-  test("backend: sibling files travel with the run payload", async ({
-    page,
-  }) => {
+  test("backend: sibling files travel with the run payload", async (
+    { page },
+    testInfo,
+  ) => {
+    const hasPiston = await requirePiston();
+    const canType = testInfo.project.name !== "Mobile Safari";
     await page.goto("/play?template=python");
     await expect(
       page.getByText("index.py", { exact: true }).first(),
@@ -136,14 +152,32 @@ test.describe("playground file lifecycle", () => {
       await route.continue();
     });
 
-    // Run the entry file (creating helpers.py made it active).
-    await page.getByText("index.py", { exact: true }).first().click();
-    await closeFilesDrawer(page);
-    await page.getByRole("button", { name: "Run", exact: true }).click();
-    // Definitive outcome either way (Piston up or graceful 503).
-    await expect(
-      page.getByText(/Hello, Python!|temporarily unavailable/).first(),
-    ).toBeVisible({ timeout: 60000 });
+    if (hasPiston && canType) {
+      // True end-to-end proof: siblings resolve server-side at run time.
+      await page.getByText("helpers.py", { exact: true }).first().click();
+      await page.locator(".monaco-editor").first().click();
+      await page.keyboard.press("ControlOrMeta+a");
+      await page.keyboard.type("VALUE = 21");
+      await page.getByText("index.py", { exact: true }).first().click();
+      await page.locator(".monaco-editor").first().click();
+      await page.keyboard.press("ControlOrMeta+a");
+      await page.keyboard.type("from helpers import VALUE\nprint(VALUE * 2)");
+      await closeFilesDrawer(page);
+      await page.getByRole("button", { name: "Run", exact: true }).click();
+      await expect(page.getByText("42").first()).toBeVisible({
+        timeout: 60000,
+      });
+    } else {
+      // No executor here: verify the payload contract instead.
+      // Run the entry file (creating helpers.py made it active).
+      await page.getByText("index.py", { exact: true }).first().click();
+      await closeFilesDrawer(page);
+      await page.getByRole("button", { name: "Run", exact: true }).click();
+      // Definitive outcome either way (Piston up or graceful 503).
+      await expect(
+        page.getByText(/Hello, Python!|temporarily unavailable/).first(),
+      ).toBeVisible({ timeout: 60000 });
+    }
 
     const explicit = bodies.filter(
       (b): b is { speculative?: boolean; files?: unknown } =>
@@ -161,6 +195,7 @@ test.describe("playground file lifecycle", () => {
   test("backend: stdin input travels with the run and persists", async ({
     page,
   }) => {
+    await requirePiston();
     await page.goto("/play?template=python");
     await expect(
       page.getByText("index.py", { exact: true }).first(),

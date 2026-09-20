@@ -30,6 +30,12 @@ export function allowedExtsForTemplate(templateId?: string): string[] {
   if (id === "node" || id === "ts-node" || id === "empty-js" || id === "empty-ts") {
     return [".js", ".ts", ".json", ".md"];
   }
+  // Framework-first defaults: the toolbar "New file" button creates the
+  // framework's own file kind (Header → Header.vue, not Header.js).
+  if (id === "vue" || id === "empty-vue") return [".vue", ...FRONTEND_EXTS];
+  if (id === "svelte" || id === "empty-svelte") {
+    return [".svelte", ...FRONTEND_EXTS];
+  }
   // Default frontend list (covers empty-react and every framework template,
   // plus non-catalog ids such as the "vanilla" used by challenge attempts).
   return [...FRONTEND_EXTS];

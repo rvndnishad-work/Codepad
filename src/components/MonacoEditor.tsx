@@ -13,6 +13,7 @@ import { ataTypeScript } from "@/lib/ata-typescript-shim";
 import type { Monaco } from "@monaco-editor/react";
 import { customSnippets } from "@/lib/snippets";
 import { defineNanoBananaThemes } from "@/lib/monaco-themes";
+import { editorThemeById, DEFAULT_EDITOR_THEME_ID } from "@/lib/editor-themes";
 import "@/lib/monaco-loader";
 import { languageFor, extColorFor } from "@/lib/monaco-langs";
 import { runTypeAcquisition } from "@/lib/type-acquisition";
@@ -25,11 +26,15 @@ export default function MonacoEditor({
   fontSize,
   readOnly = false,
   savedSnapshotRef,
+  themeId = DEFAULT_EDITOR_THEME_ID,
 }: {
   fontSize: number;
   readOnly?: boolean;
   /** Last-saved code snapshot; tabs differing from it get a dirty dot. */
   savedSnapshotRef?: React.RefObject<SandpackFiles | null>;
+  /** Gallery theme id (lib/editor-themes) — dark mode only; light mode
+      keeps the stock light theme since the gallery is dark surfaces. */
+  themeId?: string;
 }) {
   const { code, updateCode } = useActiveCode();
   const { sandpack } = useSandpack();
@@ -392,10 +397,13 @@ export default function MonacoEditor({
           display: flex;
           align-items: stretch;
           gap: 0;
-          min-height: 43.5px;
-          padding: 0 8px;
-          border-bottom: 1px solid var(--border);
-          background: var(--surface);
+          /* Geometry matches the sibling FILES + output pane headers (h-9,
+             same surface/border) so the three bars read as one level. The
+             fixed h-9 comes from Tailwind classes on the element below;
+             no min-height here or it would win over it. */
+          padding: 0 12px;
+          border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+          background: rgba(13, 15, 22, 0.9);
           overflow-x: auto;
           -ms-overflow-style: none;
           scrollbar-width: none;
@@ -457,7 +465,7 @@ export default function MonacoEditor({
       ` }} />
 
       {/* Tab Bar */}
-      <div className="monaco-tab-bar">
+      <div className="monaco-tab-bar h-9 shrink-0">
         {visibleFiles.map((f: string) => {
           const dirty = isFileDirty(
             savedSnapshotRef?.current,
@@ -500,7 +508,7 @@ export default function MonacoEditor({
       <div className="flex-1 min-h-0">
         <Editor
           height="100%"
-          theme={isDark ? "nano-banana-pro" : "nbp-light"}
+          theme={isDark ? editorThemeById(themeId).monaco : "nbp-light"}
           language={language}
           path={activeFile}
           defaultValue={code}

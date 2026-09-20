@@ -50,6 +50,8 @@ export function readNumberPref(
 /** Storage keys for playground preferences. */
 export const PREF_KEYS = {
   formatOnSave: "interviewpad_formatOnSave",
+  /** Selected playground editor theme id (see lib/editor-themes). */
+  editorTheme: "interviewpad_editorTheme",
   /** "1" = skip the delete confirmation dialog. */
   skipDeleteConfirm: "interviewpad_skipDeleteConfirm",
   layout: (part: "explorer" | "editor" | "prompt" | "consoleW" | "consoleH") =>

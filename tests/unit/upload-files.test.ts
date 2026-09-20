@@ -8,7 +8,7 @@ import { classifyUpload } from "@/lib/upload-files";
  */
 describe("classifyUpload", () => {
   it("accepts web sources as text", () => {
-    for (const n of ["a.js", "a.jsx", "a.ts", "a.tsx", "a.css", "a.html", "a.json", "a.md"]) {
+    for (const n of ["a.js", "a.jsx", "a.ts", "a.tsx", "a.vue", "a.svelte", "a.css", "a.html", "a.json", "a.md"]) {
       expect(classifyUpload(n, "")).toBe("text");
     }
   });

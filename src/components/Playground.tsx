@@ -14,7 +14,6 @@ function useIsMobile(breakpoint = 768) {
 import {
   SandpackProvider,
   SandpackLayout,
-  SandpackPreview,
   useSandpack,
   useSandpackConsole,
   type SandpackFiles,
@@ -32,6 +31,7 @@ import {
   Share2,
   Eye,
   Terminal,
+  AppWindow,
   Lock,
   Globe,
   Code2,
@@ -42,13 +42,12 @@ import {
   ExternalLink,
   Tag,
   X as XIcon,
-  Ban,
   XCircle,
   AlertTriangle,
   Info,
   ChevronRight,
 } from "lucide-react";
-import { templatesById } from "@/lib/templates";
+import { templatesById, supportsV2Bundler, V2_BUNDLER_URL } from "@/lib/templates";
 import { buildNodeBuiltinShims } from "@/lib/node-builtin-shims";
 import { MissingDepBridge } from "./bridges/MissingDepBridge";
 import { decodePlaygroundCode, decodePlaygroundFiles } from "@/lib/playground-handoff";
@@ -63,12 +62,24 @@ import { describeExecution, formatRunMeta } from "@/lib/exec-result";
 import { stdinKey } from "@/lib/run-payload";
 import { postExecute, executeBodyForFiles } from "@/lib/execute-client";
 import { snapshotFiles } from "@/lib/file-dirty";
-import { readBoolPref, writeBoolPref, PREF_KEYS } from "@/lib/prefs";
+import { readBoolPref, writeBoolPref, readPref, writePref, PREF_KEYS } from "@/lib/prefs";
+import {
+  DEFAULT_EDITOR_THEME_ID,
+  editorThemeById,
+} from "@/lib/editor-themes";
 import type { FormatResult } from "./bridges/FormatBridge";
 import MonacoEditor from "./MonacoEditor";
 import ShortcutsModal from "./ShortcutsModal";
 import PlaygroundToolbar from "./PlaygroundToolbar";
 import { FilesBridge } from "./bridges/FilesBridge";
+import {
+  PaneTitle,
+  LiveBadge,
+  UrlPill,
+  ClearButton,
+  RefreshPreviewButton,
+} from "./OutputPaneChrome";
+import { SandpackPreviewWithLoader } from "./PreviewLoadingOverlay";
 import { RunBridge } from "./bridges/RunBridge";
 import { ConsoleEntryBridge } from "./bridges/ConsoleEntryBridge";
 import { ConsoleClearBridge } from "./bridges/ConsoleClearBridge";
@@ -244,6 +255,15 @@ export default function Playground({
     tpl.mode === "console" ? "console" : "preview"
   );
   const [fontSize, setFontSize] = useState(14);
+  // Gallery theme for the Monaco panes (dark only) — validated against the
+  // catalog so a stale/foreign stored id falls back to the default.
+  const [editorThemeId, setEditorThemeId] = useState<string>(() => {
+    if (typeof window === "undefined") return DEFAULT_EDITOR_THEME_ID;
+    return editorThemeById(readPref(PREF_KEYS.editorTheme)).id;
+  });
+  useEffect(() => {
+    writePref(PREF_KEYS.editorTheme, editorThemeId);
+  }, [editorThemeId]);
   const [snippetId, setSnippetId] = useState<string | null>(snippet?.id ?? null);
   const [currentSlug, setCurrentSlug] = useState<string | null>(snippet?.slug ?? null);
   const [dirty, setDirty] = useState(false);
@@ -383,6 +403,9 @@ export default function Playground({
   const committedSeqRef = useRef(0);
   const backendFetchRef = useRef(false);
   const runRef = useRef<(() => void) | null>(null);
+  // One-time hint teaching the save model (silent persists never land on
+  // the dashboard) — shown on the first Ctrl+S of an unsaved playground.
+  const saveHintShownRef = useRef(false);
   const explorerOpsRef = useRef<ExplorerOps | null>(null);
   const formatRef = useRef<
     ((opts?: { quiet?: boolean }) => Promise<FormatResult | null>) | null
@@ -598,7 +621,7 @@ export default function Playground({
     }
   }
 
-  async function handleSave(opts: { silent?: boolean } = {}) {
+  async function handleSave(opts: { silent?: boolean; title?: string } = {}) {
     if (!signedIn) {
       if (opts.silent) return;
       const next = encodeURIComponent(window.location.pathname + window.location.search);
@@ -606,11 +629,28 @@ export default function Playground({
       return;
     }
     if (!editable) return;
+    // Silent saves (background auto-save, Ctrl+S) persist working files
+    // only — they never create dashboard entries. A playground appears on
+    // the dashboard/profile exclusively via an explicit Save click.
+    if (opts.silent && !snippetId) {
+      if (!saveHintShownRef.current) {
+        saveHintShownRef.current = true;
+        toast.info("Click Save to keep this playground on your dashboard.");
+      }
+      return;
+    }
+    // First-save naming: the toolbar's save dialog hands the chosen name
+    // here. Sync it into the title input so bar, payload, and toast agree.
+    const saveTitle = (opts.title ?? title).trim() || "Untitled";
+    if (opts.title !== undefined && opts.title !== title) setTitle(opts.title);
     // Overlapping saves (manual Ctrl+S racing the silent auto-save) resolve
     // in any order — only the latest finisher may clear dirty/saving, so a
     // stale response can never wipe a newer edit.
     const seq = ++saveSeqRef.current;
-    setSaving(true);
+    // Background auto-saves must stay invisible: the Save button is
+    // exclusively the "keep on dashboard" action, so it never spins for
+    // silent persists — only explicit user saves animate it.
+    if (!opts.silent) setSaving(true);
     try {
       // Format-on-save formats the active file first. The formatted code is
       // folded into the payload directly: the bridge sync back to filesRef is
@@ -628,7 +668,7 @@ export default function Playground({
         }
       }
       const payload: Record<string, unknown> = {
-        title,
+        title: saveTitle,
         template: templateId,
         files,
         visibility,
@@ -646,7 +686,7 @@ export default function Playground({
       const data = await res.json();
       if (!opts.silent) {
         toast.success(snippetId ? "Snippet updated" : "Snippet saved", {
-          description: title,
+          description: saveTitle,
         });
       }
       if (!snippetId && data?.id) {
@@ -664,7 +704,7 @@ export default function Playground({
       const msg = err instanceof Error ? err.message : String(err);
       if (!opts.silent) toast.error("Save failed", { description: msg });
     } finally {
-      if (saveSeqRef.current === committedSeqRef.current) setSaving(false);
+      if (!opts.silent && saveSeqRef.current === committedSeqRef.current) setSaving(false);
     }
   }
 
@@ -835,7 +875,9 @@ export default function Playground({
       if (target && (target.tagName === "INPUT" || target.tagName === "TEXTAREA" || target.isContentEditable)) return;
       if ((e.ctrlKey || e.metaKey) && e.key === "s") {
         e.preventDefault();
-        void handleSaveRef.current();
+        // File-level save: silent persist of working files, never the
+        // dashboard naming dialog (only the Save button creates/renames).
+        void handleSaveRef.current({ silent: true });
       }
       // Delete removes the active file (files only — folders stay on the
       // context menu). Guarded by the text-field check above so typing,
@@ -1018,7 +1060,8 @@ export default function Playground({
               fontSize={fontSize} setFontSize={setFontSize} view={view} setView={setView}
               snippetId={snippetId} visibility={visibility} setVisibility={setVisibility}
               snippet={snippet} isOwner={isOwner} forking={forking}
-              handleSave={() => handleSave()} handleFork={handleFork} handleShare={handleShare}
+              handleSave={(opts?: { silent?: boolean; title?: string }) => handleSave(opts ?? {})} handleFork={handleFork} handleShare={handleShare}
+              editorThemeId={editorThemeId} setEditorThemeId={setEditorThemeId}
               handleCopyEmbed={handleCopyEmbed} handlePopout={handlePopout} handleRun={handleRun}
               running={running} showRun={isBackend} showDirectionToggle={!isMobile} tags={tags} setTags={setTags} tagInput={tagInput} setTagInput={setTagInput}
               onToggleFiles={() => setMobileFilesOpen((prev) => !prev)}
@@ -1051,11 +1094,15 @@ export default function Playground({
                   files={initialFilesRef.current}
                   customSetup={customSetup}
                   options={{
-                    // The version-pinned default bundler (2-19-8-sandpack…) ships
-                    // an old parser that throws "Unexpected token" on ES2020
-                    // syntax (nullish coalescing ??, optional chaining ?.). Point
-                    // at the evergreen v2 (esbuild) bundler, which parses modern JS.
-                    bundlerURL: "https://sandpack-bundler.codesandbox.io",
+                    // The version-pinned default (v1) bundler ships an old parser
+                    // that throws "Unexpected token" on ES2020 syntax (??, ?.),
+                    // so React/Solid point at the evergreen v2 (esbuild) bundler.
+                    // But v2 only ships React/Solid transformers — Vue/Svelte
+                    // fail with "No transformer for *.vue/*.svelte" and Angular
+                    // fails with "decorators isn't currently enabled". Those
+                    // bases must fall back to the default v1 bundler, which is
+                    // the only one with their transformers.
+                    ...(supportsV2Bundler(tpl.base) ? { bundlerURL: V2_BUNDLER_URL } : {}),
                     autorun: isBackend ? false : autoRun,
                     autoReload: isBackend ? false : autoRun,
                     initMode: "immediate" as const,
@@ -1085,7 +1132,7 @@ export default function Playground({
                     <div className="fixed inset-0 z-[100] flex justify-end bg-black/60 backdrop-blur-sm">
                       <div className="flex-1" onClick={() => setPromptOpen(false)} />
                       <div className="h-full w-4/5 max-w-sm border-l border-white/10 bg-[#0d0f16] shadow-2xl">
-                        <PromptSidebar onClose={() => setPromptOpen(false)} />
+                        <PromptSidebar onClose={() => setPromptOpen(false)} contextLabel={title} signedIn={signedIn} />
                       </div>
                     </div>
                   )}
@@ -1094,14 +1141,14 @@ export default function Playground({
                     <div className="flex-1 min-w-0 h-full">
                       {previewOnly ? (
                         <div className="h-full w-full relative ide-panel">
-                          <SandpackPreview showNavigator showOpenInCodeSandbox={false} showRefreshButton={false} style={{ height: "100%", width: "100%" }} />
+                          <SandpackPreviewWithLoader title={tpl.title} showNavigator showOpenInCodeSandbox={false} showRefreshButton={false} style={{ height: "100%", width: "100%" }} />
                           <ErrorOverlay error={bundlerError} onDismiss={() => { setBundlerError(null); runRef.current?.(); }} />
                         </div>
                       ) : isMobile ? (
                         <div className="flex flex-col h-full bg-bg">
                           <div style={{ flex: `0 0 ${mobileSplit}%` }} className="min-h-0 overflow-hidden flex flex-col ide-panel">
                             <div className="flex-1 min-h-0">
-                              <MonacoEditor fontSize={fontSize} readOnly={!editable} savedSnapshotRef={savedSnapshotRef} />
+                              <MonacoEditor fontSize={fontSize} readOnly={!editable} savedSnapshotRef={savedSnapshotRef} themeId={editorThemeId} />
                             </div>
                             <ReadOnlyToolbar editable={editable} />
                           </div>
@@ -1110,9 +1157,9 @@ export default function Playground({
                             <div style={{
                               display: effectiveView === "console" ? "none" : "flex",
                               flex: effectiveView === "both" ? `0 0 ${mobileInnerSplit}%` : 1,
-                              minHeight: 0, overflow: "hidden",
-                            }}>
-                              <SandpackPreview showNavigator showOpenInCodeSandbox={false} showRefreshButton={false} style={{ height: "100%", width: "100%" }} />
+                               minHeight: 0, overflow: "hidden",
+                             }}>
+                              <SandpackPreviewWithLoader title={tpl.title} showNavigator showOpenInCodeSandbox={false} showRefreshButton={false} style={{ height: "100%", width: "100%" }} />
                             </div>
                             {effectiveView === "both" && (
                               <MobileSplitHandle onPointerDown={onMobileInnerSplitDrag} label="Resize preview and console" />
@@ -1126,18 +1173,12 @@ export default function Playground({
                             }}>
                               {effectiveView !== "preview" && (
                                 <div className="flex h-9 shrink-0 items-center justify-between gap-2 overflow-hidden border-b border-white/10 bg-[#0d0f16]/90 px-3">
-                                  <div className="flex min-w-0 items-center gap-2 overflow-hidden">
-                                    <span className="h-1.5 w-1.5 shrink-0 animate-pulse rounded-full bg-[#8b93ff]" aria-hidden />
-                                    <span className="truncate font-mono text-[11px] font-bold uppercase tracking-[0.18em] text-white/80">Console</span>
-                                  </div>
+                                  <PaneTitle icon={Terminal} iconClassName="border-cyan-400/30 bg-cyan-400/10 text-cyan-300">
+                                    Console
+                                  </PaneTitle>
                                   <div className="flex shrink-0 items-center gap-1.5 whitespace-nowrap">
-                                    <button onClick={clearConsole} className="grid h-6 w-6 shrink-0 place-items-center rounded-full text-white/40 transition hover:bg-white/10 hover:text-white" title="Clear Console">
-                                      <Ban className="w-3 h-3" />
-                                    </button>
-                                    <div className="flex shrink-0 items-center gap-1 whitespace-nowrap font-mono text-[10px] uppercase tracking-widest text-white/35">
-                                      <span className="h-1.5 w-1.5 shrink-0 animate-pulse rounded-full bg-emerald-400" />
-                                      Live
-                                    </div>
+                                    <ClearButton onClear={clearConsole} showLabel={false} />
+                                    <LiveBadge />
                                   </div>
                                 </div>
                               )}
@@ -1165,7 +1206,7 @@ export default function Playground({
                           {promptOpen && (
                             <>
                               <div style={{ width: promptW, minWidth: 0 }} className="h-full shrink-0">
-                                <PromptSidebar onClose={() => setPromptOpen(false)} />
+                                <PromptSidebar onClose={() => setPromptOpen(false)} contextLabel={title} signedIn={signedIn} />
                               </div>
                               <div className="ide-divider h-full w-px cursor-col-resize touch-none select-none" onPointerDown={onPromptDrag}>
                                 <div className="absolute inset-y-0 -left-1.5 -right-1.5" />
@@ -1192,7 +1233,7 @@ export default function Playground({
                           <div style={{ width: editorW, minWidth: 0 }} className="h-full shrink-0 flex flex-col ide-panel">
                             <div className="flex-1 min-h-0">
                               <div className="h-full w-full min-w-0">
-                                <MonacoEditor fontSize={fontSize} readOnly={!editable} savedSnapshotRef={savedSnapshotRef} />
+                                <MonacoEditor fontSize={fontSize} readOnly={!editable} savedSnapshotRef={savedSnapshotRef} themeId={editorThemeId} />
                               </div>
                             </div>
                             <ReadOnlyToolbar editable={editable} />
@@ -1203,37 +1244,30 @@ export default function Playground({
                           <div className="flex-1 min-w-0 h-full flex flex-col relative ide-panel">
                             <div className="flex h-9 shrink-0 items-center justify-between gap-2 overflow-hidden border-b border-white/10 bg-[#0d0f16]/90 px-3">
                               <div className="flex min-w-0 items-center gap-2 overflow-hidden">
-                                {effectiveView === "console" ? (
-                                  <Terminal className="h-3.5 w-3.5 shrink-0 animate-pulse text-[#8b93ff]" />
-                                ) : isBackend ? (
-                                  <Terminal className="h-3.5 w-3.5 shrink-0 text-[#8b93ff]/70" />
+                                {effectiveView === "console" || isBackend ? (
+                                  <PaneTitle icon={Terminal} iconClassName="border-cyan-400/30 bg-cyan-400/10 text-cyan-300">
+                                    Console
+                                  </PaneTitle>
                                 ) : (
-                                  <StatusDot />
+                                  <>
+                                    <PaneTitle icon={AppWindow}>
+                                      Preview
+                                    </PaneTitle>
+                                    <StatusDot />
+                                  </>
                                 )}
-                                <span className="truncate font-mono text-[11px] font-bold uppercase tracking-[0.18em] text-white/80">
-                                  {effectiveView === "console" || isBackend ? "Console" : "Output"}
-                                </span>
                               </div>
                               {effectiveView === "console" || isBackend ? (
                                 <div className="flex shrink-0 items-center gap-2 whitespace-nowrap">
-                                  <button
-                                    onClick={clearConsole}
-                                    className="flex shrink-0 items-center gap-1 whitespace-nowrap rounded-full px-2 py-1 text-white/40 transition hover:bg-white/10 hover:text-white"
-                                    title="Clear Console"
-                                  >
-                                    <Ban className="w-3 h-3 shrink-0" />
-                                    <span className="text-[10px] font-bold uppercase tracking-wider">Clear</span>
-                                  </button>
+                                  <ClearButton onClear={clearConsole} />
                                   <div className="h-3 w-px shrink-0 bg-white/10" aria-hidden />
-                                  <div className="flex shrink-0 items-center gap-1 whitespace-nowrap font-mono text-[10px] uppercase tracking-widest text-white/35">
-                                    <span className="h-1.5 w-1.5 shrink-0 animate-pulse rounded-full bg-emerald-400" />
-                                    Live
-                                  </div>
+                                  <LiveBadge />
                                 </div>
                               ) : (
                                 !isBackend && (
-                                  <div className="flex items-center gap-2">
-                                    <div className="text-[10px] font-mono text-muted/30">localhost:3000</div>
+                                  <div className="flex shrink-0 items-center gap-1.5 whitespace-nowrap">
+                                    <UrlPill />
+                                    <RefreshPreviewButton onRefresh={() => runRef.current?.()} />
                                   </div>
                                 )
                               )}
@@ -1244,7 +1278,7 @@ export default function Playground({
                                 flex: 1,
                                 minHeight: 0, minWidth: 0, overflow: "hidden",
                               }}>
-                                <SandpackPreview showNavigator showOpenInCodeSandbox={false} showRefreshButton={false} style={{ height: "100%", width: "100%" }} />
+                                <SandpackPreviewWithLoader title={tpl.title} showNavigator showOpenInCodeSandbox={false} showRefreshButton={false} style={{ height: "100%", width: "100%" }} />
                               </div>
                               {(effectiveView === "both" || effectiveView === "columns") && (
                                 effectiveView === "columns" ? (
@@ -1270,15 +1304,12 @@ export default function Playground({
                               }}>
                                 {(effectiveView === "both" || effectiveView === "columns") && (
                                   <div className="flex h-9 shrink-0 items-center justify-between gap-2 overflow-hidden border-b border-white/10 bg-[#0d0f16]/90 px-3">
-                                    <div className="flex min-w-0 items-center gap-2 overflow-hidden">
-                                      <span className="h-1.5 w-1.5 shrink-0 animate-pulse rounded-full bg-[#8b93ff]" aria-hidden />
-                                      <span className="truncate font-mono text-[11px] font-bold uppercase tracking-[0.18em] text-white/80">Console</span>
-                                    </div>
+                                    <PaneTitle icon={Terminal} iconClassName="border-cyan-400/30 bg-cyan-400/10 text-cyan-300">
+                                      Console
+                                    </PaneTitle>
                                     <div className="flex shrink-0 items-center gap-1.5 whitespace-nowrap">
-                                      <button onClick={clearConsole} className="grid h-6 w-6 shrink-0 place-items-center rounded-full text-white/40 transition hover:bg-white/10 hover:text-white" title="Clear Console">
-                                        <Ban className="w-3 h-3" />
-                                      </button>
-                                      <div className="shrink-0 whitespace-nowrap font-mono text-[10px] uppercase tracking-widest text-white/35">Live</div>
+                                      <ClearButton onClear={clearConsole} showLabel={false} />
+                                      <LiveBadge />
                                     </div>
                                   </div>
                                 )}
@@ -1318,9 +1349,9 @@ export default function Playground({
             {/* Status bar — readonly readout of template, save, runtime, view */}
             <div className="flex h-7 shrink-0 items-center justify-between gap-2 overflow-hidden border-t border-white/10 bg-[#0d0f16] px-3 font-mono text-[10px] uppercase tracking-[0.16em] text-white/40">
               <div className="flex min-w-0 flex-1 items-center gap-2.5 overflow-hidden">
-                <span className={`h-1.5 w-1.5 shrink-0 rounded-full ${running ? "animate-pulse bg-[#8b93ff]" : dirty ? "bg-amber-400/80" : "bg-emerald-400/80"}`} aria-hidden />
+                <span className={`h-1.5 w-1.5 shrink-0 rounded-full ${running ? "animate-pulse bg-[#8b93ff]" : !snippetId || dirty ? "bg-amber-400/80" : "bg-emerald-400/80"}`} aria-hidden />
                 <span className="truncate font-bold text-white/70">{tpl.title}</span>
-                <span className="hidden shrink-0 sm:inline">{saving ? "Saving…" : dirty ? "Unsaved" : "Saved"}</span>
+                <span className="hidden shrink-0 sm:inline">{saving ? "Saving…" : !snippetId || dirty ? "Unsaved" : "Saved"}</span>
               </div>
               <div className="flex shrink-0 items-center gap-3 whitespace-nowrap">
                 <span className="hidden rounded-full border border-white/10 bg-white/5 px-2 py-0.5 md:inline">

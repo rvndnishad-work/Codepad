@@ -22,9 +22,7 @@ describe("template file types", () => {
       "empty-react",
       "react",
       "react-hooks",
-      "vue",
       "angular",
-      "svelte",
       "solid",
       undefined,
       "vanilla", // non-catalog id used by challenge attempts
@@ -32,6 +30,21 @@ describe("template file types", () => {
       const allowed = allowedExtsForTemplate(id);
       for (const ext of FRONTEND_EXTS) expect(allowed).toContain(ext);
       expect(defaultExtForTemplate(id)).toBe(".js");
+    }
+  });
+
+  it("vue/svelte templates lead with their framework extension", () => {
+    for (const id of ["vue", "empty-vue"]) {
+      const allowed = allowedExtsForTemplate(id);
+      expect(allowed[0]).toBe(".vue");
+      for (const ext of FRONTEND_EXTS) expect(allowed).toContain(ext);
+      expect(defaultExtForTemplate(id)).toBe(".vue");
+    }
+    for (const id of ["svelte", "empty-svelte"]) {
+      const allowed = allowedExtsForTemplate(id);
+      expect(allowed[0]).toBe(".svelte");
+      for (const ext of FRONTEND_EXTS) expect(allowed).toContain(ext);
+      expect(defaultExtForTemplate(id)).toBe(".svelte");
     }
   });
 
@@ -60,6 +73,8 @@ describe("template file types", () => {
   it("every allowed ext has a FILE_TYPES entry (or nothing can be created)", () => {
     const ids = [
       "empty-react",
+      "empty-vue",
+      "empty-svelte",
       "empty-js",
       "empty-ts",
       "python",
@@ -70,6 +85,7 @@ describe("template file types", () => {
       "node",
       "ts-node",
       "vue",
+      "svelte",
     ];
     for (const id of ids) {
       for (const ext of allowedExtsForTemplate(id)) {

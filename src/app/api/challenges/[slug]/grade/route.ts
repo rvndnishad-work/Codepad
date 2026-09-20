@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { clientKey, rateLimitDistributed } from "@/lib/rate-limit";
 import { resolveCandidateFromToken } from "@/lib/take-home/candidate";
 import { judge, type JudgeCase } from "@/lib/judge/run";
+import { resolveHarnessSubmission } from "@/lib/run-payload";
 import { recordPrepCompletion } from "@/lib/prep-journey/complete";
 import { hasHarness } from "@/lib/judge/harness";
 import { runUnitJs } from "@/lib/judge/unit-js";
@@ -24,6 +25,9 @@ const gradeSchema = z.object({
   // Harness mode:
   language: z.string().optional(),
   code: z.string().optional(),
+  // Multi-file harness submissions: the full workspace map plus the entry
+  // path. Absent entirely for legacy single-file submissions.
+  entryPath: z.string().optional(),
   // unit-js mode: the candidate's editable source files { "/path": "code" }.
   files: z.record(z.string(), z.string()).optional(),
   durationSec: z.number().int().min(0).max(60 * 60 * 24).optional(),
@@ -68,7 +72,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ slug: s
   if (!parsed.success) {
     return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
   }
-  const { stepId, language, code, files, durationSec, sessionId, token, dryRun } = parsed.data;
+  const { stepId, language, code, files, entryPath, durationSec, sessionId, token, dryRun } = parsed.data;
 
   // ── Resolve candidate (session user, else take-home token) ──
   const session = await auth().catch(() => null);
@@ -118,10 +122,24 @@ export async function POST(req: Request, { params }: { params: Promise<{ slug: s
   let graded: Graded;
   try {
     if (step.judgingMode === "harness") {
-      if (!language || !code) {
+      if (!language) {
+        return NextResponse.json({ error: "Missing language parameter." }, { status: 400 });
+      }
+      // Multi-file submissions resolve entry + siblings; legacy callers
+      // send only `code`.
+      const submission = resolveHarnessSubmission({
+        code,
+        files: files ?? undefined,
+        entryPath,
+      });
+      if (!submission.ok) {
+        return NextResponse.json({ error: submission.error }, { status: submission.status });
+      }
+      const entryCode = submission.code;
+      if (!entryCode) {
         return NextResponse.json({ error: "Missing language or code." }, { status: 400 });
       }
-      if (Buffer.byteLength(code, "utf8") > MAX_CODE_BYTES) {
+      if (Buffer.byteLength(entryCode, "utf8") > MAX_CODE_BYTES) {
         return NextResponse.json({ error: "Code exceeds maximum size." }, { status: 413 });
       }
       if (!hasHarness(language)) {
@@ -162,7 +180,13 @@ export async function POST(req: Request, { params }: { params: Promise<{ slug: s
         compare: c.compare ?? "exact",
       }));
 
-      const result = await judge({ language, code, contract, cases });
+      const result = await judge({
+        language,
+        code: entryCode,
+        contract,
+        cases,
+        extraFiles: submission.extraFiles,
+      });
       graded = {
         passed: result.passed,
         total: result.total,
@@ -176,7 +200,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ slug: s
             : { name: r.name, isHidden: false, status: r.status, got: r.got, expected: r.expected, error: r.error }
         ),
         testTests: result.results.map((r) => ({ path: "", name: r.name, status: r.status === "pass" ? "pass" : "fail", error: r.error ?? null })),
-        filesForRecord: { [`solution.${language}`]: code },
+        filesForRecord: files ?? { [`solution.${language}`]: entryCode },
       };
     } else if (step.judgingMode === "unit-js") {
       if (!files || Object.keys(files).length === 0) {

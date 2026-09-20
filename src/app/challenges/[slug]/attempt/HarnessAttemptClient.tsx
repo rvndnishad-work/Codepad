@@ -344,6 +344,7 @@ export default function HarnessAttemptClient({
             <button
               onClick={() => run(true)}
               disabled={running || submitting}
+              aria-label="Run"
               className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full border border-emerald-500/30 bg-emerald-500/[0.07] hover:bg-emerald-500/[0.14] text-emerald-700 dark:text-emerald-400 text-xs font-bold transition disabled:opacity-50 whitespace-nowrap shrink-0"
             >
               {running ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Play className="w-3.5 h-3.5 fill-current" />}
@@ -352,6 +353,7 @@ export default function HarnessAttemptClient({
             <button
               onClick={() => run(false)}
               disabled={running || submitting}
+              aria-label="Submit"
               className="group relative overflow-hidden inline-flex items-center gap-1.5 px-5 py-2 rounded-full bg-emerald-500 hover:bg-emerald-400 text-white text-xs font-black uppercase tracking-wider transition-all duration-300 disabled:opacity-50 whitespace-nowrap shrink-0 shadow-[0_6px_24px_-8px_rgba(16,185,129,0.8)] active:translate-y-px"
             >
               <span aria-hidden className="pointer-events-none absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/30 to-transparent transition-transform duration-700 group-hover:translate-x-full" />

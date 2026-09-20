@@ -27,6 +27,31 @@ export const REACT_TEMPLATE_DEPS: Record<string, string> = {
   "react-dom": REACT_DOM_VERSION,
 };
 
+/**
+ * Single source of truth for the Angular version shipped in every sandbox.
+ * Sandpack's built-in `angular` base still declares v11-era deps, so both
+ * `base: "angular"` entries pin this explicitly: Playground forwards
+ * `dependencies` via `customSetup`, which overrides the bundler default.
+ *
+ * Notes on the set:
+ * - `@angular/compiler` ships JIT compilation in-browser (no build step).
+ * - `platform-browser-dynamic` is intentionally absent — deprecated since
+ *   Angular v21; `bootstrapApplication` from `@angular/platform-browser`
+ *   (standalone, no NgModule) is the supported path.
+ * - `zone.js` bare import only: the `zone.js/dist/zone` deep path no longer
+ *   exists in its exports map. `core-js` was a ViewEngine leftover.
+ */
+export const ANGULAR_VERSION = "^22.0.0";
+
+export const ANGULAR_TEMPLATE_DEPS: Record<string, string> = {
+  "@angular/common": ANGULAR_VERSION,
+  "@angular/compiler": ANGULAR_VERSION,
+  "@angular/core": ANGULAR_VERSION,
+  "@angular/platform-browser": ANGULAR_VERSION,
+  rxjs: "^7.8.0",
+  "zone.js": "~0.16.0",
+};
+
 export type TemplateCategory = "empty" | "core" | "framework" | "react-ecosystem";
 
 export type TemplateDef = {
@@ -99,6 +124,79 @@ export const templates: TemplateDef[] = [
       "/App.js": `export default function App() {\n  return <h1>Hello, React!</h1>;\n}\n`,
       "/styles.css": { code: "", hidden: true },
       "/public/index.html": { code: `<!DOCTYPE html>\n<html><head><meta charset="utf-8" /><title>React</title></head>\n<body><div id="root"></div></body></html>\n`, hidden: true },
+    },
+  },
+  {
+    id: "empty-vue",
+    title: "Empty Vue",
+    subtitle: "Clean slate",
+    group: "empty",
+    category: "empty",
+    base: "vue",
+    label: "Empty Vue",
+    accent: "#42b883",
+    files: {
+      "/src/App.vue": `<template>\n  <h1>Hello, Vue!</h1>\n</template>\n\n<script setup>\n</script>\n`,
+      "/src/styles.css": { code: "", hidden: true },
+      "/public/index.html": { code: `<!DOCTYPE html>\n<html><head><meta charset="utf-8" /><title>Vue</title></head>\n<body><div id="app"></div></body></html>\n`, hidden: true },
+    },
+  },
+  {
+    id: "empty-angular",
+    title: "Empty Angular",
+    subtitle: "Clean slate",
+    group: "empty",
+    category: "empty",
+    base: "angular",
+    label: "Empty NG",
+    accent: "#dd0031",
+    dependencies: { ...ANGULAR_TEMPLATE_DEPS },
+    files: {
+      "/src/app/app.component.ts": `import { Component } from "@angular/core";\n\n@Component({\n  selector: "app-root",\n  standalone: true,\n  template: \`<h1>Hello, Angular!</h1>\`,\n})\nexport class AppComponent {}\n`,
+      // Same standalone bootstrap as the full template: the base `main.ts`
+      // imports the deprecated dynamic platform + the hidden NgModule shell,
+      // so it must be overridden (see `angular` above for the full story).
+      "/src/main.ts": `import "zone.js";\nimport "@angular/compiler";\nimport { bootstrapApplication } from "@angular/platform-browser";\nimport { AppComponent } from "./app/app.component";\n\nbootstrapApplication(AppComponent).catch((err) => console.error(err));\n`,
+      "/src/polyfills.ts": `import "zone.js";\n`,
+      // The base component's external view files are orphaned once the
+      // component uses an inline template — hide them so the tree stays clean.
+      "/src/app/app.module.ts": { code: "", hidden: true },
+      "/src/app/app.component.html": { code: "", hidden: true },
+      "/src/app/app.component.css": { code: "", hidden: true },
+    },
+  },
+  {
+    id: "empty-svelte",
+    title: "Empty Svelte",
+    subtitle: "Clean slate",
+    group: "empty",
+    category: "empty",
+    base: "svelte",
+    label: "Empty Svelte",
+    accent: "#ff3e00",
+    files: {
+      "/App.svelte": `<h1>Hello, Svelte!</h1>\n`,
+      "/styles.css": { code: "", hidden: true },
+      // Keep the bundle script tag: the base bootstrap mounts into
+      // document.body and the built bundle is loaded from this shell.
+      "/public/index.html": { code: `<!DOCTYPE html>\n<html>\n<head><meta charset="utf8" /><meta name="viewport" content="width=device-width" /><title>Svelte</title></head>\n<body><script src="bundle.js"></script></body>\n</html>\n`, hidden: true },
+    },
+  },
+  {
+    id: "empty-solid",
+    title: "Empty Solid",
+    subtitle: "Clean slate",
+    group: "empty",
+    category: "empty",
+    base: "solid",
+    label: "Empty Solid",
+    accent: "#2c4f7c",
+    files: {
+      "/App.tsx": `export default function App() {\n  return <h1>Hello, Solid!</h1>;\n}\n`,
+      "/styles.css": { code: "", hidden: true },
+      // Keep the mount node + entry script: the base bootstrap renders
+      // into #app and is loaded from this shell.
+      "/index.html": { code: `<html>\n<head><title>Solid</title><meta charset="UTF-8" /></head>\n<body><div id="app"></div><script src="src/index.tsx"></script></body>\n</html>\n`, hidden: true },
     },
   },
 
@@ -309,8 +407,21 @@ body {
     base: "angular",
     label: "NG",
     accent: "#dd0031",
+    dependencies: { ...ANGULAR_TEMPLATE_DEPS },
     files: {
-      "/src/app/app.component.ts": `import { Component } from "@angular/core";\n\n@Component({\n  selector: "app-root",\n  template: \`\n    <div style="font-family: system-ui; padding: 24px">\n      <h1>Angular Counter</h1>\n      <button (click)="count = count + 1">Clicked {{count}} times</button>\n    </div>\n  \`,\n})\nexport class AppComponent {\n  count = 0;\n}\n`,
+      "/src/app/app.component.ts": `import { Component } from "@angular/core";\n\n@Component({\n  selector: "app-root",\n  standalone: true,\n  template: \`\n    <div style="font-family: system-ui; padding: 24px">\n      <h1>Angular Counter</h1>\n      <button (click)="count = count + 1">Clicked {{count}} times</button>\n    </div>\n  \`,\n})\nexport class AppComponent {\n  count = 0;\n}\n`,
+      // Standalone bootstrap (no NgModule): `platform-browser-dynamic` is
+      // deprecated, so `main.ts` uses `bootstrapApplication` + an explicit
+      // compiler import for in-browser JIT. `zone.js` is imported first as
+      // the base template's `polyfills.ts` deep path no longer resolves.
+      "/src/main.ts": `import "zone.js";\nimport "@angular/compiler";\nimport { bootstrapApplication } from "@angular/platform-browser";\nimport { AppComponent } from "./app/app.component";\n\nbootstrapApplication(AppComponent).catch((err) => console.error(err));\n`,
+      "/src/polyfills.ts": `import "zone.js";\n`,
+      // Orphaned once the app goes standalone + inline-template: the base
+      // NgModule shell and external view files are hidden, not deleted, so
+      // the file tree stays a clean slate.
+      "/src/app/app.module.ts": { code: "", hidden: true },
+      "/src/app/app.component.html": { code: "", hidden: true },
+      "/src/app/app.component.css": { code: "", hidden: true },
     },
   },
   {
@@ -552,6 +663,30 @@ body {
 ];
 
 export const templatesById = Object.fromEntries(templates.map((t) => [t.id, t]));
+
+/**
+ * Sandpack ships two bundlers:
+ *   - v1 (default, version-pinned): full transformer set — Vue SFCs, Svelte,
+ *     Angular decorators, vanilla TS. This is the only bundler that can run
+ *     those templates.
+ *   - v2 (esbuild, evergreen at sandpack-bundler.codesandbox.io): faster and
+ *     parses modern JS (nullish coalescing, optional chaining), but per
+ *     Sandpack's own docs it only supports the React and Solid templates —
+ *     everything else fails with "No transformer for *.vue/*.svelte", and
+ *     Angular fails with "decorators isn't currently enabled".
+ *
+ * So the v2 `bundlerURL` override must ONLY apply to these bases. Every other
+ * base omits `bundlerURL` and falls back to the default v1 bundler.
+ */
+export const V2_BUNDLER_URL = "https://sandpack-bundler.codesandbox.io";
+
+/** Sandpack `base` templates the v2 esbuild bundler can actually compile. */
+export const V2_BUNDLER_BASES: ReadonlySet<string> = new Set(["react", "solid"]);
+
+/** Whether a Sandpack base template should run on the v2 esbuild bundler. */
+export function supportsV2Bundler(base: string): boolean {
+  return V2_BUNDLER_BASES.has(base);
+}
 
 /**
  * Which workspace surface a challenge should render in, derived from its

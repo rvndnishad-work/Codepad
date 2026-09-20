@@ -88,7 +88,13 @@ export async function executeBatch(
   language: string,
   code: string,
   contract: Contract,
-  argsList: unknown[][]
+  argsList: unknown[][],
+  /**
+   * Sibling modules from a multi-file submission (Piston extra files).
+   * The assembled entry stays first; siblings ride alongside so candidate
+   * imports resolve inside the judged run.
+   */
+  extraFiles?: Array<{ name: string; content: string }>,
 ): Promise<BatchOutcome> {
   const program = assembleProgram(language, code, contract);
   const batchInput = buildInputFile(argsList);
@@ -99,7 +105,7 @@ export async function executeBatch(
     return { outputs: argsList.map(() => ({ raw: null, error: "Test batch too large." })), stderr: "Test batch exceeds size limit.", logs: [] };
   }
 
-  const run = await judgeSem.run(() => runOnPiston(language, program, batchInput));
+  const run = await judgeSem.run(() => runOnPiston(language, program, batchInput, extraFiles));
 
   if (run.compileError) {
     return { outputs: argsList.map(() => ({ raw: null })), compileError: true, stderr: run.stderr, logs: [] };
@@ -149,10 +155,11 @@ export async function judge(opts: {
   code: string;
   contract: Contract;
   cases: JudgeCase[];
+  extraFiles?: Array<{ name: string; content: string }>;
 }): Promise<JudgeResult> {
-  const { language, code, contract, cases } = opts;
+  const { language, code, contract, cases, extraFiles } = opts;
 
-  const batch = await executeBatch(language, code, contract, cases.map((c) => c.args));
+  const batch = await executeBatch(language, code, contract, cases.map((c) => c.args), extraFiles);
 
   if (batch.compileError) {
     return {

@@ -359,6 +359,7 @@ model Snippet {
   @@index([userId])
   @@index([visibility, updatedAt])
   @@index([viewCount])
+  @@index([template])
 }
 
 /// A coding challenge with starter code + hidden tests.

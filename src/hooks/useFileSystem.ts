@@ -23,6 +23,17 @@ export const FILE_TYPES: FileType[] = [
     template:
       "export default function Component() {\n  return <div>New component</div>;\n}\n",
   },
+  {
+    ext: ".vue",
+    label: "Vue SFC",
+    template:
+      "<template>\n  <div></div>\n</template>\n\n<script setup>\n</script>\n",
+  },
+  {
+    ext: ".svelte",
+    label: "Svelte",
+    template: "<script>\n</script>\n\n<div></div>\n",
+  },
   { ext: ".css", label: "CSS", template: "" },
   {
     ext: ".html",
@@ -384,7 +395,7 @@ export function useFileSystem(templateId?: string) {
           FILE_TYPES.find((t) => t.ext === actualExt)?.template ?? "";
         const codeToUse = existingCode.trim() ? existingCode : tpl;
         markRevealed(templateId, fullPath);
-        const payload: Record<string, any> = {
+        const payload: Record<string, { code: string; hidden: boolean }> = {
           [fullPath]: { code: codeToUse, hidden: false },
         };
         sandpack.updateFile(payload);

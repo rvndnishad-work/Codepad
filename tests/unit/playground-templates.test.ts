@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { templates, templatesById, challengeSurface } from "@/lib/templates";
+import { templates, templatesById, challengeSurface, supportsV2Bundler } from "@/lib/templates";
 import { isHiddenEntry } from "@/lib/revealed-paths";
 
 /** Template file maps: source strings or `{ code, hidden }` entries. */
@@ -9,7 +9,7 @@ type TemplateFiles = Record<
 >;
 
 /**
- * Catalog-wide invariants for all 23 playground templates. These catch an
+ * Catalog-wide invariants for all 27 playground templates. These catch an
  * entire class of "template X loads an empty/broken playground" regressions:
  * every template must resolve a visible entry file through the same rules
  * `Playground.initialVisibleFiles` uses (package.json main → candidates →
@@ -91,6 +91,34 @@ describe("template catalog", () => {
     const emptyReact = templatesById["empty-react"].files as TemplateFiles;
     expect(isHiddenEntry(emptyReact["/styles.css"])).toBe(true);
     expect(visiblePathsOf(emptyReact)).not.toContain("/styles.css");
+  });
+
+  it("only react/solid bases target the v2 esbuild bundler", () => {
+    // Regression: Playground passed `bundlerURL: <v2>` globally, and v2 only
+    // ships React/Solid transformers — Vue/Svelte died with
+    // "No transformer for *.vue/*.svelte" and Angular with
+    // "decorators isn't currently enabled". Those bases must use the default
+    // v1 bundler (no bundlerURL override).
+    for (const t of templates) {
+      if (t.base === "react" || t.base === "solid") {
+        expect(supportsV2Bundler(t.base), `${t.id} should use v2`).toBe(true);
+      } else {
+        expect(supportsV2Bundler(t.base), `${t.id} (base ${t.base}) must stay on v1`).toBe(false);
+      }
+    }
+  });
+
+  it("every framework base has an empty clean-slate counterpart", () => {
+    // empty-react is the pattern: one visible hello entry, scaffold hidden.
+    // Every frontend framework base must offer the same starting point.
+    for (const base of ["react", "vue", "angular", "svelte", "solid"]) {
+      const empty = templatesById[`empty-${base}`];
+      expect(empty, `missing empty-${base}`).toBeDefined();
+      expect(empty.base).toBe(base);
+      expect(empty.group).toBe("empty");
+      const entry = resolveEntry(empty.files as TemplateFiles);
+      expect(entry, `empty-${base} has no visible entry file`).toBeTruthy();
+    }
   });
 
   it("backend templates run console-first with a runnable main file", () => {

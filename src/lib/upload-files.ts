@@ -17,6 +17,8 @@ const TEXT_EXTS = new Set([
   "tsx",
   "vue",
   "svelte",
+  "vue",
+  "svelte",
   "html",
   "htm",
   "css",

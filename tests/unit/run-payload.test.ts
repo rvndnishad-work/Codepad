@@ -6,6 +6,7 @@ import {
   stdinKey,
   capOutput,
   applyOutputCap,
+  resolveHarnessSubmission,
   MAX_EXTRA_FILES,
 } from "@/lib/run-payload";
 
@@ -124,6 +125,56 @@ describe("stdinKey", () => {
   it("scopes stdin drafts per template", () => {
     expect(stdinKey("python")).toBe("interviewpad_stdin:python");
     expect(stdinKey("python")).not.toBe(stdinKey("go"));
+  });
+});
+
+describe("resolveHarnessSubmission", () => {
+  it("passes legacy single-file submissions straight through", () => {
+    expect(
+      resolveHarnessSubmission({ code: "def solve(): pass" }),
+    ).toEqual({ ok: true, code: "def solve(): pass", extraFiles: [] });
+  });
+
+  it("splits a workspace map into entry + validated siblings", () => {
+    const r = resolveHarnessSubmission({
+      files: {
+        "/solution.py": "from helpers import v\nprint(v)",
+        "/helpers.py": "v = 1",
+      },
+      entryPath: "/solution.py",
+    });
+    expect(r).toEqual({
+      ok: true,
+      code: "from helpers import v\nprint(v)",
+      extraFiles: [{ name: "helpers.py", content: "v = 1" }],
+    });
+  });
+
+  it("accepts entry paths with or without a leading slash", () => {
+    const files = { "solution.py": "print(1)", "/other.py": "x" };
+    expect(
+      resolveHarnessSubmission({ files, entryPath: "/solution.py" }).ok,
+    ).toBe(true);
+    expect(
+      resolveHarnessSubmission({ files, entryPath: "solution.py" }).ok,
+    ).toBe(true);
+  });
+
+  it("rejects missing entryPath, missing entry and traversal names", () => {
+    const files = { "/solution.py": "print(1)" };
+    expect(resolveHarnessSubmission({ files })).toMatchObject({
+      ok: false,
+      status: 400,
+    });
+    expect(
+      resolveHarnessSubmission({ files, entryPath: "/nope.py" }),
+    ).toMatchObject({ ok: false, status: 400 });
+    expect(
+      resolveHarnessSubmission({
+        files: { "/solution.py": "x", "../evil.py": "y" },
+        entryPath: "/solution.py",
+      }),
+    ).toMatchObject({ ok: false, status: 400 });
   });
 });
 

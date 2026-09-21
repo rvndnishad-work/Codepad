@@ -45,7 +45,7 @@ const augments: JsCodingAugment[] = [
   {
     title: "Implement Promise.any() with AggregateError",
     seoDescription:
-      "A Promise.any polyfill was verified to resolve on the first fulfillment despite an earlier rejection, and to throw a real AggregateError when every input rejects.",
+      "A Promise.any polyfill verified to resolve on the first fulfillment despite an earlier rejection, and to throw an AggregateError if all reject.",
     description: `**Problem, as an interviewer would state it:**
 "Implement \`Promise.any(promises)\` — resolving with the value of the FIRST promise to fulfill, and REJECTING with a real \`AggregateError\` (containing every individual rejection reason) only if EVERY promise rejects, matching real native \`Promise.any\`'s own documented contract."
 
@@ -202,21 +202,21 @@ Time: O(n) — every promise handled once. Space: O(n) for the \`errors\` tracki
 <span style="color:#ff8a65;font-weight:bold;">❓ Q:</span> <span style="color:#ffe0b2;">What real, practical scenario would genuinely benefit from Promise.any over Promise.race?</span>
 </div>
 <div style="background:#151a15;border:1px solid #f9a825;border-top:none;border-radius:0 0 8px 8px;padding:10px 16px;margin:0;">
-<span style="color:#66bb6a;font-weight:bold;">💡 A:</span> <span style="color:#d8d8d8;">A real, common, genuine case: querying SEVERAL redundant, real backup API endpoints (or CDN mirrors) simultaneously, wanting the response from whichever real server answers first — but genuinely NOT wanting a single, real, transient server error to fail the whole request when other, real, healthy servers are still trying; \`race\` would incorrectly fail on the first error even if a healthy server was about to respond.</span>
+<span style="color:#66bb6a;font-weight:bold;">💡 A:</span> <span style="color:#d8d8d8;">A real, common, genuine case: querying SEVERAL redundant, real backup API endpoints (or CDN mirrors) simultaneously, wanting the response from whichever real server answers first — but genuinely NOT wanting a single, real, transient server error to fail the whole request when other, real, healthy servers are still trying; \<code style="background:#332310;color:#ffca28;padding:1px 5px;border-radius:3px;">race\</code> would incorrectly fail on the first error even if a healthy server was about to respond.</span>
 </div>
 
 <div style="background:#3d2810;border-radius:8px 8px 0 0;padding:10px 16px;margin:0;">
 <span style="color:#ff8a65;font-weight:bold;">❓ Q:</span> <span style="color:#ffe0b2;">Does the order of errors inside the real AggregateError need to match the original input order, or the order they actually rejected in?</span>
 </div>
 <div style="background:#151a15;border:1px solid #f9a825;border-top:none;border-radius:0 0 8px 8px;padding:10px 16px;margin:0;">
-<span style="color:#66bb6a;font-weight:bold;">💡 A:</span> <span style="color:#d8d8d8;">Real native \`Promise.any\` documents preserving the ORIGINAL INPUT order — this implementation correctly matches that by pre-allocating <code style="background:#332310;color:#ffca28;padding:1px 5px;border-radius:3px;">errors</code> to the full input length and writing each rejection reason at ITS OWN original index (<code style="background:#332310;color:#ffca28;padding:1px 5px;border-radius:3px;">errors[i] = err</code>), rather than simply pushing onto a growing array in whatever real, non-deterministic order rejections actually happen to fire.</span>
+<span style="color:#66bb6a;font-weight:bold;">💡 A:</span> <span style="color:#d8d8d8;">Real native \<code style="background:#332310;color:#ffca28;padding:1px 5px;border-radius:3px;">Promise.any\</code> documents preserving the ORIGINAL INPUT order — this implementation correctly matches that by pre-allocating <code style="background:#332310;color:#ffca28;padding:1px 5px;border-radius:3px;">errors</code> to the full input length and writing each rejection reason at ITS OWN original index (<code style="background:#332310;color:#ffca28;padding:1px 5px;border-radius:3px;">errors[i] = err</code>), rather than simply pushing onto a growing array in whatever real, non-deterministic order rejections actually happen to fire.</span>
 </div>
 
 <div style="background:#3d2810;border-radius:8px 8px 0 0;padding:10px 16px;margin:0;">
 <span style="color:#ff8a65;font-weight:bold;">❓ Q:</span> <span style="color:#ffe0b2;">Would this implementation correctly handle a real, non-promise plain value mixed into the input array?</span>
 </div>
 <div style="background:#151a15;border:1px solid #f9a825;border-top:none;border-radius:0 0 8px 8px;padding:10px 16px;margin:0;">
-<span style="color:#66bb6a;font-weight:bold;">💡 A:</span> <span style="color:#d8d8d8;">Genuinely, yes — <code style="background:#332310;color:#ffca28;padding:1px 5px;border-radius:3px;">Promise.resolve(p)</code> correctly normalizes a plain value into an immediately-fulfilled promise, so a real, non-promise value present anywhere in the input would correctly, immediately resolve the WHOLE \`Promise.any\` call right away, exactly matching real native behavior for this specific case.</span>
+<span style="color:#66bb6a;font-weight:bold;">💡 A:</span> <span style="color:#d8d8d8;">Genuinely, yes — <code style="background:#332310;color:#ffca28;padding:1px 5px;border-radius:3px;">Promise.resolve(p)</code> correctly normalizes a plain value into an immediately-fulfilled promise, so a real, non-promise value present anywhere in the input would correctly, immediately resolve the WHOLE \<code style="background:#332310;color:#ffca28;padding:1px 5px;border-radius:3px;">Promise.any\</code> call right away, exactly matching real native behavior for this specific case.</span>
 </div>
 
 </div>
@@ -280,7 +280,7 @@ try {
   {
     title: "Implement curry(fn) That Supports Any Call Pattern — curry(1)(2)(3), curry(1,2,3), or curry(1,2)(3)",
     seoDescription:
-      "A curry() utility was verified against all four real call patterns for a 3-arg function, confirming they produce the identical result, plus reusable partials.",
+      "A curry() utility verified across all four real call patterns for a 3-arg function, all producing the identical result, plus reusable partials.",
     description: `**Problem, as an interviewer would state it:**
 "Implement \`curry(fn)\` — returning a version of \`fn\` that can genuinely be called with arguments split across ANY number of separate calls, only actually invoking the original function once ENOUGH total arguments have been collected."
 
@@ -418,7 +418,7 @@ Time: O(n) per eventual full call, where \`n\` is the total argument count (boun
 <span style="color:#ff8a65;font-weight:bold;">❓ Q:</span> <span style="color:#ffe0b2;">Why doesn't fn.length correctly count a default or rest parameter?</span>
 </div>
 <div style="background:#151a15;border:1px solid #f9a825;border-top:none;border-radius:0 0 8px 8px;padding:10px 16px;margin:0 0 14px 0;">
-<span style="color:#66bb6a;font-weight:bold;">💡 A:</span> <span style="color:#d8d8d8;">A real, deliberate JS spec design choice — <code style="background:#332310;color:#ffca28;padding:1px 5px;border-radius:3px;">Function.prototype.length</code> is documented to only count parameters BEFORE the first one with a default value or a rest parameter, since those parameters are genuinely OPTIONAL from the caller's real perspective; this is precisely why this curry implementation's own real correctness depends on \`fn\` having only plain, required parameters — a real, honest limitation worth naming.</span>
+<span style="color:#66bb6a;font-weight:bold;">💡 A:</span> <span style="color:#d8d8d8;">A real, deliberate JS spec design choice — <code style="background:#332310;color:#ffca28;padding:1px 5px;border-radius:3px;">Function.prototype.length</code> is documented to only count parameters BEFORE the first one with a default value or a rest parameter, since those parameters are genuinely OPTIONAL from the caller's real perspective; this is precisely why this curry implementation's own real correctness depends on \<code style="background:#332310;color:#ffca28;padding:1px 5px;border-radius:3px;">fn\</code> having only plain, required parameters — a real, honest limitation worth naming.</span>
 </div>
 
 <div style="background:#3d2810;border-radius:8px 8px 0 0;padding:10px 16px;margin:0;">
@@ -432,7 +432,7 @@ Time: O(n) per eventual full call, where \`n\` is the total argument count (boun
 <span style="color:#ff8a65;font-weight:bold;">❓ Q:</span> <span style="color:#ffe0b2;">How does this relate to this bank's own partial application question from an earlier batch?</span>
 </div>
 <div style="background:#151a15;border:1px solid #f9a825;border-top:none;border-radius:0 0 8px 8px;padding:10px 16px;margin:0;">
-<span style="color:#66bb6a;font-weight:bold;">💡 A:</span> <span style="color:#d8d8d8;">A real, genuinely important conceptual distinction — that bank's own <code style="background:#332310;color:#ffca28;padding:1px 5px;border-radius:3px;">partial</code> function fills SOME arguments and expects the REST in exactly ONE final call, while THIS \`curry\` genuinely supports collecting arguments across an ARBITRARY number of separate calls, each with any number of arguments, until the arity threshold is reached — a real, meaningfully more flexible, general capability.</span>
+<span style="color:#66bb6a;font-weight:bold;">💡 A:</span> <span style="color:#d8d8d8;">A real, genuinely important conceptual distinction — that bank's own <code style="background:#332310;color:#ffca28;padding:1px 5px;border-radius:3px;">partial</code> function fills SOME arguments and expects the REST in exactly ONE final call, while THIS \<code style="background:#332310;color:#ffca28;padding:1px 5px;border-radius:3px;">curry\</code> genuinely supports collecting arguments across an ARBITRARY number of separate calls, each with any number of arguments, until the arity threshold is reached — a real, meaningfully more flexible, general capability.</span>
 </div>
 
 <div style="background:#3d2810;border-radius:8px 8px 0 0;padding:10px 16px;margin:0;">
@@ -491,7 +491,7 @@ console.log("a partial application is genuinely reusable:", add5(1, 2), add5(10,
   {
     title: "Implement curry(func) with placeholder support",
     seoDescription:
-      "A curry-with-placeholder utility was verified to correctly reserve a later argument slot in 4 different real placeholder positions, matching lodash's own _.curry.",
+      "A curry-with-placeholder utility verified to reserve a later argument slot across 4 different placeholder positions, matching lodash _.curry.",
     description: `**Problem, as an interviewer would state it:**
 "Implement \`curry(fn)\` with PLACEHOLDER support — allowing a special \`_\` placeholder value to reserve an argument's position for a LATER call, matching lodash's own well-known \`_.curry\`'s placeholder behavior."
 
@@ -561,7 +561,7 @@ real, verified proof -- FOUR distinct real placeholder positions for add3(a,b,c)
   curried(1, 2, 3) -> 6   -- a normal, placeholder-free call still works identically
 \`\`\`
 
-<svg class="iq-diagram" width="100%" viewBox="0 0 640 200" role="img" aria-label="the mechanism extends the basic curry's check if enough arguments logic with one critical refinement it is not enough to just count the arguments it must also confirm that none of the first fn length arguments are still a genuine placeholder checked via includes on that specific slice if a placeholder still occupies a required slot the function is not yet ready to invoke even if the raw argument count already meets the arity when a later call arrives with more arguments the mechanism walks through those new arguments one at a time and for each one checks if there is still an unfilled placeholder slot via indexOf if so that new value replaces the placeholder at that exact position otherwise the new value is simply appended to the end verified directly across four distinct real placeholder placement patterns all producing the identical correct result">
+<svg class="iq-diagram" width="100%" viewBox="0 0 640 200" role="img" aria-label="the mechanism extends the basic curry check if enough arguments logic with one critical refinement it is not enough to just count the arguments it must also confirm that none of the first fn length arguments are still a genuine placeholder checked via includes on that specific slice if a placeholder still occupies a required slot the function is not yet ready to invoke even if the raw argument count already meets the arity when a later call arrives with more arguments the mechanism walks through those new arguments one at a time and for each one checks if there is still an unfilled placeholder slot via indexOf if so that new value replaces the placeholder at that exact position otherwise the new value is simply appended to the end verified directly across four distinct real placeholder placement patterns all producing the identical correct result">
   <defs>
     <marker id="currywithplaceholderpoly-arrow" markerWidth="8" markerHeight="8" refX="5" refY="3" orient="auto">
       <path class="d-arrow" d="M0,0 L7,3 L0,6 Z"/>
@@ -573,7 +573,7 @@ real, verified proof -- FOUR distinct real placeholder positions for add3(a,b,c)
   <text class="d-sub" x="159" y="90" text-anchor="middle">a raw-count match alone is not enough to invoke</text>
   <rect class="d-box-muted" x="336" y="46" width="280" height="60" rx="10"/>
   <text class="d-text" x="476" y="70" text-anchor="middle">a later value fills the FIRST open placeholder</text>
-  <text class="d-sub" x="476" y="90" text-anchor="middle">no placeholder left: it's simply appended instead</text>
+  <text class="d-sub" x="476" y="90" text-anchor="middle">no placeholder left: simply appended instead</text>
   <rect class="d-box" x="24" y="122" width="592" height="34" rx="8"/>
   <text class="d-sub" x="320" y="143" text-anchor="middle">a Symbol placeholder can never accidentally collide with a real, legitimate argument value</text>
 </svg>
@@ -639,21 +639,21 @@ Time: O(n) per eventual call for the placeholder-filling scan, where \`n\` is th
 <span style="color:#ff8a65;font-weight:bold;">❓ Q:</span> <span style="color:#ffe0b2;">How would you handle a genuine placeholder appearing in the LATER call too, deferring it even further?</span>
 </div>
 <div style="background:#151a15;border:1px solid #f9a825;border-top:none;border-radius:0 0 8px 8px;padding:10px 16px;margin:0;">
-<span style="color:#66bb6a;font-weight:bold;">💡 A:</span> <span style="color:#d8d8d8;">Genuinely, this specific implementation already handles it correctly, without any special-casing — if a later call's own \`moreArgs\` includes another placeholder, the fill loop simply writes that placeholder Symbol into the open slot (indistinguishable from any other value being written there), and the NEXT completeness check would correctly still find it via \`.includes(_)\`, deferring readiness yet again.</span>
+<span style="color:#66bb6a;font-weight:bold;">💡 A:</span> <span style="color:#d8d8d8;">Genuinely, this specific implementation already handles it correctly, without any special-casing — if a later call's own \<code style="background:#332310;color:#ffca28;padding:1px 5px;border-radius:3px;">moreArgs\</code> includes another placeholder, the fill loop simply writes that placeholder Symbol into the open slot (indistinguishable from any other value being written there), and the NEXT completeness check would correctly still find it via \<code style="background:#332310;color:#ffca28;padding:1px 5px;border-radius:3px;">.includes(_)\</code>, deferring readiness yet again.</span>
 </div>
 
 <div style="background:#3d2810;border-radius:8px 8px 0 0;padding:10px 16px;margin:0;">
 <span style="color:#ff8a65;font-weight:bold;">❓ Q:</span> <span style="color:#ffe0b2;">Why expose the placeholder as curryWithPlaceholder.placeholder rather than just a separate, standalone export?</span>
 </div>
 <div style="background:#151a15;border:1px solid #f9a825;border-top:none;border-radius:0 0 8px 8px;padding:10px 16px;margin:0;">
-<span style="color:#66bb6a;font-weight:bold;">💡 A:</span> <span style="color:#d8d8d8;">A real, genuine, common API convention — matching real lodash's own <code style="background:#332310;color:#ffca28;padding:1px 5px;border-radius:3px;">_.curry.placeholder</code> pattern (often aliased to <code style="background:#332310;color:#ffca28;padding:1px 5px;border-radius:3px;">_</code> itself) — attaching the placeholder as a PROPERTY of the curry function keeps the public API surface genuinely minimal, avoiding a separate, real named export that callers would need to remember to import alongside \`curry\` itself.</span>
+<span style="color:#66bb6a;font-weight:bold;">💡 A:</span> <span style="color:#d8d8d8;">A real, genuine, common API convention — matching real lodash's own <code style="background:#332310;color:#ffca28;padding:1px 5px;border-radius:3px;">_.curry.placeholder</code> pattern (often aliased to <code style="background:#332310;color:#ffca28;padding:1px 5px;border-radius:3px;">_</code> itself) — attaching the placeholder as a PROPERTY of the curry function keeps the public API surface genuinely minimal, avoiding a separate, real named export that callers would need to remember to import alongside \<code style="background:#332310;color:#ffca28;padding:1px 5px;border-radius:3px;">curry\</code> itself.</span>
 </div>
 
 <div style="background:#3d2810;border-radius:8px 8px 0 0;padding:10px 16px;margin:0;">
 <span style="color:#ff8a65;font-weight:bold;">❓ Q:</span> <span style="color:#ffe0b2;">Does this implementation correctly handle a call providing MORE placeholder-filling values than there are actual open placeholder slots?</span>
 </div>
 <div style="background:#151a15;border:1px solid #f9a825;border-top:none;border-radius:0 0 8px 8px;padding:10px 16px;margin:0;">
-<span style="color:#66bb6a;font-weight:bold;">💡 A:</span> <span style="color:#d8d8d8;">Genuinely, yes, gracefully — once every placeholder is filled, the loop's own \`else\` branch (append instead of fill) correctly, naturally takes over for any remaining new arguments, matching the identical real behavior of the basic, non-placeholder curry for any genuine "extra" arguments beyond what's strictly needed.</span>
+<span style="color:#66bb6a;font-weight:bold;">💡 A:</span> <span style="color:#d8d8d8;">Genuinely, yes, gracefully — once every placeholder is filled, the loop's own \<code style="background:#332310;color:#ffca28;padding:1px 5px;border-radius:3px;">else\</code> branch (append instead of fill) correctly, naturally takes over for any remaining new arguments, matching the identical real behavior of the basic, non-placeholder curry for any genuine "extra" arguments beyond what's strictly needed.</span>
 </div>
 
 </div>
@@ -705,7 +705,7 @@ console.log("a normal, placeholder-free call still works identically:", curriedW
   {
     title: "Implement deepMerge(target, source) — recursive merge",
     seoDescription:
-      "A deepMerge utility was verified for recursive nested merging, confirming the original target is never mutated, and that arrays are replaced wholesale, not merged.",
+      "A deepMerge utility verified for recursive nested merging: the target is never mutated, and arrays are replaced wholesale, not merged.",
     description: `**Problem, as an interviewer would state it:**
 "Implement \`deepMerge(target, source)\` — recursively merging \`source\` into \`target\`, combining NESTED objects field-by-field rather than overwriting them wholesale, and returning a genuinely NEW merged object without mutating either input."
 
@@ -854,21 +854,21 @@ Time: O(n) where \`n\` is the total number of keys across every merged level. Sp
 <span style="color:#ff8a65;font-weight:bold;">❓ Q:</span> <span style="color:#ffe0b2;">How would you extend this to support a real, custom array-merging strategy as an optional parameter?</span>
 </div>
 <div style="background:#151a15;border:1px solid #f9a825;border-top:none;border-radius:0 0 8px 8px;padding:10px 16px;margin:0;">
-<span style="color:#66bb6a;font-weight:bold;">💡 A:</span> <span style="color:#d8d8d8;">A real, genuinely direct extension: accept an optional real \`arrayMergeFn\` parameter, and when BOTH values at a key are genuinely arrays, call that function instead of simply overwriting — <code style="background:#332310;color:#ffca28;padding:1px 5px;border-radius:3px;">if (Array.isArray(source[key]) && Array.isArray(result[key])) result[key] = arrayMergeFn ? arrayMergeFn(result[key], source[key]) : source[key];</code> — genuinely letting the caller opt into a real, specific array-combining strategy (concat, dedupe, etc.) when the default replace behavior is not what they want.</span>
+<span style="color:#66bb6a;font-weight:bold;">💡 A:</span> <span style="color:#d8d8d8;">A real, genuinely direct extension: accept an optional real \<code style="background:#332310;color:#ffca28;padding:1px 5px;border-radius:3px;">arrayMergeFn\</code> parameter, and when BOTH values at a key are genuinely arrays, call that function instead of simply overwriting — <code style="background:#332310;color:#ffca28;padding:1px 5px;border-radius:3px;">if (Array.isArray(source[key]) && Array.isArray(result[key])) result[key] = arrayMergeFn ? arrayMergeFn(result[key], source[key]) : source[key];</code> — genuinely letting the caller opt into a real, specific array-combining strategy (concat, dedupe, etc.) when the default replace behavior is not what they want.</span>
 </div>
 
 <div style="background:#3d2810;border-radius:8px 8px 0 0;padding:10px 16px;margin:0;">
 <span style="color:#ff8a65;font-weight:bold;">❓ Q:</span> <span style="color:#ffe0b2;">What real, practical scenario would genuinely need deepMerge over a plain shallow merge?</span>
 </div>
 <div style="background:#151a15;border:1px solid #f9a825;border-top:none;border-radius:0 0 8px 8px;padding:10px 16px;margin:0;">
-<span style="color:#66bb6a;font-weight:bold;">💡 A:</span> <span style="color:#d8d8d8;">A real, common, genuine case: merging a real, USER-provided configuration object OVER a real set of DEFAULT settings, where both are genuinely NESTED (e.g. \`{theme: {colors: {primary: "blue"}}}\`) — a shallow merge would incorrectly wipe out the ENTIRE default \`theme.colors\` object if the user only specified ONE nested color override, while \`deepMerge\` correctly, genuinely preserves the OTHER default colors alongside the user's specific real override.</span>
+<span style="color:#66bb6a;font-weight:bold;">💡 A:</span> <span style="color:#d8d8d8;">A real, common, genuine case: merging a real, USER-provided configuration object OVER a real set of DEFAULT settings, where both are genuinely NESTED (e.g. \<code style="background:#332310;color:#ffca28;padding:1px 5px;border-radius:3px;">{theme: {colors: {primary: "blue"}}}\</code>) — a shallow merge would incorrectly wipe out the ENTIRE default \<code style="background:#332310;color:#ffca28;padding:1px 5px;border-radius:3px;">theme.colors\</code> object if the user only specified ONE nested color override, while \<code style="background:#332310;color:#ffca28;padding:1px 5px;border-radius:3px;">deepMerge\</code> correctly, genuinely preserves the OTHER default colors alongside the user's specific real override.</span>
 </div>
 
 <div style="background:#3d2810;border-radius:8px 8px 0 0;padding:10px 16px;margin:0;">
 <span style="color:#ff8a65;font-weight:bold;">❓ Q:</span> <span style="color:#ffe0b2;">Would this implementation genuinely deep-clone values that are NOT actually touched by the merge?</span>
 </div>
 <div style="background:#151a15;border:1px solid #f9a825;border-top:none;border-radius:0 0 8px 8px;padding:10px 16px;margin:0;">
-<span style="color:#66bb6a;font-weight:bold;">💡 A:</span> <span style="color:#d8d8d8;">Genuinely, no — a top-level key on \`target\` that source never touches at all is genuinely SHARED BY REFERENCE via the initial spread, not deep-cloned; only the SPECIFIC nested objects actually along a real, genuine merge path get newly-built structure, matching the identical real efficiency principle this bank's own \`pick\`/\`omit\` questions also apply.</span>
+<span style="color:#66bb6a;font-weight:bold;">💡 A:</span> <span style="color:#d8d8d8;">Genuinely, no — a top-level key on \<code style="background:#332310;color:#ffca28;padding:1px 5px;border-radius:3px;">target\</code> that source never touches at all is genuinely SHARED BY REFERENCE via the initial spread, not deep-cloned; only the SPECIFIC nested objects actually along a real, genuine merge path get newly-built structure, matching the identical real efficiency principle this bank's own \<code style="background:#332310;color:#ffca28;padding:1px 5px;border-radius:3px;">pick\</code>/\<code style="background:#332310;color:#ffca28;padding:1px 5px;border-radius:3px;">omit\</code> questions also apply.</span>
 </div>
 
 </div>
@@ -919,7 +919,7 @@ console.log("deepMerge REPLACES arrays wholesale, does not merge them:", JSON.st
   {
     title: "Implement difference(a, b) — elements in a not in b",
     seoDescription:
-      "A difference() utility was verified for basic set-difference behavior and confirmed to preserve array a's own relative order, using a Set for O(1) lookups.",
+      "A difference() utility verified for basic set-difference behavior, preserving array a own relative order, using a Set for O(1) lookups.",
     description: `**Problem, as an interviewer would state it:**
 "Implement \`difference(a, b)\` — returning every element of \`a\` that does NOT appear anywhere in \`b\`, preserving \`a\`'s own original relative order, matching lodash's own well-known \`_.difference\` behavior."
 
@@ -987,8 +987,8 @@ real, verified proof:
   <text class="d-text d-accent" x="159" y="70" text-anchor="middle">build a Set from b for O(1) membership checks</text>
   <text class="d-sub" x="159" y="90" text-anchor="middle">avoids a real O(n*m) nested-loop comparison</text>
   <rect class="d-box-muted" x="336" y="46" width="280" height="60" rx="10"/>
-  <text class="d-text" x="476" y="70" text-anchor="middle">filter a, keeping elements not in b's Set</text>
-  <text class="d-sub" x="476" y="90" text-anchor="middle">a's own order is naturally preserved by filter</text>
+  <text class="d-text" x="476" y="70" text-anchor="middle">filter a, keeping elements not in the b Set</text>
+  <text class="d-sub" x="476" y="90" text-anchor="middle">a own order is naturally preserved by filter</text>
   <rect class="d-box" x="24" y="122" width="592" height="34" rx="8"/>
   <text class="d-sub" x="320" y="143" text-anchor="middle">a genuinely asymmetric operation -- elements unique to b are never part of the result at all</text>
 </svg>
@@ -1068,7 +1068,7 @@ Time: O(n + m) — O(m) to build the Set from \`b\`, O(n) to filter \`a\`. Space
 <span style="color:#ff8a65;font-weight:bold;">❓ Q:</span> <span style="color:#ffe0b2;">Does this implementation correctly handle a real duplicate value within array a itself?</span>
 </div>
 <div style="background:#151a15;border:1px solid #f9a825;border-top:none;border-radius:0 0 8px 8px;padding:10px 16px;margin:0;">
-<span style="color:#66bb6a;font-weight:bold;">💡 A:</span> <span style="color:#d8d8d8;">Genuinely, yes — since the check is against \`b\`'s own Set only (not deduplicating \`a\` itself in any way), a value appearing TWICE in \`a\` and genuinely NOT present in \`b\` correctly, both times, survives the filter and appears twice in the result — \`difference\` does not implicitly deduplicate \`a\`'s own content, only excludes based on \`b\`'s membership.</span>
+<span style="color:#66bb6a;font-weight:bold;">💡 A:</span> <span style="color:#d8d8d8;">Genuinely, yes — since the check is against \<code style="background:#332310;color:#ffca28;padding:1px 5px;border-radius:3px;">b\</code>'s own Set only (not deduplicating \<code style="background:#332310;color:#ffca28;padding:1px 5px;border-radius:3px;">a\</code> itself in any way), a value appearing TWICE in \<code style="background:#332310;color:#ffca28;padding:1px 5px;border-radius:3px;">a\</code> and genuinely NOT present in \<code style="background:#332310;color:#ffca28;padding:1px 5px;border-radius:3px;">b\</code> correctly, both times, survives the filter and appears twice in the result — \<code style="background:#332310;color:#ffca28;padding:1px 5px;border-radius:3px;">difference\</code> does not implicitly deduplicate \<code style="background:#332310;color:#ffca28;padding:1px 5px;border-radius:3px;">a\</code>'s own content, only excludes based on \<code style="background:#332310;color:#ffca28;padding:1px 5px;border-radius:3px;">b\</code>'s membership.</span>
 </div>
 
 </div>
@@ -1105,7 +1105,7 @@ console.log("difference where b contains everything in a:", JSON.stringify(diffe
   {
     title: "Implement objectMap(obj, fn) — Transform Every Value via Object.entries/fromEntries",
     seoDescription:
-      "An objectMap utility built on Object.entries/fromEntries was verified for correct value transformation, confirming the key is passed to the callback correctly.",
+      "An objectMap utility built on Object.entries/fromEntries verified for correct value transformation, with the key passed to the callback.",
     description: `**Problem, as an interviewer would state it:**
 "Implement \`objectMap(obj, fn)\` — transforming EVERY value of a plain object via \`fn\`, keeping the same keys, matching a real, common \`Array.prototype.map\`-equivalent for objects, built directly on \`Object.entries\`/\`Object.fromEntries\`."
 
@@ -1238,21 +1238,21 @@ Time: O(n) — one entries call, one map pass, one fromEntries call, each O(n). 
 <span style="color:#ff8a65;font-weight:bold;">❓ Q:</span> <span style="color:#ffe0b2;">What real, practical scenario would genuinely need objectMap()?</span>
 </div>
 <div style="background:#151a15;border:1px solid #f9a825;border-top:none;border-radius:0 0 8px 8px;padding:10px 16px;margin:0;">
-<span style="color:#66bb6a;font-weight:bold;">💡 A:</span> <span style="color:#d8d8d8;">A real, common, genuine case: converting a real, raw object of numeric price VALUES (in cents, say) into a real, formatted display-string object for a UI — <code style="background:#332310;color:#ffca28;padding:1px 5px;border-radius:3px;">objectMap(prices, cents =&gt; \`$\${(cents/100).toFixed(2)}\`)</code> — transforming every value while keeping the exact same real product-ID keys intact.</span>
+<span style="color:#66bb6a;font-weight:bold;">💡 A:</span> <span style="color:#d8d8d8;">A real, common, genuine case: converting a real, raw object of numeric price VALUES (in cents, say) into a real, formatted display-string object for a UI — <code style="background:#332310;color:#ffca28;padding:1px 5px;border-radius:3px;">objectMap(prices, cents =&gt; \<code style="background:#332310;color:#ffca28;padding:1px 5px;border-radius:3px;">$\${(cents/100).toFixed(2)}\</code>)</code> — transforming every value while keeping the exact same real product-ID keys intact.</span>
 </div>
 
 <div style="background:#3d2810;border-radius:8px 8px 0 0;padding:10px 16px;margin:0;">
 <span style="color:#ff8a65;font-weight:bold;">❓ Q:</span> <span style="color:#ffe0b2;">Does this implementation genuinely handle Symbol-keyed properties too, not just string keys?</span>
 </div>
 <div style="background:#151a15;border:1px solid #f9a825;border-top:none;border-radius:0 0 8px 8px;padding:10px 16px;margin:0;">
-<span style="color:#66bb6a;font-weight:bold;">💡 A:</span> <span style="color:#d8d8d8;">Genuinely, no — real native <code style="background:#332310;color:#ffca28;padding:1px 5px;border-radius:3px;">Object.entries</code> is specifically documented to only return STRING-keyed own-enumerable properties, genuinely excluding Symbol-keyed ones entirely; a Symbol-keyed property on the input would be silently, completely absent from the output — a real, honest limitation inherited directly from \`Object.entries\`'s own documented behavior, worth naming if the input might genuinely have Symbol keys.</span>
+<span style="color:#66bb6a;font-weight:bold;">💡 A:</span> <span style="color:#d8d8d8;">Genuinely, no — real native <code style="background:#332310;color:#ffca28;padding:1px 5px;border-radius:3px;">Object.entries</code> is specifically documented to only return STRING-keyed own-enumerable properties, genuinely excluding Symbol-keyed ones entirely; a Symbol-keyed property on the input would be silently, completely absent from the output — a real, honest limitation inherited directly from \<code style="background:#332310;color:#ffca28;padding:1px 5px;border-radius:3px;">Object.entries\</code>'s own documented behavior, worth naming if the input might genuinely have Symbol keys.</span>
 </div>
 
 <div style="background:#3d2810;border-radius:8px 8px 0 0;padding:10px 16px;margin:0;">
 <span style="color:#ff8a65;font-weight:bold;">❓ Q:</span> <span style="color:#ffe0b2;">How would you write a real, deep version of objectMap that also transforms values in NESTED objects?</span>
 </div>
 <div style="background:#151a15;border:1px solid #f9a825;border-top:none;border-radius:0 0 8px 8px;padding:10px 16px;margin:0;">
-<span style="color:#66bb6a;font-weight:bold;">💡 A:</span> <span style="color:#d8d8d8;">A real, genuinely direct recursive extension: inside the mapping callback, check if the current value is ITSELF a genuine plain object (matching this bank's own \`deepMerge\` question's identical \`isPlainObject\` helper) — if so, RECURSE by calling \`objectMap\` on it again instead of passing it directly to \`fn\`; this bank's own separate <code style="background:#332310;color:#ffca28;padding:1px 5px;border-radius:3px;">Deep Map Keys</code> question likely covers a closely related, real recursive variant.</span>
+<span style="color:#66bb6a;font-weight:bold;">💡 A:</span> <span style="color:#d8d8d8;">A real, genuinely direct recursive extension: inside the mapping callback, check if the current value is ITSELF a genuine plain object (matching this bank's own \<code style="background:#332310;color:#ffca28;padding:1px 5px;border-radius:3px;">deepMerge\</code> question's identical \<code style="background:#332310;color:#ffca28;padding:1px 5px;border-radius:3px;">isPlainObject\</code> helper) — if so, RECURSE by calling \<code style="background:#332310;color:#ffca28;padding:1px 5px;border-radius:3px;">objectMap\</code> on it again instead of passing it directly to \<code style="background:#332310;color:#ffca28;padding:1px 5px;border-radius:3px;">fn\</code>; this bank's own separate <code style="background:#332310;color:#ffca28;padding:1px 5px;border-radius:3px;">Deep Map Keys</code> question likely covers a closely related, real recursive variant.</span>
 </div>
 
 </div>

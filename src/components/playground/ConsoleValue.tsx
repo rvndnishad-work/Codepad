@@ -1,21 +1,23 @@
 "use client";
 
-import { Fragment, type ReactNode } from "react";
+import { Fragment, useState, type ReactNode } from "react";
+import { ChevronRight } from "lucide-react";
 import {
   consoleKeyText,
   decodeConsoleValue,
+  isContainer,
   sizeOf,
   type ConsoleNode,
 } from "@/lib/console-value";
 
-/** Devtools-style colours per value type. */
+/** Devtools-style colours per value type (the dark theme's syntax hues). */
 export const CONSOLE_COLORS = {
-  number: "text-sky-400",
-  boolean: "text-purple-400",
-  nullish: "text-muted/60",
-  string: "text-emerald-400",
-  key: "text-sky-300",
-  special: "text-amber-300",
+  number: "text-secondary-soft",
+  boolean: "text-secondary-soft",
+  nullish: "text-subtle",
+  string: "text-success",
+  key: "text-muted",
+  special: "text-warning",
 } as const;
 
 const PREVIEW_DEPTH = 3;
@@ -106,4 +108,84 @@ export function InlineValue({ node, level = 0 }: { node: ConsoleNode; level?: nu
 /** One raw console argument, decoded from Sandpack's wire format. */
 export function ConsoleArg({ value }: { value: unknown }) {
   return <InlineValue node={decodeConsoleValue(value)} />;
+}
+
+function childRows(node: ConsoleNode): { key: ReactNode; value: ConsoleNode }[] {
+  switch (node.t) {
+    case "array":
+      return node.items.map((v, i) => ({ key: String(i), value: v }));
+    case "set":
+      return node.items.map((v, i) => ({ key: String(i), value: v }));
+    case "map":
+      return node.entries.map(([k, v]) => ({
+        key: <InlineValue node={k} level={1} />,
+        value: v,
+      }));
+    case "object":
+      return node.entries.map(([k, v]) => ({ key: consoleKeyText(k), value: v }));
+    default:
+      return [];
+  }
+}
+
+/**
+ * Expandable devtools-style value. Containers show their one-line preview
+ * behind a disclosure button; expanding lists each entry, and nested
+ * containers expand on their own.
+ */
+export function ConsoleTree({ node, label }: { node: ConsoleNode; label?: ReactNode }) {
+  const [open, setOpen] = useState(false);
+  const expandable = isContainer(node) && sizeOf(node) > 0;
+  if (!expandable) {
+    return (
+      <span>
+        {label}
+        <InlineValue node={node} level={label ? 1 : 0} />
+      </span>
+    );
+  }
+  const rows = childRows(node);
+  const more = (node.t === "array" || node.t === "object") && node.more ? node.more : 0;
+  return (
+    <span className="inline-block max-w-full align-top">
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        aria-expanded={open}
+        className="inline-flex max-w-full items-start gap-1 rounded-sm text-left hover:bg-panel focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent"
+      >
+        <ChevronRight
+          className={`mt-[3px] h-3 w-3 shrink-0 text-subtle transition-transform ${open ? "rotate-90" : ""}`}
+          aria-hidden
+        />
+        <span className="min-w-0">
+          {label}
+          <InlineValue node={node} level={1} />
+        </span>
+      </button>
+      {open && (
+        <span className="ml-[7px] block border-l border-border pl-3">
+          {rows.map((r, i) => (
+            <span key={i} className="block">
+              <ConsoleTree
+                node={r.value}
+                label={
+                  <>
+                    <span className={CONSOLE_COLORS.key}>{r.key}</span>
+                    {node.t === "map" ? " => " : ": "}
+                  </>
+                }
+              />
+            </span>
+          ))}
+          {more > 0 && <span className={`block ${CONSOLE_COLORS.nullish}`}>…{more} more</span>}
+        </span>
+      )}
+    </span>
+  );
+}
+
+/** One raw console argument as an expandable tree. */
+export function ConsoleArgTree({ value }: { value: unknown }) {
+  return <ConsoleTree node={decodeConsoleValue(value)} />;
 }

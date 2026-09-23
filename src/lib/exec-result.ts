@@ -23,7 +23,12 @@ export type ExecResponse = {
   error?: string;
 };
 
-export type ExecLine = { method: "log" | "error" | "info"; text: string };
+export type ExecLine = {
+  method: "log" | "error" | "info";
+  text: string;
+  /** Which program stream the text came from; absent for our own notices. */
+  stream?: "stdout" | "stderr";
+};
 
 /**
  * Turn an HTTP status + parsed body into ordered console lines. `data` may be
@@ -71,14 +76,14 @@ function describeInner(status: number, data: ExecResponse | null): ExecLine[] {
   // ── Compilation failure: program never ran ─────────────────────────────
   if (data.compileError) {
     const lines: ExecLine[] = [{ method: "error", text: "Compilation failed:" }];
-    if (data.stderr) lines.push({ method: "error", text: data.stderr });
+    if (data.stderr) lines.push({ method: "error", text: data.stderr, stream: "stderr" });
     return lines;
   }
 
   // ── Killed by a signal: time or memory limit (defence-in-depth) ─────────
   if (data.signal) {
     const lines: ExecLine[] = [];
-    if (data.stdout) lines.push({ method: "log", text: data.stdout });
+    if (data.stdout) lines.push({ method: "log", text: data.stdout, stream: "stdout" });
     lines.push({
       method: "error",
       text:
@@ -92,16 +97,22 @@ function describeInner(status: number, data: ExecResponse | null): ExecLine[] {
   // ── Normal completion ──────────────────────────────────────────────────
   if (data.exitCode === 0) {
     const lines: ExecLine[] = [
-      { method: "log", text: data.stdout || "Code executed successfully with zero output." },
+      data.stdout
+        ? { method: "log", text: data.stdout, stream: "stdout" }
+        : { method: "log", text: "Code executed successfully with zero output." },
     ];
     // stderr on a clean exit is usually warnings — surface it but don't fail.
-    if (data.stderr) lines.push({ method: "error", text: data.stderr });
+    if (data.stderr) lines.push({ method: "error", text: data.stderr, stream: "stderr" });
     return lines;
   }
 
   const lines: ExecLine[] = [];
-  if (data.stdout) lines.push({ method: "log", text: data.stdout });
-  lines.push({ method: "error", text: data.stderr || `Process exited with code ${data.exitCode ?? 1}.` });
+  if (data.stdout) lines.push({ method: "log", text: data.stdout, stream: "stdout" });
+  lines.push(
+    data.stderr
+      ? { method: "error", text: data.stderr, stream: "stderr" }
+      : { method: "error", text: `Process exited with code ${data.exitCode ?? 1}.` },
+  );
   return lines;
 }
 

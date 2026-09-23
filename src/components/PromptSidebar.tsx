@@ -145,16 +145,14 @@ export default function PromptSidebar({
       : `${limit} messages/day`;
 
   return (
-    <div className="flex h-full w-full flex-col border-r border-white/10 bg-[#0d0f16]">
+    <div className="flex h-full w-full flex-col border-r border-border bg-surface">
       {/* Header */}
-      <div className="flex items-center justify-between border-b border-white/10 bg-white/[0.02] px-4 py-3">
-        <div className="flex items-center gap-2 text-sm font-bold text-white">
-          <span className="grid h-7 w-7 place-items-center rounded-xl bg-gradient-to-br from-[#8b93ff] to-[#ff2fb3]">
-            <Sparkles className="h-3.5 w-3.5 text-white" />
-          </span>
-          <span className="font-mono text-[11px] uppercase tracking-[0.18em]">AI Assistant</span>
+      <div className="flex h-9 shrink-0 items-center justify-between gap-2 border-b border-border px-3">
+        <div className="flex min-w-0 items-center gap-2">
+          <Sparkles className="h-3.5 w-3.5 shrink-0 text-secondary" aria-hidden />
+          <span className="whitespace-nowrap text-[13px] font-medium text-fg">AI assist</span>
           <span
-            className="font-mono text-[10px] uppercase tracking-widest text-white/30"
+            className="truncate text-[12px] text-subtle"
             title="Scoped to this playground's code"
           >
             {quotaLine}
@@ -163,7 +161,7 @@ export default function PromptSidebar({
         <button
           onClick={onClose}
           aria-label="Close AI Assistant"
-          className="grid h-7 w-7 place-items-center rounded-full text-white/40 transition hover:bg-white/10 hover:text-white"
+          className="grid h-7 w-7 shrink-0 place-items-center rounded-md text-subtle transition-colors hover:bg-panel hover:text-fg focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent"
         >
           <X className="w-4 h-4" />
         </button>
@@ -181,8 +179,8 @@ export default function PromptSidebar({
             <div
               className={`grid h-7 w-7 shrink-0 place-items-center rounded-full ${
                 m.role === "user"
-                  ? "bg-gradient-to-br from-[#8b93ff] to-[#6d5ef0] text-white"
-                  : "border border-white/10 bg-white/5 text-[#8b93ff]"
+                  ? "bg-panel text-muted"
+                  : "border border-border bg-bg text-secondary"
               }`}
             >
               {m.role === "user" ? (
@@ -194,8 +192,8 @@ export default function PromptSidebar({
             <div
               className={`whitespace-pre-wrap px-3.5 py-2.5 text-[13px] leading-relaxed ${
                 m.role === "user"
-                  ? "max-w-[85%] rounded-2xl rounded-tr-md bg-gradient-to-br from-[#8b93ff] to-[#6d5ef0] text-white"
-                  : "max-w-[88%] rounded-2xl rounded-tl-md border border-white/10 bg-white/[0.04] text-white/85"
+                  ? "max-w-[85%] rounded-lg rounded-tr-sm bg-panel text-fg"
+                  : "max-w-[88%] rounded-lg rounded-tl-sm border border-border bg-bg text-muted"
               }`}
             >
               {m.text}
@@ -204,28 +202,28 @@ export default function PromptSidebar({
         ))}
         {loading && (
           <div className="flex gap-2.5">
-            <div className="grid h-7 w-7 shrink-0 place-items-center rounded-full border border-white/10 bg-white/5 text-[#8b93ff]">
+            <div className="grid h-7 w-7 shrink-0 place-items-center rounded-full border border-border bg-bg text-secondary">
               <Bot className="w-3.5 h-3.5" />
             </div>
-            <div className="flex items-center rounded-2xl rounded-tl-md border border-white/10 bg-white/[0.04] px-4 py-2.5">
-              <Loader2 className="w-4 h-4 animate-spin text-[#8b93ff]" />
+            <div className="flex items-center rounded-lg rounded-tl-sm border border-border bg-bg px-4 py-2.5">
+              <Loader2 className="h-4 w-4 animate-spin text-subtle" aria-label="Thinking" />
             </div>
           </div>
         )}
       </div>
 
       {/* Input */}
-      <div className="border-t border-white/10 bg-white/[0.02] p-3">
+      <div className="border-t border-border p-3">
         {!signedIn ? (
           <Link
             href="/login"
-            className="flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-br from-[#8b93ff] to-[#ff2fb3] px-4 py-2.5 text-sm font-bold text-white transition hover:scale-[1.01]"
+            className="flex w-full items-center justify-center gap-2 rounded-md bg-accent px-4 py-2 text-[13px] font-medium text-accent-ink transition-colors hover:bg-accent/90"
           >
             <LogIn className="w-4 h-4" />
             Sign in to use AI Assist
           </Link>
         ) : assistDisabled ? (
-          <p className="rounded-2xl border border-white/10 bg-black/30 px-4 py-2.5 text-center text-[13px] text-white/40">
+          <p className="rounded-md border border-border bg-bg px-4 py-2.5 text-center text-[13px] text-subtle">
             AI Assist is currently disabled
           </p>
         ) : (
@@ -241,14 +239,14 @@ export default function PromptSidebar({
               }}
               placeholder={blocked ?? "Ask about your code..."}
               disabled={blocked !== null}
-              className="w-full resize-none rounded-2xl border border-white/10 bg-black/30 py-2.5 pl-4 pr-12 text-sm text-white outline-none placeholder:text-white/30 focus:border-[#8b93ff]/60 disabled:opacity-50"
+              className="w-full resize-none rounded-md border border-border bg-bg py-2.5 pl-3 pr-12 text-[13px] text-fg outline-none placeholder:text-subtle focus:border-accent/70 disabled:opacity-50"
               rows={2}
             />
             <button
               type="submit"
               disabled={!input.trim() || loading || blocked !== null}
               aria-label="Send message"
-              className="absolute bottom-2.5 right-2 grid h-8 w-8 place-items-center rounded-full bg-gradient-to-br from-[#8b93ff] to-[#ff2fb3] text-white shadow-[0_4px_16px_-4px_rgba(255,47,179,0.7)] transition hover:scale-105 disabled:opacity-40"
+              className="absolute bottom-2.5 right-2 grid h-8 w-8 place-items-center rounded-md bg-accent text-accent-ink transition-colors hover:bg-accent/90 disabled:opacity-40"
             >
               <Send className="w-3.5 h-3.5" />
             </button>

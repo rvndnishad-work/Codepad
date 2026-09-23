@@ -47,9 +47,16 @@ export function readNumberPref(
   return Math.min(max, Math.max(min, n));
 }
 
-/** Storage keys for playground preferences. */
+/** Storage keys for playground preferences. Values are the historical keys,
+ *  so existing users keep their settings. */
 export const PREF_KEYS = {
   formatOnSave: "interviewpad_formatOnSave",
+  /** Editor font size in px (10-32). */
+  fontSize: "interviewpad_fontSize",
+  /** Browser templates re-run on every edit. */
+  autoRun: "interviewpad_autoRun",
+  /** Toolbar extras the user pinned from the More menu. */
+  toolbarPin: (which: "timer" | "ai" | "theme") => `play:tb:${which}`,
   /** Selected playground editor theme id (see lib/editor-themes). */
   editorTheme: "interviewpad_editorTheme",
   /** "1" = skip the delete confirmation dialog. */

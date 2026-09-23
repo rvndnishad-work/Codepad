@@ -25,13 +25,13 @@ describe("describeExecution", () => {
       stderr: "syntax error",
     });
     expect(lines[0].text).toMatch(/Compilation failed/);
-    expect(lines[1]).toEqual({ method: "error", text: "syntax error" });
+    expect(lines[1]).toEqual({ method: "error", text: "syntax error", stream: "stderr" });
   });
 
   it("explains signal kills, keeping prior stdout", () => {
     const lines = describeExecution(200, { stdout: "partial", signal: "SIGKILL" });
     expect(lines).toEqual([
-      { method: "log", text: "partial" },
+      { method: "log", text: "partial", stream: "stdout" },
       { method: "error", text: expect.stringMatching(/time or memory/) },
     ]);
     expect(describeExecution(200, { signal: "SIGTERM" })[0].text).toMatch(
@@ -39,20 +39,21 @@ describe("describeExecution", () => {
     );
   });
 
-  it("renders clean and failing exits", () => {    expect(describeExecution(200, { exitCode: 0, stdout: "hi" })).toEqual([
-      { method: "log", text: "hi" },
+  it("renders clean and failing exits, tagging each program stream", () => {
+    expect(describeExecution(200, { exitCode: 0, stdout: "hi" })).toEqual([
+      { method: "log", text: "hi", stream: "stdout" },
     ]);
     expect(
       describeExecution(200, { exitCode: 0, stdout: "", stderr: "warn" }),
     ).toEqual([
       { method: "log", text: expect.stringMatching(/zero output/) },
-      { method: "error", text: "warn" },
+      { method: "error", text: "warn", stream: "stderr" },
     ]);
     expect(
       describeExecution(200, { exitCode: 1, stdout: "out", stderr: "boom" }),
     ).toEqual([
-      { method: "log", text: "out" },
-      { method: "error", text: "boom" },
+      { method: "log", text: "out", stream: "stdout" },
+      { method: "error", text: "boom", stream: "stderr" },
     ]);
     expect(describeExecution(200, { exitCode: 2 })[0].text).toMatch(
       /exited with code 2/,

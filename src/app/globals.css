@@ -89,6 +89,16 @@
     --accent-2-glow: rgba(63, 57, 201, 0.12);
     --accent-2-ink: #ffffff;
 
+    /* Expressive accents: marketing surfaces only (the homepage gradients and
+       highlights). Never status, never the live-state signal. 700 steps on paper
+       so they hold 4.5:1 as text. */
+    --accent-3: #be185d;      /* 6.0:1 against white */
+    --accent-3-rgb: 190, 24, 93;
+    --c-accent-3: 190 24 93;
+    --accent-4: #0e7490;      /* 5.36:1 against white */
+    --accent-4-rgb: 14, 116, 144;
+    --c-accent-4: 14 116 144;
+
     /* STATUS — pass/warn/fail. Separate from --accent, which means "live /
        you are here" and must not double as a success colour. These are the
        800/700 steps, not the 500s: a saturated mid-tone reads fine on the
@@ -176,6 +186,13 @@
     --c-accent-2-soft: 165 180 252;
     --accent-2-glow: rgba(139, 147, 255, 0.16);
     --accent-2-ink: #0f1115;
+
+    --accent-3: #ff2fb3;
+    --accent-3-rgb: 255, 47, 179;
+    --c-accent-3: 255 47 179;
+    --accent-4: #22d3ee;
+    --accent-4-rgb: 34, 211, 238;
+    --c-accent-4: 34 211 238;
 
     /* Status on the dark ground: the 400 steps, which are bright enough to
        carry (min: success 7.30, warning 8.41, danger 5.22). */
@@ -1940,6 +1957,13 @@ body.sidebar-collapsed .workspace-content {
     --accent-2-rgb: 139, 147, 255;
     --c-accent-2: 139 147 255;
     --accent-2-ink: #0f1115;
+
+    --accent-3: #ff2fb3;
+    --accent-3-rgb: 255, 47, 179;
+    --c-accent-3: 255 47 179;
+    --accent-4: #22d3ee;
+    --accent-4-rgb: 34, 211, 238;
+    --c-accent-4: 34 211 238;
     --success: #34d399;
     --success-rgb: 52, 211, 153;
     --c-success: 52 211 153;
@@ -1979,6 +2003,13 @@ body.sidebar-collapsed .workspace-content {
     --accent-2-rgb: 139, 147, 255;
     --c-accent-2: 139 147 255;
     --accent-2-ink: #0f1115;
+
+    --accent-3: #ff2fb3;
+    --accent-3-rgb: 255, 47, 179;
+    --c-accent-3: 255 47 179;
+    --accent-4: #22d3ee;
+    --accent-4-rgb: 34, 211, 238;
+    --c-accent-4: 34 211 238;
     --success: #34d399;
     --success-rgb: 52, 211, 153;
     --c-success: 52 211 153;
@@ -2010,6 +2041,13 @@ body.sidebar-collapsed .workspace-content {
     --accent-2-rgb: 63, 57, 201;
     --c-accent-2: 63 57 201;
     --accent-2-ink: #ffffff;
+
+    --accent-3: #be185d;      /* 6.0:1 against white */
+    --accent-3-rgb: 190, 24, 93;
+    --c-accent-3: 190 24 93;
+    --accent-4: #0e7490;      /* 5.36:1 against white */
+    --accent-4-rgb: 14, 116, 144;
+    --c-accent-4: 14 116 144;
     --success: #065f46;
     --success-rgb: 6, 95, 70;
     --c-success: 6 95 70;

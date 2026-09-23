@@ -54,8 +54,8 @@ function LottieBox({ src, className }: { src: string; className?: string }) {
     return (
       <div className={`grid place-items-center overflow-hidden ${className ?? ""}`}>
         <svg viewBox="0 0 200 200" className="wow-spin-slow h-full w-full opacity-80">
-          <circle cx="100" cy="100" r="70" fill="none" stroke="#8b93ff" strokeWidth="2" strokeDasharray="10 8" />
-          <circle cx="100" cy="100" r="46" fill="none" stroke="#ff2fb3" strokeWidth="2" strokeDasharray="6 10" />
+          <circle cx="100" cy="100" r="70" fill="none" strokeWidth="2" strokeDasharray="10 8" className="stroke-secondary" />
+          <circle cx="100" cy="100" r="46" fill="none" strokeWidth="2" strokeDasharray="6 10" className="stroke-accent-3" />
           <text x="100" y="112" textAnchor="middle" fontSize="44" fontWeight="900" fill="currentColor">{"</>"}</text>
         </svg>
       </div>
@@ -82,6 +82,7 @@ type Portal = {
   img: string;
   href: string;
   cta: string;
+  /** Channel var of the card accent, e.g. "--c-accent"; see tone(). */
   accent: string;
 };
 
@@ -90,6 +91,11 @@ type Portal = {
  * narrow/wide (7+5, 5+7) so each row fills; an odd card out takes the full
  * row instead of leaving a hole.
  */
+/** A token colour from its channel var, optionally with alpha. */
+function tone(channel: string, alpha?: number): string {
+  return alpha === undefined ? `rgb(var(${channel}))` : `rgb(var(${channel}) / ${alpha})`;
+}
+
 function spanFor(index: number, total: number): string {
   if (total % 2 === 1 && index === total - 1) return "md:col-span-12";
   return index % 4 === 0 || index % 4 === 3 ? "md:col-span-7" : "md:col-span-5";
@@ -114,7 +120,7 @@ export default function HomeWowPortals({ counts }: { counts: PortalCounts }) {
       img: "/images/wow/code-editor.jpg",
       href: "/interview-questions",
       cta: "Enter the vault",
-      accent: "#ffe600",
+      accent: "--c-accent",
     });
   }
   if (counts.challenges > 0) {
@@ -128,7 +134,7 @@ export default function HomeWowPortals({ counts }: { counts: PortalCounts }) {
       img: "/images/wow/code-dark.jpg",
       href: "/challenges",
       cta: "Fight now",
-      accent: "#ff2fb3",
+      accent: "--c-accent-3",
     });
   }
   if (counts.reviewChallenges > 0 || counts.promptScenarios > 0) {
@@ -145,7 +151,7 @@ export default function HomeWowPortals({ counts }: { counts: PortalCounts }) {
       img: "/images/wow/whiteboard.jpg",
       href: "/interview/ai-code-review",
       cta: "Spar the AI",
-      accent: "#22d3ee",
+      accent: "--c-accent-4",
     });
   }
   portals.push({
@@ -158,15 +164,15 @@ export default function HomeWowPortals({ counts }: { counts: PortalCounts }) {
     img: "/images/wow/pair-programming.jpg",
     href: "/hire",
     cta: "Open realm",
-    accent: "#8b93ff",
+    accent: "--c-accent-2",
   });
 
   return (
-    <section className="relative bg-[var(--wow-bg)] px-4 py-24 text-[var(--wow-fg)] transition-colors md:py-32">
+    <section className="relative bg-bg px-4 py-24 text-fg transition-colors md:py-32">
       <div className="mx-auto max-w-7xl">
         <WowReveal>
-          <p className="font-mono text-[11px] uppercase tracking-[0.3em] text-[#8b93ff]">✦ choose your dimension</p>
-          <h2 className="wow-font-display mt-3 text-5xl md:text-7xl">FOUR WORLDS.<br /><span className="wow-gradient-text">ZERO TUTORIAL HELL.</span></h2>
+          <p className="font-mono text-[11px] uppercase tracking-[0.3em] text-secondary">✦ choose your dimension</p>
+          <h2 className="wow-font-display mt-3 text-4xl md:text-5xl lg:text-6xl">FOUR WORLDS.<br /><span className="wow-gradient-text">ZERO TUTORIAL HELL.</span></h2>
         </WowReveal>
 
         <div className="mt-12 grid grid-cols-1 gap-5 md:grid-cols-12">
@@ -174,28 +180,28 @@ export default function HomeWowPortals({ counts }: { counts: PortalCounts }) {
             <WowReveal key={p.key} className={spanFor(i, portals.length)}>
               <Link
                 href={p.href}
-                className="wow-card-glow group relative block overflow-hidden rounded-3xl border border-[var(--wow-card-border)] bg-[var(--wow-card)]"
+                className="wow-card-glow group relative block overflow-hidden rounded-3xl border border-border bg-surface"
               >
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img src={p.img} alt="" className="absolute inset-0 h-full w-full object-cover opacity-40 transition duration-700 group-hover:scale-105 group-hover:opacity-55 dark:opacity-45 dark:group-hover:opacity-60" loading="lazy" />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/45 to-black/15" />
-                <div className="absolute inset-0 opacity-0 transition group-hover:opacity-100" style={{ background: `radial-gradient(600px circle at 70% 20%, ${p.accent}33, transparent 65%)` }} />
+                <div className="absolute inset-0 opacity-0 transition group-hover:opacity-100" style={{ background: `radial-gradient(600px circle at 70% 20%, ${tone(p.accent, 0.2)}, transparent 65%)` }} />
                 <div className="relative flex min-h-[340px] flex-col justify-end gap-3 p-7 md:min-h-[380px] md:p-9">
                   <div className="flex items-start justify-between gap-4">
-                    <span className="rounded-full border border-[var(--wow-card-border)] bg-black/45 px-3 py-1 font-mono text-[10px] uppercase tracking-[0.2em] text-white backdrop-blur" style={{ borderColor: `${p.accent}66` }}>
-                      <span style={{ color: p.accent }}>{p.tag}</span>
+                    <span className="rounded-full border border-border bg-black/45 px-3 py-1 font-mono text-[11px] uppercase tracking-[0.2em] text-fg backdrop-blur" style={{ borderColor: tone(p.accent, 0.4) }}>
+                      <span style={{ color: tone(p.accent) }}>{p.tag}</span>
                     </span>
-                    <div className="h-24 w-24 shrink-0 overflow-hidden rounded-2xl border border-white/25 bg-black/45 text-white backdrop-blur-sm md:h-28 md:w-28">
+                    <div className="h-24 w-24 shrink-0 overflow-hidden rounded-2xl border border-fg/25 bg-black/45 text-fg backdrop-blur-sm md:h-28 md:w-28">
                       <LottieBox src={LOTTIES[p.key]} className="h-full w-full" />
                     </div>
                   </div>
-                  <h3 className="wow-font-display text-4xl text-white drop-shadow-[0_2px_12px_rgba(0,0,0,0.8)] md:text-5xl">{p.title}</h3>
-                  <p className="max-w-md text-sm font-medium leading-relaxed text-white/85 [text-shadow:0_1px_12px_rgba(0,0,0,0.9)]">{p.copy}</p>
-                  <p className="font-mono text-[11px] uppercase tracking-[0.2em] text-white/80 [text-shadow:0_1px_10px_rgba(0,0,0,0.9)]">
-                    <span className="wow-font-display text-2xl normal-case tracking-normal" style={{ color: p.accent }}>{p.stat}</span>
+                  <h3 className="wow-font-display text-4xl text-fg drop-shadow-[0_2px_12px_rgba(0,0,0,0.8)] md:text-5xl">{p.title}</h3>
+                  <p className="max-w-md text-sm font-medium leading-relaxed text-fg/85 [text-shadow:0_1px_12px_rgba(0,0,0,0.9)]">{p.copy}</p>
+                  <p className="font-mono text-[11px] uppercase tracking-[0.2em] text-fg/80 [text-shadow:0_1px_10px_rgba(0,0,0,0.9)]">
+                    <span className="wow-font-display text-2xl normal-case tracking-normal" style={{ color: tone(p.accent) }}>{p.stat}</span>
                     {"  "}{p.statLabel}
                   </p>
-                  <span className="mt-1 inline-flex w-fit items-center gap-2 rounded-full px-5 py-2.5 text-xs font-black uppercase tracking-wider text-black transition group-hover:gap-3" style={{ background: p.accent }}>
+                  <span className="mt-1 inline-flex w-fit items-center gap-2 rounded-full px-5 py-2.5 text-xs font-black uppercase tracking-wider text-bg transition group-hover:gap-3" style={{ background: tone(p.accent) }}>
                     {p.cta} <ArrowUpRight className="h-4 w-4" />
                   </span>
                 </div>
@@ -205,9 +211,9 @@ export default function HomeWowPortals({ counts }: { counts: PortalCounts }) {
         </div>
 
         <WowReveal delay={0.1}>
-          <p className="mt-6 text-[13px] text-[var(--wow-faint)]">
+          <p className="mt-6 text-[13px] text-subtle">
             New here?{" "}
-            <Link href="/prep" className="font-semibold text-[var(--wow-fg)] underline decoration-[#8b93ff] decoration-2 underline-offset-4">
+            <Link href="/prep" className="font-semibold text-fg underline decoration-secondary decoration-2 underline-offset-4">
               Take the AI-Ready journey
             </Link>{" "}
             — question bank, prompt drills and code-review challenges in one track.

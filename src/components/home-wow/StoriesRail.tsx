@@ -120,7 +120,7 @@ export default function StoriesRail({
 
   if (items.length === 0) return null;
 
-  const arrow = "hidden md:grid h-11 w-11 place-items-center rounded-full border border-[var(--wow-card-border)] bg-[var(--wow-card)] text-[var(--wow-fg)] backdrop-blur transition hover:border-[#8b93ff] hover:shadow-[0_0_24px_-6px_#8b93ff]";
+  const arrow = "hidden md:grid h-11 w-11 place-items-center rounded-full border border-border bg-panel text-fg backdrop-blur transition hover:border-secondary hover:shadow-[0_0_24px_-6px_rgb(var(--c-accent-2))]";
 
   return (
     <div className="relative">
@@ -131,18 +131,18 @@ export default function StoriesRail({
           </div>
         ))}
         {!done && (
-          <div ref={sentinelRef} className="grid shrink-0 place-items-center rounded-3xl border-2 border-dashed border-[var(--wow-card-border)]" style={{ width: `${CARD_W / 2}px` }}>
+          <div ref={sentinelRef} className="grid shrink-0 place-items-center rounded-3xl border-2 border-dashed border-border" style={{ width: `${CARD_W / 2}px` }}>
             {loading ? (
-              <span className="flex flex-col items-center gap-2 text-[var(--wow-faint)]">
-                <Loader2 className="h-5 w-5 animate-spin text-[#8b93ff]" />
-                <span className="font-mono text-[10px] uppercase tracking-widest">Loading</span>
+              <span className="flex flex-col items-center gap-2 text-subtle">
+                <Loader2 className="h-5 w-5 animate-spin text-secondary" />
+                <span className="font-mono text-[11px] uppercase tracking-widest">Loading</span>
               </span>
             ) : error ? (
               <button type="button" onClick={loadMore} className="px-2 text-center font-mono text-[11px] uppercase tracking-widest text-rose-400">
                 {error}<br />Tap to retry
               </button>
             ) : (
-              <span className="px-2 text-center font-mono text-[10px] uppercase leading-tight tracking-widest text-[var(--wow-faint)]">Scroll<br />for more</span>
+              <span className="px-2 text-center font-mono text-[11px] uppercase leading-tight tracking-widest text-subtle">Scroll<br />for more</span>
             )}
           </div>
         )}

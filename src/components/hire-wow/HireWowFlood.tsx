@@ -1,4 +1,4 @@
-import { Bot, Clock, FileCode2, Inbox, Layers, ShieldAlert, TrendingDown } from "lucide-react";
+import { Clock, Inbox, Layers, TrendingDown } from "lucide-react";
 import WowReveal from "@/components/wow/WowReveal";
 
 /**
@@ -25,30 +25,6 @@ const RANKED = Array.from({ length: APPLICANTS }, (_, i) => i).sort((a, b) => {
   if (b === HIDDEN_GEM) return 1;
   return scoreFor(b) - scoreFor(a);
 });
-
-const MECHANISMS = [
-  {
-    icon: FileCode2,
-    kicker: "Take-home assignments",
-    title: "Everyone gets the same problem",
-    body:
-      "One link goes to the whole applicant list. Real code, real execution, hidden tests — graded on our servers against your rubric, not skimmed by a tired human at 6pm.",
-  },
-  {
-    icon: Bot,
-    kicker: "AI interview",
-    title: "Round one runs without you",
-    body:
-      "An AI screening interview talks to candidates in parallel, probes their answers with follow-ups, and returns a scored transcript. Hundreds of first rounds, none of them on your calendar.",
-  },
-  {
-    icon: ShieldAlert,
-    kicker: "Anti-cheat built in",
-    title: "So the ranking means something",
-    body:
-      "Paste bursts, tab exits, timing anomalies and AI-likelihood are captured on every attempt and disclosed to the candidate. A score you can trust is the entire point of ranking.",
-  },
-];
 
 export default function HireWowFlood() {
   const gemRank = RANKED.indexOf(HIDDEN_GEM) + 1;
@@ -203,36 +179,6 @@ export default function HireWowFlood() {
               </ul>
             </article>
           </WowReveal>
-        </div>
-
-        {/* How the ranking gets built */}
-        <WowReveal delay={0.08}>
-          <h3 className="wow-font-display mt-16 text-3xl md:text-4xl">
-            THREE THINGS DO THE <span className="wow-gradient-boss">SORTING.</span>
-          </h3>
-          <p className="mt-3 max-w-2xl text-[15px] leading-relaxed text-muted">
-            None of them need your calendar, and each one runs across the whole
-            list at once.
-          </p>
-        </WowReveal>
-
-        <div className="mt-8 grid grid-cols-1 gap-4 md:grid-cols-3">
-          {MECHANISMS.map((m, i) => (
-            <WowReveal key={m.kicker} delay={i * 0.07} className="h-full">
-              <article className="flex h-full flex-col gap-4 rounded-3xl border border-border bg-panel p-6 backdrop-blur-sm transition hover:-translate-y-1 hover:border-secondary/60 hover:shadow-[0_20px_60px_-20px_rgb(var(--c-accent-2)/0.5)]">
-                <span className="grid h-11 w-11 place-items-center rounded-2xl border border-secondary/30 bg-secondary/10 text-secondary">
-                  <m.icon className="h-5 w-5" />
-                </span>
-                <div>
-                  <p className="font-mono text-[11px] font-bold uppercase tracking-[0.2em] text-secondary">
-                    {m.kicker}
-                  </p>
-                  <h4 className="mt-2 text-[17px] font-extrabold leading-snug tracking-tight">{m.title}</h4>
-                </div>
-                <p className="text-[13.5px] leading-relaxed text-muted">{m.body}</p>
-              </article>
-            </WowReveal>
-          ))}
         </div>
       </div>
     </section>

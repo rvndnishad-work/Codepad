@@ -8,12 +8,9 @@ import HireWowHero from "@/components/hire-wow/HireWowHero";
 import HireWowFlood from "@/components/hire-wow/HireWowFlood";
 import HireWowPipeline from "@/components/hire-wow/HireWowPipeline";
 import HireWowRoom, { type RoomStat } from "@/components/hire-wow/HireWowRoom";
-import HireWowRadar from "@/components/hire-wow/HireWowRadar";
 import HireWowFeatures from "@/components/hire-wow/HireWowFeatures";
-import HireWowDuel from "@/components/hire-wow/HireWowDuel";
-import HireWowRecord from "@/components/hire-wow/HireWowRecord";
+import HireWowEvidence from "@/components/hire-wow/HireWowEvidence";
 import HireWowTrust from "@/components/hire-wow/HireWowTrust";
-import PricingTeaser from "./PricingTeaser";
 import HireWowFinal from "@/components/hire-wow/HireWowFinal";
 import ScrollProgressBar from "./ScrollProgressBar";
 
@@ -57,22 +54,15 @@ export default async function HirePage() {
 
       <HireWowRoom roomStats={roomStats} />
 
-      <HireWowRadar />
-
-      {/* Six live feature demos, reskinned in boss mode — same behaviors. */}
       <section className="bg-bg px-4 py-24 transition-colors md:py-32">
         <div className="mx-auto max-w-6xl">
           <HireWowFeatures />
         </div>
       </section>
 
-      <HireWowDuel />
+      <HireWowEvidence />
 
-      <HireWowRecord />
-
-      <HireWowTrust />
-
-      <PricingTeaser plans={pricing.business} />
+      <HireWowTrust plans={pricing.business} />
 
       <HireWowFinal ctaHref={ctaHref} signedIn={!!session?.user} />
     </div>

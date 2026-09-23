@@ -64,7 +64,6 @@ type SectionShellProps = {
 };
 
 function SectionShell({ index, icon: Icon, title, titleAccent, desc, bullets, children }: SectionShellProps) {
-  const isEven = index % 2 === 1;
   const demoWrapRef = useRef<HTMLDivElement>(null);
   const [demoInView, setDemoInView] = useState(false);
   useEffect(() => {
@@ -81,7 +80,7 @@ function SectionShell({ index, icon: Icon, title, titleAccent, desc, bullets, ch
     <WowReveal>
       <div className="group relative overflow-hidden rounded-[2rem] border border-border bg-surface p-6 backdrop-blur-sm transition-all duration-500 hover:border-secondary/50 hover:shadow-[0_24px_80px_-24px_rgb(var(--c-accent-2)/0.45)] md:p-10">
         <div aria-hidden className="pointer-events-none absolute -right-24 -top-24 h-64 w-64 rounded-full bg-secondary/10 opacity-60 blur-[80px] transition-opacity duration-500 group-hover:opacity-100" />
-        <div className={`relative z-10 flex flex-col ${isEven ? "md:flex-row-reverse" : "md:flex-row"} items-center gap-8 md:gap-12`}>
+        <div className={`relative z-10 flex flex-col md:flex-row items-center gap-8 md:gap-12`}>
           <div className="min-w-0 flex-1 space-y-5">
             <div className="flex items-center gap-3">
               <span className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-gradient-to-br from-secondary to-accent-3 text-fg shadow-[0_8px_24px_-8px_rgb(var(--c-accent-2)/0.7)]">
@@ -743,21 +742,10 @@ function CreditsDemo() {
 /* ═══════════════════════════════════════════════════════════════
    ASSEMBLY — flowing feature river
    ═══════════════════════════════════════════════════════════════ */
-const SECTIONS: Omit<SectionShellProps, "children">[] = [
+const SECTIONS: (Omit<SectionShellProps, "children"> & { tab: string })[] = [
   {
     index: 0,
-    icon: Brain,
-    title: "Integrity signals &",
-    titleAccent: "session replay",
-    desc: "Tab switches, clipboard events and keystroke timing are recorded during an attempt — with the candidate told up front — and surfaced as a timeline your team reads. The system flags; a person decides.",
-    bullets: [
-      "Trust gauge that moves as signals arrive",
-      "Severity-tagged timeline, flagged inline",
-      "Full session reconstruction for post-review",
-    ],
-  },
-  {
-    index: 1,
+    tab: "MCP",
     icon: Cpu,
     title: "Model Context",
     titleAccent: "Protocol (MCP)",
@@ -769,7 +757,8 @@ const SECTIONS: Omit<SectionShellProps, "children">[] = [
     ],
   },
   {
-    index: 2,
+    index: 1,
+    tab: "Multiplayer",
     icon: Users,
     title: "Multiplayer",
     titleAccent: "interview room",
@@ -781,7 +770,8 @@ const SECTIONS: Omit<SectionShellProps, "children">[] = [
     ],
   },
   {
-    index: 3,
+    index: 2,
+    tab: "Grading",
     icon: Workflow,
     title: "Automated grading",
     titleAccent: "runtimes",
@@ -793,7 +783,8 @@ const SECTIONS: Omit<SectionShellProps, "children">[] = [
     ],
   },
   {
-    index: 4,
+    index: 3,
+    tab: "Rubrics",
     icon: FileText,
     title: "Structured rubrics &",
     titleAccent: "scorecards",
@@ -804,55 +795,70 @@ const SECTIONS: Omit<SectionShellProps, "children">[] = [
       "One-click PDF export of the full scorecard",
     ],
   },
-  {
-    index: 5,
-    icon: ShieldCheck,
-    title: "Credit-based",
-    titleAccent: "billing",
-    desc: "Screenings are billed as credits on top of seats, tracked live. Set seat bounds, cap workspace limits, and watch spend as it happens.",
-    bullets: [
-      "Live credit gauge with usage-per-assessment breakdown",
-      "Itemized recent usage history with cost tracking",
-      "Monthly spend analytics with trend visualization",
-    ],
-  },
 ];
 
-const DEMOS = [ProctoringDemo, McpDemo, MultiplayerDemo, GradingDemo, RubricsDemo, CreditsDemo];
+const DEMOS = [McpDemo, MultiplayerDemo, GradingDemo, RubricsDemo];
 
-function FlowPipe() {
-  return (
-    <div aria-hidden className="wow-flow-pipe mx-auto h-12 w-8">
-      <div className="mx-auto h-full w-px bg-border" />
-    </div>
-  );
-}
+export { ProctoringDemo, CreditsDemo };
 
+/**
+ * Four product surfaces as tabs, one live demo at a time. Proctoring moved
+ * into the live room and billing sits beside pricing, so neither repeats here.
+ */
 export default function HireWowFeatures() {
+  const [active, setActive] = useState(0);
+  const tabs = useRef<(HTMLButtonElement | null)[]>([]);
+
+  const onKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key !== "ArrowRight" && e.key !== "ArrowLeft") return;
+    e.preventDefault();
+    const next = (active + (e.key === "ArrowRight" ? 1 : SECTIONS.length - 1)) % SECTIONS.length;
+    setActive(next);
+    tabs.current[next]?.focus();
+  };
+
+  const section = SECTIONS[active];
+  const Demo = DEMOS[active];
+
   return (
     <div className="space-y-2">
       <WowReveal>
         <p className="flex items-center gap-2 font-mono text-[11px] uppercase tracking-[0.3em] text-secondary"><Brain className="h-3.5 w-3.5" /> why teams switch</p>
-        <h2 className="wow-font-display mt-3 text-5xl md:text-7xl">SIX SURFACES,<br /><span className="wow-gradient-boss">ALL OF THEM LIVE.</span></h2>
+        <h2 className="wow-font-display mt-3 text-5xl md:text-7xl">FOUR SURFACES,<br /><span className="wow-gradient-boss">ALL OF THEM LIVE.</span></h2>
         <p className="mt-4 max-w-2xl text-[15px] leading-relaxed text-muted">
-          Proctoring, challenge authoring, the multiplayer room, grading,
-          rubrics and credits. Every demo below is running on this page —
-          follow the flow.
+          Challenge authoring over MCP, the multiplayer room, grading and
+          rubrics. Pick one: each demo below is running on this page.
         </p>
       </WowReveal>
 
-      <div className="pt-6">
-        {SECTIONS.map((section, i) => {
-          const Demo = DEMOS[i];
-          return (
-            <div key={i}>
-              {i > 0 && <FlowPipe />}
-              <SectionShell {...section}>
-                <Demo />
-              </SectionShell>
-            </div>
-          );
-        })}
+      <div role="tablist" aria-label="Product surfaces" onKeyDown={onKeyDown} className="flex flex-wrap gap-2 pt-6">
+        {SECTIONS.map((s, i) => (
+          <button
+            key={s.tab}
+            ref={(el) => { tabs.current[i] = el; }}
+            type="button"
+            role="tab"
+            id={`surface-tab-${i}`}
+            aria-selected={i === active}
+            aria-controls="surface-panel"
+            tabIndex={i === active ? 0 : -1}
+            onClick={() => setActive(i)}
+            className={`flex items-center gap-2 rounded-full border px-4 py-2 font-mono text-[11px] font-bold uppercase tracking-[0.16em] transition ${
+              i === active
+                ? "border-secondary bg-secondary text-secondary-ink"
+                : "border-border bg-surface text-subtle hover:border-secondary/60 hover:text-fg"
+            }`}
+          >
+            <s.icon className="h-3.5 w-3.5" />
+            {s.tab}
+          </button>
+        ))}
+      </div>
+
+      <div role="tabpanel" id="surface-panel" aria-labelledby={`surface-tab-${active}`} className="pt-4">
+        <SectionShell key={active} {...section}>
+          <Demo />
+        </SectionShell>
       </div>
     </div>
   );

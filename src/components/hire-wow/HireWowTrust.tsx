@@ -1,7 +1,22 @@
 import { ShieldCheck, Lock, KeyRound, ScrollText, Network, History } from "lucide-react";
 import WowReveal from "@/components/wow/WowReveal";
+import type { PricingPlanDef } from "@/lib/pricing-plans";
+import PricingTeaser from "@/app/hire/PricingTeaser";
+import { CreditsDemo } from "./HireWowFeatures";
 
-/** Same six shipped mechanisms as the classic trust band — WOW cards. */
+/** Copy beside the live billing demo. Kept here: a client module cannot export data to a server component. */
+const BILLING_COPY = {
+  title: "Credit-based",
+  titleAccent: "billing",
+  desc: "Screenings are billed as credits on top of seats, tracked live. Set seat bounds, cap workspace limits, and watch spend as it happens.",
+  bullets: [
+    "Live credit gauge with usage-per-assessment breakdown",
+    "Itemized recent usage history with cost tracking",
+    "Monthly spend analytics with trend visualization",
+  ],
+};
+
+/** Six shipped security mechanisms, then pricing and the live billing demo. */
 const ITEMS = [
   {
     icon: Network,
@@ -35,7 +50,7 @@ const ITEMS = [
   },
 ];
 
-export default function HireWowTrust() {
+export default function HireWowTrust({ plans }: { plans: PricingPlanDef[] }) {
   return (
     <section className="relative bg-bg px-4 py-24 text-fg transition-colors md:py-32">
       <div className="mx-auto max-w-6xl">
@@ -63,6 +78,32 @@ export default function HireWowTrust() {
               </article>
             </WowReveal>
           ))}
+        </div>
+
+        <div className="mt-24">
+          <PricingTeaser plans={plans} />
+        </div>
+
+        <div className="mt-10 grid grid-cols-1 items-center gap-8 md:grid-cols-2 md:gap-12">
+          <WowReveal>
+            <h4 className="wow-font-display text-3xl leading-[0.95] md:text-4xl">
+              {BILLING_COPY.title} <span className="wow-gradient-boss">{BILLING_COPY.titleAccent}</span>
+            </h4>
+            <p className="mt-4 max-w-md text-[15px] leading-relaxed text-muted">{BILLING_COPY.desc}</p>
+            <ul className="mt-5 space-y-2.5">
+              {BILLING_COPY.bullets.map((b) => (
+                <li key={b} className="flex items-start gap-2.5 text-sm text-muted">
+                  <span aria-hidden className="mt-[7px] h-[5px] w-[5px] shrink-0 bg-secondary" />
+                  {b}
+                </li>
+              ))}
+            </ul>
+          </WowReveal>
+          <WowReveal delay={0.08}>
+            <div className="flex h-[440px] w-full">
+              <CreditsDemo />
+            </div>
+          </WowReveal>
         </div>
       </div>
     </section>

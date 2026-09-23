@@ -22,6 +22,7 @@ export default function WowReveal({
   useEffect(() => {
     const el = ref.current;
     if (!el) return;
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
     const tween = gsap.from(el, {
       y,
       opacity: 0,

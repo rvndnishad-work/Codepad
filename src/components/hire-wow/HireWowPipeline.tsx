@@ -19,8 +19,9 @@ const STAGES = [
   {
     step: "02", title: "Screen", tagline: "The whole pile, scored in parallel", icon: Bot,
     features: [
-      { icon: Bot, text: "AI screening interviews, hundreds in parallel" },
-      { icon: Timer, text: "Take-homes with server-side grading" },
+      { icon: Timer, text: "One take-home for every applicant, graded on our servers" },
+      { icon: Bot, text: "AI screening interview runs round one, in parallel" },
+      { icon: ShieldCheck, text: "Anti-cheat signals on every attempt, so the ranking holds" },
       { icon: Gauge, text: "Ranked shortlist, best-first, by morning" },
     ],
   },

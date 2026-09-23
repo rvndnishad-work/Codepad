@@ -62,7 +62,7 @@ export default function PinnedRail({ items }: { items: BlogFeedEntry[] }) {
   return (
     <div onMouseEnter={() => setHovered(true)} onMouseLeave={() => setHovered(false)}>
       <div className="mb-4 flex items-center justify-between">
-        <p className="flex items-center gap-2 font-mono text-[11px] font-bold uppercase tracking-[0.25em] text-[#ffe600]">
+        <p className="flex items-center gap-2 font-mono text-[11px] font-bold uppercase tracking-[0.25em] text-accent">
           <Star className="h-3.5 w-3.5 fill-current" /> Pinned by the editors
         </p>
         {items.length > 1 && (
@@ -77,7 +77,7 @@ export default function PinnedRail({ items }: { items: BlogFeedEntry[] }) {
                 onClick={() => jumpTo(active + (dir === "right" ? 1 : -1))}
                 disabled={!ok}
                 aria-label={label}
-                className="grid h-10 w-10 place-items-center rounded-full border border-[var(--wow-card-border)] bg-[var(--wow-card)] text-[var(--wow-fg)] transition hover:border-[#ffe600] disabled:cursor-not-allowed disabled:opacity-30"
+                className="grid h-10 w-10 place-items-center rounded-full border border-border bg-panel text-fg transition hover:border-accent disabled:cursor-not-allowed disabled:opacity-30"
               >
                 <Icon className="h-4 w-4" />
               </button>
@@ -92,7 +92,7 @@ export default function PinnedRail({ items }: { items: BlogFeedEntry[] }) {
             key={blog.id}
             href={`/blog/${blog.slug}`}
             style={{ scrollSnapAlign: "start" }}
-            className="group relative block h-[400px] w-[88%] shrink-0 overflow-hidden rounded-3xl border border-[var(--wow-card-border)] md:h-[430px] md:w-[72%]"
+            className="group relative block h-[400px] w-[88%] shrink-0 overflow-hidden rounded-3xl border border-border md:h-[430px] md:w-[72%]"
           >
             {blog.coverImage ? (
               <SafeImage
@@ -104,22 +104,22 @@ export default function PinnedRail({ items }: { items: BlogFeedEntry[] }) {
                 unoptimized={blog.coverImage.startsWith("data:")}
               />
             ) : (
-              <span aria-hidden className="flex h-full w-full items-center justify-center bg-gradient-to-br from-[#8b93ff] via-[#b537f2] to-[#ff2fb3]">
-                <Star className="h-16 w-16 fill-white/25 text-white/25" />
+              <span aria-hidden className="flex h-full w-full items-center justify-center bg-gradient-to-br from-secondary to-accent-3">
+                <Star className="h-16 w-16 fill-fg/25 text-fg/25" />
               </span>
             )}
             <span className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent" />
             <span className="absolute inset-x-0 bottom-0 block p-6 md:p-8">
               <span className="flex flex-wrap gap-1.5">
                 {(blog.tags ?? []).slice(0, 3).map((t) => (
-                  <span key={t} className="rounded-full border border-white/25 bg-black/45 px-2.5 py-0.5 font-mono text-[10px] font-bold uppercase tracking-[0.14em] text-white backdrop-blur">#{t}</span>
+                  <span key={t} className="rounded-full border border-fg/25 bg-black/45 px-2.5 py-0.5 font-mono text-[11px] font-bold uppercase tracking-[0.14em] text-fg backdrop-blur">#{t}</span>
                 ))}
               </span>
-              <span className="wow-font-display mt-3 block text-2xl leading-[0.95] text-white drop-shadow-[0_2px_16px_rgba(0,0,0,0.9)] md:text-4xl line-clamp-3">
+              <span className="wow-font-display mt-3 block text-2xl leading-[0.95] text-fg drop-shadow-[0_2px_16px_rgba(0,0,0,0.9)] md:text-4xl line-clamp-3">
                 {blog.title}
               </span>
-              <span className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1 font-mono text-[11px] text-white/75">
-                <span className="font-sans text-[12px] font-semibold text-white">{blog.user.name ?? "Anonymous"}</span>
+              <span className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1 font-mono text-[11px] text-fg/75">
+                <span className="font-sans text-[12px] font-semibold text-fg">{blog.user.name ?? "Anonymous"}</span>
                 <RelativeTime iso={blog.createdAt} />
                 <span className="flex items-center gap-1 tabular-nums"><BookOpen className="h-3 w-3" />{blog.readingMinutes}m</span>
                 <span className="flex items-center gap-1 tabular-nums"><Eye className="h-3 w-3" />{blog.viewCount.toLocaleString()}</span>
@@ -130,9 +130,9 @@ export default function PinnedRail({ items }: { items: BlogFeedEntry[] }) {
       </div>
 
       {items.length > 1 && (
-        <div className="mt-4 h-1 overflow-hidden rounded-full bg-[var(--wow-card-border)]">
+        <div className="mt-4 h-1 overflow-hidden rounded-full bg-border">
           <div
-            className="h-full rounded-full bg-gradient-to-r from-[#ffe600] via-[#ff2fb3] to-[#8b93ff] transition-all duration-500"
+            className="h-full rounded-full bg-gradient-to-r from-accent via-accent-3 to-secondary transition-all duration-500"
             style={{ width: `${100 / items.length}%`, marginLeft: `${(active * 100) / items.length}%` }}
           />
         </div>

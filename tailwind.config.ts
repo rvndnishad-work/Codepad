@@ -34,6 +34,10 @@ const config: Config = {
           soft: "rgb(var(--c-accent-soft) / <alpha-value>)",
           glow: "var(--accent-glow)",
           ink: "var(--accent-ink)",
+          /* Expressive accents for marketing surfaces (`bg-accent-3`,
+             `text-accent-4`); see globals.css. */
+          3: "rgb(var(--c-accent-3) / <alpha-value>)",
+          4: "rgb(var(--c-accent-4) / <alpha-value>)",
         },
         secondary: {
           DEFAULT: "rgb(var(--c-accent-2) / <alpha-value>)",

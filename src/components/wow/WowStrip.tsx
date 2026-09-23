@@ -30,12 +30,12 @@ export default function WowStrip() {
   }, []);
 
   return (
-    <section className="relative bg-[#08080f] py-20 text-white">
+    <section className="relative bg-bg py-20 text-fg">
       <div className="mx-auto max-w-7xl px-4">
-        <p className="wow-reveal text-center font-mono text-[11px] uppercase tracking-[0.3em] text-white/50">stack coverage — no setup, just spawn</p>
+        <p className="wow-reveal text-center font-mono text-[11px] uppercase tracking-[0.3em] text-fg/50">stack coverage — no setup, just spawn</p>
         <div className="wow-reveal mt-6 flex flex-wrap justify-center gap-2.5">
           {STACK.map((s, i) => (
-            <span key={s} className="wow-card-glow cursor-default rounded-full border border-white/15 bg-white/[0.05] px-5 py-2.5 font-mono text-xs uppercase tracking-widest transition hover:border-[#ffe600] hover:text-[#ffe600]" style={{ transform: `rotate(${i % 2 ? 1.5 : -1.5}deg)` }}>
+            <span key={s} className="wow-card-glow cursor-default rounded-full border border-fg/15 bg-fg/[0.05] px-5 py-2.5 font-mono text-xs uppercase tracking-widest transition hover:border-accent hover:text-accent" style={{ transform: `rotate(${i % 2 ? 1.5 : -1.5}deg)` }}>
               {s}
             </span>
           ))}
@@ -47,10 +47,10 @@ export default function WowStrip() {
           {[0, 1].map((k) => (
             <div key={k} className="flex shrink-0 gap-5">
               {SNAPS.map((p) => (
-                <figure key={`${k}-${p.cap}`} className="relative h-52 w-80 shrink-0 overflow-hidden rounded-2xl border border-white/15">
+                <figure key={`${k}-${p.cap}`} className="relative h-52 w-80 shrink-0 overflow-hidden rounded-2xl border border-fg/15">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img src={p.src} alt={p.cap} className="h-full w-full object-cover" loading="lazy" />
-                  <figcaption className="absolute bottom-3 left-3 rounded-full bg-black/65 px-3 py-1 font-mono text-[10px] uppercase tracking-widest backdrop-blur">{p.cap}</figcaption>
+                  <figcaption className="absolute bottom-3 left-3 rounded-full bg-black/65 px-3 py-1 font-mono text-[11px] uppercase tracking-widest backdrop-blur">{p.cap}</figcaption>
                 </figure>
               ))}
             </div>

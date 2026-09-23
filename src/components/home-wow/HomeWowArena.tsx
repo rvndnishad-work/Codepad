@@ -1,13 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import ArenaGrid, { type ArenaPick } from "./ArenaGrid";
 
-const IMAGES = [
-  "/images/wow/code-dark.jpg",
-  "/images/wow/code-editor.jpg",
-  "/images/wow/hackathon.jpg",
-  "/images/wow/whiteboard.jpg",
-];
-
 function safeTags(raw: string | null): string[] {
   if (!raw) return [];
   try {
@@ -42,7 +35,7 @@ export default async function HomeWowArena() {
         _count: { select: { attempts: true } },
       },
     });
-    picks = rows.map((r, i) => ({
+    picks = rows.map((r) => ({
       slug: r.slug,
       title: r.title,
       difficulty: r.difficulty,
@@ -52,7 +45,6 @@ export default async function HomeWowArena() {
       featured: r.featured,
       premium: r.premium,
       tags: safeTags(r.tags).slice(0, 2),
-      img: IMAGES[i % IMAGES.length],
     }));
   } catch {
     return null;

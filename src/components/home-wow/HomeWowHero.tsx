@@ -5,6 +5,7 @@ import Link from "next/link";
 import dynamic from "next/dynamic";
 import gsap from "gsap";
 import { ArrowRight, Play, Sparkles, Trophy, Zap } from "lucide-react";
+import { prefersReducedMotion } from "@/components/wow/motion";
 
 const CodeVerse3D = dynamic(() => import("@/components/wow/CodeVerse3D"), { ssr: false });
 
@@ -58,6 +59,11 @@ export default function HomeWowHero({
   recentSnippet?: { slug: string; title: string } | null;
 }) {
   const root = useRef<HTMLElement>(null);
+  const statTiles = [
+    { n: stats.questions, v: formatK(stats.questions), l: "hand-written questions" },
+    { n: stats.challenges, v: String(stats.challenges), l: "runnable challenges" },
+    { n: stats.sessions, v: formatK(stats.sessions), l: "sessions run" },
+  ].filter((s) => s.n > 0);
   const typed = useTypewriter(["twoSum(board, gas?)", "reviewAiSlop(pr).ship()", "hire(signal, not vibes)", "npx interviewpad --send-offer"]);
   // Offscreen → loop paused (long-session lag fix). Scrolling → loop frozen:
   // a live canvas competing with the scroll compositor is what drops frames
@@ -67,7 +73,7 @@ export default function HomeWowHero({
   const [scrolling, setScrolling] = useState(false);
 
   useEffect(() => {
-    if (typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+    if (prefersReducedMotion()) {
       setPaused(true);
     } else {
       const el = root.current;
@@ -90,6 +96,7 @@ export default function HomeWowHero({
   }, []);
 
   useEffect(() => {
+    if (prefersReducedMotion()) return;
     const ctx = gsap.context(() => {
       gsap.timeline({ defaults: { ease: "expo.out" } })
         .from(".wow-hero-line", { yPercent: 110, duration: 1.1, stagger: 0.12 })
@@ -166,7 +173,7 @@ export default function HomeWowHero({
           <div className="px-4 py-4 font-mono text-sm md:text-[15px]">
             <span className="text-[#ff2fb3]">➜</span> <span className="text-[#22d3ee]">~</span> <span className="text-white">{typed}</span><span className="wow-blink ml-0.5 inline-block h-4 w-2 translate-y-0.5 bg-[#ffe600]" />
             <div className="mt-2 text-white/70">
-              ✓ {formatK(stats.questions)} question banks loaded · {stats.challenges > 0 ? `${stats.challenges} runtimes hot` : "8 runtimes hot"} · <span className="font-bold text-[#ffe600]">offer.exe ready</span>
+              ✓ {formatK(stats.questions)} question banks loaded · {stats.challenges > 0 ? `${stats.challenges} challenges ready` : "8 runtimes hot"} · <span className="font-bold text-[#ffe600]">offer.exe ready</span>
             </div>
           </div>
         </div>
@@ -189,19 +196,21 @@ export default function HomeWowHero({
           <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
         </Link>
 
-        {/* live stat strip — every number from the DB */}
-        <div className="wow-hero-fade mt-10 grid w-full max-w-2xl grid-cols-3 gap-px overflow-hidden rounded-2xl border border-white/12 bg-white/10">
-          {[
-            { v: formatK(stats.questions), l: "hand-written questions" },
-            { v: String(stats.challenges), l: "runnable challenges" },
-            { v: formatK(stats.sessions), l: "sessions run" },
-          ].map((s) => (
-            <div key={s.l} className="bg-[#0a0d16]/95 px-4 py-4">
-              <p className="wow-font-display text-2xl tabular-nums md:text-3xl">{s.v}</p>
-              <p className="mt-1 font-mono text-[9px] uppercase leading-snug tracking-[0.16em] text-white/55 md:text-[10px]">{s.l}</p>
-            </div>
-          ))}
-        </div>
+        {/* live stat strip — every number from the DB; zero-count tiles are
+            dropped, same honesty rule as the portals */}
+        {statTiles.length > 0 && (
+          <div
+            className="wow-hero-fade mt-10 grid w-full max-w-2xl gap-px overflow-hidden rounded-2xl border border-white/12 bg-white/10"
+            style={{ gridTemplateColumns: `repeat(${statTiles.length}, minmax(0, 1fr))` }}
+          >
+            {statTiles.map((s) => (
+              <div key={s.l} className="bg-[#0a0d16]/95 px-4 py-4">
+                <p className="wow-font-display text-2xl tabular-nums md:text-3xl">{s.v}</p>
+                <p className="mt-1 font-mono text-[9px] uppercase leading-snug tracking-[0.16em] text-white/55 md:text-[10px]">{s.l}</p>
+              </div>
+            ))}
+          </div>
+        )}
 
         <div className="wow-hero-fade mt-6 flex items-center gap-1.5 font-mono text-[11px] uppercase tracking-[0.18em] text-white/55">
           <Zap className="h-3.5 w-3.5 text-[#ffe600]" /> No install · No setup · Just press start

@@ -3,13 +3,10 @@ import { Store, Heart, Users, LayoutGrid, ArrowRight, BadgeCheck } from "lucide-
 import { prisma } from "@/lib/prisma";
 import WowReveal from "@/components/wow/WowReveal";
 
-const ORBIT = [
-  { r: "132px", dur: "16s", delay: "0s" },
-  { r: "132px", dur: "16s", delay: "-8s" },
-  { r: "188px", dur: "24s", delay: "0s" },
-  { r: "188px", dur: "24s", delay: "-8s" },
-  { r: "188px", dur: "24s", delay: "-16s" },
-];
+// Every avatar rides the outer dashed ring, evenly spaced. The ring's radius
+// is set on the orbit box as --orbit-r (container half-width minus the ring's
+// 1rem inset) so the avatars sit on the ring at both breakpoints.
+const ORBIT_SECONDS = 24;
 
 /**
  * Live creator orbit: real published spaces ride the rings. Hides when
@@ -48,9 +45,9 @@ export default async function HomeWowCreators() {
 
   return (
     <section className="relative overflow-hidden bg-[var(--wow-bg)] px-4 py-24 text-[var(--wow-fg)] transition-colors md:py-32">
-      <div className="mx-auto grid max-w-7xl items-center gap-14 lg:grid-cols-2">
+      <div className="mx-auto grid max-w-7xl grid-cols-1 items-center gap-14 lg:grid-cols-2">
         {/* orbit visual with REAL avatars */}
-        <div className="relative mx-auto grid h-[400px] w-[400px] max-w-full place-items-center md:h-[480px] md:w-[480px]">
+        <div className="relative mx-auto hidden h-[400px] w-[400px] max-w-full place-items-center [--orbit-r:calc(200px_-_1rem)] sm:grid md:h-[480px] md:w-[480px] md:[--orbit-r:calc(240px_-_1rem)]">
           <div aria-hidden className="wow-spin-slower absolute inset-4 rounded-full border border-dashed border-[var(--wow-card-border)]" />
           <div aria-hidden className="wow-spin-slow absolute inset-[76px] rounded-full border border-[var(--wow-card-border)]" />
           <div aria-hidden className="absolute inset-0 rounded-full bg-[radial-gradient(circle_at_center,rgba(255,47,179,0.22),transparent_60%)] blur-2xl" />
@@ -58,10 +55,12 @@ export default async function HomeWowCreators() {
             <div><p className="wow-font-display text-3xl text-black">YOU</p><p className="font-mono text-[10px] font-bold uppercase tracking-widest text-black/70">main character</p></div>
           </div>
           {spaces.map((s, i) => {
-            const o = ORBIT[i % ORBIT.length];
+            // wow-orbit already counter-rotates, so the avatar stays upright
+            // without a second animated wrapper.
+            const delay = `${(-ORBIT_SECONDS * i) / spaces.length}s`;
             return (
-              <div key={s.id} className="absolute left-1/2 top-1/2 z-10" style={{ animation: `wow-orbit ${o.dur} linear infinite`, ["--orbit-r" as string]: o.r, animationDelay: o.delay }}>
-                <div className="group relative -ml-8 -mt-8 h-16 w-16" style={{ animation: `wow-orbit ${o.dur} linear infinite reverse`, animationDelay: o.delay }}>
+              <div key={s.id} className="wow-orbit-rider absolute left-1/2 top-1/2 z-10" style={{ animation: `wow-orbit ${ORBIT_SECONDS}s linear infinite`, animationDelay: delay }}>
+                <div className="group relative -ml-8 -mt-8 h-16 w-16">
                   <Link href={`/c/${s.handle}`} aria-label={s.name}>
                     {s.avatarUrl ? (
                       // eslint-disable-next-line @next/next/no-img-element
@@ -79,7 +78,7 @@ export default async function HomeWowCreators() {
           })}
         </div>
 
-        <div>
+        <div className="min-w-0">
           <WowReveal>
             <p className="font-mono text-[11px] uppercase tracking-[0.3em] text-[#8b93ff]">✦ learn from the guild</p>
             <h2 className="wow-font-display mt-3 text-5xl md:text-6xl">PREP WITH PEOPLE<br />WHO <span className="wow-gradient-text">CLEARED IT.</span></h2>

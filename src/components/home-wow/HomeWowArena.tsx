@@ -48,7 +48,7 @@ export default async function HomeWowArena() {
       difficulty: r.difficulty,
       lang: r.category ?? r.template,
       minutes: r.estimatedMinutes,
-      solves: r._count.attempts,
+      attempts: r._count.attempts,
       featured: r.featured,
       premium: r.premium,
       tags: safeTags(r.tags).slice(0, 2),

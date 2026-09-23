@@ -9,18 +9,23 @@ import HireHeroTypewriter from "./HireHeroTypewriter";
 
 const CodeVerse3D = dynamic(() => import("@/components/wow/CodeVerse3D"), { ssr: false });
 
-export type HireHeroStats = { workspaces: number; sessions: number; challenges: number };
+/**
+ * One hero stat. `live` marks a count read from the database (shown only once
+ * it is big enough to mean something); the rest are fixed capabilities.
+ */
+export type HeroStat = { value: string; label: string; live: boolean };
 
 /**
  * Boss-mode hero: dark cinematic command center in both themes. Persona
- * toggle cross-links /, CTAs route by session, stat strip is live DB data.
+ * toggle cross-links /, CTAs route by session, stat strip mixes live DB
+ * counts with fixed capabilities and never shows a placeholder word.
  */
 export default function HireWowHero({
   stats,
   ctaHref,
   signedIn,
 }: {
-  stats: HireHeroStats;
+  stats: HeroStat[];
   ctaHref: string;
   signedIn: boolean;
 }) {
@@ -62,12 +67,6 @@ export default function HireWowHero({
     return () => ctx.revert();
   }, []);
 
-  const cells = [
-    { v: stats.workspaces > 0 ? `${stats.workspaces}+` : "Live", l: "hiring workspaces" },
-    { v: stats.sessions > 0 ? `${stats.sessions}+` : "Replay", l: "sessions on record" },
-    { v: stats.challenges > 0 ? `${stats.challenges}+` : "8-lang", l: "challenges ready to assign" },
-  ];
-
   return (
     <section ref={root} data-dark-hero className="wow-noise relative -mt-16 overflow-hidden bg-bg text-fg">
       <div aria-hidden className="pointer-events-none absolute inset-0">
@@ -104,7 +103,7 @@ export default function HireWowHero({
             <Link href="/" className="rounded-full px-4 py-1.5 text-fg/60 transition hover:text-fg">← Developers</Link>
             <span aria-current="page" className="rounded-full bg-secondary px-4 py-1.5 font-bold text-secondary-ink">Hiring teams</span>
           </nav>
-          <span className="flex items-center gap-1.5 rounded-full border border-fg/15 bg-fg/[0.06] px-4 py-2 font-mono text-[11px] uppercase tracking-[0.2em] text-fg/80 backdrop-blur-md">
+          <span className="hidden items-center gap-1.5 rounded-full border border-fg/15 bg-fg/[0.06] px-4 py-2 font-mono sm:flex text-[11px] uppercase tracking-[0.2em] text-fg/80 backdrop-blur-md">
             <Building2 className="h-3.5 w-3.5 text-secondary" /> Boss mode
           </span>
         </div>
@@ -121,27 +120,29 @@ export default function HireWowHero({
           along, and by morning the list is sorted by who can actually do the job.
         </p>
 
-        <div className="wow-hire-fade mt-8 flex flex-col items-center gap-3 sm:flex-row">
-          <Link href={ctaHref} className="group flex items-center gap-2 rounded-full bg-fg px-8 py-4 text-sm font-black uppercase tracking-wider text-bg transition hover:scale-[1.03]">
+        <div className="wow-hire-fade mt-8 flex w-full max-w-xs flex-col items-stretch gap-3 sm:w-auto sm:max-w-none sm:flex-row sm:items-center">
+          <Link href={ctaHref} className="group flex items-center justify-center gap-2 rounded-full bg-fg px-8 py-4 text-sm font-black uppercase tracking-wider text-bg transition hover:scale-[1.03]">
             {signedIn ? "Open your workspace" : "Create a workspace"}
             <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
           </Link>
-          <Link href="/pricing" className="flex items-center gap-2 rounded-full border border-fg/25 bg-fg/5 px-8 py-4 text-sm font-bold uppercase tracking-wider text-fg backdrop-blur transition hover:border-fg/50">
+          <Link href="/pricing" className="flex items-center justify-center gap-2 rounded-full border border-fg/25 bg-fg/5 px-8 py-4 text-sm font-bold uppercase tracking-wider text-fg backdrop-blur transition hover:border-fg/50">
             See pricing
           </Link>
         </div>
 
-        <div className="wow-hire-fade mt-10 grid w-full max-w-2xl grid-cols-3 gap-px overflow-hidden rounded-2xl border border-fg/12 bg-fg/10">
-          {cells.map((s) => (
-            <div key={s.l} className="bg-surface/95 px-4 py-4">
-              <p className="wow-font-display text-2xl tabular-nums md:text-3xl">{s.v}</p>
-              <p className="mt-1 font-mono text-[11px] uppercase leading-snug tracking-[0.16em] text-fg/55 md:text-[11px]">{s.l}</p>
-            </div>
-          ))}
-        </div>
+        {stats.length > 0 && (
+          <dl className="wow-hire-fade mt-10 grid w-full max-w-2xl grid-cols-3 gap-px overflow-hidden rounded-2xl border border-fg/12 bg-fg/10">
+            {stats.map((s) => (
+              <div key={s.label} className="flex flex-col-reverse justify-end bg-surface/95 px-3 py-4 sm:px-4">
+                <dt className="mt-1 text-[12px] leading-snug text-muted sm:text-[13px]">{s.label}</dt>
+                <dd className="wow-font-display text-2xl tabular-nums md:text-3xl">{s.value}</dd>
+              </div>
+            ))}
+          </dl>
+        )}
 
-        <p className="wow-hire-fade mt-6 flex items-center gap-1.5 font-mono text-[11px] uppercase tracking-[0.18em] text-fg/55">
-          <ShieldCheck className="h-3.5 w-3.5 text-success" /> Capgemini · SakSoft · and more screen on evidence, not order
+        <p className="wow-hire-fade mt-6 text-balance text-center font-mono text-[11px] uppercase leading-relaxed tracking-[0.18em] text-fg/55">
+          <ShieldCheck className="mr-1.5 inline h-3.5 w-3.5 align-[-3px] text-success" />Capgemini · SakSoft · and more screen on evidence, not order
         </p>
       </div>
     </section>

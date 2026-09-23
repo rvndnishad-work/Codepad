@@ -4,10 +4,10 @@ import { prisma } from "@/lib/prisma";
 import { getPricingConfig } from "@/lib/pricing-plans";
 import "@/components/wow/wow.css";
 import "@/components/home-wow/home-wow.css";
-import HireWowHero from "@/components/hire-wow/HireWowHero";
+import HireWowHero, { type HeroStat } from "@/components/hire-wow/HireWowHero";
 import HireWowFlood from "@/components/hire-wow/HireWowFlood";
 import HireWowPipeline from "@/components/hire-wow/HireWowPipeline";
-import HireWowRoom, { type RoomStat } from "@/components/hire-wow/HireWowRoom";
+import HireWowRoom from "@/components/hire-wow/HireWowRoom";
 import HireWowFeatures from "@/components/hire-wow/HireWowFeatures";
 import HireWowEvidence from "@/components/hire-wow/HireWowEvidence";
 import HireWowTrust from "@/components/hire-wow/HireWowTrust";
@@ -35,7 +35,7 @@ export default async function HirePage() {
     getPricingConfig(),
   ]);
 
-  const roomStats = buildStats({ sessionCount, challengeCount, workspaceCount });
+  const heroStats = buildStats({ sessionCount, challengeCount, workspaceCount });
   const ctaHref = session?.user ? "/dashboard" : "/login?next=/dashboard";
 
   return (
@@ -43,7 +43,7 @@ export default async function HirePage() {
       <ScrollProgressBar />
 
       <HireWowHero
-        stats={{ workspaces: workspaceCount, sessions: sessionCount, challenges: challengeCount }}
+        stats={heroStats}
         ctaHref={ctaHref}
         signedIn={!!session?.user}
       />
@@ -52,7 +52,7 @@ export default async function HirePage() {
 
       <HireWowPipeline />
 
-      <HireWowRoom roomStats={roomStats} />
+      <HireWowRoom />
 
       <section className="bg-bg px-4 py-24 transition-colors md:py-32">
         <div className="mx-auto max-w-6xl">
@@ -78,19 +78,19 @@ function buildStats(counts: {
   sessionCount: number;
   challengeCount: number;
   workspaceCount: number;
-}): RoomStat[] {
-  const stats: RoomStat[] = [];
+}): HeroStat[] {
+  const stats: HeroStat[] = [];
   if (counts.sessionCount >= 50)
     stats.push({ value: formatCount(counts.sessionCount), label: "Interview sessions run", live: true });
   if (counts.challengeCount >= 10)
-    stats.push({ value: formatCount(counts.challengeCount), label: "Curated challenges ready to assign", live: true });
+    stats.push({ value: formatCount(counts.challengeCount), label: "Challenges ready to assign", live: true });
   if (counts.workspaceCount >= 25)
     stats.push({ value: formatCount(counts.workspaceCount), label: "Hiring workspaces", live: true });
 
   const capabilities = [
-    { value: "8", label: "Execution languages, server-graded", live: false },
-    { value: "3", label: "ATS integrations: Greenhouse, Lever, Ashby", live: false },
-    { value: "100%", label: "Attempts captured with replay + integrity signals", live: false },
+    { value: "8", label: "Languages, server-graded", live: false },
+    { value: "3", label: "ATS integrations", live: false },
+    { value: "100%", label: "Attempts kept as a replay", live: false },
   ];
   for (const c of capabilities) {
     if (stats.length >= 3) break;

@@ -3,14 +3,11 @@ import { RecruiterDemoCard } from "../../app/RecruiterDemoCard";
 import WowReveal from "@/components/wow/WowReveal";
 import { ProctoringDemo } from "./HireWowFeatures";
 
-/** `live` marks counts read from the database; the rest are fixed capabilities. */
-export type RoomStat = { value: string; label: string; live: boolean };
-
 /**
  * The live room and its integrity feed, side by side: the interview demo on
- * the left, the proctor feed it produces on the right, platform numbers below.
+ * the left, the proctor feed it produces on the right.
  */
-export default function HireWowRoom({ roomStats }: { roomStats: RoomStat[] }) {
+export default function HireWowRoom() {
   return (
     <section className="relative overflow-hidden bg-surface px-4 py-24 text-fg transition-colors md:py-32">
       <div aria-hidden className="pointer-events-none absolute right-[-160px] top-1/4 h-[420px] w-[420px] rounded-full bg-secondary/15 blur-[130px]" />
@@ -40,19 +37,6 @@ export default function HireWowRoom({ roomStats }: { roomStats: RoomStat[] }) {
           </WowReveal>
         </div>
 
-        <div className="mt-5 grid grid-cols-1 gap-5 sm:grid-cols-3">
-          {roomStats.map((s, i) => (
-            <WowReveal key={s.label} delay={i * 0.07} className="h-full">
-              <div className="flex h-full flex-col justify-center gap-2 rounded-3xl border border-border bg-panel p-6 backdrop-blur-sm">
-                <span className="flex items-center gap-2 font-mono text-[11px] uppercase tracking-[0.2em] text-secondary">
-                  <span className="h-[6px] w-[6px] rounded-full bg-secondary" aria-hidden /> {s.live ? "Live count" : "Built in"}
-                </span>
-                <span className="wow-font-display text-4xl tabular-nums">{s.value}</span>
-                <span className="text-[12.5px] leading-snug text-muted">{s.label}</span>
-              </div>
-            </WowReveal>
-          ))}
-        </div>
       </div>
     </section>
   );

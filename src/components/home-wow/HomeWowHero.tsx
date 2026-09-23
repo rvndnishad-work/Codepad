@@ -6,6 +6,7 @@ import dynamic from "next/dynamic";
 import gsap from "gsap";
 import { ArrowRight, Play, Sparkles, Trophy, Zap } from "lucide-react";
 import { prefersReducedMotion } from "@/components/wow/motion";
+import CountUp from "@/components/wow/CountUp";
 
 const CodeVerse3D = dynamic(() => import("@/components/wow/CodeVerse3D"), { ssr: false });
 
@@ -205,7 +206,7 @@ export default function HomeWowHero({
           >
             {statTiles.map((s) => (
               <div key={s.l} className="bg-surface/95 px-4 py-4">
-                <p className="wow-font-display text-2xl tabular-nums md:text-3xl">{s.v}</p>
+                <p className="wow-font-display text-2xl tabular-nums md:text-3xl"><CountUp value={s.v} /></p>
                 <p className="mt-1 text-[13px] leading-snug text-subtle">{s.l}</p>
               </div>
             ))}

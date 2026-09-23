@@ -6,6 +6,7 @@ import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { prefersReducedMotion } from "@/components/wow/motion";
 import { Flame, Clock, Swords, ArrowRight, Crown, Lock } from "lucide-react";
+import RevealLines from "@/components/wow/RevealLines";
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -49,7 +50,7 @@ export default function ArenaGrid({ picks }: { picks: ArenaPick[] }) {
         <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
           <div>
             <p className="flex items-center gap-2 font-mono text-xs uppercase tracking-[0.12em] text-subtle"><Swords className="h-4 w-4" /> featured challenges</p>
-            <h2 className="wow-font-display mt-3 text-4xl md:text-5xl lg:text-6xl">Pick a problem.<br />Beat the tests<span className="text-accent">.</span></h2>
+            <RevealLines className="wow-font-display mt-3 text-4xl md:text-5xl lg:text-6xl" lines={[<span key="l0">Pick a problem.</span>, <span key="l1">Beat the tests<span className="text-accent">.</span></span>]} />
           </div>
           <Link href="/challenges" className="group flex w-fit items-center gap-2 rounded-full border border-border bg-panel px-6 py-3 text-xs font-semibold transition hover:border-fg/30">
             All challenges <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
@@ -60,7 +61,7 @@ export default function ArenaGrid({ picks }: { picks: ArenaPick[] }) {
           {picks.map((c) => {
             const d = DIFF[c.difficulty] ?? { label: c.difficulty, color: "rgb(var(--c-accent-2))" };
             return (
-              <article key={c.slug} className="wow-arena-card wow-card-glow group relative flex h-full flex-col overflow-hidden rounded-3xl border border-border bg-panel p-5">
+              <article key={c.slug} data-spotlight className="wow-arena-card wow-card-glow group relative flex h-full flex-col overflow-hidden rounded-3xl border border-border bg-panel p-5">
                 <div className="flex flex-wrap items-center gap-2 font-mono text-xs uppercase tracking-widest">
                   {c.featured && <span className="flex items-center gap-1 rounded-full bg-fg px-2.5 py-0.5 font-semibold text-bg"><Flame className="h-3 w-3" aria-hidden /> staff pick</span>}
                   {c.premium && <span className="flex items-center gap-1 rounded-full bg-accent px-2.5 py-0.5 font-bold text-accent-ink"><Crown className="h-3 w-3" aria-hidden /> pro</span>}

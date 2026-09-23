@@ -14,6 +14,7 @@ import HomeWowStories from "@/components/home-wow/HomeWowStories";
 import WowFinal from "@/components/wow/WowFinal";
 import { type BlogFeedEntry } from "@/components/BlogFeedItem";
 import { techLabel } from "@/lib/interview-questions/shared";
+import SpotlightScope from "@/components/wow/SpotlightScope";
 
 async function loadStats() {
   try {
@@ -194,6 +195,7 @@ export default async function HomePage() {
 
   return (
     <div className="wow-scope min-h-screen bg-bg transition-colors">
+      <SpotlightScope />
       <HomeWowHero
         stats={{ questions: stats.prepQuestions, challenges: stats.totalChallenges, sessions: stats.interviewsRun }}
         userName={welcomeData?.name}

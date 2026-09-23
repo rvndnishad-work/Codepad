@@ -13,6 +13,7 @@ import HireWowEvidence from "@/components/hire-wow/HireWowEvidence";
 import HireWowTrust from "@/components/hire-wow/HireWowTrust";
 import HireWowFinal from "@/components/hire-wow/HireWowFinal";
 import ScrollProgressBar from "./ScrollProgressBar";
+import SpotlightScope from "@/components/wow/SpotlightScope";
 
 export const metadata: Metadata = {
   title: "Screen 1,000 Applicants Without Reading 1,000 Resumes — Interviewpad for Hiring Teams",
@@ -40,6 +41,7 @@ export default async function HirePage() {
 
   return (
     <div className="wow-scope min-h-screen bg-bg transition-colors">
+      <SpotlightScope />
       <ScrollProgressBar />
 
       <HireWowHero

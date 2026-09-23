@@ -8,6 +8,7 @@ import {
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import WowReveal from "@/components/wow/WowReveal";
+import RevealLines from "@/components/wow/RevealLines";
 
 /* ─── Shared helpers (behavior identical to the classic demos) ─── */
 function useAutoLoop(run: () => void, isDone: boolean, delay = 3500) {
@@ -823,7 +824,7 @@ export default function HireWowFeatures() {
     <div className="space-y-2">
       <WowReveal>
         <p className="flex items-center gap-2 font-mono text-xs uppercase tracking-[0.12em] text-secondary"><Brain className="h-3.5 w-3.5" /> the product</p>
-        <h2 className="wow-font-display mt-3 text-5xl md:text-7xl">Four surfaces,<br /><span className="wow-gradient-boss">all of them live.</span></h2>
+        <RevealLines className="wow-font-display mt-3 text-5xl md:text-7xl" lines={[<span key="l0">Four surfaces,</span>, <span key="l1" className="wow-gradient-boss">all of them live.</span>]} />
         <p className="mt-4 max-w-2xl text-[15px] leading-relaxed text-muted">
           Challenge authoring over MCP, the multiplayer room, grading and
           rubrics. Pick one: each demo below is running on this page.

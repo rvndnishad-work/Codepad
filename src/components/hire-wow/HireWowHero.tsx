@@ -6,6 +6,7 @@ import dynamic from "next/dynamic";
 import gsap from "gsap";
 import { ArrowRight, Building2, ShieldCheck } from "lucide-react";
 import HireHeroTypewriter from "./HireHeroTypewriter";
+import CountUp from "@/components/wow/CountUp";
 
 const CodeVerse3D = dynamic(() => import("@/components/wow/CodeVerse3D"), { ssr: false });
 
@@ -136,7 +137,7 @@ export default function HireWowHero({
             {stats.map((s) => (
               <div key={s.label} className="flex flex-col-reverse justify-end bg-surface/95 px-3 py-4 sm:px-4">
                 <dt className="mt-1 text-[12px] leading-snug text-muted sm:text-[13px]">{s.label}</dt>
-                <dd className="wow-font-display text-2xl tabular-nums md:text-3xl">{s.value}</dd>
+                <dd className="wow-font-display text-2xl tabular-nums md:text-3xl"><CountUp value={s.value} /></dd>
               </div>
             ))}
           </dl>

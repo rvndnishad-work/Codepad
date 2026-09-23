@@ -1,7 +1,22 @@
 import { ShieldCheck, Lock, KeyRound, ScrollText, Network, History } from "lucide-react";
 import WowReveal from "@/components/wow/WowReveal";
+import type { PricingPlanDef } from "@/lib/pricing-plans";
+import PricingTeaser from "@/app/hire/PricingTeaser";
+import { CreditsDemo } from "./HireWowFeatures";
 
-/** Same six shipped mechanisms as the classic trust band — WOW cards. */
+/** Copy beside the live billing demo. Kept here: a client module cannot export data to a server component. */
+const BILLING_COPY = {
+  title: "Credit-based",
+  titleAccent: "billing",
+  desc: "Screenings are billed as credits on top of seats, tracked live. Set seat bounds, cap workspace limits, and watch spend as it happens.",
+  bullets: [
+    "Live credit gauge with usage-per-assessment breakdown",
+    "Itemized recent usage history with cost tracking",
+    "Monthly spend analytics with trend visualization",
+  ],
+};
+
+/** Six shipped security mechanisms, then pricing and the live billing demo. */
 const ITEMS = [
   {
     icon: Network,
@@ -35,14 +50,14 @@ const ITEMS = [
   },
 ];
 
-export default function HireWowTrust() {
+export default function HireWowTrust({ plans }: { plans: PricingPlanDef[] }) {
   return (
-    <section className="relative bg-[var(--wow-bg)] px-4 py-24 text-[var(--wow-fg)] transition-colors md:py-32">
+    <section className="relative bg-bg px-4 py-24 text-fg transition-colors md:py-32">
       <div className="mx-auto max-w-6xl">
         <WowReveal>
-          <p className="flex items-center gap-2 font-mono text-[11px] uppercase tracking-[0.3em] text-[#8b93ff]"><ShieldCheck className="h-3.5 w-3.5" /> built for trust</p>
-          <h2 className="wow-font-display mt-3 text-5xl md:text-7xl">CANDIDATES' WORK,<br /><span className="wow-gradient-boss">HANDLED SERIOUSLY.</span></h2>
-          <p className="mt-4 max-w-xl text-[15px] leading-relaxed text-[var(--wow-muted)]">
+          <p className="flex items-center gap-2 font-mono text-xs uppercase tracking-[0.12em] text-secondary"><ShieldCheck className="h-3.5 w-3.5" /> built for trust</p>
+          <h2 className="wow-font-display mt-3 text-5xl md:text-7xl">Candidates&apos; work,<br /><span className="wow-gradient-boss">handled seriously.</span></h2>
+          <p className="mt-4 max-w-xl text-[15px] leading-relaxed text-muted">
             Hiring data is sensitive. None of these are roadmap promises — each
             one names a mechanism that is running today.
           </p>
@@ -51,18 +66,44 @@ export default function HireWowTrust() {
         <div className="mt-10 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {ITEMS.map((item, i) => (
             <WowReveal key={item.title} delay={(i % 3) * 0.07}>
-              <article className="group flex h-full flex-col gap-3 rounded-3xl border border-[var(--wow-card-border)] bg-[var(--wow-card)] p-6 backdrop-blur-sm transition hover:-translate-y-1 hover:border-[#8b93ff]/60">
+              <article className="group flex h-full flex-col gap-3 rounded-3xl border border-border bg-surface p-6 backdrop-blur-sm transition hover:-translate-y-1 hover:border-secondary/60">
                 <div className="flex items-center gap-3">
-                  <span className="grid h-10 w-10 place-items-center rounded-2xl bg-[#8b93ff]/10 text-[#8b93ff] transition group-hover:bg-[#8b93ff]/20">
+                  <span className="grid h-10 w-10 place-items-center rounded-2xl bg-secondary/10 text-secondary transition group-hover:bg-secondary/20">
                     <item.icon className="h-4 w-4" />
                   </span>
-                  <span className="font-mono text-xs font-bold tabular-nums text-[var(--wow-faint)]">{String(i + 1).padStart(2, "0")}</span>
+                  <span className="font-mono text-xs font-bold tabular-nums text-subtle">{String(i + 1).padStart(2, "0")}</span>
                 </div>
                 <h3 className="text-[15px] font-bold tracking-[-0.015em]">{item.title}</h3>
-                <p className="text-[12.5px] leading-relaxed text-[var(--wow-muted)]">{item.body}</p>
+                <p className="text-[12.5px] leading-relaxed text-muted">{item.body}</p>
               </article>
             </WowReveal>
           ))}
+        </div>
+
+        <div className="mt-24">
+          <PricingTeaser plans={plans} />
+        </div>
+
+        <div className="mt-10 grid grid-cols-1 items-center gap-8 md:grid-cols-2 md:gap-12">
+          <WowReveal>
+            <h4 className="wow-font-display text-3xl leading-[0.95] md:text-4xl">
+              {BILLING_COPY.title} <span className="wow-gradient-boss">{BILLING_COPY.titleAccent}</span>
+            </h4>
+            <p className="mt-4 max-w-md text-[15px] leading-relaxed text-muted">{BILLING_COPY.desc}</p>
+            <ul className="mt-5 space-y-2.5">
+              {BILLING_COPY.bullets.map((b) => (
+                <li key={b} className="flex items-start gap-2.5 text-sm text-muted">
+                  <span aria-hidden className="mt-[7px] h-[5px] w-[5px] shrink-0 bg-secondary" />
+                  {b}
+                </li>
+              ))}
+            </ul>
+          </WowReveal>
+          <WowReveal delay={0.08}>
+            <div className="flex h-[440px] w-full">
+              <CreditsDemo />
+            </div>
+          </WowReveal>
         </div>
       </div>
     </section>

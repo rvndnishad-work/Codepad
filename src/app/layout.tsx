@@ -1,7 +1,7 @@
 import "./globals.css";
 import type { Metadata } from "next";
 import { Suspense } from "react";
-import { Inter, Fira_Code } from "next/font/google";
+import { Geist, Geist_Mono, Fira_Code } from "next/font/google";
 import ThemedToaster from "@/components/ThemedToaster";
 import RouteProgress from "@/components/RouteProgress";
 import Header from "@/components/Header";
@@ -11,11 +11,10 @@ import FooterShell from "@/components/FooterShell";
 
 import { ThemeProvider } from "@/components/ThemeProvider";
 
-// Inter is the de-facto UI font for premium dev tools (Vercel, Linear,
-// GitHub, Stripe). It also enables the OpenType character variants
-// (cv02/cv03/cv04, ss01) that globals.css already opts into via
-// font-feature-settings — those are no-ops on the previous font.
-const inter = Inter({
+// Geist is the UI and display face: engineered, slightly condensed and
+// crisp at both 14px body and 96px headlines, so the marketing pages and
+// the app share one family instead of leaning on weight 900 for character.
+const geist = Geist({
   subsets: ["latin"],
   variable: "--font-sans",
   display: "swap",
@@ -28,6 +27,15 @@ const inter = Inter({
 const firaCode = Fira_Code({
   subsets: ["latin"],
   variable: "--font-mono",
+  display: "swap",
+});
+
+// Geist Mono is the label face on the marketing pages (/ and /hire), set
+// through the .wow-scope class. It is narrower and quieter than Fira Code in
+// small uppercase labels; editors keep Fira Code for its ligatures.
+const geistMono = Geist_Mono({
+  subsets: ["latin"],
+  variable: "--font-geist-mono",
   display: "swap",
 });
 
@@ -73,7 +81,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html
       lang="en"
-      className={`${inter.variable} ${firaCode.variable}`}
+      className={`${geist.variable} ${geistMono.variable} ${firaCode.variable}`}
       suppressHydrationWarning
     >
       <body

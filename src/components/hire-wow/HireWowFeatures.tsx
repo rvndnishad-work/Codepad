@@ -27,7 +27,7 @@ function ReplayBtn({ onClick }: { onClick: () => void }) {
     <button
       type="button"
       onClick={onClick}
-      className="absolute right-4 top-4 z-10 flex items-center gap-1.5 rounded-full border border-[var(--wow-card-border)] bg-[var(--wow-chip)] px-3 py-1.5 font-mono text-[10px] font-bold uppercase tracking-[0.16em] text-[var(--wow-faint)] backdrop-blur transition hover:border-[#8b93ff] hover:text-[var(--wow-fg)]"
+      className="flex shrink-0 items-center gap-1.5 rounded-full border border-border bg-panel px-3 py-1.5 font-mono text-xs font-medium uppercase tracking-[0.12em] text-subtle backdrop-blur transition hover:border-secondary hover:text-fg"
     >
       Replay
       <RotateCcw className="h-3 w-3" />
@@ -37,16 +37,16 @@ function ReplayBtn({ onClick }: { onClick: () => void }) {
 
 function DemoShell({ icon: Icon, label, action, children }: { icon: React.ComponentType<{ className?: string }>; label: string; action: React.ReactNode; children: React.ReactNode }) {
   return (
-    <div className="relative flex h-full w-full flex-col gap-4 overflow-hidden rounded-3xl border border-[var(--wow-card-border)] bg-[var(--wow-card)] p-5 backdrop-blur-sm md:p-6">
-      {action}
+    <div className="relative flex h-full w-full flex-col gap-4 overflow-hidden rounded-3xl border border-border bg-surface p-5 backdrop-blur-sm md:p-6">
       <div className="flex items-center gap-2.5">
-        <span className="grid h-8 w-8 place-items-center rounded-xl bg-gradient-to-br from-[#8b93ff]/25 to-[#ff2fb3]/20 text-[#8b93ff]">
+        <span className="grid h-8 w-8 shrink-0 place-items-center rounded-xl bg-secondary/15 text-secondary-soft">
           <Icon className="h-4 w-4" />
         </span>
-        <span className="font-mono text-[11px] font-bold uppercase tracking-[0.2em] text-[var(--wow-faint)]">{label}</span>
-        <span className="ml-auto flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-widest text-emerald-500">
-          <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-400" /> live
+        <span className="font-mono text-xs font-medium uppercase tracking-[0.12em] text-subtle">{label}</span>
+        <span className="ml-auto flex items-center gap-1.5 font-mono text-xs uppercase tracking-widest text-success">
+          <span className="h-1.5 w-1.5 motion-safe:animate-pulse rounded-full bg-success" /> live
         </span>
+        {action}
       </div>
       {children}
     </div>
@@ -64,7 +64,6 @@ type SectionShellProps = {
 };
 
 function SectionShell({ index, icon: Icon, title, titleAccent, desc, bullets, children }: SectionShellProps) {
-  const isEven = index % 2 === 1;
   const demoWrapRef = useRef<HTMLDivElement>(null);
   const [demoInView, setDemoInView] = useState(false);
   useEffect(() => {
@@ -79,27 +78,27 @@ function SectionShell({ index, icon: Icon, title, titleAccent, desc, bullets, ch
 
   return (
     <WowReveal>
-      <div className="group relative overflow-hidden rounded-[2rem] border border-[var(--wow-card-border)] bg-[var(--wow-card)] p-6 backdrop-blur-sm transition-all duration-500 hover:border-[#8b93ff]/50 hover:shadow-[0_24px_80px_-24px_rgba(139,147,255,0.45)] md:p-10">
-        <div aria-hidden className="pointer-events-none absolute -right-24 -top-24 h-64 w-64 rounded-full bg-[#8b93ff]/10 opacity-60 blur-[80px] transition-opacity duration-500 group-hover:opacity-100" />
-        <div className={`relative z-10 flex flex-col ${isEven ? "md:flex-row-reverse" : "md:flex-row"} items-center gap-8 md:gap-12`}>
+      <div className="group relative overflow-hidden rounded-[2rem] border border-border bg-surface p-6 backdrop-blur-sm transition-all duration-500 hover:border-secondary/50 hover:shadow-[0_24px_80px_-24px_rgb(var(--c-accent-2)/0.45)] md:p-10">
+        <div aria-hidden className="pointer-events-none absolute -right-24 -top-24 h-64 w-64 rounded-full bg-secondary/10 opacity-60 blur-[80px] transition-opacity duration-500 group-hover:opacity-100" />
+        <div className={`relative z-10 flex flex-col md:flex-row items-center gap-8 md:gap-12`}>
           <div className="min-w-0 flex-1 space-y-5">
             <div className="flex items-center gap-3">
-              <span className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-gradient-to-br from-[#8b93ff] to-[#ff2fb3] text-white shadow-[0_8px_24px_-8px_rgba(139,147,255,0.7)]">
+              <span className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl border border-secondary/30 bg-secondary/15 text-secondary-soft">
                 <Icon className="h-5 w-5" />
               </span>
-              <span className="rounded-full bg-[#8b93ff]/10 px-2.5 py-1 font-mono text-[10px] font-bold uppercase tracking-[0.18em] text-[#8b93ff]">
+              <span className="rounded-full bg-secondary/10 px-2.5 py-1 font-mono text-xs font-medium uppercase tracking-[0.12em] text-secondary">
                 Feature {index + 1}
               </span>
             </div>
             <h3 className="wow-font-display text-3xl leading-[0.95] tracking-tight md:text-4xl">
               {title} <span className="wow-gradient-boss">{titleAccent}</span>
             </h3>
-            <p className="max-w-md text-sm leading-relaxed text-[var(--wow-muted)] md:text-base">{desc}</p>
+            <p className="max-w-md text-sm leading-relaxed text-muted md:text-base">{desc}</p>
             <ul className="space-y-2.5">
               {bullets.map((b, i) => (
-                <li key={i} className="flex items-start gap-2.5 text-sm text-[var(--wow-muted)]">
-                  <span className="mt-0.5 grid h-5 w-5 shrink-0 place-items-center rounded-full bg-[#8b93ff]/10">
-                    <ChevronRight className="h-3 w-3 text-[#8b93ff]" />
+                <li key={i} className="flex items-start gap-2.5 text-sm text-muted">
+                  <span className="mt-0.5 grid h-5 w-5 shrink-0 place-items-center rounded-full bg-secondary/10">
+                    <ChevronRight className="h-3 w-3 text-secondary" />
                   </span>
                   <span>{b}</span>
                 </li>
@@ -110,7 +109,7 @@ function SectionShell({ index, icon: Icon, title, titleAccent, desc, bullets, ch
             {demoInView ? (
               children
             ) : (
-              <div className="h-full w-full animate-pulse rounded-3xl border border-[var(--wow-card-border)] bg-[var(--wow-stage)]" aria-hidden />
+              <div className="h-full w-full motion-safe:animate-pulse rounded-3xl border border-border bg-panel" aria-hidden />
             )}
           </div>
         </div>
@@ -168,18 +167,18 @@ function ProctoringDemo() {
 
   const trust = TRUST_SCORES[visibleCount] ?? 100;
   const sevStyle = {
-    green: "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400",
-    amber: "bg-amber-500/15 text-amber-600 dark:text-amber-400",
-    red: "bg-red-500/15 text-red-600 dark:text-red-400",
+    green: "bg-success/15 text-success dark:text-success",
+    amber: "bg-warning/15 text-warning dark:text-warning",
+    red: "bg-danger/15 text-danger dark:text-danger",
   };
-  const trustBar = trust > 70 ? "bg-gradient-to-r from-emerald-400 to-emerald-500" : trust > 40 ? "bg-gradient-to-r from-amber-400 to-amber-500" : "bg-gradient-to-r from-red-400 to-red-500";
-  const trustText = trust > 70 ? "text-emerald-600 dark:text-emerald-400" : trust > 40 ? "text-amber-600 dark:text-amber-400" : "text-red-600 dark:text-red-400";
+  const trustBar = trust > 70 ? "bg-gradient-to-r from-success to-success" : trust > 40 ? "bg-gradient-to-r from-warning to-warning" : "bg-gradient-to-r from-danger to-danger";
+  const trustText = trust > 70 ? "text-success dark:text-success" : trust > 40 ? "text-warning dark:text-warning" : "text-danger dark:text-danger";
 
   return (
     <DemoShell icon={Shield} label="Live Proctor Feed" action={<ReplayBtn onClick={start} />}>
-      <div className="flex items-center gap-3 rounded-2xl border border-[var(--wow-card-border)] bg-[var(--wow-stage)] p-3">
-        <span className="font-mono text-[10px] font-bold uppercase tracking-[0.16em] text-[var(--wow-faint)]">Trust</span>
-        <div className="h-2.5 flex-1 overflow-hidden rounded-full bg-[var(--wow-card-border)]">
+      <div className="flex items-center gap-3 rounded-2xl border border-border bg-panel p-3">
+        <span className="font-mono text-xs font-medium uppercase tracking-[0.12em] text-subtle">Trust</span>
+        <div className="h-2.5 flex-1 overflow-hidden rounded-full bg-border">
           <motion.div
             className={`h-full rounded-full ${trustBar}`}
             animate={{ width: `${trust}%` }}
@@ -187,7 +186,7 @@ function ProctoringDemo() {
           />
         </div>
         <motion.span
-          className={`text-lg font-black tabular-nums ${trustText}`}
+          className={`text-lg font-semibold tabular-nums ${trustText}`}
           key={trust}
           initial={{ scale: 1.3, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
@@ -202,12 +201,12 @@ function ProctoringDemo() {
               key={i}
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
-              className="flex items-center gap-2 rounded-xl border border-[var(--wow-card-border)] bg-[var(--wow-stage)] p-2 text-xs"
+              className="flex items-center gap-2 rounded-xl border border-border bg-panel p-2 text-xs"
             >
-              <Clock className="h-3 w-3 shrink-0 text-[var(--wow-faint)]" />
-              <span className="font-mono text-[11px] tabular-nums text-[var(--wow-faint)]">00:{String((i + 1) * 4).padStart(2, "0")}</span>
-              <span className="flex-1 font-medium text-[var(--wow-fg)]">{ev.text}</span>
-              <span className={`rounded-full px-1.5 py-0.5 text-[11px] font-bold uppercase ${sevStyle[ev.severity as keyof typeof sevStyle]}`}>
+              <Clock className="h-3 w-3 shrink-0 text-subtle" />
+              <span className="font-mono text-xs tabular-nums text-subtle">00:{String((i + 1) * 4).padStart(2, "0")}</span>
+              <span className="flex-1 font-medium text-fg">{ev.text}</span>
+              <span className={`rounded-full px-1.5 py-0.5 text-xs font-bold uppercase ${sevStyle[ev.severity as keyof typeof sevStyle]}`}>
                 {ev.severity}
               </span>
             </motion.div>
@@ -278,14 +277,14 @@ function McpDemo() {
   }, [step, charIdx]);
 
   const labelColor: Record<string, string> = {
-    request: "text-amber-500",
-    response: "text-emerald-500",
-    result: "text-[#8b93ff]",
+    request: "text-warning",
+    response: "text-success",
+    result: "text-secondary",
   };
 
   return (
     <DemoShell icon={Cpu} label="MCP Console" action={<ReplayBtn onClick={start} />}>
-      <div ref={scrollRef} className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto pr-1 font-mono text-[11px]">
+      <div ref={scrollRef} className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto pr-1 font-mono text-xs">
         {MCP_STEPS.slice(0, step + 1).map((blk, i) => {
           const isCurrent = i === step;
           const shownText = isCurrent ? fullText.slice(0, charIdx) : blk.lines.join("\n");
@@ -294,15 +293,15 @@ function McpDemo() {
               key={i}
               initial={{ opacity: 0, y: 8 }}
               animate={{ opacity: 1, y: 0 }}
-              className="overflow-hidden rounded-2xl border border-[var(--wow-card-border)] bg-black/40 p-3 dark:bg-black/50"
+              className="overflow-hidden rounded-2xl border border-border bg-bg/40 p-3 dark:bg-bg/50"
             >
-              <div className={`mb-1.5 text-[11px] font-bold uppercase tracking-widest ${labelColor[blk.label] ?? "text-[var(--wow-faint)]"}`}>
+              <div className={`mb-1.5 text-xs font-bold uppercase tracking-widest ${labelColor[blk.label] ?? "text-subtle"}`}>
                 ← {blk.label}
               </div>
-              <pre className="whitespace-pre-wrap break-all leading-relaxed text-white/85">
+              <pre className="whitespace-pre-wrap break-all leading-relaxed text-fg/85">
                 {shownText}
                 {isCurrent && charIdx < fullText.length && (
-                  <span className="ml-px inline-block h-[1em] w-[6px] animate-pulse bg-[#ffe600] align-[-2px]" />
+                  <span className="ml-px inline-block h-[1em] w-[6px] motion-safe:animate-pulse bg-accent align-[-2px]" />
                 )}
               </pre>
             </motion.div>
@@ -317,9 +316,9 @@ function McpDemo() {
    3. MULTIPLAYER LIVE CODING
    ═══════════════════════════════════════════════════════════════ */
 const PARTICIPANTS = [
-  { name: "Alice", initials: "AL", color: "#818CF8", cursorLines: [3, 5, 7] },
-  { name: "Bob", initials: "BO", color: "#34D399", cursorLines: [1, 4, 6] },
-  { name: "Charlie", initials: "CH", color: "#FBBF24", cursorLines: [2, 8, 3] },
+  { name: "Alice", initials: "AL", color: "rgb(var(--c-accent-2-soft))", cursorLines: [3, 5, 7] },
+  { name: "Bob", initials: "BO", color: "rgb(var(--c-success))", cursorLines: [1, 4, 6] },
+  { name: "Charlie", initials: "CH", color: "rgb(var(--c-warning))", cursorLines: [2, 8, 3] },
 ];
 
 const EDITOR_LINES = [
@@ -365,26 +364,26 @@ function MultiplayerDemo() {
         {PARTICIPANTS.map((p, i) => (
           <div key={i} className="flex items-center gap-1.5">
             <div
-              className="flex h-7 w-7 items-center justify-center rounded-full border-2 text-[11px] font-bold text-white"
-              style={{ background: `${p.color}30`, borderColor: p.color }}
+              className="flex h-7 w-7 items-center justify-center rounded-full border-2 text-xs font-bold text-fg"
+              style={{ background: `color-mix(in srgb, ${p.color} 19%, transparent)`, borderColor: p.color }}
             >
               {p.initials}
             </div>
-            <span className="hidden text-[11px] font-bold text-[var(--wow-faint)] sm:inline">{p.name}</span>
-            <div className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
+            <span className="hidden text-xs font-bold text-subtle sm:inline">{p.name}</span>
+            <div className="h-1.5 w-1.5 rounded-full bg-success" />
           </div>
         ))}
-        <div className="ml-auto flex items-center gap-1 rounded-full bg-emerald-500/10 px-2 py-0.5 text-[11px] font-bold text-emerald-500">
+        <div className="ml-auto flex items-center gap-1 rounded-full bg-success/10 px-2 py-0.5 text-xs font-bold text-success">
           <Activity className="h-3 w-3" /> WebRTC
         </div>
       </div>
-      <div className="mb-1 min-h-0 flex-1 space-y-0.5 overflow-hidden rounded-2xl border border-[var(--wow-card-border)] bg-black/40 p-3 font-mono text-[11px] dark:bg-black/50">
+      <div className="mb-1 min-h-0 flex-1 space-y-0.5 overflow-hidden rounded-2xl border border-border bg-bg/40 p-3 font-mono text-xs dark:bg-bg/50">
         {EDITOR_LINES.map((line, li) => {
           const activeCursors = PARTICIPANTS.filter((p, pi) => tick > pi && p.cursorLines[Math.min(tick - 1, 2)] === li + 1);
           return (
             <div key={li} className="relative flex min-h-[1.4em] items-center gap-2">
-              <span className="w-4 select-none text-right tabular-nums text-[11px] text-white/25">{li + 1}</span>
-              <span className="whitespace-pre text-white/70">{line || " "}</span>
+              <span className="w-4 select-none text-right tabular-nums text-xs text-fg/25">{li + 1}</span>
+              <span className="whitespace-pre text-fg/70">{line || " "}</span>
               {activeCursors.map((c, ci) => (
                 <motion.div
                   key={ci}
@@ -392,8 +391,8 @@ function MultiplayerDemo() {
                   animate={{ opacity: 1, scale: 1 }}
                   className="absolute right-2 flex items-center gap-1"
                 >
-                  <div className="h-4 w-[2px] animate-pulse" style={{ background: c.color }} />
-                  <span className="rounded px-1 text-[11px] font-bold" style={{ color: c.color, background: `${c.color}20` }}>
+                  <div className="h-4 w-[2px] motion-safe:animate-pulse" style={{ background: c.color }} />
+                  <span className="rounded px-1 text-xs font-bold" style={{ color: c.color, background: `color-mix(in srgb, ${c.color} 12.5%, transparent)` }}>
                     {c.name}
                   </span>
                 </motion.div>
@@ -404,7 +403,7 @@ function MultiplayerDemo() {
       </div>
       <div className="flex min-h-[1.75rem] items-center gap-3">
         {tick >= 1 && tick < 3 && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex items-center gap-1.5 text-[11px] text-[var(--wow-faint)]">
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex items-center gap-1.5 text-xs text-subtle">
             <span className="font-bold" style={{ color: PARTICIPANTS[0].color }}>Alice</span>
             <span>is typing</span>
             <span className="flex gap-0.5">
@@ -424,10 +423,10 @@ function MultiplayerDemo() {
             <motion.div
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
-              className="flex items-center gap-2 rounded-full border border-[var(--wow-card-border)] bg-[var(--wow-stage)] px-3 py-1.5 text-[11px]"
+              className="flex items-center gap-2 rounded-full border border-border bg-panel px-3 py-1.5 text-xs"
             >
               <span className="font-bold" style={{ color: PARTICIPANTS[1].color }}>Bob:</span>
-              <span className="text-[var(--wow-muted)]">Should we use a min-heap here?</span>
+              <span className="text-muted">Should we use a min-heap here?</span>
             </motion.div>
           )}
         </AnimatePresence>
@@ -489,18 +488,18 @@ function GradingDemo() {
   return (
     <DemoShell icon={Workflow} label="Test Runner" action={<ReplayBtn onClick={start} />}>
       <div className="flex items-center justify-between">
-        <div className="text-sm font-black tabular-nums">
-          <span className="text-emerald-500">{passed}</span>
-          <span className="text-[var(--wow-faint)]">/{ran > 0 ? TESTS.length : "-"}</span>
-          <span className="ml-1 text-[11px] font-bold uppercase text-[var(--wow-faint)]">passed</span>
+        <div className="text-sm font-semibold tabular-nums">
+          <span className="text-success">{passed}</span>
+          <span className="text-subtle">/{ran > 0 ? TESTS.length : "-"}</span>
+          <span className="ml-1 text-xs font-bold uppercase text-subtle">passed</span>
         </div>
-        <span className="rounded-full bg-[#8b93ff]/10 px-2.5 py-1 font-mono text-[10px] font-bold uppercase tracking-[0.14em] text-[#8b93ff] tabular-nums">
+        <span className="rounded-full bg-secondary/10 px-2.5 py-1 font-mono text-xs font-medium uppercase tracking-[0.12em] text-secondary tabular-nums">
           {Math.round(pct)}%
         </span>
       </div>
-      <div className="h-2.5 overflow-hidden rounded-full bg-[var(--wow-card-border)]">
+      <div className="h-2.5 overflow-hidden rounded-full bg-border">
         <motion.div
-          className="h-full rounded-full bg-gradient-to-r from-[#8b93ff] via-[#ff2fb3] to-[#22d3ee]"
+          className="h-full rounded-full bg-secondary"
           animate={{ width: `${pct}%` }}
           transition={{ duration: 0.3, ease: "easeOut" }}
         />
@@ -512,15 +511,15 @@ function GradingDemo() {
               key={i}
               initial={{ opacity: 0, x: -16 }}
               animate={{ opacity: 1, x: 0 }}
-              className="flex items-center gap-2 rounded-xl border border-[var(--wow-card-border)] bg-[var(--wow-stage)] p-2 text-xs"
+              className="flex items-center gap-2 rounded-xl border border-border bg-panel p-2 text-xs"
             >
               {test.pass ? (
-                <Check className="h-3.5 w-3.5 shrink-0 text-emerald-500" />
+                <Check className="h-3.5 w-3.5 shrink-0 text-success" />
               ) : (
-                <X className="h-3.5 w-3.5 shrink-0 text-red-500" />
+                <X className="h-3.5 w-3.5 shrink-0 text-danger" />
               )}
-              <span className={`flex-1 font-medium ${test.pass ? "text-[var(--wow-fg)]" : "text-red-500"}`}>{test.name}</span>
-              <span className={`rounded-full px-1.5 py-0.5 text-[11px] font-bold uppercase ${test.pass ? "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400" : "bg-red-500/15 text-red-500"}`}>
+              <span className={`flex-1 font-medium ${test.pass ? "text-fg" : "text-danger"}`}>{test.name}</span>
+              <span className={`rounded-full px-1.5 py-0.5 text-xs font-bold uppercase ${test.pass ? "bg-success/15 text-success dark:text-success" : "bg-danger/15 text-danger"}`}>
                 {test.pass ? "PASS" : "FAIL"}
               </span>
             </motion.div>
@@ -535,11 +534,11 @@ function GradingDemo() {
    5. STRUCTURED RUBRICS & DOSSIERS
    ═══════════════════════════════════════════════════════════════ */
 const DIMENSIONS = [
-  { label: "Code Quality", value: 92, color: "#06B6D4" },
-  { label: "Architecture", value: 87, color: "#818CF8" },
-  { label: "Performance", value: 95, color: "#34D399" },
-  { label: "Communication", value: 78, color: "#FBBF24" },
-  { label: "Problem Solving", value: 91, color: "#F472B6" },
+  { label: "Code Quality", value: 92, color: "rgb(var(--c-accent-4))" },
+  { label: "Architecture", value: 87, color: "rgb(var(--c-accent-2-soft))" },
+  { label: "Performance", value: 95, color: "rgb(var(--c-success))" },
+  { label: "Communication", value: 78, color: "rgb(var(--c-warning))" },
+  { label: "Problem Solving", value: 91, color: "rgb(var(--c-accent-3))" },
 ];
 
 function RubricsDemo() {
@@ -580,28 +579,28 @@ function RubricsDemo() {
 
   return (
     <DemoShell icon={BarChart3} label="Evaluation Rubric" action={<ReplayBtn onClick={start} />}>
-      <div className="relative flex items-center justify-between gap-4 overflow-hidden rounded-2xl border border-[var(--wow-card-border)] bg-[var(--wow-stage)] p-3.5">
+      <div className="relative flex items-center justify-between gap-4 overflow-hidden rounded-2xl border border-border bg-panel p-3.5">
         <div>
-          <div className="text-3xl font-black tabular-nums text-[#22d3ee] leading-none">
-            {scoreNum}<span className="ml-0.5 text-sm font-normal text-[var(--wow-faint)]">/100</span>
+          <div className="text-3xl font-semibold tabular-nums text-accent-4 leading-none">
+            {scoreNum}<span className="ml-0.5 text-sm font-normal text-subtle">/100</span>
           </div>
-          <div className="mt-1.5 font-mono text-[10px] font-bold uppercase tracking-[0.16em] text-[var(--wow-faint)]">Overall Score</div>
+          <div className="mt-1.5 font-mono text-xs font-medium uppercase tracking-[0.12em] text-subtle">Overall Score</div>
         </div>
         <div className="text-right">
-          <div className="inline-block rounded-full border border-emerald-500/25 bg-emerald-500/10 px-2.5 py-1 text-xs font-bold uppercase tracking-wide text-emerald-600 dark:text-emerald-400">
+          <div className="inline-block rounded-full border border-success/25 bg-success/10 px-2.5 py-1 text-xs font-bold uppercase tracking-wide text-success dark:text-success">
             Strong Pass
           </div>
-          <div className="mt-1 font-mono text-[10px] font-bold uppercase tracking-[0.16em] text-[var(--wow-faint)]">Dossier generated</div>
+          <div className="mt-1 font-mono text-xs font-medium uppercase tracking-[0.12em] text-subtle">Dossier generated</div>
         </div>
       </div>
       <div className="space-y-2">
         {DIMENSIONS.map((dim, i) => (
           <div key={i}>
-            <div className="mb-1 flex justify-between text-[11px] font-bold">
-              <span className="text-[var(--wow-muted)]">{dim.label}</span>
-              <span className="tabular-nums text-[var(--wow-fg)]">{progress ? dim.value : 0}%</span>
+            <div className="mb-1 flex justify-between text-xs font-bold">
+              <span className="text-muted">{dim.label}</span>
+              <span className="tabular-nums text-fg">{progress ? dim.value : 0}%</span>
             </div>
-            <div className="h-2 overflow-hidden rounded-full bg-[var(--wow-card-border)]">
+            <div className="h-2 overflow-hidden rounded-full bg-border">
               <motion.div
                 className="h-full rounded-full"
                 style={{ background: `linear-gradient(90deg, ${dim.color}, ${dim.color}cc)` }}
@@ -618,7 +617,7 @@ function RubricsDemo() {
         animate={done ? { scale: [1, 1.03, 1] } : {}}
         transition={{ repeat: Infinity, duration: 2 }}
       >
-        <span className="flex cursor-default items-center gap-2 rounded-full border border-[#22d3ee]/30 bg-[#22d3ee]/10 px-5 py-2.5 font-mono text-[11px] font-bold uppercase tracking-[0.16em] text-[#22d3ee]">
+        <span className="flex cursor-default items-center gap-2 rounded-full border border-accent-4/30 bg-accent-4/10 px-5 py-2.5 font-mono text-xs font-medium uppercase tracking-[0.12em] text-accent-4">
           <FileText className="h-3.5 w-3.5" />
           Export PDF Dossier
         </span>
@@ -689,7 +688,7 @@ function CreditsDemo() {
       <div className="flex flex-1 flex-col items-center justify-center gap-6 sm:flex-row">
         <div className="relative flex h-32 w-32 shrink-0 items-center justify-center">
           <svg className="h-full w-full -rotate-90" viewBox="0 0 120 120">
-            <circle cx="60" cy="60" r="54" fill="none" stroke="var(--wow-card-border)" strokeWidth="8" />
+            <circle cx="60" cy="60" r="54" fill="none" stroke="rgb(var(--c-border))" strokeWidth="8" />
             <motion.circle
               cx="60" cy="60" r="54" fill="none" stroke="url(#wow-credit-grad)" strokeWidth="8"
               strokeLinecap="round"
@@ -699,17 +698,16 @@ function CreditsDemo() {
             />
             <defs>
               <linearGradient id="wow-credit-grad" x1="0" y1="0" x2="120" y2="120" gradientUnits="userSpaceOnUse">
-                <stop offset="0" stopColor="#8b93ff" />
-                <stop offset="0.55" stopColor="#ff2fb3" />
-                <stop offset="1" stopColor="#22d3ee" />
+                <stop offset="0" stopColor="rgb(var(--c-accent-2))" />
+                <stop offset="1" stopColor="rgb(var(--c-accent-2-soft))" />
               </linearGradient>
             </defs>
           </svg>
           <div className="absolute inset-0 flex flex-col items-center justify-center">
             <span className="wow-font-display text-2xl tabular-nums">{creditAnim}</span>
-            <span className="font-mono text-[10px] font-bold uppercase tracking-[0.14em] text-[var(--wow-faint)]">/1000 credits</span>
+            <span className="text-xs text-subtle">of 1,000 credits</span>
           </div>
-          <div aria-hidden className="absolute inset-0 -z-10 rounded-full bg-[#8b93ff]/15 blur-2xl" />
+          <div aria-hidden className="absolute inset-0 -z-10 rounded-full bg-secondary/15 blur-2xl" />
         </div>
         <div className="w-full min-w-0 flex-1 space-y-2.5">
           <AnimatePresence>
@@ -718,18 +716,18 @@ function CreditsDemo() {
                 key={i}
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="flex items-center gap-2 rounded-xl border border-[var(--wow-card-border)] bg-[var(--wow-stage)] p-2.5 text-xs"
+                className="flex items-center gap-2 rounded-xl border border-border bg-panel p-2.5 text-xs"
               >
-                <span className="grid h-7 w-7 shrink-0 place-items-center rounded-lg bg-[#8b93ff]/10 text-[#8b93ff]">
+                <span className="grid h-7 w-7 shrink-0 place-items-center rounded-lg bg-secondary/10 text-secondary">
                   <item.icon className="h-3.5 w-3.5" />
                 </span>
-                <span className="flex-1 font-medium text-[var(--wow-fg)]">{item.name}</span>
-                <span className="font-mono text-[11px] font-bold tabular-nums text-[#8b93ff]">{item.credits} cr</span>
+                <span className="flex-1 font-medium text-fg">{item.name}</span>
+                <span className="font-mono text-xs font-bold tabular-nums text-secondary">{item.credits} cr</span>
               </motion.div>
             ))}
           </AnimatePresence>
-          <div className="mt-1 flex items-center justify-between rounded-2xl border border-[var(--wow-card-border)] bg-[var(--wow-stage)] p-3">
-            <span className="font-mono text-[10px] font-bold uppercase tracking-[0.16em] text-[var(--wow-faint)]">Monthly Spend</span>
+          <div className="mt-1 flex items-center justify-between rounded-2xl border border-border bg-panel p-3">
+            <span className="font-mono text-xs font-medium uppercase tracking-[0.12em] text-subtle">Monthly Spend</span>
             <span className="wow-font-display text-xl tabular-nums">
               ${spend.toLocaleString()}
             </span>
@@ -743,21 +741,10 @@ function CreditsDemo() {
 /* ═══════════════════════════════════════════════════════════════
    ASSEMBLY — flowing feature river
    ═══════════════════════════════════════════════════════════════ */
-const SECTIONS: Omit<SectionShellProps, "children">[] = [
+const SECTIONS: (Omit<SectionShellProps, "children"> & { tab: string })[] = [
   {
     index: 0,
-    icon: Brain,
-    title: "Integrity signals &",
-    titleAccent: "session replay",
-    desc: "Tab switches, clipboard events and keystroke timing are recorded during an attempt — with the candidate told up front — and surfaced as a timeline your team reads. The system flags; a person decides.",
-    bullets: [
-      "Trust gauge that moves as signals arrive",
-      "Severity-tagged timeline, flagged inline",
-      "Full session reconstruction for post-review",
-    ],
-  },
-  {
-    index: 1,
+    tab: "MCP",
     icon: Cpu,
     title: "Model Context",
     titleAccent: "Protocol (MCP)",
@@ -769,7 +756,8 @@ const SECTIONS: Omit<SectionShellProps, "children">[] = [
     ],
   },
   {
-    index: 2,
+    index: 1,
+    tab: "Multiplayer",
     icon: Users,
     title: "Multiplayer",
     titleAccent: "interview room",
@@ -781,7 +769,8 @@ const SECTIONS: Omit<SectionShellProps, "children">[] = [
     ],
   },
   {
-    index: 3,
+    index: 2,
+    tab: "Grading",
     icon: Workflow,
     title: "Automated grading",
     titleAccent: "runtimes",
@@ -793,7 +782,8 @@ const SECTIONS: Omit<SectionShellProps, "children">[] = [
     ],
   },
   {
-    index: 4,
+    index: 3,
+    tab: "Rubrics",
     icon: FileText,
     title: "Structured rubrics &",
     titleAccent: "scorecards",
@@ -804,55 +794,70 @@ const SECTIONS: Omit<SectionShellProps, "children">[] = [
       "One-click PDF export of the full scorecard",
     ],
   },
-  {
-    index: 5,
-    icon: ShieldCheck,
-    title: "Credit-based",
-    titleAccent: "billing",
-    desc: "Screenings are billed as credits on top of seats, tracked live. Set seat bounds, cap workspace limits, and watch spend as it happens.",
-    bullets: [
-      "Live credit gauge with usage-per-assessment breakdown",
-      "Itemized recent usage history with cost tracking",
-      "Monthly spend analytics with trend visualization",
-    ],
-  },
 ];
 
-const DEMOS = [ProctoringDemo, McpDemo, MultiplayerDemo, GradingDemo, RubricsDemo, CreditsDemo];
+const DEMOS = [McpDemo, MultiplayerDemo, GradingDemo, RubricsDemo];
 
-function FlowPipe() {
-  return (
-    <div aria-hidden className="wow-flow-pipe mx-auto h-12 w-8">
-      <div className="mx-auto h-full w-px bg-[var(--wow-card-border)]" />
-    </div>
-  );
-}
+export { ProctoringDemo, CreditsDemo };
 
+/**
+ * Four product surfaces as tabs, one live demo at a time. Proctoring moved
+ * into the live room and billing sits beside pricing, so neither repeats here.
+ */
 export default function HireWowFeatures() {
+  const [active, setActive] = useState(0);
+  const tabs = useRef<(HTMLButtonElement | null)[]>([]);
+
+  const onKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key !== "ArrowRight" && e.key !== "ArrowLeft") return;
+    e.preventDefault();
+    const next = (active + (e.key === "ArrowRight" ? 1 : SECTIONS.length - 1)) % SECTIONS.length;
+    setActive(next);
+    tabs.current[next]?.focus();
+  };
+
+  const section = SECTIONS[active];
+  const Demo = DEMOS[active];
+
   return (
     <div className="space-y-2">
       <WowReveal>
-        <p className="flex items-center gap-2 font-mono text-[11px] uppercase tracking-[0.3em] text-[#8b93ff]"><Brain className="h-3.5 w-3.5" /> 05 · why teams switch</p>
-        <h2 className="wow-font-display mt-3 text-5xl md:text-7xl">SIX SURFACES,<br /><span className="wow-gradient-boss">ALL OF THEM LIVE.</span></h2>
-        <p className="mt-4 max-w-2xl text-[15px] leading-relaxed text-[var(--wow-muted)]">
-          Proctoring, challenge authoring, the multiplayer room, grading,
-          rubrics and credits. Every demo below is running on this page —
-          follow the flow.
+        <p className="flex items-center gap-2 font-mono text-xs uppercase tracking-[0.12em] text-secondary"><Brain className="h-3.5 w-3.5" /> the product</p>
+        <h2 className="wow-font-display mt-3 text-5xl md:text-7xl">Four surfaces,<br /><span className="wow-gradient-boss">all of them live.</span></h2>
+        <p className="mt-4 max-w-2xl text-[15px] leading-relaxed text-muted">
+          Challenge authoring over MCP, the multiplayer room, grading and
+          rubrics. Pick one: each demo below is running on this page.
         </p>
       </WowReveal>
 
-      <div className="pt-6">
-        {SECTIONS.map((section, i) => {
-          const Demo = DEMOS[i];
-          return (
-            <div key={i}>
-              {i > 0 && <FlowPipe />}
-              <SectionShell {...section}>
-                <Demo />
-              </SectionShell>
-            </div>
-          );
-        })}
+      <div role="tablist" aria-label="Product surfaces" onKeyDown={onKeyDown} className="flex flex-wrap gap-2 pt-6">
+        {SECTIONS.map((s, i) => (
+          <button
+            key={s.tab}
+            ref={(el) => { tabs.current[i] = el; }}
+            type="button"
+            role="tab"
+            id={`surface-tab-${i}`}
+            aria-selected={i === active}
+            aria-controls="surface-panel"
+            tabIndex={i === active ? 0 : -1}
+            onClick={() => setActive(i)}
+            className={`flex items-center gap-2 rounded-full border px-4 py-2 text-[13px] font-medium transition ${
+              i === active
+                ? "border-secondary bg-secondary text-secondary-ink"
+                : "border-border bg-surface text-subtle hover:border-secondary/60 hover:text-fg"
+            }`}
+          >
+            <s.icon className="h-3.5 w-3.5" />
+            {s.tab}
+          </button>
+        ))}
+      </div>
+
+      <div role="tabpanel" id="surface-panel" aria-labelledby={`surface-tab-${active}`} className="pt-4">
+        <SectionShell key={active} {...section}>
+          <Demo />
+        </SectionShell>
       </div>
     </div>
   );

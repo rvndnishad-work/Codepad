@@ -1,4 +1,7 @@
 /* ── WOW theme tokens: light + dark ───────────────────────────────────
+   The homepage no longer reads these (it uses the Runtime tokens in
+   globals.css); the /hire sections still do. Remove once /hire moves over. */
+/* ── (original notes) ─────────────────────────────────────────────────
    The /wow prototype was hardcoded for dark. These tokens let the new home
    sections render on both themes. Components consume them as arbitrary
    values: bg-[var(--wow-bg)] text-[var(--wow-fg)] etc.
@@ -37,12 +40,6 @@
 }
 
 /* Light-theme corrections for shared wow classes */
-:root .wow-text-stroke {
-  -webkit-text-stroke-color: rgba(23, 20, 43, 0.9);
-}
-.dark .wow-text-stroke {
-  -webkit-text-stroke-color: rgba(255, 255, 255, 0.85);
-}
 :root .wow-grid-bg {
   background-image:
     linear-gradient(rgba(45, 38, 110, 0.08) 1px, transparent 1px),
@@ -73,3 +70,4 @@
 @media (prefers-reduced-motion: reduce) {
   .wow-flow-pipe::after { animation: none; opacity: 0; }
 }
+

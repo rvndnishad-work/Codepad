@@ -45,7 +45,7 @@ export default async function HomeWowCreators() {
         <WowReveal>
           <p className="font-mono text-xs uppercase tracking-[0.12em] text-subtle">learn from creators</p>
           <h2 className="wow-font-display mt-3 text-4xl md:text-5xl lg:text-6xl">Prep with people<br />who <span className="wow-gradient-text">cleared it.</span></h2>
-          <p className="mt-4 max-w-xl text-[15px] leading-relaxed text-muted">Vetted creators publish tutorials, real interview loops and paid cohorts. Following them is free.</p>
+          <p className="mt-4 max-w-xl text-[15px] leading-relaxed text-muted">Engineers who have passed the loops you are preparing for publish tutorials, interview walkthroughs and cohorts. Following them is free.</p>
         </WowReveal>
 
         <ul className="mt-12 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">

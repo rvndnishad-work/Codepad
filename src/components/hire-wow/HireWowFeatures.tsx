@@ -822,7 +822,7 @@ export default function HireWowFeatures() {
   return (
     <div className="space-y-2">
       <WowReveal>
-        <p className="flex items-center gap-2 font-mono text-xs uppercase tracking-[0.12em] text-secondary"><Brain className="h-3.5 w-3.5" /> why teams switch</p>
+        <p className="flex items-center gap-2 font-mono text-xs uppercase tracking-[0.12em] text-secondary"><Brain className="h-3.5 w-3.5" /> the product</p>
         <h2 className="wow-font-display mt-3 text-5xl md:text-7xl">Four surfaces,<br /><span className="wow-gradient-boss">all of them live.</span></h2>
         <p className="mt-4 max-w-2xl text-[15px] leading-relaxed text-muted">
           Challenge authoring over MCP, the multiplayer room, grading and

@@ -104,7 +104,7 @@ export default function HireWowHero({
             <span aria-current="page" className="rounded-full bg-secondary px-4 py-1.5 font-bold text-secondary-ink">Hiring teams</span>
           </nav>
           <span className="hidden items-center gap-1.5 rounded-full border border-fg/15 bg-fg/[0.06] px-4 py-2 font-mono sm:flex text-xs uppercase tracking-[0.12em] text-fg/80 backdrop-blur-md">
-            <Building2 className="h-3.5 w-3.5 text-secondary" /> Boss mode
+            <Building2 className="h-3.5 w-3.5 text-secondary" /> Technical hiring
           </span>
         </div>
 
@@ -114,10 +114,11 @@ export default function HireWowHero({
         </h1>
 
         <p className="wow-hire-fade mt-6 max-w-2xl text-balance text-base font-medium leading-relaxed text-fg/85 [text-shadow:0_2px_18px_rgba(0,0,0,0.9)] md:text-lg">
-          Nine hundred applications, opened in the order they landed,
-          shortlist closed at forty. Send all nine hundred a take-home or an AI
-          interview instead — our servers grade every attempt, anti-cheat rides
-          along, and by morning the list is sorted by who can actually do the job.
+          A thousand applications, read in the order they arrived, and the
+          shortlist closed at forty. Send every applicant the same take-home or
+          AI screening interview instead. We grade each attempt on our servers
+          with integrity signals attached, and by morning your list is ranked by
+          who can actually do the job.
         </p>
 
         <div className="wow-hire-fade mt-8 flex w-full max-w-xs flex-col items-stretch gap-3 sm:w-auto sm:max-w-none sm:flex-row sm:items-center">

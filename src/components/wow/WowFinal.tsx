@@ -46,7 +46,7 @@ export default function WowFinal() {
       </svg>
 
       <div className="relative mx-auto max-w-7xl px-4 pb-16 pt-14 md:pb-20 md:pt-20">
-        <p className="font-mono text-xs font-medium uppercase tracking-[0.12em] opacity-70">final boss — your career</p>
+        <p className="font-mono text-xs font-medium uppercase tracking-[0.12em] opacity-70">your next interview</p>
         <h2 className="wow-final-title wow-font-display mt-4 text-[16vw] leading-[0.85] md:text-[8.5rem]">
           <span className="block overflow-hidden"><span className="block">Walk in</span></span>
           <span className="block overflow-hidden"><span className="block">prepared<span className="opacity-40">.</span></span></span>
@@ -57,11 +57,11 @@ export default function WowFinal() {
             Create free account <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
           </Link>
           <Link href="/challenges" className="flex w-fit items-center gap-2 rounded-full border-2 border-accent-ink px-9 py-[14px] text-sm font-semibold transition hover:bg-accent-ink hover:text-accent">
-            Browse the arena
+            Browse challenges
           </Link>
           <div className="flex flex-col gap-2 font-mono text-xs uppercase tracking-widest md:ml-auto md:items-end">
-            <p className="opacity-70">No card · No install · Just press start</p>
-            <Link href="/hire" className="w-fit py-1 underline underline-offset-4 hover:no-underline">Hiring? Enter boss mode →</Link>
+            <p className="opacity-70">Free to start · No credit card · Runs in your browser</p>
+            <Link href="/hire" className="w-fit py-1 underline underline-offset-4 hover:no-underline">Hiring? Interviewpad for teams →</Link>
           </div>
         </div>
       </div>

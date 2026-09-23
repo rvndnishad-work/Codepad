@@ -25,9 +25,9 @@ export default function HomeWowStories({
       <div aria-hidden className="pointer-events-none absolute -top-32 left-1/2 h-[380px] w-[760px] -translate-x-1/2 rounded-full bg-secondary/15 blur-[130px]" />
       <div className="relative mx-auto max-w-7xl">
         <WowReveal>
-          <p className="font-mono text-xs uppercase tracking-[0.12em] text-subtle">writing</p>
+          <p className="font-mono text-xs uppercase tracking-[0.12em] text-subtle">from the blog</p>
           <div className="mt-3 flex flex-col gap-6 md:flex-row md:items-end md:justify-between">
-            <h2 className="wow-font-display text-4xl md:text-5xl lg:text-6xl">From the <span className="wow-gradient-text">blog.</span></h2>
+            <h2 className="wow-font-display text-4xl md:text-5xl lg:text-6xl">Lessons from <span className="wow-gradient-text">real loops.</span></h2>
             <div className="flex flex-wrap items-center gap-4 md:self-end">
               <Link
                 href={signedIn ? "/dashboard/blogs/new" : "/login?next=/dashboard/blogs/new"}

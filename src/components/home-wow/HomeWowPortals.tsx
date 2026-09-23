@@ -50,7 +50,7 @@ export default function HomeWowPortals({ counts, techs = [] }: { counts: PortalC
       key: "bank",
       icon: BookOpenText,
       title: "Interview questions",
-      copy: `Hand-written answers with diagrams and runnable examples.${counts.companies > 0 ? ` Includes company sets from ${counts.companies} companies.` : ""}`,
+      copy: `Detailed, hand-written answers with diagrams, runnable code and the follow-ups interviewers ask next.${counts.companies > 0 ? ` Plus question sets from ${counts.companies} companies.` : ""}`,
       stat: {
         value: formatK(counts.prepQuestions),
         label: counts.techCount > 1 ? `questions across ${counts.techCount} technologies` : "questions",
@@ -65,7 +65,7 @@ export default function HomeWowPortals({ counts, techs = [] }: { counts: PortalC
       key: "arena",
       icon: Code2,
       title: "Coding challenges",
-      copy: "Write real code in 8 languages, run it against hidden tests and get a verdict straight away.",
+      copy: "Solve real problems in 8 languages against hidden test suites, and get a verdict in seconds, just like an online assessment.",
       stat: { value: String(counts.challenges), label: counts.challenges === 1 ? "graded challenge" : "graded challenges" },
       href: "/challenges",
       cta: "Start a challenge",
@@ -81,7 +81,7 @@ export default function HomeWowPortals({ counts, techs = [] }: { counts: PortalC
       key: "ai",
       icon: Bot,
       title: "AI code review",
-      copy: "Review AI-written pull requests, catch the planted bugs and practise prompts that are scored live.",
+      copy: "Review AI-written pull requests, find the bugs planted in them and sharpen your prompting with live scoring. It is the skill teams now screen for.",
       stat,
       href: "/interview/ai-code-review",
       cta: "Try a review",
@@ -92,7 +92,7 @@ export default function HomeWowPortals({ counts, techs = [] }: { counts: PortalC
     key: "hire",
     icon: Briefcase,
     title: "For hiring teams",
-    copy: "Run live interviews and take-home tests, then watch the replay with integrity signals before you decide.",
+    copy: "Run live coding interviews and take-home assessments, then review the full replay with integrity signals before you decide.",
     href: "/hire",
     cta: "See hiring tools",
     accent: "--c-accent-2-soft",
@@ -102,8 +102,8 @@ export default function HomeWowPortals({ counts, techs = [] }: { counts: PortalC
     <section className="relative bg-surface px-4 py-24 text-fg transition-colors md:py-32">
       <div className="mx-auto max-w-7xl">
         <WowReveal>
-          <p className="font-mono text-xs uppercase tracking-[0.12em] text-subtle">what you can do here</p>
-          <h2 className="wow-font-display mt-3 text-4xl md:text-5xl lg:text-6xl">Four ways in.<br /><span className="wow-gradient-text">Zero tutorial hell.</span></h2>
+          <p className="font-mono text-xs uppercase tracking-[0.12em] text-subtle">the platform</p>
+          <h2 className="wow-font-display mt-3 text-4xl md:text-5xl lg:text-6xl">Four ways to get ready.<br /><span className="wow-gradient-text">None of them passive.</span></h2>
         </WowReveal>
 
         <div className="mt-12 grid grid-cols-1 gap-5 md:grid-cols-2">

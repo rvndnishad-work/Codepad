@@ -16,10 +16,10 @@ export type HeroStats = {
 };
 
 const PHOTOS = [
-  { src: "/images/wow/code-dark.jpg", label: "2:14 AM — it finally compiled", rot: "-6deg", pos: "left-[2%] top-[16%]" },
-  { src: "/images/wow/pair-programming.jpg", label: "pair programming > solo panic", rot: "5deg", pos: "right-[3%] top-[12%]" },
-  { src: "/images/wow/hackathon.jpg", label: "hackathon energy, daily", rot: "-4deg", pos: "right-[6%] bottom-[18%]" },
-  { src: "/images/wow/reviewer.jpg", label: "she reviews AI slop for breakfast", rot: "6deg", pos: "left-[4%] bottom-[14%]" },
+  { src: "/images/wow/code-dark.jpg", label: "2:14 AM, every test green", rot: "-6deg", pos: "left-[2%] top-[16%]" },
+  { src: "/images/wow/pair-programming.jpg", label: "Pair on real problems", rot: "5deg", pos: "right-[3%] top-[12%]" },
+  { src: "/images/wow/hackathon.jpg", label: "Ship it, then defend it", rot: "-4deg", pos: "right-[6%] bottom-[18%]" },
+  { src: "/images/wow/reviewer.jpg", label: "Review AI code line by line", rot: "6deg", pos: "left-[4%] bottom-[14%]" },
 ];
 
 function useTypewriter(words: string[]) {
@@ -60,11 +60,11 @@ export default function HomeWowHero({
 }) {
   const root = useRef<HTMLElement>(null);
   const statTiles = [
-    { n: stats.questions, v: formatK(stats.questions), l: "hand-written questions" },
-    { n: stats.challenges, v: String(stats.challenges), l: "runnable challenges" },
-    { n: stats.sessions, v: formatK(stats.sessions), l: "sessions run" },
+    { n: stats.questions, v: formatK(stats.questions), l: "Hand-written interview questions" },
+    { n: stats.challenges, v: String(stats.challenges), l: "Challenges with hidden tests" },
+    { n: stats.sessions, v: formatK(stats.sessions), l: "Interview sessions run" },
   ].filter((s) => s.n > 0);
-  const typed = useTypewriter(["twoSum(board, gas?)", "reviewAiSlop(pr).ship()", "hire(signal, not vibes)", "npx interviewpad --send-offer"]);
+  const typed = useTypewriter(["solve('lru-cache')", "review(aiPR).findBugs()", "run --tests=hidden", "mock.start('system-design')"]);
   // Offscreen → loop paused (long-session lag fix). Scrolling → loop frozen:
   // a live canvas competing with the scroll compositor is what drops frames
   // on laptop iGPUs. The GSAP parallax is compositor-only, so the frozen
@@ -146,7 +146,7 @@ export default function HomeWowHero({
 
           <div className="flex items-center gap-2 rounded-full border border-fg/15 bg-fg/[0.06] px-4 py-2 font-mono text-xs uppercase tracking-[0.12em] text-fg/80 backdrop-blur-md">
             <Sparkles className="h-3.5 w-3.5 text-accent" />
-            {userName ? `Welcome back, ${userName.split(" ")[0]} — the arena missed you` : "The interview multiverse is open"}
+            {userName ? `Welcome back, ${userName.split(" ")[0]}. Pick up where you left off` : "Practise on the tools hiring teams use"}
             <span className="rounded-full bg-accent px-2 py-0.5 font-bold text-accent-ink">live</span>
           </div>
         </div>
@@ -158,8 +158,8 @@ export default function HomeWowHero({
         </h1>
 
         <p className="wow-hero-fade mt-6 max-w-2xl text-balance text-base font-medium leading-relaxed text-fg/85 [text-shadow:0_2px_18px_rgba(0,0,0,0.9)] md:text-lg">
-          Codepad is a playable career arcade — real editors, real runtimes, AI sparring partners,
-          hiring bosses and a portfolio that proves you shipped. Press start.
+          Solve problems in a real editor against hidden tests, sit AI mock interviews that ask the
+          follow-up, and build a replay portfolio that shows recruiters how you actually work.
         </p>
 
         <div className="wow-hero-terminal mt-8 w-full max-w-xl overflow-hidden rounded-2xl border border-fg/15 bg-surface/95 text-left shadow-[0_24px_70px_-20px_rgba(0,0,0,0.9)]">
@@ -173,14 +173,14 @@ export default function HomeWowHero({
           <div className="px-4 py-4 font-mono text-sm md:text-[15px]">
             <span className="text-success">➜</span> <span className="text-secondary-soft">~</span> <span className="text-fg">{typed}</span><span className="wow-blink ml-0.5 inline-block h-4 w-2 translate-y-0.5 bg-accent" />
             <div className="mt-2 text-fg/70">
-              ✓ {formatK(stats.questions)} question banks loaded · {stats.challenges > 0 ? `${stats.challenges} challenges ready` : "8 runtimes hot"} · <span className="font-bold text-accent">offer.exe ready</span>
+              ✓ {formatK(stats.questions)} questions indexed · {stats.challenges > 0 ? `${stats.challenges} challenges ready` : "8 languages online"} · <span className="font-bold text-accent">you&apos;re up</span>
             </div>
           </div>
         </div>
 
         <div className="wow-hero-fade mt-8 flex flex-col items-center gap-3 sm:flex-row">
           <Link href="/challenges" className="group flex items-center gap-2 rounded-full bg-accent px-8 py-4 text-sm font-semibold text-accent-ink shadow-[0_10px_30px_-14px_rgb(var(--c-accent)/0.7)] transition hover:scale-[1.02]">
-            <Play className="h-4 w-4 fill-accent-ink" /> Press start — play free
+            <Play className="h-4 w-4 fill-accent-ink" /> Start practising free
             <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
           </Link>
           <Link
@@ -192,7 +192,7 @@ export default function HomeWowHero({
         </div>
 
         <Link href="/hire" className="wow-hero-fade group mt-5 inline-flex items-center gap-2 rounded-full border border-fg/20 bg-fg/[0.06] px-6 py-3 font-mono text-xs uppercase tracking-[0.12em] text-fg/80 backdrop-blur-md transition hover:border-fg/40 hover:text-fg">
-          Looking to hire
+          Hiring? Interviewpad for teams
           <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
         </Link>
 
@@ -213,7 +213,7 @@ export default function HomeWowHero({
         )}
 
         <div className="wow-hero-fade mt-6 flex items-center gap-1.5 font-mono text-xs uppercase tracking-[0.12em] text-fg/55">
-          <Zap className="h-3.5 w-3.5 text-accent" /> No install · No setup · Just press start
+          <Zap className="h-3.5 w-3.5 text-accent" /> Runs in your browser · No credit card · Free to start
         </div>
       </div>
     </section>

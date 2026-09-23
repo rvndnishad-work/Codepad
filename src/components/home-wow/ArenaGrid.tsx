@@ -48,8 +48,8 @@ export default function ArenaGrid({ picks }: { picks: ArenaPick[] }) {
       <div className="relative mx-auto max-w-7xl">
         <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
           <div>
-            <p className="flex items-center gap-2 font-mono text-xs uppercase tracking-[0.12em] text-subtle"><Swords className="h-4 w-4" /> tonight in the arena</p>
-            <h2 className="wow-font-display mt-3 text-4xl md:text-5xl lg:text-6xl">Fresh<br />boss fights<span className="text-accent">.</span></h2>
+            <p className="flex items-center gap-2 font-mono text-xs uppercase tracking-[0.12em] text-subtle"><Swords className="h-4 w-4" /> featured challenges</p>
+            <h2 className="wow-font-display mt-3 text-4xl md:text-5xl lg:text-6xl">Pick a problem.<br />Beat the tests<span className="text-accent">.</span></h2>
           </div>
           <Link href="/challenges" className="group flex w-fit items-center gap-2 rounded-full border border-border bg-panel px-6 py-3 text-xs font-semibold transition hover:border-fg/30">
             All challenges <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />

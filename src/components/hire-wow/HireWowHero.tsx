@@ -142,7 +142,7 @@ export default function HireWowHero({
         )}
 
         <p className="wow-hire-fade mt-6 text-balance text-center font-mono text-[11px] uppercase leading-relaxed tracking-[0.18em] text-fg/55">
-          <ShieldCheck className="mr-1.5 inline h-3.5 w-3.5 align-[-3px] text-success" />Capgemini · SakSoft · and more screen on evidence, not order
+          <ShieldCheck className="mr-1.5 inline h-3.5 w-3.5 align-[-3px] text-success" />Screen on evidence, not arrival order
         </p>
       </div>
     </section>

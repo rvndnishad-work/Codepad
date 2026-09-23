@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { ArrowUpRight, BookOpenText, Code2, Bot, Briefcase, type LucideIcon } from "lucide-react";
 import WowReveal from "@/components/wow/WowReveal";
+import RevealLines from "@/components/wow/RevealLines";
+import CountUp from "@/components/wow/CountUp";
 
 export type PortalCounts = {
   prepQuestions: number;
@@ -103,7 +105,7 @@ export default function HomeWowPortals({ counts, techs = [] }: { counts: PortalC
       <div className="mx-auto max-w-7xl">
         <WowReveal>
           <p className="font-mono text-xs uppercase tracking-[0.12em] text-subtle">the platform</p>
-          <h2 className="wow-font-display mt-3 text-4xl md:text-5xl lg:text-6xl">Four ways to get ready.<br /><span className="wow-gradient-text">None of them passive.</span></h2>
+          <RevealLines className="wow-font-display mt-3 text-4xl md:text-5xl lg:text-6xl" lines={[<span key="l0">Four ways to get ready.</span>, <span key="l1" className="wow-gradient-text">None of them passive.</span>]} />
         </WowReveal>
 
         <div className="mt-12 grid grid-cols-1 gap-5 md:grid-cols-2">
@@ -114,6 +116,7 @@ export default function HomeWowPortals({ counts, techs = [] }: { counts: PortalC
               <WowReveal key={p.key} className={wide ? "md:col-span-2" : undefined}>
                 <Link
                   href={p.href}
+                  data-spotlight
                   className="wow-card-glow group relative flex h-full flex-col gap-4 overflow-hidden rounded-3xl border border-border bg-panel p-7 md:p-8"
                 >
                   <div aria-hidden className="pointer-events-none absolute inset-0 opacity-60 transition group-hover:opacity-100" style={{ background: `radial-gradient(520px circle at 100% 0%, ${tone(p.accent, 0.07)}, transparent 60%)` }} />
@@ -123,7 +126,7 @@ export default function HomeWowPortals({ counts, techs = [] }: { counts: PortalC
                     </span>
                     {p.stat && (
                       <p className="text-right">
-                        <span className="wow-font-display block text-4xl tabular-nums text-fg">{p.stat.value}</span>
+                        <CountUp value={p.stat.value} className="wow-font-display block text-4xl tabular-nums text-fg" />
                         <span className="mt-1 block text-[13px] text-subtle">{p.stat.label}</span>
                       </p>
                     )}

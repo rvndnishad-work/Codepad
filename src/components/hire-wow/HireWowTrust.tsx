@@ -3,6 +3,7 @@ import WowReveal from "@/components/wow/WowReveal";
 import type { PricingPlanDef } from "@/lib/pricing-plans";
 import PricingTeaser from "@/app/hire/PricingTeaser";
 import { CreditsDemo } from "./HireWowFeatures";
+import RevealLines from "@/components/wow/RevealLines";
 
 /** Copy beside the live billing demo. Kept here: a client module cannot export data to a server component. */
 const BILLING_COPY = {
@@ -56,7 +57,7 @@ export default function HireWowTrust({ plans }: { plans: PricingPlanDef[] }) {
       <div className="mx-auto max-w-6xl">
         <WowReveal>
           <p className="flex items-center gap-2 font-mono text-xs uppercase tracking-[0.12em] text-secondary"><ShieldCheck className="h-3.5 w-3.5" /> built for trust</p>
-          <h2 className="wow-font-display mt-3 text-5xl md:text-7xl">Candidates&apos; work,<br /><span className="wow-gradient-boss">handled seriously.</span></h2>
+          <RevealLines className="wow-font-display mt-3 text-5xl md:text-7xl" lines={[<span key="l0">Candidates&apos; work,</span>, <span key="l1" className="wow-gradient-boss">handled seriously.</span>]} />
           <p className="mt-4 max-w-xl text-[15px] leading-relaxed text-muted">
             Hiring data is sensitive. None of these are roadmap promises — each
             one names a mechanism that is running today.

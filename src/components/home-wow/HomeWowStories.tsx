@@ -3,6 +3,7 @@ import { ArrowRight, PenSquare, Flame, Eye } from "lucide-react";
 import { type BlogFeedEntry } from "@/components/BlogFeedItem";
 import { StoryHeroCard, StoryCard } from "./StoryCards";
 import WowReveal from "@/components/wow/WowReveal";
+import RevealLines from "@/components/wow/RevealLines";
 
 /**
  * From the blog: one lead story beside the numbered Most read list, then up
@@ -27,7 +28,7 @@ export default function HomeWowStories({
         <WowReveal>
           <p className="font-mono text-xs uppercase tracking-[0.12em] text-subtle">from the blog</p>
           <div className="mt-3 flex flex-col gap-6 md:flex-row md:items-end md:justify-between">
-            <h2 className="wow-font-display text-4xl md:text-5xl lg:text-6xl">Lessons from <span className="wow-gradient-text">real loops.</span></h2>
+            <RevealLines className="wow-font-display text-4xl md:text-5xl lg:text-6xl" lines={[<span key="l0">Lessons from <span className="wow-gradient-text">real loops.</span></span>]} />
             <div className="flex flex-wrap items-center gap-4 md:self-end">
               <Link
                 href={signedIn ? "/dashboard/blogs/new" : "/login?next=/dashboard/blogs/new"}

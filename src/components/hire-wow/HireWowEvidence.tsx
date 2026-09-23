@@ -1,5 +1,6 @@
 import { Award, ShieldCheck, X } from "lucide-react";
 import WowReveal from "@/components/wow/WowReveal";
+import RevealLines from "@/components/wow/RevealLines";
 
 const RESUME_BULLETS = ["5 years Node.js", "Ex-FAANG (unverified)", "“Team player”", "Lists React, Vue, Angular…", "No code attached. Ever."];
 
@@ -33,9 +34,7 @@ export default function HireWowEvidence() {
       <div className="mx-auto max-w-6xl">
         <WowReveal>
           <p className="text-center font-mono text-xs uppercase tracking-[0.12em] text-secondary">same candidate, two stories</p>
-          <h2 className="wow-font-display mt-3 text-center text-5xl md:text-7xl">
-            Resume <span className="text-subtle">vs</span> <span className="wow-gradient-boss">replay.</span>
-          </h2>
+          <RevealLines className="wow-font-display mt-3 text-center text-5xl md:text-7xl" lines={[<span key="l0">Resume <span className="text-subtle">vs</span> <span className="wow-gradient-boss">replay.</span></span>]} />
         </WowReveal>
 
         <div className="mt-10 grid grid-cols-1 gap-6 md:grid-cols-2 md:gap-8">
@@ -86,7 +85,7 @@ export default function HireWowEvidence() {
 
         <WowReveal>
           <p className="mt-24 flex items-center gap-2 font-mono text-xs uppercase tracking-[0.12em] text-secondary"><Award className="h-3.5 w-3.5" /> the record</p>
-          <h3 className="wow-font-display mt-3 text-4xl md:text-6xl">What you are left with,<br /><span className="wow-gradient-boss">per candidate.</span></h3>
+          <RevealLines as="h3" className="wow-font-display mt-3 text-4xl md:text-6xl" lines={[<span key="l0">What you are left with,</span>, <span key="l1" className="wow-gradient-boss">per candidate.</span>]} />
           <p className="mt-4 max-w-2xl text-[15px] leading-relaxed text-muted">
             A hiring decision is easy to make and hard to defend three months
             later. Every attempt closes into one record your team can reopen,

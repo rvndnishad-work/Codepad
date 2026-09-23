@@ -2,6 +2,7 @@ import Link from "next/link";
 import { Store, Heart, Users, LayoutGrid, BadgeCheck } from "lucide-react";
 import { prisma } from "@/lib/prisma";
 import WowReveal from "@/components/wow/WowReveal";
+import RevealLines from "@/components/wow/RevealLines";
 
 /**
  * Creators: up to four published spaces as cards, featured first. Hides
@@ -44,7 +45,7 @@ export default async function HomeWowCreators() {
       <div className="mx-auto max-w-7xl">
         <WowReveal>
           <p className="font-mono text-xs uppercase tracking-[0.12em] text-subtle">learn from creators</p>
-          <h2 className="wow-font-display mt-3 text-4xl md:text-5xl lg:text-6xl">Prep with people<br />who <span className="wow-gradient-text">cleared it.</span></h2>
+          <RevealLines className="wow-font-display mt-3 text-4xl md:text-5xl lg:text-6xl" lines={[<span key="l0">Prep with people</span>, <span key="l1">who <span className="wow-gradient-text">cleared it.</span></span>]} />
           <p className="mt-4 max-w-xl text-[15px] leading-relaxed text-muted">Engineers who have passed the loops you are preparing for publish tutorials, interview walkthroughs and cohorts. Following them is free.</p>
         </WowReveal>
 
@@ -52,7 +53,7 @@ export default async function HomeWowCreators() {
           {spaces.map((s, i) => (
             <li key={s.id} className="min-w-0">
               <WowReveal delay={i * 0.06} className="h-full">
-                <Link href={`/c/${s.handle}`} className="wow-card-glow group flex h-full flex-col gap-4 rounded-3xl border border-border bg-surface p-6">
+                <Link href={`/c/${s.handle}`} data-spotlight className="wow-card-glow group relative flex h-full flex-col gap-4 rounded-3xl border border-border bg-surface p-6">
                   {s.avatarUrl ? (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img src={s.avatarUrl} alt="" className="h-16 w-16 rounded-2xl border border-border object-cover" loading="lazy" />

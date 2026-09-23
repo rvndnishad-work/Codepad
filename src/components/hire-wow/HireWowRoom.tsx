@@ -2,6 +2,7 @@ import { Video } from "lucide-react";
 import { RecruiterDemoCard } from "../../app/RecruiterDemoCard";
 import WowReveal from "@/components/wow/WowReveal";
 import { ProctoringDemo } from "./HireWowFeatures";
+import RevealLines from "@/components/wow/RevealLines";
 
 /**
  * The live room and its integrity feed, side by side: the interview demo on
@@ -14,7 +15,7 @@ export default function HireWowRoom() {
       <div className="relative mx-auto max-w-7xl">
         <WowReveal>
           <p className="flex items-center gap-2 font-mono text-xs uppercase tracking-[0.12em] text-secondary"><Video className="h-3.5 w-3.5" /> live interview room</p>
-          <h2 className="wow-font-display mt-3 text-5xl md:text-7xl">The room,<br />as candidates <span className="wow-gradient-boss">see it.</span></h2>
+          <RevealLines className="wow-font-display mt-3 text-5xl md:text-7xl" lines={[<span key="l0">The room,</span>, <span key="l1">as candidates <span className="wow-gradient-boss">see it.</span></span>]} />
           <p className="mt-4 max-w-2xl text-[15px] leading-relaxed text-muted">
             A shared editor with live cursors, real execution and an AI
             co-pilot suggesting follow-ups, in the browser with nothing to

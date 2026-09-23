@@ -1,5 +1,7 @@
 import { Clock, Inbox, Layers, TrendingDown } from "lucide-react";
 import WowReveal from "@/components/wow/WowReveal";
+import RevealLines from "@/components/wow/RevealLines";
+import CountUp from "@/components/wow/CountUp";
 
 /**
  * The core argument of /hire: applications arrive in the order people clicked
@@ -40,11 +42,7 @@ export default function HireWowFlood() {
           <p className="flex items-center gap-2 font-mono text-xs uppercase tracking-[0.12em] text-secondary">
             <Inbox className="h-3.5 w-3.5" /> the problem you actually have
           </p>
-          <h2 className="wow-font-display mt-3 max-w-4xl text-5xl md:text-7xl">
-            The pile isn&apos;t sorted
-            <br />
-            <span className="wow-gradient-boss">by talent.</span>
-          </h2>
+          <RevealLines className="wow-font-display mt-3 max-w-4xl text-5xl md:text-7xl" lines={[<span key="l0">The pile isn&apos;t sorted</span>, <span key="l1" className="wow-gradient-boss">by talent.</span>]} />
           <p className="mt-4 max-w-2xl text-[15px] leading-relaxed text-muted">
             You post one role and hundreds — sometimes thousands — of
             applications land in a week. Somebody opens them top-down, five
@@ -68,7 +66,7 @@ export default function HireWowFlood() {
                   <s.icon className="h-5 w-5" />
                 </span>
                 <span>
-                  <span className="wow-font-display block text-3xl tabular-nums">{s.v}</span>
+                  <CountUp value={s.v} className="wow-font-display block text-3xl tabular-nums" />
                   <span className="mt-0.5 block text-[12.5px] leading-snug text-muted">{s.l}</span>
                 </span>
               </div>

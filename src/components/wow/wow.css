@@ -108,3 +108,50 @@
   .wow-spin-slow, .wow-spin-slower, .wow-orbit-dot,
   .wow-svg-dash, .wow-blink { animation: none !important; }
 }
+
+/* ── RevealLines: section headlines rise out of a mask, line by line ── */
+.wow-lines .wow-line {
+  transition: transform 0.9s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.9s ease;
+}
+.wow-lines[data-state="armed"] .wow-line {
+  transform: translateY(105%);
+  opacity: 0;
+}
+.wow-lines[data-state="in"] .wow-line {
+  transform: none;
+  opacity: 1;
+}
+
+/* ── Spotlight: a soft glow that follows the cursor on marked cards ── */
+[data-spotlight] {
+  isolation: isolate;
+}
+[data-spotlight]::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  background: radial-gradient(420px circle at var(--mx, 50%) var(--my, 0%), rgb(var(--c-fg) / 0.07), transparent 45%);
+}
+[data-spotlight][data-spot-on]::after {
+  opacity: 1;
+}
+
+/* ── Live step: the progress bar that fills while a step is active ── */
+@keyframes wow-step-fill {
+  from { transform: scaleX(0); }
+  to { transform: scaleX(1); }
+}
+.wow-step-fill {
+  transform-origin: left;
+  animation: wow-step-fill var(--wow-step-ms, 2600ms) linear forwards;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .wow-lines .wow-line { transition: none; }
+  .wow-step-fill { animation: none; transform: scaleX(1); }
+}

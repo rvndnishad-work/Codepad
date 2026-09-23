@@ -3,6 +3,7 @@ import { ArrowRight, Tag } from "lucide-react";
 import WowReveal from "@/components/wow/WowReveal";
 
 import type { PricingPlanDef } from "@/lib/pricing-plans";
+import RevealLines from "@/components/wow/RevealLines";
 
 /**
  * Compact pricing teaser for the recruiter page. Renders the business tiers
@@ -25,7 +26,7 @@ export default function PricingTeaser({ plans }: { plans: PricingPlanDef[] }) {
         <div className="flex flex-wrap items-end justify-between gap-4">
           <div>
             <p className="flex items-center gap-2 font-mono text-xs uppercase tracking-[0.12em] text-secondary"><Tag className="h-3.5 w-3.5" /> pricing</p>
-            <h3 className="wow-font-display mt-3 text-4xl md:text-6xl">Per-seat plans.<br /><span className="wow-gradient-boss">Per-screening credits.</span></h3>
+            <RevealLines as="h3" className="wow-font-display mt-3 text-4xl md:text-6xl" lines={[<span key="l0">Per-seat plans.</span>, <span key="l1" className="wow-gradient-boss">Per-screening credits.</span>]} />
             <p className="mt-4 max-w-2xl text-[15px] leading-relaxed text-muted">
               Seats cover the workspace and everyone in it. AI screenings are
               credits on top, charged only when a candidate actually starts.

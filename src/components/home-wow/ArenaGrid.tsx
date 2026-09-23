@@ -4,6 +4,7 @@ import { useEffect, useRef } from "react";
 import Link from "next/link";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
+import { prefersReducedMotion } from "@/components/wow/motion";
 import { Flame, Clock, Swords, ArrowRight, Crown, Lock } from "lucide-react";
 
 gsap.registerPlugin(ScrollTrigger);
@@ -14,7 +15,7 @@ export type ArenaPick = {
   difficulty: string;
   lang: string;
   minutes: number;
-  solves: number;
+  attempts: number;
   featured: boolean;
   premium: boolean;
   tags: string[];
@@ -43,6 +44,7 @@ function TiltCard({ children, className }: { children: React.ReactNode; classNam
 export default function ArenaGrid({ picks }: { picks: ArenaPick[] }) {
   const root = useRef<HTMLElement>(null);
   useEffect(() => {
+    if (prefersReducedMotion()) return;
     const ctx = gsap.context(() => {
       gsap.utils.toArray<HTMLElement>(".wow-arena-card").forEach((card, i) => {
         gsap.from(card, {
@@ -86,7 +88,7 @@ export default function ArenaGrid({ picks }: { picks: ArenaPick[] }) {
                     <div className="flex items-center gap-2 font-mono text-[11px] uppercase tracking-widest text-[var(--wow-faint)]">
                       <span className="rounded-full px-2.5 py-0.5 font-bold text-black" style={{ background: d.color }}>{d.label}</span>
                       <span className="flex items-center gap-1"><Clock className="h-3 w-3" /> {c.minutes}m</span>
-                      <span className="ml-auto tabular-nums">{c.solves} solves</span>
+                      {c.attempts > 0 && <span className="ml-auto tabular-nums">{c.attempts} {c.attempts === 1 ? "attempt" : "attempts"}</span>}
                     </div>
                     <h3 className="mt-3 line-clamp-2 min-h-[3.2em] text-xl font-extrabold tracking-tight">{c.title}</h3>
                     {c.tags.length > 0 && (

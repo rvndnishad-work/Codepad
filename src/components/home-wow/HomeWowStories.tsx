@@ -32,7 +32,7 @@ export default function HomeWowStories({
   return (
     <section className="relative overflow-hidden bg-[var(--wow-bg-2)] px-4 py-24 text-[var(--wow-fg)] transition-colors md:py-32">
       <div aria-hidden className="pointer-events-none absolute -top-32 left-1/2 h-[380px] w-[760px] -translate-x-1/2 rounded-full bg-[var(--wow-glow-a)] blur-[130px]" />
-      <div className="relative mx-auto max-w-6xl">
+      <div className="relative mx-auto max-w-7xl">
         <WowReveal>
           <p className="font-mono text-[11px] uppercase tracking-[0.3em] text-[#8b93ff]">✦ writing</p>
           <div className="mt-3 flex flex-col gap-6 md:flex-row md:items-end md:justify-between">

@@ -83,8 +83,17 @@ type Portal = {
   href: string;
   cta: string;
   accent: string;
-  span: string;
 };
+
+/**
+ * Column spans on the 12-col grid. Rows alternate wide/narrow then
+ * narrow/wide (7+5, 5+7) so each row fills; an odd card out takes the full
+ * row instead of leaving a hole.
+ */
+function spanFor(index: number, total: number): string {
+  if (total % 2 === 1 && index === total - 1) return "md:col-span-12";
+  return index % 4 === 0 || index % 4 === 3 ? "md:col-span-7" : "md:col-span-5";
+}
 
 /**
  * Four worlds, every number from the DB. Cards with no content hide
@@ -106,7 +115,6 @@ export default function HomeWowPortals({ counts }: { counts: PortalCounts }) {
       href: "/interview-questions",
       cta: "Enter the vault",
       accent: "#ffe600",
-      span: "md:col-span-7",
     });
   }
   if (counts.challenges > 0) {
@@ -121,7 +129,6 @@ export default function HomeWowPortals({ counts }: { counts: PortalCounts }) {
       href: "/challenges",
       cta: "Fight now",
       accent: "#ff2fb3",
-      span: "md:col-span-5",
     });
   }
   if (counts.reviewChallenges > 0 || counts.promptScenarios > 0) {
@@ -139,7 +146,6 @@ export default function HomeWowPortals({ counts }: { counts: PortalCounts }) {
       href: "/interview/ai-code-review",
       cta: "Spar the AI",
       accent: "#22d3ee",
-      span: "md:col-span-5",
     });
   }
   portals.push({
@@ -153,7 +159,6 @@ export default function HomeWowPortals({ counts }: { counts: PortalCounts }) {
     href: "/hire",
     cta: "Open realm",
     accent: "#8b93ff",
-    span: portals.length % 2 === 0 ? "md:col-span-7" : "md:col-span-5",
   });
 
   return (
@@ -165,8 +170,8 @@ export default function HomeWowPortals({ counts }: { counts: PortalCounts }) {
         </WowReveal>
 
         <div className="mt-12 grid grid-cols-1 gap-5 md:grid-cols-12">
-          {portals.map((p) => (
-            <WowReveal key={p.key} className={p.span}>
+          {portals.map((p, i) => (
+            <WowReveal key={p.key} className={spanFor(i, portals.length)}>
               <Link
                 href={p.href}
                 className="wow-card-glow group relative block overflow-hidden rounded-3xl border border-[var(--wow-card-border)] bg-[var(--wow-card)]"

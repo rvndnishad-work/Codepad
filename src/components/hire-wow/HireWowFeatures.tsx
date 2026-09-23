@@ -27,7 +27,7 @@ function ReplayBtn({ onClick }: { onClick: () => void }) {
     <button
       type="button"
       onClick={onClick}
-      className="absolute right-4 top-4 z-10 flex items-center gap-1.5 rounded-full border border-[var(--wow-card-border)] bg-[var(--wow-chip)] px-3 py-1.5 font-mono text-[10px] font-bold uppercase tracking-[0.16em] text-[var(--wow-faint)] backdrop-blur transition hover:border-[#8b93ff] hover:text-[var(--wow-fg)]"
+      className="flex shrink-0 items-center gap-1.5 rounded-full border border-[var(--wow-card-border)] bg-[var(--wow-chip)] px-3 py-1.5 font-mono text-[10px] font-bold uppercase tracking-[0.16em] text-[var(--wow-faint)] backdrop-blur transition hover:border-[#8b93ff] hover:text-[var(--wow-fg)]"
     >
       Replay
       <RotateCcw className="h-3 w-3" />
@@ -38,15 +38,15 @@ function ReplayBtn({ onClick }: { onClick: () => void }) {
 function DemoShell({ icon: Icon, label, action, children }: { icon: React.ComponentType<{ className?: string }>; label: string; action: React.ReactNode; children: React.ReactNode }) {
   return (
     <div className="relative flex h-full w-full flex-col gap-4 overflow-hidden rounded-3xl border border-[var(--wow-card-border)] bg-[var(--wow-card)] p-5 backdrop-blur-sm md:p-6">
-      {action}
       <div className="flex items-center gap-2.5">
-        <span className="grid h-8 w-8 place-items-center rounded-xl bg-gradient-to-br from-[#8b93ff]/25 to-[#ff2fb3]/20 text-[#8b93ff]">
+        <span className="grid h-8 w-8 shrink-0 place-items-center rounded-xl bg-gradient-to-br from-[#8b93ff]/25 to-[#ff2fb3]/20 text-[#8b93ff]">
           <Icon className="h-4 w-4" />
         </span>
         <span className="font-mono text-[11px] font-bold uppercase tracking-[0.2em] text-[var(--wow-faint)]">{label}</span>
         <span className="ml-auto flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-widest text-emerald-500">
-          <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-400" /> live
+          <span className="h-1.5 w-1.5 motion-safe:animate-pulse rounded-full bg-emerald-400" /> live
         </span>
+        {action}
       </div>
       {children}
     </div>
@@ -110,7 +110,7 @@ function SectionShell({ index, icon: Icon, title, titleAccent, desc, bullets, ch
             {demoInView ? (
               children
             ) : (
-              <div className="h-full w-full animate-pulse rounded-3xl border border-[var(--wow-card-border)] bg-[var(--wow-stage)]" aria-hidden />
+              <div className="h-full w-full motion-safe:animate-pulse rounded-3xl border border-[var(--wow-card-border)] bg-[var(--wow-stage)]" aria-hidden />
             )}
           </div>
         </div>
@@ -832,7 +832,7 @@ export default function HireWowFeatures() {
   return (
     <div className="space-y-2">
       <WowReveal>
-        <p className="flex items-center gap-2 font-mono text-[11px] uppercase tracking-[0.3em] text-[#8b93ff]"><Brain className="h-3.5 w-3.5" /> 05 · why teams switch</p>
+        <p className="flex items-center gap-2 font-mono text-[11px] uppercase tracking-[0.3em] text-[#8b93ff]"><Brain className="h-3.5 w-3.5" /> why teams switch</p>
         <h2 className="wow-font-display mt-3 text-5xl md:text-7xl">SIX SURFACES,<br /><span className="wow-gradient-boss">ALL OF THEM LIVE.</span></h2>
         <p className="mt-4 max-w-2xl text-[15px] leading-relaxed text-[var(--wow-muted)]">
           Proctoring, challenge authoring, the multiplayer room, grading,

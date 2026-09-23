@@ -100,5 +100,6 @@
 
 @media (prefers-reduced-motion: reduce) {
   .wow-marquee-track, .wow-float, .wow-float-2, .wow-float-3,
-  .wow-spin-slow, .wow-spin-slower, .wow-orbit-dot, .wow-gradient-text { animation: none !important; }
+  .wow-spin-slow, .wow-spin-slower, .wow-orbit-dot, .wow-gradient-text,
+  .wow-gradient-boss, .wow-svg-dash, .wow-blink { animation: none !important; }
 }

@@ -14,6 +14,7 @@ export default function HireWowDuel() {
 
   useEffect(() => {
     if (held) return;
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
     const el = root.current;
     if (!el) return;
     let live = true;
@@ -38,7 +39,7 @@ export default function HireWowDuel() {
         </WowReveal>
 
         <WowReveal delay={0.08}>
-          <div className="mt-8 flex justify-center" onMouseEnter={() => setHeld(true)}>
+          <div className="mt-8 flex justify-center" onMouseEnter={() => setHeld(true)} onFocus={() => setHeld(true)}>
             <div className="flex rounded-full border border-[var(--wow-card-border)] bg-[var(--wow-card)] p-1 font-mono text-[11px] uppercase tracking-[0.18em]">
               <button
                 onClick={() => { setSide("resume"); setHeld(true); }}

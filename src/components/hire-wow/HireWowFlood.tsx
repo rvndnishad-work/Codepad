@@ -123,8 +123,8 @@ export default function HireWowFlood() {
                         gem
                           ? "bg-emerald-400 shadow-[0_0_10px_2px_rgba(52,211,153,0.55)]"
                           : read
-                            ? "bg-[var(--wow-fg)]/45"
-                            : "bg-[var(--wow-fg)]/10"
+                            ? "bg-[color:color-mix(in_srgb,var(--wow-fg)_45%,transparent)]"
+                            : "bg-[color:color-mix(in_srgb,var(--wow-fg)_10%,transparent)]"
                       }`}
                     >
                       {gem && (
@@ -138,7 +138,7 @@ export default function HireWowFlood() {
               </div>
 
               <p className="mt-4 font-mono text-[10px] uppercase tracking-[0.18em] text-[var(--wow-faint)]">
-                <span className="text-[var(--wow-fg)]/60">■ read</span>
+                <span className="text-[color:color-mix(in_srgb,var(--wow-fg)_60%,transparent)]">■ read</span>
                 <span className="ml-3">■ never opened</span>
                 <span className="ml-3 text-emerald-400">■ your best hire</span>
               </p>
@@ -195,7 +195,7 @@ export default function HireWowFlood() {
                 <span className="ml-3 text-emerald-400">■ surfaced at rank {gemRank}</span>
               </p>
 
-              <ul className="mt-5 space-y-2 border-t border-[var(--wow-card-border)] pt-4 text-[13px] leading-snug text-[var(--wow-fg)]/85">
+              <ul className="mt-5 space-y-2 border-t border-[var(--wow-card-border)] pt-4 text-[13px] leading-snug text-[color:color-mix(in_srgb,var(--wow-fg)_85%,transparent)]">
                 <li>· Every applicant gets the same assessment and rubric</li>
                 <li>· Grading runs on our servers while you sleep</li>
                 <li>· Integrity signals attached, so the top of the list is real</li>

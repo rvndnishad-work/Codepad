@@ -52,6 +52,7 @@ export default function HireWowHero({
   }, []);
 
   useEffect(() => {
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
     const ctx = gsap.context(() => {
       gsap.timeline({ defaults: { ease: "expo.out" } })
         .from(".wow-hire-line", { yPercent: 110, duration: 1.1, stagger: 0.12 })
@@ -97,7 +98,7 @@ export default function HireWowHero({
         </div>
       </div>
 
-      <div className="relative z-20 mx-auto flex min-h-[100vh] max-w-7xl flex-col items-center px-4 pb-16 pt-24 text-center md:pt-30">
+      <div className="relative z-20 mx-auto flex min-h-[100vh] max-w-7xl flex-col items-center px-4 pb-16 pt-24 text-center md:pt-[7.5rem]">
         <div className="wow-hire-fade flex flex-wrap items-center justify-center gap-3">
           <nav aria-label="Choose your view" className="flex items-center rounded-full border border-white/15 bg-white/[0.06] p-1 font-mono text-[11px] uppercase tracking-[0.18em] backdrop-blur-md">
             <Link href="/" className="rounded-full px-4 py-1.5 text-white/60 transition hover:text-white">← Developers</Link>

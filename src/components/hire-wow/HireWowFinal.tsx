@@ -9,11 +9,13 @@ import WowReveal from "@/components/wow/WowReveal";
 
 gsap.registerPlugin(ScrollTrigger);
 
-/** Closing band for hiring teams: deep indigo, one ask. */
+/** Closing band for hiring teams: deep indigo, one ask. A section, not a
+ * footer: the site footer follows it and carries the copyright and links. */
 export default function HireWowFinal({ ctaHref, signedIn }: { ctaHref: string; signedIn: boolean }) {
   const root = useRef<HTMLElement>(null);
 
   useEffect(() => {
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
     const ctx = gsap.context(() => {
       gsap.from(".wow-hire-final-title > span > span", {
         yPercent: 110, duration: 1, stagger: 0.08, ease: "expo.out",
@@ -24,13 +26,13 @@ export default function HireWowFinal({ ctaHref, signedIn }: { ctaHref: string; s
   }, []);
 
   return (
-    <footer ref={root} className="wow-noise relative overflow-hidden bg-[#0c1030] text-white">
+    <section ref={root} className="wow-noise relative overflow-hidden bg-[#0c1030] text-white">
       <div aria-hidden className="pointer-events-none absolute inset-0">
         <div className="absolute left-1/2 top-[-200px] h-[420px] w-[820px] -translate-x-1/2 rounded-full bg-[#4f46e5]/30 blur-[130px]" />
         <div className="wow-grid-bg absolute inset-0 opacity-70" />
       </div>
 
-      <div className="relative mx-auto max-w-7xl px-4 pb-10 pt-20 md:pt-28">
+      <div className="relative mx-auto max-w-7xl px-4 pb-20 pt-20 md:pb-28 md:pt-28">
         <WowReveal>
           <p className="font-mono text-[11px] uppercase tracking-[0.3em] text-[#a5b4fc]">◆ your next opening, minus the pile</p>
         </WowReveal>
@@ -50,16 +52,7 @@ export default function HireWowFinal({ ctaHref, signedIn }: { ctaHref: string; s
             <p className="font-mono text-[11px] uppercase tracking-widest text-white/50 md:ml-auto">Pilot friendly · Cancel anytime</p>
           </div>
         </WowReveal>
-
-        <div className="mt-14 flex flex-col items-start justify-between gap-4 border-t border-white/15 pt-6 font-mono text-[11px] uppercase tracking-widest text-white/50 md:flex-row md:items-center">
-          <span>© 2026 Interviewpad — hire on evidence</span>
-          <div className="flex items-center gap-5">
-            <Link href="/" className="transition hover:text-white">Developers →</Link>
-            <Link href="/pricing" className="transition hover:text-white">Pricing</Link>
-            <Link href="/blog" className="transition hover:text-white">Blog</Link>
-          </div>
-        </div>
       </div>
-    </footer>
+    </section>
   );
 }

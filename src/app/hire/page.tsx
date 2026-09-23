@@ -1,12 +1,13 @@
 import type { Metadata } from "next";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { getPricingConfig } from "@/lib/pricing-plans";
 import "@/components/wow/wow.css";
 import "@/components/home-wow/home-wow.css";
 import HireWowHero from "@/components/hire-wow/HireWowHero";
 import HireWowFlood from "@/components/hire-wow/HireWowFlood";
 import HireWowPipeline from "@/components/hire-wow/HireWowPipeline";
-import HireWowRoom from "@/components/hire-wow/HireWowRoom";
+import HireWowRoom, { type RoomStat } from "@/components/hire-wow/HireWowRoom";
 import HireWowRadar from "@/components/hire-wow/HireWowRadar";
 import HireWowFeatures from "@/components/hire-wow/HireWowFeatures";
 import HireWowDuel from "@/components/hire-wow/HireWowDuel";
@@ -30,10 +31,11 @@ export const metadata: Metadata = {
 
 export default async function HirePage() {
   const session = await auth().catch(() => null);
-  const [challengeCount, sessionCount, workspaceCount] = await Promise.all([
+  const [challengeCount, sessionCount, workspaceCount, pricing] = await Promise.all([
     prisma.challenge.count({ where: { published: true } }).catch(() => 0),
     prisma.interviewSession.count().catch(() => 0),
     prisma.workspace.count().catch(() => 0),
+    getPricingConfig(),
   ]);
 
   const roomStats = buildStats({ sessionCount, challengeCount, workspaceCount });
@@ -70,7 +72,7 @@ export default async function HirePage() {
 
       <HireWowTrust />
 
-      <PricingTeaser />
+      <PricingTeaser plans={pricing.business} />
 
       <HireWowFinal ctaHref={ctaHref} signedIn={!!session?.user} />
     </div>
@@ -86,19 +88,19 @@ function buildStats(counts: {
   sessionCount: number;
   challengeCount: number;
   workspaceCount: number;
-}): { value: string; label: string }[] {
-  const stats: { value: string; label: string }[] = [];
+}): RoomStat[] {
+  const stats: RoomStat[] = [];
   if (counts.sessionCount >= 50)
-    stats.push({ value: formatCount(counts.sessionCount), label: "Interview sessions run" });
+    stats.push({ value: formatCount(counts.sessionCount), label: "Interview sessions run", live: true });
   if (counts.challengeCount >= 10)
-    stats.push({ value: formatCount(counts.challengeCount), label: "Curated challenges ready to assign" });
+    stats.push({ value: formatCount(counts.challengeCount), label: "Curated challenges ready to assign", live: true });
   if (counts.workspaceCount >= 25)
-    stats.push({ value: formatCount(counts.workspaceCount), label: "Hiring workspaces" });
+    stats.push({ value: formatCount(counts.workspaceCount), label: "Hiring workspaces", live: true });
 
   const capabilities = [
-    { value: "8", label: "Execution languages, server-graded" },
-    { value: "3", label: "ATS integrations: Greenhouse, Lever, Ashby" },
-    { value: "100%", label: "Attempts captured with replay + integrity signals" },
+    { value: "8", label: "Execution languages, server-graded", live: false },
+    { value: "3", label: "ATS integrations: Greenhouse, Lever, Ashby", live: false },
+    { value: "100%", label: "Attempts captured with replay + integrity signals", live: false },
   ];
   for (const c of capabilities) {
     if (stats.length >= 3) break;

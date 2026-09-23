@@ -36,13 +36,13 @@ export default function HireWowRadar() {
             <div aria-hidden className="absolute left-0 top-1/2 h-px w-full bg-[#8b93ff]/15" />
             <div
               aria-hidden
-              className="absolute inset-0 animate-[wow-spin_4s_linear_infinite] rounded-full"
+              className="absolute inset-0 motion-safe:animate-[wow-spin_4s_linear_infinite] rounded-full"
               style={{ background: "conic-gradient(from 0deg, rgba(139,147,255,0.55), transparent 22%)" }}
             />
             <div aria-hidden className="absolute left-1/2 top-1/2 h-2.5 w-2.5 -translate-x-1/2 -translate-y-1/2 rounded-full bg-[#c7d2fe] shadow-[0_0_16px_4px_rgba(139,147,255,0.8)]" />
             {BLIPS.map((b) => (
               <div key={b.label} className="group absolute" style={{ left: b.x, top: b.y }}>
-                <span className={`absolute -left-1.5 -top-1.5 h-3 w-3 animate-ping rounded-full ${b.bad ? "bg-rose-400" : "bg-emerald-300"}`} style={{ animationDuration: "2.2s" }} />
+                <span className={`absolute -left-1.5 -top-1.5 h-3 w-3 motion-safe:animate-ping rounded-full ${b.bad ? "bg-rose-400" : "bg-emerald-300"}`} style={{ animationDuration: "2.2s" }} />
                 <span className={`absolute -left-1 -top-1 h-2 w-2 rounded-full ${b.bad ? "bg-rose-400" : "bg-emerald-300"}`} />
                 <span className="absolute left-3 top-[-10px] whitespace-nowrap rounded-full border border-white/15 bg-black/75 px-2.5 py-1 font-mono text-[10px] tracking-wide text-white/90 opacity-0 backdrop-blur transition group-hover:opacity-100">
                   {b.label}

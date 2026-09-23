@@ -6,7 +6,10 @@ import WowReveal from "@/components/wow/WowReveal";
  * The live room: the real interactive interview demo, framed in WOW —
  * plus live platform metrics and the capability strip. All copy preserved.
  */
-export default function HireWowRoom({ roomStats }: { roomStats: { value: string; label: string }[] }) {
+/** `live` marks counts read from the database; the rest are fixed capabilities. */
+export type RoomStat = { value: string; label: string; live: boolean };
+
+export default function HireWowRoom({ roomStats }: { roomStats: RoomStat[] }) {
   return (
     <section className="relative overflow-hidden bg-[var(--wow-bg-2)] px-4 py-24 text-[var(--wow-fg)] transition-colors md:py-32">
       <div aria-hidden className="pointer-events-none absolute right-[-160px] top-1/4 h-[420px] w-[420px] rounded-full bg-[var(--wow-glow-a)] blur-[130px]" />
@@ -32,7 +35,7 @@ export default function HireWowRoom({ roomStats }: { roomStats: { value: string;
               <WowReveal key={s.label} delay={i * 0.07} className="h-full">
                 <div className="flex h-full flex-col justify-center gap-2 rounded-3xl border border-[var(--wow-card-border)] bg-[var(--wow-card)] p-6 backdrop-blur-sm">
                   <span className="flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.2em] text-[#8b93ff]">
-                    <span className="h-[6px] w-[6px] rounded-full bg-[#8b93ff]" aria-hidden /> Live metric
+                    <span className="h-[6px] w-[6px] rounded-full bg-[#8b93ff]" aria-hidden /> {s.live ? "Live count" : "Built in"}
                   </span>
                   <span className="wow-font-display text-4xl tabular-nums">{s.value}</span>
                   <span className="text-[12.5px] leading-snug text-[var(--wow-muted)]">{s.label}</span>

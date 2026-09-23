@@ -77,9 +77,3 @@
   .wow-flow-pipe::after { animation: none; opacity: 0; }
 }
 
-/* Creator orbit riders get their animation inline (per-avatar delay), which a
-   class rule cannot cancel without !important. Freeze them in place, still
-   spread around the ring, for reduced motion. */
-@media (prefers-reduced-motion: reduce) {
-  .wow-orbit-rider { animation-play-state: paused !important; }
-}

@@ -82,7 +82,7 @@ export function StoryHeroCard({ blog }: { blog: BlogFeedEntry }) {
   return (
     <Link
       href={`/blog/${blog.slug}`}
-      className="wow-card-glow group relative block min-h-[420px] overflow-hidden rounded-3xl border border-border md:min-h-[460px]"
+      className="wow-card-glow group relative block h-full min-h-[420px] overflow-hidden rounded-3xl border border-border md:min-h-[460px]"
     >
       <span className="absolute inset-0">
         <CoverArt blog={blog} sizes="(min-width: 1024px) 66vw, 100vw" />

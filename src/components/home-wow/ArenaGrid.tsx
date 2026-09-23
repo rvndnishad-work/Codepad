@@ -19,7 +19,6 @@ export type ArenaPick = {
   featured: boolean;
   premium: boolean;
   tags: string[];
-  img: string;
 };
 
 const DIFF: Record<string, { label: string; color: string }> = {
@@ -28,27 +27,14 @@ const DIFF: Record<string, { label: string; color: string }> = {
   hard: { label: "Hard", color: "rgb(var(--c-danger))" },
 };
 
-function TiltCard({ children, className }: { children: React.ReactNode; className?: string }) {
-  const ref = useRef<HTMLDivElement>(null);
-  const onMove = (e: React.MouseEvent) => {
-    const el = ref.current!;
-    const r = el.getBoundingClientRect();
-    const rx = ((e.clientY - r.top) / r.height - 0.5) * -10;
-    const ry = ((e.clientX - r.left) / r.width - 0.5) * 12;
-    el.style.transform = `perspective(900px) rotateX(${rx}deg) rotateY(${ry}deg) translateY(-4px)`;
-  };
-  const onLeave = () => { ref.current!.style.transform = "perspective(900px) rotateX(0deg) rotateY(0deg)"; };
-  return <div ref={ref} onMouseMove={onMove} onMouseLeave={onLeave} className={`wow-tilt ${className ?? ""}`}>{children}</div>;
-}
-
 export default function ArenaGrid({ picks }: { picks: ArenaPick[] }) {
   const root = useRef<HTMLElement>(null);
   useEffect(() => {
     if (prefersReducedMotion()) return;
     const ctx = gsap.context(() => {
-      gsap.utils.toArray<HTMLElement>(".wow-arena-card").forEach((card, i) => {
+      gsap.utils.toArray<HTMLElement>(".wow-arena-card").forEach((card) => {
         gsap.from(card, {
-          y: 80, opacity: 0, rotation: i % 2 ? 3 : -3, duration: 0.9, ease: "expo.out",
+          y: 60, opacity: 0, duration: 0.9, ease: "expo.out",
           scrollTrigger: { trigger: card, start: "top 88%" },
         });
       });
@@ -66,7 +52,7 @@ export default function ArenaGrid({ picks }: { picks: ArenaPick[] }) {
             <h2 className="wow-font-display mt-3 text-4xl md:text-5xl lg:text-6xl">FRESH<br />BOSS FIGHTS<span className="text-accent-3">.</span></h2>
           </div>
           <Link href="/challenges" className="group flex w-fit items-center gap-2 rounded-full border border-border bg-panel px-6 py-3 text-xs font-bold uppercase tracking-wider transition hover:border-accent-3">
-            All fights <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
+            All challenges <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
           </Link>
         </div>
 
@@ -74,40 +60,33 @@ export default function ArenaGrid({ picks }: { picks: ArenaPick[] }) {
           {picks.map((c) => {
             const d = DIFF[c.difficulty] ?? { label: c.difficulty, color: "rgb(var(--c-accent-2))" };
             return (
-              <TiltCard key={c.slug} className="wow-arena-card">
-                <article className="wow-card-glow group relative h-full overflow-hidden rounded-3xl border border-border bg-panel backdrop-blur-sm">
-                  <div className="relative h-44 overflow-hidden">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={c.img} alt="" className="h-full w-full object-cover transition duration-700 group-hover:scale-110 group-hover:rotate-1" loading="lazy" />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent" />
-                    {c.featured && <span className="absolute left-3 top-3 flex items-center gap-1 rounded-full bg-accent-3 px-3 py-1 font-mono text-[11px] font-bold uppercase tracking-widest text-fg"><Flame className="h-3 w-3" /> staff pick</span>}
-                    <span className="absolute right-3 top-3 max-w-[55%] truncate rounded-full bg-black/60 px-3 py-1 font-mono text-[11px] uppercase tracking-widest text-fg backdrop-blur">{c.lang}</span>
-                    {c.premium && <span className="absolute bottom-3 left-3 flex items-center gap-1 rounded-full bg-accent px-2.5 py-1 font-mono text-[11px] font-bold uppercase tracking-widest text-accent-ink"><Crown className="h-3 w-3" /> pro</span>}
+              <article key={c.slug} className="wow-arena-card wow-card-glow group relative flex h-full flex-col overflow-hidden rounded-3xl border border-border bg-panel p-5">
+                <div className="flex flex-wrap items-center gap-2 font-mono text-[11px] uppercase tracking-widest">
+                  {c.featured && <span className="flex items-center gap-1 rounded-full bg-accent-3 px-2.5 py-0.5 font-bold text-fg"><Flame className="h-3 w-3" aria-hidden /> staff pick</span>}
+                  {c.premium && <span className="flex items-center gap-1 rounded-full bg-accent px-2.5 py-0.5 font-bold text-accent-ink"><Crown className="h-3 w-3" aria-hidden /> pro</span>}
+                  <span className="min-w-0 max-w-full truncate rounded-full border border-border px-2.5 py-0.5 text-muted">{c.lang}</span>
+                </div>
+                <h3 className="mt-4 line-clamp-2 min-h-[2.5em] text-xl font-extrabold leading-tight tracking-tight">{c.title}</h3>
+                {c.tags.length > 0 && (
+                  <div className="mt-3 flex flex-wrap gap-1.5">
+                    {c.tags.map((t) => (
+                      <span key={t} className="rounded-md border border-border px-2 py-0.5 font-mono text-[11px] text-subtle">{t}</span>
+                    ))}
                   </div>
-                  <div className="wow-tilt-inner p-5">
-                    <div className="flex items-center gap-2 font-mono text-[11px] uppercase tracking-widest text-subtle">
-                      <span className="rounded-full px-2.5 py-0.5 font-bold text-bg" style={{ background: d.color }}>{d.label}</span>
-                      <span className="flex items-center gap-1"><Clock className="h-3 w-3" /> {c.minutes}m</span>
-                      {c.attempts > 0 && <span className="ml-auto tabular-nums">{c.attempts} {c.attempts === 1 ? "attempt" : "attempts"}</span>}
-                    </div>
-                    <h3 className="mt-3 line-clamp-2 min-h-[3.2em] text-xl font-extrabold tracking-tight">{c.title}</h3>
-                    {c.tags.length > 0 && (
-                      <div className="mt-2 flex flex-wrap gap-1.5">
-                        {c.tags.map((t) => (
-                          <span key={t} className="rounded-md border border-border px-2 py-0.5 font-mono text-[11px] text-subtle">{t}</span>
-                        ))}
-                      </div>
-                    )}
-                    <Link
-                      href={`/challenges/${c.slug}`}
-                      className="mt-4 flex w-full items-center justify-center gap-1.5 rounded-xl border border-border bg-elevated py-2.5 text-xs font-black uppercase tracking-widest transition group-hover:border-transparent group-hover:bg-accent group-hover:text-accent-ink"
-                    >
-                      {c.premium ? <Lock className="h-3.5 w-3.5" /> : <span aria-hidden>▶</span>}
-                      {c.premium ? "Unlock fight" : "Fight boss"}
-                    </Link>
-                  </div>
-                </article>
-              </TiltCard>
+                )}
+                <div className="mt-auto flex items-center gap-2 pt-5 font-mono text-[11px] uppercase tracking-widest text-subtle">
+                  <span className="rounded-full px-2.5 py-0.5 font-bold text-bg" style={{ background: d.color }}>{d.label}</span>
+                  <span className="flex items-center gap-1"><Clock className="h-3 w-3" aria-hidden /> {c.minutes}m</span>
+                  {c.attempts > 0 && <span className="ml-auto tabular-nums">{c.attempts} {c.attempts === 1 ? "attempt" : "attempts"}</span>}
+                </div>
+                <Link
+                  href={`/challenges/${c.slug}`}
+                  className="mt-4 flex w-full items-center justify-center gap-1.5 rounded-xl border border-border bg-elevated py-2.5 text-xs font-black uppercase tracking-widest transition group-hover:border-transparent group-hover:bg-accent group-hover:text-accent-ink"
+                >
+                  {c.premium ? <Lock className="h-3.5 w-3.5" aria-hidden /> : <span aria-hidden>▶</span>}
+                  {c.premium ? "Unlock challenge" : "Start challenge"}
+                </Link>
+              </article>
             );
           })}
         </div>

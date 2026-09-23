@@ -104,7 +104,7 @@ export default function HireHeroTypewriter() {
         className={
           good
             ? "wow-gradient-boss transition-colors duration-500"
-            : "text-white transition-colors duration-500"
+            : "text-fg transition-colors duration-500"
         }
       >
         {shown || " "}
@@ -112,7 +112,7 @@ export default function HireHeroTypewriter() {
       <span
         aria-hidden
         className={`wow-blink ml-[0.06em] inline-block h-[0.72em] w-[0.07em] translate-y-[0.02em] ${
-          good ? "bg-[#8b93ff]" : "bg-rose-400"
+          good ? "bg-secondary" : "bg-danger"
         }`}
       />
       <span className="sr-only">

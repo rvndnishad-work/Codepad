@@ -42,7 +42,7 @@ export default async function HirePage() {
   const ctaHref = session?.user ? "/dashboard" : "/login?next=/dashboard";
 
   return (
-    <div className="min-h-screen bg-[var(--wow-bg)] transition-colors">
+    <div className="min-h-screen bg-bg transition-colors">
       <ScrollProgressBar />
 
       <HireWowHero
@@ -60,7 +60,7 @@ export default async function HirePage() {
       <HireWowRadar />
 
       {/* Six live feature demos, reskinned in boss mode — same behaviors. */}
-      <section className="bg-[var(--wow-bg)] px-4 py-24 transition-colors md:py-32">
+      <section className="bg-bg px-4 py-24 transition-colors md:py-32">
         <div className="mx-auto max-w-6xl">
           <HireWowFeatures />
         </div>

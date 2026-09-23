@@ -37,12 +37,12 @@ const ITEMS = [
 
 export default function HireWowTrust() {
   return (
-    <section className="relative bg-[var(--wow-bg)] px-4 py-24 text-[var(--wow-fg)] transition-colors md:py-32">
+    <section className="relative bg-bg px-4 py-24 text-fg transition-colors md:py-32">
       <div className="mx-auto max-w-6xl">
         <WowReveal>
-          <p className="flex items-center gap-2 font-mono text-[11px] uppercase tracking-[0.3em] text-[#8b93ff]"><ShieldCheck className="h-3.5 w-3.5" /> built for trust</p>
+          <p className="flex items-center gap-2 font-mono text-[11px] uppercase tracking-[0.3em] text-secondary"><ShieldCheck className="h-3.5 w-3.5" /> built for trust</p>
           <h2 className="wow-font-display mt-3 text-5xl md:text-7xl">CANDIDATES' WORK,<br /><span className="wow-gradient-boss">HANDLED SERIOUSLY.</span></h2>
-          <p className="mt-4 max-w-xl text-[15px] leading-relaxed text-[var(--wow-muted)]">
+          <p className="mt-4 max-w-xl text-[15px] leading-relaxed text-muted">
             Hiring data is sensitive. None of these are roadmap promises — each
             one names a mechanism that is running today.
           </p>
@@ -51,15 +51,15 @@ export default function HireWowTrust() {
         <div className="mt-10 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {ITEMS.map((item, i) => (
             <WowReveal key={item.title} delay={(i % 3) * 0.07}>
-              <article className="group flex h-full flex-col gap-3 rounded-3xl border border-[var(--wow-card-border)] bg-[var(--wow-card)] p-6 backdrop-blur-sm transition hover:-translate-y-1 hover:border-[#8b93ff]/60">
+              <article className="group flex h-full flex-col gap-3 rounded-3xl border border-border bg-surface p-6 backdrop-blur-sm transition hover:-translate-y-1 hover:border-secondary/60">
                 <div className="flex items-center gap-3">
-                  <span className="grid h-10 w-10 place-items-center rounded-2xl bg-[#8b93ff]/10 text-[#8b93ff] transition group-hover:bg-[#8b93ff]/20">
+                  <span className="grid h-10 w-10 place-items-center rounded-2xl bg-secondary/10 text-secondary transition group-hover:bg-secondary/20">
                     <item.icon className="h-4 w-4" />
                   </span>
-                  <span className="font-mono text-xs font-bold tabular-nums text-[var(--wow-faint)]">{String(i + 1).padStart(2, "0")}</span>
+                  <span className="font-mono text-xs font-bold tabular-nums text-subtle">{String(i + 1).padStart(2, "0")}</span>
                 </div>
                 <h3 className="text-[15px] font-bold tracking-[-0.015em]">{item.title}</h3>
-                <p className="text-[12.5px] leading-relaxed text-[var(--wow-muted)]">{item.body}</p>
+                <p className="text-[12.5px] leading-relaxed text-muted">{item.body}</p>
               </article>
             </WowReveal>
           ))}

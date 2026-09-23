@@ -25,7 +25,7 @@
 }
 /* Boss-mode gradient: restrained indigo → cyan → ice. Professional, not playful. */
 .wow-gradient-boss {
-  background: linear-gradient(92deg, #a5b4fc 0%, #8b93ff 35%, #22d3ee 75%, #e0f2fe 100%);
+  background: linear-gradient(92deg, rgb(var(--c-accent-2-soft)) 0%, rgb(var(--c-accent-2)) 35%, rgb(var(--c-accent-4)) 75%, rgb(var(--c-fg)) 100%);
   background-size: 220% 100%;
   -webkit-background-clip: text;
   background-clip: text;

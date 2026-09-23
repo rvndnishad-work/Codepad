@@ -195,7 +195,7 @@ export default async function HomePage() {
   return (
     <div className="min-h-screen bg-bg transition-colors">
       <HomeWowHero
-        stats={{ questions: stats.prepQuestions, challenges: stats.totalChallenges, sessions: stats.interviewsRun }}
+        stats={{ questions: stats.prepQuestions, techs: arsenal.counts.techCount, challenges: stats.totalChallenges, sessions: stats.interviewsRun }}
         userName={welcomeData?.name}
         recentSnippet={welcomeData?.recent}
       />

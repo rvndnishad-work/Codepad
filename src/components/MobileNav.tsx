@@ -211,7 +211,7 @@ export default function MobileNav({
                 <Link
                   href="/login"
                   onClick={() => setOpen(false)}
-                  className="block rounded-full bg-gradient-to-r from-[#8b93ff] via-[#ff2fb3] to-[#22d3ee] bg-[length:180%_100%] bg-left px-5 py-3 text-center text-sm font-bold text-white transition-all duration-300 hover:bg-right active:translate-y-px"
+                  className="block rounded-full bg-fg px-5 py-3 text-center text-sm font-semibold text-bg transition-colors duration-200 hover:bg-fg/85"
                 >
                   Sign in
                 </Link>
@@ -254,18 +254,18 @@ function MobileGroup({
 
     const body = (
       <>
-        <span className={`grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-gradient-to-br ${tone === "secondary" ? "from-[#6366f1]/25 to-[#22d3ee]/15 text-[#a5b4fc]" : "from-[#ff2fb3]/25 to-[#8b93ff]/20 text-[#ff8ac2]"}`}>
+        <span className={`grid h-9 w-9 shrink-0 place-items-center rounded-xl border border-border bg-panel ${tone === "secondary" ? "text-secondary-soft" : "text-accent"}`}>
           <Icon className="h-4 w-4" />
         </span>
         <span className="min-w-0 flex-1">
           <span className="flex items-center gap-2">
             <span className="text-[13.5px] font-semibold text-fg">{item.label}</span>
             {isComingSoon ? (
-              <span className="font-mono text-[10px] font-bold uppercase tracking-[0.14em] text-amber-500">Soon</span>
+              <span className="font-mono text-[11px] font-medium uppercase tracking-[0.08em] text-warning">Soon</span>
             ) : item.badge ? (
               <span
-                className={`font-mono text-[10px] font-bold uppercase tracking-[0.14em] ${
-                  item.badge === "Hidden" ? "text-rose-400" : labelTone
+                className={`font-mono text-[11px] font-medium uppercase tracking-[0.08em] ${
+                  item.badge === "Hidden" ? "text-danger" : labelTone
                 }`}
               >
                 {item.badge}
@@ -316,7 +316,7 @@ function MobileGroup({
           expanded ? "bg-panel/60" : ""
         }`}
       >
-        <span className={`font-mono text-[11px] font-bold uppercase tracking-[0.2em] ${expanded || groupActive ? labelTone : "text-muted"}`}>{title}</span>
+        <span className={`text-[15px] font-medium ${expanded || groupActive ? "text-fg" : "text-muted"}`}>{title}</span>
         <span
           aria-hidden
           className={`grid h-6 w-6 place-items-center rounded-full border border-border text-muted transition-transform duration-200 ${
@@ -334,7 +334,7 @@ function MobileGroup({
                 <div key={cat} className="flex flex-col">
                   <div className="flex items-center gap-2 px-3 pb-1 pt-2">
                     <span className={`h-1 w-1 rounded-full ${markerBg}`} aria-hidden />
-                    <span className="font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-subtle">{cat}</span>
+                    <span className="font-mono text-[11px] font-medium uppercase tracking-[0.12em] text-subtle">{cat}</span>
                   </div>
                   {items.filter((i) => i.category === cat).map(renderMobileItem)}
                 </div>
@@ -374,7 +374,7 @@ function FlatLink({
         {label}
       </span>
       {isComingSoon && (
-        <span className="font-mono text-[10px] font-bold uppercase tracking-[0.14em] text-amber-500">Soon</span>
+        <span className="font-mono text-[11px] font-medium uppercase tracking-[0.08em] text-warning">Soon</span>
       )}
     </Link>
   );

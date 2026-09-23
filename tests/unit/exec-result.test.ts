@@ -90,3 +90,16 @@ describe("formatRunMeta", () => {
     expect(formatRunMeta({})).toBeNull();
   });
 });
+
+describe("summarizeRun", () => {
+  it("names the outcome instead of a blanket 'complete'", async () => {
+    const { summarizeRun } = await import("@/lib/exec-result");
+    expect(summarizeRun(200, { exitCode: 0, stdout: "hi" })).toEqual({ tone: "ok", text: "Exited with code 0" });
+    expect(summarizeRun(200, { exitCode: 2, stderr: "x" })).toEqual({ tone: "error", text: "Exited with code 2" });
+    expect(summarizeRun(200, { compileError: true })).toEqual({ tone: "error", text: "Compilation failed" });
+    expect(summarizeRun(200, { signal: "SIGKILL" }).text).toBe("Stopped at the time or memory limit");
+    expect(summarizeRun(503, { error: "down" })).toEqual({ tone: "error", text: "Runner unavailable" });
+    expect(summarizeRun(429, null).text).toBe("Rate limited");
+    expect(summarizeRun(500, null).text).toBe("Could not run");
+  });
+});

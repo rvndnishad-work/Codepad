@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import React, { useState, useRef, useEffect } from "react";
 import {
@@ -46,9 +46,9 @@ import { readBoolPref, writeBoolPref, PREF_KEYS } from "@/lib/prefs";
 import { useChallengeTimer, type ChallengeTimerController } from "./ChallengeTimer";
 import type { Snippet, Visibility } from "./Playground";
 
-/* â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-   3D Toolbar Styles â€” injected once
-â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ────────────────────────────────────────────────────────────────
+   3D Toolbar Styles — injected once
+──────────────────────────────────────────────────────────────── */
 
 const toolbarCSS = `
   .toolbar-3d {
@@ -114,7 +114,7 @@ const toolbarCSS = `
     transform: translateY(0.5px);
   }
 
-  /* 3D Run button â€” glowing raised, uses accent across themes */
+  /* 3D Run button — glowing raised, uses accent across themes */
   .tb-run {
     background: linear-gradient(180deg, var(--accent) 0%, var(--accent-soft) 100%);
     box-shadow:
@@ -136,7 +136,7 @@ const toolbarCSS = `
     transform: translateY(1px);
   }
 
-  /* AI button 3D â€” uses accent across themes */
+  /* AI button 3D — uses accent across themes */
   .tb-ai {
     background: linear-gradient(180deg, rgba(var(--accent-rgb),0.12) 0%, rgba(var(--accent-rgb),0.06) 100%);
     box-shadow:
@@ -184,7 +184,7 @@ const toolbarCSS = `
     box-shadow: inset 0 1px 2px rgba(0,0,0,0.2);
   }
 
-  /* 3D separator â€” subtle groove */
+  /* 3D separator — subtle groove */
   .tb-sep {
     width: 1px;
     height: 20px;
@@ -202,7 +202,7 @@ const toolbarCSS = `
     box-shadow: 1px 0 0 rgba(255,255,255,0.04);
   }
 
-  /* Segmented tabs â€” used for the View Layout selector on lg+ screens */
+  /* Segmented tabs — used for the View Layout selector on lg+ screens */
   .tb-tabs {
     background: var(--bg);
     border: 1px solid var(--border);
@@ -235,7 +235,7 @@ const toolbarCSS = `
     color: var(--accent);
   }
 
-  /* Icon button â€” ghost style with 3D hover */
+  /* Icon button — ghost style with 3D hover */
   .tb-icon-btn {
     transition: all 0.15s ease;
     color: var(--muted);
@@ -587,9 +587,9 @@ function ViewLayoutControl({
   );
 }
 
-/* â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-   Numeric Stepper â€” 3D inset
-â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ────────────────────────────────────────────────────────────────
+   Numeric Stepper — 3D inset
+──────────────────────────────────────────────────────────────── */
 
 function NumericStepper({
   value,
@@ -928,7 +928,7 @@ export default function PlaygroundToolbar({
     <>
       <style dangerouslySetInnerHTML={{ __html: toolbarCSS }} />
       <div className="toolbar-3d relative flex h-14 items-center justify-between gap-2 overflow-visible px-2 sm:px-4">
-        {/* â”€â”€ Left: Identity + Run â”€â”€ */}
+        {/* ── Left: Identity + Run ── */}
         <div className="flex items-center gap-3">
           {/* Brand — same lockup as the homepage navbar (mark + wordmark),
               compact mark on small screens. Home is the way out to the
@@ -985,7 +985,7 @@ export default function PlaygroundToolbar({
             />
           </div>
 
-          {/* Run Button â€” 3D raised */}
+          {/* Run Button — 3D raised */}
           {showRun && (
             <button
               onClick={handleRun}
@@ -1007,22 +1007,24 @@ export default function PlaygroundToolbar({
           )}
         </div>
 
-        {/* â”€â”€ Center: Editor Config â”€â”€
+        {/* ── Center: Editor Config ──
             View Layout is the only control visible at every breakpoint
-            (dropdown < lg, segmented tabs â‰¥ lg). Font size + UI scale are
+            (dropdown < lg, segmented tabs ≥ lg). Font size + UI scale are
             secondary, so they stay gated to xl+ to keep narrower toolbars
-            uncluttered. The Editor Engine selector is gone â€” Monaco is the
+            uncluttered. The Editor Engine selector is gone — Monaco is the
             sole editor now. */}
-        <div className="tb-frame flex min-w-0 flex-shrink-0 items-center gap-1 sm:gap-1.5">
-          <ViewLayoutControl
-            value={view}
-            onChange={setView}
-            disabled={tplMode === "console"}
-            showDirectionToggle={showDirectionToggle}
-          />
-        </div>
+        {/* Console-only templates have nothing to switch, so no dead toggle. */}
+        {tplMode !== "console" && (
+          <div className="tb-frame flex min-w-0 flex-shrink-0 items-center gap-1 sm:gap-1.5">
+            <ViewLayoutControl
+              value={view}
+              onChange={setView}
+              showDirectionToggle={showDirectionToggle}
+            />
+          </div>
+        )}
 
-        {/* â”€â”€ Right: Actions â”€â”€ */}
+        {/* ── Right: Actions ── */}
         <div className="flex items-center gap-2">
           {showTimer && <TimerChip t={challengeTimer} />}
           {/* AI Assist is login-only (the /api/playground/assist route 401s

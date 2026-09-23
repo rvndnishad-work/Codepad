@@ -104,3 +104,26 @@ function describeInner(status: number, data: ExecResponse | null): ExecLine[] {
   lines.push({ method: "error", text: data.stderr || `Process exited with code ${data.exitCode ?? 1}.` });
   return lines;
 }
+
+export type RunSummary = { tone: "ok" | "error"; text: string };
+
+/**
+ * One-line outcome for console footers ("Exited with code 0", "Compilation
+ * failed", "Runner unavailable"). Replaces a fixed "Execution complete."
+ * that also showed under failures.
+ */
+export function summarizeRun(status: number, data: ExecResponse | null): RunSummary {
+  if (status === 429) return { tone: "error", text: "Rate limited" };
+  if (status === 503) return { tone: "error", text: "Runner unavailable" };
+  if (status === 413) return { tone: "error", text: "Too large to run" };
+  if (!data || status >= 400) return { tone: "error", text: "Could not run" };
+  if (data.compileError) return { tone: "error", text: "Compilation failed" };
+  if (data.signal) {
+    return {
+      tone: "error",
+      text: data.signal === "SIGKILL" ? "Stopped at the time or memory limit" : `Stopped by ${data.signal}`,
+    };
+  }
+  const code = data.exitCode ?? 0;
+  return { tone: code === 0 ? "ok" : "error", text: `Exited with code ${code}` };
+}

@@ -46,12 +46,12 @@ export async function generateMetadata({ params }: Props) {
       visibility: true,
     },
   });
-  if (!challenge) return { title: "Challenge not found â€” Interviewpad" };
+  if (!challenge) return { title: "Challenge not found — Interviewpad" };
   const indexable = challenge.published && challenge.visibility === "public";
   const description =
     challenge.description?.slice(0, 160).trim() ||
     `Solve the "${challenge.title}" coding challenge (${challenge.difficulty}).`;
-  const title = `${challenge.title} â€” Interviewpad Challenges`;
+  const title = `${challenge.title} — Interviewpad Challenges`;
   const canonical = `/challenges/${slug}`;
   return {
     title,
@@ -74,7 +74,7 @@ export async function generateMetadata({ params }: Props) {
   };
 }
 
-// â”€â”€ Challenge type identity â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Challenge type identity ──────────────────────────────────────────────
 // Same template-based classification as the catalog page: "harness" is the
 // multi-language algorithm judge, test-runner / console templates are JS
 // questions, everything else renders a UI. Each type gets its own tint so
@@ -168,7 +168,7 @@ export default async function ChallengeDetailPage({ params, searchParams }: Prop
   const userId = session?.user?.id;
   const userEmail = session?.user?.email?.toLowerCase() ?? null;
 
-  // â”€â”€ Access control â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── Access control ───────────────────────────────────────────────────
   // Mirrors the gating on /tracks/[slug] before Tracks were folded in.
   const isOwner = !!userId && challenge.authorId === userId;
   const callerIsAdmin = await staffCan(session, "content:curate");
@@ -179,7 +179,7 @@ export default async function ChallengeDetailPage({ params, searchParams }: Prop
     if (challenge.visibility === "public") {
       canView = true;
     } else {
-      // private â€” check magic-link token then email/userId match
+      // private — check magic-link token then email/userId match
       if (inviteToken) {
         const inv = await prisma.challengeInvitation.findUnique({
           where: { token: inviteToken },
@@ -229,7 +229,7 @@ export default async function ChallengeDetailPage({ params, searchParams }: Prop
   }
   if (!canView) notFound();
 
-  // â”€â”€ Creator-space paywall â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── Creator-space paywall ────────────────────────────────────────────
   // If this challenge is gated by a space (SpaceContent), non-owner / non-
   // curator viewers without access (purchase or sufficient-tier membership)
   // see a paywall instead of the runnable challenge.
@@ -254,7 +254,7 @@ export default async function ChallengeDetailPage({ params, searchParams }: Prop
       })
     : [];
 
-  // Per-step status â€” passed | failed | in_progress | null. Used to render
+  // Per-step status — passed | failed | in_progress | null. Used to render
   // the step list checklist on multi-step challenges.
   const statusByStep: Record<string, "passed" | "failed" | "in_progress"> = {};
   if (userId && challenge.steps.length > 1) {
@@ -283,7 +283,7 @@ export default async function ChallengeDetailPage({ params, searchParams }: Prop
   }
 
   const tags = parseTags(challenge.tags);
-  // Up next rail â€” same category when possible, else same template family.
+  // Up next rail — same category when possible, else same template family.
   const upNext = await prisma.challenge.findMany({
     where: {
       published: true,
@@ -310,7 +310,7 @@ export default async function ChallengeDetailPage({ params, searchParams }: Prop
   const startStep = nextUnpassedStep < 0 ? 0 : nextUnpassedStep;
   const totalMinutes = challenge.steps.reduce((s, st) => s + st.estimatedMinutes, 0);
 
-  // â”€â”€ Type-specific launch-card facts â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── Type-specific launch-card facts ──────────────────────────────────
   const kind = challengeKind(challenge.template);
   const theme = TYPE_THEME[kind];
   const firstStep = challenge.steps[0];
@@ -332,7 +332,7 @@ export default async function ChallengeDetailPage({ params, searchParams }: Prop
       languages,
       signature:
         sig && firstStep.functionName
-          ? `${firstStep.functionName}(${sig.params.map((p) => `${p.name}: ${p.type}`).join(", ")}) â†’ ${sig.returnType}`
+          ? `${firstStep.functionName}(${sig.params.map((p) => `${p.name}: ${p.type}`).join(", ")}) → ${sig.returnType}`
           : null,
       totalCases: cases.length,
       hiddenCases: cases.filter((c) => c.isHidden).length,
@@ -634,10 +634,10 @@ export default async function ChallengeDetailPage({ params, searchParams }: Prop
           </ul>
         </div>
       )}
-        {/* â”€â”€ Main column â”€â”€ */}
+        {/* ── Main column ── */}
       </div>
 
-      {/* â”€â”€ Up next on this route â”€â”€ */}
+      {/* ── Up next on this route ── */}
       {upNext.length > 0 && (
         <div className="mx-auto mt-14 max-w-5xl px-6">
           <WowReveal>

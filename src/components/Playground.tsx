@@ -47,7 +47,7 @@ import {
   Info,
   ChevronRight,
 } from "lucide-react";
-import { templatesById, supportsV2Bundler, V2_BUNDLER_URL } from "@/lib/templates";
+import { templatesById, supportsV2Bundler, V2_BUNDLER_URL, type TemplateDef } from "@/lib/templates";
 import { buildNodeBuiltinShims } from "@/lib/node-builtin-shims";
 import { MissingDepBridge } from "./bridges/MissingDepBridge";
 import { decodePlaygroundCode, decodePlaygroundFiles } from "@/lib/playground-handoff";
@@ -58,7 +58,7 @@ import {
   getLanguageFromPath,
   isBackendLanguage,
 } from "@/lib/playground-languages";
-import { describeExecution, formatRunMeta } from "@/lib/exec-result";
+import { describeExecution, formatRunMeta, summarizeRun, type RunSummary } from "@/lib/exec-result";
 import { stdinKey } from "@/lib/run-payload";
 import { postExecute, executeBodyForFiles } from "@/lib/execute-client";
 import { snapshotFiles } from "@/lib/file-dirty";
@@ -84,6 +84,8 @@ import { RunBridge } from "./bridges/RunBridge";
 import { ConsoleEntryBridge } from "./bridges/ConsoleEntryBridge";
 import { ConsoleClearBridge } from "./bridges/ConsoleClearBridge";
 import { FormatBridge } from "./bridges/FormatBridge";
+import { ConsoleArg } from "./playground/ConsoleValue";
+import { formatConsoleArgs } from "@/lib/console-value";
 
 export type Visibility = "private" | "public";
 
@@ -226,7 +228,19 @@ function MobileSplitHandle({ onPointerDown, label }: { onPointerDown: (e: ReactP
   );
 }
 
-export default function Playground({
+/**
+ * Guard for unknown template ids. It lives in its own component so the
+ * editor below always calls the same hooks in the same order.
+ */
+export default function Playground(props: Props) {
+  const tpl = templatesById[props.templateId];
+  if (!tpl) {
+    return <div className="p-8">Unknown template: {props.templateId}</div>;
+  }
+  return <PlaygroundEditor {...props} tpl={tpl} />;
+}
+
+function PlaygroundEditor({
   templateId,
   initialTitle,
   initialFiles,
@@ -236,16 +250,12 @@ export default function Playground({
   embed = false,
   previewOnly = false,
   backHref,
-}: Props) {
-  const { theme, resolvedTheme } = useTheme();
+  tpl,
+}: Props & { tpl: TemplateDef }) {
+  const { resolvedTheme } = useTheme();
   const isDark = resolvedTheme === "dark";
 
   const sandpackTheme = useMemo(() => getSandpackTheme(isDark), [isDark]);
-
-  const tpl = templatesById[templateId];
-  if (!tpl) {
-    return <div className="p-8">Unknown template: {templateId}</div>;
-  }
 
   const [title, setTitle] = useState(initialTitle ?? tpl.title);
   const [visibility, setVisibility] = useState<Visibility>(snippet?.visibility ?? "private");
@@ -276,6 +286,8 @@ export default function Playground({
   const [backendLogs, setBackendLogs] = useState<{ method: string; data: string[] }[]>([]);
   // Provenance of the last explicit run for the console footer.
   const [runMeta, setRunMeta] = useState<string | null>(null);
+  // Outcome line for the backend console footer ("Exited with code 0").
+  const [runSummary, setRunSummary] = useState<RunSummary | null>(null);
   // Program input for backend runs. Local-only draft per template — it rides
   // the run request but never enters saved snippets.
   const [stdin, setStdin] = useState("");
@@ -521,47 +533,49 @@ export default function Playground({
 
   const effectiveView = isBackend ? "console" : view;
 
-  // Speculative pre-compilation — only for backend languages
-  useEffect(() => {
-    if (!dirty || !templateId || !isBackend) return;
-    // No background executor spend for background tabs.
-    if (typeof document !== "undefined" && document.hidden) return;
-
-    const timer = setTimeout(async () => {
-      try {
-        const activeFilePath = activeFileRef.current || (filesRef.current ? Object.keys(filesRef.current)[0] : "/index.ts");
-        const fileObj = filesRef.current?.[activeFilePath];
-        const activeCode = typeof fileObj === "string"
-          ? fileObj
-          : (fileObj as { code: string } | undefined)?.code ?? "";
-
-        if (!activeCode || !activeCode.trim()) return;
-
-        const hashHex = simpleHash(activeCode);
-        const executionLanguage = getLanguageFromPath(activeFilePath, templateId);
-
-        // Only pre-compile backend languages
-        if (!isBackendLanguage(executionLanguage, templateId)) return;
-
-        // Warm the same cache key the explicit run will read: siblings ride
-        // along so the pre-compiled result matches a multi-file run.
-        await postExecute(
-          executeBodyForFiles({
-            language: executionLanguage,
-            activeFilePath,
-            files: filesRef.current,
-            speculative: true,
-            codeHash: hashHex,
-            stdin: stdinRef.current,
-          }),
-        );
-      } catch (err) {
+  // Speculative pre-compilation — backend languages, signed-in users only.
+  // Debounced on every edit (not on the one-shot `dirty` flip, which warmed
+  // the first keystroke's code and never again), and skipped when the exact
+  // payload was already warmed. Guests are excluded: their 10 runs a minute
+  // are too few to spend on background work.
+  const speculativeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const lastWarmedRef = useRef("");
+  const scheduleSpeculative = useCallback(() => {
+    if (!isBackend || !signedIn) return;
+    if (speculativeTimerRef.current) clearTimeout(speculativeTimerRef.current);
+    speculativeTimerRef.current = setTimeout(() => {
+      speculativeTimerRef.current = null;
+      // No background executor spend for hidden tabs or mid-run.
+      if (document.hidden || backendFetchRef.current) return;
+      const activeFilePath = activeFileRef.current || Object.keys(filesRef.current)[0] || "/index.ts";
+      const fileObj = filesRef.current[activeFilePath];
+      const activeCode = typeof fileObj === "string" ? fileObj : fileObj?.code ?? "";
+      if (!activeCode.trim()) return;
+      const executionLanguage = getLanguageFromPath(activeFilePath, templateId);
+      if (!isBackendLanguage(executionLanguage, templateId)) return;
+      // Same body the explicit run will send, so the server keys match.
+      const body = executeBodyForFiles({
+        language: executionLanguage,
+        activeFilePath,
+        files: filesRef.current,
+        speculative: true,
+        codeHash: simpleHash(activeCode),
+        stdin: stdinRef.current,
+      });
+      const signature = simpleHash(JSON.stringify(body));
+      if (signature === lastWarmedRef.current) return;
+      lastWarmedRef.current = signature;
+      postExecute(body).catch((err) => {
         console.warn("[Speculative] Pre-compilation background warning:", err);
-      }
-    }, 1200);
-
-    return () => clearTimeout(timer);
-  }, [dirty, templateId, isBackend]);
+      });
+    }, 1500);
+  }, [isBackend, signedIn, templateId]);
+  useEffect(
+    () => () => {
+      if (speculativeTimerRef.current) clearTimeout(speculativeTimerRef.current);
+    },
+    [],
+  );
 
   async function handleRun() {
     if (backendFetchRef.current) return; // rapid clicks: one execution at a time
@@ -582,6 +596,7 @@ export default function Playground({
         // Clear console before execution
         setBackendLogs([]);
         setRunMeta(null);
+        setRunSummary(null);
         backendFetchRef.current = true;
 
         // Multi-file workspaces travel whole: sibling modules ride as Piston
@@ -597,6 +612,7 @@ export default function Playground({
           }),
         );
         setRunMeta(formatRunMeta(runResult));
+        setRunSummary(summarizeRun(status, runResult));
         setBackendLogs(
           describeExecution(status, runResult).map((line) => ({
             method: line.method,
@@ -610,6 +626,10 @@ export default function Playground({
       }
     } catch (err) {
       console.error("Run execution error:", err);
+      if (isBackend) {
+        setBackendLogs([{ method: "error", data: [`Could not reach the runner: ${String(err)}`] }]);
+        setRunSummary({ tone: "error", text: "Could not run" });
+      }
       window.postMessage({
         type: "console",
         codesandbox: true,
@@ -724,7 +744,7 @@ export default function Playground({
       const res = await fetch(`/api/snippets/${targetId}/fork`, { method: "POST", cache: "no-store" });
       if (!res.ok) throw new Error((await res.text()) || `HTTP ${res.status}`);
       const data = await res.json();
-      toast.success("Fork created â€” openingâ€¦");
+      toast.success("Fork created, opening it…");
       window.location.href = `/play/${data.slug}`;
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err);
@@ -733,26 +753,38 @@ export default function Playground({
     }
   }
 
+  /**
+   * Public links and embeds only work for public snippets. Making one public
+   * is the owner's call, so ask instead of flipping it silently.
+   */
+  async function ensurePublic(): Promise<boolean> {
+    if (!editable || visibility === "public" || !snippetId) return true;
+    const ok = window.confirm(
+      "This playground is private. Make it public so anyone with the link can view it?",
+    );
+    if (!ok) return false;
+    try {
+      const res = await fetch(`/api/snippets/${snippetId}`, {
+        method: "PATCH",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ visibility: "public" }),
+        cache: "no-store",
+      });
+      if (!res.ok) throw new Error(await res.text());
+      setVisibility("public");
+      return true;
+    } catch {
+      toast.error("Could not make the playground public. Try again.");
+      return false;
+    }
+  }
+
   async function handleShare() {
     if (!snippetId || !currentSlug) {
       toast.info("Save first to get a shareable link.");
       return;
     }
-    if (editable && visibility !== "public") {
-      try {
-        const res = await fetch(`/api/snippets/${snippetId}`, {
-          method: "PATCH",
-          headers: { "content-type": "application/json" },
-          body: JSON.stringify({ visibility: "public" }),
-          cache: "no-store",
-        });
-        if (!res.ok) throw new Error(await res.text());
-        setVisibility("public");
-      } catch {
-        toast.error("Couldn't update visibility.");
-        return;
-      }
-    }
+    if (!(await ensurePublic())) return;
     const url = `${window.location.origin}/play/${currentSlug}`;
     try {
       await navigator.clipboard.writeText(url);
@@ -779,21 +811,7 @@ export default function Playground({
       toast.info("Save first to get an embed code.");
       return;
     }
-    if (editable && visibility !== "public") {
-      try {
-        const res = await fetch(`/api/snippets/${snippetId}`, {
-          method: "PATCH",
-          headers: { "content-type": "application/json" },
-          body: JSON.stringify({ visibility: "public" }),
-          cache: "no-store",
-        });
-        if (!res.ok) throw new Error(await res.text());
-        setVisibility("public");
-      } catch {
-        toast.error("Couldn't update visibility.");
-        return;
-      }
-    }
+    if (!(await ensurePublic())) return;
     const url = `${window.location.origin}/embed/${currentSlug}`;
     const code = `<iframe src="${url}" width="100%" height="500" frameborder="0" sandbox="allow-scripts allow-same-origin allow-popups allow-forms"></iframe>`;
     try {
@@ -895,20 +913,16 @@ export default function Playground({
         e.preventDefault();
         void formatRef.current?.();
       }
-      if ((e.ctrlKey || e.metaKey) && (e.key === "=" || e.key === "+" || e.code === "Equal" || e.code === "NumpadAdd")) {
-        e.preventDefault();
-        e.stopPropagation();
-        setFontSize((f) => Math.min(32, f + 1));
-      }
-      if ((e.ctrlKey || e.metaKey) && (e.key === "-" || e.code === "Minus" || e.code === "NumpadSubtract")) {
-        e.preventDefault();
-        e.stopPropagation();
-        setFontSize((f) => Math.max(10, f - 1));
-      }
+      // Ctrl/⌘ + = / - are deliberately NOT captured: they are the browser's
+      // page zoom, which low-vision users rely on. Editor font size lives in
+      // the More menu and on Ctrl+wheel over the editor.
     };
 
     const onWheel = (e: WheelEvent) => {
-      if (e.ctrlKey || e.metaKey) {
+      // Only over the code editor (VS Code parity). Anywhere else Ctrl+wheel
+      // and trackpad pinch stay the browser's page zoom.
+      const overEditor = (e.target as Element | null)?.closest?.(".monaco-editor");
+      if (overEditor && (e.ctrlKey || e.metaKey)) {
         e.preventDefault();
         e.stopPropagation();
         if (e.deltaY < 0) {
@@ -1178,7 +1192,7 @@ export default function Playground({
                                   </PaneTitle>
                                   <div className="flex shrink-0 items-center gap-1.5 whitespace-nowrap">
                                     <ClearButton onClear={clearConsole} showLabel={false} />
-                                    <LiveBadge />
+                                    {!isBackend && <LiveBadge />}
                                   </div>
                                 </div>
                               )}
@@ -1192,7 +1206,7 @@ export default function Playground({
                               )}
                               <div className="flex-1 min-h-0">
                                 {isBackend ? (
-                                  <BackendConsole logs={backendLogs} meta={runMeta} />
+                                  <BackendConsole logs={backendLogs} meta={runMeta} summary={runSummary} />
                                 ) : (
                                   <JsConsole resetRef={consoleResetRef} />
                                 )}
@@ -1260,8 +1274,12 @@ export default function Playground({
                               {effectiveView === "console" || isBackend ? (
                                 <div className="flex shrink-0 items-center gap-2 whitespace-nowrap">
                                   <ClearButton onClear={clearConsole} />
-                                  <div className="h-3 w-px shrink-0 bg-white/10" aria-hidden />
-                                  <LiveBadge />
+                                  {!isBackend && (
+                                    <>
+                                      <div className="h-3 w-px shrink-0 bg-white/10" aria-hidden />
+                                      <LiveBadge />
+                                    </>
+                                  )}
                                 </div>
                               ) : (
                                 !isBackend && (
@@ -1323,7 +1341,7 @@ export default function Playground({
                                 )}
                                 <div className="flex-1 min-h-0">
                                   {isBackend ? (
-                                    <BackendConsole logs={backendLogs} meta={runMeta} />
+                                    <BackendConsole logs={backendLogs} meta={runMeta} summary={runSummary} />
                                   ) : (
                                     <JsConsole resetRef={consoleResetRef} />
                                   )}
@@ -1336,7 +1354,7 @@ export default function Playground({
                       )}
                     </div>
                   </div>
-                  <FilesBridge templateId={templateId} filesRef={filesRef} activeFileRef={activeFileRef} templateFiles={cleanFiles} onChange={() => { if (!previewOnly) setDirty(true); }} />
+                  <FilesBridge templateId={templateId} filesRef={filesRef} activeFileRef={activeFileRef} templateFiles={cleanFiles} onChange={() => { if (!previewOnly) { setDirty(true); scheduleSpeculative(); } }} />
                   <ErrorBridge onError={setBundlerError} />
                   <MissingDepBridge enabled={editable && !isBackend} />
                   <RunBridge runRef={runRef} onStatusChange={(s) => { if (s === "idle" || s === "done") setRunning(false); }} />
@@ -1346,7 +1364,11 @@ export default function Playground({
                 </SandpackProvider>
               )}
             </div>
-            {/* Status bar — readonly readout of template, save, runtime, view */}
+          </div>
+          {/* Status bar — readonly readout of template, save, runtime, view.
+              Lives outside the pane box: inside it, the absolute pane layer
+              painted over it and it was never visible. */}
+          {!previewOnly && !embed && (
             <div className="flex h-7 shrink-0 items-center justify-between gap-2 overflow-hidden border-t border-white/10 bg-[#0d0f16] px-3 font-mono text-[10px] uppercase tracking-[0.16em] text-white/40">
               <div className="flex min-w-0 flex-1 items-center gap-2.5 overflow-hidden">
                 <span className={`h-1.5 w-1.5 shrink-0 rounded-full ${running ? "animate-pulse bg-[#8b93ff]" : !snippetId || dirty ? "bg-amber-400/80" : "bg-emerald-400/80"}`} aria-hidden />
@@ -1355,7 +1377,7 @@ export default function Playground({
               </div>
               <div className="flex shrink-0 items-center gap-3 whitespace-nowrap">
                 <span className="hidden rounded-full border border-white/10 bg-white/5 px-2 py-0.5 md:inline">
-                  {isBackend ? "JIT runtime" : "Browser runtime"}
+                  {isBackend ? "Runs on server" : "Runs in browser"}
                 </span>
                 <span className="hidden sm:inline">{effectiveView}</span>
                 <span aria-live="polite" className={`inline-block min-w-[92px] shrink-0 text-right font-bold tabular-nums ${running ? "animate-pulse text-[#8b93ff]" : "text-emerald-400/80"}`}>
@@ -1363,89 +1385,11 @@ export default function Playground({
                 </span>
               </div>
             </div>
-          </div>
+          )}
         </div>
       </div>
     </>
   );
-}
-
-/** Format a single console argument the way a real devtools console would:
- *  top-level strings unquoted, objects/arrays as compact JSON. */
-function formatConsoleArg(arg: unknown): string {
-  if (typeof arg === "string") return arg;
-  if (arg === null) return "null";
-  if (arg === undefined) return "undefined";
-  if (typeof arg === "bigint") return `${arg}n`;
-  if (typeof arg === "object") {
-    try {
-      return JSON.stringify(arg, (_k, v) => (typeof v === "bigint" ? v.toString() : v));
-    } catch {
-      return String(arg);
-    }
-  }
-  return String(arg);
-}
-
-/** Devtools-style syntax colors for console values. */
-const CONSOLE_COLORS = {
-  number: "text-sky-400",
-  boolean: "text-purple-400",
-  nullish: "text-muted/60",
-  string: "text-emerald-400",
-  key: "text-sky-300",
-} as const;
-
-/** Colorize a compact JSON string into devtools-like tokens (keys, strings,
- *  numbers, booleans, null each get their own color). */
-function highlightJson(json: string): React.ReactNode[] {
-  const out: React.ReactNode[] = [];
-  const re = /"(?:\\.|[^"\\])*"|\b(?:true|false|null)\b|-?\d+(?:\.\d+)?(?:[eE][+-]?\d+)?/g;
-  let last = 0;
-  let i = 0;
-  let m: RegExpExecArray | null;
-  while ((m = re.exec(json))) {
-    if (m.index > last) out.push(json.slice(last, m.index));
-    const tok = m[0];
-    let cls: string = CONSOLE_COLORS.number;
-    if (tok[0] === '"') {
-      cls = /^\s*:/.test(json.slice(re.lastIndex)) ? CONSOLE_COLORS.key : CONSOLE_COLORS.string;
-    } else if (tok === "true" || tok === "false") {
-      cls = CONSOLE_COLORS.boolean;
-    } else if (tok === "null") {
-      cls = CONSOLE_COLORS.nullish;
-    }
-    out.push(
-      <span key={i++} className={cls}>
-        {tok}
-      </span>
-    );
-    last = re.lastIndex;
-  }
-  if (last < json.length) out.push(json.slice(last));
-  return out;
-}
-
-/** Render one console argument with type-based coloring. Top-level strings show
- *  plain (like Chrome devtools); objects/arrays are syntax-highlighted JSON. */
-function ConsoleArg({ value }: { value: unknown }): React.ReactNode {
-  if (typeof value === "string") return value;
-  if (typeof value === "number" || typeof value === "bigint")
-    return <span className={CONSOLE_COLORS.number}>{String(value)}</span>;
-  if (typeof value === "boolean")
-    return <span className={CONSOLE_COLORS.boolean}>{String(value)}</span>;
-  if (value === null) return <span className={CONSOLE_COLORS.nullish}>null</span>;
-  if (value === undefined) return <span className={CONSOLE_COLORS.nullish}>undefined</span>;
-  if (typeof value === "object") {
-    let json: string;
-    try {
-      json = JSON.stringify(value, (_k, v) => (typeof v === "bigint" ? v.toString() : v));
-    } catch {
-      return String(value);
-    }
-    return <>{highlightJson(json)}</>;
-  }
-  return String(value);
 }
 
 /** Signature of one console entry, for consecutive-duplicate collapsing. */
@@ -1566,7 +1510,7 @@ function JsConsole({ resetRef }: { resetRef: React.MutableRefObject<(() => void)
               {icon}
               <div className="flex-1 min-w-0">
                 {isError || isWarn
-                  ? args.map(formatConsoleArg).join(" ")
+                  ? formatConsoleArgs(args)
                   : args.map((arg, idx) => (
                       <span key={idx}>
                         {idx > 0 ? " " : ""}
@@ -1647,7 +1591,16 @@ function StdinBar({
   );
 }
 
-function BackendConsole({ logs, meta }: { logs: { method: string; data: string[] }[]; meta?: string | null }) {  const listRef = useRef<HTMLDivElement>(null);
+function BackendConsole({
+  logs,
+  meta,
+  summary,
+}: {
+  logs: { method: string; data: string[] }[];
+  meta?: string | null;
+  summary?: RunSummary | null;
+}) {
+  const listRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
     const el = listRef.current;
     if (el) el.scrollTop = el.scrollHeight;
@@ -1697,7 +1650,9 @@ function BackendConsole({ logs, meta }: { logs: { method: string; data: string[]
       <div className="flex items-center gap-1.5 px-3 py-2 border-t border-neutral-900/40 font-mono text-[11px] text-neutral-600 bg-black/20 select-none">
         <span className="text-accent font-bold">›</span>
         <span className="animate-pulse w-1 h-3 bg-accent/60" />
-        <span className="italic">Execution complete.</span>
+        <span className={`italic ${summary?.tone === "error" ? "text-red-400/80" : ""}`}>
+          {summary?.text ?? "Run finished"}
+        </span>
         {meta && (
           <span data-testid="run-meta" className="ml-auto not-italic tabular-nums text-white/40">
             {meta}

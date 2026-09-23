@@ -206,7 +206,7 @@ paths:
                 language: { type: string, example: python, description: "One of python, javascript/node, typescript, go, java, cpp, rust." }
                 code: { type: string, description: Source (max 64KB). }
                 stdin: { type: string, description: Standard input (max 16KB). }
-                speculative: { type: boolean, description: Allow cached/speculative result. }
+                speculative: { type: boolean, description: "Background warm-up (signed-in only); its result serves the next matching run once." }
       responses:
         "200":
           description: Execution result.

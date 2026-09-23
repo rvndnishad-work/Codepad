@@ -29,7 +29,9 @@ export function PlaygroundSkeleton() {
       </div>
 
       <div className="flex min-h-0 flex-1 max-md:flex-col">
-        <div className="hidden w-[280px] shrink-0 flex-col gap-2.5 border-r border-border p-3 md:flex">
+        {/* Below 1100px the playground starts with files collapsed to a rail. */}
+        <div className="hidden w-10 shrink-0 border-r border-border bg-surface md:block min-[1100px]:hidden" />
+        <div className="hidden w-[280px] shrink-0 flex-col gap-2.5 border-r border-border p-3 min-[1100px]:flex">
           <div className={`mb-1 h-3 w-12 ${BAR}`} />
           {[70, 55, 80, 48].map((w, i) => (
             <div key={i} className="flex items-center gap-2">

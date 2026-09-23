@@ -28,6 +28,8 @@ export type PlaygroundContextValue = {
   run: () => void;
   view: ViewMode;
   setView: (v: ViewMode) => void;
+  /** Side by side fits next to the editor. When false, "columns" stacks. */
+  canColumns: boolean;
   toggleFiles: () => void;
   togglePrompt: () => void;
   /** Copy a /play link that carries the current files in its hash. */

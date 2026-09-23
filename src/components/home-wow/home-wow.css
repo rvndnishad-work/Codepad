@@ -1,7 +1,4 @@
 /* ── WOW theme tokens: light + dark ───────────────────────────────────
-   The homepage no longer reads these (it uses the Runtime tokens in
-   globals.css); the /hire sections still do. Remove once /hire moves over. */
-/* ── (original notes) ─────────────────────────────────────────────────
    The /wow prototype was hardcoded for dark. These tokens let the new home
    sections render on both themes. Components consume them as arbitrary
    values: bg-[var(--wow-bg)] text-[var(--wow-fg)] etc.
@@ -76,4 +73,3 @@
 @media (prefers-reduced-motion: reduce) {
   .wow-flow-pipe::after { animation: none; opacity: 0; }
 }
-

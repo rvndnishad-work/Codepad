@@ -61,6 +61,9 @@ export const PREF_KEYS = {
   editorTheme: "interviewpad_editorTheme",
   /** "1" = skip the delete confirmation dialog. */
   skipDeleteConfirm: "interviewpad_skipDeleteConfirm",
-  layout: (part: "explorer" | "editor" | "prompt" | "consoleW" | "consoleH") =>
+  /** Pane sizes. explorer/editor/prompt are px; consoleSplitW/H are the
+   *  console's share of the output pane in percent (side by side, stacked).
+   *  consoleW/consoleH held px and are no longer read. */
+  layout: (part: "explorer" | "editor" | "prompt" | "consoleSplitW" | "consoleSplitH") =>
     `interviewpad_layout:${part}`,
 } as const;

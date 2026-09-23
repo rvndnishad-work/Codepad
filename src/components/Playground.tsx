@@ -10,7 +10,6 @@ import type { ExplorerOps } from "./FileExplorer";
 import { ErrorBridge, ErrorOverlay, type ErrorData } from "./ErrorOverlay";
 import PromptSidebar from "./PromptSidebar";
 import { useResizable } from "@/hooks/useResizable";
-import { useResizableHeight } from "@/hooks/useResizableHeight";
 import { templatesById, supportsV2Bundler, V2_BUNDLER_URL, type TemplateDef } from "@/lib/templates";
 import { buildNodeBuiltinShims } from "@/lib/node-builtin-shims";
 import { MissingDepBridge } from "./bridges/MissingDepBridge";
@@ -19,6 +18,18 @@ import { getSandpackTheme } from "@/lib/sandpack-theme";
 import { BACKEND_LANGUAGES } from "@/lib/playground-languages";
 import { snapshotFiles } from "@/lib/file-dirty";
 import { PREF_KEYS } from "@/lib/prefs";
+import {
+  CONSOLE_SPLIT,
+  PANE,
+  PHONE_SPLIT,
+  defaultEditorWidth,
+  editorMaxWidth,
+  effectiveView,
+  explorerCrowdsPrompt,
+  leftOfEditor,
+  phoneEditorSplit,
+  startsWithExplorerCollapsed,
+} from "@/lib/playground-layout";
 import {
   applyDraft,
   codeLinkUrl,
@@ -42,7 +53,9 @@ import {
   ResizeHandle,
   RestoreDraftBar,
   StatusBar,
+  usePaneSize,
   useVerticalSplit,
+  useWindowWidth,
 } from "./playground/Chrome";
 import { OutputPane } from "./playground/OutputPane";
 import { PlaygroundProvider, type PlaygroundContextValue, type ViewMode } from "./playground/PlaygroundContext";
@@ -171,7 +184,11 @@ function PlaygroundEditor({
   const [bundlerError, setBundlerError] = useState<ErrorData | null>(null);
   const [mobileFilesOpen, setMobileFilesOpen] = useState(false);
   const [promptOpen, setPromptOpen] = useState(false);
-  const [explorerCollapsed, setExplorerCollapsed] = useState(false);
+  // Tablets and small laptops start with files tucked away so the editor
+  // and output both get a usable width.
+  const [explorerCollapsed, setExplorerCollapsed] = useState(() =>
+    typeof window === "undefined" ? false : startsWithExplorerCollapsed(window.innerWidth),
+  );
   // Bumped to remount Sandpack with new files (restoring a draft).
   const [restoreKey, setRestoreKey] = useState(0);
 
@@ -303,42 +320,68 @@ function PlaygroundEditor({
     }
   }, [templateId]);
 
-  // Default the editor to half of what the explorer leaves; a width the user
-  // dragged to is persisted and wins.
-  const [defaultEditorW] = useState(() =>
-    typeof window === "undefined" ? 500 : Math.max(200, Math.floor((window.innerWidth - 280) * 0.5)),
-  );
-  // Default wide enough for the "Files" label + all header buttons to show.
-  const explorer = useResizable(280, 200, 400, false, PREF_KEYS.layout("explorer"));
-  const editor = useResizable(defaultEditorW, 200, 2000, false, PREF_KEYS.layout("editor"));
-  const prompt = useResizable(384, 280, 640, false, PREF_KEYS.layout("prompt"));
-  const consoleH = useResizableHeight(300, 120, 900, PREF_KEYS.layout("consoleH"));
-  const consoleW = useResizable(420, 240, 900, true, PREF_KEYS.layout("consoleW"));
-  // Phone stacked-pane splits: editor/output, then preview/console.
-  const mobileSplit = useVerticalSplit(55);
-  const mobileInnerSplit = useVerticalSplit(60);
-
-  // When the AI panel docks, steal its width from explorer + editor
-  // proportionally so the output pane keeps a usable share. Widths are
-  // restored when it closes. Below lg the panel overlays content flow, so
-  // no redistribution happens there.
-  const prevWidths = useRef<{ explorer: number; editor: number } | null>(null);
+  // Pane sizes. The editor gives way first so the output always keeps the
+  // width its view needs; a width the user dragged to is kept and comes
+  // back when there is room again (window widened, AI panel closed).
+  const viewport = useWindowWidth();
+  const explorer = useResizable(PANE.explorerDefault, PANE.explorerMin, PANE.explorerMax, false, PREF_KEYS.layout("explorer"));
+  const prompt = useResizable(PANE.promptDefault, PANE.promptMin, PANE.promptMax, false, PREF_KEYS.layout("prompt"));
+  const left = leftOfEditor({
+    explorerCollapsed,
+    explorerWidth: explorer.width,
+    promptOpen: promptOpen && !isMobile,
+    promptWidth: prompt.width,
+  });
+  // "columns" stacks where side by side would not fit next to the editor.
+  const shownView = effectiveView(view, { isBackend, isMobile, viewport, left });
+  const canColumns = effectiveView("columns", { isBackend, isMobile, viewport, left }) === "columns";
+  const [firstEditorW] = useState(() => defaultEditorWidth(viewport, left));
+  const editor = usePaneSize({
+    storageKey: PREF_KEYS.layout("editor"),
+    initial: firstEditorW,
+    min: PANE.editorMin,
+    max: editorMaxWidth(viewport, left, shownView, isBackend),
+  });
+  const consoleColumns = usePaneSize({
+    storageKey: PREF_KEYS.layout("consoleSplitW"),
+    initial: CONSOLE_SPLIT.columns.initial,
+    min: CONSOLE_SPLIT.columns.min,
+    max: CONSOLE_SPLIT.columns.max,
+    unit: "%",
+    invert: true,
+  });
+  const consoleRows = usePaneSize({
+    storageKey: PREF_KEYS.layout("consoleSplitH"),
+    initial: CONSOLE_SPLIT.rows.initial,
+    min: CONSOLE_SPLIT.rows.min,
+    max: CONSOLE_SPLIT.rows.max,
+    unit: "%",
+    axis: "y",
+    invert: true,
+  });
+  // Phone stacked-pane splits: editor/output, then preview/console. Picking
+  // preview + console gives the editor less height so all three stay usable.
+  const mobileSplit = useVerticalSplit(phoneEditorSplit(shownView));
+  const mobileInnerSplit = useVerticalSplit(PHONE_SPLIT.preview);
+  // Docking the AI panel where the files would crowd out the output tucks
+  // the files away, and brings them back when the panel closes.
+  const explorerTucked = useRef(false);
   useEffect(() => {
-    if (window.innerWidth < 1024) return;
-    if (promptOpen) {
-      if (prevWidths.current) return;
-      prevWidths.current = { explorer: explorer.width, editor: editor.width };
-      const freed = Math.min(prompt.width, window.innerWidth - 900);
-      const total = Math.max(1, explorer.width + editor.width);
-      explorer.setWidth(Math.max(200, Math.round(explorer.width - freed * (explorer.width / total))));
-      editor.setWidth(Math.max(200, Math.round(editor.width - freed * (editor.width / total))));
-    } else if (prevWidths.current) {
-      explorer.setWidth(prevWidths.current.explorer);
-      editor.setWidth(prevWidths.current.editor);
-      prevWidths.current = null;
+    if (isMobile) return;
+    if (promptOpen && !explorerCollapsed && explorerCrowdsPrompt(window.innerWidth, explorer.width, prompt.width)) {
+      explorerTucked.current = true;
+      setExplorerCollapsed(true);
+    } else if (!promptOpen && explorerTucked.current) {
+      explorerTucked.current = false;
+      setExplorerCollapsed(false);
     }
+    // Only when the panel opens or closes; widths read at that moment.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [promptOpen]);
+  }, [promptOpen, isMobile]);
+  const { setSplit: setMobileSplit } = mobileSplit;
+  useEffect(() => {
+    if (isMobile) setMobileSplit(phoneEditorSplit(shownView));
+  }, [isMobile, shownView, setMobileSplit]);
 
   // Strip the one-shot #code= handoff from the URL once it's been applied, so a
   // refresh, save, or fork doesn't re-inject it and the address bar stays clean.
@@ -476,6 +519,7 @@ function PlaygroundEditor({
     run: () => void runner.handleRun(),
     view,
     setView,
+    canColumns,
     toggleFiles: () => setMobileFilesOpen((v) => !v),
     togglePrompt: () => setPromptOpen((v) => !v),
     copyCodeLink: () => void copyCodeLink(),
@@ -598,8 +642,8 @@ function PlaygroundEditor({
                         orientation="vertical"
                         label="Resize AI assist"
                         value={prompt.width}
-                        min={280}
-                        max={640}
+                        min={PANE.promptMin}
+                        max={PANE.promptMax}
                         onPointerDown={prompt.onPointerDown}
                         onResize={prompt.setWidth}
                       />
@@ -631,8 +675,8 @@ function PlaygroundEditor({
                         orientation="vertical"
                         label="Resize file explorer"
                         value={explorer.width}
-                        min={200}
-                        max={400}
+                        min={PANE.explorerMin}
+                        max={PANE.explorerMax}
                         onPointerDown={explorer.onPointerDown}
                         onResize={explorer.setWidth}
                       />
@@ -640,7 +684,7 @@ function PlaygroundEditor({
                   )}
 
                   <div
-                    style={isMobile ? { flex: `0 0 ${mobileSplit.split}%` } : { width: editor.width }}
+                    style={isMobile ? { flex: `0 0 ${mobileSplit.split}%` } : { width: editor.value }}
                     className="pg-panel flex min-h-0 min-w-0 shrink-0 flex-col"
                   >
                     <div className="min-h-0 flex-1">
@@ -660,16 +704,16 @@ function PlaygroundEditor({
                     <ResizeHandle
                       orientation="vertical"
                       label="Resize editor"
-                      value={editor.width}
-                      min={200}
-                      max={2000}
+                      value={editor.value}
+                      min={editor.min}
+                      max={editor.max}
                       onPointerDown={editor.onPointerDown}
-                      onResize={editor.setWidth}
+                      onResize={editor.set}
                     />
                   )}
 
                   <OutputPane
-                    view={view}
+                    view={shownView}
                     isBackend={isBackend}
                     isMobile={isMobile}
                     templateTitle={tpl.title}
@@ -677,20 +721,8 @@ function PlaygroundEditor({
                     runner={runner}
                     bundlerError={bundlerError}
                     onDismissError={dismissError}
-                    consoleWidth={{
-                      value: consoleW.width,
-                      min: 240,
-                      max: 900,
-                      set: consoleW.setWidth,
-                      onPointerDown: consoleW.onPointerDown,
-                    }}
-                    consoleHeight={{
-                      value: consoleH.height,
-                      min: 120,
-                      max: 900,
-                      set: consoleH.setHeight,
-                      onPointerDown: consoleH.onPointerDown,
-                    }}
+                    consoleColumns={consoleColumns}
+                    consoleRows={consoleRows}
                     mobileSplit={mobileInnerSplit}
                   />
                 </div>

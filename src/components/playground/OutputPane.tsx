@@ -1,12 +1,11 @@
 "use client";
 
-import type { PointerEvent as ReactPointerEvent } from "react";
 import { useSandpack } from "@codesandbox/sandpack-react";
 import { AppWindow, Terminal } from "lucide-react";
 import { ErrorOverlay, type ErrorData } from "../ErrorOverlay";
 import { ClearButton, LiveBadge, PaneHeader, PaneTitle, RefreshPreviewButton } from "../OutputPaneChrome";
 import { SandpackPreviewWithLoader } from "../PreviewLoadingOverlay";
-import { MobileSplitHandle, ResizeHandle, type useVerticalSplit } from "./Chrome";
+import { MobileSplitHandle, ResizeHandle, type PaneSize, type useVerticalSplit } from "./Chrome";
 import { BackendConsole, JsConsole, StdinBar } from "./Consoles";
 import type { ViewMode } from "./PlaygroundContext";
 import type { Runner } from "./useRunner";
@@ -19,14 +18,6 @@ function PreviewStatusDot() {
   const label = sandpack.error ? "Preview has an error" : busy ? "Preview is building" : "Preview is up to date";
   return <span className={`h-1.5 w-1.5 shrink-0 rounded-full ${tone}`} role="img" aria-label={label} title={label} />;
 }
-
-type Size = {
-  value: number;
-  min: number;
-  max: number;
-  set: (n: number) => void;
-  onPointerDown: (e: ReactPointerEvent<HTMLDivElement>) => void;
-};
 
 /**
  * Everything right of (or, on phones, below) the editor: the preview, the
@@ -43,8 +34,8 @@ export function OutputPane({
   runner,
   bundlerError,
   onDismissError,
-  consoleWidth,
-  consoleHeight,
+  consoleColumns,
+  consoleRows,
   mobileSplit,
 }: {
   view: ViewMode;
@@ -55,11 +46,14 @@ export function OutputPane({
   runner: Runner;
   bundlerError: ErrorData | null;
   onDismissError: () => void;
-  consoleWidth: Size;
-  consoleHeight: Size;
+  /** Console share of the output pane in percent, side by side. */
+  consoleColumns: PaneSize;
+  /** Console share of the output pane in percent, stacked. */
+  consoleRows: PaneSize;
   mobileSplit: ReturnType<typeof useVerticalSplit>;
 }) {
-  // Phones stack everything, so side-by-side reads as stacked there.
+  // Phones stack everything, so side-by-side reads as stacked there. (The
+  // playground already passes "both" where side by side does not fit.)
   const mode: ViewMode = isBackend ? "console" : isMobile && view === "columns" ? "both" : view;
   const showPreview = mode !== "console";
   const showConsole = mode !== "preview";
@@ -77,12 +71,14 @@ export function OutputPane({
     : mode === "both" && isMobile
       ? { flex: `0 0 ${mobileSplit.split}%` }
       : { flex: "1 1 0%" };
+  // Preview and console share the pane by percentage, so neither can be
+  // squeezed out when the window, the editor or the view changes.
   const consoleStyle = !showConsole
     ? { display: "none" }
     : mode === "columns"
-      ? { width: consoleWidth.value }
+      ? { flex: `0 0 ${consoleColumns.value}%` }
       : mode === "both" && !isMobile
-        ? { height: consoleHeight.value }
+        ? { flex: `0 0 ${consoleRows.value}%` }
         : { flex: "1 1 0%" };
 
   return (
@@ -125,23 +121,27 @@ export function OutputPane({
             <ResizeHandle
               orientation="vertical"
               label="Resize console"
-              value={consoleWidth.value}
-              min={consoleWidth.min}
-              max={consoleWidth.max}
-              onPointerDown={consoleWidth.onPointerDown}
-              onResize={consoleWidth.set}
+              value={consoleColumns.value}
+              min={consoleColumns.min}
+              max={consoleColumns.max}
+              onPointerDown={consoleColumns.onPointerDown}
+              onResize={consoleColumns.set}
               invert
+              step={2}
+              bigStep={10}
             />
           ) : (
             <ResizeHandle
               orientation="horizontal"
               label="Resize console"
-              value={consoleHeight.value}
-              min={consoleHeight.min}
-              max={consoleHeight.max}
-              onPointerDown={consoleHeight.onPointerDown}
-              onResize={consoleHeight.set}
+              value={consoleRows.value}
+              min={consoleRows.min}
+              max={consoleRows.max}
+              onPointerDown={consoleRows.onPointerDown}
+              onResize={consoleRows.set}
               invert
+              step={2}
+              bigStep={10}
             />
           ))}
 

@@ -1,12 +1,22 @@
 "use client";
 
-import { useCallback, useRef, useState, type KeyboardEvent, type PointerEvent as ReactPointerEvent } from "react";
+import {
+  useCallback,
+  useRef,
+  useState,
+  useSyncExternalStore,
+  type KeyboardEvent,
+  type PointerEvent as ReactPointerEvent,
+} from "react";
 import { History, Lock } from "lucide-react";
+import { clamp } from "@/lib/playground-layout";
+import { readPref, writePref } from "@/lib/prefs";
 
 /**
  * Keyboard- and pointer-operable pane divider. Arrow keys nudge the pane by
- * 16px (Shift: 64px); `invert` is for panes anchored to the right of or below
- * their handle, where moving the handle left or up grows them.
+ * `step` (Shift: `bigStep`), 16px and 64px by default; `invert` is for panes
+ * anchored to the right of or below their handle, where moving the handle
+ * left or up grows them.
  */
 export function ResizeHandle({
   orientation,
@@ -17,6 +27,8 @@ export function ResizeHandle({
   onPointerDown,
   onResize,
   invert = false,
+  step = 16,
+  bigStep = 64,
 }: {
   /** "vertical" = a vertical line between side-by-side panes. */
   orientation: "vertical" | "horizontal";
@@ -27,6 +39,8 @@ export function ResizeHandle({
   onPointerDown: (e: ReactPointerEvent<HTMLDivElement>) => void;
   onResize: (next: number) => void;
   invert?: boolean;
+  step?: number;
+  bigStep?: number;
 }) {
   const onKeyDown = (e: KeyboardEvent<HTMLDivElement>) => {
     const grow = orientation === "vertical" ? ["ArrowRight"] : ["ArrowDown"];
@@ -38,8 +52,8 @@ export function ResizeHandle({
     else if (e.key === "End") return (e.preventDefault(), onResize(invert ? min : max));
     else return;
     e.preventDefault();
-    const step = (e.shiftKey ? 64 : 16) * dir * (invert ? -1 : 1);
-    onResize(Math.min(max, Math.max(min, value + step)));
+    const delta = (e.shiftKey ? bigStep : step) * dir * (invert ? -1 : 1);
+    onResize(Math.min(max, Math.max(min, value + delta)));
   };
   return (
     <div
@@ -56,6 +70,114 @@ export function ResizeHandle({
     />
   );
 }
+
+/** Window width, kept current across resizes. */
+export function useWindowWidth(): number {
+  return useSyncExternalStore(
+    (cb) => {
+      window.addEventListener("resize", cb);
+      return () => window.removeEventListener("resize", cb);
+    },
+    () => window.innerWidth,
+    () => 1280,
+  );
+}
+
+/**
+ * A desktop pane size the user can drag, in px or as a percentage of the
+ * handle's container. The dragged size is kept as a preference, but what
+ * renders is always clamped to the current `min`/`max`, so a narrow window
+ * or a docked panel squeezes the pane without losing the preference, and
+ * the pane springs back when there is room again. Drags start from the
+ * rendered size and only write the preference when the user moves a handle.
+ */
+export function usePaneSize({
+  storageKey,
+  initial,
+  min,
+  max,
+  unit = "px",
+  axis = "x",
+  invert = false,
+}: {
+  storageKey: string;
+  initial: number;
+  min: number;
+  max: number;
+  unit?: "px" | "%";
+  axis?: "x" | "y";
+  /** For panes right of or below their handle: moving the handle left or up grows them. */
+  invert?: boolean;
+}) {
+  const [preferred, setPreferred] = useState<number | null>(() => {
+    const raw = readPref(storageKey);
+    const n = raw === null ? NaN : Number(raw);
+    return Number.isFinite(n) ? n : null;
+  });
+  const value = clamp(preferred ?? initial, min, max);
+
+  const set = useCallback(
+    (n: number) => {
+      const next = Math.round(clamp(n, min, max) * 10) / 10;
+      setPreferred(next);
+      writePref(storageKey, String(next));
+    },
+    [storageKey, min, max],
+  );
+
+  const onPointerDown = useCallback(
+    (e: ReactPointerEvent<HTMLDivElement>) => {
+      e.preventDefault();
+      const rect = e.currentTarget.parentElement?.getBoundingClientRect();
+      const total = Math.max(1, (axis === "x" ? rect?.width : rect?.height) ?? 1);
+      const start = axis === "x" ? e.clientX : e.clientY;
+      const startValue = value;
+      let frame = 0;
+      let pending: number | null = null;
+      const apply = () => {
+        if (pending === null) return;
+        const moved = invert ? -pending : pending;
+        set(startValue + (unit === "%" ? (moved / total) * 100 : moved));
+      };
+      const onPointerMove = (ev: globalThis.PointerEvent) => {
+        pending = (axis === "x" ? ev.clientX : ev.clientY) - start;
+        if (!frame) {
+          frame = requestAnimationFrame(() => {
+            frame = 0;
+            apply();
+          });
+        }
+      };
+      const cursor = axis === "x" ? "col-resize" : "row-resize";
+      // Covers the page while dragging so the preview iframe cannot swallow
+      // pointer events.
+      const overlay = document.createElement("div");
+      overlay.style.cssText = `position:fixed;inset:0;z-index:9999;cursor:${cursor};`;
+      const onPointerUp = () => {
+        if (frame) cancelAnimationFrame(frame);
+        frame = 0;
+        apply();
+        document.removeEventListener("pointermove", onPointerMove);
+        document.removeEventListener("pointerup", onPointerUp);
+        document.removeEventListener("pointercancel", onPointerUp);
+        document.body.style.cursor = "";
+        document.body.style.userSelect = "";
+        overlay.remove();
+      };
+      document.addEventListener("pointermove", onPointerMove);
+      document.addEventListener("pointerup", onPointerUp);
+      document.addEventListener("pointercancel", onPointerUp);
+      document.body.style.cursor = cursor;
+      document.body.style.userSelect = "none";
+      document.body.appendChild(overlay);
+    },
+    [axis, invert, unit, value, set],
+  );
+
+  return { value, min, max, set, onPointerDown };
+}
+
+export type PaneSize = ReturnType<typeof usePaneSize>;
 
 /**
  * Percentage-based vertical split for the stacked phone layout. Tracks a

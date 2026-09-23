@@ -99,7 +99,7 @@ function ViewLayoutControl({
     }`;
   const dirOpen = split && showDirection;
   return (
-    <div className="flex h-8 shrink-0 items-center gap-0.5 rounded-md border border-border bg-bg p-0.5">
+    <div className="flex h-8 shrink-0 items-center rounded-md border border-border bg-bg p-0.5">
       <div role="radiogroup" aria-label="Output view" className="flex items-center gap-0.5">
         <button
           type="button"
@@ -124,13 +124,14 @@ function ViewLayoutControl({
           Console
         </button>
       </div>
-      {/* Always mounted at a fixed width so the tabs never shift when the
-          direction toggles slide in. */}
+      {/* Folded to nothing while Preview is selected, so the switch only
+          takes the room it needs; choosing Console slides it open to show
+          the stacked / side-by-side toggles. */}
       <div
         data-open={dirOpen}
         aria-hidden={!dirOpen}
-        className={`flex w-[58px] shrink-0 items-center gap-0.5 overflow-hidden pl-1 transition-[opacity,transform] duration-200 ${
-          dirOpen ? "translate-x-0 opacity-100" : "invisible translate-x-2 opacity-0"
+        className={`flex shrink-0 items-center gap-0.5 overflow-hidden transition-[width,padding,opacity] duration-200 ease-out ${
+          dirOpen ? "w-[58px] pl-1 opacity-100" : "invisible w-0 pl-0 opacity-0"
         }`}
       >
         <button
@@ -691,7 +692,7 @@ export default function PlaygroundToolbar() {
         </div>
 
         {showView && !compact && (
-          <ViewLayoutControl value={pg.view} onChange={pg.setView} showDirection={!pg.isMobile} />
+          <ViewLayoutControl value={pg.view} onChange={pg.setView} showDirection={!pg.isMobile && pg.canColumns} />
         )}
 
         <div className="flex flex-1 items-center justify-end gap-1 sm:gap-1.5">
@@ -711,25 +712,29 @@ export default function PlaygroundToolbar() {
           {!compact && showTheme && <EditorThemePicker value={prefs.editorThemeId} onChange={prefs.setEditorThemeId} />}
           {!compact && saveButton}
 
-          <button
-            type="button"
-            onClick={pg.run}
-            disabled={pg.running}
-            aria-busy={pg.running}
-            aria-label={pg.running ? "Running" : "Run"}
-            title={`Run (${RUN_SHORTCUT})`}
-            className={`flex h-8 shrink-0 items-center gap-2 rounded-md bg-accent pl-2.5 pr-3 text-[13px] font-medium text-accent-ink transition-[background-color,transform] hover:bg-accent/90 active:scale-[0.98] disabled:cursor-wait disabled:opacity-80 ${FOCUS}`}
-          >
-            {pg.running ? (
-              <span className="h-3.5 w-3.5 shrink-0 animate-spin rounded-full border-2 border-accent-ink/30 border-t-accent-ink" aria-hidden />
-            ) : (
-              <Play className="h-3.5 w-3.5 shrink-0 fill-current" aria-hidden />
-            )}
-            <span aria-hidden>{pg.running ? "Running" : "Run"}</span>
-            <kbd aria-hidden className="hidden font-sans text-[12px] opacity-60 lg:inline">
-              {RUN_SHORTCUT}
-            </kbd>
-          </button>
+          {/* Browser templates preview live as you type, so only server
+              languages get a Run button. */}
+          {pg.isBackend && (
+            <button
+              type="button"
+              onClick={pg.run}
+              disabled={pg.running}
+              aria-busy={pg.running}
+              aria-label={pg.running ? "Running" : "Run"}
+              title={`Run (${RUN_SHORTCUT})`}
+              className={`flex h-8 shrink-0 items-center gap-2 rounded-md bg-accent pl-2.5 pr-3 text-[13px] font-medium text-accent-ink transition-[background-color,transform] hover:bg-accent/90 active:scale-[0.98] disabled:cursor-wait disabled:opacity-80 ${FOCUS}`}
+            >
+              {pg.running ? (
+                <span className="h-3.5 w-3.5 shrink-0 animate-spin rounded-full border-2 border-accent-ink/30 border-t-accent-ink" aria-hidden />
+              ) : (
+                <Play className="h-3.5 w-3.5 shrink-0 fill-current" aria-hidden />
+              )}
+              <span aria-hidden>{pg.running ? "Running" : "Run"}</span>
+              <kbd aria-hidden className="hidden font-sans text-[12px] opacity-60 lg:inline">
+                {RUN_SHORTCUT}
+              </kbd>
+            </button>
+          )}
 
           <div className="relative" ref={menuRef}>
             <button

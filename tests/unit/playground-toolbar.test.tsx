@@ -27,6 +27,7 @@ function makeCtx(o: Overrides = {}): PlaygroundContextValue {
     run: vi.fn(),
     view: "preview",
     setView: vi.fn(),
+    canColumns: true,
     toggleFiles: vi.fn(),
     togglePrompt: vi.fn(),
     copyCodeLink: vi.fn(),
@@ -90,7 +91,7 @@ describe("PlaygroundToolbar", () => {
   });
 
   it("Run is the one accent button and runs the code", () => {
-    const ctx = renderBar();
+    const ctx = renderBar({ isBackend: true });
     const run = screen.getByRole("button", { name: "Run" });
     expect(run.className).toContain("bg-accent");
     expect(run.title).toMatch(/Run \((⌘↵|Ctrl\+↵)\)/);
@@ -98,8 +99,14 @@ describe("PlaygroundToolbar", () => {
     expect(ctx.run).toHaveBeenCalledTimes(1);
   });
 
+  it("browser templates preview live and have no Run button", () => {
+    renderBar({ isBackend: false });
+    expect(screen.queryByRole("button", { name: "Run" })).toBeNull();
+    expect(screen.queryByTitle(/^Run \(/)).toBeNull();
+  });
+
   it("Run shows a busy state while code runs", () => {
-    renderBar({ running: true });
+    renderBar({ isBackend: true, running: true });
     const run = screen.getByRole("button", { name: "Running" });
     expect(run).toBeDisabled();
     expect(run.getAttribute("aria-busy")).toBe("true");
@@ -167,11 +174,21 @@ describe("PlaygroundToolbar", () => {
     expect(ctx.setView).toHaveBeenCalledWith("preview");
   });
 
-  it("direction toggles stay mounted but parked when not split", () => {
+  it("direction toggles fold away to no width when not split", () => {
     renderBar({ view: "preview" });
     const stacked = screen.getByTitle("Stacked: preview above console");
     expect(stacked.parentElement?.getAttribute("data-open")).toBe("false");
+    expect(stacked.parentElement?.className).toContain("w-0");
     expect(stacked.tabIndex).toBe(-1);
+  });
+
+  it("direction toggles are parked when side by side does not fit", () => {
+    renderBar({ view: "columns", canColumns: false });
+    const group = screen.getByRole("radiogroup", { name: "Output view" });
+    expect(within(group).getByRole("radio", { name: "Console" }).getAttribute("aria-checked")).toBe("true");
+    const sideBySide = screen.getByTitle("Side by side");
+    expect(sideBySide.parentElement?.getAttribute("data-open")).toBe("false");
+    expect(sideBySide.tabIndex).toBe(-1);
   });
 
   it("console-only templates have no view control", () => {
@@ -320,7 +337,7 @@ describe("PlaygroundToolbar", () => {
 
   describe("on phones", () => {
     it("keeps only brand, files, title, Run and More on the bar", () => {
-      renderBar({ isMobile: true, doc: { dirty: true } });
+      renderBar({ isMobile: true, isBackend: true, doc: { dirty: true } });
       expect(screen.getByRole("button", { name: "Files" })).toBeTruthy();
       expect(screen.getByRole("button", { name: "Run" })).toBeTruthy();
       expect(screen.queryByRole("radiogroup", { name: "Output view" })).toBeNull();

@@ -5,7 +5,7 @@
  *   foreground color — no gradient tile, no orbit. Reads on light and dark
  *   via `var(--fg)` with zero per-instance paint setup.
  * - Persona-adaptive wordmark: `tone="secondary"` shifts the "pad"
- *   gradient + sub-caption on hiring routes.
+ *   colour (yellow for developers, indigo for hiring) and the sub-caption.
  * - Alive: blinking caret (inline <style>, same pattern as Logo.tsx so it
  *   works wherever the header renders, no global CSS needed).
  */
@@ -17,11 +17,6 @@ type Props = {
   showSub?: boolean;
   className?: string;
 };
-
-const GRADIENTS = {
-  accent: ["#8b93ff", "#ff2fb3", "#22d3ee"],
-  secondary: ["#6366f1", "#8b93ff", "#22d3ee"],
-} as const;
 
 export function LogoDynamicMark({ className }: { className?: string }) {
   return (
@@ -56,7 +51,6 @@ export function LogoDynamicMark({ className }: { className?: string }) {
 }
 
 export default function LogoDynamic({ tone = "accent", compact = false, showSub = true, className }: Props) {
-  const [a, , c] = GRADIENTS[tone];
   return (
     <span className={`group/logo flex justify-center items-center gap-2.5 ${className ?? ""}`}>
       <style>{`
@@ -70,12 +64,7 @@ export default function LogoDynamic({ tone = "accent", compact = false, showSub 
         <span className="flex flex-col leading-none">
           <span className="ld-word text-[17px] font-semibold tracking-[-0.03em]" style={{ color: "var(--fg)" }}>
             interview
-            <span
-              className="inline-block bg-clip-text text-transparent"
-              style={{
-                backgroundImage: `linear-gradient(92deg, ${a}, ${c})`,
-              }}
-            >
+            <span className={tone === "secondary" ? "text-secondary-soft" : "text-accent"}>
               pad
             </span>
           </span>

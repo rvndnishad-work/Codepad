@@ -11,6 +11,7 @@ import NavDropdown from "./NavDropdown";
 import NavChrome from "./NavChrome";
 import UserMenu from "./UserMenu";
 import MobileNav from "./MobileNav";
+import NavGlide from "./NavGlide";
 import NotificationBell from "./NotificationBell";
 
 export default async function Header() {
@@ -247,6 +248,7 @@ export default async function Header() {
 
         <div className="flex items-center">
           <nav aria-label="Primary" className="hidden h-16 items-center gap-1 md:flex">
+            <NavGlide>
             {(devsMenuStatus !== "hidden" || showAdmin) &&
               (filteredDeveloperItems.length > 0 || showAdmin) && (
                 <NavDropdown
@@ -284,7 +286,7 @@ export default async function Header() {
                 }
               />
             )}
-
+            </NavGlide>
           </nav>
 
           {/* Utility island — divider + buttons flip with the bar state. */}

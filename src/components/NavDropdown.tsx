@@ -191,11 +191,13 @@ export default function NavDropdown({
     closeTimerRef.current = window.setTimeout(() => setOpen(false), 120);
   };
 
-  const accentText = tone === "secondary" ? "text-[#8b93ff]" : "text-[#ff2fb3]";
-  const tileGradient =
+  // One accent per menu: yellow for developers, indigo for hiring teams.
+  const accentText = tone === "secondary" ? "text-secondary-soft" : "text-accent";
+  const accentDot = tone === "secondary" ? "bg-secondary-soft" : "bg-accent";
+  const tileClass =
     tone === "secondary"
-      ? "from-[#6366f1]/25 to-[#22d3ee]/15 text-[#a5b4fc]"
-      : "from-[#ff2fb3]/25 to-[#8b93ff]/20 text-[#ff8ac2]";
+      ? "border border-border bg-panel text-muted group-hover/item:border-secondary/40 group-hover/item:text-secondary-soft"
+      : "border border-border bg-panel text-muted group-hover/item:border-accent/40 group-hover/item:text-accent";
 
   // Distinct category groupings if specified on items
   const categories = Array.from(
@@ -210,7 +212,7 @@ export default function NavDropdown({
 
     const body = (
       <>
-        <span className={`grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-gradient-to-br ${tileGradient}`}>
+        <span className={`grid h-9 w-9 shrink-0 place-items-center rounded-xl transition-colors duration-200 ${tileClass}`}>
           <Icon className="h-4 w-4" />
         </span>
         <span className="min-w-0 flex-1">
@@ -219,11 +221,11 @@ export default function NavDropdown({
               {item.label}
             </span>
             {isComingSoon ? (
-              <span className="font-mono text-[10px] font-bold uppercase tracking-[0.14em] text-amber-500">Soon</span>
+              <span className="font-mono text-[11px] font-medium uppercase tracking-[0.08em] text-warning">Soon</span>
             ) : item.badge ? (
               <span
-                className={`font-mono text-[10px] font-bold uppercase tracking-[0.14em] ${
-                  item.badge === "Hidden" ? "text-rose-400" : accentText
+                className={`font-mono text-[11px] font-medium uppercase tracking-[0.08em] ${
+                  item.badge === "Hidden" ? "text-danger" : accentText
                 }`}
               >
                 {item.badge}
@@ -259,7 +261,8 @@ export default function NavDropdown({
         href={item.href}
         role="menuitem"
         aria-current={active ? "page" : undefined}
-        className={`nav-tile group/item flex items-start gap-3 rounded-xl px-3 py-2.5 ${
+        style={{ ["--nav-i" as string]: index }}
+        className={`nav-tile nav-item-in group/item flex items-start gap-3 rounded-xl px-3 py-2.5 ${
           active ? "bg-panel ring-1 ring-inset ring-border" : ""
         }`}
       >
@@ -275,7 +278,7 @@ export default function NavDropdown({
 
     const body = (
       <>
-        <span className={`grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-gradient-to-br ${tileGradient}`}>
+        <span className={`grid h-9 w-9 shrink-0 place-items-center rounded-xl transition-colors duration-200 ${tileClass}`}>
           <Icon className="h-4 w-4" />
         </span>
         <span className="min-w-0 flex-1">
@@ -284,11 +287,11 @@ export default function NavDropdown({
               {item.label}
             </span>
             {isComingSoon ? (
-              <span className="font-mono text-[10px] font-bold uppercase tracking-[0.14em] text-amber-500">Soon</span>
+              <span className="font-mono text-[11px] font-medium uppercase tracking-[0.08em] text-warning">Soon</span>
             ) : item.badge ? (
               <span
-                className={`font-mono text-[10px] font-bold uppercase tracking-[0.14em] ${
-                  item.badge === "Hidden" ? "text-rose-400" : accentText
+                className={`font-mono text-[11px] font-medium uppercase tracking-[0.08em] ${
+                  item.badge === "Hidden" ? "text-danger" : accentText
                 }`}
               >
                 {item.badge}
@@ -324,7 +327,8 @@ export default function NavDropdown({
         href={item.href}
         role="menuitem"
         aria-current={active ? "page" : undefined}
-        className={`nav-tile group/item flex items-start gap-3 rounded-xl px-3 py-3 ${
+        style={{ ["--nav-i" as string]: index }}
+        className={`nav-tile nav-item-in group/item flex items-start gap-3 rounded-xl px-3 py-3 ${
           active ? "bg-panel ring-1 ring-inset ring-border" : ""
         }`}
       >
@@ -348,7 +352,7 @@ export default function NavDropdown({
         aria-haspopup="menu"
         aria-expanded={open}
         onClick={() => setOpen((o) => !o)}
-        className={`nav-pill group flex h-9 items-center gap-1.5 rounded-full px-4 text-[13px] font-semibold tracking-[-0.005em] transition-all duration-200 ${
+        className={`nav-pill group relative z-[1] flex h-9 items-center gap-1.5 rounded-full px-4 text-[14px] font-medium tracking-[-0.01em] transition-colors duration-200 ${
           open || isGroupActive ? "nav-pill-active" : ""
         }`}
       >
@@ -368,17 +372,17 @@ export default function NavDropdown({
           className={`absolute left-0 top-[calc(100%+10px)] z-50 ${hasCategories || twoUp ? "w-[43rem]" : "w-[32rem]"}`}
         >
           {/* Glass-free command panel — fully opaque in every theme */}
-          <div className="animate-fade-in overflow-hidden rounded-2xl border border-border bg-surface shadow-[0_32px_80px_-20px_rgba(0,0,0,0.5)]">
+          <div className="nav-panel-in overflow-hidden rounded-2xl border border-border bg-surface shadow-[0_32px_80px_-20px_rgba(0,0,0,0.5)]">
             <div className="grid grid-cols-1 gap-2 p-2 sm:grid-cols-[12.5rem_1fr]">
               {/* ── The rail: who this menu is for ── */}
               <div className="flex flex-col justify-between gap-6 rounded-xl bg-panel/60 p-5">
                 <div>
                   <div className="flex items-center gap-2">
-                    <span aria-hidden className={`h-1.5 w-1.5 rounded-full bg-gradient-to-r ${tone === "secondary" ? "from-[#6366f1] to-[#22d3ee]" : "from-[#ff2fb3] to-[#8b93ff]"}`} />
-                    <span className={`font-mono text-[11px] font-bold uppercase tracking-[0.18em] ${accentText}`}>{railTitle ?? label}</span>
+                    <span aria-hidden className={`h-1.5 w-1.5 rounded-full ${accentDot}`} />
+                    <span className={`font-mono text-xs font-medium uppercase tracking-[0.12em] ${accentText}`}>{railTitle ?? label}</span>
                   </div>
                   {railBlurb && (
-                    <p className="mt-3 text-[12px] leading-relaxed text-muted">{railBlurb}</p>
+                    <p className="mt-3 text-[13px] leading-relaxed text-muted">{railBlurb}</p>
                   )}
                 </div>
                 {railHref && railHrefLabel && (
@@ -387,7 +391,7 @@ export default function NavDropdown({
                     role="menuitem"
                     className="group/rail inline-flex items-center gap-1.5 self-start text-[12px] font-semibold text-fg"
                   >
-                    <span className="underline decoration-[#8b93ff] decoration-2 underline-offset-4">{railHrefLabel}</span>
+                    <span className={`underline decoration-2 underline-offset-4 ${tone === "secondary" ? "decoration-secondary-soft" : "decoration-accent"}`}>{railHrefLabel}</span>
                     <ArrowRight className="h-3 w-3 transition-transform group-hover/rail:translate-x-0.5" />
                   </Link>
                 )}
@@ -401,10 +405,10 @@ export default function NavDropdown({
                     return (
                       <div key={cat} className="flex min-w-0 flex-col">
                         <div className="flex items-center gap-2 px-3 pb-1 pt-1">
-                          <span className="font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-subtle">{cat}</span>
+                          <span className="font-mono text-[11px] font-medium uppercase tracking-[0.12em] text-subtle">{cat}</span>
                         </div>
                         <div className="flex flex-col">
-                          {catItems.map((item, idx) => renderCategorizedItem(item, idx))}
+                          {catItems.map((item) => renderCategorizedItem(item, items.indexOf(item)))}
                         </div>
                       </div>
                     );
@@ -419,11 +423,11 @@ export default function NavDropdown({
 
             {/* ── Footer strip: the panel states its own size, in mono ── */}
             <div className="flex items-center justify-between border-t border-border bg-surface/60 px-5 py-2.5">
-              <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-subtle">
+              <span className="font-mono text-[11px] uppercase tracking-[0.1em] text-subtle">
                 {String(items.length).padStart(2, "0")} destinations · {tone === "secondary" ? "Recruiter suite" : "Interview runtime"}
               </span>
               <span className="flex items-center gap-2" aria-hidden>
-                <span className={`h-1.5 w-1.5 rounded-full bg-gradient-to-r ${tone === "secondary" ? "from-[#6366f1] to-[#22d3ee]" : "from-[#ff2fb3] to-[#8b93ff]"}`} />
+                <span className={`h-1.5 w-1.5 rounded-full ${accentDot}`} />
                 <span className="h-px w-6 bg-border" />
                 <span className="h-1.5 w-1.5 rounded-full border border-border-strong" />
               </span>

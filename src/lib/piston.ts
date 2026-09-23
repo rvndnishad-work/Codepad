@@ -8,7 +8,7 @@
  *
  * Configure with:
  *   PISTON_URL            base URL of the Piston API (default http://localhost:2000)
- *   PISTON_RUN_TIMEOUT    per-run wall-clock budget in ms (default 5000)
+ *   PISTON_RUN_TIMEOUT    per-run wall-clock budget in ms (default 3000)
  *   PISTON_COMPILE_TIMEOUT compile budget in ms (default 10000)
  *   PISTON_RUN_MEMORY     run memory cap in bytes, -1 = unlimited (default 256MB)
  */

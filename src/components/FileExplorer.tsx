@@ -251,7 +251,7 @@ function DeleteConfirmDialog({
 
   return (
     <div
-      className="fixed inset-0 z-[200] grid place-items-center bg-black/60 p-4 backdrop-blur-sm"
+      className="fixed inset-0 z-[200] grid place-items-center bg-bg/70 p-4 backdrop-blur-sm"
       onMouseDown={(e) => {
         if (e.target === e.currentTarget) onCancel();
       }}
@@ -763,11 +763,8 @@ export default function FileExplorer({
         setDropPosition(null);
       }}
     >
-      <div className="sticky top-0 z-10 flex h-9 shrink-0 items-center justify-between border-b border-white/10 bg-[#0d0f16]/90 px-3">
-        <span className="flex items-center gap-2 font-mono text-[11px] font-bold uppercase tracking-[0.18em] text-white/80">
-          <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-[#8b93ff]" aria-hidden />
-          Files
-        </span>
+      <div className="sticky top-0 z-10 flex h-9 shrink-0 items-center justify-between border-b border-border bg-surface px-3">
+        <span className="text-[13px] font-medium text-fg">Files</span>
         <div className="flex items-center gap-0.5">
           {!readOnly && (
             <>
@@ -777,7 +774,7 @@ export default function FileExplorer({
                   startNew("/", "file", defaultExt);
                 }}
                 title="New file"
-                className="grid h-6 w-6 place-items-center rounded-full text-white/40 transition hover:bg-white/10 hover:text-white"
+                className="grid h-6 w-6 place-items-center rounded-md text-subtle transition-colors hover:bg-panel hover:text-fg focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent"
               >
                 <FilePlus className="w-3.5 h-3.5" />
               </button>
@@ -787,7 +784,7 @@ export default function FileExplorer({
                   startNew("/", "folder");
                 }}
                 title="New folder"
-                className="grid h-6 w-6 place-items-center rounded-full text-white/40 transition hover:bg-white/10 hover:text-white"
+                className="grid h-6 w-6 place-items-center rounded-md text-subtle transition-colors hover:bg-panel hover:text-fg focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent"
               >
                 <FolderPlus className="w-3.5 h-3.5" />
               </button>
@@ -798,8 +795,8 @@ export default function FileExplorer({
                     setShowDeps((v) => !v);
                   }}
                   title="Dependencies"
-                  className={`grid h-6 w-6 place-items-center rounded-full transition ${
-                    showDeps ? "bg-[#8b93ff]/20 text-[#8b93ff]" : "text-white/40 hover:bg-white/10 hover:text-white"
+                  className={`grid h-6 w-6 place-items-center rounded-md transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent ${
+                    showDeps ? "bg-panel text-accent" : "text-subtle hover:bg-panel hover:text-fg"
                   }`}
                 >
                   <Package className="w-3.5 h-3.5" />
@@ -815,10 +812,10 @@ export default function FileExplorer({
                     ? "Sort: manual (creation order). Click for A–Z."
                     : "Sort: A–Z. Click for manual."
                 }
-                className={`grid h-6 w-6 place-items-center rounded-full transition ${
+                className={`grid h-6 w-6 place-items-center rounded-md transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent ${
                   sortMode === "name"
-                    ? "bg-[#8b93ff]/20 text-[#8b93ff]"
-                    : "text-white/40 hover:bg-white/10 hover:text-white"
+                    ? "bg-panel text-accent"
+                    : "text-subtle hover:bg-panel hover:text-fg"
                 }`}
               >
                 {sortMode === "manual" ? (
@@ -836,7 +833,7 @@ export default function FileExplorer({
                 void downloadZip();
               }}
               title="Download ZIP"
-              className="grid h-6 w-6 place-items-center rounded-full text-white/40 transition hover:bg-white/10 hover:text-white"
+              className="grid h-6 w-6 place-items-center rounded-md text-subtle transition-colors hover:bg-panel hover:text-fg focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent"
             >
               <Download className="w-3.5 h-3.5" />
             </button>
@@ -847,7 +844,7 @@ export default function FileExplorer({
               onClick={onToggleCollapse}
               title="Collapse to icons"
               aria-label="Collapse file tree"
-              className="p-1.5 hover:bg-elevated rounded transition text-muted/50 hover:text-fg"
+              className="grid h-6 w-6 place-items-center rounded-md text-subtle transition-colors hover:bg-panel hover:text-fg focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent"
             >
               <PanelLeftClose className="w-3.5 h-3.5" />
             </button>
@@ -858,8 +855,9 @@ export default function FileExplorer({
               <div className="w-px h-4 bg-border mx-1" />
               <button
                 onClick={onCollapse}
-                title="Collapse sidebar"
-                className="p-1.5 hover:bg-elevated rounded transition text-muted/50 hover:text-fg"
+                title="Hide files"
+                aria-label="Hide files"
+                className="grid h-6 w-6 place-items-center rounded-md text-subtle transition-colors hover:bg-panel hover:text-fg focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent"
               >
                 <X className="w-3.5 h-3.5" />
               </button>
@@ -884,10 +882,10 @@ export default function FileExplorer({
             <ChevronDown
               className={`w-3.5 h-3.5 text-muted transition-transform duration-200 ${showDeps ? "" : "-rotate-90"}`}
             />
-            <span className="text-[11px] font-bold uppercase tracking-wide text-muted">
+            <span className="text-[13px] font-medium text-muted">
               Dependencies
             </span>
-            <span className="rounded-full bg-accent/10 px-1.5 py-px font-mono text-[10px] font-bold tabular-nums text-accent">
+            <span className="rounded-full bg-panel px-1.5 py-px text-[12px] tabular-nums text-muted">
               {Object.keys(dependencies).length}
             </span>
           </button>

@@ -71,16 +71,16 @@ function PreviewLoadingOverlay({ title }: { title: string }) {
     <div
       role="status"
       aria-live="polite"
-      className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-4 bg-[#0d0f16] px-6 text-center animate-in fade-in duration-300"
+      className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-4 bg-surface px-6 text-center animate-in fade-in duration-300 motion-reduce:animate-none"
     >
       {timedOut ? (
         <>
-          <span className="grid h-12 w-12 place-items-center rounded-full border border-amber-400/30 bg-amber-400/10">
-            <AlertTriangle className="h-5 w-5 text-amber-300" />
+          <span className="grid h-12 w-12 place-items-center rounded-full border border-warning/30 bg-warning/10">
+            <AlertTriangle className="h-5 w-5 text-warning" />
           </span>
           <div>
-            <p className="text-sm font-bold text-white/90">Preview timed out</p>
-            <p className="mt-1 text-xs text-white/50">
+            <p className="text-sm font-semibold text-fg">Preview timed out</p>
+            <p className="mt-1 text-[13px] text-subtle">
               The sandbox did not respond. Check your connection and try again.
             </p>
           </div>
@@ -90,7 +90,7 @@ function PreviewLoadingOverlay({ title }: { title: string }) {
               sandpack.runSandpack?.();
               dispatch({ type: "refresh" });
             }}
-            className="rounded-full border border-white/15 bg-white/5 px-4 py-1.5 text-xs font-bold text-white/80 transition hover:border-[#8b93ff]/50 hover:text-white"
+            className="rounded-md border border-border-strong bg-panel px-3 py-1.5 text-[13px] font-medium text-fg transition hover:bg-elevated focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent"
           >
             Retry preview
           </button>
@@ -99,29 +99,21 @@ function PreviewLoadingOverlay({ title }: { title: string }) {
         <>
           <span className="relative grid h-12 w-12 place-items-center" aria-hidden>
             <span className="absolute inset-0 rounded-full border-2 border-accent/20" />
-            <span className="absolute inset-0 rounded-full border-2 border-accent border-t-transparent animate-spin" />
-            <span className="h-1.5 w-1.5 rounded-full bg-accent animate-pulse" />
+            <span className="absolute inset-0 rounded-full border-2 border-accent border-t-transparent animate-spin motion-reduce:animate-none" />
           </span>
           <div>
-            <p className="text-sm font-bold text-white/90">
-              Preparing {title} preview
+            <p className="text-sm font-semibold text-fg">
+              Preparing the {title} preview
             </p>
-            <p className="mt-1 font-mono text-[11px] uppercase tracking-[0.18em] text-white/45">
+            <p className="mt-1 text-[13px] text-subtle">
               {sandpack.status === "running"
                 ? "Bundling preview…"
                 : "Starting sandbox…"}
             </p>
           </div>
-          {/* Skeleton hint of the content to come — pulses while bundling. */}
-          <div className="w-full max-w-[220px] space-y-2" aria-hidden>
-            <div className="h-2 rounded-full bg-white/10 animate-pulse" />
-            <div className="h-2 w-3/4 mx-auto rounded-full bg-white/[0.07] animate-pulse" />
-            <div className="h-2 w-1/2 mx-auto rounded-full bg-white/[0.05] animate-pulse" />
-          </div>
           {slow && (
-            <p className="max-w-[260px] text-[11px] leading-relaxed text-white/40">
-              First load installs dependencies — hang tight, this can take a
-              moment.
+            <p className="max-w-[280px] text-[13px] leading-relaxed text-subtle">
+              The first load installs dependencies, so it can take a moment.
             </p>
           )}
         </>

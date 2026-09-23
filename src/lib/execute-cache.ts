@@ -1,7 +1,9 @@
 /**
- * Result cache for /api/execute. Stores a finished execution keyed by
- * user+language+codeHash so a speculative (background) run can be served
- * instantly by the subsequent explicit run.
+ * Result cache for /api/execute. Holds only speculative (background) runs,
+ * keyed by user+language+codeHash, so the explicit run that follows can be
+ * served instantly. The explicit run takes the entry (read + delete): a
+ * warm-up is used at most once, so pressing Run again always executes
+ * again — programs that print random numbers or the time never replay.
  *
  * Backed by Redis (shared across serverless instances, with TTL) when
  * configured; otherwise a bounded in-memory LRU that is correct only on a
@@ -47,4 +49,20 @@ export async function setCachedResult(key: string, result: PistonResult): Promis
     const oldest = mem.keys().next().value;
     if (oldest) mem.delete(oldest);
   }
+}
+
+/** Read and remove in one step, so a warmed result is served at most once. */
+export async function takeCachedResult(key: string): Promise<PistonResult | null> {
+  const redis = getRedis();
+  if (redis) {
+    try {
+      return (await redis.getdel<PistonResult>(KEY_PREFIX + key)) ?? null;
+    } catch (err) {
+      console.error("execute-cache take failed:", err);
+      return null;
+    }
+  }
+  const hit = mem.get(key) ?? null;
+  mem.delete(key);
+  return hit;
 }

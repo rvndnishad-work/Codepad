@@ -114,8 +114,8 @@ export default function HomeWowHero({
   return (
     <section ref={root} data-dark-hero className="wow-noise relative -mt-16 overflow-hidden bg-bg text-fg">
       <div aria-hidden className="pointer-events-none absolute inset-0">
-        <div className="absolute left-1/2 top-24 h-[480px] w-[900px] -translate-x-1/2 rounded-full bg-accent-3/10 blur-[140px]" />
-        <div className="absolute right-[-160px] top-1/3 h-[420px] w-[420px] rounded-full bg-accent-4/15 blur-[120px]" />
+        <div className="absolute left-1/2 top-24 h-[480px] w-[900px] -translate-x-1/2 rounded-full bg-secondary/10 blur-[140px]" />
+        <div className="absolute right-[-160px] top-1/3 h-[420px] w-[420px] rounded-full bg-accent-4/[0.07] blur-[120px]" />
         <div className="absolute left-[-140px] top-1/2 h-[420px] w-[420px] rounded-full bg-accent/10 blur-[120px]" />
         <div className="wow-grid-bg absolute inset-0" />
       </div>
@@ -128,10 +128,10 @@ export default function HomeWowHero({
 
       {PHOTOS.map((p) => (
         <figure key={p.src} className={`wow-hero-photo wow-float absolute z-10 hidden w-52 lg:block ${p.pos}`} style={{ ["--wow-rot" as string]: p.rot }}>
-          <div className="rotate-[var(--wow-rot)] overflow-hidden rounded-2xl border border-fg/25 bg-fg/10 p-2 shadow-[0_20px_60px_-15px_rgb(var(--c-accent-3)/0.5)] backdrop-blur-md">
+          <div className="rotate-[var(--wow-rot)] overflow-hidden rounded-2xl border border-fg/25 bg-fg/10 p-2 shadow-[0_20px_50px_-20px_rgb(0_0_0/0.9)] backdrop-blur-md">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src={p.src} alt="" className="h-32 w-full rounded-xl object-cover" loading="eager" />
-            <figcaption className="px-1 py-2 font-mono text-[11px] uppercase tracking-widest text-fg/80">{p.label}</figcaption>
+            <figcaption className="px-1 py-2 text-[13px] font-medium leading-snug text-fg/80">{p.label}</figcaption>
           </div>
         </figure>
       ))}
@@ -139,12 +139,12 @@ export default function HomeWowHero({
       <div className="relative z-20 mx-auto flex min-h-[100vh] max-w-7xl flex-col items-center px-4 pb-16 pt-24 text-center md:pt-32">
         <div className="wow-hero-fade flex flex-wrap items-center justify-center gap-3">
           {/* persona switch — developers here, hiring teams one tap away */}
-          <nav aria-label="Choose your view" className="flex items-center rounded-full border border-fg/15 bg-fg/[0.06] p-1 font-mono text-[11px] uppercase tracking-[0.18em] backdrop-blur-md">
+          <nav aria-label="Choose your view" className="flex items-center rounded-full border border-fg/15 bg-fg/[0.06] p-1 font-mono text-xs uppercase tracking-[0.12em] backdrop-blur-md">
             <span aria-current="page" className="rounded-full bg-accent px-4 py-1.5 font-bold text-accent-ink">Developers</span>
             <Link href="/hire" className="rounded-full px-4 py-1.5 text-fg/60 transition hover:text-fg">Hiring teams →</Link>
           </nav>
 
-          <div className="flex items-center gap-2 rounded-full border border-fg/15 bg-fg/[0.06] px-4 py-2 font-mono text-[11px] uppercase tracking-[0.2em] text-fg/80 backdrop-blur-md">
+          <div className="flex items-center gap-2 rounded-full border border-fg/15 bg-fg/[0.06] px-4 py-2 font-mono text-xs uppercase tracking-[0.12em] text-fg/80 backdrop-blur-md">
             <Sparkles className="h-3.5 w-3.5 text-accent" />
             {userName ? `Welcome back, ${userName.split(" ")[0]} — the arena missed you` : "The interview multiverse is open"}
             <span className="rounded-full bg-accent px-2 py-0.5 font-bold text-accent-ink">live</span>
@@ -152,9 +152,9 @@ export default function HomeWowHero({
         </div>
 
         <h1 className="wow-font-display mt-8 text-[15vw] leading-[0.88] drop-shadow-[0_2px_16px_rgba(0,0,0,0.95)] sm:text-[11vw] lg:text-[7.5rem]">
-          <span className="block overflow-hidden pb-1"><span className="wow-hero-line block">DON&apos;T LEARN</span></span>
-          <span className="block overflow-hidden pb-1"><span className="wow-hero-line wow-gradient-text block pb-2">TO INTERVIEW.</span></span>
-          <span className="block overflow-hidden pb-2"><span className="wow-hero-line wow-text-stroke block">LIVE INSIDE IT.</span></span>
+          <span className="block overflow-hidden pb-1"><span className="wow-hero-line block">Don&apos;t learn</span></span>
+          <span className="block overflow-hidden pb-1"><span className="wow-hero-line wow-gradient-text block pb-2">to interview.</span></span>
+          <span className="block overflow-hidden pb-2"><span className="wow-hero-line wow-text-stroke block">Live inside it.</span></span>
         </h1>
 
         <p className="wow-hero-fade mt-6 max-w-2xl text-balance text-base font-medium leading-relaxed text-fg/85 [text-shadow:0_2px_18px_rgba(0,0,0,0.9)] md:text-lg">
@@ -167,11 +167,11 @@ export default function HomeWowHero({
             <span className="h-2.5 w-2.5 rounded-full bg-danger" />
             <span className="h-2.5 w-2.5 rounded-full bg-warning" />
             <span className="h-2.5 w-2.5 rounded-full bg-success" />
-            <span className="ml-2 font-mono text-[11px] text-fg/60">codepad — zsh</span>
-            <span className="ml-auto flex items-center gap-1 font-mono text-[11px] uppercase tracking-widest text-emerald-300"><span className="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-400" />live</span>
+            <span className="ml-2 font-mono text-xs text-fg/60">codepad — zsh</span>
+            <span className="ml-auto flex items-center gap-1 font-mono text-xs uppercase tracking-widest text-success"><span className="h-1.5 w-1.5 animate-pulse rounded-full bg-success" />live</span>
           </div>
           <div className="px-4 py-4 font-mono text-sm md:text-[15px]">
-            <span className="text-accent-3">➜</span> <span className="text-accent-4">~</span> <span className="text-fg">{typed}</span><span className="wow-blink ml-0.5 inline-block h-4 w-2 translate-y-0.5 bg-accent" />
+            <span className="text-success">➜</span> <span className="text-secondary-soft">~</span> <span className="text-fg">{typed}</span><span className="wow-blink ml-0.5 inline-block h-4 w-2 translate-y-0.5 bg-accent" />
             <div className="mt-2 text-fg/70">
               ✓ {formatK(stats.questions)} question banks loaded · {stats.challenges > 0 ? `${stats.challenges} challenges ready` : "8 runtimes hot"} · <span className="font-bold text-accent">offer.exe ready</span>
             </div>
@@ -179,19 +179,19 @@ export default function HomeWowHero({
         </div>
 
         <div className="wow-hero-fade mt-8 flex flex-col items-center gap-3 sm:flex-row">
-          <Link href="/challenges" className="group flex items-center gap-2 rounded-full bg-accent px-8 py-4 text-sm font-black uppercase tracking-wider text-accent-ink shadow-[0_0_50px_-8px_rgb(var(--c-accent))] transition hover:scale-105 hover:rotate-1">
+          <Link href="/challenges" className="group flex items-center gap-2 rounded-full bg-accent px-8 py-4 text-sm font-semibold text-accent-ink shadow-[0_10px_30px_-14px_rgb(var(--c-accent)/0.7)] transition hover:scale-[1.02]">
             <Play className="h-4 w-4 fill-accent-ink" /> Press start — play free
             <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
           </Link>
           <Link
             href={recentSnippet ? `/play/${recentSnippet.slug}` : "/playgrounds"}
-            className="flex items-center gap-2 rounded-full border border-fg/20 bg-fg/[0.06] px-8 py-4 text-sm font-bold uppercase tracking-wider text-fg backdrop-blur-md transition hover:border-fg/40 hover:scale-105"
+            className="flex items-center gap-2 rounded-full border border-fg/20 bg-fg/[0.06] px-8 py-4 text-sm font-semibold text-fg backdrop-blur-md transition hover:border-fg/40 hover:scale-[1.02]"
           >
-            <Trophy className="h-4 w-4 text-accent-3" /> {recentSnippet ? "Resume sandbox" : "Open a playground"}
+            <Trophy className="h-4 w-4 text-fg/60" /> {recentSnippet ? "Resume sandbox" : "Open a playground"}
           </Link>
         </div>
 
-        <Link href="/hire" className="wow-hero-fade group mt-5 inline-flex items-center gap-2 rounded-full border border-fg/20 bg-fg/[0.06] px-6 py-3 font-mono text-[11px] uppercase tracking-[0.2em] text-fg/80 backdrop-blur-md transition hover:border-fg/40 hover:text-fg">
+        <Link href="/hire" className="wow-hero-fade group mt-5 inline-flex items-center gap-2 rounded-full border border-fg/20 bg-fg/[0.06] px-6 py-3 font-mono text-xs uppercase tracking-[0.12em] text-fg/80 backdrop-blur-md transition hover:border-fg/40 hover:text-fg">
           Looking to hire
           <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
         </Link>
@@ -206,13 +206,13 @@ export default function HomeWowHero({
             {statTiles.map((s) => (
               <div key={s.l} className="bg-surface/95 px-4 py-4">
                 <p className="wow-font-display text-2xl tabular-nums md:text-3xl">{s.v}</p>
-                <p className="mt-1 font-mono text-[11px] uppercase leading-snug tracking-[0.16em] text-fg/55 md:text-[11px]">{s.l}</p>
+                <p className="mt-1 text-[13px] leading-snug text-subtle">{s.l}</p>
               </div>
             ))}
           </div>
         )}
 
-        <div className="wow-hero-fade mt-6 flex items-center gap-1.5 font-mono text-[11px] uppercase tracking-[0.18em] text-fg/55">
+        <div className="wow-hero-fade mt-6 flex items-center gap-1.5 font-mono text-xs uppercase tracking-[0.12em] text-fg/55">
           <Zap className="h-3.5 w-3.5 text-accent" /> No install · No setup · Just press start
         </div>
       </div>

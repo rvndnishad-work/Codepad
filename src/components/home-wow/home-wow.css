@@ -40,12 +40,6 @@
 }
 
 /* Light-theme corrections for shared wow classes */
-:root .wow-text-stroke {
-  -webkit-text-stroke-color: rgba(23, 20, 43, 0.9);
-}
-.dark .wow-text-stroke {
-  -webkit-text-stroke-color: rgba(255, 255, 255, 0.85);
-}
 :root .wow-grid-bg {
   background-image:
     linear-gradient(rgba(45, 38, 110, 0.08) 1px, transparent 1px),

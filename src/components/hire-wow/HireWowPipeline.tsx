@@ -48,8 +48,8 @@ export default function HireWowPipeline() {
     <section className="relative bg-bg px-4 py-24 text-fg transition-colors md:py-32">
       <div className="mx-auto max-w-7xl">
         <WowReveal>
-          <p className="flex items-center gap-2 font-mono text-[11px] uppercase tracking-[0.3em] text-secondary"><Workflow className="h-3.5 w-3.5" /> the pipeline</p>
-          <h2 className="wow-font-display mt-3 max-w-4xl text-5xl md:text-7xl">ONE WORKSPACE,<br /><span className="wow-gradient-boss">EVERY STAGE.</span></h2>
+          <p className="flex items-center gap-2 font-mono text-xs uppercase tracking-[0.12em] text-secondary"><Workflow className="h-3.5 w-3.5" /> the pipeline</p>
+          <h2 className="wow-font-display mt-3 max-w-4xl text-5xl md:text-7xl">One workspace,<br /><span className="wow-gradient-boss">every stage.</span></h2>
           <p className="mt-4 max-w-xl text-[15px] leading-relaxed text-muted">
             From a thousand applicants down to the signed offer — no
             tool-hopping, no lost context between stages, and one record per

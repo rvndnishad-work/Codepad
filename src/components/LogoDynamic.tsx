@@ -68,7 +68,7 @@ export default function LogoDynamic({ tone = "accent", compact = false, showSub 
       />
       {!compact && (
         <span className="flex flex-col leading-none">
-          <span className="ld-word text-[17px] font-extrabold tracking-tight" style={{ color: "var(--fg)" }}>
+          <span className="ld-word text-[17px] font-semibold tracking-[-0.03em]" style={{ color: "var(--fg)" }}>
             interview
             <span
               className="inline-block bg-clip-text text-transparent"
@@ -81,7 +81,7 @@ export default function LogoDynamic({ tone = "accent", compact = false, showSub 
           </span>
           {showSub && (
             <span
-              className="ld-sub mt-1 font-mono text-[9px] font-bold uppercase tracking-[0.32em]"
+              className="ld-sub mt-1 font-mono text-[10px] font-medium uppercase tracking-[0.18em]"
               style={{ color: "var(--subtle)" }}
             >
               {tone === "secondary" ? "Hiring runtime" : "Interview runtime"}

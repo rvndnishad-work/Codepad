@@ -34,22 +34,22 @@ export default function HireWowFinal({ ctaHref, signedIn }: { ctaHref: string; s
 
       <div className="relative mx-auto max-w-7xl px-4 pb-20 pt-20 md:pb-28 md:pt-28">
         <WowReveal>
-          <p className="font-mono text-[11px] uppercase tracking-[0.3em] text-secondary-soft">◆ your next opening, minus the pile</p>
+          <p className="font-mono text-xs uppercase tracking-[0.12em] text-secondary-soft">your next opening, minus the pile</p>
         </WowReveal>
         <h2 className="wow-hire-final-title wow-font-display mt-4 text-[13vw] leading-[0.9] md:text-[6.5rem]">
-          <span className="block overflow-hidden"><span className="block">MAKE YOUR NEXT</span></span>
-          <span className="block overflow-hidden"><span className="wow-gradient-boss block pb-2">HIRE THE OBVIOUS ONE.</span></span>
+          <span className="block overflow-hidden"><span className="block">Make your next</span></span>
+          <span className="block overflow-hidden"><span className="wow-gradient-boss block pb-2">hire the obvious one.</span></span>
         </h2>
 
         <WowReveal delay={0.1}>
           <div className="mt-8 flex flex-col gap-4 md:flex-row md:items-center">
-            <Link href={ctaHref} className="group flex w-fit items-center gap-2 rounded-full bg-fg px-9 py-4 text-sm font-black uppercase tracking-wider text-bg transition hover:scale-[1.03]">
+            <Link href={ctaHref} className="group flex w-fit items-center gap-2 rounded-full bg-fg px-9 py-4 text-sm font-semibold text-bg transition hover:scale-[1.03]">
               {signedIn ? "Open your workspace" : "Create a workspace"} <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
             </Link>
-            <Link href="/pricing" className="flex w-fit items-center gap-2 rounded-full border border-fg/25 px-9 py-[14px] text-sm font-bold uppercase tracking-wider text-fg transition hover:border-fg/60 hover:bg-fg/5">
+            <Link href="/pricing" className="flex w-fit items-center gap-2 rounded-full border border-fg/25 px-9 py-[14px] text-sm font-semibold text-fg transition hover:border-fg/60 hover:bg-fg/5">
               Compare plans
             </Link>
-            <p className="font-mono text-[11px] uppercase tracking-widest text-fg/50 md:ml-auto">Pilot friendly · Cancel anytime</p>
+            <p className="font-mono text-xs uppercase tracking-widest text-fg/50 md:ml-auto">Pilot friendly · Cancel anytime</p>
           </div>
         </WowReveal>
       </div>

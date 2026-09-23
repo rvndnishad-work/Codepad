@@ -43,8 +43,8 @@ export default async function HomeWowCreators() {
     <section className="relative bg-bg px-4 py-24 text-fg transition-colors md:py-32">
       <div className="mx-auto max-w-7xl">
         <WowReveal>
-          <p className="font-mono text-[11px] uppercase tracking-[0.3em] text-secondary">✦ learn from creators</p>
-          <h2 className="wow-font-display mt-3 text-4xl md:text-5xl lg:text-6xl">PREP WITH PEOPLE<br />WHO <span className="wow-gradient-text">CLEARED IT.</span></h2>
+          <p className="font-mono text-xs uppercase tracking-[0.12em] text-subtle">learn from creators</p>
+          <h2 className="wow-font-display mt-3 text-4xl md:text-5xl lg:text-6xl">Prep with people<br />who <span className="wow-gradient-text">cleared it.</span></h2>
           <p className="mt-4 max-w-xl text-[15px] leading-relaxed text-muted">Vetted creators publish tutorials, real interview loops and paid cohorts. Following them is free.</p>
         </WowReveal>
 
@@ -66,7 +66,7 @@ export default async function HomeWowCreators() {
                     </span>
                     <span className="mt-1 block line-clamp-2 text-[13px] leading-relaxed text-muted">{s.tagline ?? `/c/${s.handle}`}</span>
                   </span>
-                  <span className="mt-auto flex items-center gap-4 border-t border-border pt-4 font-mono text-[11px] tabular-nums text-subtle">
+                  <span className="mt-auto flex items-center gap-4 border-t border-border pt-4 font-mono text-xs tabular-nums text-subtle">
                     <span className="inline-flex items-center gap-1.5"><Heart className="h-3.5 w-3.5" aria-hidden />{count(followCounts, s.id).toLocaleString()} <span className="sr-only">followers</span></span>
                     <span className="inline-flex items-center gap-1.5"><Users className="h-3.5 w-3.5" aria-hidden />{count(memberCounts, s.id).toLocaleString()} <span className="sr-only">members</span></span>
                   </span>
@@ -78,7 +78,7 @@ export default async function HomeWowCreators() {
 
         <WowReveal delay={0.1}>
           <div className="mt-8 flex flex-wrap items-center gap-4">
-            <Link href="/creators" className="inline-flex items-center gap-2 rounded-full bg-fg px-6 py-3 text-xs font-black uppercase tracking-wider text-bg transition hover:scale-105">
+            <Link href="/creators" className="inline-flex items-center gap-2 rounded-full bg-fg px-6 py-3 text-xs font-semibold text-bg transition hover:scale-[1.02]">
               <LayoutGrid className="h-4 w-4" aria-hidden /> Browse creators
             </Link>
             <Link href="/become-creator" className="text-[13px] font-semibold underline decoration-secondary decoration-2 underline-offset-4">

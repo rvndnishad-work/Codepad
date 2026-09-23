@@ -193,7 +193,7 @@ export default async function HomePage() {
   const hasAnyBlog = !!homeHero || homeGrid.length > 0 || popularEntries.length > 0;
 
   return (
-    <div className="min-h-screen bg-bg transition-colors">
+    <div className="wow-scope min-h-screen bg-bg transition-colors">
       <HomeWowHero
         stats={{ questions: stats.prepQuestions, challenges: stats.totalChallenges, sessions: stats.interviewsRun }}
         userName={welcomeData?.name}

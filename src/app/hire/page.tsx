@@ -39,7 +39,7 @@ export default async function HirePage() {
   const ctaHref = session?.user ? "/dashboard" : "/login?next=/dashboard";
 
   return (
-    <div className="min-h-screen bg-bg transition-colors">
+    <div className="wow-scope min-h-screen bg-bg transition-colors">
       <ScrollProgressBar />
 
       <HireWowHero

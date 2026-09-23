@@ -13,8 +13,8 @@ export default function HireWowRoom() {
       <div aria-hidden className="pointer-events-none absolute right-[-160px] top-1/4 h-[420px] w-[420px] rounded-full bg-secondary/15 blur-[130px]" />
       <div className="relative mx-auto max-w-7xl">
         <WowReveal>
-          <p className="flex items-center gap-2 font-mono text-[11px] uppercase tracking-[0.3em] text-secondary"><Video className="h-3.5 w-3.5" /> live interview room</p>
-          <h2 className="wow-font-display mt-3 text-5xl md:text-7xl">THE ROOM,<br />AS CANDIDATES <span className="wow-gradient-boss">SEE IT.</span></h2>
+          <p className="flex items-center gap-2 font-mono text-xs uppercase tracking-[0.12em] text-secondary"><Video className="h-3.5 w-3.5" /> live interview room</p>
+          <h2 className="wow-font-display mt-3 text-5xl md:text-7xl">The room,<br />as candidates <span className="wow-gradient-boss">see it.</span></h2>
           <p className="mt-4 max-w-2xl text-[15px] leading-relaxed text-muted">
             A shared editor with live cursors, real execution and an AI
             co-pilot suggesting follow-ups, in the browser with nothing to

@@ -55,8 +55,8 @@ export default function HireWowTrust({ plans }: { plans: PricingPlanDef[] }) {
     <section className="relative bg-bg px-4 py-24 text-fg transition-colors md:py-32">
       <div className="mx-auto max-w-6xl">
         <WowReveal>
-          <p className="flex items-center gap-2 font-mono text-[11px] uppercase tracking-[0.3em] text-secondary"><ShieldCheck className="h-3.5 w-3.5" /> built for trust</p>
-          <h2 className="wow-font-display mt-3 text-5xl md:text-7xl">CANDIDATES' WORK,<br /><span className="wow-gradient-boss">HANDLED SERIOUSLY.</span></h2>
+          <p className="flex items-center gap-2 font-mono text-xs uppercase tracking-[0.12em] text-secondary"><ShieldCheck className="h-3.5 w-3.5" /> built for trust</p>
+          <h2 className="wow-font-display mt-3 text-5xl md:text-7xl">Candidates&apos; work,<br /><span className="wow-gradient-boss">handled seriously.</span></h2>
           <p className="mt-4 max-w-xl text-[15px] leading-relaxed text-muted">
             Hiring data is sensitive. None of these are roadmap promises — each
             one names a mechanism that is running today.

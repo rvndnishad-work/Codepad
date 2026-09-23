@@ -5,10 +5,10 @@ import { User, BookOpen, Eye, ArrowUpRight, Star } from "lucide-react";
 import type { BlogFeedEntry } from "@/components/BlogFeedItem";
 
 const FALLBACK_HUES = [
-  "from-secondary to-accent-4",
-  "from-accent-3 to-secondary",
-  "from-accent-4 to-secondary",
-  "from-accent to-accent-3",
+  "from-secondary/45 to-panel",
+  "from-accent-4/30 to-panel",
+  "from-secondary/25 to-elevated",
+  "from-accent/25 to-panel",
 ];
 
 function CoverArt({ blog, index = 0, sizes }: { blog: BlogFeedEntry; index?: number; sizes: string }) {
@@ -39,7 +39,7 @@ function Avatar({ name, image }: { name: string | null; image: string | null }) 
       {image ? (
         <SafeImage src={image} alt="" fill sizes="24px" className="object-cover" unoptimized={image.startsWith("data:")} />
       ) : (
-        <span className="flex h-full w-full items-center justify-center bg-gradient-to-br from-secondary to-accent-3">
+        <span className="flex h-full w-full items-center justify-center bg-elevated">
           <User className="h-3 w-3 text-fg" />
         </span>
       )}
@@ -50,7 +50,7 @@ function Avatar({ name, image }: { name: string | null; image: string | null }) 
 function Meta({ blog, light = false }: { blog: BlogFeedEntry; light?: boolean }) {
   const tone = light ? "text-fg/75" : "text-subtle";
   return (
-    <span className={`flex flex-wrap items-center gap-x-2.5 gap-y-1 font-mono text-[11px] ${tone}`}>
+    <span className={`flex flex-wrap items-center gap-x-2.5 gap-y-1 font-mono text-xs ${tone}`}>
       <span className="flex items-center gap-1.5">
         <Avatar name={blog.user.name} image={blog.user.image} />
         <span className={`max-w-[130px] truncate font-sans text-[12px] font-semibold ${light ? "text-fg" : "text-fg"}`}>
@@ -69,7 +69,7 @@ function TagRow({ tags = [] }: { tags?: string[] }) {
   return (
     <span className="flex flex-wrap gap-1.5">
       {tags.slice(0, 2).map((t) => (
-        <span key={t} className="rounded-full border border-fg/25 bg-black/45 px-2.5 py-0.5 font-mono text-[11px] font-bold uppercase tracking-[0.14em] text-fg backdrop-blur">
+        <span key={t} className="rounded-full border border-fg/25 bg-black/45 px-2.5 py-0.5 font-mono text-xs font-bold uppercase tracking-[0.12em] text-fg backdrop-blur">
           #{t}
         </span>
       ))}
@@ -88,7 +88,7 @@ export function StoryHeroCard({ blog }: { blog: BlogFeedEntry }) {
         <CoverArt blog={blog} sizes="(min-width: 1024px) 66vw, 100vw" />
       </span>
       <span className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/45 to-black/5" />
-      <span className="absolute left-5 top-5 flex items-center gap-1.5 rounded-full bg-accent px-3.5 py-1.5 font-mono text-[11px] font-black uppercase tracking-[0.18em] text-accent-ink">
+      <span className="absolute left-5 top-5 flex items-center gap-1.5 rounded-full bg-accent px-3.5 py-1.5 font-mono text-xs font-semibold uppercase tracking-[0.12em] text-accent-ink">
         <Star className="h-3 w-3 fill-accent-ink" /> Lead story
       </span>
       <span className="absolute inset-x-0 bottom-0 block p-6 md:p-9">
@@ -121,13 +121,13 @@ export function StoryCard({ blog, index = 0 }: { blog: BlogFeedEntry; index?: nu
         <CoverArt blog={blog} index={index} sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw" />
         <span className="absolute inset-0 bg-gradient-to-t from-black/35 to-transparent" />
         {blog.tags?.[0] && (
-          <span className="absolute left-3 top-3 rounded-full border border-fg/25 bg-black/50 px-2.5 py-1 font-mono text-[11px] font-bold uppercase tracking-[0.14em] text-fg backdrop-blur">
+          <span className="absolute left-3 top-3 rounded-full border border-fg/25 bg-black/50 px-2.5 py-1 font-mono text-xs font-bold uppercase tracking-[0.12em] text-fg backdrop-blur">
             #{blog.tags[0]}
           </span>
         )}
       </span>
       <span className="flex flex-1 flex-col gap-2.5 p-5">
-        <span className="line-clamp-2 text-[17px] font-extrabold leading-snug tracking-tight text-fg">
+        <span className="line-clamp-2 text-[17px] font-semibold leading-snug tracking-tight text-fg">
           {blog.title}
         </span>
         {blog.excerpt && (

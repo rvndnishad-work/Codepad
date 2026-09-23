@@ -37,13 +37,13 @@ export default function HireWowFlood() {
       />
       <div className="relative mx-auto max-w-7xl">
         <WowReveal>
-          <p className="flex items-center gap-2 font-mono text-[11px] uppercase tracking-[0.3em] text-secondary">
+          <p className="flex items-center gap-2 font-mono text-xs uppercase tracking-[0.12em] text-secondary">
             <Inbox className="h-3.5 w-3.5" /> the problem you actually have
           </p>
           <h2 className="wow-font-display mt-3 max-w-4xl text-5xl md:text-7xl">
-            THE PILE ISN&apos;T SORTED
+            The pile isn&apos;t sorted
             <br />
-            <span className="wow-gradient-boss">BY TALENT.</span>
+            <span className="wow-gradient-boss">by talent.</span>
           </h2>
           <p className="mt-4 max-w-2xl text-[15px] leading-relaxed text-muted">
             You post one role and hundreds — sometimes thousands — of
@@ -82,7 +82,7 @@ export default function HireWowFlood() {
             <article className="flex h-full flex-col rounded-3xl border border-danger/25 bg-panel p-6 backdrop-blur-sm">
               <header className="flex items-baseline justify-between gap-3">
                 <h3 className="wow-font-display text-2xl">Read in arrival order</h3>
-                <span className="font-mono text-[11px] uppercase tracking-[0.2em] text-danger">today</span>
+                <span className="font-mono text-xs uppercase tracking-[0.12em] text-danger">today</span>
               </header>
               <p className="mt-1.5 text-[13px] text-muted">
                 Attention runs out long before the pile does. Each square is an applicant.
@@ -104,7 +104,7 @@ export default function HireWowFlood() {
                       }`}
                     >
                       {gem && (
-                        <span className="pointer-events-none absolute bottom-full left-1/2 z-10 mb-2 -translate-x-1/2 whitespace-nowrap rounded-full border border-success/30 bg-bg px-2.5 py-1 font-mono text-[11px] text-success opacity-0 transition group-hover:opacity-100">
+                        <span className="pointer-events-none absolute bottom-full left-1/2 z-10 mb-2 -translate-x-1/2 whitespace-nowrap rounded-full border border-success/30 bg-bg px-2.5 py-1 font-mono text-xs text-success opacity-0 transition group-hover:opacity-100">
                           #{GEM_LABEL} · never opened
                         </span>
                       )}
@@ -113,7 +113,7 @@ export default function HireWowFlood() {
                 })}
               </div>
 
-              <p className="mt-4 font-mono text-[11px] uppercase tracking-[0.18em] text-subtle">
+              <p className="mt-4 font-mono text-xs uppercase tracking-[0.12em] text-subtle">
                 <span className="text-fg/60">■ read</span>
                 <span className="ml-3">■ never opened</span>
                 <span className="ml-3 text-success">■ your best hire</span>
@@ -132,7 +132,7 @@ export default function HireWowFlood() {
             <article className="flex h-full flex-col rounded-3xl border border-secondary/40 bg-panel p-6 shadow-[0_24px_70px_-30px_rgb(var(--c-accent-2)/0.6)] backdrop-blur-sm">
               <header className="flex items-baseline justify-between gap-3">
                 <h3 className="wow-font-display text-2xl">Ranked by what they built</h3>
-                <span className="font-mono text-[11px] uppercase tracking-[0.2em] text-secondary">here</span>
+                <span className="font-mono text-xs uppercase tracking-[0.12em] text-secondary">here</span>
               </header>
               <p className="mt-1.5 text-[13px] text-muted">
                 Same pile, scored in parallel, best-first by morning.
@@ -156,7 +156,7 @@ export default function HireWowFlood() {
                       }`}
                     >
                       {gem && (
-                        <span className="pointer-events-none absolute bottom-full left-1/2 z-10 mb-2 -translate-x-1/2 whitespace-nowrap rounded-full border border-success/30 bg-bg px-2.5 py-1 font-mono text-[11px] text-success opacity-0 transition group-hover:opacity-100">
+                        <span className="pointer-events-none absolute bottom-full left-1/2 z-10 mb-2 -translate-x-1/2 whitespace-nowrap rounded-full border border-success/30 bg-bg px-2.5 py-1 font-mono text-xs text-success opacity-0 transition group-hover:opacity-100">
                           #{GEM_LABEL} · now rank {gemRank} · 92/100
                         </span>
                       )}
@@ -165,7 +165,7 @@ export default function HireWowFlood() {
                 })}
               </div>
 
-              <p className="mt-4 font-mono text-[11px] uppercase tracking-[0.18em] text-subtle">
+              <p className="mt-4 font-mono text-xs uppercase tracking-[0.12em] text-subtle">
                 <span className="text-secondary">■ interview these</span>
                 <span className="ml-3">■ scored, kept warm</span>
                 <span className="ml-3 text-success">■ surfaced at rank {gemRank}</span>

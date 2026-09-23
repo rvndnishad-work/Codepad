@@ -57,7 +57,7 @@ export default function HomeWowPortals({ counts, techs = [] }: { counts: PortalC
       },
       href: "/interview-questions",
       cta: "Browse questions",
-      accent: "--c-accent",
+      accent: "--c-accent-2-soft",
     });
   }
   if (counts.challenges > 0) {
@@ -69,7 +69,7 @@ export default function HomeWowPortals({ counts, techs = [] }: { counts: PortalC
       stat: { value: String(counts.challenges), label: counts.challenges === 1 ? "graded challenge" : "graded challenges" },
       href: "/challenges",
       cta: "Start a challenge",
-      accent: "--c-accent-3",
+      accent: "--c-accent-2-soft",
     });
   }
   if (counts.reviewChallenges > 0 || counts.promptScenarios > 0) {
@@ -85,7 +85,7 @@ export default function HomeWowPortals({ counts, techs = [] }: { counts: PortalC
       stat,
       href: "/interview/ai-code-review",
       cta: "Try a review",
-      accent: "--c-accent-4",
+      accent: "--c-accent-2-soft",
     });
   }
   portals.push({
@@ -95,15 +95,15 @@ export default function HomeWowPortals({ counts, techs = [] }: { counts: PortalC
     copy: "Run live interviews and take-home tests, then watch the replay with integrity signals before you decide.",
     href: "/hire",
     cta: "See hiring tools",
-    accent: "--c-accent-2",
+    accent: "--c-accent-2-soft",
   });
 
   return (
     <section className="relative bg-surface px-4 py-24 text-fg transition-colors md:py-32">
       <div className="mx-auto max-w-7xl">
         <WowReveal>
-          <p className="font-mono text-[11px] uppercase tracking-[0.3em] text-secondary">✦ what you can do here</p>
-          <h2 className="wow-font-display mt-3 text-4xl md:text-5xl lg:text-6xl">FOUR WAYS IN.<br /><span className="wow-gradient-text">ZERO TUTORIAL HELL.</span></h2>
+          <p className="font-mono text-xs uppercase tracking-[0.12em] text-subtle">what you can do here</p>
+          <h2 className="wow-font-display mt-3 text-4xl md:text-5xl lg:text-6xl">Four ways in.<br /><span className="wow-gradient-text">Zero tutorial hell.</span></h2>
         </WowReveal>
 
         <div className="mt-12 grid grid-cols-1 gap-5 md:grid-cols-2">
@@ -116,21 +116,21 @@ export default function HomeWowPortals({ counts, techs = [] }: { counts: PortalC
                   href={p.href}
                   className="wow-card-glow group relative flex h-full flex-col gap-4 overflow-hidden rounded-3xl border border-border bg-panel p-7 md:p-8"
                 >
-                  <div aria-hidden className="pointer-events-none absolute inset-0 opacity-60 transition group-hover:opacity-100" style={{ background: `radial-gradient(520px circle at 100% 0%, ${tone(p.accent, 0.14)}, transparent 60%)` }} />
+                  <div aria-hidden className="pointer-events-none absolute inset-0 opacity-60 transition group-hover:opacity-100" style={{ background: `radial-gradient(520px circle at 100% 0%, ${tone(p.accent, 0.07)}, transparent 60%)` }} />
                   <div className="relative flex items-start justify-between gap-4">
                     <span className="grid h-12 w-12 place-items-center rounded-2xl border" style={{ borderColor: tone(p.accent, 0.4), background: tone(p.accent, 0.1), color: tone(p.accent) }}>
                       <p.icon className="h-6 w-6" aria-hidden />
                     </span>
                     {p.stat && (
                       <p className="text-right">
-                        <span className="wow-font-display block text-4xl tabular-nums" style={{ color: tone(p.accent) }}>{p.stat.value}</span>
-                        <span className="mt-1 block font-mono text-[11px] uppercase tracking-[0.16em] text-muted">{p.stat.label}</span>
+                        <span className="wow-font-display block text-4xl tabular-nums text-fg">{p.stat.value}</span>
+                        <span className="mt-1 block text-[13px] text-subtle">{p.stat.label}</span>
                       </p>
                     )}
                   </div>
-                  <h3 className="relative text-2xl font-extrabold tracking-tight md:text-3xl">{p.title}</h3>
+                  <h3 className="relative text-2xl font-semibold tracking-[-0.03em] md:text-3xl">{p.title}</h3>
                   <p className="relative max-w-md text-[15px] leading-relaxed text-muted">{p.copy}</p>
-                  <span className="relative mt-auto inline-flex w-fit items-center gap-2 pt-2 text-sm font-bold transition group-hover:gap-3" style={{ color: tone(p.accent) }}>
+                  <span className="relative mt-auto inline-flex w-fit items-center gap-2 pt-2 text-sm font-medium text-fg transition group-hover:gap-3">
                     {p.cta} <ArrowUpRight className="h-4 w-4" aria-hidden />
                   </span>
                 </Link>
@@ -142,7 +142,7 @@ export default function HomeWowPortals({ counts, techs = [] }: { counts: PortalC
         {techs.length > 0 && (
           <WowReveal delay={0.05}>
             <div className="mt-10">
-              <p className="font-mono text-[11px] uppercase tracking-[0.3em] text-subtle">Questions by technology</p>
+              <p className="font-mono text-xs uppercase tracking-[0.12em] text-subtle">Questions by technology</p>
               <ul className="mt-4 flex flex-wrap gap-2.5">
                 {techs.map((t) => (
                   <li key={t.slug}>
@@ -151,7 +151,7 @@ export default function HomeWowPortals({ counts, techs = [] }: { counts: PortalC
                       className="inline-flex items-center gap-2 rounded-full border border-border bg-panel px-4 py-2 text-[13px] font-semibold transition hover:border-accent hover:text-accent"
                     >
                       {t.label}
-                      <span className="font-mono text-[11px] tabular-nums text-subtle">{t.count}</span>
+                      <span className="font-mono text-xs tabular-nums text-subtle">{t.count}</span>
                     </Link>
                   </li>
                 ))}

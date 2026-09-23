@@ -48,10 +48,10 @@ export default function ArenaGrid({ picks }: { picks: ArenaPick[] }) {
       <div className="relative mx-auto max-w-7xl">
         <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
           <div>
-            <p className="flex items-center gap-2 font-mono text-[11px] uppercase tracking-[0.3em] text-accent-3"><Swords className="h-4 w-4" /> tonight in the arena</p>
-            <h2 className="wow-font-display mt-3 text-4xl md:text-5xl lg:text-6xl">FRESH<br />BOSS FIGHTS<span className="text-accent-3">.</span></h2>
+            <p className="flex items-center gap-2 font-mono text-xs uppercase tracking-[0.12em] text-subtle"><Swords className="h-4 w-4" /> tonight in the arena</p>
+            <h2 className="wow-font-display mt-3 text-4xl md:text-5xl lg:text-6xl">Fresh<br />boss fights<span className="text-accent">.</span></h2>
           </div>
-          <Link href="/challenges" className="group flex w-fit items-center gap-2 rounded-full border border-border bg-panel px-6 py-3 text-xs font-bold uppercase tracking-wider transition hover:border-accent-3">
+          <Link href="/challenges" className="group flex w-fit items-center gap-2 rounded-full border border-border bg-panel px-6 py-3 text-xs font-semibold transition hover:border-fg/30">
             All challenges <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
           </Link>
         </div>
@@ -61,27 +61,27 @@ export default function ArenaGrid({ picks }: { picks: ArenaPick[] }) {
             const d = DIFF[c.difficulty] ?? { label: c.difficulty, color: "rgb(var(--c-accent-2))" };
             return (
               <article key={c.slug} className="wow-arena-card wow-card-glow group relative flex h-full flex-col overflow-hidden rounded-3xl border border-border bg-panel p-5">
-                <div className="flex flex-wrap items-center gap-2 font-mono text-[11px] uppercase tracking-widest">
-                  {c.featured && <span className="flex items-center gap-1 rounded-full bg-accent-3 px-2.5 py-0.5 font-bold text-fg"><Flame className="h-3 w-3" aria-hidden /> staff pick</span>}
+                <div className="flex flex-wrap items-center gap-2 font-mono text-xs uppercase tracking-widest">
+                  {c.featured && <span className="flex items-center gap-1 rounded-full bg-fg px-2.5 py-0.5 font-semibold text-bg"><Flame className="h-3 w-3" aria-hidden /> staff pick</span>}
                   {c.premium && <span className="flex items-center gap-1 rounded-full bg-accent px-2.5 py-0.5 font-bold text-accent-ink"><Crown className="h-3 w-3" aria-hidden /> pro</span>}
                   <span className="min-w-0 max-w-full truncate rounded-full border border-border px-2.5 py-0.5 text-muted">{c.lang}</span>
                 </div>
-                <h3 className="mt-4 line-clamp-2 min-h-[2.5em] text-xl font-extrabold leading-tight tracking-tight">{c.title}</h3>
+                <h3 className="mt-4 line-clamp-2 min-h-[2.5em] text-xl font-semibold leading-tight tracking-tight">{c.title}</h3>
                 {c.tags.length > 0 && (
                   <div className="mt-3 flex flex-wrap gap-1.5">
                     {c.tags.map((t) => (
-                      <span key={t} className="rounded-md border border-border px-2 py-0.5 font-mono text-[11px] text-subtle">{t}</span>
+                      <span key={t} className="rounded-md border border-border px-2 py-0.5 font-mono text-xs text-subtle">{t}</span>
                     ))}
                   </div>
                 )}
-                <div className="mt-auto flex items-center gap-2 pt-5 font-mono text-[11px] uppercase tracking-widest text-subtle">
+                <div className="mt-auto flex items-center gap-2 pt-5 font-mono text-xs uppercase tracking-widest text-subtle">
                   <span className="rounded-full px-2.5 py-0.5 font-bold text-bg" style={{ background: d.color }}>{d.label}</span>
                   <span className="flex items-center gap-1"><Clock className="h-3 w-3" aria-hidden /> {c.minutes}m</span>
                   {c.attempts > 0 && <span className="ml-auto tabular-nums">{c.attempts} {c.attempts === 1 ? "attempt" : "attempts"}</span>}
                 </div>
                 <Link
                   href={`/challenges/${c.slug}`}
-                  className="mt-4 flex w-full items-center justify-center gap-1.5 rounded-xl border border-border bg-elevated py-2.5 text-xs font-black uppercase tracking-widest transition group-hover:border-transparent group-hover:bg-accent group-hover:text-accent-ink"
+                  className="mt-4 flex w-full items-center justify-center gap-1.5 rounded-xl border border-border bg-elevated py-2.5 text-[13px] font-medium transition group-hover:border-transparent group-hover:bg-accent group-hover:text-accent-ink"
                 >
                   {c.premium ? <Lock className="h-3.5 w-3.5" aria-hidden /> : <span aria-hidden>▶</span>}
                   {c.premium ? "Unlock challenge" : "Start challenge"}

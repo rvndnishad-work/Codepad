@@ -32,9 +32,9 @@ export default function HireWowEvidence() {
     <section className="relative bg-surface px-4 py-24 text-fg transition-colors md:py-32">
       <div className="mx-auto max-w-6xl">
         <WowReveal>
-          <p className="text-center font-mono text-[11px] uppercase tracking-[0.3em] text-secondary">◆ same candidate, two stories</p>
+          <p className="text-center font-mono text-xs uppercase tracking-[0.12em] text-secondary">same candidate, two stories</p>
           <h2 className="wow-font-display mt-3 text-center text-5xl md:text-7xl">
-            RESUME <span className="text-subtle">vs</span> <span className="wow-gradient-boss">REPLAY.</span>
+            Resume <span className="text-subtle">vs</span> <span className="wow-gradient-boss">replay.</span>
           </h2>
         </WowReveal>
 
@@ -44,10 +44,10 @@ export default function HireWowEvidence() {
               <div className="ip-invert h-full md:rotate-[-1deg] rounded-3xl border border-border bg-ink p-8 text-fg">
                 <div className="flex items-start justify-between">
                   <div>
-                    <p className="text-xl font-extrabold tracking-tight">Candidate.pdf</p>
-                    <p className="font-mono text-[11px] uppercase tracking-widest text-subtle">2 pages · zero verifiable claims</p>
+                    <p className="text-xl font-semibold tracking-tight">Candidate.pdf</p>
+                    <p className="font-mono text-xs uppercase tracking-widest text-subtle">2 pages · zero verifiable claims</p>
                   </div>
-                  <span className="flex items-center gap-1 rounded-full border-2 border-danger px-3 py-1 font-mono text-[11px] font-bold uppercase tracking-widest text-danger">
+                  <span className="flex items-center gap-1 rounded-full border-2 border-danger px-3 py-1 font-mono text-xs font-medium uppercase tracking-widest text-danger">
                     <X className="h-3 w-3" /> unverified
                   </span>
                 </div>
@@ -63,12 +63,12 @@ export default function HireWowEvidence() {
             <article aria-label="What the replay shows you" className="h-full">
               <div className="h-full md:rotate-[1deg] overflow-hidden rounded-3xl border-2 border-secondary/60 bg-panel shadow-[0_0_70px_-18px_rgb(var(--c-accent-2))]">
                 <div className="flex items-center gap-3 border-b border-fg/10 px-6 py-4">
-                  <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-secondary font-black text-secondary-ink">▶</span>
+                  <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-secondary font-semibold text-secondary-ink">▶</span>
                   <div>
                     <p className="text-[15px] font-bold text-fg">debounce-from-scratch · full session</p>
-                    <p className="font-mono text-[11px] uppercase tracking-[0.18em] text-fg/45">24:16 · every keystroke kept</p>
+                    <p className="font-mono text-xs uppercase tracking-[0.12em] text-fg/45">24:16 · every keystroke kept</p>
                   </div>
-                  <span className="ml-auto rounded-full bg-success/10 px-3 py-1 font-mono text-[11px] font-bold text-success">92/100</span>
+                  <span className="ml-auto rounded-full bg-success/10 px-3 py-1 font-mono text-xs font-bold text-success">92/100</span>
                 </div>
                 <div className="space-y-3 px-6 py-5 text-[14px] text-fg/85">
                   <p className="flex gap-2"><span className="font-mono text-fg/40">04:12</span> Writes failing test <em className="text-secondary-soft not-italic">first</em> — unprompted.</p>
@@ -82,11 +82,11 @@ export default function HireWowEvidence() {
             </article>
           </WowReveal>
         </div>
-        <p className="mt-6 text-center font-mono text-[11px] uppercase tracking-[0.25em] text-subtle">Only one of them is evidence</p>
+        <p className="mt-6 text-center font-mono text-xs uppercase tracking-[0.12em] text-subtle">Only one of them is evidence</p>
 
         <WowReveal>
-          <p className="mt-24 flex items-center gap-2 font-mono text-[11px] uppercase tracking-[0.3em] text-secondary"><Award className="h-3.5 w-3.5" /> the record</p>
-          <h3 className="wow-font-display mt-3 text-4xl md:text-6xl">WHAT YOU ARE LEFT WITH,<br /><span className="wow-gradient-boss">PER CANDIDATE.</span></h3>
+          <p className="mt-24 flex items-center gap-2 font-mono text-xs uppercase tracking-[0.12em] text-secondary"><Award className="h-3.5 w-3.5" /> the record</p>
+          <h3 className="wow-font-display mt-3 text-4xl md:text-6xl">What you are left with,<br /><span className="wow-gradient-boss">per candidate.</span></h3>
           <p className="mt-4 max-w-2xl text-[15px] leading-relaxed text-muted">
             A hiring decision is easy to make and hard to defend three months
             later. Every attempt closes into one record your team can reopen,
@@ -104,8 +104,8 @@ export default function HireWowEvidence() {
                     i > 0 ? "border-t border-border" : ""
                   }`}
                 >
-                  <span className="flex shrink-0 items-center gap-2 font-mono text-[11px] font-bold uppercase tracking-[0.18em] text-secondary sm:w-36">
-                    <span className="font-black tabular-nums text-subtle">0{i + 1}</span>
+                  <span className="flex shrink-0 items-center gap-2 font-mono text-xs font-medium uppercase tracking-[0.12em] text-secondary sm:w-36">
+                    <span className="font-semibold tabular-nums text-subtle">0{i + 1}</span>
                     {row.label}
                   </span>
                   <span className="text-[13.5px] leading-relaxed text-muted">{row.body}</span>

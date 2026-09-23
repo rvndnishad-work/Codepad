@@ -27,7 +27,7 @@ function ReplayBtn({ onClick }: { onClick: () => void }) {
     <button
       type="button"
       onClick={onClick}
-      className="flex shrink-0 items-center gap-1.5 rounded-full border border-border bg-panel px-3 py-1.5 font-mono text-[11px] font-bold uppercase tracking-[0.16em] text-subtle backdrop-blur transition hover:border-secondary hover:text-fg"
+      className="flex shrink-0 items-center gap-1.5 rounded-full border border-border bg-panel px-3 py-1.5 font-mono text-xs font-medium uppercase tracking-[0.12em] text-subtle backdrop-blur transition hover:border-secondary hover:text-fg"
     >
       Replay
       <RotateCcw className="h-3 w-3" />
@@ -39,11 +39,11 @@ function DemoShell({ icon: Icon, label, action, children }: { icon: React.Compon
   return (
     <div className="relative flex h-full w-full flex-col gap-4 overflow-hidden rounded-3xl border border-border bg-surface p-5 backdrop-blur-sm md:p-6">
       <div className="flex items-center gap-2.5">
-        <span className="grid h-8 w-8 shrink-0 place-items-center rounded-xl bg-gradient-to-br from-secondary/25 to-accent-3/20 text-secondary">
+        <span className="grid h-8 w-8 shrink-0 place-items-center rounded-xl bg-secondary/15 text-secondary-soft">
           <Icon className="h-4 w-4" />
         </span>
-        <span className="font-mono text-[11px] font-bold uppercase tracking-[0.2em] text-subtle">{label}</span>
-        <span className="ml-auto flex items-center gap-1.5 font-mono text-[11px] uppercase tracking-widest text-success">
+        <span className="font-mono text-xs font-medium uppercase tracking-[0.12em] text-subtle">{label}</span>
+        <span className="ml-auto flex items-center gap-1.5 font-mono text-xs uppercase tracking-widest text-success">
           <span className="h-1.5 w-1.5 motion-safe:animate-pulse rounded-full bg-success" /> live
         </span>
         {action}
@@ -83,10 +83,10 @@ function SectionShell({ index, icon: Icon, title, titleAccent, desc, bullets, ch
         <div className={`relative z-10 flex flex-col md:flex-row items-center gap-8 md:gap-12`}>
           <div className="min-w-0 flex-1 space-y-5">
             <div className="flex items-center gap-3">
-              <span className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-gradient-to-br from-secondary to-accent-3 text-fg shadow-[0_8px_24px_-8px_rgb(var(--c-accent-2)/0.7)]">
+              <span className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl border border-secondary/30 bg-secondary/15 text-secondary-soft">
                 <Icon className="h-5 w-5" />
               </span>
-              <span className="rounded-full bg-secondary/10 px-2.5 py-1 font-mono text-[11px] font-bold uppercase tracking-[0.18em] text-secondary">
+              <span className="rounded-full bg-secondary/10 px-2.5 py-1 font-mono text-xs font-medium uppercase tracking-[0.12em] text-secondary">
                 Feature {index + 1}
               </span>
             </div>
@@ -177,7 +177,7 @@ function ProctoringDemo() {
   return (
     <DemoShell icon={Shield} label="Live Proctor Feed" action={<ReplayBtn onClick={start} />}>
       <div className="flex items-center gap-3 rounded-2xl border border-border bg-panel p-3">
-        <span className="font-mono text-[11px] font-bold uppercase tracking-[0.16em] text-subtle">Trust</span>
+        <span className="font-mono text-xs font-medium uppercase tracking-[0.12em] text-subtle">Trust</span>
         <div className="h-2.5 flex-1 overflow-hidden rounded-full bg-border">
           <motion.div
             className={`h-full rounded-full ${trustBar}`}
@@ -186,7 +186,7 @@ function ProctoringDemo() {
           />
         </div>
         <motion.span
-          className={`text-lg font-black tabular-nums ${trustText}`}
+          className={`text-lg font-semibold tabular-nums ${trustText}`}
           key={trust}
           initial={{ scale: 1.3, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
@@ -204,9 +204,9 @@ function ProctoringDemo() {
               className="flex items-center gap-2 rounded-xl border border-border bg-panel p-2 text-xs"
             >
               <Clock className="h-3 w-3 shrink-0 text-subtle" />
-              <span className="font-mono text-[11px] tabular-nums text-subtle">00:{String((i + 1) * 4).padStart(2, "0")}</span>
+              <span className="font-mono text-xs tabular-nums text-subtle">00:{String((i + 1) * 4).padStart(2, "0")}</span>
               <span className="flex-1 font-medium text-fg">{ev.text}</span>
-              <span className={`rounded-full px-1.5 py-0.5 text-[11px] font-bold uppercase ${sevStyle[ev.severity as keyof typeof sevStyle]}`}>
+              <span className={`rounded-full px-1.5 py-0.5 text-xs font-bold uppercase ${sevStyle[ev.severity as keyof typeof sevStyle]}`}>
                 {ev.severity}
               </span>
             </motion.div>
@@ -284,7 +284,7 @@ function McpDemo() {
 
   return (
     <DemoShell icon={Cpu} label="MCP Console" action={<ReplayBtn onClick={start} />}>
-      <div ref={scrollRef} className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto pr-1 font-mono text-[11px]">
+      <div ref={scrollRef} className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto pr-1 font-mono text-xs">
         {MCP_STEPS.slice(0, step + 1).map((blk, i) => {
           const isCurrent = i === step;
           const shownText = isCurrent ? fullText.slice(0, charIdx) : blk.lines.join("\n");
@@ -295,7 +295,7 @@ function McpDemo() {
               animate={{ opacity: 1, y: 0 }}
               className="overflow-hidden rounded-2xl border border-border bg-bg/40 p-3 dark:bg-bg/50"
             >
-              <div className={`mb-1.5 text-[11px] font-bold uppercase tracking-widest ${labelColor[blk.label] ?? "text-subtle"}`}>
+              <div className={`mb-1.5 text-xs font-bold uppercase tracking-widest ${labelColor[blk.label] ?? "text-subtle"}`}>
                 ← {blk.label}
               </div>
               <pre className="whitespace-pre-wrap break-all leading-relaxed text-fg/85">
@@ -364,25 +364,25 @@ function MultiplayerDemo() {
         {PARTICIPANTS.map((p, i) => (
           <div key={i} className="flex items-center gap-1.5">
             <div
-              className="flex h-7 w-7 items-center justify-center rounded-full border-2 text-[11px] font-bold text-fg"
+              className="flex h-7 w-7 items-center justify-center rounded-full border-2 text-xs font-bold text-fg"
               style={{ background: `color-mix(in srgb, ${p.color} 19%, transparent)`, borderColor: p.color }}
             >
               {p.initials}
             </div>
-            <span className="hidden text-[11px] font-bold text-subtle sm:inline">{p.name}</span>
+            <span className="hidden text-xs font-bold text-subtle sm:inline">{p.name}</span>
             <div className="h-1.5 w-1.5 rounded-full bg-success" />
           </div>
         ))}
-        <div className="ml-auto flex items-center gap-1 rounded-full bg-success/10 px-2 py-0.5 text-[11px] font-bold text-success">
+        <div className="ml-auto flex items-center gap-1 rounded-full bg-success/10 px-2 py-0.5 text-xs font-bold text-success">
           <Activity className="h-3 w-3" /> WebRTC
         </div>
       </div>
-      <div className="mb-1 min-h-0 flex-1 space-y-0.5 overflow-hidden rounded-2xl border border-border bg-bg/40 p-3 font-mono text-[11px] dark:bg-bg/50">
+      <div className="mb-1 min-h-0 flex-1 space-y-0.5 overflow-hidden rounded-2xl border border-border bg-bg/40 p-3 font-mono text-xs dark:bg-bg/50">
         {EDITOR_LINES.map((line, li) => {
           const activeCursors = PARTICIPANTS.filter((p, pi) => tick > pi && p.cursorLines[Math.min(tick - 1, 2)] === li + 1);
           return (
             <div key={li} className="relative flex min-h-[1.4em] items-center gap-2">
-              <span className="w-4 select-none text-right tabular-nums text-[11px] text-fg/25">{li + 1}</span>
+              <span className="w-4 select-none text-right tabular-nums text-xs text-fg/25">{li + 1}</span>
               <span className="whitespace-pre text-fg/70">{line || " "}</span>
               {activeCursors.map((c, ci) => (
                 <motion.div
@@ -392,7 +392,7 @@ function MultiplayerDemo() {
                   className="absolute right-2 flex items-center gap-1"
                 >
                   <div className="h-4 w-[2px] motion-safe:animate-pulse" style={{ background: c.color }} />
-                  <span className="rounded px-1 text-[11px] font-bold" style={{ color: c.color, background: `color-mix(in srgb, ${c.color} 12.5%, transparent)` }}>
+                  <span className="rounded px-1 text-xs font-bold" style={{ color: c.color, background: `color-mix(in srgb, ${c.color} 12.5%, transparent)` }}>
                     {c.name}
                   </span>
                 </motion.div>
@@ -403,7 +403,7 @@ function MultiplayerDemo() {
       </div>
       <div className="flex min-h-[1.75rem] items-center gap-3">
         {tick >= 1 && tick < 3 && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex items-center gap-1.5 text-[11px] text-subtle">
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex items-center gap-1.5 text-xs text-subtle">
             <span className="font-bold" style={{ color: PARTICIPANTS[0].color }}>Alice</span>
             <span>is typing</span>
             <span className="flex gap-0.5">
@@ -423,7 +423,7 @@ function MultiplayerDemo() {
             <motion.div
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
-              className="flex items-center gap-2 rounded-full border border-border bg-panel px-3 py-1.5 text-[11px]"
+              className="flex items-center gap-2 rounded-full border border-border bg-panel px-3 py-1.5 text-xs"
             >
               <span className="font-bold" style={{ color: PARTICIPANTS[1].color }}>Bob:</span>
               <span className="text-muted">Should we use a min-heap here?</span>
@@ -488,18 +488,18 @@ function GradingDemo() {
   return (
     <DemoShell icon={Workflow} label="Test Runner" action={<ReplayBtn onClick={start} />}>
       <div className="flex items-center justify-between">
-        <div className="text-sm font-black tabular-nums">
+        <div className="text-sm font-semibold tabular-nums">
           <span className="text-success">{passed}</span>
           <span className="text-subtle">/{ran > 0 ? TESTS.length : "-"}</span>
-          <span className="ml-1 text-[11px] font-bold uppercase text-subtle">passed</span>
+          <span className="ml-1 text-xs font-bold uppercase text-subtle">passed</span>
         </div>
-        <span className="rounded-full bg-secondary/10 px-2.5 py-1 font-mono text-[11px] font-bold uppercase tracking-[0.14em] text-secondary tabular-nums">
+        <span className="rounded-full bg-secondary/10 px-2.5 py-1 font-mono text-xs font-medium uppercase tracking-[0.12em] text-secondary tabular-nums">
           {Math.round(pct)}%
         </span>
       </div>
       <div className="h-2.5 overflow-hidden rounded-full bg-border">
         <motion.div
-          className="h-full rounded-full bg-gradient-to-r from-secondary via-accent-3 to-accent-4"
+          className="h-full rounded-full bg-secondary"
           animate={{ width: `${pct}%` }}
           transition={{ duration: 0.3, ease: "easeOut" }}
         />
@@ -519,7 +519,7 @@ function GradingDemo() {
                 <X className="h-3.5 w-3.5 shrink-0 text-danger" />
               )}
               <span className={`flex-1 font-medium ${test.pass ? "text-fg" : "text-danger"}`}>{test.name}</span>
-              <span className={`rounded-full px-1.5 py-0.5 text-[11px] font-bold uppercase ${test.pass ? "bg-success/15 text-success dark:text-success" : "bg-danger/15 text-danger"}`}>
+              <span className={`rounded-full px-1.5 py-0.5 text-xs font-bold uppercase ${test.pass ? "bg-success/15 text-success dark:text-success" : "bg-danger/15 text-danger"}`}>
                 {test.pass ? "PASS" : "FAIL"}
               </span>
             </motion.div>
@@ -581,22 +581,22 @@ function RubricsDemo() {
     <DemoShell icon={BarChart3} label="Evaluation Rubric" action={<ReplayBtn onClick={start} />}>
       <div className="relative flex items-center justify-between gap-4 overflow-hidden rounded-2xl border border-border bg-panel p-3.5">
         <div>
-          <div className="text-3xl font-black tabular-nums text-accent-4 leading-none">
+          <div className="text-3xl font-semibold tabular-nums text-accent-4 leading-none">
             {scoreNum}<span className="ml-0.5 text-sm font-normal text-subtle">/100</span>
           </div>
-          <div className="mt-1.5 font-mono text-[11px] font-bold uppercase tracking-[0.16em] text-subtle">Overall Score</div>
+          <div className="mt-1.5 font-mono text-xs font-medium uppercase tracking-[0.12em] text-subtle">Overall Score</div>
         </div>
         <div className="text-right">
           <div className="inline-block rounded-full border border-success/25 bg-success/10 px-2.5 py-1 text-xs font-bold uppercase tracking-wide text-success dark:text-success">
             Strong Pass
           </div>
-          <div className="mt-1 font-mono text-[11px] font-bold uppercase tracking-[0.16em] text-subtle">Dossier generated</div>
+          <div className="mt-1 font-mono text-xs font-medium uppercase tracking-[0.12em] text-subtle">Dossier generated</div>
         </div>
       </div>
       <div className="space-y-2">
         {DIMENSIONS.map((dim, i) => (
           <div key={i}>
-            <div className="mb-1 flex justify-between text-[11px] font-bold">
+            <div className="mb-1 flex justify-between text-xs font-bold">
               <span className="text-muted">{dim.label}</span>
               <span className="tabular-nums text-fg">{progress ? dim.value : 0}%</span>
             </div>
@@ -617,7 +617,7 @@ function RubricsDemo() {
         animate={done ? { scale: [1, 1.03, 1] } : {}}
         transition={{ repeat: Infinity, duration: 2 }}
       >
-        <span className="flex cursor-default items-center gap-2 rounded-full border border-accent-4/30 bg-accent-4/10 px-5 py-2.5 font-mono text-[11px] font-bold uppercase tracking-[0.16em] text-accent-4">
+        <span className="flex cursor-default items-center gap-2 rounded-full border border-accent-4/30 bg-accent-4/10 px-5 py-2.5 font-mono text-xs font-medium uppercase tracking-[0.12em] text-accent-4">
           <FileText className="h-3.5 w-3.5" />
           Export PDF Dossier
         </span>
@@ -699,14 +699,13 @@ function CreditsDemo() {
             <defs>
               <linearGradient id="wow-credit-grad" x1="0" y1="0" x2="120" y2="120" gradientUnits="userSpaceOnUse">
                 <stop offset="0" stopColor="rgb(var(--c-accent-2))" />
-                <stop offset="0.55" stopColor="rgb(var(--c-accent-3))" />
-                <stop offset="1" stopColor="rgb(var(--c-accent-4))" />
+                <stop offset="1" stopColor="rgb(var(--c-accent-2-soft))" />
               </linearGradient>
             </defs>
           </svg>
           <div className="absolute inset-0 flex flex-col items-center justify-center">
             <span className="wow-font-display text-2xl tabular-nums">{creditAnim}</span>
-            <span className="font-mono text-[11px] font-bold uppercase tracking-[0.14em] text-subtle">/1000 credits</span>
+            <span className="text-xs text-subtle">of 1,000 credits</span>
           </div>
           <div aria-hidden className="absolute inset-0 -z-10 rounded-full bg-secondary/15 blur-2xl" />
         </div>
@@ -723,12 +722,12 @@ function CreditsDemo() {
                   <item.icon className="h-3.5 w-3.5" />
                 </span>
                 <span className="flex-1 font-medium text-fg">{item.name}</span>
-                <span className="font-mono text-[11px] font-bold tabular-nums text-secondary">{item.credits} cr</span>
+                <span className="font-mono text-xs font-bold tabular-nums text-secondary">{item.credits} cr</span>
               </motion.div>
             ))}
           </AnimatePresence>
           <div className="mt-1 flex items-center justify-between rounded-2xl border border-border bg-panel p-3">
-            <span className="font-mono text-[11px] font-bold uppercase tracking-[0.16em] text-subtle">Monthly Spend</span>
+            <span className="font-mono text-xs font-medium uppercase tracking-[0.12em] text-subtle">Monthly Spend</span>
             <span className="wow-font-display text-xl tabular-nums">
               ${spend.toLocaleString()}
             </span>
@@ -823,8 +822,8 @@ export default function HireWowFeatures() {
   return (
     <div className="space-y-2">
       <WowReveal>
-        <p className="flex items-center gap-2 font-mono text-[11px] uppercase tracking-[0.3em] text-secondary"><Brain className="h-3.5 w-3.5" /> why teams switch</p>
-        <h2 className="wow-font-display mt-3 text-5xl md:text-7xl">FOUR SURFACES,<br /><span className="wow-gradient-boss">ALL OF THEM LIVE.</span></h2>
+        <p className="flex items-center gap-2 font-mono text-xs uppercase tracking-[0.12em] text-secondary"><Brain className="h-3.5 w-3.5" /> why teams switch</p>
+        <h2 className="wow-font-display mt-3 text-5xl md:text-7xl">Four surfaces,<br /><span className="wow-gradient-boss">all of them live.</span></h2>
         <p className="mt-4 max-w-2xl text-[15px] leading-relaxed text-muted">
           Challenge authoring over MCP, the multiplayer room, grading and
           rubrics. Pick one: each demo below is running on this page.
@@ -843,7 +842,7 @@ export default function HireWowFeatures() {
             aria-controls="surface-panel"
             tabIndex={i === active ? 0 : -1}
             onClick={() => setActive(i)}
-            className={`flex items-center gap-2 rounded-full border px-4 py-2 font-mono text-[11px] font-bold uppercase tracking-[0.16em] transition ${
+            className={`flex items-center gap-2 rounded-full border px-4 py-2 text-[13px] font-medium transition ${
               i === active
                 ? "border-secondary bg-secondary text-secondary-ink"
                 : "border-border bg-surface text-subtle hover:border-secondary/60 hover:text-fg"

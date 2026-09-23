@@ -1,37 +1,41 @@
 /* WOW prototype — maximalist counterpoint to the Runtime system.
    Scoped under .wow-* so it never leaks into the real app. */
 
+/* Marketing pages swap the mono face to Geist Mono for labels and demo
+   code. The variable is resolved per element, so everything inside the
+   scope that uses font-mono picks it up. */
+.wow-scope {
+  --font-mono: var(--font-geist-mono);
+}
+
 .wow-font-display {
-  font-weight: 900;
-  letter-spacing: -0.055em;
-  line-height: 0.9;
+  /* Semibold with tight tracking reads as designed; 900 with -0.055em read
+     as a template. Headlines are sentence case in the markup. */
+  font-weight: 600;
+  letter-spacing: -0.045em;
+  line-height: 0.95;
   text-wrap: balance;
 }
+/* Second headline line: a quieter solid, not an outline. The old 2px
+   outline made long lines hard to read and looked generated. */
 .wow-text-stroke {
-  -webkit-text-stroke: 2px rgba(255,255,255,0.85);
-  color: transparent;
-}
-@media (max-width: 768px) {
-  .wow-text-stroke { -webkit-text-stroke-width: 1.2px; }
+  color: rgb(var(--c-subtle));
 }
 
 .wow-gradient-text {
-  /* Runtime tokens: accent → accent-3 → accent-2 → accent-4. */
-  background: linear-gradient(92deg, rgb(var(--c-accent)) 0%, rgb(var(--c-accent-3)) 42%, rgb(var(--c-accent-2)) 72%, rgb(var(--c-accent-4)) 100%);
-  background-size: 220% 100%;
+  /* One brand accent on the headline with a slight top-to-bottom warmth.
+     It used to cycle four accents, which read as a rainbow. */
+  background: linear-gradient(180deg, rgb(var(--c-accent)) 20%, rgb(var(--c-accent-soft)) 100%);
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
-  animation: wow-gradient-pan 7s ease-in-out infinite alternate;
 }
-/* Boss-mode gradient: restrained indigo → cyan → ice. Professional, not playful. */
+/* Hiring gradient: indigo into near-white, static. */
 .wow-gradient-boss {
-  background: linear-gradient(92deg, rgb(var(--c-accent-2-soft)) 0%, rgb(var(--c-accent-2)) 35%, rgb(var(--c-accent-4)) 75%, rgb(var(--c-fg)) 100%);
-  background-size: 220% 100%;
+  background: linear-gradient(100deg, rgb(var(--c-accent-2-soft)) 0%, rgb(var(--c-fg)) 100%);
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
-  animation: wow-gradient-pan 8s ease-in-out infinite alternate;
 }
 @keyframes wow-gradient-pan {
   from { background-position: 0% 50%; }
@@ -46,9 +50,9 @@
 }
 .wow-card-glow { transition: transform .35s cubic-bezier(.16,1,.3,1), box-shadow .35s, border-color .35s; }
 .wow-card-glow:hover {
-  transform: translateY(-6px) rotate(-0.4deg);
-  border-color: rgb(var(--c-accent) / 0.55);
-  box-shadow: 0 0 0 1px rgb(var(--c-accent) / .35), 0 24px 70px -18px rgb(var(--c-accent-3) / .45), 0 12px 40px -12px rgb(var(--c-accent-2) / .5);
+  transform: translateY(-3px);
+  border-color: rgb(var(--c-fg) / 0.22);
+  box-shadow: 0 24px 60px -24px rgb(0 0 0 / .8);
 }
 
 .wow-marquee-track { display: flex; width: max-content; animation: wow-marquee 28s linear infinite; }
@@ -101,6 +105,6 @@
 
 @media (prefers-reduced-motion: reduce) {
   .wow-marquee-track, .wow-float, .wow-float-2, .wow-float-3,
-  .wow-spin-slow, .wow-spin-slower, .wow-orbit-dot, .wow-gradient-text,
-  .wow-gradient-boss, .wow-svg-dash, .wow-blink { animation: none !important; }
+  .wow-spin-slow, .wow-spin-slower, .wow-orbit-dot,
+  .wow-svg-dash, .wow-blink { animation: none !important; }
 }

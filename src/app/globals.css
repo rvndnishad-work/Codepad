@@ -220,7 +220,7 @@
     font-size: var(--base-font-size);
     background: var(--bg);
     color: var(--fg);
-    font-family: var(--font-sans), "Inter", system-ui, -apple-system, "Segoe UI", "Helvetica Neue", sans-serif;
+    font-family: var(--font-sans), "Geist", system-ui, -apple-system, "Segoe UI", "Helvetica Neue", sans-serif;
     line-height: 1.6;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
@@ -230,10 +230,9 @@
   body {
     background: var(--bg);
     color: var(--fg);
-    /* Inter character variants: single-storey a (cv11), open 4 (cv03),
-       open 6/9 (cv04), tabular figures off, alternate-1 (ss01).
-       These are no-ops on other fonts so they're safe to leave. */
-    font-feature-settings: "cv02", "cv03", "cv04", "cv11", "ss01";
+    /* Geist defaults; the old Inter-only character variants map to
+       different glyph sets in Geist, so they are off. */
+    font-feature-settings: normal;
     -webkit-font-smoothing: antialiased;
   }
 

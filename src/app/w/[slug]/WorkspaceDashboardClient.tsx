@@ -30,7 +30,6 @@ import {
   Play,
   Eye,
   ChevronRight,
-  Upload,
   Brain,
   Copy,
   X,
@@ -38,20 +37,13 @@ import {
   Video,
   FileCode2,
   ClipboardList,
-  Table2,
-  Columns3,
 } from "lucide-react";
 import { describeExecution } from "@/lib/exec-result";
 import { postExecute } from "@/lib/execute-client";
-import AddCandidateDialog from "./AddCandidateDialog";
-import BulkAddCandidatesDialog from "./BulkAddCandidatesDialog";
 import { bulkCreateTakeHomeSessions } from "./candidates/actions";
-import CandidatePipelineClient from "./candidates/CandidatePipelineClient";
-import LeaderboardClient from "./leaderboard/LeaderboardClient";
 import WorkspaceOverview from "./WorkspaceOverview";
 import SubTabs from "./SubTabs";
-import { STAGE_SWATCH, sourceLabel, humanize, plural, relativeTime, type PlanDisplay } from "@/lib/workspace/display";
-import { PIPELINE_STAGES, STAGE_LABELS, type PipelineStage } from "@/lib/crm/stages";
+import { humanize, type PlanDisplay } from "@/lib/workspace/display";
 
 type Challenge = {
   id: string;
@@ -268,7 +260,6 @@ type Props = {
   roleBasePermissions: Record<string, string[]>;
   sessions: InterviewSessionItem[];
   candidates: CandidateItem[];
-  initialBuckets?: any;
   promptScenarios?: PromptScenario[];
   promptAttempts?: PromptAttemptItem[];
   pendingInvites?: PendingInvite[];
@@ -283,7 +274,6 @@ type PendingInvite = {
 };
 
 const SECTION_TITLES: Record<string, { title: string; body: string }> = {
-  candidates: { title: "Candidates", body: "Everyone in this workspace, from first contact to offer." },
   assessments: { title: "Assessments", body: "Live interviews, take-homes, AI screenings and their replays." },
   library: { title: "Question library", body: "Challenges and prompt scenarios your team can assign." },
   members: { title: "Members", body: "Who can see candidates and act on them in this workspace." },
@@ -292,7 +282,6 @@ const SECTION_TITLES: Record<string, { title: string; body: string }> = {
 };
 
 type TabId =
-  | "candidates"
   | "assessments"
   | "library"
   | "members"
@@ -321,7 +310,6 @@ export default function WorkspaceDashboardClient({
   roleBasePermissions,
   sessions,
   candidates,
-  initialBuckets,
   promptScenarios = [],
   promptAttempts = [],
   pendingInvites = [],
@@ -331,13 +319,11 @@ export default function WorkspaceDashboardClient({
   const sectionParam = searchParams.get("section");
   const viewParam = searchParams.get("view");
   
-  const validSections: TabId[] = ["candidates", "assessments", "library", "members", "billing", "integrations"];
+  const validSections: TabId[] = ["assessments", "library", "members", "billing", "integrations"];
   const activeTab: TabId | "overview" = (sectionParam && validSections.includes(sectionParam as TabId))
     ? (sectionParam as TabId)
     : "overview";
 
-  // Candidates sub-tab logic
-  const candidateSubTab = (activeTab === "candidates" && viewParam) ? viewParam : "list";
   const assessmentSubTab = (activeTab === "assessments" && viewParam) ? viewParam : "interviews";
 
   const [interviewSubTab, setInterviewSubTab] = useState<"sessions" | "attempts" | "scenarios">("sessions");
@@ -355,28 +341,9 @@ export default function WorkspaceDashboardClient({
   const [scenarioConstraints, setScenarioConstraints] = useState("");
   const [creatingScenario, setCreatingScenario] = useState(false);
   const [selectedAttempt, setSelectedAttempt] = useState<any | null>(null);
-  const [addCandidateOpen, setAddCandidateOpen] = useState(false);
-  const [bulkAddOpen, setBulkAddOpen] = useState(false);
   // Overview quick-action: send a one-off take-home without leaving the
   // dashboard (same form/handler as the Assessments → Take-Homes tab).
   const [quickTakeHomeOpen, setQuickTakeHomeOpen] = useState(false);
-  const [candidateSort, setCandidateSort] = useState<"recent" | "name" | "status" | "take-homes" | "interviews">("recent");
-  const [candidateStatusFilter, setCandidateStatusFilter] = useState<string>("all");
-  // Stage and search can arrive in the URL from the overview pipeline and the
-  // app bar search (?stage=OFFER, ?q=ana).
-  const [candidateStageFilter, setCandidateStageFilter] = useState<"ALL" | PipelineStage>(() => {
-    const st = searchParams.get("stage");
-    return st && (PIPELINE_STAGES as readonly string[]).includes(st) ? (st as PipelineStage) : "ALL";
-  });
-  const [candidateQuery, setCandidateQuery] = useState(() => searchParams.get("q") ?? "");
-  useEffect(() => {
-    const st = searchParams.get("stage");
-    if (st && (PIPELINE_STAGES as readonly string[]).includes(st)) setCandidateStageFilter(st as PipelineStage);
-    const q = searchParams.get("q");
-    if (q !== null) setCandidateQuery(q);
-  }, [searchParams]);
-  const [selectedCandidateIds, setSelectedCandidateIds] = useState<Set<string>>(new Set());
-  const [bulkDeleting, setBulkDeleting] = useState(false);
 
   
   // Lists data in state so client can append newly created ones instantly
@@ -404,10 +371,6 @@ export default function WorkspaceDashboardClient({
   }, [currentMembers, currentUserId, roleBasePermissions]);
   const canSetRoles = myEffective.has("member:set_role");
   const canRemoveMembers = myEffective.has("member:remove");
-  // Drives the pipeline board's edit affordances (drag / context menu). The
-  // server actions enforce this too; hiding the controls just avoids dead
-  // clicks + 403 toasts for VIEWERs.
-  const canManagePipeline = myEffective.has("candidate:manage_pipeline");
   const iAmOwner =
     currentMembers.find((m) => m.userId === currentUserId)?.role === "OWNER";
   
@@ -887,100 +850,6 @@ export default function WorkspaceDashboardClient({
     EXPIRED: "text-danger border-danger/25 bg-danger/[0.06]",
   };
 
-  // Candidate roster comes directly from the first-class Candidate model
-  // (server-fetched). This includes "parked" candidates with no assignments yet.
-  // Apply client-side status filter + sort over the server payload.
-  const STATUS_PIPELINE_ORDER: Record<string, number> = {
-    active: 0,
-    future_hire: 1,
-    do_not_hire: 2,
-    hired: 3,
-    rejected: 4,
-    archived: 5,
-  };
-  const candidateRoster = useMemo(() => {
-    const q = candidateQuery.trim().toLowerCase();
-    const filtered = candidates.filter(
-      (c) =>
-        (candidateStatusFilter === "all" || c.status === candidateStatusFilter) &&
-        (candidateStageFilter === "ALL" || (c.stage || "APPLIED") === candidateStageFilter) &&
-        (!q || c.name.toLowerCase().includes(q) || (c.email ?? "").toLowerCase().includes(q)),
-    );
-
-    const sorted = [...filtered].sort((a, b) => {
-      switch (candidateSort) {
-        case "name":
-          return a.name.localeCompare(b.name);
-        case "status":
-          return (STATUS_PIPELINE_ORDER[a.status] ?? 99) - (STATUS_PIPELINE_ORDER[b.status] ?? 99);
-        case "take-homes":
-          return b.takeHomeCount - a.takeHomeCount;
-        case "interviews":
-          return b.sessionCount - a.sessionCount;
-        case "recent":
-        default:
-          return a.updatedAt > b.updatedAt ? -1 : 1;
-      }
-    });
-    return sorted;
-  }, [candidates, candidateStatusFilter, candidateStageFilter, candidateQuery, candidateSort]);
-
-  const stageCounts = useMemo(() => {
-    const acc: Record<string, number> = {};
-    candidates.forEach((c) => { const st = c.stage || "APPLIED"; acc[st] = (acc[st] ?? 0) + 1; });
-    return acc;
-  }, [candidates]);
-
-  // Statuses with counts for the filter pill row
-  const statusCounts = useMemo(() => {
-    const acc: Record<string, number> = { all: candidates.length };
-    candidates.forEach((c) => { acc[c.status] = (acc[c.status] ?? 0) + 1; });
-    return acc;
-  }, [candidates]);
-
-  function toggleCandidateSelected(id: string) {
-    setSelectedCandidateIds((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
-  }
-
-  function toggleAllSelected() {
-    if (selectedCandidateIds.size === candidateRoster.length) {
-      setSelectedCandidateIds(new Set());
-    } else {
-      setSelectedCandidateIds(new Set(candidateRoster.map((c) => c.id)));
-    }
-  }
-
-  async function handleBulkDelete() {
-    if (selectedCandidateIds.size === 0) return;
-    if (!window.confirm(`Delete ${selectedCandidateIds.size} candidate${selectedCandidateIds.size === 1 ? "" : "s"}? This cannot be undone.`)) {
-      return;
-    }
-    setBulkDeleting(true);
-    try {
-      const res = await fetch(`/api/w/${workspace.slug}/candidates/bulk`, {
-        method: "DELETE",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ ids: Array.from(selectedCandidateIds) }),
-      });
-      const data = await res.json().catch(() => null);
-      if (!res.ok) throw new Error(data?.error ?? `HTTP ${res.status}`);
-      toast.success(`Deleted ${data.deleted} candidate${data.deleted === 1 ? "" : "s"}`);
-      setSelectedCandidateIds(new Set());
-      router.refresh();
-    } catch (err) {
-      toast.error("Failed to delete candidates", {
-        description: err instanceof Error ? err.message : String(err),
-      });
-    } finally {
-      setBulkDeleting(false);
-    }
-  }
-
   // Replays = completed take-homes (with attempt) + finished interview sessions
   const replayItems = [
     ...currentTakeHomes
@@ -1009,14 +878,6 @@ export default function WorkspaceDashboardClient({
 
   const currentStats = useMemo(() => {
     switch (activeTab) {
-      case "candidates":
-        return [
-          { label: "Candidates", value: candidates.length },
-          { label: "Assessed", value: candidates.filter(c => c.takeHomeCount > 0 || c.sessionCount > 0).length },
-          { label: "In pipeline", value: candidates.filter(c => c.stage !== "APPLIED" && c.stage !== "REJECTED").length },
-          { label: "Hired", value: candidates.filter(c => c.stage === "HIRED").length },
-          { label: "Rejected", value: candidates.filter(c => c.stage === "REJECTED").length },
-        ];
       case "assessments":
         return [
           { label: "Interviews", value: sessions.length + aiInterviewSessions.length },
@@ -1059,7 +920,7 @@ export default function WorkspaceDashboardClient({
 
       {/* Stat strip for the list sections: one bordered row, numbers in the
           foreground colour; status colour is kept for status, not decoration. */}
-      {(activeTab === "candidates" || activeTab === "assessments" || activeTab === "library") && (
+      {(activeTab === "assessments" || activeTab === "library") && (
         <div className="rounded-xl border border-border bg-surface overflow-hidden grid grid-cols-2 md:grid-cols-5">
           {currentStats.map((stat, i) => (
             <div
@@ -1098,8 +959,8 @@ export default function WorkspaceDashboardClient({
               takeHomes={currentTakeHomes}
               takeHomeSessions={takeHomeSessions}
               aiInterviewSessions={aiInterviewSessions}
-              onAddCandidate={() => setAddCandidateOpen(true)}
-              onBulkImport={() => setBulkAddOpen(true)}
+              onAddCandidate={() => router.push(`/w/${workspace.slug}/candidates?add=1`)}
+              onBulkImport={() => router.push(`/w/${workspace.slug}/candidates?import=1`)}
               onSendTakeHome={() => setQuickTakeHomeOpen(true)}
             />
           )}
@@ -1651,312 +1512,6 @@ export default function WorkspaceDashboardClient({
             </div>
           )}
 
-          {/* CANDIDATES */}
-          {activeTab === "candidates" && (
-            <div className="space-y-5">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                <SubTabs
-                  label="Candidate views"
-                  active={candidateSubTab}
-                  tabs={[
-                    { id: "list", label: "Table", icon: Table2 },
-                    { id: "pipeline", label: "Board", icon: Columns3 },
-                    { id: "leaderboard", label: "Leaderboard", icon: Trophy },
-                  ].map((t) => ({ ...t, href: `/w/${workspace.slug}?section=candidates&view=${t.id}` }))}
-                />
-              </div>
-
-              {candidateSubTab === "list" && (
-            <div className="space-y-4">
-              <div className="flex flex-col gap-3">
-                <div role="group" aria-label="Filter by stage" className="flex items-center gap-1.5 flex-wrap">
-                  {(["ALL", ...PIPELINE_STAGES] as const).map((st) => {
-                    const isActive = candidateStageFilter === st;
-                    const count = st === "ALL" ? candidates.length : stageCounts[st] ?? 0;
-                    return (
-                      <button
-                        key={st}
-                        type="button"
-                        aria-pressed={isActive}
-                        onClick={() => setCandidateStageFilter(st)}
-                        className={`inline-flex items-center gap-1.5 h-8 px-3 rounded-lg border text-[13px] font-medium transition-colors ${
-                          isActive
-                            ? "border-secondary bg-panel text-fg"
-                            : "border-border text-muted hover:text-fg hover:border-border-strong"
-                        }`}
-                      >
-                        {st !== "ALL" && <span className={`w-1.5 h-1.5 rounded-sm ${STAGE_SWATCH[st]}`} aria-hidden />}
-                        {st === "ALL" ? "All" : STAGE_LABELS[st]}
-                        <span className="text-subtle font-normal tabular-nums">{count}</span>
-                      </button>
-                    );
-                  })}
-                </div>
-                <div className="flex items-center gap-2 flex-wrap">
-                  <label className="h-9 w-full sm:w-64 sm:mr-auto flex items-center gap-2 px-2.5 rounded-lg border border-border bg-surface text-subtle focus-within:border-secondary/60">
-                    <Search className="w-4 h-4 shrink-0" aria-hidden />
-                    <input
-                      value={candidateQuery}
-                      onChange={(e) => setCandidateQuery(e.target.value)}
-                      placeholder="Filter by name or email"
-                      aria-label="Filter candidates by name or email"
-                      className="flex-1 min-w-0 bg-transparent border-0 outline-none text-sm text-fg placeholder:text-subtle"
-                    />
-                  </label>
-                  <select
-                    value={candidateStatusFilter}
-                    onChange={(e) => setCandidateStatusFilter(e.target.value)}
-                    aria-label="Filter by disposition"
-                    className="h-9 px-2.5 rounded-lg border border-border bg-surface text-fg text-[13px] focus:outline-none focus:border-secondary/60"
-                  >
-                    <option value="all">Any disposition</option>
-                    {(["active", "future_hire", "do_not_hire", "hired", "rejected", "archived"] as const).map((st) => (
-                      <option key={st} value={st}>
-                        {humanize(st)} ({statusCounts[st] ?? 0})
-                      </option>
-                    ))}
-                  </select>
-                  <select
-                    value={candidateSort}
-                    onChange={(e) => setCandidateSort(e.target.value as typeof candidateSort)}
-                    aria-label="Sort candidates"
-                    className="h-9 px-2.5 rounded-lg border border-border bg-surface text-fg text-[13px] focus:outline-none focus:border-secondary/60"
-                  >
-                    <option value="recent">Recently updated</option>
-                    <option value="status">Disposition</option>
-                    <option value="name">Name A to Z</option>
-                    <option value="take-homes">Most take-homes</option>
-                    <option value="interviews">Most interviews</option>
-                  </select>
-                  <button
-                    type="button"
-                    onClick={() => setBulkAddOpen(true)}
-                    className="inline-flex items-center gap-1.5 h-9 px-3.5 rounded-lg border border-border bg-surface text-fg text-sm font-medium hover:bg-panel transition-colors"
-                  >
-                    <Upload className="w-4 h-4 text-muted" aria-hidden />
-                    Import
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setAddCandidateOpen(true)}
-                    className="inline-flex items-center gap-1.5 h-9 px-3.5 rounded-lg bg-secondary text-bg text-sm font-medium hover:brightness-110 transition"
-                  >
-                    <Plus className="w-4 h-4" strokeWidth={2.25} aria-hidden />
-                    Add candidate
-                  </button>
-                </div>
-              </div>
-
-              {selectedCandidateIds.size > 0 && (
-                <div className="flex items-center justify-between gap-3 px-4 py-2.5 rounded-lg border border-border bg-panel">
-                  <span className="text-[13px] font-medium text-fg">{selectedCandidateIds.size} selected</span>
-                  <div className="flex items-center gap-2">
-                    <button
-                      type="button"
-                      onClick={() => setSelectedCandidateIds(new Set())}
-                      className="h-8 px-3 rounded-lg text-[13px] font-medium text-muted hover:text-fg transition-colors"
-                    >
-                      Clear
-                    </button>
-                    <button
-                      type="button"
-                      onClick={handleBulkDelete}
-                      disabled={bulkDeleting}
-                      className="inline-flex items-center gap-1.5 h-8 px-3 rounded-lg border border-danger/50 text-danger text-[13px] font-medium hover:bg-danger/10 transition-colors disabled:opacity-50"
-                    >
-                      <Trash2 className="w-3.5 h-3.5" aria-hidden />
-                      {bulkDeleting ? "Deleting…" : "Delete selected"}
-                    </button>
-                  </div>
-                </div>
-              )}
-
-              {candidateRoster.length === 0 ? (
-                <div className="rounded-xl border border-border bg-surface px-6 py-12 text-center">
-                  <p className="text-[15px] font-semibold text-fg">
-                    {candidates.length === 0 ? "No candidates yet" : "No candidates match these filters"}
-                  </p>
-                  <p className="text-sm text-muted mt-1.5 max-w-sm mx-auto">
-                    {candidates.length === 0
-                      ? "Add someone by hand, import a list, or send a take-home and they will appear here."
-                      : "Try another stage, or clear the search."}
-                  </p>
-                </div>
-              ) : (
-                <div className="rounded-xl border border-border bg-surface overflow-x-auto">
-                  <table className="w-full min-w-[760px] text-left text-sm">
-                    <thead>
-                      <tr className="border-b border-border text-subtle text-xs">
-                        <th className="pl-5 pr-2 py-3 w-px">
-                          <input
-                            type="checkbox"
-                            checked={selectedCandidateIds.size === candidateRoster.length && candidateRoster.length > 0}
-                            ref={(el) => {
-                              if (el) el.indeterminate = selectedCandidateIds.size > 0 && selectedCandidateIds.size < candidateRoster.length;
-                            }}
-                            onChange={toggleAllSelected}
-                            className="w-4 h-4 rounded border-border bg-bg accent-[rgb(var(--c-accent-2))] cursor-pointer"
-                            aria-label="Select all"
-                          />
-                        </th>
-                        <th className="px-4 py-3 font-medium">Name</th>
-                        <th className="px-4 py-3 font-medium">Stage</th>
-                        <th className="px-4 py-3 font-medium">Assessments</th>
-                        <th className="px-4 py-3 font-medium">Source</th>
-                        <th className="px-4 py-3 font-medium">Updated</th>
-                        <th className="px-4 py-3 w-px"><span className="sr-only">Open</span></th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-border">
-                      {candidateRoster.map((c) => {
-                        const isSelected = selectedCandidateIds.has(c.id);
-                        const stage = (PIPELINE_STAGES as readonly string[]).includes(c.stage) ? (c.stage as PipelineStage) : "APPLIED";
-                        const flag = c.status === "do_not_hire" || c.status === "future_hire" || c.status === "archived";
-                        const initials = c.name.split(/\s+/).map((p) => p[0]).join("").slice(0, 2).toUpperCase();
-                        return (
-                          <tr key={c.id} className={`group hover:bg-panel transition-colors ${isSelected ? "bg-panel" : ""}`}>
-                            <td className="pl-5 pr-2 py-3 align-middle" onClick={(e) => e.stopPropagation()}>
-                              <input
-                                type="checkbox"
-                                checked={isSelected}
-                                onChange={() => toggleCandidateSelected(c.id)}
-                                className="w-4 h-4 rounded border-border bg-bg accent-[rgb(var(--c-accent-2))] cursor-pointer"
-                                aria-label={`Select ${c.name}`}
-                              />
-                            </td>
-                            <td className="px-4 py-3 align-middle">
-                              <Link href={`/w/${workspace.slug}/candidates/${c.id}`} className="flex items-center gap-3 min-w-0">
-                                <span className="w-8 h-8 rounded-full bg-elevated flex items-center justify-center text-muted text-xs font-semibold shrink-0" aria-hidden>
-                                  {initials}
-                                </span>
-                                <span className="min-w-0">
-                                  <span className="flex items-center gap-2 text-sm font-medium text-fg truncate">
-                                    {c.name}
-                                    {flag && (
-                                      <span
-                                        className={`text-xs font-normal px-1.5 rounded border ${
-                                          c.status === "do_not_hire" ? "border-danger/50 text-danger" : "border-border-strong text-muted"
-                                        }`}
-                                      >
-                                        {humanize(c.status)}
-                                      </span>
-                                    )}
-                                  </span>
-                                  {c.email && <span className="block text-[13px] text-subtle truncate">{c.email}</span>}
-                                </span>
-                              </Link>
-                            </td>
-                            <td className="px-4 py-3 align-middle">
-                              <span className="inline-flex items-center gap-1.5 h-6 px-2 rounded-md border border-border bg-panel text-xs text-fg whitespace-nowrap">
-                                <span className={`w-1.5 h-1.5 rounded-sm ${STAGE_SWATCH[stage]}`} aria-hidden />
-                                {STAGE_LABELS[stage]}
-                              </span>
-                            </td>
-                            <td className="px-4 py-3 align-middle text-[13px] text-muted whitespace-nowrap">
-                              {c.takeHomeCount + c.sessionCount === 0
-                                ? "None yet"
-                                : [
-                                    c.takeHomeCount > 0 ? plural(c.takeHomeCount, "take-home") : null,
-                                    c.sessionCount > 0 ? plural(c.sessionCount, "interview") : null,
-                                  ].filter(Boolean).join(" · ")}
-                            </td>
-                            <td className="px-4 py-3 align-middle text-[13px] text-muted">{sourceLabel(c.source)}</td>
-                            <td className="px-4 py-3 align-middle text-[13px] text-subtle whitespace-nowrap">{relativeTime(c.updatedAt)}</td>
-                            <td className="px-4 py-3 align-middle">
-                              <ChevronRight className="w-4 h-4 text-subtle group-hover:text-fg transition-colors" aria-hidden />
-                            </td>
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
-                </div>
-              )}
-            </div>
-              )}
-
-              {candidateSubTab === "pipeline" && (
-                <div className="min-h-[600px]">
-                  <CandidatePipelineClient
-                    slug={workspace.slug}
-                    workspaceName={workspace.name}
-                    canEdit={canManagePipeline}
-                    initialBuckets={initialBuckets}
-                    challenges={pipelineChallenges || []}
-                  />
-                </div>
-              )}
-
-              {candidateSubTab === "leaderboard" && (
-                <div className="min-h-[600px]">
-                  <LeaderboardClient
-                    slug={workspace.slug}
-                    workspaceName={workspace.name}
-                    challenges={[...challenges, ...takeHomeSessions.map(s => ({ id: s.id, title: s.title, difficulty: "mixed" as string }))]}
-                    activeChallengeId={searchParams.get("challenge")}
-                    rows={[
-                      ...takeHomes.map((a) => {
-                      const dispatchedAt = a.createdAt || new Date().toISOString();
-                      const submittedAt = a.submittedAt || null;
-                      const startedAt = a.attemptStartedAt || null;
-                      let timeToSubmitMin = null;
-                      if (startedAt && submittedAt) {
-                        const ms = new Date(submittedAt).getTime() - new Date(startedAt).getTime();
-                        timeToSubmitMin = Math.round(ms / 60000);
-                      }
-                      return {
-                        id: a.id,
-                        candidateName: a.candidateName,
-                        candidateEmail: a.candidateEmail,
-                        status: a.status,
-                        score: a.score ?? null,
-                        challengeId: a.challengeId || "",
-                        challengeTitle: a.challengeTitle,
-                        challengeDifficulty: a.challengeDifficulty || "intermediate",
-                        dispatchedAt,
-                        submittedAt,
-                        expiresAt: a.expiresAt,
-                        timeToSubmitMin,
-                        candidateId: a.candidateId ?? null,
-                        candidateStage: a.candidateStage ?? null,
-                        candidateTags: a.candidateId ? (candidates.find((c) => c.id === a.candidateId)?.tags || []) : [],
-                        tokenPreview: a.token.slice(0, 8) + "…",
-                      };
-                    }),
-                      ...takeHomeSessions.map((s) => {
-                      const dispatchedAt = s.createdAt;
-                      const submittedAt = s.finishedAt;
-                      let timeToSubmitMin: number | null = null;
-                      if (dispatchedAt && submittedAt) {
-                        const ms = new Date(submittedAt).getTime() - new Date(dispatchedAt).getTime();
-                        timeToSubmitMin = Math.round(ms / 60000);
-                      }
-                      // Try to link session to a candidate by email to surface tags/stage
-                      const linked = s.candidateEmail ? candidates.find(c => c.email && c.email.toLowerCase() === s.candidateEmail!.toLowerCase()) : null;
-                      return {
-                        id: s.id,
-                        candidateName: s.candidateName || linked?.name || "Unknown",
-                        candidateEmail: s.candidateEmail || linked?.email || "",
-                        status: s.status === "completed" ? "SUBMITTED" : s.status === "scheduled" ? "PENDING" : s.status.toUpperCase(),
-                        score: null as number | null,
-                        challengeId: s.id,
-                        challengeTitle: s.title,
-                        challengeDifficulty: "mixed" as string,
-                        dispatchedAt,
-                        submittedAt,
-                        expiresAt: s.deadlineAt || dispatchedAt,
-                        timeToSubmitMin,
-                        candidateId: linked?.id ?? null,
-                        candidateStage: linked?.stage ?? null,
-                        candidateTags: linked?.tags || [],
-                        tokenPreview: (s.candidateAccessToken || s.id).slice(0, 8) + "…",
-                      };
-                    })]}
-                  />
-                </div>
-              )}
-            </div>
-          )}
 
           {/* MEMBERS */}
           {activeTab === "members" && (
@@ -2497,18 +2052,6 @@ export default function WorkspaceDashboardClient({
 
         </div>
       </div>
-
-      <AddCandidateDialog
-        open={addCandidateOpen}
-        onClose={() => setAddCandidateOpen(false)}
-        workspaceSlug={workspace.slug}
-      />
-
-      <BulkAddCandidatesDialog
-        open={bulkAddOpen}
-        onClose={() => setBulkAddOpen(false)}
-        workspaceSlug={workspace.slug}
-      />
 
       {/* Quick Send Take-Home modal (overview quick action). Same state +
           handler as the Assessments → Take-Homes invite form. */}

@@ -356,7 +356,7 @@ function FunnelRows({ rows, slug, ready }: { rows: ReturnType<typeof stageFunnel
       {rows.map((r) => (
         <li key={r.stage}>
           <Link
-            href={`/w/${slug}?section=candidates&stage=${r.stage}`}
+            href={`/w/${slug}/candidates?stage=${r.stage}`}
             className="grid grid-cols-[96px_minmax(0,1fr)_36px_72px] items-center gap-3 px-3 py-2 rounded-lg hover:bg-panel transition-colors"
           >
             <span className="flex items-center gap-2 text-[13px] text-muted truncate">
@@ -752,7 +752,7 @@ export default function WorkspaceOverview(props: Props) {
               value={k.active}
               trend={data.trends.added}
               sub={k.addedThisWeek > 0 ? <><span className="text-success font-medium">+{k.addedThisWeek}</span> added this week</> : "None added this week"}
-              href={`/w/${slug}?section=candidates`}
+              href={`/w/${slug}/candidates`}
               ready={ready}
             />
             <Kpi
@@ -780,7 +780,7 @@ export default function WorkspaceOverview(props: Props) {
               value={k.offers}
               trend={data.trends.hired}
               sub={`${plural(k.hiredThisMonth, "hire")} in the last 30 days`}
-              href={`/w/${slug}?section=candidates&stage=OFFER`}
+              href={`/w/${slug}/candidates?stage=OFFER`}
               ready={ready}
             />
           </div>
@@ -793,7 +793,7 @@ export default function WorkspaceOverview(props: Props) {
               title="Hiring funnel"
               subtitle="Where every candidate stands today"
               right={
-                <Link href={`/w/${slug}?section=candidates&view=pipeline`} className="text-[13px] text-secondary-soft hover:text-fg transition-colors">
+                <Link href={`/w/${slug}/candidates?view=board`} className="text-[13px] text-secondary-soft hover:text-fg transition-colors">
                   Open board
                 </Link>
               }
@@ -804,7 +804,7 @@ export default function WorkspaceOverview(props: Props) {
                 <span>
                   <span className="text-fg font-medium tabular-nums">{funnel.active}</span> in the funnel
                 </span>
-                <Link href={`/w/${slug}?section=candidates&stage=REJECTED`} className="inline-flex items-center gap-1.5 hover:text-fg transition-colors">
+                <Link href={`/w/${slug}/candidates?stage=REJECTED`} className="inline-flex items-center gap-1.5 hover:text-fg transition-colors">
                   <span className="w-2 h-2 rounded-sm bg-danger" aria-hidden />
                   {funnel.rejected} rejected
                 </Link>

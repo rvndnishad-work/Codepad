@@ -1,17 +1,9 @@
 import { redirect } from "next/navigation";
 
-type Props = {
-  params: Promise<{ slug: string }>;
-  searchParams: Promise<{ challenge?: string }>;
-};
+type Props = { params: Promise<{ slug: string }> };
 
-export default async function LeaderboardRedirectPage({ params, searchParams }: Props) {
+/** The leaderboard became each batch's Results tab. */
+export default async function LeaderboardRedirectPage({ params }: Props) {
   const { slug } = await params;
-  const sp = await searchParams;
-  
-  if (sp.challenge) {
-    redirect(`/w/${slug}?section=candidates&view=leaderboard&challenge=${sp.challenge}`);
-  } else {
-    redirect(`/w/${slug}?section=candidates&view=leaderboard`);
-  }
+  redirect(`/w/${slug}/batches`);
 }

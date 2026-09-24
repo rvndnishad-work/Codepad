@@ -3,7 +3,8 @@ import { notFound } from "next/navigation";
 import { auth } from "@/lib/auth";
 import { validatePageAccess } from "@/lib/settings";
 import WorkspaceDashboardClient from "./WorkspaceDashboardClient";
-import { Building2 } from "lucide-react";
+import { effectivePlan } from "@/lib/billing/trial";
+import { planDisplay } from "@/lib/workspace/display";
 import { PIPELINE_STAGES, type PipelineStage } from "@/lib/crm/stages";
 import {
   loadRolePermissions,
@@ -78,6 +79,7 @@ export default async function WorkspaceDashboardPage({ params }: Props) {
           shortCode: true,
           shareToken: true,
           totalSec: true,
+          scheduledAt: true,
           startedAt: true,
           finishedAt: true,
           createdAt: true,
@@ -149,7 +151,7 @@ export default async function WorkspaceDashboardPage({ params }: Props) {
         challengeIds: true,
         playgroundIds: true,
         promptScenarioIds: true,
-        candidate: { select: { email: true } },
+        candidate: { select: { id: true, email: true, stage: true } },
       },
       orderBy: { createdAt: "desc" },
       take: 200,
@@ -170,6 +172,7 @@ export default async function WorkspaceDashboardPage({ params }: Props) {
         startedAt: true,
         finishedAt: true,
         templateId: true,
+        candidate: { select: { stage: true } },
       },
       orderBy: { createdAt: "desc" },
       take: 200,
@@ -190,6 +193,8 @@ export default async function WorkspaceDashboardPage({ params }: Props) {
     questionCount: countIds(s.challengeIds) + countIds(s.playgroundIds) + countIds(s.promptScenarioIds),
     createdAt: s.createdAt.toISOString(),
     finishedAt: s.finishedAt ? s.finishedAt.toISOString() : null,
+    candidateId: s.candidate?.id ?? null,
+    candidateStage: s.candidate?.stage ?? null,
   }));
 
   const aiInterviewSessions = aiInterviewRows.map((s) => ({
@@ -200,6 +205,7 @@ export default async function WorkspaceDashboardPage({ params }: Props) {
     status: s.status,
     score: s.score ?? null,
     candidateId: s.candidateId ?? null,
+    candidateStage: s.candidate?.stage ?? null,
     inviteToken: s.inviteToken,
     templateId: s.templateId,
     createdAt: s.createdAt.toISOString(),
@@ -287,6 +293,7 @@ export default async function WorkspaceDashboardPage({ params }: Props) {
     shortCode: s.shortCode,
     shareToken: s.shareToken,
     totalSec: s.totalSec,
+    scheduledAt: s.scheduledAt ? s.scheduledAt.toISOString() : null,
     startedAt: s.startedAt ? s.startedAt.toISOString() : null,
     finishedAt: s.finishedAt ? s.finishedAt.toISOString() : null,
     createdAt: s.createdAt.toISOString(),
@@ -330,23 +337,15 @@ export default async function WorkspaceDashboardPage({ params }: Props) {
     buckets[s].push(c);
   }
 
+  const planFields = {
+    planName: workspace.planName,
+    trialEndsAt: workspace.trialEndsAt,
+    stripeSubscriptionId: workspace.stripeSubscriptionId,
+  };
+  const firstName = session?.user?.name?.trim().split(/\s+/)[0] ?? null;
+
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-3 border-b border-border pb-5">
-        <div>
-          <div className="text-[10px] font-semibold uppercase tracking-[0.14em] text-indigo-500/80 flex items-center gap-1.5">
-            <Building2 className="w-3 h-3" /> Workspace
-          </div>
-          <h1 className="text-2xl font-semibold text-fg tracking-tight mt-1">{workspace.name}</h1>
-          <p className="text-xs text-muted mt-1">Manage challenges, candidates, and your team.</p>
-        </div>
-        <div className="text-[11px] text-muted font-mono">
-          <span className="text-muted/50">/</span>
-          <span className="text-fg">{workspace.slug}</span>
-        </div>
-      </div>
-
       {/* Main Interactive Client Component */}
       <WorkspaceDashboardClient
         workspace={{
@@ -355,6 +354,9 @@ export default async function WorkspaceDashboardPage({ params }: Props) {
           slug: workspace.slug,
           planName: workspace.planName,
         }}
+        firstName={firstName}
+        plan={planDisplay(planFields)}
+        seatLimit={effectivePlan(planFields).seatLimit}
         challenges={workspace.challenges}
         pipelineChallenges={globalChallenges}
         takeHomes={formattedTakeHomes}

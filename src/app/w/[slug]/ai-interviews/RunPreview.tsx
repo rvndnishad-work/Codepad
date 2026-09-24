@@ -16,18 +16,18 @@ export default function RunPreview({ files }: { files: Record<string, string> })
   return (
     <div className="space-y-2">
       <div className="flex items-center justify-between">
-        <span className="text-[10px] font-black uppercase tracking-wider text-muted">
+        <span className="text-xs font-semibold text-muted">
           Live execution of submitted code
         </span>
         <button
           type="button"
           onClick={() => setRunKey((k) => k + 1)}
-          className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-border bg-bg hover:bg-elevated hover:border-accent/40 text-[10px] font-bold text-muted hover:text-fg transition cursor-pointer"
+          className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-border bg-bg hover:bg-elevated hover:border-secondary/40 text-xs font-bold text-muted hover:text-fg transition cursor-pointer"
         >
           Re-run
         </button>
       </div>
-      <div className="rounded-xl overflow-hidden border border-border bg-[#0d1117] h-[420px] relative">
+      <div className="rounded-xl overflow-hidden border border-border bg-bg h-[420px] relative">
         <ShimmedSandpackProvider
           key={runKey}
           template={isReact ? "react" : "vanilla"}

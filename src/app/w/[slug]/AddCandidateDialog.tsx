@@ -94,12 +94,12 @@ export default function AddCandidateDialog({ open, onClose, workspaceSlug }: Pro
       <div className="relative w-full max-w-lg rounded-xl border border-border bg-surface shadow-2xl animate-in zoom-in-95 fade-in duration-150">
         <div className="flex items-start justify-between gap-3 px-5 py-4 border-b border-border">
           <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-500">
+            <div className="w-8 h-8 rounded-lg bg-secondary/10 border border-secondary/20 flex items-center justify-center text-secondary">
               <UserPlus className="w-4 h-4" />
             </div>
             <div>
               <h3 className="text-sm font-semibold text-fg">Add candidate</h3>
-              <p className="text-[11px] text-muted mt-0.5">
+              <p className="text-xs text-muted mt-0.5">
                 Register a candidate without sending an assignment yet.
               </p>
             </div>
@@ -115,23 +115,23 @@ export default function AddCandidateDialog({ open, onClose, workspaceSlug }: Pro
 
         <form onSubmit={handleSubmit} className="px-5 py-4 space-y-3">
           <div className="space-y-1">
-            <label className="text-[10px] font-semibold uppercase tracking-wider text-muted">
-              Full name <span className="text-rose-500">*</span>
+            <label className="text-xs font-semibold text-muted">
+              Full name <span className="text-danger">*</span>
             </label>
             <input
               type="text"
               required
               value={name}
               onChange={(e) => setName(e.target.value)}
-              placeholder="Jane Developer"
-              className="w-full px-3 py-2 rounded-md border border-border bg-bg text-fg text-sm focus:outline-none focus:border-accent/40"
+              placeholder="Jane Doe"
+              className="w-full px-3 py-2 rounded-md border border-border bg-bg text-fg text-sm focus:outline-none focus:border-secondary/40"
               autoFocus
             />
           </div>
 
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1">
-              <label className="text-[10px] font-semibold uppercase tracking-wider text-muted">
+              <label className="text-xs font-semibold text-muted">
                 Email
               </label>
               <input
@@ -139,11 +139,11 @@ export default function AddCandidateDialog({ open, onClose, workspaceSlug }: Pro
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="jane@example.com"
-                className="w-full px-3 py-2 rounded-md border border-border bg-bg text-fg text-sm focus:outline-none focus:border-accent/40"
+                className="w-full px-3 py-2 rounded-md border border-border bg-bg text-fg text-sm focus:outline-none focus:border-secondary/40"
               />
             </div>
             <div className="space-y-1">
-              <label className="text-[10px] font-semibold uppercase tracking-wider text-muted">
+              <label className="text-xs font-semibold text-muted">
                 Phone
               </label>
               <input
@@ -151,20 +151,20 @@ export default function AddCandidateDialog({ open, onClose, workspaceSlug }: Pro
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
                 placeholder="+1 415 555 0100"
-                className="w-full px-3 py-2 rounded-md border border-border bg-bg text-fg text-sm focus:outline-none focus:border-accent/40"
+                className="w-full px-3 py-2 rounded-md border border-border bg-bg text-fg text-sm focus:outline-none focus:border-secondary/40"
               />
             </div>
           </div>
 
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1">
-              <label className="text-[10px] font-semibold uppercase tracking-wider text-muted">
+              <label className="text-xs font-semibold text-muted">
                 Source
               </label>
               <select
                 value={source}
                 onChange={(e) => setSource(e.target.value)}
-                className="w-full px-3 py-2 rounded-md border border-border bg-bg text-fg text-sm focus:outline-none focus:border-accent/40"
+                className="w-full px-3 py-2 rounded-md border border-border bg-bg text-fg text-sm focus:outline-none focus:border-secondary/40"
               >
                 {SOURCE_OPTIONS.map((opt) => (
                   <option key={opt.value} value={opt.value}>
@@ -174,7 +174,7 @@ export default function AddCandidateDialog({ open, onClose, workspaceSlug }: Pro
               </select>
             </div>
             <div className="space-y-1">
-              <label className="text-[10px] font-semibold uppercase tracking-wider text-muted">
+              <label className="text-xs font-semibold text-muted">
                 Tags <span className="text-muted/60 font-normal normal-case">(comma-separated)</span>
               </label>
               <input
@@ -182,13 +182,13 @@ export default function AddCandidateDialog({ open, onClose, workspaceSlug }: Pro
                 value={tagsInput}
                 onChange={(e) => setTagsInput(e.target.value)}
                 placeholder="senior, react, remote"
-                className="w-full px-3 py-2 rounded-md border border-border bg-bg text-fg text-sm focus:outline-none focus:border-accent/40"
+                className="w-full px-3 py-2 rounded-md border border-border bg-bg text-fg text-sm focus:outline-none focus:border-secondary/40"
               />
             </div>
           </div>
 
           <div className="space-y-1">
-            <label className="text-[10px] font-semibold uppercase tracking-wider text-muted">
+            <label className="text-xs font-semibold text-muted">
               Notes
             </label>
             <textarea
@@ -196,7 +196,7 @@ export default function AddCandidateDialog({ open, onClose, workspaceSlug }: Pro
               onChange={(e) => setNotes(e.target.value)}
               placeholder="Where you found them, initial impressions, scheduling constraints…"
               rows={3}
-              className="w-full px-3 py-2 rounded-md border border-border bg-bg text-fg text-sm focus:outline-none focus:border-accent/40 resize-none"
+              className="w-full px-3 py-2 rounded-md border border-border bg-bg text-fg text-sm focus:outline-none focus:border-secondary/40 resize-none"
             />
           </div>
 
@@ -211,7 +211,7 @@ export default function AddCandidateDialog({ open, onClose, workspaceSlug }: Pro
             <button
               type="submit"
               disabled={submitting}
-              className="px-4 py-2 rounded-md bg-accent hover:bg-accent-soft text-bg text-[12px] font-semibold transition-colors disabled:opacity-50"
+              className="px-4 py-2 rounded-md bg-secondary hover:brightness-110 text-bg text-[12px] font-semibold transition-colors disabled:opacity-50"
             >
               {submitting ? "Adding…" : "Add candidate"}
             </button>

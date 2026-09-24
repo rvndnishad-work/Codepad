@@ -21,23 +21,24 @@ import CandidateStatusControl from "./CandidateStatusControl";
 import CandidateStageControl from "./CandidateStageControl";
 import { getScreeningVerdict, type ScreeningVerdict } from "@/lib/ai-interview/verdict";
 import { History } from "lucide-react";
+import { humanize } from "@/lib/workspace/display";
 
 type Props = {
   params: Promise<{ slug: string; id: string }>;
 };
 
 const STATUS_BADGES: Record<string, string> = {
-  active: "text-indigo-600 dark:text-indigo-400 border-indigo-500/25 bg-indigo-500/[0.08]",
-  hired: "text-emerald-600 dark:text-emerald-400 border-emerald-500/25 bg-emerald-500/[0.06]",
-  rejected: "text-rose-600 dark:text-rose-400 border-rose-500/25 bg-rose-500/[0.06]",
+  active: "text-secondary border-secondary/25 bg-secondary/[0.08]",
+  hired: "text-success border-success/25 bg-success/[0.06]",
+  rejected: "text-danger border-danger/25 bg-danger/[0.06]",
   archived: "text-muted border-border bg-panel/50",
 };
 
 const TAKEHOME_STATUS_BADGES: Record<string, string> = {
-  PENDING: "text-amber-600 dark:text-amber-400 border-amber-500/25 bg-amber-500/[0.06]",
-  ACTIVE: "text-indigo-600 dark:text-indigo-400 border-indigo-500/25 bg-indigo-500/[0.08]",
-  SUBMITTED: "text-emerald-600 dark:text-emerald-400 border-emerald-500/25 bg-emerald-500/[0.06]",
-  EXPIRED: "text-rose-600 dark:text-rose-400 border-rose-500/25 bg-rose-500/[0.06]",
+  PENDING: "text-warning border-warning/25 bg-warning/[0.06]",
+  ACTIVE: "text-secondary border-secondary/25 bg-secondary/[0.08]",
+  SUBMITTED: "text-success border-success/25 bg-success/[0.06]",
+  EXPIRED: "text-danger border-danger/25 bg-danger/[0.06]",
 };
 
 export async function generateMetadata({ params }: Props) {
@@ -215,7 +216,7 @@ export default async function CandidateDetailPage({ params }: Props) {
         status: isDone ? "COMPLETED" : isLive ? "LIVE" : "SCHEDULED",
         score: null,
         href: `/interview/${s.shareToken}`,
-        secondary: `Interview · ${Math.round(s.totalSec / 60)} min · ${s.type}`,
+        secondary: `Interview · ${Math.round(s.totalSec / 60)} min · ${humanize(s.type)}`,
       };
     }),
     // AI screening sessions — invite sent, started, exited mid-way, or graded:
@@ -257,7 +258,7 @@ export default async function CandidateDetailPage({ params }: Props) {
     <div className="space-y-5">
       <Link
         href={`/w/${slug}?section=candidates`}
-        className="inline-flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider text-muted hover:text-fg transition-colors"
+        className="inline-flex items-center gap-1.5 text-xs font-semibold text-muted hover:text-fg transition-colors"
       >
         <ArrowLeft className="w-3.5 h-3.5" />
         All candidates
@@ -265,22 +266,22 @@ export default async function CandidateDetailPage({ params }: Props) {
 
       {/* Pipeline alert banners */}
       {candidate.status === "do_not_hire" && (
-        <div className="flex items-start gap-3 px-4 py-3 rounded-xl border border-rose-500/30 bg-rose-500/[0.06] text-rose-700 dark:text-rose-400">
+        <div className="flex items-start gap-3 px-4 py-3 rounded-xl border border-danger/30 bg-danger/[0.06] text-danger">
           <AlertTriangle className="w-4 h-4 mt-0.5 shrink-0" />
           <div className="min-w-0">
             <div className="text-sm font-semibold">Do not hire</div>
-            <div className="text-[11px] text-rose-600/80 dark:text-rose-300/80 mt-0.5">
+            <div className="text-xs text-danger/80 mt-0.5">
               This candidate has been flagged. Do not progress them for any role without explicit override.
             </div>
           </div>
         </div>
       )}
       {candidate.status === "future_hire" && (
-        <div className="flex items-start gap-3 px-4 py-3 rounded-xl border border-amber-500/30 bg-amber-500/[0.06] text-amber-700 dark:text-amber-400">
+        <div className="flex items-start gap-3 px-4 py-3 rounded-xl border border-warning/30 bg-warning/[0.06] text-warning">
           <Star className="w-4 h-4 mt-0.5 shrink-0" />
           <div className="min-w-0">
             <div className="text-sm font-semibold">Future hire</div>
-            <div className="text-[11px] text-amber-600/80 dark:text-amber-300/80 mt-0.5">
+            <div className="text-xs text-warning/80 mt-0.5">
               Strong signal. Revisit this candidate when there&apos;s an appropriate opening.
             </div>
           </div>
@@ -290,7 +291,7 @@ export default async function CandidateDetailPage({ params }: Props) {
       {/* Candidate header */}
       <div className="rounded-xl border border-border bg-surface p-5">
         <div className="flex flex-col sm:flex-row sm:items-start gap-5">
-          <div className="w-14 h-14 rounded-xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-600 dark:text-indigo-300 text-lg font-semibold shrink-0">
+          <div className="w-14 h-14 rounded-xl bg-secondary/10 border border-secondary/20 flex items-center justify-center text-secondary text-lg font-semibold shrink-0">
             {candidate.name.substring(0, 1).toUpperCase()}
           </div>
 
@@ -314,17 +315,17 @@ export default async function CandidateDetailPage({ params }: Props) {
               <div className="flex items-center gap-2 shrink-0 mt-2 lg:mt-0">
                 <Link
                   href={`/interview/new?type=live&workspaceSlug=${workspace.slug}&candidateId=${candidate.id}&candidateName=${encodeURIComponent(candidate.name)}&candidateEmail=${encodeURIComponent(candidate.email || "")}`}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-accent hover:bg-accent-soft text-bg text-[11px] font-semibold uppercase tracking-wider transition-colors shadow-sm"
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-secondary hover:brightness-110 text-bg text-xs font-semibold transition-colors shadow-sm"
                 >
                   <Briefcase className="w-3.5 h-3.5" />
-                  Schedule Interview
+                  Schedule interview
                 </Link>
                 <Link
                   href={`/w/${workspace.slug}/take-homes/new?candidateId=${candidate.id}`}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-panel border border-border hover:border-border-strong text-fg text-[11px] font-semibold uppercase tracking-wider transition-colors shadow-sm"
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-panel border border-border hover:border-border-strong text-fg text-xs font-semibold transition-colors shadow-sm"
                 >
                   <Clock className="w-3.5 h-3.5" />
-                  Assign Take-Home
+                  Assign take-home
                 </Link>
               </div>
             </div>
@@ -358,7 +359,7 @@ export default async function CandidateDetailPage({ params }: Props) {
                 {tags.map((tag) => (
                   <span
                     key={tag}
-                    className="inline-flex items-center px-2 py-0.5 rounded-md bg-panel/50 border border-border text-[10px] font-medium text-muted"
+                    className="inline-flex items-center px-2 py-0.5 rounded-md bg-panel/50 border border-border text-xs font-medium text-muted"
                   >
                     {tag}
                   </span>
@@ -373,8 +374,8 @@ export default async function CandidateDetailPage({ params }: Props) {
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <div className="p-4 rounded-xl border border-border bg-surface">
           <div className="flex items-center justify-between mb-3">
-            <span className="text-[10px] font-semibold uppercase tracking-wider text-muted">Take-homes</span>
-            <div className="w-7 h-7 rounded-lg border border-indigo-500/20 bg-indigo-500/10 flex items-center justify-center text-indigo-500">
+            <span className="text-xs font-semibold text-muted">Take-homes</span>
+            <div className="w-7 h-7 rounded-lg border border-secondary/20 bg-secondary/10 flex items-center justify-center text-secondary">
               <Clock className="w-3.5 h-3.5" />
             </div>
           </div>
@@ -383,8 +384,8 @@ export default async function CandidateDetailPage({ params }: Props) {
 
         <div className="p-4 rounded-xl border border-border bg-surface">
           <div className="flex items-center justify-between mb-3">
-            <span className="text-[10px] font-semibold uppercase tracking-wider text-muted">Interviews</span>
-            <div className="w-7 h-7 rounded-lg border border-violet-500/20 bg-violet-500/10 flex items-center justify-center text-violet-500">
+            <span className="text-xs font-semibold text-muted">Interviews</span>
+            <div className="w-7 h-7 rounded-lg border border-secondary/20 bg-secondary/10 flex items-center justify-center text-secondary">
               <Briefcase className="w-3.5 h-3.5" />
             </div>
           </div>
@@ -392,7 +393,7 @@ export default async function CandidateDetailPage({ params }: Props) {
             {candidate.sessions.length + candidate.aiInterviewSessions.length}
           </div>
           {candidate.aiInterviewSessions.length > 0 && (
-            <div className="text-[10px] text-muted mt-0.5">
+            <div className="text-xs text-muted mt-0.5">
               {candidate.aiInterviewSessions.length} AI screening{candidate.aiInterviewSessions.length === 1 ? "" : "s"}
             </div>
           )}
@@ -400,8 +401,8 @@ export default async function CandidateDetailPage({ params }: Props) {
 
         <div className="p-4 rounded-xl border border-border bg-surface">
           <div className="flex items-center justify-between mb-3">
-            <span className="text-[10px] font-semibold uppercase tracking-wider text-muted">Submitted</span>
-            <div className="w-7 h-7 rounded-lg border border-emerald-500/20 bg-emerald-500/10 flex items-center justify-center text-emerald-500">
+            <span className="text-xs font-semibold text-muted">Submitted</span>
+            <div className="w-7 h-7 rounded-lg border border-success/20 bg-success/10 flex items-center justify-center text-success">
               <CheckCircle2 className="w-3.5 h-3.5" />
             </div>
           </div>
@@ -410,8 +411,8 @@ export default async function CandidateDetailPage({ params }: Props) {
 
         <div className="p-4 rounded-xl border border-border bg-surface">
           <div className="flex items-center justify-between mb-3">
-            <span className="text-[10px] font-semibold uppercase tracking-wider text-muted">Avg score</span>
-            <div className="w-7 h-7 rounded-lg border border-amber-500/20 bg-amber-500/10 flex items-center justify-center text-amber-500">
+            <span className="text-xs font-semibold text-muted">Avg score</span>
+            <div className="w-7 h-7 rounded-lg border border-warning/20 bg-warning/10 flex items-center justify-center text-warning">
               <Award className="w-3.5 h-3.5" />
             </div>
           </div>
@@ -426,7 +427,7 @@ export default async function CandidateDetailPage({ params }: Props) {
         <div className="lg:col-span-2">
           <div className="rounded-xl border border-border bg-surface overflow-hidden">
             <div className="px-4 py-3 border-b border-border">
-              <h3 className="text-[11px] font-semibold uppercase tracking-[0.12em] text-muted">Activity timeline</h3>
+              <h3 className="text-xs font-semibold text-muted">Activity timeline</h3>
             </div>
             {timeline.length === 0 ? (
               <div className="p-12 text-center text-xs text-muted/60 italic">
@@ -450,31 +451,31 @@ export default async function CandidateDetailPage({ params }: Props) {
                       : History;
                   const iconColor =
                     ev.kind === "take-home"
-                      ? "text-purple-500"
+                      ? "text-secondary"
                       : ev.kind === "ai-screening"
-                      ? "text-accent"
+                      ? "text-secondary"
                       : ev.kind === "interview"
-                      ? "text-violet-500"
-                      : "text-sky-500";
+                      ? "text-secondary"
+                      : "text-secondary";
                   const iconBg =
                     ev.kind === "take-home"
-                      ? "bg-purple-500/10 border-purple-500/20"
+                      ? "bg-secondary/10 border-secondary/20"
                       : ev.kind === "ai-screening"
-                      ? "bg-accent/10 border-accent/20"
+                      ? "bg-secondary/10 border-secondary/20"
                       : ev.kind === "interview"
-                      ? "bg-violet-500/10 border-violet-500/20"
-                      : "bg-sky-500/10 border-sky-500/20";
+                      ? "bg-secondary/10 border-secondary/20"
+                      : "bg-secondary/10 border-secondary/20";
                   const statusColor =
                     ev.kind === "take-home" ? (
                       TAKEHOME_STATUS_BADGES[ev.status] || ""
                     ) : ev.kind === "audit" ? (
-                      "text-sky-600 dark:text-sky-400 border-sky-500/25 bg-sky-500/[0.06]"
+                      "text-secondary border-secondary/25 bg-secondary/[0.06]"
                     ) : ev.status === "COMPLETED" ? (
-                      "text-emerald-600 dark:text-emerald-400 border-emerald-500/25 bg-emerald-500/[0.06]"
+                      "text-success border-success/25 bg-success/[0.06]"
                     ) : ev.status === "STARTED" || ev.status === "LIVE" ? (
-                      "text-indigo-600 dark:text-indigo-400 border-indigo-500/25 bg-indigo-500/[0.08]"
+                      "text-secondary border-secondary/25 bg-secondary/[0.08]"
                     ) : (
-                      "text-amber-600 dark:text-amber-400 border-amber-500/25 bg-amber-500/[0.06]"
+                      "text-warning border-warning/25 bg-warning/[0.06]"
                     );
 
                   return (
@@ -487,18 +488,18 @@ export default async function CandidateDetailPage({ params }: Props) {
                           {ev.href ? (
                             <Link
                               href={ev.href}
-                              className="font-semibold text-fg text-sm hover:text-accent transition-colors truncate"
+                              className="font-semibold text-fg text-sm hover:text-secondary transition-colors truncate"
                             >
                               {ev.title}
                             </Link>
                           ) : (
                             <span className="font-semibold text-fg text-sm truncate">{ev.title}</span>
                           )}
-                          <span className={`inline-flex items-center px-2 py-0.5 rounded-md border text-[10px] font-semibold uppercase tracking-wider ${statusColor}`}>
-                            {ev.status}
+                          <span className={`inline-flex items-center px-2 py-0.5 rounded-md border text-xs font-semibold ${statusColor}`}>
+                            {humanize(ev.status)}
                           </span>
                           {ev.score !== null && ev.score !== undefined && (
-                            <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-600 dark:text-emerald-400">
+                            <span className="inline-flex items-center gap-1 text-xs font-semibold text-success">
                               <Award className="w-3 h-3" />
                               <span className="tabular-nums">{ev.score}%</span>
                             </span>
@@ -507,7 +508,7 @@ export default async function CandidateDetailPage({ params }: Props) {
                               HR decides next steps at a glance. */}
                           {ev.kind === "ai-screening" && ev.verdict && (
                             <span
-                              className={`inline-flex items-center px-2 py-0.5 rounded-md border text-[10px] font-black uppercase tracking-wider ${ev.verdict.className}`}
+                              className={`inline-flex items-center px-2 py-0.5 rounded-md border text-xs font-semibold ${ev.verdict.className}`}
                               title={ev.verdict.guidance}
                             >
                               {ev.status === "COMPLETED" ? (ev.verdict.passed ? "Passed" : "Failed") : ""}
@@ -515,7 +516,7 @@ export default async function CandidateDetailPage({ params }: Props) {
                             </span>
                           )}
                         </div>
-                        <div className="text-[11px] text-muted mt-0.5">
+                        <div className="text-xs text-muted mt-0.5">
                           {ev.secondary} · {ts}
                         </div>
                       </div>

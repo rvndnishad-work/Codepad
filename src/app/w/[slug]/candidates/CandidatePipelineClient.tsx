@@ -43,6 +43,7 @@ import {
   type CsvImportResult,
   type BulkDispatchResult,
 } from "./actions";
+import { humanize } from "@/lib/workspace/display";
 
 type CandidateRow = {
   id: string;
@@ -220,16 +221,16 @@ export default function CandidatePipelineClient({
         <div className="space-y-1 min-w-0">
           <Link
             href={`/w/${slug}`}
-            className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-muted hover:text-fg"
+            className="inline-flex items-center gap-1.5 text-xs font-semibold text-muted hover:text-fg"
           >
             <ArrowLeft className="w-3 h-3" /> {workspaceName}
           </Link>
-          <h1 className="text-2xl font-semibold tracking-tight">Candidate pipeline</h1>
+          <h2 className="text-lg font-semibold tracking-tight text-fg">Pipeline board</h2>
           <p className="text-sm text-muted leading-relaxed max-w-xl">
             Drag between adjacent stages, or <span className="text-fg font-medium">right-click</span>
             {" "}(or use the <span className="text-fg font-medium">⋯ button</span>) on any card to jump
             to a specific stage. Moving to{" "}
-            <span className="text-rose-300 font-medium">Rejected</span> requires a reason.
+            <span className="text-danger font-medium">Rejected</span> requires a reason.
             Workflow events (take-home sent or submitted, AI screening completed, interview
             scheduled) advance candidates forward automatically — never backward, and
             hire/offer decisions always stay with you.
@@ -238,7 +239,7 @@ export default function CandidatePipelineClient({
         <div className="flex items-center gap-2 shrink-0">
           <Link
             href={`/w/${slug}?section=candidates&view=leaderboard`}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-[11px] font-semibold text-fg border border-border bg-panel/40 hover:bg-panel"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold text-fg border border-border bg-panel/40 hover:bg-panel"
           >
             <Trophy className="w-3 h-3" />
             Leaderboard
@@ -252,7 +253,7 @@ export default function CandidatePipelineClient({
                 ? "No challenges available — create one first."
                 : "Dispatch one challenge to many candidates at once."
             }
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-[11px] font-semibold text-bg bg-fg hover:opacity-90 disabled:opacity-50"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold text-bg bg-fg hover:opacity-90 disabled:opacity-50"
           >
             <Send className="w-3 h-3" />
             Send to many
@@ -261,7 +262,7 @@ export default function CandidatePipelineClient({
             type="button"
             onClick={() => setImportOpen(true)}
             disabled={!canEdit}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-[11px] font-semibold text-fg border border-border bg-panel/40 hover:bg-panel disabled:opacity-50"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold text-fg border border-border bg-panel/40 hover:bg-panel disabled:opacity-50"
           >
             <Upload className="w-3 h-3" />
             Import CSV
@@ -269,7 +270,7 @@ export default function CandidatePipelineClient({
         </div>
       </header>
 
-      <div className="text-[11px] text-muted">
+      <div className="text-xs text-muted">
         {total} candidates ·{" "}
         {(PIPELINE_STAGES as readonly PipelineStage[]).map((s, i) => (
           <span key={s}>
@@ -281,7 +282,7 @@ export default function CandidatePipelineClient({
         ))}
       </div>
 
-      <DndContext sensors={sensors} onDragEnd={onDragEnd}>
+      <DndContext id="candidate-pipeline" sensors={sensors} onDragEnd={onDragEnd}>
         {/*
           Horizontal-scroll layout (à la Trello/Jira). Preserves pipeline
           reading order on every viewport instead of wrapping into rows.
@@ -401,14 +402,14 @@ function StageColumn({
       className={`rounded-xl border transition w-[260px] shrink-0 ${stickyClass} ${borderClass}`}
     >
       <header className="px-3 py-2 border-b border-border flex items-center justify-between">
-        <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider border ${STAGE_TONES[stage]}`}>
+        <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-xs font-bold border ${STAGE_TONES[stage]}`}>
           {STAGE_LABELS[stage]}
         </span>
-        <span className="text-[10px] font-mono text-muted/80">{count}</span>
+        <span className="text-xs font-mono text-muted/80">{count}</span>
       </header>
       <ul className="p-2 space-y-2 min-h-[180px]">
         {candidates.length === 0 ? (
-          <li className="text-[10px] text-muted/60 italic text-center py-4">
+          <li className="text-xs text-muted/60 italic text-center py-4">
             No candidates here yet.
           </li>
         ) : (
@@ -467,7 +468,7 @@ function CandidateCard({
       <div className="flex items-start justify-between gap-2 min-w-0">
         <Link
           href={`/w/${slug}/candidates/${c.id}`}
-          className="text-xs font-semibold text-fg truncate hover:text-accent"
+          className="text-xs font-semibold text-fg truncate hover:text-secondary"
           onPointerDown={(e) => e.stopPropagation()}
         >
           {c.name}
@@ -491,7 +492,7 @@ function CandidateCard({
         )}
       </div>
       {c.email && (
-        <div className="text-[10px] text-muted/80 truncate flex items-center gap-1">
+        <div className="text-xs text-muted/80 truncate flex items-center gap-1">
           <Mail className="w-2.5 h-2.5 shrink-0" /> {c.email}
         </div>
       )}
@@ -500,7 +501,7 @@ function CandidateCard({
           {tags.slice(0, 3).map((t) => (
             <span
               key={t}
-              className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-bg border border-border text-[9px] text-muted/90"
+              className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-bg border border-border text-xs text-muted/90"
             >
               <Tag className="w-2 h-2" /> {t}
             </span>
@@ -508,7 +509,7 @@ function CandidateCard({
         </div>
       )}
       {c.stage === "REJECTED" && c.rejectReason && (
-        <div className="text-[9px] text-rose-300 flex items-start gap-1 pt-1 border-t border-border/40">
+        <div className="text-xs text-danger flex items-start gap-1 pt-1 border-t border-border/40">
           <XCircle className="w-2.5 h-2.5 shrink-0 mt-0.5" />
           <span className="truncate">
             {REJECT_REASON_LABELS[c.rejectReason as RejectReason] ?? c.rejectReason}
@@ -516,7 +517,7 @@ function CandidateCard({
         </div>
       )}
       {c.stageChangedAt && c.stage !== "APPLIED" && (
-        <div className="text-[9px] text-muted/60 font-mono pt-0.5">
+        <div className="text-xs text-muted/60 font-mono pt-0.5">
           <Clock className="w-2 h-2 inline mr-0.5" />
           {new Date(c.stageChangedAt).toLocaleDateString()}
         </div>
@@ -586,7 +587,7 @@ function StageContextMenu({
       style={{ position: "fixed", left, top, width: MENU_W }}
       className="rounded-lg border border-border bg-elevated shadow-2xl z-[100] p-1 ring-1 ring-black/10"
     >
-      <div className="text-[10px] font-semibold uppercase tracking-wider text-muted/70 px-2.5 pt-1.5 pb-1 border-b border-border/60">
+      <div className="text-xs font-semibold text-muted/70 px-2.5 pt-1.5 pb-1 border-b border-border/60">
         Move to stage
       </div>
       <ul>
@@ -599,14 +600,14 @@ function StageContextMenu({
                 onClick={() => onPick(s)}
                 disabled={current}
                 role="menuitem"
-                className={`w-full flex items-center gap-2 px-2.5 py-1.5 rounded-md text-[11.5px] font-semibold transition text-left ${
+                className={`w-full flex items-center gap-2 px-2.5 py-1.5 rounded-md text-xs font-semibold transition text-left ${
                   current
                     ? "text-muted/50 cursor-not-allowed"
                     : "text-fg hover:bg-panel/60"
                 }`}
               >
                 <span
-                  className={`inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider border ${STAGE_TONES[s]} shrink-0`}
+                  className={`inline-flex items-center px-1.5 py-0.5 rounded text-xs font-bold border ${STAGE_TONES[s]} shrink-0`}
                 >
                   {STAGE_LABELS[s]}
                 </span>
@@ -632,9 +633,9 @@ function RejectReasonModal({
   const [note, setNote] = useState("");
   return (
     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-      <div className="w-full max-w-md rounded-xl border border-rose-500/30 bg-surface p-5 space-y-4">
+      <div className="w-full max-w-md rounded-xl border border-danger/30 bg-surface p-5 space-y-4">
         <header className="space-y-1">
-          <div className="text-[10px] font-semibold uppercase tracking-wider text-rose-300">
+          <div className="text-xs font-semibold text-danger">
             Reject candidate
           </div>
           <h2 className="text-lg font-semibold">Why?</h2>
@@ -643,7 +644,7 @@ function RejectReasonModal({
           </p>
         </header>
         <div className="space-y-2">
-          <label className="text-[10px] font-semibold uppercase tracking-wider text-muted/80">
+          <label className="text-xs font-semibold text-muted/80">
             Reason
           </label>
           <select
@@ -659,7 +660,7 @@ function RejectReasonModal({
           </select>
         </div>
         <div className="space-y-2">
-          <label className="text-[10px] font-semibold uppercase tracking-wider text-muted/80">
+          <label className="text-xs font-semibold text-muted/80">
             Note (optional)
           </label>
           <textarea
@@ -674,14 +675,14 @@ function RejectReasonModal({
           <button
             type="button"
             onClick={onCancel}
-            className="px-3 py-1.5 rounded-md text-[11px] font-semibold text-muted border border-border hover:bg-panel/40"
+            className="px-3 py-1.5 rounded-md text-xs font-semibold text-muted border border-border hover:bg-panel/40"
           >
             Cancel
           </button>
           <button
             type="button"
             onClick={() => onConfirm(reason, note)}
-            className="px-3 py-1.5 rounded-md text-[11px] font-semibold bg-rose-500/80 text-white hover:bg-rose-500"
+            className="px-3 py-1.5 rounded-md text-xs font-semibold bg-danger/80 text-bg hover:bg-danger"
           >
             Reject
           </button>
@@ -852,7 +853,7 @@ function BulkSendTakeHomeModal({
     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
       <div className="w-full max-w-3xl rounded-xl border border-border bg-surface p-5 space-y-4 max-h-[90vh] overflow-y-auto">
         <header className="space-y-1">
-          <div className="text-[10px] font-semibold uppercase tracking-wider text-muted/80 flex items-center gap-1.5">
+          <div className="text-xs font-semibold text-muted/80 flex items-center gap-1.5">
             <Send className="w-3 h-3" />
             Bulk dispatch
           </div>
@@ -865,7 +866,7 @@ function BulkSendTakeHomeModal({
         {/* Challenge + window */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
           <div className="md:col-span-3 space-y-1.5">
-            <label className="text-[10px] font-semibold uppercase tracking-wider text-muted/80 block">
+            <label className="text-xs font-semibold text-muted/80 block">
               Challenge
             </label>
             <select
@@ -878,14 +879,14 @@ function BulkSendTakeHomeModal({
               ) : (
                 challenges.map((c) => (
                   <option key={c.id} value={c.id}>
-                    {c.title} · {c.difficulty}
+                    {c.title} · {humanize(c.difficulty)}
                   </option>
                 ))
               )}
             </select>
           </div>
           <div className="space-y-1.5">
-            <label className="text-[10px] font-semibold uppercase tracking-wider text-muted/80 block">
+            <label className="text-xs font-semibold text-muted/80 block">
               Time limit (min)
             </label>
             <input
@@ -898,7 +899,7 @@ function BulkSendTakeHomeModal({
             />
           </div>
           <div className="space-y-1.5">
-            <label className="text-[10px] font-semibold uppercase tracking-wider text-muted/80 block">
+            <label className="text-xs font-semibold text-muted/80 block">
               Days to expire
             </label>
             <input
@@ -911,7 +912,7 @@ function BulkSendTakeHomeModal({
             />
           </div>
           <div className="space-y-1.5 self-end">
-            <div className="text-[10px] font-semibold uppercase tracking-wider text-muted/80">
+            <div className="text-xs font-semibold text-muted/80">
               Will dispatch
             </div>
             <div className="px-3 py-2 rounded-md bg-bg border border-border text-sm font-mono text-fg">
@@ -923,7 +924,7 @@ function BulkSendTakeHomeModal({
         {/* CRM picker */}
         <section className="space-y-2 rounded-lg border border-border bg-bg/40 p-3">
           <div className="flex items-center justify-between">
-            <div className="text-[10px] font-semibold uppercase tracking-wider text-muted/80">
+            <div className="text-xs font-semibold text-muted/80">
               Pick from CRM ({eligibleFromCrm.length} eligible)
             </div>
             <input
@@ -931,11 +932,11 @@ function BulkSendTakeHomeModal({
               value={searchCrm}
               onChange={(e) => setSearchCrm(e.target.value)}
               placeholder="Filter…"
-              className="px-2 py-1 rounded text-[11px] bg-bg border border-border text-fg focus:outline-none focus:border-fg w-40"
+              className="px-2 py-1 rounded text-xs bg-bg border border-border text-fg focus:outline-none focus:border-fg w-40"
             />
           </div>
           {eligibleFromCrm.length === 0 ? (
-            <p className="text-[11px] text-muted/60 italic py-2">
+            <p className="text-xs text-muted/60 italic py-2">
               No CRM candidates with email yet. Paste emails below instead.
             </p>
           ) : (
@@ -952,11 +953,11 @@ function BulkSendTakeHomeModal({
                         className="accent-fg"
                       />
                       <span className="text-xs text-fg flex-1 truncate">{c.name}</span>
-                      <span className="text-[10px] text-muted/80 font-mono truncate max-w-[200px]">
+                      <span className="text-xs text-muted/80 font-mono truncate max-w-[200px]">
                         {c.email}
                       </span>
-                      <span className="text-[9px] uppercase tracking-wider text-muted/60 shrink-0">
-                        {c.stage}
+                      <span className="text-xs text-muted/60 shrink-0">
+                        {humanize(c.stage)}
                       </span>
                     </label>
                   </li>
@@ -968,7 +969,7 @@ function BulkSendTakeHomeModal({
 
         {/* Pasted recipients */}
         <section className="space-y-2 rounded-lg border border-border bg-bg/40 p-3">
-          <div className="text-[10px] font-semibold uppercase tracking-wider text-muted/80">
+          <div className="text-xs font-semibold text-muted/80">
             …or paste recipients ({pastedRecipients.length} parsed)
           </div>
           <textarea
@@ -984,7 +985,7 @@ function BulkSendTakeHomeModal({
           <button
             type="button"
             onClick={onClose}
-            className="px-3 py-1.5 rounded-md text-[11px] font-semibold text-muted border border-border hover:bg-panel/40"
+            className="px-3 py-1.5 rounded-md text-xs font-semibold text-muted border border-border hover:bg-panel/40"
           >
             Cancel
           </button>
@@ -992,7 +993,7 @@ function BulkSendTakeHomeModal({
             type="button"
             onClick={onSend}
             disabled={pending || finalRecipients.length === 0 || !challengeId}
-            className="px-4 py-1.5 rounded-md text-[11px] font-semibold bg-fg text-bg hover:opacity-90 disabled:opacity-50 inline-flex items-center gap-1.5"
+            className="px-4 py-1.5 rounded-md text-xs font-semibold bg-fg text-bg hover:opacity-90 disabled:opacity-50 inline-flex items-center gap-1.5"
           >
             <Send className="w-3 h-3" />
             {pending ? "Dispatching…" : `Send to ${finalRecipients.length}`}
@@ -1032,7 +1033,7 @@ function CsvImportModal({
     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
       <div className="w-full max-w-2xl rounded-xl border border-border bg-surface p-5 space-y-4">
         <header className="space-y-1">
-          <div className="text-[10px] font-semibold uppercase tracking-wider text-muted/80 flex items-center gap-1.5">
+          <div className="text-xs font-semibold text-muted/80 flex items-center gap-1.5">
             <Upload className="w-3 h-3" />
             CSV import
           </div>
@@ -1056,7 +1057,7 @@ function CsvImportModal({
           <button
             type="button"
             onClick={onClose}
-            className="px-3 py-1.5 rounded-md text-[11px] font-semibold text-muted border border-border hover:bg-panel/40"
+            className="px-3 py-1.5 rounded-md text-xs font-semibold text-muted border border-border hover:bg-panel/40"
           >
             Cancel
           </button>
@@ -1064,7 +1065,7 @@ function CsvImportModal({
             type="button"
             onClick={onSubmit}
             disabled={pending}
-            className="px-3 py-1.5 rounded-md text-[11px] font-semibold bg-fg text-bg hover:opacity-90 disabled:opacity-50 inline-flex items-center gap-1.5"
+            className="px-3 py-1.5 rounded-md text-xs font-semibold bg-fg text-bg hover:opacity-90 disabled:opacity-50 inline-flex items-center gap-1.5"
           >
             {pending ? "Importing…" : <>Import <ChevronRight className="w-3 h-3" /></>}
           </button>

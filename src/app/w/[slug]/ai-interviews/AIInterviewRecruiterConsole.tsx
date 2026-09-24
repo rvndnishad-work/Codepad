@@ -45,6 +45,7 @@ import { getScreeningVerdict } from "@/lib/ai-interview/verdict";
 import type { FileDiff, DiffStats } from "@/lib/ai-interview/diff";
 import dynamic from "next/dynamic";
 import ScreeningWizard from "./ScreeningWizard";
+import { humanize } from "@/lib/workspace/display";
 
 const RunPreview = dynamic(() => import("./RunPreview"), {
   ssr: false,
@@ -329,7 +330,7 @@ export default function AIInterviewRecruiterConsole({
     if (verdict && !verdict.passed) {
       return (
         <span
-          className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-widest border ${verdict.className}`}
+          className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold border ${verdict.className}`}
           title={verdict.guidance}
         >
           <AlertTriangle className="w-3 h-3" />
@@ -340,23 +341,23 @@ export default function AIInterviewRecruiterConsole({
 
     if (rankIndex === 0) {
       return (
-        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-widest text-emerald-400 bg-emerald-500/10 border border-emerald-500/30 shadow-[0_0_15px_rgba(16,185,129,0.15)] animate-pulse">
+        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold text-success bg-success/10 border border-success/30 shadow-[0_0_15px_rgba(16,185,129,0.15)] animate-pulse">
           <Crown className="w-3.5 h-3.5 fill-current" />
-          Best Fit Candidate
+          Best fit candidate
         </span>
       );
     }
     if (rankIndex === 1 || rankIndex === 2) {
       return (
-        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-widest text-amber-400 bg-amber-500/10 border border-amber-500/30">
+        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold text-warning bg-warning/10 border border-warning/30">
           <Award className="w-3.5 h-3.5" />
           Backup Offer #{rankIndex + 1}
         </span>
       );
     }
     return (
-      <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider text-indigo-400 bg-indigo-500/5 border border-indigo-500/20">
-        Qualified Pipeline
+      <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold text-secondary bg-secondary/5 border border-secondary/20">
+        Qualified pipeline
       </span>
     );
   };
@@ -468,9 +469,7 @@ export default function AIInterviewRecruiterConsole({
       <div className="relative">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div>
-            <h1 className="text-3xl font-black tracking-tight text-fg flex items-center gap-2">
-              <Sparkles className="w-8 h-8 text-accent animate-pulse" /> AI Screening
-            </h1>
+            <h1 className="text-2xl md:text-[26px] font-semibold tracking-[-0.02em] text-fg">AI screening</h1>
             <p className="text-sm text-muted/80 mt-1 max-w-xl leading-relaxed">
               Screen hundreds of candidates automatically. The AI Interviewer guides applicants through React/DSA sandboxes and builds unified score sheets. <span className="text-fg">1 credit per completed screening.</span>
             </p>
@@ -480,7 +479,7 @@ export default function AIInterviewRecruiterConsole({
             <div className="flex gap-2 shrink-0 w-full md:w-auto">
               <button
                 onClick={() => setShowTemplatesModal(true)}
-                className="flex items-center gap-1.5 px-4 py-3 rounded-xl border border-border bg-surface hover:bg-elevated text-fg text-xs font-bold uppercase tracking-wider transition shrink-0"
+                className="flex items-center gap-1.5 px-4 py-3 rounded-xl border border-border bg-surface hover:bg-elevated text-fg text-xs font-bold transition shrink-0"
                 title="Manage custom screening templates"
               >
                 <FileCode className="w-4 h-4" />
@@ -489,7 +488,7 @@ export default function AIInterviewRecruiterConsole({
               <button
                 onClick={() => openWizard(true)}
                 disabled={outOfCredits}
-                className="flex items-center gap-1.5 px-4 py-3 rounded-xl border border-border bg-surface hover:bg-elevated text-fg text-xs font-bold uppercase tracking-wider transition shrink-0 disabled:opacity-40 disabled:cursor-not-allowed"
+                className="flex items-center gap-1.5 px-4 py-3 rounded-xl border border-border bg-surface hover:bg-elevated text-fg text-xs font-bold transition shrink-0 disabled:opacity-40 disabled:cursor-not-allowed"
                 title={outOfCredits ? "Workspace is out of credits" : "Invite a single candidate"}
               >
                 <Plus className="w-4 h-4" />
@@ -498,11 +497,11 @@ export default function AIInterviewRecruiterConsole({
               <button
                 onClick={() => openWizard(false)}
                 disabled={outOfCredits}
-                className="flex items-center gap-1.5 px-5 py-3 rounded-xl bg-accent hover:bg-accent-soft text-bg text-xs font-black uppercase tracking-widest transition-all cursor-pointer shadow-md flex-1 md:flex-initial text-center justify-center disabled:opacity-40 disabled:cursor-not-allowed"
+                className="flex items-center gap-1.5 px-5 py-3 rounded-xl bg-secondary hover:brightness-110 text-bg text-xs font-semibold transition-all cursor-pointer shadow-md flex-1 md:flex-initial text-center justify-center disabled:opacity-40 disabled:cursor-not-allowed"
                 title={outOfCredits ? "Workspace is out of credits" : "Screen a batch of candidates"}
               >
                 <Sparkles className="w-4 h-4" />
-                <span>{outOfCredits ? "Out of credits" : "New Screening"}</span>
+                <span>{outOfCredits ? "Out of credits" : "New screening"}</span>
               </button>
             </div>
           )}
@@ -510,17 +509,17 @@ export default function AIInterviewRecruiterConsole({
       </div>
 
       {outOfCredits && (
-        <div className="rounded-2xl border border-amber-500/30 bg-amber-500/[0.06] p-4 text-xs text-amber-300 flex items-start gap-3">
+        <div className="rounded-2xl border border-warning/30 bg-warning/[0.06] p-4 text-xs text-warning flex items-start gap-3">
           <Coins className="w-4 h-4 shrink-0 mt-0.5" />
           <div className="space-y-1 flex-1">
-            <div className="font-bold uppercase tracking-wider">Out of credits</div>
-            <div className="text-amber-200/80 leading-relaxed">
+            <div className="font-bold ">Out of credits</div>
+            <div className="text-warning/80 leading-relaxed">
               You can still view existing screenings, but generating new invites is paused until credits are added.
             </div>
           </div>
           <button
             onClick={() => setShowBuyModal(true)}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-400 text-bg text-[10px] font-black uppercase tracking-wider transition shrink-0"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-warning hover:bg-warning text-bg text-xs font-semibold transition shrink-0"
           >
             <ShoppingCart className="w-3 h-3" /> Buy credits
           </button>
@@ -550,17 +549,17 @@ export default function AIInterviewRecruiterConsole({
       {/* Stats row — credits, completed, avg score, top match */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <div className="rounded-2xl border border-border bg-surface p-5 flex items-center gap-3 relative">
-          <div className="w-11 h-11 bg-amber-500/10 border border-amber-500/20 rounded-xl flex items-center justify-center text-amber-400 shrink-0">
+          <div className="w-11 h-11 bg-warning/10 border border-warning/20 rounded-xl flex items-center justify-center text-warning shrink-0">
             <Coins className="w-5 h-5" />
           </div>
           <div className="min-w-0 flex-1">
-            <span className="text-[10px] font-black uppercase tracking-widest text-muted">Credit Balance</span>
-            <div className="text-2xl font-black text-fg mt-0.5 tabular-nums">{credits}</div>
-            <span className="text-[10px] text-muted/70 block">{usedThisMonth} used this month</span>
+            <span className="text-xs font-semibold text-muted">Credit balance</span>
+            <div className="text-2xl font-semibold text-fg mt-0.5 tabular-nums">{credits}</div>
+            <span className="text-xs text-muted/70 block">{usedThisMonth} used this month</span>
           </div>
           <button
             onClick={() => setShowBuyModal(true)}
-            className="absolute top-3 right-3 inline-flex items-center gap-1 px-2 py-1 rounded-md border border-amber-500/30 text-amber-400 hover:bg-amber-500/10 text-[9px] font-black uppercase tracking-wider transition"
+            className="absolute top-3 right-3 inline-flex items-center gap-1 px-2 py-1 rounded-md border border-warning/30 text-warning hover:bg-warning/10 text-xs font-semibold transition"
             title="Buy more credits"
           >
             <Plus className="w-3 h-3" />
@@ -569,32 +568,32 @@ export default function AIInterviewRecruiterConsole({
         </div>
 
         <div className="rounded-2xl border border-border bg-surface p-5 flex items-center gap-3">
-          <div className="w-11 h-11 bg-accent/10 border border-accent/20 rounded-xl flex items-center justify-center text-accent shrink-0">
+          <div className="w-11 h-11 bg-secondary/10 border border-secondary/20 rounded-xl flex items-center justify-center text-secondary shrink-0">
             <TrendingUp className="w-5 h-5" />
           </div>
           <div className="min-w-0">
-            <span className="text-[10px] font-black uppercase tracking-widest text-muted">Completed Screenings</span>
-            <div className="text-2xl font-black text-fg mt-0.5">{totalScreened}</div>
+            <span className="text-xs font-semibold text-muted">Completed screenings</span>
+            <div className="text-2xl font-semibold text-fg mt-0.5">{totalScreened}</div>
           </div>
         </div>
 
         <div className="rounded-2xl border border-border bg-surface p-5 flex items-center gap-3">
-          <div className="w-11 h-11 bg-emerald-500/10 border border-emerald-500/20 rounded-xl flex items-center justify-center text-emerald-400 shrink-0">
+          <div className="w-11 h-11 bg-success/10 border border-success/20 rounded-xl flex items-center justify-center text-success shrink-0">
             <CheckCircle2 className="w-5 h-5" />
           </div>
           <div className="min-w-0">
-            <span className="text-[10px] font-black uppercase tracking-widest text-muted">Pipeline Avg Score</span>
-            <div className="text-2xl font-black text-fg mt-0.5">{avgScore}%</div>
+            <span className="text-xs font-semibold text-muted">Pipeline avg score</span>
+            <div className="text-2xl font-semibold text-fg mt-0.5">{avgScore}%</div>
           </div>
         </div>
 
         <div className="rounded-2xl border border-border bg-surface p-5 flex items-center gap-3">
-          <div className="w-11 h-11 bg-indigo-500/10 border border-indigo-500/20 rounded-xl flex items-center justify-center text-indigo-400 shrink-0">
+          <div className="w-11 h-11 bg-secondary/10 border border-secondary/20 rounded-xl flex items-center justify-center text-secondary shrink-0">
             <Crown className="w-5 h-5" />
           </div>
           <div className="min-w-0">
-            <span className="text-[10px] font-black uppercase tracking-widest text-muted">Top Match</span>
-            <div className="text-sm font-black text-fg mt-0.5 truncate">
+            <span className="text-xs font-semibold text-muted">Top match</span>
+            <div className="text-sm font-semibold text-fg mt-0.5 truncate">
               {completedSessionsSorted.length > 0 ? completedSessionsSorted[0].candidateName : "—"}
             </div>
           </div>
@@ -605,22 +604,22 @@ export default function AIInterviewRecruiterConsole({
         <div className="lg:col-span-5 space-y-4">
           <div className="rounded-2xl border border-border bg-surface p-4 space-y-3">
             <div className="flex items-center justify-between">
-              <span className="text-[9px] font-black uppercase tracking-widest text-muted">
+              <span className="text-xs font-semibold text-muted">
                 {pagination.totalSessions} candidate{pagination.totalSessions === 1 ? "" : "s"} · {pagination.page}/{pagination.totalPages}
               </span>
               <div className="flex items-center gap-1.5">
                 <button
                   type="button"
                   onClick={() => setIsLive((v) => !v)}
-                  className={`inline-flex items-center gap-1 px-2 py-1 rounded-md border text-[9px] font-black uppercase tracking-wider transition ${isLive ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-400" : "bg-bg border-border/40 text-muted"}`}
+                  className={`inline-flex items-center gap-1 px-2 py-1 rounded-md border text-xs font-semibold transition ${isLive ? "bg-success/10 border-success/30 text-success" : "bg-bg border-border/40 text-muted"}`}
                   title={isLive ? `Live · updated ${lastRefresh.toLocaleTimeString()}` : "Live paused — click to resume auto-refresh"}
                 >
-                  <span className={`w-1.5 h-1.5 rounded-full ${isLive ? "bg-emerald-400 animate-pulse" : "bg-muted/40"}`} />
+                  <span className={`w-1.5 h-1.5 rounded-full ${isLive ? "bg-success animate-pulse" : "bg-muted/40"}`} />
                   {isLive ? "Live" : "Paused"}
                 </button>
                 <div className="hidden sm:flex items-center gap-0.5 rounded-md border border-border/40 bg-bg p-0.5">
-                  <button type="button" onClick={() => setDensity("cozy")} className={`px-2 py-1 text-[9px] font-bold rounded ${density === "cozy" ? "bg-accent/15 text-accent" : "text-muted"}`}>Cozy</button>
-                  <button type="button" onClick={() => setDensity("compact")} className={`px-2 py-1 text-[9px] font-bold rounded ${density === "compact" ? "bg-accent/15 text-accent" : "text-muted"}`}>Compact</button>
+                  <button type="button" onClick={() => setDensity("cozy")} className={`px-2 py-1 text-xs font-bold rounded ${density === "cozy" ? "bg-secondary/15 text-secondary" : "text-muted"}`}>Cozy</button>
+                  <button type="button" onClick={() => setDensity("compact")} className={`px-2 py-1 text-xs font-bold rounded ${density === "compact" ? "bg-secondary/15 text-secondary" : "text-muted"}`}>Compact</button>
                 </div>
               </div>
             </div>
@@ -637,7 +636,7 @@ export default function AIInterviewRecruiterConsole({
                   (window as any).__aiSearchTimer = setTimeout(() => updateQuery({ search: v }), 400);
                 }}
                 placeholder="Search candidate name, email, role... (server-side)"
-                className="w-full pl-9 pr-4 py-2.5 rounded-xl border border-border bg-bg text-xs text-fg focus:outline-none focus:border-accent"
+                className="w-full pl-9 pr-4 py-2.5 rounded-xl border border-border bg-bg text-xs text-fg focus:outline-none focus:border-secondary"
               />
             </div>
 
@@ -649,13 +648,13 @@ export default function AIInterviewRecruiterConsole({
                     setFilterStatus(status);
                     updateQuery({ status });
                   }}
-                  className={`flex-1 whitespace-nowrap px-1 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-wider border transition-all cursor-pointer ${
+                  className={`flex-1 whitespace-nowrap px-1 py-1.5 rounded-lg text-xs font-semibold border transition-all cursor-pointer ${
                     filterStatus === status
-                      ? "bg-accent/15 border-accent/30 text-accent"
+                      ? "bg-secondary/15 border-secondary/30 text-secondary"
                       : "bg-bg border-border/40 text-muted hover:text-fg"
                   }`}
                 >
-                  {status}
+                  {humanize(status)}
                 </button>
               ))}
             </div>
@@ -669,7 +668,7 @@ export default function AIInterviewRecruiterConsole({
                     setFilterBatch(v);
                     updateQuery({ batch: v });
                   }}
-                  className="px-3 py-2 rounded-lg border border-border bg-bg text-[11px] text-fg focus:outline-none focus:border-accent"
+                  className="px-3 py-2 rounded-lg border border-border bg-bg text-xs text-fg focus:outline-none focus:border-secondary"
                   title="Filter by screening batch"
                 >
                   <option value="ALL">All batches</option>
@@ -687,7 +686,7 @@ export default function AIInterviewRecruiterConsole({
                   setSortBy(v);
                   updateQuery({ sort: v });
                 }}
-                className="px-3 py-2 rounded-lg border border-border bg-bg text-[11px] text-fg focus:outline-none focus:border-accent"
+                className="px-3 py-2 rounded-lg border border-border bg-bg text-xs text-fg focus:outline-none focus:border-secondary"
                 title="Sort candidates"
               >
                 <option value="newest">Newest</option>
@@ -700,7 +699,7 @@ export default function AIInterviewRecruiterConsole({
             {/* Candidate deep-link chip (arrives via ?candidate=<id> from the
                 candidate activity board). Dismiss to see everyone. */}
             {filterCandidate !== "ALL" && (
-              <div className="flex items-center justify-between gap-2 px-3 py-2 rounded-lg border border-accent/30 bg-accent/10 text-[11px] font-bold text-accent">
+              <div className="flex items-center justify-between gap-2 px-3 py-2 rounded-lg border border-secondary/30 bg-secondary/10 text-xs font-bold text-secondary">
                 <span className="truncate">
                   Filtered: {filteredCandidateName ?? "candidate"}
                 </span>
@@ -733,12 +732,12 @@ export default function AIInterviewRecruiterConsole({
                     onClick={() => setSelectedSessionId(session.id)}
                     className={`rounded-2xl border cursor-pointer transition-all flex flex-col relative overflow-hidden ${density === "compact" ? "p-3 gap-2" : "p-4 gap-3"} ${
                       isSelected
-                        ? "bg-surface/90 border-accent/50 shadow-md shadow-accent/5"
+                        ? "bg-surface/90 border-secondary/50 shadow-md shadow-secondary/5"
                         : "bg-surface border-border/40 hover:bg-surface/30 hover:border-border"
                     }`}
                   >
                     {isSelected && isCompleted && (
-                      <div className="absolute left-0 top-0 bottom-0 w-1 bg-accent" />
+                      <div className="absolute left-0 top-0 bottom-0 w-1 bg-secondary" />
                     )}
 
                     <div className="flex justify-between items-start gap-4">
@@ -747,30 +746,30 @@ export default function AIInterviewRecruiterConsole({
                           {session.candidateName}
                           {getCandidateBadge(session)}
                         </div>
-                        <div className="text-[10px] text-muted/70 mt-0.5 font-mono">{session.candidateEmail}</div>
+                        <div className="text-xs text-muted/70 mt-0.5 font-mono">{session.candidateEmail}</div>
                       </div>
 
                       <div className="flex flex-col items-end gap-1.5">
                         <span
-                          className={`px-2 py-0.5 rounded-md text-[9px] font-black uppercase border tracking-wider ${
+                          className={`px-2 py-0.5 rounded-md text-xs font-semibold border ${
                             isCompleted
-                              ? "text-emerald-400 bg-emerald-500/10 border-emerald-500/20"
+                              ? "text-success bg-success/10 border-success/20"
                               : isActive
-                              ? "text-amber-400 bg-amber-500/10 border-amber-500/20"
+                              ? "text-warning bg-warning/10 border-warning/20"
                               : "text-muted bg-bg border-border"
                           }`}
                         >
-                          {session.status}
+                          {humanize(session.status)}
                         </span>
 
                         {isCompleted && (
                           <span
-                            className={`text-sm font-black tracking-tight ${
+                            className={`text-sm font-semibold tracking-tight ${
                               (session.score ?? 0) >= 80
-                                ? "text-emerald-400"
+                                ? "text-success"
                                 : (session.score ?? 0) >= 60
-                                ? "text-amber-400"
-                                : "text-rose-500"
+                                ? "text-warning"
+                                : "text-danger"
                             }`}
                           >
                             {session.score}%
@@ -779,7 +778,7 @@ export default function AIInterviewRecruiterConsole({
                       </div>
                     </div>
 
-                    <div className="flex justify-between items-center text-[10px] text-muted border-t border-border/40 pt-2 mt-1">
+                    <div className="flex justify-between items-center text-xs text-muted border-t border-border/40 pt-2 mt-1">
                       <div className="flex items-center gap-1.5 truncate">
                         <span className="font-bold text-fg shrink-0">{session.positionTitle}</span>
                         <span className="text-muted/30">•</span>
@@ -789,7 +788,7 @@ export default function AIInterviewRecruiterConsole({
                             : templateLabelById[session.templateId] || session.templateId}
                         </span>
                         {session.batchTitle && (
-                          <span className="px-1.5 py-0.5 rounded bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 text-[8px] font-black uppercase tracking-wider shrink-0">
+                          <span className="px-1.5 py-0.5 rounded bg-secondary/10 border border-secondary/20 text-secondary text-xs font-semibold shrink-0">
                             batch
                           </span>
                         )}
@@ -798,7 +797,7 @@ export default function AIInterviewRecruiterConsole({
                       {canCreate && (
                         <button
                           onClick={(e) => handleDeleteSession(session.id, e)}
-                          className="text-muted hover:text-rose-500 transition p-1 rounded-md hover:bg-rose-500/5 shrink-0"
+                          className="text-muted hover:text-danger transition p-1 rounded-md hover:bg-danger/5 shrink-0"
                           title="Delete session"
                         >
                           <Trash2 className="w-3.5 h-3.5" />
@@ -821,8 +820,8 @@ export default function AIInterviewRecruiterConsole({
             <div className="rounded-3xl border border-border bg-surface p-6 space-y-6">
               <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center border-b border-border pb-5 gap-4">
                 <div>
-                  <span className="text-[10px] font-black uppercase text-accent tracking-widest block">Candidate Screening Profile</span>
-                  <h2 className="text-xl font-black text-fg mt-0.5">{activeSession.candidateName}</h2>
+                  <span className="text-xs font-semibold text-secondary block">Candidate screening profile</span>
+                  <h2 className="text-xl font-semibold text-fg mt-0.5">{activeSession.candidateName}</h2>
                   <div className="flex items-center gap-3 text-xs text-muted mt-1.5 flex-wrap">
                     <span className="font-bold text-fg">{activeSession.positionTitle}</span>
                     <span className="text-muted/30">•</span>
@@ -846,7 +845,7 @@ export default function AIInterviewRecruiterConsole({
                     target="_blank"
                     className="flex-1 sm:flex-initial flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl border border-border hover:bg-elevated text-xs font-bold transition text-fg"
                   >
-                    <span>View Workpad</span>
+                    <span>View workpad</span>
                     <ExternalLink className="w-3.5 h-3.5" />
                   </Link>
                 </div>
@@ -865,11 +864,11 @@ export default function AIInterviewRecruiterConsole({
                   <div className="grid grid-cols-1 md:grid-cols-5 gap-4 items-center">
                     <div className="md:col-span-2 p-4 rounded-2xl bg-bg border border-border text-center flex flex-col justify-center items-center h-full min-w-0 relative">
                       <div className="flex items-center gap-1.5 mb-2">
-                        <span className="text-[10px] font-black uppercase text-muted tracking-wider">Composite Score</span>
+                        <span className="text-xs font-semibold text-muted ">Composite score</span>
                         <button
                           type="button"
                           onClick={() => setShowBenchmark(true)}
-                          className="w-5 h-5 rounded-full bg-muted/10 hover:bg-accent/20 border border-border/40 flex items-center justify-center text-muted hover:text-accent transition"
+                          className="w-5 h-5 rounded-full bg-muted/10 hover:bg-secondary/20 border border-border/40 flex items-center justify-center text-muted hover:text-secondary transition"
                           title="How is score calculated? — benchmark"
                           aria-label="Scoring benchmark"
                         >
@@ -877,22 +876,22 @@ export default function AIInterviewRecruiterConsole({
                         </button>
                       </div>
                       <div
-                        className={`text-4xl font-black tracking-tight ${
+                        className={`text-4xl font-semibold tracking-tight ${
                           (activeSession.score ?? 0) >= 80
-                            ? "text-emerald-400"
+                            ? "text-success"
                             : (activeSession.score ?? 0) >= 60
-                            ? "text-amber-400"
-                            : "text-rose-500"
+                            ? "text-warning"
+                            : "text-danger"
                         }`}
                       >
                         {activeSession.score}%
                       </div>
-                      <span className="text-[9px] text-muted/60 mt-1 block">AI Weighted Rubric</span>
+                      <span className="text-xs text-muted/60 mt-1 block">AI Weighted Rubric</span>
                       {(() => {
                         const v = getScreeningVerdict(activeSession.score);
                         return v ? (
                           <span
-                            className={`mt-2 inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[9px] font-black uppercase tracking-widest border ${v.className}`}
+                            className={`mt-2 inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold border ${v.className}`}
                             title={v.guidance}
                           >
                             {v.label}
@@ -904,7 +903,7 @@ export default function AIInterviewRecruiterConsole({
                       )}
                       {activeSession.outboundCallCount > 0 && (
                         <span
-                          className="mt-1.5 inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-widest border border-indigo-500/30 bg-indigo-500/10 text-indigo-300"
+                          className="mt-1.5 inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold border border-secondary/30 bg-secondary/10 text-secondary"
                           title="Number of times the AI interviewer called into an external MCP server during this screening"
                         >
                           <Plug className="w-2.5 h-2.5" />
@@ -918,19 +917,19 @@ export default function AIInterviewRecruiterConsole({
                         icon={<FileCode className="w-3.5 h-3.5" />}
                         label="Code Architecture"
                         value={activeSession.ratings.CodeQuality}
-                        color="bg-violet-500"
+                        color="bg-secondary"
                       />
                       <RatingBar
                         icon={<Cpu className="w-3.5 h-3.5" />}
                         label="Problem Solving & logic"
                         value={activeSession.ratings.ProblemSolving}
-                        color="bg-accent"
+                        color="bg-secondary"
                       />
                       <RatingBar
                         icon={<Bot className="w-3.5 h-3.5" />}
                         label="Conversational telemetry"
                         value={activeSession.ratings.Communication}
-                        color="bg-emerald-400"
+                        color="bg-success"
                       />
                     </div>
                   </div>
@@ -939,17 +938,17 @@ export default function AIInterviewRecruiterConsole({
                     <div className="fixed inset-0 z-[80] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4" onClick={() => setShowBenchmark(false)}>
                       <div onClick={(e) => e.stopPropagation()} className="w-full max-w-xl bg-surface border border-border rounded-2xl shadow-2xl overflow-hidden">
                         <div className="px-6 py-4 border-b border-border bg-bg/50 flex items-center justify-between">
-                          <h3 className="text-xs font-black uppercase tracking-widest text-fg flex items-center gap-2">
-                            <HelpCircle className="w-4 h-4 text-accent" /> Scoring Benchmark
+                          <h3 className="text-xs font-semibold text-fg flex items-center gap-2">
+                            <HelpCircle className="w-4 h-4 text-secondary" /> Scoring Benchmark
                           </h3>
                           <button onClick={() => setShowBenchmark(false)} className="p-1 rounded-md hover:bg-elevated text-muted hover:text-fg"><X className="w-4 h-4" /></button>
                         </div>
                         <div className="p-6 space-y-4 max-h-[65vh] overflow-y-auto">
-                          <p className="text-[11px] leading-relaxed text-muted">
+                          <p className="text-xs leading-relaxed text-muted">
                             Score is <span className="font-bold text-fg">candidate-authored diff only</span> — boilerplate (`/package.json` auto-format, Sandpack base) and untouched starter are ignored. `5%` = started but wrote `0` meaningful lines (not an error).
                           </p>
                           <div className="rounded-xl border border-border overflow-hidden">
-                            <div className="grid grid-cols-12 gap-0 bg-bg/80 px-3 py-2 text-[9px] font-black uppercase tracking-wider text-muted">
+                            <div className="grid grid-cols-12 gap-0 bg-bg/80 px-3 py-2 text-xs font-semibold text-muted">
                               <span className="col-span-5">Candidate action</span>
                               <span className="col-span-3 text-center">Score</span>
                               <span className="col-span-4 text-right">Signal</span>
@@ -963,24 +962,24 @@ export default function AIInterviewRecruiterConsole({
                               ["10–15 lines + logic", "35–58%", "Solid slice"],
                               ["16+ lines + task signals", "60–100%", "Strong/Good fit"],
                             ].map(([action, score, signal]) => (
-                              <div key={action} className="grid grid-cols-12 gap-0 px-3 py-2.5 text-[11px] border-t border-border/40 items-center">
+                              <div key={action} className="grid grid-cols-12 gap-0 px-3 py-2.5 text-xs border-t border-border/40 items-center">
                                 <span className="col-span-5 text-fg font-medium">{action}</span>
-                                <span className={`col-span-3 text-center font-black ${score.startsWith("5") || score.startsWith("7") || score.startsWith("9") ? "text-rose-400" : score.includes("16") || score.includes("34") ? "text-amber-400" : "text-emerald-400"}`}>{score}</span>
-                                <span className="col-span-4 text-right text-muted text-[10px]">{signal}</span>
+                                <span className={`col-span-3 text-center font-semibold ${score.startsWith("5") || score.startsWith("7") || score.startsWith("9") ? "text-danger" : score.includes("16") || score.includes("34") ? "text-warning" : "text-success"}`}>{score}</span>
+                                <span className="col-span-4 text-right text-muted text-xs">{signal}</span>
                               </div>
                             ))}
                           </div>
                           <div className="space-y-2">
-                            <h4 className="text-[10px] font-black uppercase tracking-widest text-fg">Rubric (5-point each, capped by effort)</h4>
-                            <ul className="text-[11px] leading-relaxed text-muted space-y-1 list-disc pl-4">
-                              <li><span className="font-bold text-fg">Code Architecture</span> — React hooks, file structure, signal gates (`useState` needs ≥3 lines, `slice` ≥6)</li>
-                              <li><span className="font-bold text-fg">Problem Solving</span> — task signals (pagination `slice`, stack `push/pop`, memo `cache`) + meaningful line tiers</li>
+                            <h4 className="text-xs font-semibold text-fg">Rubric (5-point each, capped by effort)</h4>
+                            <ul className="text-xs leading-relaxed text-muted space-y-1 list-disc pl-4">
+                              <li><span className="font-bold text-fg">Code architecture</span> — React hooks, file structure, signal gates (`useState` needs ≥3 lines, `slice` ≥6)</li>
+                              <li><span className="font-bold text-fg">Problem solving</span> — task signals (pagination `slice`, stack `push/pop`, memo `cache`) + meaningful line tiers</li>
                               <li><span className="font-bold text-fg">Conversational telemetry</span> — chat turns, but capped: `1 line` caps at `2/5` even if chatty</li>
                               <li className="text-muted/70">`package.json` / boilerplate never counts — only code files (`/App.js`, `/components/*`, etc.)</li>
                             </ul>
                           </div>
-                          <div className="rounded-lg bg-amber-500/10 border border-amber-500/20 p-3 text-[10px] leading-relaxed text-amber-200">
-                            <span className="font-black uppercase tracking-wider text-amber-300">For founders:</span> `5%` = verified zero contribution — quick filter `NOT A FIT`. Use `DIFF VS STARTER` to audit exactly what was written. Real hire bar is `60%+` (`GOOD FIT`).
+                          <div className="rounded-lg bg-warning/10 border border-warning/20 p-3 text-xs leading-relaxed text-warning">
+                            <span className="font-semibold text-warning">For founders:</span> `5%` = verified zero contribution — quick filter `NOT A FIT`. Use `DIFF VS STARTER` to audit exactly what was written. Real hire bar is `60%+` (`GOOD FIT`).
                           </div>
                         </div>
                       </div>
@@ -993,7 +992,7 @@ export default function AIInterviewRecruiterConsole({
 
                   {activeSession.aiSummary && (
                     <div className="space-y-3 bg-panel/40 border border-border p-5 rounded-2xl">
-                      <h3 className="text-xs font-black uppercase text-accent tracking-widest flex items-center gap-1.5">
+                      <h3 className="text-xs font-semibold text-secondary flex items-center gap-1.5">
                         <Sparkles className="w-4 h-4" /> AI Grading Rubrics Summary
                       </h3>
                       <div className="divide-y divide-border/40 text-xs leading-relaxed space-y-3">
@@ -1004,11 +1003,11 @@ export default function AIInterviewRecruiterConsole({
                             return (
                               <div key={idx} className="flex gap-2 py-1 items-start">
                                 {isStrength ? (
-                                  <span className="text-emerald-400 font-extrabold shrink-0">✔</span>
+                                  <span className="text-success font-semibold shrink-0">✔</span>
                                 ) : isFlaw ? (
-                                  <span className="text-rose-500 font-extrabold shrink-0">✘</span>
+                                  <span className="text-danger font-semibold shrink-0">✘</span>
                                 ) : (
-                                  <span className="text-indigo-400 shrink-0">•</span>
+                                  <span className="text-secondary shrink-0">•</span>
                                 )}
                                 <span>{line.replace(/^([+-]\s*\[.*?\]|[+-])/g, "").trim()}</span>
                               </div>
@@ -1024,9 +1023,9 @@ export default function AIInterviewRecruiterConsole({
                       <details className="rounded-2xl border border-border bg-bg overflow-hidden group">
                         <summary className="px-5 py-3 cursor-pointer flex items-center justify-between bg-elevated/30 hover:bg-elevated/50 transition list-none">
                           <span className="text-xs font-bold text-fg flex items-center gap-2">
-                            <Bot className="w-4 h-4 text-accent" /> Review Candidate Interview Chat Logs ({activeSession.chatHistory.length})
+                            <Bot className="w-4 h-4 text-secondary" /> Review Candidate Interview Chat Logs ({activeSession.chatHistory.length})
                           </span>
-                          <span className="text-[10px] text-muted group-open:rotate-90 transition">❯</span>
+                          <span className="text-xs text-muted group-open:rotate-90 transition">❯</span>
                         </summary>
                         <div className="p-4 border-t border-border bg-surface max-h-[350px] overflow-y-auto space-y-3">
                           {activeSession.chatHistory.map((chat, idx) => {
@@ -1034,14 +1033,14 @@ export default function AIInterviewRecruiterConsole({
                             return (
                               <div key={idx} className={`flex gap-2.5 items-start ${isAI ? "" : "flex-row-reverse"}`}>
                                 <div
-                                  className={`w-6 h-6 rounded-md flex items-center justify-center shrink-0 text-[10px] font-bold ${
-                                    isAI ? "bg-accent/15 text-accent" : "bg-border text-muted"
+                                  className={`w-6 h-6 rounded-md flex items-center justify-center shrink-0 text-xs font-bold ${
+                                    isAI ? "bg-secondary/15 text-secondary" : "bg-border text-muted"
                                   }`}
                                 >
                                   {isAI ? "AI" : "C"}
                                 </div>
                                 <div
-                                  className={`p-3 rounded-xl border text-[11px] max-w-[80%] leading-relaxed ${
+                                  className={`p-3 rounded-xl border text-xs max-w-[80%] leading-relaxed ${
                                     isAI
                                       ? "bg-surface border-border text-fg"
                                       : "bg-bg border-border/40 text-muted"
@@ -1063,22 +1062,22 @@ export default function AIInterviewRecruiterConsole({
                 </div>
               ) : (
                 <div className="rounded-2xl border border-dashed border-border bg-bg p-8 text-center flex flex-col items-center gap-4">
-                  <div className="w-12 h-12 bg-amber-500/10 border border-amber-500/25 rounded-full flex items-center justify-center text-amber-400">
+                  <div className="w-12 h-12 bg-warning/10 border border-warning/25 rounded-full flex items-center justify-center text-warning">
                     <Clock className="w-6 h-6 animate-pulse" />
                   </div>
                   <div className="space-y-1">
-                    <h4 className="text-sm font-bold text-fg uppercase tracking-wider">Candidate Screening Pending</h4>
+                    <h4 className="text-sm font-bold text-fg ">Candidate screening pending</h4>
                     <p className="text-xs text-muted max-w-sm">
-                      The workspace invitation is generated. As soon as the candidate enters the workpad workspace and submits, their scoring metrics will appear here instantly. <span className="text-amber-300">1 credit is charged on the candidate&apos;s first message.</span>
+                      The workspace invitation is generated. As soon as the candidate enters the workpad workspace and submits, their scoring metrics will appear here instantly. <span className="text-warning">1 credit is charged on the candidate&apos;s first message.</span>
                     </p>
                   </div>
 
                   <div className="p-3 bg-surface border border-border rounded-xl text-left w-full max-w-sm space-y-1">
-                    <span className="text-[9px] font-black uppercase text-accent tracking-widest block">Target Test Scaffold</span>
+                    <span className="text-xs font-semibold text-secondary block">Target test scaffold</span>
                     <span className="text-xs font-bold text-fg block">
                       {templateLabelById[activeSession.templateId] || activeSession.templateId}
                     </span>
-                    <span className="text-[10px] text-muted block mt-1">
+                    <span className="text-xs text-muted block mt-1">
                       Link: <span className="font-mono text-fg select-all break-all">{typeof window !== "undefined" ? `${window.location.origin}/ai-interview/${activeSession.inviteToken}` : ""}</span>
                     </span>
                   </div>
@@ -1088,10 +1087,10 @@ export default function AIInterviewRecruiterConsole({
                       const origin = typeof window !== "undefined" ? window.location.origin : "";
                       copyToClipboard(`${origin}/ai-interview/${activeSession.inviteToken}`);
                     }}
-                    className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-accent hover:bg-accent-soft text-bg text-xs font-black uppercase tracking-wider transition cursor-pointer"
+                    className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-secondary hover:brightness-110 text-bg text-xs font-semibold transition cursor-pointer"
                   >
                     <Copy className="w-3.5 h-3.5" />
-                    <span>Copy Invitation Link</span>
+                    <span>Copy invitation link</span>
                   </button>
                 </div>
               )}
@@ -1161,7 +1160,7 @@ function TemplateBindings({
 
   if (availableServers.length === 0) {
     return (
-      <div className="text-[10px] text-muted/60 italic px-2 py-1.5 rounded-md border border-dashed border-border/40">
+      <div className="text-xs text-muted/60 italic px-2 py-1.5 rounded-md border border-dashed border-border/40">
         <Plug className="w-3 h-3 inline mr-1" />
         No external MCP servers configured. Add and enable one on the{" "}
         <Link
@@ -1180,12 +1179,12 @@ function TemplateBindings({
     <div
       className={`space-y-1.5 ${workspaceAllowExternalMcp ? "" : "opacity-60"}`}
     >
-      <div className="text-[9px] font-black uppercase tracking-widest text-muted flex items-center gap-1">
+      <div className="text-xs font-semibold text-muted flex items-center gap-1">
         <Plug className="w-3 h-3" />
         External MCP bindings
         {!workspaceAllowExternalMcp && (
           <span
-            className="inline-flex items-center gap-0.5 ml-2 px-1.5 py-0.5 rounded border border-amber-500/30 bg-amber-500/10 text-amber-300 text-[8px] font-bold normal-case tracking-normal"
+            className="inline-flex items-center gap-0.5 ml-2 px-1.5 py-0.5 rounded border border-warning/30 bg-warning/10 text-warning text-xs font-bold normal-case tracking-normal"
             title="Workspace kill-switch is off — bindings exist but no outbound calls will happen until you enable it."
           >
             <ShieldAlert className="w-2.5 h-2.5" />
@@ -1199,9 +1198,9 @@ function TemplateBindings({
           return (
             <label
               key={s.id}
-              className={`flex items-center gap-2 px-2 py-1.5 rounded-md border text-[11px] cursor-pointer transition ${
+              className={`flex items-center gap-2 px-2 py-1.5 rounded-md border text-xs cursor-pointer transition ${
                 isBound
-                  ? "border-accent/40 bg-accent/[0.06] text-fg"
+                  ? "border-secondary/40 bg-secondary/[0.06] text-fg"
                   : "border-border bg-surface text-muted hover:text-fg"
               }`}
             >
@@ -1209,7 +1208,7 @@ function TemplateBindings({
                 type="checkbox"
                 checked={isBound}
                 onChange={(e) => toggle(s.id, e.target.checked)}
-                className="accent-accent"
+                className="accent-secondary"
               />
               <span className="truncate font-medium">{s.name}</span>
             </label>
@@ -1319,10 +1318,10 @@ function CustomTemplatesModal({
       >
         <div className="flex items-center justify-between">
           <div>
-            <h3 className="text-sm font-black uppercase tracking-widest text-fg flex items-center gap-2">
-              <FileCode className="w-4 h-4 text-violet-400" /> Screening Templates
+            <h3 className="text-sm font-semibold text-fg flex items-center gap-2">
+              <FileCode className="w-4 h-4 text-secondary" /> Screening Templates
             </h3>
-            <p className="text-[11px] text-muted/70 mt-1">
+            <p className="text-xs text-muted/70 mt-1">
               Custom templates layer on top of the builtins. Candidates see exactly what you author.
             </p>
           </div>
@@ -1335,10 +1334,10 @@ function CustomTemplatesModal({
           <div className="space-y-5">
             <div>
               <div className="flex items-center justify-between mb-2">
-                <span className="text-[10px] font-black uppercase tracking-widest text-accent">Workspace customs ({customs.length})</span>
+                <span className="text-xs font-semibold text-secondary">Workspace customs ({customs.length})</span>
                 <button
                   onClick={() => setMode("create")}
-                  className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-accent/10 text-accent border border-accent/25 hover:bg-accent/20 text-[10px] font-bold uppercase tracking-wider transition"
+                  className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-secondary/10 text-secondary border border-secondary/25 hover:bg-secondary/20 text-xs font-bold transition"
                 >
                   <Plus className="w-3 h-3" /> New
                 </button>
@@ -1354,12 +1353,12 @@ function CustomTemplatesModal({
                       <div className="flex items-start justify-between gap-3">
                         <div className="min-w-0">
                           <div className="text-xs font-bold text-fg truncate">{t.title}</div>
-                          <div className="text-[10px] text-muted/70 truncate">{t.description}</div>
-                          <div className="text-[9px] text-muted/50 font-mono mt-1">{t.estimatedMinutes} min</div>
+                          <div className="text-xs text-muted/70 truncate">{t.description}</div>
+                          <div className="text-xs text-muted/50 font-mono mt-1">{t.estimatedMinutes} min</div>
                         </div>
                         <button
                           onClick={() => handleDelete(t.id, t.title)}
-                          className="p-1.5 rounded-md text-muted hover:text-rose-400 hover:bg-rose-500/10 transition shrink-0"
+                          className="p-1.5 rounded-md text-muted hover:text-danger hover:bg-danger/10 transition shrink-0"
                         >
                           <Trash2 className="w-3.5 h-3.5" />
                         </button>
@@ -1388,12 +1387,12 @@ function CustomTemplatesModal({
             </div>
 
             <div>
-              <div className="text-[10px] font-black uppercase tracking-widest text-muted mb-2">Builtins ({builtins.length})</div>
+              <div className="text-xs font-semibold text-muted mb-2">Builtins ({builtins.length})</div>
               <div className="space-y-1">
                 {builtins.map((t) => (
-                  <div key={t.id} className="px-3 py-2 rounded-lg border border-border/40 bg-bg/40 text-[11px] flex items-center justify-between">
+                  <div key={t.id} className="px-3 py-2 rounded-lg border border-border/40 bg-bg/40 text-xs flex items-center justify-between">
                     <span className="text-fg font-medium truncate">{t.title}</span>
-                    <span className="text-muted/60 font-mono text-[9px] shrink-0">{t.estimatedMinutes}m</span>
+                    <span className="text-muted/60 font-mono text-xs shrink-0">{t.estimatedMinutes}m</span>
                   </div>
                 ))}
               </div>
@@ -1404,25 +1403,25 @@ function CustomTemplatesModal({
             <button
               type="button"
               onClick={() => setMode("list")}
-              className="text-[10px] font-bold text-muted hover:text-fg uppercase tracking-wider"
+              className="text-xs font-bold text-muted hover:text-fg "
             >
               ← Back to list
             </button>
 
             <div className="space-y-1.5">
-              <label className="text-[10px] font-black uppercase text-muted tracking-wider block">Title</label>
+              <label className="text-xs font-semibold text-muted block">Title</label>
               <input
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
                 required
                 maxLength={80}
                 placeholder="e.g. Vue 3 Composition API drag-drop"
-                className="w-full px-3 py-2 rounded-xl border border-border bg-bg text-xs text-fg focus:outline-none focus:border-accent"
+                className="w-full px-3 py-2 rounded-xl border border-border bg-bg text-xs text-fg focus:outline-none focus:border-secondary"
               />
             </div>
 
             <div className="space-y-1.5">
-              <label className="text-[10px] font-black uppercase text-muted tracking-wider block">
+              <label className="text-xs font-semibold text-muted block">
                 Description (shown to candidate as the AI Interviewer&apos;s framing)
               </label>
               <textarea
@@ -1430,13 +1429,13 @@ function CustomTemplatesModal({
                 onChange={(e) => setDescription(e.target.value)}
                 required
                 rows={3}
-                className="w-full px-3 py-2 rounded-xl border border-border bg-bg text-xs text-fg focus:outline-none focus:border-accent resize-none"
+                className="w-full px-3 py-2 rounded-xl border border-border bg-bg text-xs text-fg focus:outline-none focus:border-secondary resize-none"
               />
             </div>
 
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
-                <label className="text-[10px] font-black uppercase text-muted tracking-wider block">Estimated minutes</label>
+                <label className="text-xs font-semibold text-muted block">Estimated minutes</label>
                 <input
                   type="number"
                   min={5}
@@ -1444,15 +1443,15 @@ function CustomTemplatesModal({
                   value={estimatedMinutes}
                   onChange={(e) => setEstimatedMinutes(e.target.value)}
                   required
-                  className="w-full px-3 py-2 rounded-xl border border-border bg-bg text-xs text-fg tabular-nums focus:outline-none focus:border-accent"
+                  className="w-full px-3 py-2 rounded-xl border border-border bg-bg text-xs text-fg tabular-nums focus:outline-none focus:border-secondary"
                 />
               </div>
               <div className="space-y-1.5">
-                <label className="text-[10px] font-black uppercase text-muted tracking-wider block">Surface</label>
+                <label className="text-xs font-semibold text-muted block">Surface</label>
                 <select
                   value={kind}
                   onChange={(e) => setKind(e.target.value as "frontend" | "backend" | "dsa")}
-                  className="w-full px-3 py-2 rounded-xl border border-border bg-bg text-xs text-fg focus:outline-none focus:border-accent"
+                  className="w-full px-3 py-2 rounded-xl border border-border bg-bg text-xs text-fg focus:outline-none focus:border-secondary"
                 >
                   <option value="frontend">Frontend (Sandpack)</option>
                   <option value="backend">Backend (console)</option>
@@ -1464,11 +1463,11 @@ function CustomTemplatesModal({
             {kind !== "frontend" && (
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1.5">
-                  <label className="text-[10px] font-black uppercase text-muted tracking-wider block">Language</label>
+                  <label className="text-xs font-semibold text-muted block">Language</label>
                   <select
                     value={language}
                     onChange={(e) => setLanguage(e.target.value)}
-                    className="w-full px-3 py-2 rounded-xl border border-border bg-bg text-xs text-fg focus:outline-none focus:border-accent"
+                    className="w-full px-3 py-2 rounded-xl border border-border bg-bg text-xs text-fg focus:outline-none focus:border-secondary"
                   >
                     {["node", "typescript", "python", "go", "java", "cpp", "rust"].map((l) => (
                       <option key={l} value={l}>{l}</option>
@@ -1476,7 +1475,7 @@ function CustomTemplatesModal({
                   </select>
                 </div>
                 <div className="space-y-1.5">
-                  <label className="text-[10px] font-black uppercase text-muted tracking-wider block">
+                  <label className="text-xs font-semibold text-muted block">
                     Framework label <span className="font-normal normal-case text-muted/60">(optional, not executed)</span>
                   </label>
                   <input
@@ -1484,14 +1483,14 @@ function CustomTemplatesModal({
                     value={frameworkLabel}
                     onChange={(e) => setFrameworkLabel(e.target.value)}
                     placeholder="e.g. Express, Django"
-                    className="w-full px-3 py-2 rounded-xl border border-border bg-bg text-xs text-fg focus:outline-none focus:border-accent"
+                    className="w-full px-3 py-2 rounded-xl border border-border bg-bg text-xs text-fg focus:outline-none focus:border-secondary"
                   />
                 </div>
               </div>
             )}
 
             <div className="space-y-1.5">
-              <label className="text-[10px] font-black uppercase text-muted tracking-wider block">
+              <label className="text-xs font-semibold text-muted block">
                 Starter files (JSON map of path → code)
               </label>
               <textarea
@@ -1500,13 +1499,13 @@ function CustomTemplatesModal({
                 required
                 rows={6}
                 spellCheck={false}
-                className="w-full px-3 py-2 rounded-xl border border-border bg-bg text-[10px] font-mono text-fg focus:outline-none focus:border-accent"
+                className="w-full px-3 py-2 rounded-xl border border-border bg-bg text-xs font-mono text-fg focus:outline-none focus:border-secondary"
               />
-              <div className="text-[10px] text-muted/60">Paths must begin with /. Example: <code className="text-fg">{"\"{ \"/App.js\": \"...\" }\""}</code></div>
+              <div className="text-xs text-muted/60">Paths must begin with /. Example: <code className="text-fg">{"\"{ \"/App.js\": \"...\" }\""}</code></div>
             </div>
 
             <div className="space-y-1.5">
-              <label className="text-[10px] font-black uppercase text-muted tracking-wider block">
+              <label className="text-xs font-semibold text-muted block">
                 Grader hints (free-text scoring guidance for the AI grader)
               </label>
               <textarea
@@ -1514,7 +1513,7 @@ function CustomTemplatesModal({
                 onChange={(e) => setTestsCode(e.target.value)}
                 rows={3}
                 placeholder="e.g. Look for proper composition API usage, drag/drop events, list mutation."
-                className="w-full px-3 py-2 rounded-xl border border-border bg-bg text-[11px] text-fg focus:outline-none focus:border-accent resize-none"
+                className="w-full px-3 py-2 rounded-xl border border-border bg-bg text-xs text-fg focus:outline-none focus:border-secondary resize-none"
               />
             </div>
 
@@ -1529,9 +1528,9 @@ function CustomTemplatesModal({
               <button
                 type="submit"
                 disabled={isPending}
-                className="px-5 py-2 rounded-xl bg-accent text-bg text-xs font-black uppercase tracking-wider hover:bg-accent-soft transition disabled:opacity-50"
+                className="px-5 py-2 rounded-xl bg-secondary text-bg text-xs font-semibold hover:brightness-110 transition disabled:opacity-50"
               >
-                {isPending ? "Creating..." : "Create Template"}
+                {isPending ? "Creating..." : "Create template"}
               </button>
             </div>
           </form>
@@ -1554,7 +1553,7 @@ function PaginationFooter({
   const last = Math.min(page * pageSize, totalSessions);
   const base = `/w/${workspaceSlug}/ai-interviews`;
   return (
-    <div className="flex items-center justify-between px-2 pt-2 text-[10px] text-muted">
+    <div className="flex items-center justify-between px-2 pt-2 text-xs text-muted">
       <span className="tabular-nums">
         Showing {first}–{last} of {totalSessions}
       </span>
@@ -1591,9 +1590,9 @@ function SuspicionBadge({ score }: { score: number }) {
   const tier =
     score >= 60 ? "high" : score >= 30 ? "med" : "low";
   const cls = {
-    high: "text-rose-300 bg-rose-500/15 border-rose-500/35",
-    med: "text-amber-300 bg-amber-500/15 border-amber-500/30",
-    low: "text-emerald-300/80 bg-emerald-500/10 border-emerald-500/25",
+    high: "text-danger bg-danger/15 border-danger/35",
+    med: "text-warning bg-warning/15 border-warning/30",
+    low: "text-success/80 bg-success/10 border-success/25",
   }[tier];
   // Short labels — the long forms wrapped into vertical letter-stacks inside
   // the narrow composite-score tile.
@@ -1604,7 +1603,7 @@ function SuspicionBadge({ score }: { score: number }) {
   }[tier];
   return (
     <span
-      className={`mt-2 inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider border whitespace-nowrap max-w-full ${cls}`}
+      className={`mt-2 inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold border whitespace-nowrap max-w-full ${cls}`}
       title={`Integrity suspicion: ${score}/100 (heuristic from paste/blur events)`}
     >
       {label}
@@ -1646,7 +1645,7 @@ function RoundBreakdown({ rounds }: { rounds: RoundSummary[] }) {
   };
   return (
     <div className="space-y-2">
-      <h3 className="text-xs font-black uppercase text-accent tracking-widest flex items-center gap-1.5">
+      <h3 className="text-xs font-semibold text-secondary flex items-center gap-1.5">
         <Layers className="w-4 h-4" /> Round breakdown ({rounds.length})
       </h3>
       <div className="space-y-1.5">
@@ -1655,25 +1654,25 @@ function RoundBreakdown({ rounds }: { rounds: RoundSummary[] }) {
           return (
             <details key={r.id} className="rounded-xl border border-border bg-bg overflow-hidden group">
               <summary className="px-4 py-2.5 cursor-pointer flex items-center gap-3 list-none hover:bg-elevated/30">
-                <span className="inline-flex items-center justify-center w-5 h-5 rounded-md bg-accent/10 text-accent text-[10px] font-black shrink-0">
+                <span className="inline-flex items-center justify-center w-5 h-5 rounded-md bg-secondary/10 text-secondary text-xs font-semibold shrink-0">
                   {i + 1}
                 </span>
                 <div className="min-w-0 flex-1">
                   <div className="text-xs font-bold text-fg truncate">{label(r)}</div>
-                  <div className="text-[9px] uppercase tracking-wider text-muted/70">
-                    {r.status} · {fileCount} file{fileCount === 1 ? "" : "s"}
+                  <div className="text-xs text-muted/70">
+                    {humanize(r.status)} · {fileCount} file{fileCount === 1 ? "" : "s"}
                   </div>
                 </div>
                 {r.score != null && (
                   <span
-                    className={`text-sm font-black ${
-                      r.score >= 80 ? "text-emerald-400" : r.score >= 60 ? "text-amber-400" : "text-rose-500"
+                    className={`text-sm font-semibold ${
+                      r.score >= 80 ? "text-success" : r.score >= 60 ? "text-warning" : "text-danger"
                     }`}
                   >
                     {r.score}%
                   </span>
                 )}
-                <span className="text-[10px] text-muted group-open:rotate-90 transition shrink-0">❯</span>
+                <span className="text-xs text-muted group-open:rotate-90 transition shrink-0">❯</span>
               </summary>
               <div className="p-3 border-t border-border bg-surface space-y-3">
                 {r.ratings && (
@@ -1684,14 +1683,14 @@ function RoundBreakdown({ rounds }: { rounds: RoundSummary[] }) {
                   </div>
                 )}
                 {fileCount === 0 ? (
-                  <p className="text-[10px] text-muted/50">No files submitted for this round.</p>
+                  <p className="text-xs text-muted/50">No files submitted for this round.</p>
                 ) : (
                   Object.entries(r.filesJson).map(([path, code]) => (
                     <div key={path} className="space-y-1">
-                      <div className="text-[10px] font-mono font-bold text-fg bg-bg px-2 py-1 rounded border border-border">
+                      <div className="text-xs font-mono font-bold text-fg bg-bg px-2 py-1 rounded border border-border">
                         {path}
                       </div>
-                      <pre className="text-[10px] font-mono text-muted/90 bg-bg/80 p-2 overflow-x-auto leading-relaxed rounded max-h-[180px] border border-border/20">
+                      <pre className="text-xs font-mono text-muted/90 bg-bg/80 p-2 overflow-x-auto leading-relaxed rounded max-h-[180px] border border-border/20">
                         {code || "(empty)"}
                       </pre>
                     </div>
@@ -1709,8 +1708,8 @@ function RoundBreakdown({ rounds }: { rounds: RoundSummary[] }) {
 function RoundStat({ label, value }: { label: string; value: number }) {
   return (
     <div className="rounded-lg bg-bg border border-border px-2 py-1.5 text-center">
-      <div className="text-[8px] uppercase tracking-wider text-muted">{label}</div>
-      <div className="text-xs font-black text-fg">{value}/5</div>
+      <div className="text-xs text-muted">{label}</div>
+      <div className="text-xs font-semibold text-fg">{value}/5</div>
     </div>
   );
 }
@@ -1738,10 +1737,10 @@ function BuyCreditsModal({
       >
         <div className="flex items-center justify-between">
           <div>
-            <h3 className="text-sm font-black uppercase tracking-widest text-fg flex items-center gap-2">
-              <ShoppingCart className="w-4 h-4 text-amber-400" /> Buy AI Screening Credits
+            <h3 className="text-sm font-semibold text-fg flex items-center gap-2">
+              <ShoppingCart className="w-4 h-4 text-warning" /> Buy AI Screening Credits
             </h3>
-            <p className="text-[11px] text-muted/70 mt-1">Credits never expire. 1 credit covers one completed screening.</p>
+            <p className="text-xs text-muted/70 mt-1">Credits never expire. 1 credit covers one completed screening.</p>
           </div>
           <button onClick={onClose} className="p-1 rounded-md hover:bg-elevated text-muted hover:text-fg">
             <X className="w-4 h-4" />
@@ -1758,36 +1757,36 @@ function BuyCreditsModal({
                 key={pack.id}
                 className={`rounded-2xl border p-5 flex flex-col gap-4 relative ${
                   featured
-                    ? "border-accent/50 bg-surface/80 shadow-md shadow-accent/5"
+                    ? "border-secondary/50 bg-surface/80 shadow-md shadow-secondary/5"
                     : "border-border bg-bg"
                 }`}
               >
                 {featured && (
-                  <span className="absolute -top-2.5 right-4 px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-widest bg-accent text-bg">
+                  <span className="absolute -top-2.5 right-4 px-2 py-0.5 rounded-full text-xs font-semibold bg-secondary text-bg">
                     {pack.badge}
                   </span>
                 )}
                 <div>
-                  <div className="text-[10px] font-black uppercase tracking-widest text-muted">{pack.label}</div>
-                  <div className="text-3xl font-black text-fg tabular-nums mt-1">
+                  <div className="text-xs font-semibold text-muted">{pack.label}</div>
+                  <div className="text-3xl font-semibold text-fg tabular-nums mt-1">
                     {pack.credits}
                     <span className="text-xs text-muted/70 font-bold ml-1">credits</span>
                   </div>
                 </div>
                 <div className="space-y-0.5">
-                  <div className="text-xl font-black text-fg tabular-nums">
+                  <div className="text-xl font-semibold text-fg tabular-nums">
                     ${(pack.priceCents / 100).toFixed(0)}
                   </div>
-                  <div className="text-[10px] text-muted/70">
+                  <div className="text-xs text-muted/70">
                     ≈ ${perCredit.toFixed(2)} / screening
                   </div>
                 </div>
                 <button
                   onClick={() => onPick(pack.id)}
                   disabled={!!purchasingPackId}
-                  className={`mt-auto inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl text-[11px] font-black uppercase tracking-wider transition disabled:opacity-50 ${
+                  className={`mt-auto inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold transition disabled:opacity-50 ${
                     featured
-                      ? "bg-accent text-bg hover:bg-accent-soft"
+                      ? "bg-secondary text-bg hover:brightness-110"
                       : "bg-fg/10 text-fg border border-border hover:bg-fg/15"
                   }`}
                 >
@@ -1805,7 +1804,7 @@ function BuyCreditsModal({
           })}
         </div>
 
-        <p className="text-[10px] text-muted/60 text-center leading-relaxed">
+        <p className="text-xs text-muted/60 text-center leading-relaxed">
           Secure checkout via Stripe. Only workspace owners and admins can purchase.
         </p>
       </div>
@@ -1859,26 +1858,26 @@ function SubmittedWorkReview({ session }: { session: RecruiterSession }) {
     <details className="rounded-2xl border border-border bg-bg overflow-hidden group" open>
       <summary className="px-5 py-3 cursor-pointer flex items-center justify-between bg-elevated/30 hover:bg-elevated/50 transition list-none">
         <span className="text-xs font-bold text-fg flex items-center gap-2">
-          <FileCode className="w-4 h-4 text-violet-400" />
+          <FileCode className="w-4 h-4 text-secondary" />
           Review Submitted Workspace Files ({Object.keys(session.filesJson).length})
           {stats && stats.filesChanged > 0 && (
             <span
-              className={`ml-2 inline-flex items-center px-2 py-0.5 rounded-md border text-[9px] font-black uppercase tracking-wider ${
+              className={`ml-2 inline-flex items-center px-2 py-0.5 rounded-md border text-xs font-semibold ${
                 stats.addedLines === 0
-                  ? "text-rose-400 bg-rose-500/[0.08] border-rose-500/25"
-                  : "text-emerald-400 bg-emerald-500/[0.08] border-emerald-500/25"
+                  ? "text-danger bg-danger/[0.08] border-danger/25"
+                  : "text-success bg-success/[0.08] border-success/25"
               }`}
             >
               {stats.filesChanged} changed · +{stats.addedLines} −{stats.removedLines}
             </span>
           )}
           {stats && stats.filesChanged === 0 && (
-            <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded-md border text-[9px] font-black uppercase tracking-wider text-rose-400 bg-rose-500/[0.08] border-rose-500/25">
+            <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded-md border text-xs font-semibold text-danger bg-danger/[0.08] border-danger/25">
               No code written
             </span>
           )}
         </span>
-        <span className="text-[10px] text-muted group-open:rotate-90 transition">❯</span>
+        <span className="text-xs text-muted group-open:rotate-90 transition">❯</span>
       </summary>
 
       {/* View toggle */}
@@ -1893,9 +1892,9 @@ function SubmittedWorkReview({ session }: { session: RecruiterSession }) {
             type="button"
             onClick={() => !disabled && setView(key)}
             disabled={disabled}
-            className={`px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wider border transition cursor-pointer ${
+            className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition cursor-pointer ${
               view === key
-                ? "bg-accent/15 border-accent/40 text-accent"
+                ? "bg-secondary/15 border-secondary/40 text-secondary"
                 : disabled
                 ? "bg-bg border-border/30 text-muted/30 cursor-not-allowed"
                 : "bg-bg border-border/40 text-muted hover:text-fg"
@@ -1912,14 +1911,14 @@ function SubmittedWorkReview({ session }: { session: RecruiterSession }) {
         ) : view === "code" ? (
           Object.entries(session.filesJson).map(([path, code]) => (
             <div key={path} className="space-y-1.5">
-              <div className="text-[10px] font-mono font-bold text-fg bg-bg px-3 py-1.5 rounded-lg border border-border flex justify-between items-center">
+              <div className="text-xs font-mono font-bold text-fg bg-bg px-3 py-1.5 rounded-lg border border-border flex justify-between items-center">
                 <span className="flex items-center gap-1.5">
-                  <FolderOpen className="w-3.5 h-3.5 text-violet-400" />
+                  <FolderOpen className="w-3.5 h-3.5 text-secondary" />
                   {path}
                 </span>
-                <span className="text-muted/65 text-[9px]">{code.split(/\r?\n/).length} lines</span>
+                <span className="text-muted/65 text-xs">{code.split(/\r?\n/).length} lines</span>
               </div>
-              <pre className="text-[10px] font-mono text-muted/90 bg-bg/80 p-3 overflow-x-auto leading-relaxed rounded-xl max-h-[260px] border border-border/20">
+              <pre className="text-xs font-mono text-muted/90 bg-bg/80 p-3 overflow-x-auto leading-relaxed rounded-xl max-h-[260px] border border-border/20">
                 {code || "(empty)"}
               </pre>
             </div>
@@ -1927,11 +1926,11 @@ function SubmittedWorkReview({ session }: { session: RecruiterSession }) {
         ) : hasDiffData ? (
           <>
             {stats && (
-              <p className="text-[11px] text-muted">
+              <p className="text-xs text-muted">
                 Candidate changes vs starter template:{" "}
                 <span className="font-bold text-fg">{stats.filesChanged}</span> file(s) changed,{" "}
-                <span className="font-bold text-emerald-400">+{stats.addedLines}</span> /{" "}
-                <span className="font-bold text-rose-400">−{stats.removedLines}</span> lines. Grading
+                <span className="font-bold text-success">+{stats.addedLines}</span> /{" "}
+                <span className="font-bold text-danger">−{stats.removedLines}</span> lines. Grading
                 is based on exactly this diff.
               </p>
             )}
@@ -1959,9 +1958,9 @@ function FileDiffCard({ diff }: { diff: FileDiff }) {
   if (diff.isDeleted) {
     return (
       <div className="space-y-1.5">
-        <div className="text-[10px] font-mono font-bold text-rose-400 bg-bg px-3 py-1.5 rounded-lg border border-border flex items-center gap-1.5">
+        <div className="text-xs font-mono font-bold text-danger bg-bg px-3 py-1.5 rounded-lg border border-border flex items-center gap-1.5">
           <FolderOpen className="w-3.5 h-3.5" /> {diff.path}
-          <span className="ml-auto text-[9px] uppercase tracking-wider">deleted by candidate</span>
+          <span className="ml-auto text-xs ">deleted by candidate</span>
         </div>
       </div>
     );
@@ -1978,35 +1977,35 @@ function FileDiffCard({ diff }: { diff: FileDiff }) {
 
   return (
     <div className="space-y-1.5">
-      <div className="text-[10px] font-mono font-bold text-fg bg-bg px-3 py-1.5 rounded-lg border border-border flex justify-between items-center">
+      <div className="text-xs font-mono font-bold text-fg bg-bg px-3 py-1.5 rounded-lg border border-border flex justify-between items-center">
         <span className="flex items-center gap-1.5">
-          <FolderOpen className={`w-3.5 h-3.5 ${diff.isNew ? "text-emerald-400" : "text-violet-400"}`} />
+          <FolderOpen className={`w-3.5 h-3.5 ${diff.isNew ? "text-success" : "text-secondary"}`} />
           {diff.path}
         </span>
-        <span className="flex items-center gap-2 text-[9px]">
+        <span className="flex items-center gap-2 text-xs">
           {diff.isNew ? (
-            <span className="text-emerald-400 font-black uppercase tracking-wider">new file</span>
+            <span className="text-success font-semibold ">new file</span>
           ) : (
             <>
-              <span className="text-emerald-400">+{diff.added.length}</span>
-              <span className="text-rose-400">−{diff.removed.length}</span>
+              <span className="text-success">+{diff.added.length}</span>
+              <span className="text-danger">−{diff.removed.length}</span>
             </>
           )}
         </span>
       </div>
       <div className="rounded-xl border border-border/20 bg-bg/80 p-3 max-h-[300px] overflow-auto">
         {lines.length === 0 ? (
-          <p className="text-[10px] text-muted italic">No changes in this file.</p>
+          <p className="text-xs text-muted italic">No changes in this file.</p>
         ) : (
-          <pre className="text-[10px] font-mono leading-relaxed">
+          <pre className="text-xs font-mono leading-relaxed">
             {lines.map((l, i) => (
               <div
                 key={i}
                 className={`px-2 py-px whitespace-pre-wrap break-all ${
                   l.sign === "+"
-                    ? "bg-emerald-500/[0.08] text-emerald-300"
+                    ? "bg-success/[0.08] text-success"
                     : l.sign === "-"
-                    ? "bg-rose-500/[0.08] text-rose-300"
+                    ? "bg-danger/[0.08] text-danger"
                     : "text-muted/70"
                 }`}
               >
@@ -2065,7 +2064,7 @@ function ExtensionPolicyEditor({
   return (
     <div className="rounded-xl border border-border bg-panel/50 p-3 flex flex-wrap items-end gap-3">
       <div className="space-y-1">
-        <span className="text-[9px] font-black uppercase tracking-widest text-muted block">
+        <span className="text-xs font-semibold text-muted block">
           Candidate extensions allowed
         </span>
         <input
@@ -2074,12 +2073,12 @@ function ExtensionPolicyEditor({
           max={5}
           value={maxExt}
           onChange={(e) => setMaxExt(Number(e.target.value))}
-          className="w-20 px-2.5 py-1.5 rounded-lg border border-border bg-bg text-xs text-fg tabular-nums focus:outline-none focus:border-accent"
+          className="w-20 px-2.5 py-1.5 rounded-lg border border-border bg-bg text-xs text-fg tabular-nums focus:outline-none focus:border-secondary"
           title="How many times the candidate may extend"
         />
       </div>
       <div className="space-y-1">
-        <span className="text-[9px] font-black uppercase tracking-widest text-muted block">
+        <span className="text-xs font-semibold text-muted block">
           Minutes per extension
         </span>
         <input
@@ -2088,7 +2087,7 @@ function ExtensionPolicyEditor({
           max={60}
           value={minEach}
           onChange={(e) => setMinEach(Number(e.target.value))}
-          className="w-20 px-2.5 py-1.5 rounded-lg border border-border bg-bg text-xs text-fg tabular-nums focus:outline-none focus:border-accent"
+          className="w-20 px-2.5 py-1.5 rounded-lg border border-border bg-bg text-xs text-fg tabular-nums focus:outline-none focus:border-secondary"
           title="Minutes granted per extension"
         />
       </div>
@@ -2096,9 +2095,9 @@ function ExtensionPolicyEditor({
         type="button"
         onClick={save}
         disabled={!dirty || isPending}
-        className={`px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wider transition ${
+        className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition ${
           dirty && !isPending
-            ? "bg-accent text-bg hover:bg-accent-soft cursor-pointer"
+            ? "bg-secondary text-bg hover:brightness-110 cursor-pointer"
             : "bg-surface text-muted border border-border cursor-not-allowed opacity-60"
         }`}
       >
@@ -2106,7 +2105,7 @@ function ExtensionPolicyEditor({
       </button>
 
       {/* Usage readout */}
-      <span className="ml-auto text-[10px] font-bold text-muted tabular-nums">
+      <span className="ml-auto text-xs font-bold text-muted tabular-nums">
         Used: {session.extensionPolicy.used}/{savedMax} · granted {session.extensionPolicy.extraMinutes}m
       </span>
     </div>

@@ -175,10 +175,19 @@ export default function CandidateProfileClient({
         </div>
       )}
 
-      {/* Header */}
-      <div className="flex flex-col lg:flex-row lg:items-start justify-between gap-5">
+      {/* Header, on a band tinted by the stage: indigo while screening, then the decision colour. */}
+      <div
+        className="relative overflow-hidden rounded-2xl border border-border bg-surface px-5 py-5 md:px-6 flex flex-col lg:flex-row lg:items-start justify-between gap-5 animate-slide-up motion-reduce:animate-none"
+        style={{
+          backgroundImage: `radial-gradient(520px 220px at 0% 0%, rgb(var(${
+            row.stage === "PASSED" ? (row.manualPass ? "--c-warning" : "--c-success") : row.stage === "REJECTED" ? "--c-danger" : "--c-accent-2"
+          }) / 0.18), transparent 70%)`,
+        }}
+      >
         <div className="flex gap-4 items-start min-w-0">
-          <Avatar name={row.name} size={64} />
+          <span className="rounded-full ring-2 ring-offset-2 ring-offset-surface ring-secondary/40 shrink-0">
+            <Avatar name={row.name} size={64} />
+          </span>
           <div className="min-w-0">
             <div className="flex flex-wrap items-center gap-2.5">
               <h1 className="text-[26px] font-semibold tracking-tight text-fg">{row.name}</h1>

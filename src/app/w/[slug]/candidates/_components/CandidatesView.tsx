@@ -21,6 +21,7 @@ import {
   Tag,
   Trash2,
   UserPlus,
+  Users,
   X,
   Zap,
 } from "lucide-react";
@@ -41,6 +42,7 @@ import { RESULT_KIND_LABELS } from "@/lib/crm/results";
 import { plural, sourceLabel } from "@/lib/workspace/display";
 import { bulkCandidatesAction } from "../manage-actions";
 import type { BulkAction } from "@/lib/crm/candidates-server";
+import CountUp from "@/components/scroll/CountUp";
 import { Board } from "./Board";
 import { ConfirmDialog, PassOverrideDialog, RejectDialog, TagDialog } from "./dialogs";
 import { QuickView } from "./QuickView";
@@ -61,6 +63,15 @@ import {
 export type Perms = { canWrite: boolean; canPipeline: boolean; canDelete: boolean; isManager: boolean };
 
 const PAGE = 100;
+
+/** Colour per stage card: indigo for all and screening, then the stage colours. */
+const STAGE_CARD_TONES: Record<string, { bar: string; text: string; border: string; ring: string; cssVar: string }> = {
+  ALL: { bar: "bg-secondary", text: "text-secondary-soft", border: "border-secondary/50", ring: "ring-secondary/30", cssVar: "--c-accent-2" },
+  NEW: { bar: "bg-subtle", text: "text-fg", border: "border-border-strong", ring: "ring-border-strong", cssVar: "--c-subtle" },
+  SCREENING: { bar: "bg-secondary", text: "text-secondary-soft", border: "border-secondary/50", ring: "ring-secondary/30", cssVar: "--c-accent-2" },
+  PASSED: { bar: "bg-success", text: "text-success", border: "border-success/50", ring: "ring-success/30", cssVar: "--c-success" },
+  REJECTED: { bar: "bg-danger", text: "text-danger", border: "border-danger/50", ring: "ring-danger/30", cssVar: "--c-danger" },
+};
 const SORTS: Record<SortKey, string> = {
   attention: "Needs attention first",
   updated: "Recently updated",
@@ -139,6 +150,12 @@ export function CandidatesView({
   const [overrides, setOverrides] = useState<Record<string, string>>({});
   const [pendingReject, setPendingReject] = useState<string[] | null>(null);
   const [pendingPass, setPendingPass] = useState<string[] | null>(null);
+  // Bars grow in after the first paint.
+  const [ready, setReady] = useState(false);
+  useEffect(() => {
+    const id = requestAnimationFrame(() => setReady(true));
+    return () => cancelAnimationFrame(id);
+  }, []);
   const [confirm, setConfirm] = useState<null | "archive" | "erase">(null);
   const [tagging, setTagging] = useState(false);
   const [busy, startBusy] = useTransition();
@@ -298,27 +315,43 @@ export function CandidatesView({
 
   return (
     <div className="flex flex-col gap-4">
-      {/* Stage strip: counts under the other filters, and the stage filter itself. */}
-      <div role="group" aria-label="Filter by stage" className="flex overflow-x-auto lg:grid lg:grid-cols-5 rounded-xl border border-border bg-surface">
+      {/* Stage cards: counts under the other filters, and the stage filter itself. */}
+      <div role="group" aria-label="Filter by stage" className="flex gap-3 overflow-x-auto pb-1 -mb-1 lg:grid lg:grid-cols-5 lg:overflow-visible">
         {[null, ...PIPELINE_STAGES].map((s, i) => {
           const on = filters.stage === s;
           const n = s ? (stageCounts.get(s) ?? 0) : base.length;
+          const tone = STAGE_CARD_TONES[s ?? "ALL"];
+          const share = base.length ? Math.round((n / base.length) * 100) : 0;
           return (
             <button
               key={s ?? "all"}
               type="button"
               aria-pressed={on}
               onClick={() => set({ stage: s })}
-              className={`relative shrink-0 flex-1 min-w-[104px] text-left px-4 py-3 transition border-border ${i ? "border-l" : ""} ${
-                on ? "bg-panel" : "hover:bg-panel/60"
+              style={{
+                animationDelay: `${i * 50}ms`,
+                animationFillMode: "backwards",
+                backgroundImage: on ? `radial-gradient(220px 120px at 100% 0%, rgb(var(${tone.cssVar}) / 0.20), transparent 70%)` : undefined,
+              }}
+              className={`group relative shrink-0 flex-1 min-w-[148px] overflow-hidden text-left rounded-xl border px-4 pt-3.5 pb-3 bg-surface animate-slide-up motion-reduce:animate-none transition duration-200 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-black/20 motion-reduce:hover:translate-y-0 ${
+                on ? `${tone.border} ring-1 ${tone.ring}` : "border-border hover:border-border-strong"
               }`}
             >
-              {on && <span aria-hidden className="absolute inset-x-0 bottom-0 h-0.5 bg-secondary" />}
+              <span aria-hidden className={`absolute inset-x-0 top-0 h-0.5 ${tone.bar} ${on ? "opacity-100" : "opacity-60 group-hover:opacity-100"} transition-opacity`} />
               <span className="flex items-center gap-1.5 text-[13px] text-muted whitespace-nowrap">
-                {s && <StageDot stage={s} className="w-[7px] h-[7px]" />}
+                {s ? <StageDot stage={s} className="w-2 h-2" /> : <Users className="w-3.5 h-3.5 text-secondary-soft" aria-hidden />}
                 {s ? STAGE_LABELS[s] : "All"}
               </span>
-              <span className="block text-[22px] font-semibold text-fg mt-1 tabular-nums">{n}</span>
+              <span className="flex items-baseline justify-between gap-2 mt-1">
+                <CountUp value={n} duration={0.9} className={`text-[26px] font-semibold tabular-nums ${on ? tone.text : "text-fg"}`} />
+                {s && <span className="text-xs text-subtle tabular-nums">{share}%</span>}
+              </span>
+              <span aria-hidden className="block mt-2 h-1 rounded-full bg-panel overflow-hidden">
+                <span
+                  className={`block h-full rounded-full ${tone.bar} transition-[width] duration-700 ease-[cubic-bezier(0.22,1,0.36,1)] motion-reduce:transition-none`}
+                  style={{ width: ready ? `${s ? share : 100}%` : "0%" }}
+                />
+              </span>
             </button>
           );
         })}
@@ -901,7 +934,7 @@ function ListTable({
           Actions
         </span>
       </div>
-      {rows.map((r) => {
+      {rows.map((r, i) => {
         const sel = selected.has(r.id);
         const owner = memberName(r.ownerId);
         const batch = batchName(r.batchId);
@@ -910,10 +943,16 @@ function ListTable({
             key={r.id}
             role="row"
             onClick={() => onOpen(r.id)}
-            className={`group relative flex gap-3 md:gap-0 px-4 py-3 border-b border-border last:border-b-0 cursor-pointer transition-colors ${grid} ${
+            // The first screenful fades in one row after another.
+            style={i < 16 ? { animationDelay: `${i * 30}ms`, animationFillMode: "backwards" } : undefined}
+            className={`group relative flex gap-3 md:gap-0 px-4 py-3 border-b border-border last:border-b-0 cursor-pointer transition-colors animate-fade-in motion-reduce:animate-none ${grid} ${
               quickId === r.id ? "bg-panel" : sel ? "bg-secondary/[0.07]" : "hover:bg-panel/60"
             }`}
           >
+            <span
+              aria-hidden
+              className={`absolute left-0 top-2 bottom-2 w-0.5 rounded-full bg-secondary transition-opacity ${quickId === r.id || sel ? "opacity-100" : "opacity-0 group-hover:opacity-100"}`}
+            />
             <span role="cell" className="flex items-start md:items-center justify-center pt-2 md:pt-0" onClick={(e) => e.stopPropagation()}>
               <input type="checkbox" checked={sel} onChange={() => onToggle(r.id)} aria-label={`Select ${r.name}`} className="w-4 h-4 accent-secondary" />
             </span>

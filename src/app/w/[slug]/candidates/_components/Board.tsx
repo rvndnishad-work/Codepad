@@ -37,6 +37,19 @@ const NEXT_DOT: Record<NextStep["tone"], string> = {
   plain: "bg-subtle",
 };
 
+const LANE_ACCENT: Record<PipelineStage, string> = {
+  NEW: "bg-subtle/70",
+  SCREENING: "bg-secondary",
+  PASSED: "bg-success",
+  REJECTED: "bg-danger",
+};
+const LANE_COUNT: Record<PipelineStage, string> = {
+  NEW: "bg-elevated text-muted",
+  SCREENING: "bg-secondary/20 text-secondary-soft",
+  PASSED: "bg-success/15 text-success",
+  REJECTED: "bg-danger/15 text-danger",
+};
+
 type Group = { key: string; label: string; kind: GroupBy; rows: RosterRow[] };
 
 function groupRows(rows: RosterRow[], by: GroupBy, batchName: (id: string | null) => string, memberName: (id: string | null) => string): Group[] {
@@ -125,7 +138,7 @@ export function Board({
         }
       : {};
 
-  const card = (r: RosterRow) => {
+  const card = (r: RosterRow, i = 0) => {
     const owner = memberName(r.ownerId);
     const decided = r.stage === "PASSED" || r.stage === "REJECTED";
     const stuck = !decided && r.daysInStage >= STUCK_AFTER_DAYS;
@@ -150,7 +163,8 @@ export function Board({
         }}
         onClick={() => onOpen(r.id)}
         onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && (e.preventDefault(), onOpen(r.id))}
-        className={`group rounded-lg border border-border bg-surface px-3 pt-2.5 pb-2 shadow-sm shadow-black/10 transition hover:border-border-strong hover:bg-elevated/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-secondary/60 ${
+        style={{ animationDelay: `${Math.min(i, 10) * 35}ms`, animationFillMode: "backwards" }}
+        className={`group rounded-lg border border-border bg-surface px-3 pt-2.5 pb-2 shadow-sm shadow-black/10 animate-slide-up motion-reduce:animate-none transition duration-200 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-black/25 hover:border-border-strong hover:bg-elevated/50 motion-reduce:hover:translate-y-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-secondary/60 ${
           canMove ? "cursor-grab active:cursor-grabbing" : "cursor-pointer"
         } ${dragId === r.id ? "opacity-40" : ""}`}
       >
@@ -221,7 +235,7 @@ export function Board({
           isOver ? (stage === "REJECTED" ? "ring-2 ring-inset ring-danger/50 bg-danger/[0.06]" : "ring-2 ring-inset ring-secondary/60 bg-secondary/[0.06]") : ""
         }`}
       >
-        {list.slice(0, LANE_MAX).map(card)}
+        {list.slice(0, LANE_MAX).map((r, i) => card(r, i))}
         {list.length > LANE_MAX && <p className="text-xs text-subtle px-1.5 py-1">and {list.length - LANE_MAX} more. Filter to narrow down.</p>}
         {list.length === 0 &&
           (dragId ? (
@@ -234,10 +248,11 @@ export function Board({
   };
 
   const header = (stage: PipelineStage) => (
-    <div key={stage} className={`flex items-center gap-2 px-3 h-10 bg-panel/50 ${swimlanes ? "rounded-lg" : "rounded-t-lg"}`}>
+    <div key={stage} className={`relative overflow-hidden flex items-center gap-2 px-3 h-10 bg-panel/50 ${swimlanes ? "rounded-lg" : "rounded-t-lg"}`}>
+      <span aria-hidden className={`absolute inset-x-0 top-0 h-0.5 ${LANE_ACCENT[stage]}`} />
       <StageDot stage={stage} className="w-2 h-2" />
       <span className="text-[13px] font-semibold text-muted truncate">{STAGE_LABELS[stage]}</span>
-      <span className="ml-auto h-5 min-w-5 px-1.5 rounded-full bg-elevated text-xs font-medium text-muted leading-5 text-center tabular-nums">{counts.get(stage) ?? 0}</span>
+      <span className={`ml-auto h-5 min-w-5 px-1.5 rounded-full text-xs font-medium leading-5 text-center tabular-nums ${LANE_COUNT[stage]}`}>{counts.get(stage) ?? 0}</span>
     </div>
   );
 

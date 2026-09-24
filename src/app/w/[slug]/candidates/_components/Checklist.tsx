@@ -112,7 +112,7 @@ export function ChecklistRow({ items, decision }: { items: CheckItem[]; decision
   const d = decisionText(decision, items);
   return (
     <ol aria-label="Screening" className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-      {items.map((it) => {
+      {items.map((it, i) => {
         const body = (
           <>
             <div className="flex items-center gap-2">
@@ -134,9 +134,12 @@ export function ChecklistRow({ items, decision }: { items: CheckItem[]; decision
           </>
         );
         return (
-          <li key={it.kind} className="min-w-0">
+          <li key={it.kind} className="min-w-0 animate-slide-up motion-reduce:animate-none" style={{ animationDelay: `${80 + i * 60}ms`, animationFillMode: "backwards" }}>
             {it.href ? (
-              <a href={it.href} className="block h-full rounded-xl border border-border bg-bg/40 px-3.5 py-3 hover:border-border-strong transition">
+              <a
+                href={it.href}
+                className="block h-full rounded-xl border border-border bg-bg/40 px-3.5 py-3 hover:border-border-strong hover:-translate-y-0.5 hover:shadow-lg hover:shadow-black/20 motion-reduce:hover:translate-y-0 transition duration-200"
+              >
                 {body}
               </a>
             ) : (
@@ -146,7 +149,8 @@ export function ChecklistRow({ items, decision }: { items: CheckItem[]; decision
         );
       })}
       <li
-        className={`min-w-0 rounded-xl border px-3.5 py-3 ${
+        style={{ animationDelay: "280ms", animationFillMode: "backwards" }}
+        className={`min-w-0 rounded-xl border px-3.5 py-3 animate-pop-in motion-reduce:animate-none ${
           d.override
             ? "border-warning/40 bg-warning/10"
             : d.label === "Passed"

@@ -88,6 +88,10 @@ export type OverviewData = {
   attention: AttentionItem[];
   upcoming: { id: string; at: string | null; name: string; detail: string; href: string }[];
   weekly: { label: string; count: number }[];
+  /** Eight weekly counts, oldest first, for the KPI sparklines. */
+  trends: { added: number[]; completed: number[]; interviews: number[]; hired: number[] };
+  /** Finished AI screenings with a score. */
+  scores: { count: number; average: number | null; buckets: { label: string; count: number }[] };
   activity: { id: string; who: string; what: string; at: string }[];
 };
 
@@ -218,6 +222,15 @@ export function buildOverview(input: OverviewInput, now: Date = new Date()): Ove
   };
 
   // Completed assessments per week, oldest to newest, over 8 weeks ---------
+  const weekStart = (i: number) => t - (8 - i) * 7 * DAY;
+  const perWeek = (dates: (string | null | undefined)[]) =>
+    Array.from({ length: 8 }, (_, i) =>
+      dates.filter((iso) => {
+        if (!iso) return false;
+        const at = new Date(iso).getTime();
+        return at > weekStart(i) && at <= weekStart(i) + 7 * DAY;
+      }).length,
+    );
   const finishedAt: string[] = [
     ...input.sessions.map((s) => s.finishedAt),
     ...input.aiInterviewSessions.map((s) => s.finishedAt),
@@ -234,6 +247,30 @@ export function buildOverview(input: OverviewInput, now: Date = new Date()): Ove
     const label = i === 7 ? "This week" : new Date(end - 6 * DAY).toLocaleDateString("en-GB", { day: "numeric", month: "short" });
     return { label, count };
   });
+  const trends = {
+    added: perWeek(input.candidates.map((c) => c.createdAt)),
+    completed: weekly.map((w) => w.count),
+    interviews: perWeek([
+      ...input.sessions.map((s) => s.finishedAt),
+      ...input.aiInterviewSessions.map((s) => s.finishedAt),
+    ]),
+    hired: perWeek(input.candidates.filter((c) => c.stage === "HIRED").map((c) => c.stageChangedAt)),
+  };
+
+  // AI screening scores ----------------------------------------------------
+  const scored = input.aiInterviewSessions
+    .filter((s) => s.status === "COMPLETED" && s.score !== null)
+    .map((s) => s.score as number);
+  const scores = {
+    count: scored.length,
+    average: scored.length ? Math.round(scored.reduce((a, b) => a + b, 0) / scored.length) : null,
+    buckets: [
+      { label: "85 and up", count: scored.filter((x) => x >= 85).length },
+      { label: "70 to 84", count: scored.filter((x) => x >= 70 && x < 85).length },
+      { label: "50 to 69", count: scored.filter((x) => x >= 50 && x < 70).length },
+      { label: "Under 50", count: scored.filter((x) => x < 50).length },
+    ],
+  };
 
   // Recent activity, newest first -----------------------------------------
   const activity = [
@@ -268,5 +305,5 @@ export function buildOverview(input: OverviewInput, now: Date = new Date()): Ove
     href: `/interview/${s.shareToken}`,
   }));
 
-  return { kpis, attention, upcoming, weekly, activity };
+  return { kpis, attention, upcoming, weekly, trends, scores, activity };
 }

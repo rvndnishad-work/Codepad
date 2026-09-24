@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 import {
+  Blocks,
   BookOpen,
   Bot,
   ClipboardList,
@@ -13,7 +14,7 @@ import {
   Plug,
   RefreshCw,
   ScrollText,
-  Sparkles,
+  Lock,
   Users,
   UsersRound,
 } from "lucide-react";
@@ -42,6 +43,8 @@ type NavItem = {
   href: string;
   isActive: boolean;
   count?: number | null;
+  /** Needs a Growth plan: shown with a lock and linked to billing. */
+  locked?: boolean;
 };
 
 function NavLink({ item, collapsed }: { item: NavItem; collapsed: boolean }) {
@@ -54,7 +57,7 @@ function NavLink({ item, collapsed }: { item: NavItem; collapsed: boolean }) {
     return (
       <Link
         href={item.href}
-        title={item.label}
+        title={item.locked ? `${item.label} (Growth plan)` : item.label}
         aria-label={item.label}
         aria-current={item.isActive ? "page" : undefined}
         className={`relative flex items-center justify-center h-9 rounded-lg transition-colors ${tone}`}
@@ -75,6 +78,7 @@ function NavLink({ item, collapsed }: { item: NavItem; collapsed: boolean }) {
       )}
       <Icon className={`w-4 h-4 shrink-0 ${item.isActive ? "text-secondary" : "text-subtle"}`} aria-hidden />
       <span className="flex-1 truncate">{item.label}</span>
+      {item.locked && <Lock className="w-3.5 h-3.5 text-subtle" aria-label="Growth plan" />}
       {item.count !== null && item.count !== undefined && (
         <span className={`text-xs tabular-nums ${item.isActive ? "text-fg" : "text-subtle"}`}>{item.count}</span>
       )}
@@ -109,8 +113,12 @@ export default function WorkspaceSidebarNav({ slug, growthFeatures, counts, coll
   const sectionActive = (section: string) => onWorkspaceRoute && activeSection === section;
   const route = (path: string) => ({ href: `/w/${slug}/${path}`, isActive: pathname.startsWith(`/w/${slug}/${path}`) });
 
-  const workspace: NavItem[] = [
-    { label: "Overview", icon: Home, href: sectionHref("overview"), isActive: sectionActive("overview") },
+  // Growth tools stay visible on Free so teams can find them; they open the
+  // plans page instead of the tool.
+  const growth = (item: NavItem): NavItem =>
+    growthFeatures ? item : { ...item, href: sectionHref("billing"), isActive: false, locked: true };
+
+  const hiring: NavItem[] = [
     {
       label: "Candidates",
       icon: Users,
@@ -128,33 +136,33 @@ export default function WorkspaceSidebarNav({ slug, growthFeatures, counts, coll
         pathname.startsWith(`/w/${slug}/attempts`),
       count: counts.interviews + counts.takeHomes + counts.replays,
     },
+    growth({ label: "AI screening", icon: Bot, ...route("ai-interviews") }),
     { label: "Question library", icon: BookOpen, href: sectionHref("library"), isActive: sectionActive("library"), count: counts.challenges },
   ];
 
-  const automation: NavItem[] = [
-    { label: "AI screening", icon: Bot, ...route("ai-interviews") },
-    { label: "ATS sync", icon: RefreshCw, ...route("ats") },
+  const connections: NavItem[] = [
+    { label: "Integrations", icon: Blocks, href: sectionHref("integrations"), isActive: sectionActive("integrations") },
+    growth({ label: "ATS sync", icon: RefreshCw, ...route("ats") }),
+    growth({ label: "API keys", icon: KeyRound, ...route("api-keys") }),
+    growth({ label: "External MCP", icon: Plug, ...route("external-mcp") }),
   ];
 
-  const developers: NavItem[] = [
-    { label: "API keys", icon: KeyRound, ...route("api-keys") },
-    { label: "External MCP", icon: Plug, ...route("external-mcp") },
-  ];
-
-  const settings: NavItem[] = [
+  const admin: NavItem[] = [
     { label: "Members", icon: UsersRound, href: sectionHref("members"), isActive: sectionActive("members"), count: counts.members },
     { label: "Billing and plan", icon: CreditCard, href: sectionHref("billing"), isActive: sectionActive("billing") },
-    { label: "Integrations", icon: Sparkles, href: sectionHref("integrations"), isActive: sectionActive("integrations") },
     { label: "Audit log", icon: ScrollText, ...route("audit") },
     { label: "Email activity", icon: Mail, ...route("emails") },
   ];
 
   return (
     <nav aria-label="Workspace" className="flex flex-col">
-      <Group items={workspace} collapsed={collapsed} />
-      {growthFeatures && <Group label="Automation" items={automation} collapsed={collapsed} />}
-      {growthFeatures && <Group label="Developers" items={developers} collapsed={collapsed} />}
-      <Group label="Settings" items={settings} collapsed={collapsed} />
+      <Group
+        items={[{ label: "Overview", icon: Home, href: sectionHref("overview"), isActive: sectionActive("overview") }]}
+        collapsed={collapsed}
+      />
+      <Group label="Hiring" items={hiring} collapsed={collapsed} />
+      <Group label="Connections" items={connections} collapsed={collapsed} />
+      <Group label="Administration" items={admin} collapsed={collapsed} />
     </nav>
   );
 }

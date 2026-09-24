@@ -167,4 +167,13 @@ describe("buildOverview", () => {
   it("orders activity newest first", () => {
     expect(o.activity[0]).toMatchObject({ who: "Ana", what: "was added as a candidate" });
   });
+
+  it("builds weekly trends and the screening score summary", () => {
+    expect(o.trends.added).toHaveLength(8);
+    expect(o.trends.added[7]).toBe(1);
+    expect(o.trends.hired.reduce((a, b) => a + b, 0)).toBe(1);
+    expect(o.trends.completed).toEqual(o.weekly.map((w) => w.count));
+    expect(o.scores).toMatchObject({ count: 1, average: 82 });
+    expect(o.scores.buckets.map((b) => b.count)).toEqual([0, 1, 0, 0]);
+  });
 });

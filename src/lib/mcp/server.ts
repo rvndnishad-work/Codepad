@@ -523,6 +523,15 @@ export function buildMcpServer(auth: AuthedKey): McpServer {
             data: { status: args.status, notes: nextNotes },
             select: { id: true, name: true, status: true, updatedAt: true },
           });
+          // The profile shows authored notes (CandidateNote); mirror there too.
+          if (args.note?.trim()) {
+            await prisma.candidateNote.create({
+              data: {
+                candidateId: existing.id,
+                body: `Via ${auth.label} (status set to ${args.status}): ${args.note.trim()}`,
+              },
+            });
+          }
 
           const text = [
             `Candidate "${updated.name}" status updated.`,
@@ -573,6 +582,9 @@ export function buildMcpServer(auth: AuthedKey): McpServer {
           await prisma.candidate.update({
             where: { id: existing.id },
             data: { notes: nextNotes },
+          });
+          await prisma.candidateNote.create({
+            data: { candidateId: existing.id, body: `Via ${auth.label}: ${args.body.trim()}` },
           });
 
           return {

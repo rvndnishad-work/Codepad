@@ -17,6 +17,7 @@ import {
 import { upsertCandidateForWorkflow } from "@/lib/crm/auto-create";
 import { advanceCandidateStage } from "@/lib/crm/advance";
 import { canMember, type Permission } from "@/lib/permissions";
+import { moveCandidatesStage, resolveCandidateActor } from "@/lib/crm/candidates-server";
 
 /**
  * Authorize as a member of the workspace + return the workspace id.
@@ -65,84 +66,14 @@ export async function updateCandidateStageAction(
   slug: string,
   input: UpdateStageInput,
 ) {
-  const { workspaceId, actorUserId, actorEmail } = await assertWorkspaceMember(
-    slug,
-    "candidate:manage_pipeline",
-  );
-  if (!isPipelineStage(input.toStage)) {
-    throw new Error(`Unknown stage: ${input.toStage}`);
+  // One implementation for every stage move (board drag, bulk bar, profile),
+  // so the reject-reason gate and the audit row can't drift apart.
+  const actor = await resolveCandidateActor(slug, "candidate:manage_pipeline");
+  const { moved } = await moveCandidatesStage(actor, [input.candidateId], input.toStage, input);
+  if (moved === 0) {
+    const exists = await prisma.candidate.count({ where: { id: input.candidateId, workspaceId: actor.workspaceId } });
+    if (!exists) throw new Error("Candidate not found in this workspace.");
   }
-
-  // Snapshot the previous stage for the audit row so the trail reads
-  // "moved Ava Patel from SCREENED → ONSITE" rather than only the new stage.
-  const previous = await prisma.candidate.findUnique({
-    where: { id: input.candidateId },
-    select: { stage: true, name: true, workspaceId: true },
-  });
-  if (!previous || previous.workspaceId !== workspaceId) {
-    throw new Error("Candidate not found in this workspace.");
-  }
-
-  // Reject-reason gate — server-side enforced so even a direct action call
-  // can't bypass the UI requirement.
-  if (input.toStage === "REJECTED" && !input.rejectReason) {
-    throw new Error(
-      "A reject reason is required when moving a candidate to Rejected.",
-    );
-  }
-  if (input.rejectReason && !REJECT_REASONS.includes(input.rejectReason)) {
-    throw new Error(`Unknown reject reason: ${input.rejectReason}`);
-  }
-
-  // Atomic update scoped by workspaceId so a guessed candidate id from a
-  // different workspace can't be mutated.
-  const updated = await prisma.candidate.updateMany({
-    where: { id: input.candidateId, workspaceId },
-    data: {
-      stage: input.toStage,
-      rejectReason: input.toStage === "REJECTED" ? input.rejectReason : null,
-      rejectReasonNote:
-        input.toStage === "REJECTED"
-          ? input.rejectReasonNote?.trim() || null
-          : null,
-      stageChangedAt: new Date(),
-      // Keep legacy `status` synced with terminal stages in BOTH directions:
-      // entering HIRED/REJECTED sets the disposition, and leaving a terminal
-      // stage resets it to "active" so roster filters (status-keyed) agree
-      // with the board (stage-keyed) instead of showing a stale red pill.
-      ...(input.toStage === "HIRED" ? { status: "hired" } : {}),
-      ...(input.toStage === "REJECTED" ? { status: "rejected" } : {}),
-      ...(input.toStage !== "HIRED" &&
-      input.toStage !== "REJECTED" &&
-      (previous.stage === "HIRED" || previous.stage === "REJECTED")
-        ? { status: "active" }
-        : {}),
-    },
-  });
-
-  if (updated.count === 0) {
-    throw new Error("Candidate not found in this workspace.");
-  }
-
-  // IP-37: workspace audit row. Fire-and-forget — failure here logs but
-  // never rolls back the stage transition the user just committed to.
-  void writeWorkspaceAuditEntry({
-    workspaceId,
-    actorUserId,
-    actorEmail,
-    action: WORKSPACE_AUDIT_ACTIONS.PIPELINE_STAGE_CHANGED,
-    targetType: "candidate",
-    targetId: input.candidateId,
-    meta: {
-      candidateName: previous.name,
-      fromStage: previous.stage,
-      toStage: input.toStage,
-      ...(input.toStage === "REJECTED"
-        ? { rejectReason: input.rejectReason, hasNote: !!input.rejectReasonNote?.trim() }
-        : {}),
-    },
-  });
-
   revalidatePath(`/w/${slug}/candidates`);
   revalidatePath(`/w/${slug}`);
   return { ok: true };

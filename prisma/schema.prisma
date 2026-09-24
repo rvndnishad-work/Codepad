@@ -72,6 +72,9 @@ model User {
   sessions             Session[]
   snippets             Snippet[]
   workspaces           WorkspaceMember[]
+  ownedCandidates      Candidate[]           @relation("CandidateOwner")
+  ownedCandidateBatches CandidateBatch[]     @relation("CandidateBatchOwner")
+  candidateNotes       CandidateNote[]
   securityEvents       SecurityAuditLog[]
   notifications        Notification[]
   notificationPreferences NotificationPreference[]
@@ -784,6 +787,7 @@ model Workspace {
   aiScreeningBatches   AIScreeningBatch[]
   atsIntegration       AtsIntegration?
   candidates           Candidate[]
+  candidateBatches     CandidateBatch[]
   challenges           Challenge[]
   sessions             InterviewSession[]
   mcpApiKeys           McpApiKey[]
@@ -852,10 +856,17 @@ model Candidate {
   rejectReasonNote    String?
   /// Last time `stage` mutated — drives "time-in-stage" diagnostics.
   stageChangedAt      DateTime?
+  /// The hiring batch (role or drive) this candidate belongs to. One at a time.
+  batchId             String?
+  /// Workspace member responsible for moving this candidate along.
+  ownerId             String?
   createdAt           DateTime             @default(now())
   updatedAt           DateTime             @updatedAt
   aiInterviewSessions AIInterviewSession[]
   workspace           Workspace            @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  batch               CandidateBatch?      @relation(fields: [batchId], references: [id], onDelete: SetNull)
+  owner               User?                @relation("CandidateOwner", fields: [ownerId], references: [id], onDelete: SetNull)
+  candidateNotes      CandidateNote[]
   sessions            InterviewSession[]
   takeHomes           TakeHomeAssignment[]
 
@@ -863,6 +874,44 @@ model Candidate {
   @@index([workspaceId, status])
   @@index([workspaceId, name])
   @@index([workspaceId, stage])
+  @@index([workspaceId, batchId])
+  @@index([workspaceId, ownerId])
+}
+
+/// A named group of candidates for one role or hiring drive
+/// ("Frontend · Oct"). A candidate belongs to at most one batch.
+model CandidateBatch {
+  id          String      @id @default(cuid())
+  workspaceId String
+  name        String
+  roleTitle   String?
+  ownerId     String?
+  deadline    DateTime?
+  targetHires Int?
+  /// OPEN or CLOSED.
+  status      String      @default("OPEN")
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+  workspace   Workspace   @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  owner       User?       @relation("CandidateBatchOwner", fields: [ownerId], references: [id], onDelete: SetNull)
+  candidates  Candidate[]
+
+  @@unique([workspaceId, name])
+  @@index([workspaceId, status])
+}
+
+/// One note on a candidate, with its author. Replaces the single shared
+/// `Candidate.notes` text for new writes; that field stays as "earlier notes".
+model CandidateNote {
+  id          String    @id @default(cuid())
+  candidateId String
+  authorId    String?
+  body        String
+  createdAt   DateTime  @default(now())
+  candidate   Candidate @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+  author      User?     @relation(fields: [authorId], references: [id], onDelete: SetNull)
+
+  @@index([candidateId, createdAt])
 }
 
 model WorkspaceMember {

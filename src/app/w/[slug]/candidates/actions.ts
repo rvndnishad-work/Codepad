@@ -230,7 +230,7 @@ export async function bulkCreateTakeHomeSessions(
             name: r.name,
             email: r.email,
             source: "take-home-dispatch",
-            initialStage: "TAKE_HOME",
+            initialStage: "SCREENING",
           },
           tx,
         );
@@ -274,7 +274,7 @@ export async function bulkCreateTakeHomeSessions(
     await advanceCandidateStage({
       workspaceId,
       candidateId,
-      toStage: "TAKE_HOME",
+      toStage: "SCREENING",
       source: "auto:take-home-session-dispatch",
       actorUserId,
       actorEmail,

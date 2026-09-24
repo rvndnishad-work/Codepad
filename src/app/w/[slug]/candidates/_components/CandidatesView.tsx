@@ -283,7 +283,7 @@ export function CandidatesView({
   return (
     <div className="flex flex-col gap-4">
       {/* Stage strip: counts under the other filters, and the stage filter itself. */}
-      <div role="group" aria-label="Filter by stage" className="flex overflow-x-auto lg:grid lg:grid-cols-8 rounded-xl border border-border bg-surface">
+      <div role="group" aria-label="Filter by stage" className="flex overflow-x-auto lg:grid lg:grid-cols-5 rounded-xl border border-border bg-surface">
         {[null, ...PIPELINE_STAGES].map((s, i) => {
           const on = filters.stage === s;
           const n = s ? (stageCounts.get(s) ?? 0) : base.length;
@@ -714,7 +714,7 @@ export function CandidatesView({
             const ids = pendingReject;
             setPendingReject(null);
             setOverrides((o) => ({ ...o, ...Object.fromEntries(ids.map((id) => [id, "REJECTED"])) }));
-            run(ids, { action: "stage", stage: "REJECTED", rejectReason: reason, rejectReasonNote: note }, (n) => `Rejected ${plural(n, "candidate")}`);
+            run(ids, { action: "stage", stage: "REJECTED", rejectReason: reason, rejectReasonNote: note }, (n) => `Marked ${plural(n, "candidate")} as not passed`);
           }}
         />
       )}
@@ -949,7 +949,7 @@ function ListTable({
               ) : (
                 <StageChip stage={r.stage} />
               )}
-              <span className={`text-xs ${r.daysInStage >= 7 && r.stage !== "HIRED" && r.stage !== "REJECTED" ? "text-warning" : "text-subtle"}`}>
+              <span className={`text-xs ${r.daysInStage >= 7 && r.stage !== "PASSED" && r.stage !== "REJECTED" ? "text-warning" : "text-subtle"}`}>
                 {plural(r.daysInStage, "day")} in stage
               </span>
             </div>
@@ -1092,7 +1092,7 @@ function Board({
       </div>
       <NextStepPill next={r.next} compact />
       <div className="flex items-center gap-1.5 text-xs text-subtle min-w-0">
-        <span className={`shrink-0 ${r.daysInStage >= 7 && r.stage !== "HIRED" && r.stage !== "REJECTED" ? "text-warning" : ""}`}>
+        <span className={`shrink-0 ${r.daysInStage >= 7 && r.stage !== "PASSED" && r.stage !== "REJECTED" ? "text-warning" : ""}`}>
           {r.daysInStage}d in stage
         </span>
         {showBatch && r.batchId && <span className="truncate">· {batchName(r.batchId)}</span>}
@@ -1102,9 +1102,9 @@ function Board({
 
   return (
     <div className="flex flex-col gap-2">
-      {canMove && <p className="text-[13px] text-subtle">Drag a card to move it. Rejected asks for a reason.</p>}
+      {canMove && <p className="text-[13px] text-subtle">Drag a card to move it. Not passed asks for a reason.</p>}
       <div className="overflow-x-auto pb-2 -mx-1 px-1">
-        <div className={`grid gap-2.5 items-start ${showRejected ? "min-w-[1500px] grid-cols-7" : "min-w-[1330px] grid-cols-[repeat(6,minmax(0,1fr))_64px]"}`}>
+        <div className={`grid gap-2.5 items-start ${showRejected ? "min-w-[880px] grid-cols-4" : "min-w-[720px] grid-cols-[repeat(3,minmax(0,1fr))_64px]"}`}>
           {FLOW.map((s) => {
             const list = by.get(s) ?? [];
             return (
@@ -1130,14 +1130,14 @@ function Board({
           })}
           {showRejected ? (
             <section
-              aria-label={`Rejected, ${rejected.length}`}
+              aria-label={`Not passed, ${rejected.length}`}
               {...dropProps("REJECTED")}
               className={`rounded-xl border p-2.5 flex flex-col gap-2 min-h-[140px] ${over === "REJECTED" ? "border-danger/60 bg-danger/[0.06]" : "border-border bg-bg/60"}`}
             >
               <div className="flex items-center justify-between px-1 pt-0.5 pb-1">
                 <span className="flex items-center gap-1.5 text-[13px] font-semibold text-fg">
                   <StageDot stage="REJECTED" className="w-2 h-2" />
-                  Rejected
+                  Not passed
                 </span>
                 <button type="button" onClick={onToggleRejected} className="text-xs text-subtle hover:text-fg">
                   Hide
@@ -1157,7 +1157,7 @@ function Board({
             >
               <StageDot stage="REJECTED" className="w-2 h-2" />
               <span className="text-xs text-subtle tabular-nums">{rejected.length}</span>
-              <span className="[writing-mode:vertical-rl] text-[13px] font-semibold text-muted">Rejected</span>
+              <span className="[writing-mode:vertical-rl] text-[13px] font-semibold text-muted">Not passed</span>
             </button>
           )}
         </div>

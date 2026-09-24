@@ -776,11 +776,11 @@ export default function WorkspaceOverview(props: Props) {
             <Kpi
               icon={Award}
               tone="success"
-              label="Offers out"
-              value={k.offers}
-              trend={data.trends.hired}
-              sub={`${plural(k.hiredThisMonth, "hire")} in the last 30 days`}
-              href={`/w/${slug}/candidates?stage=OFFER`}
+              label="Passed screening"
+              value={k.passed}
+              trend={data.trends.passed}
+              sub={`${k.passedThisMonth} in the last 30 days`}
+              href={`/w/${slug}/candidates?stage=PASSED`}
               ready={ready}
             />
           </div>
@@ -790,7 +790,7 @@ export default function WorkspaceOverview(props: Props) {
             <UpcomingCard items={data.upcoming} slug={slug} className="xl:col-span-4" />
 
             <Card
-              title="Hiring funnel"
+              title="Screening funnel"
               subtitle="Where every candidate stands today"
               right={
                 <Link href={`/w/${slug}/candidates?view=board`} className="text-[13px] text-secondary-soft hover:text-fg transition-colors">
@@ -806,7 +806,7 @@ export default function WorkspaceOverview(props: Props) {
                 </span>
                 <Link href={`/w/${slug}/candidates?stage=REJECTED`} className="inline-flex items-center gap-1.5 hover:text-fg transition-colors">
                   <span className="w-2 h-2 rounded-sm bg-danger" aria-hidden />
-                  {funnel.rejected} rejected
+                  {funnel.rejected} not passed
                 </Link>
               </div>
             </Card>

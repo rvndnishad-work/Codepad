@@ -5,7 +5,7 @@
  * share them. Nothing here reads the database.
  */
 import { trialActive, type PlanFields } from "@/lib/billing/trial";
-import type { PipelineStage } from "@/lib/crm/stages";
+import { normalizeStage, type PipelineStage } from "@/lib/crm/stages";
 
 const DAY_MS = 86_400_000;
 
@@ -54,7 +54,7 @@ export function planDisplay(
   };
 }
 
-/** "TAKE_HOME" -> "Take home", "do_not_hire" -> "Do not hire". */
+/** "NOT_PASSED" -> "Not passed", "do_not_hire" -> "Do not hire". */
 export function humanize(value: string | null | undefined): string {
   if (!value) return "";
   const words = value.replace(/[_-]+/g, " ").trim().toLowerCase();
@@ -102,27 +102,16 @@ export function relativeTime(iso: string | Date, now: Date = new Date()): string
 }
 
 /** Stage order shown in the pipeline bar (REJECTED is reported separately). */
-export const ACTIVE_STAGES: PipelineStage[] = [
-  "APPLIED",
-  "SCREENED",
-  "TAKE_HOME",
-  "ONSITE",
-  "OFFER",
-  "HIRED",
-];
+export const ACTIVE_STAGES: PipelineStage[] = ["NEW", "SCREENING", "PASSED"];
 
 /**
- * Tailwind background class for each stage's swatch. One indigo ramp for the
- * in-progress stages so the bar reads as a single flow, then status colours
- * for the two outcomes.
+ * Tailwind background class for each stage's swatch: neutral for new, the
+ * indigo accent while screening, then status colours for the two decisions.
  */
 export const STAGE_SWATCH: Record<PipelineStage, string> = {
-  APPLIED: "bg-subtle",
-  SCREENED: "bg-secondary/55",
-  TAKE_HOME: "bg-secondary/70",
-  ONSITE: "bg-secondary/85",
-  OFFER: "bg-secondary",
-  HIRED: "bg-success",
+  NEW: "bg-subtle",
+  SCREENING: "bg-secondary",
+  PASSED: "bg-success",
   REJECTED: "bg-danger",
 };
 
@@ -130,8 +119,8 @@ export type StageCount = { stage: PipelineStage; count: number; conversion: numb
 
 /**
  * Counts per active stage plus the share of candidates who reached at least
- * the next stage ("moved on"). A candidate at ONSITE has passed APPLIED,
- * SCREENED and TAKE_HOME, so conversion from stage i is
+ * the next stage ("moved on"). A candidate who Passed went through New and
+ * Screening, so conversion from stage i is
  * reached(i + 1) / reached(i). Rejected candidates are left out: their last
  * stage before rejection is not stored.
  */
@@ -139,11 +128,11 @@ export function stageFunnel(stages: string[]): { rows: StageCount[]; active: num
   const counts = new Map<PipelineStage, number>(ACTIVE_STAGES.map((s) => [s, 0]));
   let rejected = 0;
   for (const raw of stages) {
-    if (raw === "REJECTED") {
+    const s = normalizeStage(raw);
+    if (s === "REJECTED") {
       rejected++;
       continue;
     }
-    const s = (ACTIVE_STAGES as string[]).includes(raw) ? (raw as PipelineStage) : "APPLIED";
     counts.set(s, (counts.get(s) ?? 0) + 1);
   }
   const reached = ACTIVE_STAGES.map((_, i) =>
@@ -207,15 +196,15 @@ export function setupSteps(input: SetupInput, opts: { seatLimit: number | null; 
 }
 
 /**
- * "Waiting for review": finished work whose candidate has not been moved on
- * since. Moving the candidate to a later stage (or rejecting them) is what
- * clears an item, so the queue needs no extra "reviewed" flag.
+ * "Waiting for review": finished work whose candidate has no decision yet.
+ * Passing or not passing the candidate is what clears an item, so the queue
+ * needs no extra "reviewed" flag.
  */
-export const TAKE_HOME_REVIEW_STAGES = ["APPLIED", "SCREENED", "TAKE_HOME"] as const;
-export const SCREENING_REVIEW_STAGES = ["APPLIED", "SCREENED"] as const;
+export const TAKE_HOME_REVIEW_STAGES = ["NEW", "SCREENING"] as const;
+export const SCREENING_REVIEW_STAGES = ["NEW", "SCREENING"] as const;
 
 export function awaitsReview(kind: "take-home" | "screening", candidateStage: string | null | undefined): boolean {
   if (!candidateStage) return true;
   const stages: readonly string[] = kind === "take-home" ? TAKE_HOME_REVIEW_STAGES : SCREENING_REVIEW_STAGES;
-  return stages.includes(candidateStage);
+  return stages.includes(normalizeStage(candidateStage));
 }

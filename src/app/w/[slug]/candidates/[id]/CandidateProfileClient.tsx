@@ -9,6 +9,7 @@ import {
   Bot,
   CalendarDays,
   CircleArrowRight,
+  CircleCheck,
   FileCode2,
   Layers,
   Mail,
@@ -25,8 +26,7 @@ import {
   X,
   Zap,
 } from "lucide-react";
-import { buildStageSteps, type StageMove } from "@/lib/crm/history";
-import { RESULT_KIND_LABELS, RESULT_WEIGHTS, type CandidateResult, type ResultKind } from "@/lib/crm/results";
+import { RESULT_KIND_LABELS, RESULT_WEIGHTS, screeningChecklist, type CandidateResult, type ResultKind } from "@/lib/crm/results";
 import type { ActivityItem } from "@/lib/crm/activity";
 import type { RosterBatch, RosterMember, RosterRow } from "@/lib/crm/roster";
 import { PIPELINE_STAGES, STAGE_LABELS, type RejectReason } from "@/lib/crm/stages";
@@ -38,8 +38,7 @@ import {
   updateCandidateAction,
 } from "../manage-actions";
 import { ConfirmDialog, RejectDialog } from "../_components/dialogs";
-import { nextStageOf } from "../_components/QuickView";
-import { HorizontalStepper } from "../_components/Stepper";
+import { ChecklistRow } from "../_components/Checklist";
 import type { Perms } from "../_components/CandidatesView";
 import { Avatar, Btn, Field, fmtDate, inputCls, Menu, MenuItem, MenuLabel, StageChip, StageDot, stageLabel, useToasts } from "../_components/ui";
 
@@ -61,7 +60,6 @@ export default function CandidateProfileClient({
   meId,
   row,
   rejectNote,
-  moves,
   notes,
   activity,
   batches,
@@ -72,7 +70,6 @@ export default function CandidateProfileClient({
   meId: string;
   row: RosterRow;
   rejectNote: string | null;
-  moves: StageMove[];
   notes: Note[];
   activity: ActivityItem[];
   batches: RosterBatch[];
@@ -92,12 +89,8 @@ export default function CandidateProfileClient({
   const batch = batches.find((b) => b.id === row.batchId) ?? null;
   const owner = members.find((m) => m.id === row.ownerId) ?? null;
   const archived = row.status === "archived";
-  const history = useMemo(
-    () => buildStageSteps({ stage: row.stage, createdAt: row.createdAt, stageChangedAt: row.stageChangedAt, moves }),
-    [row.stage, row.createdAt, row.stageChangedAt, moves],
-  );
-  const next = nextStageOf(row.stage);
-  const isClosed = row.stage === "HIRED" || row.stage === "REJECTED";
+  const checklist = useMemo(() => screeningChecklist(row.results), [row.results]);
+  const isClosed = row.stage === "PASSED" || row.stage === "REJECTED";
   const sortedResults = [...row.results].sort((a, b) => +new Date(b.finishedAt ?? b.sentAt) - +new Date(a.finishedAt ?? a.sentAt));
 
   function act(p: Promise<{ ok: boolean; error?: string }>, done: string, after?: () => void) {
@@ -114,7 +107,7 @@ export default function CandidateProfileClient({
   }
 
   const move = (stage: string) =>
-    stage === "REJECTED" ? setRejecting(true) : act(bulkCandidatesAction(slug, [row.id], { action: "stage", stage }), `Moved to ${stageLabel(stage)}`);
+    stage === "REJECTED" ? setRejecting(true) : act(bulkCandidatesAction(slug, [row.id], { action: "stage", stage }), stage === "PASSED" ? "Passed" : `Moved to ${stageLabel(stage)}`);
 
   const flag = (status: "future_hire" | "do_not_hire" | "active") =>
     act(
@@ -131,6 +124,7 @@ export default function CandidateProfileClient({
 
   const scheduleHref = `/interview/new?type=live&workspaceSlug=${slug}&candidateId=${row.id}&candidateName=${encodeURIComponent(row.name)}&candidateEmail=${encodeURIComponent(row.email ?? "")}`;
   const takeHomeHref = `/w/${slug}/take-homes/new?candidates=${row.id}`;
+  const aiInterviewHref = `/w/${slug}/ai-interviews`;
 
   return (
     <div className="flex flex-col gap-5">
@@ -250,20 +244,41 @@ export default function CandidateProfileClient({
         <div className="flex flex-wrap gap-2 shrink-0">
           {!isClosed && !archived && (
             <>
-              <Btn size="md" icon={Send} href={takeHomeHref}>
-                Send take-home
-              </Btn>
-              <Btn size="md" icon={CalendarDays} href={scheduleHref}>
-                Schedule interview
-              </Btn>
+              <Menu
+                align="right"
+                width={220}
+                label="Send an assessment"
+                trigger={(p) => (
+                  <Btn size="md" icon={Send} {...p}>
+                    Send
+                  </Btn>
+                )}
+              >
+                {() => (
+                  <>
+                    <MenuItem href={aiInterviewHref}>
+                      <Bot className="w-3.5 h-3.5 text-subtle" />
+                      AI screening
+                    </MenuItem>
+                    <MenuItem href={takeHomeHref}>
+                      <FileCode2 className="w-3.5 h-3.5 text-subtle" />
+                      Take-home
+                    </MenuItem>
+                    <MenuItem href={scheduleHref}>
+                      <CalendarDays className="w-3.5 h-3.5 text-subtle" />
+                      Schedule interview
+                    </MenuItem>
+                  </>
+                )}
+              </Menu>
               {perms.canPipeline && (
                 <Btn size="md" variant="danger" onClick={() => setRejecting(true)} disabled={busy}>
-                  Reject
+                  Not passed
                 </Btn>
               )}
-              {perms.canPipeline && next && (
-                <Btn size="md" variant="primary" icon={CircleArrowRight} onClick={() => move(next)} disabled={busy}>
-                  Move to {stageLabel(next)}
+              {perms.canPipeline && (
+                <Btn size="md" variant="primary" icon={CircleCheck} onClick={() => move("PASSED")} disabled={busy}>
+                  Pass
                 </Btn>
               )}
             </>
@@ -288,7 +303,7 @@ export default function CandidateProfileClient({
                 )}
                 {perms.canPipeline && (
                   <>
-                    <MenuLabel>Move to stage</MenuLabel>
+                    <MenuLabel>{isClosed ? "Change decision" : "Move to stage"}</MenuLabel>
                     {PIPELINE_STAGES.filter((s) => s !== row.stage).map((s) => (
                       <MenuItem key={s} danger={s === "REJECTED"} onClick={() => (move(s), close())}>
                         <StageDot stage={s} />
@@ -338,10 +353,7 @@ export default function CandidateProfileClient({
       </div>
 
       <section className="rounded-xl border border-border bg-surface px-5 py-4">
-        <HorizontalStepper
-          steps={history.steps}
-          rejected={row.stage === "REJECTED" ? { at: history.rejectedAt, reason: row.rejectReason } : null}
-        />
+        <ChecklistRow items={checklist} decision={{ stage: row.stage, at: row.stageChangedAt, reason: row.rejectReason }} />
         {row.stage === "REJECTED" && rejectNote && <p className="mt-3 text-[13px] text-muted">&ldquo;{rejectNote}&rdquo;</p>}
       </section>
 
@@ -387,19 +399,24 @@ export default function CandidateProfileClient({
                   <Btn variant="primary" href={row.next.href}>
                     Open
                   </Btn>
-                ) : row.next.label === "Send take-home" ? (
+                ) : row.next.label === "Send an assessment" ? (
                   <Btn variant="primary" href={takeHomeHref}>
                     Send take-home
                   </Btn>
-                ) : row.next.label === "Schedule interview" ? (
-                  <Btn variant="primary" href={scheduleHref}>
-                    Schedule
-                  </Btn>
+                ) : row.next.label === "Make a decision" && perms.canPipeline ? (
+                  <>
+                    <Btn variant="danger" onClick={() => setRejecting(true)} disabled={busy}>
+                      Not passed
+                    </Btn>
+                    <Btn variant="primary" icon={CircleCheck} onClick={() => move("PASSED")} disabled={busy}>
+                      Pass
+                    </Btn>
+                  </>
                 ) : null}
               </div>
             )}
 
-            <ResultsGrid results={sortedResults} combined={row.combined} scheduleHref={scheduleHref} canSchedule={!isClosed && !archived} />
+            <ResultsGrid results={sortedResults} combined={row.combined} />
 
             <section className="rounded-xl border border-border bg-surface">
               <div className="flex items-center justify-between px-5 py-4 border-b border-border">
@@ -451,7 +468,7 @@ export default function CandidateProfileClient({
             setRejecting(false);
             act(
               bulkCandidatesAction(slug, [row.id], { action: "stage", stage: "REJECTED", rejectReason: reason, rejectReasonNote: note }),
-              "Rejected",
+              "Marked as not passed",
             );
           }}
         />
@@ -491,18 +508,9 @@ export default function CandidateProfileClient({
   );
 }
 
-function ResultsGrid({
-  results,
-  combined,
-  scheduleHref,
-  canSchedule,
-}: {
-  results: CandidateResult[];
-  combined: number | null;
-  scheduleHref: string;
-  canSchedule: boolean;
-}) {
-  const hasInterview = results.some((r) => r.kind === "interview");
+function ResultsGrid({ results, combined }: { results: CandidateResult[]; combined: number | null }) {
+  // The checklist above already says what has not been sent.
+  if (!results.length) return null;
   const kindIcon: Record<ResultKind, typeof Bot> = { take_home: FileCode2, ai_screening: Bot, interview: CalendarDays };
   return (
     <section className="flex flex-col gap-3">
@@ -586,20 +594,7 @@ function ResultsGrid({
             </div>
           );
         })}
-        {!hasInterview && (
-          <div className="rounded-xl border border-dashed border-border-strong p-4 flex flex-col gap-2.5 justify-center items-start">
-            <div className="text-xs text-subtle">Live interview</div>
-            <div className="text-[15px] font-semibold text-fg">Not scheduled yet</div>
-            <p className="text-[13px] text-muted leading-relaxed">Book a pair-programming session. Feedback from each interviewer lands here.</p>
-            {canSchedule && (
-              <Btn icon={CalendarDays} href={scheduleHref}>
-                Schedule interview
-              </Btn>
-            )}
-          </div>
-        )}
       </div>
-      {results.length === 0 && <p className="text-[13px] text-subtle">No take-homes or screenings sent yet.</p>}
     </section>
   );
 }

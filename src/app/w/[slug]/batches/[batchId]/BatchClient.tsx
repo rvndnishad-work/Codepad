@@ -46,7 +46,7 @@ export default function BatchClient({
   const [adding, setAdding] = useState(false);
   const [toasts, toast] = useToasts();
   const active = rows.filter((r) => r.status !== "archived");
-  const withEmail = active.filter((r) => r.email && r.stage !== "HIRED" && r.stage !== "REJECTED");
+  const withEmail = active.filter((r) => r.email && r.stage !== "PASSED" && r.stage !== "REJECTED");
 
   function setTab(t: Tab) {
     const p = new URLSearchParams(sp.toString());
@@ -60,7 +60,7 @@ export default function BatchClient({
   const target = batch.targetHires ?? 0;
   const tiles: [string, string, string][] = [
     ["Candidates", String(batch.total), batch.addedThisWeek ? `${batch.addedThisWeek} added this week` : "None added this week"],
-    ["Hired", target ? `${batch.hired} of ${target}` : String(batch.hired), batch.deadline ? `Target by ${deadlineText(batch.deadline, "OPEN").split(",")[0]}` : "No target date"],
+    ["Passed", target ? `${batch.passed} of ${target}` : String(batch.passed), batch.deadline ? `Target by ${deadlineText(batch.deadline, "OPEN").split(",")[0]}` : "No target date"],
     ["Waiting on you", String(batch.attention), batch.attention ? "Reviews, feedback or stuck candidates" : "Nothing waiting"],
     ["Deadline", batch.deadline ? deadlineText(batch.deadline, batch.status).split(", ")[0] : "None", batch.deadline ? (deadlineText(batch.deadline, batch.status).split(", ")[1] ?? "") : "Set one in batch settings"],
   ];
@@ -454,7 +454,7 @@ function Results({
           onConfirm={(reason, note) => {
             const ids = rejecting;
             setRejecting(null);
-            run(ids, { action: "stage", stage: "REJECTED", rejectReason: reason, rejectReasonNote: note }, `Rejected ${plural(ids.length, "candidate")}`);
+            run(ids, { action: "stage", stage: "REJECTED", rejectReason: reason, rejectReasonNote: note }, `Marked ${plural(ids.length, "candidate")} as not passed`);
           }}
         />
       )}

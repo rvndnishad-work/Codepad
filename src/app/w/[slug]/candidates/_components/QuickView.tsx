@@ -2,21 +2,13 @@
 
 import { useEffect, useRef, useState, useTransition } from "react";
 import Link from "next/link";
-import { ArrowUpRight, CalendarDays, ChevronDown, ChevronUp, CircleArrowRight, FileText, Send, X } from "lucide-react";
-import { buildStageSteps } from "@/lib/crm/history";
-import { RESULT_KIND_LABELS } from "@/lib/crm/results";
-import { PIPELINE_STAGES } from "@/lib/crm/stages";
+import { ArrowUpRight, CalendarDays, ChevronDown, ChevronUp, CircleCheck, FileText, Send, X } from "lucide-react";
+import { screeningChecklist } from "@/lib/crm/results";
 import type { RosterRow } from "@/lib/crm/roster";
 import { relativeTime } from "@/lib/workspace/display";
 import { addNoteAction, quickViewAction, type QuickViewData } from "../manage-actions";
-import { VerticalStepper } from "./Stepper";
-import { Avatar, Btn, inputCls, stageLabel } from "./ui";
-
-export function nextStageOf(stage: string): string | null {
-  const flow = PIPELINE_STAGES.filter((s) => s !== "REJECTED");
-  const i = flow.indexOf(stage as (typeof flow)[number]);
-  return i >= 0 && i < flow.length - 1 ? flow[i + 1] : null;
-}
+import { ChecklistList } from "./Checklist";
+import { Avatar, Btn, inputCls } from "./ui";
 
 export function QuickView({
   slug,
@@ -76,15 +68,8 @@ export function QuickView({
     panelRef.current?.focus();
   }, [row.id]);
 
-  const history = buildStageSteps({
-    stage: row.stage,
-    createdAt: row.createdAt,
-    stageChangedAt: row.stageChangedAt,
-    moves: data?.moves ?? [],
-  });
-  const next = nextStageOf(row.stage);
-  const scored = row.results.filter((r) => r.score != null).slice(0, 4);
-  const isClosed = row.stage === "HIRED" || row.stage === "REJECTED";
+  const checklist = screeningChecklist(row.results);
+  const isClosed = row.stage === "PASSED" || row.stage === "REJECTED";
 
   function saveNote() {
     startSaving(async () => {
@@ -162,39 +147,8 @@ export function QuickView({
           )}
 
           <section>
-            <h3 className="text-xs font-medium text-subtle mb-2.5">Workflow</h3>
-            <VerticalStepper
-              steps={history.steps}
-              rejected={row.stage === "REJECTED" ? { at: history.rejectedAt, reason: row.rejectReason } : null}
-            />
-          </section>
-
-          <section>
-            <h3 className="text-xs font-medium text-subtle mb-2.5">Results</h3>
-            {scored.length ? (
-              <div className="grid grid-cols-2 gap-2.5">
-                {scored.map((r) => (
-                  <a
-                    key={r.id}
-                    href={r.href ?? undefined}
-                    className="rounded-xl border border-border p-3 hover:border-border-strong transition min-w-0"
-                  >
-                    <div className="text-xs text-subtle truncate">
-                      {RESULT_KIND_LABELS[r.kind]} · {r.title}
-                    </div>
-                    <div className="text-[22px] font-semibold text-fg mt-1 tabular-nums">{r.kind === "interview" && r.rating != null ? r.rating.toFixed(1) : r.score}</div>
-                    <div className={`text-xs mt-0.5 ${r.passed ? "text-success" : r.passed === false ? "text-warning" : "text-muted"}`}>
-                      {r.verdict}
-                      {r.minutesTaken != null && r.kind === "take_home" ? ` · ${r.minutesTaken} min` : ""}
-                    </div>
-                  </a>
-                ))}
-              </div>
-            ) : (
-              <p className="text-[13px] text-subtle">
-                {row.results.length ? `${row.results.length} sent, none scored yet.` : "Nothing sent yet."}
-              </p>
-            )}
+            <h3 className="text-xs font-medium text-subtle mb-3">Screening</h3>
+            <ChecklistList items={checklist} decision={{ stage: row.stage, at: row.stageChangedAt, reason: row.rejectReason }} />
           </section>
 
           <section>
@@ -248,9 +202,9 @@ export function QuickView({
 
         {(canPipeline || canWrite) && !isClosed && (
           <div className="px-5 py-3.5 border-t border-border flex flex-wrap gap-2">
-            {canPipeline && next && (
-              <Btn variant="primary" icon={CircleArrowRight} onClick={() => onMove(next)}>
-                Move to {stageLabel(next)}
+            {canPipeline && (
+              <Btn variant="primary" icon={CircleCheck} onClick={() => onMove("PASSED")}>
+                Pass
               </Btn>
             )}
             <Btn icon={Send} href={`/w/${slug}/take-homes/new?candidates=${row.id}`}>
@@ -264,7 +218,7 @@ export function QuickView({
             </Btn>
             {canPipeline && (
               <Btn variant="danger" className="ml-auto" onClick={onReject}>
-                Reject
+                Not passed
               </Btn>
             )}
           </div>

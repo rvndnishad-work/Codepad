@@ -15,14 +15,14 @@ export type BatchSummary = {
   targetHires: number | null;
   createdAt: string;
   total: number;
-  hired: number;
+  passed: number;
   attention: number;
   addedThisWeek: number;
   stages: { stage: string; count: number }[];
 };
 
 export function summarizeBatch(
-  b: Omit<BatchSummary, "total" | "hired" | "attention" | "addedThisWeek" | "stages">,
+  b: Omit<BatchSummary, "total" | "passed" | "attention" | "addedThisWeek" | "stages">,
   rows: RosterRow[],
   now = Date.now(),
 ): BatchSummary {
@@ -32,7 +32,7 @@ export function summarizeBatch(
   return {
     ...b,
     total: mine.length,
-    hired: counts.get("HIRED") ?? 0,
+    passed: counts.get("PASSED") ?? 0,
     attention: mine.filter((r) => r.attention).length,
     addedThisWeek: mine.filter((r) => now - +new Date(r.createdAt) < 7 * 86_400_000).length,
     stages: PIPELINE_STAGES.map((s) => ({ stage: s, count: counts.get(s) ?? 0 })).filter((s) => s.count > 0),

@@ -2,7 +2,6 @@ import { notFound, redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { CandidateError, resolveCandidateActor } from "@/lib/crm/candidates-server";
 import { loadCandidatePerms, loadRoster, loadRosterLookups } from "@/lib/crm/roster-server";
-import { movesFromAudit } from "@/lib/crm/history";
 import { describeAudit, resultActivity, type ActivityItem } from "@/lib/crm/activity";
 import CandidateProfileClient from "./CandidateProfileClient";
 
@@ -89,7 +88,6 @@ export default async function CandidateProfilePage({ params }: Props) {
       meId={actor.actorUserId}
       row={row}
       rejectNote={candidate.rejectReasonNote}
-      moves={movesFromAudit(audit.filter((a) => a.action === "PIPELINE_STAGE_CHANGED"))}
       notes={notes.map((n) => ({
         id: n.id,
         body: n.body,

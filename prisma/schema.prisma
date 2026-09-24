@@ -839,16 +839,17 @@ model Candidate {
   /// JSON-encoded string[] of tags (e.g. ["senior", "react", "remote-ok"]).
   tags                String?
   /// Disposition flag — semantically "what's the current bucket for this
-  /// person?" Historical values: active/future_hire/do_not_hire/hired/
-  /// rejected/archived. Coexists with `stage` (the pipeline position) — see
-  /// IP-34. Kept for backwards compat with existing queries.
+  /// person?" Values: active/future_hire/do_not_hire/passed/rejected/
+  /// archived ("hired" before screening-only Candidates). Coexists with
+  /// `stage` — see IP-34. Kept for backwards compat with existing queries.
   status              String               @default("active")
-  /// IP-34: pipeline stage. One of:
-  ///   APPLIED → SCREENED → TAKE_HOME → ONSITE → OFFER → HIRED
-  ///                                                       ↘ REJECTED
-  /// REJECTED requires `rejectReason` set. Drag-drop on the Kanban moves
-  /// candidates between these.
-  stage               String               @default("APPLIED")
+  /// IP-34, narrowed to screening only (the app is not an ATS):
+  ///   NEW → SCREENING → PASSED
+  ///                   ↘ REJECTED ("Not passed")
+  /// REJECTED requires `rejectReason` set. Older values (APPLIED, SCREENED,
+  /// TAKE_HOME, ONSITE, OFFER, HIRED) were migrated; normalizeStage() still
+  /// reads them.
+  stage               String               @default("NEW")
   /// IP-34: when set, why this candidate was rejected.
   ///   SKILL_GAP / CULTURE_FIT / COMP_MISMATCH / NO_RESPONSE / WITHDREW / OTHER
   rejectReason        String?

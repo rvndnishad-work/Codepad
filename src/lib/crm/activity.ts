@@ -16,7 +16,17 @@ export type ActivityItem = {
   href: string | null;
 };
 
-const stage = (s: unknown) => (typeof s === "string" && isPipelineStage(s) ? STAGE_LABELS[s] : String(s ?? "?"));
+// Rows written before screening-only Candidates keep their old stage names.
+const LEGACY_LABELS: Record<string, string> = {
+  APPLIED: "Applied",
+  SCREENED: "Screened",
+  TAKE_HOME: "Take-home",
+  ONSITE: "Onsite",
+  OFFER: "Offer",
+  HIRED: "Hired",
+};
+const stage = (s: unknown) =>
+  typeof s === "string" ? (isPipelineStage(s) ? STAGE_LABELS[s] : (LEGACY_LABELS[s] ?? s)) : "?";
 const FIELD: Record<string, string> = { name: "name", email: "email", phone: "phone", source: "source", notes: "notes", tags: "tags" };
 
 export function describeAudit(
@@ -39,7 +49,12 @@ export function describeAudit(
       return {
         ...base,
         kind: "move",
-        title: m.toStage === "REJECTED" ? `Rejected at ${stage(m.fromStage)}` : `Moved from ${stage(m.fromStage)} to ${stage(m.toStage)}`,
+        title:
+          m.toStage === "REJECTED"
+            ? `Marked as not passed at ${stage(m.fromStage)}`
+            : m.toStage === "PASSED"
+              ? "Passed screening"
+              : `Moved from ${stage(m.fromStage)} to ${stage(m.toStage)}`,
         detail: [auto ? "Automatically, from an assessment event" : who ? `By ${who}` : null, reason].filter(Boolean).join(" · ") || null,
       };
     }

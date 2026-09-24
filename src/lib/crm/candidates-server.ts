@@ -18,6 +18,7 @@ import { canMember, type Permission } from "@/lib/permissions";
 import { MANAGER_ROLES } from "@/lib/permissions/role-groups";
 import {
   isPipelineStage,
+  normalizeStage,
   REJECT_REASONS,
   type PipelineStage,
   type RejectReason,
@@ -26,6 +27,14 @@ import {
   writeWorkspaceAuditEntry,
   WORKSPACE_AUDIT_ACTIONS,
 } from "@/lib/workspace-audit";
+
+/** The legacy `status` column mirrors the decision. Flags such as
+ *  future_hire survive while the candidate is still being screened. */
+function statusForStage(stage: PipelineStage, current?: string): string {
+  if (stage === "PASSED") return "passed";
+  if (stage === "REJECTED") return "rejected";
+  return current === "passed" || current === "hired" || current === "rejected" || !current ? "active" : current;
+}
 
 export class CandidateError extends Error {
   constructor(
@@ -169,8 +178,9 @@ export async function createCandidate(
   if (!name) throw new CandidateError(400, "A name is required.");
   const email = normalizeEmail(input.email);
   const tags = cleanTags(input.tags);
-  const stage: PipelineStage = input.stage && isPipelineStage(input.stage) ? input.stage : "APPLIED";
-  if (stage === "REJECTED") throw new CandidateError(400, "New candidates cannot start as Rejected.");
+  // Old stage names (APPLIED, ONSITE, HIRED...) still arrive from CSVs and API callers.
+  const stage: PipelineStage = normalizeStage(input.stage);
+  if (stage === "REJECTED") throw new CandidateError(400, "New candidates cannot start as Not passed.");
   if (!opts.refsChecked) await assertRefs(actor, input.batchId, input.ownerId);
 
   if (email) {
@@ -223,7 +233,7 @@ export async function createCandidate(
       phone: input.phone?.trim() || null,
       source: input.source?.trim() || "manual",
       tags: tagsJson(tags),
-      status: stage === "HIRED" ? "hired" : "active",
+      status: statusForStage(stage),
       stage,
       stageChangedAt: new Date(),
       batchId: input.batchId || null,
@@ -257,8 +267,9 @@ export type CandidatePatch = {
   source?: string | null;
   notes?: string | null;
   tags?: string[] | null;
-  /** Disposition flag. "hired" and "rejected" also move the stage. */
-  status?: "active" | "future_hire" | "do_not_hire" | "hired" | "rejected" | "archived";
+  /** Disposition flag. "passed" and "rejected" also move the stage; "hired"
+   *  is the old name for "passed" and is still accepted. */
+  status?: "active" | "future_hire" | "do_not_hire" | "passed" | "hired" | "rejected" | "archived";
   rejectReason?: RejectReason;
   rejectReasonNote?: string | null;
   batchId?: string | null;
@@ -329,33 +340,35 @@ export async function updateCandidate(actor: CandidateActor, id: string, patch: 
   }
 
   let stageMove: { from: string; to: string } | null = null;
-  if (patch.status && patch.status !== current.status) {
-    data.status = patch.status;
+  const nextStatus = patch.status === "hired" ? "passed" : patch.status;
+  if (nextStatus && nextStatus !== current.status) {
+    data.status = nextStatus;
     fields.push("status");
     const prev = current.stage;
-    if (patch.status === "hired" && prev !== "HIRED") {
-      data.stage = "HIRED";
+    if (nextStatus === "passed" && prev !== "PASSED") {
+      data.stage = "PASSED";
       data.stageChangedAt = new Date();
       data.rejectReason = null;
       data.rejectReasonNote = null;
-      stageMove = { from: prev, to: "HIRED" };
-    } else if (patch.status === "rejected" && prev !== "REJECTED") {
+      stageMove = { from: prev, to: "PASSED" };
+    } else if (nextStatus === "rejected" && prev !== "REJECTED") {
       // The reason is required, exactly as on the board. The old route
       // recorded every status-dropdown rejection as OTHER.
       if (!patch.rejectReason || !REJECT_REASONS.includes(patch.rejectReason)) {
-        throw new CandidateError(400, "Pick a reason to reject this candidate.");
+        throw new CandidateError(400, "Pick a reason for not passing this candidate.");
       }
       data.stage = "REJECTED";
       data.rejectReason = patch.rejectReason;
       data.rejectReasonNote = patch.rejectReasonNote?.trim() || null;
       data.stageChangedAt = new Date();
       stageMove = { from: prev, to: "REJECTED" };
-    } else if (patch.status === "active" && (prev === "HIRED" || prev === "REJECTED")) {
-      data.stage = "APPLIED";
+    } else if (nextStatus === "active" && (prev === "PASSED" || prev === "REJECTED")) {
+      // Reopening a decision puts them back into screening.
+      data.stage = "SCREENING";
       data.rejectReason = null;
       data.rejectReasonNote = null;
       data.stageChangedAt = new Date();
-      stageMove = { from: prev, to: "APPLIED" };
+      stageMove = { from: prev, to: "SCREENING" };
     }
   }
 
@@ -446,12 +459,8 @@ export async function moveCandidatesStage(
         stageChangedAt: now,
         rejectReason: toStage === "REJECTED" ? reason!.rejectReason : null,
         rejectReasonNote: toStage === "REJECTED" ? reason?.rejectReasonNote?.trim() || null : null,
-        // Keep the legacy status in step with terminal stages, both ways.
-        ...(toStage === "HIRED" ? { status: "hired" } : {}),
-        ...(toStage === "REJECTED" ? { status: "rejected" } : {}),
-        ...(toStage !== "HIRED" && toStage !== "REJECTED" && (c.status === "hired" || c.status === "rejected")
-          ? { status: "active" }
-          : {}),
+        // Keep the legacy status in step with the decision, both ways.
+        ...(c.status === "archived" ? {} : { status: statusForStage(toStage, c.status) }),
       },
     });
     void audit(actor, WORKSPACE_AUDIT_ACTIONS.PIPELINE_STAGE_CHANGED, "candidate", c.id, {
@@ -526,7 +535,7 @@ export async function archiveCandidates(actor: CandidateActor, ids: string[], ar
   const changing = rows.filter((r) => (archived ? r.status !== "archived" : r.status === "archived"));
   for (const c of changing) {
     // Restoring puts the disposition back in step with the stage.
-    const status = archived ? "archived" : c.stage === "HIRED" ? "hired" : c.stage === "REJECTED" ? "rejected" : "active";
+    const status = archived ? "archived" : statusForStage(normalizeStage(c.stage));
     await prisma.candidate.update({ where: { id: c.id }, data: { status } });
     void audit(
       actor,

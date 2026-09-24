@@ -125,9 +125,9 @@ export default function BatchesClient({
                   <div className="text-xl font-semibold text-fg mt-0.5 tabular-nums">{b.total}</div>
                 </div>
                 <div>
-                  <div className="text-xs text-subtle">Hired</div>
+                  <div className="text-xs text-subtle">Passed</div>
                   <div className="text-xl font-semibold text-fg mt-0.5 tabular-nums">
-                    {b.hired}
+                    {b.passed}
                     {target > 0 && <span className="text-[13px] font-normal text-subtle"> of {target}</span>}
                   </div>
                 </div>

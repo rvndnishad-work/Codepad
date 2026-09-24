@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { REJECT_REASONS, REJECT_REASON_LABELS, type RejectReason } from "@/lib/crm/stages";
+import { REJECT_REASON_CHOICES, REJECT_REASON_LABELS, type RejectReason } from "@/lib/crm/stages";
 import { plural } from "@/lib/workspace/display";
 import { Btn, Dialog, Field, inputCls } from "./ui";
 
@@ -21,21 +21,21 @@ export function RejectDialog({
   const who = names.length === 1 ? names[0] : plural(names.length, "candidate");
   return (
     <Dialog
-      title={`Reject ${who}`}
+      title={`Mark ${who} as not passed`}
       onClose={onCancel}
       width={480}
       footer={
         <>
           <Btn onClick={onCancel}>Cancel</Btn>
           <Btn variant="danger" disabled={!reason || busy} onClick={() => reason && onConfirm(reason, note)}>
-            {busy ? "Rejecting" : "Reject"}
+            {busy ? "Saving" : "Not passed"}
           </Btn>
         </>
       }
     >
       <fieldset className="flex flex-col gap-1">
         <legend className="text-[13px] text-muted mb-2">Why? The reason is kept on the record and in reporting.</legend>
-        {REJECT_REASONS.map((r) => (
+        {REJECT_REASON_CHOICES.map((r) => (
           <label key={r} className="flex items-center gap-2.5 h-9 px-2 rounded-lg text-sm text-fg hover:bg-panel cursor-pointer">
             <input
               type="radio"
@@ -56,7 +56,7 @@ export function RejectDialog({
             value={note}
             onChange={(e) => setNote(e.target.value)}
             maxLength={1000}
-            placeholder="For example: salary expectation well above the band"
+            placeholder="For example: strong on the take-home, weak on system design"
             className={`${inputCls} h-auto py-2 resize-none`}
           />
         </Field>

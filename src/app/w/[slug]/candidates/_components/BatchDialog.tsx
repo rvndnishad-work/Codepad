@@ -134,7 +134,7 @@ export function BatchDialog({
           <Field label="Deadline (optional)">
             <input type="date" value={f.deadline} onChange={(e) => setF({ ...f, deadline: e.target.value })} className={inputCls} />
           </Field>
-          <Field label="Target hires (optional)">
+          <Field label="How many to pass (optional)">
             <input type="number" min={0} value={f.targetHires} onChange={(e) => setF({ ...f, targetHires: e.target.value })} className={inputCls} />
           </Field>
         </div>

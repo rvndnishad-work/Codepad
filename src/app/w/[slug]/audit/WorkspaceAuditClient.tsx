@@ -54,7 +54,7 @@ type Props = {
  */
 const ACTION_META: Record<string, { label: string; tone: string }> = {
   PIPELINE_STAGE_CHANGED: {
-    label: "Pipeline stage changed",
+    label: "Screening stage changed",
     tone: "border-secondary/30 bg-secondary/[0.06] text-secondary",
   },
   BULK_TAKE_HOME_DISPATCHED: {

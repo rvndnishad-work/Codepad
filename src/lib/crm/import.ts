@@ -147,4 +147,4 @@ export function parsePastedList(text: string): ImportRow[] {
   return rows;
 }
 
-export const CSV_TEMPLATE = "name,email,phone,source,tags,stage,notes\nPriya Raman,priya@example.com,+44 7700 900123,linkedin,react; senior,APPLIED,Referred by the platform team\n";
+export const CSV_TEMPLATE = "name,email,phone,source,tags,stage,notes\nPriya Raman,priya@example.com,+44 7700 900123,linkedin,react; senior,NEW,Referred by the platform team\n";

@@ -12,7 +12,7 @@
  * results-server.ts.
  */
 import { getScreeningVerdict } from "@/lib/ai-interview/verdict";
-import type { PipelineStage } from "@/lib/crm/stages";
+import { normalizeStage, type PipelineStage } from "@/lib/crm/stages";
 
 export type ResultKind = "take_home" | "ai_screening" | "interview";
 
@@ -206,8 +206,6 @@ export type NextStepInput = {
 
 const DAY = 24 * 60 * 60 * 1000;
 
-const STAGE_RANK: Record<string, number> = { APPLIED: 0, SCREENED: 1, TAKE_HOME: 2, ONSITE: 3, OFFER: 4, HIRED: 5 };
-
 /** Days since `iso`, floored, never negative. */
 export function daysSince(iso: string | null | undefined, now = Date.now()): number {
   if (!iso) return 0;
@@ -223,107 +221,170 @@ function waiting(iso: string | null, now: number): string {
 /** Stage after which a stalled candidate is flagged, in days. */
 export const STUCK_AFTER_DAYS = 7;
 
+const shortDate = (iso: string) =>
+  new Date(iso).toLocaleString("en-GB", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
+
 /**
- * What should happen next for this candidate. Ordered by urgency: work that
- * waits on the recruiter first, then deadlines, then the stage default.
+ * What should happen next for this candidate. Screening ends at a decision
+ * (Passed or Not passed); the ATS takes it from there. Ordered by urgency:
+ * work that waits on the recruiter first, then deadlines on the candidate
+ * side, then the decision itself.
  */
 export function computeNextStep(input: NextStepInput): NextStep {
   const now = input.now ?? Date.now();
-  const stage = input.stage;
+  const stage = normalizeStage(input.stage);
   const byTime = [...input.results].sort((a, b) => resultTime(b) - resultTime(a));
 
-  if (stage === "HIRED") return { label: "Hired", tone: "plain", detail: null, href: null, onUs: false };
-  if (stage === "REJECTED") return { label: "Closed", tone: "plain", detail: null, href: null, onUs: false };
+  if (stage === "PASSED") return { label: "Passed", tone: "plain", detail: null, href: null, onUs: false };
+  if (stage === "REJECTED") return { label: "Not passed", tone: "plain", detail: null, href: null, onUs: false };
 
-  // 1. Finished work nobody has looked at yet. Once the candidate has moved
-  // past the step, the team has evidently decided, so stop nagging.
-  const rank = STAGE_RANK[stage] ?? 0;
-  const unreviewed = rank <= STAGE_RANK.TAKE_HOME && byTime.find((r) => r.kind === "take_home" && r.state === "submitted");
+  // 1. Finished work nobody has looked at yet.
+  const unreviewed = byTime.find((r) => r.kind === "take_home" && r.state === "submitted");
   if (unreviewed) {
-    return {
-      label: "Review take-home",
-      tone: "warning",
-      detail: waiting(unreviewed.finishedAt, now),
-      href: unreviewed.href,
-      onUs: true,
-    };
+    return { label: "Review take-home", tone: "warning", detail: waiting(unreviewed.finishedAt, now), href: unreviewed.href, onUs: true };
   }
-  // A scored screening while still at Applied/Screened needs a decision.
-  const screening = byTime.find((r) => r.kind === "ai_screening" && r.state === "scored");
-  if (screening && (stage === "APPLIED" || stage === "SCREENED") && !byTime.some((r) => r.kind === "take_home")) {
-    const d = daysSince(screening.finishedAt, now);
-    if (screening.passed === false) {
-      return { label: "Review screening", tone: "warning", detail: waiting(screening.finishedAt, now), href: screening.href, onUs: true };
-    }
-    if (stage === "APPLIED" || d >= 1) {
-      return { label: "Send take-home", tone: "plain", detail: `Screening ${screening.score}`, href: null, onUs: true };
-    }
+  const noFeedback = byTime.find((r) => r.kind === "interview" && r.state === "submitted");
+  if (noFeedback) {
+    return { label: "Collect feedback", tone: "warning", detail: waiting(noFeedback.finishedAt, now), href: noFeedback.href, onUs: true };
   }
 
-  // 2. Deadlines on the candidate side.
+  // 2. Deadlines and work in flight on the candidate side.
   const open = byTime.find((r) => r.kind === "take_home" && (r.state === "invited" || r.state === "in_progress"));
-  if (open?.deadlineAt) {
+  if (open?.deadlineAt && open.state === "invited") {
     const left = new Date(open.deadlineAt).getTime() - now;
-    if (left < 0 && open.state === "invited") {
-      return { label: "Take-home link expired", tone: "danger", detail: "Not started", href: open.href, onUs: true };
-    }
-    if (left >= 0 && left < 2 * DAY && open.state === "invited") {
-      return {
-        label: left < DAY ? "Link expires today" : "Link expires tomorrow",
-        tone: "danger",
-        detail: "Not started",
-        href: open.href,
-        onUs: false,
-      };
+    if (left < 0) return { label: "Take-home link expired", tone: "danger", detail: "Not started", href: open.href, onUs: true };
+    if (left < 2 * DAY) {
+      return { label: left < DAY ? "Link expires today" : "Link expires tomorrow", tone: "danger", detail: "Not started", href: open.href, onUs: false };
     }
   }
-  if (open) {
-    return {
-      label: open.state === "in_progress" ? "Take-home in progress" : "Waiting on take-home",
-      tone: "plain",
-      detail: open.state === "invited" ? `Sent ${daysSince(open.sentAt, now)}d ago` : null,
-      href: open.href,
-      onUs: false,
-    };
-  }
-
-  const interview = byTime.find((r) => r.kind === "interview");
-  if (interview && (interview.state === "invited" || interview.state === "in_progress")) {
-    const at = interview.scheduledAt ? new Date(interview.scheduledAt) : null;
+  const interview = byTime.find((r) => r.kind === "interview" && (r.state === "invited" || r.state === "in_progress"));
+  if (interview) {
     return {
       label: interview.state === "in_progress" ? "Interview live now" : "Interview booked",
       tone: "info",
-      detail: at ? at.toLocaleString("en-GB", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }) : null,
+      detail: interview.scheduledAt ? shortDate(interview.scheduledAt) : null,
       href: interview.href,
       onUs: false,
     };
   }
-  if (interview && interview.state === "submitted" && rank <= STAGE_RANK.ONSITE) {
-    return { label: "Collect feedback", tone: "warning", detail: waiting(interview.finishedAt, now), href: interview.href, onUs: true };
+  const inFlight = open ?? byTime.find((r) => r.kind === "ai_screening" && (r.state === "invited" || r.state === "in_progress"));
+  if (inFlight) {
+    const what = inFlight.kind === "take_home" ? "take-home" : "AI screening";
+    return {
+      label: inFlight.state === "in_progress" ? `${what.charAt(0).toUpperCase()}${what.slice(1)} in progress` : `Waiting on ${what}`,
+      tone: "plain",
+      detail: inFlight.state === "invited" ? `Sent ${daysSince(inFlight.sentAt, now)}d ago` : null,
+      href: inFlight.href,
+      onUs: false,
+    };
   }
 
-  // 3. Stage defaults.
-  switch (stage) {
-    case "APPLIED":
-      if (!input.batchId) return { label: "Add to a batch", tone: "plain", detail: null, href: null, onUs: true };
-      return { label: "Screen candidate", tone: "plain", detail: null, href: null, onUs: true };
-    case "SCREENED":
-      return { label: "Send take-home", tone: "plain", detail: null, href: null, onUs: true };
-    case "TAKE_HOME":
-      return { label: "Send take-home", tone: "warning", detail: "None sent yet", href: null, onUs: true };
-    case "ONSITE":
-      if (interview?.state === "scored") return { label: "Decide on offer", tone: "warning", detail: `Interview ${interview.verdict}`, href: null, onUs: true };
-      return { label: "Schedule interview", tone: "plain", detail: null, href: null, onUs: true };
-    case "OFFER":
-      return { label: "Waiting on reply", tone: "plain", detail: waiting(input.stageChangedAt ?? input.createdAt, now).replace("waiting", "since offer"), href: null, onUs: false };
-    default:
-      return { label: "No action", tone: "plain", detail: null, href: null, onUs: false };
+  // 3. Everything sent has come back: the decision is ours.
+  const scored = byTime.filter((r) => r.state === "scored" && r.score != null);
+  if (scored.length) {
+    const summary = summarizeResults(input.results);
+    const failing = scored.some((r) => r.passed === false);
+    return {
+      label: "Make a decision",
+      tone: "warning",
+      detail: summary.combined != null ? `Combined ${summary.combined}${failing ? ", one below the bar" : ""}` : null,
+      href: null,
+      onUs: true,
+    };
   }
+
+  // 4. Nothing sent yet (or only expired links).
+  if (stage === "NEW" && !input.batchId) return { label: "Add to a batch", tone: "plain", detail: null, href: null, onUs: true };
+  const expired = byTime.find((r) => r.state === "expired");
+  return {
+    label: "Send an assessment",
+    tone: expired ? "warning" : "plain",
+    detail: expired ? `${RESULT_KIND_LABELS[expired.kind]} expired` : null,
+    href: null,
+    onUs: true,
+  };
 }
 
 /** True when a candidate is flagged in the "Needs attention" filter. */
 export function needsAttention(next: NextStep, stage: string, daysInStage: number): boolean {
-  if (stage === "HIRED" || stage === "REJECTED") return false;
+  const s = normalizeStage(stage);
+  if (s === "PASSED" || s === "REJECTED") return false;
   if (next.tone === "warning" || next.tone === "danger") return true;
   return daysInStage >= STUCK_AFTER_DAYS && next.onUs;
+}
+
+/* ──────────────────────────────────────────────────────────────────────────
+ * Screening checklist
+ * ────────────────────────────────────────────────────────────────────────── */
+
+/** The three ways a candidate is screened, in the order they are shown. */
+export const CHECK_ORDER: ResultKind[] = ["ai_screening", "take_home", "interview"];
+
+export type CheckState = "todo" | "waiting" | "review" | "done" | "expired";
+
+export type CheckItem = {
+  kind: ResultKind;
+  state: CheckState;
+  /** Plain status line: "Not sent", "Invited", "Not reviewed", "Scored 82". */
+  status: string;
+  /** Headline number when scored: a 0 to 100 score, or a 1 to 5 rating for interviews. */
+  value: string | null;
+  verdict: string | null;
+  passed: boolean | null;
+  title: string | null;
+  at: string | null;
+  href: string | null;
+  /** How many of this kind were sent, retakes included. */
+  count: number;
+};
+
+/**
+ * One line per assessment kind, done in any order. A scored result wins (the
+ * best one, as in the combined score); otherwise the newest attempt.
+ */
+export function screeningChecklist(results: CandidateResult[]): CheckItem[] {
+  return CHECK_ORDER.map((kind) => {
+    const mine = results.filter((r) => r.kind === kind);
+    const best = mine
+      .filter((r) => r.state === "scored" && r.score != null)
+      .sort((a, b) => (b.score ?? 0) - (a.score ?? 0))[0];
+    const r = best ?? [...mine].sort((a, b) => resultTime(b) - resultTime(a))[0];
+    if (!r) {
+      return {
+        kind,
+        state: "todo",
+        status: kind === "interview" ? "Not scheduled" : "Not sent",
+        value: null,
+        verdict: null,
+        passed: null,
+        title: null,
+        at: null,
+        href: null,
+        count: 0,
+      };
+    }
+    const state: CheckState =
+      r.state === "scored" ? "done" : r.state === "submitted" ? "review" : r.state === "expired" ? "expired" : "waiting";
+    const value = r.score == null ? null : kind === "interview" && r.rating != null ? r.rating.toFixed(1) : String(r.score);
+    const status =
+      r.state === "scored"
+        ? r.verdict ?? "Scored"
+        : r.state === "invited" && kind === "interview"
+          ? r.scheduledAt
+            ? `Booked for ${shortDate(r.scheduledAt)}`
+            : "Booked"
+          : resultStateText(r);
+    return {
+      kind,
+      state,
+      status,
+      value,
+      verdict: r.verdict,
+      passed: r.passed,
+      title: r.title,
+      at: r.finishedAt ?? r.startedAt ?? r.scheduledAt ?? r.sentAt,
+      href: r.href,
+      count: mine.length,
+    };
+  });
 }

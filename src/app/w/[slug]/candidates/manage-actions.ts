@@ -29,7 +29,6 @@ import {
 } from "@/lib/crm/candidates-server";
 import { isPipelineStage } from "@/lib/crm/stages";
 import { IMPORT_MAX, type ImportRow } from "@/lib/crm/import";
-import { movesFromAudit } from "@/lib/crm/history";
 import { writeWorkspaceAuditEntry, WORKSPACE_AUDIT_ACTIONS } from "@/lib/workspace-audit";
 
 export type ActionResult<T = object> =
@@ -234,7 +233,7 @@ export async function importCandidatesAction(
     if (!rows.length) throw new CandidateError(400, "There is nobody to import.");
     if (rows.length > IMPORT_MAX) throw new CandidateError(400, `Import up to ${IMPORT_MAX} people at a time.`);
     if (opts.stage && (!isPipelineStage(opts.stage) || opts.stage === "REJECTED")) {
-      throw new CandidateError(400, "Pick a starting stage other than Rejected.");
+      throw new CandidateError(400, "Pick a starting stage other than Not passed.");
     }
     await assertRefs(actor, opts.batchId, opts.ownerId);
 
@@ -295,12 +294,11 @@ export async function importCandidatesAction(
 }
 
 export type QuickViewData = {
-  moves: { from: string; to: string; at: string }[];
   notes: { id: string; body: string; createdAt: string; authorName: string | null }[];
   noteCount: number;
 };
 
-/** Stage history and the latest notes for the quick-view drawer. */
+/** The latest notes for the quick-view drawer. */
 export async function quickViewAction(slug: string, candidateId: string): Promise<ActionResult<{ data: QuickViewData }>> {
   try {
     const actor = await resolveCandidateActor(slug);
@@ -309,18 +307,7 @@ export async function quickViewAction(slug: string, candidateId: string): Promis
       select: { id: true },
     });
     if (!exists) throw new CandidateError(404, "Candidate not found.");
-    const [rows, notes, noteCount] = await Promise.all([
-      prisma.workspaceAuditLog.findMany({
-        where: {
-          workspaceId: actor.workspaceId,
-          action: WORKSPACE_AUDIT_ACTIONS.PIPELINE_STAGE_CHANGED,
-          targetType: "candidate",
-          targetId: candidateId,
-        },
-        orderBy: { createdAt: "asc" },
-        take: 100,
-        select: { meta: true, createdAt: true },
-      }),
+    const [notes, noteCount] = await Promise.all([
       prisma.candidateNote.findMany({
         where: { candidateId },
         orderBy: { createdAt: "desc" },
@@ -332,7 +319,6 @@ export async function quickViewAction(slug: string, candidateId: string): Promis
     return {
       ok: true,
       data: {
-        moves: movesFromAudit(rows),
         notes: notes.map((n) => ({
           id: n.id,
           body: n.body,

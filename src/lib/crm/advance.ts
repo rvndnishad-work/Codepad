@@ -8,7 +8,7 @@
  *
  *   - Forward only (`isForwardTransition`): events never demote a candidate,
  *     and a candidate a recruiter already moved ahead stays ahead.
- *   - Never auto-enters HIRED or REJECTED — terminal moves are human calls
+ *   - Never auto-enters PASSED or REJECTED — screening decisions are human calls
  *     (REJECTED additionally requires a reason via moveCandidatesStage).
  *   - Server-only module: keep it out of client bundles (stages.ts stays the
  *     client-safe home for the taxonomy).
@@ -27,7 +27,7 @@ import {
 } from "@/lib/workspace-audit";
 
 /** Stages workflow events may auto-advance into. Terminal stages excluded. */
-export type AutoAdvanceStage = Exclude<PipelineStage, "HIRED" | "REJECTED">;
+export type AutoAdvanceStage = Exclude<PipelineStage, "PASSED" | "REJECTED">;
 
 export type AdvanceInput = {
   workspaceId: string;

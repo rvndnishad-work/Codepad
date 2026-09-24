@@ -96,7 +96,7 @@ export function sortRows(rows: RosterRow[], key: SortKey): RosterRow[] {
       // Work waiting on us first (most urgent tone, then longest waiting),
       // then everyone else by last update. Closed candidates sink.
       const rank = (r: RosterRow) =>
-        r.stage === "HIRED" || r.stage === "REJECTED" ? 4 : r.next.tone === "danger" ? 0 : r.next.tone === "warning" ? 1 : r.attention ? 2 : 3;
+        r.stage === "PASSED" || r.stage === "REJECTED" ? 4 : r.next.tone === "danger" ? 0 : r.next.tone === "warning" ? 1 : r.attention ? 2 : 3;
       return out.sort(
         (a, b) => rank(a) - rank(b) || b.daysInStage - a.daysInStage || +new Date(b.updatedAt) - +new Date(a.updatedAt),
       );

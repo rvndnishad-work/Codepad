@@ -54,7 +54,7 @@ export function AddCandidatesDialog({
 
   // Shared group options.
   const [batchId, setBatchId] = useState<string>(defaultBatchId ?? "");
-  const [stage, setStage] = useState<string>("APPLIED");
+  const [stage, setStage] = useState<string>("NEW");
   const [ownerId, setOwnerId] = useState<string>("");
   const [groupTags, setGroupTags] = useState("");
 

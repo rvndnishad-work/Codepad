@@ -311,7 +311,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ slug: s
           void advanceCandidateStage({
             workspaceId: updated.workspaceId,
             candidateId: updated.candidateId,
-            toStage: "TAKE_HOME",
+            toStage: "SCREENING",
             source: "auto:take-home-submitted",
           });
         }
@@ -379,7 +379,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ slug: s
             void advanceCandidateStage({
               workspaceId: th.workspaceId,
               candidateId: th.candidateId,
-              toStage: "TAKE_HOME",
+              toStage: "SCREENING",
               source: "auto:take-home-session-completed",
             });
           }

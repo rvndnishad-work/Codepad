@@ -16,7 +16,7 @@ const patchSchema = z.object({
   source: z.string().max(40).nullable().optional(),
   notes: z.string().max(10000).nullable().optional(),
   tags: z.array(z.string().max(40)).nullable().optional(),
-  status: z.enum(["active", "future_hire", "do_not_hire", "hired", "rejected", "archived"]).optional(),
+  status: z.enum(["active", "future_hire", "do_not_hire", "passed", "hired", "rejected", "archived"]).optional(),
   /** Required when status is "rejected". */
   rejectReason: z.enum(REJECT_REASONS).optional(),
   rejectReasonNote: z.string().max(1000).nullable().optional(),

@@ -54,18 +54,16 @@ describe("text helpers", () => {
 
 describe("stageFunnel", () => {
   it("counts stages and the share that reached each next stage", () => {
-    const f = stageFunnel(["APPLIED", "APPLIED", "SCREENED", "TAKE_HOME", "ONSITE", "REJECTED", "weird"]);
-    expect(f.active).toBe(6);
+    const f = stageFunnel(["NEW", "NEW", "SCREENING", "SCREENING", "ONSITE", "PASSED", "REJECTED", "weird"]);
+    expect(f.active).toBe(7);
     expect(f.rejected).toBe(1);
     const byStage = Object.fromEntries(f.rows.map((r) => [r.stage, r]));
-    // "weird" is treated as APPLIED.
-    expect(byStage.APPLIED.count).toBe(3);
-    // 3 of the 6 active candidates got past APPLIED.
-    expect(byStage.SCREENED.conversion).toBe(50);
-    expect(byStage.TAKE_HOME.conversion).toBe(67);
-    expect(byStage.OFFER.conversion).toBe(0);
-    // Nobody reached OFFER, so the HIRED rate is undefined.
-    expect(byStage.HIRED.conversion).toBeNull();
+    // "weird" reads as New; the old ONSITE stage reads as Screening.
+    expect(byStage.NEW.count).toBe(3);
+    expect(byStage.SCREENING.count).toBe(3);
+    // 4 of the 7 active candidates got past New, and 1 of those 4 passed.
+    expect(byStage.SCREENING.conversion).toBe(57);
+    expect(byStage.PASSED.conversion).toBe(25);
   });
 });
 
@@ -87,11 +85,12 @@ describe("setupSteps", () => {
 });
 
 describe("awaitsReview", () => {
-  it("clears once the candidate moves past the work's stage", () => {
-    expect(awaitsReview("take-home", "TAKE_HOME")).toBe(true);
-    expect(awaitsReview("take-home", "ONSITE")).toBe(false);
-    expect(awaitsReview("screening", "SCREENED")).toBe(true);
-    expect(awaitsReview("screening", "TAKE_HOME")).toBe(false);
+  it("clears once the candidate has a decision", () => {
+    expect(awaitsReview("take-home", "SCREENING")).toBe(true);
+    expect(awaitsReview("take-home", "PASSED")).toBe(false);
+    expect(awaitsReview("screening", "REJECTED")).toBe(false);
+    // Old stage names still read correctly.
+    expect(awaitsReview("screening", "TAKE_HOME")).toBe(true);
     expect(awaitsReview("screening", null)).toBe(true);
   });
 });
@@ -100,9 +99,9 @@ describe("buildOverview", () => {
   const input: OverviewInput = {
     slug: "acme",
     candidates: [
-      { id: "c1", name: "Ana", stage: "TAKE_HOME", createdAt: ago(2), stageChangedAt: ago(2) },
-      { id: "c2", name: "Ben", stage: "OFFER", createdAt: ago(24 * 20), stageChangedAt: ago(5) },
-      { id: "c3", name: "Cy", stage: "HIRED", createdAt: ago(24 * 40), stageChangedAt: ago(24 * 3) },
+      { id: "c1", name: "Ana", stage: "SCREENING", createdAt: ago(2), stageChangedAt: ago(2) },
+      { id: "c2", name: "Ben", stage: "PASSED", createdAt: ago(24 * 20), stageChangedAt: ago(5) },
+      { id: "c3", name: "Cy", stage: "PASSED", createdAt: ago(24 * 40), stageChangedAt: ago(24 * 3) },
       { id: "c4", name: "Di", stage: "REJECTED", createdAt: ago(24 * 10), stageChangedAt: ago(24) },
     ],
     sessions: [
@@ -118,7 +117,7 @@ describe("buildOverview", () => {
     takeHomes: [
       {
         id: "t1", candidateName: "Ana", challengeTitle: "LRU", status: "SUBMITTED", expiresAt: ahead(10),
-        submittedAt: ago(60), attemptId: "a1", candidateId: "c1", candidateStage: "TAKE_HOME",
+        submittedAt: ago(60), attemptId: "a1", candidateId: "c1", candidateStage: "SCREENING",
       },
       {
         id: "t2", candidateName: "Eve", challengeTitle: "Debounce", status: "PENDING", expiresAt: ahead(20),
@@ -129,7 +128,7 @@ describe("buildOverview", () => {
     aiInterviewSessions: [
       {
         id: "ai1", candidateName: "Cy", positionTitle: "FE", status: "COMPLETED", score: 81.6,
-        candidateId: "c3", candidateStage: "HIRED", finishedAt: ago(24 * 5), createdAt: ago(24 * 6),
+        candidateId: "c3", candidateStage: "PASSED", finishedAt: ago(24 * 5), createdAt: ago(24 * 6),
       },
     ],
   };
@@ -141,20 +140,20 @@ describe("buildOverview", () => {
     expect(o.attention[1].href).toBe("/w/acme/attempts/a1");
   });
 
-  it("skips screenings whose candidate already moved on", () => {
+  it("skips screenings whose candidate already has a decision", () => {
     expect(o.attention.find((a) => a.id === "ai-ai1")).toBeUndefined();
   });
 
   it("computes the KPI strip", () => {
     expect(o.kpis).toEqual({
-      active: 2,
+      active: 1,
       addedThisWeek: 1,
       toReview: 1,
       reviewOverdue: 1,
       upcomingInterviews: 1,
       interviewsThisWeek: 2,
-      offers: 1,
-      hiredThisMonth: 1,
+      passed: 2,
+      passedThisMonth: 2,
     });
   });
 
@@ -171,7 +170,7 @@ describe("buildOverview", () => {
   it("builds weekly trends and the screening score summary", () => {
     expect(o.trends.added).toHaveLength(8);
     expect(o.trends.added[7]).toBe(1);
-    expect(o.trends.hired.reduce((a, b) => a + b, 0)).toBe(1);
+    expect(o.trends.passed.reduce((a, b) => a + b, 0)).toBe(2);
     expect(o.trends.completed).toEqual(o.weekly.map((w) => w.count));
     expect(o.scores).toMatchObject({ count: 1, average: 82 });
     expect(o.scores.buckets.map((b) => b.count)).toEqual([0, 1, 0, 0]);

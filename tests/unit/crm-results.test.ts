@@ -4,6 +4,7 @@ import {
   daysSince,
   needsAttention,
   resultStateText,
+  screeningChecklist,
   rubricAverage,
   rubricToScore,
   summarizeResults,
@@ -77,11 +78,16 @@ describe("summarizeResults", () => {
 });
 
 describe("computeNextStep", () => {
-  const base = { stage: "TAKE_HOME", stageChangedAt: daysAgo(3), createdAt: daysAgo(12), batchId: "b1", now: NOW };
+  const base = { stage: "SCREENING", stageChangedAt: daysAgo(3), createdAt: daysAgo(12), batchId: "b1", now: NOW };
 
   it("asks for a review when a take-home is submitted", () => {
     const n = computeNextStep({ ...base, results: [result({ state: "submitted", finishedAt: daysAgo(2) })] });
     expect(n).toMatchObject({ label: "Review take-home", tone: "warning", detail: "2 days waiting", onUs: true });
+  });
+
+  it("asks for feedback on a finished interview", () => {
+    const n = computeNextStep({ ...base, results: [result({ kind: "interview", state: "submitted", finishedAt: daysAgo(1) })] });
+    expect(n).toMatchObject({ label: "Collect feedback", onUs: true });
   });
 
   it("warns when an unstarted link expires tomorrow", () => {
@@ -92,40 +98,69 @@ describe("computeNextStep", () => {
     expect(n).toMatchObject({ label: "Link expires tomorrow", tone: "danger" });
   });
 
-  it("suggests adding a new applicant to a batch", () => {
-    const n = computeNextStep({ ...base, stage: "APPLIED", batchId: null, results: [] });
-    expect(n.label).toBe("Add to a batch");
+  it("waits on the candidate while an AI screening is out", () => {
+    const n = computeNextStep({ ...base, results: [result({ kind: "ai_screening", state: "invited", sentAt: daysAgo(2) })] });
+    expect(n).toMatchObject({ label: "Waiting on AI screening", detail: "Sent 2d ago", onUs: false });
   });
 
-  it("suggests a take-home after a passing screening", () => {
+  it("suggests adding a new candidate to a batch, then sending an assessment", () => {
+    expect(computeNextStep({ ...base, stage: "NEW", batchId: null, results: [] }).label).toBe("Add to a batch");
+    expect(computeNextStep({ ...base, stage: "NEW", results: [] }).label).toBe("Send an assessment");
+  });
+
+  it("asks for a decision once everything sent is scored, in any order", () => {
     const n = computeNextStep({
       ...base,
-      stage: "SCREENED",
-      results: [result({ kind: "ai_screening", score: 84, passed: true, finishedAt: daysAgo(2) })],
+      results: [
+        result({ kind: "ai_screening", score: 30, passed: false, finishedAt: daysAgo(1) }),
+        result({ kind: "take_home", score: 80, passed: true, finishedAt: daysAgo(2) }),
+      ],
     });
-    expect(n).toMatchObject({ label: "Send take-home", detail: "Screening 84" });
+    // 30 x 0.3 + 80 x 0.4, over 0.7.
+    expect(n).toMatchObject({ label: "Make a decision", tone: "warning", detail: "Combined 59, one below the bar" });
   });
 
-  it("asks for a review of a failing screening", () => {
-    const n = computeNextStep({
-      ...base,
-      stage: "SCREENED",
-      results: [result({ kind: "ai_screening", score: 30, passed: false, finishedAt: daysAgo(1) })],
-    });
-    expect(n.label).toBe("Review screening");
-  });
-
-  it("closes out terminal stages", () => {
-    expect(computeNextStep({ ...base, stage: "HIRED", results: [] }).label).toBe("Hired");
-    expect(computeNextStep({ ...base, stage: "REJECTED", results: [] }).label).toBe("Closed");
-  });
-
-  it("stops asking for reviews and feedback once the candidate has moved on", () => {
-    const submitted = result({ state: "submitted", finishedAt: daysAgo(8) });
+  it("stops at a decision", () => {
     const interview = result({ kind: "interview", state: "submitted", finishedAt: daysAgo(12) });
-    expect(computeNextStep({ ...base, stage: "ONSITE", results: [submitted] }).label).toBe("Schedule interview");
-    expect(computeNextStep({ ...base, stage: "ONSITE", results: [interview] }).label).toBe("Collect feedback");
-    expect(computeNextStep({ ...base, stage: "OFFER", results: [interview] }).label).toBe("Waiting on reply");
+    expect(computeNextStep({ ...base, stage: "PASSED", results: [interview] }).label).toBe("Passed");
+    expect(computeNextStep({ ...base, stage: "REJECTED", results: [] }).label).toBe("Not passed");
+    // Old stage names map onto the decision.
+    expect(computeNextStep({ ...base, stage: "HIRED", results: [] }).label).toBe("Passed");
+  });
+
+  it("does not flag decided candidates", () => {
+    const n = computeNextStep({ ...base, stage: "PASSED", results: [] });
+    expect(needsAttention(n, "PASSED", 30)).toBe(false);
+  });
+});
+
+describe("screeningChecklist", () => {
+  it("shows the three assessments in a fixed order, whatever was sent first", () => {
+    const items = screeningChecklist([
+      result({ kind: "interview", state: "invited", scheduledAt: "2026-09-26T10:00:00Z" }),
+      result({ kind: "take_home", state: "submitted", finishedAt: daysAgo(1) }),
+    ]);
+    expect(items.map((i) => [i.kind, i.state])).toEqual([
+      ["ai_screening", "todo"],
+      ["take_home", "review"],
+      ["interview", "waiting"],
+    ]);
+    expect(items[0].status).toBe("Not sent");
+    expect(items[1].status).toBe("Not reviewed");
+    expect(items[2].status).toMatch(/^Booked for 26 Sept/);
+  });
+
+  it("prefers the best score over a newer retake", () => {
+    const items = screeningChecklist([
+      result({ kind: "take_home", score: 72, verdict: "Pass", passed: true, finishedAt: daysAgo(5) }),
+      result({ kind: "take_home", state: "invited", sentAt: daysAgo(1) }),
+    ]);
+    expect(items[1]).toMatchObject({ state: "done", value: "72", status: "Pass", count: 2 });
+  });
+
+  it("shows interview ratings on the 1 to 5 scale", () => {
+    const items = screeningChecklist([result({ kind: "interview", score: 75, rating: 4, verdict: "Hire", passed: true })]);
+    expect(items[2]).toMatchObject({ state: "done", value: "4.0" });
   });
 });
 

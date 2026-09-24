@@ -119,7 +119,7 @@ export const MCP_TOOLS: ToolCatalogEntry[] = [
       { name: "status", type: "active|hired|rejected|archived", required: true, description: "New status." },
       { name: "note", type: "string", required: false, description: "Optional note appended to candidate notes." },
     ],
-    example: 'update_candidate_status({ candidate_id: "cmp...", status: "hired" })',
+    example: 'update_candidate_status({ candidate_id: "cmp...", status: "passed" })',
   },
   {
     name: "add_candidate_note",

@@ -26,7 +26,7 @@ export type AutoCreateInput = {
   email: string; // required — that's the dedup key. If unknown, fall back to manual add.
   source: AutoCreateSource;
   /** Initial stage if this is a brand-new row. Existing rows keep their stage. */
-  initialStage?: "APPLIED" | "SCREENED" | "TAKE_HOME" | "ONSITE";
+  initialStage?: "NEW" | "SCREENING";
 };
 
 export async function upsertCandidateForWorkflow(
@@ -55,7 +55,7 @@ export async function upsertCandidateForWorkflow(
       email,
       source: input.source,
       status: "active",
-      stage: input.initialStage ?? "APPLIED",
+      stage: input.initialStage ?? "NEW",
       stageChangedAt: new Date(),
     },
     select: { id: true },

@@ -1,11 +1,10 @@
 import { prisma } from "@/lib/prisma";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
 import { validatePageAccess } from "@/lib/settings";
 import WorkspaceDashboardClient from "./WorkspaceDashboardClient";
 import { effectivePlan } from "@/lib/billing/trial";
 import { planDisplay } from "@/lib/workspace/display";
-import { PIPELINE_STAGES, type PipelineStage } from "@/lib/crm/stages";
 import {
   loadRolePermissions,
   expandRolePermissions,
@@ -14,7 +13,22 @@ import {
 
 type Props = {
   params: Promise<{ slug: string }>;
+  searchParams?: Promise<Record<string, string | string[] | undefined>>;
 };
+
+/** The old Candidates tab (table, board, leaderboard) lived at ?section=candidates. */
+function legacyCandidatesUrl(slug: string, sp: Record<string, string | string[] | undefined>): string {
+  const one = (k: string) => (typeof sp[k] === "string" ? (sp[k] as string) : undefined);
+  const view = one("view");
+  if (view === "leaderboard") return `/w/${slug}/batches`;
+  const q = new URLSearchParams();
+  const stage = one("stage");
+  if (stage) q.set("stage", stage);
+  if (one("q")) q.set("q", one("q")!);
+  if (view === "pipeline" || view === "board") q.set("view", "board");
+  const qs = q.toString();
+  return `/w/${slug}/candidates${qs ? `?${qs}` : ""}`;
+}
 
 export async function generateMetadata({ params }: Props) {
   const { slug } = await params;
@@ -27,8 +41,10 @@ export async function generateMetadata({ params }: Props) {
   };
 }
 
-export default async function WorkspaceDashboardPage({ params }: Props) {
+export default async function WorkspaceDashboardPage({ params, searchParams }: Props) {
   const { slug } = await params;
+  const sp = (await searchParams) ?? {};
+  if (sp.section === "candidates") redirect(legacyCandidatesUrl(slug, sp));
 
   // Gate workspace access based on admin visibility settings
   const session = await auth().catch(() => null);
@@ -320,23 +336,6 @@ export default async function WorkspaceDashboardPage({ params }: Props) {
     createdAt: c.createdAt.toISOString(),
   }));
 
-  // Bucket candidates for Pipeline view
-  const buckets: Record<PipelineStage, typeof formattedCandidates> = {
-    APPLIED: [],
-    SCREENED: [],
-    TAKE_HOME: [],
-    ONSITE: [],
-    OFFER: [],
-    HIRED: [],
-    REJECTED: [],
-  };
-  for (const c of formattedCandidates) {
-    const s = (PIPELINE_STAGES as readonly string[]).includes(c.stage)
-      ? (c.stage as PipelineStage)
-      : "APPLIED";
-    buckets[s].push(c);
-  }
-
   const planFields = {
     planName: workspace.planName,
     trialEndsAt: workspace.trialEndsAt,
@@ -367,7 +366,6 @@ export default async function WorkspaceDashboardPage({ params }: Props) {
         roleBasePermissions={roleBasePermissions}
         sessions={formattedSessions}
         candidates={formattedCandidates}
-        initialBuckets={buckets as any}
         promptScenarios={promptScenarios}
         promptAttempts={formattedPromptAttempts}
         pendingInvites={pendingInvites.map((i) => ({

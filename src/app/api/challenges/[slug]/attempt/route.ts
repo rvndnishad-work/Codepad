@@ -225,7 +225,7 @@ export async function POST(
         void advanceCandidateStage({
           workspaceId: updated.workspaceId,
           candidateId: updated.candidateId,
-          toStage: "TAKE_HOME",
+          toStage: "SCREENING",
           source: "auto:take-home-submitted",
         });
       }

@@ -1,8 +1,14 @@
-import { auth } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { canMember, type Permission } from "@/lib/permissions";
+import { REJECT_REASONS } from "@/lib/crm/stages";
+import {
+  assertRefs,
+  BULK_MAX,
+  candidateErrorResponse,
+  createCandidate,
+  resolveCandidateActor,
+  runBulkAction,
+} from "@/lib/crm/candidates-server";
 
 const bulkCreateSchema = z.object({
   candidates: z
@@ -14,124 +20,124 @@ const bulkCreateSchema = z.object({
         notes: z.string().max(10000).optional().or(z.literal("")),
         tags: z.array(z.string().max(40)).optional(),
         source: z.string().max(40).optional().or(z.literal("")),
-      })
+        stage: z.string().max(20).optional(),
+      }),
     )
     .min(1)
-    .max(200),
+    .max(1000),
+  batchId: z.string().max(40).nullable().optional(),
+  ownerId: z.string().max(40).nullable().optional(),
+  /** Existing emails are skipped unless the caller asks to update them. */
+  onDuplicate: z.enum(["skip", "update"]).optional(),
+});
+
+const ids = z.array(z.string().min(1)).min(1).max(BULK_MAX);
+
+const bulkActionSchema = z.object({
+  ids,
+  op: z.discriminatedUnion("action", [
+    z.object({
+      action: z.literal("stage"),
+      stage: z.string(),
+      rejectReason: z.enum(REJECT_REASONS).optional(),
+      rejectReasonNote: z.string().max(1000).nullable().optional(),
+    }),
+    z.object({ action: z.literal("batch"), batchId: z.string().nullable() }),
+    z.object({ action: z.literal("owner"), ownerId: z.string().nullable() }),
+    z.object({
+      action: z.literal("tag"),
+      add: z.array(z.string().max(40)).optional(),
+      remove: z.array(z.string().max(40)).optional(),
+    }),
+    z.object({ action: z.literal("archive") }),
+    z.object({ action: z.literal("restore") }),
+    z.object({ action: z.literal("erase") }),
+  ]),
 });
 
 const bulkDeleteSchema = z.object({
-  ids: z.array(z.string().min(1)).min(1).max(200),
+  ids,
+  mode: z.enum(["archive", "erase"]).optional(),
 });
-
-async function authorize(slug: string, permission?: Permission) {
-  const session = await auth();
-  if (!session?.user?.id) return { error: "unauthorized" as const, status: 401 };
-  const workspace = await prisma.workspace.findUnique({
-    where: { slug },
-    include: { members: { select: { userId: true, role: true, permissions: true } } },
-  });
-  if (!workspace) return { error: "Workspace not found" as const, status: 404 };
-  const member = workspace.members.find((m) => m.userId === session.user!.id);
-  if (!member) return { error: "Forbidden" as const, status: 403 };
-  if (permission && !(await canMember(member, permission))) {
-    return { error: "Forbidden" as const, status: 403 };
-  }
-  return { workspace, userId: session.user.id };
-}
 
 export async function POST(req: Request, { params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
-  const ctx = await authorize(slug, "candidate:write");
-  if ("error" in ctx) return NextResponse.json({ error: ctx.error }, { status: ctx.status });
-
-  const body = await req.json().catch(() => null);
-  const parsed = bulkCreateSchema.safeParse(body);
+  const parsed = bulkCreateSchema.safeParse(await req.json().catch(() => null));
   if (!parsed.success) {
     return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
   }
-
-  let created = 0;
-  let updated = 0;
-  let skipped = 0;
-  const failed: { row: number; reason: string }[] = [];
-
-  for (let i = 0; i < parsed.data.candidates.length; i++) {
-    const c = parsed.data.candidates[i];
-    const normalizedEmail = c.email?.toLowerCase().trim() || null;
-    const tagsJson = c.tags && c.tags.length ? JSON.stringify(c.tags) : null;
-
-    try {
-      if (normalizedEmail) {
-        const before = await prisma.candidate.findUnique({
-          where: { workspaceId_email: { workspaceId: ctx.workspace.id, email: normalizedEmail } },
-          select: { id: true },
-        });
-        await prisma.candidate.upsert({
-          where: { workspaceId_email: { workspaceId: ctx.workspace.id, email: normalizedEmail } },
-          update: {
-            name: c.name,
-            phone: c.phone || undefined,
-            notes: c.notes || undefined,
-            tags: tagsJson || undefined,
-            source: c.source || undefined,
-          },
-          create: {
-            workspaceId: ctx.workspace.id,
-            name: c.name,
-            email: normalizedEmail,
-            phone: c.phone || null,
-            notes: c.notes || null,
-            tags: tagsJson,
-            source: c.source || "bulk-import",
-            status: "active",
-          },
-        });
-        if (before) updated += 1;
-        else created += 1;
-      } else {
-        // No email — only create, no dedupe
-        await prisma.candidate.create({
-          data: {
-            workspaceId: ctx.workspace.id,
-            name: c.name,
-            email: null,
-            phone: c.phone || null,
-            notes: c.notes || null,
-            tags: tagsJson,
-            source: c.source || "bulk-import",
-            status: "active",
-          },
-        });
-        created += 1;
+  try {
+    const actor = await resolveCandidateActor(slug, "candidate:write");
+    const onDuplicate = parsed.data.onDuplicate ?? "skip";
+    await assertRefs(actor, parsed.data.batchId, parsed.data.ownerId);
+    let created = 0;
+    let updated = 0;
+    let skipped = 0;
+    const failed: { row: number; reason: string }[] = [];
+    for (let i = 0; i < parsed.data.candidates.length; i++) {
+      const c = parsed.data.candidates[i];
+      try {
+        const r = await createCandidate(
+          actor,
+          { ...c, source: c.source || "bulk-import", batchId: parsed.data.batchId, ownerId: parsed.data.ownerId },
+          onDuplicate,
+          { audit: false, refsChecked: true },
+        );
+        if (r.status === "created") created++;
+        else if (r.status === "updated") updated++;
+        else skipped++;
+      } catch (err) {
+        failed.push({ row: i + 1, reason: err instanceof Error ? err.message : String(err) });
       }
-    } catch (err) {
-      failed.push({ row: i + 1, reason: err instanceof Error ? err.message : String(err) });
-      skipped += 1;
     }
+    const { writeWorkspaceAuditEntry, WORKSPACE_AUDIT_ACTIONS } = await import("@/lib/workspace-audit");
+    void writeWorkspaceAuditEntry({
+      workspaceId: actor.workspaceId,
+      actorUserId: actor.actorUserId,
+      actorEmail: actor.actorEmail,
+      action: WORKSPACE_AUDIT_ACTIONS.CANDIDATES_IMPORTED,
+      targetType: parsed.data.batchId ? "candidateBatch" : "workspace",
+      targetId: parsed.data.batchId ?? actor.workspaceId,
+      meta: { created, updated, skipped, failed: failed.length, via: "api" },
+    });
+    return NextResponse.json({ ok: true, created, updated, skipped, failed });
+  } catch (err) {
+    const { body, status } = candidateErrorResponse(err);
+    return NextResponse.json(body, { status });
   }
-
-  return NextResponse.json({ ok: true, created, updated, skipped, failed });
 }
 
-export async function DELETE(req: Request, { params }: { params: Promise<{ slug: string }> }) {
+/** One endpoint for every bulk change: stage, batch, owner, tags, archive, restore, erase. */
+export async function PATCH(req: Request, { params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
-  const ctx = await authorize(slug, "candidate:delete");
-  if ("error" in ctx) return NextResponse.json({ error: ctx.error }, { status: ctx.status });
-
-  const body = await req.json().catch(() => null);
-  const parsed = bulkDeleteSchema.safeParse(body);
+  const parsed = bulkActionSchema.safeParse(await req.json().catch(() => null));
   if (!parsed.success) {
     return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
   }
+  try {
+    const actor = await resolveCandidateActor(slug);
+    const r = await runBulkAction(actor, parsed.data.ids, parsed.data.op);
+    return NextResponse.json({ ok: true, ...r });
+  } catch (err) {
+    const { body, status } = candidateErrorResponse(err);
+    return NextResponse.json(body, { status });
+  }
+}
 
-  // Only delete candidates that belong to this workspace
-  const result = await prisma.candidate.deleteMany({
-    where: {
-      id: { in: parsed.data.ids },
-      workspaceId: ctx.workspace.id,
-    },
-  });
-
-  return NextResponse.json({ ok: true, deleted: result.count });
+/** Archives by default. `mode: "erase"` is permanent and for owners and admins. */
+export async function DELETE(req: Request, { params }: { params: Promise<{ slug: string }> }) {
+  const { slug } = await params;
+  const parsed = bulkDeleteSchema.safeParse(await req.json().catch(() => null));
+  if (!parsed.success) {
+    return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
+  }
+  try {
+    const actor = await resolveCandidateActor(slug);
+    const erase = parsed.data.mode === "erase";
+    const r = await runBulkAction(actor, parsed.data.ids, { action: erase ? "erase" : "archive" });
+    return NextResponse.json({ ok: true, ...(erase ? { erased: r.changed } : { archived: r.changed }) });
+  } catch (err) {
+    const { body, status } = candidateErrorResponse(err);
+    return NextResponse.json(body, { status });
+  }
 }

@@ -35,7 +35,7 @@ export default async function WorkspaceLayout({ children, params }: Props) {
           challenges: true,
           sessions: true,
           takeHomes: true,
-          candidates: true,
+          candidates: { where: { status: { not: "archived" } } },
         },
       },
     },

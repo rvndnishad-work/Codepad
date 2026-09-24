@@ -51,16 +51,17 @@ function avatarOf(name: string) { return AVATARS[hash(name) % AVATARS.length]; }
 function initialsOf(name: string) { return name.split(/\s+/).filter(Boolean).map((w) => w[0]).slice(0, 2).join("").toUpperCase() || "?"; }
 
 export default function TakeHomeBuilder({
-  slug, workspaceName, challenges, prompts, playgrounds, candidates,
+  slug, workspaceName, challenges, prompts, playgrounds, candidates, initialCandidateIds = [],
 }: {
   slug: string; workspaceName: string;
   challenges: CurationChallenge[]; prompts: CurationPrompt[];
   playgrounds: CurationPlayground[]; candidates: PickCandidate[];
+  initialCandidateIds?: string[];
 }) {
   const router = useRouter();
   const [title, setTitle] = useState("Take-home assessment");
   const [daysToExpire, setDaysToExpire] = useState(7);
-  const [groups, setGroups] = useState<Group[]>([newGroup()]);
+  const [groups, setGroups] = useState<Group[]>(() => [{ ...newGroup(), candidateIds: new Set(initialCandidateIds) }]);
   const [creating, startCreating] = useTransition();
 
 

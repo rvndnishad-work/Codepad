@@ -106,10 +106,10 @@ export function buildMcpServer(auth: AuthedKey): McpServer {
     {
       title: "List candidates",
       description:
-        "List candidates in this workspace. Filter by status (active/hired/rejected/archived) or free-text search across name and email. Defaults to the 25 most recently updated.",
+        "List candidates in this workspace. Filter by status (active/passed/rejected/archived) or free-text search across name and email. Defaults to the 25 most recently updated.",
       inputSchema: {
         status: z
-          .enum(["active", "hired", "rejected", "archived"])
+          .enum(["active", "passed", "hired", "rejected", "archived"])
           .optional()
           .describe("Pipeline status filter."),
         search: z.string().optional().describe("Match against name or email."),
@@ -126,7 +126,8 @@ export function buildMcpServer(auth: AuthedKey): McpServer {
       withAudit({ auth, kind: "tool", name: "list_candidates", args }, async () => {
         const limit = args.limit ?? 25;
         const where: Record<string, unknown> = { workspaceId: auth.workspaceId };
-        if (args.status) where.status = args.status;
+        // "hired" is the pre-screening-only name for "passed".
+        if (args.status) where.status = args.status === "hired" ? "passed" : args.status;
         if (args.search) {
           where.OR = [
             { name: { contains: args.search } },
@@ -481,12 +482,12 @@ export function buildMcpServer(auth: AuthedKey): McpServer {
     {
       title: "Update candidate status",
       description:
-        "Move a candidate to a new pipeline status (active/hired/rejected/archived). Optionally append a dated note describing the reason.",
+        "Set a candidate's screening status (active/passed/rejected/archived). Optionally append a dated note describing the reason.",
       inputSchema: {
         candidate_id: z.string().min(1).describe("Candidate's internal id."),
         status: z
-          .enum(["active", "hired", "rejected", "archived"])
-          .describe("New pipeline status."),
+          .enum(["active", "passed", "hired", "rejected", "archived"])
+          .describe('New screening status. "hired" is accepted as the old name for "passed".'),
         note: z
           .string()
           .optional()
@@ -520,9 +521,22 @@ export function buildMcpServer(auth: AuthedKey): McpServer {
 
           const updated = await prisma.candidate.update({
             where: { id: existing.id },
-            data: { status: args.status, notes: nextNotes },
+            data: {
+              status: args.status === "hired" ? "passed" : args.status,
+              notes: nextNotes,
+              ...(args.status === "passed" || args.status === "hired" ? { stage: "PASSED", stageChangedAt: new Date() } : {}),
+            },
             select: { id: true, name: true, status: true, updatedAt: true },
           });
+          // The profile shows authored notes (CandidateNote); mirror there too.
+          if (args.note?.trim()) {
+            await prisma.candidateNote.create({
+              data: {
+                candidateId: existing.id,
+                body: `Via ${auth.label} (status set to ${args.status}): ${args.note.trim()}`,
+              },
+            });
+          }
 
           const text = [
             `Candidate "${updated.name}" status updated.`,
@@ -573,6 +587,9 @@ export function buildMcpServer(auth: AuthedKey): McpServer {
           await prisma.candidate.update({
             where: { id: existing.id },
             data: { notes: nextNotes },
+          });
+          await prisma.candidateNote.create({
+            data: { candidateId: existing.id, body: `Via ${auth.label}: ${args.body.trim()}` },
           });
 
           return {

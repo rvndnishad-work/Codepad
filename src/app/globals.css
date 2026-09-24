@@ -2278,3 +2278,11 @@ body.sidebar-collapsed .workspace-content {
     transition-duration: 0.01ms !important;
   }
 }
+
+/* Candidates: menus, dialogs, toasts and the quick-view drawer. Each use site
+   pairs these with motion-reduce:animate-none. */
+@keyframes menuIn { from { opacity: 0; transform: translateY(-4px) scale(0.98); } }
+@keyframes dialogIn { from { opacity: 0; transform: translateY(8px) scale(0.985); } }
+@keyframes toastIn { from { opacity: 0; transform: translateY(8px); } }
+@keyframes drawerIn { from { transform: translateX(24px); opacity: 0; } }
+@keyframes fadeIn { from { opacity: 0; } }

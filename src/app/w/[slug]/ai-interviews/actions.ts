@@ -91,7 +91,7 @@ export async function createAIInterviewSessionAction(
     name: data.candidateName.trim(),
     email: data.candidateEmail.trim().toLowerCase(),
     source: "ai-interview-create",
-    initialStage: "SCREENED",
+    initialStage: "SCREENING",
   });
 
   // Snapshot the starter baseline at invite time so grading never drifts
@@ -189,7 +189,7 @@ export async function quickAddCandidateAction(
     name,
     email,
     source: "ai-interview-create",
-    initialStage: "SCREENED",
+    initialStage: "SCREENING",
   });
 
   const row = await prisma.candidate.findUnique({
@@ -204,7 +204,7 @@ export async function quickAddCandidateAction(
       id: row?.id ?? candidateId,
       name: row?.name ?? name,
       email: row?.email ?? email,
-      stage: row?.stage ?? "SCREENED",
+      stage: row?.stage ?? "SCREENING",
     },
   };
 }

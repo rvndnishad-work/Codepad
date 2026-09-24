@@ -518,7 +518,7 @@ export async function gradeSessionById(params: {
       ...(session.candidateId
         ? { candidateId: session.candidateId }
         : { email: session.candidateEmail }),
-      toStage: "SCREENED",
+      toStage: "SCREENING",
       source: "auto:ai-screening-completed",
     });
   }

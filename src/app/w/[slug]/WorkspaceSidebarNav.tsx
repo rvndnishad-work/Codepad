@@ -122,8 +122,8 @@ export default function WorkspaceSidebarNav({ slug, growthFeatures, counts, coll
     {
       label: "Candidates",
       icon: Users,
-      href: sectionHref("candidates"),
-      isActive: sectionActive("candidates") || pathname.startsWith(`/w/${slug}/candidates`),
+      href: `/w/${slug}/candidates`,
+      isActive: pathname.startsWith(`/w/${slug}/candidates`) || pathname.startsWith(`/w/${slug}/batches`),
       count: counts.candidates,
     },
     {

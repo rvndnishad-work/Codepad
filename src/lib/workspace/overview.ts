@@ -3,6 +3,7 @@
  * page already loads. Pure, so it runs on the client and in unit tests.
  */
 import { awaitsReview } from "./display";
+import { normalizeStage } from "@/lib/crm/stages";
 
 const HOUR = 3_600_000;
 const DAY = 24 * HOUR;
@@ -82,14 +83,14 @@ export type OverviewData = {
     reviewOverdue: number;
     upcomingInterviews: number;
     interviewsThisWeek: number;
-    offers: number;
-    hiredThisMonth: number;
+    passed: number;
+    passedThisMonth: number;
   };
   attention: AttentionItem[];
   upcoming: { id: string; at: string | null; name: string; detail: string; href: string }[];
   weekly: { label: string; count: number }[];
   /** Eight weekly counts, oldest first, for the KPI sparklines. */
-  trends: { added: number[]; completed: number[]; interviews: number[]; hired: number[] };
+  trends: { added: number[]; completed: number[]; interviews: number[]; passed: number[] };
   /** Finished AI screenings with a score. */
   scores: { count: number; average: number | null; buckets: { label: string; count: number }[] };
   activity: { id: string; who: string; what: string; at: string }[];
@@ -207,7 +208,8 @@ export function buildOverview(input: OverviewInput, now: Date = new Date()): Ove
   ];
 
   // KPIs -------------------------------------------------------------------
-  const open = input.candidates.filter((c) => c.stage !== "REJECTED" && c.stage !== "HIRED");
+  const stageOf = (c: { stage: string }) => normalizeStage(c.stage);
+  const open = input.candidates.filter((c) => stageOf(c) === "NEW" || stageOf(c) === "SCREENING");
   const liveFinished = input.sessions.filter((s) => within(s.finishedAt, 7 * DAY, t)).length;
   const aiFinished = input.aiInterviewSessions.filter((s) => within(s.finishedAt, 7 * DAY, t)).length;
   const kpis = {
@@ -217,8 +219,8 @@ export function buildOverview(input: OverviewInput, now: Date = new Date()): Ove
     reviewOverdue: review.filter((r) => t - new Date(r.at).getTime() > 48 * HOUR).length,
     upcomingInterviews: pendingLive.length,
     interviewsThisWeek: liveFinished + aiFinished,
-    offers: input.candidates.filter((c) => c.stage === "OFFER").length,
-    hiredThisMonth: input.candidates.filter((c) => c.stage === "HIRED" && within(c.stageChangedAt, 30 * DAY, t)).length,
+    passed: input.candidates.filter((c) => stageOf(c) === "PASSED").length,
+    passedThisMonth: input.candidates.filter((c) => stageOf(c) === "PASSED" && within(c.stageChangedAt, 30 * DAY, t)).length,
   };
 
   // Completed assessments per week, oldest to newest, over 8 weeks ---------
@@ -254,7 +256,7 @@ export function buildOverview(input: OverviewInput, now: Date = new Date()): Ove
       ...input.sessions.map((s) => s.finishedAt),
       ...input.aiInterviewSessions.map((s) => s.finishedAt),
     ]),
-    hired: perWeek(input.candidates.filter((c) => c.stage === "HIRED").map((c) => c.stageChangedAt)),
+    passed: perWeek(input.candidates.filter((c) => stageOf(c) === "PASSED").map((c) => c.stageChangedAt)),
   };
 
   // AI screening scores ----------------------------------------------------

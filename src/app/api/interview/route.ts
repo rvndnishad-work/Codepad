@@ -201,7 +201,7 @@ export async function POST(req: Request) {
           name: candidateName,
           email: candidateEmail,
           source: "interview-schedule",
-          initialStage: "ONSITE",
+          initialStage: "SCREENING",
         });
         candidateId = linkedId;
       }
@@ -213,7 +213,7 @@ export async function POST(req: Request) {
       await advanceCandidateStage({
         workspaceId,
         candidateId,
-        toStage: "ONSITE",
+        toStage: "SCREENING",
         source: "auto:interview-created",
         actorUserId: session.user.id,
         actorEmail: session.user.email ?? null,

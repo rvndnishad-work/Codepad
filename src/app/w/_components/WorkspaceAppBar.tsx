@@ -144,7 +144,7 @@ function WorkspaceSearch({ slug }: { slug: string }) {
       onSubmit={(e) => {
         e.preventDefault();
         const query = q.trim();
-        router.push(`/w/${slug}?section=candidates${query ? `&q=${encodeURIComponent(query)}` : ""}`);
+        router.push(`/w/${slug}/candidates${query ? `?q=${encodeURIComponent(query)}` : ""}`);
       }}
       className="hidden lg:flex flex-1 justify-center min-w-0"
     >

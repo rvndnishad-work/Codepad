@@ -54,7 +54,7 @@ type Props = {
  */
 const ACTION_META: Record<string, { label: string; tone: string }> = {
   PIPELINE_STAGE_CHANGED: {
-    label: "Pipeline stage changed",
+    label: "Screening stage changed",
     tone: "border-secondary/30 bg-secondary/[0.06] text-secondary",
   },
   BULK_TAKE_HOME_DISPATCHED: {
@@ -64,6 +64,62 @@ const ACTION_META: Record<string, { label: string; tone: string }> = {
   CANDIDATE_CSV_IMPORTED: {
     label: "Candidate CSV imported",
     tone: "border-secondary/30 bg-secondary/[0.06] text-secondary",
+  },
+  CANDIDATE_CREATED: {
+    label: "Candidate added",
+    tone: "border-success/30 bg-success/[0.06] text-success",
+  },
+  CANDIDATE_UPDATED: {
+    label: "Candidate details edited",
+    tone: "border-border bg-panel text-muted",
+  },
+  CANDIDATE_ARCHIVED: {
+    label: "Candidate archived",
+    tone: "border-border bg-panel text-muted",
+  },
+  CANDIDATE_RESTORED: {
+    label: "Candidate restored",
+    tone: "border-border bg-panel text-muted",
+  },
+  CANDIDATE_ERASED: {
+    label: "Candidate erased",
+    tone: "border-danger/30 bg-danger/[0.05] text-danger",
+  },
+  CANDIDATE_BATCH_CHANGED: {
+    label: "Candidate batch changed",
+    tone: "border-secondary/30 bg-secondary/[0.06] text-secondary",
+  },
+  CANDIDATE_OWNER_CHANGED: {
+    label: "Candidate owner changed",
+    tone: "border-secondary/30 bg-secondary/[0.06] text-secondary",
+  },
+  CANDIDATE_TAGS_CHANGED: {
+    label: "Candidate tags changed",
+    tone: "border-border bg-panel text-muted",
+  },
+  CANDIDATE_NOTE_ADDED: {
+    label: "Candidate note added",
+    tone: "border-border bg-panel text-muted",
+  },
+  CANDIDATE_NOTE_DELETED: {
+    label: "Candidate note deleted",
+    tone: "border-border bg-panel text-muted",
+  },
+  CANDIDATES_IMPORTED: {
+    label: "Candidates imported",
+    tone: "border-secondary/30 bg-secondary/[0.06] text-secondary",
+  },
+  BATCH_CREATED: {
+    label: "Batch created",
+    tone: "border-success/30 bg-success/[0.06] text-success",
+  },
+  BATCH_UPDATED: {
+    label: "Batch updated",
+    tone: "border-border bg-panel text-muted",
+  },
+  BATCH_DELETED: {
+    label: "Batch deleted",
+    tone: "border-danger/30 bg-danger/[0.05] text-danger",
   },
   ATS_INTEGRATION_CONNECTED: {
     label: "ATS connected / updated",

@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import {
   Archive,
   ArrowLeft,
+  ArrowRight,
   Bot,
   CalendarDays,
   CircleArrowRight,
@@ -26,7 +27,17 @@ import {
   X,
   Zap,
 } from "lucide-react";
-import { RESULT_KIND_LABELS, RESULT_WEIGHTS, screeningChecklist, type CandidateResult, type ResultKind } from "@/lib/crm/results";
+import {
+  INTERVIEW_PASS_RATING,
+  RESULT_KIND_LABELS,
+  RESULT_WEIGHTS,
+  rubricToScore,
+  screeningChecklist,
+  TAKE_HOME_PASS,
+  type CandidateResult,
+  type ResultKind,
+} from "@/lib/crm/results";
+import { SCREENING_PASS_THRESHOLD } from "@/lib/ai-interview/verdict";
 import type { ActivityItem } from "@/lib/crm/activity";
 import { passOverrides, type RosterBatch, type RosterMember, type RosterRow } from "@/lib/crm/roster";
 import { PIPELINE_STAGES, STAGE_LABELS, type RejectReason } from "@/lib/crm/stages";
@@ -550,91 +561,140 @@ export default function CandidateProfileClient({
 function ResultsGrid({ results, combined }: { results: CandidateResult[]; combined: number | null }) {
   // The checklist above already says what has not been sent.
   if (!results.length) return null;
-  const kindIcon: Record<ResultKind, typeof Bot> = { take_home: FileCode2, ai_screening: Bot, interview: CalendarDays };
   return (
-    <section className="flex flex-col gap-3">
-      <div className="flex items-baseline justify-between gap-3">
-        <h2 className="text-[15px] font-semibold text-fg">Results</h2>
+    <section className="rounded-xl border border-border bg-surface overflow-hidden">
+      <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 px-5 py-4 border-b border-border">
+        <h2 className="text-[15px] font-semibold text-fg">
+          Results <span className="ml-1 text-[13px] font-normal text-subtle tabular-nums">{results.length}</span>
+        </h2>
         {combined != null && (
-          <span className="text-[13px] text-muted">
-            Combined <span className="text-fg font-semibold tabular-nums">{combined}</span>
+          <span className="inline-flex items-center gap-2 text-[13px] text-muted">
+            <span className="inline-flex items-baseline gap-1 h-7 px-2.5 rounded-lg bg-secondary/15 text-secondary-soft">
+              Combined <span className="font-semibold tabular-nums text-fg">{combined}</span>
+            </span>
             <span className="text-subtle">
-              {" "}
-              · screening {RESULT_WEIGHTS.ai_screening * 100}%, take-home {RESULT_WEIGHTS.take_home * 100}%, interview {RESULT_WEIGHTS.interview * 100}%
+              Screening {RESULT_WEIGHTS.ai_screening * 100}%, take-home {RESULT_WEIGHTS.take_home * 100}%, interview {RESULT_WEIGHTS.interview * 100}%
             </span>
           </span>
         )}
       </div>
-      <div className="grid sm:grid-cols-2 xl:grid-cols-3 gap-4">
-        {results.map((r) => {
-          const Icon = kindIcon[r.kind];
-          const state =
-            r.state === "scored"
-              ? null
-              : r.state === "submitted"
-                ? r.kind === "interview"
-                  ? "Waiting for feedback"
-                  : "Submitted, not scored yet"
-                : r.state === "in_progress"
-                  ? "In progress"
-                  : r.state === "expired"
-                    ? "Expired"
-                    : r.kind === "interview"
-                      ? r.scheduledAt
-                        ? `Booked for ${fmtDate(r.scheduledAt)}`
-                        : "Booked"
-                      : "Sent, not started";
-          return (
-            <div key={r.id} className="rounded-xl border border-border bg-surface p-4 flex flex-col gap-3 min-w-0">
-              <div className="flex items-start justify-between gap-3">
-                <div className="min-w-0">
-                  <div className="flex items-center gap-1.5 text-xs text-subtle">
-                    <Icon className="w-3.5 h-3.5" aria-hidden />
-                    {RESULT_KIND_LABELS[r.kind]}
-                  </div>
-                  <div className="text-[15px] font-semibold text-fg mt-0.5 truncate">{r.title}</div>
-                </div>
-                {r.verdict && (
-                  <span
-                    className={`shrink-0 inline-flex items-center h-6 px-2 rounded-md text-xs font-medium ${
-                      r.passed ? "bg-success/15 text-success" : r.passed === false ? "bg-warning/15 text-warning" : "bg-panel text-muted"
-                    }`}
-                  >
-                    {r.verdict}
-                  </span>
-                )}
-              </div>
-              {r.score != null ? (
-                <div className="flex items-baseline gap-1.5">
-                  <span className="text-[32px] font-semibold tracking-tight text-fg tabular-nums">
-                    {r.kind === "interview" && r.rating != null ? r.rating.toFixed(1) : r.score}
-                  </span>
-                  <span className="text-[13px] text-subtle">{r.kind === "interview" ? "/ 5" : "/ 100"}</span>
-                </div>
-              ) : (
-                <div className={`text-sm ${r.state === "expired" ? "text-danger" : r.state === "submitted" ? "text-warning" : "text-muted"}`}>{state}</div>
-              )}
-              <div className="text-xs text-subtle flex flex-wrap gap-x-3 gap-y-1">
-                <span>Sent {fmtDate(r.sentAt)}</span>
-                {r.finishedAt && <span>Finished {fmtDate(r.finishedAt)}</span>}
-                {r.minutesTaken != null && (
-                  <span>
-                    {r.minutesTaken}
-                    {r.minutesAllowed ? ` of ${r.minutesAllowed}` : ""} min
-                  </span>
-                )}
-                {r.deadlineAt && !r.finishedAt && <span>Due {fmtDate(r.deadlineAt)}</span>}
-              </div>
-              {r.href && (
-                <a href={r.href} className="text-[13px] font-medium text-secondary-soft hover:underline mt-auto">
-                  {r.kind === "ai_screening" ? "Read transcript" : r.kind === "interview" ? "Open interview" : r.state === "scored" || r.state === "submitted" ? "Open submission" : "Open"}
-                </a>
-              )}
-            </div>
-          );
-        })}
-      </div>
+      <ol className="divide-y divide-border">
+        {results.map((r, i) => (
+          <ResultRow key={r.id} r={r} index={i} />
+        ))}
+      </ol>
     </section>
+  );
+}
+
+const KIND_ICON: Record<ResultKind, typeof Bot> = { take_home: FileCode2, ai_screening: Bot, interview: CalendarDays };
+/** Where each kind clears the bar, on the 0 to 100 scale the bar draws. */
+const PASS_MARK: Record<ResultKind, number> = {
+  ai_screening: SCREENING_PASS_THRESHOLD,
+  take_home: TAKE_HOME_PASS,
+  interview: rubricToScore(INTERVIEW_PASS_RATING),
+};
+
+function resultState(r: CandidateResult): string | null {
+  if (r.state === "scored") return null;
+  if (r.state === "submitted") return r.kind === "interview" ? "Waiting for feedback" : "Submitted, not scored yet";
+  if (r.state === "in_progress") return "In progress";
+  if (r.state === "expired") return "Expired";
+  if (r.kind === "interview") return r.scheduledAt ? `Booked for ${fmtDate(r.scheduledAt)}` : "Booked";
+  return "Sent, not started";
+}
+
+function ResultRow({ r, index }: { r: CandidateResult; index: number }) {
+  const Icon = KIND_ICON[r.kind];
+  const state = resultState(r);
+  // Colour follows the verdict: green clears the bar, amber is below it, indigo is still open.
+  const tone = r.passed ? "success" : r.passed === false ? "warning" : r.state === "expired" ? "danger" : "secondary";
+  const tile = {
+    success: "bg-success/15 text-success",
+    warning: "bg-warning/15 text-warning",
+    danger: "bg-danger/15 text-danger",
+    secondary: "bg-secondary/15 text-secondary-soft",
+  }[tone];
+  const bar = { success: "bg-success", warning: "bg-warning", danger: "bg-danger", secondary: "bg-secondary" }[tone];
+  const link = r.kind === "ai_screening" ? "Read transcript" : r.kind === "interview" ? "Open interview" : r.state === "scored" || r.state === "submitted" ? "Open submission" : "Open";
+  return (
+    <li
+      className="group relative grid grid-cols-[40px_minmax(0,1fr)] md:grid-cols-[40px_minmax(0,1fr)_180px_156px] items-center gap-x-4 gap-y-3 px-5 py-4 transition-colors hover:bg-panel/40 animate-slide-up motion-reduce:animate-none"
+      style={{ animationDelay: `${Math.min(index, 8) * 50}ms`, animationFillMode: "backwards" }}
+    >
+      <span className={`w-10 h-10 rounded-xl flex items-center justify-center ${tile}`}>
+        <Icon className="w-[18px] h-[18px]" aria-hidden />
+      </span>
+
+      <div className="min-w-0">
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="text-xs text-subtle">{RESULT_KIND_LABELS[r.kind]}</span>
+          {r.verdict && (
+            <span
+              className={`inline-flex items-center h-5 px-1.5 rounded-md text-xs font-medium ${
+                r.passed ? "bg-success/15 text-success" : r.passed === false ? "bg-warning/15 text-warning" : "bg-panel text-muted"
+              }`}
+            >
+              {r.verdict}
+            </span>
+          )}
+        </div>
+        <div className="text-[15px] font-semibold text-fg mt-0.5 truncate" title={r.title}>
+          {r.title}
+        </div>
+        <div className="text-xs text-subtle flex flex-wrap gap-x-3 gap-y-1 mt-1">
+          <span>Sent {fmtDate(r.sentAt)}</span>
+          {r.finishedAt && <span>Finished {fmtDate(r.finishedAt)}</span>}
+          {r.minutesTaken != null && (
+            <span>
+              {r.minutesTaken}
+              {r.minutesAllowed ? ` of ${r.minutesAllowed}` : ""} min
+            </span>
+          )}
+          {r.deadlineAt && !r.finishedAt && <span>Due {fmtDate(r.deadlineAt)}</span>}
+        </div>
+      </div>
+
+      <div className="col-start-2 md:col-start-auto min-w-0">
+        {r.score != null ? (
+          <div className="flex flex-col gap-2">
+            <div className="flex items-baseline gap-1.5">
+              <span className="text-[26px] leading-none font-semibold tracking-tight text-fg tabular-nums">
+                {r.kind === "interview" && r.rating != null ? r.rating.toFixed(1) : r.score}
+              </span>
+              <span className="text-[13px] text-subtle">{r.kind === "interview" && r.rating != null ? "/ 5" : "/ 100"}</span>
+              <span className="ml-auto text-xs text-subtle tabular-nums">
+                Bar {r.kind === "interview" && r.rating != null ? INTERVIEW_PASS_RATING : PASS_MARK[r.kind]}
+              </span>
+            </div>
+            <div className="relative h-1.5 rounded-full bg-panel" aria-hidden>
+              <div
+                className={`h-1.5 rounded-full origin-left animate-rule-in motion-reduce:animate-none ${bar}`}
+                style={{ width: `${Math.max(2, Math.min(100, r.score))}%`, animationDelay: `${150 + Math.min(index, 8) * 50}ms` }}
+              />
+              <span className="absolute -top-1 bottom-[-4px] w-px bg-fg/40" style={{ left: `${PASS_MARK[r.kind]}%` }} title="Pass mark" />
+            </div>
+          </div>
+        ) : (
+          <div className={`flex items-center gap-2 text-[13px] whitespace-nowrap ${r.state === "expired" ? "text-danger" : r.state === "submitted" ? "text-warning" : "text-muted"}`}>
+            <span className={`w-1.5 h-1.5 shrink-0 rounded-full ${r.state === "expired" ? "bg-danger" : r.state === "submitted" ? "bg-warning" : "bg-secondary"} ${r.state === "in_progress" ? "animate-pulse motion-reduce:animate-none" : ""}`} />
+            {state}
+          </div>
+        )}
+      </div>
+
+      <div className="col-start-2 md:col-start-auto md:justify-self-end">
+        {r.href && (
+          <a
+            href={r.href}
+            className="inline-flex items-center gap-1 h-8 px-3 rounded-lg border border-border text-[13px] font-medium text-fg hover:bg-panel hover:border-border-strong transition-colors whitespace-nowrap"
+          >
+            {link}
+            <ArrowRight className="w-3.5 h-3.5 text-subtle transition-transform group-hover:translate-x-0.5 motion-reduce:transition-none" aria-hidden />
+          </a>
+        )}
+      </div>
+    </li>
   );
 }
 

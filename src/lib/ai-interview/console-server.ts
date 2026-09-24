@@ -728,10 +728,13 @@ export async function loadTalentPool(workspaceId: string): Promise<PoolCandidate
 
 /* ── Question bank for New screening ─────────────────────────────────────── */
 
-export type PoolChallenge = CuratableChallenge & { title: string; difficulty: string };
+export type PoolChallenge = CuratableChallenge & { title: string; difficulty: string; mine: boolean };
 
-/** The published challenge bank, classified by stack (same as /api/interview/stack-pool). */
-export async function loadChallengePool(): Promise<PoolChallenge[]> {
+/**
+ * The published challenge bank, classified by stack (same as
+ * /api/interview/stack-pool), plus this workspace's own question library.
+ */
+export async function loadChallengePool(workspaceId?: string): Promise<PoolChallenge[]> {
   const parse = (raw: string | null | undefined): string[] => {
     if (!raw) return [];
     try {
@@ -742,10 +745,11 @@ export async function loadChallengePool(): Promise<PoolChallenge[]> {
     }
   };
   const rows = await prisma.challenge.findMany({
-    where: { published: true, workspaceId: null },
+    where: workspaceId ? { OR: [{ published: true, workspaceId: null }, { workspaceId }] } : { published: true, workspaceId: null },
     orderBy: [{ difficulty: "asc" }, { createdAt: "asc" }],
     select: {
       id: true,
+      workspaceId: true,
       title: true,
       difficulty: true,
       category: true,
@@ -761,6 +765,6 @@ export async function loadChallengePool(): Promise<PoolChallenge[]> {
       tags: parse(c.tags),
       category: c.category,
     });
-    return { id: c.id, title: c.title, difficulty: c.difficulty, paradigm: meta.paradigm, languages: meta.languages, frameworks: meta.frameworks };
+    return { id: c.id, title: c.title, difficulty: c.difficulty, paradigm: meta.paradigm, languages: meta.languages, frameworks: meta.frameworks, mine: !!c.workspaceId };
   });
 }

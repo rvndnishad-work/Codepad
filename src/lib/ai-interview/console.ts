@@ -290,3 +290,59 @@ export function fmtDuration(sec: number | null | undefined): string | null {
   if (m < 60) return `${m} min`;
   return `${Math.floor(m / 60)} h ${m % 60} min`;
 }
+
+// ---- Role picker ---------------------------------------------------------------
+
+export const ROLE_LEVELS = ["Junior", "Mid-level", "Senior", "Lead", "Manager"] as const;
+export type RoleLevel = (typeof ROLE_LEVELS)[number];
+
+export type RoleArea = {
+  id: string;
+  label: string;
+  /** Title noun, e.g. "Frontend Engineer". */
+  noun: string;
+  /** Title used with the Manager level. */
+  manager: string;
+  technical: boolean;
+  /** Stack preselected when the area is picked and nothing is chosen yet. */
+  stack?: { frontend?: string[]; backend?: string[]; dsa?: string[] };
+};
+
+export const ROLE_AREAS: RoleArea[] = [
+  { id: "frontend", label: "Frontend", noun: "Frontend Engineer", manager: "Frontend Engineering Manager", technical: true, stack: { frontend: ["react"] } },
+  { id: "backend", label: "Backend", noun: "Backend Engineer", manager: "Backend Engineering Manager", technical: true, stack: { backend: ["node"] } },
+  { id: "fullstack", label: "Full-stack", noun: "Full-stack Engineer", manager: "Engineering Manager", technical: true, stack: { frontend: ["react"], backend: ["node"] } },
+  { id: "mobile", label: "Mobile", noun: "Mobile Engineer", manager: "Mobile Engineering Manager", technical: true, stack: { frontend: ["react"] } },
+  { id: "data", label: "Data", noun: "Data Engineer", manager: "Data Engineering Manager", technical: true, stack: { backend: ["python"], dsa: ["python"] } },
+  { id: "devops", label: "DevOps", noun: "DevOps Engineer", manager: "Platform Engineering Manager", technical: true, stack: { backend: ["python"] } },
+  { id: "qa", label: "QA", noun: "QA Engineer", manager: "QA Manager", technical: true, stack: { frontend: ["react"] } },
+  { id: "product", label: "Product", noun: "Product Manager", manager: "Group Product Manager", technical: false },
+  { id: "design", label: "Design", noun: "Product Designer", manager: "Design Manager", technical: false },
+  { id: "sales", label: "Sales", noun: "Account Executive", manager: "Sales Manager", technical: false },
+  { id: "marketing", label: "Marketing", noun: "Marketing Specialist", manager: "Marketing Manager", technical: false },
+  { id: "support", label: "Customer support", noun: "Customer Support Specialist", manager: "Customer Support Manager", technical: false },
+  { id: "operations", label: "Operations", noun: "Operations Specialist", manager: "Operations Manager", technical: false },
+  { id: "people", label: "People and HR", noun: "HR Generalist", manager: "People Manager", technical: false },
+  { id: "finance", label: "Finance", noun: "Financial Analyst", manager: "Finance Manager", technical: false },
+];
+
+/**
+ * Compose a job title from a level and an area. "Mid-level" is left out of
+ * the title, as job ads usually do; Manager uses the area's own manager title.
+ */
+export function composeRoleTitle(level: RoleLevel | null, areaId: string | null): string {
+  const area = ROLE_AREAS.find((a) => a.id === areaId) ?? null;
+  if (level === "Manager") return area ? area.manager : "Manager";
+  const prefix = level && level !== "Mid-level" ? level : "";
+  const noun = area ? area.noun : level ? "Engineer" : "";
+  return [prefix, noun].filter(Boolean).join(" ");
+}
+
+/** Best-effort read of a level and area back out of a free-text title. */
+export function parseRoleTitle(title: string): { level: RoleLevel | null; area: string | null } {
+  const t = title.trim().toLowerCase();
+  if (!t) return { level: null, area: null };
+  for (const level of ROLE_LEVELS)
+    for (const a of ROLE_AREAS) if (composeRoleTitle(level, a.id).toLowerCase() === t) return { level, area: a.id };
+  return { level: null, area: null };
+}

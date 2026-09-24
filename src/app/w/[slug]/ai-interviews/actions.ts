@@ -181,6 +181,16 @@ export type NewScreeningInput = {
   extensionMinutes: number;
 };
 
+/** Challenge rounds may use the public bank or this workspace's own library, nothing else. */
+async function assertChallengesVisible(workspaceId: string, rounds: { sourceKind: string; sourceId?: string }[]) {
+  const ids = [...new Set(rounds.filter((r) => r.sourceKind === "challenge" && r.sourceId).map((r) => r.sourceId!))];
+  if (!ids.length) return;
+  const found = await prisma.challenge.count({
+    where: { id: { in: ids }, OR: [{ published: true, workspaceId: null }, { workspaceId }] },
+  });
+  if (found !== ids.length) throw new ActionError("One of the questions is no longer available. Pick another one.");
+}
+
 export async function createScreeningAction(
   slug: string,
   input: NewScreeningInput,
@@ -193,6 +203,7 @@ export async function createScreeningAction(
     const rounds = (input.rounds ?? []).map(sanitizeRoundSpec);
     if (!rounds.length) throw new ActionError("Pick at least one thing to test.");
     if (rounds.length > 6) throw new ActionError("A screening can have at most 6 rounds.");
+    await assertChallengesVisible(w.workspace.id, rounds);
 
     const level = normalizeEngagementLevel(input.engagementLevel);
     const expiresAfterDays = clampChoice(input.expiresAfterDays, EXPIRY_CHOICES, DEFAULT_EXPIRY_DAYS);

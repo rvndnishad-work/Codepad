@@ -82,6 +82,7 @@ import {
 type Message = {
   role: "user" | "assistant";
   text: string;
+  roundId?: string;
 };
 
 /** One round surfaced to the candidate (resolved server-side from its source). */
@@ -90,7 +91,7 @@ export type RoundView = {
   order: number;
   title: string;
   description: string;
-  kind: "frontend" | "backend" | "dsa";
+  kind: "frontend" | "backend" | "dsa" | "conversation";
   language?: string;
   estimatedMinutes: number;
   files: Record<string, string>;
@@ -134,6 +135,7 @@ const ROUND_ICON: Record<string, React.ReactNode> = {
   frontend: <Monitor className="w-3.5 h-3.5" />,
   backend: <Server className="w-3.5 h-3.5" />,
   dsa: <Binary className="w-3.5 h-3.5" />,
+  conversation: <MessageSquare className="w-3.5 h-3.5" />,
 };
 
 /** Extract a plain code map from a Sandpack files object. */
@@ -216,6 +218,8 @@ export default function AIInterviewWorkspace({ session, rounds, initialChat }: P
   const activeRound = rounds.find((r) => r.roundId === activeRoundId) ?? rounds[0];
   const activeFiles = roundFiles[activeRoundId] ?? {};
   const isMultiRound = rounds.length > 1;
+  const allTalk = rounds.every((r) => r.kind === "conversation");
+  const nextRound = rounds[rounds.findIndex((r) => r.roundId === activeRound?.roundId) + 1] ?? null;
 
   const chatContainerRef = useRef<HTMLDivElement>(null);
   const chatEndRef = useRef<HTMLDivElement>(null);
@@ -743,7 +747,7 @@ export default function AIInterviewWorkspace({ session, rounds, initialChat }: P
     if (!text.trim() || sending) return;
     const userMessage = text.trim();
     setSending(true);
-    setChat((prev) => [...prev, { role: "user", text: userMessage }]);
+    setChat((prev) => [...prev, { role: "user", text: userMessage, roundId: activeRoundId }]);
     try {
       const res = await postMessage(userMessage);
       if (!res.ok) {
@@ -832,7 +836,15 @@ export default function AIInterviewWorkspace({ session, rounds, initialChat }: P
                 Assessment Completed
               </h2>
               <p className="text-xs text-muted max-w-md mx-auto leading-relaxed font-medium">
-                Thank you for completing the technical round{isMultiRound ? "s" : ""}, <span className="text-fg font-extrabold">{session.candidateName}</span>! Your code submissions, editor workflows, and dictation history across {rounds.length} round{rounds.length === 1 ? "" : "s"} have been successfully audited and graded by our AI Agent.
+                {allTalk ? (
+                  <>
+                    Thank you for completing the interview, <span className="text-fg font-extrabold">{session.candidateName}</span>! Your answers across {rounds.length} round{rounds.length === 1 ? "" : "s"} have been saved and sent to the hiring team.
+                  </>
+                ) : (
+                  <>
+                    Thank you for completing the technical round{isMultiRound ? "s" : ""}, <span className="text-fg font-extrabold">{session.candidateName}</span>! Your code submissions, editor workflows, and dictation history across {rounds.length} round{rounds.length === 1 ? "" : "s"} have been successfully audited and graded by our AI Agent.
+                  </>
+                )}
               </p>
             </div>
           </div>
@@ -886,7 +898,7 @@ export default function AIInterviewWorkspace({ session, rounds, initialChat }: P
 
           {/* Gracious Reassurance Text */}
           <div className="text-center bg-bg/40 border border-border/40 rounded-2xl p-4 text-[11px] leading-relaxed text-muted font-medium">
-            💼 Your technical scores, file templates, terminal execution records, and dictation sessions are securely compiled. The engineering hiring panel will review your profile and connect with you on next steps shortly. Best of luck!
+            💼 {allTalk ? "The hiring team will review your interview and contact you about next steps. Best of luck!" : "Your technical scores, file templates, terminal execution records, and dictation sessions are securely compiled. The engineering hiring panel will review your profile and connect with you on next steps shortly. Best of luck!"}
           </div>
 
           {/* Premium Finalize & Exit Button */}
@@ -927,7 +939,7 @@ export default function AIInterviewWorkspace({ session, rounds, initialChat }: P
           </Link>
           <span className="text-muted/30 hidden sm:inline">|</span>
           <div className="min-w-0">
-            <span className="text-[10px] font-black uppercase text-muted tracking-widest block">AI Technical Round</span>
+            <span className="text-[10px] font-black uppercase text-muted tracking-widest block">{allTalk ? "AI Interview" : "AI Technical Round"}</span>
             <span className="text-xs font-bold text-fg truncate block">{session.positionTitle}</span>
           </div>
         </div>
@@ -1045,7 +1057,7 @@ export default function AIInterviewWorkspace({ session, rounds, initialChat }: P
           className={`transition-all duration-300 flex flex-col min-w-0 border-r border-border bg-surface/40 ${chatCollapsed ? "opacity-0 pointer-events-none border-r-0 shrink-0" : "shrink-0"}`}
         >
           <div className="px-5 py-3.5 border-b border-border bg-surface/60 flex items-center justify-between shrink-0 h-14">
-            <span className="text-[10px] font-black uppercase text-accent tracking-widest">Assessment Question</span>
+            <span className="text-[10px] font-black uppercase text-accent tracking-widest">{activeRound.kind === "conversation" ? "About this round" : "Assessment Question"}</span>
             <button
               type="button"
               onClick={() => setChatCollapsed(true)}
@@ -1155,6 +1167,22 @@ export default function AIInterviewWorkspace({ session, rounds, initialChat }: P
           )}
 
           <div className="flex-1 min-h-0 overflow-hidden">
+            {activeRound.kind === "conversation" ? (
+              <ConversationPane
+                key={activeRound.roundId}
+                chat={chat}
+                sending={sending}
+                input={input}
+                setInput={setInput}
+                onSend={handleSend}
+                started={chat.some((m) => m.roundId === activeRound.roundId)}
+                onStart={() => void handleSendText("I am ready to start this round.")}
+                disabled={completed || outOfCredits || !!aiStatus?.expired}
+                finishLabel={nextRound ? "Finish round" : "Finish and submit"}
+                finishing={submitting}
+                onFinish={() => (nextRound ? setActiveRoundId(nextRound.roundId) : void handleSubmitAssessment())}
+              />
+            ) : (
             <RoundSurface
               key={activeRound.roundId}
               round={activeRound}
@@ -1165,6 +1193,7 @@ export default function AIInterviewWorkspace({ session, rounds, initialChat }: P
               setOutputView={setOutputView}
               reservedLeft={chatCollapsed ? 0 : effChatW + 6}
             />
+            )}
           </div>
         </div>
       </main>
@@ -1514,7 +1543,7 @@ export default function AIInterviewWorkspace({ session, rounds, initialChat }: P
       )}
 
       {/* Floating Chat Overlay Panel — user choosable dock: left / center / right */}
-      {floatingChatOpen && (
+      {floatingChatOpen && activeRound.kind !== "conversation" && (
         <div
           style={{ boxShadow: "0 24px 64px rgba(0, 0, 0, 0.3)" }}
           className={`fixed bottom-24 z-50 w-[400px] max-w-[92vw] h-[560px] bg-surface/95 border border-border/80 backdrop-blur-lg rounded-3xl flex flex-col min-w-0 shadow-2xl animate-in fade-in slide-in-from-bottom-5 duration-300 overflow-hidden ${
@@ -1682,6 +1711,123 @@ export default function AIInterviewWorkspace({ session, rounds, initialChat }: P
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+/**
+ * A conversation round: the chat is the whole surface. No editor, no files;
+ * the interviewer works through the recruiter's questions one at a time.
+ */
+function ConversationPane({
+  chat,
+  sending,
+  input,
+  setInput,
+  onSend,
+  started,
+  onStart,
+  disabled,
+  finishLabel,
+  finishing,
+  onFinish,
+}: {
+  chat: Message[];
+  sending: boolean;
+  input: string;
+  setInput: (v: string) => void;
+  onSend: (e: React.FormEvent) => void;
+  started: boolean;
+  onStart: () => void;
+  disabled: boolean;
+  finishLabel: string;
+  finishing: boolean;
+  onFinish: () => void;
+}) {
+  const endRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    endRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
+  }, [chat.length, sending]);
+
+  return (
+    <div className="h-full flex flex-col bg-bg">
+      <div className="flex-1 overflow-y-auto px-4 sm:px-8 py-6">
+        <div className="max-w-2xl mx-auto flex flex-col gap-4">
+          {chat.map((msg, i) => {
+            const isAI = msg.role === "assistant";
+            return (
+              <div key={i} className={`flex gap-2.5 max-w-[88%] ${isAI ? "" : "ml-auto flex-row-reverse"}`}>
+                <div
+                  className={`w-8 h-8 rounded-lg shrink-0 flex items-center justify-center ${
+                    isAI ? "bg-accent/10 border border-accent/25 text-accent" : "bg-elevated/40 border border-border text-muted"
+                  }`}
+                >
+                  {isAI ? <Bot className="w-4 h-4" /> : <User className="w-4 h-4" />}
+                </div>
+                <div
+                  className={`px-4 py-3 rounded-2xl border text-sm leading-relaxed break-words [overflow-wrap:anywhere] ${
+                    isAI ? "bg-surface border-border text-fg" : "bg-accent/10 border-accent/25 text-fg"
+                  }`}
+                >
+                  {isAI ? <MarkdownRenderer content={msg.text} className="text-sm prose-p:my-1.5 prose-p:text-fg" /> : <div className="whitespace-pre-line">{msg.text}</div>}
+                </div>
+              </div>
+            );
+          })}
+          {sending && (
+            <div className="flex items-center gap-2 text-xs text-muted">
+              <Bot className="w-4 h-4 text-accent animate-pulse" /> The interviewer is thinking
+            </div>
+          )}
+          {!started && !sending && (
+            <div className="rounded-2xl border border-dashed border-border p-5 text-center flex flex-col items-center gap-3">
+              <p className="text-sm text-muted">This round is a conversation. The interviewer asks a few questions, one at a time. Answer in your own words; there is no code.</p>
+              <button
+                type="button"
+                onClick={onStart}
+                disabled={disabled}
+                className="px-4 py-2 rounded-xl bg-accent text-bg text-sm font-bold hover:bg-accent-soft disabled:opacity-50 cursor-pointer"
+              >
+                Start this round
+              </button>
+            </div>
+          )}
+          <div ref={endRef} />
+        </div>
+      </div>
+      {/* pb-24 keeps the answer box clear of the voice dock pinned at the bottom. */}
+      <div className="border-t border-border bg-surface/60 px-4 sm:px-8 pt-3 pb-24">
+        <form onSubmit={onSend} className="max-w-2xl mx-auto flex items-end gap-2">
+          <textarea
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && !e.shiftKey) {
+                e.preventDefault();
+                (e.currentTarget.form as HTMLFormElement | null)?.requestSubmit();
+              }
+            }}
+            rows={2}
+            placeholder="Type your answer. Enter sends, Shift+Enter adds a line."
+            disabled={sending || disabled}
+            aria-label="Your answer"
+            className="flex-1 resize-none px-4 py-3 rounded-xl border border-border bg-bg text-sm text-fg focus:outline-none focus:border-accent"
+          />
+          <button type="submit" disabled={sending || disabled || !input.trim()} className="h-11 px-4 rounded-xl bg-accent text-bg text-sm font-bold disabled:opacity-40 cursor-pointer inline-flex items-center gap-1.5">
+            <Send className="w-4 h-4" /> Send
+          </button>
+        </form>
+        <div className="max-w-2xl mx-auto flex justify-end pt-2">
+          <button
+            type="button"
+            onClick={onFinish}
+            disabled={finishing || disabled}
+            className="text-xs font-bold text-emerald-600 dark:text-emerald-400 hover:underline disabled:opacity-50 cursor-pointer"
+          >
+            {finishLabel}
+          </button>
+        </div>
+      </div>
     </div>
   );
 }

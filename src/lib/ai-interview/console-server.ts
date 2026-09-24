@@ -283,7 +283,7 @@ export type ReportRound = {
   order: number;
   title: string;
   description: string;
-  kind: "frontend" | "backend" | "dsa";
+  kind: "frontend" | "backend" | "dsa" | "conversation";
   label: string;
   language: string | null;
   frameworkLabel: string | null;
@@ -313,7 +313,7 @@ export type ReportData = {
   suspicion: number | null;
   ratings: Ratings | null;
   summary: SummarySection[];
-  chat: { role: "user" | "assistant"; text: string }[];
+  chat: { role: "user" | "assistant"; text: string; roundId?: string }[];
   rounds: ReportRound[];
   notes: ReportNote[];
   timeSpentSec: number;
@@ -395,13 +395,17 @@ export async function loadReport(workspaceId: string, sessionId: string, viewerI
   const known = rounds.filter((r) => r.linesWritten != null);
   const linesWritten = known.length ? known.reduce((n, r) => n + (r.linesWritten ?? 0), 0) : null;
 
-  let chat: { role: "user" | "assistant"; text: string }[] = [];
+  let chat: { role: "user" | "assistant"; text: string; roundId?: string }[] = [];
   try {
     const parsed = JSON.parse(s.chatHistory || "[]");
     if (Array.isArray(parsed)) {
       chat = parsed
         .filter((m) => m && typeof m.text === "string")
-        .map((m) => ({ role: m.role === "assistant" ? "assistant" : "user", text: String(m.text) }));
+        .map((m) => ({
+          role: m.role === "assistant" ? "assistant" : "user",
+          text: String(m.text),
+          ...(typeof m.roundId === "string" ? { roundId: m.roundId } : {}),
+        }));
     }
   } catch {
     chat = [];
@@ -646,7 +650,7 @@ export type QuestionItem = {
   description: string;
   minutes: number;
   custom: boolean;
-  kind: "frontend" | "backend" | "dsa";
+  kind: "frontend" | "backend" | "dsa" | "conversation";
   language: string | null;
   frameworkLabel: string | null;
   label: string;

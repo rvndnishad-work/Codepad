@@ -154,7 +154,7 @@ export default async function AIInterviewRunPage({ params, searchParams }: Props
           kind: r.kind,
           language: r.language,
           estimatedMinutes: r.estimatedMinutes,
-          files: Object.keys(r.files).length > 0 ? r.files : DEFAULT_STARTER_FILES,
+          files: r.kind === "conversation" || Object.keys(r.files).length > 0 ? r.files : DEFAULT_STARTER_FILES,
           status: r.status,
         }))
       : [

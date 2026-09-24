@@ -7,8 +7,9 @@ import { plural } from "@/lib/workspace/display";
 import { Avatar, inputCls } from "../../../candidates/_components/ui";
 
 /**
- * The whole conversation with the AI interviewer. Messages are stored without
- * times or round markers, so the transcript is one continuous thread.
+ * The whole conversation with the AI interviewer. Newer messages carry the
+ * round they were sent in, which shows as a divider when the round changes;
+ * older ones read as one continuous thread.
  */
 export default function TranscriptTab({ r }: { r: ReportData }) {
   const [q, setQ] = useState("");
@@ -39,10 +40,21 @@ export default function TranscriptTab({ r }: { r: ReportData }) {
         ) : shown.length === 0 ? (
           <p className="text-sm text-muted text-center py-8">No messages match that search.</p>
         ) : (
-          shown.map((m) => {
+          shown.map((m, idx) => {
             const ai = m.role === "assistant";
+            const prev = shown[idx - 1];
+            const roundIdx = m.roundId ? r.rounds.findIndex((x) => x.id === m.roundId) : -1;
+            const divider = r.rounds.length > 1 && roundIdx >= 0 && (!prev || prev.roundId !== m.roundId);
             return (
-              <div key={m.i} className={`flex gap-3 items-start ${ai ? "" : "flex-row-reverse"}`}>
+              <div key={m.i} className="flex flex-col gap-5">
+                {divider && (
+                  <div className="flex items-center gap-3 text-xs text-subtle" role="separator">
+                    <span className="h-px flex-1 bg-border" />
+                    Round {roundIdx + 1}: {r.rounds[roundIdx].title}
+                    <span className="h-px flex-1 bg-border" />
+                  </div>
+                )}
+              <div className={`flex gap-3 items-start ${ai ? "" : "flex-row-reverse"}`}>
                 {ai ? (
                   <span className="w-8 h-8 rounded-full bg-secondary/15 text-secondary-soft inline-flex items-center justify-center shrink-0" aria-hidden>
                     <Bot className="w-4 h-4" />
@@ -60,6 +72,7 @@ export default function TranscriptTab({ r }: { r: ReportData }) {
                     {m.text}
                   </div>
                 </div>
+              </div>
               </div>
             );
           })

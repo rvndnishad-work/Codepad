@@ -553,16 +553,24 @@ function sanitizeQuestion(input: QuestionInput) {
   if (!Number.isFinite(estimatedMinutes) || estimatedMinutes < 5 || estimatedMinutes > 180) {
     throw new ActionError("Time must be between 5 and 180 minutes.");
   }
+  const kindRaw = (input.kind ?? "frontend").trim().toLowerCase();
+  const kind = ["frontend", "backend", "dsa", "conversation"].includes(kindRaw) ? kindRaw : "frontend";
+  const frameworkLabel = input.frameworkLabel?.trim().slice(0, 60) || null;
+  if (kind === "conversation") {
+    // No code: the brief is the description, and the questions to cover are
+    // kept in testsCode (one per line), which only the interviewer and grader see.
+    const questions = (input.testsCode ?? "").split("\n").map((l) => l.trim()).filter(Boolean);
+    if (!questions.length) throw new ActionError("List at least one question for the interviewer to ask.");
+    if (questions.length > 20) throw new ActionError("Keep it to 20 questions or fewer.");
+    return { title, description, starterFiles: "{}", testsCode: questions.join("\n"), estimatedMinutes, kind, language: null, frameworkLabel };
+  }
   let starterFiles: string;
   try {
     starterFiles = validateStarterFilesJson(input.starterFilesJson);
   } catch (err) {
     throw new ActionError(err instanceof Error ? err.message : "The starter files are not valid.");
   }
-  const kindRaw = (input.kind ?? "frontend").trim().toLowerCase();
-  const kind = ["frontend", "backend", "dsa"].includes(kindRaw) ? kindRaw : "frontend";
   const language = input.language?.trim() || null;
-  const frameworkLabel = input.frameworkLabel?.trim() || null;
   if (kind !== "frontend" && !language) throw new ActionError("Backend and algorithm questions need a language.");
   return { title, description, starterFiles, testsCode: (input.testsCode ?? "").trim(), estimatedMinutes, kind, language, frameworkLabel };
 }

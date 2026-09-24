@@ -38,7 +38,7 @@ import { Avatar, Btn, Dialog, StageChip, inputCls, useToasts } from "../../candi
 import { selectCls } from "./kit";
 import { createScreeningAction } from "../actions";
 
-export type QuestionChoice = { id: string; title: string; kind: string; label: string; minutes: number; custom: boolean; language: string | null };
+export type QuestionChoice = { id: string; title: string; kind: string; label: string; minutes: number; custom: boolean; language: string | null; frameworkLabel: string | null };
 export type ChallengeChoice = CuratableChallenge & { title: string; difficulty: string; mine: boolean };
 export type Prefill = {
   title: string;
@@ -313,8 +313,11 @@ export default function NewScreening({
           {/* 2. What to test */}
           <Section n={2} title="What to test" hint="Pick the stack, or add questions from your library. Each becomes one round." done={rows.length > 0}>
             {area && !area.technical && (
-              <p className="rounded-lg border border-warning/30 bg-warning/10 px-3.5 py-2.5 text-[13px] text-fg">
-                The AI interviewer runs coding rounds for now, so there is nothing to pick for {area.label.toLowerCase()} yet. Conversation rounds for roles like this are next on the list.
+              <p className="rounded-lg border border-secondary/30 bg-secondary/10 px-3.5 py-2.5 text-[13px] text-fg">
+                For a {area.label.toLowerCase()} role, add conversation questions from your library. The AI interviewer asks them in chat, with no code.{" "}
+                <Link href={`${base}/questions`} className="text-secondary-soft underline">
+                  Write a conversation question
+                </Link>
               </p>
             )}
             <ChipGroup label="Frontend">
@@ -592,6 +595,7 @@ export default function NewScreening({
           questions={questions}
           challenges={challenges}
           minutes={minutes}
+          initialKind={area && !area.technical ? "conversation" : ""}
           added={rows.map((r) => r.spec)}
           onAdd={addFromLibrary}
           onClose={() => setBrowsing(false)}
@@ -632,6 +636,13 @@ function stackFromSpecs(specs: Prefill["rounds"], challenges: ChallengeChoice[])
   const mine = new Set(challenges.filter((c) => c.mine).map((c) => c.id));
   for (const s of specs) {
     // A round picked from the team library stays that exact question.
+    if (s.paradigm === "conversation" && s.templateId) {
+      const spec: RoundSpecInput = { paradigm: "conversation", sourceKind: "scaffold", templateId: s.templateId, frameworkLabel: s.frameworkLabel ?? undefined, estimatedMinutes: s.estimatedMinutes };
+      const key = `lib:scaffold:${s.templateId}`;
+      out.extra.push({ key, spec, base: spec });
+      out.order.push(key);
+      continue;
+    }
     if (s.sourceKind === "challenge" && s.sourceId && mine.has(s.sourceId)) {
       const spec: RoundSpecInput = {
         paradigm: s.paradigm as RoundSpecInput["paradigm"],
@@ -819,6 +830,7 @@ function LibraryDialog({
   questions,
   challenges,
   minutes,
+  initialKind,
   added,
   onAdd,
   onClose,
@@ -826,13 +838,14 @@ function LibraryDialog({
   questions: QuestionChoice[];
   challenges: ChallengeChoice[];
   minutes: number;
+  initialKind: "" | "conversation";
   added: RoundSpecInput[];
   onAdd: (spec: RoundSpecInput) => void;
   onClose: () => void;
 }) {
   const [tab, setTab] = useState<LibraryTab>("team");
   const [q, setQ] = useState("");
-  const [kind, setKind] = useState<"" | "frontend" | "backend" | "dsa">("");
+  const [kind, setKind] = useState<"" | "frontend" | "backend" | "dsa" | "conversation">(initialKind);
 
   type Item = { id: string; title: string; meta: string; kind: string; spec: RoundSpecInput };
   const items: Record<LibraryTab, Item[]> = useMemo(() => {
@@ -841,7 +854,14 @@ function LibraryDialog({
       title: x.title,
       meta: `${x.label}, ${x.minutes} min`,
       kind: x.kind,
-      spec: { paradigm: x.kind as RoundSpecInput["paradigm"], language: x.language ?? undefined, sourceKind: "scaffold", templateId: x.id, estimatedMinutes: x.minutes },
+      spec: {
+        paradigm: x.kind as RoundSpecInput["paradigm"],
+        language: x.kind === "conversation" ? undefined : x.language ?? undefined,
+        frameworkLabel: x.frameworkLabel ?? undefined,
+        sourceKind: "scaffold",
+        templateId: x.id,
+        estimatedMinutes: x.minutes,
+      },
     });
     const fromChallenge = (c: ChallengeChoice): Item => {
       const fw = c.paradigm === "frontend" ? FRONTEND_FRAMEWORKS.find((f) => c.frameworks.includes(f.id)) : undefined;
@@ -899,6 +919,7 @@ function LibraryDialog({
             <option value="frontend">Frontend</option>
             <option value="backend">Backend</option>
             <option value="dsa">Algorithms</option>
+            <option value="conversation">Conversation</option>
           </select>
         </div>
         <ul className="flex flex-col max-h-[50vh] overflow-y-auto rounded-xl border border-border divide-y divide-border">

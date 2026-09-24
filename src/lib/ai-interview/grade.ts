@@ -571,7 +571,7 @@ async function notifyWorkspaceRecruiters(params: {
   });
   if (!workspace) return;
 
-  const consoleUrl = `${params.origin}/w/${workspace.slug}/ai-interviews`;
+  const consoleUrl = `${params.origin}/w/${workspace.slug}/ai-interviews/${params.sessionId}`;
 
   const sends = workspace.members
     .filter((m) => !!m.user.email)

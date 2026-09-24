@@ -121,6 +121,38 @@ const ACTION_META: Record<string, { label: string; tone: string }> = {
     label: "Batch deleted",
     tone: "border-danger/30 bg-danger/[0.05] text-danger",
   },
+  AI_SCREENING_CREATED: {
+    label: "AI screening sent",
+    tone: "border-success/30 bg-success/[0.06] text-success",
+  },
+  AI_SCREENING_CANDIDATES_ADDED: {
+    label: "People added to an AI screening",
+    tone: "border-secondary/30 bg-secondary/[0.06] text-secondary",
+  },
+  AI_SCREENING_INVITE_RESENT: {
+    label: "AI screening invite resent",
+    tone: "border-border bg-panel text-muted",
+  },
+  AI_SCREENING_REMINDED: {
+    label: "AI screening reminder sent",
+    tone: "border-border bg-panel text-muted",
+  },
+  AI_SCREENING_CANCELLED: {
+    label: "AI screening invite cancelled",
+    tone: "border-warning/30 bg-warning/[0.06] text-warning",
+  },
+  AI_SCREENING_DELETED: {
+    label: "AI screening deleted",
+    tone: "border-danger/30 bg-danger/[0.05] text-danger",
+  },
+  AI_QUESTION_SET_SAVED: {
+    label: "AI question saved",
+    tone: "border-border bg-panel text-muted",
+  },
+  AI_QUESTION_SET_DELETED: {
+    label: "AI question deleted",
+    tone: "border-danger/30 bg-danger/[0.05] text-danger",
+  },
   ATS_INTEGRATION_CONNECTED: {
     label: "ATS connected / updated",
     tone: "border-success/30 bg-success/[0.06] text-success",

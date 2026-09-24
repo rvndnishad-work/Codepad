@@ -153,7 +153,7 @@ export default function CandidateProfileClient({
 
   const scheduleHref = `/interview/new?type=live&workspaceSlug=${slug}&candidateId=${row.id}&candidateName=${encodeURIComponent(row.name)}&candidateEmail=${encodeURIComponent(row.email ?? "")}`;
   const takeHomeHref = `/w/${slug}/take-homes/new?candidates=${row.id}`;
-  const aiInterviewHref = `/w/${slug}/ai-interviews`;
+  const aiInterviewHref = `/w/${slug}/ai-interviews/new?candidates=${row.id}`;
 
   return (
     <div className="flex flex-col gap-5">

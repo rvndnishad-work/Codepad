@@ -3,9 +3,12 @@ import { prisma } from "@/lib/prisma";
 import { assertCronAuth } from "@/lib/cron-auth";
 import { gradeSessionById } from "@/lib/ai-interview/grade";
 import { resolveSessionRounds } from "@/lib/ai-interview/rounds";
+import { reminderDue } from "@/lib/ai-interview/console";
+import { deliverInvite } from "@/lib/ai-interview/invites";
 
 /**
- * Abandoned AI screening sweep.
+ * AI screening sweep: grades abandoned sessions, closes invites past their
+ * expiry, and sends the one automatic reminder a screening asked for.
  *
  * Before this cron, a candidate who started a screening and closed the tab
  * stayed "ACTIVE" on the recruiter dashboard FOREVER — grading only ran when
@@ -15,8 +18,11 @@ import { resolveSessionRounds } from "@/lib/ai-interview/rounds";
  *   - ACTIVE + started + past its total round budget (+30s grace) → graded
  *     against the last-saved per-round code (saved on every chat turn) and
  *     marked COMPLETED, exactly as if the candidate had hit submit.
- *   - PENDING invites (never started) are untouched — an invite has no expiry
- *     by design.
+ *   - PENDING invites past `expiresAt` become EXPIRED: the link stops working
+ *     and they stop holding credits. Invites sent before expiry existed have
+ *     no `expiresAt` and stay open.
+ *   - PENDING invites whose screening set `reminderAfterDays` get one
+ *     reminder email once that many days pass unstarted.
  *   - Already-graded sessions are skipped by the grader's idempotency guard,
  *     so overlapping cron runs and a candidate submitting simultaneously are
  *     both safe.
@@ -76,10 +82,42 @@ export async function POST(req: NextRequest) {
     }
   }
 
+  // Close unstarted invites past their expiry.
+  const expired = await prisma.aIInterviewSession.updateMany({
+    where: { status: "PENDING", startedAt: null, expiresAt: { lte: new Date(now) } },
+    data: { status: "EXPIRED" },
+  });
+
+  // One automatic reminder per invite, when its screening asked for one.
+  const waiting = await prisma.aIInterviewSession.findMany({
+    where: {
+      status: "PENDING",
+      startedAt: null,
+      reminderSentAt: null,
+      practice: false,
+      batch: { reminderAfterDays: { gt: 0 } },
+    },
+    include: {
+      batch: { select: { reminderAfterDays: true } },
+      rounds: { select: { estimatedMinutes: true } },
+      workspace: { select: { id: true, name: true } },
+    },
+    orderBy: { createdAt: "asc" },
+    take: 100,
+  });
+  let reminded = 0;
+  for (const s of waiting) {
+    if (!reminderDue(s, s.batch?.reminderAfterDays, new Date(now))) continue;
+    const res = await deliverInvite(s, s.workspace, origin, { reminder: true });
+    if (res.sent) reminded++;
+  }
+
   return NextResponse.json({
     success: true,
     scanned: candidates.length,
     processed: results.length,
     results,
+    expired: expired.count,
+    reminded,
   });
 }

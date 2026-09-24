@@ -455,6 +455,17 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    // An invite that closed before the candidate started cannot be started.
+    if (
+      session.status === "EXPIRED" ||
+      (!session.startedAt && session.expiresAt && session.expiresAt.getTime() <= Date.now())
+    ) {
+      return NextResponse.json(
+        { error: "This invite has expired. Ask the recruiter to send a new one.", inviteExpired: true },
+        { status: 410 }
+      );
+    }
+
     // Normalize rounds and pick the active one (defaults to the first).
     const sessionRounds = resolveSessionRounds(session);
     const activeRound: SessionRound =

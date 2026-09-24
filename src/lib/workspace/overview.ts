@@ -143,9 +143,7 @@ export function buildOverview(input: OverviewInput, now: Date = new Date()): Ove
       detail: `AI screening finished${s.score !== null ? ` · ${Math.round(s.score)}%` : ""}`,
       at: s.finishedAt ?? s.createdAt,
       action: "Review",
-      href: s.candidateId
-        ? `${base}/ai-interviews?candidate=${s.candidateId}`
-        : `${base}/ai-interviews?search=${encodeURIComponent(s.candidateName)}`,
+      href: `${base}/ai-interviews/${s.id}`,
     });
   }
 

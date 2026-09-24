@@ -1114,6 +1114,16 @@ model AIInterviewSession {
   /// Used as the authoritative baseline for diffs/grading so re-resolving
   /// templates at grade time can never drift and credit scaffold code.
   starterFilesJson String?
+  /// Unstarted invites close at this time (status becomes "EXPIRED") and stop
+  /// holding credits. Null for invites sent before expiry existed.
+  expiresAt        DateTime?
+  /// When the invite email last went out, and whether it was accepted by the
+  /// mail provider: "SENT" | "FAILED" | "SKIPPED" (no provider configured).
+  inviteSentAt      DateTime?
+  inviteEmailStatus String?
+  inviteEmailError  String?
+  /// Reminder email for unstarted invites; sent at most once automatically.
+  reminderSentAt    DateTime?
   ledgerEntries    AIInterviewCreditLedger[]
   candidate        Candidate?                @relation(fields: [candidateId], references: [id])
   workspace        Workspace                 @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
@@ -1124,6 +1134,7 @@ model AIInterviewSession {
   @@index([workspaceId, createdAt])
   @@index([candidateId])
   @@index([batchId])
+  @@index([status, expiresAt])
 }
 
 /// Revamp (2026-06): a screening campaign grouping multiple candidates under
@@ -1141,6 +1152,10 @@ model AIScreeningBatch {
   /// Live presence the recruiter chose for this screening: "REACTIVE" |
   /// "OBSERVER" | "COACH". Copied onto each session at invite; sets credit cost.
   engagementLevel String   @default("REACTIVE")
+  /// Invite settings chosen in New screening. Null on batches created before
+  /// these settings existed (no expiry, no automatic reminder).
+  expiresAfterDays  Int?
+  reminderAfterDays Int?
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
   workspace       Workspace              @relation(fields: [workspaceId], references: [id], onDelete: Cascade)

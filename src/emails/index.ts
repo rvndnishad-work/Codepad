@@ -79,7 +79,9 @@ export const TEMPLATES = {
   "ai-screening-invite": {
     Component: AiScreeningInvite,
     subject: (p) =>
-      `Your AI technical screening for ${p.positionTitle} at ${p.workspaceName}`,
+      p.reminder
+        ? `Reminder: your AI technical screening for ${p.positionTitle} at ${p.workspaceName}`
+        : `Your AI technical screening for ${p.positionTitle} at ${p.workspaceName}`,
     text: aiScreeningInviteText,
   } satisfies TemplateDef<AiScreeningInviteProps>,
 

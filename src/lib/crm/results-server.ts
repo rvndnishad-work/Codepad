@@ -255,7 +255,7 @@ export async function loadCandidateResults(
       scheduledAt: null,
       minutesTaken: minutes(a.timeSpentSec),
       minutesAllowed: null,
-      href: `/w/${workspaceSlug}/ai-interviews?candidate=${a.candidateId}`,
+      href: `/w/${workspaceSlug}/ai-interviews/${a.id}`,
     });
   }
 

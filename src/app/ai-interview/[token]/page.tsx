@@ -118,6 +118,25 @@ export default async function AIInterviewRunPage({ params, searchParams }: Props
 
   if (!session) notFound();
 
+  // Closed before the candidate started: the recruiter cancelled it or it
+  // passed its expiry date.
+  if (
+    session.status === "EXPIRED" ||
+    (!session.startedAt && session.expiresAt && session.expiresAt.getTime() <= Date.now())
+  ) {
+    return (
+      <main className="min-h-[70vh] flex items-center justify-center p-6">
+        <div className="max-w-md w-full rounded-2xl border border-border bg-surface p-8 text-center">
+          <h1 className="text-xl font-semibold text-fg">This screening link has expired</h1>
+          <p className="mt-3 text-sm text-muted leading-relaxed">
+            The invite for the {session.positionTitle} screening is no longer open. If you still want to take it, reply to
+            the email you received and ask the recruiter to send a new link.
+          </p>
+        </div>
+      </main>
+    );
+  }
+
   // Normalize to an ordered round list, then resolve each round's runnable
   // content (title/surface/starter files) by source kind.
   const sessionRounds = resolveSessionRounds(session);

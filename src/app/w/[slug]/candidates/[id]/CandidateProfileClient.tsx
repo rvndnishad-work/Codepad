@@ -28,7 +28,7 @@ import {
 } from "lucide-react";
 import { RESULT_KIND_LABELS, RESULT_WEIGHTS, screeningChecklist, type CandidateResult, type ResultKind } from "@/lib/crm/results";
 import type { ActivityItem } from "@/lib/crm/activity";
-import type { RosterBatch, RosterMember, RosterRow } from "@/lib/crm/roster";
+import { passOverrides, type RosterBatch, type RosterMember, type RosterRow } from "@/lib/crm/roster";
 import { PIPELINE_STAGES, STAGE_LABELS, type RejectReason } from "@/lib/crm/stages";
 import { plural, relativeTime, sourceLabel } from "@/lib/workspace/display";
 import {
@@ -37,7 +37,7 @@ import {
   deleteNoteAction,
   updateCandidateAction,
 } from "../manage-actions";
-import { ConfirmDialog, RejectDialog } from "../_components/dialogs";
+import { ConfirmDialog, PassOverrideDialog, RejectDialog } from "../_components/dialogs";
 import { ChecklistRow } from "../_components/Checklist";
 import type { Perms } from "../_components/CandidatesView";
 import { Avatar, Btn, Field, fmtDate, inputCls, Menu, MenuItem, MenuLabel, StageChip, StageDot, stageLabel, useToasts } from "../_components/ui";
@@ -60,6 +60,7 @@ export default function CandidateProfileClient({
   meId,
   row,
   rejectNote,
+  decidedBy,
   notes,
   activity,
   batches,
@@ -70,6 +71,8 @@ export default function CandidateProfileClient({
   meId: string;
   row: RosterRow;
   rejectNote: string | null;
+  /** Who made the current Passed or Not passed decision, when known. */
+  decidedBy: string | null;
   notes: Note[];
   activity: ActivityItem[];
   batches: RosterBatch[];
@@ -81,6 +84,7 @@ export default function CandidateProfileClient({
   const [busy, start] = useTransition();
   const [toasts, toast] = useToasts();
   const [rejecting, setRejecting] = useState(false);
+  const [confirmPass, setConfirmPass] = useState(false);
   const [confirm, setConfirm] = useState<null | "archive" | "erase">(null);
   const [editing, setEditing] = useState(false);
   const [addingTag, setAddingTag] = useState(false);
@@ -93,10 +97,18 @@ export default function CandidateProfileClient({
   const isClosed = row.stage === "PASSED" || row.stage === "REJECTED";
   const sortedResults = [...row.results].sort((a, b) => +new Date(b.finishedAt ?? b.sentAt) - +new Date(a.finishedAt ?? a.sentAt));
 
-  function act(p: Promise<{ ok: boolean; error?: string }>, done: string, after?: () => void) {
+  // Passing over results below the bar is a manual override; confirm it.
+  const passOverride = useMemo(() => passOverrides([row]), [row]);
+
+  function act(p: Promise<{ ok: boolean; error?: string; needsOverride?: string[] }>, done: string, after?: () => void) {
     start(async () => {
-      const r = (await p) as { ok: boolean; error?: string };
+      const r = await p;
       if (!r.ok) {
+        // Results changed since the page loaded: confirm the override first.
+        if (r.needsOverride?.length) {
+          setConfirmPass(true);
+          return;
+        }
         toast(r.error ?? "Something went wrong.", "error");
         return;
       }
@@ -106,8 +118,14 @@ export default function CandidateProfileClient({
     });
   }
 
-  const move = (stage: string) =>
-    stage === "REJECTED" ? setRejecting(true) : act(bulkCandidatesAction(slug, [row.id], { action: "stage", stage }), stage === "PASSED" ? "Passed" : `Moved to ${stageLabel(stage)}`);
+  const move = (stage: string, override?: boolean) => {
+    if (stage === "REJECTED") return setRejecting(true);
+    if (stage === "PASSED" && passOverride.length && !override) return setConfirmPass(true);
+    act(
+      bulkCandidatesAction(slug, [row.id], { action: "stage", stage, ...(override ? { override } : {}) }),
+      stage === "PASSED" ? (override ? "Passed as a manual override" : "Passed") : `Moved to ${stageLabel(stage)}`,
+    );
+  };
 
   const flag = (status: "future_hire" | "do_not_hire" | "active") =>
     act(
@@ -277,7 +295,7 @@ export default function CandidateProfileClient({
                 </Btn>
               )}
               {perms.canPipeline && (
-                <Btn size="md" variant="primary" icon={CircleCheck} onClick={() => move("PASSED")} disabled={busy}>
+                <Btn size="md" variant={passOverride.length ? "ghost" : "primary"} icon={CircleCheck} onClick={() => move("PASSED")} disabled={busy}>
                   Pass
                 </Btn>
               )}
@@ -353,7 +371,7 @@ export default function CandidateProfileClient({
       </div>
 
       <section className="rounded-xl border border-border bg-surface px-5 py-4">
-        <ChecklistRow items={checklist} decision={{ stage: row.stage, at: row.stageChangedAt, reason: row.rejectReason }} />
+        <ChecklistRow items={checklist} decision={{ stage: row.stage, at: row.stageChangedAt, reason: row.rejectReason, by: decidedBy }} />
         {row.stage === "REJECTED" && rejectNote && <p className="mt-3 text-[13px] text-muted">&ldquo;{rejectNote}&rdquo;</p>}
       </section>
 
@@ -408,7 +426,7 @@ export default function CandidateProfileClient({
                     <Btn variant="danger" onClick={() => setRejecting(true)} disabled={busy}>
                       Not passed
                     </Btn>
-                    <Btn variant="primary" icon={CircleCheck} onClick={() => move("PASSED")} disabled={busy}>
+                    <Btn variant={passOverride.length ? "ghost" : "primary"} icon={CircleCheck} onClick={() => move("PASSED")} disabled={busy}>
                       Pass
                     </Btn>
                   </>
@@ -470,6 +488,18 @@ export default function CandidateProfileClient({
               bulkCandidatesAction(slug, [row.id], { action: "stage", stage: "REJECTED", rejectReason: reason, rejectReasonNote: note }),
               "Marked as not passed",
             );
+          }}
+        />
+      )}
+      {confirmPass && (
+        <PassOverrideDialog
+          people={passOverrides([{ ...row, stage: "SCREENING" }])}
+          total={1}
+          busy={busy}
+          onCancel={() => setConfirmPass(false)}
+          onConfirm={() => {
+            setConfirmPass(false);
+            move("PASSED", true);
           }}
         />
       )}

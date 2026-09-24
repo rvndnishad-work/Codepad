@@ -88,15 +88,31 @@ export function rubricToScore(rating: number): number {
   return Math.round(((rating - 1) / 4) * 100);
 }
 
-/** Verdict text and pass flag for a scored result. */
-export function describeScore(kind: ResultKind, score: number, rating?: number | null) {
+/** Interview rubric average at or above this clears the bar. */
+export const INTERVIEW_PASS_RATING = 3.5;
+
+/** Interviewer verdicts that fail the interview whatever the rubric says. */
+const FAILING_INTERVIEW_VERDICTS: Record<string, string> = {
+  failed: "marked failed",
+  suspicious: "marked suspicious",
+  left_in_between: "left early",
+};
+
+/**
+ * Verdict text and pass flag for a scored result. For interviews the
+ * interviewer's own verdict counts too: a "failed" interview never reads as
+ * passed because its rubric happens to clear the bar.
+ */
+export function describeScore(kind: ResultKind, score: number, rating?: number | null, interviewerVerdict?: string | null) {
   if (kind === "ai_screening") {
     const v = getScreeningVerdict(score);
     return { verdict: v?.label ?? null, passed: v?.passed ?? null };
   }
   if (kind === "interview") {
     const r = rating ?? 1 + (score / 100) * 4;
-    return { verdict: `${r.toFixed(1)} of 5`, passed: r >= 3.5 };
+    const flagged = interviewerVerdict ? FAILING_INTERVIEW_VERDICTS[interviewerVerdict] : undefined;
+    if (flagged) return { verdict: `${r.toFixed(1)} of 5, ${flagged}`, passed: false };
+    return { verdict: `${r.toFixed(1)} of 5`, passed: r >= INTERVIEW_PASS_RATING };
   }
   return { verdict: score >= TAKE_HOME_PASS ? "Passed" : "Below bar", passed: score >= TAKE_HOME_PASS };
 }
@@ -235,7 +251,13 @@ export function computeNextStep(input: NextStepInput): NextStep {
   const stage = normalizeStage(input.stage);
   const byTime = [...input.results].sort((a, b) => resultTime(b) - resultTime(a));
 
-  if (stage === "PASSED") return { label: "Passed", tone: "plain", detail: null, href: null, onUs: false };
+  if (stage === "PASSED") {
+    // Automation never passes anyone, so a Pass over a failing or missing
+    // result is a recruiter's manual override and reads as one.
+    const check = passCheck(input.results);
+    if (check.override) return { label: "Manual pass", tone: "warning", detail: check.reason, href: null, onUs: false };
+    return { label: "Passed", tone: "plain", detail: null, href: null, onUs: false };
+  }
   if (stage === "REJECTED") return { label: "Not passed", tone: "plain", detail: null, href: null, onUs: false };
 
   // 1. Finished work nobody has looked at yet.
@@ -283,11 +305,16 @@ export function computeNextStep(input: NextStepInput): NextStep {
   const scored = byTime.filter((r) => r.state === "scored" && r.score != null);
   if (scored.length) {
     const summary = summarizeResults(input.results);
-    const failing = scored.some((r) => r.passed === false);
+    // The best attempt per kind counts, as in the combined score: a retake
+    // that clears the bar is not "below the bar".
+    const below = passCheck(input.results).below.length;
     return {
       label: "Make a decision",
       tone: "warning",
-      detail: summary.combined != null ? `Combined ${summary.combined}${failing ? ", one below the bar" : ""}` : null,
+      detail:
+        summary.combined != null
+          ? `Combined ${summary.combined}${below ? `, ${below === 1 ? "one" : below === 2 ? "two" : "three"} below the bar` : ""}`
+          : null,
       href: null,
       onUs: true,
     };
@@ -387,4 +414,44 @@ export function screeningChecklist(results: CandidateResult[]): CheckItem[] {
       count: mine.length,
     };
   });
+}
+
+/* ──────────────────────────────────────────────────────────────────────────
+ * Pass check
+ * ────────────────────────────────────────────────────────────────────────── */
+
+export type PassCheck = {
+  /** True when passing is a recruiter's manual override of the results. */
+  override: boolean;
+  /** Assessments whose best result is below the bar. */
+  below: CheckItem[];
+  /** Nothing has a score yet, so there is nothing to back a pass. */
+  unscored: boolean;
+  /** Plain reason for the override, e.g. "AI screening 5, Not a fit". */
+  reason: string | null;
+};
+
+function belowText(i: CheckItem): string {
+  const label = RESULT_KIND_LABELS[i.kind];
+  // Interview verdicts already carry the rating ("2.5 of 5").
+  if (i.kind === "interview") return `${label} ${i.verdict ?? i.value ?? "below the bar"}`;
+  return `${label} ${i.value ?? ""}${i.verdict ? `, ${i.verdict}` : ""}`.trim();
+}
+
+/**
+ * Whether passing this candidate is backed by their results. Passing is
+ * always a person's call (automation stops at Screening); when the best
+ * result of any assessment is below the bar, or nothing is scored yet, the
+ * pass is a manual override: it needs confirming and is labelled as one.
+ */
+export function passCheckFromItems(items: CheckItem[]): PassCheck {
+  const scored = items.filter((i) => i.state === "done");
+  const below = scored.filter((i) => i.passed === false);
+  const unscored = scored.length === 0;
+  const reason = below.length ? below.map(belowText).join("; ") : unscored ? "No scored results yet" : null;
+  return { override: below.length > 0 || unscored, below, unscored, reason };
+}
+
+export function passCheck(results: CandidateResult[]): PassCheck {
+  return passCheckFromItems(screeningChecklist(results));
 }

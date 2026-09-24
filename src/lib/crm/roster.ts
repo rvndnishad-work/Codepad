@@ -2,7 +2,7 @@
  * The row shape shared by the Candidates list, the board, the quick view and
  * a batch's tabs, plus the pure filtering used by all of them. Client-safe.
  */
-import type { CandidateResult, NextStep, ResultKind } from "@/lib/crm/results";
+import { passCheck, type CandidateResult, type NextStep, type ResultKind } from "@/lib/crm/results";
 
 export type RosterRow = {
   id: string;
@@ -30,7 +30,22 @@ export type RosterRow = {
   takeHomeMinutes: number | null;
   next: NextStep;
   attention: boolean;
+  /** Set when the candidate is Passed over results that do not back it: the
+   *  reason, e.g. "AI screening 5, Not a fit". A recruiter's manual override. */
+  manualPass: string | null;
 };
+
+/**
+ * The candidates in `rows` a pass would override: not yet Passed, and with a
+ * best result below the bar or nothing scored. Empty means a plain pass.
+ */
+export function passOverrides(rows: Pick<RosterRow, "id" | "name" | "stage" | "results">[]) {
+  return rows
+    .filter((r) => r.stage !== "PASSED")
+    .map((r) => ({ id: r.id, name: r.name, check: passCheck(r.results) }))
+    .filter((r) => r.check.override)
+    .map((r) => ({ id: r.id, name: r.name, reason: r.check.reason ?? "Below the bar" }));
+}
 
 export type RosterBatch = { id: string; name: string; status: string };
 export type RosterMember = { id: string; name: string; email: string | null };

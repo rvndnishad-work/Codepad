@@ -2,6 +2,8 @@ import { describe, expect, it } from "vitest";
 import {
   computeNextStep,
   daysSince,
+  describeScore,
+  passCheck,
   needsAttention,
   resultStateText,
   screeningChecklist,
@@ -121,11 +123,49 @@ describe("computeNextStep", () => {
   });
 
   it("stops at a decision", () => {
+    const good = result({ kind: "take_home", score: 80, ...describeScore("take_home", 80), finishedAt: daysAgo(3) });
     const interview = result({ kind: "interview", state: "submitted", finishedAt: daysAgo(12) });
-    expect(computeNextStep({ ...base, stage: "PASSED", results: [interview] }).label).toBe("Passed");
+    expect(computeNextStep({ ...base, stage: "PASSED", results: [good, interview] })).toMatchObject({ label: "Passed", tone: "plain", detail: null });
     expect(computeNextStep({ ...base, stage: "REJECTED", results: [] }).label).toBe("Not passed");
     // Old stage names map onto the decision.
-    expect(computeNextStep({ ...base, stage: "HIRED", results: [] }).label).toBe("Passed");
+    expect(computeNextStep({ ...base, stage: "HIRED", results: [good] }).label).toBe("Passed");
+  });
+
+  it("never shows a pass over a failing result as a clean pass", () => {
+    // The reported case: AI screening 5, Not a fit, yet Passed.
+    const notAFit = result({ kind: "ai_screening", score: 5, ...describeScore("ai_screening", 5), finishedAt: daysAgo(30) });
+    expect(computeNextStep({ ...base, stage: "PASSED", results: [notAFit] })).toMatchObject({
+      label: "Manual pass",
+      tone: "warning",
+      detail: "AI screening 5, Not a fit",
+    });
+    // A candidate moved to Offer or Hired before screening-only Candidates
+    // (now Passed) is labelled the same way.
+    expect(computeNextStep({ ...base, stage: "OFFER", results: [notAFit] }).label).toBe("Manual pass");
+    // Passed with nothing scored is a manual pass too.
+    expect(computeNextStep({ ...base, stage: "PASSED", results: [] })).toMatchObject({ label: "Manual pass", detail: "No scored results yet" });
+  });
+
+  it("counts assessments below the bar by their best attempt", () => {
+    const n = computeNextStep({
+      ...base,
+      results: [
+        result({ kind: "ai_screening", score: 30, ...describeScore("ai_screening", 30), finishedAt: daysAgo(1) }),
+        result({ kind: "take_home", score: 40, ...describeScore("take_home", 40), finishedAt: daysAgo(4) }),
+        // A retake that clears the bar: the take-home is no longer below it.
+        result({ kind: "take_home", score: 70, ...describeScore("take_home", 70), finishedAt: daysAgo(2) }),
+      ],
+    });
+    // (30 x 0.3 + 70 x 0.4) / 0.7, the retake counting.
+    expect(n.detail).toBe("Combined 53, one below the bar");
+    const two = computeNextStep({
+      ...base,
+      results: [
+        result({ kind: "ai_screening", score: 30, ...describeScore("ai_screening", 30), finishedAt: daysAgo(1) }),
+        result({ kind: "take_home", score: 40, ...describeScore("take_home", 40), finishedAt: daysAgo(4) }),
+      ],
+    });
+    expect(two.detail).toBe("Combined 36, two below the bar");
   });
 
   it("does not flag decided candidates", () => {
@@ -184,5 +224,71 @@ describe("needsAttention", () => {
   it("floors days since", () => {
     expect(daysSince(daysAgo(2.9), NOW)).toBe(2);
     expect(daysSince(null, NOW)).toBe(0);
+  });
+});
+
+describe("describeScore", () => {
+  it("uses the absolute bar for AI screening, whatever the rank", () => {
+    expect(describeScore("ai_screening", 5)).toEqual({ verdict: "Not a fit", passed: false });
+    expect(describeScore("ai_screening", 45)).toEqual({ verdict: "Borderline", passed: false });
+    expect(describeScore("ai_screening", 60)).toEqual({ verdict: "Good fit", passed: true });
+  });
+
+  it("passes a take-home at 60", () => {
+    expect(describeScore("take_home", 59).passed).toBe(false);
+    expect(describeScore("take_home", 60).passed).toBe(true);
+  });
+
+  it("never passes an interview the interviewer marked failed, whatever the rubric", () => {
+    expect(describeScore("interview", 75, 4)).toEqual({ verdict: "4.0 of 5", passed: true });
+    expect(describeScore("interview", 75, 4, "failed")).toEqual({ verdict: "4.0 of 5, marked failed", passed: false });
+    expect(describeScore("interview", 75, 4, "suspicious").passed).toBe(false);
+    expect(describeScore("interview", 75, 4, "left_in_between").passed).toBe(false);
+    // "success" does not lift a rubric below the bar.
+    expect(describeScore("interview", 25, 2, "success").passed).toBe(false);
+  });
+});
+
+describe("passCheck", () => {
+  const ai = (score: number) => result({ kind: "ai_screening", score, ...describeScore("ai_screening", score), finishedAt: daysAgo(2) });
+  const th = (score: number, d = 2) => result({ kind: "take_home", score, ...describeScore("take_home", score), finishedAt: daysAgo(d) });
+
+  it("needs an override to pass a candidate who is not a fit", () => {
+    const c = passCheck([ai(5)]);
+    expect(c.override).toBe(true);
+    expect(c.reason).toBe("AI screening 5, Not a fit");
+    expect(c.below.map((i) => i.kind)).toEqual(["ai_screening"]);
+  });
+
+  it("needs an override for a borderline result too", () => {
+    expect(passCheck([ai(45), th(90)]).reason).toBe("AI screening 45, Borderline");
+  });
+
+  it("lists every assessment below the bar", () => {
+    const interview = result({ kind: "interview", score: 25, rating: 2, ...describeScore("interview", 25, 2), finishedAt: daysAgo(1) });
+    expect(passCheck([ai(20), th(30), interview]).reason).toBe(
+      "AI screening 20, Not a fit; Take-home 30, Below bar; Interview 2.0 of 5",
+    );
+  });
+
+  it("needs an override when nothing is scored yet", () => {
+    const pending = result({ kind: "take_home", state: "submitted", finishedAt: daysAgo(1) });
+    expect(passCheck([])).toMatchObject({ override: true, unscored: true, reason: "No scored results yet" });
+    expect(passCheck([pending])).toMatchObject({ override: true, unscored: true });
+  });
+
+  it("does not need one when every scored result clears the bar", () => {
+    const pending = result({ kind: "interview", state: "invited" });
+    expect(passCheck([ai(82), th(75), pending])).toMatchObject({ override: false, below: [], reason: null });
+  });
+
+  it("judges each assessment by its best attempt, as the combined score does", () => {
+    expect(passCheck([th(40, 5), th(72, 1)]).override).toBe(false);
+    expect(passCheck([th(72, 5), th(40, 1)]).override).toBe(false);
+  });
+
+  it("fails an interview the interviewer marked failed, even with a good rubric", () => {
+    const failed = result({ kind: "interview", score: 75, rating: 4, ...describeScore("interview", 75, 4, "failed"), finishedAt: daysAgo(1) });
+    expect(passCheck([ai(90), failed]).reason).toBe("Interview 4.0 of 5, marked failed");
   });
 });

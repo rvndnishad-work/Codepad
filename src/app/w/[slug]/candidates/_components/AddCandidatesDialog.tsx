@@ -15,7 +15,7 @@ import {
   type ImportField,
   type ImportRow,
 } from "@/lib/crm/import";
-import { PIPELINE_STAGES, STAGE_LABELS } from "@/lib/crm/stages";
+import { STAGE_LABELS, type PipelineStage } from "@/lib/crm/stages";
 import type { RosterBatch, RosterMember } from "@/lib/crm/roster";
 import { plural } from "@/lib/workspace/display";
 import {
@@ -27,7 +27,8 @@ import {
 import { Btn, Dialog, Field, inputCls } from "./ui";
 
 type Mode = "one" | "paste" | "csv";
-const STARTS = PIPELINE_STAGES.filter((s) => s !== "REJECTED");
+// Passed and Not passed are decisions made after screening, never at import.
+const STARTS: PipelineStage[] = ["NEW", "SCREENING"];
 const selectCls = `${inputCls} pr-8`;
 
 export function AddCandidatesDialog({
@@ -459,7 +460,7 @@ export function AddCandidatesDialog({
             </ul>
           </details>
         )}
-        <p className="text-[13px] text-muted">These settings apply to everyone in this import. A stage in the file wins over the one here.</p>
+        <p className="text-[13px] text-muted">These settings apply to everyone in this import. A New or Screening stage in the file wins over the one here.</p>
         {groupOptions}
       </div>
     );

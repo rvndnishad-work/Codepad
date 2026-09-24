@@ -28,6 +28,7 @@ import { PIPELINE_STAGES, STAGE_LABELS, type RejectReason } from "@/lib/crm/stag
 import {
   EMPTY_FILTERS,
   filterRows,
+  passOverrides,
   rowsToCsv,
   sortRows,
   type RosterBatch,
@@ -40,7 +41,7 @@ import { RESULT_KIND_LABELS } from "@/lib/crm/results";
 import { plural, sourceLabel } from "@/lib/workspace/display";
 import { bulkCandidatesAction } from "../manage-actions";
 import type { BulkAction } from "@/lib/crm/candidates-server";
-import { ConfirmDialog, RejectDialog, TagDialog } from "./dialogs";
+import { ConfirmDialog, PassOverrideDialog, RejectDialog, TagDialog } from "./dialogs";
 import { QuickView } from "./QuickView";
 import {
   Avatar,
@@ -137,6 +138,7 @@ export function CandidatesView({
   const [limit, setLimit] = useState(PAGE);
   const [overrides, setOverrides] = useState<Record<string, string>>({});
   const [pendingReject, setPendingReject] = useState<string[] | null>(null);
+  const [pendingPass, setPendingPass] = useState<string[] | null>(null);
   const [confirm, setConfirm] = useState<null | "archive" | "erase">(null);
   const [tagging, setTagging] = useState(false);
   const [busy, startBusy] = useTransition();
@@ -218,8 +220,13 @@ export function CandidatesView({
     startBusy(async () => {
       const r = await bulkCandidatesAction(slug, ids, op);
       if (!r.ok) {
-        toast(r.error, "error");
         setOverrides({});
+        // Results changed since the page loaded: confirm the override first.
+        if (r.needsOverride?.length && op.action === "stage" && op.stage === "PASSED" && !op.override) {
+          setPendingPass(ids);
+          return;
+        }
+        toast(r.error, "error");
         return;
       }
       toast(done(r.changed), "ok", undo ? () => run(ids, undo, () => "Undone") : undefined);
@@ -233,8 +240,18 @@ export function CandidatesView({
       setPendingReject(ids);
       return;
     }
+    if (stage === "PASSED" && passOverrides(live.filter((r) => ids.includes(r.id))).length) {
+      setPendingPass(ids);
+      return;
+    }
+    commitMove(ids, stage);
+  }
+
+  function commitMove(ids: string[], stage: string, override?: boolean) {
     setOverrides((o) => ({ ...o, ...Object.fromEntries(ids.map((id) => [id, stage])) }));
-    run(ids, { action: "stage", stage }, (n) => (n ? `Moved ${plural(n, "candidate")} to ${stageLabel(stage)}` : "Nothing to move"));
+    run(ids, { action: "stage", stage, ...(override ? { override } : {}) }, (n) =>
+      n ? (stage === "PASSED" ? `Passed ${plural(n, "candidate")}` : `Moved ${plural(n, "candidate")} to ${stageLabel(stage)}`) : "Nothing to move",
+    );
   }
 
   function exportCsv(list: RosterRow[]) {
@@ -715,6 +732,19 @@ export function CandidatesView({
             setPendingReject(null);
             setOverrides((o) => ({ ...o, ...Object.fromEntries(ids.map((id) => [id, "REJECTED"])) }));
             run(ids, { action: "stage", stage: "REJECTED", rejectReason: reason, rejectReasonNote: note }, (n) => `Marked ${plural(n, "candidate")} as not passed`);
+          }}
+        />
+      )}
+      {pendingPass && (
+        <PassOverrideDialog
+          people={passOverrides(live.filter((r) => pendingPass.includes(r.id)))}
+          total={live.filter((r) => pendingPass.includes(r.id) && r.stage !== "PASSED").length}
+          busy={busy}
+          onCancel={() => setPendingPass(null)}
+          onConfirm={() => {
+            const ids = pendingPass;
+            setPendingPass(null);
+            commitMove(ids, "PASSED", true);
           }}
         />
       )}

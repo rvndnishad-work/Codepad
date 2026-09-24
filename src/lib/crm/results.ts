@@ -159,6 +159,25 @@ export function summarizeResults(results: CandidateResult[]): ResultsSummary {
   return { latest, byKind, interviewRating, combined, submitted, takeHomeMinutes };
 }
 
+/**
+ * Short state text for a result that has no score yet, e.g. for the list
+ * when nothing is scored ("No feedback yet").
+ */
+export function resultStateText(r: CandidateResult): string {
+  switch (r.state) {
+    case "scored":
+      return r.score != null ? `Scored ${r.score}` : "Scored";
+    case "submitted":
+      return r.kind === "interview" ? "No feedback yet" : r.kind === "take_home" ? "Not reviewed" : "Finished";
+    case "in_progress":
+      return "In progress";
+    case "expired":
+      return "Expired";
+    default:
+      return r.kind === "interview" ? "Booked" : "Invited";
+  }
+}
+
 /* ──────────────────────────────────────────────────────────────────────────
  * Next step
  * ────────────────────────────────────────────────────────────────────────── */
@@ -187,6 +206,8 @@ export type NextStepInput = {
 
 const DAY = 24 * 60 * 60 * 1000;
 
+const STAGE_RANK: Record<string, number> = { APPLIED: 0, SCREENED: 1, TAKE_HOME: 2, ONSITE: 3, OFFER: 4, HIRED: 5 };
+
 /** Days since `iso`, floored, never negative. */
 export function daysSince(iso: string | null | undefined, now = Date.now()): number {
   if (!iso) return 0;
@@ -214,8 +235,10 @@ export function computeNextStep(input: NextStepInput): NextStep {
   if (stage === "HIRED") return { label: "Hired", tone: "plain", detail: null, href: null, onUs: false };
   if (stage === "REJECTED") return { label: "Closed", tone: "plain", detail: null, href: null, onUs: false };
 
-  // 1. Finished work nobody has looked at yet.
-  const unreviewed = byTime.find((r) => r.kind === "take_home" && r.state === "submitted");
+  // 1. Finished work nobody has looked at yet. Once the candidate has moved
+  // past the step, the team has evidently decided, so stop nagging.
+  const rank = STAGE_RANK[stage] ?? 0;
+  const unreviewed = rank <= STAGE_RANK.TAKE_HOME && byTime.find((r) => r.kind === "take_home" && r.state === "submitted");
   if (unreviewed) {
     return {
       label: "Review take-home",
@@ -275,7 +298,7 @@ export function computeNextStep(input: NextStepInput): NextStep {
       onUs: false,
     };
   }
-  if (interview && interview.state === "submitted") {
+  if (interview && interview.state === "submitted" && rank <= STAGE_RANK.ONSITE) {
     return { label: "Collect feedback", tone: "warning", detail: waiting(interview.finishedAt, now), href: interview.href, onUs: true };
   }
 

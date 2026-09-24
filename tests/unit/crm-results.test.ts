@@ -3,6 +3,7 @@ import {
   computeNextStep,
   daysSince,
   needsAttention,
+  resultStateText,
   rubricAverage,
   rubricToScore,
   summarizeResults,
@@ -117,6 +118,23 @@ describe("computeNextStep", () => {
   it("closes out terminal stages", () => {
     expect(computeNextStep({ ...base, stage: "HIRED", results: [] }).label).toBe("Hired");
     expect(computeNextStep({ ...base, stage: "REJECTED", results: [] }).label).toBe("Closed");
+  });
+
+  it("stops asking for reviews and feedback once the candidate has moved on", () => {
+    const submitted = result({ state: "submitted", finishedAt: daysAgo(8) });
+    const interview = result({ kind: "interview", state: "submitted", finishedAt: daysAgo(12) });
+    expect(computeNextStep({ ...base, stage: "ONSITE", results: [submitted] }).label).toBe("Schedule interview");
+    expect(computeNextStep({ ...base, stage: "ONSITE", results: [interview] }).label).toBe("Collect feedback");
+    expect(computeNextStep({ ...base, stage: "OFFER", results: [interview] }).label).toBe("Waiting on reply");
+  });
+});
+
+describe("resultStateText", () => {
+  it("describes unscored work in plain words", () => {
+    expect(resultStateText(result({ kind: "interview", state: "submitted" }))).toBe("No feedback yet");
+    expect(resultStateText(result({ state: "submitted" }))).toBe("Not reviewed");
+    expect(resultStateText(result({ state: "invited" }))).toBe("Invited");
+    expect(resultStateText(result({ kind: "interview", state: "invited" }))).toBe("Booked");
   });
 });
 

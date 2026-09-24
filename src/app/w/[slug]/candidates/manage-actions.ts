@@ -29,6 +29,7 @@ import {
 } from "@/lib/crm/candidates-server";
 import { isPipelineStage } from "@/lib/crm/stages";
 import { IMPORT_MAX, type ImportRow } from "@/lib/crm/import";
+import { movesFromAudit } from "@/lib/crm/history";
 import { writeWorkspaceAuditEntry, WORKSPACE_AUDIT_ACTIONS } from "@/lib/workspace-audit";
 
 export type ActionResult<T = object> =
@@ -288,6 +289,59 @@ export async function importCandidatesAction(
     }
     refresh(slug, undefined, opts.batchId);
     return { ok: true, created, updated, skipped, invalid };
+  } catch (err) {
+    return fail(err);
+  }
+}
+
+export type QuickViewData = {
+  moves: { from: string; to: string; at: string }[];
+  notes: { id: string; body: string; createdAt: string; authorName: string | null }[];
+  noteCount: number;
+};
+
+/** Stage history and the latest notes for the quick-view drawer. */
+export async function quickViewAction(slug: string, candidateId: string): Promise<ActionResult<{ data: QuickViewData }>> {
+  try {
+    const actor = await resolveCandidateActor(slug);
+    const exists = await prisma.candidate.findFirst({
+      where: { id: candidateId, workspaceId: actor.workspaceId },
+      select: { id: true },
+    });
+    if (!exists) throw new CandidateError(404, "Candidate not found.");
+    const [rows, notes, noteCount] = await Promise.all([
+      prisma.workspaceAuditLog.findMany({
+        where: {
+          workspaceId: actor.workspaceId,
+          action: WORKSPACE_AUDIT_ACTIONS.PIPELINE_STAGE_CHANGED,
+          targetType: "candidate",
+          targetId: candidateId,
+        },
+        orderBy: { createdAt: "asc" },
+        take: 100,
+        select: { meta: true, createdAt: true },
+      }),
+      prisma.candidateNote.findMany({
+        where: { candidateId },
+        orderBy: { createdAt: "desc" },
+        take: 3,
+        select: { id: true, body: true, createdAt: true, author: { select: { name: true, email: true } } },
+      }),
+      prisma.candidateNote.count({ where: { candidateId } }),
+    ]);
+    return {
+      ok: true,
+      data: {
+        moves: movesFromAudit(rows),
+        notes: notes.map((n) => ({
+          id: n.id,
+          body: n.body,
+          createdAt: n.createdAt.toISOString(),
+          authorName: n.author?.name || n.author?.email || null,
+        })),
+        noteCount,
+      },
+    };
   } catch (err) {
     return fail(err);
   }

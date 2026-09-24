@@ -113,7 +113,7 @@ export async function loadCandidateResults(
           ? "submitted"
           : th.status === "EXPIRED" || (th.status === "PENDING" && th.expiresAt < new Date())
             ? "expired"
-            : th.status === "ACTIVE" || th.startedAt
+            : th.status === "ACTIVE" || th.status === "STARTED" || th.startedAt
               ? "in_progress"
               : "invited";
     push({
@@ -197,7 +197,7 @@ export async function loadCandidateResults(
     const state: ResultState =
       score != null
         ? "scored"
-        : s.status === "completed" || s.finishedAt
+        : s.status === "completed" || s.status === "finished" || s.finishedAt
           ? "submitted"
           : s.status === "abandoned" || s.status === "expired"
             ? "expired"

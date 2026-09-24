@@ -17,10 +17,18 @@ export const metadata = {
 
 export default async function NewTakeHomePage({
   params,
+  searchParams,
 }: {
   params: Promise<{ slug: string }>;
+  searchParams: Promise<{ candidates?: string; candidateId?: string }>;
 }) {
   const { slug } = await params;
+  // Pre-select people when arriving from the Candidates list or a profile.
+  const sp = await searchParams;
+  const preselected = [...(sp.candidates?.split(",") ?? []), ...(sp.candidateId ? [sp.candidateId] : [])]
+    .map((s) => s.trim())
+    .filter(Boolean)
+    .slice(0, 100);
   const session = await auth().catch(() => null);
   if (!session?.user?.id) {
     redirect(`/login?next=${encodeURIComponent(`/w/${slug}/take-homes/new`)}`);
@@ -124,6 +132,7 @@ export default async function NewTakeHomePage({
       prompts={prompts}
       playgrounds={playgrounds}
       candidates={candidateOptions}
+      initialCandidateIds={preselected.filter((id) => candidateOptions.some((c) => c.id === id))}
     />
   );
 }

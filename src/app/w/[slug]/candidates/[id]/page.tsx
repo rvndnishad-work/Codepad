@@ -1,554 +1,106 @@
-import { prisma } from "@/lib/prisma";
-import { auth } from "@/lib/auth";
 import { notFound, redirect } from "next/navigation";
-import Link from "next/link";
-import {
-  ArrowLeft,
-  Clock,
-  Briefcase,
-  Mail,
-  Phone,
-  Award,
-  ExternalLink,
-  Play,
-  CheckCircle2,
-  AlertTriangle,
-  Star,
-  Sparkles,
-} from "lucide-react";
-import CandidateNotesEditor from "./CandidateNotesEditor";
-import CandidateStatusControl from "./CandidateStatusControl";
-import CandidateStageControl from "./CandidateStageControl";
-import { getScreeningVerdict, type ScreeningVerdict } from "@/lib/ai-interview/verdict";
-import { History } from "lucide-react";
-import { humanize } from "@/lib/workspace/display";
+import { prisma } from "@/lib/prisma";
+import { CandidateError, resolveCandidateActor } from "@/lib/crm/candidates-server";
+import { loadCandidatePerms, loadRoster, loadRosterLookups } from "@/lib/crm/roster-server";
+import { movesFromAudit } from "@/lib/crm/history";
+import { describeAudit, resultActivity, type ActivityItem } from "@/lib/crm/activity";
+import CandidateProfileClient from "./CandidateProfileClient";
 
-type Props = {
-  params: Promise<{ slug: string; id: string }>;
-};
-
-const STATUS_BADGES: Record<string, string> = {
-  active: "text-secondary border-secondary/25 bg-secondary/[0.08]",
-  hired: "text-success border-success/25 bg-success/[0.06]",
-  rejected: "text-danger border-danger/25 bg-danger/[0.06]",
-  archived: "text-muted border-border bg-panel/50",
-};
-
-const TAKEHOME_STATUS_BADGES: Record<string, string> = {
-  PENDING: "text-warning border-warning/25 bg-warning/[0.06]",
-  ACTIVE: "text-secondary border-secondary/25 bg-secondary/[0.08]",
-  SUBMITTED: "text-success border-success/25 bg-success/[0.06]",
-  EXPIRED: "text-danger border-danger/25 bg-danger/[0.06]",
-};
+type Props = { params: Promise<{ slug: string; id: string }> };
 
 export async function generateMetadata({ params }: Props) {
-  const { id } = await params;
-  const candidate = await prisma.candidate.findUnique({ where: { id }, select: { name: true } });
-  return { title: candidate ? `${candidate.name} — Candidate` : "Candidate not found" };
+  const { slug, id } = await params;
+  // Scoped to the workspace so a guessed id cannot leak a name from elsewhere.
+  const candidate = await prisma.candidate.findFirst({
+    where: { id, workspace: { slug } },
+    select: { name: true },
+  });
+  return { title: candidate ? `${candidate.name} — Candidate` : "Candidate not found", robots: { index: false, follow: false } };
 }
 
-export default async function CandidateDetailPage({ params }: Props) {
+export default async function CandidateProfilePage({ params }: Props) {
   const { slug, id } = await params;
-
-  const session = await auth().catch(() => null);
-  if (!session?.user?.id) redirect("/login");
-
-  // Resolve workspace + membership
-  const workspace = await prisma.workspace.findUnique({
-    where: { slug },
-    select: {
-      id: true,
-      slug: true,
-      members: { select: { userId: true } },
-    },
-  });
-  if (!workspace) notFound();
-  if (!workspace.members.some((m) => m.userId === session.user!.id)) {
+  const actor = await resolveCandidateActor(slug).catch((err) => {
+    if (err instanceof CandidateError && err.status === 401) redirect(`/login?next=/w/${slug}/candidates/${id}`);
+    if (err instanceof CandidateError && err.status === 404) notFound();
     redirect("/dashboard");
-  }
-
-  const candidate = await prisma.candidate.findFirst({
-    where: { id, workspaceId: workspace.id },
-    include: {
-      takeHomes: {
-        orderBy: { createdAt: "desc" },
-        include: {
-          challenge: { select: { title: true, slug: true } },
-          attempt: { select: { id: true, score: true } },
-        },
-      },
-      sessions: {
-        orderBy: { createdAt: "desc" },
-        select: {
-          id: true,
-          title: true,
-          type: true,
-          status: true,
-          verdict: true,
-          shareToken: true,
-          totalSec: true,
-          startedAt: true,
-          finishedAt: true,
-          createdAt: true,
-        },
-      },
-      // AI screening sessions — previously missing entirely, so invites that
-      // were sent/started never appeared on the candidate activity board.
-      aiInterviewSessions: {
-        orderBy: { createdAt: "desc" },
-        select: {
-          id: true,
-          positionTitle: true,
-          status: true,
-          score: true,
-          engagementLevel: true,
-          timeSpentSec: true,
-          startedAt: true,
-          finishedAt: true,
-          createdAt: true,
-        },
-      },
-    },
   });
 
-  if (!candidate) notFound();
-
-  // Candidate-targeted audit rows (stage moves, rejections, verdicts) — these
-  // used to be written to the audit log but never surfaced here, so the
-  // timeline silently omitted the decisions that matter most.
-  const auditRows = await prisma.workspaceAuditLog.findMany({
-    where: { workspaceId: workspace.id, targetType: "candidate", targetId: id },
-    orderBy: { createdAt: "desc" },
-    take: 30,
-    select: { id: true, action: true, actorEmail: true, meta: true, createdAt: true },
-  });
-
-  const tags: string[] = candidate.tags ? JSON.parse(candidate.tags) : [];
-
-  // Aggregate score: average of submitted attempt scores + graded AI screenings
-  const submittedScores = candidate.takeHomes
-    .map((th) => th.attempt?.score)
-    .filter((s): s is number => typeof s === "number");
-  const aiGradedScores = candidate.aiInterviewSessions
-    .map((s) => s.score)
-    .filter((s): s is number => typeof s === "number");
-  const allScores = [...submittedScores, ...aiGradedScores];
-  const avgScore = allScores.length
-    ? Math.round(allScores.reduce((a, b) => a + b, 0) / allScores.length)
-    : null;
-
-  // Combined timeline of all activity
-  type TimelineEvent = {
-    kind: "take-home" | "interview" | "ai-screening" | "audit";
-    id: string;
-    title: string;
-    timestamp: Date;
-    status: string;
-    detail?: string;
-    score?: number | null;
-    /** Pass/fail interpretation of a completed AI screening. */
-    verdict?: ScreeningVerdict | null;
-    /** Audit events have no destination — they're facts, not artifacts. */
-    href: string | null;
-    secondary: string;
-  };
-
-  // Human-readable line per audit action; unknown actions fall back to the key.
-  function describeAudit(action: string, meta: Record<string, unknown>): { title: string; status: string } {
-    if (action === "PIPELINE_STAGE_CHANGED") {
-      const from = String(meta.fromStage ?? "?");
-      const to = String(meta.toStage ?? "?");
-      const src = typeof meta.source === "string" && meta.source.startsWith("auto:") ? " (automatic)" : "";
-      return { title: `Stage moved ${from} → ${to}${src}`, status: String(meta.toStage ?? "MOVED") };
-    }
-    if (action === "INTERVIEW_VERDICT_RECORDED") {
-      return {
-        title: `Interview verdict: ${String(meta.verdict ?? "?").replace(/_/g, " ")} — ${String(meta.sessionTitle ?? "")}`,
-        status: "VERDICT",
-      };
-    }
-    return { title: action.replace(/_/g, " ").toLowerCase(), status: "EVENT" };
-  }
-
-  const auditEvents: TimelineEvent[] = auditRows.map((row) => {
-    let meta: Record<string, unknown> = {};
-    try {
-      const parsed = row.meta ? JSON.parse(row.meta) : null;
-      if (parsed && typeof parsed === "object") meta = parsed as Record<string, unknown>;
-    } catch {
-      /* unreadable meta — describe from the action alone */
-    }
-    const d = describeAudit(row.action, meta);
-    return {
-      kind: "audit" as const,
-      id: row.id,
-      title: d.title,
-      timestamp: row.createdAt,
-      status: d.status,
-      score: null,
-      href: null,
-      secondary: row.actorEmail ? `By ${row.actorEmail}` : "System",
-    };
-  });
-
-  const timeline: TimelineEvent[] = [
-    ...auditEvents,
-    ...candidate.takeHomes.map((th) => ({
-      kind: "take-home" as const,
-      id: th.id,
-      title: th.challenge.title,
-      timestamp: th.submittedAt ?? th.startedAt ?? th.createdAt,
-      status: th.status,
-      score: th.attempt?.score ?? null,
-      href: th.attempt
-        ? `/w/${workspace.slug}/attempts/${th.attempt.id}`
-        : `/take-home/${th.token}`,
-      secondary: `Take-home · ${th.timeLimitMin} min limit`,
-    })),
-    ...candidate.sessions.map((s) => {
-      const isDone = !!s.finishedAt;
-      const isLive = !!s.startedAt && !isDone;
-      return {
-        kind: "interview" as const,
-        id: s.id,
-        title: s.title,
-        timestamp: s.finishedAt ?? s.startedAt ?? s.createdAt,
-        status: isDone ? "COMPLETED" : isLive ? "LIVE" : "SCHEDULED",
-        score: null,
-        href: `/interview/${s.shareToken}`,
-        secondary: `Interview · ${Math.round(s.totalSec / 60)} min · ${humanize(s.type)}`,
-      };
+  const [rows, lookups, perms, notes, audit, candidate] = await Promise.all([
+    loadRoster(actor.workspaceId, actor.workspaceSlug, { ids: [id] }),
+    loadRosterLookups(actor.workspaceId),
+    loadCandidatePerms(actor.member, actor.isManager),
+    prisma.candidateNote.findMany({
+      where: { candidateId: id, candidate: { workspaceId: actor.workspaceId } },
+      orderBy: { createdAt: "desc" },
+      select: { id: true, body: true, createdAt: true, authorId: true, author: { select: { name: true, email: true } } },
     }),
-    // AI screening sessions — invite sent, started, exited mid-way, or graded:
-    // every state is now visible on the board with a deep link into the
-    // AI Screening console pre-filtered to this candidate.
-    ...candidate.aiInterviewSessions.map((s) => {
-      const isDone = !!s.finishedAt;
-      const isStarted = !!s.startedAt && !isDone;
-      const verdict = getScreeningVerdict(s.score);
-      return {
-        kind: "ai-screening" as const,
-        id: s.id,
-        title: s.positionTitle,
-        timestamp: s.finishedAt ?? s.startedAt ?? s.createdAt,
-        status: isDone ? "COMPLETED" : isStarted ? "STARTED" : "INVITED",
-        score: s.score,
-        verdict,
-        href: `/w/${workspace.slug}/ai-interviews?candidate=${candidate.id}`,
-        secondary: `AI screening · ${
-          s.engagementLevel === "COACH"
-            ? "Coach mode"
-            : s.engagementLevel === "OBSERVER"
-            ? "Observer mode"
-            : "Reactive mode"
-        }${isStarted ? " · exited before submit" : ""}${
-          s.timeSpentSec > 0 ? ` · ${Math.max(1, Math.round(s.timeSpentSec / 60))} min spent` : ""
-        }${verdict ? ` · ${verdict.guidance}` : ""}`,
-      };
+    prisma.workspaceAuditLog.findMany({
+      where: { workspaceId: actor.workspaceId, targetType: "candidate", targetId: id },
+      orderBy: { createdAt: "asc" },
+      take: 300,
+      select: { id: true, action: true, meta: true, createdAt: true, actorEmail: true, actorUserId: true },
     }),
-  ].sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
+    prisma.candidate.findFirst({ where: { id, workspaceId: actor.workspaceId }, select: { rejectReasonNote: true, createdAt: true } }),
+  ]);
+  const row = rows[0];
+  if (!row || !candidate) notFound();
 
-  const created = candidate.createdAt.toLocaleDateString(undefined, {
-    year: "numeric",
-    month: "short",
-    day: "numeric",
-  });
+  const memberName = (uid: string | null) => lookups.members.find((m) => m.id === uid)?.name ?? null;
+  const batchName = (bid: string | null) => lookups.batches.find((b) => b.id === bid)?.name ?? null;
+  // Notes come from their own table so older notes (added before notes were
+  // audited) show too; the NOTE_ADDED audit rows would only duplicate them.
+  const noteItems: ActivityItem[] = notes.map((n) => ({
+    id: `note_${n.id}`,
+    kind: "note",
+    title: `Note from ${n.author?.name ?? n.author?.email ?? "a teammate"}`,
+    detail: n.body.length > 140 ? `${n.body.slice(0, 140).trimEnd()}…` : n.body,
+    at: n.createdAt.toISOString(),
+    href: null,
+  }));
+  // Candidates added before the revamp have no CANDIDATE_CREATED row.
+  const createdItem: ActivityItem[] = audit.some((a) => a.action === "CANDIDATE_CREATED")
+    ? []
+    : [{ id: "created", kind: "created", title: "Added to the workspace", detail: null, at: candidate.createdAt.toISOString(), href: null }];
+  const activity: ActivityItem[] = [
+    ...noteItems,
+    ...createdItem,
+    ...audit
+      .filter((a) => a.action !== "CANDIDATE_NOTE_ADDED")
+      .map((a) =>
+        describeAudit(
+          {
+            id: a.id,
+            action: a.action,
+            meta: a.meta,
+            createdAt: a.createdAt.toISOString(),
+            actorName: memberName(a.actorUserId) ?? a.actorEmail,
+          },
+          { batch: batchName, member: memberName },
+        ),
+      )
+      .filter((x): x is ActivityItem => !!x),
+    ...resultActivity(row.results),
+  ].sort((a, b) => +new Date(b.at) - +new Date(a.at));
 
   return (
-    <div className="space-y-5">
-      <Link
-        href={`/w/${slug}?section=candidates`}
-        className="inline-flex items-center gap-1.5 text-xs font-semibold text-muted hover:text-fg transition-colors"
-      >
-        <ArrowLeft className="w-3.5 h-3.5" />
-        All candidates
-      </Link>
-
-      {/* Pipeline alert banners */}
-      {candidate.status === "do_not_hire" && (
-        <div className="flex items-start gap-3 px-4 py-3 rounded-xl border border-danger/30 bg-danger/[0.06] text-danger">
-          <AlertTriangle className="w-4 h-4 mt-0.5 shrink-0" />
-          <div className="min-w-0">
-            <div className="text-sm font-semibold">Do not hire</div>
-            <div className="text-xs text-danger/80 mt-0.5">
-              This candidate has been flagged. Do not progress them for any role without explicit override.
-            </div>
-          </div>
-        </div>
-      )}
-      {candidate.status === "future_hire" && (
-        <div className="flex items-start gap-3 px-4 py-3 rounded-xl border border-warning/30 bg-warning/[0.06] text-warning">
-          <Star className="w-4 h-4 mt-0.5 shrink-0" />
-          <div className="min-w-0">
-            <div className="text-sm font-semibold">Future hire</div>
-            <div className="text-xs text-warning/80 mt-0.5">
-              Strong signal. Revisit this candidate when there&apos;s an appropriate opening.
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Candidate header */}
-      <div className="rounded-xl border border-border bg-surface p-5">
-        <div className="flex flex-col sm:flex-row sm:items-start gap-5">
-          <div className="w-14 h-14 rounded-xl bg-secondary/10 border border-secondary/20 flex items-center justify-center text-secondary text-lg font-semibold shrink-0">
-            {candidate.name.substring(0, 1).toUpperCase()}
-          </div>
-
-          <div className="flex-1 min-w-0">
-            <div className="flex flex-col lg:flex-row lg:items-center gap-3 justify-between w-full mb-2">
-              <div className="flex flex-wrap items-center gap-3 min-w-0">
-                <h2 className="text-xl font-semibold text-fg tracking-tight truncate">{candidate.name}</h2>
-                <CandidateStageControl
-                  workspaceSlug={slug}
-                  candidateId={candidate.id}
-                  initialStage={candidate.stage}
-                />
-                <CandidateStatusControl
-                  workspaceSlug={slug}
-                  candidateId={candidate.id}
-                  initialStatus={candidate.status}
-                />
-              </div>
-
-              {/* CRM Actions */}
-              <div className="flex items-center gap-2 shrink-0 mt-2 lg:mt-0">
-                <Link
-                  href={`/interview/new?type=live&workspaceSlug=${workspace.slug}&candidateId=${candidate.id}&candidateName=${encodeURIComponent(candidate.name)}&candidateEmail=${encodeURIComponent(candidate.email || "")}`}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-secondary hover:brightness-110 text-bg text-xs font-semibold transition-colors shadow-sm"
-                >
-                  <Briefcase className="w-3.5 h-3.5" />
-                  Schedule interview
-                </Link>
-                <Link
-                  href={`/w/${workspace.slug}/take-homes/new?candidateId=${candidate.id}`}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-panel border border-border hover:border-border-strong text-fg text-xs font-semibold transition-colors shadow-sm"
-                >
-                  <Clock className="w-3.5 h-3.5" />
-                  Assign take-home
-                </Link>
-              </div>
-            </div>
-
-            <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-[12px] text-muted">
-              {candidate.email && (
-                <a
-                  href={`mailto:${candidate.email}`}
-                  className="inline-flex items-center gap-1.5 hover:text-fg transition-colors"
-                >
-                  <Mail className="w-3.5 h-3.5" />
-                  <span className="font-mono">{candidate.email}</span>
-                </a>
-              )}
-              {candidate.phone && (
-                <span className="inline-flex items-center gap-1.5">
-                  <Phone className="w-3.5 h-3.5" />
-                  <span className="font-mono">{candidate.phone}</span>
-                </span>
-              )}
-              {candidate.source && (
-                <span className="inline-flex items-center gap-1.5 capitalize">
-                  Source: <span className="text-fg font-medium">{candidate.source}</span>
-                </span>
-              )}
-              <span className="text-muted/60">Added {created}</span>
-            </div>
-
-            {tags.length > 0 && (
-              <div className="flex flex-wrap items-center gap-1.5 mt-3">
-                {tags.map((tag) => (
-                  <span
-                    key={tag}
-                    className="inline-flex items-center px-2 py-0.5 rounded-md bg-panel/50 border border-border text-xs font-medium text-muted"
-                  >
-                    {tag}
-                  </span>
-                ))}
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
-
-      {/* Stat tiles */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        <div className="p-4 rounded-xl border border-border bg-surface">
-          <div className="flex items-center justify-between mb-3">
-            <span className="text-xs font-semibold text-muted">Take-homes</span>
-            <div className="w-7 h-7 rounded-lg border border-secondary/20 bg-secondary/10 flex items-center justify-center text-secondary">
-              <Clock className="w-3.5 h-3.5" />
-            </div>
-          </div>
-          <div className="text-2xl font-semibold text-fg tabular-nums">{candidate.takeHomes.length}</div>
-        </div>
-
-        <div className="p-4 rounded-xl border border-border bg-surface">
-          <div className="flex items-center justify-between mb-3">
-            <span className="text-xs font-semibold text-muted">Interviews</span>
-            <div className="w-7 h-7 rounded-lg border border-secondary/20 bg-secondary/10 flex items-center justify-center text-secondary">
-              <Briefcase className="w-3.5 h-3.5" />
-            </div>
-          </div>
-          <div className="text-2xl font-semibold text-fg tabular-nums">
-            {candidate.sessions.length + candidate.aiInterviewSessions.length}
-          </div>
-          {candidate.aiInterviewSessions.length > 0 && (
-            <div className="text-xs text-muted mt-0.5">
-              {candidate.aiInterviewSessions.length} AI screening{candidate.aiInterviewSessions.length === 1 ? "" : "s"}
-            </div>
-          )}
-        </div>
-
-        <div className="p-4 rounded-xl border border-border bg-surface">
-          <div className="flex items-center justify-between mb-3">
-            <span className="text-xs font-semibold text-muted">Submitted</span>
-            <div className="w-7 h-7 rounded-lg border border-success/20 bg-success/10 flex items-center justify-center text-success">
-              <CheckCircle2 className="w-3.5 h-3.5" />
-            </div>
-          </div>
-          <div className="text-2xl font-semibold text-fg tabular-nums">{allScores.length}</div>
-        </div>
-
-        <div className="p-4 rounded-xl border border-border bg-surface">
-          <div className="flex items-center justify-between mb-3">
-            <span className="text-xs font-semibold text-muted">Avg score</span>
-            <div className="w-7 h-7 rounded-lg border border-warning/20 bg-warning/10 flex items-center justify-center text-warning">
-              <Award className="w-3.5 h-3.5" />
-            </div>
-          </div>
-          <div className="text-2xl font-semibold text-fg tabular-nums">
-            {avgScore !== null ? `${avgScore}%` : <span className="text-muted/60">—</span>}
-          </div>
-        </div>
-      </div>
-
-      {/* Two-column: timeline (left) + notes (right) */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        <div className="lg:col-span-2">
-          <div className="rounded-xl border border-border bg-surface overflow-hidden">
-            <div className="px-4 py-3 border-b border-border">
-              <h3 className="text-xs font-semibold text-muted">Activity timeline</h3>
-            </div>
-            {timeline.length === 0 ? (
-              <div className="p-12 text-center text-xs text-muted/60 italic">
-                No assignments or interviews yet.
-              </div>
-            ) : (
-              <ul className="divide-y divide-border">
-                {timeline.map((ev) => {
-                  const ts = ev.timestamp.toLocaleDateString(undefined, {
-                    year: "numeric",
-                    month: "short",
-                    day: "numeric",
-                  });
-                  const Icon =
-                    ev.kind === "take-home"
-                      ? Clock
-                      : ev.kind === "interview"
-                      ? Briefcase
-                      : ev.kind === "ai-screening"
-                      ? Sparkles
-                      : History;
-                  const iconColor =
-                    ev.kind === "take-home"
-                      ? "text-secondary"
-                      : ev.kind === "ai-screening"
-                      ? "text-secondary"
-                      : ev.kind === "interview"
-                      ? "text-secondary"
-                      : "text-secondary";
-                  const iconBg =
-                    ev.kind === "take-home"
-                      ? "bg-secondary/10 border-secondary/20"
-                      : ev.kind === "ai-screening"
-                      ? "bg-secondary/10 border-secondary/20"
-                      : ev.kind === "interview"
-                      ? "bg-secondary/10 border-secondary/20"
-                      : "bg-secondary/10 border-secondary/20";
-                  const statusColor =
-                    ev.kind === "take-home" ? (
-                      TAKEHOME_STATUS_BADGES[ev.status] || ""
-                    ) : ev.kind === "audit" ? (
-                      "text-secondary border-secondary/25 bg-secondary/[0.06]"
-                    ) : ev.status === "COMPLETED" ? (
-                      "text-success border-success/25 bg-success/[0.06]"
-                    ) : ev.status === "STARTED" || ev.status === "LIVE" ? (
-                      "text-secondary border-secondary/25 bg-secondary/[0.08]"
-                    ) : (
-                      "text-warning border-warning/25 bg-warning/[0.06]"
-                    );
-
-                  return (
-                    <li key={`${ev.kind}-${ev.id}`} className="px-4 py-3 flex items-start gap-3 hover:bg-panel/30 transition-colors">
-                      <div className={`w-8 h-8 rounded-lg border flex items-center justify-center shrink-0 ${iconBg} ${iconColor}`}>
-                        <Icon className="w-3.5 h-3.5" />
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <div className="flex flex-wrap items-center gap-2">
-                          {ev.href ? (
-                            <Link
-                              href={ev.href}
-                              className="font-semibold text-fg text-sm hover:text-secondary transition-colors truncate"
-                            >
-                              {ev.title}
-                            </Link>
-                          ) : (
-                            <span className="font-semibold text-fg text-sm truncate">{ev.title}</span>
-                          )}
-                          <span className={`inline-flex items-center px-2 py-0.5 rounded-md border text-xs font-semibold ${statusColor}`}>
-                            {humanize(ev.status)}
-                          </span>
-                          {ev.score !== null && ev.score !== undefined && (
-                            <span className="inline-flex items-center gap-1 text-xs font-semibold text-success">
-                              <Award className="w-3 h-3" />
-                              <span className="tabular-nums">{ev.score}%</span>
-                            </span>
-                          )}
-                          {/* Pass/fail verdict for completed AI screenings —
-                              HR decides next steps at a glance. */}
-                          {ev.kind === "ai-screening" && ev.verdict && (
-                            <span
-                              className={`inline-flex items-center px-2 py-0.5 rounded-md border text-xs font-semibold ${ev.verdict.className}`}
-                              title={ev.verdict.guidance}
-                            >
-                              {ev.status === "COMPLETED" ? (ev.verdict.passed ? "Passed" : "Failed") : ""}
-                              {ev.status === "COMPLETED" && ` · ${ev.verdict.label}`}
-                            </span>
-                          )}
-                        </div>
-                        <div className="text-xs text-muted mt-0.5">
-                          {ev.secondary} · {ts}
-                        </div>
-                      </div>
-                      {ev.href && (
-                        <Link
-                          href={ev.href}
-                          className="inline-flex items-center justify-center w-7 h-7 rounded-md text-muted hover:text-fg hover:bg-panel/40 transition-colors shrink-0"
-                          title="Open"
-                        >
-                          {ev.kind === "take-home" && ev.status === "SUBMITTED" ? (
-                            <Play className="w-3.5 h-3.5" />
-                          ) : (
-                            <ExternalLink className="w-3.5 h-3.5" />
-                          )}
-                        </Link>
-                      )}
-                    </li>
-                  );
-                })}
-              </ul>
-            )}
-          </div>
-        </div>
-
-        <div className="lg:col-span-1">
-          <CandidateNotesEditor
-            workspaceSlug={slug}
-            candidateId={candidate.id}
-            initialNotes={candidate.notes ?? ""}
-          />
-        </div>
-      </div>
-    </div>
+    <CandidateProfileClient
+      slug={slug}
+      meId={actor.actorUserId}
+      row={row}
+      rejectNote={candidate.rejectReasonNote}
+      moves={movesFromAudit(audit.filter((a) => a.action === "PIPELINE_STAGE_CHANGED"))}
+      notes={notes.map((n) => ({
+        id: n.id,
+        body: n.body,
+        createdAt: n.createdAt.toISOString(),
+        authorId: n.authorId,
+        authorName: n.author?.name || n.author?.email || null,
+      }))}
+      activity={activity}
+      batches={lookups.batches}
+      members={lookups.members}
+      perms={perms}
+    />
   );
 }

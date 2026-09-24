@@ -86,7 +86,9 @@ export default function ReportView({
   const [deleting, setDeleting] = useState(false);
   const done = r.status === "COMPLETED";
   const decided = r.candidate.stage === "PASSED" || r.candidate.stage === "REJECTED";
-  const wide = tab === "code" || tab === "run";
+  // Conversation-only screenings have no code to show or run.
+  const allTalk = r.rounds.length > 0 && r.rounds.every((x) => x.kind === "conversation");
+  const wide = (tab === "code" || tab === "run") && r.rounds[round]?.kind !== "conversation";
   const hrefFor = (patch: { tab?: Tab; round?: number }) => {
     const t = patch.tab ?? tab;
     const rd = patch.round ?? round;
@@ -218,7 +220,7 @@ export default function ReportView({
       <div className="flex flex-col lg:flex-row gap-6 items-start">
         <div className="flex-1 min-w-0 w-full flex flex-col gap-4">
           <nav aria-label="Report sections" className="flex gap-1 border-b border-border overflow-x-auto print:hidden">
-            {TABS.map((t) => {
+            {TABS.filter((t) => !allTalk || (t.id !== "code" && t.id !== "run")).map((t) => {
               const on = t.id === tab;
               return (
                 <Link
@@ -237,14 +239,25 @@ export default function ReportView({
             })}
           </nav>
 
-          {(tab === "code" || tab === "run") && r.rounds.length > 1 && (
+          {(tab === "code" || tab === "run") && r.rounds.length > 1 && !allTalk && (
             <RoundSwitch rounds={r.rounds} active={round} hrefFor={(i) => hrefFor({ round: i })} />
           )}
 
           {tab === "summary" && <SummaryTab r={r} hrefFor={hrefFor} />}
           {tab === "transcript" && <TranscriptTab r={r} />}
-          {tab === "code" && <CodeTab key={`${r.id}:${round}`} round={r.rounds[round]} />}
-          {tab === "run" && <RunTab key={`${r.id}:${round}`} round={r.rounds[round]} />}
+          {(tab === "code" || tab === "run") && r.rounds[round]?.kind === "conversation" ? (
+            <div className="rounded-xl border border-border bg-surface p-8 text-center text-sm text-muted">
+              Round {round + 1} is a conversation, so there is no code.{" "}
+              <Link href={hrefFor({ tab: "transcript" })} scroll={false} className="text-secondary-soft hover:underline">
+                Read the transcript
+              </Link>
+            </div>
+          ) : (
+            <>
+              {tab === "code" && <CodeTab key={`${r.id}:${round}`} round={r.rounds[round]} />}
+              {tab === "run" && <RunTab key={`${r.id}:${round}`} round={r.rounds[round]} />}
+            </>
+          )}
         </div>
 
         {!wide && (
@@ -600,6 +613,8 @@ function Skill({ label, value, note }: { label: string; value: number | null; no
 
 function ScoreCard({ r }: { r: ReportData }) {
   const s = r.suggestion;
+  const talk = r.rounds.length > 0 && r.rounds.every((x) => x.kind === "conversation");
+  const mixed = !talk && r.rounds.some((x) => x.kind === "conversation");
   if (r.status !== "COMPLETED") {
     return (
       <Card>
@@ -627,14 +642,32 @@ function ScoreCard({ r }: { r: ReportData }) {
         </div>
       )}
       <div className="h-px bg-border" />
-      <Skill label="Code quality" value={r.ratings?.code ?? null} note="Structure, naming and correctness of what they wrote" />
-      <Skill label="Problem solving" value={r.ratings?.problem ?? null} note="How much of the task they got working" />
-      <Skill label="Communication" value={r.ratings?.communication ?? null} note="How clearly they explained their choices" />
+      {talk ? (
+        <>
+          <Skill label="Answer quality" value={r.ratings?.code ?? null} note="Relevant, specific answers backed by real examples" />
+          <Skill label="Judgement" value={r.ratings?.problem ?? null} note="Reasoning in scenarios, priorities and trade-offs" />
+          <Skill label="Communication" value={r.ratings?.communication ?? null} note="Clear, structured and honest" />
+        </>
+      ) : (
+        <>
+          <Skill label="Code quality" value={r.ratings?.code ?? null} note="Structure, naming and correctness of what they wrote" />
+          <Skill label="Problem solving" value={r.ratings?.problem ?? null} note="How much of the task they got working" />
+          <Skill label="Communication" value={r.ratings?.communication ?? null} note="How clearly they explained their choices" />
+        </>
+      )}
       <details className="group text-[13px]">
         <summary className="cursor-pointer text-secondary-soft hover:underline list-none">How the score works</summary>
         <div className="mt-2 flex flex-col gap-2 text-muted leading-relaxed">
-          <p>The AI grades only the lines the candidate wrote, compared with the starter code. Half the score is the code itself, a quarter is how much of the task works, and a quarter is how they talked it through.</p>
-          <p>Submitting without writing code scores under 10. With several rounds, the score is the average of the rounds.</p>
+          {talk ? (
+            <p>The AI grades the answers in the conversation: 40% answer quality, 35% judgement and 25% communication. Answering fewer than two questions in substance scores under 10.</p>
+          ) : (
+            <>
+              <p>The AI grades only the lines the candidate wrote, compared with the starter code. Half the score is the code itself, a quarter is how much of the task works, and a quarter is how they talked it through.</p>
+              <p>Submitting without writing code scores under 10.</p>
+            </>
+          )}
+          {mixed && <p>Conversation rounds are graded on their answers instead: answer quality counts as code quality and judgement as problem solving.</p>}
+          <p>With several rounds, the score is the average of the rounds.</p>
           <p>Your bar is {SCREENING_PASS_THRESHOLD}. Passing someone below it is allowed, and is recorded as a manual override.</p>
         </div>
       </details>

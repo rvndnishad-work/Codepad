@@ -16,7 +16,9 @@
 
 import type { AIInterviewRound, AIInterviewSession } from "@prisma/client";
 
-export type Paradigm = "frontend" | "backend" | "dsa";
+/** Round surface. "conversation" is a chat-only round with no code editor. */
+export type Paradigm = "frontend" | "backend" | "dsa" | "conversation";
+export type SurfaceKind = Paradigm;
 export type RoundSourceKind = "challenge" | "playground" | "scaffold";
 
 /** A normalized round — the shared shape of a real AIInterviewRound row and the

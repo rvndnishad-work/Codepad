@@ -12,7 +12,7 @@ import type { RoundSpecInput } from "./rounds";
 
 export function sanitizeRoundSpec(r: RoundSpecInput, idx: number): RoundSpecInput {
   const paradigm = r.paradigm;
-  if (!["frontend", "backend", "dsa"].includes(paradigm)) {
+  if (!["frontend", "backend", "dsa", "conversation"].includes(paradigm)) {
     throw new Error(`Round ${idx + 1}: invalid paradigm "${paradigm}".`);
   }
   const sourceKind = r.sourceKind;
@@ -25,9 +25,13 @@ export function sanitizeRoundSpec(r: RoundSpecInput, idx: number): RoundSpecInpu
     throw new Error(`Round ${idx + 1} has no question.`);
   }
   const minutes = Number(r.estimatedMinutes ?? 30);
+  // A conversation round is always a team question and runs no code.
+  if (paradigm === "conversation" && sourceKind !== "scaffold") {
+    throw new Error(`Round ${idx + 1}: conversation rounds must use a team question.`);
+  }
   return {
     paradigm,
-    language: r.language?.trim() || undefined,
+    language: paradigm === "conversation" ? undefined : r.language?.trim() || undefined,
     frameworkLabel: r.frameworkLabel?.trim() || undefined,
     sourceKind,
     sourceId: r.sourceId?.trim() || undefined,

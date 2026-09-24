@@ -17,15 +17,16 @@ const MonacoFileEditor = dynamic(() => import("@/components/MonacoFileEditor"), 
   loading: () => <div className="h-[280px] rounded-lg border border-border bg-bg animate-pulse" />,
 });
 
-type Filter = "all" | "team" | "frontend" | "backend" | "dsa";
+type Filter = "all" | "team" | "frontend" | "backend" | "dsa" | "conversation";
 const FILTERS: { id: Filter; label: string }[] = [
   { id: "all", label: "All" },
   { id: "team", label: "Team" },
   { id: "frontend", label: "Frontend" },
   { id: "backend", label: "Backend" },
   { id: "dsa", label: "Algorithms" },
+  { id: "conversation", label: "Conversation" },
 ];
-const KIND_NAME: Record<string, string> = { frontend: "Frontend", backend: "Backend", dsa: "Algorithms" };
+const KIND_NAME: Record<string, string> = { frontend: "Frontend", backend: "Backend", dsa: "Algorithms", conversation: "Conversation" };
 
 /** "Frontend, React" (or just "Frontend" when the stack adds nothing). */
 function stackText(q: QuestionItem): string {
@@ -247,6 +248,19 @@ function Viewer({
         <div className="text-sm text-muted leading-relaxed">
           <MarkdownRenderer content={q.description} />
         </div>
+        {q.kind === "conversation" ? (
+          <div className="flex flex-col gap-1.5">
+            <span className="text-xs font-medium text-subtle">Questions the interviewer asks (candidates do not see this list)</span>
+            <ol className="list-decimal pl-5 flex flex-col gap-1 text-sm text-muted">
+              {q.testsCode
+                .split("\n")
+                .filter((l) => l.trim())
+                .map((l, i) => (
+                  <li key={i}>{l}</li>
+                ))}
+            </ol>
+          </div>
+        ) : (
         <div className="flex flex-col gap-1.5">
           <span className="text-xs font-medium text-subtle">Starter files</span>
           <ul className="flex flex-wrap gap-1.5">
@@ -258,6 +272,7 @@ function Viewer({
             {!files.length && <li className="text-[13px] text-subtle">None</li>}
           </ul>
         </div>
+        )}
         {canManage && (
           <div className="flex flex-wrap gap-2 pt-1">
             {q.custom ? (
@@ -321,6 +336,7 @@ function Editor({
   const [pending, start] = useTransition();
   const [advanced, setAdvanced] = useState(false);
   const set = <K extends keyof Draft>(k: K, v: Draft[K]) => setD((x) => ({ ...x, [k]: v }));
+  const convo = d.kind === "conversation";
   const langs = d.kind === "backend" ? BACKEND_LANGUAGES.map((b) => ({ id: b.id, label: b.label })) : DSA_LANGUAGES.map((l) => ({ id: l, label: DSA_LANGUAGE_LABELS[l] ?? l }));
   const bound = d.id ? sets.items.find((i) => i.id === d.id)?.boundServerIds ?? [] : [];
 
@@ -331,7 +347,7 @@ function Editor({
         title: d.title,
         description: d.description,
         kind: d.kind,
-        language: d.kind === "frontend" ? undefined : d.language,
+        language: d.kind === "frontend" || convo ? undefined : d.language,
         frameworkLabel: d.frameworkLabel,
         estimatedMinutes: d.minutes,
         starterFilesJson: d.starterFilesJson,
@@ -349,7 +365,10 @@ function Editor({
         <Field label="Title">
           <input value={d.title} onChange={(e) => set("title", e.target.value)} maxLength={80} className={inputCls} placeholder="Paginated todo list" />
         </Field>
-        <Field label="Task for the candidate" hint="The AI interviewer reads this too.">
+        <Field
+          label={convo ? "Brief for the candidate" : "Task for the candidate"}
+          hint={convo ? "Shown before the conversation starts, e.g. the role and a scenario. The AI interviewer reads this too." : "The AI interviewer reads this too."}
+        >
           <textarea rows={4} value={d.description} onChange={(e) => set("description", e.target.value)} className={`${inputCls} h-auto py-2`} />
         </Field>
         <div className="grid grid-cols-2 gap-3">
@@ -358,13 +377,20 @@ function Editor({
               value={d.kind}
               onChange={(e) => {
                 const kind = e.target.value;
-                setD((x) => ({ ...x, kind, language: kind === "frontend" ? "" : x.language || (kind === "backend" ? "node" : "python") }));
+                setD((x) => ({
+                  ...x,
+                  kind,
+                  language: kind === "frontend" || kind === "conversation" ? "" : x.language || (kind === "backend" ? "node" : "python"),
+                  frameworkLabel: kind === "conversation" && x.kind !== "conversation" ? "" : x.frameworkLabel,
+                  testsCode: kind === "conversation" && x.kind !== "conversation" ? "" : x.testsCode,
+                }));
               }}
               className={inputCls}
             >
               <option value="frontend">Frontend</option>
               <option value="backend">Backend</option>
               <option value="dsa">Algorithms</option>
+              <option value="conversation">Conversation (no code)</option>
             </select>
           </Field>
           <Field label="Time">
@@ -376,7 +402,7 @@ function Editor({
               ))}
             </select>
           </Field>
-          {d.kind !== "frontend" && (
+          {d.kind !== "frontend" && !convo && (
             <Field label="Language">
               <select value={d.language} onChange={(e) => set("language", e.target.value)} className={inputCls}>
                 {langs.map((l) => (
@@ -387,29 +413,48 @@ function Editor({
               </select>
             </Field>
           )}
-          <Field label={d.kind === "frontend" ? "Framework" : "Framework focus"}>
-            <input value={d.frameworkLabel} onChange={(e) => set("frameworkLabel", e.target.value)} className={inputCls} placeholder={d.kind === "frontend" ? "React" : "Express"} />
+          <Field label={convo ? "Role area (optional)" : d.kind === "frontend" ? "Framework" : "Framework focus"}>
+            <input
+              value={d.frameworkLabel}
+              onChange={(e) => set("frameworkLabel", e.target.value)}
+              className={inputCls}
+              placeholder={convo ? "Sales" : d.kind === "frontend" ? "React" : "Express"}
+            />
           </Field>
         </div>
-        <div className="flex flex-col gap-1.5">
-          <span className="text-xs font-medium text-subtle">Starter files</span>
-          <MonacoFileEditor value={d.starterFilesJson} onChange={(v) => set("starterFilesJson", v)} emptyHint="No starter files yet. Add one with +." height={300} />
-        </div>
+        {convo ? (
+          <Field label="Questions to ask" hint="One per line, in order. The interviewer asks them one at a time and follows up. Candidates never see this list.">
+            <textarea
+              rows={7}
+              value={d.testsCode}
+              onChange={(e) => set("testsCode", e.target.value)}
+              className={`${inputCls} h-auto py-2`}
+              placeholder={"Tell me about a deal you lost and what you learned.\nHow do you plan your week when the pipeline is thin?\nA customer asks for a discount you cannot give. What do you say?"}
+            />
+          </Field>
+        ) : (
+          <div className="flex flex-col gap-1.5">
+            <span className="text-xs font-medium text-subtle">Starter files</span>
+            <MonacoFileEditor value={d.starterFilesJson} onChange={(v) => set("starterFilesJson", v)} emptyHint="No starter files yet. Add one with +." height={300} />
+          </div>
+        )}
         <button type="button" onClick={() => setAdvanced((a) => !a)} aria-expanded={advanced} className="self-start text-[13px] text-secondary-soft hover:underline">
-          {advanced ? "Hide advanced" : "Advanced: grading hints and external tools"}
+          {advanced ? "Hide advanced" : convo ? "Advanced: external tools" : "Advanced: grading hints and external tools"}
         </button>
         {advanced && (
           <div className="flex flex-col gap-4 rounded-lg border border-border p-4">
-            <Field label="Grading hints or tests (optional)" hint="Given to the AI grader. Candidates never see it.">
-              <textarea rows={4} value={d.testsCode} onChange={(e) => set("testsCode", e.target.value)} className={`${inputCls} h-auto py-2 font-mono text-[12.5px]`} />
-            </Field>
+            {!convo && (
+              <Field label="Grading hints or tests (optional)" hint="Given to the AI grader. Candidates never see it.">
+                <textarea rows={4} value={d.testsCode} onChange={(e) => set("testsCode", e.target.value)} className={`${inputCls} h-auto py-2 font-mono text-[12.5px]`} />
+              </Field>
+            )}
             <ServerBindings slug={slug} questionId={d.id} bound={bound} sets={sets} toast={toast} />
           </div>
         )}
       </div>
       <div className="mt-auto flex items-center justify-end gap-2 px-5 py-4 border-t border-border">
         <Btn onClick={onClose}>Cancel</Btn>
-        <Btn variant="primary" disabled={pending || !d.title.trim() || !d.description.trim()} onClick={save}>
+        <Btn variant="primary" disabled={pending || !d.title.trim() || !d.description.trim() || (convo && !d.testsCode.trim())} onClick={save}>
           {pending ? "Saving" : d.id ? "Save changes" : "Add question"}
         </Btn>
       </div>

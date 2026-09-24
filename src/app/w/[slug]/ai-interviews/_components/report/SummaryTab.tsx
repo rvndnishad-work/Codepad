@@ -18,7 +18,7 @@ function Bullet({ text, kind }: { text: string; kind: "ok" | "gap" | "note" }) {
   );
 }
 
-export default function SummaryTab({ r, hrefFor }: { r: ReportData; hrefFor: (p: { tab?: "code" | "run"; round?: number }) => string }) {
+export default function SummaryTab({ r, hrefFor }: { r: ReportData; hrefFor: (p: { tab?: "code" | "run" | "transcript"; round?: number }) => string }) {
   const sections = r.summary;
   const multi = sections.length > 1;
   return (
@@ -77,7 +77,12 @@ export default function SummaryTab({ r, hrefFor }: { r: ReportData; hrefFor: (p:
                 </span>
               </div>
               {x.score != null ? <ToneScore value={x.score} tone={tone} width={100} /> : <span className="text-[13px] text-subtle">{r.status === "PENDING" || r.status === "EXPIRED" ? "Not started" : "Not scored"}</span>}
-              {r.status !== "PENDING" && r.status !== "EXPIRED" && <span className="flex gap-3 text-[13px]">
+              {r.status !== "PENDING" && r.status !== "EXPIRED" && x.kind === "conversation" && (
+                <Link href={hrefFor({ tab: "transcript" })} scroll={false} className="text-[13px] text-secondary-soft hover:underline">
+                  Read transcript
+                </Link>
+              )}
+              {r.status !== "PENDING" && r.status !== "EXPIRED" && x.kind !== "conversation" && <span className="flex gap-3 text-[13px]">
                 <Link href={hrefFor({ tab: "code", round: i })} scroll={false} className="text-secondary-soft hover:underline">
                   View code
                 </Link>

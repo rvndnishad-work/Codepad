@@ -54,7 +54,7 @@ export default async function NewAiScreeningPage({ params, searchParams }: Props
       credits={credits}
       pool={pool}
       preselected={preselected}
-      questions={questions.items.map((q) => ({ id: q.id, title: q.title, kind: q.kind, label: q.label, minutes: q.minutes, custom: q.custom, language: q.language }))}
+      questions={questions.items.map((q) => ({ id: q.id, title: q.title, kind: q.kind, label: q.label, minutes: q.minutes, custom: q.custom, language: q.language, frameworkLabel: q.frameworkLabel }))}
       challenges={challenges.map((c) => ({ id: c.id, title: c.title, difficulty: c.difficulty, paradigm: c.paradigm, languages: c.languages, frameworks: c.frameworks, mine: c.mine }))}
       prefill={prefill}
       canBuy={access.canBuy}

@@ -7,8 +7,9 @@ import {
   PAID_PLANS,
   WORKSPACE_ADMIN_ROLES,
 } from "@/lib/totp-gate";
-import WorkspaceSidebar from "./WorkspaceSidebar";
-import { trialActive } from "@/lib/billing/trial";
+import WorkspaceShell from "./WorkspaceShell";
+import { effectivePlan } from "@/lib/billing/trial";
+import { planDisplay } from "@/lib/workspace/display";
 
 type Props = {
   children: React.ReactNode;
@@ -64,46 +65,48 @@ export default async function WorkspaceLayout({ children, params }: Props) {
   const myMemberships = await prisma.workspaceMember.findMany({
     where: { userId },
     include: {
-      workspace: { select: { name: true, slug: true, planName: true } },
+      workspace: {
+        select: { name: true, slug: true, planName: true, trialEndsAt: true, stripeSubscriptionId: true },
+      },
     },
   });
 
   const showAdmin = await isStaff(session);
 
-  return (
-    <div className="bg-bg text-fg flex flex-col md:flex-row relative font-sans h-[calc(100vh-64px)] overflow-hidden">
-      {/* Sidebar — client component owns the collapse state + tooltips. */}
-      <WorkspaceSidebar
-        slug={slug}
-        workspaceName={activeWorkspace.name}
-        planName={trialActive(activeWorkspace) ? "TRIAL" : activeWorkspace.planName}
-        memberships={myMemberships.map((m) => ({
-          name: m.workspace.name,
-          slug: m.workspace.slug,
-          planName: m.workspace.planName,
-        }))}
-        counts={{
-          challenges: activeWorkspace._count.challenges,
-          interviews: activeWorkspace._count.sessions,
-          takeHomes: activeWorkspace._count.takeHomes,
-          candidates: activeWorkspace._count.candidates,
-          replays: submittedTakeHomes + finishedSessions,
-          members: activeWorkspace.members.length,
-        }}
-        user={{
-          name: session.user.name,
-          email: session.user.email,
-          image: session.user.image,
-        }}
-        isAdmin={showAdmin}
-      />
+  const plan = planDisplay(activeWorkspace);
+  // System workspaces (double-underscore slugs) are internal tenants and
+  // never appear in the switcher.
+  const switcher = myMemberships
+    .filter((m) => !m.workspace.slug.startsWith("__"))
+    .sort((a, b) => a.workspace.name.localeCompare(b.workspace.name))
+    .map((m) => ({
+      name: m.workspace.name,
+      slug: m.workspace.slug,
+      planLabel: planDisplay(m.workspace).label,
+    }));
 
-      {/* Main content — scrolls independently of the sidebar. min-h-0 (not
-          h-full) so on mobile it takes the height left over below the compact
-          sidebar bar instead of overflowing the clipped container. */}
-      <main className="flex-1 min-w-0 min-h-0 relative z-10 bg-bg overflow-y-auto">
-        <div className="workspace-content mx-auto w-full max-w-5xl p-4 md:p-8 space-y-6">{children}</div>
-      </main>
-    </div>
+  return (
+    <WorkspaceShell
+      current={{ name: activeWorkspace.name, slug, planLabel: plan.label }}
+      workspaces={switcher}
+      plan={plan}
+      seatLimit={effectivePlan(activeWorkspace).seatLimit}
+      counts={{
+        challenges: activeWorkspace._count.challenges,
+        interviews: activeWorkspace._count.sessions,
+        takeHomes: activeWorkspace._count.takeHomes,
+        candidates: activeWorkspace._count.candidates,
+        replays: submittedTakeHomes + finishedSessions,
+        members: activeWorkspace.members.length,
+      }}
+      user={{
+        name: session.user.name,
+        email: session.user.email,
+        image: session.user.image,
+      }}
+      isAdmin={showAdmin}
+    >
+      {children}
+    </WorkspaceShell>
   );
 }

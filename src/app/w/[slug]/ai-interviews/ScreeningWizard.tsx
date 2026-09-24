@@ -87,20 +87,20 @@ const PARADIGM_META: Record<
   frontend: {
     label: "Frontend",
     icon: <Monitor className="w-3.5 h-3.5" />,
-    tone: "text-sky-500 dark:text-sky-400",
-    dot: "bg-sky-500",
+    tone: "text-secondary",
+    dot: "bg-secondary",
   },
   backend: {
     label: "Backend",
     icon: <Server className="w-3.5 h-3.5" />,
-    tone: "text-emerald-500 dark:text-emerald-400",
-    dot: "bg-emerald-500",
+    tone: "text-success",
+    dot: "bg-success",
   },
   dsa: {
     label: "DSA",
     icon: <Binary className="w-3.5 h-3.5" />,
-    tone: "text-violet-500 dark:text-violet-400",
-    dot: "bg-violet-500",
+    tone: "text-secondary",
+    dot: "bg-secondary",
   },
 };
 
@@ -336,13 +336,13 @@ export default function ScreeningWizard({
         </button>
 
         <div className="text-center">
-          <h1 className="text-lg sm:text-xl font-black tracking-tight text-fg flex items-center justify-center gap-2">
-            <Sparkles className="w-5 h-5 text-accent" /> New AI Screening
+          <h1 className="text-lg sm:text-xl font-semibold tracking-tight text-fg flex items-center justify-center gap-2">
+            <Sparkles className="w-5 h-5 text-secondary" /> New AI Screening
           </h1>
-          <p className="text-[11px] text-muted hidden sm:block">{STEPS[step - 1].hint}</p>
+          <p className="text-xs text-muted hidden sm:block">{STEPS[step - 1].hint}</p>
         </div>
 
-        <div className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl border border-amber-500/30 bg-amber-500/[0.07] text-amber-500 text-xs font-black tabular-nums">
+        <div className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl border border-warning/30 bg-warning/[0.07] text-warning text-xs font-semibold tabular-nums">
           <Coins className="w-3.5 h-3.5" />
           {credits}
         </div>
@@ -442,7 +442,7 @@ export default function ScreeningWizard({
             )}
           </button>
 
-          <div className="text-[11px] text-muted hidden sm:block tabular-nums">
+          <div className="text-xs text-muted hidden sm:block tabular-nums">
             {selectedIds.length > 0 && (
               <span>
                 <span className="text-fg font-bold">{selectedIds.length}</span> candidate
@@ -473,7 +473,7 @@ export default function ScreeningWizard({
               type="button"
               disabled={submitting || sharedRounds.length === 0}
               onClick={handleGenerate}
-              className="group inline-flex items-center gap-2 px-6 py-2.5 rounded-xl bg-accent text-bg text-xs font-black uppercase tracking-widest hover:bg-accent-soft transition disabled:opacity-50 disabled:cursor-not-allowed shadow-md shadow-accent/20"
+              className="group inline-flex items-center gap-2 px-6 py-2.5 rounded-xl bg-secondary text-bg text-xs font-semibold hover:brightness-110 transition disabled:opacity-50 disabled:cursor-not-allowed shadow-md shadow-secondary/20"
             >
               {submitting ? (
                 <Loader2 className="w-4 h-4 animate-spin" />
@@ -503,7 +503,7 @@ function NextButton({
       type="button"
       disabled={disabled}
       onClick={onClick}
-      className="group inline-flex items-center gap-1.5 px-6 py-2.5 rounded-xl bg-accent text-bg text-xs font-black uppercase tracking-widest hover:bg-accent-soft transition disabled:opacity-40 disabled:cursor-not-allowed shadow-md shadow-accent/20"
+      className="group inline-flex items-center gap-1.5 px-6 py-2.5 rounded-xl bg-secondary text-bg text-xs font-semibold hover:brightness-110 transition disabled:opacity-40 disabled:cursor-not-allowed shadow-md shadow-secondary/20"
     >
       {children}
       <ChevronRight className="w-4 h-4 transition-transform group-hover:translate-x-0.5" />
@@ -523,7 +523,7 @@ function Stepper({ step, onJump }: { step: Step; onJump: (n: Step) => void }) {
       <div className="absolute left-5 right-5 top-5 h-[3px] -translate-y-1/2">
         <div className="absolute inset-0 rounded-full bg-border" />
         <motion.div
-          className="absolute inset-y-0 left-0 rounded-full bg-accent"
+          className="absolute inset-y-0 left-0 rounded-full bg-secondary"
           initial={false}
           animate={{ width: `${progress}%` }}
           transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
@@ -553,9 +553,9 @@ function Stepper({ step, onJump }: { step: Step; onJump: (n: Step) => void }) {
               whileTap={clickable ? { scale: 0.95 } : undefined}
               className={`w-10 h-10 rounded-full flex items-center justify-center border-2 transition-colors ${
                 active
-                  ? "bg-accent border-accent text-bg shadow-lg shadow-accent/40 ring-4 ring-accent/20"
+                  ? "bg-secondary border-secondary text-bg shadow-lg shadow-secondary/40 ring-4 ring-secondary/20"
                   : done
-                  ? "bg-accent border-accent text-bg"
+                  ? "bg-secondary border-secondary text-bg"
                   : "bg-surface border-border text-muted"
               }`}
             >
@@ -577,8 +577,8 @@ function Stepper({ step, onJump }: { step: Step; onJump: (n: Step) => void }) {
               </AnimatePresence>
             </motion.span>
             <div
-              className={`text-[11px] font-black uppercase tracking-wider transition-colors ${
-                active ? "text-fg" : done ? "text-accent/90" : "text-muted/70"
+              className={`text-xs font-semibold transition-colors ${
+                active ? "text-fg" : done ? "text-secondary/90" : "text-muted/70"
               }`}
             >
               {s.label}
@@ -701,7 +701,7 @@ function StepCandidates({
           placeholder="e.g. Senior Frontend Engineer"
         />
         <div className="flex flex-wrap items-center gap-1.5 px-1">
-          <span className="text-[9px] font-black uppercase tracking-widest text-muted/60 mr-0.5">Quick pick</span>
+          <span className="text-xs font-semibold text-muted/60 mr-0.5">Quick pick</span>
           {SENIORITY_LEVELS.map((s) => (
             <PresetChip key={s} active={seniority === s} onClick={() => pickSeniority(s)}>
               {s}
@@ -727,13 +727,13 @@ function StepCandidates({
           {/* Talent pool */}
           <div className="rounded-2xl border border-border bg-surface/50 p-3 flex flex-col">
             <div className="flex items-center justify-between mb-2.5 px-1">
-              <span className="text-[10px] font-black uppercase tracking-widest text-muted flex items-center gap-1.5">
+              <span className="text-xs font-semibold text-muted flex items-center gap-1.5">
                 <Users className="w-3.5 h-3.5" /> Talent pool
               </span>
               <button
                 type="button"
                 onClick={() => setQuickOpen((v) => !v)}
-                className="inline-flex items-center gap-1 text-[10px] font-bold text-accent hover:underline"
+                className="inline-flex items-center gap-1 text-xs font-bold text-secondary hover:underline"
               >
                 <UserPlus className="w-3 h-3" /> Invite new
               </button>
@@ -749,12 +749,12 @@ function StepCandidates({
                   transition={{ duration: 0.25 }}
                   className="overflow-hidden"
                 >
-                  <div className="mb-2.5 rounded-xl border border-accent/30 bg-accent/[0.05] p-3 space-y-2">
+                  <div className="mb-2.5 rounded-xl border border-secondary/30 bg-secondary/[0.05] p-3 space-y-2">
                     <input
                       value={qName}
                       onChange={(e) => setQName(e.target.value)}
                       placeholder="Full name"
-                      className="w-full px-3 py-2 rounded-lg border border-border bg-bg text-xs text-fg focus:outline-none focus:border-accent"
+                      className="w-full px-3 py-2 rounded-lg border border-border bg-bg text-xs text-fg focus:outline-none focus:border-secondary"
                     />
                     <input
                       type="email"
@@ -762,13 +762,13 @@ function StepCandidates({
                       onChange={(e) => setQEmail(e.target.value)}
                       onKeyDown={(e) => e.key === "Enter" && handleQuickAdd()}
                       placeholder="email@company.com"
-                      className="w-full px-3 py-2 rounded-lg border border-border bg-bg text-xs text-fg focus:outline-none focus:border-accent"
+                      className="w-full px-3 py-2 rounded-lg border border-border bg-bg text-xs text-fg focus:outline-none focus:border-secondary"
                     />
                     <button
                       type="button"
                       onClick={handleQuickAdd}
                       disabled={adding}
-                      className="w-full inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg bg-accent text-bg text-[11px] font-black uppercase tracking-wider hover:bg-accent-soft transition disabled:opacity-50"
+                      className="w-full inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg bg-secondary text-bg text-xs font-semibold hover:brightness-110 transition disabled:opacity-50"
                     >
                       {adding ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Plus className="w-3.5 h-3.5" />}
                       Add & select
@@ -784,7 +784,7 @@ function StepCandidates({
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 placeholder="Search the pipeline…"
-                className="w-full pl-9 pr-3 py-2 rounded-xl border border-border bg-bg text-xs text-fg focus:outline-none focus:border-accent"
+                className="w-full pl-9 pr-3 py-2 rounded-xl border border-border bg-bg text-xs text-fg focus:outline-none focus:border-secondary"
               />
             </div>
 
@@ -792,8 +792,8 @@ function StepCandidates({
               {pool.length === 0 ? (
                 <EmptyHint>
                   No candidates with an email yet. Use{" "}
-                  <span className="text-accent font-bold">Invite new</span> above, or add people to your{" "}
-                  <Link href={`/w/${workspaceSlug}/candidates`} target="_blank" className="text-accent underline">
+                  <span className="text-secondary font-bold">Invite new</span> above, or add people to your{" "}
+                  <Link href={`/w/${workspaceSlug}/candidates`} target="_blank" className="text-secondary underline">
                     pipeline
                   </Link>
                   .
@@ -849,15 +849,15 @@ function DraggableCandidate({ candidate, onAdd }: { candidate: CandidateOption; 
         role="button"
         tabIndex={0}
         onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && onAdd()}
-        className="group flex items-center gap-2.5 px-3 py-2 rounded-xl border border-border bg-bg hover:border-accent/50 hover:bg-accent/[0.04] cursor-grab active:cursor-grabbing transition select-none"
+        className="group flex items-center gap-2.5 px-3 py-2 rounded-xl border border-border bg-bg hover:border-secondary/50 hover:bg-secondary/[0.04] cursor-grab active:cursor-grabbing transition select-none"
       >
         <GripVertical className="w-3.5 h-3.5 text-muted/40 group-hover:text-muted shrink-0" />
         <Avatar name={candidate.name} />
         <div className="min-w-0 flex-1">
           <div className="text-xs font-bold text-fg truncate">{candidate.name}</div>
-          <div className="text-[10px] text-muted/70 font-mono truncate">{candidate.email}</div>
+          <div className="text-xs text-muted/70 font-mono truncate">{candidate.email}</div>
         </div>
-        <span className="opacity-0 group-hover:opacity-100 transition text-accent">
+        <span className="opacity-0 group-hover:opacity-100 transition text-secondary">
           <Plus className="w-4 h-4" />
         </span>
       </div>
@@ -882,18 +882,18 @@ function SelectedZone({
       ref={setNodeRef}
       className={`rounded-2xl border-2 p-3 flex flex-col transition-colors ${
         isOver
-          ? "border-accent bg-accent/[0.08]"
+          ? "border-secondary bg-secondary/[0.08]"
           : isDragging
-          ? "border-dashed border-accent/50 bg-accent/[0.03]"
+          ? "border-dashed border-secondary/50 bg-secondary/[0.03]"
           : "border-border bg-surface/50"
       }`}
     >
       <div className="flex items-center justify-between mb-2.5 px-1">
-        <span className="text-[10px] font-black uppercase tracking-widest text-accent flex items-center gap-1.5">
+        <span className="text-xs font-semibold text-secondary flex items-center gap-1.5">
           <CheckCircle2 className="w-3.5 h-3.5" /> Screening ({selected.length})
         </span>
         {selected.length > 0 && (
-          <button type="button" onClick={onClear} className="text-[10px] font-bold text-muted hover:text-fg">
+          <button type="button" onClick={onClear} className="text-xs font-bold text-muted hover:text-fg">
             Clear
           </button>
         )}
@@ -905,11 +905,11 @@ function SelectedZone({
             <motion.div
               animate={isDragging ? { scale: [1, 1.12, 1] } : { scale: 1 }}
               transition={{ repeat: isDragging ? Infinity : 0, duration: 1 }}
-              className="w-10 h-10 rounded-full bg-accent/10 border border-accent/20 flex items-center justify-center text-accent"
+              className="w-10 h-10 rounded-full bg-secondary/10 border border-secondary/20 flex items-center justify-center text-secondary"
             >
               <UserPlus className="w-5 h-5" />
             </motion.div>
-            <p className="text-[11px] text-muted max-w-[180px]">
+            <p className="text-xs text-muted max-w-[180px]">
               {isDragging ? "Drop to add to the screening" : "Drag or tap candidates from the pool"}
             </p>
           </div>
@@ -925,16 +925,16 @@ function SelectedZone({
                   exit={{ opacity: 0, x: 12 }}
                   transition={{ type: "spring", stiffness: 420, damping: 32 }}
                 >
-                  <div className="group flex items-center gap-2.5 px-3 py-2 rounded-xl border border-accent/30 bg-accent/[0.06]">
+                  <div className="group flex items-center gap-2.5 px-3 py-2 rounded-xl border border-secondary/30 bg-secondary/[0.06]">
                     <Avatar name={c.name} accent />
                     <div className="min-w-0 flex-1">
                       <div className="text-xs font-bold text-fg truncate">{c.name}</div>
-                      <div className="text-[10px] text-muted/70 font-mono truncate">{c.email}</div>
+                      <div className="text-xs text-muted/70 font-mono truncate">{c.email}</div>
                     </div>
                     <button
                       type="button"
                       onClick={() => onRemove(c.id)}
-                      className="p-1 rounded-md text-muted hover:text-rose-400 hover:bg-rose-500/10 transition"
+                      className="p-1 rounded-md text-muted hover:text-danger hover:bg-danger/10 transition"
                     >
                       <X className="w-3.5 h-3.5" />
                     </button>
@@ -953,13 +953,13 @@ function CandidateCardVisual({ candidate, dragging }: { candidate: CandidateOpti
   return (
     <div
       className={`flex items-center gap-2.5 px-3 py-2 rounded-xl border bg-surface ${
-        dragging ? "border-accent shadow-2xl shadow-accent/20 rotate-1" : "border-border"
+        dragging ? "border-secondary shadow-2xl shadow-secondary/20 rotate-1" : "border-border"
       }`}
     >
       <Avatar name={candidate.name} accent />
       <div className="min-w-0">
         <div className="text-xs font-bold text-fg truncate">{candidate.name}</div>
-        <div className="text-[10px] text-muted/70 font-mono truncate">{candidate.email}</div>
+        <div className="text-xs text-muted/70 font-mono truncate">{candidate.email}</div>
       </div>
     </div>
   );
@@ -968,8 +968,8 @@ function CandidateCardVisual({ candidate, dragging }: { candidate: CandidateOpti
 function Avatar({ name, accent }: { name: string; accent?: boolean }) {
   return (
     <span
-      className={`w-7 h-7 rounded-lg shrink-0 flex items-center justify-center text-[10px] font-black ${
-        accent ? "bg-accent/20 text-accent" : "bg-elevated text-muted"
+      className={`w-7 h-7 rounded-lg shrink-0 flex items-center justify-center text-xs font-semibold ${
+        accent ? "bg-secondary/20 text-secondary" : "bg-elevated text-muted"
       }`}
     >
       {initials(name)}
@@ -1046,7 +1046,7 @@ function StepStack({
               transition={{ duration: 0.25 }}
               className="overflow-hidden"
             >
-              <p className="text-[10px] font-bold uppercase tracking-wider text-muted/70 mt-3 mb-1.5">
+              <p className="text-xs font-bold text-muted/70 mt-3 mb-1.5">
                 Framework focus <span className="font-normal normal-case">(steers AI questions — not executed)</span>
               </p>
               <ChipGrid
@@ -1068,7 +1068,7 @@ function StepStack({
           selected={dsaLangs}
           onToggle={(v) => setDsaLangs((p) => toggleId(p, v))}
         />
-        <p className="mt-2 text-[10px] text-muted/60">
+        <p className="mt-2 text-xs text-muted/60">
           Fullstack = pick a frontend framework <span className="text-fg/70">+</span> a backend language together.
         </p>
       </StackCard>
@@ -1077,29 +1077,29 @@ function StepStack({
         <TimeSlider minutes={minutes} setMinutes={setMinutes} />
       </div>
 
-      {poolError && <div className="text-[11px] text-rose-400">{poolError}</div>}
+      {poolError && <div className="text-xs text-danger">{poolError}</div>}
     </div>
   );
 }
 
 const TONE: Record<string, { ring: string; chip: string; head: string; bar: string }> = {
   sky: {
-    ring: "border-sky-500/30",
-    chip: "bg-sky-500/15 border-sky-500/40 text-sky-600 dark:text-sky-400",
-    head: "text-sky-500 dark:text-sky-400",
-    bar: "bg-sky-500",
+    ring: "border-secondary/30",
+    chip: "bg-secondary/15 border-secondary/40 text-secondary",
+    head: "text-secondary",
+    bar: "bg-secondary",
   },
   emerald: {
-    ring: "border-emerald-500/30",
-    chip: "bg-emerald-500/15 border-emerald-500/40 text-emerald-600 dark:text-emerald-400",
-    head: "text-emerald-500 dark:text-emerald-400",
-    bar: "bg-emerald-500",
+    ring: "border-success/30",
+    chip: "bg-success/15 border-success/40 text-success",
+    head: "text-success",
+    bar: "bg-success",
   },
   violet: {
-    ring: "border-violet-500/30",
-    chip: "bg-violet-500/15 border-violet-500/40 text-violet-600 dark:text-violet-400",
-    head: "text-violet-500 dark:text-violet-400",
-    bar: "bg-violet-500",
+    ring: "border-secondary/30",
+    chip: "bg-secondary/15 border-secondary/40 text-secondary",
+    head: "text-secondary",
+    bar: "bg-secondary",
   },
 };
 
@@ -1120,7 +1120,7 @@ function StackCard({
   return (
     <div className={`rounded-2xl border bg-surface/50 p-4 transition-colors ${count > 0 ? t.ring : "border-border"}`}>
       <div className="flex items-center justify-between mb-3">
-        <div className={`flex items-center gap-2 text-xs font-black uppercase tracking-wider ${t.head}`}>
+        <div className={`flex items-center gap-2 text-xs font-semibold ${t.head}`}>
           {icon}
           {title}
         </div>
@@ -1130,7 +1130,7 @@ function StackCard({
               initial={{ scale: 0, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0, opacity: 0 }}
-              className={`text-[10px] font-black px-2 py-0.5 rounded-full border ${t.chip}`}
+              className={`text-xs font-semibold px-2 py-0.5 rounded-full border ${t.chip}`}
             >
               {count}
             </motion.span>
@@ -1167,7 +1167,7 @@ function ChipGrid({
             onClick={() => onToggle(o.id)}
             whileTap={{ scale: 0.92 }}
             className={`inline-flex items-center gap-1.5 rounded-full border font-bold transition-colors ${
-              small ? "px-2.5 py-1 text-[10px]" : "px-3.5 py-1.5 text-[11px]"
+              small ? "px-2.5 py-1 text-xs" : "px-3.5 py-1.5 text-xs"
             } ${on ? t.chip : "bg-transparent border-border text-muted hover:border-border-strong hover:text-fg"}`}
           >
             <AnimatePresence initial={false}>
@@ -1197,21 +1197,21 @@ function TimeSlider({ minutes, setMinutes }: { minutes: number; setMinutes: (n: 
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between">
-        <label className="text-[10px] font-black uppercase tracking-wider text-muted flex items-center gap-1.5">
+        <label className="text-xs font-semibold text-muted flex items-center gap-1.5">
           <Clock className="w-3.5 h-3.5" /> Time per round
         </label>
         <motion.span
           key={minutes}
           initial={{ scale: 0.8, opacity: 0.5 }}
           animate={{ scale: 1, opacity: 1 }}
-          className="text-sm font-black text-accent tabular-nums"
+          className="text-sm font-semibold text-secondary tabular-nums"
         >
           {minutes} min
         </motion.span>
       </div>
       <div className="relative h-6 flex items-center">
         <div className="absolute left-0 right-0 h-1.5 rounded-full bg-border" />
-        <div className="absolute left-0 h-1.5 rounded-full bg-accent" style={{ width: `${pct}%` }} />
+        <div className="absolute left-0 h-1.5 rounded-full bg-secondary" style={{ width: `${pct}%` }} />
         <input
           type="range"
           min={min}
@@ -1219,13 +1219,13 @@ function TimeSlider({ minutes, setMinutes }: { minutes: number; setMinutes: (n: 
           step={15}
           value={minutes}
           onChange={(e) => setMinutes(Number(e.target.value))}
-          className="absolute left-0 right-0 w-full appearance-none bg-transparent cursor-pointer accent-accent
+          className="absolute left-0 right-0 w-full appearance-none bg-transparent cursor-pointer accent-secondary
             [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4
-            [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-accent [&::-webkit-slider-thumb]:shadow-md
+            [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-secondary [&::-webkit-slider-thumb]:shadow-md
             [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-bg"
         />
       </div>
-      <div className="flex justify-between text-[9px] text-muted/60 tabular-nums">
+      <div className="flex justify-between text-xs text-muted/60 tabular-nums">
         <span>15m</span>
         <span>120m</span>
       </div>
@@ -1259,10 +1259,10 @@ function StepRounds({
     <div className="space-y-5">
       {/* Interviewer presence — drives proactive behavior + credit cost. */}
       <div>
-        <div className="text-[10px] font-black uppercase tracking-widest text-accent flex items-center gap-1.5 mb-1">
+        <div className="text-xs font-semibold text-secondary flex items-center gap-1.5 mb-1">
           <Gauge className="w-3.5 h-3.5" /> Interviewer presence
         </div>
-        <p className="text-[11px] text-muted mb-3">
+        <p className="text-xs text-muted mb-3">
           How present the AI is while the candidate codes. More presence = richer signal, more credits per candidate.
         </p>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
@@ -1275,20 +1275,20 @@ function StepRounds({
                 onClick={() => setEngagementLevel(o.id)}
                 whileTap={{ scale: 0.97 }}
                 className={`text-left rounded-xl border p-3 transition-colors ${
-                  on ? "border-accent bg-accent/[0.07]" : "border-border bg-bg hover:border-border-strong"
+                  on ? "border-secondary bg-secondary/[0.07]" : "border-border bg-bg hover:border-border-strong"
                 }`}
               >
                 <div className="flex items-center justify-between mb-1.5">
-                  <span className={`inline-flex items-center gap-1.5 text-xs font-black ${on ? "text-fg" : "text-muted"}`}>
-                    <span className={on ? "text-accent" : "text-muted"}>{o.icon}</span>
+                  <span className={`inline-flex items-center gap-1.5 text-xs font-semibold ${on ? "text-fg" : "text-muted"}`}>
+                    <span className={on ? "text-secondary" : "text-muted"}>{o.icon}</span>
                     {o.label}
                   </span>
-                  <span className="inline-flex items-center gap-0.5 text-[10px] font-black text-amber-500 tabular-nums">
+                  <span className="inline-flex items-center gap-0.5 text-xs font-semibold text-warning tabular-nums">
                     <Coins className="w-3 h-3" />
                     {o.cost}
                   </span>
                 </div>
-                <p className="text-[10px] text-muted leading-snug">{o.desc}</p>
+                <p className="text-xs text-muted leading-snug">{o.desc}</p>
               </motion.button>
             );
           })}
@@ -1296,10 +1296,10 @@ function StepRounds({
       </div>
 
       <div>
-        <div className="text-[10px] font-black uppercase tracking-widest text-accent flex items-center gap-1.5 mb-1">
+        <div className="text-xs font-semibold text-secondary flex items-center gap-1.5 mb-1">
           <Layers className="w-3.5 h-3.5" /> Shared question set
         </div>
-        <p className="text-[11px] text-muted mb-3">
+        <p className="text-xs text-muted mb-3">
           Drag to reorder — candidates run rounds top-to-bottom. Override any round with a custom scaffold.
         </p>
         <SortableRounds initial={sharedRounds} onChange={setSharedRounds} templates={templates} />
@@ -1312,10 +1312,10 @@ function StepRounds({
             onClick={() => setAdvancedOpen((v) => !v)}
             className="w-full flex items-center justify-between px-4 py-3 hover:bg-elevated/30 transition"
           >
-            <span className="text-[10px] font-black uppercase tracking-widest text-muted flex items-center gap-1.5">
+            <span className="text-xs font-semibold text-muted flex items-center gap-1.5">
               <Sliders className="w-3.5 h-3.5" /> Per-candidate overrides
               {Object.keys(overrides).length > 0 && (
-                <span className="text-accent">({Object.keys(overrides).length})</span>
+                <span className="text-secondary">({Object.keys(overrides).length})</span>
               )}
             </span>
             <ChevronRight className={`w-4 h-4 text-muted transition-transform ${advancedOpen ? "rotate-90" : ""}`} />
@@ -1330,7 +1330,7 @@ function StepRounds({
                 className="overflow-hidden"
               >
                 <div className="px-4 pb-4 pt-1 space-y-1.5 border-t border-border/60">
-                  <p className="text-[10px] text-muted/70 py-2">
+                  <p className="text-xs text-muted/70 py-2">
                     Everyone gets the shared set unless overridden here.
                   </p>
                   {selectedCandidates.map((c) => (
@@ -1383,12 +1383,12 @@ function OverrideRow({
         <Avatar name={candidate.name} />
         <div className="min-w-0 flex-1">
           <div className="text-xs font-bold text-fg truncate">{candidate.name}</div>
-          <div className="text-[10px] text-muted/70 truncate">
+          <div className="text-xs text-muted/70 truncate">
             {overridden ? `${override!.length} custom round${override!.length === 1 ? "" : "s"}` : "Shared set"}
           </div>
         </div>
         {overridden && (
-          <button type="button" onClick={() => onSet(null)} className="text-[10px] font-bold text-muted hover:text-fg">
+          <button type="button" onClick={() => onSet(null)} className="text-xs font-bold text-muted hover:text-fg">
             Reset
           </button>
         )}
@@ -1398,7 +1398,7 @@ function OverrideRow({
             if (!overridden) onSet(sharedRounds.map((r) => ({ ...r })));
             setExpanded((v) => !v);
           }}
-          className="inline-flex items-center gap-1 text-[10px] font-bold text-accent hover:underline"
+          className="inline-flex items-center gap-1 text-xs font-bold text-secondary hover:underline"
         >
           {expanded ? "Done" : "Customize"}
           <ChevronRight className={`w-3 h-3 transition-transform ${expanded ? "rotate-90" : ""}`} />
@@ -1537,7 +1537,7 @@ function SortableRound({
       ref={setNodeRef}
       style={style}
       className={`flex items-center gap-2.5 rounded-xl border bg-bg p-2.5 ${
-        isDragging ? "border-accent shadow-xl shadow-accent/10" : "border-border"
+        isDragging ? "border-secondary shadow-xl shadow-secondary/10" : "border-border"
       }`}
     >
       <button
@@ -1550,7 +1550,7 @@ function SortableRound({
         <GripVertical className="w-4 h-4" />
       </button>
 
-      <span className="inline-flex items-center justify-center w-6 h-6 rounded-lg bg-accent/10 text-accent text-[11px] font-black shrink-0">
+      <span className="inline-flex items-center justify-center w-6 h-6 rounded-lg bg-secondary/10 text-secondary text-xs font-semibold shrink-0">
         {index + 1}
       </span>
 
@@ -1559,7 +1559,7 @@ function SortableRound({
           <span className={meta?.tone}>{meta?.icon}</span>
           {meta?.label} · {roundTech(round)}
         </div>
-        <div className="text-[9px] uppercase tracking-wider text-muted/70">
+        <div className="text-xs text-muted/70">
           {isScaffold ? "Custom scaffold" : `Auto · ${round.sourceKind}`} · {round.estimatedMinutes ?? 30}m
         </div>
       </div>
@@ -1577,7 +1577,7 @@ function SortableRound({
       <button
         type="button"
         onClick={onRemove}
-        className="p-1 rounded-md text-muted hover:text-rose-400 hover:bg-rose-500/10 transition shrink-0"
+        className="p-1 rounded-md text-muted hover:text-danger hover:bg-danger/10 transition shrink-0"
         title="Remove round"
       >
         <Trash2 className="w-3.5 h-3.5" />
@@ -1615,13 +1615,13 @@ function QuestionPicker({
         type="button"
         onClick={() => setOpen(true)}
         title="Choose the question for this round"
-        className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border text-[11px] transition max-w-[180px] ${
+        className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border text-xs transition max-w-[180px] ${
           selected
-            ? "border-accent/40 bg-accent/[0.06] text-fg"
-            : "border-border bg-surface text-muted hover:text-fg hover:border-accent/50"
+            ? "border-secondary/40 bg-secondary/[0.06] text-fg"
+            : "border-border bg-surface text-muted hover:text-fg hover:border-secondary/50"
         }`}
       >
-        {selected ? <FileCog className="w-3 h-3 shrink-0 text-accent" /> : <Sparkles className="w-3 h-3 shrink-0" />}
+        {selected ? <FileCog className="w-3 h-3 shrink-0 text-secondary" /> : <Sparkles className="w-3 h-3 shrink-0" />}
         <span className="truncate">{selected ? selected.title : "Auto (curated)"}</span>
         <ChevronRight className="w-3 h-3 shrink-0 opacity-50 rotate-90" />
       </button>
@@ -1765,7 +1765,7 @@ function QuestionPickerDrawer({
         <div className="p-4 border-b border-border space-y-3 shrink-0">
           <div className="flex items-start justify-between">
             <div>
-              <div className="text-[10px] font-black uppercase tracking-widest text-accent">Choose question</div>
+              <div className="text-xs font-semibold text-secondary">Choose question</div>
               <div className="text-xs text-muted flex items-center gap-1.5 mt-0.5">
                 <span className={meta?.tone}>{meta?.icon}</span>
                 Round {index + 1} · {meta?.label} · {roundTech(round)}
@@ -1783,7 +1783,7 @@ function QuestionPickerDrawer({
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder="Search questions…"
-              className="w-full pl-9 pr-3 py-2.5 rounded-xl border border-border bg-bg text-sm text-fg focus:outline-none focus:border-accent"
+              className="w-full pl-9 pr-3 py-2.5 rounded-xl border border-border bg-bg text-sm text-fg focus:outline-none focus:border-secondary"
             />
           </div>
 
@@ -1795,9 +1795,9 @@ function QuestionPickerDrawer({
                   key={f.key}
                   type="button"
                   onClick={() => setFilter(f.key)}
-                  className={`px-2.5 py-1 rounded-full text-[10px] font-bold border transition-colors ${
+                  className={`px-2.5 py-1 rounded-full text-xs font-bold border transition-colors ${
                     on
-                      ? "border-accent/50 bg-accent/15 text-accent"
+                      ? "border-secondary/50 bg-secondary/15 text-secondary"
                       : "border-border bg-transparent text-muted hover:text-fg hover:border-border-strong"
                   }`}
                 >
@@ -1815,7 +1815,7 @@ function QuestionPickerDrawer({
             selected={value === null}
             onMouseEnter={() => {}}
             onClick={() => onChange(null)}
-            icon={<Sparkles className="w-3.5 h-3.5 text-accent" />}
+            icon={<Sparkles className="w-3.5 h-3.5 text-secondary" />}
             title="Auto (curated)"
             subtitle="Let Interviewpad pick a matching question from the bank"
           />
@@ -1846,7 +1846,7 @@ function QuestionPickerDrawer({
             />
           ))}
           {filtered.length === 0 && (
-            <div className="px-3 py-10 text-center text-[11px] text-muted">
+            <div className="px-3 py-10 text-center text-xs text-muted">
               No questions found. Try another search or filter.
             </div>
           )}
@@ -1854,7 +1854,7 @@ function QuestionPickerDrawer({
 
         {/* Pagination */}
         <div className="p-3 border-t border-border flex items-center justify-between shrink-0">
-          <span className="text-[10px] text-muted/80 tabular-nums">
+          <span className="text-xs text-muted/80 tabular-nums">
             {filtered.length} question{filtered.length === 1 ? "" : "s"}
           </span>
           <div className="flex items-center gap-1.5">
@@ -1866,7 +1866,7 @@ function QuestionPickerDrawer({
             >
               <ChevronLeft className="w-3.5 h-3.5" />
             </button>
-            <span className="text-[10px] font-bold text-fg tabular-nums min-w-[52px] text-center">
+            <span className="text-xs font-bold text-fg tabular-nums min-w-[52px] text-center">
               {safePage + 1} / {pages}
             </span>
             <button
@@ -1913,7 +1913,7 @@ const PickerOption = ({
       onClick={onClick}
       onMouseEnter={onMouseEnter}
       className={`w-full text-left flex items-start gap-2.5 px-2.5 py-2 rounded-xl transition-colors ${
-        active ? "bg-accent/[0.08]" : "hover:bg-elevated/40"
+        active ? "bg-secondary/[0.08]" : "hover:bg-elevated/40"
       }`}
     >
       <span className="mt-0.5 shrink-0">{icon}</span>
@@ -1925,7 +1925,7 @@ const PickerOption = ({
               {meta.map((m, i) => (
                 <span
                   key={i}
-                  className="text-[8px] font-bold uppercase tracking-wider text-muted/70 bg-bg border border-border/60 rounded px-1 py-0.5"
+                  className="text-xs font-bold text-muted/70 bg-bg border border-border/60 rounded px-1 py-0.5"
                 >
                   {m}
                 </span>
@@ -1933,9 +1933,9 @@ const PickerOption = ({
             </span>
           )}
         </span>
-        {subtitle && <span className="block text-[10px] text-muted/80 truncate mt-0.5">{subtitle}</span>}
+        {subtitle && <span className="block text-xs text-muted/80 truncate mt-0.5">{subtitle}</span>}
       </span>
-      {selected && <Check className="w-3.5 h-3.5 text-accent shrink-0 mt-0.5" strokeWidth={3} />}
+      {selected && <Check className="w-3.5 h-3.5 text-secondary shrink-0 mt-0.5" strokeWidth={3} />}
     </button>
   );
 };
@@ -1982,8 +1982,8 @@ function SummaryRail({
 
   return (
     <div className="rounded-2xl border border-border bg-surface/60 p-5 lg:sticky lg:top-4 space-y-5">
-      <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-muted">
-        <Sparkles className="w-3.5 h-3.5 text-accent" /> Screening summary
+      <div className="flex items-center gap-2 text-xs font-semibold text-muted">
+        <Sparkles className="w-3.5 h-3.5 text-secondary" /> Screening summary
       </div>
 
       <SummaryBlock label="Position" filled={!!positionTitle.trim()}>
@@ -2005,7 +2005,7 @@ function SummaryRail({
                     animate={{ scale: 1, opacity: 1 }}
                     exit={{ scale: 0, opacity: 0 }}
                     title={c.name}
-                    className="w-7 h-7 rounded-lg bg-accent/15 text-accent text-[10px] font-black flex items-center justify-center"
+                    className="w-7 h-7 rounded-lg bg-secondary/15 text-secondary text-xs font-semibold flex items-center justify-center"
                   >
                     {initials(c.name)}
                   </motion.span>
@@ -2013,7 +2013,7 @@ function SummaryRail({
               </AnimatePresence>
             </LayoutGroup>
             {selectedCandidates.length > 8 && (
-              <span className="w-7 h-7 rounded-lg bg-elevated text-muted text-[10px] font-black flex items-center justify-center">
+              <span className="w-7 h-7 rounded-lg bg-elevated text-muted text-xs font-semibold flex items-center justify-center">
                 +{selectedCandidates.length - 8}
               </span>
             )}
@@ -2029,7 +2029,7 @@ function SummaryRail({
             {stackChips.map((c, i) => (
               <span
                 key={`${c.label}-${i}`}
-                className={`px-2 py-0.5 rounded-full text-[10px] font-bold border ${TONE[c.tone].chip}`}
+                className={`px-2 py-0.5 rounded-full text-xs font-bold border ${TONE[c.tone].chip}`}
               >
                 {c.label}
               </span>
@@ -2051,14 +2051,14 @@ function SummaryRail({
 
       <div className="pt-4 border-t border-border space-y-1.5">
         <div className="flex items-center justify-between">
-          <span className="text-[10px] font-black uppercase tracking-widest text-muted">Credits on completion</span>
-          <span className="inline-flex items-center gap-1 text-sm font-black text-amber-500 tabular-nums">
+          <span className="text-xs font-semibold text-muted">Credits on completion</span>
+          <span className="inline-flex items-center gap-1 text-sm font-semibold text-warning tabular-nums">
             <Coins className="w-3.5 h-3.5" />
             {totalCredits}
           </span>
         </div>
         {selectedCandidates.length > 0 && (
-          <div className="text-[10px] text-muted/70 tabular-nums text-right">
+          <div className="text-xs text-muted/70 tabular-nums text-right">
             {selectedCandidates.length} × {creditPerCandidate} ({engagementLabel})
           </div>
         )}
@@ -2080,9 +2080,9 @@ function SummaryBlock({
     <div className="space-y-1.5">
       <div className="flex items-center gap-1.5">
         <span
-          className={`w-1.5 h-1.5 rounded-full transition-colors ${filled ? "bg-accent" : "bg-border-strong"}`}
+          className={`w-1.5 h-1.5 rounded-full transition-colors ${filled ? "bg-secondary" : "bg-border-strong"}`}
         />
-        <span className="text-[10px] font-black uppercase tracking-wider text-muted">{label}</span>
+        <span className="text-xs font-semibold text-muted">{label}</span>
       </div>
       <div className="text-xs text-fg pl-3">{children}</div>
     </div>
@@ -2110,11 +2110,11 @@ function FloatingField({
   return (
     <div
       className={`relative rounded-2xl border bg-surface/50 transition-colors ${
-        focused ? "border-accent" : "border-border"
+        focused ? "border-secondary" : "border-border"
       }`}
     >
       <div className="flex items-center gap-3 px-4 pt-5 pb-2">
-        <span className={`shrink-0 transition-colors ${active ? "text-accent" : "text-muted"}`}>{icon}</span>
+        <span className={`shrink-0 transition-colors ${active ? "text-secondary" : "text-muted"}`}>{icon}</span>
         <input
           id={id}
           value={value}
@@ -2129,7 +2129,7 @@ function FloatingField({
         htmlFor={id}
         className={`absolute left-11 pointer-events-none transition-all ${
           active
-            ? "top-2 text-[9px] font-black uppercase tracking-widest text-accent"
+            ? "top-2 text-xs font-semibold text-secondary"
             : "top-1/2 -translate-y-1/2 text-sm text-muted"
         }`}
       >
@@ -2141,7 +2141,7 @@ function FloatingField({
 
 function EmptyHint({ children }: { children: React.ReactNode }) {
   return (
-    <div className="rounded-xl border border-dashed border-border bg-bg/40 p-5 text-center text-[11px] text-muted leading-relaxed">
+    <div className="rounded-xl border border-dashed border-border bg-bg/40 p-5 text-center text-xs text-muted leading-relaxed">
       {children}
     </div>
   );
@@ -2161,9 +2161,9 @@ function PresetChip({
       type="button"
       onClick={onClick}
       whileTap={{ scale: 0.92 }}
-      className={`rounded-full border px-2.5 py-0.5 text-[10px] font-bold transition-colors ${
+      className={`rounded-full border px-2.5 py-0.5 text-xs font-bold transition-colors ${
         active
-          ? "border-accent/50 bg-accent/15 text-accent"
+          ? "border-secondary/50 bg-secondary/15 text-secondary"
           : "border-border bg-transparent text-muted hover:border-border-strong hover:text-fg"
       }`}
     >

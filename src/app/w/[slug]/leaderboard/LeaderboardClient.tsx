@@ -74,34 +74,34 @@ type SavedPreset = {
 const STATUS_META: Record<string, { label: string; tone: string; Icon: typeof Clock }> = {
   PENDING: {
     label: "Pending",
-    tone: "border-slate-300 bg-slate-100 text-slate-700 dark:border-slate-500/30 dark:bg-slate-500/[0.06] dark:text-slate-300",
+    tone: "border-border bg-panel text-muted",
     Icon: Clock,
   },
   ACTIVE: {
     label: "Active",
-    tone: "border-amber-300 bg-amber-100 text-amber-800 dark:border-amber-500/30 dark:bg-amber-500/[0.06] dark:text-amber-300",
+    tone: "border-warning/30 bg-warning/[0.06] text-warning",
     Icon: AlertCircle,
   },
   SUBMITTED: {
     label: "Submitted",
-    tone: "border-emerald-300 bg-emerald-100 text-emerald-700 dark:border-emerald-500/30 dark:bg-emerald-500/[0.06] dark:text-emerald-300",
+    tone: "border-success/30 bg-success/[0.06] text-success",
     Icon: CheckCircle2,
   },
   EXPIRED: {
     label: "Expired",
-    tone: "border-rose-300 bg-rose-100 text-rose-700 dark:border-rose-500/30 dark:bg-rose-500/[0.05] dark:text-rose-300",
+    tone: "border-danger/30 bg-danger/[0.05] text-danger",
     Icon: XCircle,
   },
 };
 
 const STAGE_META: Record<string, { label: string; tone: string }> = {
-  APPLIED: { label: "Applied", tone: "bg-blue-500/10 border-blue-500/20 text-blue-600 dark:text-blue-400" },
-  SCREENED: { label: "Screened", tone: "bg-sky-500/10 border-sky-500/20 text-sky-600 dark:text-sky-400" },
-  TAKE_HOME: { label: "Take-Home", tone: "bg-purple-500/10 border-purple-500/20 text-purple-600 dark:text-purple-400" },
-  ONSITE: { label: "Onsite", tone: "bg-indigo-500/10 border-indigo-500/20 text-indigo-600 dark:text-indigo-400" },
-  OFFER: { label: "Offer", tone: "bg-amber-500/10 border-amber-500/20 text-amber-600 dark:text-amber-400" },
-  HIRED: { label: "Hired", tone: "bg-emerald-500/10 border-emerald-500/20 text-emerald-600 dark:text-emerald-400" },
-  REJECTED: { label: "Rejected", tone: "bg-rose-500/10 border-rose-500/20 text-rose-600 dark:text-rose-400" },
+  APPLIED: { label: "Applied", tone: "bg-secondary/10 border-secondary/20 text-secondary" },
+  SCREENED: { label: "Screened", tone: "bg-secondary/10 border-secondary/20 text-secondary" },
+  TAKE_HOME: { label: "Take-Home", tone: "bg-secondary/10 border-secondary/20 text-secondary" },
+  ONSITE: { label: "Onsite", tone: "bg-secondary/10 border-secondary/20 text-secondary" },
+  OFFER: { label: "Offer", tone: "bg-warning/10 border-warning/20 text-warning" },
+  HIRED: { label: "Hired", tone: "bg-success/10 border-success/20 text-success" },
+  REJECTED: { label: "Rejected", tone: "bg-danger/10 border-danger/20 text-danger" },
 };
 
 export default function LeaderboardClient({
@@ -496,20 +496,17 @@ export default function LeaderboardClient({
     <div className="space-y-6 animate-in fade-in duration-300">
       
       {/* Dynamic atmospheric header background glow */}
-      <div className="absolute top-0 right-1/4 w-[35vw] h-[35vw] rounded-full blur-[140px] opacity-[0.03] dark:opacity-10 bg-indigo-500/20 pointer-events-none" />
+      <div className="absolute top-0 right-1/4 w-[35vw] h-[35vw] rounded-full blur-[140px] opacity-[0.03] dark:opacity-10 bg-secondary/20 pointer-events-none" />
 
       <header className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between border-b border-border pb-5">
         <div className="space-y-1 min-w-0">
           <Link
             href={`/w/${slug}`}
-            className="inline-flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-muted hover:text-fg transition-all"
+            className="inline-flex items-center gap-1.5 text-xs font-bold text-muted hover:text-fg transition-all"
           >
             <ArrowLeft className="w-3.5 h-3.5" /> Back to Dashboard
           </Link>
-          <h1 className="text-2xl font-extrabold tracking-tight bg-gradient-to-r from-violet-600 to-indigo-600 dark:from-violet-400 dark:to-indigo-400 bg-clip-text text-transparent inline-flex items-center gap-2 mt-1">
-            <Trophy className="w-6 h-6 text-amber-500 animate-pulse" />
-            Recruiter Leaderboard
-          </h1>
+          <h1 className="mt-1 text-2xl md:text-[26px] font-semibold tracking-[-0.02em] text-fg">Leaderboard</h1>
           <p className="text-xs text-muted max-w-2xl leading-relaxed">
             Analyze candidate take-home performance across multiple dimensions. Sort, query, and curate custom rosters dynamically.
           </p>
@@ -518,9 +515,9 @@ export default function LeaderboardClient({
           <button
             type="button"
             onClick={() => setIsFilterExpanded(!isFilterExpanded)}
-            className={`inline-flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold uppercase tracking-wider transition-all border ${
+            className={`inline-flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition-all border ${
               isFilterExpanded || activeFiltersCount > 0
-                ? "bg-accent/10 border-accent/40 text-accent font-black"
+                ? "bg-secondary/10 border-secondary/40 text-secondary font-semibold"
                 : "bg-surface border-border text-muted hover:text-fg hover:border-border-strong hover:bg-panel"
             }`}
           >
@@ -532,7 +529,7 @@ export default function LeaderboardClient({
             type="button"
             onClick={onExportFilteredCsv}
             disabled={exporting || sorted.length === 0}
-            className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold uppercase tracking-wider text-white bg-gradient-to-r from-indigo-500 to-violet-500 hover:opacity-95 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-[0_4px_12px_rgba(99,102,241,0.2)] hover:shadow-[0_4px_20px_rgba(139,92,246,0.3)]"
+            className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold text-bg bg-secondary hover:brightness-110 hover:opacity-95 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-[0_4px_12px_rgba(99,102,241,0.2)] hover:shadow-[0_4px_20px_rgba(139,92,246,0.3)]"
           >
             <Download className="w-3.5 h-3.5" />
             {exporting ? "Exporting…" : "Export CSV"}
@@ -543,9 +540,9 @@ export default function LeaderboardClient({
       {/* Preset Saved Views Pill Bar */}
       {savedPresets.length > 0 && (
         <div className="bg-surface/50 border border-border backdrop-blur-xl rounded-2xl p-4 space-y-2.5">
-          <h4 className="text-[10px] font-bold uppercase tracking-wider text-muted flex items-center gap-1.5">
-            <Bookmark className="w-3.5 h-3.5 text-accent" />
-            Saved View Presets
+          <h4 className="text-xs font-bold text-muted flex items-center gap-1.5">
+            <Bookmark className="w-3.5 h-3.5 text-secondary" />
+            Saved view presets
           </h4>
           <div className="flex flex-wrap items-center gap-2">
             {savedPresets.map((preset) => (
@@ -561,7 +558,7 @@ export default function LeaderboardClient({
                   className="p-0.5 rounded-full hover:bg-muted-soft transition-colors cursor-pointer"
                   title="Delete preset"
                 >
-                  <X className="w-3 h-3 text-muted group-hover:text-rose-500 transition-colors" />
+                  <X className="w-3 h-3 text-muted group-hover:text-danger transition-colors" />
                 </div>
               </button>
             ))}
@@ -571,12 +568,12 @@ export default function LeaderboardClient({
 
       {/* Advanced Expandable Glassmorphic Filter Drawer */}
       {isFilterExpanded && (
-        <div className="bg-surface/90 border border-accent/20 dark:border-border-strong backdrop-blur-2xl rounded-2xl p-6 shadow-xl space-y-6 transition-all duration-300 animate-in slide-in-from-top-4 duration-500">
+        <div className="bg-surface/90 border border-border-strong backdrop-blur-2xl rounded-2xl p-6 shadow-xl space-y-6 transition-all duration-300 animate-in slide-in-from-top-4 duration-500">
           
           <div className="flex items-center justify-between border-b border-border pb-3">
-            <h3 className="text-xs font-bold uppercase tracking-widest text-fg inline-flex items-center gap-2">
-              <ListFilter className="w-4 h-4 text-accent" />
-              Advanced Curation Filters
+            <h3 className="text-xs font-bold text-fg inline-flex items-center gap-2">
+              <ListFilter className="w-4 h-4 text-secondary" />
+              Advanced curation filters
             </h3>
             <button
               onClick={() => setIsFilterExpanded(false)}
@@ -590,17 +587,17 @@ export default function LeaderboardClient({
             
             {/* 1. Date Range Filter (Span 4) */}
             <div className="lg:col-span-4 space-y-3.5 border-r border-border/70 pr-6 last:border-0 last:pr-0">
-              <label className="block text-[10px] font-extrabold uppercase tracking-wider text-muted">
-                Date Range Filter
+              <label className="block text-xs font-semibold text-muted">
+                Date range filter
               </label>
 
               <div className="flex bg-panel p-1 rounded-xl border border-border gap-1">
                 <button
                   type="button"
                   onClick={() => handleDateChange(startDate, endDate, "dispatched")}
-                  className={`flex-1 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all ${
+                  className={`flex-1 py-1.5 rounded-lg text-xs font-bold transition-all ${
                     dateType === "dispatched"
-                      ? "bg-accent text-bg font-extrabold shadow"
+                      ? "bg-secondary text-bg font-semibold shadow"
                       : "text-muted hover:text-fg"
                   }`}
                 >
@@ -609,9 +606,9 @@ export default function LeaderboardClient({
                 <button
                   type="button"
                   onClick={() => handleDateChange(startDate, endDate, "submitted")}
-                  className={`flex-1 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all ${
+                  className={`flex-1 py-1.5 rounded-lg text-xs font-bold transition-all ${
                     dateType === "submitted"
-                      ? "bg-accent text-bg font-extrabold shadow"
+                      ? "bg-secondary text-bg font-semibold shadow"
                       : "text-muted hover:text-fg"
                   }`}
                 >
@@ -621,21 +618,21 @@ export default function LeaderboardClient({
 
               <div className="grid grid-cols-2 gap-2">
                 <div className="space-y-1">
-                  <span className="text-[9px] font-bold uppercase tracking-wider text-muted/80">From</span>
+                  <span className="text-xs font-bold text-muted/80">From</span>
                   <input
                     type="date"
                     value={startDate}
                     onChange={(e) => handleDateChange(e.target.value, endDate, dateType)}
-                    className="w-full px-3 py-2 rounded-xl bg-panel border border-border focus:border-accent/40 text-xs text-fg outline-none"
+                    className="w-full px-3 py-2 rounded-xl bg-panel border border-border focus:border-secondary/40 text-xs text-fg outline-none"
                   />
                 </div>
                 <div className="space-y-1">
-                  <span className="text-[9px] font-bold uppercase tracking-wider text-muted/80">To</span>
+                  <span className="text-xs font-bold text-muted/80">To</span>
                   <input
                     type="date"
                     value={endDate}
                     onChange={(e) => handleDateChange(startDate, e.target.value, dateType)}
-                    className="w-full px-3 py-2 rounded-xl bg-panel border border-border focus:border-accent/40 text-xs text-fg outline-none"
+                    className="w-full px-3 py-2 rounded-xl bg-panel border border-border focus:border-secondary/40 text-xs text-fg outline-none"
                   />
                 </div>
               </div>
@@ -646,7 +643,7 @@ export default function LeaderboardClient({
                     key={preset}
                     type="button"
                     onClick={() => handleDatePreset(preset as any)}
-                    className="flex-1 py-1 px-2 rounded-lg bg-panel hover:bg-panel-strong border border-border text-[9px] font-bold uppercase tracking-wider text-muted hover:text-fg transition-colors"
+                    className="flex-1 py-1 px-2 rounded-lg bg-panel hover:bg-panel-strong border border-border text-xs font-bold text-muted hover:text-fg transition-colors"
                   >
                     {preset === "today" ? "Today" : preset === "week" ? "Last 7d" : "Last 30d"}
                   </button>
@@ -656,7 +653,7 @@ export default function LeaderboardClient({
 
             {/* 2. Challenge Multi-Select Pool (Span 4) */}
             <div className="lg:col-span-4 space-y-3.5 border-r border-border/70 pr-6 last:border-0 last:pr-0">
-              <label className="block text-[10px] font-extrabold uppercase tracking-wider text-muted">
+              <label className="block text-xs font-semibold text-muted">
                 Filter by Challenge ({selectedChallenges.size})
               </label>
               
@@ -669,15 +666,15 @@ export default function LeaderboardClient({
                       onClick={() => handleToggleChallenge(c.id)}
                       className={`px-3 py-2 rounded-xl border transition-all cursor-pointer flex items-center justify-between gap-3 ${
                         isChecked
-                          ? "bg-accent/5 border-accent/40 text-accent font-black shadow-inner"
+                          ? "bg-secondary/5 border-secondary/40 text-secondary font-semibold shadow-inner"
                           : "bg-panel border-border hover:border-border-strong text-muted hover:text-fg"
                       }`}
                     >
                       <div className="min-w-0">
                         <div className="text-xs font-semibold truncate leading-tight">{c.title}</div>
-                        <div className="text-[9px] uppercase tracking-wider opacity-80 mt-0.5">{c.difficulty}</div>
+                        <div className="text-xs opacity-80 mt-0.5">{c.difficulty}</div>
                       </div>
-                      {isChecked && <Check className="w-3.5 h-3.5 shrink-0 text-accent" />}
+                      {isChecked && <Check className="w-3.5 h-3.5 shrink-0 text-secondary" />}
                     </div>
                   );
                 })}
@@ -689,7 +686,7 @@ export default function LeaderboardClient({
               
               {/* Stages Section */}
               <div className="space-y-2">
-                <label className="block text-[10px] font-extrabold uppercase tracking-wider text-muted">
+                <label className="block text-xs font-semibold text-muted">
                   Pipeline Stage ({selectedStages.size})
                 </label>
                 <div className="flex flex-wrap gap-1.5 max-h-[85px] overflow-y-auto pr-1">
@@ -701,9 +698,9 @@ export default function LeaderboardClient({
                         key={stage}
                         type="button"
                         onClick={() => handleToggleStage(stage)}
-                        className={`px-2.5 py-1 rounded-lg border text-[9px] font-bold uppercase tracking-wider transition-all ${
+                        className={`px-2.5 py-1 rounded-lg border text-xs font-bold transition-all ${
                           isChecked
-                            ? `${meta.tone} border-current font-black scale-95 shadow-inner`
+                            ? `${meta.tone} border-current font-semibold scale-95 shadow-inner`
                             : "bg-panel border-border text-muted hover:text-fg hover:border-border-strong"
                         }`}
                       >
@@ -716,11 +713,11 @@ export default function LeaderboardClient({
 
               {/* Tags Section */}
               <div className="space-y-2 pt-1 border-t border-border/50">
-                <label className="block text-[10px] font-extrabold uppercase tracking-wider text-muted">
+                <label className="block text-xs font-semibold text-muted">
                   Candidate Tags ({selectedTags.size})
                 </label>
                 {allUniqueTags.length === 0 ? (
-                  <div className="text-[10px] text-muted italic">No candidate tags available.</div>
+                  <div className="text-xs text-muted italic">No candidate tags available.</div>
                 ) : (
                   <div className="flex flex-wrap gap-1.5 max-h-[80px] overflow-y-auto pr-1">
                     {allUniqueTags.map((tag) => {
@@ -730,9 +727,9 @@ export default function LeaderboardClient({
                           key={tag}
                           type="button"
                           onClick={() => handleToggleTag(tag)}
-                          className={`px-2.5 py-1 rounded-lg border text-[9px] font-bold uppercase tracking-wider transition-all ${
+                          className={`px-2.5 py-1 rounded-lg border text-xs font-bold transition-all ${
                             isChecked
-                              ? "bg-accent/10 border-accent/40 text-accent font-black scale-95 shadow-inner"
+                              ? "bg-secondary/10 border-secondary/40 text-secondary font-semibold scale-95 shadow-inner"
                               : "bg-panel border-border text-muted hover:text-fg hover:border-border-strong"
                           }`}
                         >
@@ -755,25 +752,25 @@ export default function LeaderboardClient({
               <button
                 type="button"
                 onClick={handleResetFilters}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-rose-500/30 text-rose-500 hover:bg-rose-500/5 text-[10px] font-bold uppercase tracking-wider transition-all"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-danger/30 text-danger hover:bg-danger/5 text-xs font-bold transition-all"
               >
                 <Trash2 className="w-3.5 h-3.5" />
-                Reset Filters
+                Reset filters
               </button>
 
               <button
                 type="button"
                 onClick={() => setShowSavePresetDialog(true)}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-accent/30 text-accent hover:bg-accent/5 text-[10px] font-bold uppercase tracking-wider transition-all"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-secondary/30 text-secondary hover:bg-secondary/5 text-xs font-bold transition-all"
               >
                 <Save className="w-3.5 h-3.5" />
-                Save Active Preset
+                Save active preset
               </button>
             </div>
 
             {/* Save Preset inline Modal */}
             {showSavePresetDialog && (
-              <form onSubmit={handleSavePreset} className="flex items-center gap-2 border border-accent/20 bg-panel px-3 py-1.5 rounded-xl animate-in slide-in-from-left duration-300">
+              <form onSubmit={handleSavePreset} className="flex items-center gap-2 border border-secondary/20 bg-panel px-3 py-1.5 rounded-xl animate-in slide-in-from-left duration-300">
                 <input
                   type="text"
                   required
@@ -784,7 +781,7 @@ export default function LeaderboardClient({
                 />
                 <button
                   type="submit"
-                  className="px-2.5 py-1 text-[9px] font-bold uppercase tracking-wider bg-accent hover:bg-accent-soft text-bg rounded-lg transition-colors"
+                  className="px-2.5 py-1 text-xs font-bold bg-secondary hover:brightness-110 text-bg rounded-lg transition-colors"
                 >
                   Save
                 </button>
@@ -798,7 +795,7 @@ export default function LeaderboardClient({
               </form>
             )}
 
-            <div className="text-[10px] text-muted font-mono font-bold tracking-wider uppercase bg-panel px-3 py-1.5 rounded-xl border border-border">
+            <div className="text-xs text-muted font-mono font-bold bg-panel px-3 py-1.5 rounded-xl border border-border">
               Roster Subset: {sorted.length} / {rows.length} Submissions
             </div>
           </div>
@@ -819,16 +816,16 @@ export default function LeaderboardClient({
           <button
             type="button"
             onClick={handleResetFilters}
-            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-wider text-bg bg-fg hover:opacity-95 transition-opacity"
+            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold text-bg bg-fg hover:opacity-95 transition-opacity"
           >
-            Clear Filters
+            Clear filters
           </button>
         </div>
       ) : (
         <div className="rounded-2xl border border-border bg-surface/40 backdrop-blur-xl overflow-hidden shadow-sm dark:shadow-md transition-all">
           <table className="w-full text-sm">
             <thead>
-              <tr className="bg-panel/40 border-b border-border text-[10px] uppercase tracking-[0.12em] text-muted/80 font-bold">
+              <tr className="bg-panel/40 border-b border-border text-xs text-muted/80 font-bold">
                 <SortableTh label="Rank" active={sortKey === "score"} dir={sortDir} onClick={() => toggleSort("score")} />
                 <th className="px-4 py-3.5 text-left font-bold">Challenge</th>
                 <th className="px-4 py-3.5 text-left font-bold">Status</th>
@@ -849,21 +846,21 @@ export default function LeaderboardClient({
                     {/* Candidate Name, Email & Rank */}
                     <td className="px-4 py-3 align-top">
                       <div className="flex items-start gap-3">
-                        <div className="w-6 h-6 rounded-full bg-bg border border-border text-[10px] font-mono font-bold flex items-center justify-center text-muted shrink-0 mt-0.5 shadow-sm">
+                        <div className="w-6 h-6 rounded-full bg-bg border border-border text-xs font-mono font-bold flex items-center justify-center text-muted shrink-0 mt-0.5 shadow-sm">
                           {rank}
                         </div>
                         <div className="min-w-0">
                           {r.candidateId ? (
                             <Link
                               href={`/w/${slug}/candidates/${r.candidateId}`}
-                              className="text-fg font-semibold hover:text-accent block truncate text-sm transition-colors"
+                              className="text-fg font-semibold hover:text-secondary block truncate text-sm transition-colors"
                             >
                               {r.candidateName}
                             </Link>
                           ) : (
                             <span className="text-fg font-semibold text-sm">{r.candidateName}</span>
                           )}
-                          <div className="text-[10px] text-muted font-mono truncate flex items-center gap-1.5 mt-0.5">
+                          <div className="text-xs text-muted font-mono truncate flex items-center gap-1.5 mt-0.5">
                             <Mail className="w-3 h-3 shrink-0 text-muted/60" />
                             {r.candidateEmail}
                           </div>
@@ -875,13 +872,13 @@ export default function LeaderboardClient({
                     <td className="px-4 py-3 align-top">
                       <div className="text-xs text-fg font-semibold truncate max-w-[240px]">{r.challengeTitle}</div>
                       <div className="flex flex-wrap items-center gap-1.5 mt-1.5">
-                        <span className="text-[9px] uppercase tracking-wider font-extrabold text-muted/70 bg-panel px-1.5 py-0.5 rounded border border-border">
+                        <span className="text-xs font-semibold text-muted/70 bg-panel px-1.5 py-0.5 rounded border border-border">
                           {r.challengeDifficulty}
                         </span>
 
                         {/* Pipeline Stage Tag */}
                         {stage && (
-                          <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[8px] font-bold uppercase tracking-wider border ${stage.tone}`}>
+                          <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-xs font-bold border ${stage.tone}`}>
                             {stage.label}
                           </span>
                         )}
@@ -890,7 +887,7 @@ export default function LeaderboardClient({
                         {r.candidateTags && r.candidateTags.map((tag) => (
                           <span
                             key={tag}
-                            className="inline-flex items-center px-1.5 py-0.5 rounded bg-panel/50 border border-border text-[8px] font-medium text-muted/80"
+                            className="inline-flex items-center px-1.5 py-0.5 rounded bg-panel/50 border border-border text-xs font-medium text-muted/80"
                           >
                             {tag}
                           </span>
@@ -900,7 +897,7 @@ export default function LeaderboardClient({
 
                     {/* Assessment Status Badge */}
                     <td className="px-4 py-3 align-top">
-                      <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-[9px] font-bold uppercase tracking-wider border ${meta.tone} shadow-sm`}>
+                      <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-xs font-bold border ${meta.tone} shadow-sm`}>
                         <meta.Icon className="w-3 h-3" />
                         {meta.label}
                       </span>
@@ -909,7 +906,7 @@ export default function LeaderboardClient({
                     {/* Score (Right aligned, code font) */}
                     <td className="px-4 py-3 align-top text-right font-mono text-xs">
                       {r.score !== null ? (
-                        <span className="text-fg font-extrabold bg-emerald-500/5 border border-emerald-500/10 px-2 py-0.5 rounded">
+                        <span className="text-fg font-semibold bg-success/5 border border-success/10 px-2 py-0.5 rounded">
                           {r.score}%
                         </span>
                       ) : (
@@ -927,7 +924,7 @@ export default function LeaderboardClient({
                     </td>
 
                     {/* Dispatched Date */}
-                    <td className="px-4 py-3 align-top text-[11px] text-muted font-mono leading-relaxed">
+                    <td className="px-4 py-3 align-top text-xs text-muted font-mono leading-relaxed">
                       {new Date(r.dispatchedAt).toLocaleDateString(undefined, {
                         year: "numeric",
                         month: "short",
@@ -943,7 +940,7 @@ export default function LeaderboardClient({
         </div>
       )}
 
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 text-[10px] text-muted/70 font-semibold uppercase tracking-wider pt-2">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 text-xs text-muted/70 font-semibold pt-2">
         <div>
           Showing {sorted.length} row{sorted.length === 1 ? "" : "s"} of {rows.length} total
           {activeFiltersCount > 0 ? " · filtered subset" : ""}
@@ -951,9 +948,9 @@ export default function LeaderboardClient({
         {activeFiltersCount > 0 && (
           <button
             onClick={handleResetFilters}
-            className="inline-flex items-center gap-1 hover:text-fg text-accent transition-colors"
+            className="inline-flex items-center gap-1 hover:text-fg text-secondary transition-colors"
           >
-            Clear Filters
+            Clear filters
           </button>
         )}
       </div>

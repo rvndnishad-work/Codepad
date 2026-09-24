@@ -18,16 +18,17 @@ import {
   Sparkles,
   Play
 } from "lucide-react";
+import { humanize } from "@/lib/workspace/display";
 
 interface WorkspaceAttemptDetailPageProps {
   params: Promise<{ slug: string; id: string }>;
 }
 
 const STATUS_BADGE: Record<string, { color: string; icon: typeof CheckCircle2 }> = {
-  passed: { color: "text-emerald-500 bg-emerald-500/10 border-emerald-500/20", icon: CheckCircle2 },
-  failed: { color: "text-red-500 bg-red-500/10 border-red-500/20", icon: XCircle },
+  passed: { color: "text-success bg-success/10 border-success/20", icon: CheckCircle2 },
+  failed: { color: "text-danger bg-danger/10 border-danger/20", icon: XCircle },
   in_progress: {
-    color: "text-amber-500 bg-amber-500/10 border-amber-500/20",
+    color: "text-warning bg-warning/10 border-warning/20",
     icon: AlertCircle,
   },
   abandoned: { color: "text-muted bg-muted/10 border-border", icon: Square },
@@ -136,7 +137,7 @@ export default async function WorkspaceAttemptDetailPage({ params }: WorkspaceAt
     <div className="space-y-6">
       <Link
         href={`/w/${slug}?tab=take-homes`}
-        className="inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-muted hover:text-fg transition"
+        className="inline-flex items-center gap-1.5 text-xs font-bold text-muted hover:text-fg transition"
       >
         <ArrowLeft className="w-3.5 h-3.5" />
         Back to Dashboard
@@ -145,16 +146,16 @@ export default async function WorkspaceAttemptDetailPage({ params }: WorkspaceAt
       <div className="rounded-2xl border border-border bg-surface p-6">
         <div className="flex items-center gap-2 mb-2">
           <span
-            className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider border ${badge.color}`}
+            className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-semibold border ${badge.color}`}
           >
             <Icon className="w-3 h-3" />
             {attempt.status.replace("_", " ")}
           </span>
-          <span className="text-[10px] font-mono text-muted/60">{attempt.id}</span>
+          <span className="text-xs font-mono text-muted/60">{attempt.id}</span>
           {attempt.sessionId && showAdmin && (
             <Link
               href={`/admin/interviews/${attempt.sessionId}`}
-              className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider text-accent bg-accent/10 border border-accent/20 hover:bg-accent/15 transition"
+              className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold text-secondary bg-secondary/10 border border-secondary/20 hover:bg-secondary/15 transition"
             >
               <Briefcase className="w-3 h-3" />
               In interview (Admin)
@@ -162,8 +163,8 @@ export default async function WorkspaceAttemptDetailPage({ params }: WorkspaceAt
           )}
         </div>
 
-        <h2 className="text-2xl font-black tracking-tight">
-          <span className="text-[#F3F4F6]">
+        <h2 className="text-2xl font-semibold tracking-tight">
+          <span className="text-fg">
             {attempt.challenge.title}
           </span>
         </h2>
@@ -174,8 +175,8 @@ export default async function WorkspaceAttemptDetailPage({ params }: WorkspaceAt
           <span className="text-muted/30">·</span>
           <span className="font-mono text-muted/60">{attempt.user.email}</span>
           <span className="text-muted/30">·</span>
-          <span className="uppercase tracking-wider">
-            {attempt.challenge.difficulty}
+          <span className="">
+            {humanize(attempt.challenge.difficulty)}
             {attempt.challenge.category ? ` · ${attempt.challenge.category}` : ""}
           </span>
           {attempt.step && (
@@ -190,7 +191,7 @@ export default async function WorkspaceAttemptDetailPage({ params }: WorkspaceAt
           {showAdmin && (
             <Link
               href={`/admin/challenges/${attempt.challenge.id}/edit`}
-              className="ml-auto inline-flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider text-muted hover:text-fg hover:bg-elevated transition"
+              className="ml-auto inline-flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-semibold text-muted hover:text-fg hover:bg-elevated transition"
             >
               Edit challenge (Admin)
               <ExternalLink className="w-3 h-3" />
@@ -229,39 +230,39 @@ export default async function WorkspaceAttemptDetailPage({ params }: WorkspaceAt
 
       {/* Corporate AI Assessment Telemetry & Session Replay proctoring block */}
       {attempt.integrityReport && (
-        <div className="rounded-3xl border border-indigo-500/20 bg-[#161B2E]/60 backdrop-blur-md p-6 flex flex-col md:flex-row justify-between items-start md:items-center gap-6 shadow-xl relative overflow-hidden transition-all hover:border-accent/20">
+        <div className="rounded-3xl border border-secondary/20 bg-surface backdrop-blur-md p-6 flex flex-col md:flex-row justify-between items-start md:items-center gap-6 shadow-xl relative overflow-hidden transition-all hover:border-secondary/20">
           <div className="space-y-2 max-w-xl">
-            <h3 className="text-xs font-black text-indigo-400 uppercase tracking-widest flex items-center gap-2">
+            <h3 className="text-xs font-semibold text-secondary flex items-center gap-2">
               <Sparkles className="w-4 h-4 animate-pulse" /> AI Proctoring & Replay Log Auditor
             </h3>
-            <p className="text-sm font-black text-[#F3F4F6]">
+            <p className="text-sm font-semibold text-fg">
               Risk Assessment Rating:{" "}
-              <span className={`px-2 py-0.5 rounded-lg border text-[10px] font-black uppercase ml-1.5 ${
+              <span className={`px-2 py-0.5 rounded-lg border text-xs font-semibold ml-1.5 ${
                 attempt.integrityReport.suspicionScore < 25
-                  ? "text-emerald-400 border-emerald-500/35 bg-emerald-500/10"
+                  ? "text-success border-success/35 bg-success/10"
                   : attempt.integrityReport.suspicionScore < 55
-                  ? "text-amber-400 border-amber-400/35 bg-amber-400/10"
-                  : "text-rose-500 border-rose-500/35 bg-rose-500/10 font-black animate-pulse"
+                  ? "text-warning border-warning/35 bg-warning/10"
+                  : "text-danger border-danger/35 bg-danger/10 font-semibold animate-pulse"
               }`}>
                 {attempt.integrityReport.suspicionScore}%{" "}
                 {attempt.integrityReport.suspicionScore < 25
                   ? "Secure"
                   : attempt.integrityReport.suspicionScore < 55
-                  ? "Low Risk"
-                  : "High Risk"}
+                  ? "Low risk"
+                  : "High risk"}
               </span>
             </p>
             <p className="text-xs text-muted leading-relaxed">
-              We tracked <span className="text-[#F3F4F6] font-bold">{attempt.integrityReport.blurCount} browser tab blurs</span> (candidate left screen for <span className="text-[#F3F4F6] font-bold">{attempt.integrityReport.totalBlurSec} seconds</span>) and <span className="text-[#F3F4F6] font-bold">{attempt.integrityReport.pasteCount} keyboard block pastes</span>. Large copy-pastes or high-speed typing bursts indicate external AI code generation.
+              We tracked <span className="text-fg font-bold">{attempt.integrityReport.blurCount} browser tab blurs</span> (candidate left screen for <span className="text-fg font-bold">{attempt.integrityReport.totalBlurSec} seconds</span>) and <span className="text-fg font-bold">{attempt.integrityReport.pasteCount} keyboard block pastes</span>. Large copy-pastes or high-speed typing bursts indicate external AI code generation.
             </p>
           </div>
 
           <Link
             href={`/w/${slug}/attempts/${attempt.id}/replay`}
-            className="inline-flex items-center gap-2 px-5 py-3 rounded-xl bg-accent hover:bg-accent-soft text-bg text-xs font-black uppercase tracking-wider transition-colors shadow-soft shrink-0 w-full md:w-auto text-center justify-center cursor-pointer"
+            className="inline-flex items-center gap-2 px-5 py-3 rounded-xl bg-secondary hover:brightness-110 text-bg text-xs font-semibold transition-colors shadow-soft shrink-0 w-full md:w-auto text-center justify-center cursor-pointer"
           >
             <Play className="w-3.5 h-3.5 fill-current" />
-            <span>Watch Session Replay</span>
+            <span>Watch session replay</span>
           </Link>
         </div>
       )}
@@ -269,7 +270,7 @@ export default async function WorkspaceAttemptDetailPage({ params }: WorkspaceAt
       {tests?.tests && tests.tests.length > 0 && (
         <div className="rounded-2xl border border-border bg-surface overflow-hidden">
           <div className="px-5 py-3 border-b border-border bg-elevated/30">
-            <h3 className="text-xs font-black uppercase tracking-[0.18em] text-muted">
+            <h3 className="text-xs font-semibold text-muted">
               Test results ({tests.tests.length})
             </h3>
           </div>
@@ -286,15 +287,15 @@ export default async function WorkspaceAttemptDetailPage({ params }: WorkspaceAt
                 <li key={i} className="px-5 py-3">
                   <div className="flex items-start gap-3">
                     <span
-                      className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider border shrink-0 ${testBadge.color}`}
+                      className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold border shrink-0 ${testBadge.color}`}
                     >
                       <TIcon className="w-3 h-3" />
-                      {t.status}
+                      {humanize(t.status)}
                     </span>
                     <div className="min-w-0 flex-1">
                       <div className="text-sm font-bold text-fg break-words">{t.name}</div>
                       {t.error && (
-                        <pre className="mt-2 text-[11px] text-red-400 bg-red-500/5 border border-red-500/20 rounded-lg p-3 overflow-x-auto whitespace-pre-wrap">
+                        <pre className="mt-2 text-xs text-danger bg-danger/5 border border-danger/20 rounded-lg p-3 overflow-x-auto whitespace-pre-wrap">
                           {t.error}
                         </pre>
                       )}
@@ -308,7 +309,7 @@ export default async function WorkspaceAttemptDetailPage({ params }: WorkspaceAt
       )}
 
       <div>
-        <h3 className="text-sm font-black uppercase tracking-[0.18em] text-muted mb-3 flex items-center gap-2">
+        <h3 className="text-sm font-semibold text-muted mb-3 flex items-center gap-2">
           <FileCode className="w-3.5 h-3.5" />
           Submitted files ({fileEntries.length})
         </h3>
@@ -326,11 +327,11 @@ export default async function WorkspaceAttemptDetailPage({ params }: WorkspaceAt
               >
                 <summary className="px-5 py-3 cursor-pointer flex items-center justify-between bg-elevated/30 hover:bg-elevated/50 transition list-none">
                   <span className="text-xs font-mono font-bold text-fg">{path}</span>
-                  <span className="text-[10px] text-muted">
+                  <span className="text-xs text-muted">
                     {code.split(/\r?\n/).length} lines · {code.length.toLocaleString()} chars
                   </span>
                 </summary>
-                <pre className="text-[12px] font-mono text-fg/90 bg-[#0B0F19] p-4 overflow-x-auto leading-relaxed border-t border-border max-h-[480px]">
+                <pre className="text-[12px] font-mono text-fg/90 bg-bg p-4 overflow-x-auto leading-relaxed border-t border-border max-h-[480px]">
                   {code || "(empty)"}
                 </pre>
               </details>
@@ -352,8 +353,8 @@ function Stat({
   value: string;
 }) {
   return (
-    <div className="rounded-xl border border-border bg-[#0B0F19] px-3 py-3">
-      <div className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-wider text-muted mb-1">
+    <div className="rounded-xl border border-border bg-bg px-3 py-3">
+      <div className="flex items-center gap-1.5 text-xs font-semibold text-muted mb-1">
         <Icon className="w-3 h-3" />
         {label}
       </div>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { toast } from "sonner";
 import Link from "next/link";
@@ -35,21 +35,12 @@ import {
   Copy,
   X,
   Search,
-  Zap,
-  ArrowUpRight,
+  Video,
+  FileCode2,
+  ClipboardList,
+  Table2,
+  Columns3,
 } from "lucide-react";
-import {
-  AreaChart,
-  Area,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-  BarChart,
-  Bar,
-  Cell
-} from "recharts";
 import { describeExecution } from "@/lib/exec-result";
 import { postExecute } from "@/lib/execute-client";
 import AddCandidateDialog from "./AddCandidateDialog";
@@ -57,6 +48,10 @@ import BulkAddCandidatesDialog from "./BulkAddCandidatesDialog";
 import { bulkCreateTakeHomeSessions } from "./candidates/actions";
 import CandidatePipelineClient from "./candidates/CandidatePipelineClient";
 import LeaderboardClient from "./leaderboard/LeaderboardClient";
+import WorkspaceOverview from "./WorkspaceOverview";
+import SubTabs from "./SubTabs";
+import { STAGE_SWATCH, sourceLabel, humanize, plural, relativeTime, type PlanDisplay } from "@/lib/workspace/display";
+import { PIPELINE_STAGES, STAGE_LABELS, type PipelineStage } from "@/lib/crm/stages";
 
 type Challenge = {
   id: string;
@@ -140,13 +135,13 @@ const PERMISSION_LABELS: Record<string, string> = {
 function roleBadgeClass(role: string): string {
   switch (role) {
     case "OWNER":
-      return "text-violet-600 dark:text-violet-400 border-violet-500/25 bg-violet-500/[0.08]";
+      return "text-secondary border-secondary/25 bg-secondary/[0.08]";
     case "ADMIN":
-      return "text-indigo-600 dark:text-indigo-400 border-indigo-500/25 bg-indigo-500/[0.08]";
+      return "text-secondary border-secondary/25 bg-secondary/[0.08]";
     case "RECRUITER":
-      return "text-cyan-600 dark:text-cyan-400 border-cyan-500/25 bg-cyan-500/[0.08]";
+      return "text-secondary border-secondary/25 bg-secondary/[0.08]";
     case "VIEWER":
-      return "text-slate-500 dark:text-slate-400 border-slate-500/25 bg-slate-500/[0.06]";
+      return "text-muted border-border bg-panel";
     default: // INTERVIEWER + any custom role
       return "text-muted border-border bg-panel/50";
   }
@@ -163,6 +158,7 @@ type InterviewSessionItem = {
   shortCode: string | null;
   shareToken: string;
   totalSec: number;
+  scheduledAt: string | null;
   startedAt: string | null;
   finishedAt: string | null;
   createdAt: string;
@@ -179,6 +175,7 @@ type CandidateItem = {
   status: string;
   /** Pipeline stage (APPLIED … HIRED/REJECTED) — see src/lib/crm/stages.ts. */
   stage: string;
+  stageChangedAt: string | null;
   tags: string[];
   takeHomeCount: number;
   sessionCount: number;
@@ -229,6 +226,8 @@ type TakeHomeSession = {
   questionCount: number;
   createdAt: string;
   finishedAt: string | null;
+  candidateId: string | null;
+  candidateStage: string | null;
 };
 
 type AIInterviewSessionItem = {
@@ -239,6 +238,7 @@ type AIInterviewSessionItem = {
   status: string;
   score: number | null;
   candidateId: string | null;
+  candidateStage: string | null;
   inviteToken: string;
   templateId: string;
   createdAt: string;
@@ -253,6 +253,9 @@ type Props = {
     slug: string;
     planName: string;
   };
+  firstName: string | null;
+  plan: PlanDisplay;
+  seatLimit: number | null;
   challenges: Challenge[];
   pipelineChallenges?: any[];
   takeHomes: TakeHome[];
@@ -279,6 +282,15 @@ type PendingInvite = {
   createdAt: string;
 };
 
+const SECTION_TITLES: Record<string, { title: string; body: string }> = {
+  candidates: { title: "Candidates", body: "Everyone in this workspace, from first contact to offer." },
+  assessments: { title: "Assessments", body: "Live interviews, take-homes, AI screenings and their replays." },
+  library: { title: "Question library", body: "Challenges and prompt scenarios your team can assign." },
+  members: { title: "Members", body: "Who can see candidates and act on them in this workspace." },
+  billing: { title: "Billing and plan", body: "Your plan, seats and invoices." },
+  integrations: { title: "Integrations", body: "Connect your ATS and try code in the sandbox." },
+};
+
 type TabId =
   | "candidates"
   | "assessments"
@@ -288,14 +300,17 @@ type TabId =
   | "integrations";
 
 const PLAN_BADGES: Record<string, string> = {
-  FREE: "text-amber-600 dark:text-amber-400 border-amber-500/25 bg-amber-500/[0.06]",
-  GROWTH: "text-indigo-600 dark:text-indigo-300 border-indigo-500/25 bg-indigo-500/[0.08]",
-  ENTERPRISE: "text-emerald-600 dark:text-emerald-400 border-emerald-500/25 bg-emerald-500/[0.06]",
-  LOCKED: "text-rose-600 dark:text-rose-400 border-rose-500/25 bg-rose-500/[0.06]",
+  FREE: "text-warning border-warning/25 bg-warning/[0.06]",
+  GROWTH: "text-secondary border-secondary/25 bg-secondary/[0.08]",
+  ENTERPRISE: "text-success border-success/25 bg-success/[0.06]",
+  LOCKED: "text-danger border-danger/25 bg-danger/[0.06]",
 };
 
 export default function WorkspaceDashboardClient({
   workspace,
+  firstName,
+  plan,
+  seatLimit,
   challenges,
   pipelineChallenges = [],
   takeHomes,
@@ -347,6 +362,19 @@ export default function WorkspaceDashboardClient({
   const [quickTakeHomeOpen, setQuickTakeHomeOpen] = useState(false);
   const [candidateSort, setCandidateSort] = useState<"recent" | "name" | "status" | "take-homes" | "interviews">("recent");
   const [candidateStatusFilter, setCandidateStatusFilter] = useState<string>("all");
+  // Stage and search can arrive in the URL from the overview pipeline and the
+  // app bar search (?stage=OFFER, ?q=ana).
+  const [candidateStageFilter, setCandidateStageFilter] = useState<"ALL" | PipelineStage>(() => {
+    const st = searchParams.get("stage");
+    return st && (PIPELINE_STAGES as readonly string[]).includes(st) ? (st as PipelineStage) : "ALL";
+  });
+  const [candidateQuery, setCandidateQuery] = useState(() => searchParams.get("q") ?? "");
+  useEffect(() => {
+    const st = searchParams.get("stage");
+    if (st && (PIPELINE_STAGES as readonly string[]).includes(st)) setCandidateStageFilter(st as PipelineStage);
+    const q = searchParams.get("q");
+    if (q !== null) setCandidateQuery(q);
+  }, [searchParams]);
   const [selectedCandidateIds, setSelectedCandidateIds] = useState<Set<string>>(new Set());
   const [bulkDeleting, setBulkDeleting] = useState(false);
 
@@ -445,14 +473,15 @@ export default function WorkspaceDashboardClient({
     }
   }
 
-  // Effect to load once
-  useState(() => {
-    if (!fetchedIntegrations) {
-      setFetchedIntegrations(true);
-      loadIntegrations();
-    }
-    return undefined;
-  });
+  // Load once, in the browser, the first time the Integrations section opens.
+  // (A useState initialiser ran this during SSR, where a relative fetch URL
+  // throws.)
+  useEffect(() => {
+    if (activeTab !== "integrations" || fetchedIntegrations) return;
+    setFetchedIntegrations(true);
+    loadIntegrations();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeTab, fetchedIntegrations]);
 
   function handleLangChange(lang: string) {
     setSandboxLang(lang);
@@ -846,16 +875,16 @@ export default function WorkspaceDashboardClient({
   }
 
   const difficultyColor: Record<string, string> = {
-    easy: "text-emerald-600 dark:text-emerald-400 bg-emerald-500/[0.06] border-emerald-500/20",
-    medium: "text-amber-600 dark:text-amber-400 bg-amber-500/[0.06] border-amber-500/20",
-    hard: "text-rose-600 dark:text-rose-400 bg-rose-500/[0.06] border-rose-500/20",
+    easy: "text-success bg-success/[0.06] border-success/20",
+    medium: "text-warning bg-warning/[0.06] border-warning/20",
+    hard: "text-danger bg-danger/[0.06] border-danger/20",
   };
 
   const statusBadgeColor: Record<string, string> = {
-    PENDING: "text-amber-600 dark:text-amber-400 border-amber-500/25 bg-amber-500/[0.06]",
-    ACTIVE: "text-indigo-600 dark:text-indigo-400 border-indigo-500/25 bg-indigo-500/[0.08]",
-    SUBMITTED: "text-emerald-600 dark:text-emerald-400 border-emerald-500/25 bg-emerald-500/[0.06]",
-    EXPIRED: "text-rose-600 dark:text-rose-400 border-rose-500/25 bg-rose-500/[0.06]",
+    PENDING: "text-warning border-warning/25 bg-warning/[0.06]",
+    ACTIVE: "text-secondary border-secondary/25 bg-secondary/[0.08]",
+    SUBMITTED: "text-success border-success/25 bg-success/[0.06]",
+    EXPIRED: "text-danger border-danger/25 bg-danger/[0.06]",
   };
 
   // Candidate roster comes directly from the first-class Candidate model
@@ -870,9 +899,13 @@ export default function WorkspaceDashboardClient({
     archived: 5,
   };
   const candidateRoster = useMemo(() => {
-    const filtered = candidateStatusFilter === "all"
-      ? candidates
-      : candidates.filter((c) => c.status === candidateStatusFilter);
+    const q = candidateQuery.trim().toLowerCase();
+    const filtered = candidates.filter(
+      (c) =>
+        (candidateStatusFilter === "all" || c.status === candidateStatusFilter) &&
+        (candidateStageFilter === "ALL" || (c.stage || "APPLIED") === candidateStageFilter) &&
+        (!q || c.name.toLowerCase().includes(q) || (c.email ?? "").toLowerCase().includes(q)),
+    );
 
     const sorted = [...filtered].sort((a, b) => {
       switch (candidateSort) {
@@ -890,7 +923,13 @@ export default function WorkspaceDashboardClient({
       }
     });
     return sorted;
-  }, [candidates, candidateStatusFilter, candidateSort]);
+  }, [candidates, candidateStatusFilter, candidateStageFilter, candidateQuery, candidateSort]);
+
+  const stageCounts = useMemo(() => {
+    const acc: Record<string, number> = {};
+    candidates.forEach((c) => { const st = c.stage || "APPLIED"; acc[st] = (acc[st] ?? 0) + 1; });
+    return acc;
+  }, [candidates]);
 
   // Statuses with counts for the filter pill row
   const statusCounts = useMemo(() => {
@@ -968,95 +1007,31 @@ export default function WorkspaceDashboardClient({
       })),
   ].sort((a, b) => (a.timestamp > b.timestamp ? -1 : 1));
 
-  // Aggregating Activity Data for the Area Chart — now includes AI screenings
-  const activityData = useMemo(() => {
-    // Generate the last 14 days
-    const days: { date: string; displayDate: string; interviews: number; takeHomes: number }[] = [];
-    for (let i = 13; i >= 0; i--) {
-      const d = new Date();
-      d.setDate(d.getDate() - i);
-      const dateStr = d.toISOString().split('T')[0];
-      days.push({
-        date: dateStr,
-        displayDate: d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
-        interviews: 0,
-        takeHomes: 0
-      });
-    }
-
-    sessions.forEach(s => {
-      const dStr = (s.createdAt || "").split('T')[0];
-      const match = days.find(d => d.date === dStr);
-      if (match) match.interviews++;
-    });
-    // AI screenings — previously invisibly zero
-    aiInterviewSessions.forEach(s => {
-      const dStr = (s.createdAt || "").split('T')[0];
-      const match = days.find(d => d.date === dStr);
-      if (match) match.interviews++;
-    });
-
-    currentTakeHomes.forEach(th => {
-      const dStr = (th.createdAt || th.startedAt || th.expiresAt || "").split('T')[0];
-      const match = days.find(d => d.date === dStr);
-      if (match) match.takeHomes++;
-    });
-
-    takeHomeSessions.forEach(th => {
-      const dStr = (th.createdAt || "").split('T')[0];
-      const match = days.find(d => d.date === dStr);
-      if (match) match.takeHomes++;
-    });
-
-    return days;
-  }, [sessions, aiInterviewSessions, currentTakeHomes, takeHomeSessions]);
-
-  // Candidate Pipeline Data — now by pipeline STAGE (APPLIED..REJECTED) so dragging actually moves the bar.
-  // Previous grouped by status (active/hired) which never changed when stage changed.
-  const pipelineData = useMemo(() => {
-    const stageCounts: Record<string, number> = {
-      APPLIED: 0, SCREENED: 0, TAKE_HOME: 0, ONSITE: 0, OFFER: 0, HIRED: 0, REJECTED: 0,
-    };
-    candidates.forEach(c => {
-      const s = c.stage || "APPLIED";
-      if (stageCounts[s] !== undefined) stageCounts[s]++;
-      else stageCounts[s] = 1;
-    });
-    const STAGE_FILL: Record<string,string> = {
-      APPLIED: "#8b5cf6", SCREENED: "#6366f1", TAKE_HOME: "#a855f7", ONSITE: "#06b6d4", OFFER: "#f59e0b", HIRED: "#10b981", REJECTED: "#f43f5e",
-    };
-    const STAGE_LABEL: Record<string,string> = {
-      APPLIED: "Applied", SCREENED: "Screened", TAKE_HOME: "Take-Home", ONSITE: "Onsite", OFFER: "Offer", HIRED: "Hired", REJECTED: "Rejected",
-    };
-    return (Object.keys(stageCounts) as (keyof typeof stageCounts)[])
-      .map(k => ({ name: STAGE_LABEL[k], count: stageCounts[k], fill: STAGE_FILL[k] }))
-      .filter(d => d.count > 0);
-  }, [candidates]);
   const currentStats = useMemo(() => {
     switch (activeTab) {
       case "candidates":
         return [
-          { label: "Total Candidates", value: candidates.length, icon: Users, colorClass: "text-blue-500", bgClass: "bg-blue-500/10", borderClass: "border-blue-500/20", gradClass: "from-blue-500/5" },
-          { label: "Assessed", value: candidates.filter(c => c.takeHomeCount > 0 || c.sessionCount > 0).length, icon: Brain, colorClass: "text-violet-500", bgClass: "bg-violet-500/10", borderClass: "border-violet-500/20", gradClass: "from-violet-500/5" },
-          { label: "In Pipeline", value: candidates.filter(c => c.stage !== "APPLIED" && c.stage !== "REJECTED").length, icon: CheckCircle2, colorClass: "text-emerald-500", bgClass: "bg-emerald-500/10", borderClass: "border-emerald-500/20", gradClass: "from-emerald-500/5" },
-          { label: "Hired", value: candidates.filter(c => c.status === 'hired').length, icon: Award, colorClass: "text-amber-500", bgClass: "bg-amber-500/10", borderClass: "border-amber-500/20", gradClass: "from-amber-500/5" },
-          { label: "Rejected", value: candidates.filter(c => c.status === 'rejected' || c.status === 'do_not_hire').length, icon: X, colorClass: "text-rose-500", bgClass: "bg-rose-500/10", borderClass: "border-rose-500/20", gradClass: "from-rose-500/5" },
+          { label: "Candidates", value: candidates.length },
+          { label: "Assessed", value: candidates.filter(c => c.takeHomeCount > 0 || c.sessionCount > 0).length },
+          { label: "In pipeline", value: candidates.filter(c => c.stage !== "APPLIED" && c.stage !== "REJECTED").length },
+          { label: "Hired", value: candidates.filter(c => c.stage === "HIRED").length },
+          { label: "Rejected", value: candidates.filter(c => c.stage === "REJECTED").length },
         ];
       case "assessments":
         return [
-          { label: "Total Interviews", value: sessions.length + aiInterviewSessions.length, icon: Briefcase, colorClass: "text-violet-500", bgClass: "bg-violet-500/10", borderClass: "border-violet-500/20", gradClass: "from-violet-500/5" },
-          { label: "Total Take-homes", value: currentTakeHomes.length + takeHomeSessions.length, icon: Clock, colorClass: "text-indigo-500", bgClass: "bg-indigo-500/10", borderClass: "border-indigo-500/20", gradClass: "from-indigo-500/5" },
-          { label: "Live Sessions", value: sessions.filter(s => !!s.startedAt && !s.finishedAt).length + aiInterviewSessions.filter(s => !!s.startedAt && !s.finishedAt).length, icon: Play, colorClass: "text-emerald-500", bgClass: "bg-emerald-500/10", borderClass: "border-emerald-500/20", gradClass: "from-emerald-500/5" },
-          { label: "Completed", value: sessions.filter(s => !!s.finishedAt).length + aiInterviewSessions.filter(s => !!s.finishedAt).length + currentTakeHomes.filter(t => t.status === 'SUBMITTED').length + takeHomeSessions.filter(t => !!t.finishedAt).length, icon: CheckCircle2, colorClass: "text-blue-500", bgClass: "bg-blue-500/10", borderClass: "border-blue-500/20", gradClass: "from-blue-500/5" },
-          { label: "Pending", value: sessions.filter(s => !s.startedAt).length + aiInterviewSessions.filter(s => !s.startedAt && s.status === "PENDING").length + currentTakeHomes.filter(t => t.status === 'PENDING').length + takeHomeSessions.filter(t => t.status === "scheduled" || !t.finishedAt).length, icon: Clock, colorClass: "text-amber-500", bgClass: "bg-amber-500/10", borderClass: "border-amber-500/20", gradClass: "from-amber-500/5" },
+          { label: "Interviews", value: sessions.length + aiInterviewSessions.length },
+          { label: "Take-homes", value: currentTakeHomes.length + takeHomeSessions.length },
+          { label: "Live now", value: sessions.filter(s => !!s.startedAt && !s.finishedAt).length + aiInterviewSessions.filter(s => !!s.startedAt && !s.finishedAt).length },
+          { label: "Completed", value: sessions.filter(s => !!s.finishedAt).length + aiInterviewSessions.filter(s => !!s.finishedAt).length + currentTakeHomes.filter(t => t.status === 'SUBMITTED').length + takeHomeSessions.filter(t => !!t.finishedAt).length },
+          { label: "Pending", value: sessions.filter(s => !s.startedAt).length + aiInterviewSessions.filter(s => !s.startedAt && s.status === "PENDING").length + currentTakeHomes.filter(t => t.status === 'PENDING').length + takeHomeSessions.filter(t => t.status === "scheduled" || !t.finishedAt).length },
         ];
       case "library":
         return [
-          { label: "Workspace Challenges", value: challenges.length, icon: Trophy, colorClass: "text-amber-500", bgClass: "bg-amber-500/10", borderClass: "border-amber-500/20", gradClass: "from-amber-500/5" },
-          { label: "AI Scenarios", value: currentPromptScenarios.length, icon: Brain, colorClass: "text-violet-500", bgClass: "bg-violet-500/10", borderClass: "border-violet-500/20", gradClass: "from-violet-500/5" },
-          { label: "Published", value: challenges.filter(c => c.published).length + currentPromptScenarios.filter(c => c.published).length, icon: CheckCircle2, colorClass: "text-emerald-500", bgClass: "bg-emerald-500/10", borderClass: "border-emerald-500/20", gradClass: "from-emerald-500/5" },
-          { label: "Drafts", value: challenges.filter(c => !c.published).length + currentPromptScenarios.filter(c => !c.published).length, icon: ExternalLink, colorClass: "text-blue-500", bgClass: "bg-blue-500/10", borderClass: "border-blue-500/20", gradClass: "from-blue-500/5" },
-          { label: "Global Templates", value: pipelineChallenges.length, icon: Sparkles, colorClass: "text-fuchsia-500", bgClass: "bg-fuchsia-500/10", borderClass: "border-fuchsia-500/20", gradClass: "from-fuchsia-500/5" },
+          { label: "Workspace challenges", value: challenges.length },
+          { label: "AI scenarios", value: currentPromptScenarios.length },
+          { label: "Published", value: challenges.filter(c => c.published).length + currentPromptScenarios.filter(c => c.published).length },
+          { label: "Drafts", value: challenges.filter(c => !c.published).length + currentPromptScenarios.filter(c => !c.published).length },
+          { label: "Shared templates", value: pipelineChallenges.length },
         ];
       case "members":
       case "billing":
@@ -1064,50 +1039,41 @@ export default function WorkspaceDashboardClient({
       case "overview":
       default:
         return [
-          { label: "Challenges", value: Math.max(challenges.length, pipelineChallenges.length), icon: Trophy, colorClass: "text-amber-500", bgClass: "bg-amber-500/10", borderClass: "border-amber-500/20", gradClass: "from-amber-500/5" },
-          { label: "Interviews", value: sessions.length + aiInterviewSessions.length, icon: Briefcase, colorClass: "text-violet-500", bgClass: "bg-violet-500/10", borderClass: "border-violet-500/20", gradClass: "from-violet-500/5" },
-          { label: "Take-homes", value: currentTakeHomes.length + takeHomeSessions.length, icon: Clock, colorClass: "text-indigo-500", bgClass: "bg-indigo-500/10", borderClass: "border-indigo-500/20", gradClass: "from-indigo-500/5" },
-          { label: "Candidates", value: candidates.length, icon: UserCircle2, colorClass: "text-purple-500", bgClass: "bg-purple-500/10", borderClass: "border-purple-500/20", gradClass: "from-purple-500/5" },
-          { label: "Members", value: currentMembers.length, icon: Users, colorClass: "text-emerald-500", bgClass: "bg-emerald-500/10", borderClass: "border-emerald-500/20", gradClass: "from-emerald-500/5" },
+          { label: "Challenges", value: Math.max(challenges.length, pipelineChallenges.length) },
+          { label: "Interviews", value: sessions.length + aiInterviewSessions.length },
+          { label: "Take-homes", value: currentTakeHomes.length + takeHomeSessions.length },
+          { label: "Candidates", value: candidates.length },
+          { label: "Members", value: currentMembers.length },
         ];
     }
   }, [activeTab, challenges, pipelineChallenges, sessions, aiInterviewSessions, currentTakeHomes, takeHomeSessions, candidates, currentMembers, currentPromptScenarios]);
 
   return (
     <div className="space-y-6">
-      {/* Stat strip — one segmented panel (hairline dividers via gap-px over a
-          border-tinted backdrop) so metrics read as a single instrument, not a
-          row of cards competing with the action tiles below. */}
-      <div className="rounded-[24px] border border-border bg-border/40 shadow-sm overflow-hidden grid grid-cols-2 md:grid-cols-5 gap-px">
-        {currentStats.map((stat, i) => (
-          <div
-            key={i}
-            className={`relative group/stat p-5 bg-surface/90 dark:bg-surface/80 backdrop-blur-2xl overflow-hidden transition-colors hover:bg-panel/60 ${
-              i === 4 ? "col-span-2 md:col-span-1" : ""
-            }`}
-          >
-            {/* Oversized watermark icon */}
-            <stat.icon
-              className={`absolute -right-3 -bottom-4 w-20 h-20 ${stat.colorClass} opacity-[0.06] group-hover/stat:opacity-[0.14] group-hover/stat:-rotate-6 group-hover/stat:scale-110 transition-all duration-500 pointer-events-none`}
-            />
-            <div className="relative flex items-center gap-2 mb-3">
-              <div className={`w-6 h-6 rounded-lg border ${stat.borderClass} ${stat.bgClass} flex items-center justify-center ${stat.colorClass}`}>
-                <stat.icon className="w-3 h-3" />
-              </div>
-              <span className="text-[10px] font-bold uppercase tracking-widest text-muted/80">{stat.label}</span>
-            </div>
-            <div className={`relative text-4xl font-black tracking-tighter tabular-nums ${stat.colorClass}`}>
-              {stat.value}
-            </div>
-            {/* Accent underline sweeps in on hover (currentColor from the
-                stat's text tint — avoids dynamically-built Tailwind classes) */}
+      {activeTab !== "overview" && (
+        <div className="flex flex-col gap-1.5">
+          <h1 className="text-2xl md:text-[26px] font-semibold tracking-[-0.02em] text-fg">{SECTION_TITLES[activeTab].title}</h1>
+          <p className="text-[15px] text-muted">{SECTION_TITLES[activeTab].body}</p>
+        </div>
+      )}
+
+      {/* Stat strip for the list sections: one bordered row, numbers in the
+          foreground colour; status colour is kept for status, not decoration. */}
+      {(activeTab === "candidates" || activeTab === "assessments" || activeTab === "library") && (
+        <div className="rounded-xl border border-border bg-surface overflow-hidden grid grid-cols-2 md:grid-cols-5">
+          {currentStats.map((stat, i) => (
             <div
-              className={`absolute bottom-0 left-0 h-[3px] w-0 group-hover/stat:w-full transition-all duration-500 opacity-70 ${stat.colorClass}`}
-              style={{ background: "currentColor" }}
-            />
-          </div>
-        ))}
-      </div>
+              key={stat.label}
+              className={`px-5 py-4 border-border ${i < currentStats.length - 1 ? "md:border-r" : ""} ${
+                i % 2 === 0 ? "border-r md:border-r" : ""
+              } ${i < currentStats.length - 1 ? "border-b md:border-b-0" : ""} ${i === 4 ? "col-span-2 md:col-span-1" : ""}`}
+            >
+              <div className="text-[13px] text-muted">{stat.label}</div>
+              <div className="text-[26px] font-semibold tracking-[-0.02em] tabular-nums mt-1 text-fg">{stat.value}</div>
+            </div>
+          ))}
+        </div>
+      )}
 
       {/* Section content — driven by ?section= search param from sidebar */}
       <div className="space-y-5">
@@ -1117,267 +1083,25 @@ export default function WorkspaceDashboardClient({
 
           {/* OVERVIEW */}
           {activeTab === "overview" && (
-            <div className="space-y-6 animate-fade-in">
-              <div className="flex items-end justify-between">
-                <div>
-                  <h3 className="text-xl font-bold text-fg tracking-tight">Command Center</h3>
-                  <p className="text-sm text-muted mt-1">Real-time metrics and activity across your workspace.</p>
-                </div>
-              </div>
-
-              {/* Quick actions — vivid, color-coded tiles so they read as
-                  "do something" controls, in deliberate contrast with the
-                  neutral stat strip above. */}
-              <div className="space-y-3">
-                <div className="flex items-center gap-2.5">
-                  <div className="w-6 h-6 rounded-lg bg-accent/10 border border-accent/25 flex items-center justify-center">
-                    <Zap className="w-3 h-3 text-accent" />
-                  </div>
-                  <span className="text-[10px] font-black uppercase tracking-[0.2em] text-muted">Quick Actions</span>
-                  <div className="flex-1 h-px bg-gradient-to-r from-border to-transparent" />
-                </div>
-
-                <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-                  {[
-                    {
-                      key: "add-candidate",
-                      onClick: () => setAddCandidateOpen(true),
-                      icon: UserPlus,
-                      title: "Add Candidate",
-                      desc: "Register a new candidate in your pipeline.",
-                      tile: "border-blue-500/25 hover:border-blue-400/60 hover:shadow-[0_16px_40px_-12px_rgba(59,130,246,0.45)]",
-                      grad: "from-blue-500/[0.12] via-blue-500/[0.03]",
-                      glow: "bg-blue-500/30",
-                      iconBox: "border-blue-500/40 bg-blue-500/15 text-blue-500 dark:text-blue-400 shadow-[0_0_24px_-6px_rgba(59,130,246,0.7)]",
-                      arrow: "group-hover:text-blue-500 dark:group-hover:text-blue-400",
-                    },
-                    {
-                      key: "bulk-import",
-                      onClick: () => setBulkAddOpen(true),
-                      icon: Upload,
-                      title: "Bulk Import",
-                      desc: "Paste a CSV list to add many candidates at once.",
-                      tile: "border-fuchsia-500/25 hover:border-fuchsia-400/60 hover:shadow-[0_16px_40px_-12px_rgba(217,70,239,0.45)]",
-                      grad: "from-fuchsia-500/[0.12] via-fuchsia-500/[0.03]",
-                      glow: "bg-fuchsia-500/30",
-                      iconBox: "border-fuchsia-500/40 bg-fuchsia-500/15 text-fuchsia-500 dark:text-fuchsia-400 shadow-[0_0_24px_-6px_rgba(217,70,239,0.7)]",
-                      arrow: "group-hover:text-fuchsia-500 dark:group-hover:text-fuchsia-400",
-                    },
-                    {
-                      key: "schedule-interview",
-                      href: `/interview/new?workspaceSlug=${workspace.slug}`,
-                      icon: Calendar,
-                      title: "Schedule Interview",
-                      desc: "Set up a live pair-programming session.",
-                      tile: "border-amber-500/25 hover:border-amber-400/60 hover:shadow-[0_16px_40px_-12px_rgba(245,158,11,0.45)]",
-                      grad: "from-amber-500/[0.12] via-amber-500/[0.03]",
-                      glow: "bg-amber-500/30",
-                      iconBox: "border-amber-500/40 bg-amber-500/15 text-amber-500 dark:text-amber-400 shadow-[0_0_24px_-6px_rgba(245,158,11,0.7)]",
-                      arrow: "group-hover:text-amber-500 dark:group-hover:text-amber-400",
-                    },
-                    {
-                      key: "send-take-home",
-                      onClick: () => setQuickTakeHomeOpen(true),
-                      icon: Mail,
-                      title: "Send Take-Home",
-                      desc: "Generate a secure assessment invite link.",
-                      tile: "border-emerald-500/25 hover:border-emerald-400/60 hover:shadow-[0_16px_40px_-12px_rgba(16,185,129,0.45)]",
-                      grad: "from-emerald-500/[0.12] via-emerald-500/[0.03]",
-                      glow: "bg-emerald-500/30",
-                      iconBox: "border-emerald-500/40 bg-emerald-500/15 text-emerald-500 dark:text-emerald-400 shadow-[0_0_24px_-6px_rgba(16,185,129,0.7)]",
-                      arrow: "group-hover:text-emerald-500 dark:group-hover:text-emerald-400",
-                    },
-                  ].map((a) => {
-                    const inner = (
-                      <>
-                        {/* Color wash + corner glow orb */}
-                        <div className={`absolute inset-0 bg-gradient-to-br ${a.grad} to-transparent`} />
-                        <div className={`absolute -top-10 -right-10 w-28 h-28 rounded-full blur-3xl opacity-40 group-hover:opacity-90 transition-opacity duration-500 ${a.glow}`} />
-                        {/* Launch arrow */}
-                        <ArrowUpRight
-                          className={`absolute top-4 right-4 w-4 h-4 text-muted/40 transition-all duration-300 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 ${a.arrow}`}
-                        />
-                        <div className="relative">
-                          <div className={`w-11 h-11 rounded-2xl border flex items-center justify-center transition-transform duration-300 group-hover:scale-110 group-hover:-rotate-6 ${a.iconBox}`}>
-                            <a.icon className="w-5 h-5" />
-                          </div>
-                          <div className="text-sm font-black text-fg tracking-tight mt-4">{a.title}</div>
-                          <p className="text-[11px] text-muted mt-1 leading-relaxed">{a.desc}</p>
-                        </div>
-                      </>
-                    );
-                    const tileClass = `group relative overflow-hidden text-left p-5 rounded-2xl border bg-surface/70 backdrop-blur-xl transition-all duration-300 hover:-translate-y-1 active:scale-[0.98] ${a.tile}`;
-                    return a.href ? (
-                      <Link key={a.key} href={a.href} className={tileClass}>
-                        {inner}
-                      </Link>
-                    ) : (
-                      <button key={a.key} type="button" onClick={a.onClick} className={tileClass}>
-                        {inner}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-
-              {/* Charts Row */}
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                
-                {/* Activity Graph */}
-                <div className="lg:col-span-2 rounded-[24px] border border-border bg-surface/80 dark:bg-surface/60 backdrop-blur-2xl shadow-sm p-6 relative overflow-hidden group">
-                  <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/[0.02] to-transparent pointer-events-none"></div>
-                  <div className="flex items-center justify-between mb-6 relative z-10">
-                    <div className="flex items-center gap-2">
-                      <div className="w-8 h-8 rounded-xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-500">
-                        <Sparkles className="w-4 h-4" />
-                      </div>
-                      <h4 className="text-sm font-bold tracking-tight text-fg">Activity Overview</h4>
-                    </div>
-                  </div>
-                  <div className="h-[280px] w-full relative z-10">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <AreaChart data={activityData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                        <defs>
-                          <linearGradient id="colorInterviews" x1="0" y1="0" x2="0" y2="1">
-                            <stop offset="5%" stopColor="#8b5cf6" stopOpacity={0.3}/>
-                            <stop offset="95%" stopColor="#8b5cf6" stopOpacity={0}/>
-                          </linearGradient>
-                          <linearGradient id="colorTakeHomes" x1="0" y1="0" x2="0" y2="1">
-                            <stop offset="5%" stopColor="#6366f1" stopOpacity={0.3}/>
-                            <stop offset="95%" stopColor="#6366f1" stopOpacity={0}/>
-                          </linearGradient>
-                        </defs>
-                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--border)" opacity={0.5} />
-                        <XAxis dataKey="displayDate" axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: 'var(--muted)' }} dy={10} />
-                        <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: 'var(--muted)' }} />
-                        <Tooltip 
-                          contentStyle={{ backgroundColor: 'var(--panel)', borderColor: 'var(--border)', borderRadius: '12px', fontSize: '12px', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }}
-                          itemStyle={{ color: 'var(--fg)', fontWeight: 600 }}
-                        />
-                        <Area type="monotone" dataKey="interviews" name="Interviews" stroke="#8b5cf6" strokeWidth={3} fillOpacity={1} fill="url(#colorInterviews)" activeDot={{ r: 6, strokeWidth: 0, fill: '#8b5cf6' }} />
-                        <Area type="monotone" dataKey="takeHomes" name="Take-homes" stroke="#6366f1" strokeWidth={3} fillOpacity={1} fill="url(#colorTakeHomes)" activeDot={{ r: 6, strokeWidth: 0, fill: '#6366f1' }} />
-                      </AreaChart>
-                    </ResponsiveContainer>
-                  </div>
-                </div>
-
-                {/* Pipeline Breakdown */}
-                <div className="rounded-[24px] border border-border bg-surface/80 dark:bg-surface/60 backdrop-blur-2xl shadow-sm p-6 relative overflow-hidden">
-                  <div className="absolute inset-0 bg-gradient-to-bl from-purple-500/[0.02] to-transparent pointer-events-none"></div>
-                  <div className="flex items-center justify-between mb-6 relative z-10">
-                    <div className="flex items-center gap-2">
-                      <div className="w-8 h-8 rounded-xl bg-purple-500/10 border border-purple-500/20 flex items-center justify-center text-purple-500">
-                        <Users className="w-4 h-4" />
-                      </div>
-                      <h4 className="text-sm font-bold tracking-tight text-fg">Pipeline Distribution</h4>
-                    </div>
-                  </div>
-                  <div className="h-[280px] w-full relative z-10">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <BarChart data={pipelineData} layout="vertical" margin={{ top: 0, right: 20, left: 0, bottom: 0 }}>
-                        <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="var(--border)" opacity={0.5} />
-                        <XAxis type="number" axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: 'var(--muted)' }} />
-                        <YAxis type="category" dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: 'var(--muted)' }} width={65} />
-                        <Tooltip 
-                          cursor={{ fill: 'var(--border)', opacity: 0.2 }}
-                          contentStyle={{ backgroundColor: 'var(--panel)', borderColor: 'var(--border)', borderRadius: '12px', fontSize: '12px', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }}
-                        />
-                        <Bar dataKey="count" name="Candidates" radius={[0, 4, 4, 0]} barSize={20}>
-                          {pipelineData.map((entry, index) => (
-                            <Cell key={`cell-${index}`} fill={entry.fill} />
-                          ))}
-                        </Bar>
-                      </BarChart>
-                    </ResponsiveContainer>
-                  </div>
-                </div>
-
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {/* Recent take-homes */}
-                <div className="rounded-[24px] border border-border bg-surface/80 dark:bg-surface/60 backdrop-blur-2xl overflow-hidden shadow-sm flex flex-col">
-                  <div className="px-6 py-5 border-b border-border flex items-center justify-between bg-surface/50">
-                    <div className="flex items-center gap-2">
-                      <Clock className="w-4 h-4 text-indigo-500" />
-                      <h4 className="text-[11px] font-bold uppercase tracking-[0.15em] text-muted">Recent take-homes</h4>
-                    </div>
-                    <Link
-                      href={`/w/${workspace.slug}?section=assessments&view=take-homes`}
-                      className="text-[11px] font-semibold text-accent hover:text-accent-hover transition-colors"
-                    >
-                      View all
-                    </Link>
-                  </div>
-                  {currentTakeHomes.length === 0 && takeHomeSessions.length === 0 ? (
-                    <div className="p-8 flex-1 flex items-center justify-center text-xs text-muted/60 italic text-center">No take-homes scheduled.</div>
-                  ) : (
-                    <ul className="divide-y divide-border">
-                      {/* Merge legacy + session-backed (new model) and sort by most recent */}
-                      {[...currentTakeHomes.map(th => ({ id: th.id, name: th.candidateName, sub: th.challengeTitle, status: th.status, at: th.createdAt || th.expiresAt })),
-                         ...takeHomeSessions.map(th => ({ id: th.id, name: th.candidateName || "Unknown", sub: th.title + ` · ${th.questionCount} Q`, status: th.status, at: th.createdAt }))]
-                        .sort((a,b) => (a.at > b.at ? -1 : 1))
-                        .slice(0, 5).map((th) => (
-                        <li key={th.id} className="px-6 py-4 flex items-center justify-between gap-4 hover:bg-panel/50 transition-colors group">
-                          <div className="min-w-0 flex-1">
-                            <div className="text-sm font-bold text-fg truncate group-hover:text-accent transition-colors">{th.name}</div>
-                            <div className="text-[12px] text-muted truncate mt-0.5">{th.sub}</div>
-                          </div>
-                          <span className={`inline-flex items-center px-2.5 py-1 rounded-lg border text-[10px] font-bold uppercase tracking-widest shrink-0 ${statusBadgeColor[th.status] ?? statusBadgeColor.PENDING}`}>
-                            {th.status}
-                          </span>
-                        </li>
-                      ))}
-                    </ul>
-                  )}
-                </div>
-
-                {/* Recent interviews */}
-                <div className="rounded-[24px] border border-border bg-surface/80 dark:bg-surface/60 backdrop-blur-2xl overflow-hidden shadow-sm flex flex-col">
-                  <div className="px-6 py-5 border-b border-border flex items-center justify-between bg-surface/50">
-                    <div className="flex items-center gap-2">
-                      <Briefcase className="w-4 h-4 text-violet-500" />
-                      <h4 className="text-[11px] font-bold uppercase tracking-[0.15em] text-muted">Recent interviews</h4>
-                    </div>
-                    <Link
-                      href={`/w/${workspace.slug}?section=assessments&view=interviews`}
-                      className="text-[11px] font-semibold text-accent hover:text-accent-hover transition-colors"
-                    >
-                      View all
-                    </Link>
-                  </div>
-                  {(sessions.length === 0 && aiInterviewSessions.length === 0) ? (
-                    <div className="p-8 flex-1 flex items-center justify-center text-xs text-muted/60 italic text-center">No interviews scheduled.</div>
-                  ) : (
-                    <ul className="divide-y divide-border">
-                      {[...sessions.map(s => ({ id: s.id, name: s.candidateName || "Unknown", sub: s.title, at: s.createdAt, startedAt: s.startedAt, finishedAt: s.finishedAt, kind: "Live" as const })),
-                         ...aiInterviewSessions.map(s => ({ id: s.id, name: s.candidateName, sub: s.positionTitle, at: s.createdAt, startedAt: s.startedAt, finishedAt: s.finishedAt, kind: "AI" as const }))]
-                        .sort((a,b) => (a.at > b.at ? -1 : 1))
-                        .slice(0, 5).map((s) => {
-                        const isDone = !!s.finishedAt;
-                        const isLive = !!s.startedAt && !isDone;
-                        const statusColor = isDone
-                          ? "text-emerald-600 dark:text-emerald-400 border-emerald-500/25 bg-emerald-500/[0.06]"
-                          : isLive
-                          ? "text-indigo-600 dark:text-indigo-400 border-indigo-500/25 bg-indigo-500/[0.08]"
-                          : "text-amber-600 dark:text-amber-400 border-amber-500/25 bg-amber-500/[0.06]";
-                        return (
-                          <li key={s.id} className="px-6 py-4 flex items-center justify-between gap-4 hover:bg-panel/50 transition-colors group">
-                            <div className="min-w-0 flex-1">
-                              <div className="text-sm font-bold text-fg truncate group-hover:text-accent transition-colors flex items-center gap-1.5">{s.name} {s.kind === "AI" && <span className="text-[9px] px-1 py-0.5 rounded bg-violet-500/15 border border-violet-500/30 text-violet-500">AI</span>}</div>
-                              <div className="text-[12px] text-muted truncate mt-0.5">{s.sub}</div>
-                            </div>
-                            <span className={`inline-flex items-center px-2.5 py-1 rounded-lg border text-[10px] font-bold uppercase tracking-widest shrink-0 ${statusColor}`}>
-                              {isDone ? "Done" : isLive ? "Live" : "Scheduled"}
-                            </span>
-                          </li>
-                        );
-                      })}
-                    </ul>
-                  )}
-                </div>
-              </div>
-            </div>
+            <WorkspaceOverview
+              slug={workspace.slug}
+              firstName={firstName}
+              plan={plan}
+              seatLimit={seatLimit}
+              setup={{
+                assessments: challenges.length + currentTakeHomes.length + takeHomeSessions.length + sessions.length,
+                members: currentMembers.length,
+                pendingInvites: pendingInvites.length,
+              }}
+              candidates={candidates}
+              sessions={sessions}
+              takeHomes={currentTakeHomes}
+              takeHomeSessions={takeHomeSessions}
+              aiInterviewSessions={aiInterviewSessions}
+              onAddCandidate={() => setAddCandidateOpen(true)}
+              onBulkImport={() => setBulkAddOpen(true)}
+              onSendTakeHome={() => setQuickTakeHomeOpen(true)}
+            />
           )}
 
           {/* LIBRARY */}
@@ -1390,7 +1114,7 @@ export default function WorkspaceDashboardClient({
                 </div>
                 <Link
                   href="/admin/challenges/new"
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-accent hover:bg-accent-soft text-bg text-[11px] font-semibold uppercase tracking-wider transition-colors"
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-secondary hover:brightness-110 text-bg text-xs font-semibold transition-colors"
                 >
                   <Plus className="w-3.5 h-3.5" />
                   <span>New challenge</span>
@@ -1399,7 +1123,7 @@ export default function WorkspaceDashboardClient({
 
               {challenges.length === 0 ? (
                 <div className="rounded-xl border border-border bg-surface p-12 text-center">
-                  <div className="w-12 h-12 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-500 mx-auto mb-3">
+                  <div className="w-12 h-12 rounded-xl bg-warning/10 border border-warning/20 flex items-center justify-center text-warning mx-auto mb-3">
                     <Trophy className="w-5 h-5" />
                   </div>
                   <p className="text-sm font-semibold text-fg">No challenges yet</p>
@@ -1412,26 +1136,26 @@ export default function WorkspaceDashboardClient({
                   {challenges.map((c) => (
                     <div
                       key={c.id}
-                      className="p-4 rounded-xl border border-border bg-surface hover:border-accent/30 transition-colors group"
+                      className="p-4 rounded-xl border border-border bg-surface hover:border-secondary/30 transition-colors group"
                     >
                       <div className="space-y-2">
                         <div className="flex items-center gap-1.5">
-                          <span className={`inline-flex items-center px-2 py-0.5 rounded-md border text-[10px] font-semibold uppercase tracking-wider ${difficultyColor[c.difficulty]}`}>
-                            {c.difficulty}
+                          <span className={`inline-flex items-center px-2 py-0.5 rounded-md border text-xs font-semibold ${difficultyColor[c.difficulty]}`}>
+                            {humanize(c.difficulty)}
                           </span>
-                          <span className="inline-flex items-center px-2 py-0.5 rounded-md bg-panel/50 border border-border text-[10px] font-medium text-muted">
+                          <span className="inline-flex items-center px-2 py-0.5 rounded-md bg-panel/50 border border-border text-xs font-medium text-muted">
                             {c.template}
                           </span>
                         </div>
-                        <h4 className="text-sm font-semibold text-fg truncate group-hover:text-accent transition-colors">
+                        <h4 className="text-sm font-semibold text-fg truncate group-hover:text-secondary transition-colors">
                           {c.title}
                         </h4>
                       </div>
                       <div className="flex justify-between items-center gap-2 pt-3 mt-3 border-t border-border">
-                        <span className="text-[11px] text-muted font-mono truncate">/{c.slug}</span>
+                        <span className="text-xs text-muted font-mono truncate">/{c.slug}</span>
                         <Link
                           href={`/challenges/${c.slug}`}
-                          className="inline-flex items-center gap-1 text-[11px] font-semibold text-accent hover:underline shrink-0"
+                          className="inline-flex items-center gap-1 text-xs font-semibold text-secondary hover:underline shrink-0"
                         >
                           Preview <ExternalLink className="w-3 h-3" />
                         </Link>
@@ -1447,39 +1171,22 @@ export default function WorkspaceDashboardClient({
           {activeTab === "assessments" && (
             <div className="space-y-5">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                <div className="inline-flex items-center p-1 rounded-xl bg-elevated/50 border border-border/60 backdrop-blur-sm shadow-sm overflow-x-auto scrollbar-none">
-                  {[
-                    { id: "interviews", label: "Interviews", icon: "🎙" },
-                    { id: "attempts", label: "Attempts", icon: "📝" },
-                    { id: "take-homes", label: "Take-Homes", icon: "📦" },
-                    { id: "replays", label: "Replays", icon: "▶️" },
-                    { id: "scenarios", label: "Scenarios", icon: "🧩" },
-                  ].map((subTab) => {
-                    const isActive = assessmentSubTab === subTab.id;
-                    return (
-                      <Link
-                        key={subTab.id}
-                        href={`/w/${workspace.slug}?section=assessments&view=${subTab.id}`}
-                        className={`relative flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-[11px] font-semibold tracking-wide transition-all duration-200 shrink-0 ${
-                          isActive
-                            ? "bg-surface text-fg shadow-md shadow-black/10 dark:shadow-black/30 ring-1 ring-border/80"
-                            : "text-muted hover:text-fg hover:bg-surface/50"
-                        }`}
-                      >
-                        <span className="text-[13px] leading-none">{subTab.icon}</span>
-                        <span>{subTab.label}</span>
-                        {isActive && (
-                          <span className="absolute -bottom-px left-3 right-3 h-[2px] rounded-full bg-accent/60" />
-                        )}
-                      </Link>
-                    );
-                  })}
-                </div>
+                <SubTabs
+                  label="Assessment views"
+                  active={assessmentSubTab}
+                  tabs={[
+                    { id: "interviews", label: "Interviews", icon: Video },
+                    { id: "attempts", label: "Attempts", icon: FileCode2 },
+                    { id: "take-homes", label: "Take-homes", icon: ClipboardList },
+                    { id: "replays", label: "Replays", icon: Play },
+                    { id: "scenarios", label: "Prompt scenarios", icon: Brain },
+                  ].map((t) => ({ ...t, href: `/w/${workspace.slug}?section=assessments&view=${t.id}` }))}
+                />
 
                 {assessmentSubTab === "interviews" && (
                   <Link
                     href={`/interview/new?workspaceSlug=${workspace.slug}`}
-                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-accent hover:bg-accent-soft text-bg text-[11px] font-semibold uppercase tracking-wider transition-colors shrink-0"
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-secondary hover:brightness-110 text-bg text-xs font-semibold transition-colors shrink-0"
                   >
                     <Plus className="w-3.5 h-3.5" />
                     <span>New interview</span>
@@ -1489,10 +1196,10 @@ export default function WorkspaceDashboardClient({
                 {assessmentSubTab === "scenarios" && (
                   <button
                     onClick={() => setCreatePromptOpen(true)}
-                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-accent hover:bg-accent-soft text-bg text-[11px] font-semibold uppercase tracking-wider transition-colors shrink-0 animate-fade-in"
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-secondary hover:brightness-110 text-bg text-xs font-semibold transition-colors shrink-0 animate-fade-in"
                   >
                     <Plus className="w-3.5 h-3.5" />
-                    <span>Create Custom Scenario</span>
+                    <span>Create custom scenario</span>
                   </button>
                 )}
               </div>
@@ -1509,7 +1216,7 @@ export default function WorkspaceDashboardClient({
 
                   {sessions.length === 0 ? (
                     <div className="rounded-xl border border-border bg-surface p-12 text-center">
-                      <div className="w-12 h-12 rounded-xl bg-violet-500/10 border border-violet-500/20 flex items-center justify-center text-violet-500 mx-auto mb-3">
+                      <div className="w-12 h-12 rounded-xl bg-secondary/10 border border-secondary/20 flex items-center justify-center text-secondary mx-auto mb-3">
                         <Briefcase className="w-5 h-5" />
                       </div>
                       <p className="text-sm font-semibold text-fg">No interviews yet</p>
@@ -1521,7 +1228,7 @@ export default function WorkspaceDashboardClient({
                     <div className="rounded-xl border border-border bg-surface overflow-hidden">
                       <table className="w-full text-left text-sm">
                         <thead>
-                          <tr className="bg-elevated/60 border-b border-border text-muted uppercase text-[10px] tracking-[0.14em]">
+                          <tr className="bg-elevated/60 border-b border-border text-muted text-xs ">
                             <th className="px-4 py-3 font-semibold">Session</th>
                             <th className="px-4 py-3 font-semibold">Candidate</th>
                             <th className="px-4 py-3 font-semibold">Interviewer</th>
@@ -1535,18 +1242,18 @@ export default function WorkspaceDashboardClient({
                             const isDone = !!s.finishedAt || s.status === "completed" || s.status === "finished";
                             const isLive = !!s.startedAt && !isDone;
                             const statusColor = isDone
-                              ? "text-emerald-600 dark:text-emerald-400 border-emerald-500/25 bg-emerald-500/[0.06]"
+                              ? "text-success border-success/25 bg-success/[0.06]"
                               : isLive
-                              ? "text-indigo-600 dark:text-indigo-400 border-indigo-500/25 bg-indigo-500/[0.08]"
-                              : "text-amber-600 dark:text-amber-400 border-amber-500/25 bg-amber-500/[0.06]";
+                              ? "text-secondary border-secondary/25 bg-secondary/[0.08]"
+                              : "text-warning border-warning/25 bg-warning/[0.06]";
                             const statusLabel = isDone ? "Completed" : isLive ? "Live" : "Scheduled";
 
                             return (
                               <tr key={s.id} className="hover:bg-panel/30 transition-colors">
                                 <td className="px-4 py-3 align-middle">
                                   <div className="font-semibold text-fg text-sm truncate">{s.title}</div>
-                                  <div className="text-[11px] text-muted mt-0.5 font-mono">
-                                    {Math.round(s.totalSec / 60)} min · {s.type}
+                                  <div className="text-xs text-muted mt-0.5 font-mono">
+                                    {Math.round(s.totalSec / 60)} min · {humanize(s.type)}
                                   </div>
                                 </td>
                                 <td className="px-4 py-3 align-middle text-xs text-fg">
@@ -1554,17 +1261,17 @@ export default function WorkspaceDashboardClient({
                                 </td>
                                 <td className="px-4 py-3 align-middle">
                                   <div className="text-xs text-fg">{s.interviewerName || "Unknown"}</div>
-                                  <div className="text-[11px] text-muted font-mono mt-0.5">{s.interviewerEmail}</div>
+                                  <div className="text-xs text-muted font-mono mt-0.5">{s.interviewerEmail}</div>
                                 </td>
                                 <td className="px-4 py-3 align-middle">
-                                  <span className={`inline-flex items-center px-2 py-0.5 rounded-md border text-[10px] font-semibold uppercase tracking-wider ${statusColor}`}>
+                                  <span className={`inline-flex items-center px-2 py-0.5 rounded-md border text-xs font-semibold ${statusColor}`}>
                                     {statusLabel}
                                   </span>
                                   {s.verdict && (
-                                    <div className="text-[10px] text-muted mt-1 capitalize">{s.verdict.replace(/_/g, " ")}</div>
+                                    <div className="text-xs text-muted mt-1 capitalize">{s.verdict.replace(/_/g, " ")}</div>
                                   )}
                                 </td>
-                                <td className="px-4 py-3 align-middle font-mono text-[11px] text-fg">
+                                <td className="px-4 py-3 align-middle font-mono text-xs text-fg">
                                   {s.shortCode || <span className="text-muted/60">—</span>}
                                 </td>
                                 <td className="px-4 py-3 align-middle text-right">
@@ -1572,7 +1279,7 @@ export default function WorkspaceDashboardClient({
                                     {isDone ? (
                                       <Link
                                         href={`/interview/${s.shareToken}`}
-                                        className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-accent/10 border border-accent/25 text-[11px] font-semibold text-accent hover:bg-accent/15 transition-colors"
+                                        className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-secondary/10 border border-secondary/25 text-xs font-semibold text-secondary hover:bg-secondary/15 transition-colors"
                                       >
                                         <Eye className="w-3 h-3" />
                                         Review
@@ -1580,7 +1287,7 @@ export default function WorkspaceDashboardClient({
                                     ) : (
                                       <Link
                                         href={`/interview/${s.shareToken}`}
-                                        className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-panel/40 border border-border hover:border-accent/40 text-[11px] font-semibold text-muted hover:text-fg transition-colors"
+                                        className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-panel/40 border border-border hover:border-secondary/40 text-xs font-semibold text-muted hover:text-fg transition-colors"
                                       >
                                         <Play className="w-3 h-3" />
                                         Open
@@ -1626,7 +1333,7 @@ export default function WorkspaceDashboardClient({
                 <div className="flex items-start justify-between gap-3">
                   <div>
                     <h3 className="text-sm font-semibold text-fg flex items-center gap-1.5">
-                      <Plus className="w-4 h-4 text-indigo-500" /> Invite candidate
+                      <Plus className="w-4 h-4 text-secondary" /> Invite candidate
                     </h3>
                     <p className="text-xs text-muted mt-0.5">Generate a secure expiring invitation link.</p>
                   </div>
@@ -1635,7 +1342,7 @@ export default function WorkspaceDashboardClient({
                       single form below stays for quick one-off invites. */}
                   <Link
                     href={`/w/${workspace.slug}/take-homes/new`}
-                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-accent text-bg text-[11px] font-bold uppercase tracking-wider shrink-0 hover:opacity-90 transition-opacity"
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-secondary text-bg text-xs font-bold shrink-0 hover:opacity-90 transition-opacity"
                   >
                     <Users className="w-3.5 h-3.5" />
                     New take-home →
@@ -1644,37 +1351,37 @@ export default function WorkspaceDashboardClient({
 
                 <form onSubmit={handleGenerateTakeHome} className="grid grid-cols-1 md:grid-cols-4 gap-3 items-end">
                   <div className="space-y-1">
-                    <label className="text-[10px] font-semibold uppercase tracking-wider text-muted">Name</label>
+                    <label className="text-xs font-semibold text-muted">Name</label>
                     <input
                       type="text"
                       required
                       placeholder="Candidate name"
                       value={candidateName}
                       onChange={(e) => setCandidateName(e.target.value)}
-                      className="w-full px-3 py-2 rounded-md border border-border bg-bg text-fg text-xs focus:outline-none focus:border-accent/40"
+                      className="w-full px-3 py-2 rounded-md border border-border bg-bg text-fg text-xs focus:outline-none focus:border-secondary/40"
                     />
                   </div>
                   <div className="space-y-1">
-                    <label className="text-[10px] font-semibold uppercase tracking-wider text-muted">Email</label>
+                    <label className="text-xs font-semibold text-muted">Email</label>
                     <input
                       type="email"
                       required
                       placeholder="candidate@example.com"
                       value={candidateEmail}
                       onChange={(e) => setCandidateEmail(e.target.value)}
-                      className="w-full px-3 py-2 rounded-md border border-border bg-bg text-fg text-xs focus:outline-none focus:border-accent/40"
+                      className="w-full px-3 py-2 rounded-md border border-border bg-bg text-fg text-xs focus:outline-none focus:border-secondary/40"
                     />
                   </div>
                   <div className="space-y-1">
-                    <label className="text-[10px] font-semibold uppercase tracking-wider text-muted">Challenge</label>
+                    <label className="text-xs font-semibold text-muted">Challenge</label>
                     <select
                       value={selectedChallengeId}
                       onChange={(e) => setSelectedChallengeId(e.target.value)}
-                      className="w-full px-3 py-2 rounded-md border border-border bg-bg text-fg text-xs focus:outline-none focus:border-accent/40"
+                      className="w-full px-3 py-2 rounded-md border border-border bg-bg text-fg text-xs focus:outline-none focus:border-secondary/40"
                     >
                       {quickChallenges.map((c) => (
                         <option key={c.id} value={c.id}>
-                          {c.title}{c.difficulty ? ` (${c.difficulty})` : ""}
+                          {c.title}{c.difficulty ? ` (${humanize(c.difficulty)})` : ""}
                         </option>
                       ))}
                     </select>
@@ -1682,7 +1389,7 @@ export default function WorkspaceDashboardClient({
                   <button
                     type="submit"
                     disabled={generating || quickChallenges.length === 0}
-                    className="w-full px-3 py-2 rounded-md bg-accent hover:bg-accent-soft text-bg text-[11px] font-semibold uppercase tracking-wider transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="w-full px-3 py-2 rounded-md bg-secondary hover:brightness-110 text-bg text-xs font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     {generating ? "Sending…" : "Send invite"}
                   </button>
@@ -1694,14 +1401,14 @@ export default function WorkspaceDashboardClient({
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
                     <h3 className="text-sm font-semibold text-fg flex items-center gap-1.5">
-                      <Sparkles className="w-4 h-4 text-indigo-500" /> Take-home assessments
+                      <Sparkles className="w-4 h-4 text-secondary" /> Take-home assessments
                     </h3>
-                    <span className="text-[11px] text-muted">{takeHomeSessions.length} sent</span>
+                    <span className="text-xs text-muted">{takeHomeSessions.length} sent</span>
                   </div>
                   <div className="rounded-xl border border-border bg-surface overflow-hidden">
                     <table className="w-full text-left text-sm">
                       <thead>
-                        <tr className="bg-elevated/60 border-b border-border text-muted uppercase text-[10px] tracking-[0.14em]">
+                        <tr className="bg-elevated/60 border-b border-border text-muted text-xs ">
                           <th className="px-4 py-3 font-semibold">Candidate</th>
                           <th className="px-4 py-3 font-semibold">Assessment</th>
                           <th className="px-4 py-3 font-semibold">Status</th>
@@ -1719,26 +1426,26 @@ export default function WorkspaceDashboardClient({
                             (!!deadline && Date.now() > deadline.getTime() && s.status !== "completed" && s.status !== "in_progress");
                           const { label, cls } =
                             s.status === "completed"
-                              ? { label: "Completed", cls: "text-emerald-600 dark:text-emerald-400 border-emerald-500/25 bg-emerald-500/[0.06]" }
+                              ? { label: "Completed", cls: "text-success border-success/25 bg-success/[0.06]" }
                               : expired
-                              ? { label: "Expired", cls: "text-rose-600 dark:text-rose-400 border-rose-500/25 bg-rose-500/[0.06]" }
+                              ? { label: "Expired", cls: "text-danger border-danger/25 bg-danger/[0.06]" }
                               : s.status === "in_progress"
-                              ? { label: "In progress", cls: "text-indigo-600 dark:text-indigo-400 border-indigo-500/25 bg-indigo-500/[0.08]" }
-                              : { label: "Sent", cls: "text-amber-600 dark:text-amber-400 border-amber-500/25 bg-amber-500/[0.06]" };
+                              ? { label: "In progress", cls: "text-secondary border-secondary/25 bg-secondary/[0.08]" }
+                              : { label: "Sent", cls: "text-warning border-warning/25 bg-warning/[0.06]" };
                           return (
                             <tr key={s.id} className="hover:bg-panel/30 transition-colors">
                               <td className="px-4 py-3 align-middle">
                                 <div className="text-xs font-semibold text-fg truncate">{s.candidateName || "—"}</div>
-                                <div className="text-[11px] text-muted font-mono truncate">{s.candidateEmail}</div>
+                                <div className="text-xs text-muted font-mono truncate">{s.candidateEmail}</div>
                               </td>
                               <td className="px-4 py-3 align-middle">
                                 <div className="text-xs text-fg truncate max-w-[240px]">{s.title}</div>
-                                <div className="text-[10px] text-muted">{s.questionCount} question{s.questionCount === 1 ? "" : "s"}</div>
+                                <div className="text-xs text-muted">{s.questionCount} question{s.questionCount === 1 ? "" : "s"}</div>
                               </td>
                               <td className="px-4 py-3 align-middle">
-                                <span className={`inline-flex items-center px-2 py-0.5 rounded-md border text-[10px] font-semibold uppercase tracking-wider ${cls}`}>{label}</span>
+                                <span className={`inline-flex items-center px-2 py-0.5 rounded-md border text-xs font-semibold ${cls}`}>{label}</span>
                               </td>
-                              <td className="px-4 py-3 align-middle text-[11px] text-muted whitespace-nowrap">{deadline ? deadline.toLocaleDateString() : "—"}</td>
+                              <td className="px-4 py-3 align-middle text-xs text-muted whitespace-nowrap">{deadline ? deadline.toLocaleDateString() : "—"}</td>
                               <td className="px-4 py-3 align-middle text-right">
                                 <div className="inline-flex items-center gap-1.5">
                                   <button
@@ -1748,13 +1455,13 @@ export default function WorkspaceDashboardClient({
                                       navigator.clipboard?.writeText(`${window.location.origin}/take-home/s/${s.candidateAccessToken}`);
                                       toast.success("Candidate link copied");
                                     }}
-                                    className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-panel/40 border border-border hover:border-accent/40 text-[11px] font-semibold text-muted hover:text-fg transition-colors"
+                                    className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-panel/40 border border-border hover:border-secondary/40 text-xs font-semibold text-muted hover:text-fg transition-colors"
                                   >
                                     <Link2 className="w-3 h-3" /> Copy link
                                   </button>
                                   <Link
                                     href={`/w/${workspace.slug}/take-homes/${s.id}`}
-                                    className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-accent/10 border border-accent/25 text-[11px] font-semibold text-accent hover:bg-accent/15 transition-colors"
+                                    className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-secondary/10 border border-secondary/25 text-xs font-semibold text-secondary hover:bg-secondary/15 transition-colors"
                                   >
                                     <Eye className="w-3 h-3" /> Review
                                   </Link>
@@ -1775,7 +1482,7 @@ export default function WorkspaceDashboardClient({
 
                 {currentTakeHomes.length === 0 ? (
                   <div className="rounded-xl border border-border bg-surface p-12 text-center">
-                    <div className="w-12 h-12 rounded-xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-500 mx-auto mb-3">
+                    <div className="w-12 h-12 rounded-xl bg-secondary/10 border border-secondary/20 flex items-center justify-center text-secondary mx-auto mb-3">
                       <Clock className="w-5 h-5" />
                     </div>
                     <p className="text-sm font-semibold text-fg">No take-homes scheduled</p>
@@ -1787,7 +1494,7 @@ export default function WorkspaceDashboardClient({
                   <div className="rounded-xl border border-border bg-surface overflow-hidden">
                     <table className="w-full text-left text-sm">
                       <thead>
-                        <tr className="bg-elevated/60 border-b border-border text-muted uppercase text-[10px] tracking-[0.14em]">
+                        <tr className="bg-elevated/60 border-b border-border text-muted text-xs ">
                           <th className="px-4 py-3 font-semibold">Candidate</th>
                           <th className="px-4 py-3 font-semibold">Challenge</th>
                           <th className="px-4 py-3 font-semibold">Status</th>
@@ -1801,12 +1508,12 @@ export default function WorkspaceDashboardClient({
                           <tr key={th.id} className="hover:bg-panel/30 transition-colors">
                             <td className="px-4 py-3 align-middle">
                               <div className="font-semibold text-fg text-sm">{th.candidateName}</div>
-                              <div className="text-[11px] text-muted font-mono mt-0.5">{th.candidateEmail}</div>
+                              <div className="text-xs text-muted font-mono mt-0.5">{th.candidateEmail}</div>
                             </td>
                             <td className="px-4 py-3 align-middle text-xs text-fg">{th.challengeTitle}</td>
                             <td className="px-4 py-3 align-middle">
-                              <span className={`inline-flex items-center px-2 py-0.5 rounded-md border text-[10px] font-semibold uppercase tracking-wider ${statusBadgeColor[th.status]}`}>
-                                {th.status}
+                              <span className={`inline-flex items-center px-2 py-0.5 rounded-md border text-xs font-semibold ${statusBadgeColor[th.status]}`}>
+                                {humanize(th.status)}
                               </span>
                             </td>
                             <td className="px-4 py-3 align-middle text-xs text-muted tabular-nums">{th.timeLimitMin} min</td>
@@ -1815,13 +1522,13 @@ export default function WorkspaceDashboardClient({
                                 th.attemptId ? (
                                   <Link
                                     href={`/w/${workspace.slug}/attempts/${th.attemptId}`}
-                                    className="inline-flex items-center gap-1 text-emerald-600 dark:text-emerald-400 font-semibold text-xs hover:underline"
+                                    className="inline-flex items-center gap-1 text-success font-semibold text-xs hover:underline"
                                   >
                                     <Award className="w-3.5 h-3.5" />
                                     <span className="tabular-nums">{th.score}%</span>
                                   </Link>
                                 ) : (
-                                  <div className="inline-flex items-center gap-1 text-emerald-600 dark:text-emerald-400 font-semibold text-xs">
+                                  <div className="inline-flex items-center gap-1 text-success font-semibold text-xs">
                                     <Award className="w-3.5 h-3.5" />
                                     <span className="tabular-nums">{th.score}%</span>
                                   </div>
@@ -1834,7 +1541,7 @@ export default function WorkspaceDashboardClient({
                               {th.status === "SUBMITTED" && th.attemptId ? (
                                 <Link
                                   href={`/w/${workspace.slug}/attempts/${th.attemptId}`}
-                                  className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-accent/10 border border-accent/25 text-[11px] font-semibold text-accent hover:bg-accent/15 transition-colors"
+                                  className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-secondary/10 border border-secondary/25 text-xs font-semibold text-secondary hover:bg-secondary/15 transition-colors"
                                 >
                                   <Award className="w-3 h-3" />
                                   <span>Review</span>
@@ -1846,7 +1553,7 @@ export default function WorkspaceDashboardClient({
                                     navigator.clipboard.writeText(url);
                                     toast.success("Invitation link copied", { description: "Send this link to your candidate." });
                                   }}
-                                  className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-panel/40 border border-border text-[11px] font-semibold text-muted hover:text-fg hover:border-accent/40 transition-colors cursor-pointer"
+                                  className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-panel/40 border border-border text-xs font-semibold text-muted hover:text-fg hover:border-secondary/40 transition-colors cursor-pointer"
                                 >
                                   <Link2 className="w-3 h-3" />
                                   <span>Copy link</span>
@@ -1875,7 +1582,7 @@ export default function WorkspaceDashboardClient({
 
               {replayItems.length === 0 ? (
                 <div className="rounded-xl border border-border bg-surface p-12 text-center">
-                  <div className="w-12 h-12 rounded-xl bg-purple-500/10 border border-purple-500/20 flex items-center justify-center text-purple-500 mx-auto mb-3">
+                  <div className="w-12 h-12 rounded-xl bg-secondary/10 border border-secondary/20 flex items-center justify-center text-secondary mx-auto mb-3">
                     <FileVideo className="w-5 h-5" />
                   </div>
                   <p className="text-sm font-semibold text-fg">No replays yet</p>
@@ -1887,7 +1594,7 @@ export default function WorkspaceDashboardClient({
                 <div className="rounded-xl border border-border bg-surface overflow-hidden">
                   <table className="w-full text-left text-sm">
                     <thead>
-                      <tr className="bg-elevated/60 border-b border-border text-muted uppercase text-[10px] tracking-[0.14em]">
+                      <tr className="bg-elevated/60 border-b border-border text-muted text-xs ">
                         <th className="px-4 py-3 font-semibold">Source</th>
                         <th className="px-4 py-3 font-semibold">Candidate</th>
                         <th className="px-4 py-3 font-semibold">Title</th>
@@ -1901,12 +1608,12 @@ export default function WorkspaceDashboardClient({
                         const ts = new Date(r.timestamp);
                         const tsLabel = ts.toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" });
                         const sourceColor = r.kind === "take-home"
-                          ? "text-purple-600 dark:text-purple-400 border-purple-500/25 bg-purple-500/[0.06]"
-                          : "text-violet-600 dark:text-violet-400 border-violet-500/25 bg-violet-500/[0.08]";
+                          ? "text-secondary border-secondary/25 bg-secondary/[0.06]"
+                          : "text-secondary border-secondary/25 bg-secondary/[0.08]";
                         return (
                           <tr key={`${r.kind}-${r.id}`} className="hover:bg-panel/30 transition-colors">
                             <td className="px-4 py-3 align-middle">
-                              <span className={`inline-flex items-center px-2 py-0.5 rounded-md border text-[10px] font-semibold uppercase tracking-wider ${sourceColor}`}>
+                              <span className={`inline-flex items-center px-2 py-0.5 rounded-md border text-xs font-semibold ${sourceColor}`}>
                                 {r.kind === "take-home" ? "Take-home" : "Interview"}
                               </span>
                             </td>
@@ -1915,7 +1622,7 @@ export default function WorkspaceDashboardClient({
                             <td className="px-4 py-3 align-middle text-xs text-muted">{tsLabel}</td>
                             <td className="px-4 py-3 align-middle">
                               {r.score !== null ? (
-                                <span className="inline-flex items-center gap-1 text-xs font-semibold text-emerald-600 dark:text-emerald-400">
+                                <span className="inline-flex items-center gap-1 text-xs font-semibold text-success">
                                   <Award className="w-3.5 h-3.5" />
                                   <span className="tabular-nums">{r.score}%</span>
                                 </span>
@@ -1926,7 +1633,7 @@ export default function WorkspaceDashboardClient({
                             <td className="px-4 py-3 align-middle text-right">
                               <Link
                                 href={r.href}
-                                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-accent/10 border border-accent/25 text-[11px] font-semibold text-accent hover:bg-accent/15 transition-colors"
+                                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-secondary/10 border border-secondary/25 text-xs font-semibold text-secondary hover:bg-secondary/15 transition-colors"
                               >
                                 <Play className="w-3 h-3" />
                                 Watch
@@ -1948,136 +1655,116 @@ export default function WorkspaceDashboardClient({
           {activeTab === "candidates" && (
             <div className="space-y-5">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                <div className="inline-flex items-center p-1 rounded-xl bg-elevated/50 border border-border/60 backdrop-blur-sm shadow-sm overflow-x-auto scrollbar-none">
-                  {[
-                    { id: "list", label: "Roster", icon: "👥" },
-                    { id: "pipeline", label: "Pipeline", icon: "📊" },
-                    { id: "leaderboard", label: "Leaderboard", icon: "🏆" },
-                  ].map((subTab) => {
-                    const isActive = candidateSubTab === subTab.id;
-                    return (
-                      <Link
-                        key={subTab.id}
-                        href={`/w/${workspace.slug}?section=candidates&view=${subTab.id}`}
-                        className={`relative flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-[11px] font-semibold tracking-wide transition-all duration-200 shrink-0 ${
-                          isActive
-                            ? "bg-surface text-fg shadow-md shadow-black/10 dark:shadow-black/30 ring-1 ring-border/80"
-                            : "text-muted hover:text-fg hover:bg-surface/50"
-                        }`}
-                      >
-                        <span className="text-[13px] leading-none">{subTab.icon}</span>
-                        <span>{subTab.label}</span>
-                        {isActive && (
-                          <span className="absolute -bottom-px left-3 right-3 h-[2px] rounded-full bg-accent/60" />
-                        )}
-                      </Link>
-                    );
-                  })}
-                </div>
+                <SubTabs
+                  label="Candidate views"
+                  active={candidateSubTab}
+                  tabs={[
+                    { id: "list", label: "Table", icon: Table2 },
+                    { id: "pipeline", label: "Board", icon: Columns3 },
+                    { id: "leaderboard", label: "Leaderboard", icon: Trophy },
+                  ].map((t) => ({ ...t, href: `/w/${workspace.slug}?section=candidates&view=${t.id}` }))}
+                />
               </div>
 
               {candidateSubTab === "list" && (
-            <div className="space-y-3">
-              <div className="flex items-center justify-between gap-4 flex-wrap">
-                <div>
-                  <h3 className="text-lg font-semibold text-fg tracking-tight">Candidates</h3>
-                  <p className="text-xs text-muted mt-0.5">
-                    Your workspace candidate roster — sourced manually or from take-homes/interviews.
-                  </p>
+            <div className="space-y-4">
+              <div className="flex flex-col gap-3">
+                <div role="group" aria-label="Filter by stage" className="flex items-center gap-1.5 flex-wrap">
+                  {(["ALL", ...PIPELINE_STAGES] as const).map((st) => {
+                    const isActive = candidateStageFilter === st;
+                    const count = st === "ALL" ? candidates.length : stageCounts[st] ?? 0;
+                    return (
+                      <button
+                        key={st}
+                        type="button"
+                        aria-pressed={isActive}
+                        onClick={() => setCandidateStageFilter(st)}
+                        className={`inline-flex items-center gap-1.5 h-8 px-3 rounded-lg border text-[13px] font-medium transition-colors ${
+                          isActive
+                            ? "border-secondary bg-panel text-fg"
+                            : "border-border text-muted hover:text-fg hover:border-border-strong"
+                        }`}
+                      >
+                        {st !== "ALL" && <span className={`w-1.5 h-1.5 rounded-sm ${STAGE_SWATCH[st]}`} aria-hidden />}
+                        {st === "ALL" ? "All" : STAGE_LABELS[st]}
+                        <span className="text-subtle font-normal tabular-nums">{count}</span>
+                      </button>
+                    );
+                  })}
                 </div>
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={() => setBulkAddOpen(true)}
-                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-panel/40 border border-border hover:border-accent/40 text-muted hover:text-fg text-[11px] font-semibold uppercase tracking-wider transition-colors"
+                <div className="flex items-center gap-2 flex-wrap">
+                  <label className="h-9 w-full sm:w-64 sm:mr-auto flex items-center gap-2 px-2.5 rounded-lg border border-border bg-surface text-subtle focus-within:border-secondary/60">
+                    <Search className="w-4 h-4 shrink-0" aria-hidden />
+                    <input
+                      value={candidateQuery}
+                      onChange={(e) => setCandidateQuery(e.target.value)}
+                      placeholder="Filter by name or email"
+                      aria-label="Filter candidates by name or email"
+                      className="flex-1 min-w-0 bg-transparent border-0 outline-none text-sm text-fg placeholder:text-subtle"
+                    />
+                  </label>
+                  <select
+                    value={candidateStatusFilter}
+                    onChange={(e) => setCandidateStatusFilter(e.target.value)}
+                    aria-label="Filter by disposition"
+                    className="h-9 px-2.5 rounded-lg border border-border bg-surface text-fg text-[13px] focus:outline-none focus:border-secondary/60"
                   >
-                    <Upload className="w-3.5 h-3.5" />
-                    <span>Bulk add</span>
+                    <option value="all">Any disposition</option>
+                    {(["active", "future_hire", "do_not_hire", "hired", "rejected", "archived"] as const).map((st) => (
+                      <option key={st} value={st}>
+                        {humanize(st)} ({statusCounts[st] ?? 0})
+                      </option>
+                    ))}
+                  </select>
+                  <select
+                    value={candidateSort}
+                    onChange={(e) => setCandidateSort(e.target.value as typeof candidateSort)}
+                    aria-label="Sort candidates"
+                    className="h-9 px-2.5 rounded-lg border border-border bg-surface text-fg text-[13px] focus:outline-none focus:border-secondary/60"
+                  >
+                    <option value="recent">Recently updated</option>
+                    <option value="status">Disposition</option>
+                    <option value="name">Name A to Z</option>
+                    <option value="take-homes">Most take-homes</option>
+                    <option value="interviews">Most interviews</option>
+                  </select>
+                  <button
+                    type="button"
+                    onClick={() => setBulkAddOpen(true)}
+                    className="inline-flex items-center gap-1.5 h-9 px-3.5 rounded-lg border border-border bg-surface text-fg text-sm font-medium hover:bg-panel transition-colors"
+                  >
+                    <Upload className="w-4 h-4 text-muted" aria-hidden />
+                    Import
                   </button>
                   <button
+                    type="button"
                     onClick={() => setAddCandidateOpen(true)}
-                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-accent hover:bg-accent-soft text-bg text-[11px] font-semibold uppercase tracking-wider transition-colors"
+                    className="inline-flex items-center gap-1.5 h-9 px-3.5 rounded-lg bg-secondary text-bg text-sm font-medium hover:brightness-110 transition"
                   >
-                    <UserPlus className="w-3.5 h-3.5" />
-                    <span>Add candidate</span>
+                    <Plus className="w-4 h-4" strokeWidth={2.25} aria-hidden />
+                    Add candidate
                   </button>
                 </div>
               </div>
 
-              {/* Filter + sort toolbar */}
-              {candidates.length > 0 && (
-                <div className="flex items-center justify-between gap-3 flex-wrap">
-                  {/* Status filter pills */}
-                  <div className="flex items-center gap-1 flex-wrap">
-                    {(["all", "active", "future_hire", "do_not_hire", "hired", "rejected", "archived"] as const).map((s) => {
-                      const isActive = candidateStatusFilter === s;
-                      const count = statusCounts[s] ?? 0;
-                      const label = s === "all" ? "All"
-                        : s === "future_hire" ? "Future hire"
-                        : s === "do_not_hire" ? "Do not hire"
-                        : s.charAt(0).toUpperCase() + s.slice(1);
-                      const activeStyle =
-                        s === "future_hire" ? "bg-amber-500/15 text-amber-600 dark:text-amber-400 border-amber-500/30"
-                        : s === "do_not_hire" ? "bg-rose-500/15 text-rose-700 dark:text-rose-400 border-rose-500/40"
-                        : s === "hired" ? "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/30"
-                        : s === "rejected" ? "bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/25"
-                        : s === "archived" ? "bg-panel/60 text-muted border-border"
-                        : "bg-indigo-500/15 text-indigo-600 dark:text-indigo-300 border-indigo-500/25";
-                      return (
-                        <button
-                          key={s}
-                          onClick={() => setCandidateStatusFilter(s)}
-                          className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md border text-[11px] font-semibold transition-colors ${
-                            isActive ? activeStyle : "border-border text-muted hover:text-fg hover:bg-panel/40"
-                          }`}
-                        >
-                          <span>{label}</span>
-                          {count > 0 && (
-                            <span className={`text-[10px] tabular-nums ${isActive ? "" : "text-muted/60"}`}>
-                              {count}
-                            </span>
-                          )}
-                        </button>
-                      );
-                    })}
-                  </div>
-
-                  {/* Sort dropdown */}
-                  <div className="flex items-center gap-2">
-                    <span className="text-[10px] font-semibold uppercase tracking-wider text-muted">Sort</span>
-                    <select
-                      value={candidateSort}
-                      onChange={(e) => setCandidateSort(e.target.value as typeof candidateSort)}
-                      className="px-2.5 py-1 rounded-md border border-border bg-bg text-fg text-[11px] font-semibold focus:outline-none focus:border-accent/40"
-                    >
-                      <option value="recent">Recent activity</option>
-                      <option value="status">Status</option>
-                      <option value="name">Name A–Z</option>
-                      <option value="take-homes">Take-homes (desc)</option>
-                      <option value="interviews">Interviews (desc)</option>
-                    </select>
-                  </div>
-                </div>
-              )}
-
-              {/* Bulk selection bar */}
               {selectedCandidateIds.size > 0 && (
-                <div className="flex items-center justify-between gap-3 px-4 py-2.5 rounded-md border border-accent/30 bg-accent/10 animate-in slide-in-from-top-1 duration-150">
-                  <span className="text-[12px] font-semibold text-fg">
-                    {selectedCandidateIds.size} selected
-                  </span>
+                <div className="flex items-center justify-between gap-3 px-4 py-2.5 rounded-lg border border-border bg-panel">
+                  <span className="text-[13px] font-medium text-fg">{selectedCandidateIds.size} selected</span>
                   <div className="flex items-center gap-2">
                     <button
+                      type="button"
                       onClick={() => setSelectedCandidateIds(new Set())}
-                      className="px-2.5 py-1 rounded-md text-[11px] font-semibold text-muted hover:text-fg transition-colors"
+                      className="h-8 px-3 rounded-lg text-[13px] font-medium text-muted hover:text-fg transition-colors"
                     >
                       Clear
                     </button>
                     <button
+                      type="button"
                       onClick={handleBulkDelete}
                       disabled={bulkDeleting}
-                      className="inline-flex items-center gap-1.5 px-3 py-1 rounded-md bg-rose-600 hover:bg-rose-500 text-white text-[11px] font-semibold uppercase tracking-wider transition-colors disabled:opacity-50"
+                      className="inline-flex items-center gap-1.5 h-8 px-3 rounded-lg border border-danger/50 text-danger text-[13px] font-medium hover:bg-danger/10 transition-colors disabled:opacity-50"
                     >
-                      <Trash2 className="w-3 h-3" />
+                      <Trash2 className="w-3.5 h-3.5" aria-hidden />
                       {bulkDeleting ? "Deleting…" : "Delete selected"}
                     </button>
                   </div>
@@ -2085,25 +1772,22 @@ export default function WorkspaceDashboardClient({
               )}
 
               {candidateRoster.length === 0 ? (
-                <div className="rounded-xl border border-border bg-surface p-12 text-center">
-                  <div className="w-12 h-12 rounded-xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-500 mx-auto mb-3">
-                    <UserCircle2 className="w-5 h-5" />
-                  </div>
-                  <p className="text-sm font-semibold text-fg">
-                    {candidates.length === 0 ? "No candidates yet" : "No candidates match this filter"}
+                <div className="rounded-xl border border-border bg-surface px-6 py-12 text-center">
+                  <p className="text-[15px] font-semibold text-fg">
+                    {candidates.length === 0 ? "No candidates yet" : "No candidates match these filters"}
                   </p>
-                  <p className="text-xs text-muted mt-1 max-w-sm mx-auto">
+                  <p className="text-sm text-muted mt-1.5 max-w-sm mx-auto">
                     {candidates.length === 0
-                      ? "Add a candidate manually, or invite one via the take-home or interview flow."
-                      : "Try clearing the status filter or adding new candidates."}
+                      ? "Add someone by hand, import a list, or send a take-home and they will appear here."
+                      : "Try another stage, or clear the search."}
                   </p>
                 </div>
               ) : (
-                <div className="rounded-xl border border-border bg-surface overflow-hidden">
-                  <table className="w-full text-left text-sm">
+                <div className="rounded-xl border border-border bg-surface overflow-x-auto">
+                  <table className="w-full min-w-[760px] text-left text-sm">
                     <thead>
-                      <tr className="bg-elevated/60 border-b border-border text-muted uppercase text-[10px] tracking-[0.14em]">
-                        <th className="pl-4 pr-2 py-3 w-px">
+                      <tr className="border-b border-border text-subtle text-xs">
+                        <th className="pl-5 pr-2 py-3 w-px">
                           <input
                             type="checkbox"
                             checked={selectedCandidateIds.size === candidateRoster.length && candidateRoster.length > 0}
@@ -2111,98 +1795,75 @@ export default function WorkspaceDashboardClient({
                               if (el) el.indeterminate = selectedCandidateIds.size > 0 && selectedCandidateIds.size < candidateRoster.length;
                             }}
                             onChange={toggleAllSelected}
-                            className="w-3.5 h-3.5 rounded border-border bg-bg accent-accent cursor-pointer"
+                            className="w-4 h-4 rounded border-border bg-bg accent-[rgb(var(--c-accent-2))] cursor-pointer"
                             aria-label="Select all"
                           />
                         </th>
-                        <th className="px-4 py-3 font-semibold">Candidate</th>
-                        <th className="px-4 py-3 font-semibold">Status</th>
-                        <th className="px-4 py-3 font-semibold">Source</th>
-                        <th className="px-4 py-3 font-semibold">Activity</th>
-                        <th className="px-4 py-3 font-semibold">Last updated</th>
-                        <th className="px-4 py-3 font-semibold w-px" />
+                        <th className="px-4 py-3 font-medium">Name</th>
+                        <th className="px-4 py-3 font-medium">Stage</th>
+                        <th className="px-4 py-3 font-medium">Assessments</th>
+                        <th className="px-4 py-3 font-medium">Source</th>
+                        <th className="px-4 py-3 font-medium">Updated</th>
+                        <th className="px-4 py-3 w-px"><span className="sr-only">Open</span></th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-border">
                       {candidateRoster.map((c) => {
-                        const last = new Date(c.updatedAt);
-                        const lastLabel = last.toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" });
-                        const statusColor =
-                          c.status === "hired" ? "text-emerald-600 dark:text-emerald-400 border-emerald-500/25 bg-emerald-500/[0.06]"
-                          : c.status === "rejected" ? "text-rose-600 dark:text-rose-400 border-rose-500/25 bg-rose-500/[0.06]"
-                          : c.status === "do_not_hire" ? "text-rose-700 dark:text-rose-400 border-rose-500/40 bg-rose-500/[0.10]"
-                          : c.status === "future_hire" ? "text-amber-600 dark:text-amber-400 border-amber-500/30 bg-amber-500/[0.08]"
-                          : c.status === "archived" ? "text-muted/80 border-border bg-panel/50"
-                          : "text-indigo-600 dark:text-indigo-400 border-indigo-500/25 bg-indigo-500/[0.08]";
-                        const statusLabel =
-                          c.status === "future_hire" ? "Future hire"
-                          : c.status === "do_not_hire" ? "Do not hire"
-                          : c.status.charAt(0).toUpperCase() + c.status.slice(1);
                         const isSelected = selectedCandidateIds.has(c.id);
-                        const alertStripe =
-                          c.status === "do_not_hire" ? "bg-rose-500"
-                          : c.status === "future_hire" ? "bg-amber-500"
-                          : null;
+                        const stage = (PIPELINE_STAGES as readonly string[]).includes(c.stage) ? (c.stage as PipelineStage) : "APPLIED";
+                        const flag = c.status === "do_not_hire" || c.status === "future_hire" || c.status === "archived";
+                        const initials = c.name.split(/\s+/).map((p) => p[0]).join("").slice(0, 2).toUpperCase();
                         return (
-                          <tr
-                            key={c.id}
-                            className={`group hover:bg-panel/30 transition-colors ${
-                              isSelected ? "bg-accent/[0.04]" : ""
-                            }`}
-                          >
-                            <td className="pl-4 pr-2 py-3 align-middle relative" onClick={(e) => e.stopPropagation()}>
-                              {alertStripe && (
-                                <span className={`absolute left-0 top-0 bottom-0 w-[3px] ${alertStripe}`} aria-hidden />
-                              )}
+                          <tr key={c.id} className={`group hover:bg-panel transition-colors ${isSelected ? "bg-panel" : ""}`}>
+                            <td className="pl-5 pr-2 py-3 align-middle" onClick={(e) => e.stopPropagation()}>
                               <input
                                 type="checkbox"
                                 checked={isSelected}
                                 onChange={() => toggleCandidateSelected(c.id)}
-                                className="w-3.5 h-3.5 rounded border-border bg-bg accent-accent cursor-pointer"
+                                className="w-4 h-4 rounded border-border bg-bg accent-[rgb(var(--c-accent-2))] cursor-pointer"
                                 aria-label={`Select ${c.name}`}
                               />
                             </td>
                             <td className="px-4 py-3 align-middle">
                               <Link href={`/w/${workspace.slug}/candidates/${c.id}`} className="flex items-center gap-3 min-w-0">
-                                <div className="w-8 h-8 rounded-lg bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-600 dark:text-indigo-300 text-[11px] font-semibold shrink-0">
-                                  {c.name.substring(0, 1).toUpperCase()}
-                                </div>
-                                <div className="min-w-0">
-                                  <div className="font-semibold text-fg text-sm truncate group-hover:text-accent transition-colors flex items-center gap-1.5">
+                                <span className="w-8 h-8 rounded-full bg-elevated flex items-center justify-center text-muted text-xs font-semibold shrink-0" aria-hidden>
+                                  {initials}
+                                </span>
+                                <span className="min-w-0">
+                                  <span className="flex items-center gap-2 text-sm font-medium text-fg truncate">
                                     {c.name}
-                                    {c.status === "do_not_hire" && (
-                                      <AlertTriangle className="w-3 h-3 text-rose-500 shrink-0" />
+                                    {flag && (
+                                      <span
+                                        className={`text-xs font-normal px-1.5 rounded border ${
+                                          c.status === "do_not_hire" ? "border-danger/50 text-danger" : "border-border-strong text-muted"
+                                        }`}
+                                      >
+                                        {humanize(c.status)}
+                                      </span>
                                     )}
-                                  </div>
-                                  {c.email && (
-                                    <div className="text-[11px] text-muted/70 font-mono mt-0.5 truncate">{c.email}</div>
-                                  )}
-                                </div>
+                                  </span>
+                                  {c.email && <span className="block text-[13px] text-subtle truncate">{c.email}</span>}
+                                </span>
                               </Link>
                             </td>
                             <td className="px-4 py-3 align-middle">
-                              <span className={`inline-flex items-center px-2 py-0.5 rounded-md border text-[10px] font-semibold uppercase tracking-wider ${statusColor}`}>
-                                {statusLabel}
+                              <span className="inline-flex items-center gap-1.5 h-6 px-2 rounded-md border border-border bg-panel text-xs text-fg whitespace-nowrap">
+                                <span className={`w-1.5 h-1.5 rounded-sm ${STAGE_SWATCH[stage]}`} aria-hidden />
+                                {STAGE_LABELS[stage]}
                               </span>
                             </td>
-                            <td className="px-4 py-3 align-middle text-[11px] text-muted capitalize">
-                              {c.source || "—"}
+                            <td className="px-4 py-3 align-middle text-[13px] text-muted whitespace-nowrap">
+                              {c.takeHomeCount + c.sessionCount === 0
+                                ? "None yet"
+                                : [
+                                    c.takeHomeCount > 0 ? plural(c.takeHomeCount, "take-home") : null,
+                                    c.sessionCount > 0 ? plural(c.sessionCount, "interview") : null,
+                                  ].filter(Boolean).join(" · ")}
                             </td>
+                            <td className="px-4 py-3 align-middle text-[13px] text-muted">{sourceLabel(c.source)}</td>
+                            <td className="px-4 py-3 align-middle text-[13px] text-subtle whitespace-nowrap">{relativeTime(c.updatedAt)}</td>
                             <td className="px-4 py-3 align-middle">
-                              <div className="flex items-center gap-3 text-[11px]">
-                                <span className="inline-flex items-center gap-1 text-fg">
-                                  <Clock className="w-3 h-3 text-purple-500/80" />
-                                  <span className="tabular-nums">{c.takeHomeCount}</span>
-                                </span>
-                                <span className="inline-flex items-center gap-1 text-fg">
-                                  <Briefcase className="w-3 h-3 text-violet-500/80" />
-                                  <span className="tabular-nums">{c.sessionCount}</span>
-                                </span>
-                              </div>
-                            </td>
-                            <td className="px-4 py-3 align-middle text-xs text-muted">{lastLabel}</td>
-                            <td className="px-4 py-3 align-middle">
-                              <ChevronRight className="w-4 h-4 text-muted/40 group-hover:text-accent transition-colors" />
+                              <ChevronRight className="w-4 h-4 text-subtle group-hover:text-fg transition-colors" aria-hidden />
                             </td>
                           </tr>
                         );
@@ -2304,14 +1965,14 @@ export default function WorkspaceDashboardClient({
               <div className="rounded-xl border border-border bg-surface p-5 space-y-4">
                 <div>
                   <h3 className="text-sm font-semibold text-fg flex items-center gap-1.5">
-                    <UserPlus className="w-4 h-4 text-indigo-500" /> Invite teammate
+                    <UserPlus className="w-4 h-4 text-secondary" /> Invite teammate
                   </h3>
                   <p className="text-xs text-muted mt-0.5">Add a colleague to this workspace.</p>
                 </div>
 
                 <form onSubmit={handleInviteTeammate} className="grid grid-cols-1 md:grid-cols-3 gap-3 items-end">
                   <div className="space-y-1">
-                    <label className="text-[10px] font-semibold uppercase tracking-wider text-muted">Email</label>
+                    <label className="text-xs font-semibold text-muted">Email</label>
                     <div className="relative flex items-center">
                       <Mail className="absolute left-3 w-3.5 h-3.5 text-muted/50" />
                       <input
@@ -2320,16 +1981,16 @@ export default function WorkspaceDashboardClient({
                         placeholder="colleague@company.com"
                         value={teammateEmail}
                         onChange={(e) => setTeammateEmail(e.target.value)}
-                        className="w-full pl-9 pr-3 py-2 rounded-md border border-border bg-bg text-fg text-xs focus:outline-none focus:border-accent/40"
+                        className="w-full pl-9 pr-3 py-2 rounded-md border border-border bg-bg text-fg text-xs focus:outline-none focus:border-secondary/40"
                       />
                     </div>
                   </div>
                   <div className="space-y-1">
-                    <label className="text-[10px] font-semibold uppercase tracking-wider text-muted">Role</label>
+                    <label className="text-xs font-semibold text-muted">Role</label>
                     <select
                       value={teammateRole}
                       onChange={(e) => setTeammateRole(e.target.value)}
-                      className="w-full px-3 py-2 rounded-md border border-border bg-bg text-fg text-xs focus:outline-none focus:border-accent/40"
+                      className="w-full px-3 py-2 rounded-md border border-border bg-bg text-fg text-xs focus:outline-none focus:border-secondary/40"
                     >
                       <option value="ADMIN">Admin</option>
                       <option value="RECRUITER">Recruiter</option>
@@ -2340,7 +2001,7 @@ export default function WorkspaceDashboardClient({
                   <button
                     type="submit"
                     disabled={inviting}
-                    className="w-full px-3 py-2 rounded-md bg-accent hover:bg-accent-soft text-bg text-[11px] font-semibold uppercase tracking-wider transition-colors disabled:opacity-50"
+                    className="w-full px-3 py-2 rounded-md bg-secondary hover:brightness-110 text-bg text-xs font-semibold transition-colors disabled:opacity-50"
                   >
                     {inviting ? "Inviting…" : "Invite"}
                   </button>
@@ -2357,12 +2018,12 @@ export default function WorkspaceDashboardClient({
                     {pendingInvites.map((inv) => (
                       <div key={inv.id} className="flex items-center justify-between gap-3 px-4 py-3">
                         <div className="flex items-center gap-3 min-w-0">
-                          <div className="w-8 h-8 rounded-lg bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-500 shrink-0">
+                          <div className="w-8 h-8 rounded-lg bg-warning/10 border border-warning/20 flex items-center justify-center text-warning shrink-0">
                             <Mail className="w-3.5 h-3.5" />
                           </div>
                           <div className="min-w-0">
                             <div className="text-xs font-semibold text-fg truncate">{inv.email}</div>
-                            <div className="text-[10px] text-muted uppercase tracking-wider">
+                            <div className="text-xs text-muted ">
                               {inv.role.toLowerCase()} · invited, awaiting acceptance
                             </div>
                           </div>
@@ -2370,7 +2031,7 @@ export default function WorkspaceDashboardClient({
                         <button
                           type="button"
                           onClick={() => handleRevokeInvite(inv.id)}
-                          className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md border border-border hover:border-rose-500/40 text-[11px] font-semibold text-muted hover:text-rose-500 transition-colors shrink-0"
+                          className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md border border-border hover:border-danger/40 text-xs font-semibold text-muted hover:text-danger transition-colors shrink-0"
                         >
                           <X className="w-3 h-3" /> Revoke
                         </button>
@@ -2406,7 +2067,7 @@ export default function WorkspaceDashboardClient({
                               className="w-9 h-9 rounded-lg border border-border bg-bg shrink-0"
                             />
                           ) : (
-                            <div className="w-9 h-9 rounded-lg bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-600 dark:text-indigo-300 text-xs font-semibold shrink-0">
+                            <div className="w-9 h-9 rounded-lg bg-secondary/10 border border-secondary/20 flex items-center justify-center text-secondary text-xs font-semibold shrink-0">
                               {m.user.name?.substring(0, 1).toUpperCase() || "U"}
                             </div>
                           )}
@@ -2414,7 +2075,7 @@ export default function WorkspaceDashboardClient({
                             <div className="text-sm font-semibold text-fg truncate">
                               {m.user.name || "Pending invite"}
                             </div>
-                            <div className="text-[11px] text-muted truncate font-mono mt-0.5">{m.user.email}</div>
+                            <div className="text-xs text-muted truncate font-mono mt-0.5">{m.user.email}</div>
                           </div>
                         </div>
                         <div className="flex items-center gap-2 shrink-0">
@@ -2423,7 +2084,7 @@ export default function WorkspaceDashboardClient({
                               value={m.role}
                               disabled={saving}
                               onChange={(e) => handleChangeRole(m.id, e.target.value)}
-                              className="px-2 py-1 rounded-md border border-border bg-bg text-fg text-[11px] focus:outline-none focus:border-accent/40 disabled:opacity-50"
+                              className="px-2 py-1 rounded-md border border-border bg-bg text-fg text-xs focus:outline-none focus:border-secondary/40 disabled:opacity-50"
                               title="Change role"
                             >
                               {WORKSPACE_ROLE_OPTIONS.map((opt) => (
@@ -2440,9 +2101,9 @@ export default function WorkspaceDashboardClient({
                             </select>
                           ) : (
                             <span
-                              className={`inline-flex items-center px-2 py-0.5 rounded-md border text-[10px] font-semibold uppercase tracking-wider ${roleBadgeClass(m.role)}`}
+                              className={`inline-flex items-center px-2 py-0.5 rounded-md border text-xs font-semibold ${roleBadgeClass(m.role)}`}
                             >
-                              {m.role}
+                              {humanize(m.role)}
                             </span>
                           )}
                           {canSetRoles && (
@@ -2451,7 +2112,7 @@ export default function WorkspaceDashboardClient({
                               onClick={() => setExpandedMemberId(isExpanded ? null : m.id)}
                               className={`w-7 h-7 rounded-md transition-colors cursor-pointer flex items-center justify-center ${
                                 isExpanded
-                                  ? "text-accent bg-accent/10"
+                                  ? "text-secondary bg-secondary/10"
                                   : "text-muted hover:text-fg hover:bg-panel"
                               }`}
                               title="Advanced permissions"
@@ -2465,7 +2126,7 @@ export default function WorkspaceDashboardClient({
                             <button
                               type="button"
                               onClick={() => handleRemoveTeammate(m.id)}
-                              className="w-7 h-7 rounded-md text-muted hover:text-rose-500 hover:bg-rose-500/10 transition-colors cursor-pointer flex items-center justify-center"
+                              className="w-7 h-7 rounded-md text-muted hover:text-danger hover:bg-danger/10 transition-colors cursor-pointer flex items-center justify-center"
                               title="Remove teammate"
                             >
                               <Trash2 className="w-3.5 h-3.5" />
@@ -2477,10 +2138,10 @@ export default function WorkspaceDashboardClient({
                       {isExpanded && effective && base && (
                         <div className="border-t border-border pt-3">
                           <div className="flex items-center justify-between mb-2">
-                            <span className="text-[10px] font-semibold uppercase tracking-wider text-muted">
+                            <span className="text-xs font-semibold text-muted">
                               Permissions
                             </span>
-                            <span className="text-[10px] text-muted">
+                            <span className="text-xs text-muted">
                               Overrides the <span className="font-semibold text-fg">{m.role}</span> defaults
                             </span>
                           </div>
@@ -2491,7 +2152,7 @@ export default function WorkspaceDashboardClient({
                               return (
                                 <label
                                   key={perm}
-                                  className="flex items-center gap-2 text-[11px] text-fg cursor-pointer select-none"
+                                  className="flex items-center gap-2 text-xs text-fg cursor-pointer select-none"
                                   title={perm}
                                 >
                                   <input
@@ -2499,13 +2160,13 @@ export default function WorkspaceDashboardClient({
                                     checked={checked}
                                     disabled={saving}
                                     onChange={(e) => handleToggleOverride(m, perm, e.target.checked)}
-                                    className="accent-accent w-3.5 h-3.5 disabled:opacity-50"
+                                    className="accent-secondary w-3.5 h-3.5 disabled:opacity-50"
                                   />
-                                  <span className={overridden ? "font-semibold text-accent" : ""}>
+                                  <span className={overridden ? "font-semibold text-secondary" : ""}>
                                     {PERMISSION_LABELS[perm] ?? perm}
                                   </span>
                                   {overridden && (
-                                    <span className="text-[9px] text-accent" title="Differs from role default">●</span>
+                                    <span className="text-xs text-secondary" title="Differs from role default">●</span>
                                   )}
                                 </label>
                               );
@@ -2534,13 +2195,13 @@ export default function WorkspaceDashboardClient({
                 <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                   <div className="space-y-2 min-w-0">
                     <div className="flex items-center gap-2">
-                      <span className="text-[10px] font-semibold uppercase tracking-wider text-muted">Current plan</span>
+                      <span className="text-xs font-semibold text-muted">Current plan</span>
                       <span
-                        className={`inline-flex items-center px-2 py-0.5 rounded-md border text-[10px] font-semibold uppercase tracking-wider ${
+                        className={`inline-flex items-center px-2 py-0.5 rounded-md border text-xs font-semibold ${
                           PLAN_BADGES[workspace.planName] || PLAN_BADGES.FREE
                         }`}
                       >
-                        {workspace.planName}
+                        {humanize(workspace.planName)}
                       </span>
                     </div>
                     <h4 className="text-base font-semibold text-fg">
@@ -2556,7 +2217,7 @@ export default function WorkspaceDashboardClient({
                   <button
                     onClick={handleTriggerBilling}
                     disabled={billingLoading}
-                    className="px-4 py-2 rounded-md bg-accent hover:bg-accent-soft text-bg text-[11px] font-semibold uppercase tracking-wider transition-colors shrink-0 disabled:opacity-50"
+                    className="px-4 py-2 rounded-md bg-secondary hover:brightness-110 text-bg text-xs font-semibold transition-colors shrink-0 disabled:opacity-50"
                   >
                     {billingLoading ? "Loading…" : workspace.planName === "GROWTH" ? "Manage billing" : "Upgrade plan"}
                   </button>
@@ -2570,7 +2231,7 @@ export default function WorkspaceDashboardClient({
                   <div className="flex items-center justify-between">
                     <div>
                       <h4 className="text-sm font-semibold text-fg">Seat allocation</h4>
-                      <p className="text-[11px] text-muted mt-0.5">Active billable seats.</p>
+                      <p className="text-xs text-muted mt-0.5">Active billable seats.</p>
                     </div>
                     <span className="text-lg font-semibold text-fg tabular-nums">
                       {currentMembers.length}
@@ -2584,23 +2245,23 @@ export default function WorkspaceDashboardClient({
                         <div
                           key={seat}
                           className={`h-full flex-1 transition-all ${
-                            seat <= currentMembers.length ? "bg-indigo-500" : "bg-panel"
+                            seat <= currentMembers.length ? "bg-secondary" : "bg-panel"
                           }`}
                         />
                       ))
                     ) : (
-                      <div className="h-full w-full bg-indigo-500 rounded-full" />
+                      <div className="h-full w-full bg-secondary rounded-full" />
                     )}
                   </div>
 
                   {workspace.planName === "FREE" ? (
-                    <p className="text-[11px] text-muted flex items-start gap-1.5 leading-relaxed">
-                      <AlertTriangle className="w-3.5 h-3.5 shrink-0 text-amber-500 mt-0.5" />
+                    <p className="text-xs text-muted flex items-start gap-1.5 leading-relaxed">
+                      <AlertTriangle className="w-3.5 h-3.5 shrink-0 text-warning mt-0.5" />
                       <span>Free workspaces are limited to 3 seats. Upgrade to scale beyond.</span>
                     </p>
                   ) : (
-                    <p className="text-[11px] text-muted flex items-start gap-1.5 leading-relaxed">
-                      <Sparkles className="w-3.5 h-3.5 shrink-0 text-indigo-500 mt-0.5" />
+                    <p className="text-xs text-muted flex items-start gap-1.5 leading-relaxed">
+                      <Sparkles className="w-3.5 h-3.5 shrink-0 text-secondary mt-0.5" />
                       <span>Growth billing scales with active seats at <span className="text-fg font-semibold">$49 / seat / month</span>.</span>
                     </p>
                   )}
@@ -2609,7 +2270,7 @@ export default function WorkspaceDashboardClient({
                 {/* Features list */}
                 <div className="rounded-xl border border-border bg-surface p-5 space-y-3">
                   <h4 className="text-sm font-semibold text-fg">Growth tier features</h4>
-                  <ul className="grid grid-cols-1 sm:grid-cols-2 gap-y-1.5 gap-x-3 text-[11px] text-muted">
+                  <ul className="grid grid-cols-1 sm:grid-cols-2 gap-y-1.5 gap-x-3 text-xs text-muted">
                     {[
                       "Unlimited candidates",
                       "Custom rubrics",
@@ -2621,7 +2282,7 @@ export default function WorkspaceDashboardClient({
                       "ATS & OAuth sync",
                     ].map((feat) => (
                       <li key={feat} className="flex items-center gap-1.5">
-                        <CheckCircle2 className="w-3 h-3 text-emerald-500 shrink-0" />
+                        <CheckCircle2 className="w-3 h-3 text-success shrink-0" />
                         <span>{feat}</span>
                       </li>
                     ))}
@@ -2643,23 +2304,23 @@ export default function WorkspaceDashboardClient({
                 {/* ATS */}
                 <div className="rounded-xl border border-border bg-surface p-5 space-y-4">
                   <div className="flex items-center gap-2.5">
-                    <div className="w-8 h-8 rounded-lg bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-500">
+                    <div className="w-8 h-8 rounded-lg bg-secondary/10 border border-secondary/20 flex items-center justify-center text-secondary">
                       <Sparkles className="w-3.5 h-3.5" />
                     </div>
                     <div>
                       <h4 className="text-sm font-semibold text-fg">Applicant Tracking System</h4>
-                      <p className="text-[11px] text-muted">Sync take-home invitations from your ATS.</p>
+                      <p className="text-xs text-muted">Sync take-home invitations from your ATS.</p>
                     </div>
                   </div>
 
                   <form onSubmit={handleSaveAts} className="space-y-3">
                     <div className="space-y-1">
-                      <label className="text-[10px] font-semibold uppercase tracking-wider text-muted">Provider</label>
+                      <label className="text-xs font-semibold text-muted">Provider</label>
                       <select
                         value={atsProvider}
                         onChange={(e) => setAtsProvider(e.target.value as any)}
                         disabled={atsActive}
-                        className="w-full px-3 py-2 rounded-md border border-border bg-bg text-fg text-xs focus:outline-none focus:border-accent/40 disabled:opacity-60"
+                        className="w-full px-3 py-2 rounded-md border border-border bg-bg text-fg text-xs focus:outline-none focus:border-secondary/40 disabled:opacity-60"
                       >
                         <option value="GREENHOUSE">Greenhouse</option>
                         <option value="LEVER">Lever</option>
@@ -2668,26 +2329,26 @@ export default function WorkspaceDashboardClient({
                     </div>
 
                     <div className="space-y-1">
-                      <label className="text-[10px] font-semibold uppercase tracking-wider text-muted">API key</label>
+                      <label className="text-xs font-semibold text-muted">API key</label>
                       <input
                         type="password"
                         placeholder={atsActive ? "••••••••••••••••" : "Paste your ATS API token"}
                         value={atsApiKey}
                         onChange={(e) => setAtsApiKey(e.target.value)}
                         disabled={atsActive}
-                        className="w-full px-3 py-2 rounded-md border border-border bg-bg text-fg text-xs focus:outline-none focus:border-accent/40 disabled:opacity-60"
+                        className="w-full px-3 py-2 rounded-md border border-border bg-bg text-fg text-xs focus:outline-none focus:border-secondary/40 disabled:opacity-60"
                       />
                     </div>
 
                     <div className="space-y-1">
-                      <label className="text-[10px] font-semibold uppercase tracking-wider text-muted">Webhook secret <span className="text-muted/60 font-normal">(optional)</span></label>
+                      <label className="text-xs font-semibold text-muted">Webhook secret <span className="text-muted/60 font-normal">(optional)</span></label>
                       <input
                         type="password"
                         placeholder={atsActive ? "••••••••••••••••" : "Webhook signature secret"}
                         value={atsWebhookSecret}
                         onChange={(e) => setAtsWebhookSecret(e.target.value)}
                         disabled={atsActive}
-                        className="w-full px-3 py-2 rounded-md border border-border bg-bg text-fg text-xs focus:outline-none focus:border-accent/40 disabled:opacity-60"
+                        className="w-full px-3 py-2 rounded-md border border-border bg-bg text-fg text-xs focus:outline-none focus:border-secondary/40 disabled:opacity-60"
                       />
                     </div>
 
@@ -2695,24 +2356,24 @@ export default function WorkspaceDashboardClient({
                       <button
                         type="submit"
                         disabled={atsLoading}
-                        className="w-full py-2 rounded-md bg-accent hover:bg-accent-soft text-bg text-[11px] font-semibold uppercase tracking-wider transition-colors disabled:opacity-50"
+                        className="w-full py-2 rounded-md bg-secondary hover:brightness-110 text-bg text-xs font-semibold transition-colors disabled:opacity-50"
                       >
                         {atsLoading ? "Connecting…" : "Connect"}
                       </button>
                     ) : (
                       <div className="space-y-3 pt-1">
-                        <div className="px-3 py-2 rounded-md bg-emerald-500/[0.06] border border-emerald-500/20 text-emerald-600 dark:text-emerald-400 text-[11px] font-semibold flex items-center gap-2">
+                        <div className="px-3 py-2 rounded-md bg-success/[0.06] border border-success/20 text-success text-xs font-semibold flex items-center gap-2">
                           <CheckCircle2 className="w-3.5 h-3.5 shrink-0" />
                           <span>Connected</span>
                         </div>
 
                         {atsSavedUrl && (
                           <div className="space-y-1">
-                            <span className="text-[10px] font-semibold uppercase tracking-wider text-muted">Webhook endpoint URL</span>
-                            <div className="px-2.5 py-2 rounded-md border border-border bg-bg font-mono text-[10px] text-fg select-all break-all">
+                            <span className="text-xs font-semibold text-muted">Webhook endpoint URL</span>
+                            <div className="px-2.5 py-2 rounded-md border border-border bg-bg font-mono text-xs text-fg select-all break-all">
                               {atsSavedUrl}
                             </div>
-                            <span className="text-[10px] text-muted/70 block mt-1">Add this URL to your ATS webhooks to trigger tests automatically.</span>
+                            <span className="text-xs text-muted/70 block mt-1">Add this URL to your ATS webhooks to trigger tests automatically.</span>
                           </div>
                         )}
 
@@ -2720,7 +2381,7 @@ export default function WorkspaceDashboardClient({
                           type="button"
                           onClick={handleDisconnectAts}
                           disabled={atsLoading}
-                          className="w-full py-2 rounded-md bg-rose-500/[0.06] border border-rose-500/25 hover:bg-rose-500/[0.1] text-rose-600 dark:text-rose-400 text-[11px] font-semibold uppercase tracking-wider transition-colors disabled:opacity-50"
+                          className="w-full py-2 rounded-md bg-danger/[0.06] border border-danger/25 hover:bg-danger/[0.1] text-danger text-xs font-semibold transition-colors disabled:opacity-50"
                         >
                           {atsLoading ? "Disconnecting…" : "Disconnect"}
                         </button>
@@ -2734,28 +2395,28 @@ export default function WorkspaceDashboardClient({
                     disconnected demo form. */}
                 <div className="rounded-xl border border-border bg-surface p-5 space-y-4">
                   <div className="flex items-center gap-2.5">
-                    <div className="w-8 h-8 rounded-lg bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-500">
+                    <div className="w-8 h-8 rounded-lg bg-secondary/10 border border-secondary/20 flex items-center justify-center text-secondary">
                       <Calendar className="w-3.5 h-3.5" />
                     </div>
                     <div>
                       <h4 className="text-sm font-semibold text-fg">Interview scheduling</h4>
-                      <p className="text-[11px] text-muted">Built into interview creation — no separate sync step.</p>
+                      <p className="text-xs text-muted">Built into interview creation — no separate sync step.</p>
                     </div>
                   </div>
                   <ul className="space-y-2 text-xs text-muted leading-relaxed">
                     <li className="flex items-start gap-2">
-                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500 shrink-0 mt-0.5" />
+                      <CheckCircle2 className="w-3.5 h-3.5 text-success shrink-0 mt-0.5" />
                       Pick a date &amp; time when you create the interview — the candidate gets an
                       invite email with the join link, access code, and scheduled slot.
                     </li>
                     <li className="flex items-start gap-2">
-                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500 shrink-0 mt-0.5" />
+                      <CheckCircle2 className="w-3.5 h-3.5 text-success shrink-0 mt-0.5" />
                       Candidates with an Interviewpad account also get an in-app notification.
                     </li>
                   </ul>
                   <Link
                     href={`/interview/new?workspaceSlug=${workspace.slug}`}
-                    className="inline-flex items-center gap-1.5 px-3 py-2 rounded-md bg-accent hover:bg-accent-soft text-bg text-[11px] font-semibold uppercase tracking-wider transition-colors"
+                    className="inline-flex items-center gap-1.5 px-3 py-2 rounded-md bg-secondary hover:brightness-110 text-bg text-xs font-semibold transition-colors"
                   >
                     <Plus className="w-3.5 h-3.5" />
                     Schedule an interview
@@ -2766,23 +2427,23 @@ export default function WorkspaceDashboardClient({
               {/* Sandbox */}
               <div className="rounded-xl border border-border bg-surface p-5 space-y-4">
                 <div className="flex items-center gap-2.5">
-                  <div className="w-8 h-8 rounded-lg bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-500">
+                  <div className="w-8 h-8 rounded-lg bg-secondary/10 border border-secondary/20 flex items-center justify-center text-secondary">
                     <Trophy className="w-3.5 h-3.5" />
                   </div>
                   <div>
                     <h4 className="text-sm font-semibold text-fg">Code sandbox</h4>
-                    <p className="text-[11px] text-muted">Run Python, Go, Java, or JS code in a sandboxed runtime.</p>
+                    <p className="text-xs text-muted">Run Python, Go, Java, or JS code in a sandboxed runtime.</p>
                   </div>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
                   <div className="md:col-span-4 space-y-3">
                     <div className="space-y-1">
-                      <label className="text-[10px] font-semibold uppercase tracking-wider text-muted">Language</label>
+                      <label className="text-xs font-semibold text-muted">Language</label>
                       <select
                         value={sandboxLang}
                         onChange={(e) => handleLangChange(e.target.value)}
-                        className="w-full px-3 py-2 rounded-md border border-border bg-bg text-fg text-xs focus:outline-none focus:border-accent/40"
+                        className="w-full px-3 py-2 rounded-md border border-border bg-bg text-fg text-xs focus:outline-none focus:border-secondary/40"
                       >
                         <option value="python">Python 3.11</option>
                         <option value="go">Go 1.21</option>
@@ -2792,19 +2453,19 @@ export default function WorkspaceDashboardClient({
                     </div>
 
                     <div className="space-y-1">
-                      <label className="text-[10px] font-semibold uppercase tracking-wider text-muted">Stdin input <span className="text-muted/60 font-normal">(optional)</span></label>
+                      <label className="text-xs font-semibold text-muted">Stdin input <span className="text-muted/60 font-normal">(optional)</span></label>
                       <textarea
                         placeholder="Input for the program's stdin…"
                         value={sandboxInput}
                         onChange={(e) => setSandboxInput(e.target.value)}
-                        className="w-full h-[80px] p-3 rounded-md border border-border bg-bg text-fg text-xs focus:outline-none focus:border-accent/40 resize-none"
+                        className="w-full h-[80px] p-3 rounded-md border border-border bg-bg text-fg text-xs focus:outline-none focus:border-secondary/40 resize-none"
                       />
                     </div>
 
                     <button
                       onClick={handleRunSandbox}
                       disabled={sandboxRunning}
-                      className="w-full py-2 rounded-md bg-accent hover:bg-accent-soft text-bg text-[11px] font-semibold uppercase tracking-wider transition-colors disabled:opacity-50"
+                      className="w-full py-2 rounded-md bg-secondary hover:brightness-110 text-bg text-xs font-semibold transition-colors disabled:opacity-50"
                     >
                       {sandboxRunning ? "Running…" : "Run"}
                     </button>
@@ -2812,18 +2473,18 @@ export default function WorkspaceDashboardClient({
 
                   <div className="md:col-span-8 flex flex-col gap-3">
                     <div className="flex-1 flex flex-col gap-1">
-                      <label className="text-[10px] font-semibold uppercase tracking-wider text-muted">Code</label>
+                      <label className="text-xs font-semibold text-muted">Code</label>
                       <textarea
                         value={sandboxCode}
                         onChange={(e) => setSandboxCode(e.target.value)}
-                        className="w-full min-h-[160px] flex-1 p-3 rounded-md border border-border bg-bg text-fg font-mono text-xs focus:outline-none focus:border-accent/40 leading-relaxed resize-y whitespace-pre"
+                        className="w-full min-h-[160px] flex-1 p-3 rounded-md border border-border bg-bg text-fg font-mono text-xs focus:outline-none focus:border-secondary/40 leading-relaxed resize-y whitespace-pre"
                       />
                     </div>
 
                     {sandboxOutput && (
                       <div className="space-y-1">
-                        <span className="text-[10px] font-semibold uppercase tracking-wider text-muted">Output</span>
-                        <pre className="font-mono text-[11px] text-emerald-600 dark:text-emerald-400 bg-bg border border-border rounded-md p-3 max-h-[140px] overflow-y-auto whitespace-pre-wrap leading-relaxed select-all">
+                        <span className="text-xs font-semibold text-muted">Output</span>
+                        <pre className="font-mono text-xs text-success bg-bg border border-border rounded-md p-3 max-h-[140px] overflow-y-auto whitespace-pre-wrap leading-relaxed select-all">
                           {sandboxOutput}
                         </pre>
                       </div>
@@ -2862,8 +2523,8 @@ export default function WorkspaceDashboardClient({
           >
             <div className="px-6 py-4 border-b border-border flex items-center justify-between bg-panel/30">
               <div className="flex items-center gap-2">
-                <Mail className="w-5 h-5 text-indigo-500" />
-                <h2 className="text-base font-semibold text-fg">Send Take-Home Assessment</h2>
+                <Mail className="w-5 h-5 text-secondary" />
+                <h2 className="text-base font-semibold text-fg">Send take-home assessment</h2>
               </div>
               <button
                 onClick={() => setQuickTakeHomeOpen(false)}
@@ -2876,44 +2537,44 @@ export default function WorkspaceDashboardClient({
             <form onSubmit={handleGenerateTakeHome} className="flex-1 overflow-y-auto p-6 space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-1">
-                  <label className="text-[10px] font-semibold uppercase tracking-wider text-muted">Candidate name</label>
+                  <label className="text-xs font-semibold text-muted">Candidate name</label>
                   <input
                     type="text"
                     required
                     placeholder="Candidate name"
                     value={candidateName}
                     onChange={(e) => setCandidateName(e.target.value)}
-                    className="w-full px-3 py-2 rounded-md border border-border bg-bg text-fg text-xs focus:outline-none focus:border-accent/40"
+                    className="w-full px-3 py-2 rounded-md border border-border bg-bg text-fg text-xs focus:outline-none focus:border-secondary/40"
                   />
                 </div>
                 <div className="space-y-1">
-                  <label className="text-[10px] font-semibold uppercase tracking-wider text-muted">Email</label>
+                  <label className="text-xs font-semibold text-muted">Email</label>
                   <input
                     type="email"
                     required
                     placeholder="candidate@example.com"
                     value={candidateEmail}
                     onChange={(e) => setCandidateEmail(e.target.value)}
-                    className="w-full px-3 py-2 rounded-md border border-border bg-bg text-fg text-xs focus:outline-none focus:border-accent/40"
+                    className="w-full px-3 py-2 rounded-md border border-border bg-bg text-fg text-xs focus:outline-none focus:border-secondary/40"
                   />
                 </div>
               </div>
 
               <div className="space-y-1">
-                <label className="text-[10px] font-semibold uppercase tracking-wider text-muted">Challenge</label>
+                <label className="text-xs font-semibold text-muted">Challenge</label>
                 <select
                   value={selectedChallengeId}
                   onChange={(e) => setSelectedChallengeId(e.target.value)}
-                  className="w-full px-3 py-2 rounded-md border border-border bg-bg text-fg text-xs focus:outline-none focus:border-accent/40"
+                  className="w-full px-3 py-2 rounded-md border border-border bg-bg text-fg text-xs focus:outline-none focus:border-secondary/40"
                 >
                   {quickChallenges.map((c) => (
                     <option key={c.id} value={c.id}>
-                      {c.title}{c.difficulty ? ` (${c.difficulty})` : ""}
+                      {c.title}{c.difficulty ? ` (${humanize(c.difficulty)})` : ""}
                     </option>
                   ))}
                 </select>
                 {quickChallenges.length === 0 && (
-                  <p className="text-[11px] text-amber-500 pt-1">
+                  <p className="text-xs text-warning pt-1">
                     No challenges available yet — use the multi-question builder below, or create a challenge first.
                   </p>
                 )}
@@ -2921,25 +2582,25 @@ export default function WorkspaceDashboardClient({
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1">
-                  <label className="text-[10px] font-semibold uppercase tracking-wider text-muted">Time limit (min)</label>
+                  <label className="text-xs font-semibold text-muted">Time limit (min)</label>
                   <input
                     type="number"
                     min={10}
                     max={480}
                     value={timeLimitMin}
                     onChange={(e) => setTimeLimitMin(parseInt(e.target.value, 10) || 60)}
-                    className="w-full px-3 py-2 rounded-md border border-border bg-bg text-fg text-xs focus:outline-none focus:border-accent/40"
+                    className="w-full px-3 py-2 rounded-md border border-border bg-bg text-fg text-xs focus:outline-none focus:border-secondary/40"
                   />
                 </div>
                 <div className="space-y-1">
-                  <label className="text-[10px] font-semibold uppercase tracking-wider text-muted">Expires in (days)</label>
+                  <label className="text-xs font-semibold text-muted">Expires in (days)</label>
                   <input
                     type="number"
                     min={1}
                     max={30}
                     value={daysToExpire}
                     onChange={(e) => setDaysToExpire(parseInt(e.target.value, 10) || 7)}
-                    className="w-full px-3 py-2 rounded-md border border-border bg-bg text-fg text-xs focus:outline-none focus:border-accent/40"
+                    className="w-full px-3 py-2 rounded-md border border-border bg-bg text-fg text-xs focus:outline-none focus:border-secondary/40"
                   />
                 </div>
               </div>
@@ -2947,7 +2608,7 @@ export default function WorkspaceDashboardClient({
               <button
                 type="submit"
                 disabled={generating || quickChallenges.length === 0}
-                className="w-full px-3 py-2.5 rounded-md bg-accent hover:bg-accent-soft text-bg text-[11px] font-semibold uppercase tracking-wider transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full px-3 py-2.5 rounded-md bg-secondary hover:brightness-110 text-bg text-xs font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {generating ? "Sending…" : "Send take-home invite"}
               </button>
@@ -2955,7 +2616,7 @@ export default function WorkspaceDashboardClient({
               <div className="text-center pt-1 border-t border-border">
                 <Link
                   href={`/w/${workspace.slug}/take-homes/new`}
-                  className="inline-flex items-center gap-1 pt-3 text-[11px] font-semibold text-accent hover:underline"
+                  className="inline-flex items-center gap-1 pt-3 text-xs font-semibold text-secondary hover:underline"
                 >
                   Need multiple questions? Open the full take-home builder
                   <ChevronRight className="w-3 h-3" />
@@ -2973,8 +2634,8 @@ export default function WorkspaceDashboardClient({
             {/* Header */}
             <div className="px-6 py-4 border-b border-border flex items-center justify-between bg-panel/30">
               <div className="flex items-center gap-2">
-                <Brain className="w-5 h-5 text-indigo-500 animate-pulse" />
-                <h2 className="text-base font-semibold text-fg">Create Custom Prompt Scenario</h2>
+                <Brain className="w-5 h-5 text-secondary animate-pulse" />
+                <h2 className="text-base font-semibold text-fg">Create custom prompt scenario</h2>
               </div>
               <button
                 onClick={() => setCreatePromptOpen(false)}
@@ -2988,18 +2649,18 @@ export default function WorkspaceDashboardClient({
             <form onSubmit={handleCreateScenario} className="flex-1 overflow-y-auto p-6 space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-1">
-                  <label className="text-[10px] font-semibold uppercase tracking-wider text-muted">Scenario Title</label>
+                  <label className="text-xs font-semibold text-muted">Scenario title</label>
                   <input
                     type="text"
                     required
                     placeholder="e.g., Write a Rest API Spec Generator prompt"
                     value={scenarioTitle}
                     onChange={(e) => setScenarioTitle(e.target.value)}
-                    className="w-full px-3 py-2 rounded-md border border-border bg-bg text-fg text-xs focus:outline-none focus:border-accent/40"
+                    className="w-full px-3 py-2 rounded-md border border-border bg-bg text-fg text-xs focus:outline-none focus:border-secondary/40"
                   />
                 </div>
                 <div className="space-y-1">
-                  <label className="text-[10px] font-semibold uppercase tracking-wider text-muted">Estimated Duration (Minutes)</label>
+                  <label className="text-xs font-semibold text-muted">Estimated Duration (Minutes)</label>
                   <input
                     type="number"
                     min="1"
@@ -3007,33 +2668,33 @@ export default function WorkspaceDashboardClient({
                     required
                     value={scenarioEstMin}
                     onChange={(e) => setScenarioEstMin(e.target.value)}
-                    className="w-full px-3 py-2 rounded-md border border-border bg-bg text-fg text-xs focus:outline-none focus:border-accent/40"
+                    className="w-full px-3 py-2 rounded-md border border-border bg-bg text-fg text-xs focus:outline-none focus:border-secondary/40"
                   />
                 </div>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-1">
-                  <label className="text-[10px] font-semibold uppercase tracking-wider text-muted">Category</label>
+                  <label className="text-xs font-semibold text-muted">Category</label>
                   <select
                     value={scenarioCategory}
                     onChange={(e) => setScenarioCategory(e.target.value)}
-                    className="w-full px-3 py-2 rounded-md border border-border bg-bg text-fg text-xs focus:outline-none focus:border-accent/40"
+                    className="w-full px-3 py-2 rounded-md border border-border bg-bg text-fg text-xs focus:outline-none focus:border-secondary/40"
                   >
-                    <option value="code-generation">Code Generation</option>
+                    <option value="code-generation">Code generation</option>
                     <option value="debugging">Debugging</option>
                     <option value="api-design">API Design</option>
-                    <option value="data-analysis">Data Analysis</option>
-                    <option value="system-design">System Design</option>
+                    <option value="data-analysis">Data analysis</option>
+                    <option value="system-design">System design</option>
                     <option value="creative">Creative / Docs</option>
                   </select>
                 </div>
                 <div className="space-y-1">
-                  <label className="text-[10px] font-semibold uppercase tracking-wider text-muted">Difficulty</label>
+                  <label className="text-xs font-semibold text-muted">Difficulty</label>
                   <select
                     value={scenarioDifficulty}
                     onChange={(e) => setScenarioDifficulty(e.target.value)}
-                    className="w-full px-3 py-2 rounded-md border border-border bg-bg text-fg text-xs focus:outline-none focus:border-accent/40"
+                    className="w-full px-3 py-2 rounded-md border border-border bg-bg text-fg text-xs focus:outline-none focus:border-secondary/40"
                   >
                     <option value="beginner">Beginner</option>
                     <option value="intermediate">Intermediate</option>
@@ -3043,65 +2704,65 @@ export default function WorkspaceDashboardClient({
               </div>
 
               <div className="space-y-1">
-                <label className="text-[10px] font-semibold uppercase tracking-wider text-muted">Scenario Description (Markdown support)</label>
-                <p className="text-[10px] text-muted -mt-0.5">Describe the context, the system setting, or the background information.</p>
+                <label className="text-xs font-semibold text-muted">Scenario Description (Markdown support)</label>
+                <p className="text-xs text-muted -mt-0.5">Describe the context, the system setting, or the background information.</p>
                 <textarea
                   required
                   placeholder="Provide background context here..."
                   value={scenarioDesc}
                   onChange={(e) => setScenarioDesc(e.target.value)}
-                  className="w-full h-24 p-3 rounded-md border border-border bg-bg text-fg text-xs focus:outline-none focus:border-accent/40 resize-y"
+                  className="w-full h-24 p-3 rounded-md border border-border bg-bg text-fg text-xs focus:outline-none focus:border-secondary/40 resize-y"
                 />
               </div>
 
               <div className="space-y-1">
-                <label className="text-[10px] font-semibold uppercase tracking-wider text-muted">Objective / Task Goal</label>
-                <p className="text-[10px] text-muted -mt-0.5">Explain exactly what the user's prompt needs to achieve.</p>
+                <label className="text-xs font-semibold text-muted">Objective / Task Goal</label>
+                <p className="text-xs text-muted -mt-0.5">Explain exactly what the user's prompt needs to achieve.</p>
                 <textarea
                   required
                   placeholder="State the objective clearly..."
                   value={scenarioObjective}
                   onChange={(e) => setScenarioObjective(e.target.value)}
-                  className="w-full h-20 p-3 rounded-md border border-border bg-bg text-fg text-xs focus:outline-none focus:border-accent/40 resize-y"
+                  className="w-full h-20 p-3 rounded-md border border-border bg-bg text-fg text-xs focus:outline-none focus:border-secondary/40 resize-y"
                 />
               </div>
 
               <div className="border-t border-border/60 pt-4 space-y-3">
-                <h4 className="text-xs font-semibold text-fg flex items-center gap-1.5 text-indigo-400">
+                <h4 className="text-xs font-semibold text-fg flex items-center gap-1.5 text-secondary">
                   <Sparkles className="w-3.5 h-3.5" /> Grading Helper Traits (Keywords & Constraints)
                 </h4>
                 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-1">
-                    <label className="text-[10px] font-semibold uppercase tracking-wider text-muted">Expected Keywords (Comma-separated)</label>
+                    <label className="text-xs font-semibold text-muted">Expected Keywords (Comma-separated)</label>
                     <input
                       type="text"
                       placeholder="e.g., sort, filter, pagination, typescript"
                       value={scenarioKeywords}
                       onChange={(e) => setScenarioKeywords(e.target.value)}
-                      className="w-full px-3 py-2 rounded-md border border-border bg-bg text-fg text-xs focus:outline-none focus:border-accent/40"
+                      className="w-full px-3 py-2 rounded-md border border-border bg-bg text-fg text-xs focus:outline-none focus:border-secondary/40"
                     />
                   </div>
                   <div className="space-y-1">
-                    <label className="text-[10px] font-semibold uppercase tracking-wider text-muted">Output Format Expectation</label>
+                    <label className="text-xs font-semibold text-muted">Output format expectation</label>
                     <input
                       type="text"
                       placeholder="e.g., JSON, markdown codeblock, yaml"
                       value={scenarioFormat}
                       onChange={(e) => setScenarioFormat(e.target.value)}
-                      className="w-full px-3 py-2 rounded-md border border-border bg-bg text-fg text-xs focus:outline-none focus:border-accent/40"
+                      className="w-full px-3 py-2 rounded-md border border-border bg-bg text-fg text-xs focus:outline-none focus:border-secondary/40"
                     />
                   </div>
                 </div>
 
                 <div className="space-y-1">
-                  <label className="text-[10px] font-semibold uppercase tracking-wider text-muted">Negative Constraints (One per line)</label>
-                  <p className="text-[10px] text-muted -mt-0.5">Things the prompt must avoid or instruct the AI not to do.</p>
+                  <label className="text-xs font-semibold text-muted">Negative Constraints (One per line)</label>
+                  <p className="text-xs text-muted -mt-0.5">Things the prompt must avoid or instruct the AI not to do.</p>
                   <textarea
                     placeholder="e.g., No external styling libraries&#10;Do not use inline styles"
                     value={scenarioConstraints}
                     onChange={(e) => setScenarioConstraints(e.target.value)}
-                    className="w-full h-16 p-3 rounded-md border border-border bg-bg text-fg text-xs focus:outline-none focus:border-accent/40 resize-y"
+                    className="w-full h-16 p-3 rounded-md border border-border bg-bg text-fg text-xs focus:outline-none focus:border-secondary/40 resize-y"
                   />
                 </div>
               </div>
@@ -3118,9 +2779,9 @@ export default function WorkspaceDashboardClient({
                 <button
                   type="submit"
                   disabled={creatingScenario}
-                  className="px-4 py-2 rounded-md bg-accent hover:bg-accent-soft text-bg text-xs font-semibold tracking-wider transition-colors disabled:opacity-50"
+                  className="px-4 py-2 rounded-md bg-secondary hover:brightness-110 text-bg text-xs font-semibold transition-colors disabled:opacity-50"
                 >
-                  {creatingScenario ? "Creating..." : "Create Scenario"}
+                  {creatingScenario ? "Creating..." : "Create scenario"}
                 </button>
               </div>
             </form>
@@ -3144,10 +2805,10 @@ export default function WorkspaceDashboardClient({
               {/* Header */}
               <div className="px-6 py-4 border-b border-border flex items-center justify-between bg-panel/30">
                 <div className="flex items-center gap-2.5">
-                  <Brain className="w-5 h-5 text-indigo-500 animate-pulse" />
+                  <Brain className="w-5 h-5 text-secondary animate-pulse" />
                   <div>
-                    <h2 className="text-base font-semibold text-fg">Prompt Evaluation Review</h2>
-                    <p className="text-[10px] text-muted mt-0.5">
+                    <h2 className="text-base font-semibold text-fg">Prompt evaluation review</h2>
+                    <p className="text-xs text-muted mt-0.5">
                       Candidate: <span className="text-fg font-medium">{candidateName}</span> &bull; Scenario: <span className="text-fg font-medium">{selectedAttempt.scenarioTitle}</span>
                     </p>
                   </div>
@@ -3166,16 +2827,16 @@ export default function WorkspaceDashboardClient({
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   {/* Left: Overall score circle */}
                   <div className="bg-panel/20 border border-border/60 rounded-xl p-4 flex flex-col items-center justify-center text-center relative overflow-hidden">
-                    <div className="absolute top-2 right-2 flex items-center gap-1 text-[9px] font-semibold uppercase tracking-wider text-indigo-400 bg-indigo-500/10 px-1.5 py-0.5 rounded">
-                      <Sparkles className="w-2.5 h-2.5" /> {selectedAttempt.graderType === "ai" ? "Gemini AI" : "Rules Grader"}
+                    <div className="absolute top-2 right-2 flex items-center gap-1 text-xs font-semibold text-secondary bg-secondary/10 px-1.5 py-0.5 rounded">
+                      <Sparkles className="w-2.5 h-2.5" /> {selectedAttempt.graderType === "ai" ? "Gemini AI" : "Rules grader"}
                     </div>
                     
-                    <span className="text-[10px] font-bold text-muted uppercase tracking-wider">Overall Score</span>
+                    <span className="text-xs font-bold text-muted ">Overall score</span>
                     <div className="relative flex items-center justify-center my-2">
-                      <div className="text-4xl font-extrabold text-indigo-500">{selectedAttempt.score ?? 0}</div>
+                      <div className="text-4xl font-semibold text-secondary">{selectedAttempt.score ?? 0}</div>
                       <div className="text-xs text-muted/60 self-end mb-1">/100</div>
                     </div>
-                    <span className="text-[10px] text-muted mt-1">
+                    <span className="text-xs text-muted mt-1">
                       {selectedAttempt.durationSec ? `${Math.round(selectedAttempt.durationSec / 60)}m taken` : "Untimed"} &bull; {selectedAttempt.tokenEstimate} tokens
                     </span>
                   </div>
@@ -3193,13 +2854,13 @@ export default function WorkspaceDashboardClient({
                         "Edge Cases": rubric.edgeCases
                       }).map(([key, val]) => {
                         const score = Number(val || 0);
-                        let barColor = "bg-rose-500";
-                        if (score >= 75) barColor = "bg-emerald-500";
-                        else if (score >= 50) barColor = "bg-amber-500";
+                        let barColor = "bg-danger";
+                        if (score >= 75) barColor = "bg-success";
+                        else if (score >= 50) barColor = "bg-warning";
                         
                         return (
                           <div key={key} className="space-y-1">
-                            <div className="flex justify-between text-[10px]">
+                            <div className="flex justify-between text-xs">
                               <span className="text-muted font-medium">{key}</span>
                               <span className="text-fg font-semibold">{score}%</span>
                             </div>
@@ -3215,8 +2876,8 @@ export default function WorkspaceDashboardClient({
 
                 {/* AI Feedback */}
                 {selectedAttempt.feedback && (
-                  <div className="bg-indigo-500/[0.03] border border-indigo-500/20 rounded-xl p-4 space-y-2">
-                    <h3 className="text-xs font-semibold text-indigo-400 flex items-center gap-1.5">
+                  <div className="bg-secondary/[0.03] border border-secondary/20 rounded-xl p-4 space-y-2">
+                    <h3 className="text-xs font-semibold text-secondary flex items-center gap-1.5">
                       <Sparkles className="w-3.5 h-3.5" /> Evaluator Feedback Insights
                     </h3>
                     <p className="text-xs text-muted leading-relaxed whitespace-pre-wrap font-sans">
@@ -3234,12 +2895,12 @@ export default function WorkspaceDashboardClient({
                         navigator.clipboard.writeText(selectedAttempt.promptText);
                         toast.success("Prompt copied to clipboard!");
                       }}
-                      className="inline-flex items-center gap-1 text-[10px] text-muted hover:text-fg hover:bg-panel px-2 py-1 rounded border border-border/40 transition-colors"
+                      className="inline-flex items-center gap-1 text-xs text-muted hover:text-fg hover:bg-panel px-2 py-1 rounded border border-border/40 transition-colors"
                     >
                       <Copy className="w-3 h-3" /> Copy Prompt
                     </button>
                   </div>
-                  <pre className="font-mono text-xs text-fg leading-relaxed bg-bg border border-border rounded-lg p-4 max-h-[220px] overflow-y-auto whitespace-pre-wrap select-text selection:bg-indigo-500/25">
+                  <pre className="font-mono text-xs text-fg leading-relaxed bg-bg border border-border rounded-lg p-4 max-h-[220px] overflow-y-auto whitespace-pre-wrap select-text selection:bg-secondary/25">
                     {selectedAttempt.promptText}
                   </pre>
                 </div>
@@ -3249,9 +2910,9 @@ export default function WorkspaceDashboardClient({
               <div className="flex justify-end bg-panel/30 border-t border-border px-6 py-4">
                 <button
                   onClick={() => setSelectedAttempt(null)}
-                  className="px-4 py-2 bg-accent hover:bg-accent-soft text-bg rounded-md text-xs font-semibold tracking-wider transition-colors"
+                  className="px-4 py-2 bg-secondary hover:brightness-110 text-bg rounded-md text-xs font-semibold transition-colors"
                 >
-                  Close Review
+                  Close review
                 </button>
               </div>
             </div>
@@ -3297,7 +2958,7 @@ export function PromptAttemptsSection({
       {/* Filters and search */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
         <div>
-          <h3 className="text-sm font-semibold text-fg">Prompt Evaluation Roster</h3>
+          <h3 className="text-sm font-semibold text-fg">Prompt evaluation roster</h3>
           <p className="text-xs text-muted mt-0.5">Review submissions from candidates and developers.</p>
         </div>
         <div className="w-full sm:w-64 relative">
@@ -3306,7 +2967,7 @@ export function PromptAttemptsSection({
             placeholder="Search candidate or scenario..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-8 pr-3 py-1.5 rounded-md border border-border bg-bg text-fg text-xs focus:outline-none focus:border-accent/40"
+            className="w-full pl-8 pr-3 py-1.5 rounded-md border border-border bg-bg text-fg text-xs focus:outline-none focus:border-secondary/40"
           />
           <Search className="w-3.5 h-3.5 text-muted/60 absolute left-2.5 top-1/2 -translate-y-1/2" />
         </div>
@@ -3319,7 +2980,7 @@ export function PromptAttemptsSection({
           </div>
           <div>
             <h4 className="text-xs font-semibold text-fg">No attempts found</h4>
-            <p className="text-[11px] text-muted mt-1 max-w-[280px] mx-auto leading-relaxed">
+            <p className="text-xs text-muted mt-1 max-w-[280px] mx-auto leading-relaxed">
               When candidates complete prompt engineering rounds, their detailed scores and feedback will appear here.
             </p>
           </div>
@@ -3329,13 +2990,13 @@ export function PromptAttemptsSection({
           <div className="overflow-x-auto">
             <table className="w-full border-collapse text-left">
               <thead>
-                <tr className="border-b border-border bg-panel/30 text-[10px] font-semibold uppercase tracking-wider text-muted select-none">
+                <tr className="border-b border-border bg-panel/30 text-xs font-semibold text-muted select-none">
                   <th className="px-4 py-3 align-middle font-semibold">Candidate</th>
                   <th className="px-4 py-3 align-middle font-semibold">Scenario</th>
                   <th className="px-4 py-3 align-middle font-semibold">Score</th>
                   <th className="px-4 py-3 align-middle font-semibold">Tokens</th>
                   <th className="px-4 py-3 align-middle font-semibold">Grader</th>
-                  <th className="px-4 py-3 align-middle font-semibold">Submitted At</th>
+                  <th className="px-4 py-3 align-middle font-semibold">Submitted at</th>
                   <th className="px-4 py-3 align-middle text-right font-semibold">Action</th>
                 </tr>
               </thead>
@@ -3346,43 +3007,43 @@ export function PromptAttemptsSection({
                   
                   // Score styling
                   const score = a.score ?? 0;
-                  let scoreColor = "text-rose-500 bg-rose-500/10 border-rose-500/20";
-                  if (score >= 75) scoreColor = "text-emerald-500 bg-emerald-500/10 border-emerald-500/20";
-                  else if (score >= 50) scoreColor = "text-amber-500 bg-amber-500/10 border-amber-500/20";
+                  let scoreColor = "text-danger bg-danger/10 border-danger/20";
+                  if (score >= 75) scoreColor = "text-success bg-success/10 border-success/20";
+                  else if (score >= 50) scoreColor = "text-warning bg-warning/10 border-warning/20";
 
                   return (
                     <tr key={a.id} className="hover:bg-panel/10 text-xs transition-colors group">
                       <td className="px-4 py-3.5 align-middle">
                         <div className="flex flex-col">
-                          <span className="font-semibold text-fg group-hover:text-indigo-400 transition-colors">{name}</span>
-                          <span className="text-[10px] text-muted mt-0.5 font-mono">
-                            {isSession ? "Interview Session" : "Practice Mode"}
+                          <span className="font-semibold text-fg group-hover:text-secondary transition-colors">{name}</span>
+                          <span className="text-xs text-muted mt-0.5 font-mono">
+                            {isSession ? "Interview session" : "Practice mode"}
                           </span>
                         </div>
                       </td>
                       <td className="px-4 py-3.5 align-middle">
                         <div className="flex flex-col">
                           <span className="font-medium text-fg">{a.scenarioTitle}</span>
-                          <span className="text-[10px] text-muted mt-0.5 capitalize">
+                          <span className="text-xs text-muted mt-0.5 capitalize">
                             {a.scenarioCategory.replace("-", " ")} &bull; {a.scenarioDifficulty}
                           </span>
                         </div>
                       </td>
                       <td className="px-4 py-3.5 align-middle">
-                        <span className={`inline-flex items-center px-2 py-0.5 rounded-full border text-[11px] font-bold ${scoreColor}`}>
+                        <span className={`inline-flex items-center px-2 py-0.5 rounded-full border text-xs font-bold ${scoreColor}`}>
                           {a.score !== null ? `${a.score}%` : "Ungraded"}
                         </span>
                       </td>
-                      <td className="px-4 py-3.5 align-middle font-mono text-[11px] text-muted">
+                      <td className="px-4 py-3.5 align-middle font-mono text-xs text-muted">
                         {a.tokenEstimate}
                       </td>
                       <td className="px-4 py-3.5 align-middle">
                         {a.graderType === "ai" ? (
-                          <span className="inline-flex items-center gap-1 text-[10px] font-medium text-indigo-400">
+                          <span className="inline-flex items-center gap-1 text-xs font-medium text-secondary">
                             <Sparkles className="w-2.5 h-2.5" /> Gemini AI
                           </span>
                         ) : (
-                          <span className="text-[10px] text-muted">Rules Engine</span>
+                          <span className="text-xs text-muted">Rules engine</span>
                         )}
                       </td>
                       <td className="px-4 py-3.5 align-middle text-muted">
@@ -3396,7 +3057,7 @@ export function PromptAttemptsSection({
                       <td className="px-4 py-3.5 align-middle text-right">
                         <button
                           onClick={() => onSelectAttempt(a)}
-                          className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-accent/10 border border-accent/25 text-[11px] font-semibold text-accent hover:bg-accent/15 transition-colors"
+                          className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-secondary/10 border border-secondary/25 text-xs font-semibold text-secondary hover:bg-secondary/15 transition-colors"
                         >
                           <Eye className="w-3 h-3" />
                           Review
@@ -3445,21 +3106,21 @@ export function ScenarioLibrarySection({
       {/* Header and Add Button */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
         <div>
-          <h3 className="text-sm font-semibold text-fg">Prompt Challenges Library</h3>
+          <h3 className="text-sm font-semibold text-fg">Prompt challenges library</h3>
           <p className="text-xs text-muted mt-0.5">Manage custom challenges or review platform built-in ones.</p>
         </div>
         <button
           onClick={onOpenCreateModal}
-          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-indigo-600 hover:bg-indigo-500 text-white text-[11px] font-semibold uppercase tracking-wider transition-colors"
+          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-secondary hover:brightness-110 text-bg text-xs font-semibold transition-colors"
         >
           <Plus className="w-3.5 h-3.5" />
-          Create Custom Scenario
+          Create custom scenario
         </button>
       </div>
 
       {/* Filters */}
       <div className="flex flex-wrap gap-2 items-center bg-panel/10 p-2 border border-border/40 rounded-lg">
-        <span className="text-[10px] font-bold text-muted uppercase tracking-wider px-2">Filters:</span>
+        <span className="text-xs font-bold text-muted px-2">Filters:</span>
         
         {/* Difficulty */}
         <select
@@ -3467,7 +3128,7 @@ export function ScenarioLibrarySection({
           onChange={(e) => setDifficultyFilter(e.target.value)}
           className="px-2 py-1 bg-bg border border-border rounded text-xs text-muted focus:outline-none"
         >
-          <option value="all">All Difficulties</option>
+          <option value="all">All difficulties</option>
           <option value="beginner">Beginner</option>
           <option value="intermediate">Intermediate</option>
           <option value="advanced">Advanced</option>
@@ -3479,16 +3140,16 @@ export function ScenarioLibrarySection({
           onChange={(e) => setCategoryFilter(e.target.value)}
           className="px-2 py-1 bg-bg border border-border rounded text-xs text-muted focus:outline-none"
         >
-          <option value="all">All Categories</option>
-          <option value="code-generation">Code Generation</option>
+          <option value="all">All categories</option>
+          <option value="code-generation">Code generation</option>
           <option value="debugging">Debugging</option>
           <option value="api-design">API Design</option>
-          <option value="data-analysis">Data Analysis</option>
-          <option value="system-design">System Design</option>
+          <option value="data-analysis">Data analysis</option>
+          <option value="system-design">System design</option>
           <option value="creative">Creative / Docs</option>
         </select>
 
-        <span className="text-[10px] text-muted/60 ml-auto pr-2 font-mono">
+        <span className="text-xs text-muted/60 ml-auto pr-2 font-mono">
           Showing {filteredScenarios.length} scenarios
         </span>
       </div>
@@ -3500,7 +3161,7 @@ export function ScenarioLibrarySection({
           </div>
           <div>
             <h4 className="text-xs font-semibold text-fg">No scenarios match your filters</h4>
-            <p className="text-[11px] text-muted mt-1">Try adjusting your filters or create a custom one.</p>
+            <p className="text-xs text-muted mt-1">Try adjusting your filters or create a custom one.</p>
           </div>
         </div>
       ) : (
@@ -3509,45 +3170,45 @@ export function ScenarioLibrarySection({
             const isCustom = s.workspaceId !== null;
             
             // Diff badge
-            let diffColor = "text-emerald-500 bg-emerald-500/10 border-emerald-500/20";
-            if (s.difficulty === "intermediate") diffColor = "text-amber-500 bg-amber-500/10 border-amber-500/20";
-            else if (s.difficulty === "advanced") diffColor = "text-rose-500 bg-rose-500/10 border-rose-500/20";
+            let diffColor = "text-success bg-success/10 border-success/20";
+            if (s.difficulty === "intermediate") diffColor = "text-warning bg-warning/10 border-warning/20";
+            else if (s.difficulty === "advanced") diffColor = "text-danger bg-danger/10 border-danger/20";
 
             return (
               <div
                 key={s.id}
-                className="group relative flex flex-col bg-surface border border-border hover:border-indigo-500/40 rounded-xl p-5 hover:shadow-lg transition-all duration-300 overflow-hidden"
+                className="group relative flex flex-col bg-surface border border-border hover:border-secondary/40 rounded-xl p-5 hover:shadow-lg transition-all duration-300 overflow-hidden"
               >
                 <div className="flex items-start justify-between">
                   <div className="flex items-center gap-1.5">
-                    <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-bold border uppercase tracking-wider ${diffColor}`}>
-                      {s.difficulty}
+                    <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-xs font-bold border ${diffColor}`}>
+                      {humanize(s.difficulty)}
                     </span>
-                    <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-medium bg-panel/60 border border-border text-muted uppercase tracking-wider">
+                    <span className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-panel/60 border border-border text-muted ">
                       {s.category.replace("-", " ")}
                     </span>
                   </div>
                   
                   {isCustom ? (
-                    <span className="text-[9px] font-bold text-indigo-400 bg-indigo-500/10 px-1.5 py-0.5 rounded border border-indigo-500/20 uppercase tracking-wider animate-pulse">
+                    <span className="text-xs font-bold text-secondary bg-secondary/10 px-1.5 py-0.5 rounded border border-secondary/20 animate-pulse">
                       Custom
                     </span>
                   ) : (
-                    <span className="text-[9px] font-medium text-muted bg-panel px-1.5 py-0.5 rounded border border-border uppercase tracking-wider">
+                    <span className="text-xs font-medium text-muted bg-panel px-1.5 py-0.5 rounded border border-border ">
                       Platform Built-in
                     </span>
                   )}
                 </div>
 
-                <h4 className="text-sm font-semibold text-fg group-hover:text-indigo-400 transition-colors mt-3">
+                <h4 className="text-sm font-semibold text-fg group-hover:text-secondary transition-colors mt-3">
                   {s.title}
                 </h4>
 
-                <p className="text-[11px] text-muted mt-2 line-clamp-2 leading-relaxed">
+                <p className="text-xs text-muted mt-2 line-clamp-2 leading-relaxed">
                   {s.description}
                 </p>
 
-                <div className="mt-4 pt-4 border-t border-border/40 flex items-center justify-between text-[11px] text-muted">
+                <div className="mt-4 pt-4 border-t border-border/40 flex items-center justify-between text-xs text-muted">
                   <div className="flex items-center gap-1 font-medium">
                     <Clock className="w-3.5 h-3.5 text-muted/60" />
                     <span>Est. {s.estimatedMinutes} mins</span>
@@ -3559,7 +3220,7 @@ export function ScenarioLibrarySection({
                         e.stopPropagation();
                         onDeleteScenario(s.id);
                       }}
-                      className="inline-flex items-center gap-1 text-rose-500 hover:text-rose-400 hover:bg-rose-500/10 px-2 py-1 rounded transition-all"
+                      className="inline-flex items-center gap-1 text-danger hover:text-danger hover:bg-danger/10 px-2 py-1 rounded transition-all"
                     >
                       <Trash2 className="w-3 h-3" /> Delete
                     </button>

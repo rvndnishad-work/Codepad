@@ -199,12 +199,12 @@ export default function BulkAddCandidatesDialog({ open, onClose, workspaceSlug }
       <div className="relative w-full max-w-2xl rounded-xl border border-border bg-surface shadow-2xl animate-in zoom-in-95 fade-in duration-150 max-h-[85vh] flex flex-col">
         <div className="flex items-start justify-between gap-3 px-5 py-4 border-b border-border shrink-0">
           <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-500">
+            <div className="w-8 h-8 rounded-lg bg-secondary/10 border border-secondary/20 flex items-center justify-center text-secondary">
               <Upload className="w-4 h-4" />
             </div>
             <div>
               <h3 className="text-sm font-semibold text-fg">Bulk add candidates</h3>
-              <p className="text-[11px] text-muted mt-0.5">
+              <p className="text-xs text-muted mt-0.5">
                 Paste rows — one candidate per line. Comma or tab separated.
               </p>
             </div>
@@ -214,7 +214,7 @@ export default function BulkAddCandidatesDialog({ open, onClose, workspaceSlug }
               <button
                 type="button"
                 onClick={() => downloadTemplate("csv")}
-                className="inline-flex items-center gap-1 px-2 py-1.5 rounded-md border border-border bg-bg hover:bg-panel/40 text-muted hover:text-fg transition-colors text-[11px] font-medium"
+                className="inline-flex items-center gap-1 px-2 py-1.5 rounded-md border border-border bg-bg hover:bg-panel/40 text-muted hover:text-fg transition-colors text-xs font-medium"
                 title="Download CSV template (name,email,phone,notes) — opens in Excel & Sheets"
               >
                 <FileSpreadsheet className="w-3.5 h-3.5" />
@@ -223,7 +223,7 @@ export default function BulkAddCandidatesDialog({ open, onClose, workspaceSlug }
               <button
                 type="button"
                 onClick={() => downloadTemplate("xlsx")}
-                className="inline-flex items-center gap-1 px-2 py-1.5 rounded-md border border-border bg-bg hover:bg-panel/40 text-muted hover:text-fg transition-colors text-[11px] font-medium"
+                className="inline-flex items-center gap-1 px-2 py-1.5 rounded-md border border-border bg-bg hover:bg-panel/40 text-muted hover:text-fg transition-colors text-xs font-medium"
                 title="Download Excel template (.xlsx) — same columns"
               >
                 <FileSpreadsheet className="w-3.5 h-3.5" />
@@ -234,7 +234,7 @@ export default function BulkAddCandidatesDialog({ open, onClose, workspaceSlug }
               <button
                 type="button"
                 onClick={() => downloadTemplate("csv")}
-                className="inline-flex items-center gap-1 px-2 py-1.5 rounded-md border border-border bg-bg hover:bg-panel/40 text-muted hover:text-fg transition-colors text-[11px] font-medium"
+                className="inline-flex items-center gap-1 px-2 py-1.5 rounded-md border border-border bg-bg hover:bg-panel/40 text-muted hover:text-fg transition-colors text-xs font-medium"
                 title="Download template"
               >
                 <Download className="w-3.5 h-3.5" />
@@ -254,10 +254,10 @@ export default function BulkAddCandidatesDialog({ open, onClose, workspaceSlug }
         <div className="px-5 py-4 space-y-3 overflow-y-auto flex-1 min-h-0">
           <div className="space-y-1">
             <div className="flex items-center justify-between gap-2">
-              <label className="text-[10px] font-semibold uppercase tracking-wider text-muted">
+              <label className="text-xs font-semibold text-muted">
                 Paste candidates
               </label>
-              <span className="text-[10px] text-muted/60 hidden sm:inline">Validated before import — invalid rows are skipped</span>
+              <span className="text-xs text-muted/60 hidden sm:inline">Validated before import — invalid rows are skipped</span>
             </div>
 
             <div
@@ -272,7 +272,7 @@ export default function BulkAddCandidatesDialog({ open, onClose, workspaceSlug }
                 const f = e.dataTransfer.files?.[0];
                 if (f) handleFile(f);
               }}
-              className={`relative rounded-md border ${isDragging ? "border-accent bg-accent/5" : "border-border bg-bg"} transition-colors`}
+              className={`relative rounded-md border ${isDragging ? "border-secondary bg-secondary/5" : "border-border bg-bg"} transition-colors`}
             >
               <input
                 ref={fileInputRef}
@@ -282,18 +282,18 @@ export default function BulkAddCandidatesDialog({ open, onClose, workspaceSlug }
                 className="hidden"
               />
               <div className="flex items-center justify-between gap-2 px-3 py-2 border-b border-border/60 bg-elevated/20 rounded-t-md">
-                <span className="text-[11px] font-medium text-muted flex items-center gap-1.5">
+                <span className="text-xs font-medium text-muted flex items-center gap-1.5">
                   <FileUp className="w-3.5 h-3.5" /> Upload
                 </span>
                 <div className="flex items-center gap-1.5">
                   <button
                     type="button"
                     onClick={() => fileInputRef.current?.click()}
-                    className="inline-flex items-center gap-1 px-2 py-1 rounded-md border border-border bg-bg hover:bg-panel text-[11px] font-medium text-muted hover:text-fg transition-colors"
+                    className="inline-flex items-center gap-1 px-2 py-1 rounded-md border border-border bg-bg hover:bg-panel text-xs font-medium text-muted hover:text-fg transition-colors"
                   >
                     <FileUp className="w-3 h-3" /> CSV / Excel
                   </button>
-                  <span className="text-[10px] text-muted/50 hidden sm:inline">or drag & drop here</span>
+                  <span className="text-xs text-muted/50 hidden sm:inline">or drag & drop here</span>
                 </div>
               </div>
               <textarea
@@ -306,14 +306,14 @@ export default function BulkAddCandidatesDialog({ open, onClose, workspaceSlug }
                 autoFocus
               />
               {isDragging && (
-                <div className="absolute inset-0 bg-accent/10 backdrop-blur-[1px] rounded-md flex items-center justify-center pointer-events-none">
+                <div className="absolute inset-0 bg-secondary/10 backdrop-blur-[1px] rounded-md flex items-center justify-center pointer-events-none">
                   <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-surface border border-border text-xs font-semibold shadow-sm">
-                    <FileUp className="w-3.5 h-3.5 text-accent" /> Drop CSV or Excel to load
+                    <FileUp className="w-3.5 h-3.5 text-secondary" /> Drop CSV or Excel to load
                   </span>
                 </div>
               )}
             </div>
-            <p className="text-[10px] text-muted/70">
+            <p className="text-xs text-muted/70">
               Format: <code className="font-mono">name, email, phone, notes</code>. Email and later fields are optional.
               Lines starting with <code className="font-mono">#</code> are skipped.
             </p>
@@ -321,14 +321,14 @@ export default function BulkAddCandidatesDialog({ open, onClose, workspaceSlug }
 
           {rows.length > 0 && (
             <div className="rounded-md border border-border overflow-hidden">
-              <div className="px-3 py-2 border-b border-border bg-elevated/40 flex items-center justify-between text-[11px] font-semibold">
+              <div className="px-3 py-2 border-b border-border bg-elevated/40 flex items-center justify-between text-xs font-semibold">
                 <span className="text-muted">Preview ({rows.length})</span>
                 <span className="flex items-center gap-3">
-                  <span className="inline-flex items-center gap-1 text-emerald-600 dark:text-emerald-400">
+                  <span className="inline-flex items-center gap-1 text-success">
                     <CheckCircle2 className="w-3 h-3" /> {validRows.length} valid
                   </span>
                   {invalidRows.length > 0 && (
-                    <span className="inline-flex items-center gap-1 text-rose-600 dark:text-rose-400">
+                    <span className="inline-flex items-center gap-1 text-danger">
                       <AlertTriangle className="w-3 h-3" /> {invalidRows.length} invalid
                     </span>
                   )}
@@ -339,16 +339,16 @@ export default function BulkAddCandidatesDialog({ open, onClose, workspaceSlug }
                   <li
                     key={i}
                     className={`px-3 py-1.5 flex items-center justify-between gap-2 ${
-                      !r.valid ? "bg-rose-500/[0.04]" : ""
+                      !r.valid ? "bg-danger/[0.04]" : ""
                     }`}
                   >
                     <div className="min-w-0 flex-1">
                       <span className="font-semibold text-fg">{r.name || "(no name)"}</span>
-                      {r.email && <span className="text-muted ml-2 font-mono text-[11px]">{r.email}</span>}
-                      {r.phone && <span className="text-muted/60 ml-2 font-mono text-[11px]">{r.phone}</span>}
+                      {r.email && <span className="text-muted ml-2 font-mono text-xs">{r.email}</span>}
+                      {r.phone && <span className="text-muted/60 ml-2 font-mono text-xs">{r.phone}</span>}
                     </div>
                     {!r.valid && (
-                      <span className="text-[10px] text-rose-600 dark:text-rose-400 font-semibold shrink-0">
+                      <span className="text-xs text-danger font-semibold shrink-0">
                         {r.error}
                       </span>
                     )}
@@ -371,7 +371,7 @@ export default function BulkAddCandidatesDialog({ open, onClose, workspaceSlug }
             type="button"
             onClick={handleSubmit}
             disabled={submitting || validRows.length === 0}
-            className="px-4 py-2 rounded-md bg-accent hover:bg-accent-soft text-bg text-[12px] font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className="px-4 py-2 rounded-md bg-secondary hover:brightness-110 text-bg text-[12px] font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {submitting ? "Importing…" : `Import ${validRows.length} candidate${validRows.length === 1 ? "" : "s"}`}
           </button>

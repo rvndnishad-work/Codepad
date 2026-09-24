@@ -9,6 +9,7 @@ import { prisma } from "@/lib/prisma";
 import { notFound, redirect } from "next/navigation";
 import { canMember } from "@/lib/permissions";
 import { Mail } from "lucide-react";
+import { humanize } from "@/lib/workspace/display";
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
@@ -20,13 +21,13 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
 
 const STATUS_TONE: Record<string, string> = {
   queued: "text-muted bg-panel border-border",
-  sent: "text-sky-300 bg-sky-500/10 border-sky-500/25",
-  delivered: "text-emerald-300 bg-emerald-500/10 border-emerald-500/25",
-  opened: "text-emerald-300 bg-emerald-500/15 border-emerald-500/30",
-  clicked: "text-emerald-200 bg-emerald-500/20 border-emerald-500/40",
-  bounced: "text-rose-300 bg-rose-500/10 border-rose-500/25",
-  complained: "text-rose-300 bg-rose-500/15 border-rose-500/30",
-  failed: "text-amber-300 bg-amber-500/10 border-amber-500/25",
+  sent: "text-secondary bg-secondary/10 border-secondary/25",
+  delivered: "text-success bg-success/10 border-success/25",
+  opened: "text-success bg-success/15 border-success/30",
+  clicked: "text-success bg-success/20 border-success/40",
+  bounced: "text-danger bg-danger/10 border-danger/25",
+  complained: "text-danger bg-danger/15 border-danger/30",
+  failed: "text-warning bg-warning/10 border-warning/25",
   suppressed: "text-muted bg-panel border-border",
 };
 
@@ -106,11 +107,11 @@ export default async function WorkspaceEmailsPage({
   return (
     <div className="space-y-6">
       <div className="border-b border-border pb-5">
-        <div className="text-[10px] font-semibold uppercase tracking-[0.14em] text-indigo-500/80 flex items-center gap-1.5">
+        <div className="text-xs font-semibold text-secondary/80 flex items-center gap-1.5">
           <Mail className="w-3 h-3" /> Workspace
         </div>
-        <h1 className="text-2xl font-semibold text-fg tracking-tight mt-1">Email activity</h1>
-        <p className="text-xs text-muted mt-1">
+        <h1 className="text-2xl md:text-[26px] font-semibold tracking-[-0.02em] text-fg">Email activity</h1>
+        <p className="text-[15px] text-muted mt-1.5">
           Delivery status for emails this workspace has sent — invites, reminders,
           and submission notifications. Updated as recipients open or bounce.
         </p>
@@ -120,7 +121,7 @@ export default async function WorkspaceEmailsPage({
       <div className="grid grid-cols-3 md:grid-cols-6 gap-2.5">
         {["sent", "delivered", "opened", "clicked", "bounced", "failed"].map((s) => (
           <div key={s} className={`rounded-lg border p-2.5 ${STATUS_TONE[s] ?? "border-border"}`}>
-            <div className="text-[9px] uppercase tracking-wider font-semibold opacity-80">{s}</div>
+            <div className="text-xs font-semibold opacity-80">{s}</div>
             <div className="text-xl font-bold tabular-nums mt-0.5">{counts[s] ?? 0}</div>
           </div>
         ))}
@@ -138,7 +139,7 @@ export default async function WorkspaceEmailsPage({
         <div className="rounded-xl border border-border bg-surface overflow-hidden">
           <table className="w-full text-left text-sm">
             <thead className="bg-elevated/50">
-              <tr className="text-[10px] uppercase tracking-wider text-muted">
+              <tr className="text-xs text-muted">
                 <th className="px-4 py-2.5 font-semibold">Status</th>
                 <th className="px-4 py-2.5 font-semibold">Type</th>
                 <th className="px-4 py-2.5 font-semibold">Recipient</th>
@@ -151,12 +152,12 @@ export default async function WorkspaceEmailsPage({
                 <tr key={l.id} className="hover:bg-panel/30">
                   <td className="px-4 py-2.5">
                     <span
-                      className={`inline-flex items-center px-2 py-0.5 rounded-md border text-[10px] font-semibold uppercase tracking-wider ${
+                      className={`inline-flex items-center px-2 py-0.5 rounded-md border text-xs font-semibold ${
                         STATUS_TONE[l.status] ?? "border-border text-muted"
                       }`}
                       title={l.errorReason ?? undefined}
                     >
-                      {l.status}
+                      {humanize(l.status)}
                     </span>
                   </td>
                   <td className="px-4 py-2.5 text-xs text-fg">
@@ -165,10 +166,10 @@ export default async function WorkspaceEmailsPage({
                   <td className="px-4 py-2.5 text-xs text-fg truncate max-w-[240px]">
                     {l.recipientEmail}
                   </td>
-                  <td className="px-4 py-2.5 text-[11px] text-muted whitespace-nowrap">
+                  <td className="px-4 py-2.5 text-xs text-muted whitespace-nowrap">
                     {timeAgo(l.createdAt)}
                   </td>
-                  <td className="px-4 py-2.5 text-[11px] text-muted whitespace-nowrap">
+                  <td className="px-4 py-2.5 text-xs text-muted whitespace-nowrap">
                     {timeAgo(l.lastEventAt)}
                   </td>
                 </tr>
@@ -177,7 +178,7 @@ export default async function WorkspaceEmailsPage({
           </table>
         </div>
       )}
-      <p className="text-[11px] text-muted/70">{total} emails sent from this workspace.</p>
+      <p className="text-xs text-muted/70">{total} emails sent from this workspace.</p>
     </div>
   );
 }

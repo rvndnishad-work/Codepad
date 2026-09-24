@@ -115,10 +115,10 @@ export default function QuestionGroups({ questions, filtered }: { questions: Top
             key={d}
             aria-labelledby={`group-${d}`}
             className="flex flex-col gap-3"
-            initial={reduceMotion ? false : { opacity: 0, y: 18 }}
+            initial={{ opacity: 0, y: 18 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true, margin: "-40px" }}
-            transition={{ duration: 0.45, ease: "easeOut" }}
+            transition={reduceMotion ? { duration: 0 } : { duration: 0.45, ease: "easeOut" }}
           >
             <div className="flex h-9 items-center gap-2.5 md:h-10">
               <span className={`h-2 w-2 rounded-full ${DIFFICULTY_BG[d]}`} aria-hidden />

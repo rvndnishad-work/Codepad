@@ -67,10 +67,10 @@ export function DifficultyBar({
           key={d}
           className={`block min-w-[6px] rounded-full ${DIFFICULTY_BG[d]}`}
           style={{ flexGrow: n, originX: 0 }}
-          initial={reduce ? false : { scaleX: 0 }}
+          initial={{ scaleX: 0 }}
           whileInView={{ scaleX: 1 }}
           viewport={{ once: true, margin: "-20px" }}
-          transition={{ duration: 0.8, delay: delay + i * 0.08, ease: [0.2, 0.7, 0.2, 1] }}
+          transition={reduce ? { duration: 0 } : { duration: 0.8, delay: delay + i * 0.08, ease: [0.2, 0.7, 0.2, 1] }}
         />
       ))}
     </div>

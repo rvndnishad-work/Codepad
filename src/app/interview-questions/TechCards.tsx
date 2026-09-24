@@ -100,11 +100,11 @@ export default function TechCards({ stats }: { stats: Record<string, TechStats> 
               <motion.div
                 key={slug}
                 layout={!reduceMotion}
-                initial={reduceMotion ? false : { opacity: 0, y: 24 }}
+                initial={{ opacity: 0, y: 24 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 exit={reduceMotion ? undefined : { opacity: 0, scale: 0.96 }}
                 viewport={{ once: true, margin: "-30px" }}
-                transition={{ duration: 0.45, delay: reduceMotion ? 0 : (i % 4) * 0.06, ease: "easeOut" }}
+                transition={reduceMotion ? { duration: 0 } : { duration: 0.45, delay: (i % 4) * 0.06, ease: "easeOut" }}
               >
                 <Link
                   href={`/interview-questions/${slug}`}

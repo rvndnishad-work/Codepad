@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState, useTransition, type DragEvent } from "react";
+import { useCallback, useEffect, useMemo, useState, useTransition } from "react";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import {
@@ -41,6 +41,7 @@ import { RESULT_KIND_LABELS } from "@/lib/crm/results";
 import { plural, sourceLabel } from "@/lib/workspace/display";
 import { bulkCandidatesAction } from "../manage-actions";
 import type { BulkAction } from "@/lib/crm/candidates-server";
+import { Board } from "./Board";
 import { ConfirmDialog, PassOverrideDialog, RejectDialog, TagDialog } from "./dialogs";
 import { QuickView } from "./QuickView";
 import {
@@ -59,7 +60,6 @@ import {
 
 export type Perms = { canWrite: boolean; canPipeline: boolean; canDelete: boolean; isManager: boolean };
 
-const FLOW = PIPELINE_STAGES.filter((s) => s !== "REJECTED");
 const PAGE = 100;
 const SORTS: Record<SortKey, string> = {
   attention: "Needs attention first",
@@ -144,7 +144,6 @@ export function CandidatesView({
   const [busy, startBusy] = useTransition();
   const [toasts, toast] = useToasts();
   const [views, setViews] = useState<SavedView[]>([]);
-  const [showRejected, setShowRejected] = useState(false);
   const viewsKey = `candidates.views.${slug}`;
 
   useEffect(() => {
@@ -697,9 +696,8 @@ export function CandidatesView({
           canMove={perms.canPipeline && !filters.archived}
           onMove={moveTo}
           onOpen={setQuick}
-          showRejected={showRejected || filters.stage === "REJECTED"}
-          onToggleRejected={() => setShowRejected((v) => !v)}
           batchName={batchName}
+          memberName={memberName}
           showBatch={!scopeBatchId}
         />
       )}
@@ -1041,157 +1039,6 @@ function ListTable({
           Show {Math.min(PAGE, total - rows.length)} more of {total - rows.length}
         </button>
       )}
-    </div>
-  );
-}
-
-function Board({
-  rows,
-  canMove,
-  onMove,
-  onOpen,
-  showRejected,
-  onToggleRejected,
-  batchName,
-  showBatch,
-}: {
-  rows: RosterRow[];
-  canMove: boolean;
-  onMove: (ids: string[], stage: string) => void;
-  onOpen: (id: string) => void;
-  showRejected: boolean;
-  onToggleRejected: () => void;
-  batchName: (id: string | null) => string;
-  showBatch: boolean;
-}) {
-  const [dragId, setDragId] = useState<string | null>(null);
-  const [over, setOver] = useState<string | null>(null);
-  const by = useMemo(() => {
-    const m = new Map<string, RosterRow[]>();
-    for (const r of rows) m.set(r.stage, [...(m.get(r.stage) ?? []), r]);
-    return m;
-  }, [rows]);
-  const rejected = by.get("REJECTED") ?? [];
-
-  const dropProps = (stage: string) =>
-    canMove
-      ? {
-          onDragOver: (e: DragEvent) => {
-            e.preventDefault();
-            setOver(stage);
-          },
-          onDragLeave: () => setOver((o) => (o === stage ? null : o)),
-          onDrop: (e: DragEvent) => {
-            e.preventDefault();
-            const id = e.dataTransfer.getData("text/plain") || dragId;
-            setOver(null);
-            setDragId(null);
-            const row = rows.find((r) => r.id === id);
-            if (row && row.stage !== stage) onMove([row.id], stage);
-          },
-        }
-      : {};
-
-  const card = (r: RosterRow) => (
-    <div
-      key={r.id}
-      role="button"
-      tabIndex={0}
-      draggable={canMove}
-      onDragStart={(e) => {
-        e.dataTransfer.setData("text/plain", r.id);
-        e.dataTransfer.effectAllowed = "move";
-        setDragId(r.id);
-      }}
-      onDragEnd={() => {
-        setDragId(null);
-        setOver(null);
-      }}
-      onClick={() => onOpen(r.id)}
-      onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && (e.preventDefault(), onOpen(r.id))}
-      className={`flex flex-col gap-2.5 p-3 rounded-[10px] border border-border bg-surface hover:border-border-strong transition cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-secondary/60 ${
-        dragId === r.id ? "opacity-50" : ""
-      }`}
-    >
-      <div className="flex items-center gap-2 min-w-0">
-        <Avatar name={r.name} size={26} />
-        <span className="text-[13px] font-medium text-fg flex-1 truncate">{r.name}</span>
-        {r.combined != null && (
-          <span className={`text-[13px] font-semibold tabular-nums ${r.combined >= 80 ? "text-success" : "text-fg"}`}>{r.combined}</span>
-        )}
-      </div>
-      <NextStepPill next={r.next} compact />
-      <div className="flex items-center gap-1.5 text-xs text-subtle min-w-0">
-        <span className={`shrink-0 ${r.daysInStage >= 7 && r.stage !== "PASSED" && r.stage !== "REJECTED" ? "text-warning" : ""}`}>
-          {r.daysInStage}d in stage
-        </span>
-        {showBatch && r.batchId && <span className="truncate">· {batchName(r.batchId)}</span>}
-      </div>
-    </div>
-  );
-
-  return (
-    <div className="flex flex-col gap-2">
-      {canMove && <p className="text-[13px] text-subtle">Drag a card to move it. Not passed asks for a reason.</p>}
-      <div className="overflow-x-auto pb-2 -mx-1 px-1">
-        <div className={`grid gap-2.5 items-start ${showRejected ? "min-w-[880px] grid-cols-4" : "min-w-[720px] grid-cols-[repeat(3,minmax(0,1fr))_64px]"}`}>
-          {FLOW.map((s) => {
-            const list = by.get(s) ?? [];
-            return (
-              <section
-                key={s}
-                aria-label={`${STAGE_LABELS[s]}, ${list.length}`}
-                {...dropProps(s)}
-                className={`rounded-xl border p-2.5 flex flex-col gap-2 min-h-[140px] transition-colors ${
-                  over === s ? "border-secondary/70 bg-secondary/[0.06]" : "border-border bg-bg/60"
-                }`}
-              >
-                <div className="flex items-center justify-between px-1 pt-0.5 pb-1">
-                  <span className="flex items-center gap-1.5 text-[13px] font-semibold text-fg">
-                    <StageDot stage={s} className="w-2 h-2" />
-                    {STAGE_LABELS[s]}
-                  </span>
-                  <span className="text-xs text-subtle tabular-nums">{list.length}</span>
-                </div>
-                {list.slice(0, 60).map(card)}
-                {list.length > 60 && <p className="text-xs text-subtle px-1">and {list.length - 60} more. Filter to narrow down.</p>}
-              </section>
-            );
-          })}
-          {showRejected ? (
-            <section
-              aria-label={`Not passed, ${rejected.length}`}
-              {...dropProps("REJECTED")}
-              className={`rounded-xl border p-2.5 flex flex-col gap-2 min-h-[140px] ${over === "REJECTED" ? "border-danger/60 bg-danger/[0.06]" : "border-border bg-bg/60"}`}
-            >
-              <div className="flex items-center justify-between px-1 pt-0.5 pb-1">
-                <span className="flex items-center gap-1.5 text-[13px] font-semibold text-fg">
-                  <StageDot stage="REJECTED" className="w-2 h-2" />
-                  Not passed
-                </span>
-                <button type="button" onClick={onToggleRejected} className="text-xs text-subtle hover:text-fg">
-                  Hide
-                </button>
-              </div>
-              {rejected.slice(0, 60).map(card)}
-            </section>
-          ) : (
-            <button
-              type="button"
-              onClick={onToggleRejected}
-              {...dropProps("REJECTED")}
-              aria-label={`Show rejected, ${rejected.length}`}
-              className={`rounded-xl border h-[220px] flex flex-col items-center gap-2 pt-3 transition-colors ${
-                over === "REJECTED" ? "border-danger/60 bg-danger/[0.06]" : "border-border bg-bg/60 hover:bg-panel/60"
-              }`}
-            >
-              <StageDot stage="REJECTED" className="w-2 h-2" />
-              <span className="text-xs text-subtle tabular-nums">{rejected.length}</span>
-              <span className="[writing-mode:vertical-rl] text-[13px] font-semibold text-muted">Not passed</span>
-            </button>
-          )}
-        </div>
-      </div>
     </div>
   );
 }

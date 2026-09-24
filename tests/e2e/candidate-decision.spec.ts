@@ -14,12 +14,14 @@ const slug = `e2e-screening-${Date.now().toString(36)}`;
 const ids: Record<string, string> = {};
 
 async function signIn(page: Page) {
-  await page.goto("/login");
-  await page.waitForTimeout(500);
-  await page.getByPlaceholder("Email address").fill("recruiter@codepad.test");
-  await page.getByPlaceholder("Password").fill("password123");
-  await page.getByRole("button", { name: "Sign In", exact: true }).first().click();
-  await page.waitForURL((url) => url.pathname !== "/login");
+  // Through the credentials endpoint rather than the form, so a cold dev
+  // server compiling the login page cannot make the session flaky.
+  const { csrfToken } = await (await page.request.get("/api/auth/csrf")).json();
+  await page.request.post("/api/auth/callback/credentials", {
+    form: { csrfToken, email: "recruiter@codepad.test", password: "password123", json: "true" },
+  });
+  const session = await (await page.request.get("/api/auth/session")).json();
+  expect(session?.user?.email).toBe("recruiter@codepad.test");
 }
 
 const decisionCard = (page: Page) => page.getByRole("list", { name: "Screening" }).getByRole("listitem").last();
@@ -44,6 +46,7 @@ test.describe("Screening decisions", () => {
       { key: "notFit", name: "Nia Fontaine", stage: "SCREENING", score: 5 },
       { key: "notFitApi", name: "Omar Haddad", stage: "SCREENING", score: 12 },
       { key: "strong", name: "Sol Bakker", stage: "SCREENING", score: 88 },
+      { key: "board", name: "Kai Lindqvist", stage: "NEW", score: 8 },
       // The reported case: moved to Offer on the old board, now Passed, with
       // a Not a fit screening.
       { key: "migrated", name: "Ravi Menon", stage: "PASSED", score: 5 },
@@ -148,6 +151,33 @@ test.describe("Screening decisions", () => {
       data: { name: "Pat Imported", email: `pat@${slug}.test`, stage: "PASSED" },
     });
     expect(create.status()).toBe(400);
+  });
+
+  test("dragging a card on the board moves it, and a Not a fit card into Passed asks for an override", async ({ page }) => {
+    await page.goto(`/w/${slug}/candidates?view=board`, { waitUntil: "networkidle" });
+    const card = page.getByRole("button", { name: /^Kai Lindqvist, / });
+    const lane = (name: string) => page.getByRole("group", { name: new RegExp(`^${name}, \\d+$`) });
+    // Step the pointer like a person does: Chromium picks the drag source on
+    // the first move, and a single jump can land it on a neighbouring card.
+    const drag = async (to: string) => {
+      const from = (await card.boundingBox())!;
+      const target = (await lane(to).boundingBox())!;
+      await page.mouse.move(from.x + from.width / 2, from.y + from.height / 2);
+      await page.mouse.down();
+      await page.mouse.move(from.x + from.width / 2 + 10, from.y + from.height / 2 + 5, { steps: 3 });
+      await page.mouse.move(target.x + target.width / 2, target.y + 60, { steps: 10 });
+      await page.mouse.up();
+    };
+
+    await drag("Passed");
+    const dialog = page.getByRole("dialog");
+    await expect(dialog).toContainText("Pass Kai Lindqvist as a manual override?");
+    await dialog.getByRole("button", { name: "Cancel" }).click();
+    await expect(lane("New")).toContainText("Kai Lindqvist");
+
+    await drag("Screening");
+    await expect(lane("Screening")).toContainText("Kai Lindqvist", { timeout: 15000 });
+    await expect.poll(async () => (await prisma.candidate.findUniqueOrThrow({ where: { id: ids.board } })).stage).toBe("SCREENING");
   });
 
   test("the list flags a manual pass", async ({ page }) => {

@@ -26,6 +26,7 @@ import {
   type SummarySection,
 } from "./console";
 import { roundLabel } from "./round-label";
+import { classifyChallenge, type CuratableChallenge } from "@/lib/interview/stack";
 
 export const QUEUE_PAGE_SIZE = 25;
 
@@ -723,4 +724,43 @@ export async function loadTalentPool(workspaceId: string): Promise<PoolCandidate
     take: 1000,
   });
   return rows.map((c) => ({ id: c.id, name: c.name, email: c.email ?? "", stage: c.stage }));
+}
+
+/* ── Question bank for New screening ─────────────────────────────────────── */
+
+export type PoolChallenge = CuratableChallenge & { title: string; difficulty: string };
+
+/** The published challenge bank, classified by stack (same as /api/interview/stack-pool). */
+export async function loadChallengePool(): Promise<PoolChallenge[]> {
+  const parse = (raw: string | null | undefined): string[] => {
+    if (!raw) return [];
+    try {
+      const v = JSON.parse(raw);
+      return Array.isArray(v) ? v.filter((x): x is string => typeof x === "string") : [];
+    } catch {
+      return [];
+    }
+  };
+  const rows = await prisma.challenge.findMany({
+    where: { published: true, workspaceId: null },
+    orderBy: [{ difficulty: "asc" }, { createdAt: "asc" }],
+    select: {
+      id: true,
+      title: true,
+      difficulty: true,
+      category: true,
+      tags: true,
+      steps: { select: { judgingMode: true, languagesJson: true }, orderBy: { position: "asc" }, take: 1 },
+    },
+  });
+  return rows.map((c) => {
+    const step = c.steps?.[0];
+    const meta = classifyChallenge({
+      judgingMode: step?.judgingMode,
+      languages: parse(step?.languagesJson),
+      tags: parse(c.tags),
+      category: c.category,
+    });
+    return { id: c.id, title: c.title, difficulty: c.difficulty, paradigm: meta.paradigm, languages: meta.languages, frameworks: meta.frameworks };
+  });
 }

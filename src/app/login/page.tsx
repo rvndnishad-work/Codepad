@@ -4,9 +4,9 @@ import OnboardingShowcase from "./OnboardingShowcase";
 export default async function LoginPage({
   searchParams,
 }: {
-  searchParams: Promise<{ next?: string }>;
+  searchParams: Promise<{ next?: string; mode?: string }>;
 }) {
-  const { next } = await searchParams;
+  const { next, mode } = await searchParams;
   const safeNext = next && next.startsWith("/") ? next : "/";
 
   const providers = {
@@ -37,7 +37,11 @@ export default async function LoginPage({
         <div className="lg:hidden absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[300px] h-[300px] rounded-full bg-accent/5 opacity-[0.1] blur-[80px] pointer-events-none" />
         
         <div className="w-full max-w-sm relative z-10 my-auto">
-          <AuthCard providers={providers} next={safeNext} />
+          <AuthCard
+            providers={providers}
+            next={safeNext}
+            initialMode={mode === "signup" ? "signup" : "signin"}
+          />
         </div>
       </div>
     </div>

@@ -6,16 +6,7 @@ import dynamic from "next/dynamic";
 import { useEffect, useMemo, useRef, useState } from "react";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
-import {
-  ArrowRight,
-  LayoutGrid,
-  Search,
-  Rocket,
-  ChevronDown,
-  User,
-  List,
-  FlaskConical,
-} from "lucide-react";
+import { ArrowRight, Bookmark, LayoutGrid, List, Search, FlaskConical } from "lucide-react";
 import {
   templates,
   groups,
@@ -23,11 +14,16 @@ import {
   type TemplateDef,
 } from "@/lib/templates";
 import { FALLBACK_POPULAR_IDS } from "@/lib/popular-templates";
+import { catalogSections, shortGroupLabel } from "@/lib/playground-catalog";
 import { TemplateLogo } from "@/lib/icons";
-import { CodePeekCard } from "./CodePeekCard";
-import WowReveal from "@/components/wow/WowReveal";
+import { CatalogCard, CodePeekCard, LogoBlob } from "./CodePeekCard";
+import "./playgrounds.css";
 
 gsap.registerPlugin(ScrollTrigger);
+
+/** Where the filter bar sticks: just below the floating nav pill (keep in
+ *  step with `md:top-[84px]` on the bar). */
+const BAR_TOP = 84;
 
 const BlackHoleScene3D = dynamic(() => import("./_wow/BlackHoleScene3D"), { ssr: false });
 
@@ -38,74 +34,70 @@ type Welcome = {
   recent: { slug: string; title: string; template: string } | null;
 } | null;
 
+/** Pill on the hero for signed-in people: who they are, where they left off. */
 function WelcomeStrip({ w }: { w: NonNullable<Welcome> }) {
   const firstName = w.name?.split(" ")[0] ?? "Developer";
+  const initials =
+    (w.name ?? "")
+      .split(/\s+/)
+      .filter(Boolean)
+      .slice(0, 2)
+      .map((p) => p[0]?.toUpperCase())
+      .join("") || "?";
+  const recentTemplate = w.recent ? templatesById[w.recent.template] : undefined;
 
   return (
-    <div className="relative flex flex-col justify-between gap-4 overflow-hidden rounded-3xl border border-white/12 bg-white/[0.04] p-4 backdrop-blur-md sm:flex-row sm:items-center sm:p-5">
-      <div className="flex items-center gap-4">
-        <div className="relative">
-          {w.image ? (
-            <Image
-              src={w.image}
-              alt={w.name ?? ""}
-              width={44}
-              height={44}
-              className="shrink-0 rounded-2xl border border-white/20"
-            />
-          ) : (
-            <div className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl border border-white/15 bg-white/10">
-              <User className="h-5 w-5 text-white/60" />
-            </div>
-          )}
-          <span className="absolute -bottom-1 -right-1 h-3 w-3 rounded-full border-2 border-[#0b0d16] bg-emerald-400" />
-        </div>
-
-        <div className="min-w-0">
-          <div className="text-sm font-bold leading-snug text-white">
-            Welcome back, {firstName}
-          </div>
-          <div className="mt-0.5 text-xs text-white/60">
-            {w.snippetCount === 0 ? (
-              <span className="italic">No saved sandboxes yet.</span>
-            ) : (
-              <span>
-                <strong className="font-black tabular-nums text-white">
-                  {w.snippetCount}
-                </strong>{" "}
-                saved sandbox{w.snippetCount === 1 ? "" : "es"}
-              </span>
-            )}
-          </div>
-        </div>
+    <div className="mx-auto flex max-w-[720px] flex-col gap-3 rounded-[20px] border border-white/[0.14] bg-[#08080f]/75 p-3.5 backdrop-blur-md md:h-16 md:flex-row md:items-center md:gap-3.5 md:rounded-full md:py-0 md:pl-3 md:pr-2">
+      <div className="flex min-w-0 flex-1 items-center gap-3 md:gap-3.5">
+        {w.image ? (
+          <Image
+            src={w.image}
+            alt=""
+            width={40}
+            height={40}
+            className="h-10 w-10 shrink-0 rounded-full border border-white/20"
+          />
+        ) : (
+          <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full border border-[#373d47] bg-[#272c34] text-[13px] font-semibold text-[#cdd1d7]">
+            {initials}
+          </span>
+        )}
+        <span className="flex min-w-0 flex-col">
+          <span className="truncate text-[15px] font-semibold text-white">Welcome back, {firstName}</span>
+          <span className="text-[13px] text-[#949aa3]">
+            {w.snippetCount === 0
+              ? "No saved sandboxes yet"
+              : `${w.snippetCount} saved sandbox${w.snippetCount === 1 ? "" : "es"}`}
+          </span>
+        </span>
       </div>
 
-      <div className="flex shrink-0 items-center gap-3">
+      <div className="flex items-center gap-2">
         {w.recent && (
           <Link
             href={`/play/${w.recent.slug}`}
-            className="group/continue flex max-w-xs shrink-0 items-center gap-3 rounded-2xl border border-white/12 bg-black/30 px-3 py-2 transition hover:border-[#8b93ff]/60"
+            className="flex h-[46px] min-w-0 flex-1 items-center gap-2.5 rounded-full border border-white/[0.14] pl-2 pr-3.5 text-white transition-colors hover:border-[#ffe600]/50 hover:bg-white/[0.06] motion-reduce:transition-none md:flex-none"
           >
-            <div className="grid h-8 w-8 shrink-0 place-items-center rounded-lg border border-white/10 bg-white/5">
-              <TemplateLogo id={w.recent.template} size={16} />
-            </div>
-            <div className="min-w-0 flex-1">
-              <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-white/50">
-                Continue editing
-              </div>
-              <div className="mt-0.5 max-w-[140px] truncate text-xs font-bold text-white">
-                {w.recent.title}
-              </div>
-            </div>
-            <ArrowRight className="h-4 w-4 shrink-0 text-white/40 transition-all group-hover/continue:translate-x-0.5 group-hover/continue:text-white" />
+            {recentTemplate ? (
+              <LogoBlob t={recentTemplate} size={30} />
+            ) : (
+              <span className="grid h-[30px] w-[30px] shrink-0 place-items-center">
+                <TemplateLogo id={w.recent.template} size={15} />
+              </span>
+            )}
+            <span className="flex min-w-0 flex-col">
+              <span className="text-xs text-[#949aa3]">Continue editing</span>
+              <span className="max-w-[160px] truncate text-sm font-medium">{w.recent.title}</span>
+            </span>
+            <span aria-hidden className="ml-1 text-[#ffe600]">
+              →
+            </span>
           </Link>
         )}
-
         <Link
           href="/dashboard"
-          className="inline-flex items-center gap-2 rounded-full bg-white px-4 py-2 text-xs font-black uppercase tracking-wider text-black transition hover:scale-105"
+          className="flex h-[46px] shrink-0 items-center rounded-full bg-[#f5f6f7] px-[18px] text-sm font-semibold text-[#0f1115] transition-colors hover:bg-white motion-reduce:transition-none"
         >
-          <LayoutGrid className="h-3.5 w-3.5" />
           Dashboard
         </Link>
       </div>
@@ -113,136 +105,34 @@ function WelcomeStrip({ w }: { w: NonNullable<Welcome> }) {
   );
 }
 
+/** Pill on the hero for guests: saving needs an account. */
 function GuestWelcomeStrip() {
   return (
-    <div className="relative flex flex-col justify-between gap-4 overflow-hidden rounded-3xl border border-white/12 bg-white/[0.04] p-4 backdrop-blur-md sm:flex-row sm:items-center sm:p-5">
-      <div className="flex items-center gap-4">
-        <div className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-gradient-to-br from-[#8b93ff] to-[#ff2fb3]">
-          <Rocket className="h-5 w-5 animate-pulse text-white" />
-        </div>
-        <div className="min-w-0">
-          <div className="text-sm font-bold leading-snug text-white">
-            Save and share your custom sandboxes
-          </div>
-          <div className="mt-0.5 text-xs text-white/60">
-            Sign in to persist your modifications, fork popular templates, and build your portfolio.
-          </div>
-        </div>
+    <div className="mx-auto flex max-w-[720px] flex-col gap-3 rounded-[20px] border border-white/[0.14] bg-[#08080f]/75 p-3.5 backdrop-blur-md md:h-[60px] md:flex-row md:items-center md:gap-3.5 md:rounded-full md:py-0 md:pl-2.5 md:pr-2">
+      <div className="flex min-w-0 flex-1 items-center gap-3 md:gap-3.5">
+        <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-[#ffe600]/[0.12]">
+          <Bookmark className="h-[18px] w-[18px] text-[#ffe600]" aria-hidden />
+        </span>
+        <p className="m-0 text-[15px] leading-snug text-[#cdd1d7]">
+          <strong className="font-semibold text-white">Save your sandboxes</strong> and share them with a link.
+        </p>
       </div>
-
-      <div className="relative shrink-0">
+      <div className="flex gap-2 md:items-center md:gap-1">
         <Link
-          href="/login"
-          className="inline-flex items-center gap-1.5 rounded-full bg-[#ffe600] px-5 py-2.5 text-xs font-black uppercase tracking-wider text-black transition hover:scale-105"
+          href="/login?mode=signup&next=/playgrounds"
+          className="order-2 flex h-11 flex-1 items-center justify-center rounded-full border border-white/20 text-[15px] font-medium text-white transition-colors hover:border-white/40 motion-reduce:transition-none md:order-1 md:h-auto md:flex-none md:border-0 md:px-1.5 md:text-sm md:font-normal md:text-[#cdd1d7] md:hover:text-white"
         >
-          Sign In / Sign Up
-          <ArrowRight className="h-3.5 w-3.5" />
+          Create account
+        </Link>
+        <Link
+          href="/login?next=/playgrounds"
+          className="order-1 flex h-11 flex-1 items-center justify-center gap-1.5 rounded-full bg-[#ffe600] px-5 text-[15px] font-semibold text-[#0f1115] transition-[filter] hover:brightness-105 motion-reduce:transition-none md:order-2 md:flex-none md:text-sm"
+        >
+          Sign in
+          <ArrowRight className="hidden h-3.5 w-3.5 md:block" aria-hidden />
         </Link>
       </div>
     </div>
-  );
-}
-
-
-/**
- * Mouse-tracked glow that washes the grid and brightens whatever card sits
- * under the cursor. DOM-driven at ~60fps (no re-renders), pointer-events-none
- * so clicks still land, plus-lighter blending for real lift on dark cards.
- */
-function SpotlightGrid({
-  children,
-  gridClassName,
-}: {
-  children: React.ReactNode;
-  gridClassName: string;
-}) {
-  const ref = useRef<HTMLDivElement>(null);
-  const overlayRef = useRef<HTMLDivElement>(null);
-
-  const handleMove = (e: React.MouseEvent) => {
-    const el = ref.current;
-    const overlay = overlayRef.current;
-    if (!el || !overlay) return;
-
-    const rect = el.getBoundingClientRect();
-    el.style.setProperty("--spot-x", `${e.clientX - rect.left}px`);
-    el.style.setProperty("--spot-y", `${e.clientY - rect.top}px`);
-
-    const hit = document.elementFromPoint(e.clientX, e.clientY);
-    const card = hit?.closest<HTMLElement>("[data-accent-rgb]");
-    if (card) {
-      const rgb = card.dataset.accentRgb;
-      if (rgb) el.style.setProperty("--spot-color", rgb);
-      overlay.style.opacity = "1";
-    } else {
-      overlay.style.opacity = "0";
-    }
-  };
-
-  const handleLeave = () => {
-    if (overlayRef.current) overlayRef.current.style.opacity = "0";
-  };
-
-  return (
-    <div
-      ref={ref}
-      onMouseMove={handleMove}
-      onMouseLeave={handleLeave}
-      className="relative"
-    >
-      <div className={gridClassName}>{children}</div>
-      <div
-        ref={overlayRef}
-        aria-hidden
-        className="pointer-events-none absolute inset-0 z-10 opacity-0 transition-opacity duration-300"
-        style={{
-          background:
-            "radial-gradient(440px circle at var(--spot-x, 50%) var(--spot-y, 50%), rgba(var(--spot-color, 139, 147, 255), 0.3), rgba(var(--spot-color, 139, 147, 255), 0.1) 28%, transparent 55%)",
-          mixBlendMode: "plus-lighter",
-        }}
-      />
-    </div>
-  );
-}
-
-function GroupPanel({
-  label,
-  count,
-  defaultOpen = true,
-  gridClassName = "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4",
-  children,
-}: {
-  label: string;
-  count: number;
-  defaultOpen?: boolean;
-  gridClassName?: string;
-  children: React.ReactNode;
-}) {
-  const [open, setOpen] = useState(defaultOpen);
-  return (
-    <section className="overflow-hidden rounded-3xl border border-[var(--wow-card-border)] bg-[var(--wow-card)] backdrop-blur-sm">
-      <button
-        type="button"
-        onClick={() => setOpen((v) => !v)}
-        className="flex w-full items-center justify-between gap-3 px-5 py-4 transition hover:bg-[var(--wow-stage)] md:px-6"
-        aria-expanded={open}
-      >
-        <div className="flex items-center gap-3">
-          <span className="wow-font-display text-2xl tabular-nums text-[var(--wow-fg)]">{String(count).padStart(2, "0")}</span>
-          <h3 className="text-base font-extrabold tracking-tight text-[var(--wow-fg)]">{label}</h3>
-        </div>
-        <span className={`grid h-8 w-8 place-items-center rounded-full border border-[var(--wow-card-border)] transition-transform duration-300 ${open ? "rotate-180" : ""}`}>
-          <ChevronDown className="h-4 w-4 text-[var(--wow-faint)]" />
-        </span>
-      </button>
-      {open && (
-        <div className="px-4 pb-4 md:px-5 md:pb-5">
-          <SpotlightGrid gridClassName={gridClassName}>
-            {children}
-          </SpotlightGrid>
-        </div>
-      )}
-    </section>
   );
 }
 
@@ -251,13 +141,18 @@ export default function PlaygroundsBrowser({
   popularIds = [...FALLBACK_POPULAR_IDS],
 }: {
   welcome: Welcome;
-  /** Usage-ranked template ids for "Most Popular" (server-computed). */
+  /** Usage-ranked template ids for "Most popular" (server-computed). */
   popularIds?: string[];
 }) {
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState<string>("all");
   const [viewMode, setViewMode] = useState<"card" | "compact">("compact");
   const heroRef = useRef<HTMLElement>(null);
+  const barRef = useRef<HTMLDivElement>(null);
+  const catalogRef = useRef<HTMLElement>(null);
+  const chipsRef = useRef<HTMLDivElement>(null);
+  const [barStuck, setBarStuck] = useState(false);
+  const [chipsOverflow, setChipsOverflow] = useState(false);
 
   // Black-hole loop freezes offscreen / while scrolling / on reduced motion
   // (same perf contract as the other 3D heroes).
@@ -304,12 +199,15 @@ export default function PlaygroundsBrowser({
     return () => ctx.revert();
   }, []);
 
-  // ⌘K / Ctrl+K focuses the search box, matching the kbd hint in the hero.
+  // ⌘K / Ctrl+K focuses the hero search while it is on screen, otherwise
+  // the one in the filter bar.
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
         e.preventDefault();
-        const el = document.getElementById("playgrounds-search");
+        const hero = document.getElementById("playgrounds-search");
+        const heroOnScreen = hero ? hero.getBoundingClientRect().bottom > 64 : false;
+        const el = heroOnScreen ? hero : document.getElementById("playgrounds-search-bar");
         if (el instanceof HTMLInputElement) {
           el.focus();
           el.select();
@@ -320,6 +218,41 @@ export default function PlaygroundsBrowser({
     return () => window.removeEventListener("keydown", handler);
   }, []);
 
+  // The bar sticks just under the floating nav pill (md and up). Once stuck
+  // it grows a band behind the pill so cards never show between the two.
+  useEffect(() => {
+    const onScroll = () => {
+      const bar = barRef.current;
+      if (!bar) return;
+      const stuck =
+        window.matchMedia("(min-width: 768px)").matches &&
+        bar.getBoundingClientRect().top <= BAR_TOP + 0.5;
+      setBarStuck(stuck);
+    };
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    window.addEventListener("resize", onScroll);
+    return () => {
+      window.removeEventListener("scroll", onScroll);
+      window.removeEventListener("resize", onScroll);
+    };
+  }, []);
+
+  // Fade the chip row's edge only when some chips are scrolled out of view.
+  useEffect(() => {
+    const el = chipsRef.current;
+    if (!el) return;
+    const check = () => setChipsOverflow(el.scrollWidth - el.scrollLeft - el.clientWidth > 1);
+    check();
+    const ro = new ResizeObserver(check);
+    ro.observe(el);
+    el.addEventListener("scroll", check, { passive: true });
+    return () => {
+      ro.disconnect();
+      el.removeEventListener("scroll", check);
+    };
+  }, []);
+
   const featured = useMemo(
     () =>
       popularIds
@@ -328,18 +261,11 @@ export default function PlaygroundsBrowser({
     [popularIds],
   );
 
-  const filtered = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    return templates.filter((t) => {
-      if (filter !== "all" && t.group !== filter) return false;
-      if (!q) return true;
-      return (
-        t.title.toLowerCase().includes(q) ||
-        t.id.toLowerCase().includes(q) ||
-        (t.subtitle?.toLowerCase().includes(q) ?? false)
-      );
-    });
-  }, [query, filter]);
+  const sections = useMemo(
+    () => catalogSections(templates, groups, filter, query),
+    [filter, query],
+  );
+  const resultCount = sections.reduce((n, s) => n + s.items.length, 0);
 
   const stats = useMemo(() => {
     const tsCount = templates.filter((t) =>
@@ -354,25 +280,46 @@ export default function PlaygroundsBrowser({
   }, []);
 
   const isBrowsing = filter !== "all" || query.trim().length > 0;
-  // Featured ids are excluded from the grouped catalog below so a
-  // usage-promoted template never renders twice on the page.
-  const featuredIds = useMemo(() => new Set<string>(popularIds), [popularIds]);
 
-  const groupedItems = useMemo(() => {
-    return groups.map((g) => ({
-      group: g,
-      items: templates.filter(
-        (t) => t.group === g.key && !featuredIds.has(t.id)
-      ),
-    }));
-  }, [featuredIds]);
+  // Once the filter bar is stuck under the site nav, a new filter should
+  // show its results from the top instead of wherever the page was.
+  const keepCatalogInView = (smooth: boolean) => {
+    const bar = barRef.current;
+    const catalog = catalogRef.current;
+    if (!bar || !catalog) return;
+    const barBottom = bar.getBoundingClientRect().bottom;
+    const catalogTop = catalog.getBoundingClientRect().top;
+    if (catalogTop >= barBottom - 1) return;
+    const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    window.scrollTo({
+      top: window.scrollY + catalogTop - barBottom,
+      behavior: smooth && !reduced ? "smooth" : "auto",
+    });
+  };
 
-  const gridClasses = viewMode === "compact"
-    ? "grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3"
-    : "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4";
+  const pickFromBar = (key: string) => {
+    setFilter(key);
+    keepCatalogInView(true);
+  };
+
+  const clearFilters = () => {
+    setQuery("");
+    setFilter("all");
+    keepCatalogInView(true);
+  };
+
+  const gridClasses = "grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4";
+  const Card = viewMode === "card" ? CodePeekCard : CatalogCard;
+
+  // Short labels so every chip fits beside the search on a laptop; the
+  // section headings below carry the counts.
+  const barChips = [
+    { key: "all", label: "All sandboxes" },
+    ...groups.map((g) => ({ key: g.key, label: shortGroupLabel(g.label).replace(/ Templates$/, "") })),
+  ];
 
   return (
-    <div className="min-h-screen bg-[var(--wow-bg)] pb-32 transition-colors">
+    <div className="min-h-screen bg-bg transition-colors">
       {/* ── Dark cinematic hero (starts under the transparent bar) ── */}
       <header ref={heroRef} data-dark-hero className="wow-noise relative -mt-16 overflow-hidden bg-[#08080f] text-white">
         <div aria-hidden className="ph-bg pointer-events-none absolute inset-0">
@@ -495,73 +442,142 @@ export default function PlaygroundsBrowser({
         </div>
       </header>
 
-      <main className="mx-auto max-w-6xl px-4">
-        {/* Most Popular — Fast Track section */}
-        {!isBrowsing && (
-          <section className="mt-14">
-            <WowReveal>
-              <div className="mb-6 flex flex-wrap items-end justify-between gap-3">
-                <div>
-                  <p className="flex items-center gap-2 font-mono text-[11px] uppercase tracking-[0.25em] text-[#ff2fb3]">
-                    <Rocket className="h-3.5 w-3.5" /> Fast track
-                  </p>
-                  <h2 className="wow-font-display mt-2 text-4xl text-[var(--wow-fg)] md:text-5xl">MOST POPULAR.</h2>
-                </div>
-                <span className="font-mono text-[11px] uppercase tracking-[0.2em] text-[var(--wow-faint)]">Top picks</span>
-              </div>
-            </WowReveal>
-            <SpotlightGrid gridClassName={gridClasses}>
+      {/* Filter bar: stays under the site nav once the hero scrolls away. */}
+      <div
+        ref={barRef}
+        data-stuck={barStuck}
+        className="relative z-40 border-y border-border bg-bg/90 backdrop-blur-md md:sticky md:top-[84px]"
+      >
+        <div
+          aria-hidden
+          className={`pointer-events-none absolute inset-x-0 bottom-full h-[84px] bg-bg/90 backdrop-blur-md transition-opacity duration-200 motion-reduce:transition-none ${
+            barStuck ? "opacity-100" : "opacity-0"
+          }`}
+        />
+        <div className="mx-auto flex max-w-[1280px] flex-col gap-2.5 py-3 md:h-16 md:flex-row md:items-center md:justify-between md:gap-6 md:px-6 md:py-0">
+          <label className="order-1 mx-4 flex h-11 items-center gap-2.5 rounded-xl border border-border-strong bg-surface px-3.5 transition-[border-color,box-shadow] focus-within:border-accent focus-within:shadow-[0_0_0_3px_rgb(var(--c-accent)/0.18)] motion-reduce:transition-none md:order-2 md:mx-0 md:h-[38px] md:w-[240px] md:shrink-0 md:rounded-[10px] md:pl-3 md:pr-2.5">
+            <Search className="h-4 w-4 shrink-0 text-subtle" aria-hidden />
+            <span className="sr-only">Search playgrounds</span>
+            <input
+              id="playgrounds-search-bar"
+              type="search"
+              value={query}
+              onChange={(e) => {
+                setQuery(e.target.value);
+                keepCatalogInView(false);
+              }}
+              placeholder="Search sandboxes"
+              className="h-full min-w-0 flex-1 bg-transparent text-base text-fg outline-none placeholder:text-subtle md:text-sm"
+            />
+            <kbd className="hidden rounded-[5px] border border-border-strong px-1.5 py-0.5 font-mono text-[11px] text-subtle md:inline">
+              ⌘K
+            </kbd>
+          </label>
+          <div
+            ref={chipsRef}
+            role="group"
+            aria-label="Filter playgrounds"
+            className={`order-2 flex min-w-0 gap-2 overflow-x-auto px-4 [scrollbar-width:none] md:order-1 md:gap-1.5 md:px-0 [&::-webkit-scrollbar]:hidden ${
+              chipsOverflow ? "[mask-image:linear-gradient(to_right,black_calc(100%-40px),transparent)]" : ""
+            }`}
+          >
+            {barChips.map((c) => {
+              const on = filter === c.key;
+              return (
+                <button
+                  key={c.key}
+                  type="button"
+                  aria-pressed={on}
+                  onClick={() => pickFromBar(c.key)}
+                  className={`flex h-9 shrink-0 items-center whitespace-nowrap rounded-full border px-3 text-sm font-medium transition-colors motion-reduce:transition-none md:h-[34px] md:text-[13px] ${
+                    on
+                      ? "border-accent bg-accent text-accent-ink"
+                      : "border-border text-muted hover:border-border-strong hover:text-fg"
+                  }`}
+                >
+                  {c.label}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+
+      <main
+        ref={catalogRef}
+        className="mx-auto flex max-w-[1280px] flex-col gap-12 px-4 pt-10 md:px-6"
+      >
+        {!isBrowsing && featured.length > 0 && (
+          <section aria-labelledby="most-popular" className="flex flex-col gap-[18px]">
+            <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
+              <h2 id="most-popular" className="text-[22px] font-semibold tracking-[-0.015em] text-fg">
+                Most popular
+              </h2>
+              <span className="text-[13px] text-subtle">Ranked by sandboxes saved</span>
+            </div>
+            {/* A swipe row on phones, a grid from sm up. */}
+            <div className="-mx-4 flex snap-x scroll-px-4 gap-3 overflow-x-auto px-4 pb-1 [scrollbar-width:none] sm:mx-0 sm:grid sm:grid-cols-2 sm:gap-4 sm:overflow-visible sm:px-0 sm:pb-0 lg:grid-cols-4 [&::-webkit-scrollbar]:hidden">
               {featured.map((t) => (
-                <CodePeekCard key={t.id} t={t} variant="featured" compact={viewMode === "compact"} />
+                <div key={t.id} className="w-[272px] shrink-0 snap-start sm:w-auto">
+                  <CodePeekCard t={t} />
+                </div>
               ))}
-            </SpotlightGrid>
+            </div>
           </section>
         )}
 
-        {/* Catalog — grouped collapsible panels, or flat filtered grid */}
-        <section className="mt-10 space-y-5">
-          {!isBrowsing ? (
-            groupedItems.map(({ group, items }) => {
-              if (!items.length) return null;
-              return (
-                <GroupPanel
-                  key={group.key}
-                  label={group.label}
-                  count={items.length}
-                  gridClassName={gridClasses}
-                >
-                  {items.map((t) => (
-                    <CodePeekCard key={t.id} t={t} compact={viewMode === "compact"} />
-                  ))}
-                </GroupPanel>
-              );
-            })
-          ) : filtered.length > 0 ? (
-            <SpotlightGrid gridClassName={gridClasses}>
-              {filtered.map((t) => (
-                <CodePeekCard key={t.id} t={t} compact={viewMode === "compact"} />
-              ))}
-            </SpotlightGrid>
-          ) : (
-            <div className="mx-auto max-w-md rounded-3xl border border-[var(--wow-card-border)] bg-[var(--wow-card)] p-8 text-center text-sm text-[var(--wow-muted)]">
-              No playgrounds match “{query}”.
-              <button
-                className="mx-auto mt-3 block text-xs font-bold text-[#8b93ff] hover:underline"
-                onClick={() => {
-                  setQuery("");
-                  setFilter("all");
-                }}
-              >
-                Clear filters
-              </button>
-            </div>
-          )}
-        </section>
+        {isBrowsing && (
+          <div className="-mb-4 flex items-center justify-between gap-4">
+            <p role="status" className="text-[15px] text-muted">
+              {resultCount === 1 ? "1 playground" : `${resultCount} playgrounds`}
+            </p>
+            <button
+              type="button"
+              onClick={clearFilters}
+              className="h-[34px] rounded-lg border border-border-strong px-3 text-[13px] text-muted transition-colors hover:border-subtle hover:text-fg motion-reduce:transition-none"
+            >
+              Clear filters
+            </button>
+          </div>
+        )}
 
-        {/* Subtle footer note */}
-        <div className="mt-16 text-center font-mono text-[11px] uppercase tracking-[0.2em] text-[var(--wow-faint)]">
-          Missing a stack? New playgrounds ship every release.
-        </div>
+        {sections.map((s) => (
+          <section key={s.key} aria-labelledby={`group-${s.key}`} className="flex flex-col gap-4">
+            <div className="flex items-baseline gap-2.5">
+              <h2 id={`group-${s.key}`} className="text-[22px] font-semibold tracking-[-0.015em] text-fg">
+                {s.label}
+              </h2>
+              <span className="font-mono text-[13px] text-subtle">{s.items.length}</span>
+            </div>
+            <div className={gridClasses}>
+              {s.items.map((t) => (
+                <Card key={t.id} t={t} />
+              ))}
+            </div>
+          </section>
+        ))}
+
+        {resultCount === 0 && (
+          <div className="flex flex-col items-center gap-3 rounded-2xl border border-dashed border-border-strong px-6 py-12 text-center">
+            <p className="text-[17px] font-semibold text-fg">No playground matches that yet</p>
+            <p className="text-sm text-subtle">
+              Try a framework or language name, or start from a blank template.
+            </p>
+            <button
+              type="button"
+              onClick={clearFilters}
+              className="mt-1.5 h-10 rounded-[10px] bg-accent px-4 text-sm font-semibold text-accent-ink transition-[filter] hover:brightness-105 motion-reduce:transition-none"
+            >
+              Show all playgrounds
+            </button>
+          </div>
+        )}
+
+        <footer className="mt-4 border-t border-border pb-16 pt-7">
+          <p className="text-[15px] text-muted">
+            Missing a stack you need? New playgrounds ship with every release.
+          </p>
+        </footer>
       </main>
     </div>
   );

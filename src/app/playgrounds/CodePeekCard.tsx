@@ -2,204 +2,113 @@
 
 import Link from "next/link";
 import { useMemo } from "react";
-import { ArrowUpRight } from "lucide-react";
 import { templateIcon, TemplateLogo } from "@/lib/icons";
 import type { TemplateDef } from "@/lib/templates";
 import { highlight, pickShowpiece, trimForPeek } from "@/lib/code-peek";
-
-type Variant = "featured" | "standard";
-
-const LANG_LABEL: Record<string, string> = {
-  typescript: "TS",
-  javascript: "JS",
-  xml: "Markup",
-  css: "CSS",
-  plaintext: "Text",
-  python: "Python",
-  go: "Go",
-  java: "Java",
-  cpp: "C++",
-  rust: "Rust",
-};
+import { runsOnServer, templateBlurb } from "@/lib/playground-catalog";
 
 function basename(path: string): string {
   const i = path.lastIndexOf("/");
   return i >= 0 ? path.slice(i + 1) : path;
 }
 
-function hexToRgb(hex: string): string {
-  const clean = hex.replace("#", "");
-  if (clean.length === 3) {
-    const r = parseInt(clean[0] + clean[0], 16);
-    const g = parseInt(clean[1] + clean[1], 16);
-    const b = parseInt(clean[2] + clean[2], 16);
-    return `${r}, ${g}, ${b}`;
-  }
-  if (clean.length === 6) {
-    const r = parseInt(clean.slice(0, 2), 16);
-    const g = parseInt(clean.slice(2, 4), 16);
-    const b = parseInt(clean.slice(4, 6), 16);
-    return `${r}, ${g}, ${b}`;
-  }
-  return "139, 92, 246";
+/** Stable per-template offset into the backdrop loop, so cards drift apart. */
+function loopOffset(id: string): string {
+  let n = 0;
+  for (const ch of id) n = (n * 31 + ch.charCodeAt(0)) % 1400;
+  return `-${(n / 100).toFixed(1)}s`;
 }
 
-export function CodePeekCard({
-  t,
-  variant = "standard",
-  compact = false,
-}: {
-  t: TemplateDef;
-  variant?: Variant;
-  compact?: boolean;
-}) {
+/** Brand logo on its tinted, slowly morphing backdrop. */
+export function LogoBlob({ t, size }: { t: TemplateDef; size: number }) {
+  const color = templateIcon[t.id]?.color ?? t.accent ?? "var(--accent)";
+  const delay = loopOffset(t.id);
+  return (
+    <span
+      className="relative flex shrink-0 items-center justify-center"
+      style={{ width: size, height: size, color }}
+      aria-hidden
+    >
+      <span className="pgl-blob" style={{ background: color, animationDelay: delay }} />
+      <span className="pgl-ring" style={{ animationDelay: delay }} />
+      <TemplateLogo id={t.id} size={Math.round(size / 2)} className="pgl-logo" />
+    </span>
+  );
+}
+
+/** Where the code runs, as a dot and a word. */
+export function RuntimeTag({ t }: { t: TemplateDef }) {
+  const server = runsOnServer(t);
+  return (
+    <span className="flex shrink-0 items-center gap-1.5 text-xs text-subtle">
+      <span className={`h-1.5 w-1.5 rounded-full ${server ? "bg-secondary" : "bg-success"}`} aria-hidden />
+      {server ? "Server" : "Browser"}
+    </span>
+  );
+}
+
+/** Catalogue card: logo, name, where it runs and what is inside. */
+export function CatalogCard({ t }: { t: TemplateDef }) {
+  return (
+    <Link
+      href={`/play?template=${t.id}`}
+      className="pgl-card group flex h-[88px] items-center gap-3.5 rounded-2xl border border-border bg-surface py-3.5 pl-3.5 pr-4 hover:border-border-strong hover:bg-panel focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+    >
+      <LogoBlob t={t} size={56} />
+      <span className="flex min-w-0 flex-1 flex-col gap-1">
+        <span className="flex items-center justify-between gap-2">
+          <span className="truncate text-[15px] font-semibold text-fg">{t.title}</span>
+          <RuntimeTag t={t} />
+        </span>
+        <span className="truncate text-[13px] text-subtle">{templateBlurb(t)}</span>
+      </span>
+    </Link>
+  );
+}
+
+const PEEK_LINES = 6;
+
+/** Card with the opening lines of the template's main file. */
+export function CodePeekCard({ t }: { t: TemplateDef }) {
   const showpiece = useMemo(() => pickShowpiece(t), [t]);
-  // Always render 5 lines worth of room so cards in a row stay the same
-  // height even when the underlying file is shorter than the window.
-  const maxLines = 5;
-  const trimmedCode = useMemo(
-    () => (showpiece ? trimForPeek(showpiece.code, maxLines) : ""),
-    [showpiece]
-  );
-  const highlighted = useMemo(
-    () =>
-      showpiece ? highlight(trimmedCode, showpiece.lang) : "",
-    [showpiece, trimmedCode]
-  );
-
-  const accent = templateIcon[t.id]?.color ?? t.accent ?? "var(--accent)";
-  const rgbAccent = useMemo(() => hexToRgb(accent), [accent]);
-  const depCount = t.dependencies ? Object.keys(t.dependencies).length : 0;
-  const isFeatured = variant === "featured";
-
-  // Pad line numbers so every card shows the same 1..5 gutter even when the
-  // code itself only fills three lines. The "phantom" lines render an empty
-  // pre body so the cursor block (last line) lines up with the gutter.
-  const codeLineCount = trimmedCode ? trimmedCode.split("\n").length : 0;
-  const lineCount = Math.max(maxLines, codeLineCount);
-  const cursorRow = Math.min(codeLineCount + 1, lineCount);
+  const code = useMemo(() => (showpiece ? trimForPeek(showpiece.code, PEEK_LINES) : ""), [showpiece]);
+  const html = useMemo(() => (showpiece ? highlight(code, showpiece.lang) : ""), [showpiece, code]);
+  // Always draw the same gutter so cards in a row line up.
+  const gutter = Array.from({ length: PEEK_LINES }, (_, i) => i + 1);
 
   return (
     <Link
       href={`/play?template=${t.id}`}
-      data-accent-rgb={rgbAccent}
-      style={
-        {
-          "--theme-accent": accent,
-          "--theme-accent-rgb": rgbAccent,
-        } as React.CSSProperties
-      }
-      className="wow-card-glow group relative flex h-full flex-col overflow-hidden rounded-3xl border border-[var(--wow-card-border)] bg-[var(--wow-card)] backdrop-blur-sm transition-all duration-300 hover:-translate-y-1"
+      className="pgl-card group flex flex-col overflow-hidden rounded-2xl border border-border bg-surface hover:border-border-strong focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
     >
-      {/* Window chrome — dots left, file name centered, lang pill right */}
-      {!compact && (
-        <div className="relative flex items-center bg-black/30 px-4 py-2.5">
-          <div className="flex shrink-0 items-center gap-1.5">
-            <span className="h-2.5 w-2.5 rounded-full bg-[#ff5f57]" />
-            <span className="h-2.5 w-2.5 rounded-full bg-[#febc2e]" />
-            <span className="h-2.5 w-2.5 rounded-full bg-[#28c840]" />
-          </div>
-          <span className="absolute left-1/2 max-w-[140px] -translate-x-1/2 truncate font-mono text-[11px] text-white/50">
-            {showpiece ? basename(showpiece.path) : "sandbox"}
-          </span>
-          <div className="z-10 ml-auto flex items-center gap-1.5">
-            {t.group === "backend" && (
-              <span className="inline-flex items-center gap-1 rounded-full border border-emerald-400/30 bg-emerald-400/10 px-1.5 py-0.5 text-[11px] font-black uppercase tracking-wider text-emerald-300">
-                <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-400" />
-                JIT 0ms
-              </span>
-            )}
-            {showpiece && (
-              <span
-                className="rounded-full px-2 py-0.5 text-[11px] font-black uppercase tracking-widest"
-                style={{
-                  color: accent,
-                  background: `rgba(${rgbAccent}, 0.15)`,
-                }}
-              >
-                {LANG_LABEL[showpiece.lang] ?? showpiece.lang}
-              </span>
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* Code body with line-number gutter and trailing cursor block */}
-      {!compact && (
-        <div className="relative flex overflow-hidden bg-[#07090e]">
-          {/* Line gutter */}
-          <div className="shrink-0 select-none px-3 py-3 text-right font-mono text-[11px] leading-relaxed text-slate-700">
-            {Array.from({ length: lineCount }, (_, i) => (
-              <div key={i}>{i + 1}</div>
-            ))}
-          </div>
-
-          {/* Code column */}
-          <div className="relative min-w-0 flex-1 py-3 pr-4">
-            {showpiece ? (
-              <pre
-                className={`code-peek m-0 whitespace-pre font-mono leading-relaxed text-slate-300 overflow-hidden ${
-                  isFeatured ? "text-[12px]" : "text-[11px]"
-                }`}
-              >
-                <code dangerouslySetInnerHTML={{ __html: highlighted }} />
-              </pre>
-            ) : (
-              <pre className="m-0 font-mono text-[11px] italic leading-relaxed text-slate-600">
-                // empty sandbox
-              </pre>
-            )}
-
-            {/* Faux cursor block — sits at the first unused line so the card
-                feels like an open editor waiting for input. */}
-            <span
-              aria-hidden
-              className={`absolute left-0 inline-block bg-[#8b93ff]/90 ${
-                isFeatured ? "w-[7px] h-[14px]" : "w-[6px] h-[12px]"
-              }`}
-              style={{
-                top: `calc(0.75rem + (${cursorRow - 1}) * ${isFeatured ? "1.65em" : "1.6em"})`,
-              }}
-            />
-          </div>
-          {/* bottom fade into the footer */}
-          <div aria-hidden className="pointer-events-none absolute inset-x-0 bottom-0 h-8 bg-gradient-to-t from-[#07090e] to-transparent" />
-        </div>
-      )}
-
-      {/* Accent-tinted hover glow */}
-      <div
-        className="pointer-events-none absolute -bottom-8 -left-8 z-0 h-32 w-32 rounded-full opacity-0 blur-[50px] transition-opacity duration-500 group-hover:opacity-30"
-        style={{ background: accent }}
-      />
-
-      {/* Footer: gradient icon stage + title row + subtitle */}
-      <div className="relative z-10 flex items-center gap-4 p-4">
-        <div className="relative flex h-14 w-14 shrink-0 items-center justify-center">
-          <div
-            className="absolute inset-0 opacity-25 blur-[1px] transition-opacity duration-500 group-hover:opacity-50"
-            style={{ background: accent, borderRadius: "30% 70% 70% 30% / 30% 30% 70% 70%" }}
-          />
-          <div className="relative flex h-1/2 w-1/2 items-center justify-center transition-transform duration-300 group-hover:scale-110">
-            <TemplateLogo id={t.id} className="h-full w-full" />
-          </div>
-        </div>
-
-        <div className="flex min-w-0 flex-1 flex-col gap-1">
-          <div className="flex items-center justify-between gap-2">
-            <span className="truncate text-base font-black leading-tight tracking-tight text-[var(--wow-fg)]">
-              {t.title}
+      <span className="flex h-9 items-center justify-between border-b border-border bg-panel/50 px-3.5">
+        <span className="truncate font-mono text-xs text-subtle">
+          {showpiece ? basename(showpiece.path) : "sandbox"}
+        </span>
+        <RuntimeTag t={t} />
+      </span>
+      <span className="flex h-[138px] overflow-hidden bg-bg pr-3.5 pt-3">
+        <span className="w-9 shrink-0 select-none pr-3 text-right font-mono text-xs leading-5 text-subtle/50" aria-hidden>
+          {gutter.map((n) => (
+            <span key={n} className="block">
+              {n}
             </span>
-            <ArrowUpRight className="h-3.5 w-3.5 shrink-0 text-[var(--wow-faint)] transition-all group-hover:-translate-y-0.5 group-hover:translate-x-0.5 group-hover:text-[#8b93ff]" />
-          </div>
-          <p className="line-clamp-1 text-[11px] leading-relaxed text-[var(--wow-faint)]">
-            {t.subtitle ??
-              (depCount > 0
-                ? `${depCount} ${depCount === 1 ? "dep" : "deps"}`
-                : "Zero-install starter")}
-          </p>
-        </div>
-      </div>
+          ))}
+        </span>
+        <pre className="code-peek m-0 min-w-0 flex-1 overflow-hidden whitespace-pre font-mono text-xs leading-5 text-muted">
+          <code dangerouslySetInnerHTML={{ __html: html }} />
+        </pre>
+      </span>
+      <span className="flex items-center gap-3 border-t border-border px-3.5 py-3">
+        <LogoBlob t={t} size={52} />
+        <span className="flex min-w-0 flex-1 flex-col gap-0.5">
+          <span className="truncate text-[15px] font-semibold text-fg">{t.title}</span>
+          <span className="truncate text-[13px] text-subtle">{templateBlurb(t)}</span>
+        </span>
+        <span className="pgl-open text-accent" aria-hidden>
+          →
+        </span>
+      </span>
     </Link>
   );
 }

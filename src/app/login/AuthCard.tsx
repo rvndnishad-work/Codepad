@@ -17,11 +17,14 @@ type Providers = {
 export default function AuthCard({
   providers,
   next,
+  initialMode = "signin",
 }: {
   providers: Providers;
   next: string;
+  /** `/login?mode=signup` opens straight on the create-account form. */
+  initialMode?: "signin" | "signup";
 }) {
-  const [mode, setMode] = useState<"signin" | "signup">("signin");
+  const [mode, setMode] = useState<"signin" | "signup">(initialMode);
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");

@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowDown, ArrowLeft, ArrowUp, Check, ClipboardPaste, Coins, Repeat2, Search, Send, Sparkles, Trash2, X } from "lucide-react";
+import { ArrowDown, ArrowLeft, ArrowUp, BookOpen, Check, ClipboardPaste, Coins, Plus, Repeat2, Search, Send, Sparkles, Trash2, X } from "lucide-react";
 import type { CreditSummary, PoolCandidate } from "@/lib/ai-interview/console-server";
 import type { RoundSpecInput } from "@/lib/ai-interview/rounds";
 import {
@@ -25,6 +25,11 @@ import {
   expiryDate,
   parsePastedPeople,
   REMINDER_CHOICES,
+  ROLE_AREAS,
+  ROLE_LEVELS,
+  composeRoleTitle,
+  parseRoleTitle,
+  type RoleLevel,
 } from "@/lib/ai-interview/console";
 import { AI_ENGAGEMENT_CREDIT_COST, ENGAGEMENT_LABELS, normalizeEngagementLevel, type EngagementLevel } from "@/lib/ai-interview/engagement";
 import { paradigmName, roundLabel } from "@/lib/ai-interview/round-label";
@@ -34,7 +39,7 @@ import { selectCls } from "./kit";
 import { createScreeningAction } from "../actions";
 
 export type QuestionChoice = { id: string; title: string; kind: string; label: string; minutes: number; custom: boolean; language: string | null };
-export type ChallengeChoice = CuratableChallenge & { title: string; difficulty: string };
+export type ChallengeChoice = CuratableChallenge & { title: string; difficulty: string; mine: boolean };
 export type Prefill = {
   title: string;
   engagementLevel: string;
@@ -51,9 +56,8 @@ export type Prefill = {
   }[];
 };
 
-const SENIORITY = ["Junior", "Mid-level", "Senior", "Lead"];
-const DISCIPLINES = ["Frontend", "Backend", "Full-stack"];
 const MINUTES = [15, 20, 30, 45, 60];
+const MAX_ROUNDS = 6;
 
 /** A round's slot in the stack, kept when the stack changes so swaps survive. */
 const slotKey = (r: { paradigm: string; language?: string | null; frameworkLabel?: string | null }) =>
@@ -85,11 +89,14 @@ export default function NewScreening({
   const [sending, start] = useTransition();
   const [toasts, toast] = useToasts();
 
-  // 1. Role
+  // 1. Role: level and area compose the title; typing a title detaches them.
   const [title, setTitle] = useState(prefill?.title ?? "");
+  const [roleLevel, setRoleLevel] = useState<RoleLevel | null>(() => parseRoleTitle(prefill?.title ?? "").level);
+  const [roleArea, setRoleArea] = useState<string | null>(() => parseRoleTitle(prefill?.title ?? "").area);
+  const area = ROLE_AREAS.find((a) => a.id === roleArea) ?? null;
 
   // 2. What to test. A duplicated screening starts from its stack and swaps.
-  const init = useMemo(() => stackFromSpecs(prefill?.rounds ?? []), [prefill]);
+  const init = useMemo(() => stackFromSpecs(prefill?.rounds ?? [], challenges), [prefill, challenges]);
   const [frontend, setFrontend] = useState<string[]>(init.frontend);
   const [backend, setBackend] = useState<string[]>(init.backend);
   const [backendFw, setBackendFw] = useState<string[]>(init.backendFw);
@@ -99,6 +106,9 @@ export default function NewScreening({
   const [order, setOrder] = useState<string[]>(init.order);
   const [removed, setRemoved] = useState<string[]>([]);
   const [swapping, setSwapping] = useState<Row | null>(null);
+  // Rounds added straight from the question library, on top of the stack.
+  const [extra, setExtra] = useState<Row[]>(() => init.extra);
+  const [browsing, setBrowsing] = useState(false);
 
   // 3. Candidates
   const [picked, setPicked] = useState<string[]>(preselected);
@@ -123,7 +133,9 @@ export default function NewScreening({
   }, [frontend, backend, backendFw, dsa]);
 
   const rows: Row[] = useMemo(() => {
-    const curated = curateRoundSpecs(stack, { challenges }, { defaultMinutes: minutes }) as RoundSpecInput[];
+    // Only the public bank feeds automatic picks; library drafts are added by hand.
+    const bank = challenges.filter((c) => !c.mine);
+    const curated = curateRoundSpecs(stack, { challenges: bank }, { defaultMinutes: minutes }) as RoundSpecInput[];
     const list = curated
       .map((c) => {
         const key = slotKey(c);
@@ -131,13 +143,14 @@ export default function NewScreening({
         const spec: RoundSpecInput = swap ? { ...c, sourceKind: "scaffold", sourceId: undefined, templateId: swap } : c;
         return { key, spec, base: c };
       })
-      .filter((r) => !removed.includes(r.key));
+      .filter((r) => !removed.includes(r.key))
+      .concat(extra);
     const rank = (k: string) => {
       const i = order.indexOf(k);
       return i < 0 ? 1000 : i;
     };
     return list.map((r, i) => ({ r, i })).sort((a, b) => rank(a.r.key) - rank(b.r.key) || a.i - b.i).map((x) => x.r);
-  }, [stack, challenges, minutes, swaps, removed, order]);
+  }, [stack, challenges, minutes, swaps, removed, order, extra]);
 
   const missingDsa = dsa.filter((l) => !challenges.some((c) => c.paradigm === "dsa" && c.languages.map((x) => x.toLowerCase()).includes(l.toLowerCase())));
 
@@ -148,6 +161,7 @@ export default function NewScreening({
   const problems = [
     !title.trim() && "Name the role",
     !rows.length && "Pick at least one thing to test",
+    rows.length > MAX_ROUNDS && `Keep it to ${MAX_ROUNDS} rounds`,
     !people && "Add at least one candidate",
     people > 0 && !check.ok && "Not enough credits",
   ].filter(Boolean) as string[];
@@ -161,6 +175,38 @@ export default function NewScreening({
     if (i < 0 || j < 0 || j >= keys.length) return;
     [keys[i], keys[j]] = [keys[j], keys[i]];
     setOrder(keys);
+  }
+
+  function pickLevel(l: RoleLevel) {
+    const next = roleLevel === l ? null : l;
+    setRoleLevel(next);
+    setTitle(composeRoleTitle(next, roleArea));
+  }
+
+  function pickArea(id: string) {
+    const next = roleArea === id ? null : id;
+    setRoleArea(next);
+    setTitle(composeRoleTitle(roleLevel, next));
+    // A technical area starts the stack for you, only when nothing is picked yet.
+    const a = ROLE_AREAS.find((x) => x.id === next);
+    const empty = !frontend.length && !backend.length && !dsa.length && !extra.length;
+    if (a?.stack && empty) {
+      setFrontend(a.stack.frontend ?? []);
+      setBackend(a.stack.backend ?? []);
+      setDsa(a.stack.dsa ?? []);
+    }
+  }
+
+  function addFromLibrary(spec: RoundSpecInput) {
+    const key = `lib:${spec.sourceKind}:${spec.sourceId ?? spec.templateId}`;
+    if (rows.some((r) => r.key === key)) return;
+    setExtra((a) => [...a, { key, spec, base: spec }]);
+    toast("Round added");
+  }
+
+  function removeRound(key: string) {
+    if (key.startsWith("lib:")) setExtra((a) => a.filter((r) => r.key !== key));
+    else setRemoved((a) => [...a, key]);
   }
 
   function addPasted() {
@@ -226,22 +272,51 @@ export default function NewScreening({
       <div className="flex flex-col lg:flex-row gap-6 items-start">
         <div className="flex-1 min-w-0 w-full flex flex-col gap-4">
           {/* 1. Role */}
-          <Section n={1} title="Role" hint="What the candidates are applying for" done={!!title.trim()}>
-            <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Senior Frontend Engineer" aria-label="Role name" maxLength={120} className={`${inputCls} h-10 text-sm`} />
-            <div className="flex flex-wrap gap-1.5">
-              {SENIORITY.flatMap((s) => DISCIPLINES.map((d) => `${s} ${d} Engineer`))
-                .filter((t) => !title || t.toLowerCase().includes(title.toLowerCase().split(" ")[0] ?? ""))
-                .slice(0, 6)
-                .map((t) => (
-                  <Pill key={t} on={title === t} onClick={() => setTitle(t)}>
-                    {t}
-                  </Pill>
-                ))}
-            </div>
+          <Section n={1} title="Role" hint="Pick a level and an area, or type any title" done={!!title.trim()}>
+            <ChipGroup label="Level">
+              {ROLE_LEVELS.map((l) => (
+                <Pill key={l} on={roleLevel === l} onClick={() => pickLevel(l)}>
+                  {l}
+                </Pill>
+              ))}
+            </ChipGroup>
+            <ChipGroup label="Engineering">
+              {ROLE_AREAS.filter((a) => a.technical).map((a) => (
+                <Pill key={a.id} on={roleArea === a.id} onClick={() => pickArea(a.id)}>
+                  {a.label}
+                </Pill>
+              ))}
+            </ChipGroup>
+            <ChipGroup label="Business and other roles">
+              {ROLE_AREAS.filter((a) => !a.technical).map((a) => (
+                <Pill key={a.id} on={roleArea === a.id} onClick={() => pickArea(a.id)}>
+                  {a.label}
+                </Pill>
+              ))}
+            </ChipGroup>
+            <label className="flex flex-col gap-1.5">
+              <span className="text-xs font-medium text-subtle">Job title candidates will see</span>
+              <input
+                value={title}
+                onChange={(e) => {
+                  setTitle(e.target.value);
+                  setRoleLevel(null);
+                  setRoleArea(null);
+                }}
+                placeholder="Senior Frontend Engineer"
+                maxLength={120}
+                className={`${inputCls} h-10 text-sm`}
+              />
+            </label>
           </Section>
 
           {/* 2. What to test */}
-          <Section n={2} title="What to test" hint="Pick the stack. Each pick becomes one round." done={rows.length > 0}>
+          <Section n={2} title="What to test" hint="Pick the stack, or add questions from your library. Each becomes one round." done={rows.length > 0}>
+            {area && !area.technical && (
+              <p className="rounded-lg border border-warning/30 bg-warning/10 px-3.5 py-2.5 text-[13px] text-fg">
+                The AI interviewer runs coding rounds for now, so there is nothing to pick for {area.label.toLowerCase()} yet. Conversation rounds for roles like this are next on the list.
+              </p>
+            )}
             <ChipGroup label="Frontend">
               {FRONTEND_FRAMEWORKS.map((f) => (
                 <Pill key={f.id} on={frontend.includes(f.id)} onClick={() => toggle(setFrontend, f.id)}>
@@ -288,6 +363,13 @@ export default function NewScreening({
               </select>
             </label>
 
+            <div className="flex flex-wrap items-center gap-3">
+              <Btn icon={BookOpen} onClick={() => setBrowsing(true)}>
+                Add from question library
+              </Btn>
+              {rows.length > MAX_ROUNDS && <span className="text-[13px] text-danger">A screening can have at most {MAX_ROUNDS} rounds.</span>}
+            </div>
+
             {rows.length > 0 && (
               <ol className="flex flex-col rounded-xl border border-border divide-y divide-border">
                 {rows.map((r, i) => (
@@ -297,16 +379,18 @@ export default function NewScreening({
                       <span className="text-sm font-medium text-fg">{questionTitle(r.spec)}</span>
                       <span className="text-xs text-subtle">
                         {paradigmName(r.spec.paradigm)}, {roundLabel(r.spec)}, {r.spec.estimatedMinutes} min
-                        {r.spec.sourceKind === "scaffold" ? ", swapped" : ""}
+                        {r.key.startsWith("lib:") ? ", from your library" : r.spec.sourceKind === "scaffold" ? ", swapped" : ""}
                       </span>
                     </div>
                     <div className="flex items-center gap-1">
-                      <Btn variant="quiet" icon={Repeat2} onClick={() => setSwapping(r)}>
-                        Swap question
-                      </Btn>
+                      {!r.key.startsWith("lib:") && (
+                        <Btn variant="quiet" icon={Repeat2} onClick={() => setSwapping(r)}>
+                          Swap question
+                        </Btn>
+                      )}
                       <IconBtn label="Move up" disabled={i === 0} onClick={() => move(r.key, -1)} icon={ArrowUp} />
                       <IconBtn label="Move down" disabled={i === rows.length - 1} onClick={() => move(r.key, 1)} icon={ArrowDown} />
-                      <IconBtn label="Remove round" onClick={() => setRemoved((a) => [...a, r.key])} icon={Trash2} />
+                      <IconBtn label="Remove round" onClick={() => removeRound(r.key)} icon={Trash2} />
                     </div>
                   </li>
                 ))}
@@ -503,6 +587,16 @@ export default function NewScreening({
           }}
         />
       )}
+      {browsing && (
+        <LibraryDialog
+          questions={questions}
+          challenges={challenges}
+          minutes={minutes}
+          added={rows.map((r) => r.spec)}
+          onAdd={addFromLibrary}
+          onClose={() => setBrowsing(false)}
+        />
+      )}
       {pasting && (
         <Dialog
           title="Paste emails"
@@ -533,9 +627,25 @@ export default function NewScreening({
   );
 }
 
-function stackFromSpecs(specs: Prefill["rounds"]) {
-  const out = { frontend: [] as string[], backend: [] as string[], backendFw: [] as string[], dsa: [] as string[], swaps: {} as Record<string, string>, order: [] as string[], minutes: null as number | null };
+function stackFromSpecs(specs: Prefill["rounds"], challenges: ChallengeChoice[]) {
+  const out = { frontend: [] as string[], backend: [] as string[], backendFw: [] as string[], dsa: [] as string[], swaps: {} as Record<string, string>, order: [] as string[], minutes: null as number | null, extra: [] as Row[] };
+  const mine = new Set(challenges.filter((c) => c.mine).map((c) => c.id));
   for (const s of specs) {
+    // A round picked from the team library stays that exact question.
+    if (s.sourceKind === "challenge" && s.sourceId && mine.has(s.sourceId)) {
+      const spec: RoundSpecInput = {
+        paradigm: s.paradigm as RoundSpecInput["paradigm"],
+        language: s.language ?? undefined,
+        frameworkLabel: s.frameworkLabel ?? undefined,
+        sourceKind: "challenge",
+        sourceId: s.sourceId,
+        estimatedMinutes: s.estimatedMinutes,
+      };
+      const key = `lib:challenge:${s.sourceId}`;
+      out.extra.push({ key, spec, base: spec });
+      out.order.push(key);
+      continue;
+    }
     if (s.paradigm === "frontend") {
       const f = FRONTEND_FRAMEWORKS.find((x) => x.label === s.frameworkLabel || x.id === s.sourceId);
       if (f && !out.frontend.includes(f.id)) out.frontend.push(f.id);
@@ -696,6 +806,131 @@ function SwapDialog({
             </li>
           ))}
           {list.length === 0 && <li className="px-3.5 py-3 text-[13px] text-subtle">No questions match.</li>}
+        </ul>
+      </div>
+    </Dialog>
+  );
+}
+
+type LibraryTab = "team" | "builtin" | "bank";
+
+/** Browse every question the workspace can use and add any of them as a round. */
+function LibraryDialog({
+  questions,
+  challenges,
+  minutes,
+  added,
+  onAdd,
+  onClose,
+}: {
+  questions: QuestionChoice[];
+  challenges: ChallengeChoice[];
+  minutes: number;
+  added: RoundSpecInput[];
+  onAdd: (spec: RoundSpecInput) => void;
+  onClose: () => void;
+}) {
+  const [tab, setTab] = useState<LibraryTab>("team");
+  const [q, setQ] = useState("");
+  const [kind, setKind] = useState<"" | "frontend" | "backend" | "dsa">("");
+
+  type Item = { id: string; title: string; meta: string; kind: string; spec: RoundSpecInput };
+  const items: Record<LibraryTab, Item[]> = useMemo(() => {
+    const fromQuestion = (x: QuestionChoice): Item => ({
+      id: `q:${x.id}`,
+      title: x.title,
+      meta: `${x.label}, ${x.minutes} min`,
+      kind: x.kind,
+      spec: { paradigm: x.kind as RoundSpecInput["paradigm"], language: x.language ?? undefined, sourceKind: "scaffold", templateId: x.id, estimatedMinutes: x.minutes },
+    });
+    const fromChallenge = (c: ChallengeChoice): Item => {
+      const fw = c.paradigm === "frontend" ? FRONTEND_FRAMEWORKS.find((f) => c.frameworks.includes(f.id)) : undefined;
+      const spec: RoundSpecInput = {
+        paradigm: c.paradigm,
+        language: c.paradigm === "frontend" ? undefined : c.languages[0],
+        frameworkLabel: fw?.label,
+        sourceKind: "challenge",
+        sourceId: c.id,
+        estimatedMinutes: minutes,
+      };
+      return { id: `c:${c.id}`, title: c.title, meta: `${roundLabel(spec)}, ${c.difficulty}`, kind: c.paradigm, spec };
+    };
+    return {
+      team: [...questions.filter((x) => x.custom).map(fromQuestion), ...challenges.filter((c) => c.mine).map(fromChallenge)],
+      builtin: questions.filter((x) => !x.custom).map(fromQuestion),
+      bank: challenges.filter((c) => !c.mine).map(fromChallenge),
+    };
+  }, [questions, challenges, minutes]);
+
+  const isAdded = (s: RoundSpecInput) => added.some((a) => a.sourceKind === s.sourceKind && (a.sourceId ?? a.templateId) === (s.sourceId ?? s.templateId));
+  const needle = q.trim().toLowerCase();
+  const list = items[tab].filter((x) => (!kind || x.kind === kind) && (!needle || x.title.toLowerCase().includes(needle)));
+  const TABS: { id: LibraryTab; label: string }[] = [
+    { id: "team", label: "Your team" },
+    { id: "builtin", label: "Built in" },
+    { id: "bank", label: "Problem bank" },
+  ];
+
+  return (
+    <Dialog title="Add from question library" onClose={onClose} width={620}>
+      <div className="flex flex-col gap-3">
+        <div role="tablist" aria-label="Library" className="flex gap-1 border-b border-border">
+          {TABS.map((t) => (
+            <button
+              key={t.id}
+              type="button"
+              role="tab"
+              aria-selected={tab === t.id}
+              onClick={() => setTab(t.id)}
+              className={`h-9 px-3 -mb-px border-b-2 text-[13px] transition ${tab === t.id ? "border-secondary text-fg" : "border-transparent text-muted hover:text-fg"}`}
+            >
+              {t.label} <span className="text-subtle tabular-nums">{items[t.id].length}</span>
+            </button>
+          ))}
+        </div>
+        <div className="flex flex-wrap gap-2">
+          <label className="relative flex-1 min-w-[200px]">
+            <span className="sr-only">Search questions</span>
+            <Search aria-hidden className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-subtle" />
+            <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search questions" className={`${inputCls} pl-8`} />
+          </label>
+          <select value={kind} onChange={(e) => setKind(e.target.value as typeof kind)} aria-label="Type" className={`${selectCls} w-auto`}>
+            <option value="">All types</option>
+            <option value="frontend">Frontend</option>
+            <option value="backend">Backend</option>
+            <option value="dsa">Algorithms</option>
+          </select>
+        </div>
+        <ul className="flex flex-col max-h-[50vh] overflow-y-auto rounded-xl border border-border divide-y divide-border">
+          {list.map((x) => {
+            const done = isAdded(x.spec);
+            return (
+              <li key={x.id} className="flex items-center gap-3 px-3.5 py-3">
+                <span className="flex-1 min-w-0">
+                  <span className="block text-sm text-fg truncate">{x.title}</span>
+                  <span className="block text-xs text-subtle">
+                    {paradigmName(x.spec.paradigm)}, {x.meta}
+                  </span>
+                </span>
+                {done ? (
+                  <span className="inline-flex items-center gap-1 text-[13px] text-success">
+                    <Check className="w-3.5 h-3.5" aria-hidden /> Added
+                  </span>
+                ) : (
+                  <Btn icon={Plus} onClick={() => onAdd(x.spec)}>
+                    Add
+                  </Btn>
+                )}
+              </li>
+            );
+          })}
+          {list.length === 0 && (
+            <li className="px-3.5 py-6 text-center text-[13px] text-subtle">
+              {items[tab].length === 0 && tab === "team"
+                ? "Your team has no questions yet. Write one under Question sets, or add challenges in the Question library."
+                : "No questions match."}
+            </li>
+          )}
         </ul>
       </div>
     </Dialog>

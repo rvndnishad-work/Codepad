@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
+  composeRoleTitle,
+  parseRoleTitle,
   parseSummary,
   awaitsDecision,
   creditCheck,
@@ -149,5 +151,22 @@ describe("parseSummary", () => {
   it("handles a single block and empty text", () => {
     expect(parseSummary("+ Good naming")).toEqual([{ round: null, score: null, strengths: ["Good naming"], gaps: [], notes: [] }]);
     expect(parseSummary(null)).toEqual([]);
+  });
+});
+
+
+describe("role titles", () => {
+  it("composes level and area", () => {
+    expect(composeRoleTitle("Senior", "frontend")).toBe("Senior Frontend Engineer");
+    expect(composeRoleTitle("Mid-level", "sales")).toBe("Account Executive");
+    expect(composeRoleTitle("Lead", "design")).toBe("Lead Product Designer");
+    expect(composeRoleTitle("Manager", "backend")).toBe("Backend Engineering Manager");
+    expect(composeRoleTitle("Manager", "support")).toBe("Customer Support Manager");
+    expect(composeRoleTitle("Junior", null)).toBe("Junior Engineer");
+    expect(composeRoleTitle(null, "product")).toBe("Product Manager");
+  });
+  it("reads a composed title back", () => {
+    expect(parseRoleTitle("Senior Frontend Engineer")).toEqual({ level: "Senior", area: "frontend" });
+    expect(parseRoleTitle("Growth hacker")).toEqual({ level: null, area: null });
   });
 });

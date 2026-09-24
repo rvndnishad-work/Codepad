@@ -51,17 +51,22 @@ export default function QuestionEngagement({ slug, initialLikes, tone = "default
 
   return (
     <button
+      type="button"
       onClick={toggle}
       disabled={busy}
-      className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl border text-sm font-bold transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#8b93ff] ${
+      aria-pressed={liked}
+      aria-label={`${liked ? "Unlike" : "Like"} this question, ${likes} likes`}
+      className={`inline-flex items-center gap-2 border text-sm font-medium tabular-nums transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent motion-reduce:transition-none ${
+        tone === "dark" ? "h-11 rounded-full px-4 backdrop-blur-md" : "h-10 rounded-xl px-4"
+      } ${
         liked
-          ? "border-rose-500/40 bg-rose-500/10 text-rose-500"
+          ? "border-danger/40 bg-danger/10 text-danger"
           : tone === "dark"
-            ? "border-white/25 bg-white/[0.07] text-white/85 hover:text-white hover:border-white/50"
-            : "border-border text-muted hover:text-fg hover:border-fg/30"
+            ? "border-white/[0.14] bg-white/[0.06] text-white/85 hover:border-white/30 hover:bg-white/[0.1] hover:text-white"
+            : "border-border text-muted hover:border-border-strong hover:text-fg"
       }`}
     >
-      <Heart className={`w-4 h-4 text-rose-500 ${liked ? "fill-current" : ""}`} />
+      <Heart className={`h-4 w-4 ${liked ? "fill-current" : ""}`} aria-hidden />
       {likes}
     </button>
   );

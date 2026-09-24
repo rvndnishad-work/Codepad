@@ -34,16 +34,21 @@ export default function SaveButton({ question, saved: controlledSaved, onClick, 
 
   return (
     <button
+      type="button"
       onClick={handlePress}
-      className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl border text-sm font-bold transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#8b93ff] ${
+      aria-pressed={displaySaved}
+      title="Shortcut: S"
+      className={`inline-flex items-center gap-2 border text-sm font-medium transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent motion-reduce:transition-none ${
+        tone === "dark" ? "h-11 rounded-full px-4 backdrop-blur-md" : "h-10 rounded-xl px-4"
+      } ${
         displaySaved
-          ? "border-accent/40 bg-accent/10 text-accent"
+          ? "border-accent/40 bg-accent/10 text-accent hover:bg-accent/15"
           : tone === "dark"
-            ? "border-white/25 bg-white/[0.07] text-white/85 hover:text-white hover:border-white/50"
-            : "border-border text-muted hover:text-fg hover:border-fg/30"
+            ? "border-white/[0.14] bg-white/[0.06] text-white/85 hover:border-white/30 hover:bg-white/[0.1] hover:text-white"
+            : "border-border text-muted hover:border-border-strong hover:text-fg"
       }`}
     >
-      {displaySaved ? <BookmarkCheck className="w-4 h-4 text-blue-500 dark:text-blue-400" /> : <Bookmark className="w-4 h-4 text-blue-500 dark:text-blue-400" />}
+      {displaySaved ? <BookmarkCheck className="h-4 w-4" aria-hidden /> : <Bookmark className="h-4 w-4" aria-hidden />}
       {displaySaved ? "Saved" : "Save"}
     </button>
   );

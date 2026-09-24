@@ -76,11 +76,10 @@ export default async function QuestionDetailPage({ params }: { params: Promise<{
     (a, b) => (DIFF_RANK[a.difficulty ?? "medium"] ?? 1) - (DIFF_RANK[b.difficulty ?? "medium"] ?? 1),
   );
   const idx = ordered.findIndex((n) => n.slug === slug);
-  const prevQuestion = idx > 0 ? { slug: ordered[idx - 1].slug, title: ordered[idx - 1].title } : null;
-  const nextQuestion =
-    idx >= 0 && idx < ordered.length - 1
-      ? { slug: ordered[idx + 1].slug, title: ordered[idx + 1].title }
-      : null;
+  const nav = (n: (typeof ordered)[number] | undefined) =>
+    n ? { slug: n.slug, title: n.title, difficulty: n.difficulty } : null;
+  const prevQuestion = idx > 0 ? nav(ordered[idx - 1]) : null;
+  const nextQuestion = idx >= 0 ? nav(ordered[idx + 1]) : null;
 
   const comments: CommentNode[] = commentRows.map((c) => ({
     id: c.id,

@@ -1,0 +1,254 @@
+/* /interview-question/[slug]: reading styles for the problem and the answer,
+   code blocks, the solution reveal and small hover details. Colours come from
+   the site tokens. Elements that carry their own inline style (the curated
+   "How to answer" card) are left alone: every decorative rule here skips
+   [style]. Everything animated stops under reduced motion. */
+
+/* ---------- Long-form text ---------- */
+
+.qa-doc {
+  --qa-text: rgb(var(--c-fg) / 0.84);
+  color: var(--qa-text);
+  font-size: 16px;
+  line-height: 1.75;
+}
+@media (min-width: 768px) {
+  .qa-doc { font-size: 16.5px; }
+}
+
+/* MarkdownRenderer's article carries Tailwind typography; these win over it. */
+.qa-doc article.prose { color: var(--qa-text); font-size: inherit; line-height: inherit; max-width: none; }
+.qa-doc article.prose :where(p, li):not([style]) { color: inherit; }
+.qa-doc article.prose p { margin: 0 0 1.15em; }
+.qa-doc article.prose > :first-child { margin-top: 0; }
+.qa-doc article.prose > :last-child { margin-bottom: 0; }
+
+.qa-doc article.prose h2 {
+  position: relative;
+  margin: 2.4em 0 0.75em;
+  font-size: 1.45em;
+  line-height: 1.3;
+  font-weight: 600;
+  letter-spacing: -0.015em;
+  color: rgb(var(--c-fg));
+}
+.qa-doc article.prose h3 {
+  position: relative;
+  margin: 1.9em 0 0.6em;
+  font-size: 1.15em;
+  line-height: 1.4;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: rgb(var(--c-fg));
+}
+.qa-doc article.prose h4 { margin: 1.6em 0 0.5em; font-size: 1em; font-weight: 600; color: rgb(var(--c-fg)); }
+.qa-doc article.prose :where(h2, h3) code:not([style]) { font-size: 0.86em; }
+
+/* The heading's # link shows on hover, in the left gutter on wide screens. */
+.doc-anchor {
+  margin-left: 0.4em;
+  font-weight: 500;
+  color: rgb(var(--c-subtle));
+  text-decoration: none !important;
+  opacity: 0;
+  transition: opacity 0.15s ease, color 0.15s ease;
+}
+.group:hover > .doc-anchor,
+.doc-anchor:focus-visible { opacity: 1; }
+.doc-anchor:hover { color: rgb(var(--c-accent)); }
+
+.qa-doc article.prose strong:not([style]) { color: rgb(var(--c-fg)); font-weight: 600; }
+.qa-doc article.prose a:not([style]) {
+  color: rgb(var(--c-accent-2));
+  text-decoration: underline;
+  text-decoration-color: rgb(var(--c-accent-2) / 0.35);
+  text-underline-offset: 3px;
+}
+.qa-doc article.prose a:not([style]):hover { text-decoration-color: rgb(var(--c-accent-2)); }
+
+/* Inline code: quiet chip in the text colour, not a highlighter. */
+.qa-doc article.prose :not(pre) > code:not([style]) {
+  padding: 0.12em 0.4em;
+  border: 1px solid rgb(var(--c-border));
+  border-radius: 6px;
+  background: rgb(var(--c-panel));
+  color: rgb(var(--c-fg));
+  font-size: 0.86em;
+  font-weight: 500;
+  white-space: break-spaces;
+}
+
+.qa-doc article.prose :where(ul, ol) { margin: 0 0 1.2em; padding-left: 1.4em; }
+.qa-doc article.prose li { margin: 0.35em 0; padding-left: 0.2em; }
+.qa-doc article.prose li::marker { color: rgb(var(--c-subtle)); }
+.qa-doc article.prose ol > li::marker { font-weight: 500; }
+
+.qa-doc article.prose blockquote:not([style]) {
+  margin: 1.6em 0;
+  padding: 14px 18px;
+  border: 1px solid rgb(var(--c-border));
+  border-left: 3px solid rgb(var(--c-accent-2) / 0.7);
+  border-radius: 12px;
+  background: rgb(var(--c-surface));
+  color: rgb(var(--c-muted));
+  font-style: normal;
+  font-weight: 400;
+  quotes: none;
+}
+.qa-doc article.prose blockquote:not([style]) p { margin: 0 0 0.6em; }
+.qa-doc article.prose blockquote:not([style]) p:last-child { margin-bottom: 0; }
+.qa-doc article.prose blockquote:not([style]) p::before,
+.qa-doc article.prose blockquote:not([style]) p::after { content: none; }
+
+.qa-doc article.prose hr { margin: 2.4em 0; border-color: rgb(var(--c-border)); }
+
+/* Tables scroll inside their frame instead of squeezing the columns. */
+.doc-table {
+  margin: 1.6em 0;
+  overflow-x: auto;
+  border: 1px solid rgb(var(--c-border));
+  border-radius: 14px;
+  background: rgb(var(--c-surface));
+}
+/* The wrapper scrolls, so the table itself goes back to a real table (globals make .prose tables blocks). */
+.qa-doc .doc-table table { display: table; max-width: none; overflow: visible; margin: 0 !important; width: 100%; min-width: 520px; border-collapse: collapse; font-size: 0.9em; line-height: 1.55; }
+.doc-table thead { background: rgb(var(--c-panel)); }
+.doc-table th {
+  padding: 11px 16px !important;
+  text-align: left;
+  font-weight: 600;
+  color: rgb(var(--c-fg));
+  border-bottom: 1px solid rgb(var(--c-border));
+}
+.doc-table td {
+  padding: 11px 16px !important;
+  vertical-align: top;
+  color: var(--qa-text);
+  border-top: 1px solid rgb(var(--c-border) / 0.7);
+}
+.doc-table tbody tr:first-child td { border-top: 0; }
+.doc-table tbody tr:hover td { background: rgb(var(--c-panel) / 0.5); }
+
+/* Hand-drawn SVG diagrams: framed, and they open larger on click. */
+.qa-doc .iq-diagram {
+  margin: 1.8em 0;
+  padding: 18px;
+  border: 1px solid rgb(var(--c-border));
+  border-radius: 16px;
+  background: rgb(var(--c-surface));
+  cursor: zoom-in;
+  transition: border-color 0.15s ease;
+}
+.qa-doc .iq-diagram:hover { border-color: rgb(var(--c-border-strong)); }
+
+/* ---------- Code blocks ---------- */
+
+.doc-code {
+  margin: 1.6em 0;
+  overflow: hidden;
+  border: 1px solid rgb(var(--c-border));
+  border-radius: 14px;
+  background: #0b0d12; /* fixed dark: the highlight theme is github-dark */
+}
+.doc-code-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  height: 38px;
+  padding: 0 8px 0 16px;
+  border-bottom: 1px solid rgb(var(--c-border));
+  background: rgb(var(--c-surface));
+  font-size: 12px;
+  font-weight: 500;
+  color: rgb(var(--c-subtle));
+}
+.doc-code-bar button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 28px;
+  padding: 0 10px;
+  border-radius: 8px;
+  color: rgb(var(--c-subtle));
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+.doc-code-bar button:hover { background: rgb(var(--c-panel)); color: rgb(var(--c-fg)); }
+.doc-code-bar button:focus-visible { outline: 2px solid rgb(var(--c-accent)); outline-offset: -2px; }
+.doc-code pre {
+  margin: 0 !important;
+  padding: 16px 18px !important;
+  overflow-x: auto;
+  background: transparent !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  font-size: 13.5px;
+  line-height: 1.7;
+  white-space: pre;
+  scrollbar-width: thin;
+  scrollbar-color: rgb(var(--c-border-strong)) transparent;
+}
+.doc-code pre code {
+  padding: 0 !important;
+  background: transparent !important;
+  border: 0 !important;
+  font-size: inherit !important;
+  white-space: pre !important;
+  color: rgb(var(--c-muted));
+}
+
+/* The same frame for code outside the answer (examples, runners). */
+.qa-code-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: rgb(var(--c-border-strong)) transparent;
+}
+
+/* ---------- Solution reveal ---------- */
+
+.qa-preview {
+  -webkit-mask-image: linear-gradient(to bottom, black 0%, transparent 92%);
+  mask-image: linear-gradient(to bottom, black 0%, transparent 92%);
+  filter: blur(5px);
+  user-select: none;
+  pointer-events: none;
+}
+
+@keyframes qa-in {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: none; }
+}
+.qa-in { animation: qa-in 0.45s cubic-bezier(0.2, 0.7, 0.2, 1) both; }
+
+/* Soft pulse on the lock while the solution waits. */
+@keyframes qa-glow {
+  0%, 100% { box-shadow: 0 0 0 0 rgb(var(--c-accent) / 0); }
+  50% { box-shadow: 0 0 0 8px rgb(var(--c-accent) / 0.08); }
+}
+.qa-lock { animation: qa-glow 2.8s ease-in-out infinite; }
+
+/* ---------- Lists, links and small details ---------- */
+
+.qa-row { transition: background-color 0.15s ease, border-color 0.15s ease; }
+.qa-row .qa-go { opacity: 0; transform: translateX(-3px); transition: opacity 0.15s ease, transform 0.15s ease; }
+.qa-row:hover .qa-go,
+.qa-row:focus-visible .qa-go { opacity: 1; transform: none; }
+.qa-row .qa-title { transition: color 0.15s ease; }
+.qa-row:hover .qa-title { color: rgb(var(--c-fg)); }
+
+.qa-next { transition: border-color 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease; }
+.qa-next:hover {
+  transform: translateY(-2px);
+  border-color: rgb(var(--c-accent) / 0.5);
+  box-shadow: 0 24px 60px -30px rgb(var(--c-accent) / 0.45);
+}
+.qa-next .qa-arrow { transition: transform 0.2s ease; }
+.qa-next:hover .qa-arrow { transform: translateX(3px); }
+
+/* Table of contents: the active entry gets the accent rule. */
+.qa-toc a { transition: color 0.15s ease, border-color 0.15s ease; }
+
+@media (prefers-reduced-motion: reduce) {
+  .qa-in, .qa-lock { animation: none; }
+  .qa-row .qa-go, .qa-next, .qa-next .qa-arrow, .doc-anchor { transition: none; }
+  .qa-next:hover { transform: none; }
+}

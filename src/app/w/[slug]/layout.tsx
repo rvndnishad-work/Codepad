@@ -8,7 +8,6 @@ import {
   WORKSPACE_ADMIN_ROLES,
 } from "@/lib/totp-gate";
 import WorkspaceShell from "./WorkspaceShell";
-import { effectivePlan } from "@/lib/billing/trial";
 import { planDisplay } from "@/lib/workspace/display";
 
 type Props = {
@@ -90,7 +89,6 @@ export default async function WorkspaceLayout({ children, params }: Props) {
       current={{ name: activeWorkspace.name, slug, planLabel: plan.label }}
       workspaces={switcher}
       plan={plan}
-      seatLimit={effectivePlan(activeWorkspace).seatLimit}
       counts={{
         challenges: activeWorkspace._count.challenges,
         interviews: activeWorkspace._count.sessions,

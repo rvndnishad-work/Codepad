@@ -11,7 +11,6 @@ type Props = {
   current: SwitcherWorkspace;
   workspaces: SwitcherWorkspace[];
   plan: PlanDisplay;
-  seatLimit: number | null;
   counts: SidebarCounts;
   user: { name?: string | null; email?: string | null; image?: string | null };
   isAdmin: boolean;
@@ -23,7 +22,7 @@ type Props = {
  * (a drawer under the app bar on phones), and a main column that scrolls on
  * its own.
  */
-export default function WorkspaceShell({ current, workspaces, plan, seatLimit, counts, user, isAdmin, children }: Props) {
+export default function WorkspaceShell({ current, workspaces, plan, counts, user, isAdmin, children }: Props) {
   const [mobileOpen, setMobileOpen] = useState(false);
   const pathname = usePathname();
   const params = useSearchParams();
@@ -46,7 +45,6 @@ export default function WorkspaceShell({ current, workspaces, plan, seatLimit, c
           slug={current.slug}
           plan={plan}
           counts={counts}
-          seatLimit={seatLimit}
           mobileOpen={mobileOpen}
           onNavigate={() => setMobileOpen(false)}
         />

@@ -1,14 +1,21 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
-import { motion, useReducedMotion, useMotionValue, useSpring } from "framer-motion";
-import { ArrowUpRight } from "lucide-react";
-import { TECHNOLOGIES } from "@/lib/interview-questions/shared";
-import TechSvg from "@/components/TechSvg";
+import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
+import { ArrowUpRight, Check } from "lucide-react";
 import { getSolved } from "@/lib/interview-questions/progress";
-import { getTechMeta } from "@/lib/interview-questions/techTheme";
-import { SpotlightGroup, SpotlightCard } from "@/components/scroll/SpotlightGroup";
+import {
+  TRACKS,
+  TOPIC_ORDER,
+  trackOf,
+  topicName,
+  topicBlurb,
+  plural,
+  type TrackKey,
+} from "@/lib/interview-questions/topic-catalog";
+import { TopicLogoBlob } from "./_components/TopicLogo";
+import { DifficultyBar } from "./_components/Difficulty";
 
 interface TechStats {
   easy: number;
@@ -17,186 +24,139 @@ interface TechStats {
   total: number;
 }
 
-/** Pointer-tracked 3D tilt (springs) — disabled for reduced motion. */
-function TiltModule({ children }: { children: React.ReactNode }) {
-  const reduce = useReducedMotion();
-  const rx = useSpring(0, { stiffness: 180, damping: 16 });
-  const ry = useSpring(0, { stiffness: 180, damping: 16 });
-  if (reduce) return <div className="h-full">{children}</div>;
-  return (
-    <motion.div
-      className="h-full"
-      style={{ rotateX: rx, rotateY: ry, transformPerspective: 1000 }}
-      onMouseMove={(e) => {
-        const r = e.currentTarget.getBoundingClientRect();
-        ry.set(((e.clientX - r.left) / r.width - 0.5) * 10);
-        rx.set(-((e.clientY - r.top) / r.height - 0.5) * 10);
-      }}
-      onMouseLeave={() => {
-        rx.set(0);
-        ry.set(0);
-      }}
-    >
-      {children}
-    </motion.div>
-  );
-}
+type Filter = "all" | TrackKey;
 
-/** Radial "decrypted" progress ring. */
-function SolveRing({ solved, total }: { solved: number; total: number }) {
-  const pct = total > 0 ? Math.min(1, solved / total) : 0;
-  const R = 15.5;
-  const C = 2 * Math.PI * R;
-  return (
-    <div className="relative h-11 w-11 shrink-0" title={`${solved}/${total} decrypted`}>
-      <svg viewBox="0 0 36 36" className="h-11 w-11 -rotate-90">
-        <circle cx="18" cy="18" r={R} fill="none" strokeWidth="3.5" className="stroke-black/10 dark:stroke-white/10" />
-        <circle
-          cx="18" cy="18" r={R} fill="none" stroke="#34d399" strokeWidth="3.5" strokeLinecap="round"
-          strokeDasharray={C} strokeDashoffset={C * (1 - pct)}
-          className="transition-all duration-500"
-        />
-      </svg>
-      <span className="absolute inset-0 grid place-items-center font-mono text-[10px] font-bold tabular-nums text-[var(--wow-fg)]">
-        {Math.round(pct * 100)}%
-      </span>
-    </div>
-  );
-}
+const CHIPS: { key: Filter; label: string; count: number }[] = [
+  { key: "all", label: "All topics", count: TOPIC_ORDER.length },
+  ...TRACKS.map((t) => ({ key: t.key, label: t.label, count: t.topics.length })),
+];
 
-export default function TechCards({
-  stats,
-}: {
-  stats: Record<string, TechStats>;
-}) {
+/** "Browse by topic": track filter chips and one card per topic. */
+export default function TechCards({ stats }: { stats: Record<string, TechStats> }) {
+  const [filter, setFilter] = useState<Filter>("all");
   const [solvedCounts, setSolvedCounts] = useState<Record<string, number>>({});
   const reduceMotion = useReducedMotion();
 
   useEffect(() => {
     const computeSolved = () => {
-      const list = getSolved();
       const counts: Record<string, number> = {};
-      list.forEach((q) => {
-        if (q.technology) {
-          counts[q.technology] = (counts[q.technology] || 0) + 1;
-        }
-      });
+      for (const q of getSolved()) {
+        if (q.technology) counts[q.technology] = (counts[q.technology] || 0) + 1;
+      }
       setSolvedCounts(counts);
     };
-
     computeSolved();
     window.addEventListener("iq-solved-changed", computeSolved);
     return () => window.removeEventListener("iq-solved-changed", computeSolved);
   }, []);
 
+  const total = Object.values(stats).reduce((s, t) => s + t.total, 0);
+  const topics = TOPIC_ORDER.filter((slug) => filter === "all" || trackOf(slug) === filter);
+
   return (
-    <SpotlightGroup className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-      {TECHNOLOGIES.map((t, i) => {
-        const m = getTechMeta(t.slug);
-        const stat = stats[t.slug] ?? { easy: 0, medium: 0, hard: 0, total: 0 };
-        const solvedCount = solvedCounts[t.slug] || 0;
-        const segs = [
-          { n: stat.easy, c: "bg-emerald-500", label: `Easy: ${stat.easy}` },
-          { n: stat.medium, c: "bg-amber-500", label: `Medium: ${stat.medium}` },
-          { n: stat.hard, c: "bg-rose-500", label: `Hard: ${stat.hard}` },
-        ].filter((s) => s.n > 0);
+    <div className="flex flex-col gap-4 md:gap-7">
+      <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between lg:gap-6">
+        <div className="flex flex-col gap-2">
+          <h2 className="text-2xl font-semibold tracking-[-0.02em] text-fg md:text-[30px] md:leading-[1.15]">
+            Browse by topic
+          </h2>
+          <p className="text-sm text-subtle md:text-[15px]">
+            {TOPIC_ORDER.length} topics, {plural(total, "question")} with answers.
+          </p>
+        </div>
+        <div
+          role="group"
+          aria-label="Filter topics"
+          className="-mx-4 flex gap-2 overflow-x-auto px-4 [scrollbar-width:none] md:mx-0 md:px-0 [&::-webkit-scrollbar]:hidden"
+        >
+          {CHIPS.map((c) => {
+            const active = filter === c.key;
+            return (
+              <button
+                key={c.key}
+                type="button"
+                aria-pressed={active}
+                onClick={() => setFilter(c.key)}
+                className={`flex h-9 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full border px-[15px] text-sm font-medium transition-colors motion-reduce:transition-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent ${
+                  active
+                    ? "border-accent bg-accent text-accent-ink"
+                    : "border-border bg-surface text-muted hover:border-border-strong hover:text-fg"
+                }`}
+              >
+                {c.label}
+                <span className={`text-xs ${active ? "opacity-60" : "text-subtle"}`}>{c.count}</span>
+              </button>
+            );
+          })}
+        </div>
+      </div>
 
-        return (
-          <motion.div
-            key={t.slug}
-            className="h-full"
-            initial={reduceMotion ? false : { opacity: 0, y: 36 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, margin: "-40px" }}
-            transition={{ duration: 0.55, delay: (i % 3) * 0.09, ease: "easeOut" }}
-          >
-            <SpotlightCard className="h-full">
-              <TiltModule>
+      <motion.div layout={!reduceMotion} className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-3 xl:grid-cols-4">
+        <AnimatePresence mode="popLayout" initial={false}>
+          {topics.map((slug, i) => {
+            const stat = stats[slug] ?? { easy: 0, medium: 0, hard: 0, total: 0 };
+            const solved = solvedCounts[slug] || 0;
+            return (
+              <motion.div
+                key={slug}
+                layout={!reduceMotion}
+                initial={{ opacity: 0, y: 24 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                exit={reduceMotion ? undefined : { opacity: 0, scale: 0.96 }}
+                viewport={{ once: true, margin: "-30px" }}
+                transition={reduceMotion ? { duration: 0 } : { duration: 0.45, delay: (i % 4) * 0.06, ease: "easeOut" }}
+              >
                 <Link
-                  href={`/interview-questions/${t.slug}`}
-                  className={`group relative flex h-full flex-col overflow-hidden rounded-2xl border border-[var(--wow-card-border)] bg-[var(--wow-card)] p-5 backdrop-blur-sm transition-all duration-300 hover:-translate-y-1 ${m.hoverBorder} hover:shadow-[0_18px_50px_-20px_rgba(139,147,255,0.45)]`}
+                  href={`/interview-questions/${slug}`}
+                  className="iq-card flex h-[132px] flex-col gap-2.5 rounded-2xl border border-border bg-surface p-3.5 hover:border-border-strong hover:bg-panel focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent sm:h-[184px] sm:gap-0 sm:p-5"
                 >
-                  {/* sheen sweep */}
-                  <span
-                    aria-hidden
-                    className="pointer-events-none absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/[0.07] to-transparent transition-transform duration-700 group-hover:translate-x-full"
-                  />
-                  {/* hover glow */}
-                  <span aria-hidden className={`pointer-events-none absolute -top-14 -right-14 h-36 w-36 rounded-full blur-3xl opacity-0 transition-opacity duration-500 group-hover:opacity-40 ${m.glowColor}`} />
-
-                  {/* module header */}
-                  <div className="relative flex items-center justify-between">
-                    <span className="font-mono text-[10px] font-bold uppercase tracking-[0.25em] text-muted">
-                      MOD-{String(i + 1).padStart(2, "0")}
+                  <div className="flex flex-col items-start gap-2.5 sm:flex-row sm:items-center sm:gap-3.5">
+                    <span className="sm:hidden">
+                      <TopicLogoBlob slug={slug} size={40} />
                     </span>
-                    <span className="grid h-7 w-7 place-items-center rounded-full border border-[var(--wow-card-border)] text-muted opacity-60 transition-all duration-300 group-hover:border-[#8b93ff]/50 group-hover:text-[#8b93ff] group-hover:opacity-100">
-                      <ArrowUpRight className="h-3.5 w-3.5" />
+                    <span className="hidden sm:block">
+                      <TopicLogoBlob slug={slug} size={52} />
                     </span>
-                  </div>
-
-                  {/* reactor icon */}
-                  <div className="relative mt-4 flex items-center gap-4">
-                    <span className={`relative grid h-16 w-16 shrink-0 place-items-center rounded-2xl border ${m.iconBg} transition-transform duration-300 group-hover:scale-105`}>
-                      <TechSvg tech={t.slug} className="h-9 w-9" />
-                      <span aria-hidden className={`pointer-events-none absolute -inset-1 rounded-[1.1rem] border border-white/5 opacity-0 transition-opacity duration-300 group-hover:opacity-100`} />
-                    </span>
-                    <span>
-                      <h3 className="wow-font-display text-[1.35rem] leading-none text-[var(--wow-fg)]">
-                        {t.label}
+                    <div className="flex w-full min-w-0 flex-1 flex-col gap-0.5">
+                      <h3 className="iq-name truncate text-[15px] font-semibold text-fg sm:text-[17px] sm:tracking-[-0.01em]">
+                        {topicName(slug)}
                       </h3>
-                      <p className="mt-1 font-mono text-[10px] uppercase tracking-[0.2em] text-muted">
-                        {stat.total > 0 ? `${stat.total} signals` : "standby"}
+                      <p className="truncate text-xs text-subtle sm:text-[13px]">
+                        {plural(stat.total, "question")}
+                        {solved > 0 && <span className="text-success sm:hidden"> · {solved} solved</span>}
                       </p>
-                    </span>
+                    </div>
+                    <ArrowUpRight className="iq-go hidden h-[18px] w-[18px] shrink-0 text-muted sm:block" aria-hidden />
                   </div>
 
-                  <p className="relative mt-3 text-xs leading-relaxed text-muted">{m.tagline}</p>
+                  <p className="mt-3.5 hidden truncate text-sm text-muted sm:block">{topicBlurb(slug)}</p>
 
-                  {/* concept chips */}
-                  <div className="relative mb-4 mt-3 flex flex-wrap gap-1.5">
-                    {m.concepts.slice(0, 4).map((concept) => (
-                      <span
-                        key={concept}
-                        className="rounded-md border border-[var(--wow-card-border)] bg-[var(--wow-stage)] px-2 py-0.5 font-mono text-[10px] font-bold uppercase tracking-wider text-muted"
-                      >
-                        {concept}
+                  <div className="mt-auto flex flex-col gap-2.5">
+                    <DifficultyBar
+                      easy={stat.easy}
+                      medium={stat.medium}
+                      hard={stat.hard}
+                      height={4}
+                      delay={0.15 + (i % 4) * 0.06}
+                    />
+                    <div className="hidden items-center justify-between gap-2 text-xs text-subtle sm:flex">
+                      <span className="truncate">
+                        {stat.easy} easy · {stat.medium} medium · {stat.hard} hard
                       </span>
-                    ))}
-                  </div>
-
-                  {/* footer */}
-                  <div className="relative mt-auto flex items-center gap-3 border-t border-[var(--wow-card-border)] pt-4">
-                    {stat.total > 0 ? (
-                      <>
-                        <SolveRing solved={solvedCount} total={stat.total} />
-                        <div className="min-w-0 flex-1">
-                          <p className="font-mono text-[10px] font-bold uppercase tracking-[0.18em] text-muted">
-                            {solvedCount}/{stat.total} decrypted
-                          </p>
-                          <div className="mt-1.5 flex gap-1">
-                            {segs.map((s) => (
-                              <span
-                                key={s.c}
-                                title={s.label}
-                                style={{ flexGrow: s.n }}
-                                className={`h-1.5 min-w-3 rounded-full ${s.c}`}
-                              />
-                            ))}
-                          </div>
-                        </div>
-                      </>
-                    ) : (
-                      <p className="font-mono text-[10px] font-bold uppercase tracking-[0.25em] text-muted/60">
-                        Awaiting transmissions
-                      </p>
-                    )}
+                      {solved > 0 && (
+                        <span className="flex shrink-0 items-center gap-1 font-medium text-success">
+                          <Check className="h-3.5 w-3.5" aria-hidden />
+                          {solved} solved
+                        </span>
+                      )}
+                    </div>
                   </div>
                 </Link>
-              </TiltModule>
-            </SpotlightCard>
-          </motion.div>
-        );
-      })}
-    </SpotlightGroup>
+              </motion.div>
+            );
+          })}
+        </AnimatePresence>
+      </motion.div>
+    </div>
   );
 }

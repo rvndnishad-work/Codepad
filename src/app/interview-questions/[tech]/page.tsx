@@ -1,10 +1,13 @@
 import { prisma } from "@/lib/prisma";
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import { Radar, Send } from "lucide-react";
-import { TECHNOLOGIES, RESERVED_TECH_SLUGS, techLabel, parseJsonArray, compactNumber } from "@/lib/interview-questions/shared";
+import { Send } from "lucide-react";
+import { TECHNOLOGIES, RESERVED_TECH_SLUGS, techLabel, parseJsonArray } from "@/lib/interview-questions/shared";
 import { getTechTheme } from "@/lib/interview-questions/techTheme";
-import QuestionCard from "../_components/QuestionCard";
+import QuestionGroups from "./QuestionGroups";
+import ProgressPanel from "./ProgressPanel";
+import { DifficultyBar, DIFFICULTY_BG } from "../_components/Difficulty";
+import { DIFFICULTY_ORDER } from "@/lib/interview-questions/topic-catalog";
 import JsonLd, { breadcrumb, faqPage } from "../_components/JsonLd";
 import TechFilters from "./TechFilters";
 import FrameworkPreference from "./FrameworkPreference";
@@ -52,7 +55,7 @@ export default async function TechnologyPage({
   // Every technology track is ordered easy -> hard (then by popularity) so a
   // learner can work through it progressively. Difficulty is a string, so the
   // rank is applied in JS below; the take covers the whole set per tech.
-  const [questionsRaw, total, companiesInTech, roundsRaw, difficultyGroups, statsAggregate] = await Promise.all([
+  const [questionsRaw, total, companiesInTech, roundsRaw, difficultyGroups, statsAggregate, allInTech] = await Promise.all([
     prisma.prepQuestion.findMany({
       where,
       orderBy: [{ views: "desc" }],
@@ -83,6 +86,12 @@ export default async function TechnologyPage({
       where: { technology: tech, status: "published" },
       _sum: { views: true, likes: true },
     }),
+    // The whole topic, for progress and "up next" whatever the filters are.
+    prisma.prepQuestion.findMany({
+      where: { technology: tech, status: "published" },
+      select: { slug: true, title: true, difficulty: true, views: true },
+      take: 1000,
+    }),
   ]);
 
   if (total === 0 && !isKnownTech(tech)) notFound();
@@ -93,6 +102,13 @@ export default async function TechnologyPage({
       (DIFF_RANK[a.difficulty ?? "medium"] ?? 1) - (DIFF_RANK[b.difficulty ?? "medium"] ?? 1) ||
       b.views - a.views,
   );
+
+  const ordered = [...allInTech].sort(
+    (a, b) =>
+      (DIFF_RANK[a.difficulty ?? "medium"] ?? 1) - (DIFF_RANK[b.difficulty ?? "medium"] ?? 1) ||
+      b.views - a.views,
+  );
+  const filtered = Boolean(difficulty || company || round || q);
 
   const rounds = roundsRaw.map((r) => r.round!).filter(Boolean);
   const label = techLabel(tech);
@@ -110,9 +126,6 @@ export default async function TechnologyPage({
 
   const theme = getTechTheme(tech);
 
-  const easyPct = total > 0 ? (diffCounts.easy / total) * 100 : 0;
-  const mediumPct = total > 0 ? (diffCounts.medium / total) * 100 : 0;
-  const hardPct = total > 0 ? (diffCounts.hard / total) * 100 : 0;
 
   // Dynamic top tag extraction
   const tagCounts = new Map<string, number>();
@@ -162,7 +175,7 @@ export default async function TechnologyPage({
   };
 
   return (
-    <div className="min-h-screen bg-[var(--wow-bg)] pb-32 text-[var(--wow-fg)] transition-colors">
+    <div className="min-h-screen bg-[var(--wow-bg)] text-[var(--wow-fg)]">
       <JsonLd
         data={[
           breadcrumb([
@@ -175,7 +188,7 @@ export default async function TechnologyPage({
         ]}
       />
 
-      {/* ── Sector dossier sub-hero ── */}
+      {/* Topic hero */}
       <TechDossierHero
         tech={tech}
         label={label}
@@ -186,123 +199,98 @@ export default async function TechnologyPage({
         likes={totalLikes}
         diff={diffCounts}
       />
-      {tech === "machine-coding" && (
-        <div className="mx-auto max-w-6xl px-4 pt-6">
-          <FrameworkPreference />
-        </div>
-      )}
+      <TechFilters
+        tech={tech}
+        label={label}
+        companies={companiesInTech}
+        rounds={rounds}
+        counts={{ ...diffCounts, total }}
+        current={{
+          difficulty: difficulty ?? "",
+          company: company ?? "",
+          round: round ?? "",
+          q: q ?? "",
+        }}
+      />
 
-      <div className="mx-auto max-w-6xl px-4 pt-10">
-        {/* 2-Column Responsive Dashboard Layout */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+      <div className="bg-bg">
+        <div className="mx-auto max-w-[1280px] px-4 pt-4 md:px-6 md:pt-8">
+          {tech === "machine-coding" && <FrameworkPreference />}
 
-          {/* LEFT COLUMN: Main catalog list with filters */}
-          <div className="lg:col-span-8 space-y-6">
-            {/* Filter console — sticky glass */}
-            <div className="sticky top-[64px] z-20 rounded-2xl border border-[var(--wow-card-border)] bg-[var(--wow-card)] p-4 shadow-[0_18px_50px_-24px_rgba(0,0,0,0.5)] backdrop-blur-xl">
-              <TechFilters
-                tech={tech}
-                companies={companiesInTech}
-                rounds={rounds}
-                current={{
-                  difficulty: difficulty ?? "",
-                  company: company ?? "",
-                  round: round ?? "",
-                  q: q ?? "",
-                }}
-              />
-            </div>
-
-            {/* Question Catalog List */}
-            <div className="space-y-4">
-              <div className="flex items-center gap-2">
-                <Radar className="h-4 w-4 text-[#ff2fb3]" />
-                <h2 className="font-mono text-[11px] font-bold uppercase tracking-[0.25em] text-muted">
-                  Transmission log
-                </h2>
-                <span className="font-mono text-[11px] tabular-nums text-muted/60">// {questions.length} visible</span>
-              </div>
-
-              {/* Questions stack */}
-              <div className="space-y-3">
-                {questions.length > 0 ? (
-                  questions.map((q) => <QuestionCard key={q.slug} q={q} />)
-                ) : (
-                  <div className="rounded-2xl border border-dashed border-[var(--wow-card-border)] bg-[var(--wow-card)] py-12 text-center">
-                    <p className="font-mono text-sm uppercase tracking-[0.18em] text-muted">No signals on this frequency.</p>
-                    <p className="text-xs text-muted/60 mt-1">Try clearing filters or searching for something else.</p>
-                  </div>
-                )}
-              </div>
-            </div>
+          <div className="mt-4 md:hidden">
+            <ProgressPanel ordered={ordered} total={total} variant="strip" />
           </div>
 
-          {/* RIGHT COLUMN: Sticky intel sidebar */}
-          <div className="lg:col-span-4 space-y-5 lg:sticky lg:top-24">
+          <div className="mt-7 grid grid-cols-1 items-start gap-8 md:mt-8 lg:grid-cols-[minmax(0,1fr)_360px] xl:grid-cols-[minmax(0,1fr)_384px]">
+            <div>
+              {questions.length > 0 ? (
+                <QuestionGroups questions={questions} filtered={filtered} />
+              ) : (
+                <div className="rounded-2xl border border-dashed border-border bg-surface px-6 py-12 text-center">
+                  <p className="text-[15px] font-medium text-fg">No questions match these filters.</p>
+                  <p className="mt-1 text-sm text-subtle">Try another difficulty or clear the search.</p>
+                </div>
+              )}
+            </div>
 
-            {/* Widget 1: Difficulty mix */}
-            <WowReveal>
-              <div className="space-y-4 rounded-2xl border border-[var(--wow-card-border)] bg-[var(--wow-card)] p-5 shadow-sm backdrop-blur-sm">
-                <h3 className="flex items-center gap-2 font-mono text-[11px] font-bold uppercase tracking-[0.2em] text-muted">
-                  <span className="h-1.5 w-1.5 rounded-full bg-[#8b93ff]" />
-                  Difficulty mix
-                </h3>
-                <div className="space-y-3.5">
-                  <div className="flex h-2.5 w-full gap-1 overflow-hidden">
-                    {diffCounts.easy > 0 && (
-                      <span style={{ flexGrow: diffCounts.easy }} className="min-w-3 rounded-full bg-emerald-500" title={`Easy: ${diffCounts.easy}`} />
-                    )}
-                    {diffCounts.medium > 0 && (
-                      <span style={{ flexGrow: diffCounts.medium }} className="min-w-3 rounded-full bg-amber-500" title={`Medium: ${diffCounts.medium}`} />
-                    )}
-                    {diffCounts.hard > 0 && (
-                      <span style={{ flexGrow: diffCounts.hard }} className="min-w-3 rounded-full bg-rose-500" title={`Hard: ${diffCounts.hard}`} />
-                    )}
-                  </div>
-                  <div className="space-y-2 font-mono text-[11px]">
-                    <div className="flex items-center justify-between">
-                      <span className="flex items-center gap-1.5 text-muted">
-                        <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
-                        Easy
+            <aside className="flex flex-col gap-4">
+              <div className="hidden md:block">
+                <ProgressPanel ordered={ordered} total={total} variant="card" />
+              </div>
+
+              <div className="hidden flex-col gap-3.5 rounded-2xl border border-border bg-surface p-5 md:flex">
+                <h3 className="text-sm font-semibold text-fg">Difficulty mix</h3>
+                <DifficultyBar easy={diffCounts.easy} medium={diffCounts.medium} hard={diffCounts.hard} height={6} delay={0.2} />
+                <div className="flex flex-col gap-2">
+                  {DIFFICULTY_ORDER.map((d) => (
+                    <div key={d} className="flex items-center justify-between text-[13px]">
+                      <span className="flex items-center gap-2 capitalize text-muted">
+                        <span className={`h-1.5 w-1.5 rounded-full ${DIFFICULTY_BG[d]}`} aria-hidden />
+                        {d}
                       </span>
-                      <span className="tabular-nums text-[var(--wow-fg)]">{diffCounts.easy} ({Math.round(easyPct)}%)</span>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span className="flex items-center gap-1.5 text-muted">
-                        <span className="h-1.5 w-1.5 rounded-full bg-amber-500" />
-                        Medium
+                      <span className="font-mono text-xs tabular-nums text-subtle">
+                        {diffCounts[d]} · {total > 0 ? Math.round((diffCounts[d] / total) * 100) : 0}%
                       </span>
-                      <span className="tabular-nums text-[var(--wow-fg)]">{diffCounts.medium} ({Math.round(mediumPct)}%)</span>
                     </div>
-                    <div className="flex items-center justify-between">
-                      <span className="flex items-center gap-1.5 text-muted">
-                        <span className="h-1.5 w-1.5 rounded-full bg-rose-500" />
-                        Hard
-                      </span>
-                      <span className="tabular-nums text-[var(--wow-fg)]">{diffCounts.hard} ({Math.round(hardPct)}%)</span>
-                    </div>
-                  </div>
+                  ))}
                 </div>
               </div>
-            </WowReveal>
 
-            {/* Widget 2: Intercepted at */}
-            {companiesInTech.length > 0 && (
-              <WowReveal delay={0.08}>
-                <div className="space-y-3 rounded-2xl border border-[var(--wow-card-border)] bg-[var(--wow-card)] p-5 shadow-sm backdrop-blur-sm">
-                  <h3 className="flex items-center gap-2 font-mono text-[11px] font-bold uppercase tracking-[0.2em] text-muted">
-                    <span className="h-1.5 w-1.5 rounded-full bg-[#22d3ee]" />
-                    Intercepted at
-                  </h3>
+              {topTags.length > 0 && (
+                <div className="flex flex-col gap-3.5 rounded-2xl border border-border bg-surface p-[18px] md:p-5">
+                  <h3 className="text-sm font-semibold text-fg">Topics tested</h3>
+                  <div className="flex flex-wrap gap-1.5">
+                    {topTags.map((tag) => (
+                      <Link
+                        key={tag}
+                        href={`/interview-questions/${tech}?q=${encodeURIComponent(tag)}`}
+                        scroll={false}
+                        className={`flex h-[30px] items-center rounded-lg border px-[11px] text-[13px] transition-colors motion-reduce:transition-none ${
+                          q?.toLowerCase() === tag
+                            ? "border-accent bg-accent/10 text-fg"
+                            : "border-border bg-bg text-muted hover:border-border-strong hover:text-fg"
+                        }`}
+                      >
+                        {tag}
+                      </Link>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {companiesInTech.length > 0 && (
+                <div className="flex flex-col gap-3.5 rounded-2xl border border-border bg-surface p-[18px] md:p-5">
+                  <h3 className="text-sm font-semibold text-fg">Asked at</h3>
                   <div className="flex flex-wrap gap-1.5">
                     {companiesInTech.map((c) => (
                       <Link
                         key={c.slug}
                         href={buildCompanyUrl(c.slug)}
-                        className={`rounded-full px-3 py-1 text-[11px] font-bold transition duration-200 ${
+                        scroll={false}
+                        className={`flex h-[30px] items-center rounded-lg border px-[11px] text-[13px] transition-colors motion-reduce:transition-none ${
                           company === c.slug
-                            ? "bg-white font-black text-black"
-                            : "border border-[var(--wow-card-border)] text-muted hover:border-[#8b93ff]/50 hover:text-[var(--wow-fg)]"
+                            ? "border-accent bg-accent/10 text-fg"
+                            : "border-border bg-bg text-muted hover:border-border-strong hover:text-fg"
                         }`}
                       >
                         {c.name}
@@ -310,64 +298,30 @@ export default async function TechnologyPage({
                     ))}
                   </div>
                 </div>
-              </WowReveal>
-            )}
+              )}
 
-            {/* Widget 3: Tested Topics */}
-            {topTags.length > 0 && (
-              <WowReveal delay={0.16}>
-                <div className="space-y-3 rounded-2xl border border-[var(--wow-card-border)] bg-[var(--wow-card)] p-5 shadow-sm backdrop-blur-sm">
-                  <h3 className="flex items-center gap-2 font-mono text-[11px] font-bold uppercase tracking-[0.2em] text-muted">
-                    <span className="h-1.5 w-1.5 rounded-full bg-[#ff2fb3]" />
-                    Tested topics
-                  </h3>
-                  <div className="flex flex-wrap gap-1.5">
-                    {topTags.map((tag) => (
-                      <span
-                        key={tag}
-                        className="rounded-md border border-[var(--wow-card-border)] bg-[var(--wow-stage)] px-2 py-0.5 font-mono text-[10px] font-bold uppercase tracking-wider text-muted"
-                      >
-                        #{tag}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              </WowReveal>
-            )}
-
-            {/* Widget 4: Decryption key (study guide) */}
-            <WowReveal delay={0.24}>
-              <div className="space-y-3 rounded-2xl border border-[#8b93ff]/25 bg-gradient-to-b from-[#8b93ff]/10 to-transparent p-5 shadow-sm backdrop-blur-sm">
-                <h3 className="flex items-center gap-2 font-mono text-[11px] font-bold uppercase tracking-[0.2em] text-muted">
-                  <span className="h-1.5 w-1.5 rounded-full bg-[#ffe600]" />
-                  Decryption key
-                </h3>
-                <p className="text-xs font-semibold leading-relaxed text-muted">
-                  {studyTip}
-                </p>
+              <div className="flex flex-col gap-3.5 rounded-2xl border border-border bg-surface p-[18px] md:p-5">
+                <h3 className="text-sm font-semibold text-fg">Where to focus</h3>
+                <p className="text-sm leading-relaxed text-muted">{studyTip}</p>
               </div>
-            </WowReveal>
+            </aside>
           </div>
+
+          <WowReveal y={20}>
+            <div className="mb-24 mt-12 flex flex-col gap-3.5 rounded-2xl border border-border bg-surface p-5 md:mb-32 md:mt-16 md:min-h-[88px] md:flex-row md:items-center md:justify-between md:px-7 md:py-4">
+              <p className="text-[15px] leading-relaxed text-muted">
+                <span className="font-semibold text-fg">Seen a {label} question that is not here?</span> Add it and help
+                the next candidate.
+              </p>
+              <Link
+                href="/interview-questions/share"
+                className="inline-flex h-11 shrink-0 items-center justify-center gap-2 rounded-full bg-accent px-5 text-sm font-semibold text-accent-ink transition-[transform,box-shadow] hover:-translate-y-px hover:shadow-[0_10px_30px_-10px_rgb(var(--c-accent)/0.55)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent motion-reduce:transition-none motion-reduce:hover:translate-y-0"
+              >
+                <Send className="h-4 w-4" aria-hidden /> Share a question
+              </Link>
+            </div>
+          </WowReveal>
         </div>
-
-        {/* Slim uplink banner */}
-        <WowReveal>
-          <div className="mt-12 flex flex-col items-start justify-between gap-4 rounded-2xl border border-[var(--wow-card-border)] bg-[var(--wow-card)] p-5 backdrop-blur-sm sm:flex-row sm:items-center sm:px-6">
-            <p className="font-mono text-[11px] uppercase leading-relaxed tracking-[0.18em] text-muted">
-              Intercepted something new? <span className="text-[var(--wow-fg)]">Beam it into the archive.</span>
-            </p>
-            <Link
-              href="/interview-questions/share"
-              className="inline-flex shrink-0 items-center gap-2 rounded-full bg-white px-5 py-2.5 text-[11px] font-black uppercase tracking-wider text-black transition hover:scale-105"
-            >
-              <Send className="h-3.5 w-3.5" /> Share intel
-            </Link>
-          </div>
-        </WowReveal>
-
-        <p className="mt-8 font-mono text-[11px] tabular-nums text-muted/60">
-          // {compactNumber(totalViews)} total views · {compactNumber(totalLikes)} upvotes · {total} decoded
-        </p>
       </div>
     </div>
   );

@@ -482,12 +482,12 @@ export function buildMcpServer(auth: AuthedKey): McpServer {
     {
       title: "Update candidate status",
       description:
-        "Set a candidate's screening status (active/passed/rejected/archived). Optionally append a dated note describing the reason.",
+        "Set a candidate's screening status (active/rejected/archived). Passing is a recruiter decision made in the app, so this tool never passes anyone. Optionally append a dated note describing the reason.",
       inputSchema: {
         candidate_id: z.string().min(1).describe("Candidate's internal id."),
         status: z
           .enum(["active", "passed", "hired", "rejected", "archived"])
-          .describe('New screening status. "hired" is accepted as the old name for "passed".'),
+          .describe('New screening status. "passed" (and its old name "hired") is refused: only a recruiter can pass a candidate, in the app.'),
         note: z
           .string()
           .optional()
@@ -502,10 +502,19 @@ export function buildMcpServer(auth: AuthedKey): McpServer {
         async () => {
           requireWriteScope(auth);
 
+          // Automation never passes a candidate: a pass is a person's call,
+          // made in the app where results below the bar need a confirmed
+          // manual override.
+          if (args.status === "passed" || args.status === "hired") {
+            throw new ToolError(
+              "Passing a candidate is a recruiter decision. Open the candidate in the app to pass them."
+            );
+          }
+
           // Tenant scoping — candidate must belong to this workspace.
           const existing = await prisma.candidate.findFirst({
             where: { id: args.candidate_id, workspaceId: auth.workspaceId },
-            select: { id: true, name: true, status: true, notes: true },
+            select: { id: true, name: true, stage: true, status: true, notes: true },
           });
           if (!existing) {
             throw new ToolError("Candidate not found in this workspace.");
@@ -522,9 +531,14 @@ export function buildMcpServer(auth: AuthedKey): McpServer {
           const updated = await prisma.candidate.update({
             where: { id: existing.id },
             data: {
-              status: args.status === "hired" ? "passed" : args.status,
+              status: args.status,
               notes: nextNotes,
-              ...(args.status === "passed" || args.status === "hired" ? { stage: "PASSED", stageChangedAt: new Date() } : {}),
+              // Keep the stage in step with the status, as the app does.
+              ...(args.status === "rejected" && existing.stage !== "REJECTED"
+                ? { stage: "REJECTED", rejectReason: "OTHER", stageChangedAt: new Date() }
+                : args.status === "active" && (existing.stage === "PASSED" || existing.stage === "REJECTED")
+                  ? { stage: "SCREENING", rejectReason: null, rejectReasonNote: null, stageChangedAt: new Date() }
+                  : {}),
             },
             select: { id: true, name: true, status: true, updatedAt: true },
           });

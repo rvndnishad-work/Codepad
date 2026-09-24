@@ -22,6 +22,8 @@ const patchSchema = z.object({
   rejectReasonNote: z.string().max(1000).nullable().optional(),
   batchId: z.string().max(40).nullable().optional(),
   ownerId: z.string().max(40).nullable().optional(),
+  /** Confirms passing a candidate whose results are below the bar. */
+  override: z.boolean().optional(),
 });
 
 export async function PATCH(

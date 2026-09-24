@@ -27,6 +27,8 @@ import {
   writeWorkspaceAuditEntry,
   WORKSPACE_AUDIT_ACTIONS,
 } from "@/lib/workspace-audit";
+import { passCheck } from "@/lib/crm/results";
+import { loadCandidateResults } from "@/lib/crm/results-server";
 
 /** The legacy `status` column mirrors the decision. Flags such as
  *  future_hire survive while the candidate is still being screened. */
@@ -180,7 +182,10 @@ export async function createCandidate(
   const tags = cleanTags(input.tags);
   // Old stage names (APPLIED, ONSITE, HIRED...) still arrive from CSVs and API callers.
   const stage: PipelineStage = normalizeStage(input.stage);
+  // Decisions are made here, on screening results, by a person. Imports and
+  // API callers (and the ATS sync to come) only bring people in.
   if (stage === "REJECTED") throw new CandidateError(400, "New candidates cannot start as Not passed.");
+  if (stage === "PASSED") throw new CandidateError(400, "New candidates cannot start as Passed. Pass them after screening.");
   if (!opts.refsChecked) await assertRefs(actor, input.batchId, input.ownerId);
 
   if (email) {
@@ -274,7 +279,41 @@ export type CandidatePatch = {
   rejectReasonNote?: string | null;
   batchId?: string | null;
   ownerId?: string | null;
+  /** Confirms a pass that its results do not back (see `assertPassBacked`). */
+  override?: boolean;
 };
+
+/**
+ * Passing is a person's call, and when a candidate's best result on any
+ * assessment is below the bar (or nothing is scored) it is a manual override
+ * of the results. Without `override` such a pass is refused, so no caller can
+ * pass a failing candidate by accident. Returns the override reason per id,
+ * for the audit trail.
+ */
+async function assertPassBacked(
+  actor: CandidateActor,
+  rows: { id: string; name: string }[],
+  override: boolean | undefined,
+): Promise<Map<string, string>> {
+  const out = new Map<string, string>();
+  if (!rows.length) return out;
+  const results = await loadCandidateResults(actor.workspaceId, actor.workspaceSlug, rows.map((r) => r.id));
+  for (const r of rows) {
+    const check = passCheck(results.get(r.id) ?? []);
+    if (check.override) out.set(r.id, check.reason ?? "Below the bar");
+  }
+  if (out.size && !override) {
+    const first = rows.find((r) => out.has(r.id))!;
+    throw new CandidateError(
+      409,
+      out.size === 1
+        ? `${first.name}: ${out.get(first.id)}. Confirm the pass as a manual override.`
+        : `${out.size} candidates have results below the bar or none scored. Confirm the pass as a manual override.`,
+      { needsOverride: [...out.keys()] },
+    );
+  }
+  return out;
+}
 
 async function findOwned(actor: CandidateActor, id: string) {
   const c = await prisma.candidate.findFirst({ where: { id, workspaceId: actor.workspaceId } });
@@ -340,12 +379,14 @@ export async function updateCandidate(actor: CandidateActor, id: string, patch: 
   }
 
   let stageMove: { from: string; to: string } | null = null;
+  let overrideReason: string | null = null;
   const nextStatus = patch.status === "hired" ? "passed" : patch.status;
   if (nextStatus && nextStatus !== current.status) {
     data.status = nextStatus;
     fields.push("status");
     const prev = current.stage;
     if (nextStatus === "passed" && prev !== "PASSED") {
+      overrideReason = (await assertPassBacked(actor, [current], patch.override)).get(id) ?? null;
       data.stage = "PASSED";
       data.stageChangedAt = new Date();
       data.rejectReason = null;
@@ -415,6 +456,7 @@ export async function updateCandidate(actor: CandidateActor, id: string, patch: 
       fromStage: stageMove.from,
       toStage: stageMove.to,
       ...(stageMove.to === "REJECTED" ? { rejectReason: patch.rejectReason } : {}),
+      ...(overrideReason ? { manualOverride: overrideReason } : {}),
     });
   }
   return updated;
@@ -440,7 +482,7 @@ export async function moveCandidatesStage(
   actor: CandidateActor,
   ids: string[],
   toStage: string,
-  reason?: { rejectReason?: RejectReason; rejectReasonNote?: string | null },
+  reason?: { rejectReason?: RejectReason; rejectReasonNote?: string | null; override?: boolean },
 ): Promise<{ moved: number }> {
   if (!isPipelineStage(toStage)) throw new CandidateError(400, `Unknown stage: ${toStage}`);
   if (toStage === "REJECTED") {
@@ -450,6 +492,7 @@ export async function moveCandidatesStage(
   }
   const rows = await scopedCandidates(actor, ids);
   const moving = rows.filter((r) => r.stage !== toStage);
+  const overrides = toStage === "PASSED" ? await assertPassBacked(actor, moving, reason?.override) : new Map<string, string>();
   const now = new Date();
   for (const c of moving) {
     await prisma.candidate.update({
@@ -470,6 +513,7 @@ export async function moveCandidatesStage(
       ...(toStage === "REJECTED"
         ? { rejectReason: reason?.rejectReason, hasNote: !!reason?.rejectReasonNote?.trim() }
         : {}),
+      ...(overrides.has(c.id) ? { manualOverride: overrides.get(c.id) } : {}),
       ...(moving.length > 1 ? { bulk: moving.length } : {}),
     });
   }
@@ -717,7 +761,14 @@ export async function deleteBatch(actor: CandidateActor, batchId: string) {
  * ────────────────────────────────────────────────────────────────────────── */
 
 export type BulkAction =
-  | { action: "stage"; stage: string; rejectReason?: RejectReason; rejectReasonNote?: string | null }
+  | {
+      action: "stage";
+      stage: string;
+      rejectReason?: RejectReason;
+      rejectReasonNote?: string | null;
+      /** Confirms passing candidates whose results do not back it. */
+      override?: boolean;
+    }
   | { action: "batch"; batchId: string | null }
   | { action: "owner"; ownerId: string | null }
   | { action: "tag"; add?: string[]; remove?: string[] }

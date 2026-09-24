@@ -41,6 +41,8 @@ const bulkActionSchema = z.object({
       stage: z.string(),
       rejectReason: z.enum(REJECT_REASONS).optional(),
       rejectReasonNote: z.string().max(1000).nullable().optional(),
+      /** Confirms passing candidates whose results are below the bar. */
+      override: z.boolean().optional(),
     }),
     z.object({ action: z.literal("batch"), batchId: z.string().nullable() }),
     z.object({ action: z.literal("owner"), ownerId: z.string().nullable() }),

@@ -4,7 +4,8 @@
  */
 import { prisma } from "@/lib/prisma";
 import { loadCandidateResults } from "@/lib/crm/results-server";
-import { computeNextStep, daysSince, needsAttention, resultStateText, resultTime, summarizeResults } from "@/lib/crm/results";
+import { computeNextStep, daysSince, needsAttention, passCheck, resultStateText, resultTime, summarizeResults } from "@/lib/crm/results";
+import { normalizeStage } from "@/lib/crm/stages";
 import { parseTags } from "@/lib/crm/candidates-server";
 import type { RosterRow } from "@/lib/crm/roster";
 
@@ -83,6 +84,7 @@ export async function loadRoster(
       takeHomeMinutes: summary.takeHomeMinutes,
       next,
       attention: c.status !== "archived" && needsAttention(next, c.stage, daysInStage),
+      manualPass: normalizeStage(c.stage) === "PASSED" ? (passCheck(rs).reason ?? null) : null,
     };
   });
 }

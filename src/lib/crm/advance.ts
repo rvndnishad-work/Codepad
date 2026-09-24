@@ -49,6 +49,13 @@ export type AdvanceInput = {
 export async function advanceCandidateStage(
   input: AdvanceInput,
 ): Promise<{ advanced: boolean }> {
+  // The type already rules these out; this holds even for a cast or a
+  // plain-JS caller. Automation never makes a screening decision.
+  const to: string = input.toStage;
+  if (to === "PASSED" || to === "REJECTED") {
+    console.error(`[crmAdvance] refused auto-move to ${to} from ${input.source}`);
+    return { advanced: false };
+  }
   try {
     const candidate = input.candidateId
       ? await prisma.candidate.findFirst({

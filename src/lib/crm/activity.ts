@@ -53,9 +53,18 @@ export function describeAudit(
           m.toStage === "REJECTED"
             ? `Marked as not passed at ${stage(m.fromStage)}`
             : m.toStage === "PASSED"
-              ? "Passed screening"
+              ? typeof m.manualOverride === "string"
+                ? "Passed as a manual override"
+                : "Passed screening"
               : `Moved from ${stage(m.fromStage)} to ${stage(m.toStage)}`,
-        detail: [auto ? "Automatically, from an assessment event" : who ? `By ${who}` : null, reason].filter(Boolean).join(" · ") || null,
+        detail:
+          [
+            auto ? "Automatically, from an assessment event" : who ? `By ${who}` : null,
+            reason,
+            typeof m.manualOverride === "string" ? m.manualOverride : null,
+          ]
+            .filter(Boolean)
+            .join(" · ") || null,
       };
     }
     case "CANDIDATE_CREATED":

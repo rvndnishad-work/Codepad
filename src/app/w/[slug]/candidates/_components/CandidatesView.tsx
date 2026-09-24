@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState, useTransition, type DragEvent } from "react";
+import { useCallback, useEffect, useMemo, useState, useTransition } from "react";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import {
@@ -21,6 +21,7 @@ import {
   Tag,
   Trash2,
   UserPlus,
+  Users,
   X,
   Zap,
 } from "lucide-react";
@@ -28,6 +29,7 @@ import { PIPELINE_STAGES, STAGE_LABELS, type RejectReason } from "@/lib/crm/stag
 import {
   EMPTY_FILTERS,
   filterRows,
+  passOverrides,
   rowsToCsv,
   sortRows,
   type RosterBatch,
@@ -40,7 +42,9 @@ import { RESULT_KIND_LABELS } from "@/lib/crm/results";
 import { plural, sourceLabel } from "@/lib/workspace/display";
 import { bulkCandidatesAction } from "../manage-actions";
 import type { BulkAction } from "@/lib/crm/candidates-server";
-import { ConfirmDialog, RejectDialog, TagDialog } from "./dialogs";
+import CountUp from "@/components/scroll/CountUp";
+import { Board } from "./Board";
+import { ConfirmDialog, PassOverrideDialog, RejectDialog, TagDialog } from "./dialogs";
 import { QuickView } from "./QuickView";
 import {
   Avatar,
@@ -58,8 +62,16 @@ import {
 
 export type Perms = { canWrite: boolean; canPipeline: boolean; canDelete: boolean; isManager: boolean };
 
-const FLOW = PIPELINE_STAGES.filter((s) => s !== "REJECTED");
 const PAGE = 100;
+
+/** Colour per stage card: indigo for all and screening, then the stage colours. */
+const STAGE_CARD_TONES: Record<string, { bar: string; text: string; border: string; ring: string; cssVar: string }> = {
+  ALL: { bar: "bg-secondary", text: "text-secondary-soft", border: "border-secondary/50", ring: "ring-secondary/30", cssVar: "--c-accent-2" },
+  NEW: { bar: "bg-subtle", text: "text-fg", border: "border-border-strong", ring: "ring-border-strong", cssVar: "--c-subtle" },
+  SCREENING: { bar: "bg-secondary", text: "text-secondary-soft", border: "border-secondary/50", ring: "ring-secondary/30", cssVar: "--c-accent-2" },
+  PASSED: { bar: "bg-success", text: "text-success", border: "border-success/50", ring: "ring-success/30", cssVar: "--c-success" },
+  REJECTED: { bar: "bg-danger", text: "text-danger", border: "border-danger/50", ring: "ring-danger/30", cssVar: "--c-danger" },
+};
 const SORTS: Record<SortKey, string> = {
   attention: "Needs attention first",
   updated: "Recently updated",
@@ -137,12 +149,18 @@ export function CandidatesView({
   const [limit, setLimit] = useState(PAGE);
   const [overrides, setOverrides] = useState<Record<string, string>>({});
   const [pendingReject, setPendingReject] = useState<string[] | null>(null);
+  const [pendingPass, setPendingPass] = useState<string[] | null>(null);
+  // Bars grow in after the first paint.
+  const [ready, setReady] = useState(false);
+  useEffect(() => {
+    const id = requestAnimationFrame(() => setReady(true));
+    return () => cancelAnimationFrame(id);
+  }, []);
   const [confirm, setConfirm] = useState<null | "archive" | "erase">(null);
   const [tagging, setTagging] = useState(false);
   const [busy, startBusy] = useTransition();
   const [toasts, toast] = useToasts();
   const [views, setViews] = useState<SavedView[]>([]);
-  const [showRejected, setShowRejected] = useState(false);
   const viewsKey = `candidates.views.${slug}`;
 
   useEffect(() => {
@@ -218,8 +236,13 @@ export function CandidatesView({
     startBusy(async () => {
       const r = await bulkCandidatesAction(slug, ids, op);
       if (!r.ok) {
-        toast(r.error, "error");
         setOverrides({});
+        // Results changed since the page loaded: confirm the override first.
+        if (r.needsOverride?.length && op.action === "stage" && op.stage === "PASSED" && !op.override) {
+          setPendingPass(ids);
+          return;
+        }
+        toast(r.error, "error");
         return;
       }
       toast(done(r.changed), "ok", undo ? () => run(ids, undo, () => "Undone") : undefined);
@@ -233,8 +256,18 @@ export function CandidatesView({
       setPendingReject(ids);
       return;
     }
+    if (stage === "PASSED" && passOverrides(live.filter((r) => ids.includes(r.id))).length) {
+      setPendingPass(ids);
+      return;
+    }
+    commitMove(ids, stage);
+  }
+
+  function commitMove(ids: string[], stage: string, override?: boolean) {
     setOverrides((o) => ({ ...o, ...Object.fromEntries(ids.map((id) => [id, stage])) }));
-    run(ids, { action: "stage", stage }, (n) => (n ? `Moved ${plural(n, "candidate")} to ${stageLabel(stage)}` : "Nothing to move"));
+    run(ids, { action: "stage", stage, ...(override ? { override } : {}) }, (n) =>
+      n ? (stage === "PASSED" ? `Passed ${plural(n, "candidate")}` : `Moved ${plural(n, "candidate")} to ${stageLabel(stage)}`) : "Nothing to move",
+    );
   }
 
   function exportCsv(list: RosterRow[]) {
@@ -282,27 +315,43 @@ export function CandidatesView({
 
   return (
     <div className="flex flex-col gap-4">
-      {/* Stage strip: counts under the other filters, and the stage filter itself. */}
-      <div role="group" aria-label="Filter by stage" className="flex overflow-x-auto lg:grid lg:grid-cols-5 rounded-xl border border-border bg-surface">
+      {/* Stage cards: counts under the other filters, and the stage filter itself. */}
+      <div role="group" aria-label="Filter by stage" className="flex gap-3 overflow-x-auto pb-1 -mb-1 lg:grid lg:grid-cols-5 lg:overflow-visible">
         {[null, ...PIPELINE_STAGES].map((s, i) => {
           const on = filters.stage === s;
           const n = s ? (stageCounts.get(s) ?? 0) : base.length;
+          const tone = STAGE_CARD_TONES[s ?? "ALL"];
+          const share = base.length ? Math.round((n / base.length) * 100) : 0;
           return (
             <button
               key={s ?? "all"}
               type="button"
               aria-pressed={on}
               onClick={() => set({ stage: s })}
-              className={`relative shrink-0 flex-1 min-w-[104px] text-left px-4 py-3 transition border-border ${i ? "border-l" : ""} ${
-                on ? "bg-panel" : "hover:bg-panel/60"
+              style={{
+                animationDelay: `${i * 50}ms`,
+                animationFillMode: "backwards",
+                backgroundImage: on ? `radial-gradient(220px 120px at 100% 0%, rgb(var(${tone.cssVar}) / 0.20), transparent 70%)` : undefined,
+              }}
+              className={`group relative shrink-0 flex-1 min-w-[148px] overflow-hidden text-left rounded-xl border px-4 pt-3.5 pb-3 bg-surface animate-slide-up motion-reduce:animate-none transition duration-200 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-black/20 motion-reduce:hover:translate-y-0 ${
+                on ? `${tone.border} ring-1 ${tone.ring}` : "border-border hover:border-border-strong"
               }`}
             >
-              {on && <span aria-hidden className="absolute inset-x-0 bottom-0 h-0.5 bg-secondary" />}
+              <span aria-hidden className={`absolute inset-x-0 top-0 h-0.5 ${tone.bar} ${on ? "opacity-100" : "opacity-60 group-hover:opacity-100"} transition-opacity`} />
               <span className="flex items-center gap-1.5 text-[13px] text-muted whitespace-nowrap">
-                {s && <StageDot stage={s} className="w-[7px] h-[7px]" />}
+                {s ? <StageDot stage={s} className="w-2 h-2" /> : <Users className="w-3.5 h-3.5 text-secondary-soft" aria-hidden />}
                 {s ? STAGE_LABELS[s] : "All"}
               </span>
-              <span className="block text-[22px] font-semibold text-fg mt-1 tabular-nums">{n}</span>
+              <span className="flex items-baseline justify-between gap-2 mt-1">
+                <CountUp value={n} duration={0.9} className={`text-[26px] font-semibold tabular-nums ${on ? tone.text : "text-fg"}`} />
+                {s && <span className="text-xs text-subtle tabular-nums">{share}%</span>}
+              </span>
+              <span aria-hidden className="block mt-2 h-1 rounded-full bg-panel overflow-hidden">
+                <span
+                  className={`block h-full rounded-full ${tone.bar} transition-[width] duration-700 ease-[cubic-bezier(0.22,1,0.36,1)] motion-reduce:transition-none`}
+                  style={{ width: ready ? `${s ? share : 100}%` : "0%" }}
+                />
+              </span>
             </button>
           );
         })}
@@ -680,9 +729,8 @@ export function CandidatesView({
           canMove={perms.canPipeline && !filters.archived}
           onMove={moveTo}
           onOpen={setQuick}
-          showRejected={showRejected || filters.stage === "REJECTED"}
-          onToggleRejected={() => setShowRejected((v) => !v)}
           batchName={batchName}
+          memberName={memberName}
           showBatch={!scopeBatchId}
         />
       )}
@@ -715,6 +763,19 @@ export function CandidatesView({
             setPendingReject(null);
             setOverrides((o) => ({ ...o, ...Object.fromEntries(ids.map((id) => [id, "REJECTED"])) }));
             run(ids, { action: "stage", stage: "REJECTED", rejectReason: reason, rejectReasonNote: note }, (n) => `Marked ${plural(n, "candidate")} as not passed`);
+          }}
+        />
+      )}
+      {pendingPass && (
+        <PassOverrideDialog
+          people={passOverrides(live.filter((r) => pendingPass.includes(r.id)))}
+          total={live.filter((r) => pendingPass.includes(r.id) && r.stage !== "PASSED").length}
+          busy={busy}
+          onCancel={() => setPendingPass(null)}
+          onConfirm={() => {
+            const ids = pendingPass;
+            setPendingPass(null);
+            commitMove(ids, "PASSED", true);
           }}
         />
       )}
@@ -873,7 +934,7 @@ function ListTable({
           Actions
         </span>
       </div>
-      {rows.map((r) => {
+      {rows.map((r, i) => {
         const sel = selected.has(r.id);
         const owner = memberName(r.ownerId);
         const batch = batchName(r.batchId);
@@ -882,10 +943,16 @@ function ListTable({
             key={r.id}
             role="row"
             onClick={() => onOpen(r.id)}
-            className={`group relative flex gap-3 md:gap-0 px-4 py-3 border-b border-border last:border-b-0 cursor-pointer transition-colors ${grid} ${
+            // The first screenful fades in one row after another.
+            style={i < 16 ? { animationDelay: `${i * 30}ms`, animationFillMode: "backwards" } : undefined}
+            className={`group relative flex gap-3 md:gap-0 px-4 py-3 border-b border-border last:border-b-0 cursor-pointer transition-colors animate-fade-in motion-reduce:animate-none ${grid} ${
               quickId === r.id ? "bg-panel" : sel ? "bg-secondary/[0.07]" : "hover:bg-panel/60"
             }`}
           >
+            <span
+              aria-hidden
+              className={`absolute left-0 top-2 bottom-2 w-0.5 rounded-full bg-secondary transition-opacity ${quickId === r.id || sel ? "opacity-100" : "opacity-0 group-hover:opacity-100"}`}
+            />
             <span role="cell" className="flex items-start md:items-center justify-center pt-2 md:pt-0" onClick={(e) => e.stopPropagation()}>
               <input type="checkbox" checked={sel} onChange={() => onToggle(r.id)} aria-label={`Select ${r.name}`} className="w-4 h-4 accent-secondary" />
             </span>
@@ -1011,157 +1078,6 @@ function ListTable({
           Show {Math.min(PAGE, total - rows.length)} more of {total - rows.length}
         </button>
       )}
-    </div>
-  );
-}
-
-function Board({
-  rows,
-  canMove,
-  onMove,
-  onOpen,
-  showRejected,
-  onToggleRejected,
-  batchName,
-  showBatch,
-}: {
-  rows: RosterRow[];
-  canMove: boolean;
-  onMove: (ids: string[], stage: string) => void;
-  onOpen: (id: string) => void;
-  showRejected: boolean;
-  onToggleRejected: () => void;
-  batchName: (id: string | null) => string;
-  showBatch: boolean;
-}) {
-  const [dragId, setDragId] = useState<string | null>(null);
-  const [over, setOver] = useState<string | null>(null);
-  const by = useMemo(() => {
-    const m = new Map<string, RosterRow[]>();
-    for (const r of rows) m.set(r.stage, [...(m.get(r.stage) ?? []), r]);
-    return m;
-  }, [rows]);
-  const rejected = by.get("REJECTED") ?? [];
-
-  const dropProps = (stage: string) =>
-    canMove
-      ? {
-          onDragOver: (e: DragEvent) => {
-            e.preventDefault();
-            setOver(stage);
-          },
-          onDragLeave: () => setOver((o) => (o === stage ? null : o)),
-          onDrop: (e: DragEvent) => {
-            e.preventDefault();
-            const id = e.dataTransfer.getData("text/plain") || dragId;
-            setOver(null);
-            setDragId(null);
-            const row = rows.find((r) => r.id === id);
-            if (row && row.stage !== stage) onMove([row.id], stage);
-          },
-        }
-      : {};
-
-  const card = (r: RosterRow) => (
-    <div
-      key={r.id}
-      role="button"
-      tabIndex={0}
-      draggable={canMove}
-      onDragStart={(e) => {
-        e.dataTransfer.setData("text/plain", r.id);
-        e.dataTransfer.effectAllowed = "move";
-        setDragId(r.id);
-      }}
-      onDragEnd={() => {
-        setDragId(null);
-        setOver(null);
-      }}
-      onClick={() => onOpen(r.id)}
-      onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && (e.preventDefault(), onOpen(r.id))}
-      className={`flex flex-col gap-2.5 p-3 rounded-[10px] border border-border bg-surface hover:border-border-strong transition cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-secondary/60 ${
-        dragId === r.id ? "opacity-50" : ""
-      }`}
-    >
-      <div className="flex items-center gap-2 min-w-0">
-        <Avatar name={r.name} size={26} />
-        <span className="text-[13px] font-medium text-fg flex-1 truncate">{r.name}</span>
-        {r.combined != null && (
-          <span className={`text-[13px] font-semibold tabular-nums ${r.combined >= 80 ? "text-success" : "text-fg"}`}>{r.combined}</span>
-        )}
-      </div>
-      <NextStepPill next={r.next} compact />
-      <div className="flex items-center gap-1.5 text-xs text-subtle min-w-0">
-        <span className={`shrink-0 ${r.daysInStage >= 7 && r.stage !== "PASSED" && r.stage !== "REJECTED" ? "text-warning" : ""}`}>
-          {r.daysInStage}d in stage
-        </span>
-        {showBatch && r.batchId && <span className="truncate">· {batchName(r.batchId)}</span>}
-      </div>
-    </div>
-  );
-
-  return (
-    <div className="flex flex-col gap-2">
-      {canMove && <p className="text-[13px] text-subtle">Drag a card to move it. Not passed asks for a reason.</p>}
-      <div className="overflow-x-auto pb-2 -mx-1 px-1">
-        <div className={`grid gap-2.5 items-start ${showRejected ? "min-w-[880px] grid-cols-4" : "min-w-[720px] grid-cols-[repeat(3,minmax(0,1fr))_64px]"}`}>
-          {FLOW.map((s) => {
-            const list = by.get(s) ?? [];
-            return (
-              <section
-                key={s}
-                aria-label={`${STAGE_LABELS[s]}, ${list.length}`}
-                {...dropProps(s)}
-                className={`rounded-xl border p-2.5 flex flex-col gap-2 min-h-[140px] transition-colors ${
-                  over === s ? "border-secondary/70 bg-secondary/[0.06]" : "border-border bg-bg/60"
-                }`}
-              >
-                <div className="flex items-center justify-between px-1 pt-0.5 pb-1">
-                  <span className="flex items-center gap-1.5 text-[13px] font-semibold text-fg">
-                    <StageDot stage={s} className="w-2 h-2" />
-                    {STAGE_LABELS[s]}
-                  </span>
-                  <span className="text-xs text-subtle tabular-nums">{list.length}</span>
-                </div>
-                {list.slice(0, 60).map(card)}
-                {list.length > 60 && <p className="text-xs text-subtle px-1">and {list.length - 60} more. Filter to narrow down.</p>}
-              </section>
-            );
-          })}
-          {showRejected ? (
-            <section
-              aria-label={`Not passed, ${rejected.length}`}
-              {...dropProps("REJECTED")}
-              className={`rounded-xl border p-2.5 flex flex-col gap-2 min-h-[140px] ${over === "REJECTED" ? "border-danger/60 bg-danger/[0.06]" : "border-border bg-bg/60"}`}
-            >
-              <div className="flex items-center justify-between px-1 pt-0.5 pb-1">
-                <span className="flex items-center gap-1.5 text-[13px] font-semibold text-fg">
-                  <StageDot stage="REJECTED" className="w-2 h-2" />
-                  Not passed
-                </span>
-                <button type="button" onClick={onToggleRejected} className="text-xs text-subtle hover:text-fg">
-                  Hide
-                </button>
-              </div>
-              {rejected.slice(0, 60).map(card)}
-            </section>
-          ) : (
-            <button
-              type="button"
-              onClick={onToggleRejected}
-              {...dropProps("REJECTED")}
-              aria-label={`Show rejected, ${rejected.length}`}
-              className={`rounded-xl border h-[220px] flex flex-col items-center gap-2 pt-3 transition-colors ${
-                over === "REJECTED" ? "border-danger/60 bg-danger/[0.06]" : "border-border bg-bg/60 hover:bg-panel/60"
-              }`}
-            >
-              <StageDot stage="REJECTED" className="w-2 h-2" />
-              <span className="text-xs text-subtle tabular-nums">{rejected.length}</span>
-              <span className="[writing-mode:vertical-rl] text-[13px] font-semibold text-muted">Not passed</span>
-            </button>
-          )}
-        </div>
-      </div>
     </div>
   );
 }

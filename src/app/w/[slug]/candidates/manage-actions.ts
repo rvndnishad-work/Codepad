@@ -27,18 +27,29 @@ import {
   type CandidatePatch,
   type OnDuplicate,
 } from "@/lib/crm/candidates-server";
-import { isPipelineStage } from "@/lib/crm/stages";
 import { IMPORT_MAX, type ImportRow } from "@/lib/crm/import";
 import { writeWorkspaceAuditEntry, WORKSPACE_AUDIT_ACTIONS } from "@/lib/workspace-audit";
 
-export type ActionResult<T = object> =
-  | ({ ok: true } & T)
-  | { ok: false; error: string; existing?: { id: string; name: string } };
+type ActionError = {
+  ok: false;
+  error: string;
+  existing?: { id: string; name: string };
+  /** Candidates whose pass needs confirming as a manual override. */
+  needsOverride?: string[];
+};
 
-function fail(err: unknown): { ok: false; error: string; existing?: { id: string; name: string } } {
+export type ActionResult<T = object> = ({ ok: true } & T) | ActionError;
+
+function fail(err: unknown): ActionError {
   if (err instanceof CandidateError) {
     const existing = err.extra?.existing as { id: string; name: string } | undefined;
-    return { ok: false, error: err.message, ...(existing ? { existing: { id: existing.id, name: existing.name } } : {}) };
+    const needsOverride = err.extra?.needsOverride as string[] | undefined;
+    return {
+      ok: false,
+      error: err.message,
+      ...(existing ? { existing: { id: existing.id, name: existing.name } } : {}),
+      ...(needsOverride ? { needsOverride } : {}),
+    };
   }
   console.error("[candidates action]", err);
   return { ok: false, error: "Something went wrong. Try again." };
@@ -232,8 +243,8 @@ export async function importCandidatesAction(
     const actor = await resolveCandidateActor(slug, "candidate:write");
     if (!rows.length) throw new CandidateError(400, "There is nobody to import.");
     if (rows.length > IMPORT_MAX) throw new CandidateError(400, `Import up to ${IMPORT_MAX} people at a time.`);
-    if (opts.stage && (!isPipelineStage(opts.stage) || opts.stage === "REJECTED")) {
-      throw new CandidateError(400, "Pick a starting stage other than Not passed.");
+    if (opts.stage && opts.stage !== "NEW" && opts.stage !== "SCREENING") {
+      throw new CandidateError(400, "New candidates start at New or Screening.");
     }
     await assertRefs(actor, opts.batchId, opts.ownerId);
 
@@ -264,7 +275,9 @@ export async function importCandidatesAction(
           source: r.source || (opts.via === "csv" ? "csv-import" : opts.via === "paste" ? "bulk-import" : "manual"),
           notes: r.notes,
           tags: [...(r.tags ?? []), ...(opts.tags ?? [])],
-          stage: rowStage && isPipelineStage(rowStage) && rowStage !== "REJECTED" ? rowStage : opts.stage,
+          // A CSV can place people in New or Screening. Passed and Not passed are
+          // decisions made here, so those rows start at the default instead.
+          stage: rowStage === "NEW" || rowStage === "SCREENING" ? rowStage : opts.stage,
           batchId: opts.batchId,
           ownerId: opts.ownerId,
         },

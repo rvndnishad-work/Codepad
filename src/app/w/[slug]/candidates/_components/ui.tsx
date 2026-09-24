@@ -72,7 +72,10 @@ export function ScoreBar({ value, label, width = 120 }: { value: number | null; 
         {label && <span className="text-xs text-subtle truncate">{label}</span>}
       </div>
       <div className="h-1 rounded-full bg-panel" style={{ width }}>
-        <div className={`h-1 rounded-full ${scoreTone(value)}`} style={{ width: `${Math.max(2, Math.min(100, value))}%` }} />
+        <div
+          className={`h-1 rounded-full origin-left animate-rule-in motion-reduce:animate-none ${scoreTone(value)}`}
+          style={{ width: `${Math.max(2, Math.min(100, value))}%` }}
+        />
       </div>
     </div>
   );

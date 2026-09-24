@@ -93,13 +93,14 @@ export default function BatchesClient({
       )}
 
       <div className="grid sm:grid-cols-2 xl:grid-cols-3 gap-4">
-        {shown.map((b) => {
+        {shown.map((b, i) => {
           const target = b.targetHires ?? 0;
           return (
             <Link
               key={b.id}
               href={`/w/${slug}/batches/${b.id}`}
-              className="group rounded-xl border border-border bg-surface p-5 flex flex-col gap-4 hover:border-border-strong hover:-translate-y-0.5 transition motion-reduce:hover:translate-y-0"
+              style={{ animationDelay: `${Math.min(i, 8) * 50}ms`, animationFillMode: "backwards" }}
+              className="group rounded-xl border border-border bg-surface p-5 flex flex-col gap-4 hover:border-border-strong hover:-translate-y-0.5 hover:shadow-lg hover:shadow-black/20 transition duration-200 animate-slide-up motion-reduce:animate-none motion-reduce:hover:translate-y-0"
             >
               <div className="flex justify-between gap-3">
                 <div className="min-w-0">

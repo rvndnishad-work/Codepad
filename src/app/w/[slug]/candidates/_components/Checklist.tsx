@@ -1,11 +1,11 @@
 "use client";
 
 import { AlertCircle, Check, Clock, X } from "lucide-react";
-import { RESULT_KIND_LABELS, type CheckItem, type CheckState } from "@/lib/crm/results";
+import { RESULT_KIND_LABELS, passCheckFromItems, type CheckItem, type CheckState } from "@/lib/crm/results";
 import { REJECT_REASON_LABELS, normalizeStage, type RejectReason } from "@/lib/crm/stages";
 import { fmtDate } from "./ui";
 
-export type Decision = { stage: string; at: string | null; reason: string | null };
+export type Decision = { stage: string; at: string | null; reason: string | null; by?: string | null };
 
 const STATE_TEXT: Record<CheckState, string> = {
   todo: "text-subtle",
@@ -43,19 +43,35 @@ function CheckDot({ state }: { state: CheckState }) {
   return <span aria-hidden className="w-5 h-5 rounded-full border-2 border-dashed border-border-strong shrink-0" />;
 }
 
-function decisionText(d: Decision): { label: string; tone: string; detail: string | null } {
+type DecisionView = { label: string; tone: string; detail: string | null; override: string | null };
+
+/**
+ * A pass the results do not back (a best result below the bar, or nothing
+ * scored) can only be a recruiter's manual override, since automation never
+ * passes anyone. It is labelled as one, with the reason, so it never reads
+ * as a clean pass.
+ */
+function decisionText(d: Decision, items: CheckItem[]): DecisionView {
   const stage = normalizeStage(d.stage);
-  if (stage === "PASSED") return { label: "Passed", tone: "text-success", detail: fmtDate(d.at) || null };
+  const by = d.by ? `by ${d.by}` : null;
+  if (stage === "PASSED") {
+    const check = passCheckFromItems(items);
+    const when = fmtDate(d.at) || null;
+    if (check.override) {
+      return { label: "Passed", tone: "text-warning", detail: [by && `By ${d.by}`, when].filter(Boolean).join(" · ") || null, override: check.reason };
+    }
+    return { label: "Passed", tone: "text-success", detail: [by && `By ${d.by}`, when].filter(Boolean).join(" · ") || null, override: null };
+  }
   if (stage === "REJECTED") {
     const reason = d.reason ? (REJECT_REASON_LABELS[d.reason as RejectReason] ?? d.reason) : null;
-    return { label: "Not passed", tone: "text-danger", detail: [reason, fmtDate(d.at)].filter(Boolean).join(" · ") || null };
+    return { label: "Not passed", tone: "text-danger", detail: [reason, by, fmtDate(d.at)].filter(Boolean).join(" · ") || null, override: null };
   }
-  return { label: "No decision yet", tone: "text-subtle", detail: null };
+  return { label: "No decision yet", tone: "text-subtle", detail: null, override: null };
 }
 
 /** The three screening steps in any order, then the decision. Quick view. */
 export function ChecklistList({ items, decision }: { items: CheckItem[]; decision: Decision }) {
-  const d = decisionText(decision);
+  const d = decisionText(decision, items);
   return (
     <ul className="flex flex-col gap-3" aria-label="Screening">
       {items.map((it) => (
@@ -77,12 +93,14 @@ export function ChecklistList({ items, decision }: { items: CheckItem[]; decisio
         <span
           aria-hidden
           className={`w-5 h-5 rounded-full shrink-0 border-2 ${
-            d.label === "Passed" ? "bg-success border-success" : d.label === "Not passed" ? "bg-danger/20 border-danger" : "border-border-strong"
+            d.override ? "bg-warning/20 border-warning" : d.label === "Passed" ? "bg-success border-success" : d.label === "Not passed" ? "bg-danger/20 border-danger" : "border-border-strong"
           }`}
         />
         <div className="flex-1 min-w-0">
           <span className={`font-medium ${d.tone}`}>{d.label}</span>
+          {d.override && <span className="text-warning"> · Manual override</span>}
           {d.detail && <span className="text-subtle"> · {d.detail}</span>}
+          {d.override && <div className="text-warning">Results do not back it: {d.override}</div>}
         </div>
       </li>
     </ul>
@@ -91,10 +109,10 @@ export function ChecklistList({ items, decision }: { items: CheckItem[]; decisio
 
 /** Four cards across the profile: AI interview, take-home, interview, decision. */
 export function ChecklistRow({ items, decision }: { items: CheckItem[]; decision: Decision }) {
-  const d = decisionText(decision);
+  const d = decisionText(decision, items);
   return (
     <ol aria-label="Screening" className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-      {items.map((it) => {
+      {items.map((it, i) => {
         const body = (
           <>
             <div className="flex items-center gap-2">
@@ -116,9 +134,12 @@ export function ChecklistRow({ items, decision }: { items: CheckItem[]; decision
           </>
         );
         return (
-          <li key={it.kind} className="min-w-0">
+          <li key={it.kind} className="min-w-0 animate-slide-up motion-reduce:animate-none" style={{ animationDelay: `${80 + i * 60}ms`, animationFillMode: "backwards" }}>
             {it.href ? (
-              <a href={it.href} className="block h-full rounded-xl border border-border bg-bg/40 px-3.5 py-3 hover:border-border-strong transition">
+              <a
+                href={it.href}
+                className="block h-full rounded-xl border border-border bg-bg/40 px-3.5 py-3 hover:border-border-strong hover:-translate-y-0.5 hover:shadow-lg hover:shadow-black/20 motion-reduce:hover:translate-y-0 transition duration-200"
+              >
                 {body}
               </a>
             ) : (
@@ -128,13 +149,25 @@ export function ChecklistRow({ items, decision }: { items: CheckItem[]; decision
         );
       })}
       <li
-        className={`min-w-0 rounded-xl border px-3.5 py-3 ${
-          d.label === "Passed" ? "border-success/40 bg-success/10" : d.label === "Not passed" ? "border-danger/40 bg-danger/10" : "border-border bg-bg/40"
+        style={{ animationDelay: "280ms", animationFillMode: "backwards" }}
+        className={`min-w-0 rounded-xl border px-3.5 py-3 animate-pop-in motion-reduce:animate-none ${
+          d.override
+            ? "border-warning/40 bg-warning/10"
+            : d.label === "Passed"
+              ? "border-success/40 bg-success/10"
+              : d.label === "Not passed"
+                ? "border-danger/40 bg-danger/10"
+                : "border-border bg-bg/40"
         }`}
       >
-        <div className="text-[13px] text-muted">Decision</div>
+        <div className="flex items-center justify-between gap-2">
+          <span className="text-[13px] text-muted">Decision</span>
+          {d.override && <span className="text-xs font-medium text-warning rounded-md bg-warning/15 px-1.5 leading-5">Manual override</span>}
+        </div>
         <div className={`mt-2 text-sm font-semibold ${d.tone === "text-subtle" ? "text-fg" : d.tone}`}>{d.label}</div>
-        <div className="text-xs text-subtle truncate mt-0.5">{d.detail ?? "Decide once the results are in"}</div>
+        <div className="text-xs text-subtle truncate mt-0.5" title={d.override ? `Results do not back it: ${d.override}` : undefined}>
+          {d.detail ?? "Decide once the results are in"}
+        </div>
       </li>
     </ol>
   );

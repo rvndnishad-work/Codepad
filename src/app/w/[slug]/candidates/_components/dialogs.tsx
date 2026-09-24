@@ -173,3 +173,62 @@ export function TagDialog({
     </Dialog>
   );
 }
+
+/**
+ * Passing over results below the bar (or with nothing scored) is allowed, as
+ * a recruiter's manual override. It is confirmed here and then labelled as
+ * one on the profile, the list and the activity log.
+ */
+export function PassOverrideDialog({
+  people,
+  total,
+  onCancel,
+  onConfirm,
+  busy,
+}: {
+  /** The candidates whose results do not back a pass, with the reason. */
+  people: { name: string; reason: string }[];
+  /** How many are being passed in all. */
+  total: number;
+  onCancel: () => void;
+  onConfirm: () => void;
+  busy?: boolean;
+}) {
+  const one = people.length === 1 && total === 1;
+  const shown = people.slice(0, 6);
+  return (
+    <Dialog
+      title={one ? `Pass ${people[0].name} as a manual override?` : `Pass ${plural(total, "candidate")} with a manual override?`}
+      onClose={onCancel}
+      width={480}
+      footer={
+        <>
+          <Btn onClick={onCancel}>Cancel</Btn>
+          <Btn variant="primary" disabled={busy} onClick={onConfirm} data-autofocus>
+            {busy ? "Saving" : "Pass anyway"}
+          </Btn>
+        </>
+      }
+    >
+      <p className="text-sm text-muted leading-relaxed">
+        {!people.length
+          ? "Their results changed since this page loaded and no longer back a pass."
+          : one
+            ? "Their results do not back a pass:"
+            : `${plural(people.length, "candidate")} ${people.length === 1 ? "has" : "have"} results that do not back a pass:`}
+      </p>
+      <ul className="mt-3 flex flex-col gap-2">
+        {shown.map((p) => (
+          <li key={p.name + p.reason} className="rounded-lg border border-warning/40 bg-warning/10 px-3 py-2 text-[13px]">
+            {!one && <span className="text-fg font-medium">{p.name}: </span>}
+            <span className="text-warning">{p.reason}</span>
+          </li>
+        ))}
+        {people.length > shown.length && <li className="text-[13px] text-subtle">and {people.length - shown.length} more</li>}
+      </ul>
+      <p className="mt-3 text-[13px] text-subtle leading-relaxed">
+        The pass is recorded as a manual override, with your name, on the profile and in the activity log.
+      </p>
+    </Dialog>
+  );
+}

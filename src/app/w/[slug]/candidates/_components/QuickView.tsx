@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState, useTransition } from "react";
 import Link from "next/link";
 import { ArrowUpRight, CalendarDays, ChevronDown, ChevronUp, CircleCheck, FileText, Send, X } from "lucide-react";
-import { screeningChecklist } from "@/lib/crm/results";
+import { passCheck, screeningChecklist } from "@/lib/crm/results";
 import type { RosterRow } from "@/lib/crm/roster";
 import { relativeTime } from "@/lib/workspace/display";
 import { addNoteAction, quickViewAction, type QuickViewData } from "../manage-actions";
@@ -203,7 +203,7 @@ export function QuickView({
         {(canPipeline || canWrite) && !isClosed && (
           <div className="px-5 py-3.5 border-t border-border flex flex-wrap gap-2">
             {canPipeline && (
-              <Btn variant="primary" icon={CircleCheck} onClick={() => onMove("PASSED")}>
+              <Btn variant={passCheck(row.results).override ? "ghost" : "primary"} icon={CircleCheck} onClick={() => onMove("PASSED")}>
                 Pass
               </Btn>
             )}

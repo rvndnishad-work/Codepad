@@ -46,6 +46,18 @@ export default async function CandidateProfilePage({ params }: Props) {
   if (!row || !candidate) notFound();
 
   const memberName = (uid: string | null) => lookups.members.find((m) => m.id === uid)?.name ?? null;
+  // Who made the current decision: the newest move into it. Older rows use
+  // the pre-screening names (Offer and Hired became Passed).
+  const decisionStages = row?.stage === "PASSED" ? ["PASSED", "OFFER", "HIRED"] : row?.stage === "REJECTED" ? ["REJECTED"] : [];
+  const decisionRow = [...audit].reverse().find((a) => {
+    if (a.action !== "PIPELINE_STAGE_CHANGED") return false;
+    try {
+      return decisionStages.includes(JSON.parse(a.meta ?? "{}").toStage);
+    } catch {
+      return false;
+    }
+  });
+  const decidedBy = decisionRow ? (memberName(decisionRow.actorUserId) ?? decisionRow.actorEmail) : null;
   const batchName = (bid: string | null) => lookups.batches.find((b) => b.id === bid)?.name ?? null;
   // Notes come from their own table so older notes (added before notes were
   // audited) show too; the NOTE_ADDED audit rows would only duplicate them.
@@ -88,6 +100,7 @@ export default async function CandidateProfilePage({ params }: Props) {
       meId={actor.actorUserId}
       row={row}
       rejectNote={candidate.rejectReasonNote}
+      decidedBy={decidedBy}
       notes={notes.map((n) => ({
         id: n.id,
         body: n.body,

@@ -6,14 +6,14 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { ArrowLeft, CircleArrowRight, Download, Pencil, Plus, Send, Star, X } from "lucide-react";
 import { deadlineText, type BatchSummary } from "@/lib/crm/batches";
 import { RESULT_WEIGHTS, type ResultKind } from "@/lib/crm/results";
-import type { RosterBatch, RosterMember, RosterRow } from "@/lib/crm/roster";
+import { passOverrides, type RosterBatch, type RosterMember, type RosterRow } from "@/lib/crm/roster";
 import { PIPELINE_STAGES, STAGE_LABELS } from "@/lib/crm/stages";
 import { plural } from "@/lib/workspace/display";
 import { bulkCandidatesAction } from "../../candidates/manage-actions";
 import { AddCandidatesDialog } from "../../candidates/_components/AddCandidatesDialog";
 import { BatchDialog } from "../../candidates/_components/BatchDialog";
 import { CandidatesView, type Perms } from "../../candidates/_components/CandidatesView";
-import { RejectDialog } from "../../candidates/_components/dialogs";
+import { PassOverrideDialog, RejectDialog } from "../../candidates/_components/dialogs";
 import { Avatar, Btn, Menu, MenuItem, StageDot, stageLabel, useToasts } from "../../candidates/_components/ui";
 
 type Tab = "candidates" | "board" | "results";
@@ -215,6 +215,7 @@ function Results({
   const [picked, setPicked] = useState<string[]>([]);
   const [onlyShortlist, setOnlyShortlist] = useState(false);
   const [rejecting, setRejecting] = useState<string[] | null>(null);
+  const [passing, setPassing] = useState<string[] | null>(null);
   const [busy, start] = useTransition();
   const [toasts, toast] = useToasts();
 
@@ -236,7 +237,9 @@ function Results({
   function run(ids: string[], op: Parameters<typeof bulkCandidatesAction>[2], done: string) {
     start(async () => {
       const r = await bulkCandidatesAction(slug, ids, op);
-      if (!r.ok) toast(r.error, "error");
+      // Results changed since the page loaded: confirm the override first.
+      if (!r.ok && r.needsOverride?.length && op.action === "stage" && op.stage === "PASSED" && !op.override) setPassing(ids);
+      else if (!r.ok) toast(r.error, "error");
       else {
         toast(done);
         router.refresh();
@@ -391,6 +394,7 @@ function Results({
                         onClick={() => {
                           close();
                           if (s === "REJECTED") setRejecting(picked);
+                          else if (s === "PASSED" && passOverrides(compared).length) setPassing(picked);
                           else run(picked, { action: "stage", stage: s }, `Moved ${plural(picked.length, "candidate")} to ${STAGE_LABELS[s]}`);
                         }}
                       >
@@ -455,6 +459,19 @@ function Results({
             const ids = rejecting;
             setRejecting(null);
             run(ids, { action: "stage", stage: "REJECTED", rejectReason: reason, rejectReasonNote: note }, `Marked ${plural(ids.length, "candidate")} as not passed`);
+          }}
+        />
+      )}
+      {passing && (
+        <PassOverrideDialog
+          people={passOverrides(rows.filter((r) => passing.includes(r.id)))}
+          total={rows.filter((r) => passing.includes(r.id) && r.stage !== "PASSED").length}
+          busy={busy}
+          onCancel={() => setPassing(null)}
+          onConfirm={() => {
+            const ids = passing;
+            setPassing(null);
+            run(ids, { action: "stage", stage: "PASSED", override: true }, `Passed ${plural(ids.length, "candidate")}`);
           }}
         />
       )}

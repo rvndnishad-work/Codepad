@@ -212,7 +212,7 @@ export async function loadCandidateResults(
       state,
       score,
       rating,
-      ...(score != null ? describeScore("interview", score, rating) : { verdict: null, passed: null }),
+      ...(score != null ? describeScore("interview", score, rating, s.verdict) : { verdict: null, passed: null }),
       sentAt: s.createdAt.toISOString(),
       startedAt: iso(s.startedAt),
       finishedAt: iso(s.finishedAt),

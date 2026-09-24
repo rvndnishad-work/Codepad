@@ -8,6 +8,8 @@ import rehypeRaw from "rehype-raw";
 import { toHtml } from "hast-util-to-html";
 import "highlight.js/styles/github-dark.css";
 import RunnableSnippet from "./RunnableSnippet";
+import DocCodeBlock from "./DocCodeBlock";
+import { createSlugger } from "@/lib/interview-questions/reading";
 
 interface MarkdownRendererProps {
   content: string;
@@ -20,6 +22,12 @@ interface MarkdownRendererProps {
    * user-generated content: raw HTML here is a stored-XSS vector.
    */
   allowHtml?: boolean;
+  /**
+   * Long-form document mode (interview answers): h2/h3 get anchor ids that
+   * match `extractHeadings`, code blocks get a language label and a copy
+   * button and scroll instead of wrapping, and tables scroll on narrow screens.
+   */
+  docs?: boolean;
 }
 
 function normalizeSingleLineFences(md: string): string {
@@ -36,8 +44,10 @@ function normalizeSingleLineFences(md: string): string {
   });
 }
 
-export default function MarkdownRenderer({ content, className = "", forceRunnable = false, allowHtml = false }: MarkdownRendererProps) {
+export default function MarkdownRenderer({ content, className = "", forceRunnable = false, allowHtml = false, docs = false }: MarkdownRendererProps) {
   const normalizedContent = normalizeSingleLineFences(content);
+  // Fresh per render so ids repeat identically on every pass.
+  const slug = createSlugger();
   const extractText = (node: any): string => {
     if (typeof node === 'string') return node;
     if (Array.isArray(node)) return node.map(extractText).join('');
@@ -86,7 +96,7 @@ export default function MarkdownRenderer({ content, className = "", forceRunnabl
             }
 
             // Ensure long single-line code (curated JSON flattened without \n) wraps instead of overflowing on one line.
-            const wrapClass = !inline ? " whitespace-pre-wrap break-words [overflow-wrap:anywhere]" : "";
+            const wrapClass = !inline && !docs ? " whitespace-pre-wrap break-words [overflow-wrap:anywhere]" : "";
             return <code className={`${className ?? ""}${wrapClass}`} {...props}>{children}</code>;
           },
           // Render hand-authored inline SVG via the browser's native parser
@@ -101,6 +111,33 @@ export default function MarkdownRenderer({ content, className = "", forceRunnabl
               dangerouslySetInnerHTML={{ __html: toHtml(node, { space: "svg" }) }}
             />
           ),
+          ...(docs
+            ? {
+                h2: ({ children }: any) => {
+                  const id = slug(extractText(children));
+                  return (
+                    <h2 id={id} className="group scroll-mt-40">
+                      {children}
+                      <a href={`#${id}`} aria-label="Link to this section" className="doc-anchor">#</a>
+                    </h2>
+                  );
+                },
+                h3: ({ children }: any) => {
+                  const id = slug(extractText(children));
+                  return (
+                    <h3 id={id} className="group scroll-mt-40">
+                      {children}
+                      <a href={`#${id}`} aria-label="Link to this section" className="doc-anchor">#</a>
+                    </h3>
+                  );
+                },
+                table: ({ children }: any) => (
+                  <div className="doc-table">
+                    <table>{children}</table>
+                  </div>
+                ),
+              }
+            : {}),
           img: ({ ...props }) => (
             <span className="block my-8">
               <img 
@@ -128,6 +165,12 @@ export default function MarkdownRenderer({ content, className = "", forceRunnabl
 
             if (hasRunnable) {
               return <>{children}</>;
+            }
+
+            if (docs) {
+              const first = childrenArray[0] as any;
+              const lang = /language-([\w-]+)/.exec(first?.props?.className || "")?.[1] ?? "";
+              return <DocCodeBlock language={lang} text={extractText(children)}>{children}</DocCodeBlock>;
             }
 
             return (

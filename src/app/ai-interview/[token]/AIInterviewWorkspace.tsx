@@ -59,6 +59,7 @@ import { useResizableHeight } from "@/hooks/useResizableHeight";
 import { javascript } from "@codemirror/lang-javascript";
 import MarkdownRenderer from "@/components/MarkdownRenderer";
 import TheoryRound from "./TheoryRound";
+import { transcriptOf } from "@/lib/ai-interview/speech";
 
 import CustomMonacoEditor from "@/components/MonacoEditor";
 const RawMonacoEditor = dynamic(() => import("@monaco-editor/react"), { ssr: false });
@@ -511,6 +512,8 @@ export default function AIInterviewWorkspace({ session, rounds, initialChat, ser
   // Now: interim results stream live into the input, auto-send only after 1.4s of silence.
   const interimTranscriptRef = useRef("");
   const finalTranscriptRef = useRef("");
+  const resultsSentRef = useRef(0);
+  const resultsSeenRef = useRef(0);
   const silenceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isListeningRef = useRef(false);
   const shouldRestartRef = useRef(false);
@@ -532,22 +535,19 @@ export default function AIInterviewWorkspace({ session, rounds, initialChat, ser
       shouldRestartRef.current = true;
       finalTranscriptRef.current = "";
       interimTranscriptRef.current = "";
+      resultsSentRef.current = 0;
+      resultsSeenRef.current = 0;
       // Don't clear input completely — keep any typed draft, append dictation after it
       toast.success("Listening… pause 1.4s to send, or tap mic to finish.");
     };
 
     rec.onresult = (event: any) => {
-      let interim = "";
-      for (let i = event.resultIndex; i < event.results.length; i++) {
-        const transcript: string = event.results[i][0].transcript;
-        if (event.results[i].isFinal) {
-          finalTranscriptRef.current += transcript + " ";
-        } else {
-          interim += transcript;
-        }
-      }
-      interimTranscriptRef.current = interim;
-      const combined = (finalTranscriptRef.current + interim).trim();
+      // Rebuild from the unsent part of the list: some engines (Chrome on
+      // Android) re-send the utterance so far as each phrase.
+      const results = Array.from(event.results as ArrayLike<ArrayLike<{ transcript: string }>>);
+      resultsSeenRef.current = results.length;
+      interimTranscriptRef.current = transcriptOf(results.slice(resultsSentRef.current));
+      const combined = interimTranscriptRef.current;
       if (combined) setInput(combined);
 
       // Debounce: only send after silence
@@ -560,6 +560,7 @@ export default function AIInterviewWorkspace({ session, rounds, initialChat, ser
         shouldRestartRef.current = false;
         finalTranscriptRef.current = "";
         interimTranscriptRef.current = "";
+        resultsSentRef.current = resultsSeenRef.current;
         setInput("");
         handleSendTextRef.current(toSend);
       }, 1400);

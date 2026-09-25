@@ -45,6 +45,7 @@ export default async function WorkspaceDashboardPage({ params, searchParams }: P
   const { slug } = await params;
   const sp = (await searchParams) ?? {};
   if (sp.section === "candidates") redirect(legacyCandidatesUrl(slug, sp));
+  if (sp.section === "library") redirect(`/w/${slug}/library`);
 
   // Gate workspace access based on admin visibility settings
   const session = await auth().catch(() => null);

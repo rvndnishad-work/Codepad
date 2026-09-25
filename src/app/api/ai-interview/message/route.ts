@@ -1,3 +1,4 @@
+import { interviewerQuestionList, questionTexts } from "@/lib/ai-interview/questionnaire";
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { resolveSessionRounds, type SessionRound } from "@/lib/ai-interview/rounds";
@@ -641,11 +642,7 @@ export async function POST(req: NextRequest) {
     // Configurable interviewer persona: workspace override → platform default
     // → code default (defaults.ts, extracted verbatim from the old inline
     // string). Everything dynamic is injected as {{vars}}.
-    const mockQuestions = () =>
-      (roundContent?.interviewerNotes ?? "")
-        .split("\n")
-        .map((l) => l.trim())
-        .filter(Boolean);
+    const mockQuestions = () => questionTexts(roundContent?.interviewerNotes);
     const agent = await getAgentConfig("INTERVIEWER", session.workspaceId);
     let systemInstruction =
       kind === "conversation"
@@ -655,12 +652,7 @@ export async function POST(req: NextRequest) {
             taskBrief: roundContent?.description ? `Brief: ${roundContent.description}\n` : "",
             roleLine: roundFw ? `Role area: ${roundFw}.` : "",
             roundLine,
-            questions:
-              (roundContent?.interviewerNotes ?? "")
-                .split("\n")
-                .filter((l) => l.trim())
-                .map((l, i) => `${i + 1}. ${l.trim()}`)
-                .join("\n") || "Ask about relevant experience for the role.",
+            questions: interviewerQuestionList(roundContent?.interviewerNotes) || "Ask about relevant experience for the role.",
           })
         : renderPrompt(agent.systemPrompt || DEFAULT_AGENTS.INTERVIEWER.systemPrompt, {
             positionTitle: session.positionTitle,

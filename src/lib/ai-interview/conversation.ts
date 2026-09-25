@@ -63,14 +63,14 @@ export function conversationFallback(msgs: ChatEntry[]): ConversationGrade {
 }
 
 /** Grading prompt for one conversation round. */
-export function conversationGraderPrompt(p: { positionTitle: string; brief: string; questions: string[]; transcript: string }): string {
+export function conversationGraderPrompt(p: { positionTitle: string; brief: string; questionList: string; transcript: string }): string {
   return `You are the Interviewpad AI Grading Agent.
 Evaluate a candidate's screening conversation for the position of "${p.positionTitle}". There is no code in this round.
 
 Round brief: ${p.brief || "(none)"}
 
 Questions the interviewer was asked to cover:
-${p.questions.map((q, i) => `${i + 1}. ${q}`).join("\n") || "(not listed)"}
+${p.questionList || "(not listed)"}
 
 Transcript:
 ${p.transcript || "(empty)"}

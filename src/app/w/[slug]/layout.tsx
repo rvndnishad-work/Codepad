@@ -33,6 +33,7 @@ export default async function WorkspaceLayout({ children, params }: Props) {
       _count: {
         select: {
           challenges: true,
+          aiInterviewTemplates: { where: { kind: "conversation" } },
           sessions: true,
           takeHomes: true,
           candidates: { where: { status: { not: "archived" } } },
@@ -90,7 +91,7 @@ export default async function WorkspaceLayout({ children, params }: Props) {
       workspaces={switcher}
       plan={plan}
       counts={{
-        challenges: activeWorkspace._count.challenges,
+        challenges: activeWorkspace._count.challenges + activeWorkspace._count.aiInterviewTemplates,
         interviews: activeWorkspace._count.sessions,
         takeHomes: activeWorkspace._count.takeHomes,
         candidates: activeWorkspace._count.candidates,

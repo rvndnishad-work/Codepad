@@ -137,7 +137,7 @@ export default function WorkspaceSidebarNav({ slug, growthFeatures, counts, coll
       count: counts.interviews + counts.takeHomes + counts.replays,
     },
     growth({ label: "AI screening", icon: Bot, ...route("ai-interviews") }),
-    { label: "Question library", icon: BookOpen, href: sectionHref("library"), isActive: sectionActive("library"), count: counts.challenges },
+    { label: "Question library", icon: BookOpen, ...route("library"), count: counts.challenges },
   ];
 
   const connections: NavItem[] = [

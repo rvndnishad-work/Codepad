@@ -265,7 +265,7 @@ export default function NewScreening({
         <ArrowLeft className="w-3.5 h-3.5" aria-hidden /> AI screening
       </Link>
       <div>
-        <h1 className="text-[26px] font-semibold tracking-tight text-fg">{prefill ? "Duplicate screening" : "New screening"}</h1>
+        <h1 className="text-[26px] font-semibold tracking-tight text-fg">{prefill?.title ? "Duplicate screening" : "New screening"}</h1>
         <p className="text-[15px] text-muted mt-1">Four short sections. The AI interviewer builds the rounds from what you pick, and you can swap any question.</p>
       </div>
 

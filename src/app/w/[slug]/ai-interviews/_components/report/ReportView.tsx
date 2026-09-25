@@ -15,6 +15,7 @@ import {
   Link2,
   Mail,
   MessageSquare,
+  Mic,
   Play,
   Printer,
   Send,
@@ -42,15 +43,17 @@ import {
 import { StatusChip, ToneChip, TONE_BAR, selectCls } from "../kit";
 import SummaryTab from "./SummaryTab";
 import TranscriptTab from "./TranscriptTab";
+import TheoryTab from "./TheoryTab";
 
 // The editors are heavy and browser-only.
 const CodeTab = dynamic(() => import("./CodeTab"), { ssr: false, loading: () => <PaneLoading /> });
 const RunTab = dynamic(() => import("./RunTab"), { ssr: false, loading: () => <PaneLoading /> });
 
-type Tab = "summary" | "code" | "transcript" | "run";
+type Tab = "summary" | "theory" | "code" | "transcript" | "run";
 
 const TABS: { id: Tab; label: string; icon: typeof Sparkles }[] = [
   { id: "summary", label: "Summary", icon: Sparkles },
+  { id: "theory", label: "Theory answers", icon: Mic },
   { id: "code", label: "Code changes", icon: Code2 },
   { id: "transcript", label: "Transcript", icon: MessageSquare },
   { id: "run", label: "Run the code", icon: Play },
@@ -86,9 +89,12 @@ export default function ReportView({
   const [deleting, setDeleting] = useState(false);
   const done = r.status === "COMPLETED";
   const decided = r.candidate.stage === "PASSED" || r.candidate.stage === "REJECTED";
-  // Conversation-only screenings have no code to show or run.
-  const allTalk = r.rounds.length > 0 && r.rounds.every((x) => x.kind === "conversation");
-  const wide = (tab === "code" || tab === "run") && r.rounds[round]?.kind !== "conversation";
+  // Screenings of only conversation and theory rounds have no code to show or run.
+  const talkKind = (k: string | undefined) => k === "conversation" || k === "theory";
+  const allTalk = r.rounds.length > 0 && r.rounds.every((x) => talkKind(x.kind));
+  const hasTheory = r.rounds.some((x) => x.kind === "theory");
+  const hasChat = r.rounds.some((x) => x.kind !== "theory");
+  const wide = (tab === "code" || tab === "run") && !talkKind(r.rounds[round]?.kind);
   const hrefFor = (patch: { tab?: Tab; round?: number }) => {
     const t = patch.tab ?? tab;
     const rd = patch.round ?? round;
@@ -220,7 +226,7 @@ export default function ReportView({
       <div className="flex flex-col lg:flex-row gap-6 items-start">
         <div className="flex-1 min-w-0 w-full flex flex-col gap-4">
           <nav aria-label="Report sections" className="flex gap-1 border-b border-border overflow-x-auto print:hidden">
-            {TABS.filter((t) => !allTalk || (t.id !== "code" && t.id !== "run")).map((t) => {
+            {TABS.filter((t) => (t.id === "theory" ? hasTheory : t.id === "transcript" ? hasChat : !allTalk || (t.id !== "code" && t.id !== "run"))).map((t) => {
               const on = t.id === tab;
               return (
                 <Link
@@ -244,12 +250,13 @@ export default function ReportView({
           )}
 
           {tab === "summary" && <SummaryTab r={r} hrefFor={hrefFor} />}
+          {tab === "theory" && <TheoryTab r={r} />}
           {tab === "transcript" && <TranscriptTab r={r} />}
-          {(tab === "code" || tab === "run") && r.rounds[round]?.kind === "conversation" ? (
+          {(tab === "code" || tab === "run") && talkKind(r.rounds[round]?.kind) ? (
             <div className="rounded-xl border border-border bg-surface p-8 text-center text-sm text-muted">
-              Round {round + 1} is a conversation, so there is no code.{" "}
-              <Link href={hrefFor({ tab: "transcript" })} scroll={false} className="text-secondary-soft hover:underline">
-                Read the transcript
+              Round {round + 1} is {r.rounds[round]?.kind === "theory" ? "a theory round" : "a conversation"}, so there is no code.{" "}
+              <Link href={hrefFor({ tab: r.rounds[round]?.kind === "theory" ? "theory" : "transcript" })} scroll={false} className="text-secondary-soft hover:underline">
+                {r.rounds[round]?.kind === "theory" ? "Read the answers" : "Read the transcript"}
               </Link>
             </div>
           ) : (
@@ -613,8 +620,9 @@ function Skill({ label, value, note }: { label: string; value: number | null; no
 
 function ScoreCard({ r }: { r: ReportData }) {
   const s = r.suggestion;
-  const talk = r.rounds.length > 0 && r.rounds.every((x) => x.kind === "conversation");
-  const mixed = !talk && r.rounds.some((x) => x.kind === "conversation");
+  const talk = r.rounds.length > 0 && r.rounds.every((x) => x.kind === "conversation" || x.kind === "theory");
+  const mixed = !talk && r.rounds.some((x) => x.kind === "conversation" || x.kind === "theory");
+  const theory = r.rounds.some((x) => x.kind === "theory");
   if (r.status !== "COMPLETED") {
     return (
       <Card>
@@ -666,7 +674,8 @@ function ScoreCard({ r }: { r: ReportData }) {
               <p>Submitting without writing code scores under 10.</p>
             </>
           )}
-          {mixed && <p>Conversation rounds are graded on their answers instead: answer quality counts as code quality and judgement as problem solving.</p>}
+          {mixed && <p>Conversation and theory rounds are graded on their answers instead: answer quality counts as code quality and judgement as problem solving.</p>}
+          {theory && <p>Theory rounds score each question from 0 to 5 against its reference answer. The round score is the total over every question asked, so skipped and unreached questions count as zero.</p>}
           <p>With several rounds, the score is the average of the rounds.</p>
           <p>Your bar is {SCREENING_PASS_THRESHOLD}. Passing someone below it is allowed, and is recorded as a manual override.</p>
         </div>

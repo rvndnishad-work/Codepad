@@ -26,6 +26,7 @@ import {
   type SummarySection,
 } from "./console";
 import { roundLabel } from "./round-label";
+import { parseAnswers, parseTheoryRound, parseTheorySettings, type TheoryAnswer, type TheorySettings } from "./theory";
 import { classifyChallenge, type CuratableChallenge } from "@/lib/interview/stack";
 
 export const QUEUE_PAGE_SIZE = 25;
@@ -283,7 +284,7 @@ export type ReportRound = {
   order: number;
   title: string;
   description: string;
-  kind: "frontend" | "backend" | "dsa" | "conversation";
+  kind: "frontend" | "backend" | "dsa" | "conversation" | "theory";
   label: string;
   language: string | null;
   frameworkLabel: string | null;
@@ -291,12 +292,19 @@ export type ReportRound = {
   status: string;
   score: number | null;
   ratings: Ratings | null;
+  /** Theory rounds: every question with its reference answer and what was said. Recruiters only. */
+  theory: ReportTheory | null;
   starter: Record<string, string>;
   files: Record<string, string>;
   /** Null when the starter is unknown (very old invites). */
   diffs: FileDiff[] | null;
   stats: DiffStats | null;
   linesWritten: number | null;
+};
+
+export type ReportTheory = {
+  settings: TheorySettings;
+  questions: { q: string; ref: string | null; tech: string | null; difficulty: string | null; answer: TheoryAnswer | null }[];
 };
 
 export type ReportNote = { id: string; body: string; author: string; createdAt: string; mine: boolean };
@@ -361,6 +369,7 @@ export async function loadReport(workspaceId: string, sessionId: string, viewerI
     reviewOrder(workspaceId),
   ]);
 
+  const rawRounds = new Map(s.rounds.map((x) => [x.id, x]));
   const rounds: ReportRound[] = [];
   for (const r of sessionRounds) {
     const c = contents.find((x) => x.roundId === r.id);
@@ -389,6 +398,7 @@ export async function loadReport(workspaceId: string, sessionId: string, viewerI
       diffs,
       stats: diffs ? diffStats(diffs) : null,
       linesWritten: diffs ? meaningfulAdded(diffs) : null,
+      theory: r.paradigm === "theory" ? reportTheory(rawRounds.get(r.id)) : null,
     });
   }
 
@@ -456,6 +466,16 @@ export async function loadReport(workspaceId: string, sessionId: string, viewerI
       position: pos >= 0 ? pos + 1 : null,
       total: order.length,
     },
+  };
+}
+
+function reportTheory(raw: { theoryJson: string | null; answersJson: string | null } | undefined): ReportTheory | null {
+  const data = parseTheoryRound(raw?.theoryJson);
+  if (!data) return null;
+  const answers = parseAnswers(raw?.answersJson).items;
+  return {
+    settings: data.settings,
+    questions: data.items.map((it, i) => ({ q: it.q, ref: it.a ?? null, tech: it.tech ?? null, difficulty: it.difficulty ?? null, answer: answers[i] ?? null })),
   };
 }
 
@@ -557,6 +577,7 @@ export type ScreeningDetail = {
     sourceId: string | null;
     templateId: string | null;
     estimatedMinutes: number;
+    theory: TheorySettings | null;
   }[];
   people: CompareRow[];
 };
@@ -617,6 +638,7 @@ export async function loadScreening(workspaceId: string, batchId: string): Promi
       sourceId: r.sourceId,
       templateId: r.templateId,
       estimatedMinutes: r.estimatedMinutes,
+      theory: r.paradigm === "theory" ? parseTheorySettings(r.theoryJson) : null,
     })),
     people: b.sessions.map((s) => {
       const stage = s.candidate?.stage ?? null;

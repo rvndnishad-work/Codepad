@@ -9,10 +9,12 @@ import { prisma } from "@/lib/prisma";
 import { resolveTemplate } from "./template-resolver";
 import { REACT_SANDBOX_BASE } from "./round-content";
 import type { RoundSpecInput } from "./rounds";
+import { parseQuestionnaire, type QuestionItem } from "./questionnaire";
+import { drawQuestions, sanitizeTheory, theoryMinutes, type TheoryRoundData } from "./theory";
 
 export function sanitizeRoundSpec(r: RoundSpecInput, idx: number): RoundSpecInput {
   const paradigm = r.paradigm;
-  if (!["frontend", "backend", "dsa", "conversation"].includes(paradigm)) {
+  if (!["frontend", "backend", "dsa", "conversation", "theory"].includes(paradigm)) {
     throw new Error(`Round ${idx + 1}: invalid paradigm "${paradigm}".`);
   }
   const sourceKind = r.sourceKind;
@@ -25,19 +27,42 @@ export function sanitizeRoundSpec(r: RoundSpecInput, idx: number): RoundSpecInpu
     throw new Error(`Round ${idx + 1} has no question.`);
   }
   const minutes = Number(r.estimatedMinutes ?? 30);
-  // A conversation round is always a team question and runs no code.
-  if (paradigm === "conversation" && sourceKind !== "scaffold") {
-    throw new Error(`Round ${idx + 1}: conversation rounds must use a team question.`);
+  // Conversation and theory rounds are always a team question and run no code.
+  const talk = paradigm === "conversation" || paradigm === "theory";
+  if (talk && sourceKind !== "scaffold") {
+    throw new Error(`Round ${idx + 1}: ${paradigm} rounds must use a team question.`);
   }
   return {
     paradigm,
-    language: paradigm === "conversation" ? undefined : r.language?.trim() || undefined,
+    language: talk ? undefined : r.language?.trim() || undefined,
     frameworkLabel: r.frameworkLabel?.trim() || undefined,
     sourceKind,
     sourceId: r.sourceId?.trim() || undefined,
     templateId: r.templateId?.trim() || undefined,
     estimatedMinutes: Number.isFinite(minutes) ? Math.min(180, Math.max(5, minutes)) : 30,
+    ...(paradigm === "theory" ? { theory: sanitizeTheory(r.theory) } : {}),
   };
+}
+
+/**
+ * Questions of each questionnaire a theory round uses, keyed by template id.
+ * Also fixes each theory round's length from its settings. Throws a
+ * user-facing message when a questionnaire is missing or empty.
+ */
+export async function loadTheoryQuestions(specs: RoundSpecInput[], workspaceId: string): Promise<Map<string, QuestionItem[]>> {
+  const out = new Map<string, QuestionItem[]>();
+  for (const [i, r] of specs.entries()) {
+    if (r.paradigm !== "theory" || !r.templateId) continue;
+    if (!out.has(r.templateId)) {
+      const tpl = await resolveTemplate(r.templateId, workspaceId).catch(() => undefined);
+      if (!tpl || tpl.kind !== "conversation") throw new Error(`Round ${i + 1}: that questionnaire is no longer available.`);
+      const items = parseQuestionnaire(tpl.testsCode);
+      if (!items.length) throw new Error(`Round ${i + 1}: the questionnaire "${tpl.title}" has no questions.`);
+      out.set(r.templateId, items);
+    }
+    r.estimatedMinutes = theoryMinutes(r.theory ?? sanitizeTheory(null), out.get(r.templateId)!.length);
+  }
+  return out;
 }
 
 const specKey = (r: RoundSpecInput) => `${r.sourceKind}:${r.sourceId ?? ""}:${r.templateId ?? ""}`;
@@ -108,9 +133,18 @@ export async function createSessions(
     rounds: RoundSpecInput[];
     starters: Map<string, Record<string, string> | null>;
     settings: InviteSettings;
+    /** Questionnaire questions for theory rounds, from `loadTheoryQuestions`. */
+    theoryQuestions?: Map<string, QuestionItem[]>;
   },
 ) {
   const { rounds, starters, settings } = args;
+  // Each candidate gets their own draw of theory questions, frozen at invite.
+  const theoryFor = (r: RoundSpecInput): string | undefined => {
+    if (r.paradigm !== "theory" || !r.templateId) return undefined;
+    const settings = sanitizeTheory(r.theory);
+    const data: TheoryRoundData = { v: 1, settings, items: drawQuestions(args.theoryQuestions?.get(r.templateId) ?? [], settings) };
+    return JSON.stringify(data);
+  };
   const created: { id: string; inviteToken: string; candidateName: string; candidateEmail: string; positionTitle: string; expiresAt: Date | null; rounds: { estimatedMinutes: number }[] }[] = [];
   for (const c of args.candidates) {
     // The legacy templateId column is non-null; point it at the first round.
@@ -147,6 +181,7 @@ export async function createSessions(
               estimatedMinutes: r.estimatedMinutes ?? 30,
               filesJson: "{}",
               ...(sf ? { starterFilesJson: JSON.stringify(sf) } : {}),
+              ...(r.paradigm === "theory" ? { theoryJson: theoryFor(r) } : {}),
               status: "PENDING",
             };
           }),

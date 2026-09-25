@@ -22,7 +22,7 @@ export type RoundContent = {
   order: number;
   title: string;
   description: string;
-  kind: "frontend" | "backend" | "dsa" | "conversation";
+  kind: "frontend" | "backend" | "dsa" | "conversation" | "theory";
   language?: string;
   frameworkLabel?: string;
   estimatedMinutes: number;
@@ -96,7 +96,7 @@ function parseFiles(json: string | null | undefined): Record<string, string> | n
 }
 
 /** Surface kind for a round, preferring the explicit paradigm, then a hint. */
-function kindFor(paradigm: Paradigm | null, fallback: "frontend" | "backend" | "dsa" | "conversation"): "frontend" | "backend" | "dsa" | "conversation" {
+function kindFor(paradigm: Paradigm | null, fallback: RoundContent["kind"]): RoundContent["kind"] {
   return paradigm ?? fallback;
 }
 
@@ -125,7 +125,7 @@ export async function resolveRoundsContent(
   for (const round of rounds) {
     let title = "Coding Task";
     let description = "";
-    let kind: "frontend" | "backend" | "dsa" | "conversation" = kindFor(round.paradigm, "frontend");
+    let kind: RoundContent["kind"] = kindFor(round.paradigm, "frontend");
     let language = round.language ?? undefined;
     let frameworkLabel = round.frameworkLabel ?? undefined;
     let estimatedMinutes = round.estimatedMinutes;
@@ -139,12 +139,14 @@ export async function resolveRoundsContent(
       if (tpl) {
         title = tpl.title;
         description = tpl.description;
-        kind = tpl.kind ?? kindFor(round.paradigm, "frontend");
+        // A theory round reuses a conversation questionnaire; the round decides the surface.
+        kind = round.paradigm === "theory" ? "theory" : tpl.kind ?? kindFor(round.paradigm, "frontend");
         language = tpl.language ?? language;
         frameworkLabel = tpl.frameworkLabel ?? frameworkLabel;
-        estimatedMinutes = tpl.estimatedMinutes;
+        // A theory round's length comes from its own settings, set at invite.
+        if (kind !== "theory") estimatedMinutes = tpl.estimatedMinutes;
         starterFiles = tpl.starterFiles;
-        if (kind === "conversation") interviewerNotes = tpl.testsCode || undefined;
+        if (kind === "conversation" || kind === "theory") interviewerNotes = tpl.testsCode || undefined;
       }
     } else if (round.sourceKind === "challenge") {
       const c = round.sourceId ? challengeById.get(round.sourceId) : undefined;
@@ -179,9 +181,10 @@ export async function resolveRoundsContent(
     // Challenge lookups that failed stay null so callers can detect unknown.
     const resolvedStarter = starterFiles ?? (round.sourceKind ? null : DEFAULT_STARTER);
     // A conversation round has no files at all.
-    const effectiveStarter = kind === "conversation" ? {} : resolvedStarter ?? DEFAULT_STARTER;
+    const talk = kind === "conversation" || kind === "theory";
+    const effectiveStarter = talk ? {} : resolvedStarter ?? DEFAULT_STARTER;
 
-    const saved = kind === "conversation" ? null : parseFiles(round.filesJson);
+    const saved = talk ? null : parseFiles(round.filesJson);
     out.push({
       roundId: round.id,
       order: round.order,

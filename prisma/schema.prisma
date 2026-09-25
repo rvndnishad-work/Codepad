@@ -1174,7 +1174,7 @@ model AIScreeningRoundSpec {
   batchId          String
   /// 0-based round order within the batch.
   order            Int
-  /// "frontend" | "backend" | "dsa".
+  /// "frontend" | "backend" | "dsa" | "conversation" | "theory".
   paradigm         String
   /// Execution language for backend/dsa (e.g. "node", "python"). Null for frontend.
   language         String?
@@ -1188,6 +1188,9 @@ model AIScreeningRoundSpec {
   /// AIInterviewTemplate id when sourceKind is "scaffold" (per-round override).
   templateId       String?
   estimatedMinutes Int     @default(30)
+  /// Theory rounds only: the recruiter's settings (question count, time per
+  /// question, follow-ups, answer mode) as JSON. See lib/ai-interview/theory.ts.
+  theoryJson       String?
   batch            AIScreeningBatch @relation(fields: [batchId], references: [id], onDelete: Cascade)
 
   @@index([batchId, order])
@@ -1224,6 +1227,12 @@ model AIInterviewRound {
   /// score aggregates these.
   score            Int?
   ratings          String?
+  /// Theory rounds only: settings plus the questions drawn for this candidate
+  /// at invite (with reference answers). Server-only, never sent to the candidate.
+  theoryJson       String?
+  /// Theory rounds only: the candidate's answer to each question, follow-ups,
+  /// integrity counts and, after grading, the grade for each question.
+  answersJson      String?
   /// "PENDING" | "ACTIVE" | "COMPLETED".
   status           String  @default("PENDING")
   startedAt        DateTime?

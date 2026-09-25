@@ -23,6 +23,16 @@ import {
   type FileDiff,
 } from "@/lib/ai-interview/diff";
 import { computeV2Score, clampV2ScoreForEffort } from "@/lib/ai-interview/scoring-v2";
+import {
+  cleanGrade,
+  fallbackGrade,
+  parseAnswers,
+  parseTheoryRound,
+  theoryGraderBlock,
+  theoryGraderPrompt,
+  theoryRoundScore,
+  type TheoryAnswers,
+} from "@/lib/ai-interview/theory";
 
 /**
  * Canonical AI screening grading pipeline.
@@ -129,7 +139,7 @@ Output your response strictly as a JSON object containing precisely:
 }
 
 /** Send a grading prompt to the configured model and parse its JSON verdict. */
-async function runGraderPrompt(apiKey: string, prompt: string): Promise<GraderResult> {
+async function runGraderPrompt(apiKey: string, prompt: string, maxTokens = 1500): Promise<GraderResult> {
   // Prefer Together/GLM when GLM_API_KEY (or TOGETHER_API_KEY) is configured.
   const hasTogetherKey = !!(process.env.GLM_API_KEY || process.env.TOGETHER_API_KEY);
   // If apiKey matches the Together key, treat as Together call; otherwise keep Gemini path for explicit Gemini keys.
@@ -148,7 +158,7 @@ async function runGraderPrompt(apiKey: string, prompt: string): Promise<GraderRe
           { role: "user", content: prompt },
         ],
         temperature: 0.2,
-        max_tokens: 1500,
+        max_tokens: maxTokens,
         response_format: { type: "json_object" },
       }),
     });
@@ -281,6 +291,58 @@ async function gradeConversationRound(
     }
   }
   return conversationFallback(transcript);
+}
+
+/**
+ * Grade a theory round question by question against the reference answers.
+ * Returns the round grade plus the answers with a grade on each.
+ */
+async function gradeTheoryRound(
+  apiKey: string | undefined,
+  positionTitle: string,
+  raw: { theoryJson: string | null; answersJson: string | null } | undefined,
+): Promise<{ result: GraderResult; answers: TheoryAnswers }> {
+  const data = parseTheoryRound(raw?.theoryJson);
+  const state = parseAnswers(raw?.answersJson);
+  const total = data?.items.length ?? state.items.length;
+  const answered = state.items.filter((a) => !a.skipped);
+  const summaryOf = (lines: string[]) => lines.join("\n");
+
+  if (data && apiKey && answered.length > 0) {
+    try {
+      const prompt = theoryGraderPrompt({ positionTitle, block: theoryGraderBlock(data, state.items), count: data.items.length });
+      const out = (await runGraderPrompt(apiKey, prompt, 4000)) as unknown as { questions?: { n?: number; [k: string]: unknown }[]; communication?: number; aiSummary?: string };
+      const byN = new Map((out.questions ?? []).map((q, i) => [Number(q.n) || i + 1, q]));
+      const items = state.items.map((a, i) => ({ ...a, grade: cleanGrade(byN.get(i + 1), a) }));
+      const score = theoryRoundScore(items, total);
+      const mean = items.length ? items.reduce((s, a) => s + (a.grade?.score ?? 0), 0) / Math.max(total, 1) : 0;
+      const rating = Math.max(1, Math.min(5, Math.round(mean)));
+      const comm = Math.max(1, Math.min(5, Math.round(Number(out.communication) || rating)));
+      return {
+        result: {
+          score,
+          codeQuality: rating,
+          problemSolving: rating,
+          communication: comm,
+          aiSummary: typeof out.aiSummary === "string" && out.aiSummary.trim() ? out.aiSummary.trim() : summaryOf([`- ${answered.length} of ${total} questions answered.`]),
+        },
+        answers: { ...state, items },
+      };
+    } catch (err) {
+      console.error("Theory grading failed, falling back to participation score:", err);
+    }
+  }
+  const items = state.items.map((a) => ({ ...a, grade: fallbackGrade(a) }));
+  return {
+    result: {
+      score: Math.min(40, theoryRoundScore(items, total)),
+      codeQuality: 1,
+      problemSolving: 1,
+      communication: answered.length >= 3 ? 2 : 1,
+      aiSummary: summaryOf([`- Not scored by the AI. ${answered.length} of ${total} questions answered; read the answers to judge them.`]),
+    },
+    answers: { ...state, items },
+  };
 }
 
 /** Grade one round's (or a legacy whole-session) submission, with the static
@@ -453,8 +515,12 @@ export async function gradeSessionById(params: {
       : [],
   );
 
-  const graded = await Promise.all(
+  const graded: { round: SessionRound; files: Record<string, string>; result: GraderResult; answers?: TheoryAnswers }[] = await Promise.all(
     sessionRounds.map(async (r) => {
+      if (r.paradigm === "theory") {
+        const { result, answers } = await gradeTheoryRound(apiKey, session.positionTitle, roundById.get(r.id));
+        return { round: r, files: {} as Record<string, string>, result, answers };
+      }
       const label =
         sessionRounds.length > 1
           ? `${session.positionTitle} — Round ${r.order + 1}`
@@ -553,6 +619,7 @@ export async function gradeSessionById(params: {
               filesJson: JSON.stringify(g.files),
               status: "COMPLETED",
               score: g.result.score,
+              ...(g.answers ? { answersJson: JSON.stringify(g.answers) } : {}),
               ratings: JSON.stringify({
                 CodeQuality: g.result.codeQuality,
                 ProblemSolving: g.result.problemSolving,

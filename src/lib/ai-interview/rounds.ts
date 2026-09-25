@@ -15,9 +15,16 @@
  */
 
 import type { AIInterviewRound, AIInterviewSession } from "@prisma/client";
+import type { TheorySettings } from "./theory";
 
-/** Round surface. "conversation" is a chat-only round with no code editor. */
-export type Paradigm = "frontend" | "backend" | "dsa" | "conversation";
+/**
+ * Round surface. "conversation" is a chat-only round with no code editor;
+ * "theory" asks a questionnaire's questions aloud, one at a time.
+ */
+export type Paradigm = "frontend" | "backend" | "dsa" | "conversation" | "theory";
+
+/** Rounds with no code: the candidate talks, types or both. */
+export const isTalkKind = (k: string | null | undefined) => k === "conversation" || k === "theory";
 export type SurfaceKind = Paradigm;
 export type RoundSourceKind = "challenge" | "playground" | "scaffold";
 
@@ -70,6 +77,8 @@ export type RoundSpecInput = {
   /** AIInterviewTemplate / builtin scaffold id (sourceKind === "scaffold"). */
   templateId?: string;
   estimatedMinutes?: number;
+  /** Theory rounds: count, time per question, follow-ups and answer mode. */
+  theory?: TheorySettings;
 };
 
 /** The legacy fallback estimate when a pre-batch session has no round metadata. */

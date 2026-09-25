@@ -12,7 +12,7 @@ type Props = {
 
 export const metadata = { title: "Screening report — Interviewpad", robots: { index: false, follow: false } };
 
-const TABS = ["summary", "code", "transcript", "run"] as const;
+const TABS = ["summary", "theory", "code", "transcript", "run"] as const;
 export type ReportTab = (typeof TABS)[number];
 
 export default async function AiScreeningReportPage({ params, searchParams }: Props) {

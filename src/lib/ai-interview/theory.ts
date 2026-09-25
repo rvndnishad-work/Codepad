@@ -20,9 +20,11 @@ export type TheorySettings = {
   /** Most follow-ups the interviewer may ask on one question. */
   followUps: 0 | 1 | 2;
   answerMode: TheoryAnswerMode;
+  /** Keep a recording of spoken answers for recruiters to replay. Off unless the recruiter turns it on; the candidate is told before starting. */
+  recordAudio: boolean;
 };
 
-export const DEFAULT_THEORY: TheorySettings = { count: null, secondsPerQuestion: 180, followUps: 1, answerMode: "voice" };
+export const DEFAULT_THEORY: TheorySettings = { count: null, secondsPerQuestion: 180, followUps: 1, answerMode: "voice", recordAudio: false };
 export const SECONDS_CHOICES = [60, 120, 180, 300] as const;
 export const ANSWER_MODE_LABELS: Record<TheoryAnswerMode, string> = {
   voice: "Voice, typing allowed",
@@ -43,6 +45,8 @@ export function sanitizeTheory(raw: unknown): TheorySettings {
     secondsPerQuestion: (SECONDS_CHOICES as readonly number[]).includes(secs) ? secs : DEFAULT_THEORY.secondsPerQuestion,
     followUps: fu === 0 || fu === 2 ? fu : fu === 1 ? 1 : DEFAULT_THEORY.followUps,
     answerMode: mode === "voice-only" || mode === "typing" ? mode : "voice",
+    // Typed-only rounds have nothing to record.
+    recordAudio: o.recordAudio === true && mode !== "typing",
   };
 }
 
@@ -232,6 +236,7 @@ export type TheoryView = {
   secondsPerQuestion: number;
   followUpSeconds: number;
   answerMode: TheoryAnswerMode;
+  recordAudio: boolean;
 };
 
 export function theoryView(round: TheoryRoundData, state: TheoryAnswers): TheoryView {
@@ -243,6 +248,7 @@ export function theoryView(round: TheoryRoundData, state: TheoryAnswers): Theory
     secondsPerQuestion: round.settings.secondsPerQuestion,
     followUpSeconds: followUpSeconds(round.settings),
     answerMode: round.settings.answerMode,
+    recordAudio: round.settings.recordAudio,
   };
   if (state.pendingFollowUp) {
     const pos = state.items.length - 1;
@@ -355,4 +361,33 @@ export function cleanFollowUp(raw: unknown): string | null {
   const t = raw.replace(/\s+/g, " ").trim();
   if (!t || t.length > 300) return null;
   return t;
+}
+
+/* ── Audio clips ─────────────────────────────────────────────────────────── */
+
+/** Largest clip the server accepts: about ten minutes of speech at 48 kbps, under the host's request limit. */
+export const MAX_CLIP_BYTES = 4 * 1024 * 1024;
+export const CLIP_MIME = /^audio\/(webm|ogg|mp4|mpeg|wav|x-m4a|aac)(;.*)?$/;
+
+/**
+ * Where a clip belongs: the question on screen and, while a follow-up is
+ * pending, which follow-up (1-based). The main answer is follow-up 0. Clips
+ * for anything but the current answer are refused.
+ */
+export function currentSlot(round: TheoryRoundData, state: TheoryAnswers): { question: number; followUp: number } | null {
+  const v = theoryView(round, state);
+  if (v.done) return null;
+  if (state.pendingFollowUp) {
+    const last = state.items[state.items.length - 1];
+    return { question: v.position, followUp: (last?.followUps.length ?? 0) + 1 };
+  }
+  return { question: v.position, followUp: 0 };
+}
+
+/**
+ * A transcription prompt: the question text helps the speech model spell
+ * technical terms ("useEffect", not "use effect"). Never a reference answer.
+ */
+export function transcriptionPrompt(question: string, followUp?: string | null): string {
+  return [question, followUp].filter(Boolean).join(" ").slice(0, 800);
 }

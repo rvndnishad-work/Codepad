@@ -250,7 +250,7 @@ export default function ReportView({
           )}
 
           {tab === "summary" && <SummaryTab r={r} hrefFor={hrefFor} />}
-          {tab === "theory" && <TheoryTab r={r} />}
+          {tab === "theory" && <TheoryTab r={r} slug={slug} />}
           {tab === "transcript" && <TranscriptTab r={r} />}
           {(tab === "code" || tab === "run") && talkKind(r.rounds[round]?.kind) ? (
             <div className="rounded-xl border border-border bg-surface p-8 text-center text-sm text-muted">

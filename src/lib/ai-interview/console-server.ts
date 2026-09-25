@@ -304,7 +304,15 @@ export type ReportRound = {
 
 export type ReportTheory = {
   settings: TheorySettings;
-  questions: { q: string; ref: string | null; tech: string | null; difficulty: string | null; answer: TheoryAnswer | null }[];
+  questions: {
+    q: string;
+    ref: string | null;
+    tech: string | null;
+    difficulty: string | null;
+    answer: TheoryAnswer | null;
+    /** Recordings of the spoken answer (follow-up 0 is the main answer), when replay was on. */
+    clips: { id: string; followUp: number; seconds: number }[];
+  }[];
 };
 
 export type ReportNote = { id: string; body: string; author: string; createdAt: string; mine: boolean };
@@ -363,10 +371,15 @@ export async function loadReport(workspaceId: string, sessionId: string, viewerI
   if (!s) return null;
 
   const sessionRounds = resolveSessionRounds(s);
-  const [contents, starters, order] = await Promise.all([
+  const [contents, starters, order, clipRows] = await Promise.all([
     resolveRoundsContent(sessionRounds, workspaceId),
     getStarterFilesByRoundId(s, workspaceId).catch(() => new Map<string, Record<string, string>>()),
     reviewOrder(workspaceId),
+    prisma.aIInterviewAudio.findMany({
+      where: { sessionId: s.id },
+      orderBy: [{ question: "asc" }, { followUp: "asc" }, { seq: "asc" }, { createdAt: "asc" }],
+      select: { id: true, roundId: true, question: true, followUp: true, seconds: true },
+    }),
   ]);
 
   const rawRounds = new Map(s.rounds.map((x) => [x.id, x]));
@@ -398,7 +411,7 @@ export async function loadReport(workspaceId: string, sessionId: string, viewerI
       diffs,
       stats: diffs ? diffStats(diffs) : null,
       linesWritten: diffs ? meaningfulAdded(diffs) : null,
-      theory: r.paradigm === "theory" ? reportTheory(rawRounds.get(r.id)) : null,
+      theory: r.paradigm === "theory" ? reportTheory(rawRounds.get(r.id), clipRows.filter((c) => c.roundId === r.id)) : null,
     });
   }
 
@@ -469,13 +482,23 @@ export async function loadReport(workspaceId: string, sessionId: string, viewerI
   };
 }
 
-function reportTheory(raw: { theoryJson: string | null; answersJson: string | null } | undefined): ReportTheory | null {
+function reportTheory(
+  raw: { theoryJson: string | null; answersJson: string | null } | undefined,
+  clips: { id: string; question: number; followUp: number; seconds: number }[],
+): ReportTheory | null {
   const data = parseTheoryRound(raw?.theoryJson);
   if (!data) return null;
   const answers = parseAnswers(raw?.answersJson).items;
   return {
     settings: data.settings,
-    questions: data.items.map((it, i) => ({ q: it.q, ref: it.a ?? null, tech: it.tech ?? null, difficulty: it.difficulty ?? null, answer: answers[i] ?? null })),
+    questions: data.items.map((it, i) => ({
+      q: it.q,
+      ref: it.a ?? null,
+      tech: it.tech ?? null,
+      difficulty: it.difficulty ?? null,
+      answer: answers[i] ?? null,
+      clips: clips.filter((c) => c.question === i).map((c) => ({ id: c.id, followUp: c.followUp, seconds: c.seconds })),
+    })),
   };
 }
 

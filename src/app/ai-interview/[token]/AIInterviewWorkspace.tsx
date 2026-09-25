@@ -97,6 +97,8 @@ export type RoundView = {
   estimatedMinutes: number;
   files: Record<string, string>;
   status: string;
+  /** Theory rounds: how answers are given and whether spoken answers are recorded for replay. */
+  theory?: { answerMode: "voice" | "voice-only" | "typing"; recordAudio: boolean };
 };
 
 type Props = {
@@ -113,6 +115,8 @@ type Props = {
   };
   rounds: RoundView[];
   initialChat: Message[];
+  /** The server can turn recorded speech into text, for browsers that cannot. */
+  serverTranscribe: boolean;
 };
 
 /** Shape of GET /api/ai-interview/status — the honest health probe. */
@@ -152,7 +156,7 @@ function extractCodeMap(files: Record<string, unknown>): Record<string, string> 
   return codeMap;
 }
 
-export default function AIInterviewWorkspace({ session, rounds, initialChat }: Props) {
+export default function AIInterviewWorkspace({ session, rounds, initialChat, serverTranscribe }: Props) {
   const [activeRoundId, setActiveRoundId] = useState(rounds[0]?.roundId ?? "");
   // Per-round file state. The active round's files are what we send to the AI
   // and to grading; the SurfaceBridge keeps this synced as the candidate edits.
@@ -929,8 +933,8 @@ export default function AIInterviewWorkspace({ session, rounds, initialChat }: P
   return (
     <div className="flex flex-col h-screen bg-bg text-fg font-sans overflow-hidden">
       {/* Workspace Header top bar */}
-      <header className="h-14 border-b border-border bg-surface/40 backdrop-blur-md px-6 flex items-center justify-between shrink-0 relative z-30">
-        <div className="flex items-center gap-3.5 min-w-0">
+      <header className="h-14 border-b border-border bg-surface/40 backdrop-blur-md px-3 sm:px-6 flex items-center justify-between gap-2 shrink-0 relative z-30">
+        <div className="flex items-center gap-2.5 sm:gap-3.5 min-w-0">
           <button
             type="button"
             onClick={() => setChatCollapsed(!chatCollapsed)}
@@ -940,7 +944,7 @@ export default function AIInterviewWorkspace({ session, rounds, initialChat }: P
             <PanelBottom className={`w-4 h-4 transition-transform duration-300 ${chatCollapsed ? "-rotate-90" : "rotate-90"}`} />
           </button>
 
-          <span className="text-muted/30">|</span>
+          <span className={`text-muted/30 ${theoryActive ? "hidden" : ""}`}>|</span>
           <Link href="/" className="flex items-center gap-2 shrink-0">
             <div className="w-7 h-7 rounded-lg bg-accent/20 border border-accent/35 flex items-center justify-center text-accent font-black text-sm">
               C
@@ -950,13 +954,14 @@ export default function AIInterviewWorkspace({ session, rounds, initialChat }: P
             </span>
           </Link>
           <span className="text-muted/30 hidden sm:inline">|</span>
-          <div className="min-w-0">
+          {/* Too tight for the role on a phone; the invite already named it. */}
+          <div className="min-w-0 hidden sm:block">
             <span className="text-[10px] font-black uppercase text-muted tracking-widest block">{allTalk ? "AI Interview" : "AI Technical Round"}</span>
             <span className="text-xs font-bold text-fg truncate block">{session.positionTitle}</span>
           </div>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 sm:gap-3 shrink-0">
           {filesBytes > FILES_JSON_WARN_BYTES && (
             <div
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-[11px] font-bold tabular-nums transition-colors ${
@@ -1041,10 +1046,11 @@ export default function AIInterviewWorkspace({ session, rounds, initialChat }: P
           <button
             onClick={() => handleSubmitAssessment()}
             disabled={submitting}
-            className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-black uppercase tracking-wider transition shadow-lg active:scale-95 disabled:opacity-50 cursor-pointer"
+            className="flex items-center gap-1.5 px-3 sm:px-4 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-black uppercase tracking-wider transition shadow-lg active:scale-95 disabled:opacity-50 cursor-pointer"
           >
             {submitting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <CheckCircle className="w-3.5 h-3.5" />}
-            <span>Complete Assessment</span>
+            <span className="hidden sm:inline">Complete Assessment</span>
+            <span className="sm:hidden">Submit</span>
           </button>
 
           <button
@@ -1145,7 +1151,7 @@ export default function AIInterviewWorkspace({ session, rounds, initialChat }: P
 
           {/* Active round banner — h-14 so its baseline matches the question
               pane header on the left and the panes read as one aligned row. */}
-          <div className="h-14 px-4 border-b border-border bg-surface/40 flex items-center gap-2 shrink-0">
+          <div className={`h-14 px-4 border-b border-border bg-surface/40 items-center gap-2 shrink-0 ${theoryActive ? "hidden sm:flex" : "flex"}`}>
             <span className="text-accent">{ROUND_ICON[activeRound.kind]}</span>
             <span className="text-[11px] font-bold text-fg truncate">{activeRound.title}</span>
             <span className="text-[9px] font-black uppercase tracking-wider text-muted bg-bg border border-border px-1.5 py-0.5 rounded ml-1">
@@ -1189,6 +1195,9 @@ export default function AIInterviewWorkspace({ session, rounds, initialChat }: P
                 title={activeRound.title}
                 brief={activeRound.description}
                 status={activeRound.status}
+                answerMode={activeRound.theory?.answerMode ?? "voice"}
+                recordAudio={activeRound.theory?.recordAudio ?? false}
+                serverTranscribe={serverTranscribe}
                 disabled={completed || outOfCredits || !!aiStatus?.expired}
                 finishLabel={nextRound ? "Next round" : "Finish and submit"}
                 finishing={submitting}

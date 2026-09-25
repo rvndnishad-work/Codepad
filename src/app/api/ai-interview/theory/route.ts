@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { resolveSessionRounds } from "@/lib/ai-interview/rounds";
+import { authorizeTheoryRound } from "@/lib/ai-interview/theory-server";
 import { consumeCreditIfFirstTurn, InsufficientCreditsError } from "@/lib/ai-interview/credits";
 import { callGemini, extractText, geminiApiKey } from "@/lib/ai-interview/gemini";
 import { rateLimit } from "@/lib/rate-limit";
@@ -11,7 +11,6 @@ import {
   fallbackFollowUp,
   followUpPrompt,
   parseAnswers,
-  parseTheoryRound,
   recordAnswer,
   theoryView,
 } from "@/lib/ai-interview/theory";
@@ -36,25 +35,9 @@ export async function POST(req: NextRequest) {
   if (!inviteToken || !body.roundId) return NextResponse.json({ error: "Missing inviteToken or roundId" }, { status: 400 });
   const action = body.action === "answer" ? "answer" : "state";
 
-  const session = await prisma.aIInterviewSession.findUnique({ where: { inviteToken }, include: { rounds: true } });
-  if (!session) return NextResponse.json({ error: "Session not found" }, { status: 404 });
-  if (session.finishedAt) return NextResponse.json({ error: "This interview has already been submitted." }, { status: 410 });
-  if (session.status === "EXPIRED" || (!session.startedAt && session.expiresAt && session.expiresAt.getTime() <= Date.now())) {
-    return NextResponse.json({ error: "This invite has expired. Ask the recruiter to send a new one.", inviteExpired: true }, { status: 410 });
-  }
-
-  const round = session.rounds.find((r) => r.id === body.roundId);
-  if (!round || round.paradigm !== "theory") return NextResponse.json({ error: "Round not found" }, { status: 404 });
-  const data = parseTheoryRound(round.theoryJson);
-  if (!data || !data.items.length) return NextResponse.json({ error: "This round has no questions. Please contact your recruiter." }, { status: 409 });
-
-  // Same hard deadline as the chat: sum of round budgets, extensions and 30 s grace.
-  const sessionRounds = resolveSessionRounds(session);
-  const totalMinutes = sessionRounds.reduce((s, r) => s + (r.estimatedMinutes || 0), 0) || 30;
-  if (session.startedAt) {
-    const deadline = session.startedAt.getTime() + (totalMinutes + (session.extraMinutes ?? 0)) * 60_000 + 30_000;
-    if (Date.now() > deadline) return NextResponse.json({ error: "Time is up. Please submit your assessment.", deadlineExpired: true }, { status: 410 });
-  }
+  const access = await authorizeTheoryRound(inviteToken, body.roundId);
+  if (!access.ok) return NextResponse.json(access.body, { status: access.status });
+  const { session, round, data } = access;
 
   const cadence = rateLimit(`ai-theory:${session.id}`, 1, 800);
   if (!cadence.ok) return NextResponse.json({ error: "Slow down a moment." }, { status: 429 });

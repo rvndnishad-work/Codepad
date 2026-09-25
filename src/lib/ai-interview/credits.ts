@@ -1,38 +1,14 @@
 import { prisma } from "@/lib/prisma";
 import type { Prisma } from "@prisma/client";
 
-/**
- * Cost (in credits) for a single AI screening. Centralized so it can later be
- * read from plan config without touching call sites.
- */
-export const AI_INTERVIEW_COST_PER_SESSION = 1;
-
-/**
- * Live presence of the AI interviewer during a screening. Higher presence means
- * more background Gemini calls, so it costs more credits per completed session.
- */
-export type EngagementLevel = "REACTIVE" | "OBSERVER" | "COACH";
-
-/**
- * Credits charged (once, on the candidate's first turn) per completed screening,
- * scaled by the recruiter's chosen interviewer presence. REACTIVE === the legacy
- * flat cost so existing screenings are unaffected.
- */
-export const AI_ENGAGEMENT_CREDIT_COST: Record<EngagementLevel, number> = {
-  REACTIVE: AI_INTERVIEW_COST_PER_SESSION, // 1
-  OBSERVER: 2,
-  COACH: 3,
-};
-
-/** Coerce an arbitrary stored value to a valid level (defaults to REACTIVE). */
-export function normalizeEngagementLevel(v: string | null | undefined): EngagementLevel {
-  return v === "OBSERVER" || v === "COACH" ? v : "REACTIVE";
-}
-
-/** Credit cost for a level (defaults to the REACTIVE cost for unknown input). */
-export function creditCostForLevel(level: string | null | undefined): number {
-  return AI_ENGAGEMENT_CREDIT_COST[normalizeEngagementLevel(level)];
-}
+export {
+  AI_INTERVIEW_COST_PER_SESSION,
+  AI_ENGAGEMENT_CREDIT_COST,
+  normalizeEngagementLevel,
+  creditCostForLevel,
+  type EngagementLevel,
+} from "./engagement";
+import { creditCostForLevel, AI_INTERVIEW_COST_PER_SESSION } from "./engagement";
 
 /**
  * Public-facing credit pack tiers. Prices are USD cents. Keep in sync with any

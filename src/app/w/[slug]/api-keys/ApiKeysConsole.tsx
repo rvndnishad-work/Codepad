@@ -153,12 +153,10 @@ export default function ApiKeysConsole({
     <div className="space-y-8 font-sans">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-black tracking-tight text-fg flex items-center gap-2">
-            <KeyRound className="w-7 h-7 text-accent" /> MCP API Keys
-          </h1>
+          <h1 className="text-2xl md:text-[26px] font-semibold tracking-[-0.02em] text-fg">API keys</h1>
           <p className="text-sm text-muted/80 mt-1 max-w-2xl leading-relaxed">
             Connect Claude, Cursor, Goose — any MCP-compatible client — to this workspace. Mint <strong className="text-fg">read</strong> keys for analytics access, or <strong className="text-fg">read + write</strong> keys to create screenings, refund credits, and update candidates from inside your assistant.{" "}
-            <Link href="/docs/mcp" target="_blank" className="text-accent underline underline-offset-2 inline-flex items-center gap-0.5">
+            <Link href="/docs/mcp" target="_blank" className="text-secondary underline underline-offset-2 inline-flex items-center gap-0.5">
               <BookOpen className="w-3 h-3" /> Docs
             </Link>
           </p>
@@ -166,7 +164,7 @@ export default function ApiKeysConsole({
         {canManage && (
           <button
             onClick={() => setShowCreate(true)}
-            className="flex items-center gap-1.5 px-5 py-3 rounded-xl bg-accent hover:bg-accent-soft text-bg text-xs font-black uppercase tracking-widest transition-all cursor-pointer shadow-md shrink-0 text-center justify-center"
+            className="flex items-center gap-1.5 px-5 py-3 rounded-xl bg-secondary hover:brightness-110 text-bg text-xs font-semibold transition-all cursor-pointer shadow-md shrink-0 text-center justify-center"
           >
             <Plus className="w-4 h-4" />
             <span>Generate API key</span>
@@ -204,10 +202,10 @@ export default function ApiKeysConsole({
       {/* Active keys */}
       <section className="rounded-2xl border border-border bg-surface overflow-hidden">
         <div className="p-4 border-b border-border">
-          <h2 className="text-sm font-black uppercase tracking-widest text-fg">
+          <h2 className="text-sm font-semibold text-fg">
             Active keys ({activeKeys.length})
           </h2>
-          <p className="text-[11px] text-muted/70 mt-0.5">
+          <p className="text-xs text-muted/70 mt-0.5">
             Treat these like passwords. Only the workspace owner can see them on
             generation — and even then, only once.
           </p>
@@ -222,7 +220,7 @@ export default function ApiKeysConsole({
           <div className="overflow-x-auto">
             <table className="w-full text-xs">
               <thead className="bg-bg/50">
-                <tr className="text-left text-muted uppercase tracking-wider">
+                <tr className="text-left text-muted ">
                   <th className="px-4 py-3 font-bold">Label</th>
                   <th className="px-4 py-3 font-bold">Preview</th>
                   <th className="px-4 py-3 font-bold">Scopes</th>
@@ -235,27 +233,27 @@ export default function ApiKeysConsole({
                 {activeKeys.map((k) => (
                   <tr key={k.id} className="border-t border-border/40 hover:bg-surface/30">
                     <td className="px-4 py-3 font-bold text-fg">{k.label}</td>
-                    <td className="px-4 py-3 font-mono text-muted text-[11px]">
+                    <td className="px-4 py-3 font-mono text-muted text-xs">
                       {k.keyPreview}…
                     </td>
                     <td className="px-4 py-3">
                       {k.scopes.map((s) => (
                         <span
                           key={s}
-                          className={`inline-flex items-center px-1.5 py-0.5 rounded border text-[9px] font-bold uppercase tracking-wider mr-1 ${
+                          className={`inline-flex items-center px-1.5 py-0.5 rounded border text-xs font-bold mr-1 ${
                             s === "write"
-                              ? "border-amber-500/40 bg-amber-500/15 text-amber-300"
-                              : "border-emerald-500/30 bg-emerald-500/10 text-emerald-300"
+                              ? "border-warning/40 bg-warning/15 text-warning"
+                              : "border-success/30 bg-success/10 text-success"
                           }`}
                         >
                           {s}
                         </span>
                       ))}
                     </td>
-                    <td className="px-4 py-3 text-muted/80 text-[10px]">
+                    <td className="px-4 py-3 text-muted/80 text-xs">
                       {k.lastUsedAt ? new Date(k.lastUsedAt).toLocaleString() : <span className="italic">never</span>}
                     </td>
-                    <td className="px-4 py-3 text-muted/70 text-[10px]">
+                    <td className="px-4 py-3 text-muted/70 text-xs">
                       {new Date(k.createdAt).toLocaleDateString()}
                     </td>
                     {canManage && (
@@ -263,14 +261,14 @@ export default function ApiKeysConsole({
                         <div className="flex items-center justify-end gap-1.5">
                           <button
                             onClick={() => handleRotate(k)}
-                            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md border border-amber-500/30 text-amber-400 hover:bg-amber-500/10 text-[10px] font-bold uppercase tracking-wider transition"
+                            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md border border-warning/30 text-warning hover:bg-warning/10 text-xs font-bold transition"
                             title="Generate a new key and revoke this one in one step"
                           >
                             <RefreshCw className="w-3 h-3" /> Rotate
                           </button>
                           <button
                             onClick={() => handleRevoke(k.id, k.label)}
-                            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md border border-rose-500/30 text-rose-400 hover:bg-rose-500/10 text-[10px] font-bold uppercase tracking-wider transition"
+                            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md border border-danger/30 text-danger hover:bg-danger/10 text-xs font-bold transition"
                           >
                             <Trash2 className="w-3 h-3" /> Revoke
                           </button>
@@ -289,10 +287,10 @@ export default function ApiKeysConsole({
       {revokedKeys.length > 0 && (
         <details className="rounded-2xl border border-border bg-surface overflow-hidden">
           <summary className="px-4 py-3 cursor-pointer flex items-center justify-between list-none">
-            <span className="text-xs font-black uppercase tracking-widest text-muted">
+            <span className="text-xs font-semibold text-muted">
               Revoked ({revokedKeys.length})
             </span>
-            <span className="text-[10px] text-muted/60">audit history preserved</span>
+            <span className="text-xs text-muted/60">audit history preserved</span>
           </summary>
           <div className="overflow-x-auto border-t border-border/60">
             <table className="w-full text-xs">
@@ -300,8 +298,8 @@ export default function ApiKeysConsole({
                 {revokedKeys.map((k) => (
                   <tr key={k.id} className="border-b border-border/30 opacity-60">
                     <td className="px-4 py-2 text-fg/70">{k.label}</td>
-                    <td className="px-4 py-2 font-mono text-muted text-[11px]">{k.keyPreview}…</td>
-                    <td className="px-4 py-2 text-muted/60 text-[10px]">
+                    <td className="px-4 py-2 font-mono text-muted text-xs">{k.keyPreview}…</td>
+                    <td className="px-4 py-2 text-muted/60 text-xs">
                       revoked {k.revokedAt ? new Date(k.revokedAt).toLocaleString() : ""}
                     </td>
                   </tr>
@@ -316,10 +314,10 @@ export default function ApiKeysConsole({
       <section className="rounded-2xl border border-border bg-surface overflow-hidden">
         <div className="p-4 border-b border-border flex flex-col md:flex-row md:items-center md:justify-between gap-3">
           <div>
-            <h2 className="text-sm font-black uppercase tracking-widest text-fg">
+            <h2 className="text-sm font-semibold text-fg">
               Recent activity
             </h2>
-            <p className="text-[11px] text-muted/70 mt-0.5">
+            <p className="text-xs text-muted/70 mt-0.5">
               Every MCP call writes a row here. {auditPagination.totalEntries.toLocaleString()} total.
             </p>
           </div>
@@ -339,7 +337,7 @@ export default function ApiKeysConsole({
           <div className="overflow-x-auto">
             <table className="w-full text-xs">
               <thead className="bg-bg/50">
-                <tr className="text-left text-muted uppercase tracking-wider">
+                <tr className="text-left text-muted ">
                   <th className="px-4 py-3 font-bold">When</th>
                   <th className="px-4 py-3 font-bold">Key</th>
                   <th className="px-4 py-3 font-bold">Kind</th>
@@ -351,7 +349,7 @@ export default function ApiKeysConsole({
               <tbody>
                 {auditLog.map((e) => (
                   <tr key={e.id} className="border-t border-border/40">
-                    <td className="px-4 py-2 text-muted/70 text-[10px] whitespace-nowrap">
+                    <td className="px-4 py-2 text-muted/70 text-xs whitespace-nowrap">
                       {new Date(e.createdAt).toLocaleTimeString()}
                     </td>
                     <td className="px-4 py-2 text-fg/80">
@@ -363,19 +361,19 @@ export default function ApiKeysConsole({
                     </td>
                     <td className="px-4 py-2">
                       <span
-                        className={`inline-flex items-center px-1.5 py-0.5 rounded border text-[9px] font-bold uppercase tracking-wider ${
+                        className={`inline-flex items-center px-1.5 py-0.5 rounded border text-xs font-bold ${
                           e.kind === "tool"
-                            ? "border-accent/30 bg-accent/10 text-accent"
-                            : "border-indigo-500/30 bg-indigo-500/10 text-indigo-400"
+                            ? "border-secondary/30 bg-secondary/10 text-secondary"
+                            : "border-secondary/30 bg-secondary/10 text-secondary"
                         }`}
                       >
                         {e.kind}
                       </span>
                     </td>
-                    <td className="px-4 py-2 font-mono text-fg/80 text-[11px]">{e.name}</td>
+                    <td className="px-4 py-2 font-mono text-fg/80 text-xs">{e.name}</td>
                     <td className="px-4 py-2 text-muted">
                       {e.errorCode ? (
-                        <span className="text-rose-400">
+                        <span className="text-danger">
                           <ShieldAlert className="w-3 h-3 inline mr-1" />
                           {e.errorCode}: {e.resultSummary}
                         </span>
@@ -475,9 +473,9 @@ function AuditFilterChips({
         <Link
           key={k}
           href={linkFor({ kind: k })}
-          className={`px-2.5 py-1 rounded-md text-[10px] font-black uppercase tracking-wider border transition ${
+          className={`px-2.5 py-1 rounded-md text-xs font-semibold border transition ${
             pagination.kind === k
-              ? "bg-accent/15 border-accent/30 text-accent"
+              ? "bg-secondary/15 border-secondary/30 text-secondary"
               : "bg-bg border-border/40 text-muted hover:text-fg"
           }`}
         >
@@ -486,9 +484,9 @@ function AuditFilterChips({
       ))}
       <Link
         href={linkFor({ errorsOnly: !pagination.errorsOnly })}
-        className={`px-2.5 py-1 rounded-md text-[10px] font-black uppercase tracking-wider border transition ${
+        className={`px-2.5 py-1 rounded-md text-xs font-semibold border transition ${
           pagination.errorsOnly
-            ? "bg-rose-500/15 border-rose-500/35 text-rose-300"
+            ? "bg-danger/15 border-danger/35 text-danger"
             : "bg-bg border-border/40 text-muted hover:text-fg"
         }`}
       >
@@ -518,7 +516,7 @@ function AuditPaginationFooter({
     errorsOnly: pagination.errorsOnly,
   });
   return (
-    <div className="p-3 border-t border-border/60 flex items-center justify-between text-[10px] text-muted">
+    <div className="p-3 border-t border-border/60 flex items-center justify-between text-xs text-muted">
       <span className="tabular-nums">
         Showing {first}–{last} of {pagination.totalEntries.toLocaleString()}
       </span>
@@ -569,9 +567,9 @@ function StatTile({
   monoValue?: boolean;
 }) {
   const toneCls = {
-    accent: "bg-accent/10 border-accent/20 text-accent",
-    emerald: "bg-emerald-500/10 border-emerald-500/20 text-emerald-400",
-    indigo: "bg-indigo-500/10 border-indigo-500/20 text-indigo-400",
+    accent: "bg-secondary/10 border-secondary/20 text-secondary",
+    emerald: "bg-success/10 border-success/20 text-success",
+    indigo: "bg-secondary/10 border-secondary/20 text-secondary",
   }[tone];
   return (
     <div className="rounded-2xl border border-border bg-surface p-5 flex items-center gap-3">
@@ -579,12 +577,12 @@ function StatTile({
         {icon}
       </div>
       <div className="min-w-0">
-        <span className="text-[10px] font-black uppercase tracking-widest text-muted">{label}</span>
+        <span className="text-xs font-semibold text-muted">{label}</span>
         <div
           className={`mt-0.5 ${
             monoValue
               ? "text-sm font-bold text-fg font-mono"
-              : "text-2xl font-black text-fg tabular-nums"
+              : "text-2xl font-semibold text-fg tabular-nums"
           }`}
         >
           {value}
@@ -630,22 +628,22 @@ function CreateKeyModal({
         className="w-full max-w-md bg-surface border border-border rounded-3xl p-6 space-y-5 shadow-2xl"
       >
         <div className="flex items-center justify-between">
-          <h3 className="text-sm font-black uppercase tracking-widest text-fg flex items-center gap-2">
-            <KeyRound className="w-4 h-4 text-accent" /> Generate API key
+          <h3 className="text-sm font-semibold text-fg flex items-center gap-2">
+            <KeyRound className="w-4 h-4 text-secondary" /> Generate API key
           </h3>
           <button type="button" onClick={onClose} className="p-1 rounded-md hover:bg-elevated text-muted hover:text-fg">
             <X className="w-4 h-4" />
           </button>
         </div>
 
-        <div className="rounded-xl border border-amber-500/30 bg-amber-500/[0.06] p-3 text-[11px] text-amber-200/90 leading-relaxed">
+        <div className="rounded-xl border border-warning/30 bg-warning/[0.06] p-3 text-xs text-warning/90 leading-relaxed">
           <ShieldAlert className="w-3.5 h-3.5 inline mr-1 mb-0.5" />
           The full key will be shown <strong>once</strong>. Copy it before
           closing the next dialog — we only store a hash and can&apos;t recover it.
         </div>
 
         <div className="space-y-1.5">
-          <label className="text-[10px] font-black uppercase text-muted tracking-wider block">
+          <label className="text-xs font-semibold text-muted block">
             Label (which client / what for)
           </label>
           <input
@@ -654,13 +652,13 @@ function CreateKeyModal({
             required
             maxLength={60}
             placeholder="e.g. Claude Desktop — Alice"
-            className="w-full px-3 py-2 rounded-xl border border-border bg-bg text-xs text-fg focus:outline-none focus:border-accent"
+            className="w-full px-3 py-2 rounded-xl border border-border bg-bg text-xs text-fg focus:outline-none focus:border-secondary"
             autoFocus
           />
         </div>
 
         <div className="space-y-2">
-          <label className="text-[10px] font-black uppercase text-muted tracking-wider block">
+          <label className="text-xs font-semibold text-muted block">
             Scope
           </label>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
@@ -669,17 +667,17 @@ function CreateKeyModal({
               onClick={() => setScope("read")}
               className={`text-left rounded-xl border p-3 transition ${
                 scope === "read"
-                  ? "border-emerald-500/50 bg-emerald-500/10"
+                  ? "border-success/50 bg-success/10"
                   : "border-border bg-bg hover:bg-elevated"
               }`}
             >
               <div className="flex items-center gap-1.5 mb-0.5">
-                <span className="text-[11px] font-black uppercase tracking-wider text-emerald-300">read</span>
+                <span className="text-xs font-semibold text-success">read</span>
                 {scope === "read" && (
-                  <span className="text-[9px] text-emerald-400">● selected</span>
+                  <span className="text-xs text-success">● selected</span>
                 )}
               </div>
-              <div className="text-[10px] text-muted leading-snug">
+              <div className="text-xs text-muted leading-snug">
                 List + inspect candidates, screenings, credits, transcripts. Safe default.
               </div>
             </button>
@@ -688,24 +686,24 @@ function CreateKeyModal({
               onClick={() => setScope("read-write")}
               className={`text-left rounded-xl border p-3 transition ${
                 scope === "read-write"
-                  ? "border-amber-500/50 bg-amber-500/10"
+                  ? "border-warning/50 bg-warning/10"
                   : "border-border bg-bg hover:bg-elevated"
               }`}
             >
               <div className="flex items-center gap-1.5 mb-0.5">
-                <span className="text-[11px] font-black uppercase tracking-wider text-emerald-300">read</span>
-                <span className="text-[11px] font-black uppercase tracking-wider text-amber-300">+ write</span>
+                <span className="text-xs font-semibold text-success">read</span>
+                <span className="text-xs font-semibold text-warning">+ write</span>
                 {scope === "read-write" && (
-                  <span className="text-[9px] text-amber-400">● selected</span>
+                  <span className="text-xs text-warning">● selected</span>
                 )}
               </div>
-              <div className="text-[10px] text-muted leading-snug">
+              <div className="text-xs text-muted leading-snug">
                 Plus: create screenings, update candidate status, add notes, refund credits.
               </div>
             </button>
           </div>
           {scope === "read-write" && (
-            <div className="rounded-lg border border-amber-500/25 bg-amber-500/[0.05] p-2 text-[10px] text-amber-200/80 leading-snug">
+            <div className="rounded-lg border border-warning/25 bg-warning/[0.05] p-2 text-xs text-warning/80 leading-snug">
               Write-scoped keys can spend workspace data (create screenings, refund credits). Treat them like service accounts.
             </div>
           )}
@@ -722,7 +720,7 @@ function CreateKeyModal({
           <button
             type="submit"
             disabled={isPending || !label.trim()}
-            className="px-5 py-2 rounded-xl bg-accent text-bg text-xs font-black uppercase tracking-wider hover:bg-accent-soft transition disabled:opacity-50"
+            className="px-5 py-2 rounded-xl bg-secondary text-bg text-xs font-semibold hover:brightness-110 transition disabled:opacity-50"
           >
             {isPending ? "Generating..." : "Generate key"}
           </button>
@@ -796,14 +794,14 @@ function KeyRevealModal({
 
   return (
     <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
-      <div className="w-full max-w-2xl max-h-[88vh] overflow-y-auto bg-surface border border-accent/30 rounded-3xl p-6 space-y-5 shadow-2xl">
+      <div className="w-full max-w-2xl max-h-[88vh] overflow-y-auto bg-surface border border-secondary/30 rounded-3xl p-6 space-y-5 shadow-2xl">
         <div className="flex items-center justify-between">
-          <h3 className="text-sm font-black uppercase tracking-widest text-fg flex items-center gap-2">
-            <CheckCircle2 className="w-4 h-4 text-emerald-400" /> Key generated — copy now
+          <h3 className="text-sm font-semibold text-fg flex items-center gap-2">
+            <CheckCircle2 className="w-4 h-4 text-success" /> Key generated — copy now
           </h3>
         </div>
 
-        <div className="rounded-xl border border-rose-500/30 bg-rose-500/[0.06] p-3 text-[11px] text-rose-200/90 leading-relaxed">
+        <div className="rounded-xl border border-danger/30 bg-danger/[0.06] p-3 text-xs text-danger/90 leading-relaxed">
           <ShieldAlert className="w-3.5 h-3.5 inline mr-1 mb-0.5" />
           This is the only time you&apos;ll see the full key. Copy it before
           closing — we store only the hash. If you lose it, revoke and re-issue.
@@ -811,17 +809,17 @@ function KeyRevealModal({
 
         <div className="space-y-2">
           <div className="flex items-center justify-between">
-            <label className="text-[10px] font-black uppercase text-muted tracking-wider">
+            <label className="text-xs font-semibold text-muted ">
               {label}
             </label>
             <div className="flex gap-1">
               {scopes.map((s) => (
                 <span
                   key={s}
-                  className={`inline-flex items-center px-1.5 py-0.5 rounded border text-[9px] font-bold uppercase tracking-wider ${
+                  className={`inline-flex items-center px-1.5 py-0.5 rounded border text-xs font-bold ${
                     s === "write"
-                      ? "border-amber-500/40 bg-amber-500/15 text-amber-300"
-                      : "border-emerald-500/30 bg-emerald-500/10 text-emerald-300"
+                      ? "border-warning/40 bg-warning/15 text-warning"
+                      : "border-success/30 bg-success/10 text-success"
                   }`}
                 >
                   {s}
@@ -833,7 +831,7 @@ function KeyRevealModal({
             <span className="flex-1 text-fg select-all">{plaintext}</span>
             <button
               onClick={() => copy(plaintext, "key")}
-              className="shrink-0 inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-accent text-bg text-[10px] font-bold uppercase tracking-wider hover:bg-accent-soft transition"
+              className="shrink-0 inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-secondary text-bg text-xs font-bold hover:brightness-110 transition"
             >
               <Copy className="w-3 h-3" /> Copy
             </button>
@@ -861,12 +859,12 @@ function KeyRevealModal({
           onCopy={() => copy(curlSnippet, "curl command")}
         />
 
-        <label className="flex items-start gap-2 text-[11px] text-muted cursor-pointer">
+        <label className="flex items-start gap-2 text-xs text-muted cursor-pointer">
           <input
             type="checkbox"
             checked={confirmed}
             onChange={(e) => setConfirmed(e.target.checked)}
-            className="mt-0.5 accent-accent"
+            className="mt-0.5 accent-secondary"
           />
           <span>I&apos;ve copied the key and stored it somewhere safe.</span>
         </label>
@@ -875,7 +873,7 @@ function KeyRevealModal({
           <button
             disabled={!confirmed}
             onClick={onClose}
-            className="px-5 py-2 rounded-xl bg-fg text-bg text-xs font-black uppercase tracking-wider hover:bg-fg/90 transition disabled:opacity-30 disabled:cursor-not-allowed"
+            className="px-5 py-2 rounded-xl bg-fg text-bg text-xs font-semibold hover:bg-fg/90 transition disabled:opacity-30 disabled:cursor-not-allowed"
           >
             Done
           </button>
@@ -900,19 +898,19 @@ function SnippetBlock({
     <div className="space-y-1.5">
       <div className="flex items-center justify-between">
         <div>
-          <div className="text-[11px] font-black uppercase tracking-wider text-fg flex items-center gap-1.5">
+          <div className="text-xs font-semibold text-fg flex items-center gap-1.5">
             <Terminal className="w-3.5 h-3.5 text-muted" /> {title}
           </div>
-          <div className="text-[10px] text-muted/70 mt-0.5 leading-snug">{subtitle}</div>
+          <div className="text-xs text-muted/70 mt-0.5 leading-snug">{subtitle}</div>
         </div>
         <button
           onClick={onCopy}
-          className="shrink-0 inline-flex items-center gap-1 px-2.5 py-1 rounded-lg border border-border hover:bg-elevated text-fg text-[10px] font-bold uppercase tracking-wider transition"
+          className="shrink-0 inline-flex items-center gap-1 px-2.5 py-1 rounded-lg border border-border hover:bg-elevated text-fg text-xs font-bold transition"
         >
           <Copy className="w-3 h-3" /> Copy
         </button>
       </div>
-      <pre className="text-[10px] font-mono text-fg/90 bg-bg p-3 rounded-xl border border-border/50 overflow-x-auto whitespace-pre">
+      <pre className="text-xs font-mono text-fg/90 bg-bg p-3 rounded-xl border border-border/50 overflow-x-auto whitespace-pre">
         {code}
       </pre>
     </div>

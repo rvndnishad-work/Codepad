@@ -14,6 +14,7 @@ import {
   Mail,
   XCircle,
 } from "lucide-react";
+import { humanize } from "@/lib/workspace/display";
 
 /**
  * Session take-home review (IP-88 convergence): per-question breakdown for a
@@ -36,10 +37,10 @@ function parseIds(raw: string | null | undefined): string[] {
 }
 
 const STATUS_BADGES: Record<string, { label: string; cls: string }> = {
-  completed: { label: "Completed", cls: "text-emerald-600 dark:text-emerald-400 border-emerald-500/25 bg-emerald-500/[0.06]" },
-  in_progress: { label: "In progress", cls: "text-indigo-600 dark:text-indigo-400 border-indigo-500/25 bg-indigo-500/[0.08]" },
-  expired: { label: "Expired", cls: "text-rose-600 dark:text-rose-400 border-rose-500/25 bg-rose-500/[0.06]" },
-  scheduled: { label: "Sent", cls: "text-amber-600 dark:text-amber-400 border-amber-500/25 bg-amber-500/[0.06]" },
+  completed: { label: "Completed", cls: "text-success border-success/25 bg-success/[0.06]" },
+  in_progress: { label: "In progress", cls: "text-secondary border-secondary/25 bg-secondary/[0.08]" },
+  expired: { label: "Expired", cls: "text-danger border-danger/25 bg-danger/[0.06]" },
+  scheduled: { label: "Sent", cls: "text-warning border-warning/25 bg-warning/[0.06]" },
 };
 
 export default async function TakeHomeSessionReviewPage({ params }: Props) {
@@ -126,7 +127,7 @@ export default async function TakeHomeSessionReviewPage({ params }: Props) {
       <div className="space-y-3 border-b border-border pb-5">
         <Link
           href={`/w/${slug}?section=assessments&view=take-homes`}
-          className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-muted hover:text-fg transition-colors"
+          className="inline-flex items-center gap-1.5 text-xs font-semibold text-muted hover:text-fg transition-colors"
         >
           <ArrowLeft className="w-3 h-3" /> All take-homes
         </Link>
@@ -136,7 +137,7 @@ export default async function TakeHomeSessionReviewPage({ params }: Props) {
             <div className="flex flex-wrap items-center gap-3 mt-2 text-xs text-muted">
               <span className="font-semibold text-fg">
                 {session.candidateId ? (
-                  <Link href={`/w/${slug}/candidates/${session.candidateId}`} className="hover:text-accent transition-colors">
+                  <Link href={`/w/${slug}/candidates/${session.candidateId}`} className="hover:text-secondary transition-colors">
                     {session.candidateName || "Unknown candidate"}
                   </Link>
                 ) : (
@@ -155,7 +156,7 @@ export default async function TakeHomeSessionReviewPage({ params }: Props) {
               )}
             </div>
           </div>
-          <span className={`inline-flex items-center self-start md:self-auto px-2.5 py-1 rounded-lg border text-[10px] font-bold uppercase tracking-widest ${badge.cls}`}>
+          <span className={`inline-flex items-center self-start md:self-auto px-2.5 py-1 rounded-lg border text-xs font-bold ${badge.cls}`}>
             {badge.label}
           </span>
         </div>
@@ -164,19 +165,19 @@ export default async function TakeHomeSessionReviewPage({ params }: Props) {
       {/* Summary strip */}
       <div className="grid grid-cols-3 gap-3">
         <div className="rounded-xl border border-border bg-surface p-4">
-          <div className="text-[10px] font-bold uppercase tracking-widest text-muted/80 mb-1.5">Average score</div>
-          <div className="text-2xl font-black tabular-nums text-fg">
+          <div className="text-xs font-bold text-muted/80 mb-1.5">Average score</div>
+          <div className="text-2xl font-semibold tabular-nums text-fg">
             {avgScore !== null ? `${avgScore}%` : "—"}
           </div>
         </div>
         <div className="rounded-xl border border-border bg-surface p-4">
-          <div className="text-[10px] font-bold uppercase tracking-widest text-muted/80 mb-1.5">Questions done</div>
-          <div className="text-2xl font-black tabular-nums text-fg">
+          <div className="text-xs font-bold text-muted/80 mb-1.5">Questions done</div>
+          <div className="text-2xl font-semibold tabular-nums text-fg">
             {doneCount}<span className="text-sm text-muted font-semibold">/{totalQuestions}</span>
           </div>
         </div>
         <div className="rounded-xl border border-border bg-surface p-4">
-          <div className="text-[10px] font-bold uppercase tracking-widest text-muted/80 mb-1.5">Submitted</div>
+          <div className="text-xs font-bold text-muted/80 mb-1.5">Submitted</div>
           <div className="text-sm font-bold text-fg mt-2">
             {session.finishedAt ? session.finishedAt.toLocaleString() : "Not yet"}
           </div>
@@ -190,7 +191,7 @@ export default async function TakeHomeSessionReviewPage({ params }: Props) {
         </div>
         <table className="w-full text-left text-sm">
           <thead>
-            <tr className="bg-elevated/60 border-b border-border text-muted uppercase text-[10px] tracking-[0.14em]">
+            <tr className="bg-elevated/60 border-b border-border text-muted text-xs ">
               <th className="px-4 py-3 font-semibold">Question</th>
               <th className="px-4 py-3 font-semibold">Result</th>
               <th className="px-4 py-3 font-semibold">Score</th>
@@ -206,11 +207,11 @@ export default async function TakeHomeSessionReviewPage({ params }: Props) {
                 <tr key={cid} className="hover:bg-panel/30 transition-colors">
                   <td className="px-4 py-3 align-middle">
                     <div className="flex items-center gap-2">
-                      <Layers className="w-3.5 h-3.5 text-indigo-500 shrink-0" />
+                      <Layers className="w-3.5 h-3.5 text-secondary shrink-0" />
                       <div>
                         <div className="text-xs font-semibold text-fg">{i + 1}. {c?.title ?? "(deleted challenge)"}</div>
-                        <div className="text-[10px] text-muted uppercase tracking-wider">
-                          challenge{c?.difficulty ? ` · ${c.difficulty}` : ""} · {limits[cid] ?? 30}m budget
+                        <div className="text-xs text-muted ">
+                          challenge{c?.difficulty ? ` · ${humanize(c.difficulty)}` : ""} · {limits[cid] ?? 30}m budget
                         </div>
                       </div>
                     </div>
@@ -218,18 +219,18 @@ export default async function TakeHomeSessionReviewPage({ params }: Props) {
                   <td className="px-4 py-3 align-middle">
                     {a ? (
                       a.status === "passed" ? (
-                        <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-500"><CheckCircle2 className="w-3.5 h-3.5" /> Passed</span>
+                        <span className="inline-flex items-center gap-1 text-xs font-bold text-success"><CheckCircle2 className="w-3.5 h-3.5" /> Passed</span>
                       ) : (
-                        <span className="inline-flex items-center gap-1 text-[11px] font-bold text-rose-500"><XCircle className="w-3.5 h-3.5" /> Failed</span>
+                        <span className="inline-flex items-center gap-1 text-xs font-bold text-danger"><XCircle className="w-3.5 h-3.5" /> Failed</span>
                       )
                     ) : (
-                      <span className="text-[11px] text-muted/60 italic">Not attempted</span>
+                      <span className="text-xs text-muted/60 italic">Not attempted</span>
                     )}
                   </td>
                   <td className="px-4 py-3 align-middle text-xs font-bold tabular-nums text-fg">
                     {a?.score !== null && a?.score !== undefined ? `${a.score}%` : "—"}
                   </td>
-                  <td className="px-4 py-3 align-middle text-[11px] text-muted tabular-nums">
+                  <td className="px-4 py-3 align-middle text-xs text-muted tabular-nums">
                     {a?.durationSec ? (
                       <span className="inline-flex items-center gap-1"><Clock className="w-3 h-3" /> {Math.round(a.durationSec / 60)}m</span>
                     ) : (
@@ -240,7 +241,7 @@ export default async function TakeHomeSessionReviewPage({ params }: Props) {
                     {a && (
                       <Link
                         href={`/w/${slug}/attempts/${a.id}`}
-                        className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-accent/10 border border-accent/25 text-[11px] font-semibold text-accent hover:bg-accent/15 transition-colors"
+                        className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-secondary/10 border border-secondary/25 text-xs font-semibold text-secondary hover:bg-secondary/15 transition-colors"
                       >
                         <Eye className="w-3 h-3" /> Open attempt
                       </Link>
@@ -256,26 +257,26 @@ export default async function TakeHomeSessionReviewPage({ params }: Props) {
                 <tr key={pid} className="hover:bg-panel/30 transition-colors">
                   <td className="px-4 py-3 align-middle">
                     <div className="flex items-center gap-2">
-                      <Brain className="w-3.5 h-3.5 text-violet-500 shrink-0" />
+                      <Brain className="w-3.5 h-3.5 text-secondary shrink-0" />
                       <div>
                         <div className="text-xs font-semibold text-fg">
                           {challengeIds.length + i + 1}. {s?.title ?? "(deleted scenario)"}
                         </div>
-                        <div className="text-[10px] text-muted uppercase tracking-wider">prompt · {limits[pid] ?? 30}m budget</div>
+                        <div className="text-xs text-muted ">prompt · {limits[pid] ?? 30}m budget</div>
                       </div>
                     </div>
                   </td>
                   <td className="px-4 py-3 align-middle">
                     {a ? (
-                      <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-500"><CheckCircle2 className="w-3.5 h-3.5" /> Submitted</span>
+                      <span className="inline-flex items-center gap-1 text-xs font-bold text-success"><CheckCircle2 className="w-3.5 h-3.5" /> Submitted</span>
                     ) : (
-                      <span className="text-[11px] text-muted/60 italic">Not attempted</span>
+                      <span className="text-xs text-muted/60 italic">Not attempted</span>
                     )}
                   </td>
                   <td className="px-4 py-3 align-middle text-xs font-bold tabular-nums text-fg">
                     {a?.score !== null && a?.score !== undefined ? `${a.score}%` : "—"}
                   </td>
-                  <td className="px-4 py-3 align-middle text-[11px] text-muted">—</td>
+                  <td className="px-4 py-3 align-middle text-xs text-muted">—</td>
                   <td className="px-4 py-3 align-middle text-right" />
                 </tr>
               );
@@ -284,20 +285,20 @@ export default async function TakeHomeSessionReviewPage({ params }: Props) {
               <tr key={pid} className="hover:bg-panel/30 transition-colors">
                 <td className="px-4 py-3 align-middle">
                   <div className="flex items-center gap-2">
-                    <Beaker className="w-3.5 h-3.5 text-cyan-500 shrink-0" />
+                    <Beaker className="w-3.5 h-3.5 text-secondary shrink-0" />
                     <div>
                       <div className="text-xs font-semibold text-fg">
                         {challengeIds.length + promptScenarioIds.length + i + 1}. Playground task
                       </div>
-                      <div className="text-[10px] text-muted uppercase tracking-wider">playground · {limits[pid] ?? 30}m budget</div>
+                      <div className="text-xs text-muted ">playground · {limits[pid] ?? 30}m budget</div>
                     </div>
                   </div>
                 </td>
                 <td className="px-4 py-3 align-middle">
-                  <span className="text-[11px] text-muted/60 italic">Not candidate-runnable yet</span>
+                  <span className="text-xs text-muted/60 italic">Not candidate-runnable yet</span>
                 </td>
                 <td className="px-4 py-3 align-middle text-xs text-muted">—</td>
-                <td className="px-4 py-3 align-middle text-[11px] text-muted">—</td>
+                <td className="px-4 py-3 align-middle text-xs text-muted">—</td>
                 <td className="px-4 py-3 align-middle text-right" />
               </tr>
             ))}
@@ -307,7 +308,7 @@ export default async function TakeHomeSessionReviewPage({ params }: Props) {
 
       {avgScore !== null && (
         <div className="rounded-xl border border-border bg-surface p-4 flex items-center gap-3">
-          <div className="w-9 h-9 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-500 shrink-0">
+          <div className="w-9 h-9 rounded-xl bg-warning/10 border border-warning/20 flex items-center justify-center text-warning shrink-0">
             <Award className="w-4 h-4" />
           </div>
           <p className="text-xs text-muted leading-relaxed">

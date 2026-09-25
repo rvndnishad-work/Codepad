@@ -53,7 +53,7 @@ describe("SandpackPreviewWithLoader", () => {
   it("shows a loading state while the sandbox is starting", () => {
     render(<SandpackPreviewWithLoader title="React" />);
     expect(screen.getByRole("status")).toHaveTextContent(
-      "Preparing React preview",
+      "Preparing the React preview",
     );
     expect(screen.getByRole("status")).toHaveTextContent("Starting sandbox…");
     expect(screen.getByTestId("sandpack-preview")).toBeTruthy();

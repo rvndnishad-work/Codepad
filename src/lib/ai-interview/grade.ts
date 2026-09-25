@@ -1,3 +1,4 @@
+import { graderQuestionList, parseQuestionnaire, type QuestionItem } from "./questionnaire";
 import { prisma } from "@/lib/prisma";
 import { analyzeTelemetry, type TelemetryEvent } from "@/lib/proctoring/ai-detection";
 import { AI_INTERVIEW_TOGETHER_MODEL } from "@/lib/ai-interview/scaffolds";
@@ -5,7 +6,16 @@ import { sendRecruiterNotifyEmail } from "@/lib/ai-interview/submit-notify";
 import { resolveSessionRounds, type SessionRound } from "@/lib/ai-interview/rounds";
 import { STAFF_ROLES } from "@/lib/permissions/role-groups";
 import { advanceCandidateStage } from "@/lib/crm/advance";
-import { getStarterFilesByRoundId, inferStarterForSubmission } from "@/lib/ai-interview/round-content";
+import { getStarterFilesByRoundId, inferStarterForSubmission, resolveRoundsContent } from "@/lib/ai-interview/round-content";
+import {
+  clampConversation,
+  conversationFallback,
+  conversationGraderPrompt,
+  renderTranscript,
+  substantiveTurns,
+  transcriptForRound,
+  type ChatEntry,
+} from "@/lib/ai-interview/conversation";
 import {
   describeChanges,
   diffFiles,
@@ -13,6 +23,16 @@ import {
   type FileDiff,
 } from "@/lib/ai-interview/diff";
 import { computeV2Score, clampV2ScoreForEffort } from "@/lib/ai-interview/scoring-v2";
+import {
+  cleanGrade,
+  fallbackGrade,
+  parseAnswers,
+  parseTheoryRound,
+  theoryGraderBlock,
+  theoryGraderPrompt,
+  theoryRoundScore,
+  type TheoryAnswers,
+} from "@/lib/ai-interview/theory";
 
 /**
  * Canonical AI screening grading pipeline.
@@ -115,7 +135,11 @@ Output your response strictly as a JSON object containing precisely:
   "communication": number (1-5 rating),
   "aiSummary": string (bulleted recap of strengths and flaws)
 }`;
+  return runGraderPrompt(apiKey, prompt);
+}
 
+/** Send a grading prompt to the configured model and parse its JSON verdict. */
+async function runGraderPrompt(apiKey: string, prompt: string, maxTokens = 1500): Promise<GraderResult> {
   // Prefer Together/GLM when GLM_API_KEY (or TOGETHER_API_KEY) is configured.
   const hasTogetherKey = !!(process.env.GLM_API_KEY || process.env.TOGETHER_API_KEY);
   // If apiKey matches the Together key, treat as Together call; otherwise keep Gemini path for explicit Gemini keys.
@@ -134,7 +158,7 @@ Output your response strictly as a JSON object containing precisely:
           { role: "user", content: prompt },
         ],
         temperature: 0.2,
-        max_tokens: 1500,
+        max_tokens: maxTokens,
         response_format: { type: "json_object" },
       }),
     });
@@ -249,6 +273,78 @@ function runRulesBasedGrader(
   return v2;
 }
 
+/** Grade a conversation round from its slice of the transcript. */
+async function gradeConversationRound(
+  apiKey: string | undefined,
+  positionTitle: string,
+  transcript: ChatEntry[],
+  brief: string,
+  questions: QuestionItem[],
+): Promise<GraderResult> {
+  const turns = substantiveTurns(transcript);
+  if (apiKey && turns > 0) {
+    try {
+      const raw = await runGraderPrompt(apiKey, conversationGraderPrompt({ positionTitle, brief, questionList: graderQuestionList(questions), transcript: renderTranscript(transcript) }));
+      return clampConversation(raw, turns);
+    } catch (err) {
+      console.error("Conversation grading failed, falling back to participation score:", err);
+    }
+  }
+  return conversationFallback(transcript);
+}
+
+/**
+ * Grade a theory round question by question against the reference answers.
+ * Returns the round grade plus the answers with a grade on each.
+ */
+async function gradeTheoryRound(
+  apiKey: string | undefined,
+  positionTitle: string,
+  raw: { theoryJson: string | null; answersJson: string | null } | undefined,
+): Promise<{ result: GraderResult; answers: TheoryAnswers }> {
+  const data = parseTheoryRound(raw?.theoryJson);
+  const state = parseAnswers(raw?.answersJson);
+  const total = data?.items.length ?? state.items.length;
+  const answered = state.items.filter((a) => !a.skipped);
+  const summaryOf = (lines: string[]) => lines.join("\n");
+
+  if (data && apiKey && answered.length > 0) {
+    try {
+      const prompt = theoryGraderPrompt({ positionTitle, block: theoryGraderBlock(data, state.items), count: data.items.length });
+      const out = (await runGraderPrompt(apiKey, prompt, 4000)) as unknown as { questions?: { n?: number; [k: string]: unknown }[]; communication?: number; aiSummary?: string };
+      const byN = new Map((out.questions ?? []).map((q, i) => [Number(q.n) || i + 1, q]));
+      const items = state.items.map((a, i) => ({ ...a, grade: cleanGrade(byN.get(i + 1), a) }));
+      const score = theoryRoundScore(items, total);
+      const mean = items.length ? items.reduce((s, a) => s + (a.grade?.score ?? 0), 0) / Math.max(total, 1) : 0;
+      const rating = Math.max(1, Math.min(5, Math.round(mean)));
+      const comm = Math.max(1, Math.min(5, Math.round(Number(out.communication) || rating)));
+      return {
+        result: {
+          score,
+          codeQuality: rating,
+          problemSolving: rating,
+          communication: comm,
+          aiSummary: typeof out.aiSummary === "string" && out.aiSummary.trim() ? out.aiSummary.trim() : summaryOf([`- ${answered.length} of ${total} questions answered.`]),
+        },
+        answers: { ...state, items },
+      };
+    } catch (err) {
+      console.error("Theory grading failed, falling back to participation score:", err);
+    }
+  }
+  const items = state.items.map((a) => ({ ...a, grade: fallbackGrade(a) }));
+  return {
+    result: {
+      score: Math.min(40, theoryRoundScore(items, total)),
+      codeQuality: 1,
+      problemSolving: 1,
+      communication: answered.length >= 3 ? 2 : 1,
+      aiSummary: summaryOf([`- Not scored by the AI. ${answered.length} of ${total} questions answered; read the answers to judge them.`]),
+    },
+    answers: { ...state, items },
+  };
+}
+
 /** Grade one round's (or a legacy whole-session) submission, with the static
  *  rules-based grader as the no-key / failure fallback. Diff-aware on both
  *  paths. */
@@ -356,7 +452,7 @@ export async function gradeSessionById(params: {
   // candidate submitting while the abandonment cron holds the same session.
   if (session.finishedAt) return { ok: false, reason: "already_graded" };
 
-  let chatHistory: { role: "user" | "assistant"; text: string }[] = [];
+  let chatHistory: ChatEntry[] = [];
   try {
     chatHistory = JSON.parse(session.chatHistory);
   } catch {
@@ -411,12 +507,35 @@ export async function gradeSessionById(params: {
     legacy ? params.submittedFiles ?? parseFilesMap(session.filesJson)
       : params.roundFilesOverride?.[r.id] ?? parseFilesMap(r.filesJson);
 
-  const graded = await Promise.all(
+  // Brief and questions for conversation rounds (no files to grade there).
+  const conversationRounds = sessionRounds.filter((r) => r.paradigm === "conversation");
+  const conversationContent = new Map(
+    conversationRounds.length
+      ? (await resolveRoundsContent(conversationRounds, session.workspaceId).catch(() => [])).map((c) => [c.roundId, c])
+      : [],
+  );
+
+  const graded: { round: SessionRound; files: Record<string, string>; result: GraderResult; answers?: TheoryAnswers }[] = await Promise.all(
     sessionRounds.map(async (r) => {
+      if (r.paradigm === "theory") {
+        const { result, answers } = await gradeTheoryRound(apiKey, session.positionTitle, roundById.get(r.id));
+        return { round: r, files: {} as Record<string, string>, result, answers };
+      }
       const label =
         sessionRounds.length > 1
           ? `${session.positionTitle} — Round ${r.order + 1}`
           : session.positionTitle;
+      if (r.paradigm === "conversation") {
+        const content = conversationContent.get(r.id);
+        const result = await gradeConversationRound(
+          apiKey,
+          session.positionTitle,
+          transcriptForRound(chatHistory, r.id, sessionRounds.length === 1),
+          content?.description ?? "",
+          parseQuestionnaire(content?.interviewerNotes),
+        );
+        return { round: r, files: {} as Record<string, string>, result };
+      }
       // Starter for this round (works for every round source kind).
       let starterFiles = startersByRound.get(r.id);
       // Historical fallback: if no snapshot/live baseline, infer from submitted files
@@ -466,7 +585,8 @@ export async function gradeSessionById(params: {
 
   // Integrity signal from candidate-side telemetry over ALL submitted code.
   let aiSuspicionScore: number | null = null;
-  if (Array.isArray(params.telemetry) && params.telemetry.length > 0) {
+  // A screening with no code at all (conversation rounds only) has nothing to measure.
+  if (Array.isArray(params.telemetry) && params.telemetry.length > 0 && Object.keys(mergedFiles).length > 0) {
     const totalCodeLen = Object.values(mergedFiles).reduce(
       (acc, src) => acc + (typeof src === "string" ? src.length : 0),
       0
@@ -499,6 +619,7 @@ export async function gradeSessionById(params: {
               filesJson: JSON.stringify(g.files),
               status: "COMPLETED",
               score: g.result.score,
+              ...(g.answers ? { answersJson: JSON.stringify(g.answers) } : {}),
               ratings: JSON.stringify({
                 CodeQuality: g.result.codeQuality,
                 ProblemSolving: g.result.problemSolving,
@@ -518,7 +639,7 @@ export async function gradeSessionById(params: {
       ...(session.candidateId
         ? { candidateId: session.candidateId }
         : { email: session.candidateEmail }),
-      toStage: "SCREENED",
+      toStage: "SCREENING",
       source: "auto:ai-screening-completed",
     });
   }
@@ -571,7 +692,7 @@ async function notifyWorkspaceRecruiters(params: {
   });
   if (!workspace) return;
 
-  const consoleUrl = `${params.origin}/w/${workspace.slug}/ai-interviews`;
+  const consoleUrl = `${params.origin}/w/${workspace.slug}/ai-interviews/${params.sessionId}`;
 
   const sends = workspace.members
     .filter((m) => !!m.user.email)

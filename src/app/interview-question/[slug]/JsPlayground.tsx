@@ -4,6 +4,7 @@ import { useRef, useState, useEffect } from "react";
 import { Play, RotateCcw, Loader2, ChevronRight, Trash2, ExternalLink, Check, X } from "lucide-react";
 import CodeMirrorEditor from "./CodeMirrorEditor";
 import { playgroundFilesHref } from "@/lib/playground-handoff";
+import { LANG_COLOR, badge, frame, frameBar, frameLabel, iconBtn, quietBtn, runBtn } from "./_components/codeFrame";
 
 // Cached workers to avoid re-downloading 500KB TS + 20MB Pyodide on every Run
 let tsWorkerBlobUrl: string | null = null;
@@ -370,53 +371,44 @@ export default function JsPlayground({
   }
 
   const logColor = (t: LogLine["type"]) =>
-    t === "error"
-      ? "text-rose-600 dark:text-rose-400"
-      : t === "warn"
-        ? "text-amber-600 dark:text-amber-400"
-        : "text-emerald-600 dark:text-emerald-400";
+    t === "error" ? "text-danger" : t === "warn" ? "text-warning" : "text-muted";
 
-  // Dynamic tag badges based on technology
-  const renderBadge = () => {
-    if (technology === "typescript") {
-      return (
-        <span className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-wider px-2 py-1 rounded-md bg-blue-500/15 text-blue-500 border border-blue-500/20">
-          <span className="w-1.5 h-1.5 rounded-sm bg-blue-500" /> TS
-        </span>
-      );
-    }
-    if (technology === "python") {
-      return (
-        <span className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-wider px-2 py-1 rounded-md bg-emerald-500/15 text-emerald-500 border border-emerald-500/20">
-          <span className="w-1.5 h-1.5 rounded-sm bg-emerald-500" /> PY
-        </span>
-      );
-    }
-    return (
-      <span className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-wider px-2 py-1 rounded-md bg-amber-400/15 text-amber-500 border border-amber-400/20">
-        <span className="w-1.5 h-1.5 rounded-sm bg-amber-400" /> JS
-      </span>
-    );
-  };
+  const lang =
+    technology === "typescript"
+      ? { key: "typescript", label: "TypeScript" }
+      : technology === "python"
+        ? { key: "python", label: "Python" }
+        : { key: "javascript", label: "JavaScript" };
+  const passedCount = testResults.filter((r) => r.passed).length;
+  const finished = testResults.length > 0 && testResults.every((r) => r.passed !== undefined);
 
   const practiceTemplate = technology === "python" ? "empty-python" : technology === "typescript" ? "empty-ts" : "empty-js";
   const fileExtension = technology === "python" ? ".py" : technology === "typescript" ? ".ts" : ".js";
 
+  const tab = (on: boolean) =>
+    `relative flex h-10 items-center gap-2 px-3 text-[13px] font-medium transition-colors motion-reduce:transition-none ${
+      on ? "text-fg after:absolute after:inset-x-3 after:bottom-0 after:h-0.5 after:rounded-full after:bg-accent" : "text-subtle hover:text-fg"
+    }`;
+
   return (
-    <div className="rounded-2xl border border-border bg-surface overflow-hidden shadow-sm">
-      {/* Header */}
-      <div className="flex items-center justify-between gap-2 px-3.5 py-2 border-b border-border bg-bg/40">
-        <div className="flex items-center gap-2 min-w-0">
-          {renderBadge()}
-          {label && <span className="text-xs font-bold text-muted truncate">{label}</span>}
+    <div className={frame}>
+      <div className={frameBar}>
+        <div className="flex min-w-0 items-center gap-2.5">
+          <span className={badge}>
+            <span className="h-1.5 w-1.5 rounded-full" style={{ background: LANG_COLOR[lang.key] }} aria-hidden />
+            {lang.label}
+          </span>
+          {label && <span className={frameLabel}>{label}</span>}
         </div>
-        <div className="flex items-center gap-1.5 shrink-0">
+        <div className="flex items-center gap-1.5">
           <button
+            type="button"
             onClick={() => { setSrc(code.trim()); setLogs([]); setHasRun(false); }}
-            className="p-1.5 rounded-lg text-muted hover:text-fg hover:bg-elevated transition"
-            title="Reset to original"
+            className={iconBtn}
+            aria-label="Reset the code"
+            title="Reset the code"
           >
-            <RotateCcw className="w-3.5 h-3.5" />
+            <RotateCcw className="h-4 w-4" aria-hidden />
           </button>
           {title && description && (
             <a
@@ -430,107 +422,88 @@ export default function JsPlayground({
               )}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-accent/30 text-accent text-xs font-black uppercase tracking-wider hover:bg-accent/10 transition shadow-sm"
-              title="Open in playground with a practice stub to solve"
+              className={quietBtn}
+              title="Open a blank starter in the playground, with this solution beside it"
             >
-              <ExternalLink className="w-3.5 h-3.5" />
+              <ExternalLink className="h-3.5 w-3.5" aria-hidden />
               Practice
             </a>
           )}
-          <button
-            onClick={run}
-            disabled={running}
-            className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-accent text-bg text-xs font-black uppercase tracking-wider hover:bg-accent-soft transition disabled:opacity-60 shadow-sm"
-          >
-            {running ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Play className="w-3.5 h-3.5 fill-current" />}
+          <button type="button" onClick={run} disabled={running} className={runBtn}>
+            {running ? <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden /> : <Play className="h-3.5 w-3.5 fill-current" aria-hidden />}
             Run
           </button>
         </div>
       </div>
 
-      {/* Editor */}
       <div>
         <CodeMirrorEditor value={src} onChange={setSrc} technology={technology} />
       </div>
 
-      {/* Output Console & Tests Tabs */}
       {hasRun && (
-        <div className="border-t border-border bg-bg/60">
-          <div className="flex items-center justify-between px-3.5 border-b border-border">
-            <div className="flex gap-1.5 -mb-px">
+        <div className="border-t border-border">
+          <div className="flex items-center justify-between border-b border-border bg-bg/40 pl-1 pr-2">
+            <div role="tablist" aria-label="Output" className="flex">
               {testCases.length > 0 && (
-                <button
-                  onClick={() => setActiveTab("tests")}
-                  className={`flex items-center gap-1.5 px-3.5 py-2 text-[10px] font-black uppercase tracking-wider border-b-2 transition ${
-                    activeTab === "tests"
-                      ? "border-accent text-accent"
-                      : "border-transparent text-muted hover:text-fg"
-                  }`}
-                >
-                  Test Cases ({testResults.filter(r => r.passed).length}/{testCases.length})
+                <button type="button" role="tab" aria-selected={activeTab === "tests"} onClick={() => setActiveTab("tests")} className={tab(activeTab === "tests")}>
+                  Tests
+                  <span
+                    className={`rounded-full px-1.5 py-px text-[11px] tabular-nums ${
+                      !finished ? "bg-panel text-subtle" : passedCount === testCases.length ? "bg-success/15 text-success" : "bg-danger/15 text-danger"
+                    }`}
+                  >
+                    {passedCount}/{testCases.length}
+                  </span>
                 </button>
               )}
               <button
+                type="button"
+                role="tab"
+                aria-selected={activeTab === "console" || testCases.length === 0}
                 onClick={() => setActiveTab("console")}
-                className={`flex items-center gap-1.5 px-3.5 py-2 text-[10px] font-black uppercase tracking-wider border-b-2 transition ${
-                  activeTab === "console" || testCases.length === 0
-                    ? "border-accent text-accent"
-                    : "border-transparent text-muted hover:text-fg"
-                }`}
+                className={tab(activeTab === "console" || testCases.length === 0)}
               >
                 Console
               </button>
             </div>
             {activeTab === "console" && logs.length > 0 && (
-              <button
-                onClick={() => { setLogs([]); setHasRun(false); }}
-                className="text-muted/70 hover:text-fg transition mr-3.5"
-                title="Clear output"
-              >
-                <Trash2 className="w-3 h-3" />
+              <button type="button" onClick={() => { setLogs([]); setHasRun(false); }} className={iconBtn} aria-label="Clear the output" title="Clear the output">
+                <Trash2 className="h-3.5 w-3.5" aria-hidden />
               </button>
             )}
           </div>
 
-          <div className="px-3.5 py-3 font-mono text-[13px] leading-relaxed max-h-60 overflow-auto bg-[#0a0b10] text-slate-200">
-            {running && logs.length === 0 && testResults.every(r => r.passed === undefined) ? (
-              <div className="text-muted flex items-center gap-1.5"><Loader2 className="w-3.5 h-3.5 animate-spin" /> running…</div>
+          <div className="qa-code-scroll max-h-72 overflow-auto bg-[#0b0d12] px-4 py-3 font-mono text-[13px] leading-relaxed">
+            {running && logs.length === 0 && testResults.every((r) => r.passed === undefined) ? (
+              <div className="flex items-center gap-2 text-subtle"><Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden /> Running…</div>
             ) : activeTab === "tests" && testCases.length > 0 ? (
-              <div className="space-y-3">
+              <ul className="divide-y divide-border/70">
                 {testResults.map((t, idx) => (
-                  <div key={t.id} className="p-3 rounded-xl border border-border bg-surface/50 space-y-1.5">
-                    <div className="flex items-center justify-between gap-2">
-                       <span className="font-bold text-[10px] text-muted uppercase tracking-wider">Test Case {idx + 1}</span>
+                  <li key={t.id} className="py-2.5 first:pt-0.5 last:pb-0.5">
+                    <div className="flex items-center gap-2.5">
                       {t.passed === true ? (
-                        <span className="inline-flex items-center gap-1 text-[9px] font-black uppercase tracking-wider text-emerald-500 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded-md">
-                          <Check className="w-3.5 h-3.5" /> Passed
-                        </span>
+                        <Check className="h-4 w-4 shrink-0 text-success" aria-label="Passed" />
                       ) : t.passed === false ? (
-                        <span className="inline-flex items-center gap-1 text-[9px] font-black uppercase tracking-wider text-rose-500 bg-rose-500/10 border border-rose-500/20 px-2 py-0.5 rounded-md">
-                          <X className="w-3.5 h-3.5" /> Failed
-                        </span>
+                        <X className="h-4 w-4 shrink-0 text-danger" aria-label="Failed" />
                       ) : (
-                        <span className="inline-flex items-center gap-1 text-[9px] font-black uppercase tracking-wider text-muted bg-surface border border-border px-2 py-0.5 rounded-md">
-                          Ready
-                        </span>
+                        <span className="h-4 w-4 shrink-0 rounded-full border border-border-strong" aria-label="Not run" />
                       )}
+                      <span className="text-subtle">{idx + 1}.</span>
+                      <code className="min-w-0 truncate text-fg" title={t.expression}>{t.expression}</code>
                     </div>
-                    <div className="space-y-1.5 text-xs text-fg/90">
-                      <div>
-                        <span className="text-muted font-bold">Expression:</span> <code className="bg-bg px-1.5 py-0.5 rounded border border-border">{t.expression}</code>
-                      </div>
-                      <div>
-                        <span className="text-muted font-bold">Expected:</span> <code className="bg-bg px-1.5 py-0.5 rounded border border-border text-emerald-500">{t.expected}</code>
+                    <div className="mt-1 space-y-0.5 pl-[42px] text-xs">
+                      <div className="text-subtle">
+                        expected <span className="text-success">{t.expected}</span>
                       </div>
                       {t.passed === false && (
-                        <div>
-                          <span className="text-muted font-bold">Actual:</span> <code className="bg-bg px-1.5 py-0.5 rounded border border-border text-rose-500">{t.error ? `Error: ${t.error}` : t.actual}</code>
+                        <div className="text-subtle">
+                          got <span className="text-danger">{t.error ? `Error: ${t.error}` : t.actual}</span>
                         </div>
                       )}
                     </div>
-                  </div>
+                  </li>
                 ))}
-              </div>
+              </ul>
             ) : (
               <div className="space-y-0.5">
                 {logs.map((l, i) => (

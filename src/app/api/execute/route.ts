@@ -1,8 +1,8 @@
-import { NextResponse } from "next/server";
+import { NextResponse, after } from "next/server";
 import { createHash } from "crypto";
 import { auth } from "@/lib/auth";
 import { rateLimitDistributed, clientKey } from "@/lib/rate-limit";
-import { getCachedResult, setCachedResult } from "@/lib/execute-cache";
+import { getCachedResult, setCachedResult, takeCachedResult } from "@/lib/execute-cache";
 import {
   runOnPiston,
   isSupportedLanguage,
@@ -30,7 +30,8 @@ const MAX_CODE_BYTES = 64 * 1024; // 64KB source cap
 const MAX_STDIN_BYTES = 16 * 1024;
 
 // Cap concurrent executor calls per instance so a flood of submissions can't
-// exhaust the Piston job pool / our socket budget. Excess requests wait briefly.
+// exhaust this instance's socket budget. This is per process only: across
+// serverless instances the distributed rate limit below is the real guard.
 const MAX_CONCURRENT = Number(process.env.EXECUTE_MAX_CONCURRENT ?? 8);
 let inFlight = 0;
 const waiters: Array<() => void> = [];
@@ -71,19 +72,29 @@ export async function POST(req: Request) {
     const session = await auth().catch(() => null);
     const userId = session?.user?.id;
 
+    const { language, code, stdin = "", speculative = false, files } =
+      await req.json();
+
+    // Speculative warm-ups are a signed-in perk. Guests get 10 runs a minute,
+    // too few to spend on background work, so their warm-ups are declined
+    // before they can touch the rate limit.
+    if (speculative && !userId) {
+      return NextResponse.json({ speculativeActive: false });
+    }
+
     // Sliding-window rate limit for guests and authenticated users alike.
+    // Warm-ups have their own bucket so typing never eats into explicit runs.
     const limitKey = clientKey(req, userId);
-    const limitCount = userId ? 30 : 10;
-    const rl = await rateLimitDistributed(`execute:${limitKey}`, limitCount, 60_000);
+    const rl = speculative
+      ? await rateLimitDistributed(`execute-spec:${limitKey}`, 20, 60_000)
+      : await rateLimitDistributed(`execute:${limitKey}`, userId ? 30 : 10, 60_000);
     if (!rl.ok) {
+      if (speculative) return NextResponse.json({ speculativeActive: false });
       return NextResponse.json(
         { error: "Too many requests. Please wait a minute before running code again." },
         { status: 429 }
       );
     }
-
-    const { language, code, stdin = "", speculative = false, files } =
-      await req.json();
 
     if (!language || typeof language !== "string" || !code || typeof code !== "string") {
       return NextResponse.json({ error: "Missing language or code parameters" }, { status: 400 });
@@ -123,8 +134,10 @@ export async function POST(req: Request) {
       if (await getCachedResult(cacheKey)) {
         return NextResponse.json({ speculativeActive: true, alreadyCached: true });
       }
-      // Warm the cache in the background; never block the client.
-      void (async () => {
+      // Warm the cache after the response is sent; never block the client.
+      // `after()` keeps a serverless function alive until the work finishes,
+      // where a bare floating promise could be frozen mid-run.
+      const warm = async () => {
         try {
           const result = await execute(language, code, safeStdin, extraFiles);
           await setCachedResult(cacheKey, result);
@@ -133,19 +146,25 @@ export async function POST(req: Request) {
           // subsequent real run will surface the error to the user.
           console.error("Speculative execution failed:", err);
         }
-      })();
+      };
+      try {
+        after(warm);
+      } catch {
+        // Outside a request scope (unit tests, scripts) there is no `after`.
+        void warm();
+      }
       return NextResponse.json({ speculativeActive: true });
     }
 
-    // Explicit run — serve a speculative cache hit if present.
-    const cached = await getCachedResult(cacheKey);
+    // Explicit run: consume a matching warm-up if one is waiting. Explicit
+    // results are never cached, so the next Run executes for real.
+    const cached = await takeCachedResult(cacheKey);
     if (cached) {
       logEvent("execute", { language, ms: 0, cacheHit: true, truncated: false, files: extraFiles.length, outcome: "ok" });
-      return NextResponse.json({ ...cached, timeMs: 0, cacheHit: true });
+      return NextResponse.json({ ...cached, cacheHit: true });
     }
 
     const result = await execute(language, code, safeStdin, extraFiles);
-    await setCachedResult(cacheKey, result);
     logEvent("execute", { language: language.toLowerCase(), ms: result.timeMs, cacheHit: false, truncated: !!result.truncated, files: extraFiles.length, outcome: runOutcome(result) });
     return NextResponse.json(result);
   } catch (err) {

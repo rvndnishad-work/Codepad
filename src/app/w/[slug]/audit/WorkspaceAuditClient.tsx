@@ -54,28 +54,116 @@ type Props = {
  */
 const ACTION_META: Record<string, { label: string; tone: string }> = {
   PIPELINE_STAGE_CHANGED: {
-    label: "Pipeline stage changed",
-    tone: "border-indigo-300 bg-indigo-100 text-indigo-700 dark:border-indigo-500/30 dark:bg-indigo-500/[0.06] dark:text-indigo-300",
+    label: "Screening stage changed",
+    tone: "border-secondary/30 bg-secondary/[0.06] text-secondary",
   },
   BULK_TAKE_HOME_DISPATCHED: {
     label: "Bulk take-home dispatched",
-    tone: "border-amber-300 bg-amber-100 text-amber-800 dark:border-amber-500/30 dark:bg-amber-500/[0.06] dark:text-amber-300",
+    tone: "border-warning/30 bg-warning/[0.06] text-warning",
   },
   CANDIDATE_CSV_IMPORTED: {
     label: "Candidate CSV imported",
-    tone: "border-sky-300 bg-sky-100 text-sky-700 dark:border-sky-500/30 dark:bg-sky-500/[0.06] dark:text-sky-300",
+    tone: "border-secondary/30 bg-secondary/[0.06] text-secondary",
+  },
+  CANDIDATE_CREATED: {
+    label: "Candidate added",
+    tone: "border-success/30 bg-success/[0.06] text-success",
+  },
+  CANDIDATE_UPDATED: {
+    label: "Candidate details edited",
+    tone: "border-border bg-panel text-muted",
+  },
+  CANDIDATE_ARCHIVED: {
+    label: "Candidate archived",
+    tone: "border-border bg-panel text-muted",
+  },
+  CANDIDATE_RESTORED: {
+    label: "Candidate restored",
+    tone: "border-border bg-panel text-muted",
+  },
+  CANDIDATE_ERASED: {
+    label: "Candidate erased",
+    tone: "border-danger/30 bg-danger/[0.05] text-danger",
+  },
+  CANDIDATE_BATCH_CHANGED: {
+    label: "Candidate batch changed",
+    tone: "border-secondary/30 bg-secondary/[0.06] text-secondary",
+  },
+  CANDIDATE_OWNER_CHANGED: {
+    label: "Candidate owner changed",
+    tone: "border-secondary/30 bg-secondary/[0.06] text-secondary",
+  },
+  CANDIDATE_TAGS_CHANGED: {
+    label: "Candidate tags changed",
+    tone: "border-border bg-panel text-muted",
+  },
+  CANDIDATE_NOTE_ADDED: {
+    label: "Candidate note added",
+    tone: "border-border bg-panel text-muted",
+  },
+  CANDIDATE_NOTE_DELETED: {
+    label: "Candidate note deleted",
+    tone: "border-border bg-panel text-muted",
+  },
+  CANDIDATES_IMPORTED: {
+    label: "Candidates imported",
+    tone: "border-secondary/30 bg-secondary/[0.06] text-secondary",
+  },
+  BATCH_CREATED: {
+    label: "Batch created",
+    tone: "border-success/30 bg-success/[0.06] text-success",
+  },
+  BATCH_UPDATED: {
+    label: "Batch updated",
+    tone: "border-border bg-panel text-muted",
+  },
+  BATCH_DELETED: {
+    label: "Batch deleted",
+    tone: "border-danger/30 bg-danger/[0.05] text-danger",
+  },
+  AI_SCREENING_CREATED: {
+    label: "AI screening sent",
+    tone: "border-success/30 bg-success/[0.06] text-success",
+  },
+  AI_SCREENING_CANDIDATES_ADDED: {
+    label: "People added to an AI screening",
+    tone: "border-secondary/30 bg-secondary/[0.06] text-secondary",
+  },
+  AI_SCREENING_INVITE_RESENT: {
+    label: "AI screening invite resent",
+    tone: "border-border bg-panel text-muted",
+  },
+  AI_SCREENING_REMINDED: {
+    label: "AI screening reminder sent",
+    tone: "border-border bg-panel text-muted",
+  },
+  AI_SCREENING_CANCELLED: {
+    label: "AI screening invite cancelled",
+    tone: "border-warning/30 bg-warning/[0.06] text-warning",
+  },
+  AI_SCREENING_DELETED: {
+    label: "AI screening deleted",
+    tone: "border-danger/30 bg-danger/[0.05] text-danger",
+  },
+  AI_QUESTION_SET_SAVED: {
+    label: "AI question saved",
+    tone: "border-border bg-panel text-muted",
+  },
+  AI_QUESTION_SET_DELETED: {
+    label: "AI question deleted",
+    tone: "border-danger/30 bg-danger/[0.05] text-danger",
   },
   ATS_INTEGRATION_CONNECTED: {
     label: "ATS connected / updated",
-    tone: "border-emerald-300 bg-emerald-100 text-emerald-700 dark:border-emerald-500/30 dark:bg-emerald-500/[0.06] dark:text-emerald-300",
+    tone: "border-success/30 bg-success/[0.06] text-success",
   },
   ATS_INTEGRATION_DISCONNECTED: {
     label: "ATS disconnected",
-    tone: "border-rose-300 bg-rose-100 text-rose-700 dark:border-rose-500/30 dark:bg-rose-500/[0.05] dark:text-rose-300",
+    tone: "border-danger/30 bg-danger/[0.05] text-danger",
   },
   ATS_INTEGRATION_TEST_SENT: {
     label: "ATS test event sent",
-    tone: "border-slate-300 bg-slate-100 text-slate-700 dark:border-slate-500/30 dark:bg-slate-500/[0.06] dark:text-slate-300",
+    tone: "border-border bg-panel text-muted",
   },
 };
 
@@ -83,7 +171,7 @@ function labelFor(action: string): { label: string; tone: string } {
   return (
     ACTION_META[action] ?? {
       label: action.replace(/_/g, " ").toLowerCase(),
-      tone: "border-slate-300 bg-slate-100 text-slate-700 dark:border-slate-500/30 dark:bg-slate-500/[0.06] dark:text-slate-300",
+      tone: "border-border bg-panel text-muted",
     }
   );
 }
@@ -185,14 +273,11 @@ export default function WorkspaceAuditClient({
         <div className="space-y-1 min-w-0">
           <Link
             href={`/w/${slug}`}
-            className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-muted hover:text-fg"
+            className="inline-flex items-center gap-1.5 text-xs font-semibold text-muted hover:text-fg"
           >
             <ArrowLeft className="w-3 h-3" /> {workspaceName}
           </Link>
-          <h1 className="text-2xl font-semibold tracking-tight inline-flex items-center gap-2">
-            <ScrollText className="w-5 h-5 text-amber-500" />
-            Audit log
-          </h1>
+          <h1 className="text-2xl md:text-[26px] font-semibold tracking-[-0.02em] text-fg">Audit log</h1>
           <p className="text-sm text-muted leading-relaxed max-w-2xl">
             Workspace-mutating actions are recorded here for compliance review.
             Owners and admins can filter, paginate, and export to CSV.
@@ -205,7 +290,7 @@ export default function WorkspaceAuditClient({
             type="button"
             onClick={onExport}
             disabled={exporting || rows.length === 0}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-[11px] font-semibold text-fg border border-border bg-panel/40 hover:bg-panel disabled:opacity-50"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold text-fg border border-border bg-panel/40 hover:bg-panel disabled:opacity-50"
           >
             <Download className="w-3 h-3" />
             {exporting ? "Exporting…" : "Export CSV"}
@@ -217,11 +302,11 @@ export default function WorkspaceAuditClient({
       <section className="rounded-xl border border-border bg-surface/60 p-4 space-y-3">
         <div className="flex items-center gap-2">
           <Filter className="w-3.5 h-3.5 text-muted" />
-          <span className="text-[10px] font-semibold uppercase tracking-wider text-muted/70">
+          <span className="text-xs font-semibold text-muted/70">
             Filters
           </span>
           {filterCount > 0 && (
-            <span className="text-[10px] text-accent font-mono ml-1">
+            <span className="text-xs text-secondary font-mono ml-1">
               {filterCount} active
             </span>
           )}
@@ -229,7 +314,7 @@ export default function WorkspaceAuditClient({
             <button
               type="button"
               onClick={clearAll}
-              className="text-[10px] text-muted hover:text-fg ml-auto inline-flex items-center gap-1"
+              className="text-xs text-muted hover:text-fg ml-auto inline-flex items-center gap-1"
             >
               <X className="w-2.5 h-2.5" />
               Clear
@@ -239,7 +324,7 @@ export default function WorkspaceAuditClient({
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5">
           <div className="space-y-1">
-            <label className="text-[10px] font-semibold uppercase tracking-wider text-muted/70 flex items-center gap-1">
+            <label className="text-xs font-semibold text-muted/70 flex items-center gap-1">
               <UserIcon className="w-2.5 h-2.5" /> Actor
             </label>
             <select
@@ -256,7 +341,7 @@ export default function WorkspaceAuditClient({
             </select>
           </div>
           <div className="space-y-1">
-            <label className="text-[10px] font-semibold uppercase tracking-wider text-muted/70 flex items-center gap-1">
+            <label className="text-xs font-semibold text-muted/70 flex items-center gap-1">
               <TagIcon className="w-2.5 h-2.5" /> Action
             </label>
             <select
@@ -273,7 +358,7 @@ export default function WorkspaceAuditClient({
             </select>
           </div>
           <div className="space-y-1">
-            <label className="text-[10px] font-semibold uppercase tracking-wider text-muted/70 flex items-center gap-1">
+            <label className="text-xs font-semibold text-muted/70 flex items-center gap-1">
               <Calendar className="w-2.5 h-2.5" /> Since
             </label>
             <input
@@ -284,7 +369,7 @@ export default function WorkspaceAuditClient({
             />
           </div>
           <div className="space-y-1">
-            <label className="text-[10px] font-semibold uppercase tracking-wider text-muted/70 flex items-center gap-1">
+            <label className="text-xs font-semibold text-muted/70 flex items-center gap-1">
               <Calendar className="w-2.5 h-2.5" /> Until
             </label>
             <input
@@ -300,7 +385,7 @@ export default function WorkspaceAuditClient({
           <button
             type="button"
             onClick={apply}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-[11px] font-semibold bg-fg text-bg hover:opacity-90"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold bg-fg text-bg hover:opacity-90"
           >
             Apply
           </button>
@@ -328,12 +413,12 @@ export default function WorkspaceAuditClient({
                     <div className="min-w-0 flex-1 space-y-1">
                       <div className="flex items-center gap-2 flex-wrap">
                         <span
-                          className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider border ${meta.tone}`}
+                          className={`inline-flex items-center px-1.5 py-0.5 rounded text-xs font-bold border ${meta.tone}`}
                         >
                           {meta.label}
                         </span>
                         {r.targetType && (
-                          <span className="text-[10px] font-mono text-muted/70">
+                          <span className="text-xs font-mono text-muted/70">
                             {r.targetType}
                             {r.targetId ? `:${r.targetId.slice(0, 8)}…` : ""}
                           </span>
@@ -353,7 +438,7 @@ export default function WorkspaceAuditClient({
                         <MetaPreview meta={r.meta} />
                       )}
                     </div>
-                    <div className="text-[10px] text-muted/70 font-mono shrink-0 text-right">
+                    <div className="text-xs text-muted/70 font-mono shrink-0 text-right">
                       <div>{new Date(r.createdAt).toLocaleString()}</div>
                       {r.ip && <div className="mt-0.5">{r.ip}</div>}
                     </div>
@@ -367,7 +452,7 @@ export default function WorkspaceAuditClient({
 
       {/* Pagination */}
       {(rows.length > 0 || currentCursor) && (
-        <div className="flex items-center justify-between text-[11px] text-muted">
+        <div className="flex items-center justify-between text-xs text-muted">
           <div>{rows.length} row{rows.length === 1 ? "" : "s"} shown</div>
           <div className="flex items-center gap-2">
             {currentCursor && (
@@ -408,7 +493,7 @@ function MetaPreview({ meta }: { meta: Record<string, unknown> }) {
       {entries.map(([k, v]) => (
         <span
           key={k}
-          className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-bg/60 border border-border text-[10px] font-mono"
+          className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-bg/60 border border-border text-xs font-mono"
           title={`${k}: ${JSON.stringify(v)}`}
         >
           <span className="text-muted">{k}</span>
@@ -416,7 +501,7 @@ function MetaPreview({ meta }: { meta: Record<string, unknown> }) {
         </span>
       ))}
       {Object.keys(meta).length > 4 && (
-        <span className="text-[10px] text-muted/70 self-center">
+        <span className="text-xs text-muted/70 self-center">
           +{Object.keys(meta).length - 4} more
         </span>
       )}

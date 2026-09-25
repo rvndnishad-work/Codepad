@@ -6,7 +6,7 @@ import { Keyboard, X } from "lucide-react";
 
 const SHORTCUTS: Array<{ keys: string[]; label: string }> = [
   { keys: ["Ctrl/Cmd", "Enter"], label: "Run code" },
-  { keys: ["Ctrl/Cmd", "S"], label: "Save snippet" },
+  { keys: ["Ctrl/Cmd", "S"], label: "Save changes" },
   { keys: ["Ctrl/Cmd", "Shift", "F"], label: "Format active file (Prettier — not VS Code find-in-files)" },
   { keys: ["Ctrl/Cmd", "F"], label: "Find in current file" },
   { keys: ["F2"], label: "Rename active file" },
@@ -24,8 +24,21 @@ function Kbd({ children }: { children: React.ReactNode }) {
   );
 }
 
-export default function ShortcutsModal() {
+/** Event any control can dispatch to open the cheatsheet. */
+export const OPEN_SHORTCUTS_EVENT = "play:shortcuts";
+
+export function openShortcuts() {
+  window.dispatchEvent(new Event(OPEN_SHORTCUTS_EVENT));
+}
+
+export default function ShortcutsModal({ showTrigger = true }: { showTrigger?: boolean }) {
   const [open, setOpen] = useState(false);
+
+  useEffect(() => {
+    const onOpen = () => setOpen(true);
+    window.addEventListener(OPEN_SHORTCUTS_EVENT, onOpen);
+    return () => window.removeEventListener(OPEN_SHORTCUTS_EVENT, onOpen);
+  }, []);
 
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
@@ -50,6 +63,7 @@ export default function ShortcutsModal() {
 
   return (
     <>
+      {showTrigger && (
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
@@ -59,6 +73,7 @@ export default function ShortcutsModal() {
       >
         <Keyboard className="w-3.5 h-3.5" />
       </button>
+      )}
 
       {open && typeof document !== "undefined" && createPortal(
         <div

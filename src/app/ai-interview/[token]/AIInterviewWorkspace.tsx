@@ -58,6 +58,7 @@ import { useResizable } from "@/hooks/useResizable";
 import { useResizableHeight } from "@/hooks/useResizableHeight";
 import { javascript } from "@codemirror/lang-javascript";
 import MarkdownRenderer from "@/components/MarkdownRenderer";
+import TheoryRound from "./TheoryRound";
 
 import CustomMonacoEditor from "@/components/MonacoEditor";
 const RawMonacoEditor = dynamic(() => import("@monaco-editor/react"), { ssr: false });
@@ -82,6 +83,7 @@ import {
 type Message = {
   role: "user" | "assistant";
   text: string;
+  roundId?: string;
 };
 
 /** One round surfaced to the candidate (resolved server-side from its source). */
@@ -90,11 +92,13 @@ export type RoundView = {
   order: number;
   title: string;
   description: string;
-  kind: "frontend" | "backend" | "dsa";
+  kind: "frontend" | "backend" | "dsa" | "conversation" | "theory";
   language?: string;
   estimatedMinutes: number;
   files: Record<string, string>;
   status: string;
+  /** Theory rounds: how answers are given and whether spoken answers are recorded for replay. */
+  theory?: { answerMode: "voice" | "voice-only" | "typing"; recordAudio: boolean };
 };
 
 type Props = {
@@ -111,6 +115,8 @@ type Props = {
   };
   rounds: RoundView[];
   initialChat: Message[];
+  /** The server can turn recorded speech into text, for browsers that cannot. */
+  serverTranscribe: boolean;
 };
 
 /** Shape of GET /api/ai-interview/status — the honest health probe. */
@@ -134,6 +140,8 @@ const ROUND_ICON: Record<string, React.ReactNode> = {
   frontend: <Monitor className="w-3.5 h-3.5" />,
   backend: <Server className="w-3.5 h-3.5" />,
   dsa: <Binary className="w-3.5 h-3.5" />,
+  conversation: <MessageSquare className="w-3.5 h-3.5" />,
+  theory: <Mic className="w-3.5 h-3.5" />,
 };
 
 /** Extract a plain code map from a Sandpack files object. */
@@ -148,7 +156,7 @@ function extractCodeMap(files: Record<string, unknown>): Record<string, string> 
   return codeMap;
 }
 
-export default function AIInterviewWorkspace({ session, rounds, initialChat }: Props) {
+export default function AIInterviewWorkspace({ session, rounds, initialChat, serverTranscribe }: Props) {
   const [activeRoundId, setActiveRoundId] = useState(rounds[0]?.roundId ?? "");
   // Per-round file state. The active round's files are what we send to the AI
   // and to grading; the SurfaceBridge keeps this synced as the candidate edits.
@@ -216,6 +224,12 @@ export default function AIInterviewWorkspace({ session, rounds, initialChat }: P
   const activeRound = rounds.find((r) => r.roundId === activeRoundId) ?? rounds[0];
   const activeFiles = roundFiles[activeRoundId] ?? {};
   const isMultiRound = rounds.length > 1;
+  const allTalk = rounds.every((r) => r.kind === "conversation" || r.kind === "theory");
+  // A theory round brings its own interviewer and question screen, so the
+  // question pane, voice dock and chat stay out of its way.
+  const theoryActive = activeRound?.kind === "theory";
+  const paneHidden = chatCollapsed || theoryActive;
+  const nextRound = rounds[rounds.findIndex((r) => r.roundId === activeRound?.roundId) + 1] ?? null;
 
   const chatContainerRef = useRef<HTMLDivElement>(null);
   const chatEndRef = useRef<HTMLDivElement>(null);
@@ -478,13 +492,19 @@ export default function AIInterviewWorkspace({ session, rounds, initialChat }: P
       window.speechSynthesis.getVoices();
       const handleVoicesChanged = () => window.speechSynthesis.getVoices();
       window.speechSynthesis.addEventListener("voiceschanged", handleVoicesChanged);
-      if (chat.length === 0) void sendInitialGreeting();
       return () => window.speechSynthesis.removeEventListener("voiceschanged", handleVoicesChanged);
-    } else if (chat.length === 0) {
-      void sendInitialGreeting();
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // The chat interviewer greets once, on the first round that uses the chat.
+  // Theory rounds talk through their own screen, so they never trigger it.
+  const greetedRef = useRef(false);
+  useEffect(() => {
+    if (greetedRef.current || !activeRound || activeRound.kind === "theory") return;
+    greetedRef.current = true;
+    if (chat.length === 0) void sendInitialGreeting();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeRoundId]);
 
   // Native Speech Recognition — continuous + debounced send so natural pauses don't cut you off.
   // Previous: continuous=false + instant send on first result => half-sentence cut on 600ms pause.
@@ -743,7 +763,7 @@ export default function AIInterviewWorkspace({ session, rounds, initialChat }: P
     if (!text.trim() || sending) return;
     const userMessage = text.trim();
     setSending(true);
-    setChat((prev) => [...prev, { role: "user", text: userMessage }]);
+    setChat((prev) => [...prev, { role: "user", text: userMessage, roundId: activeRoundId }]);
     try {
       const res = await postMessage(userMessage);
       if (!res.ok) {
@@ -832,7 +852,15 @@ export default function AIInterviewWorkspace({ session, rounds, initialChat }: P
                 Assessment Completed
               </h2>
               <p className="text-xs text-muted max-w-md mx-auto leading-relaxed font-medium">
-                Thank you for completing the technical round{isMultiRound ? "s" : ""}, <span className="text-fg font-extrabold">{session.candidateName}</span>! Your code submissions, editor workflows, and dictation history across {rounds.length} round{rounds.length === 1 ? "" : "s"} have been successfully audited and graded by our AI Agent.
+                {allTalk ? (
+                  <>
+                    Thank you for completing the interview, <span className="text-fg font-extrabold">{session.candidateName}</span>! Your answers across {rounds.length} round{rounds.length === 1 ? "" : "s"} have been saved and sent to the hiring team.
+                  </>
+                ) : (
+                  <>
+                    Thank you for completing the technical round{isMultiRound ? "s" : ""}, <span className="text-fg font-extrabold">{session.candidateName}</span>! Your code submissions, editor workflows, and dictation history across {rounds.length} round{rounds.length === 1 ? "" : "s"} have been successfully audited and graded by our AI Agent.
+                  </>
+                )}
               </p>
             </div>
           </div>
@@ -886,7 +914,7 @@ export default function AIInterviewWorkspace({ session, rounds, initialChat }: P
 
           {/* Gracious Reassurance Text */}
           <div className="text-center bg-bg/40 border border-border/40 rounded-2xl p-4 text-[11px] leading-relaxed text-muted font-medium">
-            💼 Your technical scores, file templates, terminal execution records, and dictation sessions are securely compiled. The engineering hiring panel will review your profile and connect with you on next steps shortly. Best of luck!
+            💼 {allTalk ? "The hiring team will review your interview and contact you about next steps. Best of luck!" : "Your technical scores, file templates, terminal execution records, and dictation sessions are securely compiled. The engineering hiring panel will review your profile and connect with you on next steps shortly. Best of luck!"}
           </div>
 
           {/* Premium Finalize & Exit Button */}
@@ -905,18 +933,18 @@ export default function AIInterviewWorkspace({ session, rounds, initialChat }: P
   return (
     <div className="flex flex-col h-screen bg-bg text-fg font-sans overflow-hidden">
       {/* Workspace Header top bar */}
-      <header className="h-14 border-b border-border bg-surface/40 backdrop-blur-md px-6 flex items-center justify-between shrink-0 relative z-30">
-        <div className="flex items-center gap-3.5 min-w-0">
+      <header className="h-14 border-b border-border bg-surface/40 backdrop-blur-md px-3 sm:px-6 flex items-center justify-between gap-2 shrink-0 relative z-30">
+        <div className="flex items-center gap-2.5 sm:gap-3.5 min-w-0">
           <button
             type="button"
             onClick={() => setChatCollapsed(!chatCollapsed)}
             title={chatCollapsed ? "Expand Question Pane" : "Collapse Question Pane"}
-            className="flex items-center justify-center p-2 rounded-xl border border-border bg-bg hover:bg-elevated text-muted hover:text-fg transition shrink-0 cursor-pointer"
+            className={`${theoryActive ? "hidden" : "flex"} items-center justify-center p-2 rounded-xl border border-border bg-bg hover:bg-elevated text-muted hover:text-fg transition shrink-0 cursor-pointer`}
           >
             <PanelBottom className={`w-4 h-4 transition-transform duration-300 ${chatCollapsed ? "-rotate-90" : "rotate-90"}`} />
           </button>
 
-          <span className="text-muted/30">|</span>
+          <span className={`text-muted/30 ${theoryActive ? "hidden" : ""}`}>|</span>
           <Link href="/" className="flex items-center gap-2 shrink-0">
             <div className="w-7 h-7 rounded-lg bg-accent/20 border border-accent/35 flex items-center justify-center text-accent font-black text-sm">
               C
@@ -926,13 +954,14 @@ export default function AIInterviewWorkspace({ session, rounds, initialChat }: P
             </span>
           </Link>
           <span className="text-muted/30 hidden sm:inline">|</span>
-          <div className="min-w-0">
-            <span className="text-[10px] font-black uppercase text-muted tracking-widest block">AI Technical Round</span>
+          {/* Too tight for the role on a phone; the invite already named it. */}
+          <div className="min-w-0 hidden sm:block">
+            <span className="text-[10px] font-black uppercase text-muted tracking-widest block">{allTalk ? "AI Interview" : "AI Technical Round"}</span>
             <span className="text-xs font-bold text-fg truncate block">{session.positionTitle}</span>
           </div>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 sm:gap-3 shrink-0">
           {filesBytes > FILES_JSON_WARN_BYTES && (
             <div
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-[11px] font-bold tabular-nums transition-colors ${
@@ -1017,10 +1046,11 @@ export default function AIInterviewWorkspace({ session, rounds, initialChat }: P
           <button
             onClick={() => handleSubmitAssessment()}
             disabled={submitting}
-            className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-black uppercase tracking-wider transition shadow-lg active:scale-95 disabled:opacity-50 cursor-pointer"
+            className="flex items-center gap-1.5 px-3 sm:px-4 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-black uppercase tracking-wider transition shadow-lg active:scale-95 disabled:opacity-50 cursor-pointer"
           >
             {submitting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <CheckCircle className="w-3.5 h-3.5" />}
-            <span>Complete Assessment</span>
+            <span className="hidden sm:inline">Complete Assessment</span>
+            <span className="sm:hidden">Submit</span>
           </button>
 
           <button
@@ -1041,11 +1071,11 @@ export default function AIInterviewWorkspace({ session, rounds, initialChat }: P
       <main className="flex-1 flex min-h-0 overflow-hidden relative">
         {/* Left Pane: Question Pane - collapsible & draggable */}
         <div
-          style={{ width: chatCollapsed ? "0px" : `${effChatW}px` }}
-          className={`transition-all duration-300 flex flex-col min-w-0 border-r border-border bg-surface/40 ${chatCollapsed ? "opacity-0 pointer-events-none border-r-0 shrink-0" : "shrink-0"}`}
+          style={{ width: paneHidden ? "0px" : `${effChatW}px` }}
+          className={`transition-all duration-300 flex flex-col min-w-0 border-r border-border bg-surface/40 ${paneHidden ? "opacity-0 pointer-events-none border-r-0 shrink-0" : "shrink-0"}`}
         >
           <div className="px-5 py-3.5 border-b border-border bg-surface/60 flex items-center justify-between shrink-0 h-14">
-            <span className="text-[10px] font-black uppercase text-accent tracking-widest">Assessment Question</span>
+            <span className="text-[10px] font-black uppercase text-accent tracking-widest">{activeRound.kind === "conversation" ? "About this round" : "Assessment Question"}</span>
             <button
               type="button"
               onClick={() => setChatCollapsed(true)}
@@ -1082,7 +1112,7 @@ export default function AIInterviewWorkspace({ session, rounds, initialChat }: P
         </div>
 
         {/* Drag handle */}
-        {!chatCollapsed && (
+        {!paneHidden && (
           <div
             onPointerDown={onChatDrag}
             title="Drag to resize chat"
@@ -1121,7 +1151,7 @@ export default function AIInterviewWorkspace({ session, rounds, initialChat }: P
 
           {/* Active round banner — h-14 so its baseline matches the question
               pane header on the left and the panes read as one aligned row. */}
-          <div className="h-14 px-4 border-b border-border bg-surface/40 flex items-center gap-2 shrink-0">
+          <div className={`h-14 px-4 border-b border-border bg-surface/40 items-center gap-2 shrink-0 ${theoryActive ? "hidden sm:flex" : "flex"}`}>
             <span className="text-accent">{ROUND_ICON[activeRound.kind]}</span>
             <span className="text-[11px] font-bold text-fg truncate">{activeRound.title}</span>
             <span className="text-[9px] font-black uppercase tracking-wider text-muted bg-bg border border-border px-1.5 py-0.5 rounded ml-1">
@@ -1150,11 +1180,45 @@ export default function AIInterviewWorkspace({ session, rounds, initialChat }: P
                 ? "Interviewer paused — this workspace is out of AI interview credits. Please contact your recruiter."
                 : aiStatus?.expired
                   ? "Time is up for this session — submit your assessment to finish."
-                  : "The AI interviewer is temporarily in offline mode — replies come from a limited script and may not fit your answers."}
+                  : theoryActive
+                    ? "The AI interviewer is in offline mode, so follow-up questions are limited. Your answers are saved as usual."
+                    : "The AI interviewer is temporarily in offline mode — replies come from a limited script and may not fit your answers."}
             </div>
           )}
 
           <div className="flex-1 min-h-0 overflow-hidden">
+            {activeRound.kind === "theory" ? (
+              <TheoryRound
+                key={activeRound.roundId}
+                inviteToken={session.inviteToken}
+                roundId={activeRound.roundId}
+                title={activeRound.title}
+                brief={activeRound.description}
+                status={activeRound.status}
+                answerMode={activeRound.theory?.answerMode ?? "voice"}
+                recordAudio={activeRound.theory?.recordAudio ?? false}
+                serverTranscribe={serverTranscribe}
+                disabled={completed || outOfCredits || !!aiStatus?.expired}
+                finishLabel={nextRound ? "Next round" : "Finish and submit"}
+                finishing={submitting}
+                onFinish={() => (nextRound ? setActiveRoundId(nextRound.roundId) : void handleSubmitAssessment())}
+              />
+            ) : activeRound.kind === "conversation" ? (
+              <ConversationPane
+                key={activeRound.roundId}
+                chat={chat}
+                sending={sending}
+                input={input}
+                setInput={setInput}
+                onSend={handleSend}
+                started={chat.some((m) => m.roundId === activeRound.roundId)}
+                onStart={() => void handleSendText("I am ready to start this round.")}
+                disabled={completed || outOfCredits || !!aiStatus?.expired}
+                finishLabel={nextRound ? "Finish round" : "Finish and submit"}
+                finishing={submitting}
+                onFinish={() => (nextRound ? setActiveRoundId(nextRound.roundId) : void handleSubmitAssessment())}
+              />
+            ) : (
             <RoundSurface
               key={activeRound.roundId}
               round={activeRound}
@@ -1165,6 +1229,7 @@ export default function AIInterviewWorkspace({ session, rounds, initialChat }: P
               setOutputView={setOutputView}
               reservedLeft={chatCollapsed ? 0 : effChatW + 6}
             />
+            )}
           </div>
         </div>
       </main>
@@ -1212,7 +1277,7 @@ export default function AIInterviewWorkspace({ session, rounds, initialChat }: P
       )}
 
       {/* Centralized AI Voice Dock */}
-      <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-4 px-4 py-2.5 rounded-full bg-surface/90 border border-violet-500/25 backdrop-blur-md shadow-[0_16px_48px_rgba(124,58,237,0.3),0_4px_16px_rgba(0,0,0,0.35)] ring-1 ring-inset ring-white/5">
+      <div className={`${theoryActive ? "hidden" : "flex"} fixed bottom-6 left-1/2 -translate-x-1/2 z-50 items-center gap-4 px-4 py-2.5 rounded-full bg-surface/90 border border-violet-500/25 backdrop-blur-md shadow-[0_16px_48px_rgba(124,58,237,0.3),0_4px_16px_rgba(0,0,0,0.35)] ring-1 ring-inset ring-white/5`}>
         {/* Custom animations inject */}
         <style dangerouslySetInnerHTML={{ __html: `
           @keyframes orb-active {
@@ -1404,7 +1469,7 @@ export default function AIInterviewWorkspace({ session, rounds, initialChat }: P
       </div>
 
       {/* Floating Voice/Speech Rate Settings Popover Panel centered above the Dock */}
-      {voiceSettingsOpen && (
+      {voiceSettingsOpen && !theoryActive && (
         <div
           style={{ boxShadow: "0 24px 64px rgba(0, 0, 0, 0.3)" }}
           className="fixed bottom-24 left-1/2 -translate-x-1/2 z-50 w-[320px] bg-surface/95 border border-border/80 backdrop-blur-lg rounded-2xl p-4 flex flex-col gap-4 shadow-2xl animate-in fade-in slide-in-from-bottom-5 duration-200"
@@ -1514,7 +1579,7 @@ export default function AIInterviewWorkspace({ session, rounds, initialChat }: P
       )}
 
       {/* Floating Chat Overlay Panel — user choosable dock: left / center / right */}
-      {floatingChatOpen && (
+      {floatingChatOpen && activeRound.kind !== "conversation" && !theoryActive && (
         <div
           style={{ boxShadow: "0 24px 64px rgba(0, 0, 0, 0.3)" }}
           className={`fixed bottom-24 z-50 w-[400px] max-w-[92vw] h-[560px] bg-surface/95 border border-border/80 backdrop-blur-lg rounded-3xl flex flex-col min-w-0 shadow-2xl animate-in fade-in slide-in-from-bottom-5 duration-300 overflow-hidden ${
@@ -1682,6 +1747,123 @@ export default function AIInterviewWorkspace({ session, rounds, initialChat }: P
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+/**
+ * A conversation round: the chat is the whole surface. No editor, no files;
+ * the interviewer works through the recruiter's questions one at a time.
+ */
+function ConversationPane({
+  chat,
+  sending,
+  input,
+  setInput,
+  onSend,
+  started,
+  onStart,
+  disabled,
+  finishLabel,
+  finishing,
+  onFinish,
+}: {
+  chat: Message[];
+  sending: boolean;
+  input: string;
+  setInput: (v: string) => void;
+  onSend: (e: React.FormEvent) => void;
+  started: boolean;
+  onStart: () => void;
+  disabled: boolean;
+  finishLabel: string;
+  finishing: boolean;
+  onFinish: () => void;
+}) {
+  const endRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    endRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
+  }, [chat.length, sending]);
+
+  return (
+    <div className="h-full flex flex-col bg-bg">
+      <div className="flex-1 overflow-y-auto px-4 sm:px-8 py-6">
+        <div className="max-w-2xl mx-auto flex flex-col gap-4">
+          {chat.map((msg, i) => {
+            const isAI = msg.role === "assistant";
+            return (
+              <div key={i} className={`flex gap-2.5 max-w-[88%] ${isAI ? "" : "ml-auto flex-row-reverse"}`}>
+                <div
+                  className={`w-8 h-8 rounded-lg shrink-0 flex items-center justify-center ${
+                    isAI ? "bg-accent/10 border border-accent/25 text-accent" : "bg-elevated/40 border border-border text-muted"
+                  }`}
+                >
+                  {isAI ? <Bot className="w-4 h-4" /> : <User className="w-4 h-4" />}
+                </div>
+                <div
+                  className={`px-4 py-3 rounded-2xl border text-sm leading-relaxed break-words [overflow-wrap:anywhere] ${
+                    isAI ? "bg-surface border-border text-fg" : "bg-accent/10 border-accent/25 text-fg"
+                  }`}
+                >
+                  {isAI ? <MarkdownRenderer content={msg.text} className="text-sm prose-p:my-1.5 prose-p:text-fg" /> : <div className="whitespace-pre-line">{msg.text}</div>}
+                </div>
+              </div>
+            );
+          })}
+          {sending && (
+            <div className="flex items-center gap-2 text-xs text-muted">
+              <Bot className="w-4 h-4 text-accent animate-pulse" /> The interviewer is thinking
+            </div>
+          )}
+          {!started && !sending && (
+            <div className="rounded-2xl border border-dashed border-border p-5 text-center flex flex-col items-center gap-3">
+              <p className="text-sm text-muted">This round is a conversation. The interviewer asks a few questions, one at a time. Answer in your own words; there is no code.</p>
+              <button
+                type="button"
+                onClick={onStart}
+                disabled={disabled}
+                className="px-4 py-2 rounded-xl bg-accent text-bg text-sm font-bold hover:bg-accent-soft disabled:opacity-50 cursor-pointer"
+              >
+                Start this round
+              </button>
+            </div>
+          )}
+          <div ref={endRef} />
+        </div>
+      </div>
+      {/* pb-24 keeps the answer box clear of the voice dock pinned at the bottom. */}
+      <div className="border-t border-border bg-surface/60 px-4 sm:px-8 pt-3 pb-24">
+        <form onSubmit={onSend} className="max-w-2xl mx-auto flex items-end gap-2">
+          <textarea
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && !e.shiftKey) {
+                e.preventDefault();
+                (e.currentTarget.form as HTMLFormElement | null)?.requestSubmit();
+              }
+            }}
+            rows={2}
+            placeholder="Type your answer. Enter sends, Shift+Enter adds a line."
+            disabled={sending || disabled}
+            aria-label="Your answer"
+            className="flex-1 resize-none px-4 py-3 rounded-xl border border-border bg-bg text-sm text-fg focus:outline-none focus:border-accent"
+          />
+          <button type="submit" disabled={sending || disabled || !input.trim()} className="h-11 px-4 rounded-xl bg-accent text-bg text-sm font-bold disabled:opacity-40 cursor-pointer inline-flex items-center gap-1.5">
+            <Send className="w-4 h-4" /> Send
+          </button>
+        </form>
+        <div className="max-w-2xl mx-auto flex justify-end pt-2">
+          <button
+            type="button"
+            onClick={onFinish}
+            disabled={finishing || disabled}
+            className="text-xs font-bold text-emerald-600 dark:text-emerald-400 hover:underline disabled:opacity-50 cursor-pointer"
+          >
+            {finishLabel}
+          </button>
+        </div>
+      </div>
     </div>
   );
 }

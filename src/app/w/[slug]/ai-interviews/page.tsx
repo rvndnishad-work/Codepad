@@ -1,390 +1,90 @@
-import { auth } from "@/lib/auth";
+import { redirect } from "next/navigation";
+import { loadAiAccess } from "./_lib";
+import {
+  latestSessionForCandidate,
+  loadCreditSummary,
+  loadQueue,
+  loadQueueCounts,
+  loadScreeningOptions,
+} from "@/lib/ai-interview/console-server";
+import { parseQueueSort, parseQueueView } from "@/lib/ai-interview/console";
 import { prisma } from "@/lib/prisma";
-import { notFound, redirect } from "next/navigation";
-import { validatePageAccess } from "@/lib/settings";
-import Link from "next/link";
-import { Lock, Sparkles } from "lucide-react";
-import { getWorkspaceCredits } from "@/lib/ai-interview/credits";
-import { effectivePlanAllowsAiScreening } from "@/lib/billing/trial";
-import { listTemplatesForWorkspace } from "@/lib/ai-interview/template-resolver";
-import { getStarterFilesByRoundId, inferStarterForSubmission } from "@/lib/ai-interview/round-content";
-import { diffFiles, diffStats, type FileDiff, type DiffStats } from "@/lib/ai-interview/diff";
-import { computeV2Score } from "@/lib/ai-interview/scoring-v2";
-import { canMember } from "@/lib/permissions";
-import AIInterviewRecruiterConsole from "./AIInterviewRecruiterConsole";
+import { AiHeader } from "./_components/kit";
+import ReviewQueue from "./_components/ReviewQueue";
 
 type Props = {
   params: Promise<{ slug: string }>;
-  searchParams: Promise<{ page?: string; candidate?: string; search?: string; status?: string; batch?: string; sort?: string }>;
+  searchParams: Promise<{ view?: string; q?: string; screening?: string; sort?: string; page?: string; candidate?: string; search?: string }>;
 };
 
-const PAGE_SIZE = 25;
-const VALID_SORTS = new Set(["newest", "score_desc", "score_asc", "name_asc"]);
+export const metadata = { title: "AI screening — Interviewpad", robots: { index: false, follow: false } };
 
-export const metadata = {
-  title: "AI Screening — Workspace",
-  robots: { index: false, follow: false },
-};
-
-export default async function WorkspaceAiInterviewsPage({ params, searchParams }: Props) {
+export default async function AiScreeningReviewPage({ params, searchParams }: Props) {
   const { slug } = await params;
   const sp = await searchParams;
-  const page = Math.max(1, Number(sp.page) || 1);
-  const skip = (page - 1) * PAGE_SIZE;
-  const search = (sp.search ?? "").trim();
-  const statusFilter = (sp.status ?? "ALL").toUpperCase();
-  const batchFilter = sp.batch ?? "ALL";
-  const sort = VALID_SORTS.has(sp.sort ?? "") ? (sp.sort as string) : "newest";
-  const session = await auth().catch(() => null);
-  await validatePageAccess("/w/ai-screening", session);
-  if (!session?.user?.id) {
-    redirect(`/login?next=${encodeURIComponent(`/w/${slug}/ai-interviews`)}`);
+  const base = `/w/${slug}/ai-interviews`;
+  const access = await loadAiAccess(slug, base);
+  if ("gate" in access) return access.gate;
+  const wsId = access.workspace.id;
+
+  // Older links opened the console filtered to one candidate: open their latest report.
+  if (sp.candidate) {
+    const id = await latestSessionForCandidate(wsId, sp.candidate);
+    redirect(id ? `${base}/${id}` : base);
   }
 
-  const workspace = await prisma.workspace.findUnique({
-    where: { slug },
-    select: {
-      id: true,
-      name: true,
-      slug: true,
-      planName: true,
-      trialEndsAt: true,
-      stripeSubscriptionId: true,
-      allowExternalMcp: true,
-      members: { select: { userId: true, role: true, permissions: true } },
-    },
-  });
-  if (!workspace) notFound();
+  const view = parseQueueView(sp.view);
+  const query = {
+    view,
+    q: (sp.q ?? sp.search ?? "").trim(),
+    screening: sp.screening ?? "all",
+    sort: parseQueueSort(sp.sort, view),
+    page: Math.max(1, Number(sp.page) || 1),
+  };
 
-  const member = workspace.members.find((m) => m.userId === session.user.id);
-  if (!member) redirect("/dashboard");
-
-  // Plan gate — trial workspaces (IP-91) pass. Friendly upgrade prompt on fail.
-  if (!effectivePlanAllowsAiScreening(workspace)) {
-    return (
-      <div className="rounded-3xl border border-border bg-surface p-10 text-center flex flex-col items-center gap-5 max-w-2xl mx-auto">
-        <div className="w-14 h-14 rounded-2xl bg-indigo-500/10 border border-indigo-500/25 flex items-center justify-center text-indigo-400">
-          <Lock className="w-6 h-6" />
-        </div>
-        <div className="space-y-2">
-          <h2 className="text-xl font-black text-fg flex items-center justify-center gap-2">
-            <Sparkles className="w-5 h-5 text-accent" />
-            AI Screening is a Growth feature
-          </h2>
-          <p className="text-sm text-muted leading-relaxed max-w-md">
-            Upgrade this workspace to <span className="font-bold text-fg">Growth</span> or <span className="font-bold text-fg">Enterprise</span> to unlock automated AI-driven candidate screenings. Each completed screening uses one credit.
-          </p>
-        </div>
-        <Link
-          href={`/w/${slug}?section=billing`}
-          className="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-xl bg-accent hover:bg-accent-soft text-bg text-xs font-black uppercase tracking-wider transition shadow-md"
-        >
-          View plans &amp; upgrade
-        </Link>
-      </div>
-    );
-  }
-
-  const canCreate = await canMember(member, "interview:conduct");
-
-  // Server-side filtering for 100s scale — URL-driven so HR can share/bookmark filtered views.
-  // Previously this was client-side over the current page only, which missed candidates on other pages.
-  const sessionWhere: Record<string, unknown> = { workspaceId: workspace.id };
-  if (search) {
-    (sessionWhere as any).OR = [
-      { candidateName: { contains: search, mode: "insensitive" } },
-      { candidateEmail: { contains: search, mode: "insensitive" } },
-      { positionTitle: { contains: search, mode: "insensitive" } },
-    ];
-  }
-  if (statusFilter !== "ALL") (sessionWhere as any).status = statusFilter;
-  if (batchFilter !== "ALL") (sessionWhere as any).batchId = batchFilter;
-
-  const sessionOrderBy: Record<string, string> =
-    sort === "score_desc" ? { score: "desc" } :
-    sort === "score_asc" ? { score: "asc" } :
-    sort === "name_asc" ? { candidateName: "asc" } :
-    { createdAt: "desc" };
-
-  const [rawSessions, totalSessions, credits, usedThisMonth, templates, externalMcpServers, candidateRows] = await Promise.all([
+  const [credits, counts, queue, screenings, expiring] = await Promise.all([
+    loadCreditSummary(wsId),
+    loadQueueCounts(wsId),
+    loadQueue(wsId, query),
+    loadScreeningOptions(wsId),
+    // Unstarted invites closing in the next two days, for the reminder nudge.
     prisma.aIInterviewSession.findMany({
-      where: sessionWhere as any,
-      orderBy: sessionOrderBy as any,
-      skip,
-      take: PAGE_SIZE,
-      include: {
-        rounds: { orderBy: { order: "asc" } },
-        batch: { select: { id: true, positionTitle: true } },
-      },
-    }),
-    prisma.aIInterviewSession.count({ where: sessionWhere as any }),
-    getWorkspaceCredits(workspace.id),
-    prisma.aIInterviewCreditLedger.aggregate({
       where: {
-        workspaceId: workspace.id,
-        kind: "CONSUMPTION",
-        createdAt: { gte: startOfMonth() },
+        workspaceId: wsId,
+        practice: false,
+        status: "PENDING",
+        startedAt: null,
+        reminderSentAt: null,
+        expiresAt: { gt: new Date(), lte: new Date(Date.now() + 2 * 86_400_000) },
       },
-      _sum: { amount: true },
-    }),
-    listTemplatesForWorkspace(workspace.id),
-    // Available enabled external MCP servers + their current template bindings.
-    // We only surface enabled servers in the UI — disabled ones can't be bound.
-    prisma.externalMcpServer.findMany({
-      where: { workspaceId: workspace.id, enabled: true },
-      select: {
-        id: true,
-        name: true,
-        templateBindings: { select: { templateId: true } },
-      },
-      orderBy: { name: "asc" },
-    }),
-    // CRM candidates available to invite into a screening batch. Exclude
-    // rejected/archived dispositions and anyone without an email (can't invite).
-    prisma.candidate.findMany({
-      where: {
-        workspaceId: workspace.id,
-        email: { not: null },
-        status: { notIn: ["rejected", "archived"] },
-      },
-      select: { id: true, name: true, email: true, stage: true },
-      orderBy: { name: "asc" },
-      take: 500,
+      select: { id: true, candidateName: true, positionTitle: true },
+      orderBy: { expiresAt: "asc" },
+      take: 50,
     }),
   ]);
 
-  const totalPages = Math.max(1, Math.ceil(totalSessions / PAGE_SIZE));
-
-  // Stats are workspace-wide, not page-local — recruiters expect "total"
-  // numbers in the header tiles even when paginating deep into history.
-  const completedAgg = await prisma.aIInterviewSession.aggregate({
-    where: { workspaceId: workspace.id, status: "COMPLETED" },
-    _count: true,
-    _avg: { score: true },
-  });
-  const totalScreened = completedAgg._count;
-  const avgScore = Math.round(completedAgg._avg.score ?? 0);
-
-  // One resolver pass for every listed session (batched challenge lookups).
-  // Snapshot-first: merged starters across all rounds so multi-round phantoms are impossible.
-  const starterMap = new Map<string, Record<string, string>>();
-  for (const s of rawSessions) {
-    try {
-      const parsedFilesEarly: Record<string, string> = (() => { try { return JSON.parse(s.filesJson || "{}"); } catch { return {}; }})();
-      if (Object.keys(parsedFilesEarly).length === 0) continue;
-      const m = await getStarterFilesByRoundId(s as never, workspace.id);
-      const merged: Record<string, string> = {};
-      for (const files of m.values()) Object.assign(merged, files);
-      if (Object.keys(merged).length > 0) {
-        starterMap.set(s.id, merged);
-      } else {
-        // Historical session without snapshot and live fallback yielded sentinel
-        // (e.g. old playground batch). Infer best matching template so zero-effort
-        // (submitted == starter) shows 0 files changed instead of phantom 4 NEW FILEs.
-        try {
-          const inferred = await inferStarterForSubmission(parsedFilesEarly, workspace.id);
-          if (inferred && Object.keys(inferred).length > 0) starterMap.set(s.id, inferred);
-        } catch {}
-      }
-    } catch {
-      /* starter unknown */
-    }
-  }
-  const mappedSessions = await Promise.all(
-    rawSessions.map(async (s) => {
-    let parsedHistory: unknown[] = [];
-    try {
-      parsedHistory = JSON.parse(s.chatHistory || "[]");
-    } catch {
-      parsedHistory = [];
-    }
-
-    let parsedFiles: Record<string, string> = {};
-    try {
-      parsedFiles = JSON.parse(s.filesJson || "{}");
-    } catch {
-      parsedFiles = {};
-    }
-
-    // Starter-vs-submitted diff so recruiters can see exactly what the
-    // candidate wrote. Uses the round-aware starter resolver
-    // (scaffold / challenge / playground rounds all covered).
-    let fileDiffs: FileDiff[] | null = null;
-    let changeStats: DiffStats | null = null;
-    let liveV2Score: number | null = null;
-    let liveV2Ratings: { CodeQuality: number; ProblemSolving: number; Communication: number } | null = null;
-    try {
-      const starter = starterMap.get(s.id);
-      if (starter && Object.keys(starter).length > 0 && Object.keys(parsedFiles).length > 0) {
-        fileDiffs = diffFiles(starter, parsedFiles);
-        changeStats = diffStats(fileDiffs);
-        // V2 live recompute — fixes historical 35% for single-line (1 meaningful => 7)
-        // Apply on page so old rows heal without DB backfill; future rows already stored via grade.ts
-        if (fileDiffs) {
-          const addedCode = fileDiffs.map((d) => d.added.join("\n")).join("\n");
-          const meaningfulLines = fileDiffs.reduce((n, d) => n + d.added.filter((l) => l.trim().length >= 3 && /[A-Za-z0-9]/.test(l) && !/^[\{\}\[\]\(\)<>;:,]+$/.test(l.trim())).length, 0);
-          const v2 = computeV2Score({
-            meaningfulLines,
-            addedLines: changeStats?.addedLines ?? 0,
-            filesChanged: changeStats?.filesChanged ?? 0,
-            addedCode,
-            templateId: s.templateId,
-            chatHistory: Array.isArray(parsedHistory) ? (parsedHistory as { role: "user" | "assistant"; text: string }[]) : [],
-          });
-          liveV2Score = v2.score;
-          liveV2Ratings = { CodeQuality: v2.codeQuality, ProblemSolving: v2.problemSolving, Communication: v2.communication };
-        }
-      }
-    } catch {
-      fileDiffs = null;
-    }
-
-    let parsedRatings = { CodeQuality: 0, ProblemSolving: 0, Communication: 0 };
-    if (s.ratings) {
-      try {
-        parsedRatings = JSON.parse(s.ratings);
-      } catch {
-        // ignore
-      }
-    }
-    // V2 live correction for historical inflated scores (single line => 35)
-    // If fileDiff shows <=4 meaningful lines and V2 says <=16, prefer V2
-    let displayScore: number | null = s.score;
-    let displayRatings = parsedRatings;
-    if (liveV2Score !== null && s.status === "COMPLETED" && liveV2Score <= 16 && (s.score ?? 0) >= 30) {
-      displayScore = liveV2Score;
-      if (liveV2Ratings) displayRatings = liveV2Ratings;
-    }
-
-    // Per-round summaries (multi-round batches). Files parsed for the per-round
-    // viewer; everything else is display metadata kept off the heavy path.
-    const rounds = (s.rounds ?? []).map((r) => {
-      let roundFiles: Record<string, string> = {};
-      try {
-        roundFiles = JSON.parse(r.filesJson || "{}");
-      } catch {
-        roundFiles = {};
-      }
-      let roundRatings: { CodeQuality: number; ProblemSolving: number; Communication: number } | null = null;
-      if (r.ratings) {
-        try {
-          roundRatings = JSON.parse(r.ratings);
-        } catch {
-          roundRatings = null;
-        }
-      }
-      return {
-        id: r.id,
-        order: r.order,
-        paradigm: r.paradigm,
-        language: r.language,
-        frameworkLabel: r.frameworkLabel,
-        sourceKind: r.sourceKind,
-        score: r.score,
-        status: r.status,
-        ratings: roundRatings,
-        filesJson: roundFiles,
-      };
-    });
-
-    return {
-      id: s.id,
-      inviteToken: s.inviteToken,
-      candidateId: s.candidateId,
-      candidateName: s.candidateName,
-      candidateEmail: s.candidateEmail,
-      positionTitle: s.positionTitle,
-      status: s.status,
-      templateId: s.templateId,
-      batchId: s.batchId,
-      batchTitle: s.batch?.positionTitle ?? null,
-      score: displayScore,
-      aiSummary: s.aiSummary,
-      aiSuspicionScore: s.aiSuspicionScore,
-      outboundCallCount: s.outboundCallCount,
-      createdAt: s.createdAt.toISOString(),
-      updatedAt: s.updatedAt.toISOString(),
-      startedAt: s.startedAt?.toISOString() ?? null,
-      finishedAt: s.finishedAt?.toISOString() ?? null,
-      chatHistory: parsedHistory as { role: "user" | "assistant"; text: string }[],
-      filesJson: parsedFiles,
-      fileDiffs,
-      changeStats,
-      timeSpentSec: s.timeSpentSec,
-      extensionPolicy: {
-        extraMinutes: s.extraMinutes,
-        used: s.extensionCount,
-        max: s.maxExtensions,
-        minutesEach: s.extensionMinutes,
-      },
-      ratings: displayRatings,
-      rounds,
-    };
-  })
-  );
-
-  // Pivot bindings into "for each custom template, which server ids are bound?"
-  // — convenient lookup shape for the binding UI in the Templates modal.
-  const bindingsByTemplate: Record<string, string[]> = {};
-  for (const server of externalMcpServers) {
-    for (const b of server.templateBindings) {
-      (bindingsByTemplate[b.templateId] ??= []).push(server.id);
-    }
-  }
-
-  const templateChoices = templates.map((t) => ({
-    id: t.id,
-    title: t.title,
-    description: t.description,
-    estimatedMinutes: t.estimatedMinutes,
-    custom: t.custom,
-    kind: t.kind,
-    language: t.language,
-    frameworkLabel: t.frameworkLabel,
-    boundExternalMcpServerIds: bindingsByTemplate[t.id] ?? [],
-  }));
-
-  const availableExternalMcpServers = externalMcpServers.map((s) => ({
-    id: s.id,
-    name: s.name,
-  }));
-
-  const candidates = candidateRows.map((c) => ({
-    id: c.id,
-    name: c.name,
-    email: c.email ?? "",
-    stage: c.stage,
-  }));
-
   return (
-    <AIInterviewRecruiterConsole
-      workspaceSlug={slug}
-      initialSessions={mappedSessions}
-      candidates={candidates}
-      totalScreened={totalScreened}
-      avgScore={avgScore}
-      credits={credits}
-      usedThisMonth={-(usedThisMonth._sum.amount ?? 0)}
-      canCreate={canCreate}
-      templates={templateChoices}
-      availableExternalMcpServers={availableExternalMcpServers}
-      workspaceAllowExternalMcp={workspace.allowExternalMcp}
-      initialCandidateId={sp.candidate ?? null}
-      initialSearch={search}
-      initialStatus={statusFilter}
-      initialBatch={batchFilter}
-      initialSort={sort}
-      pagination={{
-        page,
-        totalPages,
-        totalSessions,
-        pageSize: PAGE_SIZE,
-      }}
-    />
+    <div className="flex flex-col gap-5">
+      <AiHeader
+        slug={slug}
+        active="review"
+        counts={{ review: counts.review, screenings: screenings.length }}
+        credits={credits}
+        canCreate={access.canCreate}
+        canBuy={access.canBuy}
+        packs={access.packs}
+      />
+      <ReviewQueue
+        slug={slug}
+        query={query}
+        counts={counts}
+        rows={queue.rows}
+        total={queue.total}
+        pages={queue.pages}
+        screenings={screenings}
+        expiring={expiring.map((e) => ({ id: e.id, name: e.candidateName, role: e.positionTitle }))}
+        canCreate={access.canCreate}
+      />
+    </div>
   );
-}
-
-function startOfMonth(): Date {
-  const now = new Date();
-  return new Date(now.getFullYear(), now.getMonth(), 1);
 }

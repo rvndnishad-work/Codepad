@@ -3,6 +3,8 @@ import { headers } from "next/headers";
 import { prisma } from "@/lib/prisma";
 import { resolveSessionRounds } from "@/lib/ai-interview/rounds";
 import { resolveRoundsContent } from "@/lib/ai-interview/round-content";
+import { parseTheorySettings } from "@/lib/ai-interview/theory";
+import { isTranscriptionConfigured } from "@/lib/ai-interview/transcribe";
 import AIInterviewWorkspace from "./AIInterviewWorkspace";
 import MobileLobby from "@/components/MobileLobby";
 import { shouldRenderMobileLobby } from "@/lib/device";
@@ -83,16 +85,28 @@ export default async function AIInterviewRunPage({ params, searchParams }: Props
   const { token } = await params;
   const sp = (searchParams ? await searchParams : {}) ?? {};
 
-  // IP-38: mobile-handoff lobby. Run *before* DB lookup so a mobile candidate
-  // never burns a session-state mutation they can't finish (AI screenings
-  // consume credits on first message).
+  // Look up by inviteToken — the internal session id is never exposed to the
+  // candidate's browser. Include rounds so multi-round (batch) screenings load
+  // their per-round surfaces; legacy single-template sessions have none and
+  // resolveSessionRounds synthesizes one.
+  const session = await prisma.aIInterviewSession.findUnique({
+    where: { inviteToken: token },
+    include: { rounds: true },
+  });
+
+  if (!session) notFound();
+
+  // IP-38: mobile-handoff lobby, before any state changes, so a mobile
+  // candidate never burns a credit on a screening they cannot finish. Theory
+  // rounds need no editor, so a screening of only theory rounds runs on a phone.
   const hdrs = await headers();
   const showLobby = shouldRenderMobileLobby({
     userAgent: hdrs.get("user-agent"),
     searchParams: sp,
     cookieHeader: hdrs.get("cookie"),
   });
-  if (showLobby) {
+  const phoneFriendly = session.rounds.length > 0 && session.rounds.every((r) => r.paradigm === "theory");
+  if (showLobby && !phoneFriendly) {
     const host = hdrs.get("host") ?? "interviewpad.in";
     const proto = hdrs.get("x-forwarded-proto") ?? "https";
     const fullUrl = `${proto}://${host}/ai-interview/${token}`;
@@ -107,16 +121,25 @@ export default async function AIInterviewRunPage({ params, searchParams }: Props
     );
   }
 
-  // Look up by inviteToken — the internal session id is never exposed to the
-  // candidate's browser. Include rounds so multi-round (batch) screenings load
-  // their per-round surfaces; legacy single-template sessions have none and
-  // resolveSessionRounds synthesizes one.
-  const session = await prisma.aIInterviewSession.findUnique({
-    where: { inviteToken: token },
-    include: { rounds: true },
-  });
 
-  if (!session) notFound();
+  // Closed before the candidate started: the recruiter cancelled it or it
+  // passed its expiry date.
+  if (
+    session.status === "EXPIRED" ||
+    (!session.startedAt && session.expiresAt && session.expiresAt.getTime() <= Date.now())
+  ) {
+    return (
+      <main className="min-h-[70vh] flex items-center justify-center p-6">
+        <div className="max-w-md w-full rounded-2xl border border-border bg-surface p-8 text-center">
+          <h1 className="text-xl font-semibold text-fg">This screening link has expired</h1>
+          <p className="mt-3 text-sm text-muted leading-relaxed">
+            The invite for the {session.positionTitle} screening is no longer open. If you still want to take it, reply to
+            the email you received and ask the recruiter to send a new link.
+          </p>
+        </div>
+      </main>
+    );
+  }
 
   // Normalize to an ordered round list, then resolve each round's runnable
   // content (title/surface/starter files) by source kind.
@@ -135,8 +158,9 @@ export default async function AIInterviewRunPage({ params, searchParams }: Props
           kind: r.kind,
           language: r.language,
           estimatedMinutes: r.estimatedMinutes,
-          files: Object.keys(r.files).length > 0 ? r.files : DEFAULT_STARTER_FILES,
+          files: r.kind === "conversation" || r.kind === "theory" || Object.keys(r.files).length > 0 ? r.files : DEFAULT_STARTER_FILES,
           status: r.status,
+          theory: r.kind === "theory" ? theoryInfo(session.rounds.find((x) => x.id === r.roundId)?.theoryJson) : undefined,
         }))
       : [
           {
@@ -177,6 +201,13 @@ export default async function AIInterviewRunPage({ params, searchParams }: Props
       }}
       rounds={rounds}
       initialChat={chatHistory}
+      serverTranscribe={isTranscriptionConfigured()}
     />
   );
+}
+
+/** What the candidate screen needs to know up front: how answers are given and whether they are recorded. */
+function theoryInfo(json: string | null | undefined) {
+  const s = parseTheorySettings(json);
+  return { answerMode: s.answerMode, recordAudio: s.recordAudio };
 }

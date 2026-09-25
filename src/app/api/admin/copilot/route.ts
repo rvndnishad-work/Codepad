@@ -363,7 +363,7 @@ Database Schema reference:
 5. ChallengeAttempt: id (PK), userId, challengeId, status ("in_progress"|"passed"|"failed"|"abandoned"), durationSec, startedAt, finishedAt, score, aiSuspicionScore (FLOAT 0..100)
 6. InterviewSession: id (PK), userId, title, candidateName, status ("scheduled"|"in_progress"|"completed"|"abandoned"), totalSec, startedAt, finishedAt, shortCode, createdAt
 7. AdminTodo: id (PK), ticketKey ("IP-1"), ticketSeq, title, body, status ("BACKLOG"|"TODO"|"IN_PROGRESS"|"DONE"), priority ("LOW"|"MEDIUM"|"HIGH"), category, addedByEmail, createdAt
-8. Candidate: id (PK), workspaceId, name, email, status ("active"|"hired"|"rejected"|"archived"), source, tags, notes, createdAt
+8. Candidate: id (PK), workspaceId, name, email, status ("active"|"passed"|"rejected"|"archived"), stage ("NEW"|"SCREENING"|"PASSED"|"REJECTED"), source, tags, notes, createdAt
 9. CandidateIntegrityReport: id (PK), attemptId, suspicionScore, totalBlurSec, blurCount, pasteCount, pasteDetails (JSON), createdAt
 10. GemmaAlert: id (PK), type, title, body, severity, status ("UNRESOLVED"|"DISMISSED"|"RESOLVED"), proposedAction (JSON), targetId, createdAt
 11. McpAuditLog: id (PK), workspaceId, kind, name, argsJson, resultSummary, durationMs, createdAt

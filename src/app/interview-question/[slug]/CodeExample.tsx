@@ -2,10 +2,39 @@
 
 import { useMemo, useState } from "react";
 import { usePathname } from "next/navigation";
-import { ExternalLink, ChevronDown, FileCode } from "lucide-react";
+import { Check, ChevronDown, Copy, ExternalLink, FileCode } from "lucide-react";
 import { highlight } from "@/lib/code-peek";
 import { playgroundHref, playgroundFilesHref } from "@/lib/playground-handoff";
 import { variantMeta } from "@/lib/interview-questions/code-variants";
+import { LANG_COLOR, badge, codeArea, frame, frameBar, frameLabel, iconBtn, runBtn } from "./_components/codeFrame";
+
+/** Copies a code string, showing a tick for a moment. */
+function CopyButton({ text }: { text: string }) {
+  const [done, setDone] = useState(false);
+  return (
+    <button
+      type="button"
+      className={iconBtn}
+      aria-label={done ? "Copied" : "Copy code"}
+      title={done ? "Copied" : "Copy code"}
+      onClick={async () => {
+        try {
+          await navigator.clipboard.writeText(text);
+          setDone(true);
+          setTimeout(() => setDone(false), 1600);
+        } catch {
+          /* clipboard blocked */
+        }
+      }}
+    >
+      {done ? <Check className="h-4 w-4 text-success" aria-hidden /> : <Copy className="h-4 w-4" aria-hidden />}
+    </button>
+  );
+}
+
+function templateTech(template: string) {
+  return template.replace(/^empty-/, "");
+}
 
 export type ExampleVariant = {
   tech: string;
@@ -85,50 +114,55 @@ export function MultiFileExample({
   const pathname = usePathname();
   const backFrom = pathname?.startsWith("/interview-question") ? pathname : undefined;
 
+  const code = (files[path] ?? "").trim();
+  const tech = templateTech(template);
+
   return (
-    <div className="rounded-2xl border border-border bg-surface overflow-hidden">
-      {/* Top bar: example label + Run */}
-      <div className="flex items-center justify-between gap-2 px-4 py-2 border-b border-border bg-bg/40">
-        <span className="text-[11px] font-black text-muted tracking-wide truncate">
-          {label || "Solution"}
-        </span>
-        <a
-          href={playgroundFilesHref(files, template, backFrom)}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="inline-flex items-center gap-1.5 shrink-0 px-3 py-1.5 rounded-xl bg-accent text-bg text-[10px] font-black uppercase tracking-wider hover:bg-accent-soft transition duration-200 shadow-sm"
-        >
-          <ExternalLink className="w-3.5 h-3.5" />
-          Run Playground
-        </a>
+    <div className={frame}>
+      <div className={frameBar}>
+        <div className="flex min-w-0 items-center gap-2.5">
+          <span className={badge}>
+            <span className="h-1.5 w-1.5 rounded-full" style={{ background: LANG_COLOR[tech] ?? "rgb(var(--c-subtle))" }} aria-hidden />
+            {variantMeta(tech).label === "Code" ? tech : variantMeta(tech).label}
+          </span>
+          <span className={frameLabel}>{label || "Solution"}</span>
+        </div>
+        <div className="flex items-center gap-1.5">
+          <CopyButton text={code} />
+          <a href={playgroundFilesHref(files, template, backFrom)} target="_blank" rel="noopener noreferrer" className={runBtn}>
+            <ExternalLink className="h-3.5 w-3.5" aria-hidden />
+            Open in playground
+          </a>
+        </div>
       </div>
 
-      {/* File-name toolbar — an editor-style tab strip directly above the code */}
-      <div className="flex items-center gap-1 px-2 py-1.5 border-b border-border bg-bg/60 overflow-x-auto">
+      {/* Editor-style file tabs directly above the code. */}
+      <div role="tablist" aria-label="Files" className="flex items-center gap-1 overflow-x-auto border-b border-border bg-bg/40 px-2 py-1.5 [scrollbar-width:none]">
         {paths.map((p, i) => (
           <button
             key={p}
+            type="button"
+            role="tab"
+            aria-selected={i === active}
             onClick={() => setActive(i)}
-            className={`inline-flex items-center gap-1.5 shrink-0 px-2.5 py-1 rounded-md text-[11px] font-bold border transition ${
-              i === active
-                ? "bg-accent/10 border-accent/40 text-fg"
-                : "bg-transparent border-transparent text-muted hover:text-fg hover:bg-surface"
+            className={`inline-flex h-8 shrink-0 items-center gap-1.5 rounded-lg px-2.5 font-mono text-xs transition-colors motion-reduce:transition-none ${
+              i === active ? "bg-elevated text-fg" : "text-subtle hover:bg-panel hover:text-fg"
             }`}
           >
-            <FileCode className="w-3 h-3 opacity-60" />
+            <FileCode className="h-3.5 w-3.5 opacity-70" aria-hidden />
             {p.replace(/^\//, "")}
           </button>
         ))}
       </div>
 
-      <pre className="iq-hl p-4 overflow-auto whitespace-pre-wrap break-words [overflow-wrap:anywhere] text-[13px] font-mono leading-[1.625] text-slate-200 bg-[#0a0b10] overflow-x-auto">
-        <code className="whitespace-pre-wrap break-words [overflow-wrap:anywhere]" dangerouslySetInnerHTML={{ __html: highlighted }} />
+      <pre className={codeArea}>
+        <code className="whitespace-pre" dangerouslySetInnerHTML={{ __html: highlighted }} />
       </pre>
     </div>
   );
 }
 
-  /**
+/**
    * Renders one code example as a syntax-highlighted (theme-aware `.iq-hl`) block.
   * If the example has multiple `variants` (e.g. the same algorithm in Python /
   * Go / Java, or a UI in React / Vue / Angular), a dropdown switches between them
@@ -175,19 +209,21 @@ export default function CodeExample({
   const openable = current.runnable !== false && Boolean(meta.template);
 
   return (
-    <div className="rounded-2xl border border-border bg-surface overflow-hidden">
-      <div className="flex items-center justify-between gap-2 px-4 py-2 border-b border-border bg-bg/40">
-        <div className="flex items-center gap-2 min-w-0">
-          <span className="text-[11px] font-black text-muted tracking-wide truncate">
-            {example.label || current.label || "Code"}
-          </span>
-          {hasDropdown && (
-            <div className="relative shrink-0">
+    <div className={frame}>
+      <div className={frameBar}>
+        <div className="flex min-w-0 items-center gap-2.5">
+          {hasDropdown ? (
+            <label className="relative shrink-0">
+              <span className="sr-only">Language or framework</span>
+              <span
+                className="pointer-events-none absolute left-2.5 top-1/2 h-1.5 w-1.5 -translate-y-1/2 rounded-full"
+                style={{ background: LANG_COLOR[current.tech] ?? "rgb(var(--c-subtle))" }}
+                aria-hidden
+              />
               <select
                 value={active}
                 onChange={(e) => setActive(Number(e.target.value))}
-                aria-label="Choose language / framework"
-                className="appearance-none cursor-pointer pl-2.5 pr-7 py-1 rounded-lg border border-border bg-bg text-[11px] font-bold text-fg hover:border-accent/40 focus:outline-none focus:border-accent/60 transition"
+                className="h-7 cursor-pointer appearance-none rounded-md border border-border bg-panel pl-6 pr-7 text-xs font-medium text-fg transition-colors hover:border-border-strong focus:border-accent focus:outline-none"
               >
                 {variants.map((v, i) => (
                   <option key={i} value={i}>
@@ -195,26 +231,30 @@ export default function CodeExample({
                   </option>
                 ))}
               </select>
-              <ChevronDown className="w-3.5 h-3.5 text-muted absolute right-1.5 top-1/2 -translate-y-1/2 pointer-events-none" />
-            </div>
-          )}
+              <ChevronDown className="pointer-events-none absolute right-2 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-subtle" aria-hidden />
+            </label>
+          ) : meta.label !== "Code" ? (
+            <span className={badge}>
+              <span className="h-1.5 w-1.5 rounded-full" style={{ background: LANG_COLOR[current.tech] ?? "rgb(var(--c-subtle))" }} aria-hidden />
+              {meta.label}
+            </span>
+          ) : null}
+          <span className={frameLabel}>{example.label || current.label || "Example"}</span>
         </div>
 
-        {openable && (
-          <a
-            href={playgroundHref(current.code.trim(), meta.template, backFrom)}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center gap-1.5 shrink-0 px-3 py-1.5 rounded-xl bg-accent text-bg text-[10px] font-black uppercase tracking-wider hover:bg-accent-soft transition duration-200 shadow-sm"
-          >
-            <ExternalLink className="w-3.5 h-3.5" />
-            Run Playground
-          </a>
-        )}
+        <div className="flex items-center gap-1.5">
+          <CopyButton text={current.code.trim()} />
+          {openable && (
+            <a href={playgroundHref(current.code.trim(), meta.template, backFrom)} target="_blank" rel="noopener noreferrer" className={runBtn}>
+              <ExternalLink className="h-3.5 w-3.5" aria-hidden />
+              Open in playground
+            </a>
+          )}
+        </div>
       </div>
 
-      <pre className="iq-hl p-4 overflow-auto whitespace-pre-wrap break-words [overflow-wrap:anywhere] text-[13px] font-mono leading-[1.625] text-slate-200 bg-[#0a0b10] overflow-x-auto">
-        <code className="whitespace-pre-wrap break-words [overflow-wrap:anywhere]" dangerouslySetInnerHTML={{ __html: highlighted }} />
+      <pre className={codeArea}>
+        <code className="whitespace-pre" dangerouslySetInnerHTML={{ __html: highlighted }} />
       </pre>
     </div>
   );

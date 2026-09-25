@@ -1,5 +1,6 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
 import { POST } from "@/app/api/execute/route";
+import { auth } from "@/lib/auth";
 
 const { runOnPiston } = vi.hoisted(() => ({
   runOnPiston: vi.fn(),
@@ -77,29 +78,54 @@ describe("POST /api/execute files", () => {
     expect(runOnPiston).toHaveBeenCalledWith("python", "compat-1", "", []);
   });
 
-  it("serves identical reruns from cache, busts on sibling edits", async () => {
+  it("runs identical explicit reruns again instead of replaying them", async () => {
+    // Programs that print random numbers or the time must not repeat
+    // their last output when Run is pressed again.
     const ip = "10.8.8.8";
-    const body = {
-      language: "python",
-      code: "cache-1",
-      files: [{ name: "h.py", content: "v1" }],
-    };
-    const first = await post(body, ip);
-    expect(first.status).toBe(200);
+    const body = { language: "python", code: "rerun-1" };
+    expect((await post(body, ip)).status).toBe(200);
     const second = await post(body, ip);
-    expect(await second.json()).toMatchObject({ cacheHit: true });
-    expect(runOnPiston).toHaveBeenCalledTimes(1);
-
-    const edited = await post(
-      {
-        language: "python",
-        code: "cache-1",
-        files: [{ name: "h.py", content: "v2" }],
-      },
-      ip,
-    );
-    expect((await edited.json()).cacheHit).toBeUndefined();
+    expect((await second.json()).cacheHit).toBeUndefined();
     expect(runOnPiston).toHaveBeenCalledTimes(2);
+  });
+
+  it("serves a speculative warm-up once, keyed on siblings", async () => {
+    vi.mocked(auth).mockResolvedValue({ user: { id: "spec-user" } } as never);
+    try {
+      const body = {
+        language: "python",
+        code: "warm-1",
+        files: [{ name: "h.py", content: "v1" }],
+      };
+      const warm = await post({ ...body, speculative: true });
+      expect(await warm.json()).toMatchObject({ speculativeActive: true });
+      await vi.waitFor(() => expect(runOnPiston).toHaveBeenCalledTimes(1));
+      // Let the background task store its result.
+      await new Promise((r) => setTimeout(r, 0));
+
+      // Editing a sibling changes the key: no warm-up to serve.
+      const edited = await post({ ...body, files: [{ name: "h.py", content: "v2" }] });
+      expect((await edited.json()).cacheHit).toBeUndefined();
+      expect(runOnPiston).toHaveBeenCalledTimes(2);
+
+      // The matching run takes the warm-up without touching Piston...
+      const hit = await post(body);
+      expect(await hit.json()).toMatchObject({ cacheHit: true, stdout: "hi" });
+      expect(runOnPiston).toHaveBeenCalledTimes(2);
+
+      // ...and only once: the next Run executes for real.
+      const again = await post(body);
+      expect((await again.json()).cacheHit).toBeUndefined();
+      expect(runOnPiston).toHaveBeenCalledTimes(3);
+    } finally {
+      vi.mocked(auth).mockResolvedValue(null as never);
+    }
+  });
+
+  it("declines speculative warm-ups for guests", async () => {
+    const res = await post({ language: "python", code: "guest-warm", speculative: true });
+    expect(await res.json()).toMatchObject({ speculativeActive: false });
+    expect(runOnPiston).not.toHaveBeenCalled();
   });
 
   it("rejects traversal and malformed payloads", async () => {
@@ -126,7 +152,8 @@ describe("POST /api/execute files", () => {
     expect(runOnPiston).not.toHaveBeenCalled();
   });
 
-  it("maps executor outages to 503", async () => {    const { PistonUnavailableError } =
+  it("maps executor outages to 503", async () => {
+    const { PistonUnavailableError } =
       await import("@/lib/piston");
     runOnPiston.mockRejectedValueOnce(new PistonUnavailableError("down"));
     const res = await post({ language: "python", code: "out-1" });

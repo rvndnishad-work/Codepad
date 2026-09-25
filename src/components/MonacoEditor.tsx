@@ -416,7 +416,7 @@ export default function MonacoEditor({
           gap: 6px;
           padding: 0 12px;
           font-size: 12px;
-          font-family: 'Inter', -apple-system, sans-serif;
+          font-family: var(--font-sans), -apple-system, sans-serif;
           font-weight: 400;
           color: var(--muted);
           cursor: pointer;

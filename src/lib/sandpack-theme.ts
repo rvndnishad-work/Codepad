@@ -32,7 +32,7 @@ export const nbpDarkTheme = {
     string: "#A5D6FF",
   },
   font: {
-    body: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif',
+    body: 'var(--font-sans), "Geist", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
     mono: 'var(--font-mono), "Fira Code", monospace',
     size: "14px",
     lineHeight: "1.6",
@@ -64,7 +64,7 @@ export const nbpLightTheme = {
     string: "#15803d",
   },
   font: {
-    body: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif',
+    body: 'var(--font-sans), "Geist", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
     mono: 'var(--font-mono), "Fira Code", monospace',
     size: "14px",
     lineHeight: "1.6",

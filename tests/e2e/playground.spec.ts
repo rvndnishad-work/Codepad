@@ -98,7 +98,7 @@ test.describe("playground file lifecycle", () => {
     await expect(
       page.getByText("index.py", { exact: true }).first(),
     ).toBeVisible();
-    await expect(page.getByText("Standby").first()).toBeVisible();
+    await expect(page.getByText("No output yet").first()).toBeVisible();
 
     await page.getByRole("button", { name: "Run", exact: true }).click();
 
@@ -359,7 +359,7 @@ test.describe("playground file lifecycle", () => {
       page.getByText("index.js", { exact: true }).first(),
     ).toBeVisible();
 
-    const divider = page.locator(".ide-divider").nth(1);
+    const divider = page.getByRole("separator", { name: "Resize editor" });
     await expect(divider).toBeVisible();
     const box = await divider.boundingBox();
     expect(box).not.toBeNull();

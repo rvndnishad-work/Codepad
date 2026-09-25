@@ -1,3 +1,4 @@
+import { interviewerQuestionList, questionTexts } from "@/lib/ai-interview/questionnaire";
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { resolveSessionRounds, type SessionRound } from "@/lib/ai-interview/rounds";
@@ -16,7 +17,7 @@ import {
   type GeminiPart,
 } from "@/lib/ai-interview/gemini";
 import { getAgentConfig } from "@/lib/agents/config";
-import { DEFAULT_AGENTS } from "@/lib/agents/defaults";
+import { CONVERSATION_INTERVIEWER_PROMPT, DEFAULT_AGENTS } from "@/lib/agents/defaults";
 import { renderPrompt } from "@/lib/agents/types";
 import { rateLimit } from "@/lib/rate-limit";
 import {
@@ -58,6 +59,8 @@ const MAX_TOOL_USE_ITERATIONS = 8;
 type Message = {
   role: "user" | "assistant";
   text: string;
+  /** Round the message was sent in, so grading can split a shared chat. */
+  roundId?: string;
 };
 
 /** Model settings resolved from the agent config, forwarded to Gemini. */
@@ -252,6 +255,19 @@ async function callGeminiTextOnly(
 }
 
 // Rules-based fallback mock conversational engine
+/** Offline fallback for a conversation round: neutral follow-ups, no code talk. */
+/**
+ * Offline stand-in for a conversation round: asks the recruiter's questions in
+ * order, one per candidate turn, then points at Finish round.
+ */
+function callMockConversation(questions: string[], candidateTurns: number) {
+  const list = questions.length ? questions : ["Tell me about the work you are most proud of in your last role."];
+  if (candidateTurns <= 1) return `Thanks for joining. Let us start. ${list[0]}`;
+  const next = list[candidateTurns - 1];
+  if (next) return `Thank you. Next question: ${next}`;
+  return "Thanks, that covers everything I wanted to ask. When you are ready, press Finish round.";
+}
+
 function callMockAgent(message: string, files: Record<string, string>, historyCount: number, templateId: string) {
   const msg = message.toLowerCase().trim();
 
@@ -455,10 +471,25 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    // An invite that closed before the candidate started cannot be started.
+    if (
+      session.status === "EXPIRED" ||
+      (!session.startedAt && session.expiresAt && session.expiresAt.getTime() <= Date.now())
+    ) {
+      return NextResponse.json(
+        { error: "This invite has expired. Ask the recruiter to send a new one.", inviteExpired: true },
+        { status: 410 }
+      );
+    }
+
     // Normalize rounds and pick the active one (defaults to the first).
     const sessionRounds = resolveSessionRounds(session);
     const activeRound: SessionRound =
       sessionRounds.find((r) => r.id === roundId) ?? sessionRounds[0];
+    // Theory rounds are answered through /api/ai-interview/theory, never the chat.
+    if (activeRound.paradigm === "theory") {
+      return NextResponse.json({ error: "This round is answered on its own screen." }, { status: 409 });
+    }
 
     // Hard deadline = startedAt + sum of round budgets (+30s grace). Once it
     // elapses, no further chat turns; the client gets a clear signal to submit.
@@ -523,7 +554,7 @@ export async function POST(req: NextRequest) {
       history = [];
     }
 
-    history.push({ role: "user", text: message });
+    history.push({ role: "user", text: message, roundId: activeRound.id });
 
     // ── Phase 4.1: resolve external MCP tools, if any ────────────────────
     //
@@ -615,18 +646,26 @@ export async function POST(req: NextRequest) {
     // Configurable interviewer persona: workspace override → platform default
     // → code default (defaults.ts, extracted verbatim from the old inline
     // string). Everything dynamic is injected as {{vars}}.
+    const mockQuestions = () => questionTexts(roundContent?.interviewerNotes);
     const agent = await getAgentConfig("INTERVIEWER", session.workspaceId);
-    let systemInstruction = renderPrompt(
-      agent.systemPrompt || DEFAULT_AGENTS.INTERVIEWER.systemPrompt,
-      {
-        positionTitle: session.positionTitle,
-        taskTitle: roundContent?.title ?? session.positionTitle,
-        taskBrief: roundContent?.description ? `Brief: ${roundContent.description}\n` : "",
-        stackLine,
-        roundLine,
-        filesJson: truncateFilesForPrompt(files),
-      }
-    );
+    let systemInstruction =
+      kind === "conversation"
+        ? renderPrompt(CONVERSATION_INTERVIEWER_PROMPT, {
+            positionTitle: session.positionTitle,
+            taskTitle: roundContent?.title ?? session.positionTitle,
+            taskBrief: roundContent?.description ? `Brief: ${roundContent.description}\n` : "",
+            roleLine: roundFw ? `Role area: ${roundFw}.` : "",
+            roundLine,
+            questions: interviewerQuestionList(roundContent?.interviewerNotes) || "Ask about relevant experience for the role.",
+          })
+        : renderPrompt(agent.systemPrompt || DEFAULT_AGENTS.INTERVIEWER.systemPrompt, {
+            positionTitle: session.positionTitle,
+            taskTitle: roundContent?.title ?? session.positionTitle,
+            taskBrief: roundContent?.description ? `Brief: ${roundContent.description}\n` : "",
+            stackLine,
+            roundLine,
+            filesJson: truncateFilesForPrompt(files),
+          });
     // For backend/DSA rounds, give the interviewer the candidate's most recent
     // execution output so it can evaluate real results, not just the code.
     if ((kind === "backend" || kind === "dsa") && lastRun && (lastRun.stdout || lastRun.stderr)) {
@@ -688,12 +727,12 @@ export async function POST(req: NextRequest) {
         console.error(`[ai-interview] ${effectiveProvider} failed, degrading to mock agent: ${detail}`);
         aiProvider = "mock";
         degradedReason = err instanceof GeminiUnavailableError ? "upstream_unavailable" : "upstream_error";
-        aiResponse = callMockAgent(message, files, history.length, session.templateId);
+        aiResponse = kind === "conversation" ? callMockConversation(mockQuestions(), history.filter((h) => h.role === "user" && h.roundId === activeRound.id).length) : callMockAgent(message, files, history.length, session.templateId);
       }
     } else {
       aiProvider = "mock";
       degradedReason = "not_configured";
-      aiResponse = callMockAgent(message, files, history.length, session.templateId);
+      aiResponse = kind === "conversation" ? callMockConversation(mockQuestions(), history.filter((h) => h.role === "user" && h.roundId === activeRound.id).length) : callMockAgent(message, files, history.length, session.templateId);
     }
 
     // If external tools were used this turn, append a small footer to the
@@ -703,7 +742,7 @@ export async function POST(req: NextRequest) {
       toolCallsThisTurn.length > 0
         ? `${aiResponse}\n\n_[used external MCP: ${[...new Set(toolCallsThisTurn)].join(", ")}]_`
         : aiResponse;
-    history.push({ role: "assistant", text: assistantText });
+    history.push({ role: "assistant", text: assistantText, roundId: activeRound.id });
 
     // Persist the shared (continuous) chat + the active round's files. For a
     // legacy batch-less session the round is synthetic, so files live on the

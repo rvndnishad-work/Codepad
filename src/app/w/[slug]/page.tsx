@@ -1,10 +1,10 @@
 import { prisma } from "@/lib/prisma";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
 import { validatePageAccess } from "@/lib/settings";
 import WorkspaceDashboardClient from "./WorkspaceDashboardClient";
-import { Building2 } from "lucide-react";
-import { PIPELINE_STAGES, type PipelineStage } from "@/lib/crm/stages";
+import { effectivePlan } from "@/lib/billing/trial";
+import { planDisplay } from "@/lib/workspace/display";
 import {
   loadRolePermissions,
   expandRolePermissions,
@@ -13,7 +13,22 @@ import {
 
 type Props = {
   params: Promise<{ slug: string }>;
+  searchParams?: Promise<Record<string, string | string[] | undefined>>;
 };
+
+/** The old Candidates tab (table, board, leaderboard) lived at ?section=candidates. */
+function legacyCandidatesUrl(slug: string, sp: Record<string, string | string[] | undefined>): string {
+  const one = (k: string) => (typeof sp[k] === "string" ? (sp[k] as string) : undefined);
+  const view = one("view");
+  if (view === "leaderboard") return `/w/${slug}/batches`;
+  const q = new URLSearchParams();
+  const stage = one("stage");
+  if (stage) q.set("stage", stage);
+  if (one("q")) q.set("q", one("q")!);
+  if (view === "pipeline" || view === "board") q.set("view", "board");
+  const qs = q.toString();
+  return `/w/${slug}/candidates${qs ? `?${qs}` : ""}`;
+}
 
 export async function generateMetadata({ params }: Props) {
   const { slug } = await params;
@@ -26,8 +41,11 @@ export async function generateMetadata({ params }: Props) {
   };
 }
 
-export default async function WorkspaceDashboardPage({ params }: Props) {
+export default async function WorkspaceDashboardPage({ params, searchParams }: Props) {
   const { slug } = await params;
+  const sp = (await searchParams) ?? {};
+  if (sp.section === "candidates") redirect(legacyCandidatesUrl(slug, sp));
+  if (sp.section === "library") redirect(`/w/${slug}/library`);
 
   // Gate workspace access based on admin visibility settings
   const session = await auth().catch(() => null);
@@ -78,6 +96,7 @@ export default async function WorkspaceDashboardPage({ params }: Props) {
           shortCode: true,
           shareToken: true,
           totalSec: true,
+          scheduledAt: true,
           startedAt: true,
           finishedAt: true,
           createdAt: true,
@@ -149,7 +168,7 @@ export default async function WorkspaceDashboardPage({ params }: Props) {
         challengeIds: true,
         playgroundIds: true,
         promptScenarioIds: true,
-        candidate: { select: { email: true } },
+        candidate: { select: { id: true, email: true, stage: true } },
       },
       orderBy: { createdAt: "desc" },
       take: 200,
@@ -170,6 +189,7 @@ export default async function WorkspaceDashboardPage({ params }: Props) {
         startedAt: true,
         finishedAt: true,
         templateId: true,
+        candidate: { select: { stage: true } },
       },
       orderBy: { createdAt: "desc" },
       take: 200,
@@ -190,6 +210,8 @@ export default async function WorkspaceDashboardPage({ params }: Props) {
     questionCount: countIds(s.challengeIds) + countIds(s.playgroundIds) + countIds(s.promptScenarioIds),
     createdAt: s.createdAt.toISOString(),
     finishedAt: s.finishedAt ? s.finishedAt.toISOString() : null,
+    candidateId: s.candidate?.id ?? null,
+    candidateStage: s.candidate?.stage ?? null,
   }));
 
   const aiInterviewSessions = aiInterviewRows.map((s) => ({
@@ -200,6 +222,7 @@ export default async function WorkspaceDashboardPage({ params }: Props) {
     status: s.status,
     score: s.score ?? null,
     candidateId: s.candidateId ?? null,
+    candidateStage: s.candidate?.stage ?? null,
     inviteToken: s.inviteToken,
     templateId: s.templateId,
     createdAt: s.createdAt.toISOString(),
@@ -287,6 +310,7 @@ export default async function WorkspaceDashboardPage({ params }: Props) {
     shortCode: s.shortCode,
     shareToken: s.shareToken,
     totalSec: s.totalSec,
+    scheduledAt: s.scheduledAt ? s.scheduledAt.toISOString() : null,
     startedAt: s.startedAt ? s.startedAt.toISOString() : null,
     finishedAt: s.finishedAt ? s.finishedAt.toISOString() : null,
     createdAt: s.createdAt.toISOString(),
@@ -313,40 +337,15 @@ export default async function WorkspaceDashboardPage({ params }: Props) {
     createdAt: c.createdAt.toISOString(),
   }));
 
-  // Bucket candidates for Pipeline view
-  const buckets: Record<PipelineStage, typeof formattedCandidates> = {
-    APPLIED: [],
-    SCREENED: [],
-    TAKE_HOME: [],
-    ONSITE: [],
-    OFFER: [],
-    HIRED: [],
-    REJECTED: [],
+  const planFields = {
+    planName: workspace.planName,
+    trialEndsAt: workspace.trialEndsAt,
+    stripeSubscriptionId: workspace.stripeSubscriptionId,
   };
-  for (const c of formattedCandidates) {
-    const s = (PIPELINE_STAGES as readonly string[]).includes(c.stage)
-      ? (c.stage as PipelineStage)
-      : "APPLIED";
-    buckets[s].push(c);
-  }
+  const firstName = session?.user?.name?.trim().split(/\s+/)[0] ?? null;
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-3 border-b border-border pb-5">
-        <div>
-          <div className="text-[10px] font-semibold uppercase tracking-[0.14em] text-indigo-500/80 flex items-center gap-1.5">
-            <Building2 className="w-3 h-3" /> Workspace
-          </div>
-          <h1 className="text-2xl font-semibold text-fg tracking-tight mt-1">{workspace.name}</h1>
-          <p className="text-xs text-muted mt-1">Manage challenges, candidates, and your team.</p>
-        </div>
-        <div className="text-[11px] text-muted font-mono">
-          <span className="text-muted/50">/</span>
-          <span className="text-fg">{workspace.slug}</span>
-        </div>
-      </div>
-
       {/* Main Interactive Client Component */}
       <WorkspaceDashboardClient
         workspace={{
@@ -355,6 +354,9 @@ export default async function WorkspaceDashboardPage({ params }: Props) {
           slug: workspace.slug,
           planName: workspace.planName,
         }}
+        firstName={firstName}
+        plan={planDisplay(planFields)}
+        seatLimit={effectivePlan(planFields).seatLimit}
         challenges={workspace.challenges}
         pipelineChallenges={globalChallenges}
         takeHomes={formattedTakeHomes}
@@ -365,7 +367,6 @@ export default async function WorkspaceDashboardPage({ params }: Props) {
         roleBasePermissions={roleBasePermissions}
         sessions={formattedSessions}
         candidates={formattedCandidates}
-        initialBuckets={buckets as any}
         promptScenarios={promptScenarios}
         promptAttempts={formattedPromptAttempts}
         pendingInvites={pendingInvites.map((i) => ({

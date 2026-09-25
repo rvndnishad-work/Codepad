@@ -142,9 +142,7 @@ export default function ExternalMcpConsole({
     <div className="space-y-8 font-sans">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-black tracking-tight text-fg flex items-center gap-2">
-            <Plug className="w-7 h-7 text-accent" /> External MCP Servers
-          </h1>
+          <h1 className="text-2xl md:text-[26px] font-semibold tracking-[-0.02em] text-fg">External MCP servers</h1>
           <p className="text-sm text-muted/80 mt-1 max-w-2xl leading-relaxed">
             Connect external MCP servers (your internal docs, ATS, repo context) to this workspace. The AI interviewer can call into them mid-screening to ground its questions in customer-specific context — but only when the workspace kill-switch below is on AND a server is bound to the candidate&apos;s template.
           </p>
@@ -152,7 +150,7 @@ export default function ExternalMcpConsole({
         {canManage && (
           <button
             onClick={() => setShowCreate(true)}
-            className="flex items-center gap-1.5 px-5 py-3 rounded-xl bg-accent hover:bg-accent-soft text-bg text-xs font-black uppercase tracking-widest transition-all cursor-pointer shadow-md shrink-0 text-center justify-center"
+            className="flex items-center gap-1.5 px-5 py-3 rounded-xl bg-secondary hover:brightness-110 text-bg text-xs font-semibold transition-all cursor-pointer shadow-md shrink-0 text-center justify-center"
           >
             <Plus className="w-4 h-4" />
             <span>Add server</span>
@@ -161,7 +159,7 @@ export default function ExternalMcpConsole({
       </div>
 
       {/* Security note */}
-      <div className="rounded-xl border border-amber-500/30 bg-amber-500/[0.06] p-4 text-[12px] text-amber-200/90 leading-relaxed flex items-start gap-2.5">
+      <div className="rounded-xl border border-warning/30 bg-warning/[0.06] p-4 text-[12px] text-warning/90 leading-relaxed flex items-start gap-2.5">
         <ShieldAlert className="w-4 h-4 shrink-0 mt-0.5" />
         <div>
           <strong>Security model:</strong> URLs are SSRF-checked (private IPs blocked,
@@ -178,14 +176,14 @@ export default function ExternalMcpConsole({
       <div
         className={`rounded-2xl border p-5 flex items-start justify-between gap-4 transition-colors ${
           allowExternalMcp
-            ? "border-emerald-500/30 bg-emerald-500/[0.04]"
+            ? "border-success/30 bg-success/[0.04]"
             : "border-border bg-surface"
         }`}
       >
         <div className="space-y-1">
-          <h2 className="text-sm font-black uppercase tracking-widest text-fg flex items-center gap-2">
+          <h2 className="text-sm font-semibold text-fg flex items-center gap-2">
             {allowExternalMcp ? (
-              <Power className="w-4 h-4 text-emerald-400" />
+              <Power className="w-4 h-4 text-success" />
             ) : (
               <PowerOff className="w-4 h-4 text-muted" />
             )}
@@ -199,10 +197,10 @@ export default function ExternalMcpConsole({
           <button
             onClick={() => handleKillSwitch(!allowExternalMcp)}
             disabled={togglingSwitch}
-            className={`shrink-0 inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-[11px] font-black uppercase tracking-wider transition disabled:opacity-50 ${
+            className={`shrink-0 inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-semibold transition disabled:opacity-50 ${
               allowExternalMcp
-                ? "border border-rose-500/35 text-rose-400 hover:bg-rose-500/10"
-                : "bg-emerald-500 text-bg hover:bg-emerald-400"
+                ? "border border-danger/35 text-danger hover:bg-danger/10"
+                : "bg-success text-bg hover:bg-success"
             }`}
           >
             {togglingSwitch
@@ -217,7 +215,7 @@ export default function ExternalMcpConsole({
       {/* Servers table */}
       <section className="rounded-2xl border border-border bg-surface overflow-hidden">
         <div className="p-4 border-b border-border">
-          <h2 className="text-sm font-black uppercase tracking-widest text-fg">
+          <h2 className="text-sm font-semibold text-fg">
             Configured servers ({servers.length})
           </h2>
         </div>
@@ -231,7 +229,7 @@ export default function ExternalMcpConsole({
           <div className="overflow-x-auto">
             <table className="w-full text-xs">
               <thead className="bg-bg/50">
-                <tr className="text-left text-muted uppercase tracking-wider">
+                <tr className="text-left text-muted ">
                   <th className="px-4 py-3 font-bold">Name</th>
                   <th className="px-4 py-3 font-bold">URL</th>
                   <th className="px-4 py-3 font-bold">Auth</th>
@@ -244,37 +242,37 @@ export default function ExternalMcpConsole({
                 {servers.map((s) => (
                   <tr key={s.id} className="border-t border-border/40">
                     <td className="px-4 py-3 font-bold text-fg">{s.name}</td>
-                    <td className="px-4 py-3 font-mono text-muted text-[11px] max-w-xs truncate" title={s.url}>
+                    <td className="px-4 py-3 font-mono text-muted text-xs max-w-xs truncate" title={s.url}>
                       {s.url}
                     </td>
                     <td className="px-4 py-3">
                       <span
-                        className={`inline-flex items-center px-1.5 py-0.5 rounded border text-[9px] font-bold uppercase tracking-wider ${
+                        className={`inline-flex items-center px-1.5 py-0.5 rounded border text-xs font-bold ${
                           s.hasAuthToken
-                            ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-300"
+                            ? "border-success/30 bg-success/10 text-success"
                             : "border-border bg-bg text-muted/60"
                         }`}
                       >
                         {s.hasAuthToken ? "bearer token" : "no auth"}
                       </span>
                     </td>
-                    <td className="px-4 py-3 text-muted/80 text-[10px]">
+                    <td className="px-4 py-3 text-muted/80 text-xs">
                       {s.lastTestedAt ? new Date(s.lastTestedAt).toLocaleString() : <span className="italic">never</span>}
                     </td>
                     <td className="px-4 py-3">
                       {s.lastTestStatus === "ok" ? (
-                        <span className="inline-flex items-center gap-1 text-emerald-400 text-[10px]" title={s.lastTestSummary || undefined}>
+                        <span className="inline-flex items-center gap-1 text-success text-xs" title={s.lastTestSummary || undefined}>
                           <CheckCircle2 className="w-3 h-3" /> ok
                         </span>
                       ) : s.lastTestStatus === "error" ? (
-                        <span className="inline-flex items-center gap-1 text-rose-400 text-[10px]" title={s.lastTestSummary || undefined}>
+                        <span className="inline-flex items-center gap-1 text-danger text-xs" title={s.lastTestSummary || undefined}>
                           <XCircle className="w-3 h-3" /> error
                         </span>
                       ) : (
-                        <span className="text-muted/50 text-[10px] italic">untested</span>
+                        <span className="text-muted/50 text-xs italic">untested</span>
                       )}
                       {s.enabled && (
-                        <span className="ml-2 inline-flex items-center px-1.5 py-0.5 rounded border border-accent/30 bg-accent/10 text-accent text-[9px] font-bold uppercase tracking-wider">
+                        <span className="ml-2 inline-flex items-center px-1.5 py-0.5 rounded border border-secondary/30 bg-secondary/10 text-secondary text-xs font-bold ">
                           enabled
                         </span>
                       )}
@@ -285,16 +283,16 @@ export default function ExternalMcpConsole({
                           <button
                             onClick={() => handleTest(s.id)}
                             disabled={testingId === s.id}
-                            className="inline-flex items-center gap-1 px-2 py-1 rounded-md border border-border hover:bg-elevated text-muted hover:text-fg text-[10px] font-bold uppercase tracking-wider transition disabled:opacity-50"
+                            className="inline-flex items-center gap-1 px-2 py-1 rounded-md border border-border hover:bg-elevated text-muted hover:text-fg text-xs font-bold transition disabled:opacity-50"
                           >
                             <Beaker className="w-3 h-3" /> {testingId === s.id ? "..." : "Test"}
                           </button>
                           <button
                             onClick={() => handleToggleEnabled(s)}
-                            className={`inline-flex items-center gap-1 px-2 py-1 rounded-md border text-[10px] font-bold uppercase tracking-wider transition ${
+                            className={`inline-flex items-center gap-1 px-2 py-1 rounded-md border text-xs font-bold transition ${
                               s.enabled
-                                ? "border-amber-500/30 text-amber-400 hover:bg-amber-500/10"
-                                : "border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/10"
+                                ? "border-warning/30 text-warning hover:bg-warning/10"
+                                : "border-success/30 text-success hover:bg-success/10"
                             }`}
                           >
                             {s.enabled ? <PowerOff className="w-3 h-3" /> : <Power className="w-3 h-3" />}
@@ -302,13 +300,13 @@ export default function ExternalMcpConsole({
                           </button>
                           <button
                             onClick={() => setEditing(s)}
-                            className="inline-flex items-center gap-1 px-2 py-1 rounded-md border border-border hover:bg-elevated text-muted hover:text-fg text-[10px] font-bold uppercase tracking-wider transition"
+                            className="inline-flex items-center gap-1 px-2 py-1 rounded-md border border-border hover:bg-elevated text-muted hover:text-fg text-xs font-bold transition"
                           >
                             <Edit3 className="w-3 h-3" /> Edit
                           </button>
                           <button
                             onClick={() => handleDelete(s)}
-                            className="inline-flex items-center gap-1 px-2 py-1 rounded-md border border-rose-500/30 text-rose-400 hover:bg-rose-500/10 text-[10px] font-bold uppercase tracking-wider transition"
+                            className="inline-flex items-center gap-1 px-2 py-1 rounded-md border border-danger/30 text-danger hover:bg-danger/10 text-xs font-bold transition"
                           >
                             <Trash2 className="w-3 h-3" />
                           </button>
@@ -419,8 +417,8 @@ function ServerFormModal({
         className="w-full max-w-lg bg-surface border border-border rounded-3xl p-6 space-y-5 shadow-2xl"
       >
         <div className="flex items-center justify-between">
-          <h3 className="text-sm font-black uppercase tracking-widest text-fg flex items-center gap-2">
-            <Plug className="w-4 h-4 text-accent" />
+          <h3 className="text-sm font-semibold text-fg flex items-center gap-2">
+            <Plug className="w-4 h-4 text-secondary" />
             {mode === "create" ? "Add external MCP server" : `Edit "${existing?.name}"`}
           </h3>
           <button type="button" onClick={onClose} className="p-1 rounded-md hover:bg-elevated text-muted hover:text-fg">
@@ -429,7 +427,7 @@ function ServerFormModal({
         </div>
 
         <div className="space-y-1.5">
-          <label className="text-[10px] font-black uppercase text-muted tracking-wider block">
+          <label className="text-xs font-semibold text-muted block">
             Name (human-readable)
           </label>
           <input
@@ -438,13 +436,13 @@ function ServerFormModal({
             required
             maxLength={60}
             placeholder="e.g. Acme internal docs"
-            className="w-full px-3 py-2 rounded-xl border border-border bg-bg text-xs text-fg focus:outline-none focus:border-accent"
+            className="w-full px-3 py-2 rounded-xl border border-border bg-bg text-xs text-fg focus:outline-none focus:border-secondary"
             autoFocus
           />
         </div>
 
         <div className="space-y-1.5">
-          <label className="text-[10px] font-black uppercase text-muted tracking-wider block">
+          <label className="text-xs font-semibold text-muted block">
             MCP server URL (Streamable HTTP endpoint)
           </label>
           <input
@@ -452,15 +450,15 @@ function ServerFormModal({
             onChange={(e) => setUrl(e.target.value)}
             required
             placeholder="https://docs.acme.com/api/mcp"
-            className="w-full px-3 py-2 rounded-xl border border-border bg-bg text-xs text-fg font-mono focus:outline-none focus:border-accent"
+            className="w-full px-3 py-2 rounded-xl border border-border bg-bg text-xs text-fg font-mono focus:outline-none focus:border-secondary"
           />
-          <div className="text-[10px] text-muted/60">
+          <div className="text-xs text-muted/60">
             Production requires HTTPS. Private/internal addresses are blocked.
           </div>
         </div>
 
         <div className="space-y-1.5">
-          <label className="text-[10px] font-black uppercase text-muted tracking-wider block">
+          <label className="text-xs font-semibold text-muted block">
             Bearer auth token (optional)
           </label>
           <input
@@ -472,20 +470,20 @@ function ServerFormModal({
                 ? "leave blank to keep existing"
                 : "leave blank for no auth"
             }
-            className="w-full px-3 py-2 rounded-xl border border-border bg-bg text-xs text-fg font-mono focus:outline-none focus:border-accent"
+            className="w-full px-3 py-2 rounded-xl border border-border bg-bg text-xs text-fg font-mono focus:outline-none focus:border-secondary"
           />
           {mode === "edit" && existing?.hasAuthToken && (
-            <label className="flex items-center gap-2 text-[10px] text-muted cursor-pointer pt-1">
+            <label className="flex items-center gap-2 text-xs text-muted cursor-pointer pt-1">
               <input
                 type="checkbox"
                 checked={clearAuthToken}
                 onChange={(e) => setClearAuthToken(e.target.checked)}
-                className="accent-rose-500"
+                className="accent-danger"
               />
               Clear the existing token (server will be unauthenticated).
             </label>
           )}
-          <div className="text-[10px] text-muted/60">
+          <div className="text-xs text-muted/60">
             Sent as <code className="font-mono">Authorization: Bearer ...</code>. Never returned via API after save.
           </div>
         </div>
@@ -501,7 +499,7 @@ function ServerFormModal({
           <button
             type="submit"
             disabled={isPending}
-            className="px-5 py-2 rounded-xl bg-accent text-bg text-xs font-black uppercase tracking-wider hover:bg-accent-soft transition disabled:opacity-50"
+            className="px-5 py-2 rounded-xl bg-secondary text-bg text-xs font-semibold hover:brightness-110 transition disabled:opacity-50"
           >
             {isPending ? "Saving..." : mode === "create" ? "Add server" : "Save changes"}
           </button>

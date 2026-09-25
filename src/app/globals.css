@@ -2216,3 +2216,73 @@ body.sidebar-collapsed .workspace-content {
 .nav-tile { transition: background-color 150ms ease, transform 150ms ease; }
 .nav-tile:hover { background: var(--panel); }
 .nav-tile:active { transform: scale(0.99); }
+
+/* ── Code playground (/play) ─────────────────────────────────────────────
+   Chrome for the playground editor. Tokens only; the one accent is the
+   developer yellow. Everything here stops moving under reduced motion. */
+.pg-root { overflow: hidden; background: var(--bg); }
+.pg-panel { overflow: hidden; background: var(--bg); }
+
+/* Scrollbars are thin inside the IDE only; the rest of the site keeps the
+   browser default. */
+.pg-root ::-webkit-scrollbar { width: 6px; height: 6px; }
+.pg-root ::-webkit-scrollbar-track { background: transparent; }
+.pg-root ::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 999px; }
+.pg-root ::-webkit-scrollbar-thumb:hover { background: var(--subtle); }
+
+/* Pane dividers: a hairline that turns accent on hover, drag or focus. The
+   ::before hit area widens the grab zone without widening the line. */
+.pg-divider {
+  position: relative;
+  z-index: 10;
+  flex-shrink: 0;
+  background: var(--border);
+  transition: background-color 150ms ease;
+}
+.pg-divider::before { content: ""; position: absolute; }
+.pg-divider[aria-orientation="vertical"] { width: 1px; height: 100%; cursor: col-resize; }
+.pg-divider[aria-orientation="vertical"]::before { inset: 0 -6px; }
+.pg-divider[aria-orientation="horizontal"] { height: 1px; width: 100%; cursor: row-resize; }
+.pg-divider[aria-orientation="horizontal"]::before { inset: -6px 0; }
+.pg-divider:hover,
+.pg-divider:active,
+.pg-divider:focus-visible { background: var(--accent); outline: none; }
+
+/* Sandpack draws its own chrome; the playground supplies it instead. */
+.pg-root .sp-overlay,
+.pg-root .sp-error-indicator { display: none !important; }
+.pg-root .sp-layout { background: transparent !important; border: none !important; }
+.pg-root .sp-stack,
+.pg-root .sp-console,
+.pg-root .sp-preview-container { background: transparent !important; }
+
+/* Phone drawers and menus slide in from the edge they belong to. */
+@keyframes pg-in-left { from { transform: translateX(-24px); opacity: 0; } }
+@keyframes pg-in-right { from { transform: translateX(24px); opacity: 0; } }
+@keyframes pg-in-down { from { transform: translateY(-4px); opacity: 0; } }
+@keyframes pg-in-up { from { transform: translateY(16px); opacity: 0; } }
+.pg-sheet-left { animation: pg-in-left 200ms cubic-bezier(0.32, 0.72, 0, 1); }
+.pg-sheet-right { animation: pg-in-right 200ms cubic-bezier(0.32, 0.72, 0, 1); }
+.pg-menu { animation: pg-in-down 140ms ease-out; transform-origin: top right; }
+.pg-sheet-up { animation: pg-in-up 220ms cubic-bezier(0.32, 0.72, 0, 1); }
+
+@media (prefers-reduced-motion: reduce) {
+  .pg-root *,
+  .pg-root *::before,
+  .pg-root *::after,
+  .pg-skeleton *,
+  .pg-skeleton *::before,
+  .pg-skeleton *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* Candidates: menus, dialogs, toasts and the quick-view drawer. Each use site
+   pairs these with motion-reduce:animate-none. */
+@keyframes menuIn { from { opacity: 0; transform: translateY(-4px) scale(0.98); } }
+@keyframes dialogIn { from { opacity: 0; transform: translateY(8px) scale(0.985); } }
+@keyframes toastIn { from { opacity: 0; transform: translateY(8px); } }
+@keyframes drawerIn { from { transform: translateX(24px); opacity: 0; } }
+@keyframes fadeIn { from { opacity: 0; } }

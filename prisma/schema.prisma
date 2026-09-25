@@ -72,6 +72,9 @@ model User {
   sessions             Session[]
   snippets             Snippet[]
   workspaces           WorkspaceMember[]
+  ownedCandidates      Candidate[]           @relation("CandidateOwner")
+  ownedCandidateBatches CandidateBatch[]     @relation("CandidateBatchOwner")
+  candidateNotes       CandidateNote[]
   securityEvents       SecurityAuditLog[]
   notifications        Notification[]
   notificationPreferences NotificationPreference[]
@@ -784,6 +787,7 @@ model Workspace {
   aiScreeningBatches   AIScreeningBatch[]
   atsIntegration       AtsIntegration?
   candidates           Candidate[]
+  candidateBatches     CandidateBatch[]
   challenges           Challenge[]
   sessions             InterviewSession[]
   mcpApiKeys           McpApiKey[]
@@ -835,16 +839,17 @@ model Candidate {
   /// JSON-encoded string[] of tags (e.g. ["senior", "react", "remote-ok"]).
   tags                String?
   /// Disposition flag — semantically "what's the current bucket for this
-  /// person?" Historical values: active/future_hire/do_not_hire/hired/
-  /// rejected/archived. Coexists with `stage` (the pipeline position) — see
-  /// IP-34. Kept for backwards compat with existing queries.
+  /// person?" Values: active/future_hire/do_not_hire/passed/rejected/
+  /// archived ("hired" before screening-only Candidates). Coexists with
+  /// `stage` — see IP-34. Kept for backwards compat with existing queries.
   status              String               @default("active")
-  /// IP-34: pipeline stage. One of:
-  ///   APPLIED → SCREENED → TAKE_HOME → ONSITE → OFFER → HIRED
-  ///                                                       ↘ REJECTED
-  /// REJECTED requires `rejectReason` set. Drag-drop on the Kanban moves
-  /// candidates between these.
-  stage               String               @default("APPLIED")
+  /// IP-34, narrowed to screening only (the app is not an ATS):
+  ///   NEW → SCREENING → PASSED
+  ///                   ↘ REJECTED ("Not passed")
+  /// REJECTED requires `rejectReason` set. Older values (APPLIED, SCREENED,
+  /// TAKE_HOME, ONSITE, OFFER, HIRED) were migrated; normalizeStage() still
+  /// reads them.
+  stage               String               @default("NEW")
   /// IP-34: when set, why this candidate was rejected.
   ///   SKILL_GAP / CULTURE_FIT / COMP_MISMATCH / NO_RESPONSE / WITHDREW / OTHER
   rejectReason        String?
@@ -852,10 +857,17 @@ model Candidate {
   rejectReasonNote    String?
   /// Last time `stage` mutated — drives "time-in-stage" diagnostics.
   stageChangedAt      DateTime?
+  /// The hiring batch (role or drive) this candidate belongs to. One at a time.
+  batchId             String?
+  /// Workspace member responsible for moving this candidate along.
+  ownerId             String?
   createdAt           DateTime             @default(now())
   updatedAt           DateTime             @updatedAt
   aiInterviewSessions AIInterviewSession[]
   workspace           Workspace            @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  batch               CandidateBatch?      @relation(fields: [batchId], references: [id], onDelete: SetNull)
+  owner               User?                @relation("CandidateOwner", fields: [ownerId], references: [id], onDelete: SetNull)
+  candidateNotes      CandidateNote[]
   sessions            InterviewSession[]
   takeHomes           TakeHomeAssignment[]
 
@@ -863,6 +875,44 @@ model Candidate {
   @@index([workspaceId, status])
   @@index([workspaceId, name])
   @@index([workspaceId, stage])
+  @@index([workspaceId, batchId])
+  @@index([workspaceId, ownerId])
+}
+
+/// A named group of candidates for one role or hiring drive
+/// ("Frontend · Oct"). A candidate belongs to at most one batch.
+model CandidateBatch {
+  id          String      @id @default(cuid())
+  workspaceId String
+  name        String
+  roleTitle   String?
+  ownerId     String?
+  deadline    DateTime?
+  targetHires Int?
+  /// OPEN or CLOSED.
+  status      String      @default("OPEN")
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+  workspace   Workspace   @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  owner       User?       @relation("CandidateBatchOwner", fields: [ownerId], references: [id], onDelete: SetNull)
+  candidates  Candidate[]
+
+  @@unique([workspaceId, name])
+  @@index([workspaceId, status])
+}
+
+/// One note on a candidate, with its author. Replaces the single shared
+/// `Candidate.notes` text for new writes; that field stays as "earlier notes".
+model CandidateNote {
+  id          String    @id @default(cuid())
+  candidateId String
+  authorId    String?
+  body        String
+  createdAt   DateTime  @default(now())
+  candidate   Candidate @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+  author      User?     @relation(fields: [authorId], references: [id], onDelete: SetNull)
+
+  @@index([candidateId, createdAt])
 }
 
 model WorkspaceMember {
@@ -1064,16 +1114,28 @@ model AIInterviewSession {
   /// Used as the authoritative baseline for diffs/grading so re-resolving
   /// templates at grade time can never drift and credit scaffold code.
   starterFilesJson String?
+  /// Unstarted invites close at this time (status becomes "EXPIRED") and stop
+  /// holding credits. Null for invites sent before expiry existed.
+  expiresAt        DateTime?
+  /// When the invite email last went out, and whether it was accepted by the
+  /// mail provider: "SENT" | "FAILED" | "SKIPPED" (no provider configured).
+  inviteSentAt      DateTime?
+  inviteEmailStatus String?
+  inviteEmailError  String?
+  /// Reminder email for unstarted invites; sent at most once automatically.
+  reminderSentAt    DateTime?
   ledgerEntries    AIInterviewCreditLedger[]
   candidate        Candidate?                @relation(fields: [candidateId], references: [id])
   workspace        Workspace                 @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
   batch            AIScreeningBatch?         @relation(fields: [batchId], references: [id], onDelete: SetNull)
   rounds           AIInterviewRound[]
+  audioClips       AIInterviewAudio[]
 
   @@index([workspaceId, status])
   @@index([workspaceId, createdAt])
   @@index([candidateId])
   @@index([batchId])
+  @@index([status, expiresAt])
 }
 
 /// Revamp (2026-06): a screening campaign grouping multiple candidates under
@@ -1091,6 +1153,10 @@ model AIScreeningBatch {
   /// Live presence the recruiter chose for this screening: "REACTIVE" |
   /// "OBSERVER" | "COACH". Copied onto each session at invite; sets credit cost.
   engagementLevel String   @default("REACTIVE")
+  /// Invite settings chosen in New screening. Null on batches created before
+  /// these settings existed (no expiry, no automatic reminder).
+  expiresAfterDays  Int?
+  reminderAfterDays Int?
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
   workspace       Workspace              @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
@@ -1109,7 +1175,7 @@ model AIScreeningRoundSpec {
   batchId          String
   /// 0-based round order within the batch.
   order            Int
-  /// "frontend" | "backend" | "dsa".
+  /// "frontend" | "backend" | "dsa" | "conversation" | "theory".
   paradigm         String
   /// Execution language for backend/dsa (e.g. "node", "python"). Null for frontend.
   language         String?
@@ -1123,6 +1189,9 @@ model AIScreeningRoundSpec {
   /// AIInterviewTemplate id when sourceKind is "scaffold" (per-round override).
   templateId       String?
   estimatedMinutes Int     @default(30)
+  /// Theory rounds only: the recruiter's settings (question count, time per
+  /// question, follow-ups, answer mode) as JSON. See lib/ai-interview/theory.ts.
+  theoryJson       String?
   batch            AIScreeningBatch @relation(fields: [batchId], references: [id], onDelete: Cascade)
 
   @@index([batchId, order])
@@ -1135,6 +1204,28 @@ model AIScreeningRoundSpec {
 /// revamp default), so `chatHistory` here is reserved/nullable for a future
 /// per-round-reset option. Credit is still charged once per SESSION (on the
 /// first message of the first round), not per round.
+/// A recording of one spoken theory answer, kept only when the recruiter
+/// turned on replay for the round. Removed with its session.
+model AIInterviewAudio {
+  id        String   @id @default(cuid())
+  sessionId String
+  roundId   String
+  /// 0-based question position in the round.
+  question  Int
+  /// 0 for the main answer, n for the nth follow-up.
+  followUp  Int      @default(0)
+  /// Clip order within one answer (the mic can be paused and resumed).
+  seq       Int      @default(0)
+  mime      String
+  bytes     Bytes
+  seconds   Int      @default(0)
+  createdAt DateTime @default(now())
+  session   AIInterviewSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@index([roundId, question])
+  @@index([sessionId])
+}
+
 model AIInterviewRound {
   id               String  @id @default(cuid())
   sessionId        String
@@ -1159,6 +1250,12 @@ model AIInterviewRound {
   /// score aggregates these.
   score            Int?
   ratings          String?
+  /// Theory rounds only: settings plus the questions drawn for this candidate
+  /// at invite (with reference answers). Server-only, never sent to the candidate.
+  theoryJson       String?
+  /// Theory rounds only: the candidate's answer to each question, follow-ups,
+  /// integrity counts and, after grading, the grade for each question.
+  answersJson      String?
   /// "PENDING" | "ACTIVE" | "COMPLETED".
   status           String  @default("PENDING")
   startedAt        DateTime?

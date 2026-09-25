@@ -8,8 +8,8 @@
  *
  *   - Forward only (`isForwardTransition`): events never demote a candidate,
  *     and a candidate a recruiter already moved ahead stays ahead.
- *   - Never auto-enters HIRED or REJECTED — terminal moves are human calls
- *     (REJECTED additionally requires a reason via updateCandidateStageAction).
+ *   - Never auto-enters PASSED or REJECTED — screening decisions are human calls
+ *     (REJECTED additionally requires a reason via moveCandidatesStage).
  *   - Server-only module: keep it out of client bundles (stages.ts stays the
  *     client-safe home for the taxonomy).
  *
@@ -27,7 +27,7 @@ import {
 } from "@/lib/workspace-audit";
 
 /** Stages workflow events may auto-advance into. Terminal stages excluded. */
-export type AutoAdvanceStage = Exclude<PipelineStage, "HIRED" | "REJECTED">;
+export type AutoAdvanceStage = Exclude<PipelineStage, "PASSED" | "REJECTED">;
 
 export type AdvanceInput = {
   workspaceId: string;
@@ -49,6 +49,13 @@ export type AdvanceInput = {
 export async function advanceCandidateStage(
   input: AdvanceInput,
 ): Promise<{ advanced: boolean }> {
+  // The type already rules these out; this holds even for a cast or a
+  // plain-JS caller. Automation never makes a screening decision.
+  const to: string = input.toStage;
+  if (to === "PASSED" || to === "REJECTED") {
+    console.error(`[crmAdvance] refused auto-move to ${to} from ${input.source}`);
+    return { advanced: false };
+  }
   try {
     const candidate = input.candidateId
       ? await prisma.candidate.findFirst({

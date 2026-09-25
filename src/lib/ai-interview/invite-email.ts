@@ -13,6 +13,9 @@ export type InviteEmailInput = {
   inviteUrl: string;
   /** Attribution for the EmailLog row (workspace Email activity view). */
   workspaceId?: string;
+  reminder?: boolean;
+  expiresAt?: Date | null;
+  minutes?: number | null;
 };
 
 /**
@@ -29,6 +32,9 @@ export async function sendInviteEmail(input: InviteEmailInput): Promise<EmailRes
       positionTitle: input.positionTitle,
       workspaceName: input.workspaceName,
       inviteUrl: input.inviteUrl,
+      reminder: input.reminder,
+      expiresAt: input.expiresAt ? input.expiresAt.toISOString() : null,
+      minutes: input.minutes ?? null,
     },
     workspaceId: input.workspaceId,
   });

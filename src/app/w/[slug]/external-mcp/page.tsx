@@ -42,12 +42,12 @@ export default async function WorkspaceExternalMcpPage({ params }: Props) {
   if (!workspacePlanAllowsAiScreening(workspace.planName)) {
     return (
       <div className="rounded-3xl border border-border bg-surface p-10 text-center flex flex-col items-center gap-5 max-w-2xl mx-auto">
-        <div className="w-14 h-14 rounded-2xl bg-indigo-500/10 border border-indigo-500/25 flex items-center justify-center text-indigo-400">
+        <div className="w-14 h-14 rounded-2xl bg-secondary/10 border border-secondary/25 flex items-center justify-center text-secondary">
           <Lock className="w-6 h-6" />
         </div>
         <div className="space-y-2">
-          <h2 className="text-xl font-black text-fg flex items-center justify-center gap-2">
-            <Plug className="w-5 h-5 text-accent" /> External MCP is a Growth feature
+          <h2 className="text-xl font-semibold text-fg flex items-center justify-center gap-2">
+            <Plug className="w-5 h-5 text-secondary" /> External MCP is a Growth feature
           </h2>
           <p className="text-sm text-muted leading-relaxed max-w-md">
             Upgrade this workspace to <span className="font-bold text-fg">Growth</span> or <span className="font-bold text-fg">Enterprise</span> to wire your internal MCP servers (docs, ATS, repos) into Interviewpad screenings.
@@ -55,7 +55,7 @@ export default async function WorkspaceExternalMcpPage({ params }: Props) {
         </div>
         <Link
           href={`/w/${slug}?section=billing`}
-          className="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-xl bg-accent hover:bg-accent-soft text-bg text-xs font-black uppercase tracking-wider transition shadow-md"
+          className="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-xl bg-secondary hover:brightness-110 text-bg text-xs font-semibold transition shadow-md"
         >
           View plans &amp; upgrade
         </Link>

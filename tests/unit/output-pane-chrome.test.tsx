@@ -4,7 +4,6 @@ import { Terminal } from "lucide-react";
 import {
   PaneTitle,
   LiveBadge,
-  UrlPill,
   ClearButton,
   RefreshPreviewButton,
 } from "@/components/OutputPaneChrome";
@@ -18,11 +17,6 @@ describe("OutputPaneChrome", () => {
   it("LiveBadge signals a live stream", () => {
     render(<LiveBadge />);
     expect(screen.getByText("Live")).toBeTruthy();
-  });
-
-  it("UrlPill shows the sandbox origin", () => {
-    render(<UrlPill />);
-    expect(screen.getByText("localhost:3000")).toBeTruthy();
   });
 
   it("ClearButton fires onClear and labels itself when roomy", () => {

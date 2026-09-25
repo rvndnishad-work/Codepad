@@ -116,10 +116,10 @@ export const MCP_TOOLS: ToolCatalogEntry[] = [
       "Move a candidate through the pipeline. Optionally append a timestamped note explaining the move.",
     args: [
       { name: "candidate_id", type: "string", required: true, description: "Candidate's internal id." },
-      { name: "status", type: "active|hired|rejected|archived", required: true, description: "New status." },
+      { name: "status", type: "active|rejected|archived", required: true, description: "New status. Passing is refused: only a recruiter can pass a candidate, in the app." },
       { name: "note", type: "string", required: false, description: "Optional note appended to candidate notes." },
     ],
-    example: 'update_candidate_status({ candidate_id: "cmp...", status: "hired" })',
+    example: 'update_candidate_status({ candidate_id: "cmp...", status: "rejected", note: "Below the bar on the take-home" })',
   },
   {
     name: "add_candidate_note",

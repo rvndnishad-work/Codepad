@@ -8,6 +8,8 @@ import rehypeRaw from "rehype-raw";
 import { toHtml } from "hast-util-to-html";
 import "highlight.js/styles/github-dark.css";
 import RunnableSnippet from "./RunnableSnippet";
+import DocCodeBlock from "./DocCodeBlock";
+import { createSlugger } from "@/lib/interview-questions/reading";
 
 interface MarkdownRendererProps {
   content: string;
@@ -20,6 +22,12 @@ interface MarkdownRendererProps {
    * user-generated content: raw HTML here is a stored-XSS vector.
    */
   allowHtml?: boolean;
+  /**
+   * Long-form document mode (interview answers): h2/h3 get anchor ids that
+   * match `extractHeadings`, code blocks get a language label and a copy
+   * button and scroll instead of wrapping, and tables scroll on narrow screens.
+   */
+  docs?: boolean;
 }
 
 function normalizeSingleLineFences(md: string): string {
@@ -36,8 +44,10 @@ function normalizeSingleLineFences(md: string): string {
   });
 }
 
-function MarkdownRendererInner({ content, className = "", forceRunnable = false, allowHtml = false }: MarkdownRendererProps) {
+export default function MarkdownRenderer({ content, className = "", forceRunnable = false, allowHtml = false, docs = false }: MarkdownRendererProps) {
   const normalizedContent = normalizeSingleLineFences(content);
+  // Fresh per render so ids repeat identically on every pass.
+  const slug = createSlugger();
   const extractText = (node: any): string => {
     if (typeof node === 'string') return node;
     if (Array.isArray(node)) return node.map(extractText).join('');
@@ -86,7 +96,7 @@ function MarkdownRendererInner({ content, className = "", forceRunnable = false,
             }
 
             // Ensure long single-line code (curated JSON flattened without \n) wraps instead of overflowing on one line.
-            const wrapClass = !inline ? " whitespace-pre-wrap break-words [overflow-wrap:anywhere]" : "";
+            const wrapClass = !inline && !docs ? " whitespace-pre-wrap break-words [overflow-wrap:anywhere]" : "";
             return <code className={`${className ?? ""}${wrapClass}`} {...props}>{children}</code>;
           },
           // Render hand-authored inline SVG via the browser's native parser
@@ -101,11 +111,38 @@ function MarkdownRendererInner({ content, className = "", forceRunnable = false,
               dangerouslySetInnerHTML={{ __html: toHtml(node, { space: "svg" }) }}
             />
           ),
+          ...(docs
+            ? {
+              h2: ({ children }: any) => {
+                const id = slug(extractText(children));
+                return (
+                  <h2 id={id} className="group scroll-mt-40">
+                    {children}
+                    <a href={`#${id}`} aria-label="Link to this section" className="doc-anchor">#</a>
+                  </h2>
+                );
+              },
+              h3: ({ children }: any) => {
+                const id = slug(extractText(children));
+                return (
+                  <h3 id={id} className="group scroll-mt-40">
+                    {children}
+                    <a href={`#${id}`} aria-label="Link to this section" className="doc-anchor">#</a>
+                  </h3>
+                );
+              },
+              table: ({ children }: any) => (
+                <div className="doc-table">
+                  <table>{children}</table>
+                </div>
+              ),
+            }
+            : {}),
           img: ({ ...props }) => (
             <span className="block my-8">
-              <img 
-                {...props} 
-                className="rounded-2xl border border-border/50 shadow-2xl mx-auto" 
+              <img
+                {...props}
+                className="rounded-2xl border border-border/50 shadow-2xl mx-auto"
                 loading="lazy"
               />
               {props.alt && (
@@ -130,6 +167,12 @@ function MarkdownRendererInner({ content, className = "", forceRunnable = false,
               return <>{children}</>;
             }
 
+            if (docs) {
+              const first = childrenArray[0] as any;
+              const lang = /language-([\w-]+)/.exec(first?.props?.className || "")?.[1] ?? "";
+              return <DocCodeBlock language={lang} text={extractText(children)}>{children}</DocCodeBlock>;
+            }
+
             return (
               <pre className="relative overflow-auto whitespace-pre-wrap break-words [overflow-wrap:anywhere] group border border-border/50 bg-panel/50 rounded-xl my-8 max-w-full">
                 {children}
@@ -143,15 +186,3 @@ function MarkdownRendererInner({ content, className = "", forceRunnable = false,
     </article>
   );
 }
-
-// Memoized: props are plain stable values (markdown strings + flags), so
-// unrelated page re-renders (scroll flags, dock observers, save toggles)
-// skip this whole subtree. This matters beyond perf: the svg renderer below
-// mounts diagrams via dangerouslySetInnerHTML, and a re-render builds a new
-// {__html} object, which makes React re-set innerHTML even for an identical
-// string — destroying the SVG subtree and restarting any SMIL diagram
-// animation from 0 on every scroll burst. Verified with a jsdom identity
-// test (re-render replaces the <svg> node; memoized keeps it).
-const MarkdownRenderer = React.memo(MarkdownRendererInner);
-
-export default MarkdownRenderer;

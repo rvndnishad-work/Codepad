@@ -1,5 +1,6 @@
 "use client";
 
+import { mergeEditedLines, parseQuestionnaire, questionTexts, serializeQuestionnaire } from "@/lib/ai-interview/questionnaire";
 import dynamic from "next/dynamic";
 import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
@@ -67,7 +68,9 @@ function draftFrom(q: QuestionItem, copy: boolean): Draft {
     frameworkLabel: q.frameworkLabel ?? "",
     minutes: q.minutes,
     starterFilesJson: JSON.stringify(q.starterFiles, null, 2),
-    testsCode: q.testsCode,
+    // Conversation questions are edited here as plain lines; reference answers
+    // are kept on save (see mergeEditedLines).
+    testsCode: q.kind === "conversation" ? questionTexts(q.testsCode).join("\n") : q.testsCode,
   };
 }
 
@@ -252,12 +255,9 @@ function Viewer({
           <div className="flex flex-col gap-1.5">
             <span className="text-xs font-medium text-subtle">Questions the interviewer asks (candidates do not see this list)</span>
             <ol className="list-decimal pl-5 flex flex-col gap-1 text-sm text-muted">
-              {q.testsCode
-                .split("\n")
-                .filter((l) => l.trim())
-                .map((l, i) => (
-                  <li key={i}>{l}</li>
-                ))}
+              {questionTexts(q.testsCode).map((l, i) => (
+                <li key={i}>{l}</li>
+              ))}
             </ol>
           </div>
         ) : (
@@ -351,7 +351,9 @@ function Editor({
         frameworkLabel: d.frameworkLabel,
         estimatedMinutes: d.minutes,
         starterFilesJson: d.starterFilesJson,
-        testsCode: d.testsCode,
+        testsCode: convo
+          ? serializeQuestionnaire(mergeEditedLines(d.testsCode, parseQuestionnaire(sets.items.find((i) => i.id === d.id)?.testsCode)))
+          : d.testsCode,
       });
       if (!r.ok) return toast(r.error, "error");
       onSaved(r.id, !d.id);
@@ -423,7 +425,10 @@ function Editor({
           </Field>
         </div>
         {convo ? (
-          <Field label="Questions to ask" hint="One per line, in order. The interviewer asks them one at a time and follows up. Candidates never see this list.">
+          <Field
+            label="Questions to ask"
+            hint="One per line, in order. The interviewer asks them one at a time and follows up. Candidates never see this list. To add reference answers or pick public questions, use the Question library."
+          >
             <textarea
               rows={7}
               value={d.testsCode}

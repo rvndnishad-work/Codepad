@@ -1,3 +1,4 @@
+import { graderQuestionList, parseQuestionnaire, type QuestionItem } from "./questionnaire";
 import { prisma } from "@/lib/prisma";
 import { analyzeTelemetry, type TelemetryEvent } from "@/lib/proctoring/ai-detection";
 import { AI_INTERVIEW_TOGETHER_MODEL } from "@/lib/ai-interview/scaffolds";
@@ -268,12 +269,12 @@ async function gradeConversationRound(
   positionTitle: string,
   transcript: ChatEntry[],
   brief: string,
-  questions: string[],
+  questions: QuestionItem[],
 ): Promise<GraderResult> {
   const turns = substantiveTurns(transcript);
   if (apiKey && turns > 0) {
     try {
-      const raw = await runGraderPrompt(apiKey, conversationGraderPrompt({ positionTitle, brief, questions, transcript: renderTranscript(transcript) }));
+      const raw = await runGraderPrompt(apiKey, conversationGraderPrompt({ positionTitle, brief, questionList: graderQuestionList(questions), transcript: renderTranscript(transcript) }));
       return clampConversation(raw, turns);
     } catch (err) {
       console.error("Conversation grading failed, falling back to participation score:", err);
@@ -465,7 +466,7 @@ export async function gradeSessionById(params: {
           session.positionTitle,
           transcriptForRound(chatHistory, r.id, sessionRounds.length === 1),
           content?.description ?? "",
-          (content?.interviewerNotes ?? "").split("\n").map((l) => l.trim()).filter(Boolean),
+          parseQuestionnaire(content?.interviewerNotes),
         );
         return { round: r, files: {} as Record<string, string>, result };
       }

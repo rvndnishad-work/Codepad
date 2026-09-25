@@ -21,6 +21,7 @@ import { creditCheck, DEFAULT_EXPIRY_DAYS, EXPIRY_CHOICES, expiryDate, REMINDER_
 import { createSessions, sanitizeRoundSpec, snapshotStarters } from "@/lib/ai-interview/screening-create";
 import { deliverInvite } from "@/lib/ai-interview/invites";
 import { plural } from "@/lib/workspace/display";
+import { parseQuestionnaire, serializeQuestionnaire, validateQuestionnaire } from "@/lib/ai-interview/questionnaire";
 
 type Member = { userId: string; role: string; permissions?: unknown };
 
@@ -557,12 +558,16 @@ function sanitizeQuestion(input: QuestionInput) {
   const kind = ["frontend", "backend", "dsa", "conversation"].includes(kindRaw) ? kindRaw : "frontend";
   const frameworkLabel = input.frameworkLabel?.trim().slice(0, 60) || null;
   if (kind === "conversation") {
-    // No code: the brief is the description, and the questions to cover are
-    // kept in testsCode (one per line), which only the interviewer and grader see.
-    const questions = (input.testsCode ?? "").split("\n").map((l) => l.trim()).filter(Boolean);
-    if (!questions.length) throw new ActionError("List at least one question for the interviewer to ask.");
-    if (questions.length > 20) throw new ActionError("Keep it to 20 questions or fewer.");
-    return { title, description, starterFiles: "{}", testsCode: questions.join("\n"), estimatedMinutes, kind, language: null, frameworkLabel };
+    // No code: the brief is the description, and the questions to cover (with
+    // optional reference answers) are kept in testsCode, which only the
+    // interviewer and grader see. See questionnaire.ts for the format.
+    let items;
+    try {
+      items = validateQuestionnaire(parseQuestionnaire(input.testsCode));
+    } catch (err) {
+      throw new ActionError(err instanceof Error ? err.message : "The questions are not valid.");
+    }
+    return { title, description, starterFiles: "{}", testsCode: serializeQuestionnaire(items), estimatedMinutes, kind, language: null, frameworkLabel };
   }
   let starterFiles: string;
   try {

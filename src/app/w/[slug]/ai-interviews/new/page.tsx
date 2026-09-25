@@ -8,10 +8,11 @@ import {
   loadTalentPool,
 } from "@/lib/ai-interview/console-server";
 import NewScreening, { type Prefill } from "../_components/NewScreening";
+import { DEFAULT_REMINDER_DAYS } from "@/lib/ai-interview/console";
 
 type Props = {
   params: Promise<{ slug: string }>;
-  searchParams: Promise<{ candidates?: string; from?: string }>;
+  searchParams: Promise<{ candidates?: string; from?: string; add?: string }>;
 };
 
 export const metadata = { title: "New AI screening — Interviewpad", robots: { index: false, follow: false } };
@@ -38,7 +39,27 @@ export default async function NewAiScreeningPage({ params, searchParams }: Props
     .map((s) => s.trim())
     .filter((id) => pool.some((c) => c.id === id));
 
-  const prefill: Prefill | null = from
+  // ?add=<questionnaire id> comes from the Question library's "Use in AI screening".
+  const addQ = !from && sp.add ? questions.items.find((q) => q.id === sp.add && q.custom) : undefined;
+  const prefill: Prefill | null = addQ
+    ? {
+        title: "",
+        engagementLevel: "",
+        expiresAfterDays: null,
+        reminderAfterDays: DEFAULT_REMINDER_DAYS,
+        rounds: [
+          {
+            paradigm: addQ.kind,
+            language: addQ.kind === "conversation" ? null : addQ.language,
+            frameworkLabel: addQ.frameworkLabel,
+            sourceKind: "scaffold",
+            sourceId: null,
+            templateId: addQ.id,
+            estimatedMinutes: addQ.minutes,
+          },
+        ],
+      }
+    : from
     ? {
         title: from.title,
         engagementLevel: from.engagementLevel,

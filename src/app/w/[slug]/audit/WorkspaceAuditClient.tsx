@@ -145,6 +145,10 @@ const ACTION_META: Record<string, { label: string; tone: string }> = {
     label: "AI screening deleted",
     tone: "border-danger/30 bg-danger/[0.05] text-danger",
   },
+  AI_SCREENING_PASS_MARK_CHANGED: {
+    label: "AI screening pass mark changed",
+    tone: "border-secondary/30 bg-secondary/[0.06] text-secondary",
+  },
   AI_QUESTION_SET_SAVED: {
     label: "AI question saved",
     tone: "border-border bg-panel text-muted",

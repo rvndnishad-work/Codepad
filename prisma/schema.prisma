@@ -1182,6 +1182,10 @@ model AIScreeningBatch {
   /// these settings existed (no expiry, no automatic reminder).
   expiresAfterDays  Int?
   reminderAfterDays Int?
+  /// Score (0-100) a candidate needs to clear this screening. Null = the
+  /// default bar (SCREENING_PASS_THRESHOLD, 60). Only labels results: passing
+  /// is always a recruiter's decision.
+  passMark          Int?
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
   workspace       Workspace              @relation(fields: [workspaceId], references: [id], onDelete: Cascade)

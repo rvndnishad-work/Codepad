@@ -38,6 +38,8 @@ export type CandidateResult = {
   /** Short verdict label ("Strong fit", "Passed", "4.5 of 5"). */
   verdict: string | null;
   passed: boolean | null;
+  /** AI screenings: the screening's own pass mark (0 to 100). Other kinds use their fixed bar. */
+  passMark?: number;
   sentAt: string;
   startedAt: string | null;
   finishedAt: string | null;
@@ -103,9 +105,9 @@ const FAILING_INTERVIEW_VERDICTS: Record<string, string> = {
  * interviewer's own verdict counts too: a "failed" interview never reads as
  * passed because its rubric happens to clear the bar.
  */
-export function describeScore(kind: ResultKind, score: number, rating?: number | null, interviewerVerdict?: string | null) {
+export function describeScore(kind: ResultKind, score: number, rating?: number | null, interviewerVerdict?: string | null, passMark?: number | null) {
   if (kind === "ai_screening") {
-    const v = getScreeningVerdict(score);
+    const v = getScreeningVerdict(score, passMark);
     return { verdict: v?.label ?? null, passed: v?.passed ?? null };
   }
   if (kind === "interview") {

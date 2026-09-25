@@ -25,7 +25,6 @@ import {
   XCircle,
 } from "lucide-react";
 import type { ReportData } from "@/lib/ai-interview/console-server";
-import { SCREENING_PASS_THRESHOLD } from "@/lib/ai-interview/verdict";
 import { daysLeft, fmtDuration } from "@/lib/ai-interview/console";
 import { ENGAGEMENT_LABELS, normalizeEngagementLevel } from "@/lib/ai-interview/engagement";
 import type { RejectReason } from "@/lib/crm/stages";
@@ -115,7 +114,7 @@ export default function ReportView({
     : r.suggestion.label === "No code written"
       ? "No code was written."
       : !r.suggestion.aboveBar
-        ? `AI score ${r.score} is below the bar of ${SCREENING_PASS_THRESHOLD}.`
+        ? `AI score ${r.score} is below the bar of ${r.passMark}.`
         : null;
 
   function decide(stage: "PASSED" | "REJECTED", extra: { override?: boolean; rejectReason?: RejectReason; rejectReasonNote?: string } = {}) {
@@ -646,7 +645,7 @@ function ScoreCard({ r }: { r: ReportData }) {
       {s && (
         <div className="h-1 rounded-full bg-panel relative" aria-hidden>
           <span className={`absolute inset-y-0 left-0 rounded-full ${TONE_BAR[s.tone]}`} style={{ width: `${Math.max(2, r.score ?? 0)}%` }} />
-          <span className="absolute -top-1 -bottom-1 w-px bg-fg/60" style={{ left: `${SCREENING_PASS_THRESHOLD}%` }} title="Your bar" />
+          <span className="absolute -top-1 -bottom-1 w-px bg-fg/60" style={{ left: `${r.passMark}%` }} title={`Pass mark ${r.passMark}`} />
         </div>
       )}
       <div className="h-px bg-border" />
@@ -677,7 +676,10 @@ function ScoreCard({ r }: { r: ReportData }) {
           {mixed && <p>Conversation and theory rounds are graded on their answers instead: answer quality counts as code quality and judgement as problem solving.</p>}
           {theory && <p>Theory rounds score each question from 0 to 5 against its reference answer. The round score is the total over every question asked, so skipped and unreached questions count as zero.</p>}
           <p>With several rounds, the score is the average of the rounds.</p>
-          <p>Your bar is {SCREENING_PASS_THRESHOLD}. Passing someone below it is allowed, and is recorded as a manual override.</p>
+          <p>
+            The pass mark for this screening is {r.passMark}
+            {r.screening ? " (you can change it on the screening page)" : ""}. Passing someone below it is allowed, and is recorded as a manual override.
+          </p>
         </div>
       </details>
     </Card>

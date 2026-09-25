@@ -667,6 +667,8 @@ type ScreeningPlan = {
   status: "ACTIVE" | "CLOSED";
   expiresAfterDays: number;
   reminderAfterDays: number;
+  /** The screening's own pass mark; omitted keeps the default of 60. */
+  passMark?: number;
   talk: { paradigm: "theory" | "conversation"; templateKey: string; questions: number };
   code: { templateId: string; paradigm: "frontend" | "backend" | "dsa"; language?: string; frameworkLabel?: string };
 };
@@ -682,6 +684,7 @@ const PLANS: ScreeningPlan[] = [
     status: "ACTIVE",
     expiresAfterDays: 7,
     reminderAfterDays: 2,
+    passMark: 70,
     talk: { paradigm: "theory", templateKey: "react", questions: REACT_THEORY.length },
     code: { templateId: "valid-parentheses-stack", paradigm: "frontend", frameworkLabel: "React" },
   },
@@ -814,6 +817,7 @@ async function seedScreenings(ctx: Ctx) {
         engagementLevel: plan.engagement,
         expiresAfterDays: plan.expiresAfterDays,
         reminderAfterDays: plan.reminderAfterDays,
+        passMark: plan.passMark ?? null,
         createdAt,
         roundSpecs: {
           create: specs.map((r, order) => ({

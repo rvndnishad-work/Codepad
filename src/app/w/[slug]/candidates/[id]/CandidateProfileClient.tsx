@@ -664,7 +664,7 @@ function ResultRow({ r, index }: { r: CandidateResult; index: number }) {
               </span>
               <span className="text-[13px] text-subtle">{r.kind === "interview" && r.rating != null ? "/ 5" : "/ 100"}</span>
               <span className="ml-auto text-xs text-subtle tabular-nums">
-                Bar {r.kind === "interview" && r.rating != null ? INTERVIEW_PASS_RATING : PASS_MARK[r.kind]}
+                Bar {r.kind === "interview" && r.rating != null ? INTERVIEW_PASS_RATING : (r.passMark ?? PASS_MARK[r.kind])}
               </span>
             </div>
             <div className="relative h-1.5 rounded-full bg-panel" aria-hidden>
@@ -672,7 +672,7 @@ function ResultRow({ r, index }: { r: CandidateResult; index: number }) {
                 className={`h-1.5 rounded-full origin-left animate-rule-in motion-reduce:animate-none ${bar}`}
                 style={{ width: `${Math.max(2, Math.min(100, r.score))}%`, animationDelay: `${150 + Math.min(index, 8) * 50}ms` }}
               />
-              <span className="absolute -top-1 bottom-[-4px] w-px bg-fg/40" style={{ left: `${PASS_MARK[r.kind]}%` }} title="Pass mark" />
+              <span className="absolute -top-1 bottom-[-4px] w-px bg-fg/40" style={{ left: `${r.passMark ?? PASS_MARK[r.kind]}%` }} title="Pass mark" />
             </div>
           </div>
         ) : (

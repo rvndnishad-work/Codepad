@@ -4,7 +4,7 @@
  * and how many credits a new screening needs. No Prisma, so the rules are
  * unit-tested and shared by server pages, server actions and the cron sweep.
  */
-import { SCREENING_PASS_THRESHOLD } from "./verdict";
+import { verdictBands } from "./verdict";
 import { creditCostForLevel } from "./engagement";
 
 export const SESSION_STATUSES = ["PENDING", "ACTIVE", "COMPLETED", "EXPIRED"] as const;
@@ -39,17 +39,18 @@ export function statusTone(status: string): Tone {
  */
 export type Suggestion = { label: string; tone: Tone; aboveBar: boolean; detail: string };
 
-export function suggestion(score: number | null | undefined, linesWritten?: number | null): Suggestion | null {
+export function suggestion(score: number | null | undefined, linesWritten?: number | null, passMark?: number | null): Suggestion | null {
   if (typeof score !== "number" || Number.isNaN(score)) return null;
   const s = Math.max(0, Math.min(100, Math.round(score)));
   if (linesWritten === 0) {
     return { label: "No code written", tone: "danger", aboveBar: false, detail: "The candidate submitted without changing the starter code." };
   }
-  const aboveBar = s >= SCREENING_PASS_THRESHOLD;
-  if (s >= 80) return { label: "Strong match", tone: "success", aboveBar, detail: `Well above the bar of ${SCREENING_PASS_THRESHOLD}.` };
-  if (s >= SCREENING_PASS_THRESHOLD) return { label: "Good match", tone: "indigo", aboveBar, detail: `Above the bar of ${SCREENING_PASS_THRESHOLD}.` };
-  if (s >= 40) return { label: "Borderline", tone: "warning", aboveBar, detail: `Below the bar of ${SCREENING_PASS_THRESHOLD}. Read the code before deciding.` };
-  return { label: "Weak match", tone: "danger", aboveBar, detail: `Well below the bar of ${SCREENING_PASS_THRESHOLD}.` };
+  const b = verdictBands(passMark);
+  const aboveBar = s >= b.bar;
+  if (s >= b.strong) return { label: "Strong match", tone: "success", aboveBar, detail: `Well above the bar of ${b.bar}.` };
+  if (aboveBar) return { label: "Good match", tone: "indigo", aboveBar, detail: `Above the bar of ${b.bar}.` };
+  if (s >= b.borderline) return { label: "Borderline", tone: "warning", aboveBar, detail: `Below the bar of ${b.bar}. Read the report before deciding.` };
+  return { label: "Weak match", tone: "danger", aboveBar, detail: `Well below the bar of ${b.bar}.` };
 }
 
 /**

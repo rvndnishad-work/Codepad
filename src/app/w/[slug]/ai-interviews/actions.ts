@@ -20,6 +20,7 @@ import { loadCreditSummary } from "@/lib/ai-interview/console-server";
 import { creditCheck, DEFAULT_EXPIRY_DAYS, EXPIRY_CHOICES, expiryDate, REMINDER_CHOICES } from "@/lib/ai-interview/console";
 import { createSessions, loadTheoryQuestions, sanitizeRoundSpec, snapshotStarters } from "@/lib/ai-interview/screening-create";
 import { parseTheorySettings } from "@/lib/ai-interview/theory";
+import { passMarkOf, SCREENING_PASS_THRESHOLD } from "@/lib/ai-interview/verdict";
 import { deliverInvite } from "@/lib/ai-interview/invites";
 import { plural } from "@/lib/workspace/display";
 import { parseQuestionnaire, serializeQuestionnaire, validateQuestionnaire } from "@/lib/ai-interview/questionnaire";
@@ -188,6 +189,8 @@ export type NewScreeningInput = {
   engagementLevel: string;
   expiresAfterDays: number;
   reminderAfterDays: number;
+  /** Score a candidate needs to clear this screening. Omitted keeps the default. */
+  passMark?: number | null;
   maxExtensions: number;
   extensionMinutes: number;
 };
@@ -219,6 +222,7 @@ export async function createScreeningAction(
     const level = normalizeEngagementLevel(input.engagementLevel);
     const expiresAfterDays = clampChoice(input.expiresAfterDays, EXPIRY_CHOICES, DEFAULT_EXPIRY_DAYS);
     const reminderAfterDays = clampChoice(input.reminderAfterDays, REMINDER_CHOICES, 0);
+    const passMark = storedPassMark(input.passMark);
     const maxExtensions = Math.max(0, Math.min(5, Math.floor(Number(input.maxExtensions) || 0)));
     const extensionMinutes = Math.max(1, Math.min(60, Math.floor(Number(input.extensionMinutes) || 5)));
 
@@ -242,6 +246,7 @@ export async function createScreeningAction(
           engagementLevel: level,
           expiresAfterDays,
           reminderAfterDays: reminderAfterDays || null,
+          passMark,
           roundSpecs: {
             create: rounds.map((r, order) => ({
               order,
@@ -278,10 +283,43 @@ export async function createScreeningAction(
       engagementLevel: level,
       expiresAfterDays,
       reminderAfterDays,
+      passMark: passMarkOf(passMark),
       emailsFailed: failed,
     });
     refresh(slug);
     return { ok: true, batchId: result.batchId, sent, failed, invited: people.length };
+  } catch (err) {
+    return fail(err);
+  }
+}
+
+/** What to store for a pass mark: null for the default, so a later default change still applies. */
+function storedPassMark(value: number | null | undefined): number | null {
+  if (value == null || !Number.isFinite(Number(value))) return null;
+  const mark = passMarkOf(Number(value));
+  return mark === SCREENING_PASS_THRESHOLD ? null : mark;
+}
+
+/**
+ * Change the score a screening's candidates need to clear its bar. Only the
+ * labels change (Good match, Borderline, below the bar); scores stay as graded
+ * and nobody is passed or failed by it.
+ */
+export async function updatePassMarkAction(slug: string, batchId: string, value: number): Promise<Result<{ passMark: number }>> {
+  try {
+    const w = await assertWorkspaceWriter(slug);
+    const batch = await prisma.aIScreeningBatch.findFirst({ where: { id: batchId, workspaceId: w.workspace.id }, select: { id: true, positionTitle: true, passMark: true } });
+    if (!batch) throw new ActionError("That screening no longer exists.");
+    const passMark = storedPassMark(value);
+    await prisma.aIScreeningBatch.update({ where: { id: batch.id }, data: { passMark } });
+    audit(w, WORKSPACE_AUDIT_ACTIONS.AI_SCREENING_PASS_MARK_CHANGED, "aiScreeningBatch", batch.id, {
+      positionTitle: batch.positionTitle,
+      from: passMarkOf(batch.passMark),
+      to: passMarkOf(passMark),
+    });
+    refresh(slug);
+    revalidatePath(`/w/${slug}/candidates`, "layout");
+    return { ok: true, passMark: passMarkOf(passMark) };
   } catch (err) {
     return fail(err);
   }

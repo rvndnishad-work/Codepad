@@ -94,6 +94,7 @@ export default async function NewAiScreeningPage({ params, searchParams }: Props
         engagementLevel: from.engagementLevel,
         expiresAfterDays: from.expiresAfterDays,
         reminderAfterDays: from.reminderAfterDays,
+        passMark: from.passMarkSet ? from.passMark : null,
         rounds: from.roundSpecs,
       }
     : null;

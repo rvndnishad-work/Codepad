@@ -30,6 +30,14 @@ function legacyCandidatesUrl(slug: string, sp: Record<string, string | string[] 
   return `/w/${slug}/candidates${qs ? `?${qs}` : ""}`;
 }
 
+/** The old Assessments section: live interviews, take-homes, prompt tasks and replays. */
+function legacyAssessmentsUrl(slug: string, view: string | string[] | undefined): string {
+  if (view === "interviews") return `/w/${slug}/interviews`;
+  if (view === "attempts" || view === "scenarios") return `/w/${slug}/library?tab=prompts`;
+  if (view === "replays") return `/w/${slug}/take-homes/all?filter=submitted`;
+  return `/w/${slug}/take-homes`;
+}
+
 export async function generateMetadata({ params }: Props) {
   const { slug } = await params;
   const workspace = await prisma.workspace.findUnique({
@@ -46,6 +54,7 @@ export default async function WorkspaceDashboardPage({ params, searchParams }: P
   const sp = (await searchParams) ?? {};
   if (sp.section === "candidates") redirect(legacyCandidatesUrl(slug, sp));
   if (sp.section === "library") redirect(`/w/${slug}/library`);
+  if (sp.section === "assessments") redirect(legacyAssessmentsUrl(slug, sp.view));
 
   // Gate workspace access based on admin visibility settings
   const session = await auth().catch(() => null);
@@ -121,38 +130,7 @@ export default async function WorkspaceDashboardPage({ params, searchParams }: P
     select: { id: true, email: true, role: true, expiresAt: true, createdAt: true },
   });
 
-  const [promptScenarios, promptAttempts, globalChallenges, takeHomeSessionRows, aiInterviewRows] = await Promise.all([
-    prisma.promptScenario.findMany({
-      where: {
-        OR: [
-          { workspaceId: workspace.id },
-          { workspaceId: null },
-        ]
-      },
-      orderBy: { createdAt: "desc" },
-    }),
-    prisma.promptAttempt.findMany({
-      where: {
-        OR: [
-          { scenario: { workspaceId: workspace.id } },
-          { sessionId: { in: workspace.sessions.map((s) => s.id) } },
-        ]
-      },
-      include: {
-        scenario: { select: { title: true, category: true, difficulty: true } },
-      },
-      orderBy: { createdAt: "desc" },
-    }),
-    prisma.challenge.findMany({
-      where: {
-        OR: [
-          { published: true, workspaceId: null },
-          { workspaceId: workspace.id },
-        ],
-      },
-      select: { id: true, title: true, difficulty: true },
-      orderBy: { title: "asc" },
-    }),
+  const [takeHomeSessionRows, aiInterviewRows] = await Promise.all([
     // Session-backed take-homes (IP-88/89) — the new multi-question model.
     prisma.interviewSession.findMany({
       where: { workspaceId: workspace.id, type: "take-home" },
@@ -228,24 +206,6 @@ export default async function WorkspaceDashboardPage({ params, searchParams }: P
     createdAt: s.createdAt.toISOString(),
     startedAt: s.startedAt ? s.startedAt.toISOString() : null,
     finishedAt: s.finishedAt ? s.finishedAt.toISOString() : null,
-  }));
-
-  const formattedPromptAttempts = promptAttempts.map((a) => ({
-    id: a.id,
-    promptText: a.promptText,
-    charCount: a.charCount,
-    tokenEstimate: a.tokenEstimate,
-    score: a.score,
-    rubricScores: a.rubricScores,
-    feedback: a.feedback,
-    graderType: a.graderType,
-    sessionId: a.sessionId,
-    userId: a.userId,
-    durationSec: a.durationSec,
-    createdAt: a.createdAt.toISOString(),
-    scenarioTitle: a.scenario.title,
-    scenarioCategory: a.scenario.category,
-    scenarioDifficulty: a.scenario.difficulty,
   }));
 
   // Map workspace take-homes into a flat, client-friendly structure
@@ -358,7 +318,6 @@ export default async function WorkspaceDashboardPage({ params, searchParams }: P
         plan={planDisplay(planFields)}
         seatLimit={effectivePlan(planFields).seatLimit}
         challenges={workspace.challenges}
-        pipelineChallenges={globalChallenges}
         takeHomes={formattedTakeHomes}
         takeHomeSessions={takeHomeSessions}
         aiInterviewSessions={aiInterviewSessions}
@@ -367,8 +326,6 @@ export default async function WorkspaceDashboardPage({ params, searchParams }: P
         roleBasePermissions={roleBasePermissions}
         sessions={formattedSessions}
         candidates={formattedCandidates}
-        promptScenarios={promptScenarios}
-        promptAttempts={formattedPromptAttempts}
         pendingInvites={pendingInvites.map((i) => ({
           id: i.id,
           email: i.email,

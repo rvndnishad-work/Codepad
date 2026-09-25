@@ -12,8 +12,9 @@ import { ConfirmDialog } from "../candidates/_components/dialogs";
 import PublicBrowser, { DifficultyChip, type Page } from "./PublicBrowser";
 import QuestionnaireEditor from "./QuestionnaireEditor";
 import { addPublicQuestionsAction, deleteQuestionnaireAction } from "./actions";
+import PromptTasks, { type PromptAttemptItem, type PromptScenario } from "./PromptTasks";
 
-export type LibraryTab = "questionnaires" | "public" | "challenges";
+export type LibraryTab = "questionnaires" | "public" | "challenges" | "prompts";
 
 export default function LibraryClient({
   slug,
@@ -29,6 +30,9 @@ export default function LibraryClient({
   challenges,
   challengeCategories,
   challengeTotal,
+  workspaceId,
+  promptScenarios,
+  promptAttempts,
 }: {
   slug: string;
   initialTab: LibraryTab;
@@ -43,6 +47,9 @@ export default function LibraryClient({
   challenges: LibraryChallenge[];
   challengeCategories: ChallengeCategory[];
   challengeTotal: number;
+  workspaceId: string;
+  promptScenarios: PromptScenario[];
+  promptAttempts: PromptAttemptItem[];
 }) {
   const router = useRouter();
   const pathname = usePathname();
@@ -89,6 +96,7 @@ export default function LibraryClient({
     { id: "questionnaires", label: "Questionnaires", count: questionnaires.length },
     { id: "public", label: "Public questions", count: bankTotal },
     { id: "challenges", label: "Coding challenges", count: challenges.length },
+    { id: "prompts", label: "Prompt tasks", count: promptScenarios.length },
   ];
 
   return (
@@ -100,7 +108,7 @@ export default function LibraryClient({
             Write your own questionnaires, or build them from {bankTotal.toLocaleString("en")} public interview questions.
           </p>
         </div>
-        {canManage && tab !== "challenges" && (
+        {canManage && (tab === "questionnaires" || tab === "public") && (
           <Btn variant="primary" size="md" icon={Plus} onClick={() => setEditing("new")}>
             New questionnaire
           </Btn>
@@ -162,6 +170,7 @@ export default function LibraryClient({
         />
       )}
       {tab === "challenges" && <ChallengeGrid challenges={challenges} />}
+      {tab === "prompts" && <PromptTasks workspace={{ id: workspaceId, slug }} promptScenarios={promptScenarios} promptAttempts={promptAttempts} />}
       {toasts}
     </div>
   );

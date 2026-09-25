@@ -85,15 +85,16 @@ export async function loadCandidateResults(
     ? await prisma.challengeAttempt.findMany({
         where: { sessionId: { in: takeHomeSessionIds }, status: { in: ["passed", "failed"] } },
         select: { sessionId: true, challengeId: true, score: true, durationSec: true, finishedAt: true, startedAt: true },
-        orderBy: { startedAt: "asc" },
+        orderBy: [{ finishedAt: "asc" }, { startedAt: "asc" }],
       })
     : [];
-  // Latest finished attempt per (session, challenge) wins, as on the review page.
+  // The first finished attempt per (session, challenge) counts, as in the take-home report:
+  // retries after submitting never change the score.
   const attemptsBySession = new Map<string, Map<string, (typeof attempts)[number]>>();
   for (const a of attempts) {
     if (!a.sessionId) continue;
     const m = attemptsBySession.get(a.sessionId) ?? new Map();
-    m.set(a.challengeId, a);
+    if (!m.has(a.challengeId)) m.set(a.challengeId, a);
     attemptsBySession.set(a.sessionId, m);
   }
 
@@ -111,7 +112,7 @@ export async function loadCandidateResults(
         ? "scored"
         : th.status === "SUBMITTED"
           ? "submitted"
-          : th.status === "EXPIRED" || (th.status === "PENDING" && th.expiresAt < new Date())
+          : th.status === "EXPIRED" || th.status === "CANCELLED" || (th.status === "PENDING" && th.expiresAt < new Date())
             ? "expired"
             : th.status === "ACTIVE" || th.status === "STARTED" || th.startedAt
               ? "in_progress"
@@ -134,7 +135,7 @@ export async function loadCandidateResults(
         minutes(th.attempt?.durationSec) ??
         (th.startedAt && th.submittedAt ? minutes((th.submittedAt.getTime() - th.startedAt.getTime()) / 1000) : null),
       minutesAllowed: th.timeLimitMin,
-      href: th.attempt ? `/w/${workspaceSlug}/attempts/${th.attempt.id}` : null,
+      href: `/w/${workspaceSlug}/take-homes/${th.id}`,
     });
   }
 
@@ -164,7 +165,7 @@ export async function loadCandidateResults(
           ? "scored"
           : finished
             ? "submitted"
-            : s.status === "expired" || s.status === "abandoned" || (s.status === "scheduled" && s.deadlineAt && s.deadlineAt < new Date())
+            : s.status === "expired" || s.status === "abandoned" || s.status === "cancelled" || (s.status === "scheduled" && s.deadlineAt && s.deadlineAt < new Date())
               ? "expired"
               : s.status === "in_progress"
                 ? "in_progress"

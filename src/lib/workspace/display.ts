@@ -168,8 +168,8 @@ export function setupSteps(input: SetupInput, opts: { seatLimit: number | null; 
     { id: "workspace", title: "Create your workspace", body: "Done.", done: true },
     {
       id: "assessment",
-      title: "Create your first assessment",
-      body: "Pick a ready-made question from the library or write your own.",
+      title: "Send your first take home",
+      body: "Pick coding questions and send them to a candidate to solve on their own time.",
       done: input.assessments > 0,
     },
     {

@@ -636,7 +636,13 @@ model InterviewSession {
   /// Per-session secret used to HMAC-sign agent report bodies. Never sent to
   /// the browser; only embedded in the agent launcher env.
   proctorSecret      String?
+  /// Take-home only: the saved question set this was sent from, if any.
+  takeHomeTemplateId String?
+  /// Take-home only: set when a recruiter cancels the invite. Status is
+  /// "cancelled" and the candidate link stops working.
+  cancelledAt        DateTime?
   createdAt          DateTime         @default(now())
+  takeHomeTemplate   TakeHomeTemplate? @relation(fields: [takeHomeTemplateId], references: [id], onDelete: SetNull)
   rubric             InterviewRubric?
   proctorReport      ProctorAgentReport?
   candidate          Candidate?       @relation(fields: [candidateId], references: [id])
@@ -648,6 +654,24 @@ model InterviewSession {
   @@index([workspaceId])
   /// Listing take-home sessions per workspace (IP-88).
   @@index([workspaceId, type])
+  @@index([takeHomeTemplateId])
+}
+
+/// A saved take-home question set ("Senior frontend take home") that a
+/// recruiter can send again without picking questions each time.
+model TakeHomeTemplate {
+  id          String             @id @default(cuid())
+  workspaceId String
+  name        String
+  /// JSON [{ "challengeId": string, "minutes": number }], in order.
+  itemsJson   String
+  createdById String?
+  createdAt   DateTime           @default(now())
+  updatedAt   DateTime           @updatedAt
+  workspace   Workspace          @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  sessions    InterviewSession[]
+
+  @@index([workspaceId])
 }
 
 model BlogPost {
@@ -785,6 +809,7 @@ model Workspace {
   aiInterviewSessions  AIInterviewSession[]
   aiInterviewTemplates AIInterviewTemplate[]
   aiScreeningBatches   AIScreeningBatch[]
+  takeHomeTemplates    TakeHomeTemplate[]
   atsIntegration       AtsIntegration?
   candidates           Candidate[]
   candidateBatches     CandidateBatch[]

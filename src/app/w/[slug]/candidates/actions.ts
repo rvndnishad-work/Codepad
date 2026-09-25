@@ -107,6 +107,8 @@ export type CreateTakeHomeSessionsInput = {
   recipients: BulkRecipient[];
   daysToExpire: number;
   scenario?: string | null;
+  /** The saved question set this send came from (already checked to be in this workspace). */
+  templateId?: string | null;
 };
 
 export type CreateTakeHomeSessionsResult = {
@@ -257,6 +259,7 @@ export async function bulkCreateTakeHomeSessions(
             shareToken: crypto.randomBytes(16).toString("hex"),
             candidateAccessToken: token,
             deadlineAt,
+            takeHomeTemplateId: input.templateId ?? null,
           },
           select: { id: true },
         });

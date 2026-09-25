@@ -102,8 +102,6 @@ const within = (iso: string | null | undefined, ms: number, now: number) =>
 export function buildOverview(input: OverviewInput, now: Date = new Date()): OverviewData {
   const t = now.getTime();
   const base = `/w/${input.slug}`;
-  const candidateHref = (id: string | null | undefined, fallback: string) =>
-    id ? `${base}/candidates/${id}` : fallback;
 
   // Waiting for review ------------------------------------------------------
   const review: AttentionItem[] = [];
@@ -117,7 +115,7 @@ export function buildOverview(input: OverviewInput, now: Date = new Date()): Ove
       detail: `Take-home submitted · ${th.challengeTitle}`,
       at: th.submittedAt ?? th.expiresAt,
       action: "Review",
-      href: th.attemptId ? `${base}/attempts/${th.attemptId}` : candidateHref(th.candidateId, `${base}?section=assessments&view=take-homes`),
+      href: `${base}/take-homes/${th.id}`,
     });
   }
   for (const s of input.takeHomeSessions) {
@@ -160,7 +158,7 @@ export function buildOverview(input: OverviewInput, now: Date = new Date()): Ove
         detail: `${th.status === "STARTED" ? "Started, not submitted" : "Not started"} · link expires ${left <= DAY ? "today" : "tomorrow"}`,
         at: th.expiresAt,
         action: "Open",
-        href: candidateHref(th.candidateId, `${base}?section=assessments&view=take-homes`),
+        href: `${base}/take-homes/${th.id}`,
       });
     }
   }

@@ -698,13 +698,34 @@ export type TakeHomeSeed = {
   /** Score per challenge, for completed take-homes. */
   scores?: number[];
   minutes?: number[];
+  /** Large pastes and tab switches per question; clean when left out. */
+  integrity?: { pastes: number; blurs: number; blurSec: number }[];
 };
 
-/** Take-homes sent through Assessments (the multi-question session model). */
+/** Saved question sets on the Take home Templates tab, keyed by batch. */
+export const TAKE_HOME_TEMPLATES: { key: string; batch: string; name: string; items: { challenge: ChallengeKey; minutes: number }[] }[] = [
+  { key: "fe", batch: "fe", name: "Senior Frontend Engineer", items: [{ challenge: "debounce", minutes: 30 }, { challenge: "modal", minutes: 30 }] },
+  { key: "be", batch: "be", name: "Backend Engineer (Node.js)", items: [{ challenge: "lru", minutes: 45 }, { challenge: "retry", minutes: 30 }] },
+];
+
+/** Take-homes sent through Take home (the multi-question session model). */
 export const TAKE_HOMES: TakeHomeSeed[] = [
   { candidate: "ana", challenges: ["debounce", "modal"], status: "completed", sentDaysAgo: 8, deadlineDays: -1, scores: [95, 89], minutes: [38, 52] },
   { candidate: "ravi", challenges: ["debounce", "modal"], status: "completed", sentDaysAgo: 8, deadlineDays: -1, scores: [86, 81], minutes: [41, 58] },
   { candidate: "lena", challenges: ["debounce", "modal"], status: "in_progress", sentDaysAgo: 2, deadlineDays: 3 },
+  {
+    candidate: "tomasz",
+    challenges: ["debounce", "modal"],
+    status: "completed",
+    sentDaysAgo: 4,
+    deadlineDays: 2,
+    scores: [60, 44],
+    minutes: [26, 18],
+    integrity: [
+      { pastes: 1, blurs: 2, blurSec: 70 },
+      { pastes: 1, blurs: 1, blurSec: 30 },
+    ],
+  },
   { candidate: "chloe", challenges: ["lru", "retry"], status: "completed", sentDaysAgo: 5, deadlineDays: 2, scores: [67, 100], minutes: [39, 22] },
   { candidate: "arjun", challenges: ["lru", "retry"], status: "scheduled", sentDaysAgo: 1, deadlineDays: 6 },
   { candidate: "fatima", challenges: ["lru", "retry"], status: "expired", sentDaysAgo: 9, deadlineDays: -2 },

@@ -102,6 +102,18 @@ export async function POST(req: Request, { params }: { params: Promise<{ slug: s
   if (!challenge || !challenge.published) {
     return NextResponse.json({ error: "challenge not found" }, { status: 404 });
   }
+
+  // Take-home submission lock: no resubmitting after finishing, after the
+  // deadline, or into someone else's take-home.
+  if (!dryRun && (sessionId || assignmentTokenMatched)) {
+    const { takeHomeSubmissionBlock, assignmentSubmissionBlock } = await import("@/lib/take-home/lock");
+    const blocked = sessionId
+      ? await takeHomeSubmissionBlock({ sessionId, challengeId: challenge.id, token, userId: candidateUserId })
+      : assignmentTokenMatched && token
+        ? await assignmentSubmissionBlock(token)
+        : null;
+    if (blocked) return NextResponse.json({ error: blocked }, { status: 409 });
+  }
   const step = await prisma.challengeStep.findUnique({
     where: { id: stepId },
     select: {
@@ -332,7 +344,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ slug: s
     void (async () => {
       try {
         const th = await prisma.interviewSession.findFirst({
-          where: { id: sessionId, type: "take-home", status: { not: "completed" } },
+          where: { id: sessionId, type: "take-home", status: { in: ["scheduled", "in_progress"] } },
           select: {
             id: true,
             workspaceId: true,
@@ -356,7 +368,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ slug: s
 
         const attempts = await prisma.challengeAttempt.findMany({
           where: { sessionId, status: { in: ["passed", "failed"] } },
-          select: { challengeId: true, score: true },
+          select: { id: true, challengeId: true, status: true, score: true, startedAt: true, finishedAt: true },
         });
         const done = new Set(attempts.map((a) => a.challengeId));
         if (!ids.every((id) => done.has(id))) return;
@@ -364,14 +376,15 @@ export async function POST(req: Request, { params }: { params: Promise<{ slug: s
         // Guarded update — count 0 means the lobby fallback (or a concurrent
         // grade) already completed it, so skip the comms to avoid duplicates.
         const res = await prisma.interviewSession.updateMany({
-          where: { id: sessionId, status: { not: "completed" } },
+          where: { id: sessionId, status: { in: ["scheduled", "in_progress"] } },
           data: { status: "completed", finishedAt: new Date() },
         });
         if (res.count === 0) return;
 
-        const avgScore = attempts.length
-          ? Math.round(attempts.reduce((s, a) => s + (a.score ?? 0), 0) / attempts.length)
-          : null;
+        // One attempt per question (the first), the same score the report shows.
+        const { countedAttempts, takeHomeScore } = await import("@/lib/take-home/status");
+        const counted = countedAttempts(attempts, ids);
+        const avgScore = takeHomeScore(ids.map((id) => counted.get(id)?.score));
 
         if (th.workspaceId) {
           if (th.candidateId) {

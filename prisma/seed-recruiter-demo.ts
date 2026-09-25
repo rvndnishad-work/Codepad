@@ -565,7 +565,7 @@ type ScreeningPlan = {
   code: { templateId: string; paradigm: "frontend" | "backend" | "dsa"; language?: string; frameworkLabel?: string };
 };
 
-const THEORY_SETTINGS: TheorySettings = { count: null, secondsPerQuestion: 180, followUps: 1, answerMode: "voice" };
+const THEORY_SETTINGS: TheorySettings = { count: null, secondsPerQuestion: 180, followUps: 1, answerMode: "voice", recordAudio: false };
 
 const PLANS: ScreeningPlan[] = [
   {

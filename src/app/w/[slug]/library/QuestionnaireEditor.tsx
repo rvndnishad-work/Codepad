@@ -1,13 +1,13 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useEffect, useRef, useState, useTransition } from "react";
 import { ArrowDown, ArrowLeft, ArrowUp, BookOpen, ChevronDown, Plus, Trash2 } from "lucide-react";
 import { TopicLogo } from "@/app/interview-questions/_components/TopicLogo";
 import { techLabel } from "@/lib/interview-questions/shared";
 import { MAX_QUESTIONS, type QuestionItem } from "@/lib/ai-interview/questionnaire";
-import type { PublicCategory, PublicRow, Questionnaire } from "@/lib/library/library-server";
+import type { ChallengeCategory, PublicCategory, PublicRow, Questionnaire } from "@/lib/library/library-server";
 import { plural } from "@/lib/workspace/display";
-import { Btn, Dialog, Field, inputCls } from "../candidates/_components/ui";
+import { Btn, Field, inputCls } from "../candidates/_components/ui";
 import PublicBrowser, { DifficultyChip, type Page } from "./PublicBrowser";
 import { publicItemsAction, saveQuestionnaireAction } from "./actions";
 
@@ -28,6 +28,8 @@ export default function QuestionnaireEditor({
   rounds,
   bankTotal,
   firstPage,
+  challengeCategories = [],
+  challengeTotal = 0,
   canManage,
   onBack,
   onSaved,
@@ -39,6 +41,8 @@ export default function QuestionnaireEditor({
   rounds: string[];
   bankTotal: number;
   firstPage: Page;
+  challengeCategories?: ChallengeCategory[];
+  challengeTotal?: number;
   canManage: boolean;
   onBack: () => void;
   onSaved: (id: string, created: boolean) => void;
@@ -90,6 +94,26 @@ export default function QuestionnaireEditor({
       if (!r.ok) return toast(r.error, "error");
       onSaved(r.id, !initial);
     });
+  }
+
+  if (picking) {
+    return (
+      <PickView
+        slug={slug}
+        title={title.trim() || (initial ? "this questionnaire" : "New questionnaire")}
+        categories={categories}
+        rounds={rounds}
+        bankTotal={bankTotal}
+        firstPage={firstPage}
+        challengeCategories={challengeCategories}
+        challengeTotal={challengeTotal}
+        inQuestionnaire={new Set(rows.map((r) => r.src).filter(Boolean) as string[])}
+        initialTech={mostCommon(rows.map((r) => r.tech))}
+        room={MAX_QUESTIONS - filled.length}
+        onClose={() => setPicking(false)}
+        onAdd={addPicked}
+      />
+    );
   }
 
   return (
@@ -210,20 +234,6 @@ export default function QuestionnaireEditor({
         </div>
       </section>
 
-      {picking && (
-        <PickDialog
-          slug={slug}
-          categories={categories}
-          rounds={rounds}
-          bankTotal={bankTotal}
-          firstPage={firstPage}
-          inQuestionnaire={new Set(rows.map((r) => r.src).filter(Boolean) as string[])}
-          initialTech={mostCommon(rows.map((r) => r.tech))}
-          room={MAX_QUESTIONS - filled.length}
-          onClose={() => setPicking(false)}
-          onAdd={addPicked}
-        />
-      )}
     </div>
   );
 }
@@ -242,12 +252,19 @@ function IconButton({ label, onClick, icon: Icon, disabled }: { label: string; o
   );
 }
 
-function PickDialog({
+/**
+ * Full-width picker that replaces the editor form inside the workspace
+ * content area. The editor stays mounted, so nothing typed is lost.
+ */
+function PickView({
   slug,
+  title,
   categories,
   rounds,
   bankTotal,
   firstPage,
+  challengeCategories,
+  challengeTotal,
   inQuestionnaire,
   initialTech,
   room,
@@ -255,10 +272,13 @@ function PickDialog({
   onAdd,
 }: {
   slug: string;
+  title: string;
   categories: PublicCategory[];
   rounds: string[];
   bankTotal: number;
   firstPage: Page;
+  challengeCategories: ChallengeCategory[];
+  challengeTotal: number;
   inQuestionnaire: Set<string>;
   initialTech: string | null;
   room: number;
@@ -276,6 +296,18 @@ function PickDialog({
       return n;
     });
 
+  const root = useRef<HTMLDivElement>(null);
+  const close = useRef(onClose);
+  close.current = onClose;
+  useEffect(() => {
+    root.current?.closest("main")?.scrollTo({ top: 0 });
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape" && !document.querySelector("[role=dialog], [role=menu]")) close.current();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
+
   function add() {
     start(async () => {
       // Fetch answers so each question brings its reference answer along.
@@ -287,20 +319,22 @@ function PickDialog({
   }
 
   return (
-    <Dialog
-      title="Add from public questions"
-      onClose={onClose}
-      width={1080}
-      footer={
-        <>
-          <span className="mr-auto text-[13px] text-muted">{selected.size ? `${plural(selected.size, "question")} picked` : `Pick up to ${room}`}</span>
-          <Btn onClick={onClose}>Cancel</Btn>
-          <Btn variant="primary" disabled={!selected.size || adding} onClick={add}>
-            {adding ? "Adding" : selected.size ? `Add ${plural(selected.size, "question")}` : "Add questions"}
-          </Btn>
-        </>
-      }
-    >
+    <div ref={root} className="flex flex-col gap-4">
+      <div className="sticky top-0 z-30 -mx-4 -mt-6 px-4 md:-mx-10 md:-mt-8 md:px-10 py-3 bg-bg/90 backdrop-blur border-b border-border flex flex-wrap items-center gap-3">
+        <button type="button" onClick={onClose} className="inline-flex items-center gap-1.5 text-[13px] text-muted hover:text-fg">
+          <ArrowLeft className="w-4 h-4" aria-hidden /> Back to questionnaire
+        </button>
+        <span className="flex-1" />
+        <span className="text-[13px] text-muted tabular-nums">{selected.size ? `${plural(selected.size, "question")} picked` : `Pick up to ${room}`}</span>
+        <Btn onClick={onClose}>Cancel</Btn>
+        <Btn variant="primary" disabled={!selected.size || adding} onClick={add}>
+          {adding ? "Adding" : selected.size ? `Add ${plural(selected.size, "question")}` : "Add questions"}
+        </Btn>
+      </div>
+      <header>
+        <h1 className="text-2xl font-semibold text-fg tracking-tight">Add from public questions</h1>
+        <p className="text-sm text-muted mt-1">Picked questions go into {title}, with their reference answers.</p>
+      </header>
       <PublicBrowser
         slug={slug}
         categories={categories}
@@ -311,8 +345,10 @@ function PickDialog({
         onToggle={toggle}
         disabledIds={inQuestionnaire}
         initialTech={initialTech}
-        compact
+        challengeCategories={challengeCategories}
+        challengeTotal={challengeTotal}
+        challengeNote="Coding challenges are solved in the playground, so they cannot go into a spoken questionnaire. Use them from Public questions in a live interview or an AI screening."
       />
-    </Dialog>
+    </div>
   );
 }

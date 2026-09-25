@@ -1,6 +1,7 @@
 import { notFound, redirect } from "next/navigation";
 import {
   LibraryError,
+  loadChallengeCategories,
   loadPublicCategories,
   loadQuestionnaires,
   loadWorkspaceChallenges,
@@ -29,11 +30,12 @@ export default async function QuestionLibraryPage({ params, searchParams }: Prop
 
   const tab = TABS.includes(sp.tab as LibraryTab) ? (sp.tab as LibraryTab) : "questionnaires";
   const tech = sp.tech ?? null;
-  const [questionnaires, bank, firstPage, challenges] = await Promise.all([
+  const [questionnaires, bank, firstPage, challenges, challengeBank] = await Promise.all([
     loadQuestionnaires(actor.workspaceId),
     loadPublicCategories(),
     searchPublicQuestions({ tech }),
     loadWorkspaceChallenges(actor.workspaceId),
+    loadChallengeCategories(actor.workspaceId),
   ]);
 
   return (
@@ -49,6 +51,8 @@ export default async function QuestionLibraryPage({ params, searchParams }: Prop
       bankTotal={bank.total}
       firstPage={{ ...firstPage, tech }}
       challenges={challenges}
+      challengeCategories={challengeBank.categories}
+      challengeTotal={challengeBank.total}
     />
   );
 }

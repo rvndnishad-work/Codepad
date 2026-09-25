@@ -79,9 +79,9 @@ export default async function TakeHomeSessionRunner({ params, searchParams }: Pr
   // Completion = every DSA challenge has a finished attempt. (Prompt/playground
   // candidate execution lands in a follow-up — see IP-88 notes.) Idempotent.
   const allChallengesDone = challengeIds.length > 0 && challengeIds.every((id) => doneChallengeIds.has(id));
-  if (allChallengesDone && session.status !== "completed") {
-    await prisma.interviewSession.update({
-      where: { id: session.id },
+  if (allChallengesDone && (session.status === "scheduled" || session.status === "in_progress")) {
+    await prisma.interviewSession.updateMany({
+      where: { id: session.id, status: { in: ["scheduled", "in_progress"] } },
       data: { status: "completed", finishedAt: new Date() },
     }).catch(() => null);
     session.status = "completed";
@@ -107,6 +107,16 @@ export default async function TakeHomeSessionRunner({ params, searchParams }: Pr
       </div>
     </div>
   );
+
+  if (session.status === "cancelled") {
+    return shell(
+      <div className="text-center space-y-4 py-6">
+        <div className="w-16 h-16 bg-panel border border-border rounded-full flex items-center justify-center mx-auto text-muted"><AlertTriangle className="w-8 h-8" /></div>
+        <h2 className="text-2xl font-semibold tracking-tight">This take-home was cancelled</h2>
+        <p className="text-sm text-muted max-w-md mx-auto">{wsName} cancelled this invite, so the link no longer works. Contact them if you think this is a mistake.</p>
+      </div>
+    );
+  }
 
   if (pastDeadline) {
     return shell(

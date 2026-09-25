@@ -131,6 +131,18 @@ export async function POST(
     return NextResponse.json({ error: "challenge not found" }, { status: 404 });
   }
 
+  // Take-home submission lock: no resubmitting after finishing, after the
+  // deadline, or into someone else's take-home.
+  if (sessionId || assignmentTokenMatched) {
+    const { takeHomeSubmissionBlock, assignmentSubmissionBlock } = await import("@/lib/take-home/lock");
+    const blocked = sessionId
+      ? await takeHomeSubmissionBlock({ sessionId, challengeId: challenge.id, token, userId: candidateUserId })
+      : assignmentTokenMatched && token
+        ? await assignmentSubmissionBlock(token)
+        : null;
+    if (blocked) return NextResponse.json({ error: blocked }, { status: 409 });
+  }
+
   // ── Server-side grading ──
   // Manual-review submissions skip grading entirely. Auto submissions are
   // re-judged on the server; if that isn't possible the attempt is stored as

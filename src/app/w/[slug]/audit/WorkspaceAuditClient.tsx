@@ -153,6 +153,30 @@ const ACTION_META: Record<string, { label: string; tone: string }> = {
     label: "AI question deleted",
     tone: "border-danger/30 bg-danger/[0.05] text-danger",
   },
+  TAKE_HOME_REMINDED: {
+    label: "Take-home reminder sent",
+    tone: "border-border bg-panel text-muted",
+  },
+  TAKE_HOME_EXTENDED: {
+    label: "Take-home deadline extended",
+    tone: "border-secondary/30 bg-secondary/[0.06] text-secondary",
+  },
+  TAKE_HOME_CANCELLED: {
+    label: "Take-home cancelled",
+    tone: "border-warning/30 bg-warning/[0.06] text-warning",
+  },
+  TAKE_HOME_INVITE_RESENT: {
+    label: "Take-home invite resent",
+    tone: "border-border bg-panel text-muted",
+  },
+  TAKE_HOME_TEMPLATE_SAVED: {
+    label: "Take-home template saved",
+    tone: "border-border bg-panel text-muted",
+  },
+  TAKE_HOME_TEMPLATE_DELETED: {
+    label: "Take-home template deleted",
+    tone: "border-danger/30 bg-danger/[0.05] text-danger",
+  },
   ATS_INTEGRATION_CONNECTED: {
     label: "ATS connected / updated",
     tone: "border-success/30 bg-success/[0.06] text-success",

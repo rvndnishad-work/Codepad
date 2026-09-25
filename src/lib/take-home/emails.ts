@@ -126,6 +126,7 @@ export async function sendTakeHomeReminder(args: {
   hoursLeft: number;
   workspaceId?: string;
   takeHomeId: string;
+  manual?: boolean;
 }) {
   return sendEmail({
     template: "take-home-reminder",
@@ -140,7 +141,7 @@ export async function sendTakeHomeReminder(args: {
     },
     workspaceId: args.workspaceId,
     sessionId: args.takeHomeId,
-    idempotencyKey: `th-reminder:${args.takeHomeId}`,
+    idempotencyKey: args.manual ? `th-reminder:${args.takeHomeId}:manual:${Date.now()}` : `th-reminder:${args.takeHomeId}`,
   });
 }
 
@@ -158,6 +159,8 @@ export async function sendTakeHomeSessionReminder(args: {
   hoursLeft: number;
   workspaceId?: string;
   sessionId: string;
+  /** A reminder a recruiter asked for; keyed apart from the automatic one. */
+  manual?: boolean;
 }) {
   return sendEmail({
     template: "take-home-reminder",
@@ -172,7 +175,7 @@ export async function sendTakeHomeSessionReminder(args: {
     },
     workspaceId: args.workspaceId,
     sessionId: args.sessionId,
-    idempotencyKey: `ths-reminder:${args.sessionId}`,
+    idempotencyKey: args.manual ? `ths-reminder:${args.sessionId}:manual:${Date.now()}` : `ths-reminder:${args.sessionId}`,
   });
 }
 

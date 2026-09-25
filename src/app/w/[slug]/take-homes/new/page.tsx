@@ -5,7 +5,7 @@ import { DEFAULT_QUESTION_MINUTES, parseTemplateItems } from "@/lib/take-home/st
 import { loadTakeHomeAccess } from "../_lib";
 import Composer, { type ComposerCandidate, type ComposerQuestion, type ComposerTemplate } from "../_components/Composer";
 
-export const metadata = { title: "New take home — Interviewpad", robots: { index: false, follow: false } };
+export const metadata = { title: "New take home", robots: { index: false, follow: false } };
 
 type Props = {
   params: Promise<{ slug: string }>;

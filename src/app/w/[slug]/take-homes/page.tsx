@@ -10,7 +10,7 @@ type Props = {
   searchParams: Promise<{ view?: string; q?: string; template?: string; page?: string }>;
 };
 
-export const metadata = { title: "Take home — Interviewpad", robots: { index: false, follow: false } };
+export const metadata = { title: "Take home", robots: { index: false, follow: false } };
 
 const MONTH_MS = 30 * 86_400_000;
 

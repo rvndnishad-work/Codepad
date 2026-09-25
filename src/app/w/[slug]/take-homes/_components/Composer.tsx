@@ -45,7 +45,7 @@ export default function Composer({
   const firstTemplate = templates.find((t) => t.id === initialTemplateId) ?? null;
   const [templateId, setTemplateId] = useState<string | null>(firstTemplate?.id ?? null);
   const [items, setItems] = useState<TemplateItem[]>(firstTemplate?.items ?? []);
-  const [title, setTitle] = useState(firstTemplate?.name ?? "");
+  const [title, setTitle] = useState(firstTemplate ? `${firstTemplate.name} take home` : "");
   const [titleTouched, setTitleTouched] = useState(!!firstTemplate);
   const [people, setPeople] = useState<Person[]>(() =>
     candidates
@@ -73,7 +73,7 @@ export default function Composer({
     setTemplateId(t.id);
     setItems(t.items);
     if (!titleTouched || !title) {
-      setTitle(t.name);
+      setTitle(`${t.name} take home`);
       setTitleTouched(true);
     }
   }

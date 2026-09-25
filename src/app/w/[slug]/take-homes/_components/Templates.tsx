@@ -118,7 +118,7 @@ export default function Templates({
                 )}
                 {t.finished > 0 && (
                   <Btn icon={BarChart3} href={`${base}/all?template=${t.id}`} className="ml-auto">
-                    Compare results
+                    Results
                   </Btn>
                 )}
               </footer>

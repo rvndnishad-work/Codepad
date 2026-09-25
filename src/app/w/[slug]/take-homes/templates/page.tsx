@@ -8,7 +8,7 @@ import type { ComposerQuestion } from "../_components/Composer";
 
 type Props = { params: Promise<{ slug: string }> };
 
-export const metadata = { title: "Take home templates — Interviewpad", robots: { index: false, follow: false } };
+export const metadata = { title: "Take home templates", robots: { index: false, follow: false } };
 
 export default async function TakeHomeTemplatesPage({ params }: Props) {
   const { slug } = await params;

@@ -4,7 +4,7 @@ import InterviewsList, { type InterviewRow } from "./InterviewsList";
 
 type Props = { params: Promise<{ slug: string }>; searchParams: Promise<{ view?: string; q?: string }> };
 
-export const metadata = { title: "Interviews — Interviewpad", robots: { index: false, follow: false } };
+export const metadata = { title: "Interviews", robots: { index: false, follow: false } };
 
 export default async function InterviewsPage({ params, searchParams }: Props) {
   const { slug } = await params;

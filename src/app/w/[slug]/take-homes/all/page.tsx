@@ -10,7 +10,7 @@ type Props = {
   searchParams: Promise<{ filter?: string; q?: string; page?: string; template?: string }>;
 };
 
-export const metadata = { title: "All take-homes — Interviewpad", robots: { index: false, follow: false } };
+export const metadata = { title: "All take-homes", robots: { index: false, follow: false } };
 
 export default async function AllTakeHomesPage({ params, searchParams }: Props) {
   const { slug } = await params;

@@ -162,7 +162,7 @@ export default function ReviewQueue({
           })}
         </div>
         <div className="flex flex-wrap md:flex-nowrap items-center gap-2 w-full md:w-auto">
-          <label className="relative flex-1 md:flex-none md:w-60">
+          <label className="relative w-full md:w-60">
             <span className="sr-only">Search name, email or take home</span>
             <Search aria-hidden className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-subtle" />
             <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search name or email" className={`${inputCls} pl-8`} />
@@ -176,7 +176,7 @@ export default function ReviewQueue({
                 id="take-home-template-filter"
                 value={query.template}
                 onChange={(e) => router.push(href({ template: e.target.value }))}
-                className={`${selectCls} w-auto max-w-[220px]`}
+                className={`${selectCls} w-full md:w-auto md:max-w-[220px]`}
               >
                 <option value="all">All templates</option>
                 {templates.map((t) => (
@@ -214,13 +214,13 @@ export default function ReviewQueue({
       ) : (
         <div className="rounded-xl border border-border bg-surface overflow-hidden">
           <div role="row" className="hidden lg:flex items-center gap-4 h-10 px-4 border-b border-border text-xs text-subtle">
-            <span className="w-[250px] shrink-0">Candidate</span>
+            <span className="w-[220px] shrink-0">Candidate</span>
             <span className="flex-1 min-w-0">Take home</span>
-            <span className="w-[190px] shrink-0">Score</span>
+            <span className="w-[170px] shrink-0">Score</span>
             <span className="w-[100px] shrink-0">Time used</span>
-            <span className="w-[130px] shrink-0">Integrity</span>
-            <span className="w-[96px] shrink-0">Submitted</span>
-            <span className="w-[92px] shrink-0" />
+            <span className="w-[120px] shrink-0">Integrity</span>
+            <span className="w-[88px] shrink-0">Submitted</span>
+            <span className="w-[88px] shrink-0" />
           </div>
           <ul>
             {rows.map((r, i) => (
@@ -256,26 +256,26 @@ function QueueRow({ r, href, focused, now, decided }: { r: TakeHomeRow; href: st
         focused ? "bg-panel/80 shadow-[inset_2px_0_0_rgb(var(--c-accent-2))]" : ""
       }`}
     >
-      <Link href={href} className="flex items-center gap-3 w-full lg:w-[250px] shrink-0 min-w-0 after:absolute after:inset-0" aria-label={`Open ${r.candidate.name}`}>
+      <Link href={href} className="flex items-center gap-3 w-full lg:w-[220px] shrink-0 min-w-0 after:absolute after:inset-0" aria-label={`Open ${r.candidate.name}`}>
         <Avatar name={r.candidate.name} size={34} />
         <span className="min-w-0">
           <span className="block text-sm font-medium text-fg truncate">{r.candidate.name}</span>
           {r.candidate.email && <span className="block text-[13px] text-subtle truncate">{r.candidate.email}</span>}
         </span>
       </Link>
-      <span className="flex-1 min-w-[180px]">
+      <span className="flex-1 min-w-0">
         <span className="block text-sm text-fg truncate">{r.title}</span>
         <span className="block text-[13px] text-subtle">{answeredLabel(r)}</span>
       </span>
-      <span className="w-[190px] shrink-0">
-        <ScoreMark score={r.score} width={64} chip />
+      <span className="w-[170px] shrink-0">
+        <ScoreMark score={r.score} width={44} chip />
       </span>
       <span className="w-[100px] shrink-0 text-[13px] text-muted tabular-nums">{timeLabel(r)}</span>
-      <span className="w-[130px] shrink-0">
+      <span className="w-[120px] shrink-0">
         <IntegrityDot level={r.integrity.level} label={r.integrity.label} />
       </span>
-      <span className="w-[96px] shrink-0 text-[13px] text-muted">{r.submittedAt ? relativeTime(r.submittedAt, now) : ""}</span>
-      <span className="relative w-[92px] shrink-0 flex justify-end">
+      <span className="w-[88px] shrink-0 text-[13px] text-muted">{r.submittedAt ? relativeTime(r.submittedAt, now) : ""}</span>
+      <span className="relative w-[88px] shrink-0 flex justify-end">
         {decided ? (
           <ToneChip tone={r.decision === "passed" ? "success" : "danger"}>{r.decision === "passed" ? "Passed" : "Not passed"}</ToneChip>
         ) : (

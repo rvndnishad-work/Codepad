@@ -8,7 +8,7 @@ type Props = {
   searchParams: Promise<{ q?: string; tab?: string }>;
 };
 
-export const metadata = { title: "Take home report — Interviewpad", robots: { index: false, follow: false } };
+export const metadata = { title: "Take home report", robots: { index: false, follow: false } };
 
 const TABS: ReportTab[] = ["code", "tests", "replay"];
 

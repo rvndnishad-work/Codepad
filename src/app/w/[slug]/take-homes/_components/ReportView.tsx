@@ -77,6 +77,8 @@ export default function ReportView({
   const question = r.questions.find((q) => q.key === active) ?? r.questions[0];
   const qIndex = question ? r.questions.indexOf(question) : -1;
   const submitted = r.state === "submitted";
+  // The diff needs the full width; the side cards move below it.
+  const wide = tab === "code" && question?.kind === "challenge" && !!question.answer;
   const canAct = canDecide && submitted && !!r.candidate.id && !r.decision;
   const below = r.score == null || r.score < TAKE_HOME_PASS;
   const overrideReason = r.score == null ? "The take home has no score." : below ? `Score ${r.score} is below the bar of ${TAKE_HOME_PASS}.` : null;
@@ -144,7 +146,7 @@ export default function ReportView({
             <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1 text-[13px] text-muted">
               <span>
                 {r.title}
-                {r.template && r.template.name !== r.title ? `, from ${r.template.name}` : ""}
+                {r.template && !r.title.includes(r.template.name) ? `, from ${r.template.name}` : ""}
               </span>
               <Sep />
               <span>
@@ -196,7 +198,7 @@ export default function ReportView({
         onReject={() => setRejecting(true)}
       />
 
-      <div className="flex flex-col lg:flex-row gap-6 items-start">
+      <div className={`flex flex-col gap-6 items-start ${wide ? "" : "lg:flex-row"}`}>
         <div className="flex-1 min-w-0 w-full flex flex-col gap-4">
           {r.questions.length > 1 && (
             <div className="grid sm:grid-cols-2 xl:grid-cols-3 gap-3">
@@ -261,7 +263,7 @@ export default function ReportView({
           )}
         </div>
 
-        <aside className="w-full lg:w-[320px] shrink-0 flex flex-col gap-4">
+        <aside className={`w-full shrink-0 gap-4 ${wide ? "grid md:grid-cols-3 items-start" : "lg:w-[320px] flex flex-col"}`}>
           <ScoreCard r={r} />
           <IntegrityCard r={r} slug={slug} />
           <Card>

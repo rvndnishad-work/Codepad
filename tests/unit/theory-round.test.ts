@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import {
   canFollowUp,
+  currentSlot,
+  DEFAULT_THEORY,
   cleanAnswerInput,
   cleanGrade,
   drawQuestions,
@@ -12,6 +14,7 @@ import {
   theoryMinutes,
   theoryRoundScore,
   theoryView,
+  transcriptionPrompt,
   type TheoryRoundData,
 } from "@/lib/ai-interview/theory";
 import type { QuestionItem } from "@/lib/ai-interview/questionnaire";
@@ -21,20 +24,22 @@ const items: QuestionItem[] = [
   { q: "What does a key do in a React list?", a: "Gives each item a stable identity." },
   { q: "Explain the event loop." },
 ];
-const round = (followUps: 0 | 1 | 2 = 1): TheoryRoundData => ({ v: 1, settings: { count: null, secondsPerQuestion: 180, followUps, answerMode: "voice" }, items });
+const round = (followUps: 0 | 1 | 2 = 1): TheoryRoundData => ({ v: 1, settings: { count: null, secondsPerQuestion: 180, followUps, answerMode: "voice", recordAudio: false }, items });
 const say = (text: string) => cleanAnswerInput({ text, mode: "voice", seconds: 40, firstWordSec: 3, blurs: 0 });
 
 describe("theory settings", () => {
   it("falls back to defaults for anything unexpected", () => {
-    expect(sanitizeTheory({ count: -2, secondsPerQuestion: 7, followUps: 9, answerMode: "shout" })).toEqual({ count: null, secondsPerQuestion: 180, followUps: 1, answerMode: "voice" });
-    expect(sanitizeTheory({ count: "8", secondsPerQuestion: 120, followUps: 0, answerMode: "typing" })).toEqual({ count: 8, secondsPerQuestion: 120, followUps: 0, answerMode: "typing" });
+    expect(sanitizeTheory({ count: -2, secondsPerQuestion: 7, followUps: 9, answerMode: "shout" })).toEqual({ count: null, secondsPerQuestion: 180, followUps: 1, answerMode: "voice", recordAudio: false });
+    expect(sanitizeTheory({ count: "8", secondsPerQuestion: 120, followUps: 0, answerMode: "typing" })).toEqual({ count: 8, secondsPerQuestion: 120, followUps: 0, answerMode: "typing", recordAudio: false });
+    expect(sanitizeTheory({ recordAudio: true }).recordAudio).toBe(true);
+    expect(sanitizeTheory({ recordAudio: true, answerMode: "typing" }).recordAudio).toBe(false);
     expect(parseTheorySettings("not json").secondsPerQuestion).toBe(180);
   });
 
   it("sizes the round from the questions asked and the follow-ups allowed", () => {
-    expect(theoryMinutes({ count: 8, secondsPerQuestion: 180, followUps: 0, answerMode: "voice" }, 12)).toBe(24);
-    expect(theoryMinutes({ count: 8, secondsPerQuestion: 180, followUps: 1, answerMode: "voice" }, 12)).toBe(30);
-    expect(theoryMinutes({ count: null, secondsPerQuestion: 60, followUps: 0, answerMode: "voice" }, 2)).toBe(5);
+    expect(theoryMinutes({ ...DEFAULT_THEORY, count: 8, followUps: 0 }, 12)).toBe(24);
+    expect(theoryMinutes({ ...DEFAULT_THEORY, count: 8, followUps: 1 }, 12)).toBe(30);
+    expect(theoryMinutes({ ...DEFAULT_THEORY, secondsPerQuestion: 60, followUps: 0 }, 2)).toBe(5);
   });
 
   it("keeps the order when asking all, and draws a subset in questionnaire order", () => {
@@ -103,5 +108,22 @@ describe("theory grading", () => {
     expect(block).toContain("Candidate answer: It keeps scope");
     expect(block).toContain("3. Explain the event loop.\n   Reference answer: none given");
     expect(block).toContain("(not reached)");
+  });
+});
+
+describe("theory audio", () => {
+  it("accepts clips only for the answer on screen", () => {
+    let s = emptyAnswers();
+    expect(currentSlot(round(), s)).toEqual({ question: 0, followUp: 0 });
+    s = { ...recordAnswer(s, round(), say("short")), pendingFollowUp: "An example?" };
+    expect(currentSlot(round(), s)).toEqual({ question: 0, followUp: 1 });
+    s = recordAnswer(s, round(), say("a counter"));
+    expect(currentSlot(round(), s)).toEqual({ question: 1, followUp: 0 });
+    for (const t of ["x", "y"]) s = recordAnswer(s, round(0), say(t));
+    expect(currentSlot(round(0), s)).toBeNull();
+  });
+
+  it("primes transcription with the question, never an answer", () => {
+    expect(transcriptionPrompt("What does useEffect do?", "Give an example")).toBe("What does useEffect do? Give an example");
   });
 });

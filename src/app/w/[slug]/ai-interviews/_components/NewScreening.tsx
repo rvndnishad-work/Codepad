@@ -888,6 +888,19 @@ function TheorySettingsFields({ settings, total, onChange }: { settings: TheoryS
           ))}
         </select>
       </label>
+      <label className={`sm:col-span-2 flex items-start gap-2.5 text-[13px] ${settings.answerMode === "typing" ? "opacity-50" : ""}`}>
+        <input
+          type="checkbox"
+          checked={settings.recordAudio}
+          disabled={settings.answerMode === "typing"}
+          onChange={(e) => onChange({ recordAudio: e.target.checked })}
+          className="mt-0.5 w-4 h-4 accent-secondary"
+        />
+        <span className="flex flex-col gap-0.5">
+          <span className="text-fg font-medium">Keep recordings of spoken answers</span>
+          <span className="text-subtle">You can replay each answer in the report. Candidates are asked to agree first, and can type instead when typing is allowed.</span>
+        </span>
+      </label>
     </div>
   );
 }

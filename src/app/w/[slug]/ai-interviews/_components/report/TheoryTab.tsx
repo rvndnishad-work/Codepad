@@ -40,7 +40,8 @@ function fmtSec(s: number): string {
   return m ? `${m}m ${r.toString().padStart(2, "0")}s` : `${r}s`;
 }
 
-export default function TheoryTab({ r }: { r: ReportData }) {
+export default function TheoryTab({ r, slug }: { r: ReportData; slug: string }) {
+  const audioBase = `/w/${slug}/ai-interviews/${r.id}/audio`;
   const rounds = r.rounds.map((x, i) => ({ x, i })).filter(({ x }) => x.kind === "theory" && x.theory);
   const firstName = r.candidate.name.split(/\s+/)[0] || r.candidate.name;
   if (!rounds.length) {
@@ -49,7 +50,7 @@ export default function TheoryTab({ r }: { r: ReportData }) {
   return (
     <div className="flex flex-col gap-8">
       {rounds.map(({ x, i }) => (
-        <TheoryRoundReport key={x.id} index={i} multi={r.rounds.length > 1} title={x.title} score={x.score} theory={x.theory!} firstName={firstName} notStarted={r.status === "PENDING" || r.status === "EXPIRED"} />
+        <TheoryRoundReport key={x.id} index={i} multi={r.rounds.length > 1} title={x.title} score={x.score} theory={x.theory!} firstName={firstName} audioBase={audioBase} notStarted={r.status === "PENDING" || r.status === "EXPIRED"} />
       ))}
     </div>
   );
@@ -62,6 +63,7 @@ function TheoryRoundReport({
   score,
   theory,
   firstName,
+  audioBase,
   notStarted,
 }: {
   index: number;
@@ -70,6 +72,7 @@ function TheoryRoundReport({
   score: number | null;
   theory: ReportTheory;
   firstName: string;
+  audioBase: string;
   notStarted: boolean;
 }) {
   const [filter, setFilter] = useState<Filter>("all");
@@ -161,7 +164,7 @@ function TheoryRoundReport({
       ) : (
         <ol className="flex flex-col gap-3">
           {shown.map(({ q, n }) => (
-            <QuestionCard key={n} n={n} q={q} firstName={firstName} />
+            <QuestionCard key={n} n={n} q={q} firstName={firstName} audioBase={audioBase} />
           ))}
         </ol>
       )}
@@ -169,7 +172,8 @@ function TheoryRoundReport({
   );
 }
 
-function QuestionCard({ n, q, firstName }: { n: number; q: Q; firstName: string }) {
+function QuestionCard({ n, q, firstName, audioBase }: { n: number; q: Q; firstName: string; audioBase: string }) {
+  const clipsFor = (followUp: number) => q.clips.filter((c) => c.followUp === followUp);
   const v = verdictOf(q);
   const a = q.answer;
   const g = a?.grade;
@@ -189,11 +193,11 @@ function QuestionCard({ n, q, firstName }: { n: number; q: Q; firstName: string 
 
       {a && !a.skipped && (
         <div className="flex flex-col gap-2.5 pl-10">
-          <Said who={firstName} text={a.a} mode={a.mode} />
+          <Said who={firstName} text={a.a} mode={a.mode} clips={clipsFor(0)} audioBase={audioBase} />
           {a.followUps.map((f, i) => (
             <div key={i} className="flex flex-col gap-2 border-l-2 border-secondary/30 pl-3">
               <p className="text-[13px] text-secondary-soft">Follow-up: {f.q}</p>
-              {f.a ? <Said who={firstName} text={f.a} mode={f.mode} /> : <p className="text-[13px] text-subtle">No answer to the follow-up.</p>}
+              {f.a ? <Said who={firstName} text={f.a} mode={f.mode} clips={clipsFor(i + 1)} audioBase={audioBase} /> : <p className="text-[13px] text-subtle">No answer to the follow-up.</p>}
             </div>
           ))}
         </div>
@@ -244,14 +248,21 @@ function QuestionCard({ n, q, firstName }: { n: number; q: Q; firstName: string 
   );
 }
 
-function Said({ who, text, mode }: { who: string; text: string; mode: "voice" | "typed" }) {
+function Said({ who, text, mode, clips, audioBase }: { who: string; text: string; mode: "voice" | "typed"; clips: Q["clips"]; audioBase: string }) {
   return (
-    <div className="flex flex-col gap-1">
+    <div className="flex flex-col gap-1.5">
       <span className="text-xs text-subtle inline-flex items-center gap-1.5">
         {mode === "voice" ? <Mic className="w-3 h-3" aria-hidden /> : <Keyboard className="w-3 h-3" aria-hidden />}
         {who} {mode === "voice" ? "said" : "typed"}
       </span>
       <p className="text-[13px] text-fg leading-relaxed whitespace-pre-wrap">{text}</p>
+      {clips.map((c, i) => (
+        <div key={c.id} className="flex items-center gap-2">
+          {/* A caption track would only repeat the transcript above. */}
+          <audio controls preload="none" src={`${audioBase}/${c.id}`} className="h-9 w-full max-w-sm" aria-label={`Recording${clips.length > 1 ? `, part ${i + 1}` : ""} of what ${who} said`} />
+          <span className="text-xs text-subtle tabular-nums shrink-0">{clips.length > 1 ? `Part ${i + 1}, ` : ""}{fmtSec(c.seconds)}</span>
+        </div>
+      ))}
     </div>
   );
 }

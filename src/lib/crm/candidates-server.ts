@@ -598,7 +598,7 @@ export const ERASED_NAME = "Erased candidate";
 /**
  * Permanently remove candidates. Owners and admins only. Their take-home,
  * interview and screening records stay (scores feed workspace reporting) but
- * lose the name and email, which the old hard delete left behind.
+ * lose the name, email and any recorded answers, which the old hard delete left behind.
  */
 export async function eraseCandidates(actor: CandidateActor, ids: string[]) {
   if (!actor.isManager) throw new CandidateError(403, "Only workspace owners and admins can erase candidates.");
@@ -615,6 +615,8 @@ export async function eraseCandidates(actor: CandidateActor, ids: string[]) {
       where: { candidateId: { in: cids } },
       data: { candidateName: ERASED_NAME, candidateEmail: "erased@invalid" },
     }),
+    // A voice recording identifies the person, so it goes with the name.
+    prisma.aIInterviewAudio.deleteMany({ where: { session: { candidateId: { in: cids } } } }),
     prisma.candidate.deleteMany({ where: { id: { in: cids }, workspaceId: actor.workspaceId } }),
   ]);
   // No names in the audit row: the point of erasing is that they are gone.

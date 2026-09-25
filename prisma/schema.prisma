@@ -1129,6 +1129,7 @@ model AIInterviewSession {
   workspace        Workspace                 @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
   batch            AIScreeningBatch?         @relation(fields: [batchId], references: [id], onDelete: SetNull)
   rounds           AIInterviewRound[]
+  audioClips       AIInterviewAudio[]
 
   @@index([workspaceId, status])
   @@index([workspaceId, createdAt])
@@ -1203,6 +1204,28 @@ model AIScreeningRoundSpec {
 /// revamp default), so `chatHistory` here is reserved/nullable for a future
 /// per-round-reset option. Credit is still charged once per SESSION (on the
 /// first message of the first round), not per round.
+/// A recording of one spoken theory answer, kept only when the recruiter
+/// turned on replay for the round. Removed with its session.
+model AIInterviewAudio {
+  id        String   @id @default(cuid())
+  sessionId String
+  roundId   String
+  /// 0-based question position in the round.
+  question  Int
+  /// 0 for the main answer, n for the nth follow-up.
+  followUp  Int      @default(0)
+  /// Clip order within one answer (the mic can be paused and resumed).
+  seq       Int      @default(0)
+  mime      String
+  bytes     Bytes
+  seconds   Int      @default(0)
+  createdAt DateTime @default(now())
+  session   AIInterviewSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@index([roundId, question])
+  @@index([sessionId])
+}
+
 model AIInterviewRound {
   id               String  @id @default(cuid())
   sessionId        String

@@ -1,15 +1,21 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import dynamic from "next/dynamic";
+import { useCallback, useEffect, useRef, useState, useSyncExternalStore, type MutableRefObject } from "react";
 import { Check, Clock, Keyboard, Loader2, Mic, MicOff, RotateCcw, SkipForward, Volume2, VolumeX } from "lucide-react";
 import { toast } from "sonner";
 import { cancelSpeak, speakNaturally } from "@/lib/copilot-tts";
-import type { TheoryView } from "@/lib/ai-interview/theory";
+import type { TheoryAnswerMode, TheoryView } from "@/lib/ai-interview/theory";
+import { canRecord, useAnswerRecorder, type Clip } from "./useAnswerRecorder";
 
 /**
  * A theory round: the AI interviewer reads one question at a time and listens
  * to the answer. The server hands out each question, so this screen never
  * holds a question the candidate has not reached, nor any reference answer.
+ *
+ * Speech becomes text in the browser (Chrome, Edge) or, where the browser
+ * cannot do it, on the server from a recording. Recordings are kept for replay
+ * only when the recruiter turned that on and the candidate agreed.
  */
 
 type AiState = "idle" | "speaking" | "listening" | "thinking";
@@ -21,11 +27,17 @@ type Props = {
   brief: string;
   /** Round status when the page loaded; a started round skips the mic check. */
   status: string;
+  answerMode: TheoryAnswerMode;
+  recordAudio: boolean;
+  /** The server can transcribe recordings, for browsers that cannot. */
+  serverTranscribe: boolean;
   disabled: boolean;
   finishLabel: string;
   finishing: boolean;
   onFinish: () => void;
 };
+
+const Orb3D = dynamic(() => import("./InterviewerOrb3D"), { ssr: false, loading: () => null });
 
 // Browser speech recognition is not in the DOM typings.
 type Recognizer = {
@@ -52,8 +64,22 @@ function makeRecognizer(): Recognizer | null {
 }
 
 const fmt = (sec: number) => `${Math.floor(Math.max(0, sec) / 60)}:${String(Math.max(0, sec) % 60).padStart(2, "0")}`;
+const consentKey = (roundId: string) => `theory-consent:${roundId}`;
 
-export default function TheoryRound({ inviteToken, roundId, title, brief, status, disabled, finishLabel, finishing, onFinish }: Props) {
+export default function TheoryRound({
+  inviteToken,
+  roundId,
+  title,
+  brief,
+  status,
+  answerMode,
+  recordAudio,
+  serverTranscribe,
+  disabled,
+  finishLabel,
+  finishing,
+  onFinish,
+}: Props) {
   const [phase, setPhase] = useState<"intro" | "loading" | "question" | "done">(status === "PENDING" ? "intro" : "loading");
   const [view, setView] = useState<TheoryView | null>(null);
   const [ai, setAi] = useState<AiState>("idle");
@@ -65,13 +91,18 @@ export default function TheoryRound({ inviteToken, roundId, title, brief, status
   const [deadline, setDeadline] = useState<number | null>(null);
   const [now, setNow] = useState(() => Date.now());
   const [supported, setSupported] = useState<boolean | null>(null);
+  const [recordable, setRecordable] = useState(false);
+  const [consent, setConsentState] = useState<"yes" | "no" | null>(null);
+  const [transcribing, setTranscribing] = useState(false);
   const [testHeard, setTestHeard] = useState("");
   const [testing, setTesting] = useState(false);
 
+  const recorder = useAnswerRecorder();
   const recRef = useRef<Recognizer | null>(null);
   const wantListenRef = useRef(false);
   const baseRef = useRef("");
   const finalRef = useRef("");
+  const textRef = useRef("");
   const spokeRef = useRef(false);
   const typedRef = useRef(false);
   const startedAtRef = useRef(0);
@@ -79,15 +110,44 @@ export default function TheoryRound({ inviteToken, roundId, title, brief, status
   const blursRef = useRef(0);
   const sendingRef = useRef(false);
   const lineRef = useRef("");
+  const seqRef = useRef(0);
+  const pendingRef = useRef<Promise<void>[]>([]);
   const voiceOnRef = useRef(voiceOn);
   voiceOnRef.current = voiceOn;
 
-  const mode = view?.answerMode ?? "voice";
-  const canSpeak = supported === true && mode !== "typing";
-  const canType = mode !== "voice-only" || supported === false;
+  const mode = view?.answerMode ?? answerMode;
+  const serverStt = supported === false && serverTranscribe && recordable;
+  const voicePossible = mode !== "typing" && (supported === true || serverStt);
+  // Recording needs the candidate's yes. Without it, a round that allows typing is typed.
+  const needsConsent = recordAudio && recordable && mode !== "typing";
+  const recordOn = needsConsent && consent === "yes";
+  const canSpeak = voicePossible && (!needsConsent || consent === "yes");
+  const canType = mode !== "voice-only" || !voicePossible;
+  const blocked = mode === "voice-only" && voicePossible && needsConsent && consent !== "yes";
+
+  // Callbacks read these through refs so a mic toggle always sees the latest setup.
+  const liveRef = useRef({ recordOn, serverStt });
+  liveRef.current = { recordOn, serverStt };
+
+  const setAnswer = useCallback((t: string) => {
+    textRef.current = t;
+    setText(t);
+  }, []);
+
+  function setConsent(v: "yes" | "no") {
+    setConsentState(v);
+    try {
+      localStorage.setItem(consentKey(roundId), v);
+    } catch {}
+  }
 
   // One recognizer for the round. Results build the answer on top of whatever was typed before.
   useEffect(() => {
+    setRecordable(canRecord());
+    try {
+      const saved = localStorage.getItem(consentKey(roundId));
+      if (saved === "yes" || saved === "no") setConsentState(saved);
+    } catch {}
     const rec = makeRecognizer();
     setSupported(!!rec);
     if (!rec) return;
@@ -101,7 +161,7 @@ export default function TheoryRound({ inviteToken, roundId, title, brief, status
       const heard = (finalRef.current + interim).trim();
       if (heard && firstWordRef.current == null) firstWordRef.current = Math.round((Date.now() - startedAtRef.current) / 1000);
       if (heard) spokeRef.current = true;
-      setText([baseRef.current, heard].filter(Boolean).join(" "));
+      setAnswer([baseRef.current, heard].filter(Boolean).join(" "));
       setTestHeard(heard);
     };
     rec.onerror = (e) => {
@@ -132,31 +192,105 @@ export default function TheoryRound({ inviteToken, roundId, title, brief, status
       } catch {}
       cancelSpeak();
     };
-  }, []);
+  }, [roundId, setAnswer]);
+
+  /** Send one clip: kept for replay when recording is on, and turned into text when the browser cannot. */
+  const upload = useCallback(
+    async (clip: Clip, opts: { test?: boolean } = {}): Promise<string | null> => {
+      const { recordOn: keep, serverStt: needText } = liveRef.current;
+      if (!needText && (!keep || opts.test)) return null;
+      const form = new FormData();
+      form.append("inviteToken", inviteToken);
+      form.append("roundId", roundId);
+      form.append("seq", String(seqRef.current++));
+      form.append("seconds", String(clip.seconds));
+      form.append("keep", keep && !opts.test ? "1" : "0");
+      form.append("transcribe", needText ? "1" : "0");
+      if (opts.test) form.append("test", "1");
+      form.append("audio", clip.blob, "answer");
+      const res = await fetch("/api/ai-interview/theory/audio", { method: "POST", body: form }).catch(() => null);
+      const data = res ? ((await res.json().catch(() => ({}))) as { text?: string; error?: string }) : null;
+      if (!res?.ok) {
+        toast.error(data?.error ?? "Could not save that recording. Check your connection.");
+        return null;
+      }
+      return data?.text ?? null;
+    },
+    [inviteToken, roundId],
+  );
+
+  /** Stop the current clip and, unless discarding it, upload it in the background. */
+  const finishClip = useCallback(
+    (discard: boolean) => {
+      if (!recorder.recording()) return;
+      const job = recorder.stopClip().then(async (clip) => {
+        if (!clip || discard) return;
+        const heard = await upload(clip);
+        if (heard && liveRef.current.serverStt) {
+          spokeRef.current = true;
+          setAnswer([textRef.current.trim(), heard.trim()].filter(Boolean).join(" "));
+        }
+      });
+      pendingRef.current.push(job);
+      setTranscribing(liveRef.current.serverStt);
+      void job.finally(() => {
+        pendingRef.current = pendingRef.current.filter((p) => p !== job);
+        if (!pendingRef.current.length) setTranscribing(false);
+      });
+    },
+    [recorder, upload, setAnswer],
+  );
 
   const startMic = useCallback(() => {
-    const rec = recRef.current;
-    if (!rec || wantListenRef.current) return;
+    if (wantListenRef.current) return;
     cancelSpeak();
-    baseRef.current = text.trim();
+    baseRef.current = textRef.current.trim();
     finalRef.current = "";
     wantListenRef.current = true;
-    try {
-      rec.start();
-      setListening(true);
-      setAi("listening");
-    } catch {
-      wantListenRef.current = false;
+    setListening(true);
+    setAi("listening");
+    const rec = recRef.current;
+    if (rec) {
+      try {
+        rec.start();
+      } catch {}
     }
-  }, [text]);
+    const { recordOn: keep, serverStt: needText } = liveRef.current;
+    if (keep || needText) {
+      recorder.startClip().catch(() => {
+        wantListenRef.current = false;
+        setListening(false);
+        setAi("idle");
+        toast.error("The microphone is blocked. Allow it in the browser, or type your answer.");
+      });
+    } else if (canRecord()) {
+      // Only for the orb's level; speech still goes through the browser.
+      recorder.open().catch(() => {});
+    }
+  }, [recorder]);
 
-  const stopMic = useCallback(() => {
-    wantListenRef.current = false;
-    setListening(false);
-    try {
-      recRef.current?.stop();
-    } catch {}
-  }, []);
+  const stopMic = useCallback(
+    (discard = false) => {
+      wantListenRef.current = false;
+      setListening(false);
+      try {
+        recRef.current?.stop();
+      } catch {}
+      finishClip(discard);
+    },
+    [finishClip],
+  );
+
+  // First sound while listening marks the time to first word, for every capture path.
+  useEffect(() => {
+    if (!listening) return;
+    const id = setInterval(() => {
+      if (firstWordRef.current == null && recorder.levelRef.current > 0.35) {
+        firstWordRef.current = Math.round((Date.now() - startedAtRef.current) / 1000);
+      }
+    }, 200);
+    return () => clearInterval(id);
+  }, [listening, recorder.levelRef]);
 
   // Count focus losses while a question is on screen.
   useEffect(() => {
@@ -192,13 +326,16 @@ export default function TheoryRound({ inviteToken, roundId, title, brief, status
     void speakNaturally(line, { onEnd: finish, onError: finish });
   }, []);
 
+  const canSpeakRef = useRef(canSpeak);
+  canSpeakRef.current = canSpeak;
+
   const beginAnswer = useCallback(
     (v: TheoryView) => {
       const secs = v.followUp ? v.followUpSeconds : v.secondsPerQuestion;
       startedAtRef.current = Date.now();
       setNow(Date.now());
       setDeadline(Date.now() + secs * 1000);
-      if (v.answerMode !== "typing" && recRef.current && !typing) startMic();
+      if (canSpeakRef.current && !typing) startMic();
       else setAi("idle");
     },
     [startMic, typing],
@@ -207,13 +344,14 @@ export default function TheoryRound({ inviteToken, roundId, title, brief, status
   const present = useCallback(
     (v: TheoryView, lead = "") => {
       setView(v);
-      setText("");
+      setAnswer("");
       baseRef.current = "";
       finalRef.current = "";
       spokeRef.current = false;
       typedRef.current = false;
       firstWordRef.current = null;
       blursRef.current = 0;
+      seqRef.current = 0;
       setDeadline(null);
       if (v.done) {
         setPhase("done");
@@ -225,7 +363,7 @@ export default function TheoryRound({ inviteToken, roundId, title, brief, status
       lineRef.current = line;
       say(line, () => beginAnswer(v));
     },
-    [say, beginAnswer],
+    [say, beginAnswer, setAnswer],
   );
 
   const call = useCallback(
@@ -255,28 +393,38 @@ export default function TheoryRound({ inviteToken, roundId, title, brief, status
     const v = await call({ action: "state" });
     if (!v) {
       setAi("idle");
-      setPhase(status === "PENDING" ? "intro" : "loading");
+      setPhase("intro");
       return;
     }
     present(v, v.position === 0 && !v.followUp ? "Let us begin. " : "");
-  }, [call, present, status]);
+  }, [call, present]);
 
-  // A round already under way picks up where it stopped.
+  // A round already under way picks up where it stopped, unless the candidate
+  // still has to answer the recording question (a new browser, for example).
   useEffect(() => {
-    if (status !== "PENDING" && !disabled) void start();
+    if (status === "PENDING" || disabled) return;
+    let saved: string | null = null;
+    try {
+      saved = localStorage.getItem(consentKey(roundId));
+    } catch {}
+    if (recordAudio && answerMode !== "typing" && canRecord() && !saved) setPhase("intro");
+    else void start();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const submit = useCallback(
-    async (skipped: boolean) => {
+    async (how: "done" | "skip" | "timeout") => {
       if (sendingRef.current || !view || view.done) return;
       sendingRef.current = true;
-      stopMic();
+      stopMic(how === "skip");
       cancelSpeak();
       setDeadline(null);
       setAi("thinking");
+      // A clip still being transcribed belongs to this answer.
+      await Promise.all(pendingRef.current);
+      const skipped = how === "skip" || !textRef.current.trim();
       const answer = {
-        text: skipped ? "" : text,
+        text: skipped ? "" : textRef.current,
         skipped,
         mode: spokeRef.current ? "voice" : "typed",
         seconds: Math.round((Date.now() - startedAtRef.current) / 1000),
@@ -291,41 +439,53 @@ export default function TheoryRound({ inviteToken, roundId, title, brief, status
       }
       present(v, v.followUp ? "" : "Thanks. ");
     },
-    [view, text, call, present, stopMic],
+    [view, call, present, stopMic],
   );
 
   // Time up: send what is there (an empty answer counts as skipped).
   const remaining = deadline ? Math.ceil((deadline - now) / 1000) : null;
   useEffect(() => {
-    if (remaining != null && remaining <= 0 && phase === "question") void submit(!text.trim());
+    if (remaining != null && remaining <= 0 && phase === "question") void submit("timeout");
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [remaining, phase]);
 
-  function testMic() {
+  async function testMic() {
     const rec = recRef.current;
-    if (!rec) return;
     if (testing) {
       wantListenRef.current = false;
       setTesting(false);
       try {
-        rec.stop();
+        rec?.stop();
       } catch {}
+      if (serverStt) {
+        const clip = await recorder.stopClip();
+        if (clip) {
+          setTestHeard("…");
+          const heard = await upload(clip, { test: true });
+          setTestHeard(heard ?? "");
+        }
+      }
       return;
     }
     baseRef.current = "";
     finalRef.current = "";
     setTestHeard("");
-    wantListenRef.current = true;
     try {
-      rec.start();
+      if (serverStt) await recorder.startClip();
+      else {
+        if (canRecord()) void recorder.open().catch(() => {});
+        wantListenRef.current = true;
+        rec?.start();
+      }
       setTesting(true);
     } catch {
       wantListenRef.current = false;
+      toast.error("The microphone is blocked. Allow it in the browser to answer out loud.");
     }
   }
 
   function startRound() {
-    if (testing) testMic();
+    if (testing) void testMic();
     setTestHeard("");
     void start();
   }
@@ -339,30 +499,40 @@ export default function TheoryRound({ inviteToken, roundId, title, brief, status
 
   const answering = phase === "question" && ai !== "speaking" && ai !== "thinking";
   const low = remaining != null && remaining <= 30;
-  const stateLabel = ai === "speaking" ? "Speaking" : ai === "listening" ? "Listening to your answer" : ai === "thinking" ? "Thinking" : phase === "question" ? "Your turn" : "Ready";
+  const stateLabel =
+    ai === "speaking" ? "Speaking" : ai === "listening" ? "Listening to your answer" : ai === "thinking" ? "Thinking" : transcribing ? "Writing down your words" : phase === "question" ? "Your turn" : "Ready";
 
   return (
     <div className="h-full min-h-0 flex flex-col lg:grid lg:grid-cols-2 bg-bg">
       <style dangerouslySetInnerHTML={{ __html: ORB_CSS }} />
 
       {/* Interviewer: a compact bar on phones, the left half on large screens. */}
-      <section aria-label="AI interviewer" className="shrink-0 lg:min-h-0 border-b lg:border-b-0 lg:border-r border-border bg-surface/40 flex lg:flex-col items-center gap-3 lg:gap-7 px-4 py-3 lg:px-10 lg:py-8">
+      <section aria-label="AI interviewer" className="shrink-0 lg:min-h-0 border-b lg:border-b-0 lg:border-r border-border bg-surface/40 flex lg:flex-col items-center gap-3 lg:gap-6 px-4 py-3 lg:px-10 lg:py-8">
         <div className="hidden lg:flex self-stretch items-center justify-between text-[13px] text-muted">
           <span className="inline-flex items-center gap-2">
             <StateDot ai={ai} />
             {stateLabel}
           </span>
-          <span>AI interviewer</span>
+          <span className="inline-flex items-center gap-3">
+            {recordOn && (
+              <span className="inline-flex items-center gap-1.5 text-danger">
+                <span className={`w-1.5 h-1.5 rounded-full bg-danger ${listening ? "animate-pulse" : "opacity-50"}`} aria-hidden />
+                Recording answers
+              </span>
+            )}
+            AI interviewer
+          </span>
         </div>
-        <Orb ai={ai} />
+        <InterviewerFigure ai={ai} levelRef={recorder.levelRef} />
         <div className="flex-1 min-w-0 lg:flex-none lg:self-stretch">
           <div className="lg:hidden flex items-center gap-2 text-[13px] font-medium text-fg">
             <StateDot ai={ai} />
             {stateLabel}
+            {recordOn && <span className="ml-1 w-1.5 h-1.5 rounded-full bg-danger" aria-label="Recording answers" />}
           </div>
           <div className="lg:rounded-2xl lg:border lg:border-border lg:bg-surface lg:px-5 lg:py-4" aria-live="polite">
             <span className="hidden lg:block text-xs text-subtle mb-1.5">Captions</span>
-            <p className="text-[12.5px] lg:text-[17px] leading-relaxed text-muted lg:text-fg truncate lg:whitespace-normal">
+            <p className="text-[12.5px] lg:text-[17px] leading-relaxed text-muted lg:text-fg line-clamp-2 lg:line-clamp-none">
               {caption || "The interviewer will read each question aloud. Captions appear here."}
             </p>
           </div>
@@ -406,20 +576,39 @@ export default function TheoryRound({ inviteToken, roundId, title, brief, status
               {brief && <p className="text-[14px] leading-relaxed text-muted whitespace-pre-line">{brief}</p>}
             </div>
             <ul className="flex flex-col gap-2 text-[14px] text-fg">
-              <li className="flex gap-2.5"><Check className="w-4 h-4 mt-0.5 text-success shrink-0" aria-hidden />The interviewer reads one question at a time. Answer out loud{canType ? " or type" : ""}.</li>
+              <li className="flex gap-2.5"><Check className="w-4 h-4 mt-0.5 text-success shrink-0" aria-hidden />The interviewer reads one question at a time. {canSpeak || needsConsent ? `Answer out loud${canType ? " or type" : ""}.` : "Type your answers."}</li>
               <li className="flex gap-2.5"><Check className="w-4 h-4 mt-0.5 text-success shrink-0" aria-hidden />Each question has its own timer. Press Done when you finish. You cannot go back.</li>
               <li className="flex gap-2.5"><Check className="w-4 h-4 mt-0.5 text-success shrink-0" aria-hidden />You may get a short follow-up question on an answer.</li>
             </ul>
-            {mode !== "typing" && supported === false && (
+            {mode !== "typing" && supported === false && !serverStt && (
               <p className="rounded-lg border border-warning/40 bg-warning/10 px-3.5 py-2.5 text-[13px] text-fg">
                 This browser cannot turn speech into text, so you will type your answers. Chrome and Edge support spoken answers.
               </p>
             )}
-            {mode !== "typing" && supported && (
+            {needsConsent && voicePossible && (
+              <fieldset className="rounded-xl border border-border bg-surface p-4 flex flex-col gap-3">
+                <legend className="px-1 text-[14px] font-medium text-fg">Recording</legend>
+                <p className="text-[13px] leading-relaxed text-muted">
+                  The hiring team asked to keep a recording of your spoken answers so they can listen back. Only they can play it, and it is deleted with your screening.
+                  {mode === "voice" ? " If you would rather not be recorded, you can type your answers instead." : ""}
+                </p>
+                <label className="flex items-start gap-2.5 text-[14px] text-fg">
+                  <input type="radio" name={`consent-${roundId}`} checked={consent === "yes"} onChange={() => setConsent("yes")} className="mt-1 w-4 h-4 accent-secondary" />
+                  I agree to my spoken answers being recorded
+                </label>
+                {mode === "voice" && (
+                  <label className="flex items-start gap-2.5 text-[14px] text-fg">
+                    <input type="radio" name={`consent-${roundId}`} checked={consent === "no"} onChange={() => setConsent("no")} className="mt-1 w-4 h-4 accent-secondary" />
+                    Do not record me; I will type my answers
+                  </label>
+                )}
+              </fieldset>
+            )}
+            {canSpeak && (
               <div className="rounded-xl border border-border bg-surface p-4 flex flex-col gap-3">
                 <div className="flex flex-wrap items-center gap-2">
                   <span className="text-[14px] font-medium text-fg flex-1 min-w-[160px]">Check your microphone</span>
-                  <button type="button" onClick={testMic} className="h-10 px-3.5 rounded-lg border border-border-strong bg-bg text-[13px] text-fg inline-flex items-center gap-2 hover:bg-elevated">
+                  <button type="button" onClick={() => void testMic()} className="h-10 px-3.5 rounded-lg border border-border-strong bg-bg text-[13px] text-fg inline-flex items-center gap-2 hover:bg-elevated">
                     {testing ? <MicOff className="w-4 h-4" aria-hidden /> : <Mic className="w-4 h-4" aria-hidden />}
                     {testing ? "Stop" : "Test microphone"}
                   </button>
@@ -427,17 +616,30 @@ export default function TheoryRound({ inviteToken, roundId, title, brief, status
                     <Volume2 className="w-4 h-4" aria-hidden /> Play voice
                   </button>
                 </div>
-                <p className="text-[13px] text-muted min-h-[20px]">{testing ? testHeard || "Say a sentence. It should appear here." : testHeard ? `Heard: ${testHeard}` : "Say a sentence and check that it appears."}</p>
+                {testing && <LevelBar levelRef={recorder.levelRef} />}
+                <p className="text-[13px] text-muted min-h-[20px]">
+                  {testing
+                    ? serverStt
+                      ? "Say a sentence, then press Stop to see it written down."
+                      : testHeard || "Say a sentence. It should appear here."
+                    : testHeard === "…"
+                      ? "Writing it down…"
+                      : testHeard
+                        ? `Heard: ${testHeard}`
+                        : "Say a sentence and check that it appears."}
+                </p>
+                {serverStt && <p className="text-xs text-subtle">Your words appear each time you pause the mic.</p>}
               </div>
             )}
             <button
               type="button"
-              disabled={disabled}
+              disabled={disabled || blocked}
               onClick={startRound}
               className="self-start h-12 px-6 rounded-xl bg-accent text-bg text-[15px] font-semibold hover:opacity-90 disabled:opacity-50"
             >
-              Start the first question
+              {status === "PENDING" ? "Start the first question" : "Continue"}
             </button>
+            {blocked && <p className="text-[13px] text-muted -mt-2">This round is answered out loud, so it needs your agreement to record.</p>}
           </div>
         )}
 
@@ -496,24 +698,41 @@ export default function TheoryRound({ inviteToken, roundId, title, brief, status
                 <label htmlFor={`theory-answer-${roundId}`} className="font-medium">
                   Your answer
                 </label>
-                <span className="ml-auto">{listening ? "Pause the mic to fix a word" : canType ? "You can edit before moving on" : ""}</span>
+                {transcribing && (
+                  <span className="inline-flex items-center gap-1.5 text-secondary-soft">
+                    <Loader2 className="w-3 h-3 animate-spin" aria-hidden /> Writing down your words
+                  </span>
+                )}
+                <span className="ml-auto">{listening ? (serverStt ? "Pause the mic to see your words" : "Pause the mic to fix a word") : canType ? "You can edit before moving on" : ""}</span>
               </div>
               <textarea
                 id={`theory-answer-${roundId}`}
                 value={text}
-                readOnly={listening || !canType || !answering}
+                readOnly={listening || !canType || !answering || transcribing}
                 onChange={(e) => {
                   if (!typedRef.current) {
                     typedRef.current = true;
                     if (firstWordRef.current == null) firstWordRef.current = Math.round((Date.now() - startedAtRef.current) / 1000);
                   }
-                  setText(e.target.value);
+                  setAnswer(e.target.value);
                 }}
                 onPaste={(e) => {
                   e.preventDefault();
                   toast("Pasting is turned off for answers.");
                 }}
-                placeholder={ai === "speaking" ? "Listen to the question first." : listening ? "Start speaking. Your words appear here." : canType ? "Type your answer, or turn on the mic." : "Turn on the mic to answer."}
+                placeholder={
+                  ai === "speaking"
+                    ? "Listen to the question first."
+                    : listening
+                      ? serverStt
+                        ? "Recording. Pause the mic to see your words."
+                        : "Start speaking. Your words appear here."
+                      : canType
+                        ? canSpeak
+                          ? "Type your answer, or turn on the mic."
+                          : "Type your answer."
+                        : "Turn on the mic to answer."
+                }
                 className="flex-1 min-h-[120px] w-full resize-none bg-transparent text-[15.5px] leading-relaxed text-fg placeholder:text-subtle outline-none"
               />
             </div>
@@ -533,16 +752,16 @@ export default function TheoryRound({ inviteToken, roundId, title, brief, status
               )}
               {canSpeak && canType && (
                 <button type="button" disabled={!answering} onClick={typeInstead} className="h-12 px-4 rounded-xl border border-border-strong text-[14px] text-fg inline-flex items-center gap-2 hover:bg-elevated disabled:opacity-40">
-                  <Keyboard className="w-4 h-4" aria-hidden /> Type instead
+                  <Keyboard className="w-4 h-4" aria-hidden /> <span className="hidden sm:inline">Type instead</span><span className="sm:hidden">Type</span>
                 </button>
               )}
-              <button type="button" disabled={!answering} onClick={() => void submit(true)} className="h-12 px-4 rounded-xl border border-border-strong text-[14px] text-fg inline-flex items-center gap-2 hover:bg-elevated disabled:opacity-40">
+              <button type="button" disabled={!answering} onClick={() => void submit("skip")} className="h-12 px-4 rounded-xl border border-border-strong text-[14px] text-fg inline-flex items-center gap-2 hover:bg-elevated disabled:opacity-40">
                 <SkipForward className="w-4 h-4" aria-hidden /> Skip
               </button>
               <button
                 type="button"
-                disabled={!answering || !text.trim()}
-                onClick={() => void submit(false)}
+                disabled={!answering || (!text.trim() && !listening)}
+                onClick={() => void submit("done")}
                 className="ml-auto h-12 px-5 rounded-xl bg-accent text-bg text-[15px] font-semibold hover:opacity-90 disabled:opacity-40"
               >
                 {ai === "thinking" ? "Saving" : view.position + 1 >= view.total && !view.followUp ? "Done, last question" : "Done, next question"}
@@ -573,7 +792,7 @@ export default function TheoryRound({ inviteToken, roundId, title, brief, status
 
   function beginAnswerAfterRepeat() {
     // A repeat does not reset the timer; it only resumes listening.
-    if (view && view.answerMode !== "typing" && recRef.current && !typing) startMic();
+    if (canSpeak && !typing) startMic();
     else setAi("idle");
   }
 }
@@ -581,6 +800,62 @@ export default function TheoryRound({ inviteToken, roundId, title, brief, status
 function StateDot({ ai }: { ai: AiState }) {
   const tone = ai === "listening" ? "bg-accent" : ai === "speaking" ? "bg-secondary" : "bg-subtle";
   return <span className={`w-2 h-2 rounded-full ${tone}`} aria-hidden />;
+}
+
+/* ── Interviewer figure ──────────────────────────────────────────────────── */
+
+// The 3D orb runs on large screens with motion allowed and WebGL available.
+const FIGURE_QUERIES = ["(min-width: 1024px)", "(prefers-reduced-motion: no-preference)"];
+
+function subscribeFigure(onChange: () => void): () => void {
+  const lists = FIGURE_QUERIES.map((q) => window.matchMedia(q));
+  lists.forEach((l) => l.addEventListener("change", onChange));
+  return () => lists.forEach((l) => l.removeEventListener("change", onChange));
+}
+
+let webglOk: boolean | null = null;
+function hasWebGL(): boolean {
+  if (webglOk == null) {
+    try {
+      const c = document.createElement("canvas");
+      webglOk = !!(c.getContext("webgl2") ?? c.getContext("webgl"));
+    } catch {
+      webglOk = false;
+    }
+  }
+  return webglOk;
+}
+
+function readFigure(): boolean {
+  return FIGURE_QUERIES.every((q) => window.matchMedia(q).matches) && hasWebGL();
+}
+
+function InterviewerFigure({ ai, levelRef }: { ai: AiState; levelRef: MutableRefObject<number> }) {
+  const use3d = useSyncExternalStore(subscribeFigure, readFigure, () => false);
+  if (!use3d) return <Orb ai={ai} />;
+  return (
+    <div className="relative shrink-0 w-[300px] h-[300px] -my-4" aria-hidden>
+      <Orb3D state={ai} levelRef={levelRef} />
+    </div>
+  );
+}
+
+function LevelBar({ levelRef }: { levelRef: MutableRefObject<number> }) {
+  const bar = useRef<HTMLSpanElement>(null);
+  useEffect(() => {
+    let id = 0;
+    const tick = () => {
+      if (bar.current) bar.current.style.width = `${Math.round(Math.min(1, levelRef.current) * 100)}%`;
+      id = requestAnimationFrame(tick);
+    };
+    tick();
+    return () => cancelAnimationFrame(id);
+  }, [levelRef]);
+  return (
+    <span className="h-1.5 rounded-full bg-panel overflow-hidden" role="presentation">
+      <span ref={bar} className="block h-full rounded-full bg-success transition-[width] duration-75" style={{ width: "0%" }} />
+    </span>
+  );
 }
 
 function Orb({ ai }: { ai: AiState }) {

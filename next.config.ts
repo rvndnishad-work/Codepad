@@ -2,6 +2,7 @@ import type { NextConfig } from "next";
 import { reactMergeRedirects } from "./src/lib/react-merge-redirects";
 import { nodeMergeRedirects } from "./src/lib/node-merge-redirects";
 import { jsMergeRedirects } from "./src/lib/js-merge-redirects";
+import { nextMergeRedirects } from "./src/lib/next-merge-redirects";
 
 const nextConfig: NextConfig = {
   distDir: process.env.NEXT_DIST_DIR || ".next",
@@ -86,6 +87,8 @@ const nextConfig: NextConfig = {
       // Merged duplicate "Tricky JavaScript Scenario #N" questions → renamed
       // canonical pages (JS ULTRA retrofit, Phase 0 dedup).
       ...jsMergeRedirects,
+      // Merged duplicate Next.js questions → canonical pages (Next.js ULTRA dedup).
+      ...nextMergeRedirects,
     ];
   },
 };

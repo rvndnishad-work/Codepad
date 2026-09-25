@@ -248,6 +248,11 @@ export default function QuestionDetailClient({
   const cheatsheetCloseRef = useRef<HTMLButtonElement>(null);
   const [orbitPaused, setOrbitPaused] = useState(false);
   const [orbitScrolling, setOrbitScrolling] = useState(false);
+  // Guards the scroll handler below: setOrbitScrolling only on transitions,
+  // otherwise every scroll tick re-renders the whole page (including the
+  // answer's inline SVGs, whose SMIL timelines restart when innerHTML is
+  // re-set — see MarkdownRenderer). Ref mirrors the state, no extra renders.
+  const scrollingRef = useRef(false);
 
   // Reading progress — thin bar under the top edge, tinted to the technology.
   const { scrollYProgress } = useScroll();
@@ -414,9 +419,15 @@ export default function QuestionDetailClient({
     obs.observe(el);
     let t: ReturnType<typeof setTimeout>;
     const onScroll = () => {
-      setOrbitScrolling(true);
+      if (!scrollingRef.current) {
+        scrollingRef.current = true;
+        setOrbitScrolling(true);
+      }
       clearTimeout(t);
-      t = setTimeout(() => setOrbitScrolling(false), 160);
+      t = setTimeout(() => {
+        scrollingRef.current = false;
+        setOrbitScrolling(false);
+      }, 160);
     };
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => {

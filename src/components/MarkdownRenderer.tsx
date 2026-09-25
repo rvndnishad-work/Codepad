@@ -36,7 +36,7 @@ function normalizeSingleLineFences(md: string): string {
   });
 }
 
-export default function MarkdownRenderer({ content, className = "", forceRunnable = false, allowHtml = false }: MarkdownRendererProps) {
+function MarkdownRendererInner({ content, className = "", forceRunnable = false, allowHtml = false }: MarkdownRendererProps) {
   const normalizedContent = normalizeSingleLineFences(content);
   const extractText = (node: any): string => {
     if (typeof node === 'string') return node;
@@ -143,3 +143,15 @@ export default function MarkdownRenderer({ content, className = "", forceRunnabl
     </article>
   );
 }
+
+// Memoized: props are plain stable values (markdown strings + flags), so
+// unrelated page re-renders (scroll flags, dock observers, save toggles)
+// skip this whole subtree. This matters beyond perf: the svg renderer below
+// mounts diagrams via dangerouslySetInnerHTML, and a re-render builds a new
+// {__html} object, which makes React re-set innerHTML even for an identical
+// string — destroying the SVG subtree and restarting any SMIL diagram
+// animation from 0 on every scroll burst. Verified with a jsdom identity
+// test (re-render replaces the <svg> node; memoized keeps it).
+const MarkdownRenderer = React.memo(MarkdownRendererInner);
+
+export default MarkdownRenderer;

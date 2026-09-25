@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowDown, ArrowLeft, ArrowUp, BookOpen, Check, ClipboardPaste, Coins, Plus, Repeat2, Search, Send, Sparkles, Trash2, X } from "lucide-react";
+import { ArrowDown, ArrowLeft, ArrowUp, BookOpen, Check, ClipboardPaste, Code2, Coins, Columns2, ListChecks, Mic, Plus, Repeat2, Search, Send, Sparkles, Trash2, X } from "lucide-react";
 import type { CreditSummary, PoolCandidate } from "@/lib/ai-interview/console-server";
 import type { RoundSpecInput } from "@/lib/ai-interview/rounds";
 import {
@@ -33,12 +33,33 @@ import {
 } from "@/lib/ai-interview/console";
 import { AI_ENGAGEMENT_CREDIT_COST, ENGAGEMENT_LABELS, normalizeEngagementLevel, type EngagementLevel } from "@/lib/ai-interview/engagement";
 import { paradigmName, roundLabel } from "@/lib/ai-interview/round-label";
+import {
+  ANSWER_MODE_LABELS,
+  DEFAULT_THEORY,
+  SECONDS_CHOICES,
+  askedCount,
+  sanitizeTheory,
+  theoryMinutes,
+  type TheoryAnswerMode,
+  type TheorySettings,
+} from "@/lib/ai-interview/theory";
 import { plural } from "@/lib/workspace/display";
 import { Avatar, Btn, Dialog, StageChip, inputCls, useToasts } from "../../candidates/_components/ui";
 import { selectCls } from "./kit";
 import { createScreeningAction } from "../actions";
 
-export type QuestionChoice = { id: string; title: string; kind: string; label: string; minutes: number; custom: boolean; language: string | null; frameworkLabel: string | null };
+export type QuestionChoice = {
+  id: string;
+  title: string;
+  kind: string;
+  label: string;
+  minutes: number;
+  custom: boolean;
+  language: string | null;
+  frameworkLabel: string | null;
+  /** Questions in a questionnaire (conversation question sets); 0 otherwise. */
+  questionCount: number;
+};
 export type ChallengeChoice = CuratableChallenge & { title: string; difficulty: string; mine: boolean };
 export type Prefill = {
   title: string;
@@ -53,8 +74,21 @@ export type Prefill = {
     sourceId: string | null;
     templateId: string | null;
     estimatedMinutes: number;
+    theory?: TheorySettings | null;
   }[];
 };
+
+/** What a screening tests: spoken theory questions, coding in the playground, or both. */
+type Mode = "theory" | "practical" | "both";
+
+const MODES: { id: Mode; title: string; body: string; icon: typeof Mic }[] = [
+  { id: "theory", title: "Theory", body: "The AI reads questions from your questionnaires aloud and listens to each answer. One question at a time.", icon: Mic },
+  { id: "practical", title: "Practical", body: "Candidates solve coding tasks in the playground while the AI asks about their code.", icon: Code2 },
+  { id: "both", title: "Both", body: "Theory questions first, then coding. One invite, and a score for each part.", icon: Columns2 },
+];
+
+/** A theory round: one questionnaire with its settings. */
+type TheoryRow = { key: string; templateId: string; settings: TheorySettings };
 
 const MINUTES = [15, 20, 30, 45, 60];
 const MAX_ROUNDS = 6;
@@ -109,6 +143,10 @@ export default function NewScreening({
   // Rounds added straight from the question library, on top of the stack.
   const [extra, setExtra] = useState<Row[]>(() => init.extra);
   const [browsing, setBrowsing] = useState(false);
+  // Theory rounds (questionnaires) and what the screening tests.
+  const [theoryRows, setTheoryRows] = useState<TheoryRow[]>(init.theory);
+  const [mode, setMode] = useState<Mode>(() => (!prefill ? "both" : init.theory.length ? (init.order.length ? "both" : "theory") : "practical"));
+  const [pickingQuestionnaire, setPickingQuestionnaire] = useState(false);
 
   // 3. Candidates
   const [picked, setPicked] = useState<string[]>(preselected);
@@ -152,16 +190,41 @@ export default function NewScreening({
     return list.map((r, i) => ({ r, i })).sort((a, b) => rank(a.r.key) - rank(b.r.key) || a.i - b.i).map((x) => x.r);
   }, [stack, challenges, minutes, swaps, removed, order, extra]);
 
+  const questionnaires = useMemo(() => questions.filter((q) => q.custom && q.kind === "conversation"), [questions]);
+  const theorySpecs: { row: TheoryRow; spec: RoundSpecInput; title: string; total: number }[] = theoryRows.map((row) => {
+    const q = questionnaires.find((x) => x.id === row.templateId);
+    const total = q?.questionCount ?? 0;
+    return {
+      row,
+      title: q?.title ?? "Questionnaire",
+      total,
+      spec: {
+        paradigm: "theory",
+        sourceKind: "scaffold",
+        templateId: row.templateId,
+        frameworkLabel: q?.frameworkLabel ?? undefined,
+        estimatedMinutes: theoryMinutes(row.settings, total),
+        theory: row.settings,
+      },
+    };
+  });
+  const showTheory = mode !== "practical";
+  const showPractical = mode !== "theory";
+  // Theory rounds come first, then the coding rounds.
+  const allSpecs: RoundSpecInput[] = [...(showTheory ? theorySpecs.map((t) => t.spec) : []), ...(showPractical ? rows.map((r) => r.spec) : [])];
+
   const missingDsa = dsa.filter((l) => !challenges.some((c) => c.paradigm === "dsa" && c.languages.map((x) => x.toLowerCase()).includes(l.toLowerCase())));
 
   const people = picked.length + newPeople.length;
   const check = creditCheck(credits.balance, credits.held, people, level);
-  const totalMinutes = rows.reduce((n, r) => n + (r.spec.estimatedMinutes ?? 30), 0);
+  const totalMinutes = allSpecs.reduce((n, r) => n + (r.estimatedMinutes ?? 30), 0);
   const closes = expiryDate(new Date(), expiry);
   const problems = [
     !title.trim() && "Name the role",
-    !rows.length && "Pick at least one thing to test",
-    rows.length > MAX_ROUNDS && `Keep it to ${MAX_ROUNDS} rounds`,
+    !allSpecs.length && "Pick at least one thing to test",
+    mode === "both" && showTheory && !theoryRows.length && "Add a questionnaire for the theory part",
+    mode === "both" && !rows.length && "Add a coding round for the practical part",
+    allSpecs.length > MAX_ROUNDS && `Keep it to ${MAX_ROUNDS} rounds`,
     !people && "Add at least one candidate",
     people > 0 && !check.ok && "Not enough credits",
   ].filter(Boolean) as string[];
@@ -195,7 +258,29 @@ export default function NewScreening({
       setBackend(a.stack.backend ?? []);
       setDsa(a.stack.dsa ?? []);
     }
+    // Technical roles test both by default; other roles answer questions only.
+    if (a && empty && !theoryRows.length) setMode(a.technical ? "both" : "theory");
   }
+
+  function addQuestionnaire(id: string) {
+    if (theoryRows.some((t) => t.templateId === id)) return;
+    setTheoryRows((a) => [...a, { key: `theory:${id}`, templateId: id, settings: { ...DEFAULT_THEORY } }]);
+    toast("Questionnaire added");
+  }
+
+  function moveTheory(key: string, dir: -1 | 1) {
+    setTheoryRows((a) => {
+      const i = a.findIndex((t) => t.key === key);
+      const j = i + dir;
+      if (i < 0 || j < 0 || j >= a.length) return a;
+      const next = a.slice();
+      [next[i], next[j]] = [next[j], next[i]];
+      return next;
+    });
+  }
+
+  const setTheory = (key: string, patch: Partial<TheorySettings>) =>
+    setTheoryRows((a) => a.map((t) => (t.key === key ? { ...t, settings: sanitizeTheory({ ...t.settings, ...patch }) } : t)));
 
   function addFromLibrary(spec: RoundSpecInput) {
     const key = `lib:${spec.sourceKind}:${spec.sourceId ?? spec.templateId}`;
@@ -233,7 +318,7 @@ export default function NewScreening({
         positionTitle: title,
         candidateIds: picked,
         newPeople,
-        rounds: rows.map((r) => r.spec),
+        rounds: allSpecs,
         engagementLevel: level,
         expiresAfterDays: expiry,
         reminderAfterDays: reminder,
@@ -311,98 +396,161 @@ export default function NewScreening({
           </Section>
 
           {/* 2. What to test */}
-          <Section n={2} title="What to test" hint="Pick the stack, or add questions from your library. Each becomes one round." done={rows.length > 0}>
-            {area && !area.technical && (
-              <p className="rounded-lg border border-secondary/30 bg-secondary/10 px-3.5 py-2.5 text-[13px] text-fg">
-                For a {area.label.toLowerCase()} role, add conversation questions from your library. The AI interviewer asks them in chat, with no code.{" "}
-                <Link href={`${base}/questions`} className="text-secondary-soft underline">
-                  Write a conversation question
-                </Link>
-              </p>
+          <Section n={2} title="What to test" hint="Spoken theory questions, coding in the playground, or both" done={allSpecs.length > 0}>
+            <div role="radiogroup" aria-label="What the screening tests" className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+              {MODES.map((m) => {
+                const on = mode === m.id;
+                return (
+                  <button
+                    key={m.id}
+                    type="button"
+                    role="radio"
+                    aria-checked={on}
+                    onClick={() => setMode(m.id)}
+                    className={`flex flex-col gap-1.5 rounded-xl border p-3.5 text-left transition ${on ? "border-secondary bg-secondary/[0.07]" : "border-border hover:border-border-strong"}`}
+                  >
+                    <span className="flex items-center justify-between gap-2">
+                      <span className="flex items-center gap-2 text-sm font-medium text-fg">
+                        <m.icon className="w-4 h-4 text-secondary-soft" aria-hidden />
+                        {m.title}
+                      </span>
+                      <span className={`w-4 h-4 rounded-full border-2 shrink-0 ${on ? "border-secondary bg-secondary/30" : "border-border-strong"}`} aria-hidden />
+                    </span>
+                    <span className="text-xs text-subtle leading-snug">{m.body}</span>
+                  </button>
+                );
+              })}
+            </div>
+
+            {showTheory && (
+              <div className="flex flex-col gap-3">
+                {mode === "both" && <h3 className="text-[13px] font-semibold text-fg">Theory</h3>}
+                {theorySpecs.length > 0 ? (
+                  <ol className="flex flex-col rounded-xl border border-border divide-y divide-border">
+                    {theorySpecs.map((t, i) => (
+                      <li key={t.row.key} className="flex flex-col gap-3 px-3.5 py-3">
+                        <div className="flex flex-wrap items-center gap-3">
+                          <span className="w-7 h-7 rounded-lg bg-elevated text-[13px] font-semibold text-fg inline-flex items-center justify-center shrink-0">{i + 1}</span>
+                          <div className="flex-1 min-w-[180px] flex flex-col gap-0.5">
+                            <span className="text-sm font-medium text-fg">{t.title}</span>
+                            <span className="text-xs text-subtle">
+                              Theory, {plural(askedCount(t.row.settings, t.total), "question")} of {t.total}, about {t.spec.estimatedMinutes} min
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <IconBtn label="Move up" disabled={i === 0} onClick={() => moveTheory(t.row.key, -1)} icon={ArrowUp} />
+                            <IconBtn label="Move down" disabled={i === theorySpecs.length - 1} onClick={() => moveTheory(t.row.key, 1)} icon={ArrowDown} />
+                            <IconBtn label="Remove round" onClick={() => setTheoryRows((a) => a.filter((x) => x.key !== t.row.key))} icon={Trash2} />
+                          </div>
+                        </div>
+                        <TheorySettingsFields settings={t.row.settings} total={t.total} onChange={(patch) => setTheory(t.row.key, patch)} />
+                      </li>
+                    ))}
+                  </ol>
+                ) : (
+                  <p className="rounded-lg border border-dashed border-border-strong px-3.5 py-3 text-[13px] text-muted">
+                    Add a questionnaire. The AI reads its questions aloud, one at a time, and grades each answer against your reference answer.
+                  </p>
+                )}
+                <div className="flex flex-wrap items-center gap-3">
+                  <Btn icon={ListChecks} onClick={() => setPickingQuestionnaire(true)}>
+                    Add questionnaire
+                  </Btn>
+                  <Link href={`/w/${slug}/library`} className="text-[13px] text-secondary-soft hover:underline">
+                    Write one in the Question library
+                  </Link>
+                </div>
+              </div>
             )}
-            <ChipGroup label="Frontend">
-              {FRONTEND_FRAMEWORKS.map((f) => (
-                <Pill key={f.id} on={frontend.includes(f.id)} onClick={() => toggle(setFrontend, f.id)}>
-                  {f.label}
-                </Pill>
-              ))}
-            </ChipGroup>
-            <ChipGroup label="Backend">
-              {BACKEND_LANGUAGES.map((b) => (
-                <Pill key={b.id} on={backend.includes(b.id)} onClick={() => toggle(setBackend, b.id)}>
-                  {b.label}
-                </Pill>
-              ))}
-            </ChipGroup>
-            {backend.length > 0 && (
-              <ChipGroup label="Backend framework focus (steers the questions)">
-                {[...new Set(backend.flatMap((l) => BACKEND_FRAMEWORK_LABELS[l] ?? []))].map((fw) => (
-                  <Pill key={fw} on={backendFw.includes(fw)} onClick={() => toggle(setBackendFw, fw)}>
-                    {fw}
+
+            {showPractical && (
+              <div className="flex flex-col gap-4">
+                {mode === "both" && <h3 className="text-[13px] font-semibold text-fg">Practical</h3>}
+              <ChipGroup label="Frontend">
+                {FRONTEND_FRAMEWORKS.map((f) => (
+                  <Pill key={f.id} on={frontend.includes(f.id)} onClick={() => toggle(setFrontend, f.id)}>
+                    {f.label}
                   </Pill>
                 ))}
               </ChipGroup>
-            )}
-            <ChipGroup label="Algorithms">
-              {DSA_LANGUAGES.map((l) => (
-                <Pill key={l} on={dsa.includes(l)} onClick={() => toggle(setDsa, l)}>
-                  {DSA_LANGUAGE_LABELS[l] ?? l}
-                </Pill>
-              ))}
-            </ChipGroup>
-            {missingDsa.length > 0 && (
-              <p className="text-[13px] text-warning">
-                No algorithm problem in the bank uses {missingDsa.map((l) => DSA_LANGUAGE_LABELS[l] ?? l).join(", ")} yet, so that round is skipped.
-              </p>
-            )}
-            <label className="flex items-center gap-2 text-[13px] text-muted">
-              Time per round
-              <select value={minutes} onChange={(e) => setMinutes(Number(e.target.value))} className={`${selectCls} w-auto h-8`}>
-                {MINUTES.map((m) => (
-                  <option key={m} value={m}>
-                    {m} min
-                  </option>
+              <ChipGroup label="Backend">
+                {BACKEND_LANGUAGES.map((b) => (
+                  <Pill key={b.id} on={backend.includes(b.id)} onClick={() => toggle(setBackend, b.id)}>
+                    {b.label}
+                  </Pill>
                 ))}
-              </select>
-            </label>
-
-            <div className="flex flex-wrap items-center gap-3">
-              <Btn icon={BookOpen} onClick={() => setBrowsing(true)}>
-                Add from question library
-              </Btn>
-              {rows.length > MAX_ROUNDS && <span className="text-[13px] text-danger">A screening can have at most {MAX_ROUNDS} rounds.</span>}
-            </div>
-
-            {rows.length > 0 && (
-              <ol className="flex flex-col rounded-xl border border-border divide-y divide-border">
-                {rows.map((r, i) => (
-                  <li key={r.key} className="flex flex-wrap items-center gap-3 px-3.5 py-3">
-                    <span className="w-7 h-7 rounded-lg bg-elevated text-[13px] font-semibold text-fg inline-flex items-center justify-center shrink-0">{i + 1}</span>
-                    <div className="flex-1 min-w-[180px] flex flex-col gap-0.5">
-                      <span className="text-sm font-medium text-fg">{questionTitle(r.spec)}</span>
-                      <span className="text-xs text-subtle">
-                        {paradigmName(r.spec.paradigm)}, {roundLabel(r.spec)}, {r.spec.estimatedMinutes} min
-                        {r.key.startsWith("lib:") ? ", from your library" : r.spec.sourceKind === "scaffold" ? ", swapped" : ""}
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-1">
-                      {!r.key.startsWith("lib:") && (
-                        <Btn variant="quiet" icon={Repeat2} onClick={() => setSwapping(r)}>
-                          Swap question
-                        </Btn>
-                      )}
-                      <IconBtn label="Move up" disabled={i === 0} onClick={() => move(r.key, -1)} icon={ArrowUp} />
-                      <IconBtn label="Move down" disabled={i === rows.length - 1} onClick={() => move(r.key, 1)} icon={ArrowDown} />
-                      <IconBtn label="Remove round" onClick={() => removeRound(r.key)} icon={Trash2} />
-                    </div>
-                  </li>
+              </ChipGroup>
+              {backend.length > 0 && (
+                <ChipGroup label="Backend framework focus (steers the questions)">
+                  {[...new Set(backend.flatMap((l) => BACKEND_FRAMEWORK_LABELS[l] ?? []))].map((fw) => (
+                    <Pill key={fw} on={backendFw.includes(fw)} onClick={() => toggle(setBackendFw, fw)}>
+                      {fw}
+                    </Pill>
+                  ))}
+                </ChipGroup>
+              )}
+              <ChipGroup label="Algorithms">
+                {DSA_LANGUAGES.map((l) => (
+                  <Pill key={l} on={dsa.includes(l)} onClick={() => toggle(setDsa, l)}>
+                    {DSA_LANGUAGE_LABELS[l] ?? l}
+                  </Pill>
                 ))}
-              </ol>
-            )}
-            {removed.length > 0 && (
-              <button type="button" onClick={() => setRemoved([])} className="self-start text-[13px] text-secondary-soft hover:underline">
-                Bring back {plural(removed.length, "removed round")}
-              </button>
+              </ChipGroup>
+              {missingDsa.length > 0 && (
+                <p className="text-[13px] text-warning">
+                  No algorithm problem in the bank uses {missingDsa.map((l) => DSA_LANGUAGE_LABELS[l] ?? l).join(", ")} yet, so that round is skipped.
+                </p>
+              )}
+              <label className="flex items-center gap-2 text-[13px] text-muted">
+                Time per round
+                <select value={minutes} onChange={(e) => setMinutes(Number(e.target.value))} className={`${selectCls} w-auto h-8`}>
+                  {MINUTES.map((m) => (
+                    <option key={m} value={m}>
+                      {m} min
+                    </option>
+                  ))}
+                </select>
+              </label>
+
+              <div className="flex flex-wrap items-center gap-3">
+                <Btn icon={BookOpen} onClick={() => setBrowsing(true)}>
+                  Add from question library
+                </Btn>
+                {rows.length > MAX_ROUNDS && <span className="text-[13px] text-danger">A screening can have at most {MAX_ROUNDS} rounds.</span>}
+              </div>
+
+              {rows.length > 0 && (
+                <ol className="flex flex-col rounded-xl border border-border divide-y divide-border">
+                  {rows.map((r, i) => (
+                    <li key={r.key} className="flex flex-wrap items-center gap-3 px-3.5 py-3">
+                      <span className="w-7 h-7 rounded-lg bg-elevated text-[13px] font-semibold text-fg inline-flex items-center justify-center shrink-0">{(showTheory ? theorySpecs.length : 0) + i + 1}</span>
+                      <div className="flex-1 min-w-[180px] flex flex-col gap-0.5">
+                        <span className="text-sm font-medium text-fg">{questionTitle(r.spec)}</span>
+                        <span className="text-xs text-subtle">
+                          {paradigmName(r.spec.paradigm)}, {roundLabel(r.spec)}, {r.spec.estimatedMinutes} min
+                          {r.key.startsWith("lib:") ? ", from your library" : r.spec.sourceKind === "scaffold" ? ", swapped" : ""}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        {!r.key.startsWith("lib:") && (
+                          <Btn variant="quiet" icon={Repeat2} onClick={() => setSwapping(r)}>
+                            Swap question
+                          </Btn>
+                        )}
+                        <IconBtn label="Move up" disabled={i === 0} onClick={() => move(r.key, -1)} icon={ArrowUp} />
+                        <IconBtn label="Move down" disabled={i === rows.length - 1} onClick={() => move(r.key, 1)} icon={ArrowDown} />
+                        <IconBtn label="Remove round" onClick={() => removeRound(r.key)} icon={Trash2} />
+                      </div>
+                    </li>
+                  ))}
+                </ol>
+              )}
+              {removed.length > 0 && (
+                <button type="button" onClick={() => setRemoved([])} className="self-start text-[13px] text-secondary-soft hover:underline">
+                  Bring back {plural(removed.length, "removed round")}
+                </button>
+              )}
+              </div>
             )}
           </Section>
 
@@ -539,7 +687,8 @@ export default function NewScreening({
           <h2 className="text-[15px] font-semibold text-fg">Summary</h2>
           <dl className="flex flex-col gap-2.5 text-[13px]">
             <Line k="Role" v={title.trim() || "Not named yet"} dim={!title.trim()} />
-            <Line k="Rounds" v={rows.length ? `${rows.length}, ${totalMinutes} min in all` : "None yet"} dim={!rows.length} />
+            <Line k="Tests" v={MODES.find((m) => m.id === mode)?.title ?? ""} />
+            <Line k="Rounds" v={allSpecs.length ? `${allSpecs.length}, ${totalMinutes} min in all` : "None yet"} dim={!allSpecs.length} />
             <Line k="Candidates" v={people ? plural(people, "person", "people") : "None yet"} dim={!people} />
             <Line k="Interviewer" v={ENGAGEMENT_LABELS[level].label} />
             <Line k="Invite closes" v={closes ? closes.toLocaleDateString("en-GB", { day: "numeric", month: "short" }) : "Never"} />
@@ -601,6 +750,15 @@ export default function NewScreening({
           onClose={() => setBrowsing(false)}
         />
       )}
+      {pickingQuestionnaire && (
+        <QuestionnaireDialog
+          slug={slug}
+          questionnaires={questionnaires}
+          added={theoryRows.map((t) => t.templateId)}
+          onAdd={addQuestionnaire}
+          onClose={() => setPickingQuestionnaire(false)}
+        />
+      )}
       {pasting && (
         <Dialog
           title="Paste emails"
@@ -632,9 +790,13 @@ export default function NewScreening({
 }
 
 function stackFromSpecs(specs: Prefill["rounds"], challenges: ChallengeChoice[]) {
-  const out = { frontend: [] as string[], backend: [] as string[], backendFw: [] as string[], dsa: [] as string[], swaps: {} as Record<string, string>, order: [] as string[], minutes: null as number | null, extra: [] as Row[] };
+  const out = { frontend: [] as string[], backend: [] as string[], backendFw: [] as string[], dsa: [] as string[], swaps: {} as Record<string, string>, order: [] as string[], minutes: null as number | null, extra: [] as Row[], theory: [] as TheoryRow[] };
   const mine = new Set(challenges.filter((c) => c.mine).map((c) => c.id));
   for (const s of specs) {
+    if (s.paradigm === "theory" && s.templateId) {
+      out.theory.push({ key: `theory:${s.templateId}`, templateId: s.templateId, settings: sanitizeTheory(s.theory ?? DEFAULT_THEORY) });
+      continue;
+    }
     // A round picked from the team library stays that exact question.
     if (s.paradigm === "conversation" && s.templateId) {
       const spec: RoundSpecInput = { paradigm: "conversation", sourceKind: "scaffold", templateId: s.templateId, frameworkLabel: s.frameworkLabel ?? undefined, estimatedMinutes: s.estimatedMinutes };
@@ -673,6 +835,130 @@ function stackFromSpecs(specs: Prefill["rounds"], challenges: ChallengeChoice[])
     out.minutes ??= s.estimatedMinutes;
   }
   return out;
+}
+
+const PICK_COUNTS = [3, 5, 8, 10, 15, 20];
+
+/** The four settings of a theory round, in one row. */
+function TheorySettingsFields({ settings, total, onChange }: { settings: TheorySettings; total: number; onChange: (patch: Partial<TheorySettings>) => void }) {
+  const counts = PICK_COUNTS.filter((n) => n < total);
+  const field = "flex flex-col gap-1.5 text-xs font-medium text-subtle";
+  return (
+    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 rounded-lg bg-panel/50 border border-border p-3">
+      <label className={field}>
+        Questions to ask
+        <select
+          value={settings.count != null && settings.count < total ? settings.count : "all"}
+          onChange={(e) => onChange({ count: e.target.value === "all" ? null : Number(e.target.value) })}
+          className={inputCls}
+        >
+          <option value="all">All {total}, in order</option>
+          {counts.map((n) => (
+            <option key={n} value={n}>
+              Random {n} of {total}
+            </option>
+          ))}
+        </select>
+      </label>
+      <label className={field}>
+        Time per question
+        <select value={settings.secondsPerQuestion} onChange={(e) => onChange({ secondsPerQuestion: Number(e.target.value) })} className={inputCls}>
+          {SECONDS_CHOICES.map((s) => (
+            <option key={s} value={s}>
+              {plural(s / 60, "minute")}
+            </option>
+          ))}
+        </select>
+      </label>
+      <label className={field}>
+        Follow-ups per question
+        <select value={settings.followUps} onChange={(e) => onChange({ followUps: Number(e.target.value) as TheorySettings["followUps"] })} className={inputCls}>
+          <option value={0}>None</option>
+          <option value={1}>Up to 1</option>
+          <option value={2}>Up to 2</option>
+        </select>
+      </label>
+      <label className={field}>
+        Answer by
+        <select value={settings.answerMode} onChange={(e) => onChange({ answerMode: e.target.value as TheoryAnswerMode })} className={inputCls}>
+          {(Object.keys(ANSWER_MODE_LABELS) as TheoryAnswerMode[]).map((m) => (
+            <option key={m} value={m}>
+              {ANSWER_MODE_LABELS[m]}
+            </option>
+          ))}
+        </select>
+      </label>
+    </div>
+  );
+}
+
+/** Pick a questionnaire from the Question library for a theory round. */
+function QuestionnaireDialog({
+  slug,
+  questionnaires,
+  added,
+  onAdd,
+  onClose,
+}: {
+  slug: string;
+  questionnaires: QuestionChoice[];
+  added: string[];
+  onAdd: (id: string) => void;
+  onClose: () => void;
+}) {
+  const [q, setQ] = useState("");
+  const needle = q.trim().toLowerCase();
+  const list = questionnaires.filter((x) => !needle || x.title.toLowerCase().includes(needle));
+  return (
+    <Dialog title="Add a questionnaire" onClose={onClose} width={560}>
+      <div className="flex flex-col gap-3">
+        <label className="relative">
+          <span className="sr-only">Search questionnaires</span>
+          <Search aria-hidden className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-subtle" />
+          <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search questionnaires" className={`${inputCls} pl-8`} />
+        </label>
+        <ul className="flex flex-col max-h-[50vh] overflow-y-auto rounded-xl border border-border divide-y divide-border">
+          {list.map((x) => {
+            const done = added.includes(x.id);
+            return (
+              <li key={x.id} className="flex items-center gap-3 px-3.5 py-3">
+                <span className="flex-1 min-w-0">
+                  <span className="block text-sm text-fg truncate">{x.title}</span>
+                  <span className="block text-xs text-subtle">
+                    {plural(x.questionCount, "question")}
+                    {x.frameworkLabel ? `, ${x.frameworkLabel}` : ""}
+                  </span>
+                </span>
+                {done ? (
+                  <span className="inline-flex items-center gap-1 text-[13px] text-success">
+                    <Check className="w-3.5 h-3.5" aria-hidden /> Added
+                  </span>
+                ) : (
+                  <Btn icon={Plus} disabled={!x.questionCount} onClick={() => onAdd(x.id)}>
+                    Add
+                  </Btn>
+                )}
+              </li>
+            );
+          })}
+          {list.length === 0 && (
+            <li className="px-3.5 py-6 text-center text-[13px] text-subtle">
+              {questionnaires.length === 0 ? (
+                <>
+                  No questionnaires yet.{" "}
+                  <Link href={`/w/${slug}/library`} className="text-secondary-soft underline">
+                    Build one from the public questions
+                  </Link>
+                </>
+              ) : (
+                "No questionnaires match."
+              )}
+            </li>
+          )}
+        </ul>
+      </div>
+    </Dialog>
+  );
 }
 
 function Section({ n, title, hint, done, children }: { n: number; title: string; hint: string; done: boolean; children: React.ReactNode }) {

@@ -486,6 +486,10 @@ export async function POST(req: NextRequest) {
     const sessionRounds = resolveSessionRounds(session);
     const activeRound: SessionRound =
       sessionRounds.find((r) => r.id === roundId) ?? sessionRounds[0];
+    // Theory rounds are answered through /api/ai-interview/theory, never the chat.
+    if (activeRound.paradigm === "theory") {
+      return NextResponse.json({ error: "This round is answered on its own screen." }, { status: 409 });
+    }
 
     // Hard deadline = startedAt + sum of round budgets (+30s grace). Once it
     // elapses, no further chat turns; the client gets a clear signal to submit.

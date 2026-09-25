@@ -18,7 +18,8 @@ import { canMember } from "@/lib/permissions";
 import { writeWorkspaceAuditEntry, WORKSPACE_AUDIT_ACTIONS } from "@/lib/workspace-audit";
 import { loadCreditSummary } from "@/lib/ai-interview/console-server";
 import { creditCheck, DEFAULT_EXPIRY_DAYS, EXPIRY_CHOICES, expiryDate, REMINDER_CHOICES } from "@/lib/ai-interview/console";
-import { createSessions, sanitizeRoundSpec, snapshotStarters } from "@/lib/ai-interview/screening-create";
+import { createSessions, loadTheoryQuestions, sanitizeRoundSpec, snapshotStarters } from "@/lib/ai-interview/screening-create";
+import { parseTheorySettings } from "@/lib/ai-interview/theory";
 import { deliverInvite } from "@/lib/ai-interview/invites";
 import { plural } from "@/lib/workspace/display";
 import { parseQuestionnaire, serializeQuestionnaire, validateQuestionnaire } from "@/lib/ai-interview/questionnaire";
@@ -28,6 +29,15 @@ type Member = { userId: string; role: string; permissions?: unknown };
 export type Result<T = object> = ({ ok: true } & T) | { ok: false; error: string };
 
 class ActionError extends Error {}
+
+/** Questionnaire problems are the recruiter's to fix, so they get the real message. */
+async function theoryQuestionsFor(rounds: RoundSpecInput[], workspaceId: string) {
+  try {
+    return await loadTheoryQuestions(rounds, workspaceId);
+  } catch (err) {
+    throw new ActionError(err instanceof Error ? err.message : "A questionnaire could not be loaded.");
+  }
+}
 
 function fail(err: unknown): { ok: false; error: string } {
   if (err instanceof ActionError) return { ok: false, error: err.message };
@@ -217,6 +227,7 @@ export async function createScreeningAction(
     if (count > 200) throw new ActionError("Invite at most 200 people at a time.");
     await assertCredits(w.workspace.id, count, level);
 
+    const theoryQuestions = await theoryQuestionsFor(rounds, w.workspace.id);
     const people = await resolvePeople(w.workspace.id, input.candidateIds ?? [], input.newPeople ?? []);
     const starters = await snapshotStarters(rounds, w.workspace.id);
     const expiresAt = expiryDate(new Date(), expiresAfterDays);
@@ -241,6 +252,7 @@ export async function createScreeningAction(
               sourceId: r.sourceId,
               templateId: r.templateId,
               estimatedMinutes: r.estimatedMinutes ?? 30,
+              theoryJson: r.theory ? JSON.stringify(r.theory) : null,
             })),
           },
         },
@@ -252,6 +264,7 @@ export async function createScreeningAction(
         candidates: people,
         rounds,
         starters,
+        theoryQuestions,
         settings: { engagementLevel: level, expiresAt, maxExtensions, extensionMinutes },
       });
       return { batchId: batch.id, sessions };
@@ -304,7 +317,9 @@ export async function addToScreeningAction(
       sourceId: r.sourceId ?? undefined,
       templateId: r.templateId ?? undefined,
       estimatedMinutes: r.estimatedMinutes,
+      ...(r.paradigm === "theory" ? { theory: parseTheorySettings(r.theoryJson) } : {}),
     }));
+    const theoryQuestions = await theoryQuestionsFor(rounds, w.workspace.id);
     const starters = await snapshotStarters(rounds, w.workspace.id);
     const sessions = await prisma.$transaction((tx) =>
       createSessions(tx, {
@@ -314,6 +329,7 @@ export async function addToScreeningAction(
         candidates: fresh,
         rounds,
         starters,
+        theoryQuestions,
         settings: {
           engagementLevel: batch.engagementLevel,
           expiresAt: expiryDate(new Date(), batch.expiresAfterDays ?? DEFAULT_EXPIRY_DAYS),

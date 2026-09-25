@@ -9,6 +9,8 @@ import {
 } from "@/lib/ai-interview/console-server";
 import NewScreening, { type Prefill } from "../_components/NewScreening";
 import { DEFAULT_REMINDER_DAYS } from "@/lib/ai-interview/console";
+import { questionTexts } from "@/lib/ai-interview/questionnaire";
+import { DEFAULT_THEORY, theoryMinutes } from "@/lib/ai-interview/theory";
 
 type Props = {
   params: Promise<{ slug: string }>;
@@ -40,7 +42,9 @@ export default async function NewAiScreeningPage({ params, searchParams }: Props
     .filter((id) => pool.some((c) => c.id === id));
 
   // ?add=<questionnaire id> comes from the Question library's "Use in AI screening".
+  // A questionnaire becomes a theory round; any other team question keeps its own kind.
   const addQ = !from && sp.add ? questions.items.find((q) => q.id === sp.add && q.custom) : undefined;
+  const addTheory = addQ?.kind === "conversation";
   const prefill: Prefill | null = addQ
     ? {
         title: "",
@@ -49,13 +53,14 @@ export default async function NewAiScreeningPage({ params, searchParams }: Props
         reminderAfterDays: DEFAULT_REMINDER_DAYS,
         rounds: [
           {
-            paradigm: addQ.kind,
-            language: addQ.kind === "conversation" ? null : addQ.language,
+            paradigm: addTheory ? "theory" : addQ.kind,
+            language: addTheory ? null : addQ.language,
             frameworkLabel: addQ.frameworkLabel,
             sourceKind: "scaffold",
             sourceId: null,
             templateId: addQ.id,
-            estimatedMinutes: addQ.minutes,
+            estimatedMinutes: addTheory ? theoryMinutes(DEFAULT_THEORY, questionTexts(addQ.testsCode).length) : addQ.minutes,
+            theory: addTheory ? DEFAULT_THEORY : null,
           },
         ],
       }
@@ -75,7 +80,17 @@ export default async function NewAiScreeningPage({ params, searchParams }: Props
       credits={credits}
       pool={pool}
       preselected={preselected}
-      questions={questions.items.map((q) => ({ id: q.id, title: q.title, kind: q.kind, label: q.label, minutes: q.minutes, custom: q.custom, language: q.language, frameworkLabel: q.frameworkLabel }))}
+      questions={questions.items.map((q) => ({
+        id: q.id,
+        title: q.title,
+        kind: q.kind,
+        label: q.label,
+        minutes: q.minutes,
+        custom: q.custom,
+        language: q.language,
+        frameworkLabel: q.frameworkLabel,
+        questionCount: q.kind === "conversation" ? questionTexts(q.testsCode).length : 0,
+      }))}
       challenges={challenges.map((c) => ({ id: c.id, title: c.title, difficulty: c.difficulty, paradigm: c.paradigm, languages: c.languages, frameworks: c.frameworks, mine: c.mine }))}
       prefill={prefill}
       canBuy={access.canBuy}

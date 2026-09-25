@@ -18,7 +18,7 @@ function Bullet({ text, kind }: { text: string; kind: "ok" | "gap" | "note" }) {
   );
 }
 
-export default function SummaryTab({ r, hrefFor }: { r: ReportData; hrefFor: (p: { tab?: "code" | "run" | "transcript"; round?: number }) => string }) {
+export default function SummaryTab({ r, hrefFor }: { r: ReportData; hrefFor: (p: { tab?: "code" | "run" | "transcript" | "theory"; round?: number }) => string }) {
   const sections = r.summary;
   const multi = sections.length > 1;
   return (
@@ -82,7 +82,12 @@ export default function SummaryTab({ r, hrefFor }: { r: ReportData; hrefFor: (p:
                   Read transcript
                 </Link>
               )}
-              {r.status !== "PENDING" && r.status !== "EXPIRED" && x.kind !== "conversation" && <span className="flex gap-3 text-[13px]">
+              {r.status !== "PENDING" && r.status !== "EXPIRED" && x.kind === "theory" && (
+                <Link href={hrefFor({ tab: "theory" })} scroll={false} className="text-[13px] text-secondary-soft hover:underline">
+                  Read answers
+                </Link>
+              )}
+              {r.status !== "PENDING" && r.status !== "EXPIRED" && x.kind !== "conversation" && x.kind !== "theory" && <span className="flex gap-3 text-[13px]">
                 <Link href={hrefFor({ tab: "code", round: i })} scroll={false} className="text-secondary-soft hover:underline">
                   View code
                 </Link>

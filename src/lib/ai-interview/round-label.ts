@@ -4,7 +4,7 @@
  */
 import { BACKEND_LANGUAGES, DSA_LANGUAGE_LABELS } from "@/lib/interview/stack";
 
-const PARADIGM_NAMES: Record<string, string> = { frontend: "Frontend", backend: "Backend", dsa: "Algorithms", conversation: "Conversation" };
+const PARADIGM_NAMES: Record<string, string> = { frontend: "Frontend", backend: "Backend", dsa: "Algorithms", conversation: "Conversation", theory: "Theory" };
 
 export function paradigmName(paradigm: string | null | undefined): string {
   return PARADIGM_NAMES[paradigm ?? ""] ?? "Coding";
@@ -16,6 +16,7 @@ export function roundLabel(r: { paradigm: string | null | undefined; language?: 
     return r.frameworkLabel ? `${lang} + ${r.frameworkLabel}` : lang;
   }
   if (r.paradigm === "conversation") return r.frameworkLabel ?? "Conversation";
+  if (r.paradigm === "theory") return r.frameworkLabel ?? "Theory";
   if (r.paradigm === "dsa") return DSA_LANGUAGE_LABELS[r.language ?? ""] ?? r.language ?? "Algorithms";
   return r.frameworkLabel ?? "Frontend";
 }

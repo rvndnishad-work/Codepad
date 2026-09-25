@@ -226,7 +226,7 @@ export async function sendTakeHomeSubmissionEmails(args: {
     : Promise.resolve();
 
   // 2. Recruiter notify, fanned out per member.
-  const reviewUrl = `${appBaseUrl()}/w/${th.workspace.slug}?section=assessments&view=take-homes`;
+  const reviewUrl = `${appBaseUrl()}/w/${th.workspace.slug}/take-homes/${args.takeHomeId}`;
   const recruiterSends = th.workspace.members
     .filter((m) => !!m.user.email)
     .map((m) =>
@@ -297,7 +297,7 @@ export async function sendTakeHomeSessionSubmissionEmails(args: {
       })
     : Promise.resolve();
 
-  const reviewUrl = `${appBaseUrl()}/w/${s.workspace.slug}?section=assessments&view=take-homes`;
+  const reviewUrl = `${appBaseUrl()}/w/${s.workspace.slug}/take-homes/${args.sessionId}`;
   const recruiterSends = s.workspace.members
     .filter((m) => !!m.user.email)
     .map((m) =>

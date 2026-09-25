@@ -574,7 +574,7 @@ function SetupView(props: Props) {
   const done = steps.filter((s) => s.done).length;
   const next = steps.find((s) => !s.done)?.id;
   const actions: Record<string, { label: string; href?: string; onClick?: () => void }> = {
-    assessment: { label: "Create assessment", href: `/w/${slug}/take-homes/new` },
+    assessment: { label: "Send a take home", href: `/w/${slug}/take-homes/new` },
     candidate: { label: "Add candidate", onClick: onAddCandidate },
     ai: plan.growthFeatures
       ? { label: "Try AI screening", href: `/w/${slug}/ai-interviews` }
@@ -812,7 +812,7 @@ export default function WorkspaceOverview(props: Props) {
             </Card>
 
             <Card
-              title="Assessments completed"
+              title="Take-homes and interviews finished"
               subtitle={`${weeklyTotal} in the last 8 weeks`}
               right={<Delta series={data.trends.completed} />}
               className="xl:col-span-5"

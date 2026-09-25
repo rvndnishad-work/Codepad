@@ -137,7 +137,7 @@ describe("buildOverview", () => {
 
   it("lists today's interview first, then reviews, then expiring links", () => {
     expect(o.attention.map((a) => a.id)).toEqual(["iv-s1", "th-t1", "exp-t2"]);
-    expect(o.attention[1].href).toBe("/w/acme/attempts/a1");
+    expect(o.attention[1].href).toBe("/w/acme/take-homes/t1");
   });
 
   it("skips screenings whose candidate already has a decision", () => {

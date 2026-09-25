@@ -40,7 +40,7 @@ type FileEntry = {
   newHtml: string[];
 };
 
-export default function CodeTab({ round }: { round: ReportRound | undefined }) {
+export default function CodeTab({ round, noun = "round" }: { round: ReportRound | undefined; noun?: "round" | "question" }) {
   const [mode, setMode] = useState<Mode>("split");
   const wide = useWide();
   const view: Mode = wide ? mode : "unified";
@@ -54,8 +54,8 @@ export default function CodeTab({ round }: { round: ReportRound | undefined }) {
     return (
       <div className="rounded-xl border border-border bg-surface p-8 text-center text-sm text-muted">
         {Object.keys(round.files).length && round.status !== "PENDING"
-          ? "The starter code for this round was not recorded, so changes cannot be shown. The Run the code tab shows the final code."
-          : "Nothing was submitted for this round yet."}
+          ? `The starter code for this ${noun} was not recorded, so changes cannot be shown.${noun === "round" ? " The Run the code tab shows the final code." : ""}`
+          : `Nothing was submitted for this ${noun} yet.`}
       </div>
     );
   }
@@ -77,7 +77,7 @@ export default function CodeTab({ round }: { round: ReportRound | undefined }) {
     <div className="flex flex-col gap-3">
       {changed.length === 0 ? (
         <div className="rounded-xl border border-border bg-surface p-8 flex flex-col items-center gap-1 text-center">
-          <p className="text-sm font-medium text-fg">No code changes in this round</p>
+          <p className="text-sm font-medium text-fg">No code changes in this {noun}</p>
           <p className="text-[13px] text-muted">
             The candidate did not edit, add or delete any file{untouched ? `. All ${plural(untouched, "starter file")} are as they were given` : ""}.
           </p>

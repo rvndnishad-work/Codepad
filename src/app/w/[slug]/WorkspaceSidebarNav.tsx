@@ -17,14 +17,15 @@ import {
   Lock,
   Users,
   UsersRound,
+  Video,
 } from "lucide-react";
 
 export type SidebarCounts = {
   challenges: number;
   interviews: number;
-  takeHomes: number;
+  /** Submitted take-homes waiting on a decision. */
+  takeHomeReview: number;
   candidates: number;
-  replays: number;
   members: number;
 };
 
@@ -127,15 +128,13 @@ export default function WorkspaceSidebarNav({ slug, growthFeatures, counts, coll
       count: counts.candidates,
     },
     {
-      label: "Assessments",
+      label: "Take home",
       icon: ClipboardList,
-      href: sectionHref("assessments"),
-      isActive:
-        sectionActive("assessments") ||
-        pathname.startsWith(`/w/${slug}/take-homes`) ||
-        pathname.startsWith(`/w/${slug}/attempts`),
-      count: counts.interviews + counts.takeHomes + counts.replays,
+      href: `/w/${slug}/take-homes`,
+      isActive: pathname.startsWith(`/w/${slug}/take-homes`) || pathname.startsWith(`/w/${slug}/attempts`),
+      count: counts.takeHomeReview || undefined,
     },
+    { label: "Interviews", icon: Video, ...route("interviews"), count: counts.interviews },
     growth({ label: "AI screening", icon: Bot, ...route("ai-interviews") }),
     { label: "Question library", icon: BookOpen, ...route("library"), count: counts.challenges },
   ];

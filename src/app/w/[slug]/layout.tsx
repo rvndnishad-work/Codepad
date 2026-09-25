@@ -8,7 +8,7 @@ import {
   WORKSPACE_ADMIN_ROLES,
 } from "@/lib/totp-gate";
 import WorkspaceShell from "./WorkspaceShell";
-import { planDisplay } from "@/lib/workspace/display";
+import { planDisplay, TAKE_HOME_REVIEW_STAGES } from "@/lib/workspace/display";
 
 type Props = {
   children: React.ReactNode;
@@ -34,8 +34,6 @@ export default async function WorkspaceLayout({ children, params }: Props) {
         select: {
           challenges: true,
           aiInterviewTemplates: { where: { kind: "conversation" } },
-          sessions: true,
-          takeHomes: true,
           candidates: { where: { status: { not: "archived" } } },
         },
       },
@@ -54,13 +52,13 @@ export default async function WorkspaceLayout({ children, params }: Props) {
     (PAID_PLANS as readonly string[]).includes(activeWorkspace.planName);
   await ensureTotpEnrolledOrRedirect(userId, mustEnroll2fa);
 
-  // Replay count = submitted take-homes + finished interview sessions
-  const submittedTakeHomes = await prisma.takeHomeAssignment.count({
-    where: { workspaceId: activeWorkspace.id, status: "SUBMITTED", attemptId: { not: null } },
-  });
-  const finishedSessions = await prisma.interviewSession.count({
-    where: { workspaceId: activeWorkspace.id, finishedAt: { not: null } },
-  });
+  // Sidebar badges: submitted take-homes waiting on a decision, and live interviews.
+  const reviewWhere = { OR: [{ candidateId: null }, { candidate: { stage: { in: [...TAKE_HOME_REVIEW_STAGES] } } }] };
+  const [takeHomeSessionsToReview, takeHomeLegacyToReview, liveInterviews] = await Promise.all([
+    prisma.interviewSession.count({ where: { workspaceId: activeWorkspace.id, type: "take-home", status: "completed", ...reviewWhere } }),
+    prisma.takeHomeAssignment.count({ where: { workspaceId: activeWorkspace.id, status: "SUBMITTED", ...reviewWhere } }),
+    prisma.interviewSession.count({ where: { workspaceId: activeWorkspace.id, type: { not: "take-home" } } }),
+  ]);
 
   const myMemberships = await prisma.workspaceMember.findMany({
     where: { userId },
@@ -92,10 +90,9 @@ export default async function WorkspaceLayout({ children, params }: Props) {
       plan={plan}
       counts={{
         challenges: activeWorkspace._count.challenges + activeWorkspace._count.aiInterviewTemplates,
-        interviews: activeWorkspace._count.sessions,
-        takeHomes: activeWorkspace._count.takeHomes,
+        interviews: liveInterviews,
+        takeHomeReview: takeHomeSessionsToReview + takeHomeLegacyToReview,
         candidates: activeWorkspace._count.candidates,
-        replays: submittedTakeHomes + finishedSessions,
         members: activeWorkspace.members.length,
       }}
       user={{

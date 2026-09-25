@@ -1,6 +1,6 @@
 /**
  * Demo data for the recruiter workspace tabs: Candidates (with batches),
- * Assessments (take-homes and live interviews), AI screening (practical,
+ * Take home and live interviews, AI screening (practical,
  * theory and conversation rounds, with reports) and the Question library.
  *
  *   npm run seed:recruiter                          # demo workspace "acme-hiring"
@@ -42,6 +42,7 @@ import {
   REACT_THEORY,
   SCREENINGS,
   TAKE_HOMES,
+  TAKE_HOME_TEMPLATES,
   TEAM,
   emailFor,
   type CandidateSeed,
@@ -106,6 +107,7 @@ async function teardown() {
   await prisma.takeHomeAssignment.deleteMany({ where: seeded });
   await prisma.challengeAttempt.deleteMany({ where: seeded });
   await prisma.interviewSession.deleteMany({ where: seeded });
+  await prisma.takeHomeTemplate.deleteMany({ where: seeded });
   await prisma.candidateNote.deleteMany({ where: seeded });
   await prisma.candidate.deleteMany({ where: seeded });
   await prisma.candidateBatch.deleteMany({ where: seeded });
@@ -412,7 +414,50 @@ async function candidateUser(ctx: Ctx, key: string) {
   return seedUser(`cand_${key}`, c.name, c.email);
 }
 
+/** A short replay: the starter, a midway snapshot, the answer, plus any pastes and tab switches. */
+function replayEvents(key: string, score: number, minutes: number, integrity: { pastes: number; blurs: number } | undefined) {
+  const c = CHALLENGES.find((x) => x.key === key)!;
+  const starter = c.starterFiles as Record<string, string>;
+  const main = Object.keys(starter)[0];
+  const end = minutes * 60_000;
+  const final = JSON.parse(submittedFiles(key, score)) as Record<string, string>;
+  const events: { t: number; type: string; payload: unknown }[] = [
+    { t: 0, type: "snapshot", payload: { files: starter, activeFile: main } },
+    { t: Math.round(end * 0.45), type: "snapshot", payload: { files: { ...starter, [main]: `${starter[main]}\n// Working on it\n` }, activeFile: main } },
+    { t: end, type: "snapshot", payload: { files: final, activeFile: main } },
+  ];
+  for (let i = 0; i < (integrity?.blurs ?? 0); i++) {
+    const t = Math.round(end * (0.25 + i * 0.2));
+    events.push({ t, type: "blur", payload: {} }, { t: t + 30_000, type: "focus", payload: {} });
+  }
+  for (let i = 0; i < (integrity?.pastes ?? 0); i++) {
+    events.push({ t: Math.round(end * (0.6 + i * 0.1)), type: "paste", payload: { length: 420 + i * 180, snippet: "export function useDebounce(value, delay) {" } });
+  }
+  return events;
+}
+
+async function seedTakeHomeTemplates(ctx: Ctx, challengeIds: Record<string, string>) {
+  const ids = new Map<string, string>();
+  for (const [i, t] of TAKE_HOME_TEMPLATES.entries()) {
+    const id = sid("tht", t.key);
+    await prisma.takeHomeTemplate.create({
+      data: {
+        id,
+        workspaceId: ctx.workspaceId,
+        name: t.name,
+        itemsJson: JSON.stringify(t.items.map((x) => ({ challengeId: challengeIds[x.challenge], minutes: x.minutes }))),
+        createdById: ctx.ownerId,
+        createdAt: at(-15 + i),
+        updatedAt: at(-10 + i),
+      },
+    });
+    ids.set(t.batch, id);
+  }
+  return ids;
+}
+
 async function seedTakeHomes(ctx: Ctx, challengeIds: Record<string, string>) {
+  const templates = await seedTakeHomeTemplates(ctx, challengeIds);
   for (const t of TAKE_HOMES) {
     const c = ctx.candidates.get(t.candidate)!;
     const id = sid("th", t.candidate);
@@ -429,6 +474,10 @@ async function seedTakeHomes(ctx: Ctx, challengeIds: Record<string, string>) {
         candidateName: c.name,
         title: `${BATCHES.find((b) => b.key === c.batch)?.roleTitle ?? "Engineering"} take-home`,
         type: "take-home",
+        takeHomeTemplateId: (c.batch && templates.get(c.batch)) || null,
+        questionTimeLimitsJson: JSON.stringify(
+          Object.fromEntries(t.challenges.map((k) => [challengeIds[k], TAKE_HOME_TEMPLATES.find((x) => x.batch === c.batch)?.items.find((i) => i.challenge === k)?.minutes ?? 30])),
+        ),
         creatorRole: "interviewer",
         sourceType: "challenge",
         challengeIds: JSON.stringify(t.challenges.map((k) => challengeIds[k])),
@@ -450,8 +499,21 @@ async function seedTakeHomes(ctx: Ctx, challengeIds: Record<string, string>) {
       if (t.status === "in_progress" && i > 0) break;
       const score = t.scores?.[i] ?? 74;
       const minutes = t.minutes?.[i] ?? 35;
+      const flags = t.integrity?.[i];
       await prisma.challengeAttempt.create({
         data: {
+          eventLog: { create: { eventsData: JSON.stringify(replayEvents(key, score, minutes, flags)) } },
+          integrityReport: {
+            create: {
+              suspicionScore: flags ? Math.min(100, flags.pastes * 30 + flags.blurs * 10) : 0,
+              totalBlurSec: flags?.blurSec ?? 0,
+              blurCount: flags?.blurs ?? 0,
+              pasteCount: flags?.pastes ?? 0,
+              pasteDetails: JSON.stringify(
+                Array.from({ length: flags?.pastes ?? 0 }, (_, n) => ({ t: Math.round(minutes * 60_000 * (0.6 + n * 0.1)), length: 420 + n * 180, snippet: "export function useDebounce(value, delay) {" })),
+              ),
+            },
+          },
           id: sid("att", `${t.candidate}_${i}`),
           userId,
           challengeId: challengeIds[key],
@@ -950,7 +1012,7 @@ async function main() {
   const challengeIds = await seedChallenges(ctx);
   await seedTakeHomes(ctx, challengeIds);
   await seedInterviews(ctx, challengeIds);
-  console.log(`  ✓ Assessments: ${CHALLENGES.length} challenges, ${TAKE_HOMES.length + LEGACY_TAKE_HOMES.length} take-homes, ${INTERVIEWS.length} interviews`);
+  console.log(`  ✓ Take home and interviews: ${CHALLENGES.length} challenges, ${TAKE_HOME_TEMPLATES.length} templates, ${TAKE_HOMES.length + LEGACY_TAKE_HOMES.length} take-homes, ${INTERVIEWS.length} interviews`);
   await seedScreenings(ctx);
   const total = Object.values(SCREENINGS).reduce((n, list) => n + list.length, 0);
   console.log(`  ✓ AI screening: ${PLANS.length} screenings, ${total} candidates, credits`);

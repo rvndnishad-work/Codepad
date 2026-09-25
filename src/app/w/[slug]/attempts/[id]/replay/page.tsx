@@ -3,6 +3,7 @@ import { notFound, redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
 import { staffCan } from "@/lib/permissions/staff";
 import ReplayPlayerClient from "@/app/admin/attempts/[id]/replay/ReplayPlayerClient";
+import { takeHomeForAttempt } from "@/lib/take-home/report-server";
 
 type Props = {
   params: Promise<{ slug: string; id: string }>;
@@ -49,10 +50,13 @@ export default async function WorkspaceSessionReplayPage({ params }: Props) {
 
   if (!attempt) notFound();
 
-  // 4. Verify candidate attempt belongs to active recruiter workspace context
-  const belongsToWorkspace = 
-    attempt.challenge.workspaceId === workspace.id || 
-    attempt.takeHomeAssignment?.workspaceId === workspace.id;
+  // 4. Verify candidate attempt belongs to active recruiter workspace context.
+  // Take-homes sent as sessions reach the attempt through the session.
+  const takeHome = await takeHomeForAttempt(workspace.id, attempt.id);
+  const belongsToWorkspace =
+    attempt.challenge.workspaceId === workspace.id ||
+    attempt.takeHomeAssignment?.workspaceId === workspace.id ||
+    !!takeHome;
 
   const showAdmin = await staffCan(session, "platform:admin");
 
@@ -104,7 +108,7 @@ export default async function WorkspaceSessionReplayPage({ params }: Props) {
         }}
         events={events}
         integrity={integrity}
-        backUrl={`/w/${slug}/attempts/${attempt.id}`}
+        backUrl={takeHome ? `/w/${slug}/take-homes/${takeHome.id}?q=${takeHome.q}` : `/w/${slug}/take-homes`}
       />
     </div>
   );

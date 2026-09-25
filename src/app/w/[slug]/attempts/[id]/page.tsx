@@ -19,6 +19,7 @@ import {
   Play
 } from "lucide-react";
 import { humanize } from "@/lib/workspace/display";
+import { takeHomeForAttempt } from "@/lib/take-home/report-server";
 
 interface WorkspaceAttemptDetailPageProps {
   params: Promise<{ slug: string; id: string }>;
@@ -98,6 +99,10 @@ export default async function WorkspaceAttemptDetailPage({ params }: WorkspaceAt
   });
   if (!workspace) notFound();
 
+  // Take-home answers are read in the take-home report, on that question.
+  const takeHome = await takeHomeForAttempt(workspace.id, id);
+  if (takeHome) redirect(`/w/${slug}/take-homes/${takeHome.id}?q=${takeHome.q}`);
+
   // 3. Retrieve attempt with related workspace contexts
   const attempt = await prisma.challengeAttempt.findUnique({
     where: { id },
@@ -136,7 +141,7 @@ export default async function WorkspaceAttemptDetailPage({ params }: WorkspaceAt
   return (
     <div className="space-y-6">
       <Link
-        href={`/w/${slug}?tab=take-homes`}
+        href={`/w/${slug}/take-homes`}
         className="inline-flex items-center gap-1.5 text-xs font-bold text-muted hover:text-fg transition"
       >
         <ArrowLeft className="w-3.5 h-3.5" />

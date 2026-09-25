@@ -1,138 +1,83 @@
-import { auth } from "@/lib/auth";
+import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
-import { notFound, redirect } from "next/navigation";
-import { templates } from "@/lib/templates";
-import { canMember } from "@/lib/permissions";
-import TakeHomeBuilder, {
-  type CurationChallenge,
-  type CurationPlayground,
-  type CurationPrompt,
-  type PickCandidate,
-} from "./TakeHomeBuilder";
+import { loadTakeHomes } from "@/lib/take-home/list-server";
+import { DEFAULT_QUESTION_MINUTES, parseTemplateItems } from "@/lib/take-home/status";
+import { loadTakeHomeAccess } from "../_lib";
+import Composer, { type ComposerCandidate, type ComposerQuestion, type ComposerTemplate } from "../_components/Composer";
 
-export const metadata = {
-  title: "New take-home — Interviewpad",
-  robots: { index: false, follow: false },
+export const metadata = { title: "New take home — Interviewpad", robots: { index: false, follow: false } };
+
+type Props = {
+  params: Promise<{ slug: string }>;
+  searchParams: Promise<{ candidates?: string; candidateId?: string; template?: string }>;
 };
 
-export default async function NewTakeHomePage({
-  params,
-  searchParams,
-}: {
-  params: Promise<{ slug: string }>;
-  searchParams: Promise<{ candidates?: string; candidateId?: string }>;
-}) {
+export default async function NewTakeHomePage({ params, searchParams }: Props) {
   const { slug } = await params;
-  // Pre-select people when arriving from the Candidates list or a profile.
   const sp = await searchParams;
-  const preselected = [...(sp.candidates?.split(",") ?? []), ...(sp.candidateId ? [sp.candidateId] : [])]
-    .map((s) => s.trim())
-    .filter(Boolean)
-    .slice(0, 100);
-  const session = await auth().catch(() => null);
-  if (!session?.user?.id) {
-    redirect(`/login?next=${encodeURIComponent(`/w/${slug}/take-homes/new`)}`);
+  const access = await loadTakeHomeAccess(slug, `/w/${slug}/take-homes/new`);
+  if (!access.canCreate) redirect(`/w/${slug}/take-homes`);
+  const wsId = access.workspace.id;
+
+  const [challenges, candidates, templates, rows] = await Promise.all([
+    // Coding challenges only: they run tests, so every answer gets a score.
+    prisma.challenge.findMany({
+      where: { OR: [{ workspaceId: wsId }, { published: true, workspaceId: null }] },
+      orderBy: [{ workspaceId: "desc" }, { difficulty: "asc" }, { title: "asc" }],
+      select: { id: true, title: true, difficulty: true, estimatedMinutes: true, category: true, workspaceId: true },
+    }),
+    prisma.candidate.findMany({
+      where: { workspaceId: wsId, email: { not: null } },
+      orderBy: { updatedAt: "desc" },
+      take: 2000,
+      select: { id: true, name: true, email: true, stage: true },
+    }),
+    prisma.takeHomeTemplate.findMany({
+      where: { workspaceId: wsId },
+      orderBy: { updatedAt: "desc" },
+      select: { id: true, name: true, itemsJson: true },
+    }),
+    loadTakeHomes(wsId),
+  ]);
+
+  // People who already have an open take home get a note, not a block.
+  const open = new Map<string, string>();
+  for (const r of rows) {
+    if (r.candidate.id && (r.state === "not_started" || r.state === "in_progress") && !open.has(r.candidate.id)) open.set(r.candidate.id, r.sentAt);
   }
 
-  const workspace = await prisma.workspace.findUnique({
-    where: { slug },
-    select: {
-      id: true,
-      name: true,
-      members: { select: { userId: true, role: true, permissions: true } },
-    },
-  });
-  if (!workspace) notFound();
-  const member = workspace.members.find((m) => m.userId === session.user.id);
-  if (!member) redirect("/dashboard");
-  // Authoring take-homes is a takehome:create action. Read-only members get
-  // bounced to the workspace home.
-  if (!(await canMember(member, "takehome:create"))) {
-    redirect(`/w/${slug}`);
-  }
-
-  const [wsChallenges, globalChallenges, wsPrompts, globalPrompts, snippets, candidates] =
-    await Promise.all([
-      prisma.challenge.findMany({
-        where: { workspaceId: workspace.id },
-        orderBy: [{ difficulty: "asc" }, { createdAt: "asc" }],
-        select: { id: true, slug: true, title: true, difficulty: true, estimatedMinutes: true, category: true },
-      }),
-      prisma.challenge.findMany({
-        where: { published: true, workspaceId: null },
-        orderBy: [{ difficulty: "asc" }, { createdAt: "asc" }],
-        select: { id: true, slug: true, title: true, difficulty: true, estimatedMinutes: true, category: true },
-      }),
-      prisma.promptScenario.findMany({
-        where: { workspaceId: workspace.id },
-        orderBy: { createdAt: "asc" },
-        select: { id: true, slug: true, title: true, difficulty: true, estimatedMinutes: true, category: true },
-      }),
-      prisma.promptScenario.findMany({
-        where: { published: true, workspaceId: null },
-        orderBy: { createdAt: "asc" },
-        select: { id: true, slug: true, title: true, difficulty: true, estimatedMinutes: true, category: true },
-      }),
-      prisma.snippet.findMany({
-        where: { userId: session.user.id },
-        orderBy: [{ pinned: "desc" }, { updatedAt: "desc" }],
-        take: 50,
-        select: { id: true, slug: true, title: true, template: true },
-      }),
-      prisma.candidate.findMany({
-        where: { workspaceId: workspace.id, email: { not: null } },
-        orderBy: { updatedAt: "desc" },
-        select: { id: true, name: true, email: true, stage: true },
-      }),
-    ]);
-
-  const seen = new Set<string>();
-  const challenges: CurationChallenge[] = [
-    ...wsChallenges.map((c) => ({ ...c, workspaceOwned: true })),
-    ...globalChallenges.map((c) => ({ ...c, workspaceOwned: false })),
-  ]
-    .filter((c) => (seen.has(c.id) ? false : (seen.add(c.id), true)))
-    .map((c) => ({
-      id: c.id,
-      slug: c.slug,
-      title: c.title,
-      difficulty: c.difficulty as "easy" | "medium" | "hard",
-      estimatedMinutes: c.estimatedMinutes,
-      category: c.category,
-      workspaceOwned: c.workspaceOwned,
-    }));
-
-  const prompts: CurationPrompt[] = [
-    ...wsPrompts.map((p) => ({ ...p, workspaceOwned: true })),
-    ...globalPrompts.map((p) => ({ ...p, workspaceOwned: false })),
-  ].map((p) => ({
-    id: p.id,
-    slug: p.slug,
-    title: p.title,
-    difficulty: p.difficulty as "beginner" | "intermediate" | "advanced",
-    estimatedMinutes: p.estimatedMinutes,
-    category: p.category,
-    workspaceOwned: p.workspaceOwned,
+  const questions: ComposerQuestion[] = challenges.map((c) => ({
+    id: c.id,
+    title: c.title,
+    difficulty: c.difficulty,
+    category: c.category,
+    minutes: Math.min(Math.max(c.estimatedMinutes || DEFAULT_QUESTION_MINUTES, 15), 240),
+    own: c.workspaceId === wsId,
+  }));
+  const known = new Set(questions.map((q) => q.id));
+  const tpls: ComposerTemplate[] = templates
+    .map((t) => ({ id: t.id, name: t.name, items: parseTemplateItems(t.itemsJson).filter((i) => known.has(i.challengeId)) }))
+    .filter((t) => t.items.length > 0);
+  const people: ComposerCandidate[] = candidates.map((c) => ({
+    id: c.id,
+    name: c.name,
+    email: c.email!,
+    stage: c.stage,
+    openSince: open.get(c.id) ?? null,
   }));
 
-  const playgrounds: CurationPlayground[] = [
-    ...templates.map((t) => ({ id: `template:${t.id}`, title: t.title, template: t.id, isTemplate: true })),
-    ...snippets.map((s) => ({ id: s.id, title: s.title, template: s.template, isTemplate: false })),
-  ];
-
-  const candidateOptions: PickCandidate[] = candidates
-    .filter((c) => !!c.email)
-    .map((c) => ({ id: c.id, name: c.name, email: c.email as string, stage: c.stage }));
+  const wanted = [...(sp.candidates?.split(",") ?? []), ...(sp.candidateId ? [sp.candidateId] : [])].map((s) => s.trim()).filter(Boolean);
+  const byId = new Set(people.map((p) => p.id));
 
   return (
-    <TakeHomeBuilder
+    <Composer
       slug={slug}
-      workspaceName={workspace.name}
-      challenges={challenges}
-      prompts={prompts}
-      playgrounds={playgrounds}
-      candidates={candidateOptions}
-      initialCandidateIds={preselected.filter((id) => candidateOptions.some((c) => c.id === id))}
+      workspaceName={access.workspace.name}
+      questions={questions}
+      templates={tpls}
+      candidates={people}
+      initialCandidateIds={wanted.filter((id) => byId.has(id)).slice(0, 100)}
+      initialTemplateId={tpls.some((t) => t.id === sp.template) ? sp.template! : null}
     />
   );
 }

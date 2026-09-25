@@ -287,7 +287,14 @@ export default function InterviewBuilder({
     template?: string;
     category?: string;
     estimatedMinutes: number;
-  }[]>([]);
+  }[]>(() => {
+    // ?challenges=id1,id2 comes from the workspace question library.
+    const ids = (searchParams?.get("challenges") ?? "").split(",").filter(Boolean);
+    return ids.flatMap((id) => {
+      const c = challenges.find((x) => x.id === id);
+      return c ? [{ id, type: "challenge" as const, title: c.title, difficulty: c.difficulty, estimatedMinutes: c.estimatedMinutes }] : [];
+    });
+  });
   const [scenario, setScenario] = useState("");
   const [minutes, setMinutes] = useState(60);
   const [creating, setCreating] = useState(false);

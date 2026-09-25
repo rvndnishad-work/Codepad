@@ -3,9 +3,9 @@
 import { useMemo, useState, useTransition } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import Link from "next/link";
-import { Bot, BookOpen, ExternalLink, ListChecks, MoreHorizontal, Plus, Trophy, X } from "lucide-react";
+import { Bot, BookOpen, ExternalLink, ListChecks, MoreHorizontal, Plus, Trophy, Video, X } from "lucide-react";
 import { TopicLogo } from "@/app/interview-questions/_components/TopicLogo";
-import type { LibraryChallenge, PublicCategory, PublicRow, Questionnaire } from "@/lib/library/library-server";
+import type { ChallengeCategory, ChallengeRow, LibraryChallenge, PublicCategory, PublicRow, Questionnaire } from "@/lib/library/library-server";
 import { plural } from "@/lib/workspace/display";
 import { Btn, Menu, MenuItem, MenuLabel, fmtDate, useToasts } from "../candidates/_components/ui";
 import { ConfirmDialog } from "../candidates/_components/dialogs";
@@ -27,6 +27,8 @@ export default function LibraryClient({
   bankTotal,
   firstPage,
   challenges,
+  challengeCategories,
+  challengeTotal,
 }: {
   slug: string;
   initialTab: LibraryTab;
@@ -39,6 +41,8 @@ export default function LibraryClient({
   bankTotal: number;
   firstPage: Page;
   challenges: LibraryChallenge[];
+  challengeCategories: ChallengeCategory[];
+  challengeTotal: number;
 }) {
   const router = useRouter();
   const pathname = usePathname();
@@ -65,6 +69,8 @@ export default function LibraryClient({
           rounds={rounds}
           bankTotal={bankTotal}
           firstPage={firstPage}
+          challengeCategories={challengeCategories}
+          challengeTotal={challengeTotal}
           canManage={canManage}
           onBack={() => setEditing(null)}
           onSaved={(_id, created) => {
@@ -143,8 +149,11 @@ export default function LibraryClient({
           rounds={rounds}
           bankTotal={bankTotal}
           firstPage={firstPage}
+          challengeCategories={challengeCategories}
+          challengeTotal={challengeTotal}
           questionnaires={questionnaires}
           canManage={canManage}
+          aiScreening={aiScreening}
           onDone={() => {
             setTab("questionnaires");
             router.refresh();
@@ -301,8 +310,11 @@ function PublicTab({
   rounds,
   bankTotal,
   firstPage,
+  challengeCategories,
+  challengeTotal,
   questionnaires,
   canManage,
+  aiScreening,
   onDone,
   toast,
 }: {
@@ -311,8 +323,11 @@ function PublicTab({
   rounds: string[];
   bankTotal: number;
   firstPage: Page;
+  challengeCategories: ChallengeCategory[];
+  challengeTotal: number;
   questionnaires: Questionnaire[];
   canManage: boolean;
+  aiScreening: boolean;
   onDone: () => void;
   toast: (text: string, tone?: "ok" | "error") => void;
 }) {
@@ -327,6 +342,17 @@ function PublicTab({
       return n;
     });
   const picked = useMemo(() => [...selected.values()], [selected]);
+  const [chSelected, setChSelected] = useState<Map<string, ChallengeRow>>(() => new Map());
+  const toggleChallenge = (row: ChallengeRow) =>
+    setChSelected((m) => {
+      const n = new Map(m);
+      if (n.has(row.id)) n.delete(row.id);
+      else if (n.size < 6) n.set(row.id, row);
+      else toast("Pick up to 6 challenges at a time.", "error");
+      return n;
+    });
+  const chPicked = [...chSelected.values()];
+  const chIds = chPicked.map((c) => c.id).join(",");
 
   function addTo(questionnaireId?: string) {
     start(async () => {
@@ -340,7 +366,37 @@ function PublicTab({
 
   return (
     <div className="flex flex-col gap-4 pb-20">
-      <PublicBrowser slug={slug} categories={categories} rounds={rounds} bankTotal={bankTotal} firstPage={firstPage} selected={selected} onToggle={canManage ? toggle : () => {}} />
+      <PublicBrowser
+        slug={slug}
+        categories={categories}
+        rounds={rounds}
+        bankTotal={bankTotal}
+        firstPage={firstPage}
+        selected={selected}
+        onToggle={canManage ? toggle : () => {}}
+        challengeCategories={challengeCategories}
+        challengeTotal={challengeTotal}
+        challengeSelected={chSelected}
+        onToggleChallenge={canManage ? toggleChallenge : undefined}
+      />
+
+      {chPicked.length > 0 && picked.length === 0 && (
+        <div className="fixed bottom-5 left-1/2 -translate-x-1/2 z-40 w-[min(760px,calc(100vw-32px))] rounded-2xl border border-border-strong bg-elevated shadow-2xl shadow-black/40 px-4 py-3 flex flex-wrap items-center gap-3">
+          <span className="text-sm text-fg font-medium">{plural(chPicked.length, "challenge")} picked</span>
+          <span className="flex-1" />
+          <Btn variant="quiet" icon={X} onClick={() => setChSelected(new Map())}>
+            Clear
+          </Btn>
+          <Btn variant="ghost" icon={Video} href={`/interview/new?workspaceSlug=${encodeURIComponent(slug)}&challenges=${chIds}`}>
+            Use in live interview
+          </Btn>
+          {aiScreening && (
+            <Btn variant="primary" icon={Bot} href={`/w/${slug}/ai-interviews/new?challenges=${chIds}`}>
+              Use in AI screening
+            </Btn>
+          )}
+        </div>
+      )}
 
       {picked.length > 0 && (
         <div className="fixed bottom-5 left-1/2 -translate-x-1/2 z-40 w-[min(760px,calc(100vw-32px))] rounded-2xl border border-border-strong bg-elevated shadow-2xl shadow-black/40 px-4 py-3 flex flex-wrap items-center gap-3">

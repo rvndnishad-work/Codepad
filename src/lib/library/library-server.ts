@@ -3,6 +3,8 @@
  * sets) and the public interview question bank they can copy from.
  * Server-only.
  */
+import { publicSummary } from "@/lib/library/summary";
+import type { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
 import { canMember } from "@/lib/permissions";
@@ -135,7 +137,7 @@ export async function searchPublicQuestions(query: PublicQuery): Promise<{ rows:
       id: r.id,
       slug: r.slug,
       title: r.title,
-      summary: r.description ? r.description.replace(/\s+/g, " ").slice(0, 220) : null,
+      summary: publicSummary(r.description),
       difficulty: r.difficulty,
       technology: r.technology,
       round: r.round,
@@ -165,6 +167,84 @@ export async function publicItems(ids: string[]): Promise<QuestionItem[]> {
     if (r.technology) item.tech = r.technology;
     return [item];
   });
+}
+
+/* ── Public coding challenges ──────────────────────────────────────────── */
+
+/** Label for a challenge category; challenges with none are grouped as "Other". */
+export const challengeCategoryLabel = (c: string | null) => c?.trim() || "Other";
+
+export type ChallengeCategory = { id: string; label: string; count: number };
+
+/** Categories of the published challenge bank plus this workspace's own challenges. */
+export async function loadChallengeCategories(workspaceId: string): Promise<{ categories: ChallengeCategory[]; total: number }> {
+  const rows = await prisma.challenge.groupBy({ by: ["category"], where: { published: true, workspaceId: null }, _count: true });
+  const byLabel = new Map<string, number>();
+  for (const r of rows) byLabel.set(challengeCategoryLabel(r.category), (byLabel.get(challengeCategoryLabel(r.category)) ?? 0) + r._count);
+  const categories = [...byLabel.entries()].map(([label, count]) => ({ id: label, label, count })).sort((a, b) => a.label.localeCompare(b.label));
+  const mine = await prisma.challenge.count({ where: { workspaceId } });
+  if (mine) categories.unshift({ id: TEAM_CHALLENGES, label: "Your team", count: mine });
+  return { categories, total: categories.reduce((n, c) => n + c.count, 0) };
+}
+
+/** Category id for the workspace's own challenges. */
+export const TEAM_CHALLENGES = "__team";
+
+export type ChallengeQuery = { category?: string | null; difficulty?: string | null; q?: string | null; page?: number };
+export type ChallengeRow = {
+  id: string;
+  slug: string;
+  title: string;
+  summary: string | null;
+  difficulty: string;
+  category: string;
+  minutes: number;
+  mine: boolean;
+};
+
+export async function searchChallenges(workspaceId: string, query: ChallengeQuery): Promise<{ rows: ChallengeRow[]; total: number; page: number }> {
+  const page = Math.max(1, Math.floor(query.page ?? 1));
+  const q = query.q?.trim().slice(0, 100);
+  const cat = query.category ?? null;
+  const scope: Prisma.ChallengeWhereInput =
+    cat === TEAM_CHALLENGES
+      ? { workspaceId }
+      : {
+          published: true,
+          workspaceId: null,
+          ...(cat === "Other" ? { OR: [{ category: null }, { category: "" }] } : cat ? { category: cat } : {}),
+        };
+  const where: Prisma.ChallengeWhereInput = {
+    AND: [
+      cat ? scope : { OR: [{ published: true, workspaceId: null }, { workspaceId }] },
+      ...(query.difficulty && ["easy", "medium", "hard"].includes(query.difficulty) ? [{ difficulty: query.difficulty }] : []),
+      ...(q ? [{ OR: [{ title: { contains: q, mode: "insensitive" as const } }, { tags: { contains: q, mode: "insensitive" as const } }] }] : []),
+    ],
+  };
+  const [rows, total] = await Promise.all([
+    prisma.challenge.findMany({
+      where,
+      orderBy: [{ featured: "desc" }, { title: "asc" }],
+      skip: (page - 1) * PUBLIC_PAGE_SIZE,
+      take: PUBLIC_PAGE_SIZE,
+      select: { id: true, slug: true, title: true, description: true, difficulty: true, category: true, estimatedMinutes: true, workspaceId: true },
+    }),
+    prisma.challenge.count({ where }),
+  ]);
+  return {
+    rows: rows.map((r) => ({
+      id: r.id,
+      slug: r.slug,
+      title: r.title,
+      summary: publicSummary(r.description),
+      difficulty: r.difficulty,
+      category: r.workspaceId ? "Your team" : challengeCategoryLabel(r.category),
+      minutes: r.estimatedMinutes,
+      mine: !!r.workspaceId,
+    })),
+    total,
+    page,
+  };
 }
 
 export type LibraryChallenge = { id: string; slug: string; title: string; difficulty: string; template: string; published: boolean };

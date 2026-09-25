@@ -75,6 +75,8 @@ export type Prefill = {
     templateId: string | null;
     estimatedMinutes: number;
     theory?: TheorySettings | null;
+    /** Keep this exact challenge even when it is from the public bank (library picks). */
+    pinned?: boolean;
   }[];
 };
 
@@ -805,7 +807,7 @@ function stackFromSpecs(specs: Prefill["rounds"], challenges: ChallengeChoice[])
       out.order.push(key);
       continue;
     }
-    if (s.sourceKind === "challenge" && s.sourceId && mine.has(s.sourceId)) {
+    if (s.sourceKind === "challenge" && s.sourceId && (mine.has(s.sourceId) || s.pinned)) {
       const spec: RoundSpecInput = {
         paradigm: s.paradigm as RoundSpecInput["paradigm"],
         language: s.language ?? undefined,

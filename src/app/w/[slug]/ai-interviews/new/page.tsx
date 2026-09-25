@@ -11,10 +11,11 @@ import NewScreening, { type Prefill } from "../_components/NewScreening";
 import { DEFAULT_REMINDER_DAYS } from "@/lib/ai-interview/console";
 import { questionTexts } from "@/lib/ai-interview/questionnaire";
 import { DEFAULT_THEORY, theoryMinutes } from "@/lib/ai-interview/theory";
+import { FRONTEND_FRAMEWORKS } from "@/lib/interview/stack";
 
 type Props = {
   params: Promise<{ slug: string }>;
-  searchParams: Promise<{ candidates?: string; from?: string; add?: string }>;
+  searchParams: Promise<{ candidates?: string; from?: string; add?: string; challenges?: string }>;
 };
 
 export const metadata = { title: "New AI screening — Interviewpad", robots: { index: false, follow: false } };
@@ -45,7 +46,30 @@ export default async function NewAiScreeningPage({ params, searchParams }: Props
   // A questionnaire becomes a theory round; any other team question keeps its own kind.
   const addQ = !from && sp.add ? questions.items.find((q) => q.id === sp.add && q.custom) : undefined;
   const addTheory = addQ?.kind === "conversation";
-  const prefill: Prefill | null = addQ
+  // ?challenges=id1,id2 comes from the library's Public questions tab: each
+  // picked coding challenge becomes a practical round with that exact challenge.
+  const picked = !from && !addQ && sp.challenges
+    ? sp.challenges.split(",").flatMap((id) => challenges.filter((c) => c.id === id.trim())).slice(0, 6)
+    : [];
+  const prefill: Prefill | null = picked.length
+    ? {
+        title: "",
+        engagementLevel: "",
+        expiresAfterDays: null,
+        reminderAfterDays: DEFAULT_REMINDER_DAYS,
+        rounds: picked.map((c) => ({
+          paradigm: c.paradigm,
+          language: c.paradigm === "frontend" ? null : c.languages[0] ?? null,
+          frameworkLabel: c.paradigm === "frontend" ? FRONTEND_FRAMEWORKS.find((f) => c.frameworks.includes(f.id))?.label ?? null : null,
+          sourceKind: "challenge",
+          sourceId: c.id,
+          templateId: null,
+          estimatedMinutes: 30,
+          theory: null,
+          pinned: true,
+        })),
+      }
+    : addQ
     ? {
         title: "",
         engagementLevel: "",

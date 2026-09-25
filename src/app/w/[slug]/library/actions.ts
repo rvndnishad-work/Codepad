@@ -9,7 +9,10 @@ import {
   loadPublicAnswer,
   publicItems,
   resolveLibraryActor,
+  searchChallenges,
   searchPublicQuestions,
+  type ChallengeQuery,
+  type ChallengeRow,
   type LibraryActor,
   type PublicQuery,
   type PublicRow,
@@ -52,6 +55,15 @@ export async function searchPublicAction(slug: string, query: PublicQuery): Prom
   try {
     await resolveLibraryActor(slug);
     return { ok: true, ...(await searchPublicQuestions(query)) };
+  } catch (err) {
+    return fail(err);
+  }
+}
+
+export async function searchChallengesAction(slug: string, query: ChallengeQuery): Promise<Result<{ rows: ChallengeRow[]; total: number; page: number }>> {
+  try {
+    const a = await resolveLibraryActor(slug);
+    return { ok: true, ...(await searchChallenges(a.workspaceId, query)) };
   } catch (err) {
     return fail(err);
   }

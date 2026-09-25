@@ -38,6 +38,8 @@ import {
   NODE_THEORY,
   OWNERSHIP_QUESTIONS,
   PARENS_SOLUTIONS,
+  PROMPT_ATTEMPTS,
+  PROMPT_TASKS,
   RATE_LIMITER_SOLUTIONS,
   REACT_THEORY,
   SCREENINGS,
@@ -104,6 +106,8 @@ async function teardown() {
   await prisma.aIInterviewSession.deleteMany({ where: seeded });
   await prisma.aIScreeningBatch.deleteMany({ where: seeded });
   await prisma.aIInterviewTemplate.deleteMany({ where: seeded });
+  await prisma.promptAttempt.deleteMany({ where: seeded });
+  await prisma.promptScenario.deleteMany({ where: seeded });
   await prisma.takeHomeAssignment.deleteMany({ where: seeded });
   await prisma.challengeAttempt.deleteMany({ where: seeded });
   await prisma.interviewSession.deleteMany({ where: seeded });
@@ -246,6 +250,46 @@ async function seedQuestionnaires(workspaceId: string) {
     await make(spec.key, spec.title, `A short conversation about ${spec.roleArea}. Answer in your own words; there is no code to write.`, spec.roleArea, spec.minutes, items, 8 - i * 3);
   }
   return skipped;
+}
+
+/** Two team prompt scenarios and a few graded attempts from the live interviews. */
+async function seedPromptTasks(ctx: Ctx) {
+  for (const [i, t] of PROMPT_TASKS.entries()) {
+    await prisma.promptScenario.create({
+      data: {
+        id: sid("prompt", t.key),
+        slug: `${PREFIX}${t.key}`.replace(/_/g, "-"),
+        title: t.title,
+        description: t.description,
+        objective: t.objective,
+        expectedTraits: JSON.stringify(t.traits),
+        difficulty: t.difficulty,
+        category: t.category,
+        estimatedMinutes: t.minutes,
+        workspaceId: ctx.workspaceId,
+        authorId: ctx.ownerId,
+        createdAt: at(-20 + i),
+      },
+    });
+  }
+  for (const [i, a] of PROMPT_ATTEMPTS.entries()) {
+    await prisma.promptAttempt.create({
+      data: {
+        id: sid("pa", i),
+        scenarioId: sid("prompt", a.task),
+        promptText: a.prompt,
+        charCount: a.prompt.length,
+        tokenEstimate: Math.ceil(a.prompt.length / 4),
+        score: a.score,
+        rubricScores: JSON.stringify(a.rubric),
+        feedback: a.feedback,
+        graderType: "ai",
+        sessionId: sid("iv", a.interview),
+        durationSec: 540 + i * 120,
+        createdAt: at(-a.daysAgo, 15),
+      },
+    });
+  }
 }
 
 /* ── Candidates ──────────────────────────────────────────────────────────── */
@@ -1013,6 +1057,8 @@ async function main() {
   await seedTakeHomes(ctx, challengeIds);
   await seedInterviews(ctx, challengeIds);
   console.log(`  ✓ Take home and interviews: ${CHALLENGES.length} challenges, ${TAKE_HOME_TEMPLATES.length} templates, ${TAKE_HOMES.length + LEGACY_TAKE_HOMES.length} take-homes, ${INTERVIEWS.length} interviews`);
+  await seedPromptTasks(ctx);
+  console.log(`  ✓ Prompt tasks: ${PROMPT_TASKS.length} team scenarios, ${PROMPT_ATTEMPTS.length} graded attempts`);
   await seedScreenings(ctx);
   const total = Object.values(SCREENINGS).reduce((n, list) => n + list.length, 0);
   console.log(`  ✓ AI screening: ${PLANS.length} screenings, ${total} candidates, credits`);

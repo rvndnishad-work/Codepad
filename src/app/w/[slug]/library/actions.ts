@@ -18,6 +18,7 @@ import {
   type PublicRow,
 } from "@/lib/library/library-server";
 import { techLabel } from "@/lib/interview-questions/shared";
+import { copyTitle, MINUTES_PER_QUESTION } from "@/lib/library/questionnaire-view";
 
 export type Result<T = object> = ({ ok: true } & T) | { ok: false; error: string };
 
@@ -148,6 +149,38 @@ export async function deleteQuestionnaireAction(slug: string, id: string): Promi
   }
 }
 
+/** Copy a questionnaire, answers included, under a free "(copy)" name. */
+export async function duplicateQuestionnaireAction(slug: string, id: string): Promise<Result<{ id: string; title: string }>> {
+  try {
+    const a = await writer(slug);
+    const row = await prisma.aIInterviewTemplate.findFirst({
+      where: { id, workspaceId: a.workspaceId, kind: "conversation" },
+      select: { title: true, description: true, estimatedMinutes: true, testsCode: true, frameworkLabel: true },
+    });
+    if (!row) throw new LibraryError("That questionnaire was not found.");
+    const taken = await prisma.aIInterviewTemplate.findMany({ where: { workspaceId: a.workspaceId, kind: "conversation" }, select: { title: true } });
+    const title = copyTitle(row.title, taken.map((t) => t.title));
+    const copy = await prisma.aIInterviewTemplate.create({
+      data: {
+        workspaceId: a.workspaceId,
+        kind: "conversation",
+        title,
+        description: row.description,
+        estimatedMinutes: row.estimatedMinutes,
+        starterFiles: "{}",
+        testsCode: row.testsCode,
+        language: null,
+        frameworkLabel: row.frameworkLabel,
+      },
+    });
+    audit(a, WORKSPACE_AUDIT_ACTIONS.AI_QUESTION_SET_SAVED, copy.id, { title, created: true, copiedFrom: id, questionnaire: true });
+    refresh(slug);
+    return { ok: true, id: copy.id, title };
+  } catch (err) {
+    return fail(err);
+  }
+}
+
 /**
  * Copy public bank questions into a questionnaire: an existing one (skipping
  * questions it already has) or a new one named `newTitle`.
@@ -184,7 +217,7 @@ export async function addPublicQuestionsAction(
       brief: `A short conversation about ${techs.length ? techs.join(", ") : "your experience"}. Answer in your own words; there is no code to write.`,
       roleArea: techs.length === 1 ? techs[0] : undefined,
       // About four minutes a question, rounded to a time the editor offers.
-      minutes: [10, 15, 20, 30, 45, 60].find((m) => m >= picked.length * 4) ?? 60,
+      minutes: [10, 15, 20, 30, 45, 60].find((m) => m >= picked.length * MINUTES_PER_QUESTION) ?? 60,
       items: picked,
     });
     const id = (await prisma.aIInterviewTemplate.create({ data: { ...data, workspaceId: a.workspaceId } })).id;

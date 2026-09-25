@@ -760,3 +760,72 @@ export const INTERVIEWS: InterviewSeed[] = [
   { candidate: "chloe", title: "Backend: system design and code", interviewer: "mei", status: "scheduled", atDays: 1, minutes: 75, challenges: ["lru"] },
   { candidate: "samuel", title: "Graduate: pair programming", interviewer: "daniel", status: "completed", atDays: -20, minutes: 45, challenges: ["lru"], ratings: { CodeQuality: 4, ProblemSolving: 4, Communication: 3 }, verdict: "success" },
 ];
+
+/* ── Prompt tasks (Question library) ───────────────────────────────────── */
+
+/** The team's own prompt-writing scenarios, next to the built-in ones. */
+export const PROMPT_TASKS = [
+  {
+    key: "release-notes",
+    title: "Release notes from a changelog",
+    description:
+      "Your team ships every Friday. The raw changelog is a list of merged pull request titles, some of them internal. Customers read the release notes in the app.",
+    objective: "Write a prompt that turns the pull request titles into short, customer-facing release notes grouped by feature, leaving out internal changes.",
+    traits: { keywords: ["audience", "group", "exclude internal", "tone"], format: "Markdown with one heading per feature", constraints: ["No pull request numbers", "No internal team names"] },
+    difficulty: "beginner",
+    category: "creative",
+    minutes: 10,
+  },
+  {
+    key: "flaky-test",
+    title: "Find the cause of a flaky test",
+    description:
+      "A checkout test fails about one run in ten on CI but never locally. You have the test file, the component it covers and three failing CI logs.",
+    objective: "Write a prompt that gets an AI assistant to find the likely cause and propose the smallest fix, explaining how to prove the fix works.",
+    traits: { keywords: ["timing", "logs", "reproduce", "smallest fix"], format: "Numbered steps", constraints: ["Do not skip or retry the test", "Do not rewrite the component"] },
+    difficulty: "intermediate",
+    category: "debugging",
+    minutes: 15,
+  },
+] as const;
+
+/** Graded attempts on the scenarios above, by candidates from the live interviews. */
+export const PROMPT_ATTEMPTS: {
+  task: (typeof PROMPT_TASKS)[number]["key"];
+  interview: string;
+  score: number;
+  daysAgo: number;
+  prompt: string;
+  feedback: string;
+  rubric: Record<"clarity" | "specificity" | "efficiency" | "context" | "constraints" | "edgeCases", number>;
+}[] = [
+  {
+    task: "flaky-test",
+    interview: "ana_0",
+    score: 86,
+    daysAgo: 2,
+    prompt:
+      "You are reviewing a flaky Playwright test. Attached: checkout.spec.ts, Checkout.tsx and three CI logs where it failed.\n1. Compare the failing logs and list what differs from a passing run.\n2. Point to the line most likely racing (network, animation or state update).\n3. Propose the smallest change to the test or component that removes the race. Do not add retries or skip the test.\n4. Tell me how to prove the fix: a command to run the test 50 times locally with CPU throttling.",
+    feedback: "Clear steps and strong constraints. It could say what to do if the logs point to a backend timeout rather than the UI.",
+    rubric: { clarity: 92, specificity: 88, efficiency: 84, context: 90, constraints: 94, edgeCases: 68 },
+  },
+  {
+    task: "flaky-test",
+    interview: "dmitri_4",
+    score: 58,
+    daysAgo: 0,
+    prompt: "This test is flaky, here are the files and logs. Can you fix it so it passes every time?",
+    feedback: "The goal is clear but the prompt gives no method and no limits, so an assistant may add retries or sleeps.",
+    rubric: { clarity: 70, specificity: 45, efficiency: 80, context: 60, constraints: 30, edgeCases: 35 },
+  },
+  {
+    task: "release-notes",
+    interview: "ravi_1",
+    score: 79,
+    daysAgo: 3,
+    prompt:
+      "Turn these merged PR titles into release notes for customers. Group them under a heading per feature, write one plain sentence per change, and leave out anything that mentions refactor, CI, deps or an internal team. No PR numbers.",
+    feedback: "Good audience and exclusions. Giving one example of a good line would make the tone more consistent.",
+    rubric: { clarity: 85, specificity: 78, efficiency: 90, context: 70, constraints: 82, edgeCases: 60 },
+  },
+];

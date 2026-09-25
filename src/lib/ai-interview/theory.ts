@@ -310,6 +310,7 @@ For each of the ${p.count} questions, compare the answer with the reference answ
 - missed: the important points it left out or got wrong, one short sentence
 - reason: one sentence on the score
 Only judge what the candidate said. Never reward an answer for repeating the question.
+Judge understanding, not vocabulary. A technical term earns credit only when the candidate explains it or uses it correctly; naming the right terms with a wrong or empty explanation scores as mostly wrong, and "missed" names each misused term. A correct explanation in plain words earns full credit even without the exact term.
 
 Output strictly a JSON object:
 {
@@ -345,7 +346,7 @@ export function followUpPrompt(p: { positionTitle: string; question: string; ans
 Question: ${p.question}
 Answer: ${p.answer}
 ${earlier ? `${earlier}\n` : ""}
-Decide whether ONE short follow-up would show more about what the candidate knows. Ask one when the answer is vague, very short, or skips an obvious part of the question. Do not ask one when the answer is already complete. Never hint at or state the correct answer, never correct the candidate, and never ask a new unrelated question.
+Decide whether ONE short follow-up would show more about what the candidate knows. Ask one when the answer is vague, very short, or skips an obvious part of the question, or when it names technical terms without explaining them (then ask what one of those terms does or why it matters here, in your own neutral words). Do not ask one when the answer is already complete. Never hint at or state the correct answer, never correct the candidate, and never ask a new unrelated question.
 
 Output strictly a JSON object: { "followUp": string or null }. A follow-up is one plain spoken sentence under 25 words.`;
 }

@@ -80,6 +80,7 @@ Score with this weighted rubric (0-100 composite):
 2. JUDGEMENT (35%): sound reasoning in scenarios, sensible priorities, awareness of trade-offs and risks.
 3. COMMUNICATION (25%): clear, structured, concise and honest.
 Only judge what the candidate said. If they answered fewer than two questions in substance, the score must be below 10.
+Where a reference answer is given, judge understanding, not vocabulary: terms named without a correct explanation earn no credit, and a correct explanation in plain words earns full credit. Name misused terms among the gaps.
 
 Output strictly a JSON object:
 {

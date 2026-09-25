@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import { cancelSpeak, speakNaturally } from "@/lib/copilot-tts";
 import type { TheoryAnswerMode, TheoryView } from "@/lib/ai-interview/theory";
 import { canRecord, useAnswerRecorder, type Clip } from "./useAnswerRecorder";
+import { joinPhrases, transcriptOf } from "@/lib/ai-interview/speech";
 
 /**
  * A theory round: the AI interviewer reads one question at a time and listens
@@ -102,6 +103,7 @@ export default function TheoryRound({
   const wantListenRef = useRef(false);
   const baseRef = useRef("");
   const finalRef = useRef("");
+  const sessionRef = useRef("");
   const textRef = useRef("");
   const spokeRef = useRef(false);
   const typedRef = useRef(false);
@@ -152,13 +154,9 @@ export default function TheoryRound({
     setSupported(!!rec);
     if (!rec) return;
     rec.onresult = (e) => {
-      let interim = "";
-      for (let i = e.resultIndex; i < e.results.length; i++) {
-        const t = e.results[i][0].transcript;
-        if (e.results[i].isFinal) finalRef.current += t + " ";
-        else interim += t;
-      }
-      const heard = (finalRef.current + interim).trim();
+      // Rebuild from the whole list: some engines re-send the utterance so far as each phrase.
+      sessionRef.current = transcriptOf(e.results);
+      const heard = joinPhrases([finalRef.current, sessionRef.current]);
       if (heard && firstWordRef.current == null) firstWordRef.current = Math.round((Date.now() - startedAtRef.current) / 1000);
       if (heard) spokeRef.current = true;
       setAnswer([baseRef.current, heard].filter(Boolean).join(" "));
@@ -174,6 +172,9 @@ export default function TheoryRound({
     };
     // Browsers stop after a pause; keep listening until the candidate is done.
     rec.onend = () => {
+      // A restart begins a new result list, so keep what this session heard.
+      finalRef.current = joinPhrases([finalRef.current, sessionRef.current]);
+      sessionRef.current = "";
       if (wantListenRef.current) {
         try {
           rec.start();
@@ -246,6 +247,7 @@ export default function TheoryRound({
     cancelSpeak();
     baseRef.current = textRef.current.trim();
     finalRef.current = "";
+    sessionRef.current = "";
     wantListenRef.current = true;
     setListening(true);
     setAi("listening");
@@ -347,6 +349,7 @@ export default function TheoryRound({
       setAnswer("");
       baseRef.current = "";
       finalRef.current = "";
+      sessionRef.current = "";
       spokeRef.current = false;
       typedRef.current = false;
       firstWordRef.current = null;
@@ -469,6 +472,7 @@ export default function TheoryRound({
     }
     baseRef.current = "";
     finalRef.current = "";
+    sessionRef.current = "";
     setTestHeard("");
     try {
       if (serverStt) await recorder.startClip();

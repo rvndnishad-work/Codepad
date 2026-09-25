@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { ChevronDown, ChevronRight, FileMinus2, FilePlus2, FileDiff, FileCode2, UnfoldVertical } from "lucide-react";
 import "highlight.js/styles/github-dark.css";
 import type { ReportRound } from "@/lib/ai-interview/console-server";
-import { buildFileView, markRanges, splitFileLines, toSplitRows, type DiffLine, type DiffRow } from "@/lib/ai-interview/line-diff";
+import { buildFileView, markRanges, toSplitRows, type DiffLine, type DiffRow } from "@/lib/ai-interview/line-diff";
 import { highlight } from "@/lib/code-peek";
 import { plural } from "@/lib/workspace/display";
 import { Seg, shortPath } from "./ide";
@@ -45,10 +45,9 @@ export default function CodeTab({ round }: { round: ReportRound | undefined }) {
   const wide = useWide();
   const view: Mode = wide ? mode : "unified";
 
-  const { changed, unchanged } = useMemo(() => buildEntries(round), [round]);
+  const { changed, untouched } = useMemo(() => buildEntries(round), [round]);
   const [collapsed, setCollapsed] = useState<Set<string>>(() => new Set());
   const [viewed, setViewed] = useState<Set<string>>(() => new Set());
-  const [openUnchanged, setOpenUnchanged] = useState<Set<string>>(() => new Set());
 
   if (!round) return null;
   if (!round.diffs) {
@@ -69,14 +68,22 @@ export default function CodeTab({ round }: { round: ReportRound | undefined }) {
     else next.add(path);
     return next;
   };
-  const jump = (path: string, isChanged: boolean) => {
-    if (isChanged) setCollapsed((s) => (s.has(path) ? toggle(s, path) : s));
-    else setOpenUnchanged((s) => (s.has(path) ? s : toggle(s, path)));
+  const jump = (path: string) => {
+    setCollapsed((s) => (s.has(path) ? toggle(s, path) : s));
     requestAnimationFrame(() => document.getElementById(anchor(path))?.scrollIntoView({ behavior: "smooth", block: "start" }));
   };
 
   return (
     <div className="flex flex-col gap-3">
+      {changed.length === 0 ? (
+        <div className="rounded-xl border border-border bg-surface p-8 flex flex-col items-center gap-1 text-center">
+          <p className="text-sm font-medium text-fg">No code changes in this round</p>
+          <p className="text-[13px] text-muted">
+            The candidate did not edit, add or delete any file{untouched ? `. All ${plural(untouched, "starter file")} are as they were given` : ""}.
+          </p>
+        </div>
+      ) : (
+        <>
       <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
         <p className="text-[13px] text-muted">
           <span className="text-fg font-medium">{plural(changed.length, "file")} changed</span>
@@ -89,11 +96,9 @@ export default function CodeTab({ round }: { round: ReportRound | undefined }) {
           )}
         </p>
         <span className="flex-1" />
-        {changed.length > 0 && (
-          <span className="text-xs text-subtle">
-            {viewed.size} of {changed.length} viewed
-          </span>
-        )}
+        <span className="text-xs text-subtle">
+          {viewed.size} of {changed.length} viewed
+        </span>
         <span className="hidden md:inline-flex">
           <Seg
             label="Diff layout"
@@ -108,24 +113,14 @@ export default function CodeTab({ round }: { round: ReportRound | undefined }) {
       </div>
 
       <div className="flex gap-4 items-start">
+        {/* Only files the candidate touched; untouched starter files are never listed. */}
         <nav aria-label="Files" className="hidden lg:flex flex-col w-56 shrink-0 sticky top-4 rounded-xl border border-border bg-surface py-2 max-h-[70vh] overflow-y-auto">
           {changed.map((f) => (
-            <TreeItem key={f.path} f={f} done={viewed.has(f.path)} onClick={() => jump(f.path, true)} />
+            <TreeItem key={f.path} f={f} done={viewed.has(f.path)} onClick={() => jump(f.path)} />
           ))}
-          {unchanged.length > 0 && (
-            <>
-              <span className="px-3 pt-3 pb-1 text-[11px] text-subtle">Starter, unchanged</span>
-              {unchanged.map((f) => (
-                <TreeItem key={f.path} f={f} onClick={() => jump(f.path, false)} />
-              ))}
-            </>
-          )}
         </nav>
 
         <div className="flex-1 min-w-0 flex flex-col gap-4">
-          {changed.length === 0 && (
-            <div className="rounded-xl border border-border bg-surface p-8 text-center text-sm text-muted">The candidate did not change any starter file in this round.</div>
-          )}
           {changed.map((f) => (
             <FileCard
               key={f.path}
@@ -141,44 +136,38 @@ export default function CodeTab({ round }: { round: ReportRound | undefined }) {
               }}
             />
           ))}
-          {unchanged.length > 0 && (
-            <div className="flex flex-col gap-3">
-              <p className="text-xs text-subtle pt-2">{plural(unchanged.length, "starter file")} the candidate did not change</p>
-              {unchanged.map((f) => (
-                <FileCard key={f.path} f={f} mode="unified" open={openUnchanged.has(f.path)} onToggle={() => setOpenUnchanged((s) => toggle(s, f.path))} />
-              ))}
-            </div>
-          )}
         </div>
       </div>
+        </>
+      )}
     </div>
   );
 }
 
-function buildEntries(round: ReportRound | undefined): { changed: FileEntry[]; unchanged: FileEntry[] } {
-  if (!round?.diffs) return { changed: [], unchanged: [] };
-  const changedPaths = round.diffs.filter((d) => d.added.length || d.removed.length || d.isNew || d.isDeleted).map((d) => d.path);
-  const byPath = new Map(round.diffs.map((d) => [d.path, d]));
-  const all = [...new Set([...Object.keys(round.starter), ...Object.keys(round.files)])].sort();
-  const make = (path: string, isChanged: boolean): FileEntry => {
-    const before = round.starter[path];
-    const after = isChanged ? round.files[path] : before ?? round.files[path];
-    const d = byPath.get(path);
-    const lang = hljsForPath(path);
-    const v = isChanged
-      ? buildFileView(d?.isNew ? undefined : before, d?.isDeleted ? undefined : after)
-      : { rows: splitFileLines(after).map((text, i): DiffRow => ({ type: "line", line: { kind: "context", oldNo: i + 1, newNo: i + 1, text } })), added: 0, removed: 0 };
-    return {
-      path,
-      status: !isChanged ? "unchanged" : d?.isNew ? "added" : d?.isDeleted ? "deleted" : "modified",
+/** Files the candidate edited, added or deleted, plus how many starter files they left alone. */
+function buildEntries(round: ReportRound | undefined): { changed: FileEntry[]; untouched: number } {
+  if (!round?.diffs) return { changed: [], untouched: 0 };
+  const changed: FileEntry[] = [];
+  for (const d of round.diffs) {
+    if (!(d.added.length || d.removed.length || d.isNew || d.isDeleted)) continue;
+    const before = d.isNew ? undefined : round.starter[d.path];
+    const after = d.isDeleted ? undefined : round.files[d.path];
+    const v = buildFileView(before, after);
+    // Only trailing whitespace changed: nothing worth showing.
+    if (!v.added && !v.removed && !d.isNew && !d.isDeleted) continue;
+    const lang = hljsForPath(d.path);
+    changed.push({
+      path: d.path,
+      status: d.isNew ? "added" : d.isDeleted ? "deleted" : "modified",
       ...v,
       oldHtml: highlightLines(before ?? "", lang),
       newHtml: highlightLines(after ?? "", lang),
-    };
-  };
-  const changed = changedPaths.map((p) => make(p, true));
-  const unchanged = all.filter((p) => !changedPaths.includes(p) && !/(^|\/)package(-lock)?\.json$/.test(p)).map((p) => make(p, false));
-  return { changed, unchanged };
+    });
+  }
+  changed.sort((a, b) => a.path.localeCompare(b.path));
+  const touched = new Set(changed.map((f) => f.path));
+  const untouched = Object.keys(round.starter).filter((p) => !touched.has(p) && !/(^|\/)package(-lock)?\.json$/.test(p)).length;
+  return { changed, untouched };
 }
 
 function anchor(path: string) {

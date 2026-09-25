@@ -4,7 +4,6 @@ import {
   loadChallengeCategories,
   loadPublicCategories,
   loadQuestionnaires,
-  loadWorkspaceChallenges,
   resolveLibraryActor,
   searchPublicQuestions,
 } from "@/lib/library/library-server";
@@ -55,11 +54,10 @@ export default async function QuestionLibraryPage({ params, searchParams }: Prop
 
   const tab = TABS.includes(sp.tab as LibraryTab) ? (sp.tab as LibraryTab) : "questionnaires";
   const tech = sp.tech ?? null;
-  const [questionnaires, bank, firstPage, challenges, challengeBank, promptScenarios, promptAttempts] = await Promise.all([
+  const [questionnaires, bank, firstPage, challengeBank, promptScenarios, promptAttempts] = await Promise.all([
     loadQuestionnaires(actor.workspaceId),
     loadPublicCategories(),
     searchPublicQuestions({ tech }),
-    loadWorkspaceChallenges(actor.workspaceId),
     loadChallengeCategories(actor.workspaceId),
     prisma.promptScenario.findMany({
       where: { OR: [{ workspaceId: actor.workspaceId }, { workspaceId: null }] },
@@ -93,7 +91,6 @@ export default async function QuestionLibraryPage({ params, searchParams }: Prop
       rounds={bank.rounds}
       bankTotal={bank.total}
       firstPage={{ ...firstPage, tech }}
-      challenges={challenges}
       challengeCategories={challengeBank.categories}
       challengeTotal={challengeBank.total}
       workspaceId={actor.workspaceId}

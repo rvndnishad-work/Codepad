@@ -3,6 +3,7 @@
  * shape from results.ts. Server-only.
  */
 import { prisma } from "@/lib/prisma";
+import { passMarkOf } from "@/lib/ai-interview/verdict";
 import {
   describeScore,
   rubricAverage,
@@ -76,6 +77,7 @@ export async function loadCandidateResults(
         startedAt: true,
         finishedAt: true,
         createdAt: true,
+        batch: { select: { passMark: true } },
       },
     }),
   ]);
@@ -248,7 +250,8 @@ export async function loadCandidateResults(
       state,
       score,
       rating: null,
-      ...(score != null ? describeScore("ai_screening", score) : { verdict: null, passed: null }),
+      ...(score != null ? describeScore("ai_screening", score, null, null, a.batch?.passMark) : { verdict: null, passed: null }),
+      passMark: passMarkOf(a.batch?.passMark),
       sentAt: a.createdAt.toISOString(),
       startedAt: iso(a.startedAt),
       finishedAt: iso(a.finishedAt),

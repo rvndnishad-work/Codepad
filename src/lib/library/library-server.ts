@@ -200,6 +200,8 @@ export type ChallengeRow = {
   category: string;
   minutes: number;
   mine: boolean;
+  /** Team challenges only: not published yet. */
+  draft: boolean;
 };
 
 export async function searchChallenges(workspaceId: string, query: ChallengeQuery): Promise<{ rows: ChallengeRow[]; total: number; page: number }> {
@@ -227,7 +229,7 @@ export async function searchChallenges(workspaceId: string, query: ChallengeQuer
       orderBy: [{ featured: "desc" }, { title: "asc" }],
       skip: (page - 1) * PUBLIC_PAGE_SIZE,
       take: PUBLIC_PAGE_SIZE,
-      select: { id: true, slug: true, title: true, description: true, difficulty: true, category: true, estimatedMinutes: true, workspaceId: true },
+      select: { id: true, slug: true, title: true, description: true, difficulty: true, category: true, estimatedMinutes: true, workspaceId: true, published: true },
     }),
     prisma.challenge.count({ where }),
   ]);
@@ -241,18 +243,10 @@ export async function searchChallenges(workspaceId: string, query: ChallengeQuer
       category: r.workspaceId ? "Your team" : challengeCategoryLabel(r.category),
       minutes: r.estimatedMinutes,
       mine: !!r.workspaceId,
+      draft: !!r.workspaceId && !r.published,
     })),
     total,
     page,
   };
 }
 
-export type LibraryChallenge = { id: string; slug: string; title: string; difficulty: string; template: string; published: boolean };
-
-export async function loadWorkspaceChallenges(workspaceId: string): Promise<LibraryChallenge[]> {
-  return prisma.challenge.findMany({
-    where: { workspaceId },
-    orderBy: { updatedAt: "desc" },
-    select: { id: true, slug: true, title: true, difficulty: true, template: true, published: true },
-  });
-}

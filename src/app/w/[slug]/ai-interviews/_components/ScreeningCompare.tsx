@@ -12,6 +12,7 @@ import { Avatar, Btn, Dialog, StageChip, fmtDate, inputCls, stageLabel, useToast
 import { ConfirmDialog } from "../../candidates/_components/dialogs";
 import { StatusChip, ToneChip, ToneDot, ToneScore, selectCls } from "./kit";
 import { addToScreeningAction, cancelInvitesAction, remindAction } from "../actions";
+import { PassMarkButton } from "./PassMark";
 
 type Sort = "score" | "name" | "status";
 
@@ -102,6 +103,16 @@ export default function ScreeningCompare({
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
+          <PassMarkButton
+            slug={slug}
+            batchId={s.id}
+            value={s.passMark}
+            canManage={canManage}
+            onSaved={(text, tone) => {
+              toast(text, tone);
+              if (!tone) router.refresh();
+            }}
+          />
           <Btn icon={Download} onClick={exportCsv}>
             Export CSV
           </Btn>

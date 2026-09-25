@@ -26,6 +26,7 @@ import {
   type SummarySection,
 } from "./console";
 import { roundLabel } from "./round-label";
+import { passMarkOf } from "./verdict";
 import { parseAnswers, parseTheoryRound, parseTheorySettings, type TheoryAnswer, type TheorySettings } from "./theory";
 import { classifyChallenge, type CuratableChallenge } from "@/lib/interview/stack";
 
@@ -152,7 +153,7 @@ const queueSelect = {
   finishedAt: true,
   expiresAt: true,
   inviteEmailStatus: true,
-  batch: { select: { positionTitle: true } },
+  batch: { select: { positionTitle: true, passMark: true } },
   candidate: { select: { stage: true } },
   rounds: true,
 } satisfies Prisma.AIInterviewSessionSelect;
@@ -193,7 +194,7 @@ function toQueueRow(s: QueueSession, linesWritten: number | null): QueueRow {
     stage,
     candidateId: s.candidateId,
     score: s.status === "COMPLETED" ? s.score : null,
-    suggestion: s.status === "COMPLETED" ? suggestion(s.score, linesWritten) : null,
+    suggestion: s.status === "COMPLETED" ? suggestion(s.score, linesWritten, s.batch?.passMark) : null,
     integrity: integrity(s.aiSuspicionScore),
     rounds: Math.max(1, s.rounds.length),
     createdAt: s.createdAt.toISOString(),
@@ -323,6 +324,8 @@ export type ReportData = {
   candidate: { id: string | null; name: string; email: string; stage: string | null };
   role: string;
   screening: { id: string; title: string } | null;
+  /** The bar this screening scores against (its own pass mark or the default). */
+  passMark: number;
   score: number | null;
   suggestion: Suggestion | null;
   integrity: Integrity | null;
@@ -354,7 +357,7 @@ export async function loadReport(workspaceId: string, sessionId: string, viewerI
     where: { id: sessionId, workspaceId, practice: false },
     include: {
       rounds: { orderBy: { order: "asc" } },
-      batch: { select: { id: true, positionTitle: true } },
+      batch: { select: { id: true, positionTitle: true, passMark: true } },
       candidate: {
         select: {
           id: true,
@@ -444,8 +447,9 @@ export async function loadReport(workspaceId: string, sessionId: string, viewerI
     candidate: { id: s.candidateId, name: s.candidateName, email: s.candidateEmail, stage },
     role: s.positionTitle,
     screening: s.batch ? { id: s.batch.id, title: s.batch.positionTitle } : null,
+    passMark: passMarkOf(s.batch?.passMark),
     score: completed ? s.score : null,
-    suggestion: completed ? suggestion(s.score, linesWritten) : null,
+    suggestion: completed ? suggestion(s.score, linesWritten, s.batch?.passMark) : null,
     integrity: integrity(s.aiSuspicionScore),
     suspicion: s.aiSuspicionScore,
     ratings: parseRatings(s.ratings),
@@ -528,6 +532,7 @@ export type ScreeningRow = {
   toReview: number;
   avgScore: number | null;
   expiresAfterDays: number | null;
+  passMark: number;
 };
 
 export async function loadScreenings(workspaceId: string): Promise<ScreeningRow[]> {
@@ -562,6 +567,7 @@ export async function loadScreenings(workspaceId: string): Promise<ScreeningRow[
       toReview: done.filter((s) => awaitsDecision(s.status, s.candidate?.stage, !!s.candidateId)).length,
       avgScore: scored.length ? Math.round(scored.reduce((a, v) => a + v, 0) / scored.length) : null,
       expiresAfterDays: b.expiresAfterDays,
+      passMark: passMarkOf(b.passMark),
     };
   });
 }
@@ -591,6 +597,10 @@ export type ScreeningDetail = {
   engagementLevel: string;
   expiresAfterDays: number | null;
   reminderAfterDays: number | null;
+  /** The bar this screening scores against. */
+  passMark: number;
+  /** True when the recruiter set it; false when it is the default. */
+  passMarkSet: boolean;
   rounds: { title: string; label: string; minutes: number; kind: string }[];
   roundSpecs: {
     paradigm: string;
@@ -647,6 +657,8 @@ export async function loadScreening(workspaceId: string, batchId: string): Promi
     engagementLevel: b.engagementLevel,
     expiresAfterDays: b.expiresAfterDays,
     reminderAfterDays: b.reminderAfterDays,
+    passMark: passMarkOf(b.passMark),
+    passMarkSet: b.passMark != null,
     rounds: b.roundSpecs.map((r, i) => ({
       title: contents[i]?.title ?? `Round ${i + 1}`,
       label: roundLabel(r),
@@ -674,7 +686,7 @@ export async function loadScreening(workspaceId: string, batchId: string): Promi
         stage,
         status: s.status,
         score: done ? s.score : null,
-        suggestion: done ? suggestion(s.score) : null,
+        suggestion: done ? suggestion(s.score, null, b.passMark) : null,
         integrity: integrity(s.aiSuspicionScore),
         roundScores: b.roundSpecs.map((_, i) => s.rounds[i]?.score ?? null),
         finishedAt: s.finishedAt?.toISOString() ?? null,

@@ -31,6 +31,8 @@ import {
   parseRoleTitle,
   type RoleLevel,
 } from "@/lib/ai-interview/console";
+import { passMarkOf } from "@/lib/ai-interview/verdict";
+import { PassMarkField } from "./PassMark";
 import { AI_ENGAGEMENT_CREDIT_COST, ENGAGEMENT_LABELS, normalizeEngagementLevel, type EngagementLevel } from "@/lib/ai-interview/engagement";
 import { paradigmName, roundLabel } from "@/lib/ai-interview/round-label";
 import {
@@ -66,6 +68,8 @@ export type Prefill = {
   engagementLevel: string;
   expiresAfterDays: number | null;
   reminderAfterDays: number | null;
+  /** The screening's own pass mark, when duplicating one. */
+  passMark?: number | null;
   rounds: {
     paradigm: string;
     language: string | null;
@@ -161,6 +165,7 @@ export default function NewScreening({
   const [level, setLevel] = useState<EngagementLevel>(normalizeEngagementLevel(prefill?.engagementLevel));
   const [expiry, setExpiry] = useState<number>(prefill?.expiresAfterDays ?? DEFAULT_EXPIRY_DAYS);
   const [reminder, setReminder] = useState<number>(prefill ? prefill.reminderAfterDays ?? 0 : DEFAULT_REMINDER_DAYS);
+  const [passMark, setPassMark] = useState<number>(passMarkOf(prefill?.passMark));
   const [extensions, setExtensions] = useState(1);
   const [extMinutes, setExtMinutes] = useState(5);
 
@@ -324,6 +329,7 @@ export default function NewScreening({
         engagementLevel: level,
         expiresAfterDays: expiry,
         reminderAfterDays: reminder,
+        passMark,
         maxExtensions: extensions,
         extensionMinutes: extMinutes,
       });
@@ -681,6 +687,9 @@ export default function NewScreening({
                 </select>
               </label>
             </div>
+            <div className="rounded-xl border border-border p-4">
+              <PassMarkField value={passMark} onChange={setPassMark} />
+            </div>
           </Section>
         </div>
 
@@ -693,6 +702,7 @@ export default function NewScreening({
             <Line k="Rounds" v={allSpecs.length ? `${allSpecs.length}, ${totalMinutes} min in all` : "None yet"} dim={!allSpecs.length} />
             <Line k="Candidates" v={people ? plural(people, "person", "people") : "None yet"} dim={!people} />
             <Line k="Interviewer" v={ENGAGEMENT_LABELS[level].label} />
+            <Line k="Pass mark" v={`${passMark} of 100`} />
             <Line k="Invite closes" v={closes ? closes.toLocaleDateString("en-GB", { day: "numeric", month: "short" }) : "Never"} />
           </dl>
           <div className="h-px bg-border" />

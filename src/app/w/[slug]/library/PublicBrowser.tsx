@@ -1,15 +1,15 @@
 "use client";
 
 import { useEffect, useRef, useState, useTransition } from "react";
-import { Check, ChevronDown, ChevronLeft, ChevronRight, Code2, ExternalLink, LayoutTemplate, MonitorSmartphone, Network, Search, Server, Users } from "lucide-react";
+import { BookOpen, Check, ChevronDown, ChevronLeft, ChevronRight, Code2, ExternalLink, LayoutTemplate, MonitorSmartphone, Network, Search, Server, Users, X } from "lucide-react";
 import MarkdownRenderer from "@/components/MarkdownRenderer";
 import { TopicLogo } from "@/app/interview-questions/_components/TopicLogo";
 import { plural } from "@/lib/workspace/display";
 import { TEAM_CHALLENGES, type ChallengeCategory, type ChallengeRow, type PublicCategory, type PublicRow } from "@/lib/library/library-server";
 import { inputCls } from "../candidates/_components/ui";
+import { publicAnswerAction, searchChallengesAction, searchPublicAction } from "./actions";
 
 const selectCls = `${inputCls.replace("w-full", "")} w-auto`;
-import { publicAnswerAction, searchChallengesAction, searchPublicAction } from "./actions";
 
 const PAGE_SIZE = 25;
 const DIFFICULTIES = [
@@ -18,6 +18,8 @@ const DIFFICULTIES = [
   { id: "medium", label: "Medium" },
   { id: "hard", label: "Hard" },
 ] as const;
+
+const DIFFICULTY_DOT: Record<string, string> = { easy: "bg-success", medium: "bg-warning", hard: "bg-danger" };
 
 export const DIFFICULTY_TONE: Record<string, string> = {
   easy: "text-success bg-success/10 border-success/25",
@@ -36,49 +38,49 @@ export function DifficultyChip({ value }: { value: string | null | undefined }) 
 
 export type Page = { rows: PublicRow[]; total: number; page: number; tech: string | null };
 
+const EMPTY_PAGE: Page = { rows: [], total: 0, page: 1, tech: null };
+
 /**
- * Browse the public interview question bank by category, difficulty, round and
- * text, and tick questions to copy into a questionnaire. Answers load when a
- * row is opened. The sidebar also lists coding challenges (frontend, DSA and
- * so on), which candidates solve in the playground rather than out loud.
+ * Browse the public interview question bank (mode "questions") or the coding
+ * challenges (mode "challenges") by category, difficulty and text, and tick
+ * rows to use them. Question answers load when a row is opened.
  */
 export default function PublicBrowser({
+  mode,
   slug,
-  categories,
-  rounds,
-  bankTotal,
-  firstPage,
+  categories = [],
+  rounds = [],
+  bankTotal = 0,
+  firstPage = EMPTY_PAGE,
   selected,
   onToggle,
   disabledIds,
-  compact = false,
   initialTech,
   challengeCategories = [],
   challengeTotal = 0,
   challengeSelected,
   onToggleChallenge,
-  challengeNote,
 }: {
+  mode: Source;
   slug: string;
-  categories: PublicCategory[];
-  rounds: string[];
-  bankTotal: number;
-  firstPage: Page;
-  selected: Map<string, PublicRow>;
-  onToggle: (row: PublicRow) => void;
+  categories?: PublicCategory[];
+  rounds?: string[];
+  bankTotal?: number;
+  firstPage?: Page;
+  selected?: Map<string, PublicRow>;
+  /** Leave out to show questions read-only. */
+  onToggle?: (row: PublicRow) => void;
   /** Rows already in the questionnaire being edited, keyed by bank slug. */
   disabledIds?: Set<string>;
-  compact?: boolean;
   /** Category to open on, when it differs from the one the first page was loaded for. */
   initialTech?: string | null;
   challengeCategories?: ChallengeCategory[];
   challengeTotal?: number;
   challengeSelected?: Map<string, ChallengeRow>;
-  /** Leave out to show challenges read-only (with `challengeNote`). */
+  /** Leave out to show challenges read-only. */
   onToggleChallenge?: (row: ChallengeRow) => void;
-  challengeNote?: string;
 }) {
-  const [source, setSource] = useState<Source>("questions");
+  const source = mode;
   const [tech, setTech] = useState<string | null>(initialTech ?? firstPage.tech);
   const [chCat, setChCat] = useState<string | null>(null);
   const [difficulty, setDifficulty] = useState("");
@@ -91,11 +93,10 @@ export default function PublicBrowser({
   const first = useRef(true);
   const top = useRef<HTMLDivElement>(null);
 
-  type Next = { source?: Source; tech?: string | null; cat?: string | null; difficulty?: string; round?: string; q?: string; page?: number };
+  type Next = { tech?: string | null; cat?: string | null; difficulty?: string; round?: string; q?: string; page?: number };
   function load(next: Next) {
-    const src = next.source ?? source;
     start(async () => {
-      if (src === "challenges") {
+      if (source === "challenges") {
         const query = { category: chCat, difficulty, q, page: 1, ...("cat" in next ? { category: next.cat } : {}), ...pick(next, ["difficulty", "q", "page"]) };
         const r = await searchChallengesAction(slug, query);
         if (!r.ok) return setError(r.error);
@@ -119,7 +120,8 @@ export default function PublicBrowser({
   }
 
   useEffect(() => {
-    if (initialTech && initialTech !== firstPage.tech) load({ tech: initialTech });
+    if (source === "challenges") load({});
+    else if (initialTech && initialTech !== firstPage.tech) load({ tech: initialTech });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -135,41 +137,40 @@ export default function PublicBrowser({
   }, [q]);
 
   const pickTech = (slugOrNull: string | null) => {
-    setSource("questions");
     setTech(slugOrNull);
-    load({ source: "questions", tech: slugOrNull });
+    load({ tech: slugOrNull });
   };
   const pickChallenges = (cat: string | null) => {
-    setSource("challenges");
     setChCat(cat);
-    load({ source: "challenges", cat });
+    load({ cat });
   };
-  const onMobilePick = (v: string) => (v.startsWith("c:") ? pickChallenges(v.slice(2) || null) : pickTech(v.slice(2) || null));
 
   const showingChallenges = source === "challenges";
   const view = showingChallenges ? (chData ?? { rows: [], total: 0, page: 1 }) : data;
   const pages = Math.max(1, Math.ceil(view.total / PAGE_SIZE));
   const from = view.total ? (view.page - 1) * PAGE_SIZE + 1 : 0;
   const to = Math.min(view.total, view.page * PAGE_SIZE);
-  const picked = showingChallenges ? (challengeSelected?.size ?? 0) : selected.size;
+  const picked = showingChallenges ? (challengeSelected?.size ?? 0) : (selected?.size ?? 0);
   const noun = showingChallenges ? "challenge" : "question";
-  const hasChallenges = challengeCategories.length > 0;
+  const firstLoad = showingChallenges && !chData;
+  const filtered = !!(q || difficulty || round);
 
   return (
-    <div ref={top} className={`flex gap-5 items-start scroll-mt-24 ${compact ? "flex-col md:flex-row" : ""}`}>
+    <div ref={top} className="flex gap-5 items-start scroll-mt-24">
       {/* Categories */}
-      <nav aria-label="Categories" className={`${compact ? "hidden md:flex" : "hidden lg:flex"} flex-col w-60 shrink-0 sticky top-20 rounded-xl border border-border bg-surface py-2 max-h-[calc(100dvh-9rem)] overflow-y-auto`}>
-        {hasChallenges && <GroupLabel>Interview questions</GroupLabel>}
-        <CategoryButton on={!showingChallenges && tech === null} onClick={() => pickTech(null)} label="All questions" count={bankTotal} />
-        {categories.map((c) => (
-          <CategoryButton key={c.slug} on={!showingChallenges && tech === c.slug} onClick={() => pickTech(c.slug)} label={c.label} count={c.count} logo={c.slug} />
-        ))}
-        {hasChallenges && (
+      <nav aria-label="Categories" className="hidden lg:flex flex-col w-60 shrink-0 sticky top-20 rounded-xl border border-border bg-surface py-2 max-h-[calc(100dvh-9rem)] overflow-y-auto">
+        {showingChallenges ? (
           <>
-            <GroupLabel>Coding challenges</GroupLabel>
-            <CategoryButton on={showingChallenges && chCat === null} onClick={() => pickChallenges(null)} label="All challenges" count={challengeTotal} icon={<Code2 className="w-[15px] h-[15px] text-subtle" aria-hidden />} />
+            <CategoryButton on={chCat === null} onClick={() => pickChallenges(null)} label="All challenges" count={challengeTotal} icon={<Code2 className="w-[15px] h-[15px] text-subtle" aria-hidden />} />
             {challengeCategories.map((c) => (
-              <CategoryButton key={c.id} on={showingChallenges && chCat === c.id} onClick={() => pickChallenges(c.id)} label={c.label} count={c.count} icon={<ChallengeIcon id={c.id} />} />
+              <CategoryButton key={c.id} on={chCat === c.id} onClick={() => pickChallenges(c.id)} label={c.label} count={c.count} icon={<ChallengeIcon id={c.id} />} />
+            ))}
+          </>
+        ) : (
+          <>
+            <CategoryButton on={tech === null} onClick={() => pickTech(null)} label="All questions" count={bankTotal} icon={<BookOpen className="w-[15px] h-[15px] text-subtle" aria-hidden />} />
+            {categories.map((c) => (
+              <CategoryButton key={c.slug} on={tech === c.slug} onClick={() => pickTech(c.slug)} label={c.label} count={c.count} logo={c.slug} />
             ))}
           </>
         )}
@@ -179,33 +180,32 @@ export default function PublicBrowser({
         <div className="flex flex-wrap items-center gap-2">
           <div className="relative flex-1 min-w-[200px]">
             <Search className="w-4 h-4 text-subtle absolute left-2.5 top-1/2 -translate-y-1/2" aria-hidden />
-            <input value={q} onChange={(e) => setQ(e.target.value)} placeholder={showingChallenges ? "Search challenges or tags" : "Search questions or tags"} aria-label={`Search ${noun}s`} className={`${inputCls} pl-8`} />
+            <input value={q} onChange={(e) => setQ(e.target.value)} placeholder={showingChallenges ? "Search challenges or tags" : "Search questions or tags"} aria-label={`Search ${noun}s`} className={`${inputCls} pl-8 pr-8`} />
+            {q && (
+              <button type="button" onClick={() => setQ("")} aria-label="Clear search" className="absolute right-1.5 top-1/2 -translate-y-1/2 w-6 h-6 rounded-md flex items-center justify-center text-subtle hover:text-fg">
+                <X className="w-3.5 h-3.5" />
+              </button>
+            )}
           </div>
-          <select
-            aria-label="Category"
-            value={showingChallenges ? `c:${chCat ?? ""}` : `q:${tech ?? ""}`}
-            onChange={(e) => onMobilePick(e.target.value)}
-            className={`${selectCls} ${compact ? "md:hidden" : "lg:hidden"}`}
-          >
-            <optgroup label="Interview questions">
-              <option value="q:">All questions</option>
-              {categories.map((c) => (
-                <option key={c.slug} value={`q:${c.slug}`}>
+          {showingChallenges ? (
+            <select aria-label="Category" value={chCat ?? ""} onChange={(e) => pickChallenges(e.target.value || null)} className={`${selectCls} lg:hidden`}>
+              <option value="">All challenges ({challengeTotal})</option>
+              {challengeCategories.map((c) => (
+                <option key={c.id} value={c.id}>
                   {c.label} ({c.count})
                 </option>
               ))}
-            </optgroup>
-            {hasChallenges && (
-              <optgroup label="Coding challenges">
-                <option value="c:">All challenges</option>
-                {challengeCategories.map((c) => (
-                  <option key={c.id} value={`c:${c.id}`}>
-                    {c.label} ({c.count})
-                  </option>
-                ))}
-              </optgroup>
-            )}
-          </select>
+            </select>
+          ) : (
+            <select aria-label="Category" value={tech ?? ""} onChange={(e) => pickTech(e.target.value || null)} className={`${selectCls} lg:hidden`}>
+              <option value="">All questions ({bankTotal})</option>
+              {categories.map((c) => (
+                <option key={c.slug} value={c.slug}>
+                  {c.label} ({c.count})
+                </option>
+              ))}
+            </select>
+          )}
           <div role="radiogroup" aria-label="Difficulty" className="inline-flex h-9 rounded-lg border border-border bg-surface p-0.5">
             {DIFFICULTIES.map((d) => (
               <button
@@ -217,13 +217,14 @@ export default function PublicBrowser({
                   setDifficulty(d.id);
                   load({ difficulty: d.id });
                 }}
-                className={`px-2.5 rounded-md text-[13px] ${difficulty === d.id ? "bg-panel text-fg font-medium" : "text-muted hover:text-fg"}`}
+                className={`px-2.5 rounded-md text-[13px] transition ${difficulty === d.id ? "bg-panel text-fg font-medium" : "text-muted hover:text-fg"}`}
               >
+                {d.id && <span aria-hidden className={`inline-block w-1.5 h-1.5 rounded-full mr-1.5 align-middle ${DIFFICULTY_DOT[d.id]}`} />}
                 {d.label}
               </button>
             ))}
           </div>
-          {!showingChallenges && (
+          {!showingChallenges && rounds.length > 0 && (
             <select
               aria-label="Round"
               value={round}
@@ -243,33 +244,61 @@ export default function PublicBrowser({
           )}
         </div>
 
-        {showingChallenges && challengeNote && (
-          <p className="rounded-lg border border-border bg-surface px-3.5 py-2.5 text-[13px] text-muted">{challengeNote}</p>
-        )}
-
-        <div className="flex items-center justify-between gap-3 text-[13px] text-muted" aria-live="polite">
+        <div className="flex items-center justify-between gap-3 text-[13px] text-muted min-h-8" aria-live="polite">
           <span>
-            {loading ? "Loading" : view.total ? `${from} to ${to} of ${plural(view.total, noun)}` : `No ${noun}s match`}
+            {loading || firstLoad ? "Loading" : view.total ? `${from} to ${to} of ${plural(view.total, noun)}` : `No ${noun}s match`}
             {picked > 0 && <span className="text-fg font-medium">, {picked} picked</span>}
           </span>
           {pages > 1 && <Pager page={view.page} pages={pages} loading={loading} onPage={(page) => load({ page })} />}
         </div>
         {error && <p className="text-[13px] text-danger">{error}</p>}
 
-        <ul className={`flex flex-col rounded-xl border border-border bg-surface divide-y divide-border transition-opacity ${loading ? "opacity-60" : ""}`}>
-          {showingChallenges
-            ? view.rows.map((r) => (
-                <ChallengeRowItem
-                  key={r.id}
-                  row={r as ChallengeRow}
-                  checked={challengeSelected?.has(r.id) ?? false}
-                  onToggle={onToggleChallenge ? () => onToggleChallenge(r as ChallengeRow) : undefined}
-                />
+        <ul className={`flex flex-col rounded-xl border border-border bg-surface divide-y divide-border overflow-hidden transition-opacity ${loading ? "opacity-60" : ""}`}>
+          {firstLoad
+            ? Array.from({ length: 6 }, (_, i) => (
+                <li key={i} className="px-4 py-4 flex flex-col gap-2" aria-hidden>
+                  <span className="h-3.5 w-2/3 rounded bg-panel animate-pulse motion-reduce:animate-none" />
+                  <span className="h-3 w-1/3 rounded bg-panel/70 animate-pulse motion-reduce:animate-none" />
+                </li>
               ))
-            : data.rows.map((r) => (
-                <PublicRowItem key={r.id} slug={slug} row={r} checked={selected.has(r.id)} already={disabledIds?.has(r.slug) ?? false} onToggle={() => onToggle(r)} />
-              ))}
-          {!view.rows.length && !loading && <li className="px-4 py-10 text-center text-[13px] text-subtle">No {noun}s match these filters.</li>}
+            : showingChallenges
+              ? view.rows.map((r) => (
+                  <ChallengeRowItem
+                    key={r.id}
+                    row={r as ChallengeRow}
+                    checked={challengeSelected?.has(r.id) ?? false}
+                    onToggle={onToggleChallenge ? () => onToggleChallenge(r as ChallengeRow) : undefined}
+                  />
+                ))
+              : data.rows.map((r) => (
+                  <PublicRowItem
+                    key={r.id}
+                    slug={slug}
+                    row={r}
+                    checked={selected?.has(r.id) ?? false}
+                    already={disabledIds?.has(r.slug) ?? false}
+                    onToggle={onToggle ? () => onToggle(r) : undefined}
+                  />
+                ))}
+          {!firstLoad && !view.rows.length && !loading && (
+            <li className="px-4 py-12 text-center flex flex-col items-center gap-2">
+              <span className="text-[13px] text-muted">No {noun}s match these filters.</span>
+              {filtered && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setQ("");
+                    setDifficulty("");
+                    setRound("");
+                    load({ q: "", difficulty: "", round: "" });
+                  }}
+                  className="text-[13px] text-secondary-soft hover:underline"
+                >
+                  Clear filters
+                </button>
+              )}
+            </li>
+          )}
         </ul>
         {pages > 1 && view.rows.length > 8 && (
           <div className="flex justify-end">
@@ -288,10 +317,6 @@ function pick<T extends object, K extends keyof T>(o: T, keys: K[]): Partial<Pic
   const out: Partial<Pick<T, K>> = {};
   for (const k of keys) if (k in o) out[k] = o[k];
   return out;
-}
-
-function GroupLabel({ children }: { children: React.ReactNode }) {
-  return <span className="px-4 pt-3 pb-1.5 first:pt-1.5 text-xs font-medium text-subtle">{children}</span>;
 }
 
 function ChallengeIcon({ id }: { id: string }) {
@@ -318,8 +343,9 @@ function Pager({ page, pages, loading, onPage }: { page: number; pages: number; 
 
 function ChallengeRowItem({ row, checked, onToggle }: { row: ChallengeRow; checked: boolean; onToggle?: () => void }) {
   return (
-    <li className={checked ? "bg-secondary/[0.06]" : ""}>
-      <div className="flex items-start gap-3 px-3.5 py-3">
+    <li className={`relative transition-colors ${checked ? "bg-secondary/[0.07]" : "hover:bg-panel/40"}`}>
+      {checked && <span aria-hidden className="absolute left-0 inset-y-0 w-0.5 bg-secondary" />}
+      <div className="flex items-start gap-3 px-4 py-3.5">
         {onToggle && (
           <label className="pt-0.5 shrink-0">
             <span className="sr-only">Pick {row.title}</span>
@@ -327,13 +353,16 @@ function ChallengeRowItem({ row, checked, onToggle }: { row: ChallengeRow; check
           </label>
         )}
         <div className="flex-1 min-w-0 flex flex-col gap-1">
-          <span className="text-sm font-medium text-fg">{row.title}</span>
+          <button type="button" onClick={onToggle} disabled={!onToggle} className="text-left text-sm font-medium text-fg enabled:hover:text-secondary-soft disabled:cursor-default">
+            {row.title}
+          </button>
           {row.summary && <span className="text-[13px] text-muted line-clamp-2">{row.summary}</span>}
           <span className="flex flex-wrap items-center gap-1.5 text-xs text-subtle">
             <ChallengeIcon id={row.mine ? TEAM_CHALLENGES : row.category} />
             <span>{row.category}</span>
             <DifficultyChip value={row.difficulty} />
             <span>{row.minutes} min</span>
+            {row.draft && <span className="inline-flex items-center h-5 px-1.5 rounded border border-border text-[12px] text-subtle">Draft</span>}
           </span>
         </div>
         <a href={`/challenges/${row.slug}`} target="_blank" rel="noopener noreferrer" className="shrink-0 inline-flex items-center gap-1 h-7 px-2 rounded-md text-xs text-secondary-soft hover:bg-panel">
@@ -359,7 +388,7 @@ function CategoryButton({ on, onClick, label, count, logo, icon }: { on: boolean
   );
 }
 
-function PublicRowItem({ slug, row, checked, already, onToggle }: { slug: string; row: PublicRow; checked: boolean; already: boolean; onToggle: () => void }) {
+function PublicRowItem({ slug, row, checked, already, onToggle }: { slug: string; row: PublicRow; checked: boolean; already: boolean; onToggle?: () => void }) {
   const [open, setOpen] = useState(false);
   const [answer, setAnswer] = useState<string | null | undefined>(undefined);
   const [loading, start] = useTransition();
@@ -376,12 +405,15 @@ function PublicRowItem({ slug, row, checked, already, onToggle }: { slug: string
   }
 
   return (
-    <li className={checked ? "bg-secondary/[0.06]" : ""}>
-      <div className="flex items-start gap-3 px-3.5 py-3">
-        <label className="pt-0.5 shrink-0">
-          <span className="sr-only">{already ? "Already in this questionnaire" : `Pick ${row.title}`}</span>
-          <input type="checkbox" checked={checked || already} disabled={already} onChange={onToggle} className="w-4 h-4 accent-secondary cursor-pointer disabled:cursor-default" />
-        </label>
+    <li className={`relative transition-colors ${checked ? "bg-secondary/[0.07]" : open ? "bg-panel/30" : "hover:bg-panel/40"}`}>
+      {checked && <span aria-hidden className="absolute left-0 inset-y-0 w-0.5 bg-secondary" />}
+      <div className="flex items-start gap-3 px-4 py-3.5">
+        {onToggle && (
+          <label className="pt-0.5 shrink-0">
+            <span className="sr-only">{already ? "Already in this questionnaire" : `Pick ${row.title}`}</span>
+            <input type="checkbox" checked={checked || already} disabled={already} onChange={onToggle} className="w-4 h-4 accent-secondary cursor-pointer disabled:cursor-default" />
+          </label>
+        )}
         <button type="button" onClick={toggleOpen} aria-expanded={open} className="flex-1 min-w-0 text-left flex flex-col gap-1 group">
           <span className="text-sm font-medium text-fg group-hover:text-secondary-soft">{row.title}</span>
           {row.summary && !open && <span className="text-[13px] text-muted line-clamp-1">{row.summary}</span>}
@@ -401,7 +433,7 @@ function PublicRowItem({ slug, row, checked, already, onToggle }: { slug: string
         </button>
       </div>
       {open && (
-        <div className="px-3.5 pb-4 pl-10 flex flex-col gap-2">
+        <div className={`px-4 pb-4 flex flex-col gap-2 animate-fade-in motion-reduce:animate-none ${onToggle ? "pl-11" : ""}`}>
           {row.summary && <p className="text-[13px] text-muted">{row.summary}</p>}
           <div className="rounded-lg border border-border bg-bg/60 px-4 py-3 text-sm text-muted max-h-[360px] overflow-y-auto">
             <span className="block text-xs font-medium text-subtle mb-1.5">Reference answer</span>

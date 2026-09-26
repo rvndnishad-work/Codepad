@@ -115,7 +115,7 @@ export default function WorkspaceSidebarNav({ slug, growthFeatures, counts, coll
   // Growth tools stay visible on Free so teams can find them; they open the
   // plans page instead of the tool.
   const growth = (item: NavItem): NavItem =>
-    growthFeatures ? item : { ...item, href: sectionHref("billing"), isActive: false, locked: true };
+    growthFeatures ? item : { ...item, href: `/w/${slug}/billing`, isActive: false, locked: true };
 
   const hiring: NavItem[] = [
     {
@@ -149,8 +149,8 @@ export default function WorkspaceSidebarNav({ slug, growthFeatures, counts, coll
   ];
 
   const admin: NavItem[] = [
-    { label: "Members", icon: UsersRound, href: sectionHref("members"), isActive: sectionActive("members"), count: counts.members },
-    { label: "Billing and plan", icon: CreditCard, href: sectionHref("billing"), isActive: sectionActive("billing") },
+    { label: "Members", icon: UsersRound, ...route("members"), count: counts.members },
+    { label: "Billing and plan", icon: CreditCard, ...route("billing") },
     { label: "Audit log", icon: ScrollText, ...route("audit") },
     { label: "Email activity", icon: Mail, ...route("emails") },
   ];

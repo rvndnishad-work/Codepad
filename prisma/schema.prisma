@@ -1049,6 +1049,10 @@ model WorkspaceMember {
   /// `{ "<permission>": boolean }` — true grants, false revokes. null = pure
   /// role defaults. Resolved by src/lib/permissions (resolveEffective).
   permissions Json?
+  /// Last time this member opened a workspace page. Written at most once an
+  /// hour (see src/lib/workspace/members.ts) so page loads stay cheap. Null
+  /// until the member's first visit after the column was added.
+  lastActiveAt DateTime?
   user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
 

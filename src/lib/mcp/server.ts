@@ -614,7 +614,7 @@ export function buildMcpServer(auth: AuthedKey): McpServer {
               candidate: { id: existing.id, name: existing.name, email: existing.email },
               decision: "not_passed",
               previousStage: plan.fromStage,
-              rejectReason: plan.data.rejectReason ?? "OTHER",
+              rejectReason: typeof plan.data.rejectReason === "string" ? plan.data.rejectReason : "OTHER",
               decidedBy: { email: null, via: `api key: ${auth.label}` },
               reportPath: `candidates/${existing.id}`,
             });

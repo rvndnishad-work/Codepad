@@ -253,6 +253,10 @@ const LABELS: Record<string, string> = {
   INTERVIEWS_SCHEDULED: "Scheduled interviews",
   INTERVIEW_QUESTIONS_SET: "Set interview questions",
   INTERVIEW_DELETED: "Deleted interview",
+  INTERVIEW_SCORECARD_SUBMITTED: "Submitted an interview scorecard for",
+  INTERVIEW_SCORECARD_AMENDED: "Amended a submitted interview scorecard for",
+  INTERVIEW_SCORECARDS_NUDGED: "Reminded interviewers about scorecards for",
+  INTERVIEW_PASS_MARK_CHANGED: "Changed the interview pass mark for",
   MEMBER_INVITED: "Invited",
   MEMBER_INVITE_RESENT: "Resent the invite to",
   MEMBER_INVITE_REVOKED: "Withdrew the invite for",
@@ -310,7 +314,11 @@ function targetPath(row: AuditRowInput): { path: string | null; label: string | 
     case "aiScreeningBatch":
       return { path: `ai-interviews/screenings/${row.targetId}`, label: "Open screening" };
     case "interviewSession":
-      return row.action.startsWith("TAKE_HOME_") ? { path: `take-homes/${row.targetId}`, label: "Open take-home" } : { path: null, label: null };
+      if (row.action.startsWith("TAKE_HOME_")) return { path: `take-homes/${row.targetId}`, label: "Open take-home" };
+      if (row.action.startsWith("INTERVIEW_SCORECARD") || row.action === "INTERVIEW_PASS_MARK_CHANGED") {
+        return { path: `interviews/${row.targetId}/report`, label: "Open report" };
+      }
+      return { path: null, label: null };
     default:
       return { path: null, label: null };
   }

@@ -3,6 +3,7 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { canMember } from "@/lib/permissions";
 import { loadInterviewReport } from "@/lib/interview/report-server";
+import { loadReportScorecards } from "@/lib/interview/scorecard-server";
 import InterviewReportView from "./InterviewReportView";
 
 export const metadata = { title: "Interview report", robots: { index: false, follow: false } };
@@ -25,12 +26,27 @@ export default async function InterviewReportPage({ params }: Props) {
 
   const s = await prisma.interviewSession.findFirst({
     where: { id, workspaceId: workspace.id, type: { not: "take-home" } },
-    select: { id: true, userId: true },
+    select: { id: true, userId: true, createdById: true },
   });
   if (!s) notFound();
   const report = await loadInterviewReport(s.id);
   if (!report) notFound();
 
-  const canDelete = s.userId === session.user.id || (await canMember(member, "interview:manage"));
-  return <InterviewReportView report={report} slug={slug} canDelete={canDelete} />;
+  const [canManage, canConduct, scorecards] = await Promise.all([
+    canMember(member, "interview:manage"),
+    canMember(member, "interview:conduct"),
+    loadReportScorecards(s.id, { userId: session.user.id }),
+  ]);
+  const isHost = s.userId === session.user.id;
+  return (
+    <InterviewReportView
+      report={report}
+      slug={slug}
+      canDelete={isHost || canManage}
+      scorecards={scorecards}
+      scorecardHref={scorecards?.viewer.state ? `/w/${slug}/interviews/${s.id}/scorecard` : null}
+      canEditPassMark={isHost || canManage}
+      canNudge={isHost || s.createdById === session.user.id || canConduct}
+    />
+  );
 }

@@ -710,7 +710,7 @@ function Ended({ data }: { data: RoomData }) {
           </p>
           {isInterviewer && (
             <div className="mt-7 flex flex-wrap items-center justify-center gap-2">
-              <Link href={`/interview/${iv.id}/report`} className="h-11 px-5 rounded-xl bg-secondary text-bg text-[14px] font-semibold inline-flex items-center gap-2 hover:brightness-110">
+              <Link href={viewer.via === "member" ? `/w/${workspace.slug}/interviews/${iv.id}/report` : `/interview/${iv.id}/report`} className="h-11 px-5 rounded-xl bg-secondary text-bg text-[14px] font-semibold inline-flex items-center gap-2 hover:brightness-110">
                 Open the report <ArrowRight className="w-4 h-4" aria-hidden />
               </Link>
               {viewer.userId && (

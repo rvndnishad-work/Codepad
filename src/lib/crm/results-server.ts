@@ -224,7 +224,8 @@ export async function loadCandidateResults(
       minutesTaken:
         s.startedAt && s.finishedAt ? minutes((s.finishedAt.getTime() - s.startedAt.getTime()) / 1000) : null,
       minutesAllowed: minutes(s.totalSec),
-      href: `/interview/${s.shareToken}`,
+      // Finished interviews open the report, the rest the lobby.
+      href: `/w/${workspaceSlug}/interviews/${s.id}${state === "scored" || state === "submitted" ? "/report" : ""}`,
     });
   }
 

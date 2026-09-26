@@ -316,7 +316,7 @@ export function CandidatesView({
   return (
     <div className="flex flex-col gap-4">
       {/* Stage cards: counts under the other filters, and the stage filter itself. */}
-      <div role="group" aria-label="Filter by stage" className="flex gap-3 overflow-x-auto pb-1 -mb-1 lg:grid lg:grid-cols-5 lg:overflow-visible">
+      <div role="group" aria-label="Filter by stage" className="flex gap-3 overflow-x-auto pb-1 -mb-1 xl:grid xl:grid-cols-5 xl:overflow-visible">
         {[null, ...PIPELINE_STAGES].map((s, i) => {
           const on = filters.stage === s;
           const n = s ? (stageCounts.get(s) ?? 0) : base.length;
@@ -866,9 +866,9 @@ function FilterMenu({
 }
 
 const GRID =
-  "md:grid md:grid-cols-[36px_minmax(0,1.6fr)_140px_140px_minmax(0,1.1fr)_minmax(0,1.2fr)_120px_32px] md:gap-4 md:items-center";
+  "xl:grid xl:grid-cols-[36px_minmax(0,1.6fr)_140px_140px_minmax(0,1.1fr)_minmax(0,1.2fr)_120px_32px] xl:gap-4 xl:items-center";
 const GRID_NO_BATCH =
-  "md:grid md:grid-cols-[36px_minmax(0,1.6fr)_140px_minmax(0,1.1fr)_minmax(0,1.2fr)_120px_32px] md:gap-4 md:items-center";
+  "xl:grid xl:grid-cols-[36px_minmax(0,1.6fr)_140px_minmax(0,1.1fr)_minmax(0,1.2fr)_120px_32px] xl:gap-4 xl:items-center";
 
 function ListTable({
   slug,
@@ -945,7 +945,7 @@ function ListTable({
             onClick={() => onOpen(r.id)}
             // The first screenful fades in one row after another.
             style={i < 16 ? { animationDelay: `${i * 30}ms`, animationFillMode: "backwards" } : undefined}
-            className={`group relative flex gap-3 md:gap-0 px-4 py-3 border-b border-border last:border-b-0 cursor-pointer transition-colors animate-fade-in motion-reduce:animate-none ${grid} ${
+            className={`group relative flex gap-3 xl:gap-0 px-4 py-3 border-b border-border last:border-b-0 cursor-pointer transition-colors animate-fade-in motion-reduce:animate-none ${grid} ${
               quickId === r.id ? "bg-panel" : sel ? "bg-secondary/[0.07]" : "hover:bg-panel/60"
             }`}
           >
@@ -953,10 +953,10 @@ function ListTable({
               aria-hidden
               className={`absolute left-0 top-2 bottom-2 w-0.5 rounded-full bg-secondary transition-opacity ${quickId === r.id || sel ? "opacity-100" : "opacity-0 group-hover:opacity-100"}`}
             />
-            <span role="cell" className="flex items-start md:items-center justify-center pt-2 md:pt-0" onClick={(e) => e.stopPropagation()}>
+            <span role="cell" className="flex items-start xl:items-center justify-center pt-2 xl:pt-0" onClick={(e) => e.stopPropagation()}>
               <input type="checkbox" checked={sel} onChange={() => onToggle(r.id)} aria-label={`Select ${r.name}`} className="w-4 h-4 accent-secondary" />
             </span>
-            <div role="cell" className="flex items-start md:items-center gap-3 min-w-0 flex-1">
+            <div role="cell" className="flex items-start xl:items-center gap-3 min-w-0 flex-1">
               <Avatar name={r.name} />
               <div className="min-w-0 flex-1">
                 <Link
@@ -968,20 +968,20 @@ function ListTable({
                 </Link>
                 <div className="text-[13px] text-subtle truncate">{r.email ?? "No email"}</div>
                 {/* Phone and narrow screens: the other columns collapse into one line. */}
-                <div className="md:hidden flex flex-wrap items-center gap-2 mt-2">
+                <div className="xl:hidden flex flex-wrap items-center gap-2 mt-2">
                   <StageChip stage={r.stage} />
                   <span className="text-xs text-subtle">
                     {r.daysInStage}d{showBatch && batch ? ` · ${batch}` : ""}
                   </span>
                   {r.combined != null && <span className="text-xs font-semibold text-fg">{r.combined}</span>}
                 </div>
-                <div className="md:hidden mt-1.5">
+                <div className="xl:hidden mt-1.5">
                   <NextStepPill next={r.next} compact />
                 </div>
               </div>
             </div>
             {showBatch && (
-              <span role="cell" className="hidden md:flex items-center gap-1.5 text-[13px] text-muted min-w-0">
+              <span role="cell" className="hidden xl:flex items-center gap-1.5 text-[13px] text-muted min-w-0">
                 {batch ? (
                   <>
                     <Layers className="w-3.5 h-3.5 text-subtle shrink-0" aria-hidden />
@@ -992,7 +992,7 @@ function ListTable({
                 )}
               </span>
             )}
-            <div role="cell" className="hidden md:flex flex-col items-start gap-1" onClick={(e) => e.stopPropagation()}>
+            <div role="cell" className="hidden xl:flex flex-col items-start gap-1" onClick={(e) => e.stopPropagation()}>
               {perms.canPipeline && r.status !== "archived" ? (
                 <Menu
                   label={`Move ${r.name}`}
@@ -1020,7 +1020,7 @@ function ListTable({
                 {plural(r.daysInStage, "day")} in stage
               </span>
             </div>
-            <div role="cell" className="hidden md:block min-w-0">
+            <div role="cell" className="hidden xl:block min-w-0">
               {!r.latest && r.pending ? (
                 <div className="flex flex-col gap-0.5 min-w-0">
                   <span className="text-[13px] text-fg truncate">{r.pending.text}</span>
@@ -1032,10 +1032,10 @@ function ListTable({
                 <ScoreBar value={r.latest?.score ?? null} label={r.latest ? `${RESULT_KIND_LABELS[r.latest.kind]} · ${r.latest.title}` : undefined} />
               )}
             </div>
-            <div role="cell" className="hidden md:block min-w-0">
+            <div role="cell" className="hidden xl:block min-w-0">
               <NextStepPill next={r.next} />
             </div>
-            <div role="cell" className="hidden md:flex items-center gap-2 min-w-0">
+            <div role="cell" className="hidden xl:flex items-center gap-2 min-w-0">
               {owner ? (
                 <>
                   <Avatar name={owner} size={24} />
@@ -1045,7 +1045,7 @@ function ListTable({
                 <span className="text-[13px] text-subtle">Unassigned</span>
               )}
             </div>
-            <div role="cell" className="absolute right-2 top-2 md:static" onClick={(e) => e.stopPropagation()}>
+            <div role="cell" className="absolute right-2 top-2 xl:static" onClick={(e) => e.stopPropagation()}>
               <Menu
                 align="right"
                 width={200}

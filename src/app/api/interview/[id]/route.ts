@@ -211,6 +211,20 @@ export async function PATCH(
     parsed.data.status === "completed" &&
     existing.status !== "completed"
   ) {
+    if (existing.workspaceId && existing.type !== "take-home") {
+      const { emitWorkspaceEvent } = await import("@/lib/events");
+      void emitWorkspaceEvent(existing.workspaceId, "interview.completed", {
+        candidate: { id: existing.candidateId, name: existing.candidateName },
+        interview: {
+          id,
+          title: existing.title,
+          type: existing.type,
+          verdict: updated.verdict,
+          completedAt: (data.finishedAt instanceof Date ? data.finishedAt : new Date()).toISOString(),
+        },
+        reportPath: `interviews/${id}/report`,
+      });
+    }
     const triggers = await import("@/lib/notifications/triggers");
     void triggers.notifyInterviewReplayReady({
       sessionId: id,

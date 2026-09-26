@@ -210,6 +210,13 @@ const ACTION_META: Record<string, { label: string; tone: string }> = {
   WEBHOOK_SECRET_ROTATED: { label: "Webhook secret rotated", tone: "border-warning/30 bg-warning/[0.06] text-warning" },
   WEBHOOK_TEST_SENT: { label: "Webhook test sent", tone: "border-border bg-panel text-muted" },
   WEBHOOK_REDELIVERED: { label: "Webhook delivery resent", tone: "border-border bg-panel text-muted" },
+  ATS_SETTINGS_SAVED: { label: "ATS settings changed", tone: "border-secondary/30 bg-secondary/[0.06] text-secondary" },
+  ATS_JOB_MAPPING_SAVED: { label: "ATS job mapping saved", tone: "border-secondary/30 bg-secondary/[0.06] text-secondary" },
+  ATS_PARTNER_KEY_REVEALED: { label: "Greenhouse key viewed", tone: "border-border bg-panel text-muted" },
+  ATS_PARTNER_KEY_ROTATED: { label: "Greenhouse key replaced", tone: "border-warning/30 bg-warning/[0.06] text-warning" },
+  ATS_SYNC_RUN: { label: "ATS sync run", tone: "border-border bg-panel text-muted" },
+  ATS_WRITEBACK_RETRIED: { label: "ATS result resent", tone: "border-border bg-panel text-muted" },
+  ATS_IMPORT_SENT: { label: "Imported candidate invited", tone: "border-border bg-panel text-muted" },
 };
 
 function labelFor(action: string): { label: string; tone: string } {

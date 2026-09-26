@@ -10,7 +10,7 @@ import {
   Home,
   KeyRound,
   Mail,
-  RefreshCw,
+  Plug,
   ScrollText,
   Lock,
   Users,
@@ -145,7 +145,14 @@ export default function WorkspaceSidebarNav({ slug, growthFeatures, counts, coll
   ];
 
   const connections: NavItem[] = [
-    growth({ label: "ATS sync", icon: RefreshCw, ...route("ats") }),
+    // The catalog is open to everyone (it shows status); each Growth tool
+    // inside it carries its own plan check.
+    {
+      label: "Connections",
+      icon: Plug,
+      href: `/w/${slug}/connections`,
+      isActive: pathname.startsWith(`/w/${slug}/connections`) || pathname.startsWith(`/w/${slug}/ats`),
+    },
     growth({ label: "API keys", icon: KeyRound, ...route("api-keys") }),
     growth({ label: "Webhooks", icon: Webhook, ...route("webhooks") }),
   ];

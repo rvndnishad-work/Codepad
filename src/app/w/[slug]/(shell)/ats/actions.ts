@@ -135,6 +135,9 @@ export async function saveAtsIntegrationAction(slug: string, input: SaveAtsInput
   if (!VALID_PROVIDERS.has(input.provider)) {
     throw new Error("Unknown provider.");
   }
+  if (input.provider === "greenhouse") {
+    throw new Error("Connect Greenhouse from Connections. It uses the Greenhouse assessment partner setup.");
+  }
   const webhookUrl = (input.webhookUrl ?? "").trim();
   if (!webhookUrl) throw new Error("Webhook URL is required.");
 

@@ -210,6 +210,10 @@ const ACTION_META: Record<string, { label: string; tone: string }> = {
   WEBHOOK_SECRET_ROTATED: { label: "Webhook secret rotated", tone: "border-warning/30 bg-warning/[0.06] text-warning" },
   WEBHOOK_TEST_SENT: { label: "Webhook test sent", tone: "border-border bg-panel text-muted" },
   WEBHOOK_REDELIVERED: { label: "Webhook delivery resent", tone: "border-border bg-panel text-muted" },
+  ALERT_CHANNEL_CONNECTED: { label: "Alert channel connected", tone: "border-success/30 bg-success/[0.06] text-success" },
+  ALERT_CHANNEL_UPDATED: { label: "Alert channel edited", tone: "border-secondary/30 bg-secondary/[0.06] text-secondary" },
+  ALERT_CHANNEL_REMOVED: { label: "Alert channel removed", tone: "border-danger/30 bg-danger/[0.05] text-danger" },
+  ALERT_TEST_SENT: { label: "Alert test sent", tone: "border-border bg-panel text-muted" },
 };
 
 function labelFor(action: string): { label: string; tone: string } {

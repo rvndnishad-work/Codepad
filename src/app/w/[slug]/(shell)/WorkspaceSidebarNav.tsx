@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 import {
+  BellRing,
   BookOpen,
   Bot,
   ClipboardList,
@@ -148,6 +149,7 @@ export default function WorkspaceSidebarNav({ slug, growthFeatures, counts, coll
     growth({ label: "ATS sync", icon: RefreshCw, ...route("ats") }),
     growth({ label: "API keys", icon: KeyRound, ...route("api-keys") }),
     growth({ label: "Webhooks", icon: Webhook, ...route("webhooks") }),
+    growth({ label: "Slack and Teams", icon: BellRing, ...route("alerts") }),
   ];
 
   const admin: NavItem[] = [

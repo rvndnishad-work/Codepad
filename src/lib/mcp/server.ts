@@ -4,9 +4,18 @@ import { prisma } from "@/lib/prisma";
 import { getWorkspaceCredits, refundCredit } from "@/lib/ai-interview/credits";
 import { resolveTemplate } from "@/lib/ai-interview/template-resolver";
 import { sendInviteEmail } from "@/lib/ai-interview/invite-email";
+import { writeWorkspaceAuditEntry, WORKSPACE_AUDIT_ACTIONS } from "@/lib/workspace-audit";
 import { withAudit, writeAuditEntry } from "./audit";
 import { hasScope } from "./auth";
 import type { AuthedKey } from "./auth";
+import {
+  FROM_PIPELINE,
+  MCP_LEGACY_STATUSES,
+  MCP_REJECT_REASONS,
+  MCP_STAGES,
+  planStageChange,
+  type McpStage,
+} from "./stage";
 
 /**
  * Thin error type for tool-level rejections so the SDK turns them into
@@ -27,6 +36,34 @@ function requireWriteScope(auth: AuthedKey): void {
       "This API key has read-only scope. Write tools require a key minted with the 'write' scope."
     );
   }
+}
+
+/** Stored stage -> the stage name MCP clients see ("not_passed"). */
+function stageName(stage: string): McpStage {
+  const map: Record<string, McpStage> = { ...FROM_PIPELINE, APPLIED: "new", SCREENED: "screening", TAKE_HOME: "screening", ONSITE: "screening", OFFER: "passed", HIRED: "passed" };
+  return map[stage] ?? "new";
+}
+
+/**
+ * Record a data-changing call in the workspace audit log, so it shows on the
+ * Audit log timeline next to changes people made. Reads stay in the per-key
+ * MCP activity log only. Best effort: never blocks the tool.
+ */
+function auditWrite(
+  auth: AuthedKey,
+  action: string,
+  target: { type: string; id: string } | null,
+  meta: Record<string, unknown>,
+): void {
+  void writeWorkspaceAuditEntry({
+    workspaceId: auth.workspaceId,
+    actorUserId: null,
+    actorEmail: null,
+    action,
+    targetType: target?.type ?? null,
+    targetId: target?.id ?? null,
+    meta: { ...meta, apiKeyId: auth.apiKeyId, apiKeyLabel: auth.label },
+  });
 }
 
 /**
@@ -106,12 +143,16 @@ export function buildMcpServer(auth: AuthedKey): McpServer {
     {
       title: "List candidates",
       description:
-        "List candidates in this workspace. Filter by status (active/passed/rejected/archived) or free-text search across name and email. Defaults to the 25 most recently updated.",
+        "List candidates in this workspace. Filter by screening stage (new, screening, passed, not_passed) or free-text search across name and email. Defaults to the 25 most recently updated.",
       inputSchema: {
+        stage: z
+          .enum(MCP_STAGES)
+          .optional()
+          .describe("Screening stage filter: new, screening, passed or not_passed."),
         status: z
           .enum(["active", "passed", "hired", "rejected", "archived"])
           .optional()
-          .describe("Pipeline status filter."),
+          .describe("Older status filter. Prefer stage; use archived here to list archived candidates."),
         search: z.string().optional().describe("Match against name or email."),
         limit: z
           .number()
@@ -127,6 +168,16 @@ export function buildMcpServer(auth: AuthedKey): McpServer {
         const limit = args.limit ?? 25;
         const where: Record<string, unknown> = { workspaceId: auth.workspaceId };
         // "hired" is the pre-screening-only name for "passed".
+        if (args.stage) {
+          where.stage =
+            args.stage === "passed"
+              ? { in: ["PASSED", "HIRED", "OFFER"] }
+              : args.stage === "screening"
+                ? { in: ["SCREENING", "SCREENED", "TAKE_HOME", "ONSITE"] }
+                : args.stage === "new"
+                  ? { in: ["NEW", "APPLIED"] }
+                  : "REJECTED";
+        }
         if (args.status) where.status = args.status === "hired" ? "passed" : args.status;
         if (args.search) {
           where.OR = [
@@ -142,6 +193,7 @@ export function buildMcpServer(auth: AuthedKey): McpServer {
             id: true,
             name: true,
             email: true,
+            stage: true,
             status: true,
             source: true,
             tags: true,
@@ -155,7 +207,8 @@ export function buildMcpServer(auth: AuthedKey): McpServer {
             ? "No candidates match those filters."
             : rows
                 .map((c) =>
-                  `• ${c.name} <${c.email ?? "no-email"}> · ${c.status}` +
+                  `• ${c.name} <${c.email ?? "no-email"}> · stage:${stageName(c.stage)}` +
+                  (c.status === "archived" ? " · archived" : "") +
                   ` · sessions:${c._count.sessions} takehomes:${c._count.takeHomes}` +
                   ` · id:${c.id}`
                 )
@@ -443,6 +496,7 @@ export function buildMcpServer(auth: AuthedKey): McpServer {
               workspaceName: auth.workspaceName,
               inviteUrl,
               workspaceId: auth.workspaceId,
+              sessionId: session.id,
             }).then((res) => {
               if (!res.sent) {
                 console.warn(
@@ -451,6 +505,12 @@ export function buildMcpServer(auth: AuthedKey): McpServer {
               }
             });
           }
+
+          auditWrite(auth, WORKSPACE_AUDIT_ACTIONS.MCP_TOOL_CALLED, { type: "aiInterviewSession", id: session.id }, {
+            tool: "create_ai_screening",
+            candidateName: session.candidateName,
+            summary: `Sent an AI screening for ${session.positionTitle}.`,
+          });
 
           const text = [
             `Screening created.`,
@@ -480,20 +540,27 @@ export function buildMcpServer(auth: AuthedKey): McpServer {
   server.registerTool(
     "update_candidate_status",
     {
-      title: "Update candidate status",
+      title: "Move a candidate to a screening stage",
       description:
-        "Set a candidate's screening status (active/rejected/archived). Passing is a recruiter decision made in the app, so this tool never passes anyone. Optionally append a dated note describing the reason.",
+        "Move a candidate to a screening stage: new, screening or not_passed. Passing is a recruiter decision made in the app, so this tool never passes anyone and never changes a candidate a recruiter has passed. Optionally add a note saying why.",
       inputSchema: {
         candidate_id: z.string().min(1).describe("Candidate's internal id."),
+        stage: z
+          .enum(MCP_STAGES)
+          .optional()
+          .describe('Target stage: new, screening or not_passed. "passed" is refused: only a recruiter can pass a candidate, in the app.'),
+        reject_reason: z
+          .enum(MCP_REJECT_REASONS as unknown as [string, ...string[]])
+          .optional()
+          .describe("Why they did not pass, when stage is not_passed. Defaults to OTHER."),
         status: z
-          .enum(["active", "passed", "hired", "rejected", "archived"])
-          .describe('New screening status. "passed" (and its old name "hired") is refused: only a recruiter can pass a candidate, in the app.'),
+          .enum(MCP_LEGACY_STATUSES)
+          .optional()
+          .describe('Older way to set the outcome (active, rejected, archived). Prefer stage. "passed" and "hired" are refused.'),
         note: z
           .string()
           .optional()
-          .describe(
-            "Optional note. Appended to the candidate's running notes with a timestamp."
-          ),
+          .describe("Optional note, added to the candidate with a timestamp."),
       },
     },
     async (args) =>
@@ -501,14 +568,8 @@ export function buildMcpServer(auth: AuthedKey): McpServer {
         { auth, kind: "tool", name: "update_candidate_status", args },
         async () => {
           requireWriteScope(auth);
-
-          // Automation never passes a candidate: a pass is a person's call,
-          // made in the app where results below the bar need a confirmed
-          // manual override.
-          if (args.status === "passed" || args.status === "hired") {
-            throw new ToolError(
-              "Passing a candidate is a recruiter decision. Open the candidate in the app to pass them."
-            );
+          if (!args.stage && !args.status) {
+            throw new ToolError("Give a stage: new, screening or not_passed.");
           }
 
           // Tenant scoping — candidate must belong to this workspace.
@@ -516,54 +577,86 @@ export function buildMcpServer(auth: AuthedKey): McpServer {
             where: { id: args.candidate_id, workspaceId: auth.workspaceId },
             select: { id: true, name: true, stage: true, status: true, notes: true },
           });
+
+          // Automation never passes a candidate and never undoes a pass: a
+          // pass is a person's call, made in the app where results below the
+          // bar need a confirmed manual override. Checked before the lookup
+          // result so a pass attempt is refused even for unknown ids.
+          const plan = planStageChange(existing ?? { stage: "NEW", status: "active" }, {
+            stage: args.stage,
+            status: args.status,
+            rejectReason: args.reject_reason as Parameters<typeof planStageChange>[1]["rejectReason"],
+          });
+          if (!plan.ok) throw new ToolError(plan.error);
           if (!existing) {
             throw new ToolError("Candidate not found in this workspace.");
           }
 
-          // Append note in a stable format so future tooling can parse it.
-          let nextNotes = existing.notes ?? "";
-          if (args.note?.trim()) {
-            const stamp = new Date().toISOString();
-            const line = `[${stamp}] [MCP:${auth.label}] status→${args.status}: ${args.note.trim()}`;
-            nextNotes = nextNotes ? `${nextNotes}\n${line}` : line;
+          const target = plan.toStage ? stageName(plan.toStage) : args.stage ?? args.status;
+          const note = args.note?.trim();
+          // Keep the legacy running notes in a stable format for old tooling.
+          let nextNotes: string | undefined;
+          if (note) {
+            const line = `[${new Date().toISOString()}] [MCP:${auth.label}] stage→${target}: ${note}`;
+            nextNotes = existing.notes ? `${existing.notes}\n${line}` : line;
           }
 
-          const updated = await prisma.candidate.update({
-            where: { id: existing.id },
-            data: {
-              status: args.status,
-              notes: nextNotes,
-              // Keep the stage in step with the status, as the app does.
-              ...(args.status === "rejected" && existing.stage !== "REJECTED"
-                ? { stage: "REJECTED", rejectReason: "OTHER", stageChangedAt: new Date() }
-                : args.status === "active" && (existing.stage === "PASSED" || existing.stage === "REJECTED")
-                  ? { stage: "SCREENING", rejectReason: null, rejectReasonNote: null, stageChangedAt: new Date() }
-                  : {}),
-            },
-            select: { id: true, name: true, status: true, updatedAt: true },
-          });
+          if (Object.keys(plan.data).length || nextNotes !== undefined) {
+            await prisma.candidate.update({
+              where: { id: existing.id },
+              data: { ...plan.data, ...(nextNotes !== undefined ? { notes: nextNotes } : {}) },
+              select: { id: true },
+            });
+          }
           // The profile shows authored notes (CandidateNote); mirror there too.
-          if (args.note?.trim()) {
+          if (note) {
             await prisma.candidateNote.create({
               data: {
                 candidateId: existing.id,
-                body: `Via ${auth.label} (status set to ${args.status}): ${args.note.trim()}`,
+                body: `Via ${auth.label} (moved to ${target}): ${note}`,
               },
             });
           }
 
+          const candidateTarget = { type: "candidate", id: existing.id };
+          if (plan.toStage) {
+            auditWrite(auth, WORKSPACE_AUDIT_ACTIONS.PIPELINE_STAGE_CHANGED, candidateTarget, {
+              candidateName: existing.name,
+              fromStage: plan.fromStage,
+              toStage: plan.toStage,
+              ...(plan.toStage === "REJECTED" ? { rejectReason: plan.data.rejectReason } : {}),
+              tool: "update_candidate_status",
+            });
+          } else if (plan.data.status === "archived") {
+            auditWrite(auth, WORKSPACE_AUDIT_ACTIONS.CANDIDATE_ARCHIVED, candidateTarget, {
+              candidateName: existing.name,
+              tool: "update_candidate_status",
+            });
+          } else if (Object.keys(plan.data).length || note) {
+            auditWrite(auth, WORKSPACE_AUDIT_ACTIONS.MCP_TOOL_CALLED, candidateTarget, {
+              tool: "update_candidate_status",
+              candidateName: existing.name,
+              summary: note ? "Added a note." : null,
+            });
+          }
+
+          const before = stageName(plan.fromStage);
+          const after = plan.toStage ? stageName(plan.toStage) : before;
           const text = [
-            `Candidate "${updated.name}" status updated.`,
+            plan.toStage
+              ? `Moved "${existing.name}" to ${after}.`
+              : plan.data.status === "archived"
+                ? `Archived "${existing.name}".`
+                : `"${existing.name}" is already at ${after}.`,
             ``,
-            `Before: ${existing.status}`,
-            `After:  ${updated.status}`,
-            `Updated at: ${updated.updatedAt.toISOString()}`,
-            args.note ? `\nNote appended.` : "",
+            `Before: ${before}${existing.status === "archived" ? " (archived)" : ""}`,
+            `After:  ${after}${plan.status === "archived" ? " (archived)" : ""}`,
+            note ? `\nNote added.` : "",
           ].join("\n");
 
           return {
             result: { content: [{ type: "text" as const, text }] },
-            summary: `${updated.name}: ${existing.status} → ${updated.status}`,
+            summary: `${existing.name}: ${before} → ${after}`,
           };
         }
       )
@@ -604,6 +697,10 @@ export function buildMcpServer(auth: AuthedKey): McpServer {
           });
           await prisma.candidateNote.create({
             data: { candidateId: existing.id, body: `Via ${auth.label}: ${args.body.trim()}` },
+          });
+          auditWrite(auth, WORKSPACE_AUDIT_ACTIONS.MCP_TOOL_CALLED, { type: "candidate", id: existing.id }, {
+            tool: "add_candidate_note",
+            candidateName: existing.name,
           });
 
           return {
@@ -686,6 +783,11 @@ export function buildMcpServer(auth: AuthedKey): McpServer {
             adminUserId: "mcp:" + auth.apiKeyId,
             note: `MCP refund via key "${auth.label}": ${args.reason.trim()}`,
           });
+          auditWrite(auth, WORKSPACE_AUDIT_ACTIONS.MCP_TOOL_CALLED, { type: "aiInterviewSession", id: session.id }, {
+            tool: "refund_screening",
+            candidateName: session.candidateName,
+            summary: `Refunded 1 credit. Reason: ${args.reason.trim()}`,
+          });
 
           return {
             result: {
@@ -730,6 +832,7 @@ export function buildMcpServer(auth: AuthedKey): McpServer {
               id: true,
               name: true,
               email: true,
+              stage: true,
               status: true,
               source: true,
               tags: true,

@@ -1457,6 +1457,9 @@ model McpApiKey {
   createdByUserId String?
   lastUsedAt      DateTime?
   revokedAt       DateTime?
+  /// Optional expiry. Null means the key never expires. The MCP endpoint
+  /// refuses a key once this time has passed.
+  expiresAt       DateTime?
   createdAt       DateTime      @default(now())
   workspace       Workspace     @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
   auditLogs       McpAuditLog[]

@@ -268,7 +268,7 @@ function QueueRow({ r, href, focused, now, decided }: { r: TakeHomeRow; href: st
         <span className="block text-[13px] text-subtle">{answeredLabel(r)}</span>
       </span>
       <span className="pl-[46px] min-[1400px]:pl-0 min-[1400px]:w-[170px] shrink-0">
-        <ScoreMark score={r.score} width={44} chip />
+        <ScoreMark score={r.score} passMark={r.passMark} width={44} chip />
       </span>
       <span className="min-[1400px]:w-[100px] shrink-0 text-[13px] text-muted tabular-nums">{timeLabel(r)}</span>
       <span className="min-[1400px]:w-[120px] shrink-0">

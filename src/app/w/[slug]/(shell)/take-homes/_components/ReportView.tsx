@@ -20,7 +20,9 @@ import {
   XCircle,
 } from "lucide-react";
 import type { ReportQuestion, TakeHomeReport } from "@/lib/take-home/report-server";
-import { TAKE_HOME_PASS, type IntegrityLevel, type Tone } from "@/lib/take-home/status";
+import { type IntegrityLevel, type Tone } from "@/lib/take-home/status";
+import { takeHomeVerdict } from "@/lib/take-home/pass-mark";
+import { SettingsCard } from "./Settings";
 import type { RejectReason } from "@/lib/crm/stages";
 import { plural, relativeTime } from "@/lib/workspace/display";
 import { Avatar, Btn, fmtDate, stageLabel, useToasts } from "../../candidates/_components/ui";
@@ -80,8 +82,8 @@ export default function ReportView({
   // The diff needs the full width; the side cards move below it.
   const wide = tab === "code" && question?.kind === "challenge" && !!question.answer;
   const canAct = canDecide && submitted && !!r.candidate.id && !r.decision;
-  const below = r.score == null || r.score < TAKE_HOME_PASS;
-  const overrideReason = r.score == null ? "The take home has no score." : below ? `Score ${r.score} is below the bar of ${TAKE_HOME_PASS}.` : null;
+  const below = r.score == null || r.score < r.passMark;
+  const overrideReason = r.score == null ? "The take home has no score." : below ? `Score ${r.score} is below the pass mark of ${r.passMark}.` : null;
 
   const hrefFor = (patch: { q?: string; tab?: ReportTab }) => {
     const sp = new URLSearchParams();
@@ -203,7 +205,7 @@ export default function ReportView({
           {r.questions.length > 1 && (
             <div className="grid sm:grid-cols-2 xl:grid-cols-3 gap-3">
               {r.questions.map((q, i) => (
-                <QuestionCard key={q.key} q={q} index={i} on={q.key === question?.key} href={hrefFor({ q: q.key })} />
+                <QuestionCard key={q.key} q={q} index={i} on={q.key === question?.key} href={hrefFor({ q: q.key })} passMark={r.passMark} />
               ))}
             </div>
           )}
@@ -265,6 +267,18 @@ export default function ReportView({
 
         <aside className={`w-full shrink-0 gap-4 ${wide ? "grid md:grid-cols-3 items-start" : "lg:w-[320px] flex flex-col"}`}>
           <ScoreCard r={r} />
+          {r.settings && (
+            <SettingsCard
+              slug={slug}
+              id={r.id}
+              passMark={r.passMark}
+              groupSize={r.settings.groupSize}
+              reminders={r.settings.reminders}
+              open={r.state === "not_started" || r.state === "in_progress"}
+              canCreate={canCreate}
+              onSaved={toast}
+            />
+          )}
           <IntegrityCard r={r} slug={slug} />
           <Card>
             <h3 className="text-[15px] font-semibold text-fg">Details</h3>
@@ -334,7 +348,7 @@ function questionMeta(q: ReportQuestion): string {
   return parts.join(", ");
 }
 
-function QuestionCard({ q, index, on, href }: { q: ReportQuestion; index: number; on: boolean; href: string }) {
+function QuestionCard({ q, index, on, href, passMark }: { q: ReportQuestion; index: number; on: boolean; href: string; passMark: number }) {
   const score = q.answer?.score ?? null;
   return (
     <Link
@@ -350,7 +364,7 @@ function QuestionCard({ q, index, on, href }: { q: ReportQuestion; index: number
           Question {index + 1}
           {q.difficulty ? `, ${q.difficulty.toLowerCase()}` : ""}
         </span>
-        <span className={`text-[15px] font-semibold tabular-nums ${score == null ? "text-subtle" : score >= TAKE_HOME_PASS ? "text-fg" : "text-warning"}`}>
+        <span className={`text-[15px] font-semibold tabular-nums ${score == null ? "text-subtle" : score >= passMark ? "text-fg" : "text-warning"}`}>
           {score ?? "None"}
         </span>
       </span>
@@ -442,30 +456,31 @@ function PromptPane({ q, firstName }: { q: ReportQuestion; firstName: string }) 
 
 function ScoreCard({ r }: { r: TakeHomeReport }) {
   const scored = r.questions.filter((q) => q.answer?.score != null).length;
+  const verdict = takeHomeVerdict(r.score, r.passMark);
   return (
     <Card>
       <div className="flex items-end justify-between gap-3">
         <div className="flex flex-col gap-1">
           <span className="text-xs text-subtle">Take home score</span>
-          <span className={`text-[44px] leading-none font-semibold tracking-tight tabular-nums ${r.score != null && r.score < TAKE_HOME_PASS ? "text-warning" : "text-fg"}`}>
+          <span className={`text-[44px] leading-none font-semibold tracking-tight tabular-nums ${r.score != null && r.score < r.passMark ? "text-warning" : "text-fg"}`}>
             {r.score ?? "None"}
           </span>
         </div>
-        {r.score != null && <ToneChip tone={r.score >= TAKE_HOME_PASS ? "success" : "warning"}>{r.score >= TAKE_HOME_PASS ? "Above bar" : "Below bar"}</ToneChip>}
+        {verdict && <ToneChip tone={verdict.tone}>{verdict.label}</ToneChip>}
       </div>
       <div className="flex flex-col gap-1.5">
-        <ScoreMark score={r.score} width={260} />
-        <div className="relative h-4 text-[11px] text-subtle tabular-nums" aria-hidden>
+        <ScoreMark score={r.score} passMark={r.passMark} width={260} />
+        <div className="relative h-4 text-xs text-subtle tabular-nums" aria-hidden>
           <span className="absolute left-0">0</span>
-          <span className="absolute -translate-x-1/2" style={{ left: `${TAKE_HOME_PASS}%` }}>
-            Bar {TAKE_HOME_PASS}
+          <span className="absolute -translate-x-1/2" style={{ left: `${r.passMark}%` }}>
+            Mark {r.passMark}
           </span>
           <span className="absolute right-0">100</span>
         </div>
       </div>
       <p className="text-xs text-subtle leading-relaxed">
         The average of {scored > 1 ? `the ${scored} scored questions` : "each scored question"}, one attempt per question. Retries after submitting are not
-        counted. Passing below the bar is saved as a manual override.
+        counted. Passing below the pass mark of {r.passMark} is saved as a manual override.
       </p>
     </Card>
   );
@@ -536,12 +551,12 @@ function DecisionBar({
         r.candidate.id && <Btn href={`/w/${slug}/candidates/${r.candidate.id}`}>Open profile</Btn>,
       );
     }
-    const above = r.score != null && r.score >= TAKE_HOME_PASS;
+    const above = r.score != null && r.score >= r.passMark;
     const title =
-      r.score == null ? `${firstName} submitted without a score` : above ? `${firstName} scored ${r.score}, above the bar of ${TAKE_HOME_PASS}` : `${firstName} scored ${r.score}, below the bar of ${TAKE_HOME_PASS}`;
+      r.score == null ? `${firstName} submitted without a score` : above ? `${firstName} scored ${r.score}, a good match for the pass mark of ${r.passMark}` : `${firstName} scored ${r.score}, below the pass mark of ${r.passMark}`;
     const detail = !r.candidate.id
       ? "This take home is not linked to a candidate record, so there is no stage to set."
-      : `Tests never pass anyone. Your decision moves ${firstName} to Passed or Not passed in Candidates.${above ? "" : " Passing below the bar is saved as a manual override."}`;
+      : `Tests never pass anyone. Your decision moves ${firstName} to Passed or Not passed in Candidates.${above ? "" : " Passing below the pass mark is saved as a manual override."}`;
     return shell(
       above ? "border-secondary/35 bg-secondary/[0.07]" : "border-warning/35 bg-warning/[0.05]",
       above ? <CheckCircle2 className="w-5 h-5 text-secondary-soft" /> : <Clock className="w-5 h-5 text-warning" />,

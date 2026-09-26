@@ -155,8 +155,8 @@ export function takeHomeScore(scores: (number | null | undefined)[]): number | n
   return s.length ? Math.round(s.reduce((a, b) => a + b, 0) / s.length) : null;
 }
 
-export function aboveBar(score: number | null): boolean | null {
-  return score == null ? null : score >= TAKE_HOME_PASS;
+export function aboveBar(score: number | null, passMark: number = TAKE_HOME_PASS): boolean | null {
+  return score == null ? null : score >= passMark;
 }
 
 export type IntegrityLevel = "clean" | "some" | "high" | "none";

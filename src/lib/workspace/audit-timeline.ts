@@ -248,6 +248,8 @@ const LABELS: Record<string, string> = {
   TAKE_HOME_INVITE_RESENT: "Resent the take-home invite to",
   TAKE_HOME_TEMPLATE_SAVED: "Saved take-home template",
   TAKE_HOME_TEMPLATE_DELETED: "Deleted take-home template",
+  TAKE_HOME_PASS_MARK_CHANGED: "Changed the take-home pass mark of",
+  TAKE_HOME_REMINDERS_CHANGED: "Changed the take-home reminders of",
   INTERVIEWS_SCHEDULED: "Scheduled interviews",
   INTERVIEW_QUESTIONS_SET: "Set interview questions",
   INTERVIEW_DELETED: "Deleted interview",

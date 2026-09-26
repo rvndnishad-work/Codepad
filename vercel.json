@@ -12,6 +12,10 @@
     {
       "path": "/api/cron/webhook-deliveries",
       "schedule": "* * * * *"
+    },
+    {
+      "path": "/api/cron/take-home-reminders",
+      "schedule": "15 * * * *"
     }
   ]
 }

@@ -8,6 +8,7 @@
 import { useRouter } from "next/navigation";
 import WorkspaceOverview from "./WorkspaceOverview";
 import type { PlanDisplay } from "@/lib/workspace/display";
+import type { OverviewExtras } from "@/lib/workspace/overview";
 
 type Challenge = {
   id: string;
@@ -122,6 +123,8 @@ type Props = {
   aiInterviewSessions?: AIInterviewSessionItem[];
   memberCount: number;
   pendingInviteCount: number;
+  /** Filters and the wider attention list on the Overview. */
+  overviewExtras?: OverviewExtras;
   sessions: InterviewSessionItem[];
   candidates: CandidateItem[];
 };
@@ -137,6 +140,7 @@ export default function WorkspaceDashboardClient({
   aiInterviewSessions = [],
   memberCount,
   pendingInviteCount,
+  overviewExtras,
   sessions,
   candidates,
 }: Props) {
@@ -159,6 +163,7 @@ export default function WorkspaceDashboardClient({
         takeHomes={takeHomes}
         takeHomeSessions={takeHomeSessions}
         aiInterviewSessions={aiInterviewSessions}
+        extras={overviewExtras}
         onAddCandidate={() => router.push(`/w/${workspace.slug}/candidates?add=1`)}
         onBulkImport={() => router.push(`/w/${workspace.slug}/candidates?import=1`)}
         onSendTakeHome={() => router.push(`/w/${workspace.slug}/take-homes/new`)}

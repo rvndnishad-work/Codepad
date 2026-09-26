@@ -17,6 +17,7 @@ import {
   type TakeHomeState,
   type Tone,
 } from "@/lib/take-home/status";
+import { takeHomeVerdict } from "@/lib/take-home/pass-mark";
 import { Btn, Dialog, Menu, MenuItem, inputCls, useToasts } from "../../candidates/_components/ui";
 import { ConfirmDialog } from "../../candidates/_components/dialogs";
 import { cancelTakeHomeAction, extendTakeHomeAction, remindTakeHomeAction, resendTakeHomeAction } from "../actions";
@@ -55,10 +56,21 @@ export function StateDot({ state, decision }: { state: TakeHomeState; decision: 
   );
 }
 
-/** Score with a thin bar and a tick at the pass mark. */
-export function ScoreMark({ score, width = 88, chip = false }: { score: number | null; width?: number; chip?: boolean }) {
+/** Score with a thin bar, a tick at the pass mark and, with `chip`, its Good match or Borderline label. */
+export function ScoreMark({
+  score,
+  passMark = TAKE_HOME_PASS,
+  width = 88,
+  chip = false,
+}: {
+  score: number | null;
+  passMark?: number;
+  width?: number;
+  chip?: boolean;
+}) {
   if (score == null) return <span className="text-[13px] text-subtle">No score</span>;
-  const above = score >= TAKE_HOME_PASS;
+  const verdict = takeHomeVerdict(score, passMark)!;
+  const above = verdict.atMark;
   return (
     <span className="inline-flex items-center gap-2.5">
       <span className={`text-sm font-semibold tabular-nums w-7 text-right ${above ? "text-fg" : "text-warning"}`}>{score}</span>
@@ -67,9 +79,9 @@ export function ScoreMark({ score, width = 88, chip = false }: { score: number |
           className={`block h-1 rounded-full origin-left animate-rule-in motion-reduce:animate-none ${above ? "bg-success" : "bg-warning"}`}
           style={{ width: `${Math.max(3, Math.min(100, score))}%` }}
         />
-        <span className="absolute top-[-3px] w-px h-2.5 bg-subtle" style={{ left: `${TAKE_HOME_PASS}%` }} />
+        <span className="absolute top-[-3px] w-px h-2.5 bg-subtle" style={{ left: `${passMark}%` }} />
       </span>
-      {chip && <ToneChip tone={above ? "success" : "warning"}>{above ? "Above bar" : "Below bar"}</ToneChip>}
+      {chip && <ToneChip tone={verdict.tone}>{verdict.label}</ToneChip>}
     </span>
   );
 }

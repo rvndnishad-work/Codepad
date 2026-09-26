@@ -18,6 +18,8 @@ import {
   type IntegritySummary,
   type TakeHomeState,
 } from "./status";
+import { takeHomePassMarkOf, TAKE_HOME_PASS_MARK } from "./pass-mark";
+import type { ReminderPlan } from "./reminders";
 
 export type ReportTest = { name: string; status: string; error: string | null };
 
@@ -55,6 +57,20 @@ export type TakeHomeReport = {
   needsReview: boolean;
   candidate: { id: string | null; name: string; email: string | null; stage: string | null };
   score: number | null;
+  /** The take-home's pass mark (legacy invites use the default). */
+  passMark: number;
+  /**
+   * Settings shared by every take-home sent in the same run: the pass mark
+   * and the reminder schedule change for all of them together. Null on
+   * legacy invites, which have neither.
+   */
+  settings: null | {
+    /** How many take-homes a change applies to (this one included). */
+    groupSize: number;
+    reminders: ReminderPlan;
+    startReminderSentAt: string | null;
+    lastCallSentAt: string | null;
+  };
   integrity: IntegritySummary;
   timeUsedMin: number | null;
   timeBudgetMin: number;
@@ -243,9 +259,19 @@ async function loadSession(workspaceId: string, id: string, now: Date): Promise<
       takeHomeTemplate: { select: { id: true, name: true } },
       user: { select: { name: true, email: true } },
       candidate: { select: { id: true, name: true, email: true, stage: true } },
+      setupGroupId: true,
+      takeHomePassMark: true,
+      reminderStartAfterHours: true,
+      reminderBeforeDeadlineHours: true,
+      remindersOff: true,
+      reminderSentAt: true,
+      startReminderSentAt: true,
     },
   });
   if (!s) return null;
+  const groupSize = s.setupGroupId
+    ? await prisma.interviewSession.count({ where: { workspaceId, type: "take-home", setupGroupId: s.setupGroupId } })
+    : 1;
 
   const challengeIds = parseIds(s.challengeIds);
   const promptIds = parseIds(s.promptScenarioIds);
@@ -325,6 +351,13 @@ async function loadSession(workspaceId: string, id: string, now: Date): Promise<
     needsReview: needsReview(state, stage),
     candidate: { id: s.candidate?.id ?? null, name: s.candidate?.name ?? s.candidateName ?? "Unknown candidate", email: s.candidate?.email ?? null, stage },
     score: takeHomeScore(picked.map((a) => a.score)),
+    passMark: takeHomePassMarkOf(s.takeHomePassMark),
+    settings: {
+      groupSize: Math.max(1, groupSize),
+      reminders: { startAfterHours: s.reminderStartAfterHours, beforeDeadlineHours: s.reminderBeforeDeadlineHours, off: s.remindersOff },
+      startReminderSentAt: s.startReminderSentAt?.toISOString() ?? null,
+      lastCallSentAt: s.reminderSentAt?.toISOString() ?? null,
+    },
     integrity: integritySummary(picked.map((a) => a.integrityReport)),
     timeUsedMin: picked.length ? Math.round(picked.reduce((n, a) => n + (a.durationSec ?? 0), 0) / 60) : null,
     timeBudgetMin: challengeIds.reduce((n, cid) => n + (limits[cid] ?? DEFAULT_QUESTION_MINUTES), 0),
@@ -375,6 +408,8 @@ async function loadLegacy(workspaceId: string, id: string, now: Date): Promise<B
     needsReview: needsReview(state, stage),
     candidate: { id: a.candidate?.id ?? null, name: a.candidate?.name ?? a.candidateName, email: a.candidateEmail, stage },
     score: att?.score ?? null,
+    passMark: TAKE_HOME_PASS_MARK,
+    settings: null,
     integrity: integritySummary([att?.integrityReport]),
     timeUsedMin: att?.durationSec != null ? Math.round(att.durationSec / 60) : null,
     timeBudgetMin: a.timeLimitMin,

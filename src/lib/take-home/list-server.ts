@@ -15,6 +15,7 @@ import {
   type IntegrityLevel,
   type TakeHomeState,
 } from "./status";
+import { takeHomePassMarkOf, TAKE_HOME_PASS_MARK } from "./pass-mark";
 
 /** One take-home as the list, the review queue and the counts see it. */
 export type TakeHomeRow = {
@@ -30,6 +31,8 @@ export type TakeHomeRow = {
   questions: number;
   answered: number;
   score: number | null;
+  /** The take-home's pass mark (legacy invites use the default). */
+  passMark: number;
   integrity: { level: IntegrityLevel; label: string };
   timeUsedMin: number | null;
   timeBudgetMin: number;
@@ -79,6 +82,7 @@ export async function loadTakeHomes(workspaceId: string, now: Date = new Date())
         createdAt: true,
         finishedAt: true,
         takeHomeTemplateId: true,
+        takeHomePassMark: true,
         user: { select: { name: true, email: true } },
         candidate: { select: { id: true, name: true, email: true, stage: true } },
       },
@@ -148,6 +152,7 @@ export async function loadTakeHomes(workspaceId: string, now: Date = new Date())
       questions: challengeIds.length + others,
       answered: picked.length,
       score: takeHomeScore(picked.map((a) => a.score)),
+      passMark: takeHomePassMarkOf(s.takeHomePassMark),
       integrity: { level: integrity.level, label: integrity.label },
       timeUsedMin: picked.length ? Math.round(used / 60) : null,
       timeBudgetMin: challengeIds.reduce((n, id) => n + (limits[id] ?? DEFAULT_QUESTION_MINUTES), 0),
@@ -179,6 +184,7 @@ export async function loadTakeHomes(workspaceId: string, now: Date = new Date())
       questions: 1,
       answered: att ? 1 : 0,
       score: att?.score ?? null,
+      passMark: TAKE_HOME_PASS_MARK,
       integrity: { level: integrity.level, label: integrity.label },
       timeUsedMin: att?.durationSec != null ? Math.round(att.durationSec / 60) : null,
       timeBudgetMin: a.timeLimitMin,

@@ -54,7 +54,11 @@ function clientOf(v: string | number | null | undefined): number | null {
   return Number.isInteger(n) && n >= 0 && n <= 0xffffffff ? n : null;
 }
 
-async function touch(sessionId: string, channel: string, clientId: number, viewer: RoomViewer, place: string, awareness?: Uint8Array<ArrayBuffer>) {
+/** Yjs client ids are unsigned 32-bit; the column is a signed INT4, so store the same bits signed. */
+const dbClient = (c: number) => c | 0;
+
+async function touch(sessionId: string, channel: string, client: number, viewer: RoomViewer, place: string, awareness?: Uint8Array<ArrayBuffer>) {
+  const clientId = dbClient(client);
   const now = new Date();
   const existing = await prisma.interviewPresence.findUnique({
     where: { sessionId_channel_clientId: { sessionId, channel, clientId } },
@@ -83,13 +87,16 @@ async function fingerprint(sessionId: string, channel: string, clientId: number)
   const rows = await prisma.$queryRaw<{ maxid: number | bigint | null; pchanged: Date | null; status: string; roomRound: string | null; toolsJson: string | null; startedAt: Date | null }[]>`
     SELECT
       (SELECT MAX(u."id") FROM "InterviewToolUpdate" u WHERE u."sessionId" = s."id" AND u."channel" = ${channel}) AS maxid,
-      (SELECT MAX(p."changedAt") FROM "InterviewPresence" p WHERE p."sessionId" = s."id" AND p."channel" = ${channel} AND p."clientId" <> ${clientId}) AS pchanged,
+      (SELECT MAX(p."changedAt") FROM "InterviewPresence" p WHERE p."sessionId" = s."id" AND p."channel" = ${channel} AND p."clientId" <> ${dbClient(clientId)}) AS pchanged,
       s."status", s."roomRound", s."toolsJson", s."startedAt"
     FROM "InterviewSession" s WHERE s."id" = ${sessionId}`;
   const r = rows[0];
   if (!r) return null;
   return { maxid: Number(r.maxid ?? 0), pchanged: r.pchanged, fp: `${r.status}|${r.roomRound ?? ""}|${r.startedAt?.getTime() ?? ""}|${r.toolsJson ?? ""}` };
 }
+
+/** What the client last saw of the room; sent back as `fp` so a change that lands between two polls is not missed. */
+const fpKey = (f: Fingerprint) => `${f.fp}|${f.pchanged?.getTime() ?? 0}`;
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
@@ -118,10 +125,12 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
 
   // Long poll: hold the request until an edit, a cursor, a join or leave, or
   // a room change lands, or the wait runs out.
+  const known = sp.get("fp");
   if (!rows.length && wait > 0 && clientId !== null) {
     const start = await fingerprint(id, channel, clientId);
     const deadline = Date.now() + wait;
-    while (start && Date.now() < deadline && !req.signal.aborted) {
+    // Something changed since the client's last answer: reply at once.
+    while (start && (!known || fpKey(start) === known) && Date.now() < deadline && !req.signal.aborted) {
       await sleep(WAIT_STEP_MS);
       const cur = await fingerprint(id, channel, clientId);
       if (!cur) break;
@@ -139,6 +148,8 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
     }
   }
 
+  // Read before the state below, so anything that lands after it shows up as a mismatch next time.
+  const seen = clientId !== null ? await fingerprint(id, channel, clientId) : null;
   const [fresh, peers] = await Promise.all([
     prisma.interviewSession.findUnique({ where: { id }, select: { status: true, startedAt: true, roomRound: true, toolsJson: true, totalSec: true } }),
     prisma.interviewPresence.findMany({
@@ -162,7 +173,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
         totalSec: room.totalSec,
       },
       peers: peers.map((p) => ({
-        clientId: p.clientId,
+        clientId: p.clientId >>> 0,
         role: p.role,
         name: p.name,
         place: p.place,
@@ -172,6 +183,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
       updates: rows.map((r) => Buffer.from(r.update).toString("base64")),
       cursor: rows.length ? rows[rows.length - 1].id : since,
       more: rows.length === 500,
+      fp: seen ? fpKey(seen) : null,
       now: Date.now(),
     },
     { headers: { "Cache-Control": "no-store" } },
@@ -201,7 +213,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
   const { update, awareness, client, place, leave } = parsed.data;
 
   if (leave && client !== undefined) {
-    await prisma.interviewPresence.deleteMany({ where: { sessionId: id, channel, clientId: client } });
+    await prisma.interviewPresence.deleteMany({ where: { sessionId: id, channel, clientId: dbClient(client) } });
     return NextResponse.json({ ok: true });
   }
 

@@ -257,7 +257,7 @@ function InterviewerPrep({ data, fade }: { data: RoomData; fade: object }) {
     } catch {}
   };
   return (
-    <motion.div {...fade} className="rounded-2xl border border-border bg-surface p-6 md:p-8">
+    <motion.div {...fade} className="min-w-0 rounded-2xl border border-border bg-surface p-6 md:p-8">
       <h2 className="text-[15px] font-semibold">For interviewers only</h2>
       {p.questionsNeeded && (
         <div className="mt-4 rounded-xl bg-warning/10 ring-1 ring-inset ring-warning/25 p-4 text-[13px] text-fg flex gap-3">
@@ -281,7 +281,7 @@ function InterviewerPrep({ data, fade }: { data: RoomData; fade: object }) {
       <div className="mt-5 grid gap-1.5">
         <p className="text-[12px] text-subtle">Candidate link</p>
         <div className="flex items-center gap-2">
-          <code className="flex-1 min-w-0 truncate h-9 px-3 rounded-lg bg-panel ring-1 ring-inset ring-border text-[12px] text-muted inline-flex items-center font-mono">{p.candidateLink}</code>
+          <code className="flex-1 min-w-0 truncate h-9 px-3 rounded-lg bg-panel ring-1 ring-inset ring-border text-[12px] text-muted block leading-9 font-mono">{p.candidateLink}</code>
           <button type="button" onClick={copy} className="h-9 px-3 rounded-lg border border-border text-[13px] font-medium inline-flex items-center gap-1.5 hover:bg-panel">
             {copied ? <Check className="w-3.5 h-3.5 text-success" aria-hidden /> : <Copy className="w-3.5 h-3.5 text-muted" aria-hidden />}
             {copied ? "Copied" : "Copy"}

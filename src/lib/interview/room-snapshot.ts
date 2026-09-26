@@ -8,6 +8,20 @@ import * as Y from "yjs";
 import { prisma } from "@/lib/prisma";
 import { ROUND_META, parseRound } from "./room";
 
+function firstLanguage(languagesJson: string | null | undefined, starterCodeJson: string | null | undefined): string {
+  const parse = (v: string | null | undefined) => {
+    try {
+      return v ? JSON.parse(v) : null;
+    } catch {
+      return null;
+    }
+  };
+  const langs = parse(languagesJson);
+  if (Array.isArray(langs)) return typeof langs[0] === "string" ? langs[0] : "python";
+  const starters = parse(starterCodeJson);
+  return (starters && typeof starters === "object" && Object.keys(starters)[0]) || "python";
+}
+
 export async function snapshotRoomRounds(sessionId: string): Promise<number> {
   const s = await prisma.interviewSession.findUnique({ where: { id: sessionId }, select: { userId: true, challengeIds: true, startedAt: true } });
   if (!s) return 0;
@@ -35,9 +49,10 @@ export async function snapshotRoomRounds(sessionId: string): Promise<number> {
     if (!r || !allowed.has(r.id)) continue;
     const exists = await prisma.challengeAttempt.findFirst({ where: { sessionId, challengeId: r.id }, select: { id: true } });
     if (exists) continue;
-    const step = await prisma.challengeStep.findFirst({ where: { challengeId: r.id }, orderBy: { position: "asc" }, skip: r.step, select: { id: true } });
-    // Harness rounds keep one text per language; save the one in use.
-    const lang = meta.get(`${key}:lang`);
+    const step = await prisma.challengeStep.findFirst({ where: { challengeId: r.id }, orderBy: { position: "asc" }, skip: r.step, select: { id: true, languagesJson: true, starterCodeJson: true } });
+    // Harness rounds keep one text per language; save the one in use, which
+    // is the step's first language until someone picks another (as in the room).
+    const lang = meta.get(`${key}:lang`) ?? firstLanguage(step?.languagesJson, step?.starterCodeJson);
     const files: Record<string, string> = {};
     for (const [path, code] of Object.entries(all)) {
       if (path.startsWith("lang:")) {

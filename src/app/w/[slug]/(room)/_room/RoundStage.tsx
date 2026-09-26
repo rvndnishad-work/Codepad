@@ -200,7 +200,7 @@ export default function RoundStage({
   return (
     <div className="h-full min-h-0 grid grid-rows-[auto_minmax(0,1fr)] lg:grid-rows-1 lg:grid-cols-[minmax(300px,34%)_minmax(0,1fr)]">
       {/* Task */}
-      <section aria-label="Task" className="min-h-0 border-b lg:border-b-0 lg:border-r border-border bg-surface flex flex-col">
+      <section aria-label="Task" className="min-w-0 min-h-0 border-b lg:border-b-0 lg:border-r border-border bg-surface flex flex-col">
         <button
           type="button"
           onClick={() => setPromptOpen((o) => !o)}
@@ -226,7 +226,7 @@ export default function RoundStage({
       </section>
 
       {/* Editor and output */}
-      <section aria-label="Shared editor" className="min-h-0 flex flex-col bg-bg">
+      <section aria-label="Shared editor" className="min-w-0 min-h-0 flex flex-col bg-bg">
         <div className="h-11 shrink-0 flex items-center gap-1 px-2 border-b border-border overflow-x-auto">
           {round.mode === "harness" ? (
             <label className="flex items-center gap-2 px-2 text-[12px] text-muted">

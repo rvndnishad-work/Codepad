@@ -209,8 +209,9 @@ export default function RoomClient({ data }: { data: RoomData }) {
           />
         )}
 
-        <main className="flex-1 min-w-0 min-h-0 relative">
-          <AnimatePresence mode="wait" initial={false}>
+        <main className="flex-1 min-w-0 min-h-0 relative overflow-hidden">
+          {/* Stages are absolutely placed, so they cross-fade; "wait" mode can stall when the stage changes twice in quick succession. */}
+          <AnimatePresence initial={false}>
             <motion.div
               key={ended ? "ended" : !live ? "waiting" : stageRound ? stageRound.key : presented ? `tool:${presented}` : serverRound ? "loading" : "home"}
               initial={reduce ? false : { opacity: 0, y: 8 }}
@@ -309,6 +310,7 @@ function TopBar({
         {live ? (
           <span
             role="timer"
+            suppressHydrationWarning
             aria-label={over ? `${clock(-left)} over time` : `${clock(left)} left`}
             className={`h-8 px-3 rounded-lg inline-flex items-center gap-2 text-[13px] font-semibold tabular-nums ring-1 ring-inset ${over ? "bg-warning/10 text-warning ring-warning/25" : "bg-panel ring-border"}`}
           >
@@ -316,8 +318,8 @@ function TopBar({
               <span className="absolute inset-0 rounded-full bg-danger/60 animate-ping motion-reduce:animate-none" />
               <span className="relative w-2 h-2 rounded-full bg-danger" />
             </span>
-            {over ? `+${clock(-left)} over` : `${clock(left)} left`}
-            <span className="hidden md:inline text-subtle font-normal">· {clock(elapsed)} in</span>
+            <span suppressHydrationWarning>{over ? `+${clock(-left)} over` : `${clock(left)} left`}</span>
+            <span suppressHydrationWarning className="hidden md:inline text-subtle font-normal">· {clock(elapsed)} in</span>
           </span>
         ) : status === "scheduled" ? (
           <span className="h-8 px-3 rounded-lg inline-flex items-center gap-2 text-[13px] text-muted bg-panel ring-1 ring-inset ring-border">
@@ -331,7 +333,7 @@ function TopBar({
         {timer}
       </div>
 
-      <ul className="hidden sm:flex items-center -space-x-1.5" aria-label="In the room">
+      <ul className="hidden sm:flex items-center gap-1" aria-label="In the room">
         {people.map((p) => (
           <li key={p.key} className="relative" title={`${p.name}${p.me ? " (you)" : ""}, ${roleLabel(p.role).toLowerCase()}${p.place === "lobby" ? ", in the lobby" : ""}`}>
             <span className="block rounded-full ring-2 ring-surface">

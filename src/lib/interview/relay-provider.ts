@@ -39,6 +39,7 @@ type Wire = {
   updates: string[];
   cursor: number;
   more: boolean;
+  fp?: string | null;
   now: number;
 };
 
@@ -81,6 +82,8 @@ export class RelayProvider {
   private snap: RelaySnapshot = { connection: "connecting", synced: false, role: null, myName: null, live: true, peers: [], room: null, state: null, offset: 0, rttMs: null, unsaved: 0 };
   private listeners = new Set<(s: RelaySnapshot) => void>();
   private cursor = 0;
+  /** The server's view of the room at our last answer; lets it reply at once when that moved on. */
+  private fp: string | null = null;
   private stopped = false;
   private failures = 0;
   private pollTimer: ReturnType<typeof setTimeout> | null = null;
@@ -255,7 +258,7 @@ export class RelayProvider {
     try {
       // Give up on a request that hangs well past the long-poll window.
       const guard = setTimeout(() => ctrl.abort(), wait + 12000);
-      const r = await fetch(this.url({ since: this.cursor, client: this.doc.clientID, place: this.opts.place, wait }), { cache: "no-store", signal: ctrl.signal });
+      const r = await fetch(this.url({ since: this.cursor, client: this.doc.clientID, place: this.opts.place, wait, ...(this.fp ? { fp: this.fp } : {}) }), { cache: "no-store", signal: ctrl.signal });
       clearTimeout(guard);
       if (r.status === 401 || r.status === 403 || r.status === 404) {
         this.set({ connection: "denied" });
@@ -301,6 +304,7 @@ export class RelayProvider {
       );
     }
     this.cursor = j.cursor;
+    this.fp = j.fp ?? null;
     const present = new Set<number>();
     for (const p of j.peers) {
       if (p.clientId === this.doc.clientID) continue;

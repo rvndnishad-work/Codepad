@@ -515,7 +515,7 @@ function QuestionRow({
           {r.src ? (
             <span className="inline-flex items-center gap-1.5">
               {r.tech && <TopicLogo slug={r.tech} size={13} />}
-              {r.tech ? techLabel(r.tech) : "Question bank"}
+              {r.src.startsWith("variant:") ? "Private variant" : r.tech ? techLabel(r.tech) : "Question bank"}
             </span>
           ) : (
             <span className="inline-flex items-center gap-1">

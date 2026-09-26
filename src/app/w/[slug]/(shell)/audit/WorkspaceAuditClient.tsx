@@ -157,6 +157,10 @@ const ACTION_META: Record<string, { label: string; tone: string }> = {
     label: "AI question deleted",
     tone: "border-danger/30 bg-danger/[0.05] text-danger",
   },
+  QUESTION_VARIANT_CREATED: {
+    label: "Private question variant made",
+    tone: "border-border bg-panel text-muted",
+  },
   TAKE_HOME_REMINDED: {
     label: "Take-home reminder sent",
     tone: "border-border bg-panel text-muted",

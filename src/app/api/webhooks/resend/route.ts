@@ -122,7 +122,7 @@ export async function POST(req: Request) {
 
   const log = await prisma.emailLog.findFirst({
     where: { providerId },
-    select: { id: true, recipientEmail: true, status: true },
+    select: { id: true, recipientEmail: true, status: true, workspaceId: true, template: true, sessionId: true },
   });
   if (!log) {
     // Either we haven't recorded this send (older row, pre-IP-25) or it's a
@@ -176,5 +176,30 @@ export async function POST(req: Request) {
       .catch((e) => console.error("[resend webhook] suppression upsert failed:", e));
   }
 
+  // Tell the workspace's webhooks when a candidate invite or reminder bounced,
+  // once per email (a repeated bounce event does not send it again).
+  if (
+    mappedStatus === "bounced" &&
+    log.status !== "bounced" &&
+    log.workspaceId &&
+    isCandidateInviteTemplate(log.template)
+  ) {
+    const { emitWorkspaceEvent } = await import("@/lib/events");
+    await emitWorkspaceEvent(log.workspaceId, "invite.bounced", {
+      email: {
+        template: log.template,
+        recipient: log.recipientEmail,
+        reason: event.data?.bounce?.message?.slice(0, 500) ?? null,
+      },
+      sessionId: log.sessionId,
+    });
+  }
+
   return NextResponse.json({ ok: true });
+}
+
+/** Candidate-facing invites and reminders. Teammate invites are not included. */
+function isCandidateInviteTemplate(template: string): boolean {
+  if (template === "workspace-invite") return false;
+  return template.endsWith("-invite") || template.endsWith("-reminder");
 }

@@ -921,6 +921,7 @@ model Workspace {
   invites              WorkspaceInvite[]
   auditLogs            WorkspaceAuditLog[]
   agentConfigs         AgentConfig[]
+  webhookEndpoints     WebhookEndpoint[]
 }
 
 /// Pending teammate invitation (IP-73). Replaces the old "silently mint a
@@ -1168,6 +1169,55 @@ model AtsIntegration {
   settings      String    @default("{}")
   createdAt     DateTime  @default(now())
   workspace     Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+}
+
+/// Outbound webhook target. We POST signed JSON here when a subscribed
+/// workspace event happens (see src/lib/events). `secret` is the signing
+/// secret, encrypted at rest like AtsIntegration.apiKey.
+model WebhookEndpoint {
+  id           String            @id @default(cuid())
+  workspaceId  String
+  url          String
+  secret       String
+  /// Subscribed event names, e.g. ["candidate.decided"].
+  events       String[]          @default([])
+  /// False while paused (by a person, or automatically after repeated failures).
+  active       Boolean           @default(true)
+  pausedAt     DateTime?
+  /// "manual" | "failures". Null while active.
+  pausedReason String?
+  /// Consecutive failed delivery attempts. Reset on any success.
+  failureCount Int               @default(0)
+  createdById  String?
+  createdAt    DateTime          @default(now())
+  updatedAt    DateTime          @updatedAt
+  workspace    Workspace         @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  deliveries   WebhookDelivery[]
+
+  @@index([workspaceId])
+}
+
+/// One event sent (or queued) to one endpoint, with its retry state.
+model WebhookDelivery {
+  id            String          @id @default(cuid())
+  endpointId    String
+  /// Shared by every endpoint that received the same event.
+  eventId       String
+  event         String
+  payload       Json
+  /// pending | sending | succeeded | failed
+  status        String          @default("pending")
+  attempts      Int             @default(0)
+  responseCode  Int?
+  nextAttemptAt DateTime?       @default(now())
+  lastError     String?
+  deliveredAt   DateTime?
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+  endpoint      WebhookEndpoint @relation(fields: [endpointId], references: [id], onDelete: Cascade)
+
+  @@index([endpointId, createdAt])
+  @@index([status, nextAttemptAt])
 }
 
 model AIInterviewSession {

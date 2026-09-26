@@ -514,7 +514,7 @@ export function buildMcpServer(auth: AuthedKey): McpServer {
           // Tenant scoping — candidate must belong to this workspace.
           const existing = await prisma.candidate.findFirst({
             where: { id: args.candidate_id, workspaceId: auth.workspaceId },
-            select: { id: true, name: true, stage: true, status: true, notes: true },
+            select: { id: true, name: true, email: true, stage: true, status: true, notes: true },
           });
           if (!existing) {
             throw new ToolError("Candidate not found in this workspace.");
@@ -542,6 +542,17 @@ export function buildMcpServer(auth: AuthedKey): McpServer {
             },
             select: { id: true, name: true, status: true, updatedAt: true },
           });
+          if (args.status === "rejected" && existing.stage !== "REJECTED") {
+            const { emitWorkspaceEvent } = await import("@/lib/events");
+            void emitWorkspaceEvent(auth.workspaceId, "candidate.decided", {
+              candidate: { id: existing.id, name: existing.name, email: existing.email },
+              decision: "not_passed",
+              previousStage: existing.stage,
+              rejectReason: "OTHER",
+              decidedBy: { email: null, via: `api key: ${auth.label}` },
+              reportPath: `candidates/${existing.id}`,
+            });
+          }
           // The profile shows authored notes (CandidateNote); mirror there too.
           if (args.note?.trim()) {
             await prisma.candidateNote.create({

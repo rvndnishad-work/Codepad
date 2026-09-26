@@ -23,6 +23,7 @@ import {
   type FileDiff,
 } from "@/lib/ai-interview/diff";
 import { computeV2Score, clampV2ScoreForEffort } from "@/lib/ai-interview/scoring-v2";
+import { emitWorkspaceEvent } from "@/lib/events";
 import {
   cleanGrade,
   fallbackGrade,
@@ -641,6 +642,17 @@ export async function gradeSessionById(params: {
         : { email: session.candidateEmail }),
       toStage: "SCREENING",
       source: "auto:ai-screening-completed",
+    });
+    void emitWorkspaceEvent(session.workspaceId, "screening.completed", {
+      candidate: { id: session.candidateId, name: session.candidateName, email: session.candidateEmail },
+      screening: {
+        id: session.id,
+        positionTitle: session.positionTitle,
+        batchId: session.batchId,
+        score: aggregateScore,
+        completedAt: finishedAt.toISOString(),
+      },
+      reportPath: `ai-interviews/${session.id}`,
     });
   }
 

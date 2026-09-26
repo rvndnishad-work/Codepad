@@ -145,7 +145,7 @@ export default function WorkspaceSidebarNav({ slug, growthFeatures, counts, coll
 
   const connections: NavItem[] = [
     growth({ label: "ATS sync", icon: RefreshCw, ...route("ats") }),
-    growth({ label: "API keys", icon: KeyRound, ...route("api-keys") }),
+    growth({ label: "API and MCP", icon: KeyRound, ...route("api-keys") }),
   ];
 
   const admin: NavItem[] = [

@@ -1,12 +1,17 @@
 import { describe, expect, it } from "vitest";
 import * as Y from "yjs";
-import { applyToolsAction, defaultTools, initialTools, parseTools, timerRemaining, toolRole } from "@/lib/interview/tools";
+import { TOOLS, TOOL_IDS, applyToolsAction, defaultTools, initialTools, parseTools, timerRemaining, toolRole } from "@/lib/interview/tools";
 
 describe("room tools", () => {
   it("suggests tools by format", () => {
     expect(defaultTools("discussion")).toEqual(["whiteboard", "notes", "timer"]);
     expect(defaultTools("behavioural")).toContain("question");
     expect(defaultTools(null)).toEqual(["whiteboard", "code"]);
+  });
+
+  it("describes every tool once, in dock order", () => {
+    expect(TOOLS.map((t) => t.id)).toEqual([...TOOL_IDS]);
+    for (const t of TOOLS) expect(t.label.length).toBeGreaterThan(0);
   });
 
   it("parses stored state and falls back to the format", () => {

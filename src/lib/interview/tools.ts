@@ -6,26 +6,76 @@
  */
 import { parsePanel } from "./wizard";
 
+/**
+ * Adding a tool: add its id here and its entry in TOOL_DEFS below, then
+ * register its UI in src/app/interview/[id]/tools/registry.tsx. TypeScript
+ * fails the build until every id has both. The full checklist is in
+ * docs/interview-room-tools.md.
+ */
 export const TOOL_IDS = ["whiteboard", "code", "notes", "question", "ranking", "timer"] as const;
 export type ToolId = (typeof TOOL_IDS)[number];
+
+/** Interview formats a tool is switched on for by default. "legacy" covers
+ * interviews set up before formats existed. */
+type DefaultFor = "coding" | "discussion" | "mixed" | "behavioural" | "intro" | "legacy";
 
 export type ToolDef = {
   id: ToolId;
   label: string;
   blurb: string;
   goodFor: string[];
-  /** Opens on the big shared stage (the timer is a small pill instead). */
+  /** Opens on the big shared stage. False for dock-only tools like the timer. */
   stage: boolean;
+  defaultFor: DefaultFor[];
 };
 
-export const TOOLS: ToolDef[] = [
-  { id: "whiteboard", label: "Whiteboard", blurb: "Draw boxes and arrows together to talk through an idea.", goodFor: ["System design", "Product", "Managerial"], stage: true },
-  { id: "code", label: "Code pad", blurb: "A light shared editor for a snippet, a query or pseudo code.", goodFor: ["Technical"], stage: true },
-  { id: "notes", label: "Shared notes", blurb: "A shared page for a written answer, a plan or a draft email.", goodFor: ["Any round"], stage: true },
-  { id: "question", label: "Question card", blurb: "Show the candidate one question or scenario, big and clear.", goodFor: ["Behavioural", "Managerial", "Any round"], stage: true },
-  { id: "ranking", label: "Ranking board", blurb: "Give a list to put in order: priorities, trade-offs, a backlog.", goodFor: ["Managerial", "Product"], stage: true },
-  { id: "timer", label: "Timer", blurb: "A countdown both sides can see, for timed exercises.", goodFor: ["Any round"], stage: false },
-];
+const TOOL_DEFS: { [K in ToolId]: Omit<ToolDef, "id"> } = {
+  whiteboard: {
+    label: "Whiteboard",
+    blurb: "Draw boxes and arrows together to talk through an idea.",
+    goodFor: ["System design", "Product", "Managerial"],
+    stage: true,
+    defaultFor: ["coding", "discussion", "mixed", "legacy"],
+  },
+  code: {
+    label: "Code pad",
+    blurb: "A light shared editor for a snippet, a query or pseudo code.",
+    goodFor: ["Technical"],
+    stage: true,
+    defaultFor: ["mixed", "legacy"],
+  },
+  notes: {
+    label: "Shared notes",
+    blurb: "A shared page for a written answer, a plan or a draft email.",
+    goodFor: ["Any round"],
+    stage: true,
+    defaultFor: ["discussion", "behavioural", "intro"],
+  },
+  question: {
+    label: "Question card",
+    blurb: "Show the candidate one question or scenario, big and clear.",
+    goodFor: ["Behavioural", "Managerial", "Any round"],
+    stage: true,
+    defaultFor: ["behavioural", "intro"],
+  },
+  ranking: {
+    label: "Ranking board",
+    blurb: "Give a list to put in order: priorities, trade-offs, a backlog.",
+    goodFor: ["Managerial", "Product"],
+    stage: true,
+    defaultFor: [],
+  },
+  timer: {
+    label: "Timer",
+    blurb: "A countdown both sides can see, for timed exercises.",
+    goodFor: ["Any round"],
+    stage: false,
+    defaultFor: ["coding", "discussion", "mixed", "behavioural"],
+  },
+};
+
+/** Tools in dock order. */
+export const TOOLS: ToolDef[] = TOOL_IDS.map((id) => ({ id, ...TOOL_DEFS[id] }));
 
 export const TOOL_BY_ID: Record<ToolId, ToolDef> = Object.fromEntries(TOOLS.map((t) => [t.id, t])) as Record<ToolId, ToolDef>;
 
@@ -62,20 +112,8 @@ export const MAX_TIMER_SEC = 3 * 60 * 60;
 
 /** Tools switched on when an interview of this format opens. */
 export function defaultTools(format: string | null | undefined): ToolId[] {
-  switch (format) {
-    case "coding":
-      return ["whiteboard", "timer"];
-    case "discussion":
-      return ["whiteboard", "notes", "timer"];
-    case "mixed":
-      return ["whiteboard", "code", "timer"];
-    case "behavioural":
-      return ["question", "notes", "timer"];
-    case "intro":
-      return ["question", "notes"];
-    default:
-      return ["whiteboard", "code"];
-  }
+  const key: DefaultFor = format === "coding" || format === "discussion" || format === "mixed" || format === "behavioural" || format === "intro" ? format : "legacy";
+  return TOOL_IDS.filter((id) => TOOL_DEFS[id].defaultFor.includes(key));
 }
 
 export function isToolId(v: unknown): v is ToolId {

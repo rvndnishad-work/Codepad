@@ -1252,6 +1252,7 @@ model AIInterviewSession {
   batch            AIScreeningBatch?         @relation(fields: [batchId], references: [id], onDelete: SetNull)
   rounds           AIInterviewRound[]
   audioClips       AIInterviewAudio[]
+  shareLinks       AIReportShareLink[]
 
   @@index([workspaceId, status])
   @@index([workspaceId, createdAt])
@@ -1384,6 +1385,10 @@ model AIInterviewRound {
   answersJson      String?
   /// "PENDING" | "ACTIVE" | "COMPLETED".
   status           String  @default("PENDING")
+  /// Last test run of the candidate's final code, from the report's Tests
+  /// pane: JSON `{ passed, total, compileError, stderr, tests: [{ name, status, error }] }`.
+  testResultsJson  String?
+  testsRunAt       DateTime?
   startedAt        DateTime?
   finishedAt       DateTime?
   createdAt        DateTime @default(now())
@@ -1391,6 +1396,26 @@ model AIInterviewRound {
   session          AIInterviewSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
 
   @@index([sessionId, order])
+}
+
+/// A read-only link to one AI screening report, for a hiring manager who is
+/// not in the workspace. The URL carries a signed token naming this row and
+/// its expiry; revoking sets revokedAt, which the page checks on every view.
+/// The shared page never shows reference answers or team notes.
+model AIReportShareLink {
+  id              String             @id @default(cuid())
+  workspaceId     String
+  sessionId       String
+  createdByUserId String
+  expiresAt       DateTime
+  revokedAt       DateTime?
+  viewCount       Int                @default(0)
+  lastViewedAt    DateTime?
+  createdAt       DateTime           @default(now())
+  session         AIInterviewSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@index([sessionId])
+  @@index([workspaceId])
 }
 
 /// Workspace-scoped custom screening templates. The default `scaffolds.ts`

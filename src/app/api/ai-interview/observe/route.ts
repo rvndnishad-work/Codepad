@@ -27,7 +27,7 @@ import { renderPrompt } from "@/lib/agents/types";
  * total proactive comments per session.
  */
 
-type Message = { role: "user" | "assistant"; text: string };
+type Message = { role: "user" | "assistant"; text: string; at?: string };
 
 const LEVEL_CONFIG: Record<"OBSERVER" | "COACH", { cooldownMs: number; maxProactive: number }> = {
   // Sparing — a glance every ~2.5 min, capped low.
@@ -216,7 +216,7 @@ export async function POST(req: NextRequest) {
     } catch {
       hist = [];
     }
-    hist.push({ role: "assistant", text: comment });
+    hist.push({ role: "assistant", text: comment, at: new Date().toISOString() });
     await tx.aIInterviewSession.update({
       where: { id: session.id },
       data: { chatHistory: JSON.stringify(hist), proactiveCount: { increment: 1 } },

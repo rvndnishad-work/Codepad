@@ -12,6 +12,8 @@ import {
   ChevronRight,
   Code2,
   Copy,
+  Eye,
+  FlaskConical,
   Link2,
   Mail,
   MessageSquare,
@@ -43,17 +45,20 @@ import { StatusChip, ToneChip, TONE_BAR, selectCls } from "../kit";
 import SummaryTab from "./SummaryTab";
 import TranscriptTab from "./TranscriptTab";
 import TheoryTab from "./TheoryTab";
+import TestsTab from "./TestsTab";
+import ShareDialog from "./ShareDialog";
 
 // The editors are heavy and browser-only.
 const CodeTab = dynamic(() => import("./CodeTab"), { ssr: false, loading: () => <PaneLoading /> });
 const RunTab = dynamic(() => import("./RunTab"), { ssr: false, loading: () => <PaneLoading /> });
 
-type Tab = "summary" | "theory" | "code" | "transcript" | "run";
+type Tab = "summary" | "theory" | "code" | "tests" | "transcript" | "run";
 
 const TABS: { id: Tab; label: string; icon: typeof Sparkles }[] = [
   { id: "summary", label: "Summary", icon: Sparkles },
   { id: "theory", label: "Theory answers", icon: Mic },
   { id: "code", label: "Code changes", icon: Code2 },
+  { id: "tests", label: "Tests", icon: FlaskConical },
   { id: "transcript", label: "Transcript", icon: MessageSquare },
   { id: "run", label: "Run the code", icon: Play },
 ];
@@ -86,6 +91,7 @@ export default function ReportView({
   const [rejecting, setRejecting] = useState(false);
   const [overriding, setOverriding] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [sharing, setSharing] = useState(false);
   const done = r.status === "COMPLETED";
   const decided = r.candidate.stage === "PASSED" || r.candidate.stage === "REJECTED";
   // Screenings of only conversation and theory rounds have no code to show or run.
@@ -139,7 +145,7 @@ export default function ReportView({
     const onKey = (e: KeyboardEvent) => {
       const t = e.target as HTMLElement | null;
       if (t && (t.tagName === "INPUT" || t.tagName === "TEXTAREA" || t.tagName === "SELECT" || t.isContentEditable)) return;
-      if (e.metaKey || e.ctrlKey || e.altKey || rejecting || overriding || deleting) return;
+      if (e.metaKey || e.ctrlKey || e.altKey || rejecting || overriding || deleting || sharing) return;
       if (e.key === "j" && next) router.push(next);
       else if (e.key === "k" && prev) router.push(prev);
       else if (e.key === "p" && canDecide && done && r.candidate.id && !decided) pass();
@@ -199,8 +205,26 @@ export default function ReportView({
             </div>
           </div>
         </div>
+        <div className="flex flex-wrap items-center gap-2 print:hidden">
+          {canManage && (
+            <>
+              <a
+                href={`/w/${slug}/ai-preview/${r.id}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                title="See the screening as the candidate sees it. Nothing is saved and no candidate is created."
+                className="inline-flex items-center justify-center gap-1.5 h-8 px-3 rounded-lg text-[13px] font-medium whitespace-nowrap border border-border bg-surface text-fg hover:bg-panel hover:border-border-strong transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-secondary/60"
+              >
+                <Eye className="w-3.5 h-3.5 text-muted" strokeWidth={1.75} aria-hidden />
+                Preview as candidate
+              </a>
+              <Btn icon={Link2} onClick={() => setSharing(true)}>
+                Share read-only link
+              </Btn>
+            </>
+          )}
         {r.nav.total > 0 && (
-          <div className="flex items-center gap-2 print:hidden">
+          <div className="flex items-center gap-2">
             <Btn icon={ChevronLeft} aria-label="Previous candidate" href={prev ?? undefined} disabled={!prev} />
             <span className="text-[13px] text-subtle tabular-nums">
               {r.nav.position ? `${r.nav.position} of ${r.nav.total}` : `${r.nav.total} to review`}
@@ -208,6 +232,7 @@ export default function ReportView({
             <Btn icon={ChevronRight} aria-label="Next candidate" href={next ?? undefined} disabled={!next} />
           </div>
         )}
+        </div>
       </header>
 
       <DecisionBar
@@ -225,7 +250,7 @@ export default function ReportView({
       <div className="flex flex-col lg:flex-row gap-6 items-start">
         <div className="flex-1 min-w-0 w-full flex flex-col gap-4">
           <nav aria-label="Report sections" className="flex gap-1 border-b border-border overflow-x-auto print:hidden">
-            {TABS.filter((t) => (t.id === "theory" ? hasTheory : t.id === "transcript" ? hasChat : !allTalk || (t.id !== "code" && t.id !== "run"))).map((t) => {
+            {TABS.filter((t) => (t.id === "theory" ? hasTheory : t.id === "transcript" ? hasChat : !allTalk || (t.id !== "code" && t.id !== "run" && t.id !== "tests"))).map((t) => {
               const on = t.id === tab;
               return (
                 <Link
@@ -244,14 +269,14 @@ export default function ReportView({
             })}
           </nav>
 
-          {(tab === "code" || tab === "run") && r.rounds.length > 1 && !allTalk && (
+          {(tab === "code" || tab === "run" || tab === "tests") && r.rounds.length > 1 && !allTalk && (
             <RoundSwitch rounds={r.rounds} active={round} hrefFor={(i) => hrefFor({ round: i })} />
           )}
 
           {tab === "summary" && <SummaryTab r={r} hrefFor={hrefFor} />}
           {tab === "theory" && <TheoryTab r={r} slug={slug} />}
           {tab === "transcript" && <TranscriptTab r={r} />}
-          {(tab === "code" || tab === "run") && talkKind(r.rounds[round]?.kind) ? (
+          {(tab === "code" || tab === "run" || tab === "tests") && talkKind(r.rounds[round]?.kind) ? (
             <div className="rounded-xl border border-border bg-surface p-8 text-center text-sm text-muted">
               Round {round + 1} is {r.rounds[round]?.kind === "theory" ? "a theory round" : "a conversation"}, so there is no code.{" "}
               <Link href={hrefFor({ tab: r.rounds[round]?.kind === "theory" ? "theory" : "transcript" })} scroll={false} className="text-secondary-soft hover:underline">
@@ -262,6 +287,9 @@ export default function ReportView({
             <>
               {tab === "code" && <CodeTab key={`${r.id}:${round}`} round={r.rounds[round]} />}
               {tab === "run" && <RunTab key={`${r.id}:${round}`} round={r.rounds[round]} />}
+              {tab === "tests" && (
+                <TestsTab key={`${r.id}:${round}`} slug={slug} sessionId={r.id} round={r.rounds[round]} canRun={canManage} toast={toast} />
+              )}
             </>
           )}
         </div>
@@ -297,6 +325,9 @@ export default function ReportView({
           onCancel={() => setOverriding(false)}
           onConfirm={() => decide("PASSED", { override: true })}
         />
+      )}
+      {sharing && (
+        <ShareDialog slug={slug} sessionId={r.id} firstName={firstName} finished={done} onClose={() => setSharing(false)} toast={toast} />
       )}
       {deleting && (
         <ConfirmDialog

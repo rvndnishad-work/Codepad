@@ -157,6 +157,14 @@ const ACTION_META: Record<string, { label: string; tone: string }> = {
     label: "AI question deleted",
     tone: "border-danger/30 bg-danger/[0.05] text-danger",
   },
+  AI_REPORT_SHARE_CREATED: {
+    label: "AI report shared read-only",
+    tone: "border-secondary/30 bg-secondary/[0.06] text-secondary",
+  },
+  AI_REPORT_SHARE_REVOKED: {
+    label: "AI report share link revoked",
+    tone: "border-warning/30 bg-warning/[0.06] text-warning",
+  },
   TAKE_HOME_REMINDED: {
     label: "Take-home reminder sent",
     tone: "border-border bg-panel text-muted",

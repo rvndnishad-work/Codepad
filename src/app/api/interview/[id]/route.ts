@@ -230,6 +230,13 @@ export async function PATCH(
     }
   }
 
+  // Keep the organiser's calendar event in step: new length or call link
+  // moves it, an abandoned interview cancels it.
+  if (existing.workspaceId && (parsed.data.totalSec !== undefined || parsed.data.meetingUrl !== undefined || parsed.data.status === "abandoned")) {
+    const { syncInterviewEvent } = await import("@/lib/calendar/server");
+    await syncInterviewEvent(id);
+  }
+
   return NextResponse.json(updated);
 }
 
@@ -249,6 +256,10 @@ export async function DELETE(
     return NextResponse.json({ error: "forbidden" }, { status: 403 });
   }
 
+  if (existing.workspaceId) {
+    const { cancelInterviewEvent } = await import("@/lib/calendar/server");
+    await cancelInterviewEvent(id);
+  }
   await prisma.interviewSession.delete({ where: { id } });
   return NextResponse.json({ success: true });
 }

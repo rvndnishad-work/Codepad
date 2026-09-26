@@ -4,7 +4,7 @@
  * The wizard steps other than Questions: format, candidates, interviewers,
  * schedule and review. Each takes the wizard state and a patch function.
  */
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import {
   AlertTriangle,
@@ -567,7 +567,7 @@ function MeetingField({ value, onChange }: { value: string; onChange: (v: string
   );
 }
 
-export function ScheduleStep({ state, patch }: { state: WizardState; patch: Patch }) {
+export function ScheduleStep({ state, patch, calendar }: { state: WizardState; patch: Patch; calendar?: ReactNode }) {
   const format = formatOf(state.format);
   const rows: { key: string; name: string; email: string | null }[] = state.noCandidate || state.candidates.length === 0
     ? [{ key: "open", name: "Open link", email: null }]
@@ -727,6 +727,9 @@ export function ScheduleStep({ state, patch }: { state: WizardState; patch: Patc
           </AnimatePresence>
         </ul>
       </section>
+
+      {/* Busy times from connected calendars */}
+      {calendar}
 
       {/* Video call */}
       <MeetingField value={state.meetingUrl ?? ""} onChange={(v) => patch({ meetingUrl: v })} />

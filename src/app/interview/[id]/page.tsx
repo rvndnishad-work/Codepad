@@ -15,6 +15,7 @@ import { shouldRenderMobileLobby } from "@/lib/device";
 
 import { validatePageAccess } from "@/lib/settings";
 import { isInterviewerFor } from "@/lib/interview/wizard";
+import { guestFor } from "@/lib/interview/guests";
 
 export const metadata = {
   title: "Interview Session — Interviewpad",
@@ -25,11 +26,12 @@ export default async function InterviewRunPage({
   searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ token?: string; lobby?: string; desktop?: string }>;
+  searchParams: Promise<{ token?: string; guest?: string; lobby?: string; desktop?: string }>;
 }) {
   const { id } = await params;
   const sp = await searchParams;
   const { token, lobby } = sp;
+  const guestKey = typeof sp.guest === "string" ? sp.guest : null;
 
   // IP-38: mobile-handoff lobby. Run before any auth check so a candidate on
   // a phone always gets the QR experience first; auth and access checks
@@ -43,7 +45,7 @@ export default async function InterviewRunPage({
   if (showLobby) {
     const host = hdrs.get("host") ?? "interviewpad.in";
     const proto = hdrs.get("x-forwarded-proto") ?? "https";
-    const qs = token ? `?token=${encodeURIComponent(token)}` : "";
+    const qs = token ? `?token=${encodeURIComponent(token)}` : guestKey ? `?guest=${encodeURIComponent(guestKey)}` : "";
     const fullUrl = `${proto}://${host}/interview/${id}${qs}`;
     return (
       <MobileLobby
@@ -66,7 +68,9 @@ export default async function InterviewRunPage({
 
   // Access: owner OR holder of correct shareToken (read-only).
   // Host and co-interviewers (panel) get the owner's interviewer view.
-  const isOwner = isInterviewerFor(interview, session?.user?.id);
+  // Interviewers HR emailed (no account) come in with their own guest key.
+  const guest = interview.creatorRole === "interviewer" ? await guestFor(interview.id, guestKey) : null;
+  const isOwner = isInterviewerFor(interview, session?.user?.id) || !!guest;
   const hasShareToken = !!token && token === interview.shareToken;
   if (!isOwner && !hasShareToken) {
     if (!session?.user?.id) {
@@ -255,8 +259,9 @@ export default async function InterviewRunPage({
         sessionId={interview.id}
         roomKey={interview.shareToken}
         token={hasShareToken ? token! : null}
+        guest={guest ? guestKey : null}
         interviewer={interviewerView}
-        meName={(interviewerView ? session?.user?.name : interview.candidateName) ?? ""}
+        meName={(interviewerView ? (guest ? guest.email.split("@")[0] : session?.user?.name) : interview.candidateName) ?? ""}
         format={interview.format}
         guideQuestions={guide?.items.map((i) => i.q) ?? []}
       />
@@ -310,6 +315,7 @@ export default async function InterviewRunPage({
       }))}
       interviewerView={interviewerView}
       isOwner={isOwner}
+      guestToken={guest ? guestKey : null}
     />
     </>
   );

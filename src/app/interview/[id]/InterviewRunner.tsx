@@ -238,6 +238,7 @@ export default function InterviewRunner({
   promptAttempts = [],
   interviewerView,
   isOwner = false,
+  guestToken = null,
 }: {
   interview: Interview;
   challenges: SessionChallenge[];
@@ -247,7 +248,14 @@ export default function InterviewRunner({
   promptAttempts?: PromptAttempt[];
   interviewerView: boolean;
   isOwner?: boolean;
+  /** Emailed interviewer link: an interviewer without an account. */
+  guestToken?: string | null;
 }) {
+  const guestQ = guestToken ? `guest=${encodeURIComponent(guestToken)}` : "";
+  // Query the interviewer side adds to room links: nothing when logged in,
+  // the guest key when they came from an emailed link.
+  const ownerQuery = guestQ ? `?${guestQ}` : "";
+  const apiQs = `token=${interview.shareToken}${guestQ ? `&${guestQ}` : ""}`;
   const isPlayground = interview.sourceType === "playground";
   const isPrompt = interview.sourceType === "prompt";
   const isCombined = interview.sourceType === "combined";
@@ -406,7 +414,7 @@ export default function InterviewRunner({
     if (interview.sourceType === "playground") {
       const p = playgrounds[0];
       if (!p) return null;
-      const tokenQuery = isOwner ? "" : `?token=${interview.shareToken}`;
+      const tokenQuery = isOwner ? ownerQuery : `?token=${interview.shareToken}`;
       return `/interview/${interview.id}/play/${p.id}${tokenQuery}`;
     } else {
       const c = challenges[0];
@@ -426,7 +434,7 @@ export default function InterviewRunner({
     const poll = setInterval(async () => {
       try {
         const res = await fetch(
-          `/api/interview/${interview.id}?token=${interview.shareToken}`,
+          `/api/interview/${interview.id}?${apiQs}`,
           { cache: "no-store" }
         );
         if (!res.ok) return;
@@ -457,7 +465,7 @@ export default function InterviewRunner({
   async function requestStart() {
     setStartRequestSending(true);
     try {
-      const res = await fetch(`/api/interview/${interview.id}?token=${interview.shareToken}`, {
+      const res = await fetch(`/api/interview/${interview.id}?${apiQs}`, {
         method: "PATCH",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ startRequested: true }),
@@ -474,7 +482,7 @@ export default function InterviewRunner({
 
   async function approveStart() {
     // Clear the request flag then start the session
-    await fetch(`/api/interview/${interview.id}?token=${interview.shareToken}`, {
+    await fetch(`/api/interview/${interview.id}?${apiQs}`, {
       method: "PATCH",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({ startRequested: false }),
@@ -485,7 +493,7 @@ export default function InterviewRunner({
   }
 
   async function dismissRequest() {
-    await fetch(`/api/interview/${interview.id}?token=${interview.shareToken}`, {
+    await fetch(`/api/interview/${interview.id}?${apiQs}`, {
       method: "PATCH",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({ startRequested: false }),
@@ -553,7 +561,7 @@ export default function InterviewRunner({
         payload.activePlaygroundId = playgrounds[0].id;
       }
 
-      const res = await fetch(`/api/interview/${interview.id}?token=${interview.shareToken}`, {
+      const res = await fetch(`/api/interview/${interview.id}?${apiQs}`, {
         method: "PATCH",
         headers: { "content-type": "application/json" },
         body: JSON.stringify(payload),
@@ -562,7 +570,7 @@ export default function InterviewRunner({
       if (!res.ok) throw new Error(await res.text());
 
       if (interview.sourceType !== "playground" && challenges[0]) {
-        await fetch(`/api/interview/${interview.id}/active?token=${interview.shareToken}`, {
+        await fetch(`/api/interview/${interview.id}/active?${apiQs}`, {
           method: "PATCH",
           headers: { "content-type": "application/json" },
           body: JSON.stringify({ challengeId: challenges[0].id }),
@@ -597,7 +605,7 @@ export default function InterviewRunner({
         notes: rubricNotes || null,
       };
 
-      const res = await fetch(`/api/interview/${interview.id}?token=${interview.shareToken}`, {
+      const res = await fetch(`/api/interview/${interview.id}?${apiQs}`, {
         method: "PATCH",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ 
@@ -1351,7 +1359,7 @@ export default function InterviewRunner({
                         </div>
                         {interviewerView && (
                           <Link
-                            href={`/interview/${interview.id}/report?token=${interview.shareToken}`}
+                            href={`/interview/${interview.id}/report?${apiQs}`}
                             target="_blank"
                             className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-indigo-500/10 text-indigo-800 dark:text-indigo-400 hover:bg-indigo-500/20 transition-colors text-xs font-bold tracking-wider"
                           >
@@ -1832,7 +1840,7 @@ export default function InterviewRunner({
                               </p>
                             </div>
                             <Link
-                              href={`/interview/${interview.id}/play/${activeReviewPlayground.id}${isOwner ? "" : `?token=${interview.shareToken}`}`}
+                              href={`/interview/${interview.id}/play/${activeReviewPlayground.id}${isOwner ? ownerQuery : `?token=${interview.shareToken}`}`}
                               className="px-4 py-2 rounded-xl bg-bg hover:bg-elevated border border-border hover:border-indigo-500/40 text-xs font-bold text-fg transition-all flex items-center gap-1.5 hover:text-indigo-500 shadow-sm active:scale-95 shrink-0"
                             >
                               <Eye className="w-3.5 h-3.5" />
@@ -2073,7 +2081,7 @@ export default function InterviewRunner({
                           {playgrounds.map((p, idx) => {
                             const canEnter = status === "in_progress";
                             const isActive = interview.activePlaygroundId === p.id;
-                            const tokenQuery = isOwner ? "" : `?token=${interview.shareToken}`;
+                            const tokenQuery = isOwner ? ownerQuery : `?token=${interview.shareToken}`;
                             const href = canEnter ? `/interview/${interview.id}/play/${p.id}${tokenQuery}` : null;
 
                             let statusTag = "bg-bg/60 border border-border text-muted";
@@ -2236,7 +2244,7 @@ export default function InterviewRunner({
                         const canEnter = status === "in_progress";
                         const isActive = interview.activePlaygroundId === p.id;
                         const tokenQuery = isOwner
-                          ? ""
+                          ? ownerQuery
                           : `?token=${interview.shareToken}`;
                         const href = canEnter
                           ? `/interview/${interview.id}/play/${p.id}${tokenQuery}`

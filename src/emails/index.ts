@@ -57,6 +57,11 @@ import {
   type InterviewInviteProps,
 } from "./InterviewInvite";
 import {
+  InterviewerInvite,
+  interviewerInviteText,
+  type InterviewerInviteProps,
+} from "./InterviewerInvite";
+import {
   WorkspaceInviteEmail,
   workspaceInviteEmailText,
   type WorkspaceInviteEmailProps,
@@ -134,6 +139,12 @@ export const TEMPLATES = {
     text: interviewInviteText,
   } satisfies TemplateDef<InterviewInviteProps>,
 
+  "interviewer-invite": {
+    Component: InterviewerInvite,
+    subject: (p) => `You are interviewing for ${p.workspaceName}: ${p.title}`,
+    text: interviewerInviteText,
+  } satisfies TemplateDef<InterviewerInviteProps>,
+
   "workspace-invite": {
     Component: WorkspaceInviteEmail,
     subject: (p) => `${p.inviterName} invited you to ${p.workspaceName} on Interviewpad`,
@@ -155,5 +166,6 @@ export type TemplateProps = {
   "take-home-session-invite": TakeHomeSessionInviteProps;
   "otp-verification": OtpVerificationProps;
   "interview-invite": InterviewInviteProps;
+  "interviewer-invite": InterviewerInviteProps;
   "workspace-invite": WorkspaceInviteEmailProps;
 };

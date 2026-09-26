@@ -4,7 +4,7 @@
  * The wizard steps other than Questions: format, candidates, interviewers,
  * schedule and review. Each takes the wizard state and a patch function.
  */
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import {
   AlertTriangle,
@@ -15,6 +15,8 @@ import {
   Coffee,
   Info,
   Link2,
+  Mail,
+  ListOrdered,
   MessagesSquare,
   Minus,
   Pencil,
@@ -30,18 +32,21 @@ import {
   DURATION_CHOICES,
   FORMATS,
   MAX_CANDIDATES,
+  MAX_GUESTS,
   MAX_PANEL,
   STEPS,
   clampMinutes,
+  defaultStart,
   firstName,
   formatOf,
   isEmail,
+  normalizeGuests,
   parseLocal,
   roundsMinutes,
   staggerSlots,
   stepIssues,
   suggestedMinutes,
-  toLocalInput,
+  timeClashes,
   type FormatDef,
   type FormatId,
   type StepId,
@@ -350,7 +355,7 @@ export function PanelStep({ state, patch, members, meId }: { state: WizardState;
           </span>
         </div>
         {others.length === 0 ? (
-          <p className="text-[13px] text-muted">Nobody else in this workspace yet. Invite teammates from Members.</p>
+          <p className="text-[13px] text-muted">Nobody else in this workspace yet. Add their email below instead.</p>
         ) : (
           <div className="flex flex-wrap gap-2">
             {others.map((m) => {
@@ -377,65 +382,151 @@ export function PanelStep({ state, patch, members, meId }: { state: WizardState;
           </div>
         )}
       </section>
+
+      <GuestEmails guests={state.guests ?? []} onChange={(g) => patch({ guests: g })} />
     </div>
+  );
+}
+
+/** Interviewers who are not workspace members: HR types their email and
+ * they get the details with their own interviewer link. */
+function GuestEmails({ guests, onChange }: { guests: string[]; onChange: (g: string[]) => void }) {
+  const [text, setText] = useState("");
+  const [error, setError] = useState("");
+  const full = guests.length >= MAX_GUESTS;
+
+  const add = (raw: string) => {
+    const parts = raw.split(/[\s,;]+/).filter(Boolean);
+    if (!parts.length) return;
+    const bad = parts.filter((p) => !isEmail(p));
+    const good = parts.filter((p) => isEmail(p));
+    const next = normalizeGuests([...guests, ...good]);
+    if (next.length !== guests.length) onChange(next);
+    setText(bad.join(" "));
+    setError(bad.length ? `${bad[0]} does not look like an email.` : good.length && next.length === guests.length ? "Already added." : "");
+  };
+
+  return (
+    <section className="rounded-xl border border-border bg-surface p-4 flex flex-col gap-3">
+      <div className="flex items-start gap-3">
+        <span className="w-9 h-9 rounded-lg bg-secondary/10 text-secondary-soft flex items-center justify-center shrink-0">
+          <Mail className="w-4 h-4" aria-hidden />
+        </span>
+        <div className="flex-1 min-w-0">
+          <div className="flex items-baseline justify-between gap-2">
+            <h3 className="text-[15px] font-semibold text-fg">Email the details (optional)</h3>
+            <span className="text-[13px] text-subtle tabular-nums">
+              {guests.length} of {MAX_GUESTS}
+            </span>
+          </div>
+          <p className="text-[13px] text-muted mt-0.5">
+            For interviewers who are not in this workspace. They get the candidate, the time and the brief by email, with their own link to join as an interviewer. No account needed.
+          </p>
+        </div>
+      </div>
+      {guests.length > 0 && (
+        <ul className="flex flex-wrap gap-2">
+          <AnimatePresence initial={false}>
+            {guests.map((g) => (
+              <motion.li
+                key={g}
+                layout
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.9 }}
+                transition={spring}
+                className="inline-flex items-center gap-2 h-9 pl-1.5 pr-1 rounded-full border border-secondary/40 bg-secondary/10 text-[13px] text-fg"
+              >
+                <Avatar name={g} size={24} />
+                <span className="font-medium">{g}</span>
+                <button
+                  type="button"
+                  aria-label={`Remove ${g}`}
+                  onClick={() => onChange(guests.filter((x) => x !== g))}
+                  className="w-7 h-7 rounded-full text-subtle hover:text-fg hover:bg-panel flex items-center justify-center"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              </motion.li>
+            ))}
+          </AnimatePresence>
+        </ul>
+      )}
+      <div className="flex items-center gap-2">
+        <input
+          type="email"
+          value={text}
+          disabled={full}
+          onChange={(e) => {
+            setText(e.target.value);
+            setError("");
+          }}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" || e.key === ",") {
+              e.preventDefault();
+              add(text);
+            } else if (e.key === "Backspace" && !text && guests.length) {
+              onChange(guests.slice(0, -1));
+            }
+          }}
+          onBlur={() => text.trim() && add(text)}
+          onPaste={(e) => {
+            const t = e.clipboardData.getData("text");
+            if (/[\s,;]/.test(t.trim())) {
+              e.preventDefault();
+              add(t);
+            }
+          }}
+          placeholder={full ? "That is the most for one interview" : "name@company.com, press Enter to add"}
+          aria-label="Interviewer email"
+          aria-invalid={!!error}
+          className={`${inputCls} h-10 ${error ? "border-danger/60" : ""}`}
+        />
+        <Btn size="md" icon={Plus} disabled={!text.trim() || full} onClick={() => add(text)}>
+          Add
+        </Btn>
+      </div>
+      {error && <p className="text-[13px] text-danger">{error}</p>}
+    </section>
   );
 }
 
 /* ───────────────────────── Schedule ───────────────────────── */
 
-const SLOT_TIMES = Array.from({ length: 24 }, (_, i) => {
-  const h = 8 + Math.floor(i / 2);
-  return `${String(h).padStart(2, "0")}:${i % 2 ? "30" : "00"}`;
-});
-
-function days(n: number): Date[] {
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  return Array.from({ length: n }, (_, i) => new Date(today.getTime() + i * 86_400_000));
-}
-
-function sameDay(a: Date, b: Date) {
-  return a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
-}
-
 export function ScheduleStep({ state, patch }: { state: WizardState; patch: Patch }) {
   const format = formatOf(state.format);
-  const count = Math.max(1, state.candidates.length);
+  const rows: { key: string; name: string; email: string | null }[] = state.noCandidate || state.candidates.length === 0
+    ? [{ key: "open", name: "Open link", email: null }]
+    : state.candidates.map((c, i) => ({ key: c.id ?? c.email ?? `${c.name}-${i}`, name: c.name, email: c.email || null }));
+  const count = rows.length;
   const multi = count > 1;
-  const [mode, setMode] = useState<"stagger" | "each">("stagger");
   const [gap, setGap] = useState(15);
-  const timed = state.times.some(Boolean);
-  const first = parseLocal(state.times[0] ?? "");
   const suggested = suggestedMinutes(format, state.plan === "set" ? state.rounds : []);
   const withEmail = state.candidates.filter((c) => c.email).length;
   const tz = typeof Intl !== "undefined" ? Intl.DateTimeFormat().resolvedOptions().timeZone : "";
+  const times = Array.from({ length: count }, (_, i) => state.times[i] ?? "");
+  const set = times.filter(Boolean).length;
+  const clashes = timeClashes(times, state.minutes);
+  const now = Date.now();
 
-  const setStart = (d: Date) => {
-    const start = toLocalInput(d);
-    patch({ times: multi && mode === "stagger" ? staggerSlots(start, state.minutes, count, gap) : multi ? state.times.map((t, i) => (i === 0 ? start : t || start)) : [start] });
+  // First visit: suggest back-to-back times from tomorrow at 10:00. The
+  // recruiter can change or clear any of them.
+  useEffect(() => {
+    if (!state.timesSet && !state.times.some(Boolean)) patch({ times: staggerSlots(defaultStart(), state.minutes, count, gap), timesSet: true });
+    // Only on first open of the step.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const setRow = (i: number, v: string) => {
+    const next = [...times];
+    next[i] = v;
+    patch({ times: next, timesSet: true });
   };
-  const pickDay = (day: Date) => {
-    const base = first ?? new Date(day.getTime() + 10 * 3_600_000);
-    const d = new Date(day);
-    d.setHours(base.getHours(), base.getMinutes(), 0, 0);
-    setStart(d);
+  const fillFromFirst = (g = gap) => {
+    const start = times.find(Boolean) || defaultStart();
+    patch({ times: staggerSlots(start, state.minutes, count, g), timesSet: true });
   };
-  const pickTime = (hhmm: string) => {
-    const [h, m] = hhmm.split(":").map(Number);
-    const d = first ? new Date(first) : new Date(Date.now() + 86_400_000);
-    d.setHours(h, m, 0, 0);
-    setStart(d);
-  };
-  const setMinutes = (n: number) => {
-    const m = clampMinutes(n);
-    patch({ minutes: m, lengthSet: true, times: timed && multi && mode === "stagger" ? staggerSlots(state.times[0], m, count, gap) : state.times });
-  };
-  const toggleTimed = (on: boolean) => {
-    if (!on) return patch({ times: [] });
-    const d = new Date(Date.now() + 86_400_000);
-    d.setHours(10, 0, 0, 0);
-    setStart(d);
-  };
+  const setMinutes = (n: number) => patch({ minutes: clampMinutes(n), lengthSet: true });
 
   return (
     <div className="flex flex-col gap-6">
@@ -483,126 +574,84 @@ export function ScheduleStep({ state, patch }: { state: WizardState; patch: Patc
         </div>
       </section>
 
-      {/* When */}
-      <section className="rounded-xl border border-border bg-surface p-4 flex flex-col gap-4">
-        <Switch on={timed} onChange={toggleTimed} label="Set a time now" hint={timed ? "The time goes in the invite and on the Interviews list." : "No time in the invite. Agree on one with the candidate and join from the list."} />
-        <AnimatePresence initial={false}>
-          {timed && (
-            <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} transition={{ duration: 0.22 }} className="overflow-hidden flex flex-col gap-4">
-              <div className="flex gap-2 overflow-x-auto pb-1 -mx-1 px-1" role="radiogroup" aria-label="Day">
-                {days(14).map((d) => {
-                  const on = !!first && sameDay(d, first);
-                  const weekend = d.getDay() === 0 || d.getDay() === 6;
-                  return (
-                    <button
-                      key={d.toISOString()}
-                      type="button"
-                      role="radio"
-                      aria-checked={on}
-                      onClick={() => pickDay(d)}
-                      className={`relative shrink-0 w-[62px] h-[68px] rounded-xl border flex flex-col items-center justify-center transition-colors ${
-                        on ? "border-secondary text-fg" : `border-border hover:border-border-strong ${weekend ? "text-subtle" : "text-muted"}`
-                      }`}
-                    >
-                      {on && <motion.span layoutId="day-pill" transition={spring} className="absolute inset-0 rounded-xl bg-secondary/15" />}
-                      <span className="relative text-xs">{sameDay(d, new Date()) ? "Today" : d.toLocaleDateString("en-GB", { weekday: "short" })}</span>
-                      <span className="relative text-[18px] font-semibold tabular-nums leading-tight">{d.getDate()}</span>
-                      <span className="relative text-xs text-subtle">{d.toLocaleDateString("en-GB", { month: "short" })}</span>
-                    </button>
-                  );
-                })}
-              </div>
-              <div className="grid grid-cols-4 sm:grid-cols-6 lg:grid-cols-8 gap-1.5" role="radiogroup" aria-label="Start time">
-                {SLOT_TIMES.map((t) => {
-                  const on = !!first && `${String(first.getHours()).padStart(2, "0")}:${String(first.getMinutes()).padStart(2, "0")}` === t;
-                  return (
-                    <button
-                      key={t}
-                      type="button"
-                      role="radio"
-                      aria-checked={on}
-                      onClick={() => pickTime(t)}
-                      className={`relative h-9 rounded-lg border text-[13px] tabular-nums transition-colors ${on ? "border-secondary text-fg font-semibold" : "border-border text-muted hover:text-fg hover:border-border-strong"}`}
-                    >
-                      {on && <motion.span layoutId="time-pill" transition={spring} className="absolute inset-0 rounded-lg bg-secondary/15" />}
-                      <span className="relative">{t}</span>
-                    </button>
-                  );
-                })}
-              </div>
-              <label className="flex items-center gap-2 text-[13px] text-muted">
-                Or type a time
-                <input
-                  type="datetime-local"
-                  value={state.times[0] ?? ""}
-                  onChange={(e) => {
-                    const d = parseLocal(e.target.value);
-                    if (d) setStart(d);
-                  }}
-                  className={inputCls.replace("w-full", "w-auto")}
-                />
-              </label>
-
-              {multi && (
-                <div className="flex flex-col gap-3 border-t border-border pt-4">
-                  <div className="flex flex-wrap items-center gap-3">
-                    <Segmented
-                      id="multi-mode"
-                      value={mode}
-                      onChange={(m) => {
-                        setMode(m);
-                        if (m === "stagger" && state.times[0]) patch({ times: staggerSlots(state.times[0], state.minutes, count, gap) });
-                      }}
-                      options={[
-                        { id: "stagger", label: "Back to back" },
-                        { id: "each", label: "Set each time" },
-                      ]}
-                    />
-                    {mode === "stagger" && (
-                      <span className="flex items-center gap-2 text-[13px] text-muted">
-                        Break between
-                        <Segmented
-                          id="gap"
-                          size="sm"
-                          value={String(gap)}
-                          onChange={(g) => {
-                            setGap(Number(g));
-                            if (state.times[0]) patch({ times: staggerSlots(state.times[0], state.minutes, count, Number(g)) });
-                          }}
-                          options={["0", "15", "30"].map((g) => ({ id: g, label: `${g} min` }))}
-                        />
-                      </span>
-                    )}
-                  </div>
-                  <ul className="flex flex-col gap-1.5">
-                    {state.candidates.map((c, i) => (
-                      <li key={c.id ?? c.email ?? i} className="flex flex-wrap items-center gap-3 rounded-lg bg-bg border border-border px-3 py-2">
-                        <Avatar name={c.name} size={26} />
-                        <span className="text-[13px] font-medium text-fg flex-1 min-w-[120px] truncate">{c.name}</span>
-                        {mode === "stagger" ? (
-                          <span className="text-[13px] text-muted tabular-nums">{fmtWhen(state.times[i] ?? "")}</span>
-                        ) : (
-                          <input
-                            type="datetime-local"
-                            aria-label={`Time for ${c.name}`}
-                            value={state.times[i] ?? ""}
-                            onChange={(e) => {
-                              const next = [...state.times];
-                              while (next.length < count) next.push("");
-                              next[i] = e.target.value;
-                              patch({ times: next });
-                            }}
-                            className={inputCls.replace("w-full", "w-auto")}
-                          />
-                        )}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-            </motion.div>
+      {/* When: one row per interviewee, each with its own picker */}
+      <section className="rounded-xl border border-border bg-surface p-4 flex flex-col gap-3">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="min-w-0">
+            <h3 className="text-[15px] font-semibold text-fg">{state.noCandidate ? "Start time" : multi ? `Interviewees (${count})` : "Interviewee"}</h3>
+            <p className="text-[13px] text-muted">
+              {set === 0 ? "No times yet. Agree on one with each candidate and join from the list." : set < count ? `${count - set} without a time get the invite without one.` : "Each time goes in that invite and on the Interviews list."}
+            </p>
+          </div>
+          {multi && (
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="text-[13px] text-muted">Break</span>
+              <Segmented
+                id="gap"
+                size="sm"
+                value={String(gap)}
+                onChange={(g) => setGap(Number(g))}
+                options={["0", "15", "30"].map((g) => ({ id: g, label: `${g} min` }))}
+              />
+              <Btn icon={ListOrdered} onClick={() => fillFromFirst()}>
+                Back to back
+              </Btn>
+            </div>
           )}
-        </AnimatePresence>
+        </div>
+        <ul className="flex flex-col gap-1.5">
+          <AnimatePresence initial={false}>
+            {rows.map((r, i) => {
+              const d = parseLocal(times[i]);
+              const past = !!d && d.getTime() < now;
+              const clash = clashes.has(i);
+              return (
+                <motion.li
+                  key={r.key}
+                  layout
+                  initial={{ opacity: 0, y: 6 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, height: 0 }}
+                  transition={spring}
+                  className="flex flex-wrap items-center gap-x-3 gap-y-2 rounded-lg bg-bg border border-border px-3 py-2.5"
+                >
+                  {state.noCandidate ? (
+                    <span className="w-[26px] h-[26px] rounded-full bg-panel text-subtle flex items-center justify-center">
+                      <Link2 className="w-3.5 h-3.5" aria-hidden />
+                    </span>
+                  ) : (
+                    <Avatar name={r.name} size={26} />
+                  )}
+                  <span className="flex-1 min-w-[140px]">
+                    <span className="block text-[13px] font-medium text-fg truncate">{r.name}</span>
+                    <span className="block text-xs text-subtle truncate">
+                      {clash ? <span className="text-warning">Overlaps another interview</span> : past ? <span className="text-warning">This time has passed</span> : d ? fmtWhen(times[i]) : r.email ?? "No time yet"}
+                    </span>
+                  </span>
+                  <span className="flex items-center gap-1.5">
+                    <CalendarClock className="w-4 h-4 text-subtle" aria-hidden />
+                    <input
+                      type="datetime-local"
+                      aria-label={`Date and time for ${r.name}`}
+                      value={times[i]}
+                      onChange={(e) => setRow(i, e.target.value)}
+                      className={`${inputCls.replace("w-full", "w-[210px]")} tabular-nums [color-scheme:light] dark:[color-scheme:dark] ${clash || past ? "border-warning/50" : ""}`}
+                    />
+                    <button
+                      type="button"
+                      aria-label={`Clear the time for ${r.name}`}
+                      disabled={!times[i]}
+                      onClick={() => setRow(i, "")}
+                      className="w-8 h-9 rounded-lg text-subtle hover:text-fg hover:bg-panel disabled:opacity-30 disabled:pointer-events-none flex items-center justify-center"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  </span>
+                </motion.li>
+              );
+            })}
+          </AnimatePresence>
+        </ul>
       </section>
 
       {/* Briefs and invite */}
@@ -617,7 +666,7 @@ export function ScheduleStep({ state, patch }: { state: WizardState; patch: Patc
             placeholder="What to probe, what the hiring manager cares about, anything from earlier rounds."
             className={textareaCls}
           />
-          <span className="text-xs text-subtle">Only the host and panel see this.</span>
+          <span className="text-xs text-subtle">Only interviewers see this, including anyone you emailed.</span>
         </label>
         {format?.coding ? (
           <label className="flex flex-col gap-1.5">
@@ -687,6 +736,8 @@ export function ReviewStep({
   const issues = stepIssues(state, "review");
   const Icon = format ? FORMAT_ICON[format.id] : Code2;
   const people = state.noCandidate ? [] : state.candidates;
+  const timedCount = people.filter((_, i) => state.times[i]).length;
+  const guests = state.guests ?? [];
 
   const questions =
     state.plan === "later"
@@ -735,7 +786,7 @@ export function ReviewStep({
           icon={UserPlus}
           title="Interviewers"
           value={`${name(state.hostId)} hosts`}
-          detail={state.panelIds.length ? `Panel: ${state.panelIds.map(name).join(", ")}` : "No panel"}
+          detail={[state.panelIds.length ? `Panel: ${state.panelIds.map(name).join(", ")}` : "No panel", guests.length ? `Details emailed to ${guests.join(", ")}` : null].filter(Boolean).join(". ")}
         />
         <ReviewCard step="questions" goTo={goTo} icon={MessagesSquare} title="Questions" value={questions} detail={state.plan === "set" && state.rounds.length ? state.rounds.map((r) => r.title).join(", ") : state.plan === "later" && state.questionsNote ? `Note: ${state.questionsNote}` : undefined} tone={state.plan === "later" ? "warning" : undefined} />
         <ReviewCard
@@ -743,8 +794,8 @@ export function ReviewStep({
           goTo={goTo}
           icon={CalendarClock}
           title="Schedule"
-          value={`${fmtMinutes(state.minutes)}, ${state.times[0] ? fmtWhen(state.times[0]) : "no time yet"}`}
-          detail={people.length > 1 && state.times[0] ? `Last starts ${fmtWhen(state.times[people.length - 1] ?? "")}` : undefined}
+          value={`${fmtMinutes(state.minutes)}, ${people.length > 1 ? `${timedCount} of ${people.length} with a time` : state.times[0] ? fmtWhen(state.times[0]) : "no time yet"}`}
+          detail={people.length > 1 ? people.map((p, i) => `${firstName(p.name)} ${state.times[i] ? fmtWhen(state.times[i]) : "no time"}`).join(", ") : undefined}
         />
         <ReviewCard
           step="schedule"

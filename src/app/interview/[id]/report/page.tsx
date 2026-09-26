@@ -18,6 +18,7 @@ import {
   ScanEye,
 } from "lucide-react";
 import { isInterviewerFor } from "@/lib/interview/wizard";
+import { guestFor } from "@/lib/interview/guests";
 
 export const metadata = {
   title: "Executive Candidate Report — Interviewpad Recruiter",
@@ -28,10 +29,10 @@ export default async function CandidateReportPage({
   searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ token?: string }>;
+  searchParams: Promise<{ token?: string; guest?: string }>;
 }) {
   const { id } = await params;
-  const { token } = await searchParams;
+  const { token, guest: guestKey } = await searchParams;
 
   const session = await auth().catch(() => null);
   const interview = await prisma.interviewSession.findUnique({
@@ -45,7 +46,8 @@ export default async function CandidateReportPage({
   if (!interview) notFound();
 
   // Access: owner OR holder of correct shareToken.
-  const isOwner = isInterviewerFor(interview, session?.user?.id);
+  const guest = interview.creatorRole === "interviewer" ? await guestFor(interview.id, guestKey) : null;
+  const isOwner = isInterviewerFor(interview, session?.user?.id) || !!guest;
   const hasShareToken = !!token && token === interview.shareToken;
   if (!isOwner && !hasShareToken) {
     if (!session?.user?.id) {
@@ -187,7 +189,7 @@ export default async function CandidateReportPage({
       {/* TOP CONTROL BAR (Hidden on Print) */}
       <div className="max-w-4xl mx-auto mb-8 flex items-center justify-between no-print bg-[#18181b] border border-[#27272a] rounded-2xl p-4 shadow-xl">
         <Link
-          href={`/interview/${interview.id}?token=${interview.shareToken}`}
+          href={guest ? `/interview/${interview.id}?guest=${encodeURIComponent(guestKey!)}` : `/interview/${interview.id}?token=${interview.shareToken}`}
           className="flex items-center gap-2 text-xs font-bold text-muted hover:text-fg transition-all"
         >
           <ArrowLeft className="w-4 h-4" />

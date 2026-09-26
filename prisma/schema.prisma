@@ -670,6 +670,7 @@ model InterviewSession {
   /// Only interviewers write it.
   toolsJson          String?
   toolUpdates        InterviewToolUpdate[]
+  guests             InterviewGuest[]
   createdAt          DateTime         @default(now())
   takeHomeTemplate   TakeHomeTemplate? @relation(fields: [takeHomeTemplateId], references: [id], onDelete: SetNull)
   rubric             InterviewRubric?
@@ -699,6 +700,21 @@ model InterviewToolUpdate {
   session   InterviewSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
 
   @@index([sessionId, id])
+}
+
+/// An interviewer who is not a workspace member. HR types their email in the
+/// wizard; they get the details and a private link (`?guest=<token>`) that
+/// opens the interviewer side of this one room without an account.
+model InterviewGuest {
+  id        String           @id @default(cuid())
+  sessionId String
+  email     String
+  token     String           @unique
+  sentAt    DateTime?
+  createdAt DateTime         @default(now())
+  session   InterviewSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@unique([sessionId, email])
 }
 
 /// A saved take-home question set ("Senior frontend take home") that a

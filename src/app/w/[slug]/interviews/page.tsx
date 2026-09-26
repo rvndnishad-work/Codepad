@@ -41,6 +41,7 @@ export default async function InterviewsPage({ params, searchParams }: Props) {
       promptScenarioIds: true,
       userId: true,
       user: { select: { name: true, email: true } },
+      guests: { select: { email: true }, orderBy: { createdAt: "asc" } },
     },
   });
   const count = (raw: string) => {
@@ -73,7 +74,8 @@ export default async function InterviewsPage({ params, searchParams }: Props) {
       minutes: Math.round(s.totalSec / 60),
       when: (s.finishedAt ?? s.startedAt ?? s.scheduledAt)?.toISOString() ?? (s.format ? null : s.createdAt.toISOString()),
       interviewer: s.user.name ?? s.user.email,
-      panel: parsePanel(s.panelJson).map((id) => nameOf.get(id) ?? "Teammate"),
+      // Emailed interviewers (no account) show by their address.
+      panel: [...parsePanel(s.panelJson).map((id) => nameOf.get(id) ?? "Teammate"), ...s.guests.map((g) => g.email)],
       format: formatOf(s.format)?.label ?? null,
       questions: done
         ? "ready"

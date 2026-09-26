@@ -2,14 +2,18 @@ import { describe, expect, it } from "vitest";
 import {
   FORMAT_BY_ID,
   STEPS,
+  defaultStart,
   defaultTitle,
   isInterviewerFor,
+  nextSlot,
+  normalizeGuests,
   parsePanel,
   plansFor,
   questionState,
   staggerSlots,
   stepIssues,
   suggestedMinutes,
+  timeClashes,
   type WizardState,
 } from "@/lib/interview/wizard";
 
@@ -107,5 +111,34 @@ describe("interview wizard helpers", () => {
     expect(questionState({ questionPlan: "later", roundCount: 0, guideTemplateId: "g" })).toBe("ready");
     expect(questionState({ questionPlan: "open", roundCount: 0 })).toBe("open");
     expect(questionState({ questionPlan: "set", roundCount: 1 })).toBe("ready");
+  });
+});
+
+describe("schedule and emailed interviewers", () => {
+  it("suggests tomorrow at 10:00 as the first start", () => {
+    expect(defaultStart(new Date(2026, 8, 30, 17, 45))).toBe("2026-10-01T10:00");
+  });
+
+  it("gives someone new the slot after the previous person", () => {
+    expect(nextSlot("2026-10-01T10:00", 45)).toBe("2026-10-01T11:00");
+    expect(nextSlot("2026-10-01T10:00", 45, 0)).toBe("2026-10-01T10:45");
+    expect(nextSlot("", 45)).toBe("");
+  });
+
+  it("flags interviews that overlap, whatever order they were typed in", () => {
+    const t = ["2026-10-01T11:00", "2026-10-01T10:00", "", "2026-10-01T10:30", "2026-10-01T13:00"];
+    expect([...timeClashes(t, 60)].sort()).toEqual([0, 1, 3]);
+    expect(timeClashes(staggerSlots("2026-10-01T10:00", 60, 4, 0), 60).size).toBe(0);
+    expect(timeClashes(["", ""], 60).size).toBe(0);
+  });
+
+  it("cleans typed emails", () => {
+    expect(normalizeGuests([" Mei@Acme.io ", "mei@acme.io", "", "sam@acme.io"])).toEqual(["mei@acme.io", "sam@acme.io"]);
+    expect(normalizeGuests(Array.from({ length: 14 }, (_, i) => `p${i}@x.io`))).toHaveLength(10);
+  });
+
+  it("blocks the Interviewers step on a bad email", () => {
+    expect(stepIssues({ ...base, guests: ["mei@acme.io"] }, "panel")).toEqual([]);
+    expect(stepIssues({ ...base, guests: ["mei@acme"] }, "panel")).toEqual(["One of the emails does not look right."]);
   });
 });

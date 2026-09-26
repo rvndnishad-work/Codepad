@@ -226,8 +226,10 @@ export function toolRole(
   s: { userId: string; panelJson: string | null; creatorRole: string; shareToken: string },
   userId: string | null | undefined,
   token: string | null | undefined,
+  /** Came in with a valid emailed interviewer key (`?guest=`). */
+  guest = false,
 ): "interviewer" | "candidate" | null {
-  const isOwner = !!userId && (s.userId === userId || parsePanel(s.panelJson).includes(userId));
+  const isOwner = (guest && s.creatorRole === "interviewer") || (!!userId && (s.userId === userId || parsePanel(s.panelJson).includes(userId)));
   const hasToken = !!token && token === s.shareToken;
   if (s.creatorRole === "interviewer") {
     if (isOwner) return "interviewer";

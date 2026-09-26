@@ -3,6 +3,7 @@ import { z } from "zod";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { isInterviewerFor } from "@/lib/interview/wizard";
+import { guestFromRequest } from "@/lib/interview/guests";
 
 const patchSchema = z.object({
   status: z.enum(["scheduled", "in_progress", "completed", "abandoned"]).optional(),
@@ -87,7 +88,9 @@ export async function PATCH(
   });
   if (!existing) return NextResponse.json({ error: "not found" }, { status: 404 });
 
-  const isOwner = isInterviewerFor(existing, session?.user?.id);
+  // Host, panel, or an interviewer HR emailed (`?guest=`).
+  const guest = existing.creatorRole === "interviewer" ? await guestFromRequest(req, id) : null;
+  const isOwner = isInterviewerFor(existing, session?.user?.id) || !!guest;
   const { searchParams } = new URL(req.url);
   const token = searchParams.get("token");
   const hasShareToken = !!token && token === existing.shareToken;
@@ -194,7 +197,7 @@ export async function PATCH(
     void writeWorkspaceAuditEntry({
       workspaceId: existing.workspaceId,
       actorUserId: session?.user?.id ?? null,
-      actorEmail: session?.user?.email ?? null,
+      actorEmail: session?.user?.email ?? guest?.email ?? null,
       action: "INTERVIEW_VERDICT_RECORDED",
       targetType: "candidate",
       targetId: existing.candidateId,

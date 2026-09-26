@@ -1106,7 +1106,7 @@ export default function WorkspaceDashboardClient({
                     </li>
                   </ul>
                   <Link
-                    href={`/interview/new?workspaceSlug=${workspace.slug}`}
+                    href={`/w/${workspace.slug}/interviews/new`}
                     className="inline-flex items-center gap-1.5 px-3 py-2 rounded-md bg-secondary hover:brightness-110 text-bg text-xs font-semibold transition-colors"
                   >
                     <Plus className="w-3.5 h-3.5" />

@@ -641,6 +641,35 @@ model InterviewSession {
   /// Take-home only: set when a recruiter cancels the invite. Status is
   /// "cancelled" and the candidate link stops working.
   cancelledAt        DateTime?
+  /// ── Live interview setup (interview wizard) ────────────────────────────
+  /// Interview format: "coding" | "discussion" | "behavioural" | "intro" |
+  /// "mixed". Null for sessions made before the wizard.
+  format             String?
+  /// JSON string[] of co-interviewer user ids. They open the room with the
+  /// same interviewer view as the host (`userId`).
+  panelJson          String?
+  /// How the questions get decided: "set" (picked at setup), "later" (a
+  /// teammate picks them before the interview) or "open" (no set questions).
+  questionPlan       String           @default("set")
+  /// The teammate asked to pick the questions when questionPlan = "later".
+  questionsOwnerId   String?
+  /// Note for that teammate, e.g. "Senior React, focus on state".
+  questionsNote      String?
+  /// Questionnaire (AIInterviewTemplate kind "conversation") used as the
+  /// interviewer's question guide. Shown to interviewers only.
+  guideTemplateId    String?
+  /// Private brief for the interviewers. Never shown to the candidate.
+  interviewerBrief   String?
+  /// Who set the interview up, when that is not the host.
+  createdById        String?
+  /// Shared by the interviews scheduled together in one wizard run (one per
+  /// candidate), so questions picked later can apply to all of them.
+  setupGroupId       String?
+  /// Live room toolbox, JSON (see src/lib/interview/tools.ts): which tools are
+  /// switched on, which one is presented, the question card and the timer.
+  /// Only interviewers write it.
+  toolsJson          String?
+  toolUpdates        InterviewToolUpdate[]
   createdAt          DateTime         @default(now())
   takeHomeTemplate   TakeHomeTemplate? @relation(fields: [takeHomeTemplateId], references: [id], onDelete: SetNull)
   rubric             InterviewRubric?
@@ -655,6 +684,21 @@ model InterviewSession {
   /// Listing take-home sessions per workspace (IP-88).
   @@index([workspaceId, type])
   @@index([takeHomeTemplateId])
+  @@index([questionsOwnerId])
+  @@index([setupGroupId])
+}
+
+/// Yjs updates for the shared tools in a live interview room (whiteboard,
+/// code pad, notes, ranking). Clients append and read with an id cursor;
+/// old rows are merged into one now and then.
+model InterviewToolUpdate {
+  id        Int              @id @default(autoincrement())
+  sessionId String
+  update    Bytes
+  createdAt DateTime         @default(now())
+  session   InterviewSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@index([sessionId, id])
 }
 
 /// A saved take-home question set ("Senior frontend take home") that a

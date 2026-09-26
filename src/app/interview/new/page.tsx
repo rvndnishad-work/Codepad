@@ -28,7 +28,7 @@ export const metadata = {
 export default async function NewInterviewPage({
   searchParams,
 }: {
-  searchParams?: Promise<{ role?: string; type?: string; workspaceSlug?: string }>;
+  searchParams?: Promise<{ role?: string; type?: string; workspaceSlug?: string; candidateId?: string; challenges?: string }>;
 }) {
   const session = await auth().catch(() => null);
   await validatePageAccess("/interview/new", session);
@@ -36,7 +36,15 @@ export default async function NewInterviewPage({
     redirect(`/login?next=${encodeURIComponent("/interview/new")}`);
   }
 
-  const sp = searchParams ? await searchParams : {};
+  const sp: { role?: string; type?: string; workspaceSlug?: string; candidateId?: string; challenges?: string } = searchParams ? await searchParams : {};
+  // Workspace interviews are set up in the interview wizard now.
+  if (sp.workspaceSlug) {
+    const qs = new URLSearchParams();
+    if (sp.candidateId) qs.set("candidateId", sp.candidateId);
+    if (sp.challenges) qs.set("challenges", sp.challenges);
+    const q = qs.toString();
+    redirect(`/w/${encodeURIComponent(sp.workspaceSlug)}/interviews/new${q ? `?${q}` : ""}`);
+  }
   const queryRole = sp.role ?? null;
   const dbUserType = (session.user as { userType?: string | null } | undefined)?.userType ?? null;
   const userType = queryRole === "candidate" ? "candidate" : dbUserType;

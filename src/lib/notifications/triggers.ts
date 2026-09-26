@@ -166,6 +166,34 @@ export async function notifyInterviewScheduled(args: {
 }
 
 /* ──────────────────────────────────────────────────────────────────────────
+ * 4b. A teammate is asked to pick the questions for a live interview
+ * ────────────────────────────────────────────────────────────────────────── */
+export async function notifyInterviewQuestionsRequested(args: {
+  userId: string;
+  actorId: string;
+  actorName: string;
+  workspaceSlug: string;
+  sessionIds: string[];
+  title: string;
+  note: string | null;
+}) {
+  if (args.userId === args.actorId || args.sessionIds.length === 0) return;
+  try {
+    const n = args.sessionIds.length;
+    await createNotification({
+      userId: args.userId,
+      type: NOTIFICATION_TYPES.INTERVIEW_QUESTIONS_REQUESTED,
+      title: `Pick questions: ${args.title}`,
+      body: `${args.actorName} asked you to choose the questions${n > 1 ? ` for ${n} interviews` : ""}.${args.note ? ` Note: ${args.note}` : ""}`,
+      href: `/w/${args.workspaceSlug}/interviews/${args.sessionIds[0]}/questions`,
+      payload: { sessionIds: args.sessionIds },
+    });
+  } catch (err) {
+    logErr("INTERVIEW_QUESTIONS_REQUESTED", err);
+  }
+}
+
+/* ──────────────────────────────────────────────────────────────────────────
  * 5. Prompt attempt upvoted
  * ────────────────────────────────────────────────────────────────────────── */
 export async function notifyPromptUpvoted(args: {

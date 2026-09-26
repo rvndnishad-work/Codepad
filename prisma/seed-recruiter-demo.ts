@@ -655,6 +655,74 @@ async function seedInterviews(ctx: Ctx, challengeIds: Record<string, string>) {
       },
     });
   }
+
+  // Set up with the interview wizard: a behavioural round run from a
+  // questionnaire, and a coding round whose questions an engineer picks later.
+  const wizard = [
+    {
+      key: "lucas_behavioural",
+      candidate: "lucas",
+      title: "Behavioural interview with Lucas",
+      host: "priya" as TeamKey,
+      panel: ["mei" as TeamKey],
+      format: "behavioural",
+      plan: "set",
+      guide: sid("qset", "ownership"),
+      owner: null as TeamKey | null,
+      note: null as string | null,
+      brief: "Second round. The hiring manager wants examples of disagreeing with a lead and owning a mistake.",
+      atDays: 2,
+      hour: 11,
+      minutes: 45,
+    },
+    {
+      key: "sara_coding",
+      candidate: "sara",
+      title: "Coding interview with Sara",
+      host: "priya" as TeamKey,
+      panel: ["daniel" as TeamKey],
+      format: "coding",
+      plan: "later",
+      guide: null,
+      owner: "daniel" as TeamKey | null,
+      note: "Senior frontend role. Something with React state and async data, about 45 minutes.",
+      brief: null,
+      atDays: 3,
+      hour: 15,
+      minutes: 60,
+    },
+  ];
+  for (const [i, w] of wizard.entries()) {
+    const c = ctx.candidates.get(w.candidate)!;
+    const guide = w.guide ? await prisma.aIInterviewTemplate.findUnique({ where: { id: w.guide }, select: { id: true } }) : null;
+    await prisma.interviewSession.create({
+      data: {
+        id: sid("iv", w.key),
+        userId: ctx.team[w.host].id,
+        workspaceId: ctx.workspaceId,
+        candidateId: c.id,
+        candidateName: c.name,
+        title: w.title,
+        type: "live",
+        creatorRole: "interviewer",
+        sourceType: "combined",
+        challengeIds: "[]",
+        totalSec: w.minutes * 60,
+        status: "scheduled",
+        shareToken: token(),
+        shortCode: String(2000 + i * 1373),
+        scheduledAt: at(w.atDays, w.hour),
+        createdAt: at(-1, 9),
+        format: w.format,
+        panelJson: JSON.stringify(w.panel.map((k) => ctx.team[k].id)),
+        questionPlan: w.plan,
+        questionsOwnerId: w.owner ? ctx.team[w.owner].id : null,
+        questionsNote: w.note,
+        guideTemplateId: guide?.id ?? null,
+        interviewerBrief: w.brief,
+      },
+    });
+  }
 }
 
 /* ── AI screening ────────────────────────────────────────────────────────── */
@@ -1060,7 +1128,7 @@ async function main() {
   const challengeIds = await seedChallenges(ctx);
   await seedTakeHomes(ctx, challengeIds);
   await seedInterviews(ctx, challengeIds);
-  console.log(`  ✓ Take home and interviews: ${CHALLENGES.length} challenges, ${TAKE_HOME_TEMPLATES.length} templates, ${TAKE_HOMES.length + LEGACY_TAKE_HOMES.length} take-homes, ${INTERVIEWS.length} interviews`);
+  console.log(`  ✓ Take home and interviews: ${CHALLENGES.length} challenges, ${TAKE_HOME_TEMPLATES.length} templates, ${TAKE_HOMES.length + LEGACY_TAKE_HOMES.length} take-homes, ${INTERVIEWS.length + 2} interviews`);
   await seedPromptTasks(ctx);
   console.log(`  ✓ Prompt tasks: ${PROMPT_TASKS.length} team scenarios, ${PROMPT_ATTEMPTS.length} graded attempts`);
   await seedScreenings(ctx);

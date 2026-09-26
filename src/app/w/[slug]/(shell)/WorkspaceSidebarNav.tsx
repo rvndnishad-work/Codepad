@@ -5,6 +5,7 @@ import { usePathname, useSearchParams } from "next/navigation";
 import {
   BookOpen,
   Bot,
+  CalendarDays,
   ClipboardList,
   CreditCard,
   Home,
@@ -145,6 +146,8 @@ export default function WorkspaceSidebarNav({ slug, growthFeatures, counts, coll
   ];
 
   const connections: NavItem[] = [
+    // Per-member calendars: useful on every plan.
+    { label: "Calendar", icon: CalendarDays, ...route("calendar") },
     growth({ label: "ATS sync", icon: RefreshCw, ...route("ats") }),
     growth({ label: "API keys", icon: KeyRound, ...route("api-keys") }),
     growth({ label: "Webhooks", icon: Webhook, ...route("webhooks") }),

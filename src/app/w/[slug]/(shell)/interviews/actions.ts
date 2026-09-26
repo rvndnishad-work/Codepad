@@ -15,6 +15,7 @@ import { TOOL_IDS, defaultTools, initialTools } from "@/lib/interview/tools";
 import { inviteGuests, type DeliveryStatus } from "@/lib/interview/guests";
 import { candidateRoomPath } from "@/lib/interview/room-server";
 import { cleanMeetingUrl, MAX_MEETING_URL } from "@/lib/interview/meeting";
+import { cancelInterviewEvent, syncInterviewEvent } from "@/lib/calendar/server";
 import {
   formatOf,
   isEmail,
@@ -111,6 +112,8 @@ const scheduleSchema = z.object({
   brief: z.string().trim().max(2000),
   candidateBrief: z.string().trim().max(2000),
   sendInvites: z.boolean(),
+  /** Put each timed interview on the organiser's connected calendar. */
+  calendarEvent: z.boolean().optional(),
   tools: z.array(z.enum(TOOL_IDS)).max(TOOL_IDS.length).optional(),
 });
 
@@ -125,6 +128,8 @@ export type Scheduled = {
   invite: DeliveryStatus | null;
   /** Private candidate link path (signed, expiring). */
   candidateLink: string;
+  /** What happened to the calendar event, when one was asked for. */
+  calendar?: "created" | "updated" | "cancelled" | "skipped" | "failed";
 };
 
 function splitRounds(rounds: { kind: string; id: string }[]) {
@@ -231,6 +236,14 @@ export async function scheduleInterviewsAction(slug: string, raw: ScheduleInput)
       });
       if (d.sendInvites && res.inviteEmail) {
         toInvite.push({ session: { id: res.id, shareToken: res.shareToken, shortCode: res.shortCode }, email: res.inviteEmail, candidateName: res.candidateName, scheduledAt: p.time ? new Date(p.time) : null });
+      }
+    }
+
+    // The organiser's calendar gets one event per timed interview: the host's
+    // calendar when connected, otherwise the scheduler's.
+    if (d.calendarEvent) {
+      for (const c of created) {
+        if (c.scheduledAt) c.calendar = (await syncInterviewEvent(c.id, { organiserIds: [d.hostId, a.userId] })).status;
       }
     }
 
@@ -409,6 +422,8 @@ export async function deleteInterviewAction(slug: string, id: string): Promise<R
     if (s.userId !== a.userId && !(await canMember(member, "interview:manage"))) {
       throw new ActionError("Only the host or someone who manages interviews can delete it.");
     }
+    // Cancel the calendar event first; the row goes with the session.
+    await cancelInterviewEvent(s.id);
     // Attempts point at the session by id only, so they go first; the rest cascades.
     await prisma.$transaction([
       prisma.challengeAttempt.deleteMany({ where: { sessionId: s.id } }),

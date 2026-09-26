@@ -22,6 +22,7 @@ import { guestFor } from "@/lib/interview/guests";
 import { roomViewer } from "@/lib/interview/room-access";
 import { headers } from "next/headers";
 import { loadInterviewReport } from "@/lib/interview/report-server";
+import { loadReportScorecards } from "@/lib/interview/scorecard-server";
 import InterviewReportView from "@/app/w/[slug]/(shell)/interviews/[id]/report/InterviewReportView";
 
 export const metadata = {
@@ -85,9 +86,19 @@ export default async function CandidateReportPage({
     if (ws && member) redirect(`/w/${ws.slug}/interviews/${interview.id}/report`);
     const report = await loadInterviewReport(interview.id);
     if (!report) notFound();
+    // Emailed interviewers see the panel's scorecards once they submit their own.
+    const scorecards = await loadReportScorecards(interview.id, { guestId: viewer?.guestId ?? null });
+    const q = guestKey && viewer?.via === "guest" ? `?guest=${encodeURIComponent(guestKey)}` : "";
     return (
       <div className="min-h-screen bg-bg text-fg">
-        <InterviewReportView report={report} slug={null} canDelete={false} standalone />
+        <InterviewReportView
+          report={report}
+          slug={null}
+          canDelete={false}
+          standalone
+          scorecards={scorecards}
+          scorecardHref={scorecards?.viewer.state ? `/interview/${interview.id}/scorecard${q}` : null}
+        />
       </div>
     );
   }

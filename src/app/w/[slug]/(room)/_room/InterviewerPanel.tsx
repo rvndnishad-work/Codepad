@@ -171,8 +171,19 @@ export default function InterviewerPanel({
 
         {tab === "score" && (
           <div className="grid gap-5">
+            <a
+              href={data.viewer.via === "member" ? `/w/${data.workspace.slug}/interviews/${id}/scorecard` : `/interview/${id}/scorecard`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="rounded-xl border border-border bg-bg p-3 hover:border-border-strong"
+            >
+              <span className="block text-[13.5px] font-medium text-fg">Your own scorecard</span>
+              <span className="block mt-0.5 text-[12.5px] leading-relaxed text-muted">
+                Rate each criterion from 1 to 4 and pick a recommendation. The rest of the panel cannot see it until they submit theirs.
+              </span>
+            </a>
             <div className="flex items-center justify-between">
-              <p className="text-[12px] text-subtle">Rate 1 to 5</p>
+              <p className="text-[12px] text-subtle">Shared room ratings, 1 to 5</p>
               <SaveState s={scoreState} />
             </div>
             {CRITERIA.map((c) => (

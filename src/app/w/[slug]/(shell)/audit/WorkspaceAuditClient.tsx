@@ -185,6 +185,22 @@ const ACTION_META: Record<string, { label: string; tone: string }> = {
     label: "Interview deleted",
     tone: "border-danger/30 bg-danger/[0.05] text-danger",
   },
+  INTERVIEW_SCORECARD_SUBMITTED: {
+    label: "Interview scorecard submitted",
+    tone: "border-border bg-panel text-muted",
+  },
+  INTERVIEW_SCORECARD_AMENDED: {
+    label: "Submitted scorecard amended",
+    tone: "border-warning/30 bg-warning/[0.06] text-warning",
+  },
+  INTERVIEW_SCORECARDS_NUDGED: {
+    label: "Scorecard reminder sent",
+    tone: "border-border bg-panel text-muted",
+  },
+  INTERVIEW_PASS_MARK_CHANGED: {
+    label: "Interview pass mark changed",
+    tone: "border-secondary/30 bg-secondary/[0.06] text-secondary",
+  },
   ATS_INTEGRATION_CONNECTED: {
     label: "ATS connected / updated",
     tone: "border-success/30 bg-success/[0.06] text-success",

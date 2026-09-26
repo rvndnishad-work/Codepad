@@ -677,6 +677,13 @@ model InterviewSession {
   meetingUrl         String?
   /// Guide questions picked from the public bank for this room (questionnaire JSON, reference answers included). Interviewers only.
   guideJson          String?
+  /// Interview pass mark on the 1 to 4 scorecard scale. Null means the
+  /// default (see src/lib/interview/scorecard.ts). It only labels the panel
+  /// average; a recruiter still decides who passes.
+  scorecardPassMark  Float?
+  /// Last time someone emailed the interviewers who still owe a scorecard.
+  scorecardNudgedAt  DateTime?
+  scorecards         InterviewScorecard[]
   toolUpdates        InterviewToolUpdate[]
   presence           InterviewPresence[]
   guests             InterviewGuest[]
@@ -752,6 +759,56 @@ model InterviewGuest {
   session   InterviewSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
 
   @@unique([sessionId, email])
+}
+
+/// One interviewer's structured scorecard for one live interview. Workspace
+/// interviewers are keyed "u:<userId>", emailed guests "g:<guestId>".
+/// Drafts are private to their author. Once submitted the card is locked:
+/// the author can only amend it with a reason, and every amendment is kept
+/// in InterviewScorecardEdit.
+model InterviewScorecard {
+  id             String                   @id @default(cuid())
+  sessionId      String
+  reviewerKey    String
+  userId         String?
+  guestId        String?
+  /// Name shown to the panel, snapshotted so the card stays readable.
+  reviewerName   String
+  /// Criteria as they were when the card was started, JSON
+  /// [{ id, label, hint, kind }].
+  criteriaJson   String
+  /// JSON { [criterionId]: { r: 1..4 | null, n: string } }.
+  ratingsJson    String                   @default("{}")
+  /// Overall evidence written by the interviewer.
+  notes          String?
+  /// "no" | "unsure" | "yes". Null until picked.
+  recommendation String?
+  /// "draft" | "submitted".
+  status         String                   @default("draft")
+  submittedAt    DateTime?
+  createdAt      DateTime                 @default(now())
+  updatedAt      DateTime                 @updatedAt
+  session        InterviewSession         @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  edits          InterviewScorecardEdit[]
+
+  @@unique([sessionId, reviewerKey])
+  @@index([sessionId, status])
+}
+
+/// A change to a scorecard after it was submitted: who, why, and the card
+/// before and after.
+model InterviewScorecardEdit {
+  id          String             @id @default(cuid())
+  scorecardId String
+  actorKey    String
+  actorName   String
+  reason      String
+  beforeJson  String
+  afterJson   String
+  createdAt   DateTime           @default(now())
+  scorecard   InterviewScorecard @relation(fields: [scorecardId], references: [id], onDelete: Cascade)
+
+  @@index([scorecardId, createdAt])
 }
 
 /// A saved take-home question set ("Senior frontend take home") that a

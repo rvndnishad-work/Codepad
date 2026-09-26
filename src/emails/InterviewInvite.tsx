@@ -18,6 +18,8 @@ export type InterviewInviteProps = {
   /** ISO planned meeting time; null = "your recruiter will confirm the time". */
   scheduledAt: string | null;
   durationMin: number;
+  /** The team's video call link (Zoom, Meet, Teams...), if set. */
+  meetingUrl?: string | null;
 };
 
 export function InterviewInvite({
@@ -28,6 +30,7 @@ export function InterviewInvite({
   shortCode,
   scheduledAt,
   durationMin,
+  meetingUrl,
 }: InterviewInviteProps) {
   return (
     <BaseLayout
@@ -54,6 +57,16 @@ export function InterviewInvite({
         <Text style={{ ...emailStyles.scoreValue("#F3F4F6"), fontSize: 18 }}>
           ~{durationMin} minutes
         </Text>
+        {meetingUrl && (
+          <>
+            <Text style={{ ...emailStyles.scoreLabel, marginTop: 12 }}>Video call</Text>
+            <Text style={{ ...emailStyles.body, margin: 0 }}>
+              <a href={meetingUrl} style={emailStyles.link}>
+                {meetingUrl}
+              </a>
+            </Text>
+          </>
+        )}
         {shortCode && (
           <>
             <Text style={{ ...emailStyles.scoreLabel, marginTop: 12 }}>
@@ -93,6 +106,7 @@ export function interviewInviteText(p: InterviewInviteProps): string {
     p.scheduledAt
       ? `When: ${formatDeadlineUTC(p.scheduledAt)} (UTC).`
       : "Your recruiter will confirm the time.",
+    ...(p.meetingUrl ? ["", `Video call: ${p.meetingUrl}`] : []),
     ...(p.shortCode ? ["", `Access code: ${p.shortCode}`] : []),
     "",
     "Join here:",

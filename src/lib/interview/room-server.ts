@@ -77,6 +77,8 @@ export type RoomData = {
     tools: string[];
     round: string | null;
     verdict: string | null;
+    /** The team's video call link, if one was set. */
+    meetingUrl: string | null;
   };
   /** Interviewers see every round; candidates only the one on the stage. */
   rounds: RoundSummary[];
@@ -142,6 +144,7 @@ export async function loadRoom(
       totalSec: true,
       toolsJson: true,
       roomRound: true,
+      meetingUrl: true,
       verdict: true,
       notes: true,
       scenario: true,
@@ -331,6 +334,7 @@ export async function loadRoom(
         tools,
         round: stage ? stage.key : null,
         verdict: interviewer ? s.verdict : null,
+        meetingUrl: s.meetingUrl ?? null,
       },
       rounds,
       roundCount,

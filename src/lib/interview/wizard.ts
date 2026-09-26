@@ -6,6 +6,7 @@
  */
 
 import type { Paradigm } from "@/lib/interview/stack";
+import { cleanMeetingUrl } from "@/lib/interview/meeting";
 
 export type FormatId = "coding" | "discussion" | "behavioural" | "intro" | "mixed";
 export type QuestionPlan = "set" | "later" | "open";
@@ -138,6 +139,8 @@ export type WizardState = {
   minutes: number;
   /** One local datetime ("YYYY-MM-DDTHH:mm") per candidate, or one for the open link. Empty = no time yet. */
   times: string[];
+  /** Optional video call link (Zoom, Meet, Teams...). */
+  meetingUrl?: string;
   brief: string;
   candidateBrief: string;
   sendInvites: boolean;
@@ -188,9 +191,12 @@ export function stepIssues(s: WizardState, step: StepId): string[] {
       }
       return out;
     }
-    case "schedule":
+    case "schedule": {
       if (s.minutes < MIN_MINUTES || s.minutes > MAX_MINUTES) return [`Length must be between ${MIN_MINUTES} and ${MAX_MINUTES} minutes.`];
+      const m = cleanMeetingUrl(s.meetingUrl);
+      if (!m.ok) return [`Video call link: ${m.error}`];
       return [];
+    }
     case "review":
       return STEPS.filter((x) => x.id !== "review").flatMap((x) => stepIssues(s, x.id));
   }

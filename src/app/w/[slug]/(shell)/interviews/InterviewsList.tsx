@@ -164,7 +164,6 @@ export default function InterviewsList({ slug, rows, view: initialView, q: initi
                   <span className="block text-sm text-fg truncate">{r.title}</span>
                   <span className="block text-[13px] text-subtle truncate">
                     {r.format ?? humanize(r.type)}, {fmtLength(r.minutes)}
-                    {r.shortCode ? `, code ${r.shortCode}` : ""}
                     {r.questions === "needed" && r.questionsOwner ? `, ${r.questionsOwner} picks questions` : ""}
                   </span>
                 </span>

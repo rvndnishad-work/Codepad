@@ -14,6 +14,7 @@ import { notifyInterviewQuestionsRequested } from "@/lib/notifications/triggers"
 import { TOOL_IDS, defaultTools, initialTools } from "@/lib/interview/tools";
 import { inviteGuests, type DeliveryStatus } from "@/lib/interview/guests";
 import { candidateRoomPath } from "@/lib/interview/room-server";
+import { cleanMeetingUrl, MAX_MEETING_URL } from "@/lib/interview/meeting";
 import {
   formatOf,
   isEmail,
@@ -105,6 +106,8 @@ const scheduleSchema = z.object({
   questionsOwnerId: z.string().nullable(),
   questionsNote: z.string().trim().max(500),
   minutes: z.number().int().min(MIN_MINUTES).max(MAX_MINUTES),
+  /** Zoom, Meet, Teams... link for the call. https only. */
+  meetingUrl: z.string().trim().max(MAX_MEETING_URL).optional(),
   brief: z.string().trim().max(2000),
   candidateBrief: z.string().trim().max(2000),
   sendInvites: z.boolean(),
@@ -177,6 +180,9 @@ export async function scheduleInterviewsAction(slug: string, raw: ScheduleInput)
       bankJson.set(key, JSON.stringify({ v: 1, items }));
     }
 
+    const meeting = cleanMeetingUrl(d.meetingUrl);
+    if (!meeting.ok) throw new ActionError(`Video call link: ${meeting.error}`);
+    const meetingUrl = meeting.url;
     const setupGroupId = people.length > 1 ? randomUUID() : null;
     const created: Scheduled[] = [];
     const toInvite: Parameters<typeof sendCandidateInvites>[0]["rooms"] = [];
@@ -191,6 +197,7 @@ export async function scheduleInterviewsAction(slug: string, raw: ScheduleInput)
         allowEmpty: true,
         freshPlaygrounds: true,
         scenario: d.candidateBrief || null,
+        meetingUrl,
         totalSec: d.minutes * 60,
         scheduledAt: p.time ? new Date(p.time) : null,
         workspaceId: a.workspace.id,
@@ -228,7 +235,7 @@ export async function scheduleInterviewsAction(slug: string, raw: ScheduleInput)
     }
 
     const origin = await appOrigin();
-    const invites = await sendCandidateInvites({ workspaceId: a.workspace.id, title: d.title, totalSec: d.minutes * 60, actorId: a.userId, origin, rooms: toInvite });
+    const invites = await sendCandidateInvites({ workspaceId: a.workspace.id, title: d.title, totalSec: d.minutes * 60, actorId: a.userId, origin, meetingUrl, rooms: toInvite });
     for (const [i, r] of toInvite.entries()) {
       const c = created.find((x) => x.id === r.session.id);
       if (c) c.invite = invites[i];

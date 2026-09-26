@@ -3,6 +3,7 @@ import { z } from "zod";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { roomViewerFromRequest, ROOM_SELECT } from "@/lib/interview/room-access";
+import { cleanMeetingUrl, MAX_MEETING_URL } from "@/lib/interview/meeting";
 
 const patchSchema = z.object({
   status: z.enum(["scheduled", "in_progress", "completed", "abandoned"]).optional(),
@@ -19,6 +20,8 @@ const patchSchema = z.object({
   // Guest-only: candidate requesting the interviewer to start the session.
   startRequested: z.boolean().optional(),
   totalSec: z.number().int().positive().optional(),
+  // Video call link for workspace rooms (https only, checked below).
+  meetingUrl: z.string().max(MAX_MEETING_URL).nullable().optional(),
   // Rubric support
   rubric: z.object({
     ratings: z.record(z.string(), z.number().min(1).max(5)),
@@ -120,6 +123,11 @@ export async function PATCH(
   if (parsed.data.activePlaygroundId !== undefined)
     data.activePlaygroundId = parsed.data.activePlaygroundId;
   if (parsed.data.totalSec !== undefined) data.totalSec = parsed.data.totalSec;
+  if (parsed.data.meetingUrl !== undefined) {
+    const m = cleanMeetingUrl(parsed.data.meetingUrl);
+    if (!m.ok) return NextResponse.json({ error: m.error }, { status: 400 });
+    data.meetingUrl = m.url;
+  }
 
   if (parsed.data.rubric !== undefined) {
     const rubricData = parsed.data.rubric;

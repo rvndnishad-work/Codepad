@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 import {
+  BellRing,
   BookOpen,
   Bot,
   CalendarDays,
@@ -160,6 +161,7 @@ export default function WorkspaceSidebarNav({ slug, growthFeatures, counts, coll
     growth({ label: "Webhooks", icon: Webhook, ...route("webhooks") }),
     // Per-member calendars: useful on every plan.
     { label: "Calendar", icon: CalendarDays, ...route("calendar") },
+    growth({ label: "Slack and Teams", icon: BellRing, ...route("alerts") }),
   ];
 
   const admin: NavItem[] = [

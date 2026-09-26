@@ -41,7 +41,7 @@ const CATEGORY_RULES: { id: RealCategory; exact: string[]; prefixes: string[] }[
   {
     id: "connections",
     exact: [],
-    prefixes: ["ATS_", "WEBHOOK_", "API_KEY_", "MCP_", "EXTERNAL_MCP_", "CALENDAR_", "SLACK_", "TEAMS_", "INTEGRATION_"],
+    prefixes: ["ATS_", "WEBHOOK_", "API_KEY_", "MCP_", "EXTERNAL_MCP_", "CALENDAR_", "ALERT_", "SLACK_", "TEAMS_", "INTEGRATION_"],
   },
   { id: "billing", exact: [], prefixes: ["BILLING_", "PLAN_", "SUBSCRIPTION_", "CREDIT", "TRIAL_"] },
 ];
@@ -285,6 +285,10 @@ const LABELS: Record<string, string> = {
   WEBHOOK_REDELIVERED: "Resent a webhook delivery",
   CALENDAR_CONNECTED: "Connected a calendar",
   CALENDAR_DISCONNECTED: "Disconnected a calendar",
+  ALERT_CHANNEL_CONNECTED: "Connected an alert channel",
+  ALERT_CHANNEL_UPDATED: "Edited an alert channel",
+  ALERT_CHANNEL_REMOVED: "Removed an alert channel",
+  ALERT_TEST_SENT: "Sent a test alert",
 };
 
 const DANGER = /(_DELETED|_ERASED|_REMOVED|_REVOKED|_DISCONNECTED|_AUTO_PAUSED)$/;
@@ -431,6 +435,21 @@ export function describeAuditRow(row: AuditRowInput, names: Record<string, strin
       title: `${connected ? "Connected" : "Disconnected"} ${cal}`,
       detail: !connected && meta.self === false ? "Removed for another member." : null,
       tone: connected ? "accent" : "danger",
+      tag: null,
+    };
+  }
+
+  if (row.action.startsWith("ALERT_")) {
+    const provider = str(meta.provider);
+    const app = provider === "slack" ? "Slack" : provider === "teams" ? "Teams" : null;
+    const target = str(meta.target);
+    const where = [app, target].filter(Boolean).join(" ");
+    const failed = row.action === "ALERT_TEST_SENT" && meta.ok === false;
+    return {
+      ...base,
+      title: `${actionLabel(row.action)}${where ? `: ${where}` : ""}`,
+      detail: failed ? "The test did not go through." : null,
+      tone: DANGER.test(row.action) || failed ? "danger" : "accent",
       tag: null,
     };
   }

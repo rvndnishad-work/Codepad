@@ -999,6 +999,7 @@ model Workspace {
   atsJobMappings       AtsJobMapping[]
   atsTestRequests      AtsTestRequest[]
   atsSyncEvents        AtsSyncEvent[]
+  alertChannels        AlertChannel[]
 }
 
 /// Pending teammate invitation (IP-73). Replaces the old "silently mint a
@@ -1395,6 +1396,40 @@ model WebhookDelivery {
 
   @@index([endpointId, createdAt])
   @@index([status, nextAttemptAt])
+}
+
+/// A Slack or Microsoft Teams destination for short workspace alerts
+/// (see src/lib/alerts). Fed by the same event bus as webhooks. Messages carry
+/// a name, what happened and a link; never answers, transcripts or code.
+model AlertChannel {
+  id           String    @id @default(cuid())
+  workspaceId  String
+  /// "slack" | "teams"
+  provider     String
+  /// "webhook" (pasted incoming webhook or workflow URL) | "oauth" (Slack app install)
+  mode         String    @default("webhook")
+  /// Human label for the destination, e.g. "#hiring-screens".
+  target       String
+  /// Incoming webhook or workflow URL, encrypted at rest.
+  url          String
+  /// Slack bot token from an app install, encrypted at rest. Null in webhook mode.
+  token        String?
+  /// Slack workspace name from an app install.
+  teamName     String?
+  /// Event names that post here, e.g. ["candidate.decided"].
+  events       String[]  @default([])
+  /// Adds the score as a percentage to screening and take home alerts.
+  includeScore Boolean   @default(false)
+  active       Boolean   @default(true)
+  lastSentAt   DateTime?
+  lastError    String?
+  lastErrorAt  DateTime?
+  createdById  String?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  workspace    Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@index([workspaceId])
 }
 
 model AIInterviewSession {

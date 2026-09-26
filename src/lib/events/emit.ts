@@ -4,7 +4,8 @@
  * emitWorkspaceEvent() queues one WebhookDelivery per active endpoint that
  * subscribes to the event, then tries to send them right after the current
  * response. The cron at /api/cron/webhook-deliveries retries anything that
- * did not go out. It never throws: a webhook problem must never break the
+ * did not go out. The same envelope also goes to any Slack or Teams alert
+ * channels that want the event (one best-effort post each). It never throws: a webhook problem must never break the
  * screening, submission or decision that caused it.
  *
  * Envelope sent to receivers:
@@ -19,6 +20,7 @@ import { growthToolsEnabled } from "@/lib/billing/trial";
 import { appOrigin } from "@/lib/interview/links";
 import { TEST_EVENT, type WorkspaceEvent } from "./catalog";
 import { deliverWebhook } from "./deliver";
+import { hasAlertChannels, notifyAlertChannels } from "@/lib/alerts/send";
 import { buildEnvelope, newEventId } from "./envelope";
 import { runEventListeners } from "./listeners";
 
@@ -71,6 +73,19 @@ export function deliverSoon(ids: string[]): void {
   }
 }
 
+/** Post Slack and Teams alerts after the response, or now outside a request. */
+function alertSoon(workspaceId: string, event: string, envelope: Record<string, unknown>, origin: string): void {
+  const run = () =>
+    notifyAlertChannels(workspaceId, event, envelope, origin).catch((err) =>
+      console.error(`[alerts] ${event} failed:`, err),
+    );
+  try {
+    after(run);
+  } catch {
+    void run();
+  }
+}
+
 /** Fill a linked candidate's name and email when the caller only had the id. */
 async function withCandidateDetails(workspaceId: string, data: Record<string, unknown>): Promise<Record<string, unknown>> {
   const c = data.candidate as EventCandidate | undefined;
@@ -97,15 +112,24 @@ export async function emitWorkspaceEvent<E extends WorkspaceEvent>(
     });
     if (!ws || !growthToolsEnabled(ws)) return;
 
-    const endpoints = await prisma.webhookEndpoint.findMany({
-      where: { workspaceId, active: true, events: { has: event } },
-      select: { id: true },
-    });
-    if (!endpoints.length) return;
+    const [endpoints, wantsAlerts] = await Promise.all([
+      prisma.webhookEndpoint.findMany({
+        where: { workspaceId, active: true, events: { has: event } },
+        select: { id: true },
+      }),
+      hasAlertChannels(workspaceId, event).catch(() => false),
+    ]);
+    if (!endpoints.length && !wantsAlerts) return;
 
     const eventId = newEventId();
     const enriched = await withCandidateDetails(workspaceId, data as Record<string, unknown>);
-    const payload = buildEnvelope(eventId, event, ws, enriched, await appOrigin());
+    const origin = await appOrigin();
+    const payload = buildEnvelope(eventId, event, ws, enriched, origin);
+
+    // Slack and Teams alerts read the same envelope (see src/lib/alerts).
+    if (wantsAlerts) alertSoon(workspaceId, event, payload, origin);
+    if (!endpoints.length) return;
+
     const rows = await prisma.webhookDelivery.createManyAndReturn({
       data: endpoints.map((e) => ({
         endpointId: e.id,

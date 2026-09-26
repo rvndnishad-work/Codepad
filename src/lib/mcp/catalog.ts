@@ -47,13 +47,14 @@ export const MCP_TOOLS: ToolCatalogEntry[] = [
     title: "List candidates",
     scope: "read",
     description:
-      "List candidates in this workspace. Filter by pipeline status or free-text search. Defaults to the 25 most recently updated.",
+      "List candidates in this workspace. Filter by screening stage or free-text search. Defaults to the 25 most recently updated.",
     args: [
-      { name: "status", type: "active|hired|rejected|archived", required: false, description: "Pipeline status filter." },
+      { name: "stage", type: "new|screening|passed|not_passed", required: false, description: "Screening stage filter." },
+      { name: "status", type: "active|archived", required: false, description: "Older status filter. Use archived to list archived candidates." },
       { name: "search", type: "string", required: false, description: "Match against name or email." },
       { name: "limit", type: "number (1–100)", required: false, description: "Max rows. Default 25." },
     ],
-    example: 'list_candidates({ status: "active", limit: 10 })',
+    example: 'list_candidates({ stage: "screening", limit: 10 })',
   },
   {
     name: "list_screenings",
@@ -110,16 +111,18 @@ export const MCP_TOOLS: ToolCatalogEntry[] = [
   },
   {
     name: "update_candidate_status",
-    title: "Update candidate status",
+    title: "Move a candidate to a screening stage",
     scope: "write",
     description:
-      "Move a candidate through the pipeline. Optionally append a timestamped note explaining the move.",
+      "Move a candidate between New, Screening and Not passed. It never passes anyone and never changes a candidate a recruiter has passed. Optionally add a note explaining the move.",
     args: [
       { name: "candidate_id", type: "string", required: true, description: "Candidate's internal id." },
-      { name: "status", type: "active|rejected|archived", required: true, description: "New status. Passing is refused: only a recruiter can pass a candidate, in the app." },
-      { name: "note", type: "string", required: false, description: "Optional note appended to candidate notes." },
+      { name: "stage", type: "new|screening|not_passed", required: true, description: "Target stage. Passing is refused: only a recruiter can pass a candidate, in the app." },
+      { name: "reject_reason", type: "SKILL_GAP|CULTURE_FIT|NO_RESPONSE|WITHDREW|OTHER", required: false, description: "Why they did not pass. Default OTHER." },
+      { name: "status", type: "active|rejected|archived", required: false, description: "Older way to set the outcome. Prefer stage; use archived to archive." },
+      { name: "note", type: "string", required: false, description: "Optional note added to the candidate." },
     ],
-    example: 'update_candidate_status({ candidate_id: "cmp...", status: "rejected", note: "Below the bar on the take-home" })',
+    example: 'update_candidate_status({ candidate_id: "cmp...", stage: "not_passed", reject_reason: "SKILL_GAP", note: "Below the bar on the take-home" })',
   },
   {
     name: "add_candidate_note",

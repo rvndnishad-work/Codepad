@@ -5,34 +5,36 @@ import Link from "next/link";
 import { Lock, KeyRound } from "lucide-react";
 import { growthToolsEnabled } from "@/lib/billing/trial";
 import { canMember } from "@/lib/permissions";
-import ApiKeysConsole from "./ApiKeysConsole";
+import { appOrigin } from "@/lib/interview/links";
+import ApiKeysConsole, { type ConsoleTab } from "./ApiKeysConsole";
 
 type Props = {
   params: Promise<{ slug: string }>;
   searchParams: Promise<{
+    tab?: string;
     page?: string;
-    kind?: "tool" | "resource";
-    errorsOnly?: "1";
+    kind?: string;
+    errorsOnly?: string;
+    key?: string;
   }>;
 };
 
 const AUDIT_PAGE_SIZE = 25;
+const TABS: ConsoleTab[] = ["keys", "activity", "connect"];
 
 export const metadata = {
-  title: "MCP API Keys — Workspace",
+  title: "API and MCP — Workspace",
   robots: { index: false, follow: false },
 };
 
 export default async function WorkspaceApiKeysPage({ params, searchParams }: Props) {
   const { slug } = await params;
   const sp = await searchParams;
-  const page = Math.max(1, Number(sp.page) || 1);
-  const auditFilter: {
-    kind?: "tool" | "resource";
-    errorCode?: { not: null };
-  } = {};
-  if (sp.kind === "tool" || sp.kind === "resource") auditFilter.kind = sp.kind;
-  if (sp.errorsOnly === "1") auditFilter.errorCode = { not: null };
+  const tab: ConsoleTab = TABS.includes(sp.tab as ConsoleTab) ? (sp.tab as ConsoleTab) : "keys";
+  const kind = sp.kind === "tool" || sp.kind === "resource" ? sp.kind : "ALL";
+  const errorsOnly = sp.errorsOnly === "1";
+  const keyFilter = sp.key && /^[a-z0-9]{8,40}$/i.test(sp.key) ? sp.key : null;
+
   const session = await auth().catch(() => null);
   if (!session?.user?.id) {
     redirect(`/login?next=${encodeURIComponent(`/w/${slug}/api-keys`)}`);
@@ -63,17 +65,17 @@ export default async function WorkspaceApiKeysPage({ params, searchParams }: Pro
         </div>
         <div className="space-y-2">
           <h2 className="text-xl font-semibold text-fg flex items-center justify-center gap-2">
-            <KeyRound className="w-5 h-5 text-secondary" /> MCP API is a Growth feature
+            <KeyRound className="w-5 h-5 text-secondary" /> API and MCP are on the Growth plan
           </h2>
           <p className="text-sm text-muted leading-relaxed max-w-md">
-            Upgrade this workspace to <span className="font-bold text-fg">Growth</span> or <span className="font-bold text-fg">Enterprise</span> to mint API keys and connect Claude, Cursor, or any MCP-compatible client to your hiring pipeline.
+            Upgrade this workspace to <span className="font-bold text-fg">Growth</span> or <span className="font-bold text-fg">Enterprise</span> to create keys and connect Claude, Cursor, or any MCP client to your screening data.
           </p>
         </div>
         <Link
           href={`/w/${slug}?section=billing`}
           className="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-xl bg-secondary hover:brightness-110 text-bg text-xs font-semibold transition shadow-md"
         >
-          View plans &amp; upgrade
+          View plans and upgrade
         </Link>
       </div>
     );
@@ -81,80 +83,95 @@ export default async function WorkspaceApiKeysPage({ params, searchParams }: Pro
 
   const canManage = await canMember(member, "integration:manage");
 
-  const last24h = new Date(Date.now() - 24 * 60 * 60 * 1000);
+  const auditWhere = {
+    workspaceId: workspace.id,
+    // Outbound rows are the AI interviewer calling a customer's own MCP
+    // server; they have their own page under AI screening.
+    kind: kind === "ALL" ? { in: ["tool", "resource"] } : kind,
+    ...(errorsOnly ? { errorCode: { not: null } } : {}),
+    ...(keyFilter ? { apiKeyId: keyFilter } : {}),
+  };
 
-  const auditWhere = { workspaceId: workspace.id, ...auditFilter };
-
-  const [keys, recentAuditRaw, totalAuditEntries, callsLast24h, lastCallRow] =
-    await Promise.all([
-      prisma.mcpApiKey.findMany({
-        where: { workspaceId: workspace.id },
-        orderBy: [{ revokedAt: "asc" }, { createdAt: "desc" }],
-        take: 50,
-      }),
-      prisma.mcpAuditLog.findMany({
-        where: auditWhere,
-        orderBy: { createdAt: "desc" },
-        skip: (page - 1) * AUDIT_PAGE_SIZE,
-        take: AUDIT_PAGE_SIZE,
-        include: {
-          apiKey: { select: { label: true, keyPreview: true } },
-        },
-      }),
-      prisma.mcpAuditLog.count({ where: auditWhere }),
-      prisma.mcpAuditLog.count({
-        where: { workspaceId: workspace.id, createdAt: { gte: last24h } },
-      }),
-      prisma.mcpAuditLog.findFirst({
-        where: { workspaceId: workspace.id },
-        orderBy: { createdAt: "desc" },
-        select: { createdAt: true },
-      }),
-    ]);
-
+  const [keys, totalAuditEntries] = await Promise.all([
+    prisma.mcpApiKey.findMany({
+      where: { workspaceId: workspace.id },
+      orderBy: [{ revokedAt: "asc" }, { createdAt: "desc" }],
+      take: 100,
+    }),
+    prisma.mcpAuditLog.count({ where: auditWhere }),
+  ]);
   const totalAuditPages = Math.max(1, Math.ceil(totalAuditEntries / AUDIT_PAGE_SIZE));
+  const page = Math.min(Math.max(1, Number(sp.page) || 1), totalAuditPages);
 
-  const activeKeyCount = keys.filter((k) => !k.revokedAt).length;
+  const [auditRaw, recentRaw, creators] = await Promise.all([
+    tab === "activity"
+      ? prisma.mcpAuditLog.findMany({
+          where: auditWhere,
+          orderBy: { createdAt: "desc" },
+          skip: (page - 1) * AUDIT_PAGE_SIZE,
+          take: AUDIT_PAGE_SIZE,
+          include: { apiKey: { select: { label: true, keyPreview: true } } },
+        })
+      : Promise.resolve([]),
+    tab === "keys"
+      ? prisma.mcpAuditLog.findMany({
+          where: { workspaceId: workspace.id, kind: { in: ["tool", "resource"] } },
+          orderBy: { createdAt: "desc" },
+          take: 4,
+          include: { apiKey: { select: { label: true, keyPreview: true } } },
+        })
+      : Promise.resolve([]),
+    prisma.user.findMany({
+      where: { id: { in: [...new Set(keys.map((k) => k.createdByUserId).filter((v): v is string => !!v))] } },
+      select: { id: true, name: true, email: true },
+    }),
+  ]);
+  const creatorName = new Map(creators.map((u) => [u.id, u.name?.trim() || u.email || "Unknown"]));
+
+  const toEntry = (e: (typeof auditRaw)[number]) => ({
+    id: e.id,
+    kind: e.kind,
+    name: e.name,
+    argsJson: e.argsJson,
+    resultSummary: e.resultSummary,
+    errorCode: e.errorCode,
+    durationMs: e.durationMs,
+    createdAt: e.createdAt.toISOString(),
+    keyId: e.apiKeyId,
+    keyLabel: e.apiKey?.label ?? null,
+    keyPreview: e.apiKey?.keyPreview ?? null,
+  });
 
   return (
     <ApiKeysConsole
       workspaceSlug={slug}
       workspaceName={workspace.name}
+      mcpUrl={`${await appOrigin()}/api/mcp`}
       canManage={canManage}
-      stats={{
-        activeKeyCount,
-        callsLast24h,
-        lastCallAt: lastCallRow?.createdAt?.toISOString() ?? null,
-      }}
+      tab={tab}
+      now={new Date().toISOString()}
       auditPagination={{
         page,
         totalPages: totalAuditPages,
         totalEntries: totalAuditEntries,
         pageSize: AUDIT_PAGE_SIZE,
-        kind: sp.kind ?? "ALL",
-        errorsOnly: sp.errorsOnly === "1",
+        kind,
+        errorsOnly,
+        keyId: keyFilter,
       }}
       keys={keys.map((k) => ({
         id: k.id,
         label: k.label,
         keyPreview: k.keyPreview,
         scopes: safeParseScopes(k.scopes),
+        createdBy: k.createdByUserId ? creatorName.get(k.createdByUserId) ?? null : null,
         lastUsedAt: k.lastUsedAt?.toISOString() ?? null,
         revokedAt: k.revokedAt?.toISOString() ?? null,
+        expiresAt: k.expiresAt?.toISOString() ?? null,
         createdAt: k.createdAt.toISOString(),
       }))}
-      auditLog={recentAuditRaw.map((e) => ({
-        id: e.id,
-        kind: e.kind,
-        name: e.name,
-        argsJson: e.argsJson,
-        resultSummary: e.resultSummary,
-        errorCode: e.errorCode,
-        durationMs: e.durationMs,
-        createdAt: e.createdAt.toISOString(),
-        keyLabel: e.apiKey?.label ?? null,
-        keyPreview: e.apiKey?.keyPreview ?? null,
-      }))}
+      auditLog={auditRaw.map(toEntry)}
+      recent={recentRaw.map(toEntry)}
     />
   );
 }

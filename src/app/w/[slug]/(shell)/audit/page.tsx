@@ -1,19 +1,20 @@
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { notFound, redirect } from "next/navigation";
-import { listWorkspaceAudit } from "@/lib/workspace-audit";
 import { canMember } from "@/lib/permissions";
-import WorkspaceAuditClient from "./WorkspaceAuditClient";
+import {
+  auditWhere,
+  describeAuditRow,
+  pageWindow,
+  parseAuditQuery,
+  parseMeta,
+  AUDIT_PAGE_SIZE,
+} from "@/lib/workspace/audit-timeline";
+import WorkspaceAuditClient, { type TimelineRow } from "./WorkspaceAuditClient";
 
 type Props = {
   params: Promise<{ slug: string }>;
-  searchParams: Promise<{
-    actor?: string;
-    action?: string;
-    start?: string;
-    end?: string;
-    cursor?: string;
-  }>;
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
 };
 
 export async function generateMetadata({ params }: Props) {
@@ -26,7 +27,7 @@ export async function generateMetadata({ params }: Props) {
 
 export default async function WorkspaceAuditPage({ params, searchParams }: Props) {
   const { slug } = await params;
-  const sp = await searchParams;
+  const query = parseAuditQuery(await searchParams);
 
   const session = await auth().catch(() => null);
   if (!session?.user?.id) {
@@ -57,49 +58,45 @@ export default async function WorkspaceAuditPage({ params, searchParams }: Props
     redirect(`/w/${slug}`);
   }
 
-  // Distinct actions in this workspace's audit log — used to populate the
-  // filter dropdown. Tiny query (DISTINCT over an indexed column).
-  const distinctActions = await prisma.workspaceAuditLog.findMany({
-    where: { workspaceId: workspace.id },
-    select: { action: true },
-    distinct: ["action"],
-    take: 50,
+  const now = new Date();
+  const where = auditWhere(workspace.id, query, now);
+  const total = await prisma.workspaceAuditLog.count({ where });
+  const win = pageWindow(query.page, total, AUDIT_PAGE_SIZE);
+  const raw = await prisma.workspaceAuditLog.findMany({
+    where,
+    orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+    skip: win.skip,
+    take: win.take,
   });
 
-  // Parse filter inputs.
-  const startDate = sp.start ? new Date(sp.start) : undefined;
-  const endDate = sp.end ? new Date(sp.end) : undefined;
+  const names: Record<string, string> = {};
+  for (const m of workspace.members) {
+    const n = m.user.name?.trim() || m.user.email;
+    if (n) names[m.user.id] = n;
+  }
 
-  const { rows, nextCursor } = await listWorkspaceAudit({
-    workspaceId: workspace.id,
-    actorUserId: sp.actor || undefined,
-    action: sp.action || undefined,
-    startDate: startDate && !isNaN(startDate.getTime()) ? startDate : undefined,
-    endDate: endDate && !isNaN(endDate.getTime()) ? endDate : undefined,
-    cursor: sp.cursor || undefined,
+  const rows: TimelineRow[] = raw.map((r) => {
+    const meta = parseMeta(r.meta);
+    return {
+      id: r.id,
+      createdAt: r.createdAt.toISOString(),
+      action: r.action,
+      ip: r.ip,
+      meta,
+      ...describeAuditRow({ ...r, meta }, names),
+    };
   });
 
   return (
     <WorkspaceAuditClient
       slug={slug}
-      workspaceName={workspace.name}
+      query={{ ...query, page: win.page }}
       members={workspace.members
-        .map((m) => ({
-          id: m.user.id,
-          email: m.user.email ?? "",
-          name: m.user.name ?? null,
-        }))
-        .filter((m) => m.email)}
-      distinctActions={distinctActions.map((d) => d.action).sort()}
+        .map((m) => ({ id: m.user.id, label: m.user.name?.trim() || m.user.email || "Unnamed member" }))
+        .sort((a, b) => a.label.localeCompare(b.label))}
       rows={rows}
-      activeFilter={{
-        actor: sp.actor ?? null,
-        action: sp.action ?? null,
-        start: sp.start ?? null,
-        end: sp.end ?? null,
-      }}
-      nextCursor={nextCursor}
-      currentCursor={sp.cursor ?? null}
+      paging={{ page: win.page, pages: win.pages, total, first: win.first, last: win.last }}
+      now={now.toISOString()}
     />
   );
 }

@@ -239,7 +239,7 @@ export default async function InterviewRunPage({
   // Interviewer-only guide: brief and question guide. Built only for the
   // host and panel, so reference answers never reach the candidate.
   let guide: GuideData | null = null;
-  if (interviewerView && isOwner && interview.workspaceId && (interview.format || interview.guideTemplateId || interview.interviewerBrief)) {
+  if (interviewerView && isOwner && interview.workspaceId && (interview.format || interview.guideTemplateId || interview.guideJson || interview.interviewerBrief)) {
     const tpl = interview.guideTemplateId
       ? await prisma.aIInterviewTemplate.findFirst({
           where: { id: interview.guideTemplateId, workspaceId: interview.workspaceId },
@@ -251,15 +251,16 @@ export default async function InterviewRunPage({
       questionState({
         questionPlan: interview.questionPlan,
         roundCount: challengeIds.length + playgroundIds.length + promptScenarioIds.length,
-        guideTemplateId: interview.guideTemplateId,
+        guideTemplateId: interview.guideTemplateId ?? (interview.guideJson ? "bank" : null),
       }) === "needed";
     const ws = pending ? await prisma.workspace.findUnique({ where: { id: interview.workspaceId }, select: { slug: true } }) : null;
     guide = {
       sessionId: interview.id,
       format: interview.format,
       brief: interview.interviewerBrief,
-      title: tpl?.title ?? null,
-      items: tpl ? parseQuestionnaire(tpl.testsCode).map((i) => ({ q: i.q, a: i.a })) : [],
+      title: tpl?.title ?? (interview.guideJson ? "Picked questions" : null),
+      // The library questionnaire, then any public bank questions picked for this room.
+      items: [...(tpl ? parseQuestionnaire(tpl.testsCode) : []), ...(interview.guideJson ? parseQuestionnaire(interview.guideJson) : [])].map((i) => ({ q: i.q, a: i.a })),
       pending,
       pickHref: ws ? `/w/${ws.slug}/interviews/${interview.id}/questions` : null,
     };

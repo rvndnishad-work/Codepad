@@ -4,6 +4,9 @@
  * move them to Screening and send the invite the same way. Server-only.
  */
 import { customAlphabet, nanoid } from "nanoid";
+import { after } from "next/server";
+import { appOrigin, candidateJoinUrl } from "./links";
+import { deliveryOf, type DeliveryStatus } from "./guests";
 import { prisma } from "@/lib/prisma";
 import { templatesById } from "@/lib/templates";
 import { upsertCandidateForWorkflow } from "@/lib/crm/auto-create";
@@ -43,11 +46,22 @@ export type CreateInterviewInput = {
     interviewerBrief: string | null;
     setupGroupId: string | null;
     toolsJson?: string | null;
+    /** Extra guide questions picked from the public bank (questionnaire JSON). */
+    guideJson?: string | null;
   };
 };
 
 export type CreateInterviewResult =
-  | { ok: true; id: string; shareToken: string; shortCode: string | null; candidateId: string | null }
+  | {
+      ok: true;
+      id: string;
+      shareToken: string;
+      shortCode: string | null;
+      candidateId: string | null;
+      /** Where the invite goes (typed in, or from the candidate record). */
+      inviteEmail: string | null;
+      candidateName: string | null;
+    }
   | { ok: false; status: number; error: string };
 
 /**
@@ -223,19 +237,24 @@ export async function createInterviewSession(input: CreateInterviewInput): Promi
             createdById: input.actor.id === input.ownerId ? null : input.actor.id,
             setupGroupId: w.setupGroupId,
             toolsJson: w.toolsJson ?? null,
+            guideJson: w.guideJson ?? null,
           }
         : {}),
     },
     select: { id: true, shareToken: true, shortCode: true },
   });
 
-  // Tell the candidate. Fire-and-forget: the session exists either way and
-  // the recruiter can still copy the link.
+  // Tell the candidate after the response: the session exists either way and
+  // the recruiter can still copy the link. `after` keeps a serverless
+  // function alive until the send finishes. The wizard sends its own
+  // invites in one batch (sendInvite: false).
   if (workspaceId && input.type === "live" && inviteEmail && input.sendInvite !== false) {
-    void sendInvite({ workspaceId, session: created, email: inviteEmail, candidateName, title: input.title, scheduledAt: input.scheduledAt ?? null, totalSec: input.totalSec, actorId: input.actor.id });
+    const origin = await appOrigin();
+    const invite = { workspaceId, session: created, email: inviteEmail, candidateName, title: input.title, scheduledAt: input.scheduledAt ?? null, totalSec: input.totalSec, actorId: input.actor.id, origin };
+    after(() => sendInvite(invite));
   }
 
-  return { ok: true, id: created.id, shareToken: created.shareToken, shortCode: created.shortCode, candidateId };
+  return { ok: true, id: created.id, shareToken: created.shareToken, shortCode: created.shortCode, candidateId, inviteEmail, candidateName };
 }
 
 async function sendInvite(a: {
@@ -247,15 +266,15 @@ async function sendInvite(a: {
   scheduledAt: Date | null;
   totalSec: number;
   actorId: string;
+  origin: string;
 }) {
   try {
     const ws = await prisma.workspace.findUnique({ where: { id: a.workspaceId }, select: { name: true, slug: true } });
     const { sendEmail } = await import("@/lib/email");
     const { candidateRoomUrl } = await import("./room-server");
-    const baseUrl = process.env.NEXTAUTH_URL || "http://localhost:3000";
     // Workspace interviews open the workspace room with a private, expiring
     // link. No short code: four digits are too easy to guess.
-    const roomUrl = ws ? candidateRoomUrl({ id: a.session.id, shareToken: a.session.shareToken, scheduledAt: a.scheduledAt, totalSec: a.totalSec }, ws.slug) : null;
+    const roomUrl = ws ? candidateRoomUrl({ id: a.session.id, shareToken: a.session.shareToken, scheduledAt: a.scheduledAt, totalSec: a.totalSec }, ws.slug, a.origin) : null;
     const res = await sendEmail({
       template: "interview-invite",
       to: a.email,
@@ -263,7 +282,7 @@ async function sendInvite(a: {
         candidateName: a.candidateName || "there",
         workspaceName: ws?.name ?? "the team",
         title: a.title,
-        joinUrl: roomUrl ?? `${baseUrl}/interview/${a.session.id}?token=${a.session.shareToken}`,
+        joinUrl: roomUrl ?? candidateJoinUrl(a.origin, a.session),
         shortCode: roomUrl ? null : a.session.shortCode,
         scheduledAt: a.scheduledAt ? a.scheduledAt.toISOString() : null,
         durationMin: Math.round(a.totalSec / 60),
@@ -284,5 +303,59 @@ async function sendInvite(a: {
     });
   } catch (err) {
     console.error("[interview-invite] dispatch failed:", err);
+  }
+}
+
+/**
+ * Candidate invites for several rooms at once (the wizard), in one batch
+ * request so a big group does not trip the provider's rate limit. Awaited,
+ * so the recruiter sees on the last page who was emailed. Never throws.
+ */
+export async function sendCandidateInvites(a: {
+  workspaceId: string;
+  title: string;
+  totalSec: number;
+  actorId: string;
+  origin: string;
+  rooms: { session: { id: string; shareToken: string; shortCode: string | null }; email: string; candidateName: string | null; scheduledAt: Date | null }[];
+}): Promise<DeliveryStatus[]> {
+  if (!a.rooms.length) return [];
+  try {
+    const ws = await prisma.workspace.findUnique({ where: { id: a.workspaceId }, select: { name: true, slug: true } });
+    const { sendTemplatedBatch } = await import("@/lib/email");
+    const { candidateRoomUrl } = await import("./room-server");
+    // A private, expiring link into the workspace room. No short code: four
+    // digits are too easy to guess.
+    const roomUrl = (r: (typeof a.rooms)[number]) =>
+      ws ? candidateRoomUrl({ id: r.session.id, shareToken: r.session.shareToken, scheduledAt: r.scheduledAt, totalSec: a.totalSec }, ws.slug, a.origin) : null;
+    const res = await sendTemplatedBatch(
+      "interview-invite",
+      a.rooms.map((r) => ({
+        to: r.email,
+        props: {
+          candidateName: r.candidateName || "there",
+          workspaceName: ws?.name ?? "the team",
+          title: a.title,
+          joinUrl: roomUrl(r) ?? candidateJoinUrl(a.origin, r.session),
+          shortCode: ws ? null : r.session.shortCode,
+          scheduledAt: r.scheduledAt ? r.scheduledAt.toISOString() : null,
+          durationMin: Math.round(a.totalSec / 60),
+        },
+        workspaceId: a.workspaceId,
+        sessionId: r.session.id,
+      })),
+    );
+    // In-app notice for candidates who have an account. Not needed for the
+    // recruiter's answer, so it runs after the response.
+    after(async () => {
+      const { notifyInterviewScheduled } = await import("@/lib/notifications/triggers");
+      for (const r of a.rooms) {
+        await notifyInterviewScheduled({ sessionId: r.session.id, shareToken: r.session.shareToken, title: a.title, type: "live", candidateEmail: r.email, actorId: a.actorId });
+      }
+    });
+    return a.rooms.map((r, i) => deliveryOf(r.email, res.outcomes?.[i]));
+  } catch (err) {
+    console.error("[interview-invite] batch failed:", err);
+    return a.rooms.map((r) => ({ to: r.email, status: "failed", reason: "Something went wrong while sending." }));
   }
 }

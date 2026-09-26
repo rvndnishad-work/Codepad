@@ -2,22 +2,27 @@
 
 /**
  * New live interview, one step at a time: format, candidates, interviewers,
- * questions, schedule, review. A summary ticket fills in on the right as you
- * go, and the draft is kept in this browser until it is scheduled.
+ * questions, schedule, review. A collapsible sidebar on the right holds the
+ * pickers (candidates, questions) and the summary ticket, and the draft is
+ * kept in this browser until it is scheduled.
  */
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
-import { ArrowLeft, ArrowRight, Check, Copy, ExternalLink, Loader2, RotateCcw, Sparkles } from "lucide-react";
-import type { GuideOption, MemberOption, PersonOption, RoundOption } from "@/lib/interview/wizard-server";
+import { AlertTriangle, ArrowLeft, ArrowRight, Check, Copy, ExternalLink, Library, Loader2, Mail, MailCheck, MailX, ReceiptText, RotateCcw, Sparkles, Users } from "lucide-react";
+import type { GuideOption, MemberOption, PersonOption, PublicCategory, RoundOption } from "@/lib/interview/wizard-server";
 import {
   STEPS,
   defaultTitle,
   formatOf,
   plansFor,
+  candidateKey,
   nextSlot,
   normalizeGuests,
+  roomSets,
+  setSize,
   stepIssues,
+  usesOwnSets,
   suggestedMinutes,
   type FormatDef,
   type StepId,
@@ -27,9 +32,12 @@ import {
 } from "@/lib/interview/wizard";
 import { Avatar, Btn, useToasts } from "../../candidates/_components/ui";
 import { scheduleInterviewsAction, type Scheduled } from "../actions";
+import type { DeliveryStatus } from "@/lib/interview/guests";
+import { ALL, GuideSets, QuestionSources, type GuideTarget } from "./GuideQuestions";
+import SidePanel, { useSideOpen, type SideTab } from "./SidePanel";
 import { defaultTools, isToolId } from "@/lib/interview/tools";
 import QuestionsPicker from "./QuestionsPicker";
-import { CandidatesStep, FORMAT_ICON, FormatStep, PanelStep, ReviewStep, ScheduleStep } from "./Steps";
+import { CandidateBrowser, CandidatesStep, FORMAT_ICON, FormatStep, PanelStep, ReviewStep, ScheduleStep } from "./Steps";
 import { fmtMinutes, fmtWhen, spring } from "./parts";
 
 export type WizardProps = {
@@ -39,6 +47,7 @@ export type WizardProps = {
   members: MemberOption[];
   roundOptions: RoundOption[];
   guides: GuideOption[];
+  bankCategories: PublicCategory[];
   /** From the URL: candidates, rounds, guide or format to start with. */
   prefill: { candidateIds: string[]; rounds: WizardRound[]; guideId: string | null; format: string | null };
 };
@@ -66,7 +75,7 @@ function blankState(meId: string): WizardState {
   };
 }
 
-export default function InterviewWizard({ slug, meId, people, members, roundOptions, guides, prefill }: WizardProps) {
+export default function InterviewWizard({ slug, meId, people, members, roundOptions, guides, bankCategories, prefill }: WizardProps) {
   const reduce = useReducedMotion();
   const draftKey = `interview-wizard:${slug}`;
   const hasPrefill = prefill.candidateIds.length > 0 || prefill.rounds.length > 0 || !!prefill.guideId || !!prefill.format;
@@ -93,7 +102,11 @@ export default function InterviewWizard({ slug, meId, people, members, roundOpti
   const [dir, setDir] = useState(1);
   const [titleEdited, setTitleEdited] = useState(false);
   const [restored, setRestored] = useState(false);
-  const [done, setDone] = useState<Scheduled[] | null>(null);
+  const [done, setDone] = useState<{ created: Scheduled[]; guests: DeliveryStatus[] } | null>(null);
+  const [sideOpen, setSideOpen] = useSideOpen();
+  const [sideTab, setSideTab] = useState("summary");
+  const [drawer, setDrawer] = useState(false);
+  const [guideTarget, setGuideTarget] = useState<GuideTarget>(ALL);
   const [pending, start] = useTransition();
   const [toasts, toast] = useToasts();
   const [tried, setTried] = useState(false);
@@ -218,17 +231,22 @@ export default function InterviewWizard({ slug, meId, people, members, roundOpti
     const all = stepIssues(state, "review");
     if (all.length) return setTried(true);
     const rooms = state.noCandidate ? [] : state.candidates;
+    const own = usesOwnSets(state);
     start(async () => {
       const res = await scheduleInterviewsAction(slug, {
         format: state.format!,
         title: state.title.trim() || autoTitle,
-        candidates: rooms.map((c, i) => ({ id: c.id, name: c.name, email: c.email, time: toIso(state.times[i]) })),
+        candidates: rooms.map((c, i) => {
+          const set = own ? roomSets(state)[i].set : null;
+          return { id: c.id, name: c.name, email: c.email, time: toIso(state.times[i]), ...(set ? { questions: { guideId: set.guideId, bankIds: set.bank.map((b) => b.id) } } : {}) };
+        }),
         hostId: state.hostId,
         panelIds: state.panelIds,
         guests: normalizeGuests(state.guests ?? []),
         plan: state.plan,
         rounds: state.rounds.map((r) => ({ kind: r.kind, id: r.id })),
         guideId: state.guideId,
+        bankIds: (state.bank ?? []).map((b) => b.id),
         questionsOwnerId: state.questionsOwnerId,
         questionsNote: state.questionsNote,
         minutes: state.minutes,
@@ -243,7 +261,7 @@ export default function InterviewWizard({ slug, meId, people, members, roundOpti
       try {
         localStorage.removeItem(draftKey);
       } catch {}
-      setDone(res.created);
+      setDone({ created: res.created, guests: res.guests });
     });
   };
 
@@ -252,14 +270,67 @@ export default function InterviewWizard({ slug, meId, people, members, roundOpti
     if (state.noCandidate && state.times.length > 1) setState((s) => ({ ...s, times: s.times.slice(0, 1) }));
   }, [state.noCandidate, state.times.length]);
 
-  if (done) return <DoneView slug={slug} created={done} title={state.title} hostName={members.find((m) => m.userId === state.hostId)?.name ?? ""} meIsHost={state.hostId === meId} />;
+  // Each step opens the sidebar on its picker, or on the summary.
+  const pickerTab = step === "candidates" ? "people" : step === "questions" && state.plan === "set" && format?.guide ? "questions" : null;
+  useEffect(() => {
+    setSideTab(pickerTab ?? "summary");
+    setDrawer(false);
+  }, [step, pickerTab]);
+
+  if (done)
+    return (
+      <DoneView
+        slug={slug}
+        created={done.created}
+        guests={done.guests}
+        invitesOn={state.sendInvites}
+        title={state.title}
+        hostName={members.find((m) => m.userId === state.hostId)?.name ?? ""}
+        meIsHost={state.hostId === meId}
+      />
+    );
+
+  const openSide = (tab: string) => {
+    setSideTab(tab);
+    setSideOpen(true);
+    setDrawer(true);
+  };
+  // Where the sidebar adds guide questions: the shared set, or one person.
+  const own = usesOwnSets(state);
+  const target: GuideTarget = own ? (state.candidates.some((c) => candidateKey(c) === guideTarget) ? guideTarget : candidateKey(state.candidates[0])) : ALL;
+  const rooms = state.noCandidate ? 1 : Math.max(1, state.candidates.length);
+  const sideTabs: SideTab[] = [
+    ...(pickerTab === "people"
+      ? [{ id: "people", label: "Candidates", icon: Users, count: state.candidates.length, body: <CandidateBrowser state={state} patch={patch} people={people} /> }]
+      : []),
+    ...(pickerTab === "questions"
+      ? [
+          {
+            id: "questions",
+            label: "Questions",
+            icon: Library,
+            body: <QuestionSources slug={slug} state={state} patch={patch} guides={guides} categories={bankCategories} target={target} onTarget={setGuideTarget} />,
+          },
+        ]
+      : []),
+    {
+      id: "summary",
+      label: "Summary",
+      icon: ReceiptText,
+      body: (
+        <div className="p-3">
+          <Ticket state={state} members={members} guides={guides} rooms={rooms} />
+        </div>
+      ),
+    },
+  ];
 
   const stepBody = (() => {
     switch (step) {
       case "format":
         return <FormatStep state={state} onPick={pickFormat} />;
       case "candidates":
-        return <CandidatesStep state={state} patch={patch} people={people} />;
+        return <CandidatesStep state={state} patch={patch} people={people} onBrowse={() => openSide("people")} />;
       case "panel":
         return <PanelStep state={state} patch={patch} members={members} meId={meId} />;
       case "questions":
@@ -273,7 +344,19 @@ export default function InterviewWizard({ slug, meId, people, members, roundOpti
                   : "Use a questionnaire from your library, or run the conversation without one."}
               </p>
             </div>
-            <QuestionsPicker slug={slug} format={format} value={state} onChange={patch} roundOptions={roundOptions} guides={guides} members={members} meId={meId} />
+            <QuestionsPicker
+              slug={slug}
+              format={format}
+              value={state}
+              onChange={patch}
+              roundOptions={roundOptions}
+              guides={guides}
+              members={members}
+              meId={meId}
+              guideSlot={
+                <GuideSets state={state} patch={patch} guides={guides} target={target} onTarget={setGuideTarget} onBrowse={() => openSide("questions")} optional={format.coding} />
+              }
+            />
           </div>
         ) : null;
       case "schedule":
@@ -293,8 +376,6 @@ export default function InterviewWizard({ slug, meId, people, members, roundOpti
         );
     }
   })();
-
-  const rooms = state.noCandidate ? 1 : Math.max(1, state.candidates.length);
 
   return (
     <div ref={topRef} className="flex flex-col gap-5 scroll-mt-8">
@@ -319,6 +400,9 @@ export default function InterviewWizard({ slug, meId, people, members, roundOpti
               </motion.span>
             )}
           </AnimatePresence>
+          <Btn icon={ReceiptText} onClick={() => openSide(pickerTab ?? "summary")} className="lg:hidden">
+            {pickerTab === "people" ? "Candidates" : pickerTab === "questions" ? "Questions" : "Summary"}
+          </Btn>
           {state.format && (
             <Btn icon={RotateCcw} onClick={startOver}>
               Start over
@@ -327,87 +411,57 @@ export default function InterviewWizard({ slug, meId, people, members, roundOpti
         </div>
       </div>
 
-      {/* Mobile progress */}
-      <div className="lg:hidden flex flex-col gap-2">
-        <div className="h-1.5 rounded-full bg-panel overflow-hidden">
-          <motion.div className="h-full bg-secondary rounded-full" animate={{ width: `${((idx + 1) / STEPS.length) * 100}%` }} transition={spring} />
-        </div>
-        <div className="flex gap-1.5 overflow-x-auto">
-          {STEPS.map((s, i) => (
-            <button
-              key={s.id}
-              type="button"
-              onClick={() => goTo(s.id)}
-              disabled={!reachable(s.id) && i > idx}
-              className={`shrink-0 h-7 px-2.5 rounded-full text-xs font-medium border transition-colors disabled:opacity-40 ${
-                s.id === step ? "border-secondary bg-secondary/15 text-fg" : complete(s.id) && i < idx ? "border-border text-success" : "border-border text-muted"
-              }`}
-            >
-              {i + 1}. {s.label}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 gap-8 lg:grid-cols-[232px_minmax(0,1fr)] items-start">
-        {/* Stepper and summary */}
-        <div className="hidden lg:flex flex-col gap-5 sticky top-0">
-        <nav aria-label="Steps">
-          <ol className="relative flex flex-col gap-1">
-            <span aria-hidden className="absolute left-[17px] top-5 bottom-5 w-px bg-border" />
-            <motion.span
-              aria-hidden
-              className="absolute left-[17px] top-5 w-px bg-secondary origin-top"
-              animate={{ height: `calc(${(idx / (STEPS.length - 1)) * 100}% - ${(idx / (STEPS.length - 1)) * 40}px)` }}
-              transition={spring}
-            />
-            {STEPS.map((s, i) => {
-              const active = s.id === step;
-              const ok = complete(s.id) && i <= Math.max(far, idx) && i !== idx && s.id !== "review";
-              const can = reachable(s.id) || i <= idx;
-              return (
-                <li key={s.id}>
-                  <button
-                    type="button"
-                    onClick={() => goTo(s.id)}
-                    disabled={!can}
-                    aria-current={active ? "step" : undefined}
-                    className={`relative w-full flex items-center gap-3 rounded-lg px-1.5 py-2 text-left transition-colors disabled:cursor-not-allowed ${active ? "bg-panel" : can ? "hover:bg-panel/60" : ""}`}
+      {/* Steps */}
+      <nav aria-label="Steps" className="relative">
+        <ol className="flex items-center gap-1 overflow-x-auto pb-1 -mx-1 px-1">
+          {STEPS.map((s, i) => {
+            const active = s.id === step;
+            const ok = complete(s.id) && i <= Math.max(far, idx) && i !== idx && s.id !== "review";
+            const can = reachable(s.id) || i <= idx;
+            return (
+              <li key={s.id} className="flex items-center gap-1 shrink-0">
+                {i > 0 && (
+                  <span aria-hidden className="relative w-6 xl:w-10 h-px bg-border overflow-hidden">
+                    <motion.span className="absolute inset-y-0 left-0 bg-secondary" initial={false} animate={{ width: i <= idx ? "100%" : "0%" }} transition={spring} />
+                  </span>
+                )}
+                <button
+                  type="button"
+                  onClick={() => goTo(s.id)}
+                  disabled={!can}
+                  aria-current={active ? "step" : undefined}
+                  title={s.hint}
+                  className={`relative flex items-center gap-2 h-9 pl-1.5 pr-3 rounded-full transition-colors disabled:cursor-not-allowed ${active ? "text-fg" : can ? "text-muted hover:text-fg hover:bg-panel/60" : "text-subtle"}`}
+                >
+                  {active && <motion.span layoutId="step-pill" transition={spring} className="absolute inset-0 rounded-full bg-panel ring-1 ring-inset ring-border-strong" />}
+                  <span
+                    className={`relative z-10 w-6 h-6 rounded-full flex items-center justify-center text-xs font-semibold tabular-nums border transition-colors ${
+                      active ? "bg-secondary border-secondary text-bg" : ok ? "bg-success/15 border-success/40 text-success" : "bg-bg border-border-strong text-subtle"
+                    }`}
                   >
-                    <span
-                      className={`relative z-10 w-[23px] h-[23px] rounded-full flex items-center justify-center text-xs font-semibold tabular-nums border transition-colors ${
-                        active ? "bg-secondary border-secondary text-bg" : ok ? "bg-success/15 border-success/40 text-success" : "bg-bg border-border-strong text-subtle"
-                      }`}
-                    >
-                      <AnimatePresence mode="wait" initial={false}>
-                        {ok && !active ? (
-                          <motion.span key="ok" initial={{ scale: 0 }} animate={{ scale: 1 }} exit={{ scale: 0 }} transition={spring}>
-                            <Check className="w-3 h-3" strokeWidth={3} />
-                          </motion.span>
-                        ) : (
-                          <motion.span key="n" initial={{ scale: 0.6, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}>
-                            {i + 1}
-                          </motion.span>
-                        )}
-                      </AnimatePresence>
-                    </span>
-                    <span className="min-w-0">
-                      <span className={`block text-[14px] font-medium ${active ? "text-fg" : can ? "text-muted" : "text-subtle"}`}>{s.label}</span>
-                      <span className="block text-xs text-subtle truncate">{s.hint}</span>
-                    </span>
-                  </button>
-                </li>
-              );
-            })}
-          </ol>
-        </nav>
-        <aside aria-label="Summary">
-          <Ticket state={state} members={members} guides={guides} rooms={rooms} />
-        </aside>
-        </div>
+                    <AnimatePresence mode="wait" initial={false}>
+                      {ok && !active ? (
+                        <motion.span key="ok" initial={{ scale: 0 }} animate={{ scale: 1 }} exit={{ scale: 0 }} transition={spring}>
+                          <Check className="w-3 h-3" strokeWidth={3} />
+                        </motion.span>
+                      ) : (
+                        <motion.span key="n" initial={{ scale: 0.6, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}>
+                          {i + 1}
+                        </motion.span>
+                      )}
+                    </AnimatePresence>
+                  </span>
+                  <span className="relative text-[13px] font-medium whitespace-nowrap">{s.label}</span>
+                </button>
+              </li>
+            );
+          })}
+        </ol>
+      </nav>
 
+      <div className="flex gap-6 items-start">
         {/* Step body */}
-        <div className="min-w-0 relative">
+        <div className="flex-1 min-w-0 relative">
           <AnimatePresence mode="wait" initial={false} custom={dir}>
             <motion.div
               key={step}
@@ -421,6 +475,8 @@ export default function InterviewWizard({ slug, meId, people, members, roundOpti
             </motion.div>
           </AnimatePresence>
         </div>
+
+        <SidePanel tabs={sideTabs} active={sideTab} onActive={setSideTab} open={sideOpen} onOpen={setSideOpen} drawer={drawer} onDrawer={setDrawer} />
       </div>
 
       {/* Footer */}
@@ -533,7 +589,7 @@ function Ticket({ state, members, guides, rooms }: { state: WizardState; members
               "panel",
             )}
           {format &&
-            (state.rounds.length > 0 || state.guideId || state.plan !== "set") &&
+            (state.rounds.length > 0 || state.guideId || (state.bank?.length ?? 0) > 0 || usesOwnSets(state) || state.plan !== "set") &&
             row(
               "Questions",
               state.plan === "later" ? (
@@ -548,7 +604,18 @@ function Ticket({ state, members, guides, rooms }: { state: WizardState; members
                       <span className="truncate">{r.title}</span>
                     </li>
                   ))}
-                  {guide && <li className="text-muted">Guide: {guide.title}</li>}
+                  {usesOwnSets(state) ? (
+                    roomSets(state).map((r) => (
+                      <li key={r.candidate ? candidateKey(r.candidate) : "all"} className="text-muted truncate">
+                        {r.candidate?.name.split(" ")[0]}: {setSize(r.set, guides)} questions
+                      </li>
+                    ))
+                  ) : (
+                    <>
+                      {guide && <li className="text-muted">Guide: {guide.title}</li>}
+                      {(state.bank?.length ?? 0) > 0 && <li className="text-muted">{state.bank!.length} public questions</li>}
+                    </>
+                  )}
                 </ol>
               ),
               "q",
@@ -573,7 +640,51 @@ function Ticket({ state, members, guides, rooms }: { state: WizardState; members
 
 /* ───────────────────────── Done ───────────────────────── */
 
-function DoneView({ slug, created, title, hostName, meIsHost }: { slug: string; created: Scheduled[]; title: string; hostName: string; meIsHost: boolean }) {
+function DeliveryLine({ d, fallback }: { d: DeliveryStatus | null; fallback: string }) {
+  if (!d) return <span className="inline-flex items-center gap-1.5 text-xs text-subtle"><Mail className="w-3.5 h-3.5" aria-hidden />{fallback}</span>;
+  if (d.status === "sent")
+    return (
+      <span className="inline-flex items-center gap-1.5 text-xs text-success">
+        <MailCheck className="w-3.5 h-3.5" aria-hidden />
+        Emailed to {d.to}
+      </span>
+    );
+  if (d.status === "not-configured")
+    return (
+      <span className="inline-flex items-center gap-1.5 text-xs text-warning">
+        <AlertTriangle className="w-3.5 h-3.5" aria-hidden />
+        Not emailed: email is not set up on this site
+      </span>
+    );
+  return (
+    <span className="inline-flex items-center gap-1.5 text-xs text-danger" title={d.reason}>
+      <MailX className="w-3.5 h-3.5" aria-hidden />
+      {d.status === "suppressed" ? `Not emailed: ${d.to} bounced before` : `Email to ${d.to} failed${d.reason ? `: ${d.reason}` : ""}`}
+    </span>
+  );
+}
+
+function DoneView({
+  slug,
+  created,
+  guests,
+  invitesOn,
+  title,
+  hostName,
+  meIsHost,
+}: {
+  slug: string;
+  created: Scheduled[];
+  guests: DeliveryStatus[];
+  invitesOn: boolean;
+  title: string;
+  hostName: string;
+  meIsHost: boolean;
+}) {
+  const all = [...created.flatMap((c) => (c.invite ? [c.invite] : [])), ...guests];
+  const notSetUp = all.some((d) => d.status === "not-configured");
+  const failed = all.filter((d) => d.status === "failed" || d.status === "suppressed").length;
+  const sent = all.filter((d) => d.status === "sent").length;
   const reduce = useReducedMotion();
   const [toasts, toast] = useToasts();
   const [origin, setOrigin] = useState("");
@@ -608,6 +719,26 @@ function DoneView({ slug, created, title, hostName, meIsHost }: { slug: string; 
           {title}. {meIsHost ? "You host" : `${hostName} hosts`}. Each candidate gets a private link, below.
         </p>
       </div>
+      {all.length > 0 && (
+        <div
+          role="status"
+          className={`w-full rounded-xl border px-4 py-3 flex items-start gap-3 text-[13px] ${
+            notSetUp ? "border-warning/40 bg-warning/[0.07]" : failed ? "border-danger/40 bg-danger/[0.06]" : "border-success/35 bg-success/[0.06]"
+          }`}
+        >
+          {notSetUp ? <AlertTriangle className="w-4 h-4 text-warning shrink-0 mt-0.5" aria-hidden /> : failed ? <MailX className="w-4 h-4 text-danger shrink-0 mt-0.5" aria-hidden /> : <MailCheck className="w-4 h-4 text-success shrink-0 mt-0.5" aria-hidden />}
+          <p className="text-fg">
+            {notSetUp
+              ? "Email sending is not set up on this site, so no email went out. Copy the links below and send them yourself, or ask an admin to add the email provider key."
+              : failed
+                ? `${sent} ${sent === 1 ? "email" : "emails"} sent, ${failed} failed. Copy the link for anyone marked below.`
+                : `${sent === 1 ? "1 email" : `${sent} emails`} sent. Each person has their link and the time.`}{" "}
+            <Link href={`/w/${slug}/emails`} className="text-secondary-soft hover:underline whitespace-nowrap">
+              Email activity
+            </Link>
+          </p>
+        </div>
+      )}
       <ul className="w-full rounded-xl border border-border bg-surface divide-y divide-border">
         {created.map((c, i) => (
           <motion.li
@@ -622,6 +753,9 @@ function DoneView({ slug, created, title, hostName, meIsHost }: { slug: string; 
               <span className="block text-[14px] font-medium text-fg">{c.name ?? "Open link"}</span>
               <span className="block text-xs text-subtle">
                 {c.scheduledAt ? new Date(c.scheduledAt).toLocaleString("en-GB", { weekday: "short", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }) : "No time yet"}
+              </span>
+              <span className="block mt-0.5">
+                <DeliveryLine d={c.invite} fallback={!c.name ? "Open link, nobody to email" : invitesOn ? "No email address, copy the link" : "Invite not emailed, copy the link"} />
               </span>
             </span>
             <Btn
@@ -641,6 +775,20 @@ function DoneView({ slug, created, title, hostName, meIsHost }: { slug: string; 
           </motion.li>
         ))}
       </ul>
+      {guests.length > 0 && (
+        <section className="w-full flex flex-col gap-2">
+          <h2 className="text-[14px] font-semibold text-fg">Interviewers you emailed</h2>
+          <ul className="rounded-xl border border-border bg-surface divide-y divide-border">
+            {guests.map((g) => (
+              <li key={g.to} className="flex items-center gap-3 px-4 py-2.5">
+                <Avatar name={g.to} size={28} />
+                <span className="flex-1 min-w-0 text-[13px] font-medium text-fg truncate">{g.to}</span>
+                <DeliveryLine d={g} fallback="" />
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
       <div className="flex flex-wrap justify-center gap-2">
         <Btn size="md" href={`/w/${slug}/interviews`}>
           Back to Interviews

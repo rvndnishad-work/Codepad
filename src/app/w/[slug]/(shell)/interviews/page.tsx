@@ -38,6 +38,7 @@ export default async function InterviewsPage({ params, searchParams }: Props) {
       questionPlan: true,
       questionsOwnerId: true,
       guideTemplateId: true,
+      guideJson: true,
       challengeIds: true,
       playgroundIds: true,
       promptScenarioIds: true,
@@ -86,7 +87,7 @@ export default async function InterviewsPage({ params, searchParams }: Props) {
         : questionState({
             questionPlan: s.questionPlan,
             roundCount: count(s.challengeIds) + count(s.playgroundIds) + count(s.promptScenarioIds),
-            guideTemplateId: s.guideTemplateId,
+            guideTemplateId: s.guideTemplateId ?? (s.guideJson ? "bank" : null),
           }),
       questionsOwner: s.questionsOwnerId ? (nameOf.get(s.questionsOwnerId) ?? "A teammate") : null,
       mineToPick: s.questionsOwnerId === userId,

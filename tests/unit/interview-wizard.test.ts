@@ -7,6 +7,8 @@ import {
   isInterviewerFor,
   nextSlot,
   normalizeGuests,
+  roomSets,
+  candidateKey,
   parsePanel,
   plansFor,
   questionState,
@@ -61,7 +63,7 @@ describe("interview wizard steps", () => {
 
   it("guide formats need a questionnaire when picking now, and may skip questions", () => {
     const talk = { ...base, format: "behavioural" as const, rounds: [] };
-    expect(stepIssues(talk, "questions")).toEqual(["Choose a question guide."]);
+    expect(stepIssues(talk, "questions")).toEqual(["Choose a questionnaire or add questions."]);
     expect(stepIssues({ ...talk, guideId: "g1" }, "questions")).toEqual([]);
     expect(stepIssues({ ...talk, plan: "open" }, "questions")).toEqual([]);
   });
@@ -140,5 +142,38 @@ describe("schedule and emailed interviewers", () => {
   it("blocks the Interviewers step on a bad email", () => {
     expect(stepIssues({ ...base, guests: ["mei@acme.io"] }, "panel")).toEqual([]);
     expect(stepIssues({ ...base, guests: ["mei@acme"] }, "panel")).toEqual(["One of the emails does not look right."]);
+  });
+});
+
+describe("question sets per candidate", () => {
+  const two: WizardState = {
+    ...base,
+    format: "behavioural",
+    rounds: [],
+    candidates: [
+      { id: "c1", name: "Priya Sharma", email: "priya@example.com" },
+      { id: null, name: "Sam Lee", email: "sam@example.com" },
+    ],
+  };
+
+  it("uses the shared set until separate sets are switched on", () => {
+    const s = { ...two, guideId: "g1", bank: [{ id: "q1", title: "What is a closure?" }] };
+    expect(roomSets(s).map((r) => r.set.guideId)).toEqual(["g1", "g1"]);
+    expect(stepIssues(s, "questions")).toEqual([]);
+  });
+
+  it("each candidate needs a questionnaire or some questions", () => {
+    const s: WizardState = { ...two, perCandidate: true, guideId: null, sets: { c1: { guideId: "g1", bank: [] } } };
+    expect(candidateKey(two.candidates[1])).toBe("new:sam@example.com");
+    expect(stepIssues(s, "questions")).toEqual(["Sam needs a questionnaire or some questions."]);
+    s.sets!["new:sam@example.com"] = { guideId: null, bank: [{ id: "q9", title: "Tell me about a conflict" }] };
+    expect(stepIssues(s, "questions")).toEqual([]);
+    expect(roomSets(s).map((r) => r.set.bank.length)).toEqual([0, 1]);
+  });
+
+  it("one person or an open link always uses the shared set", () => {
+    const s: WizardState = { ...two, candidates: [two.candidates[0]], perCandidate: true, guideId: "g2", sets: { c1: { guideId: "g1", bank: [] } } };
+    expect(roomSets(s)[0].set.guideId).toBe("g2");
+    expect(roomSets({ ...s, noCandidate: true, candidates: [] })).toEqual([{ candidate: null, set: { guideId: "g2", bank: [] } }]);
   });
 });

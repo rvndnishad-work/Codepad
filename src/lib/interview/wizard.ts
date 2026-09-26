@@ -105,8 +105,14 @@ export const MAX_CANDIDATES = 20;
 export const MAX_PANEL = 6;
 /** People outside the workspace who get the details by email. */
 export const MAX_GUESTS = 10;
+/** Public bank questions in one room's guide. */
+export const MAX_BANK = 30;
 
 export type WizardCandidate = { id: string | null; name: string; email: string };
+/** A public bank question picked for a guide (reference answer stays on the server). */
+export type BankPick = { id: string; title: string; tech?: string | null; difficulty?: string | null };
+/** One room's interviewer guide: a library questionnaire, public bank questions, or both. */
+export type QuestionSet = { guideId: string | null; bank: BankPick[] };
 export type WizardRound = { key: string; kind: RoundKind; id: string; title: string; minutes: number; meta?: string };
 
 export type WizardState = {
@@ -122,6 +128,11 @@ export type WizardState = {
   plan: QuestionPlan;
   rounds: WizardRound[];
   guideId: string | null;
+  /** Public bank questions in the shared guide. */
+  bank?: BankPick[];
+  /** Each candidate gets their own guide (sets, keyed by candidateKey). */
+  perCandidate?: boolean;
+  sets?: Record<string, QuestionSet>;
   questionsOwnerId: string | null;
   questionsNote: string;
   minutes: number;
@@ -171,7 +182,10 @@ export function stepIssues(s: WizardState, step: StepId): string[] {
       if (s.plan === "open") return [];
       const out: string[] = [];
       if (f.coding && s.rounds.length === 0) out.push("Add at least one coding round.");
-      if (!f.coding && f.guide && !s.guideId) out.push("Choose a question guide.");
+      if (!f.coding && f.guide) {
+        const empty = roomSets(s).find((r) => !r.set.guideId && r.set.bank.length === 0);
+        if (empty) out.push(empty.candidate && usesOwnSets(s) ? `${firstName(empty.candidate.name)} needs a questionnaire or some questions.` : "Choose a questionnaire or add questions.");
+      }
       return out;
     }
     case "schedule":
@@ -180,6 +194,32 @@ export function stepIssues(s: WizardState, step: StepId): string[] {
     case "review":
       return STEPS.filter((x) => x.id !== "review").flatMap((x) => stepIssues(s, x.id));
   }
+}
+
+export function candidateKey(c: WizardCandidate): string {
+  return c.id ?? `new:${c.email || c.name}`;
+}
+
+export function sharedSet(s: Pick<WizardState, "guideId" | "bank">): QuestionSet {
+  return { guideId: s.guideId, bank: s.bank ?? [] };
+}
+
+/** Separate guides only make sense with two or more named people. */
+export function usesOwnSets(s: Pick<WizardState, "perCandidate" | "noCandidate" | "candidates">): boolean {
+  return !!s.perCandidate && !s.noCandidate && s.candidates.length > 1;
+}
+
+/** The guide each room gets, in room order (one room for an open link). */
+export function roomSets(s: WizardState): { candidate: WizardCandidate | null; set: QuestionSet }[] {
+  const shared = sharedSet(s);
+  if (s.noCandidate || s.candidates.length === 0) return [{ candidate: null, set: shared }];
+  const own = usesOwnSets(s);
+  return s.candidates.map((c) => ({ candidate: c, set: own ? (s.sets?.[candidateKey(c)] ?? shared) : shared }));
+}
+
+/** Questions in a set, counting the questionnaire's. */
+export function setSize(set: QuestionSet, guides: { id: string; questions: string[] }[]): number {
+  return (guides.find((g) => g.id === set.guideId)?.questions.length ?? 0) + set.bank.length;
 }
 
 export function isEmail(v: string): boolean {

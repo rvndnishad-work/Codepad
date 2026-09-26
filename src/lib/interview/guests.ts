@@ -4,8 +4,10 @@
  * them the interviewer side of that room, the same as the host and panel.
  * Server only.
  */
-import { createHash, randomBytes } from "crypto";
+import { randomBytes } from "crypto";
 import { prisma } from "@/lib/prisma";
+import type { BatchOutcome } from "@/lib/email";
+import { guestJoinUrl } from "./links";
 import { formatOf, isEmail, normalizeGuests } from "./wizard";
 
 export function newGuestToken(): string {
@@ -26,10 +28,19 @@ export async function guestFromRequest(req: Request, sessionId: string): Promise
 
 type Room = { id: string; candidateName: string | null; scheduledAt: Date | null };
 
+/** How one email went, for the wizard's last page. */
+export type DeliveryStatus = { to: string; status: "sent" | "not-configured" | "failed" | "suppressed"; reason?: string };
+
+export function deliveryOf(to: string, o: BatchOutcome | undefined): DeliveryStatus {
+  if (!o) return { to, status: "failed", reason: "not sent" };
+  if (o.status === "sent") return o.provider === "console" ? { to, status: "not-configured" } : { to, status: "sent" };
+  return { to, status: o.status, reason: o.reason };
+}
+
 /**
  * Adds the guests to every room and emails each one the details, one email
- * per person listing all rooms. Someone already on a room keeps their link.
- * Fire-and-forget safe: errors are logged, never thrown.
+ * per person listing all rooms, in a single batch request. Someone already
+ * on a room keeps their link. Never throws: failures come back per address.
  */
 export async function inviteGuests(a: {
   workspaceId: string;
@@ -41,23 +52,22 @@ export async function inviteGuests(a: {
   hostName: string;
   inviterName: string;
   brief: string | null;
-}): Promise<{ sent: number }> {
+  origin: string;
+}): Promise<DeliveryStatus[]> {
   const emails = normalizeGuests(a.emails).filter(isEmail);
-  if (!emails.length || !a.rooms.length) return { sent: 0 };
-  let sent = 0;
+  if (!emails.length || !a.rooms.length) return [];
   try {
     const ws = await prisma.workspace.findUnique({ where: { id: a.workspaceId }, select: { name: true, slug: true } });
-    const { sendEmail } = await import("@/lib/email");
-    const { guestRoomUrl } = await import("./room-server");
-    const baseUrl = process.env.NEXTAUTH_URL || "http://localhost:3000";
-    // Signed, expiring links into the workspace room (fall back to the older
-    // link only if the workspace is somehow gone).
+    const { guestRoomPath } = await import("./room-server");
+    // Signed, expiring links into the workspace room (the older link only if
+    // the workspace is somehow gone).
     const sessions = await prisma.interviewSession.findMany({ where: { id: { in: a.rooms.map((r) => r.id) } }, select: { id: true, shareToken: true, scheduledAt: true, totalSec: true } });
     const byId = new Map(sessions.map((x) => [x.id, x]));
     const linkFor = (roomId: string, token: string, guestId: string) => {
       const s = byId.get(roomId);
-      return ws && s ? guestRoomUrl(s, ws.slug, guestId) : `${baseUrl}/interview/${roomId}?guest=${token}`;
+      return ws && s ? `${a.origin}${guestRoomPath(s, ws.slug, guestId)}` : guestJoinUrl(a.origin, roomId, token);
     };
+    const perGuest: { email: string; links: { room: Room; token: string; guestId: string }[] }[] = [];
     for (const email of emails) {
       const links: { room: Room; token: string; guestId: string }[] = [];
       for (const room of a.rooms) {
@@ -69,8 +79,12 @@ export async function inviteGuests(a: {
         });
         links.push({ room, token: g.token, guestId: g.id });
       }
-      const res = await sendEmail({
-        template: "interviewer-invite",
+      perGuest.push({ email, links });
+    }
+    const { sendTemplatedBatch } = await import("@/lib/email");
+    const res = await sendTemplatedBatch(
+      "interviewer-invite",
+      perGuest.map(({ email, links }) => ({
         to: email,
         props: {
           workspaceName: ws?.name ?? "the team",
@@ -87,18 +101,15 @@ export async function inviteGuests(a: {
           })),
         },
         workspaceId: a.workspaceId,
-        sessionId: a.rooms[0].id,
-        idempotencyKey: `interviewer-invite:${createHash("sha256").update(links.map((l) => l.guestId).join(",")).digest("hex").slice(0, 32)}`,
-      });
-      if (res.sent) {
-        sent++;
-        await prisma.interviewGuest.updateMany({ where: { id: { in: links.map((l) => l.guestId) } }, data: { sentAt: new Date() } });
-      } else {
-        console.warn(`[interviewer-invite] ${email}: ${res.reason}`);
-      }
-    }
+        sessionId: links[0]?.room.id,
+      })),
+    );
+    const out = perGuest.map((g, i) => deliveryOf(g.email, res.outcomes?.[i]));
+    const sentIds = perGuest.flatMap((g, i) => (out[i].status === "sent" ? g.links.map((l) => l.guestId) : []));
+    if (sentIds.length) await prisma.interviewGuest.updateMany({ where: { id: { in: sentIds } }, data: { sentAt: new Date() } });
+    return out;
   } catch (err) {
     console.error("[interviewer-invite] failed:", err);
+    return emails.map((to) => ({ to, status: "failed", reason: "Something went wrong while sending." }));
   }
-  return { sent };
 }

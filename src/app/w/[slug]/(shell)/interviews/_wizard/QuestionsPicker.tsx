@@ -5,7 +5,7 @@
  * interview without set questions. Also used on its own by the teammate
  * who picks the questions later.
  */
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { BookOpen, Clock, ExternalLink, ListChecks, MessagesSquare, Search, UserRoundCheck } from "lucide-react";
 import type { GuideOption, MemberOption, RoundOption } from "@/lib/interview/wizard-server";
@@ -40,6 +40,7 @@ export default function QuestionsPicker({
   members,
   meId,
   allowLater = true,
+  guideSlot,
 }: {
   slug: string;
   format: FormatDef;
@@ -50,6 +51,8 @@ export default function QuestionsPicker({
   members: MemberOption[];
   meId: string;
   allowLater?: boolean;
+  /** Replaces the single questionnaire picker (the wizard's per-candidate guides). */
+  guideSlot?: ReactNode;
 }) {
   const reduce = useReducedMotion();
   const plans = plansFor(format).filter((p) => allowLater || p !== "later");
@@ -95,7 +98,8 @@ export default function QuestionsPicker({
                   <RoundsBuilder options={roundOptions} rounds={value.rounds} onChange={(rounds) => onChange({ rounds })} />
                 </div>
               )}
-              {format.guide && (
+              {format.guide && guideSlot}
+              {format.guide && !guideSlot && (
                 <div className="flex flex-col gap-2">
                   <SubHead
                     title={format.coding ? "Question guide (optional)" : "Question guide"}

@@ -21,15 +21,15 @@ export function candidateRoomPath(s: { id: string; shareToken: string; scheduled
   return `/w/${slug}/interviews/${s.id}/join?k=${k}`;
 }
 
-/** Full candidate link, for emails. */
-export function candidateRoomUrl(s: { id: string; shareToken: string; scheduledAt: Date | null; totalSec: number }, slug: string): string {
-  return `${baseUrl()}${candidateRoomPath(s, slug)}`;
+/** Full candidate link. */
+export function candidateRoomUrl(s: { id: string; shareToken: string; scheduledAt: Date | null; totalSec: number }, slug: string, origin = baseUrl()): string {
+  return `${origin}${candidateRoomPath(s, slug)}`;
 }
 
-/** Link for an interviewer HR emailed (no account). */
-export function guestRoomUrl(s: { id: string; shareToken: string; scheduledAt: Date | null; totalSec: number }, slug: string, guestId: string): string {
+/** Path (no origin) for an interviewer HR emailed (no account). */
+export function guestRoomPath(s: { id: string; shareToken: string; scheduledAt: Date | null; totalSec: number }, slug: string, guestId: string): string {
   const k = signRoomPass({ sessionId: s.id, role: "guest", guestId, expiresAt: passExpiry(s) }, s.shareToken);
-  return `${baseUrl()}/w/${slug}/interviews/${s.id}/join?k=${k}`;
+  return `/w/${slug}/interviews/${s.id}/join?k=${k}`;
 }
 
 export type RoundSummary = { key: string; kind: RoundKind; title: string; meta: string | null; steps: number };
@@ -150,6 +150,7 @@ export async function loadRoom(
       promptScenarioIds: true,
       questionPlan: true,
       guideTemplateId: true,
+      guideJson: true,
       interviewerBrief: true,
       rubric: { select: { ratings: true, notes: true } },
       user: { select: { name: true, email: true } },
@@ -291,11 +292,12 @@ export async function loadRoom(
     const tpl = s.guideTemplateId && s.workspaceId
       ? await prisma.aIInterviewTemplate.findFirst({ where: { id: s.guideTemplateId, workspaceId: s.workspaceId }, select: { title: true, testsCode: true } })
       : null;
-    const needed = s.status === "scheduled" && questionState({ questionPlan: s.questionPlan, roundCount, guideTemplateId: s.guideTemplateId }) === "needed";
+    const needed = s.status === "scheduled" && questionState({ questionPlan: s.questionPlan, roundCount, guideTemplateId: s.guideTemplateId ?? (s.guideJson ? "bank" : null) }) === "needed";
     priv = {
       brief: s.interviewerBrief,
-      guideTitle: tpl?.title ?? null,
-      guide: tpl ? parseQuestionnaire(tpl.testsCode).map((i) => ({ q: i.q, a: i.a ?? null })) : [],
+      guideTitle: tpl?.title ?? (s.guideJson ? "Picked questions" : null),
+      // The library questionnaire, then any public bank questions picked for this candidate.
+      guide: [...(tpl ? parseQuestionnaire(tpl.testsCode) : []), ...(s.guideJson ? parseQuestionnaire(s.guideJson) : [])].map((i) => ({ q: i.q, a: i.a ?? null })),
       questionsNeeded: needed,
       pickHref: needed ? `/w/${slug}/interviews/${s.id}/questions` : null,
       candidateLink: candidateRoomUrl(s, slug),

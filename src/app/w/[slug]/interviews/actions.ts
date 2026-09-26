@@ -10,15 +10,18 @@ import { writeWorkspaceAuditEntry, WORKSPACE_AUDIT_ACTIONS } from "@/lib/workspa
 import { createInterviewSession, resolveRounds, sourceTypeOf } from "@/lib/interview/create-server";
 import { notifyInterviewQuestionsRequested } from "@/lib/notifications/triggers";
 import { TOOL_IDS, defaultTools, initialTools } from "@/lib/interview/tools";
+import { inviteGuests } from "@/lib/interview/guests";
 import {
   formatOf,
   isEmail,
   isInterviewerFor,
   MAX_CANDIDATES,
   MAX_MINUTES,
+  MAX_GUESTS,
   MAX_PANEL,
   MAX_ROUNDS,
   MIN_MINUTES,
+  normalizeGuests,
   plansFor,
 } from "@/lib/interview/wizard";
 
@@ -79,6 +82,10 @@ const scheduleSchema = z.object({
     .max(MAX_CANDIDATES),
   hostId: z.string().min(1),
   panelIds: z.array(z.string().min(1)).max(MAX_PANEL),
+  guests: z
+    .array(z.string().trim().max(200).refine((v) => isEmail(v)))
+    .max(MAX_GUESTS)
+    .optional(),
   plan: z.enum(["set", "later", "open"]),
   rounds: z.array(round).max(MAX_ROUNDS),
   guideId: z.string().nullable(),
@@ -167,6 +174,23 @@ export async function scheduleInterviewsAction(slug: string, raw: ScheduleInput)
       created.push({ id: res.id, name: p.name || null, shortCode: res.shortCode, shareToken: res.shareToken, scheduledAt: p.time });
     }
 
+    // Interviewers outside the workspace get the details and their own link.
+    const guests = normalizeGuests(d.guests ?? []);
+    if (guests.length) {
+      const host = await prisma.user.findUnique({ where: { id: d.hostId }, select: { name: true, email: true } });
+      void inviteGuests({
+        workspaceId: a.workspace.id,
+        emails: guests,
+        rooms: created.map((c) => ({ id: c.id, candidateName: c.name, scheduledAt: c.scheduledAt ? new Date(c.scheduledAt) : null })),
+        title: d.title,
+        format: d.format,
+        minutes: d.minutes,
+        hostName: host?.name || host?.email || "the host",
+        inviterName: a.name,
+        brief: d.brief || null,
+      });
+    }
+
     if (d.plan === "later" && d.questionsOwnerId) {
       void notifyInterviewQuestionsRequested({
         userId: d.questionsOwnerId,
@@ -185,7 +209,7 @@ export async function scheduleInterviewsAction(slug: string, raw: ScheduleInput)
       action: WORKSPACE_AUDIT_ACTIONS.INTERVIEWS_SCHEDULED,
       targetType: "interviewSession",
       targetId: created[0]?.id ?? null,
-      meta: { count: created.length, format: d.format, plan: d.plan, hostId: d.hostId, panel: panelIds.length },
+      meta: { count: created.length, format: d.format, plan: d.plan, hostId: d.hostId, panel: panelIds.length, guests: guests.length },
     });
     revalidatePath(`/w/${slug}/interviews`, "layout");
     revalidatePath(`/w/${slug}`, "layout");

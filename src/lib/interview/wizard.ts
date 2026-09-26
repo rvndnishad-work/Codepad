@@ -103,6 +103,8 @@ export const MAX_MINUTES = 240;
 export const MAX_ROUNDS = 10;
 export const MAX_CANDIDATES = 20;
 export const MAX_PANEL = 6;
+/** People outside the workspace who get the details by email. */
+export const MAX_GUESTS = 10;
 
 export type WizardCandidate = { id: string | null; name: string; email: string };
 export type WizardRound = { key: string; kind: RoundKind; id: string; title: string; minutes: number; meta?: string };
@@ -115,6 +117,8 @@ export type WizardState = {
   noCandidate: boolean;
   hostId: string;
   panelIds: string[];
+  /** Emails of interviewers who are not workspace members. They get the details and a room link. */
+  guests?: string[];
   plan: QuestionPlan;
   rounds: WizardRound[];
   guideId: string | null;
@@ -126,6 +130,8 @@ export type WizardState = {
   brief: string;
   candidateBrief: string;
   sendInvites: boolean;
+  /** Times were filled in (or cleared) once, so the schedule step stops suggesting them. */
+  timesSet?: boolean;
   /** Length was set by hand, so it stops following the rounds. */
   lengthSet?: boolean;
   /** Room tools switched on at the start. Unset follows the format. */
@@ -155,7 +161,9 @@ export function stepIssues(s: WizardState, step: StepId): string[] {
       if (s.candidates.some((c) => c.email && !isEmail(c.email))) return ["One of the emails does not look right."];
       return [];
     case "panel":
-      return s.hostId ? [] : ["Choose who runs the interview."];
+      if (!s.hostId) return ["Choose who runs the interview."];
+      if ((s.guests ?? []).some((g) => !isEmail(g))) return ["One of the emails does not look right."];
+      return [];
     case "questions": {
       if (!f) return ["Pick a format first."];
       if (!plansFor(f).includes(s.plan)) return ["Coding rounds need questions, now or from a teammate."];
@@ -213,6 +221,54 @@ export function staggerSlots(start: string, minutes: number, count: number, gap 
   const d = parseLocal(start);
   if (!d) return Array.from({ length: count }, () => "");
   return Array.from({ length: count }, (_, i) => toLocalInput(new Date(d.getTime() + i * (minutes + gap) * 60_000)));
+}
+
+/** Tomorrow at 10:00 local, the first suggested start. */
+export function defaultStart(now = new Date()): string {
+  const d = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1, 10, 0);
+  return toLocalInput(d);
+}
+
+/** The slot after `prev`: one interview length plus `gap` minutes later. Empty when `prev` is empty. */
+export function nextSlot(prev: string, minutes: number, gap = 15): string {
+  const d = parseLocal(prev);
+  return d ? toLocalInput(new Date(d.getTime() + (minutes + gap) * 60_000)) : "";
+}
+
+/**
+ * Rows whose interview starts before an earlier one (by start time) has
+ * ended. The same host runs every room, so these clash.
+ */
+export function timeClashes(times: string[], minutes: number): Set<number> {
+  const rows = times
+    .map((t, i) => ({ i, d: parseLocal(t) }))
+    .filter((r): r is { i: number; d: Date } => !!r.d)
+    .sort((a, b) => a.d.getTime() - b.d.getTime());
+  const out = new Set<number>();
+  let end = -Infinity;
+  let endRow = -1;
+  for (const r of rows) {
+    if (r.d.getTime() < end) {
+      out.add(r.i);
+      out.add(endRow);
+    }
+    const e = r.d.getTime() + minutes * 60_000;
+    if (e > end) {
+      end = e;
+      endRow = r.i;
+    }
+  }
+  return out;
+}
+
+/** Clean a list of typed emails: trimmed, lower case, no repeats, at most MAX_GUESTS. */
+export function normalizeGuests(list: string[]): string[] {
+  const out: string[] = [];
+  for (const raw of list) {
+    const e = raw.trim().toLowerCase();
+    if (e && !out.includes(e)) out.push(e);
+  }
+  return out.slice(0, MAX_GUESTS);
 }
 
 export function parseLocal(v: string): Date | null {

@@ -23,6 +23,7 @@ export default function InterviewToolbox({
   sessionId,
   roomKey,
   token,
+  guest = null,
   interviewer,
   meName,
   format,
@@ -31,13 +32,15 @@ export default function InterviewToolbox({
   sessionId: string;
   roomKey: string | null;
   token: string | null;
+  /** Emailed interviewer key, for interviewers without an account. */
+  guest?: string | null;
   interviewer: boolean;
   meName: string;
   format: string | null;
   guideQuestions?: string[];
 }) {
   const me = useMemo(() => ({ name: meName, interviewer }), [meName, interviewer]);
-  const room = useToolsRoom({ sessionId, token, roomKey, me });
+  const room = useToolsRoom({ sessionId, token, guest, roomKey, me });
   const { state, act, live } = room;
   const isInterviewer = (room.role ?? (interviewer ? "interviewer" : "candidate")) === "interviewer";
   const readOnly = !live;

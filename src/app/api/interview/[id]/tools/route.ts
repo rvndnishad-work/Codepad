@@ -14,6 +14,7 @@ import { z } from "zod";
 import * as Y from "yjs";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { guestFromRequest } from "@/lib/interview/guests";
 import { MAX_QUESTION, MAX_TIMER_SEC, TOOL_IDS, applyToolsAction, parseTools, toolRole, type ToolsAction } from "@/lib/interview/tools";
 
 const MAX_UPDATE_BYTES = 768 * 1024;
@@ -30,7 +31,8 @@ async function load(req: Request, id: string) {
     }),
   ]);
   if (!interview || interview.type === "take-home") return { interview: null, role: null } as const;
-  return { interview, role: toolRole(interview, session?.user?.id, token) } as const;
+  const guest = await guestFromRequest(req, interview.id);
+  return { interview, role: toolRole(interview, session?.user?.id, token, !!guest) } as const;
 }
 
 export async function GET(req: Request, { params }: { params: Promise<{ id: string }> }) {

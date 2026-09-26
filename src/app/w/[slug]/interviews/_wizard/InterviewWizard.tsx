@@ -15,10 +15,13 @@ import {
   defaultTitle,
   formatOf,
   plansFor,
+  nextSlot,
+  normalizeGuests,
   stepIssues,
   suggestedMinutes,
   type FormatDef,
   type StepId,
+  type WizardCandidate,
   type WizardRound,
   type WizardState,
 } from "@/lib/interview/wizard";
@@ -139,10 +142,19 @@ export default function InterviewWizard({ slug, meId, people, members, roundOpti
         // Length follows the rounds until someone sets it by hand.
         if (!next.lengthSet && (p.rounds || p.format)) next.minutes = suggestedMinutes(formatOf(next.format), next.plan === "set" ? next.rounds : []);
         if (!titleEdited) next.title = defaultTitle(formatOf(next.format), next.noCandidate ? [] : next.candidates);
-        // Keep one time per room when people are added or removed.
+        // Keep one time per room when people are added or removed: each
+        // person keeps their time, and someone new gets the next slot.
         const rooms = Math.max(1, next.noCandidate ? 1 : next.candidates.length);
-        if (next.times.length && next.times.length !== rooms) {
-          next.times = Array.from({ length: rooms }, (_, i) => next.times[i] ?? next.times[next.times.length - 1] ?? "");
+        if (next.times.length && (next.times.length !== rooms || (p.candidates && !p.times))) {
+          const key = (c: WizardCandidate) => c.id ?? c.email ?? c.name;
+          const was = new Map(s.candidates.map((c, i) => [key(c), s.times[i] ?? ""]));
+          const times: string[] = [];
+          for (let i = 0; i < rooms; i++) {
+            const c = next.noCandidate ? undefined : next.candidates[i];
+            const kept = c && !p.times ? was.get(key(c)) : next.times[i];
+            times.push(kept ?? (i > 0 ? nextSlot(times[i - 1], next.minutes) : ""));
+          }
+          next.times = times;
         }
         return next;
       }),
@@ -213,6 +225,7 @@ export default function InterviewWizard({ slug, meId, people, members, roundOpti
         candidates: rooms.map((c, i) => ({ id: c.id, name: c.name, email: c.email, time: toIso(state.times[i]) })),
         hostId: state.hostId,
         panelIds: state.panelIds,
+        guests: normalizeGuests(state.guests ?? []),
         plan: state.plan,
         rounds: state.rounds.map((r) => ({ kind: r.kind, id: r.id })),
         guideId: state.guideId,
@@ -515,6 +528,7 @@ function Ticket({ state, members, guides, rooms }: { state: WizardState; members
               "Interviewers",
               <span>
                 {host.name} hosts{panel.length ? `, with ${panel.map((p) => p.name.split(" ")[0]).join(", ")}` : ""}
+                {(state.guests?.length ?? 0) > 0 && <span className="block text-muted">Details emailed to {state.guests!.length === 1 ? state.guests![0] : `${state.guests!.length} people`}</span>}
               </span>,
               "panel",
             )}
@@ -539,7 +553,18 @@ function Ticket({ state, members, guides, rooms }: { state: WizardState; members
               ),
               "q",
             )}
-          {state.times[0] && row("When", <span>{fmtWhen(state.times[0])}</span>, "when")}
+          {state.times.some(Boolean) &&
+            row(
+              "When",
+              rooms > 1 ? (
+                <span>
+                  {state.times.filter(Boolean).length} of {rooms} timed, first {fmtWhen([...state.times].filter(Boolean).sort()[0])}
+                </span>
+              ) : (
+                <span>{fmtWhen(state.times[0])}</span>
+              ),
+              "when",
+            )}
         </AnimatePresence>
       </div>
     </div>

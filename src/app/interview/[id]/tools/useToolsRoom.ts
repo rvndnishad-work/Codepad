@@ -53,12 +53,15 @@ const COLORS = ["--c-accent-2-soft", "--c-accent-4", "--c-accent-3", "--c-succes
 export function useToolsRoom({
   sessionId,
   token,
+  guest = null,
   roomKey,
   me,
 }: {
   sessionId: string;
   /** Share token when this viewer came in by link. */
   token: string | null;
+  /** Emailed interviewer key (`?guest=`), for interviewers without an account. */
+  guest?: string | null;
   /** Encrypts the peer-to-peer channel; both sides know the share token. */
   roomKey: string | null;
   me: { name: string; interviewer: boolean };
@@ -75,7 +78,7 @@ export function useToolsRoom({
   const stateJson = useRef("");
   const pending = useRef(0);
   const base = `/api/interview/${encodeURIComponent(sessionId)}/tools`;
-  const qs = token ? `token=${encodeURIComponent(token)}` : "";
+  const qs = [token ? `token=${encodeURIComponent(token)}` : "", guest ? `guest=${encodeURIComponent(guest)}` : ""].filter(Boolean).join("&");
   const url = (extra = "") => `${base}?${[extra, qs].filter(Boolean).join("&")}`;
 
   const adopt = useCallback((s: ToolsState) => {

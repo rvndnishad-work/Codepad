@@ -65,6 +65,11 @@ describe("room tools", () => {
     expect(toolRole(s, null, "tok")).toBe("candidate");
     expect(toolRole(s, "stranger", "nope")).toBeNull();
     expect(toolRole({ ...s, creatorRole: "candidate" }, null, "tok")).toBe("interviewer");
+    // An emailed interviewer holds a guest key; it wins over the share token.
+    expect(toolRole(s, null, "tok", true)).toBe("interviewer");
+    expect(toolRole(s, null, null, true)).toBe("interviewer");
+    // Guest keys only exist for interviewer-led rooms.
+    expect(toolRole({ ...s, creatorRole: "candidate" }, null, null, true)).toBeNull();
   });
 
   it("two docs exchanging relay updates converge", () => {

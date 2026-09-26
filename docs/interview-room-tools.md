@@ -36,3 +36,4 @@ The Tools menu, the dock, the wizard's "Tools in the room" picker and the API va
 - The candidate must never receive reference answers. Anything a tool shows comes from the doc or the switchboard, which both sides can read.
 - Tools must work read-only once the interview ends (`readOnly`).
 - Use the site colour tokens, never hex colours.
+- Interviewers HR invited by email have no account. They open the room with `?guest=<key>` (see `src/lib/interview/guests.ts`), and the room passes it on to every API call. Any new route that decides who is the interviewer must accept it, as `toolRole` and `PATCH /api/interview/[id]` do.

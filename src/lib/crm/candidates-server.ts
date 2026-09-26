@@ -28,6 +28,7 @@ import {
   WORKSPACE_AUDIT_ACTIONS,
 } from "@/lib/workspace-audit";
 import { passCheck } from "@/lib/crm/results";
+import { emitWorkspaceEvent } from "@/lib/events";
 import { loadCandidateResults } from "@/lib/crm/results-server";
 
 /** The legacy `status` column mirrors the decision. Flags such as
@@ -458,8 +459,33 @@ export async function updateCandidate(actor: CandidateActor, id: string, patch: 
       ...(stageMove.to === "REJECTED" ? { rejectReason: patch.rejectReason } : {}),
       ...(overrideReason ? { manualOverride: overrideReason } : {}),
     });
+    if (stageMove.to === "PASSED" || stageMove.to === "REJECTED") {
+      void emitDecision(actor, { id, name: updated.name, email: updated.email }, stageMove.from, stageMove.to, {
+        rejectReason: stageMove.to === "REJECTED" ? patch.rejectReason : null,
+        manualOverride: overrideReason,
+      });
+    }
   }
   return updated;
+}
+
+/** candidate.decided webhook event. Recruiter decisions only; never throws. */
+function emitDecision(
+  actor: CandidateActor,
+  candidate: { id: string; name: string; email: string | null },
+  fromStage: string,
+  toStage: "PASSED" | "REJECTED",
+  extra: { rejectReason?: string | null; manualOverride?: string | null },
+) {
+  return emitWorkspaceEvent(actor.workspaceId, "candidate.decided", {
+    candidate,
+    decision: toStage === "PASSED" ? "passed" : "not_passed",
+    previousStage: fromStage,
+    rejectReason: extra.rejectReason ?? null,
+    manualOverride: extra.manualOverride ?? null,
+    decidedBy: { email: actor.actorEmail },
+    reportPath: `candidates/${candidate.id}`,
+  });
 }
 
 /* ──────────────────────────────────────────────────────────────────────────
@@ -474,7 +500,7 @@ async function scopedCandidates(actor: CandidateActor, ids: string[]) {
   if (unique.length > BULK_MAX) throw new CandidateError(400, `Select at most ${BULK_MAX} candidates at a time.`);
   return prisma.candidate.findMany({
     where: { id: { in: unique }, workspaceId: actor.workspaceId },
-    select: { id: true, name: true, stage: true, status: true, tags: true, batchId: true, ownerId: true },
+    select: { id: true, name: true, email: true, stage: true, status: true, tags: true, batchId: true, ownerId: true },
   });
 }
 
@@ -516,6 +542,12 @@ export async function moveCandidatesStage(
       ...(overrides.has(c.id) ? { manualOverride: overrides.get(c.id) } : {}),
       ...(moving.length > 1 ? { bulk: moving.length } : {}),
     });
+    if (toStage === "PASSED" || toStage === "REJECTED") {
+      void emitDecision(actor, { id: c.id, name: c.name, email: c.email }, c.stage, toStage, {
+        rejectReason: toStage === "REJECTED" ? reason?.rejectReason : null,
+        manualOverride: overrides.get(c.id) ?? null,
+      });
+    }
   }
   return { moved: moving.length };
 }

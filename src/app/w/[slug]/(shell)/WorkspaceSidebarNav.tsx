@@ -16,6 +16,7 @@ import {
   Users,
   UsersRound,
   Video,
+  Webhook,
 } from "lucide-react";
 
 export type SidebarCounts = {
@@ -146,6 +147,7 @@ export default function WorkspaceSidebarNav({ slug, growthFeatures, counts, coll
   const connections: NavItem[] = [
     growth({ label: "ATS sync", icon: RefreshCw, ...route("ats") }),
     growth({ label: "API keys", icon: KeyRound, ...route("api-keys") }),
+    growth({ label: "Webhooks", icon: Webhook, ...route("webhooks") }),
   ];
 
   const admin: NavItem[] = [

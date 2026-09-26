@@ -223,13 +223,28 @@ export async function POST(
         select: {
           id: true,
           candidateName: true,
+          candidateEmail: true,
           candidateId: true,
           workspaceId: true,
+          submittedAt: true,
           workspace: { select: { slug: true } },
           challenge: { select: { title: true } },
         },
       });
       submittedTakeHomeId = updated.id;
+      if (updated.workspaceId) {
+        const { emitWorkspaceEvent } = await import("@/lib/events");
+        void emitWorkspaceEvent(updated.workspaceId, "takehome.submitted", {
+          candidate: { id: updated.candidateId, name: updated.candidateName, email: updated.candidateEmail },
+          takeHome: {
+            id: updated.id,
+            title: updated.challenge.title,
+            score,
+            submittedAt: (updated.submittedAt ?? new Date()).toISOString(),
+          },
+          reportPath: `take-homes/${updated.id}`,
+        });
+      }
       // IP-69: submission confirms the candidate is (at least) in the
       // take-home round — forward-advance anyone still parked earlier.
       if (updated.workspaceId && updated.candidateId) {

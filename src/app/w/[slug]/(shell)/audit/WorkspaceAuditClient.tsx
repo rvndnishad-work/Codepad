@@ -197,6 +197,19 @@ const ACTION_META: Record<string, { label: string; tone: string }> = {
     label: "ATS test event sent",
     tone: "border-border bg-panel text-muted",
   },
+  WEBHOOK_ENDPOINT_CREATED: { label: "Webhook added", tone: "border-success/30 bg-success/[0.06] text-success" },
+  WEBHOOK_ENDPOINT_UPDATED: { label: "Webhook edited", tone: "border-secondary/30 bg-secondary/[0.06] text-secondary" },
+  WEBHOOK_ENDPOINT_DELETED: { label: "Webhook removed", tone: "border-danger/30 bg-danger/[0.05] text-danger" },
+  WEBHOOK_ENDPOINT_PAUSED: { label: "Webhook paused", tone: "border-warning/30 bg-warning/[0.06] text-warning" },
+  WEBHOOK_ENDPOINT_RESUMED: { label: "Webhook resumed", tone: "border-success/30 bg-success/[0.06] text-success" },
+  WEBHOOK_ENDPOINT_AUTO_PAUSED: {
+    label: "Webhook paused after failures",
+    tone: "border-danger/30 bg-danger/[0.05] text-danger",
+  },
+  WEBHOOK_SECRET_REVEALED: { label: "Webhook secret viewed", tone: "border-border bg-panel text-muted" },
+  WEBHOOK_SECRET_ROTATED: { label: "Webhook secret rotated", tone: "border-warning/30 bg-warning/[0.06] text-warning" },
+  WEBHOOK_TEST_SENT: { label: "Webhook test sent", tone: "border-border bg-panel text-muted" },
+  WEBHOOK_REDELIVERED: { label: "Webhook delivery resent", tone: "border-border bg-panel text-muted" },
 };
 
 function labelFor(action: string): { label: string; tone: string } {

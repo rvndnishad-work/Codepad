@@ -10,11 +10,13 @@
  * Pure + synchronous — callers pass the two fields they already have.
  */
 
+import { WORKSPACE_PLANS } from "./plans";
+
 export const TRIAL_DURATION_DAYS = 14;
 /** Seats allowed during an active trial (matches the /w/create promise). */
 export const TRIAL_SEAT_LIMIT = 5;
-/** Base free-plan seat cap once the trial lapses. Kept in sync with settings. */
-export const FREE_SEAT_LIMIT = 3;
+/** Base free-plan seat cap once the trial lapses. Comes from the plan config. */
+export const FREE_SEAT_LIMIT = WORKSPACE_PLANS.FREE.seatLimit ?? 3;
 
 const GROWTH_LEVEL = new Set(["GROWTH", "ENTERPRISE"]);
 
@@ -45,9 +47,10 @@ export function trialActive(ws: PlanFields, now: Date = new Date()): boolean {
 export function effectivePlan(ws: PlanFields, now: Date = new Date()): EffectivePlan {
   const onTrial = trialActive(ws, now);
   const plan = onTrial ? "GROWTH" : ws.planName;
-  // Paid GROWTH/ENTERPRISE scale seats via Stripe (no hard cap here); FREE is
-  // capped, and a trial gets the promised higher cap.
-  const seatLimit = GROWTH_LEVEL.has(ws.planName)
+  // Paid GROWTH/ENTERPRISE (and any live per-seat subscription) scale seats
+  // via Stripe, so there is no hard cap here; FREE is capped, and a trial gets
+  // the promised higher cap.
+  const seatLimit = GROWTH_LEVEL.has(ws.planName) || ws.stripeSubscriptionId
     ? null
     : onTrial
       ? TRIAL_SEAT_LIMIT

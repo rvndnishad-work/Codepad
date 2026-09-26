@@ -38,6 +38,7 @@ import SidePanel, { useSideOpen, type SideTab } from "./SidePanel";
 import { defaultTools, isToolId } from "@/lib/interview/tools";
 import QuestionsPicker from "./QuestionsPicker";
 import { CandidateBrowser, CandidatesStep, FORMAT_ICON, FormatStep, PanelStep, ReviewStep, ScheduleStep } from "./Steps";
+import CalendarAvailability from "./CalendarAvailability";
 import { fmtMinutes, fmtWhen, spring } from "./parts";
 
 export type WizardProps = {
@@ -254,6 +255,7 @@ export default function InterviewWizard({ slug, meId, people, members, roundOpti
         brief: state.brief,
         candidateBrief: state.candidateBrief,
         sendInvites: state.sendInvites,
+        calendarEvent: state.calendarEvent !== false,
         tools: state.tools ? state.tools.filter(isToolId) : defaultTools(state.format),
       });
       if (!res.ok) return toast(res.error, "error");
@@ -361,7 +363,7 @@ export default function InterviewWizard({ slug, meId, people, members, roundOpti
           </div>
         ) : null;
       case "schedule":
-        return <ScheduleStep state={state} patch={patch} />;
+        return <ScheduleStep state={state} patch={patch} calendar={<CalendarAvailability slug={slug} state={state} patch={patch} members={members} meId={meId} />} />;
       case "review":
         return (
           <ReviewStep

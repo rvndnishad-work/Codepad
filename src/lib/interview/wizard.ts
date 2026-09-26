@@ -150,6 +150,8 @@ export type WizardState = {
   lengthSet?: boolean;
   /** Room tools switched on at the start. Unset follows the format. */
   tools?: string[];
+  /** Put the interview on the organiser's connected calendar. Unset means yes. */
+  calendarEvent?: boolean;
 };
 
 export type StepId = "format" | "candidates" | "panel" | "questions" | "schedule" | "review";

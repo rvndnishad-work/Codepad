@@ -56,6 +56,7 @@ model User {
   permissionOverrides  Json?
 
   accounts             Account[]
+  calendarConnections  CalendarConnection[]
   roles                UserRole[]
   blogBookmarks        BlogBookmark[]
   blogComments         BlogComment[]
@@ -680,6 +681,7 @@ model InterviewSession {
   toolUpdates        InterviewToolUpdate[]
   presence           InterviewPresence[]
   guests             InterviewGuest[]
+  calendarEvent      InterviewCalendarEvent?
   createdAt          DateTime         @default(now())
   takeHomeTemplate   TakeHomeTemplate? @relation(fields: [takeHomeTemplateId], references: [id], onDelete: SetNull)
   rubric             InterviewRubric?
@@ -912,6 +914,7 @@ model Workspace {
   candidateBatches     CandidateBatch[]
   challenges           Challenge[]
   sessions             InterviewSession[]
+  calendarConnections  CalendarConnection[]
   mcpApiKeys           McpApiKey[]
   mcpAuditLogs         McpAuditLog[]
   externalMcpServers   ExternalMcpServer[]
@@ -2419,4 +2422,49 @@ model AgentConfig {
   updatedAt       DateTime  @updatedAt
 
   @@index([workspaceId, role])
+}
+
+/// A member's Google or Microsoft calendar, connected per workspace. Used for
+/// free and busy times in the interview wizard and for creating the interview
+/// event on the organiser's calendar. Tokens are encrypted at rest
+/// (src/lib/crypto/at-rest.ts). One connection per member per workspace.
+model CalendarConnection {
+  id              String    @id @default(cuid())
+  userId          String
+  workspaceId     String
+  /// "google" | "microsoft"
+  provider        String
+  /// The calendar account's address, which may differ from the login email.
+  email           String
+  accessTokenEnc  String
+  refreshTokenEnc String?
+  expiresAt       DateTime?
+  /// Space-separated scopes granted.
+  scopes          String    @default("")
+  /// "active" | "expired" (refresh failed, needs reconnecting)
+  status          String    @default("active")
+  lastError       String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  workspace       Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  events          InterviewCalendarEvent[]
+
+  @@unique([workspaceId, userId])
+  @@index([userId])
+}
+
+/// The calendar event created for a live interview on the organiser's
+/// calendar, so it can be moved or cancelled when the interview changes.
+model InterviewCalendarEvent {
+  id           String             @id @default(cuid())
+  sessionId    String             @unique
+  connectionId String
+  externalId   String
+  createdAt    DateTime           @default(now())
+  updatedAt    DateTime           @updatedAt
+  session      InterviewSession   @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  connection   CalendarConnection @relation(fields: [connectionId], references: [id], onDelete: Cascade)
+
+  @@index([connectionId])
 }

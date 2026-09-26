@@ -267,7 +267,7 @@ describe("passCheck", () => {
   it("lists every assessment below the bar", () => {
     const interview = result({ kind: "interview", score: 25, rating: 2, ...describeScore("interview", 25, 2), finishedAt: daysAgo(1) });
     expect(passCheck([ai(20), th(30), interview]).reason).toBe(
-      "AI screening 20, Not a fit; Take-home 30, Below bar; Interview 2.0 of 5",
+      "AI screening 20, Not a fit; Take-home 30, Below the mark; Interview 2.0 of 5",
     );
   });
 

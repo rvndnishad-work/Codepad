@@ -9,6 +9,8 @@ import {
   WORKSPACE_AUDIT_ACTIONS,
 } from "@/lib/workspace-audit";
 import { upsertCandidateForWorkflow } from "@/lib/crm/auto-create";
+import { cleanReminderPlan, type ReminderPlan } from "@/lib/take-home/reminders";
+import { takeHomePassMarkOf } from "@/lib/take-home/pass-mark";
 import { advanceCandidateStage } from "@/lib/crm/advance";
 import { canMember, type Permission } from "@/lib/permissions";
 
@@ -109,6 +111,10 @@ export type CreateTakeHomeSessionsInput = {
   scenario?: string | null;
   /** The saved question set this send came from (already checked to be in this workspace). */
   templateId?: string | null;
+  /** Pass mark for this send (already clamped). Omitted = the default. */
+  passMark?: number | null;
+  /** Automatic reminder schedule (already cleaned). Omitted = the column defaults. */
+  reminders?: ReminderPlan | null;
 };
 
 export type CreateTakeHomeSessionsResult = {
@@ -219,6 +225,8 @@ export async function bulkCreateTakeHomeSessions(
     questionTimeLimitsJson: JSON.stringify(perQuestionMinutes),
   };
 
+  const sendGroupId = crypto.randomUUID();
+  const reminders = input.reminders ? cleanReminderPlan(input.reminders) : null;
   const createdRows: { name: string; email: string; token: string; sessionId: string }[] = [];
   // Pre-existing candidates to forward-advance to TAKE_HOME after commit (IP-69).
   const advanceIds: string[] = [];
@@ -260,6 +268,17 @@ export async function bulkCreateTakeHomeSessions(
             candidateAccessToken: token,
             deadlineAt,
             takeHomeTemplateId: input.templateId ?? null,
+            // One send shares its pass mark and reminder schedule; the group
+            // id lets a later change reach every take-home in it.
+            setupGroupId: sendGroupId,
+            ...(input.passMark != null ? { takeHomePassMark: takeHomePassMarkOf(input.passMark) } : {}),
+            ...(reminders
+              ? {
+                  reminderStartAfterHours: reminders.startAfterHours,
+                  reminderBeforeDeadlineHours: reminders.beforeDeadlineHours,
+                  remindersOff: reminders.off,
+                }
+              : {}),
           },
           select: { id: true },
         });

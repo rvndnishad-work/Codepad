@@ -2,6 +2,7 @@
 
 import { useEffect, useId, useMemo, useState, type ReactNode } from "react";
 import Link from "next/link";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import {
   ArrowRight,
   Award,
@@ -9,19 +10,32 @@ import {
   CalendarDays,
   Check,
   ChevronRight,
+  ClipboardCheck,
   ClipboardList,
   Clock,
   FileCode2,
   Inbox,
+  MailWarning,
   Plus,
   Sparkles,
   TrendingDown,
   TrendingUp,
+  Unplug,
   Upload,
   Users,
   Video,
 } from "lucide-react";
-import { buildOverview, type AttentionItem, type OverviewInput } from "@/lib/workspace/overview";
+import {
+  ALL_BATCHES,
+  buildOverview,
+  OVERVIEW_RANGES,
+  parseOverviewFilter,
+  scopeToBatch,
+  scopeToRange,
+  type AttentionItem,
+  type OverviewFilter,
+  type OverviewInput,
+} from "@/lib/workspace/overview";
 import {
   ACTIVE_STAGES,
   STAGE_SWATCH,
@@ -207,17 +221,31 @@ function Avatar({ name, size = 32 }: { name: string; size?: number }) {
   );
 }
 
-const ATTENTION_ICON = { "take-home": FileCode2, screening: Bot, clock: Clock, interview: Video } as const;
-const KIND: Record<AttentionItem["kind"], { tone: Tone; label: string; filter: string }> = {
-  review: { tone: "warning", label: "Needs review", filter: "Reviews" },
-  expiring: { tone: "danger", label: "Expiring", filter: "Expiring" },
-  interview: { tone: "secondary", label: "Today", filter: "Interviews" },
+const ATTENTION_ICON = {
+  "take-home": FileCode2,
+  screening: Bot,
+  clock: Clock,
+  interview: Video,
+  scorecard: ClipboardCheck,
+  email: MailWarning,
+  connection: Unplug,
+} as const;
+const KIND: Record<AttentionItem["kind"], { tone: Tone; filter: string }> = {
+  interview: { tone: "secondary", filter: "Today" },
+  review: { tone: "secondary", filter: "Reviews" },
+  scorecard: { tone: "warning", filter: "Scorecards" },
+  email: { tone: "danger", filter: "Emails" },
+  connection: { tone: "danger", filter: "Connections" },
+  expiring: { tone: "warning", filter: "Expiring" },
 };
+const ATTENTION_PAGE = 8;
 
 function AttentionCard({ items, now, className }: { items: AttentionItem[]; now: Date | null; className?: string }) {
   const [filter, setFilter] = useState<AttentionItem["kind"] | "all">("all");
+  const [expanded, setExpanded] = useState(false);
   const kinds = (Object.keys(KIND) as AttentionItem["kind"][]).filter((k) => items.some((i) => i.kind === k));
   const shown = items.filter((i) => filter === "all" || i.kind === filter);
+  const visible = expanded ? shown : shown.slice(0, ATTENTION_PAGE);
   return (
     <Card
       title="Needs your attention"
@@ -225,7 +253,7 @@ function AttentionCard({ items, now, className }: { items: AttentionItem[]; now:
       className={className}
       right={
         kinds.length > 1 ? (
-          <div className="hidden sm:flex items-center gap-1 p-0.5 rounded-lg bg-panel" role="group" aria-label="Filter">
+          <div className="hidden md:flex flex-wrap items-center gap-1 p-0.5 rounded-lg bg-panel" role="group" aria-label="Filter">
             {(["all", ...kinds] as const).map((k) => {
               const on = filter === k;
               const n = k === "all" ? items.length : items.filter((i) => i.kind === k).length;
@@ -251,11 +279,11 @@ function AttentionCard({ items, now, className }: { items: AttentionItem[]; now:
             <Check className="w-5 h-5" strokeWidth={2.25} />
           </span>
           <p className="text-sm font-medium text-fg">You are all caught up</p>
-          <p className="text-[13px] text-muted">New submissions and expiring links will show here.</p>
+          <p className="text-[13px] text-muted">New submissions, missing scorecards, bounced invites and expiring links will show here.</p>
         </div>
       ) : (
         <ul>
-          {shown.slice(0, 6).map((item) => {
+          {visible.map((item) => {
             const Icon = ATTENTION_ICON[item.icon];
             const kind = KIND[item.kind];
             return (
@@ -272,7 +300,7 @@ function AttentionCard({ items, now, className }: { items: AttentionItem[]; now:
                   </div>
                 </div>
                 <span className={`hidden md:inline-flex justify-self-start items-center h-6 px-2 rounded-md text-xs font-medium whitespace-nowrap ${TONE[kind.tone].chip}`}>
-                  {kind.label}
+                  {item.tag}
                 </span>
                 <span className="hidden md:inline text-[13px] text-subtle whitespace-nowrap">{now ? relativeTime(item.at, now) : ""}</span>
                 <Link
@@ -287,8 +315,13 @@ function AttentionCard({ items, now, className }: { items: AttentionItem[]; now:
           })}
         </ul>
       )}
-      {shown.length > 6 && (
-        <div className="px-5 py-3 border-t border-border text-[13px] text-subtle">Showing 6 of {shown.length}</div>
+      {shown.length > ATTENTION_PAGE && (
+        <div className="flex items-center justify-between gap-3 px-5 py-3 border-t border-border text-[13px] text-subtle">
+          <span>{expanded ? `Showing all ${shown.length}` : `Showing ${ATTENTION_PAGE} of ${shown.length}`}</span>
+          <button type="button" onClick={() => setExpanded((v) => !v)} aria-expanded={expanded} className="font-medium text-secondary-soft hover:text-fg transition-colors">
+            {expanded ? "Show fewer" : "Show all"}
+          </button>
+        </div>
       )}
     </Card>
   );
@@ -545,6 +578,73 @@ function ScoresCard({ scores, slug, growth, ready, className }: {
   );
 }
 
+const filterSelectCls =
+  "h-9 max-w-[240px] rounded-lg border border-border bg-surface px-2.5 text-sm text-fg focus:outline-none focus:border-secondary/60 focus:ring-2 focus:ring-secondary/20";
+
+/** Batch and date range for the KPI cards. Batch also narrows the lists and charts. */
+function FilterBar({
+  batches,
+  filter,
+  onChange,
+}: {
+  batches: { id: string; name: string }[];
+  filter: OverviewFilter;
+  onChange: (f: OverviewFilter) => void;
+}) {
+  const batchName = batches.find((b) => b.id === filter.batch)?.name;
+  const range = OVERVIEW_RANGES.find((r) => r.id === filter.range)!;
+  const filtered = filter.batch !== ALL_BATCHES || filter.range !== "all";
+  return (
+    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+      <p className="text-[13px] text-muted" aria-live="polite">
+        {filtered ? (
+          <>
+            Showing {batchName ? <span className="text-fg font-medium">{batchName}</span> : "every batch"}
+            {filter.range !== "all" ? `, ${range.label.toLowerCase()}` : ""}.{" "}
+            <button type="button" onClick={() => onChange({ batch: ALL_BATCHES, range: "all" })} className="text-secondary-soft hover:text-fg transition-colors">
+              Clear
+            </button>
+          </>
+        ) : (
+          "Showing every batch, all time."
+        )}
+      </p>
+      <div className="flex flex-wrap items-center gap-2">
+        {batches.length > 0 && (
+          <>
+            <label htmlFor="ov-batch" className="text-[13px] text-muted">
+              Batch
+            </label>
+            <select id="ov-batch" value={filter.batch} onChange={(e) => onChange({ ...filter, batch: e.target.value })} className={filterSelectCls}>
+              <option value={ALL_BATCHES}>All batches</option>
+              {batches.map((b) => (
+                <option key={b.id} value={b.id}>
+                  {b.name}
+                </option>
+              ))}
+            </select>
+          </>
+        )}
+        <label htmlFor="ov-range" className="text-[13px] text-muted sm:ml-1">
+          Dates
+        </label>
+        <select
+          id="ov-range"
+          value={filter.range}
+          onChange={(e) => onChange({ ...filter, range: e.target.value as OverviewFilter["range"] })}
+          className={filterSelectCls}
+        >
+          {OVERVIEW_RANGES.map((r) => (
+            <option key={r.id} value={r.id}>
+              {r.label}
+            </option>
+          ))}
+        </select>
+      </div>
+    </div>
+  );
+}
+
 function TrialBanner({ plan, slug }: { plan: PlanDisplay; slug: string }) {
   if (!plan.onTrial) return null;
   return (
@@ -673,13 +773,37 @@ export default function WorkspaceOverview(props: Props) {
     setHello(greeting(d.getHours()));
   }, []);
 
-  const data = useMemo(() => buildOverview(props, now ?? undefined), [props, now]);
-  const funnel = useMemo(() => stageFunnel(candidates.map((c) => c.stage)), [candidates]);
+  // Batch and date filters live in the URL so a filtered view can be shared.
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const batches = props.extras?.batches ?? [];
+  const filter = parseOverviewFilter({ batch: searchParams.get("batch"), range: searchParams.get("range") }, batches);
+  function setFilter(f: OverviewFilter) {
+    const sp = new URLSearchParams(searchParams.toString());
+    if (f.batch === ALL_BATCHES) sp.delete("batch");
+    else sp.set("batch", f.batch);
+    if (f.range === "all") sp.delete("range");
+    else sp.set("range", f.range);
+    const qs = sp.toString();
+    router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
+  }
+
+  // The batch narrows everything; the date range drives the KPI cards.
+  const scoped = useMemo(() => scopeToBatch(props, filter.batch), [props, filter.batch]);
+  const data = useMemo(() => buildOverview(scoped, now ?? undefined), [scoped, now]);
+  const kpiData = useMemo(
+    () => (filter.range === "all" || !now ? data : buildOverview(scopeToRange(scoped, filter.range, now), now)),
+    [data, scoped, filter.range, now],
+  );
+  const funnel = useMemo(() => stageFunnel(scoped.candidates.map((c) => c.stage)), [scoped.candidates]);
   const isNew = candidates.length === 0;
-  const k = data.kpis;
+  const k = kpiData.kpis;
+  const inBatch = filter.batch !== ALL_BATCHES;
   const weeklyTotal = data.weekly.reduce((n, w) => n + w.count, 0);
-  const byKind = { review: 0, expiring: 0, interview: 0 };
+  const byKind: Record<AttentionItem["kind"], number> = { review: 0, expiring: 0, interview: 0, scorecard: 0, email: 0, connection: 0 };
   for (const a of data.attention) byKind[a.kind] += 1;
+  const toFix = byKind.email + byKind.connection;
   // Bars and lines grow in once mounted; reduced motion skips the transition.
   const ready = now !== null;
 
@@ -721,6 +845,10 @@ export default function WorkspaceOverview(props: Props) {
                 <SummaryChip tone="warning" count={byKind.review} label="to review" />
                 <SummaryChip tone="danger" count={byKind.expiring} label={byKind.expiring === 1 ? "link expiring" : "links expiring"} />
                 <SummaryChip tone="secondary" count={byKind.interview} label={byKind.interview === 1 ? "interview today" : "interviews today"} />
+                {byKind.scorecard > 0 && (
+                  <SummaryChip tone="warning" count={byKind.scorecard} label={byKind.scorecard === 1 ? "scorecard missing" : "scorecards missing"} />
+                )}
+                {toFix > 0 && <SummaryChip tone="danger" count={toFix} label="to fix" />}
               </div>
             )}
           </div>
@@ -744,11 +872,12 @@ export default function WorkspaceOverview(props: Props) {
         <SetupView {...props} />
       ) : (
         <>
-          <div className="grid grid-cols-2 xl:grid-cols-4 gap-3 sm:gap-4">
+          <FilterBar batches={batches} filter={filter} onChange={setFilter} />
+          <div className="grid grid-cols-2 xl:grid-cols-4 gap-3 sm:gap-4 -mt-2">
             <Kpi
               icon={Users}
               tone="secondary"
-              label="Active candidates"
+              label={inBatch ? "Active in this batch" : "Active candidates"}
               value={k.active}
               trend={data.trends.added}
               sub={k.addedThisWeek > 0 ? <><span className="text-success font-medium">+{k.addedThisWeek}</span> added this week</> : "None added this week"}

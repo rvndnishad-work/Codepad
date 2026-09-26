@@ -18,6 +18,7 @@ import {
   X,
 } from "lucide-react";
 import WorkspaceOverview from "./WorkspaceOverview";
+import type { OverviewExtras } from "@/lib/workspace/overview";
 import { humanize, type PlanDisplay } from "@/lib/workspace/display";
 
 type Challenge = {
@@ -203,6 +204,8 @@ type Props = {
   sessions: InterviewSessionItem[];
   candidates: CandidateItem[];
   pendingInvites?: PendingInvite[];
+  /** Filters and the wider attention list on the Overview. */
+  overviewExtras?: OverviewExtras;
 };
 
 type PendingInvite = {
@@ -242,6 +245,7 @@ export default function WorkspaceDashboardClient({
   sessions,
   candidates,
   pendingInvites = [],
+  overviewExtras,
 }: Props) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -481,6 +485,7 @@ export default function WorkspaceDashboardClient({
               takeHomes={currentTakeHomes}
               takeHomeSessions={takeHomeSessions}
               aiInterviewSessions={aiInterviewSessions}
+              extras={overviewExtras}
               onAddCandidate={() => router.push(`/w/${workspace.slug}/candidates?add=1`)}
               onBulkImport={() => router.push(`/w/${workspace.slug}/candidates?import=1`)}
               onSendTakeHome={() => router.push(`/w/${workspace.slug}/take-homes/new`)}

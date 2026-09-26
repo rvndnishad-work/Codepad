@@ -677,7 +677,20 @@ model InterviewSession {
   meetingUrl         String?
   /// Guide questions picked from the public bank for this room (questionnaire JSON, reference answers included). Interviewers only.
   guideJson          String?
-  toolUpdates        InterviewToolUpdate[]
+  /// Take-home only: score (0-100) results need to read as a good match.
+  /// Null = the default (60). Only labels results: passing is always a
+  /// recruiter's decision. Shared by every session in one send (setupGroupId).
+  takeHomePassMark   Int?
+  /// Take-home only: automatic reminder schedule. Hours after the invite to
+  /// nudge anyone who has not started (null = no nudge), hours before the
+  /// deadline for the last call (null = no last call), and a switch that
+  /// stops both. Sent by the take-home-reminders cron.
+  reminderStartAfterHours     Int?
+  reminderBeforeDeadlineHours Int?     @default(24)
+  remindersOff       Boolean          @default(false)
+  /// Idempotency stamp for the "not started" nudge (reminderSentAt is the last call's).
+  startReminderSentAt DateTime?
+  toolUpdates       InterviewToolUpdate[]
   presence           InterviewPresence[]
   guests             InterviewGuest[]
   createdAt          DateTime         @default(now())

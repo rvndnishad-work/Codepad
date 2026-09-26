@@ -4,6 +4,7 @@
  */
 import { prisma } from "@/lib/prisma";
 import { passMarkOf } from "@/lib/ai-interview/verdict";
+import { takeHomePassMarkOf } from "@/lib/take-home/pass-mark";
 import {
   describeScore,
   rubricAverage,
@@ -62,6 +63,7 @@ export async function loadCandidateResults(
         finishedAt: true,
         createdAt: true,
         verdict: true,
+        takeHomePassMark: true,
         rubric: { select: { ratings: true } },
       },
     }),
@@ -180,7 +182,8 @@ export async function loadCandidateResults(
         state,
         score: finished ? score : null,
         rating: null,
-        ...(finished && score != null ? describeScore("take_home", score) : { verdict: null, passed: null }),
+        ...(finished && score != null ? describeScore("take_home", score, null, null, s.takeHomePassMark) : { verdict: null, passed: null }),
+        passMark: takeHomePassMarkOf(s.takeHomePassMark),
         sentAt: s.createdAt.toISOString(),
         startedAt: iso(s.startedAt),
         finishedAt: iso(s.finishedAt),

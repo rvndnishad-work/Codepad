@@ -11,6 +11,7 @@ import { createInterviewSession, resolveRounds, sourceTypeOf } from "@/lib/inter
 import { notifyInterviewQuestionsRequested } from "@/lib/notifications/triggers";
 import { TOOL_IDS, defaultTools, initialTools } from "@/lib/interview/tools";
 import { inviteGuests } from "@/lib/interview/guests";
+import { candidateRoomPath } from "@/lib/interview/room-server";
 import {
   formatOf,
   isEmail,
@@ -99,7 +100,7 @@ const scheduleSchema = z.object({
 });
 
 export type ScheduleInput = z.input<typeof scheduleSchema>;
-export type Scheduled = { id: string; name: string | null; shortCode: string | null; shareToken: string; scheduledAt: string | null };
+export type Scheduled = { id: string; name: string | null; shortCode: string | null; shareToken: string; scheduledAt: string | null; /** Private candidate link path (signed, expiring). */ candidateLink: string };
 
 function splitRounds(rounds: { kind: string; id: string }[]) {
   return {
@@ -171,7 +172,7 @@ export async function scheduleInterviewsAction(slug: string, raw: ScheduleInput)
         },
       });
       if (!res.ok) throw new ActionError(res.error);
-      created.push({ id: res.id, name: p.name || null, shortCode: res.shortCode, shareToken: res.shareToken, scheduledAt: p.time });
+      created.push({ id: res.id, name: p.name || null, shortCode: res.shortCode, shareToken: res.shareToken, scheduledAt: p.time, candidateLink: candidateRoomPath({ id: res.id, shareToken: res.shareToken, scheduledAt: p.time ? new Date(p.time) : null, totalSec: d.minutes * 60 }, slug) });
     }
 
     // Interviewers outside the workspace get the details and their own link.

@@ -46,9 +46,18 @@ export async function inviteGuests(a: {
   if (!emails.length || !a.rooms.length) return { sent: 0 };
   let sent = 0;
   try {
-    const ws = await prisma.workspace.findUnique({ where: { id: a.workspaceId }, select: { name: true } });
+    const ws = await prisma.workspace.findUnique({ where: { id: a.workspaceId }, select: { name: true, slug: true } });
     const { sendEmail } = await import("@/lib/email");
+    const { guestRoomUrl } = await import("./room-server");
     const baseUrl = process.env.NEXTAUTH_URL || "http://localhost:3000";
+    // Signed, expiring links into the workspace room (fall back to the older
+    // link only if the workspace is somehow gone).
+    const sessions = await prisma.interviewSession.findMany({ where: { id: { in: a.rooms.map((r) => r.id) } }, select: { id: true, shareToken: true, scheduledAt: true, totalSec: true } });
+    const byId = new Map(sessions.map((x) => [x.id, x]));
+    const linkFor = (roomId: string, token: string, guestId: string) => {
+      const s = byId.get(roomId);
+      return ws && s ? guestRoomUrl(s, ws.slug, guestId) : `${baseUrl}/interview/${roomId}?guest=${token}`;
+    };
     for (const email of emails) {
       const links: { room: Room; token: string; guestId: string }[] = [];
       for (const room of a.rooms) {
@@ -74,7 +83,7 @@ export async function inviteGuests(a: {
           rooms: links.map((l) => ({
             candidateName: l.room.candidateName || "Candidate to be confirmed",
             scheduledAt: l.room.scheduledAt ? l.room.scheduledAt.toISOString() : null,
-            joinUrl: `${baseUrl}/interview/${l.room.id}?guest=${l.token}`,
+            joinUrl: linkFor(l.room.id, l.token, l.guestId),
           })),
         },
         workspaceId: a.workspaceId,

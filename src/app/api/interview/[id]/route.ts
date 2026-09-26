@@ -2,8 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { isInterviewerFor } from "@/lib/interview/wizard";
-import { guestFromRequest } from "@/lib/interview/guests";
+import { roomViewerFromRequest, ROOM_SELECT } from "@/lib/interview/room-access";
 
 const patchSchema = z.object({
   status: z.enum(["scheduled", "in_progress", "completed", "abandoned"]).optional(),
@@ -33,21 +32,18 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params;
-  const { searchParams } = new URL(req.url);
-  const token = searchParams.get("token");
 
   const existing = await prisma.interviewSession.findUnique({
     where: { id },
-    select: { userId: true, status: true, startRequestedAt: true, shareToken: true, totalSec: true, startedAt: true },
+    select: { ...ROOM_SELECT, startRequestedAt: true, totalSec: true, startedAt: true },
   });
   if (!existing) return NextResponse.json({ error: "not found" }, { status: 404 });
 
-  // Allow the session owner or a valid share-token holder — being logged in
-  // as some OTHER user must not grant access to arbitrary session ids.
+  // Host, panel, emailed interviewers, room pass or share-token holders.
+  // Being logged in as some OTHER user must not grant access.
   const session = await auth().catch(() => null);
-  const isValidToken = !!token && token === existing.shareToken;
-  const isOwner = !!session?.user?.id && session.user.id === existing.userId;
-  if (!isOwner && !isValidToken) {
+  const viewer = await roomViewerFromRequest(req, existing, session?.user?.id ? { id: session.user.id, name: session.user.name, email: session.user.email } : null);
+  if (!viewer) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }
 
@@ -69,46 +65,28 @@ export async function PATCH(
   const existing = await prisma.interviewSession.findUnique({
     where: { id },
     select: {
-      userId: true,
-      panelJson: true,
-      shareToken: true,
-      creatorRole: true,
+      ...ROOM_SELECT,
       type: true,
       // IP-44: capture pre-update status + title so we can detect the
       // transition INTO "completed" without re-querying.
-      status: true,
       title: true,
       // IP-90: verdict hook needs the workspace/candidate linkage + the
       // pre-update verdict to detect first-time verdicts.
       verdict: true,
-      workspaceId: true,
       candidateId: true,
-      candidateName: true,
     },
   });
   if (!existing) return NextResponse.json({ error: "not found" }, { status: 404 });
 
-  // Host, panel, or an interviewer HR emailed (`?guest=`).
-  const guest = existing.creatorRole === "interviewer" ? await guestFromRequest(req, id) : null;
-  const isOwner = isInterviewerFor(existing, session?.user?.id) || !!guest;
-  const { searchParams } = new URL(req.url);
-  const token = searchParams.get("token");
-  const hasShareToken = !!token && token === existing.shareToken;
-
-  if (!isOwner && !hasShareToken) {
+  // Host, panel, workspace admins, emailed interviewers (room pass or
+  // `?guest=`), and whoever holds the share token.
+  const viewer = await roomViewerFromRequest(req, existing, session?.user?.id ? { id: session.user.id, name: session.user.name, email: session.user.email } : null);
+  if (!viewer) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }
 
-  // Resolve dynamic interviewer role
-  let isInterviewer = false;
-  if (existing.type === "mock") {
-    // In mock practice sessions, anyone with access (owner or shareToken holder) has full controls
-    isInterviewer = isOwner || hasShareToken;
-  } else if (existing.creatorRole === "interviewer") {
-    isInterviewer = isOwner;
-  } else {
-    isInterviewer = isOwner ? false : hasShareToken;
-  }
+  // In mock practice sessions anyone with access has full controls.
+  const isInterviewer = existing.type === "mock" || viewer.role === "interviewer";
 
   const body = await req.json().catch(() => null);
   const parsed = patchSchema.safeParse(body);
@@ -168,6 +146,13 @@ export async function PATCH(
     }
   }
 
+  // Workspace room: keep the code written in each round before the room
+  // closes, so the report shows it.
+  if (parsed.data.status === "completed" && existing.status !== "completed" && existing.workspaceId) {
+    const { snapshotRoomRounds } = await import("@/lib/interview/room-snapshot");
+    await snapshotRoomRounds(id).catch((e) => console.error("[room] snapshot failed:", e));
+  }
+
   const updated = await prisma.interviewSession.update({
     where: { id },
     data,
@@ -197,7 +182,7 @@ export async function PATCH(
     void writeWorkspaceAuditEntry({
       workspaceId: existing.workspaceId,
       actorUserId: session?.user?.id ?? null,
-      actorEmail: session?.user?.email ?? guest?.email ?? null,
+      actorEmail: session?.user?.email ?? viewer.guestEmail ?? null,
       action: "INTERVIEW_VERDICT_RECORDED",
       targetType: "candidate",
       targetId: existing.candidateId,

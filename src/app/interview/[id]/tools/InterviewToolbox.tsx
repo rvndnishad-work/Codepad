@@ -41,8 +41,10 @@ export default function InterviewToolbox({
 }) {
   const me = useMemo(() => ({ name: meName, interviewer }), [meName, interviewer]);
   const room = useToolsRoom({ sessionId, token, guest, roomKey, me });
-  const { state, act, live } = room;
-  const isInterviewer = (room.role ?? (interviewer ? "interviewer" : "candidate")) === "interviewer";
+  const state = room?.state ?? null;
+  const live = room?.live ?? true;
+  const act = room?.act;
+  const isInterviewer = (room?.role ?? (interviewer ? "interviewer" : "candidate")) === "interviewer";
   const readOnly = !live;
   const [view, setView] = useState<ToolId | null>(null);
   const [picker, setPicker] = useState(false);
@@ -66,7 +68,7 @@ export default function InterviewToolbox({
 
   const run = useCallback(
     async (a: Parameters<ToolProps["run"]>[0]) => {
-      const err = await act(a);
+      const err = act ? await act(a) : "Still connecting. Try again.";
       if (err) {
         setError(err);
         setTimeout(() => setError(null), 3500);
@@ -97,7 +99,7 @@ export default function InterviewToolbox({
     return () => document.removeEventListener("keydown", onKey);
   }, [view, picker, timerOpen]);
 
-  if (!state) return null;
+  if (!room || !state) return null;
   const stageTools = state.enabled.filter((t) => TOOL_BY_ID[t].stage && TOOL_PLUGINS[t].Stage);
   const hasTimer = state.enabled.includes("timer") && !!state.timer;
   if (!isInterviewer && stageTools.length === 0 && !hasTimer) return null;

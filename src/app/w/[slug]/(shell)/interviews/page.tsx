@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { loadTakeHomeAccess } from "../take-homes/_lib";
 import { formatOf, isInterviewerFor, parsePanel, questionState } from "@/lib/interview/wizard";
+import { candidateRoomPath } from "@/lib/interview/room-server";
 import InterviewsList, { type InterviewRow } from "./InterviewsList";
 
 type Props = { params: Promise<{ slug: string }>; searchParams: Promise<{ view?: string; q?: string }> };
@@ -33,6 +34,7 @@ export default async function InterviewsPage({ params, searchParams }: Props) {
       createdAt: true,
       format: true,
       panelJson: true,
+      createdById: true,
       questionPlan: true,
       questionsOwnerId: true,
       guideTemplateId: true,
@@ -69,8 +71,10 @@ export default async function InterviewsPage({ params, searchParams }: Props) {
       shortCode: s.shortCode,
       // Only the host and panel open the interviewer side. The share token
       // gives the candidate side, so it is only ever copied, never opened here.
-      href: isInterviewerFor(s, userId) ? (done ? `/interview/${s.id}/report` : `/interview/${s.id}`) : done ? `/interview/${s.id}/report?token=${s.shareToken}` : null,
-      candidateLink: `/interview/${s.id}?token=${s.shareToken}`,
+      // Interviewers open the workspace lobby; any member can read a report.
+      href: done ? `/interview/${s.id}/report` : isInterviewerFor(s, userId) || s.createdById === userId ? `/w/${slug}/interviews/${s.id}/lobby` : null,
+      // Private, expiring link for the candidate (copied, never opened here).
+      candidateLink: s.type === "live" ? candidateRoomPath(s, slug) : `/interview/${s.id}?token=${s.shareToken}`,
       minutes: Math.round(s.totalSec / 60),
       when: (s.finishedAt ?? s.startedAt ?? s.scheduledAt)?.toISOString() ?? (s.format ? null : s.createdAt.toISOString()),
       interviewer: s.user.name ?? s.user.email,

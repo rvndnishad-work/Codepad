@@ -249,9 +249,13 @@ async function sendInvite(a: {
   actorId: string;
 }) {
   try {
-    const ws = await prisma.workspace.findUnique({ where: { id: a.workspaceId }, select: { name: true } });
+    const ws = await prisma.workspace.findUnique({ where: { id: a.workspaceId }, select: { name: true, slug: true } });
     const { sendEmail } = await import("@/lib/email");
+    const { candidateRoomUrl } = await import("./room-server");
     const baseUrl = process.env.NEXTAUTH_URL || "http://localhost:3000";
+    // Workspace interviews open the workspace room with a private, expiring
+    // link. No short code: four digits are too easy to guess.
+    const roomUrl = ws ? candidateRoomUrl({ id: a.session.id, shareToken: a.session.shareToken, scheduledAt: a.scheduledAt, totalSec: a.totalSec }, ws.slug) : null;
     const res = await sendEmail({
       template: "interview-invite",
       to: a.email,
@@ -259,8 +263,8 @@ async function sendInvite(a: {
         candidateName: a.candidateName || "there",
         workspaceName: ws?.name ?? "the team",
         title: a.title,
-        joinUrl: `${baseUrl}/interview/${a.session.id}?token=${a.session.shareToken}`,
-        shortCode: a.session.shortCode,
+        joinUrl: roomUrl ?? `${baseUrl}/interview/${a.session.id}?token=${a.session.shareToken}`,
+        shortCode: roomUrl ? null : a.session.shortCode,
         scheduledAt: a.scheduledAt ? a.scheduledAt.toISOString() : null,
         durationMin: Math.round(a.totalSec / 60),
       },

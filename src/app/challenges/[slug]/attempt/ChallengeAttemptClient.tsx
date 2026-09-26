@@ -13,7 +13,8 @@ import {
 import ShimmedSandpackProvider from "@/components/ShimmedSandpackProvider";
 import { javascript } from "@codemirror/lang-javascript";
 import * as Y from "yjs";
-import { WebrtcProvider } from "y-webrtc";
+import { RelayProvider } from "@/lib/interview/relay-provider";
+import { seedDoc } from "@/lib/interview/relay-seed";
 import { yCollab } from "y-codemirror.next";
 import { EditorState } from "@codemirror/state";
 import {
@@ -73,7 +74,6 @@ import { toast } from "sonner";
 import ChallengeDescription from "../../ChallengeDescription";
 import SessionTimer from "@/components/SessionTimer";
 import FileExplorer from "@/components/FileExplorer";
-import { getSignalingUrls } from "@/lib/signaling";
 import { challengeSurface } from "@/lib/templates";
 import { getSandpackTheme } from "@/lib/sandpack-theme";
 import { describeExecution } from "@/lib/exec-result";
@@ -718,9 +718,13 @@ export default function ChallengeAttemptClient({
     }
   }, [multiplayer, sessionId, challenge.id]);
 
-  // Yjs and WebRTC Real-Time State
+  // Shared editor state. It goes through the server relay (plain HTTPS long
+  // polling), so both sides connect on any network that loads the site. The
+  // old peer-to-peer link needed a public signalling server and a direct
+  // route between the two browsers, and sat on "Waiting for peer" whenever
+  // either was missing.
   const [yDoc] = useState(() => new Y.Doc());
-  const [webrtcProvider, setWebrtcProvider] = useState<WebrtcProvider | null>(null);
+  const [webrtcProvider, setWebrtcProvider] = useState<RelayProvider | null>(null);
 
   // Dynamic user presence updates
   useEffect(() => {
@@ -736,60 +740,29 @@ export default function ChallengeAttemptClient({
 
   useEffect(() => {
     if (!multiplayer || !sessionId) return;
-
-    // Connect to secure WebRTC room.
-    //
-    // NOTE on signaling servers:
-    //  - ws://localhost:4444 only works when the dev signaling server is
-    //    running (`npm run dev:signal`). It's the most reliable choice for
-    //    cross-browser-profile testing on a single machine.
-    //  - wss://signaling.yjs.dev is the public Yjs signaling fallback. It
-    //    works for genuine WAN testing but has been flaky / rate-limited
-    //    in the past. (The old `y-webrtc-signaling-eu.herokuapp.com` URL
-    //    in this list pre-dated Heroku's free tier shutdown and now hangs
-    //    every connection attempt — removed.)
-    const roomName = `interviewpad-room-${sessionId}`;
-    const provider = new WebrtcProvider(roomName, yDoc, {
-      signaling: getSignalingUrls(),
+    // One document per challenge step, so a later step never inherits the
+    // text of an earlier one.
+    const step = new URLSearchParams(window.location.search).get("step") || "0";
+    const provider = new RelayProvider({
+      sessionId,
+      channel: `code:${challenge.id}-${step.replace(/[^0-9]/g, "") || "0"}`,
+      doc: yDoc,
+      query: shareToken ? `token=${encodeURIComponent(shareToken)}` : "",
     });
-
-    // Set initial awareness (Cursor colors and User tags)
-    const color = isInterviewer ? "#8b5cf6" : "#10b981"; // Sleek Purple for Interviewer, Vibrant Emerald for Candidate
+    const color = isInterviewer ? "#8b5cf6" : "#10b981";
     const roleLabel = isInterviewer ? " (Interviewer)" : " (Candidate)";
     provider.awareness.setLocalStateField("user", {
       name: username + roleLabel,
       color: color,
-      colorLight: color + "33", // Sleek translucent selection
+      colorLight: color + "33",
     });
-
-    // Diagnostic logging — visible in DevTools so the user can confirm
-    // both tabs land in the same room and watch peer discovery.
-    if (typeof window !== "undefined") {
-      console.info(
-        `[multiplayer] joined room "${roomName}" as ${
-          isInterviewer ? "interviewer" : "candidate"
-        } (clientID ${yDoc.clientID})`
-      );
-      const logStatus = () => {
-        const peers = [...provider.awareness.getStates().keys()].filter(
-          (id) => id !== yDoc.clientID
-        );
-        console.info(
-          `[multiplayer] peers=${peers.length} connected=${provider.connected} bcconns=${(provider as unknown as { room?: { bcConns?: Set<unknown> } }).room?.bcConns?.size ?? 0}`
-        );
-      };
-      provider.on("peers", logStatus);
-      provider.awareness.on("change", logStatus);
-      provider.on("synced", logStatus);
-    }
-
     setWebrtcProvider(provider);
 
     return () => {
       provider.destroy();
       setWebrtcProvider(null);
     };
-  }, [multiplayer, sessionId, yDoc, sim]);
+  }, [multiplayer, sessionId, yDoc, sim, challenge.id, shareToken]);
 
   // Test state
   const [testRun, setTestRun] = useState<{
@@ -2801,7 +2774,7 @@ function SyncingEditor({
   isDark,
 }: {
   yDoc: Y.Doc;
-  provider: WebrtcProvider | null;
+  provider: RelayProvider | null;
   starterFiles: Record<string, string>;
   isInterviewer: boolean;
   isDark: boolean;
@@ -2818,106 +2791,26 @@ function SyncingEditor({
   // can leave clients bound to orphaned Y.Text instances.
   const yText = useMemo(() => yDoc.getText(activeFile), [yDoc, activeFile]);
 
+  const [connection, setConnection] = useState<string>("connecting");
   useEffect(() => {
     if (!provider) return;
-    if (provider.connected) setSynced(true);
-    const handle = ({ synced: isSynced }: { synced: boolean }) => {
-      if (isSynced) setSynced(true);
+    const on = () => {
+      const snap = provider.snapshot;
+      setSynced(snap.synced);
+      setConnection(snap.connection);
+      setPeerCount(snap.peers.length);
     };
-    provider.on("synced", handle);
-    const onAware = () => {
-      const remote = [...provider.awareness.getStates().keys()].filter(
-        (id) => id !== yDoc.clientID
-      );
-      setPeerCount(remote.length);
-    };
-    provider.awareness.on("change", onAware);
-    onAware();
-    return () => {
-      provider.off("synced", handle);
-      provider.awareness.off("change", onAware);
-    };
-  }, [provider, yDoc]);
+    on();
+    return provider.subscribe(on);
+  }, [provider]);
 
-  // Seed starter files into the shared doc.
-  //
-  // Either role can seed (so the candidate joining first still gets code),
-  // and we coordinate with three guards to avoid duplicate content:
-  //
-  //   1. `yMeta.seeded` — a shared boolean. The first peer to transact()
-  //      flips it; any later peer with synced doc sees it true and bails.
-  //
-  //   2. A deterministic clientID tiebreaker — when peers can see each
-  //      other in awareness, only the lowest clientID seeds.
-  //
-  //   3. `isInterviewer` as a soft hint — if we appear alone and we're
-  //      the candidate, we wait an extra grace window so the interviewer
-  //      (the natural seeder) gets a chance to win.
-  //
-  // We INTENTIONALLY do NOT gate on the `synced` event here. In y-webrtc,
-  // `synced` only fires after a sync handshake with a peer (or with a
-  // signaling server that retains state). If the only available signaling
-  // server is unreachable AND there's no peer, `synced` never fires, and
-  // gating on it would leave the editor empty forever. Instead we wait a
-  // fixed wall-clock window, then run the decision regardless. If a peer
-  // shows up later, the CRDT merge + `yMeta.seeded` flag keeps content
-  // single-copy.
+  // Seed starter files into the shared doc once the relay has sent what it
+  // already holds. Every client builds the identical seed update (see
+  // relay-seed.ts), so seeding from both sides never doubles the code.
   useEffect(() => {
-    if (!provider) return;
-    const yMeta = yDoc.getMap<boolean>("meta");
-
-    let cancelled = false;
-
-    const performSeed = () => {
-      if (cancelled) return;
-      if (yMeta.get("seeded")) return;
-      yDoc.transact(() => {
-        if (yMeta.get("seeded")) return;
-        for (const [path, code] of Object.entries(starterFiles)) {
-          const t = yDoc.getText(path);
-          if (t.length === 0) t.insert(0, code);
-        }
-        yMeta.set("seeded", true);
-      });
-    };
-
-    function maybeSeed() {
-      if (cancelled || yMeta.get("seeded")) return;
-      const remoteIds = [...provider!.awareness.getStates().keys()].filter(
-        (id) => id !== yDoc.clientID
-      );
-
-      if (remoteIds.length === 0) {
-        // Appear to be alone. The interviewer seeds straight away; the
-        // candidate waits a bit longer in case the interviewer is just
-        // slow to peer with us.
-        if (!isInterviewer) {
-          window.setTimeout(performSeed, 1500);
-        } else {
-          performSeed();
-        }
-        return;
-      }
-
-      // Peers are present: deterministic tiebreaker (lowest clientID wins).
-      const lowest = Math.min(yDoc.clientID, ...remoteIds);
-      if (lowest === yDoc.clientID) {
-        performSeed();
-      } else {
-        // Other peer should seed; fall back if they don't within 2.5s.
-        window.setTimeout(performSeed, 2500);
-      }
-    }
-
-    // Wait ~1.2s for awareness to populate so the tiebreaker has accurate
-    // peer information. After that we commit — no further waiting on
-    // signaling state.
-    const t = window.setTimeout(maybeSeed, 1200);
-    return () => {
-      cancelled = true;
-      window.clearTimeout(t);
-    };
-  }, [provider, yDoc, starterFiles, isInterviewer]);
+    if (!provider || !synced) return;
+    seedDoc(yDoc, `starter:${JSON.stringify(starterFiles)}`, starterFiles);
+  }, [provider, synced, yDoc, starterFiles]);
 
   // Mirror yText changes into Sandpack so the test runner & "Run code"
   // button operate on the latest collaborative content.
@@ -2949,12 +2842,14 @@ function SyncingEditor({
         <div className="flex-1" />
         <div className="px-3 flex items-center gap-2 text-[9px] uppercase tracking-widest font-bold">
           {provider ? (
-            peerCount > 0 ? (
-              <span className="text-emerald-500">● Live · {peerCount} peer{peerCount === 1 ? "" : "s"}</span>
-            ) : synced ? (
-              <span className="text-amber-500" title="Connected to signaling but no peer in the room yet. If this persists, see the README — `npm run dev:signal` is the most reliable path locally.">● Waiting for peer…</span>
+            connection === "offline" || connection === "reconnecting" ? (
+              <span className="text-amber-500" title="Your edits are kept and sent as soon as the connection is back.">● Reconnecting…</span>
+            ) : !synced ? (
+              <span className="text-muted">● Connecting…</span>
+            ) : peerCount > 0 ? (
+              <span className="text-emerald-500">● Live · {peerCount} other{peerCount === 1 ? "" : "s"} here</span>
             ) : (
-              <span className="text-amber-500" title="Could not reach a signaling server. Editor still works offline; collaboration will start once peering succeeds.">● Offline</span>
+              <span className="text-emerald-500" title="Connected. Your code is saved and the other side sees it as soon as they open this page.">● Connected</span>
             )
           ) : (
             <span className="text-muted/60">Solo</span>
@@ -3053,7 +2948,7 @@ function CollabCodeMirror({
   isDark,
 }: {
   yText: Y.Text;
-  provider: WebrtcProvider | null;
+  provider: RelayProvider | null;
   path: string;
   isDark: boolean;
 }) {

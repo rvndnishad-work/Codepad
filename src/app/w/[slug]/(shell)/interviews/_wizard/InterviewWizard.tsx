@@ -578,7 +578,7 @@ function DoneView({ slug, created, title, hostName, meIsHost }: { slug: string; 
   const [toasts, toast] = useToasts();
   const [origin, setOrigin] = useState("");
   useEffect(() => setOrigin(window.location.origin), []);
-  const link = (c: Scheduled) => `${origin}/interview/${c.id}?token=${c.shareToken}`;
+  const link = (c: Scheduled) => `${origin}${c.candidateLink}`;
   const many = created.length > 1;
 
   return (
@@ -605,7 +605,7 @@ function DoneView({ slug, created, title, hostName, meIsHost }: { slug: string; 
       <div className="text-center">
         <h1 className="text-[26px] font-semibold tracking-tight text-fg">{many ? `${created.length} interviews scheduled` : "Interview scheduled"}</h1>
         <p className="text-[15px] text-muted mt-1">
-          {title}. {meIsHost ? "You host" : `${hostName} hosts`}. Candidate links and codes are below.
+          {title}. {meIsHost ? "You host" : `${hostName} hosts`}. Each candidate gets a private link, below.
         </p>
       </div>
       <ul className="w-full rounded-xl border border-border bg-surface divide-y divide-border">
@@ -622,7 +622,6 @@ function DoneView({ slug, created, title, hostName, meIsHost }: { slug: string; 
               <span className="block text-[14px] font-medium text-fg">{c.name ?? "Open link"}</span>
               <span className="block text-xs text-subtle">
                 {c.scheduledAt ? new Date(c.scheduledAt).toLocaleString("en-GB", { weekday: "short", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }) : "No time yet"}
-                {c.shortCode ? `, code ${c.shortCode}` : ""}
               </span>
             </span>
             <Btn
@@ -635,8 +634,8 @@ function DoneView({ slug, created, title, hostName, meIsHost }: { slug: string; 
               Copy candidate link
             </Btn>
             {meIsHost && (
-              <Btn href={`/interview/${c.id}`}>
-                Open room <ExternalLink className="w-3.5 h-3.5 text-muted" aria-hidden />
+              <Btn href={`/w/${slug}/interviews/${c.id}/lobby`}>
+                Open lobby <ExternalLink className="w-3.5 h-3.5 text-muted" aria-hidden />
               </Btn>
             )}
           </motion.li>

@@ -85,6 +85,25 @@ export async function POST(req: Request, { params }: { params: Promise<{ slug: s
       assignmentTokenMatched = candidate.kind === "assignment";
     }
   }
+  // Workspace interview room: a candidate without an account runs tests on
+  // their room pass. Attempts are filed under the interview's host with the
+  // session id, which is how the interview report finds them.
+  let viaRoomPass = false;
+  let roomChallengeIds: string[] = [];
+  if (!candidateUserId && sessionId) {
+    const { roomViewer, ROOM_SELECT } = await import("@/lib/interview/room-access");
+    const live = await prisma.interviewSession.findUnique({ where: { id: sessionId }, select: { ...ROOM_SELECT, type: true, challengeIds: true } });
+    if (live && live.type === "live" && live.status === "in_progress") {
+      const viewer = await roomViewer(live, { cookieHeader: req.headers.get("cookie"), legacy: false });
+      if (viewer) {
+        candidateUserId = live.userId;
+        viaRoomPass = true;
+        try {
+          roomChallengeIds = JSON.parse(live.challengeIds) as string[];
+        } catch {}
+      }
+    }
+  }
   if (!candidateUserId) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }
@@ -101,6 +120,9 @@ export async function POST(req: Request, { params }: { params: Promise<{ slug: s
   });
   if (!challenge || !challenge.published) {
     return NextResponse.json({ error: "challenge not found" }, { status: 404 });
+  }
+  if (viaRoomPass && !roomChallengeIds.includes(challenge.id)) {
+    return NextResponse.json({ error: "This challenge is not part of the interview." }, { status: 403 });
   }
 
   // Take-home submission lock: no resubmitting after finishing, after the
@@ -302,7 +324,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ slug: s
 
   // A passing submit credits the user's active prep journey (fire-and-forget:
   // grading must never fail because of tracker bookkeeping).
-  if (status === "passed") {
+  if (status === "passed" && !viaRoomPass) {
     void recordPrepCompletion(candidateUserId, slug, "challenge").catch((e) =>
       console.error("[prep-journey] completion credit failed:", e),
     );

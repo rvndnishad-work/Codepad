@@ -5,6 +5,7 @@ import { validatePageAccess } from "@/lib/settings";
 import WorkspaceDashboardClient from "./WorkspaceDashboardClient";
 import { effectivePlan } from "@/lib/billing/trial";
 import { planDisplay } from "@/lib/workspace/display";
+import { loadOverviewExtras } from "@/lib/workspace/overview-server";
 import {
   loadRolePermissions,
   expandRolePermissions,
@@ -132,7 +133,7 @@ export default async function WorkspaceDashboardPage({ params, searchParams }: P
     select: { id: true, email: true, role: true, expiresAt: true, createdAt: true },
   });
 
-  const [takeHomeSessionRows, aiInterviewRows] = await Promise.all([
+  const [takeHomeSessionRows, aiInterviewRows, overviewExtras] = await Promise.all([
     // Session-backed take-homes (IP-88/89) — the new multi-question model.
     prisma.interviewSession.findMany({
       where: { workspaceId: workspace.id, type: "take-home" },
@@ -173,6 +174,12 @@ export default async function WorkspaceDashboardPage({ params, searchParams }: P
       },
       orderBy: { createdAt: "desc" },
       take: 200,
+    }),
+    // Overview filters and the wider "Needs your attention" list. The Overview
+    // still works without them, so a failure here never breaks the page.
+    loadOverviewExtras(workspace.id).catch((err) => {
+      console.error("[overview] extras failed", err);
+      return undefined;
     }),
   ]);
 
@@ -328,6 +335,7 @@ export default async function WorkspaceDashboardPage({ params, searchParams }: P
         roleBasePermissions={roleBasePermissions}
         sessions={formattedSessions}
         candidates={formattedCandidates}
+        overviewExtras={overviewExtras}
         pendingInvites={pendingInvites.map((i) => ({
           id: i.id,
           email: i.email,

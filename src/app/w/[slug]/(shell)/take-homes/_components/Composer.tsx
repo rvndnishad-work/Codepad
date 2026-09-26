@@ -8,6 +8,9 @@ import { parsePeople } from "@/lib/take-home/list";
 import { plural } from "@/lib/workspace/display";
 import { Avatar, Btn, Dialog, fmtDate, inputCls } from "../../candidates/_components/ui";
 import { sendTakeHomeAction } from "../actions";
+import { TAKE_HOME_PASS_MARK } from "@/lib/take-home/pass-mark";
+import { DEFAULT_REMINDER_PLAN, type ReminderPlan } from "@/lib/take-home/reminders";
+import { PassMarkField, PassMarkPreview, RemindersField } from "./Settings";
 
 export type ComposerQuestion = { id: string; title: string; difficulty: string; category: string | null; minutes: number; own: boolean };
 export type ComposerTemplate = { id: string; name: string; items: TemplateItem[] };
@@ -53,6 +56,8 @@ export default function Composer({
       .map((c) => ({ key: c.id, id: c.id, name: c.name, email: c.email, openSince: c.openSince })),
   );
   const [days, setDays] = useState(7);
+  const [passMark, setPassMark] = useState(TAKE_HOME_PASS_MARK);
+  const [reminders, setReminders] = useState<ReminderPlan>(DEFAULT_REMINDER_PLAN);
   const [saveAs, setSaveAs] = useState(false);
   const [saveName, setSaveName] = useState("");
   const [picking, setPicking] = useState(false);
@@ -103,6 +108,8 @@ export default function Composer({
         daysToExpire: days,
         templateId: templateIntact ? templateId : null,
         saveAsTemplate: !templateIntact && saveAs ? saveName.trim() || name.trim() : null,
+        passMark,
+        reminders,
       });
       if (!res.ok) return setError(res.error);
       setSent({ created: res.created, emailed: res.emailed, skipped: res.skipped });
@@ -279,12 +286,28 @@ export default function Composer({
                 <span className="w-[170px] text-muted">Once started, they have</span>
                 <span className="text-fg">{items.length ? `${total} min, the sum of the question timers` : "The sum of the question timers"}</span>
               </div>
-              <div className="flex flex-wrap items-center gap-3">
-                <span className="w-[170px] text-muted">Reminder</span>
-                <span className="text-fg">Sent automatically 24 hours before the deadline to anyone who has not submitted</span>
-              </div>
             </div>
           </Step>
+
+          <section className="rounded-xl border border-border bg-surface p-5 animate-slide-up motion-reduce:animate-none">
+            <PassMarkField value={passMark} onChange={setPassMark} />
+          </section>
+
+          <section className="rounded-xl border border-border bg-surface p-5 flex flex-col gap-4 animate-slide-up motion-reduce:animate-none">
+            <div className="flex items-center justify-between gap-3">
+              <h2 className="text-[15px] font-semibold text-fg">Reminders</h2>
+              <label className="flex items-center gap-2 text-[13px] text-muted cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={!reminders.off}
+                  onChange={(e) => setReminders({ ...reminders, off: !e.target.checked })}
+                  className="w-4 h-4 accent-secondary"
+                />
+                Send automatically
+              </label>
+            </div>
+            <RemindersField value={reminders} onChange={setReminders} />
+          </section>
         </div>
 
         <aside className="w-full lg:w-[360px] shrink-0 flex flex-col gap-4 lg:sticky lg:top-4">
@@ -334,6 +357,8 @@ export default function Composer({
               </p>
             )}
           </section>
+
+          <PassMarkPreview passMark={passMark} />
 
           <EmailPreview
             workspaceName={workspaceName}

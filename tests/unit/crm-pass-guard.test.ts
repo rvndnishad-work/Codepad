@@ -173,7 +173,7 @@ describe("moving a candidate to Passed", () => {
     ).resolves.toEqual({ changed: 3 });
     const metas = audit.mock.calls.map((c) => c[0].meta);
     expect(metas.find((m) => m.candidateName === "Cleo Park")).not.toHaveProperty("manualOverride");
-    expect(metas.find((m) => m.candidateName === "Ben Ito")).toMatchObject({ manualOverride: "Take-home 40, Below bar" });
+    expect(metas.find((m) => m.candidateName === "Ben Ito")).toMatchObject({ manualOverride: "Take-home 40, Below the mark" });
   });
 
   it("does not re-check someone already Passed", async () => {

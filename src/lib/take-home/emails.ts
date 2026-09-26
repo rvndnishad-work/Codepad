@@ -161,6 +161,8 @@ export async function sendTakeHomeSessionReminder(args: {
   sessionId: string;
   /** A reminder a recruiter asked for; keyed apart from the automatic one. */
   manual?: boolean;
+  /** The automatic "not started" nudge; keyed apart from the last call. */
+  nudge?: boolean;
 }) {
   return sendEmail({
     template: "take-home-reminder",
@@ -175,7 +177,11 @@ export async function sendTakeHomeSessionReminder(args: {
     },
     workspaceId: args.workspaceId,
     sessionId: args.sessionId,
-    idempotencyKey: args.manual ? `ths-reminder:${args.sessionId}:manual:${Date.now()}` : `ths-reminder:${args.sessionId}`,
+    idempotencyKey: args.manual
+      ? `ths-reminder:${args.sessionId}:manual:${Date.now()}`
+      : args.nudge
+        ? `ths-reminder:${args.sessionId}:start`
+        : `ths-reminder:${args.sessionId}`,
   });
 }
 

@@ -166,7 +166,7 @@ function Row({ r, slug, now, canCreate }: { r: TakeHomeRow; slug: string; now: D
         <Progress r={r} />
       </span>
       <span className={`xl:w-[96px] shrink-0 text-[13px] ${deadline.cls}`}>{deadline.text}</span>
-      <span className={`xl:w-[48px] shrink-0 text-sm tabular-nums ${r.score == null ? "text-subtle text-[13px]" : r.score >= 60 ? "text-fg font-semibold" : "text-warning font-semibold"}`}>
+      <span className={`xl:w-[48px] shrink-0 text-sm tabular-nums ${r.score == null ? "text-subtle text-[13px]" : r.score >= r.passMark ? "text-fg font-semibold" : "text-warning font-semibold"}`}>
         <span className="xl:hidden text-[13px] font-normal text-subtle">Score </span>
         {r.score ?? "None"}
       </span>

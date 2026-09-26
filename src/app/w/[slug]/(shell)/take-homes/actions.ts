@@ -7,6 +7,8 @@ import { canMember } from "@/lib/permissions";
 import { writeWorkspaceAuditEntry, WORKSPACE_AUDIT_ACTIONS } from "@/lib/workspace-audit";
 import { parseIds, parseTemplateItems, DEFAULT_QUESTION_MINUTES, type TemplateItem } from "@/lib/take-home/status";
 import { bulkCreateTakeHomeSessions, type BulkRecipient } from "../candidates/actions";
+import { takeHomePassMarkOf } from "@/lib/take-home/pass-mark";
+import { cleanReminderPlan, describeReminderPlan, type ReminderPlan } from "@/lib/take-home/reminders";
 
 /**
  * Take home actions: invite management (remind, extend, cancel, resend),
@@ -249,6 +251,86 @@ export async function resendTakeHomeAction(slug: string, id: string): Promise<Re
   }
 }
 
+/* ── Pass mark and reminders ─────────────────────────────────────────────── */
+
+/**
+ * The take-homes a setting change applies to: every session sent in the same
+ * run as `id` (they share a group id), or just `id` for older sends.
+ */
+async function sendGroup(workspaceId: string, id: string) {
+  const s = await prisma.interviewSession.findFirst({
+    where: { id, workspaceId, type: "take-home" },
+    select: {
+      id: true,
+      title: true,
+      setupGroupId: true,
+      takeHomePassMark: true,
+      reminderStartAfterHours: true,
+      reminderBeforeDeadlineHours: true,
+      remindersOff: true,
+    },
+  });
+  if (!s) {
+    const legacy = await prisma.takeHomeAssignment.count({ where: { id, workspaceId } });
+    throw new ActionError(legacy ? "Old single-question invites keep the default settings." : "That take-home no longer exists.");
+  }
+  const where = s.setupGroupId ? { workspaceId, type: "take-home", setupGroupId: s.setupGroupId } : { id: s.id, workspaceId, type: "take-home" };
+  return { s, where };
+}
+
+/**
+ * Change the pass mark for a take-home and everything sent with it. Scores
+ * stay as graded and nobody is passed or failed: results are only relabelled.
+ */
+export async function updateTakeHomePassMarkAction(slug: string, id: string, value: number): Promise<Result<{ passMark: number; count: number }>> {
+  try {
+    const w = await assertWriter(slug);
+    if (!Number.isFinite(Number(value))) throw new ActionError("Pick a pass mark between 30 and 95.");
+    const { s, where } = await sendGroup(w.workspace.id, id);
+    const passMark = takeHomePassMarkOf(Number(value));
+    const res = await prisma.interviewSession.updateMany({ where, data: { takeHomePassMark: passMark } });
+    audit(w, WORKSPACE_AUDIT_ACTIONS.TAKE_HOME_PASS_MARK_CHANGED, "interviewSession", s.id, {
+      title: s.title,
+      from: takeHomePassMarkOf(s.takeHomePassMark),
+      to: passMark,
+      takeHomes: res.count,
+    });
+    refresh(slug);
+    revalidatePath(`/w/${slug}/candidates`, "layout");
+    return { ok: true, passMark, count: res.count };
+  } catch (err) {
+    return fail(err);
+  }
+}
+
+/** Change or switch off the automatic reminders for a take-home and everything sent with it. */
+export async function updateTakeHomeRemindersAction(slug: string, id: string, plan: ReminderPlan): Promise<Result<{ reminders: ReminderPlan; count: number }>> {
+  try {
+    const w = await assertWriter(slug);
+    const { s, where } = await sendGroup(w.workspace.id, id);
+    const reminders = cleanReminderPlan(plan);
+    const res = await prisma.interviewSession.updateMany({
+      where,
+      data: {
+        reminderStartAfterHours: reminders.startAfterHours,
+        reminderBeforeDeadlineHours: reminders.beforeDeadlineHours,
+        remindersOff: reminders.off,
+      },
+    });
+    const before: ReminderPlan = { startAfterHours: s.reminderStartAfterHours, beforeDeadlineHours: s.reminderBeforeDeadlineHours, off: s.remindersOff };
+    audit(w, WORKSPACE_AUDIT_ACTIONS.TAKE_HOME_REMINDERS_CHANGED, "interviewSession", s.id, {
+      title: s.title,
+      from: describeReminderPlan(before),
+      to: describeReminderPlan(reminders),
+      takeHomes: res.count,
+    });
+    refresh(slug);
+    return { ok: true, reminders, count: res.count };
+  } catch (err) {
+    return fail(err);
+  }
+}
+
 /* ── Sending ─────────────────────────────────────────────────────────────── */
 
 export type SendInput = {
@@ -261,6 +343,10 @@ export type SendInput = {
   templateId: string | null;
   /** Also save these questions as a new template with this name. */
   saveAsTemplate: string | null;
+  /** Score results need to read as a good match. Omitted = the default (60). */
+  passMark?: number | null;
+  /** Automatic reminder schedule. Omitted = the last call 24 hours before the deadline. */
+  reminders?: ReminderPlan | null;
 };
 
 export async function sendTakeHomeAction(
@@ -310,6 +396,8 @@ export async function sendTakeHomeAction(
       recipients,
       daysToExpire: input.daysToExpire,
       templateId,
+      passMark: input.passMark != null ? takeHomePassMarkOf(input.passMark) : null,
+      reminders: input.reminders ? cleanReminderPlan(input.reminders) : null,
     });
     refresh(slug);
     const skipped = [

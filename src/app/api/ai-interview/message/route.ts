@@ -61,6 +61,8 @@ type Message = {
   text: string;
   /** Round the message was sent in, so grading can split a shared chat. */
   roundId?: string;
+  /** When the message was stored (ISO), for transcript times in the report. */
+  at?: string;
 };
 
 /** Model settings resolved from the agent config, forwarded to Gemini. */
@@ -554,7 +556,7 @@ export async function POST(req: NextRequest) {
       history = [];
     }
 
-    history.push({ role: "user", text: message, roundId: activeRound.id });
+    history.push({ role: "user", text: message, roundId: activeRound.id, at: new Date().toISOString() });
 
     // ── Phase 4.1: resolve external MCP tools, if any ────────────────────
     //
@@ -742,7 +744,7 @@ export async function POST(req: NextRequest) {
       toolCallsThisTurn.length > 0
         ? `${aiResponse}\n\n_[used external MCP: ${[...new Set(toolCallsThisTurn)].join(", ")}]_`
         : aiResponse;
-    history.push({ role: "assistant", text: assistantText, roundId: activeRound.id });
+    history.push({ role: "assistant", text: assistantText, roundId: activeRound.id, at: new Date().toISOString() });
 
     // Persist the shared (continuous) chat + the active round's files. For a
     // legacy batch-less session the round is synthetic, so files live on the

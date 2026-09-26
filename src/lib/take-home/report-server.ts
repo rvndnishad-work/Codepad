@@ -193,6 +193,9 @@ function answerOf(
       diffs,
       stats: diffs ? diffStats(diffs) : null,
       linesWritten: null,
+      // Take-home test results live on the report itself, not on this code view.
+      testable: false,
+      tests: null,
     },
   };
 }

@@ -35,7 +35,7 @@ const CATEGORY_RULES: { id: RealCategory; exact: string[]; prefixes: string[] }[
   {
     id: "screenings",
     exact: ["BULK_TAKE_HOME_DISPATCHED"],
-    prefixes: ["AI_SCREENING_", "AI_QUESTION_", "TAKE_HOME_", "INTERVIEW"],
+    prefixes: ["AI_SCREENING_", "AI_QUESTION_", "AI_REPORT_", "TAKE_HOME_", "INTERVIEW"],
   },
   { id: "people", exact: [], prefixes: ["MEMBER_", "ROLE_"] },
   {
@@ -242,6 +242,8 @@ const LABELS: Record<string, string> = {
   AI_SCREENING_PASS_MARK_CHANGED: "Changed the pass mark of",
   AI_QUESTION_SET_SAVED: "Saved AI question",
   AI_QUESTION_SET_DELETED: "Deleted AI question",
+  AI_REPORT_SHARE_CREATED: "Shared a read-only AI report for",
+  AI_REPORT_SHARE_REVOKED: "Revoked an AI report share link for",
   TAKE_HOME_REMINDED: "Sent a take-home reminder to",
   TAKE_HOME_EXTENDED: "Extended the take-home deadline for",
   TAKE_HOME_CANCELLED: "Cancelled the take-home for",
@@ -427,7 +429,13 @@ export function describeAuditRow(row: AuditRowInput, names: Record<string, strin
 
   // Generic: label plus the most useful name in the meta.
   const subject =
-    str(meta.candidateName) ?? str(meta.name) ?? str(meta.email) ?? str(meta.title) ?? str(meta.positionTitle) ?? str(meta.label);
+    str(meta.candidateName) ??
+    str(meta.candidate) ??
+    str(meta.name) ??
+    str(meta.email) ??
+    str(meta.title) ??
+    str(meta.positionTitle) ??
+    str(meta.label);
   const label = actionLabel(row.action);
   const known = row.action in LABELS;
   return {

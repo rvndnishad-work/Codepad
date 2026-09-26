@@ -29,6 +29,8 @@ import { roundLabel } from "./round-label";
 import { passMarkOf } from "./verdict";
 import { parseAnswers, parseTheoryRound, parseTheorySettings, type TheoryAnswer, type TheorySettings } from "./theory";
 import { classifyChallenge, type CuratableChallenge } from "@/lib/interview/stack";
+import { parseTestRun, type TestRun } from "./report-extras";
+import { loadChallengeTestFiles } from "./round-tests";
 
 export const QUEUE_PAGE_SIZE = 25;
 
@@ -301,6 +303,10 @@ export type ReportRound = {
   diffs: FileDiff[] | null;
   stats: DiffStats | null;
   linesWritten: number | null;
+  /** The round's source ships hidden tests the report can run. */
+  testable: boolean;
+  /** The last stored test run, if any. */
+  tests: TestRun | null;
 };
 
 export type ReportTheory = {
@@ -315,6 +321,9 @@ export type ReportTheory = {
     clips: { id: string; followUp: number; seconds: number }[];
   }[];
 };
+
+/** `at` is when the message was stored; older messages have none. */
+export type ReportChatMessage = { role: "user" | "assistant"; text: string; roundId?: string; at?: string };
 
 export type ReportNote = { id: string; body: string; author: string; createdAt: string; mine: boolean };
 
@@ -332,7 +341,7 @@ export type ReportData = {
   suspicion: number | null;
   ratings: Ratings | null;
   summary: SummarySection[];
-  chat: { role: "user" | "assistant"; text: string; roundId?: string }[];
+  chat: ReportChatMessage[];
   rounds: ReportRound[];
   notes: ReportNote[];
   timeSpentSec: number;
@@ -374,7 +383,8 @@ export async function loadReport(workspaceId: string, sessionId: string, viewerI
   if (!s) return null;
 
   const sessionRounds = resolveSessionRounds(s);
-  const [contents, starters, order, clipRows] = await Promise.all([
+  const challengeIds = sessionRounds.filter((r) => !r.legacy && r.sourceKind === "challenge" && r.sourceId).map((r) => r.sourceId as string);
+  const [contents, starters, order, clipRows, testFiles] = await Promise.all([
     resolveRoundsContent(sessionRounds, workspaceId),
     getStarterFilesByRoundId(s, workspaceId).catch(() => new Map<string, Record<string, string>>()),
     reviewOrder(workspaceId),
@@ -383,6 +393,7 @@ export async function loadReport(workspaceId: string, sessionId: string, viewerI
       orderBy: [{ question: "asc" }, { followUp: "asc" }, { seq: "asc" }, { createdAt: "asc" }],
       select: { id: true, roundId: true, question: true, followUp: true, seconds: true },
     }),
+    loadChallengeTestFiles(challengeIds).catch(() => new Map<string, Record<string, string>>()),
   ]);
 
   const rawRounds = new Map(s.rounds.map((x) => [x.id, x]));
@@ -415,13 +426,15 @@ export async function loadReport(workspaceId: string, sessionId: string, viewerI
       stats: diffs ? diffStats(diffs) : null,
       linesWritten: diffs ? meaningfulAdded(diffs) : null,
       theory: r.paradigm === "theory" ? reportTheory(rawRounds.get(r.id), clipRows.filter((c) => c.roundId === r.id)) : null,
+      testable: !r.legacy && r.sourceKind === "challenge" && !!r.sourceId && testFiles.has(r.sourceId),
+      tests: parseTestRun(rawRounds.get(r.id)?.testResultsJson, rawRounds.get(r.id)?.testsRunAt ?? null),
     });
   }
 
   const known = rounds.filter((r) => r.linesWritten != null);
   const linesWritten = known.length ? known.reduce((n, r) => n + (r.linesWritten ?? 0), 0) : null;
 
-  let chat: { role: "user" | "assistant"; text: string; roundId?: string }[] = [];
+  let chat: ReportChatMessage[] = [];
   try {
     const parsed = JSON.parse(s.chatHistory || "[]");
     if (Array.isArray(parsed)) {
@@ -431,6 +444,7 @@ export async function loadReport(workspaceId: string, sessionId: string, viewerI
           role: m.role === "assistant" ? "assistant" : "user",
           text: String(m.text),
           ...(typeof m.roundId === "string" ? { roundId: m.roundId } : {}),
+          ...(typeof m.at === "string" ? { at: m.at } : {}),
         }));
     }
   } catch {

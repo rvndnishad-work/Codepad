@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { decryptAtRest } from "@/lib/crypto/at-rest";
 import { NextResponse } from "next/server";
+import { appOrigin } from "@/lib/interview/links";
 import * as crypto from "crypto";
 
 /**
@@ -36,23 +37,27 @@ export async function POST(
       },
     });
 
-    if (!workspace) {
-      return NextResponse.json({ error: "Workspace not found" }, { status: 404 });
+    // Only a workspace that connected this ATS accepts its webhooks. Without
+    // this check anyone who learned a workspace id could create take-home
+    // invites in it.
+    const integration = workspace?.atsIntegration;
+    if (!workspace || !integration || integration.provider.toLowerCase() !== provider.toLowerCase()) {
+      return NextResponse.json({ error: "No matching ATS integration" }, { status: 404 });
     }
 
     // Read the raw body first — HMAC verification must run over the exact
     // bytes that were signed, not a re-serialized object.
     const rawBody = await req.text();
 
-    // Verify the signature when a webhookSecret is configured. The previous
-    // check only required the header to be PRESENT (any value passed) — now
-    // the header must be a valid HMAC-SHA256 of the body.
-    if (workspace.atsIntegration?.webhookSecret) {
-      const signature = req.headers.get("x-signature") || "";
-      const secret = decryptAtRest(workspace.atsIntegration.webhookSecret);
-      if (!signature || !secret || !verifyWebhookSignature(rawBody, signature, secret)) {
-        return NextResponse.json({ error: "Unauthorized webhook payload" }, { status: 401 });
-      }
+    // Every inbound payload must carry a valid HMAC-SHA256 of the body. An
+    // integration saved without a signing secret cannot receive webhooks.
+    const secret = integration.webhookSecret ? decryptAtRest(integration.webhookSecret) : null;
+    if (!secret) {
+      return NextResponse.json({ error: "Set a webhook signing secret on the ATS sync page first" }, { status: 401 });
+    }
+    const signature = req.headers.get("x-signature") || "";
+    if (!signature || !verifyWebhookSignature(rawBody, signature, secret)) {
+      return NextResponse.json({ error: "Unauthorized webhook payload" }, { status: 401 });
     }
 
     let body: any = null;
@@ -125,7 +130,7 @@ export async function POST(
       },
     });
 
-    const origin = req.headers.get("origin") || "http://localhost:3000";
+    const origin = await appOrigin();
     const inviteUrl = `${origin}/take-home/${inviteToken}`;
 
     console.log(`ATS Webhook [${provider.toUpperCase()}] synced successfully. Created Take-Home invite for ${candidateName}: ${inviteUrl}`);

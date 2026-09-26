@@ -3,7 +3,7 @@
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
-import { workspacePlanAllowsAiScreening } from "@/lib/ai-interview/credits";
+import { growthToolsEnabled } from "@/lib/billing/trial";
 import { validateOutboundUrl } from "@/lib/mcp/outbound";
 import { encryptAtRest, decryptAtRest } from "@/lib/crypto/at-rest";
 import {
@@ -39,6 +39,8 @@ async function assertWorkspaceAdmin(slug: string) {
       slug: true,
       name: true,
       planName: true,
+      trialEndsAt: true,
+      stripeSubscriptionId: true,
       members: { select: { userId: true, role: true, permissions: true } },
     },
   });
@@ -47,7 +49,7 @@ async function assertWorkspaceAdmin(slug: string) {
   const member = workspace.members.find((m: Member) => m.userId === session.user.id);
   if (!member) throw new Error("Not a member of this workspace");
 
-  if (!workspacePlanAllowsAiScreening(workspace.planName)) {
+  if (!growthToolsEnabled(workspace)) {
     // Same plan gate as External MCP — ATS sync is a paid-tier feature
     // (see pricing page).
     throw new Error("This workspace plan does not include ATS integrations.");

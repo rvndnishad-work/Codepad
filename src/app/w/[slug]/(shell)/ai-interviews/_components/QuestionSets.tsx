@@ -4,6 +4,7 @@ import { mergeEditedLines, parseQuestionnaire, questionTexts, serializeQuestionn
 import dynamic from "next/dynamic";
 import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { Copy, FileCode2, Plus, Search, Trash2, X } from "lucide-react";
 import type { QuestionItem, QuestionSets as Sets } from "@/lib/ai-interview/console-server";
 import { BACKEND_LANGUAGES, DSA_LANGUAGE_LABELS, DSA_LANGUAGES } from "@/lib/interview/stack";
@@ -483,14 +484,21 @@ function ServerBindings({
   const router = useRouter();
   const [on, setOn] = useState<string[]>(bound);
   const [pending, start] = useTransition();
+  // Advanced and off by default: the candidate steers the conversation, so
+  // these tools are reachable from candidate input. Collapsed unless in use.
   return (
-    <div className="flex flex-col gap-2">
-      <span className="text-xs font-medium text-subtle">External MCP servers the interviewer may call</span>
+    <details open={bound.length > 0} className="group flex flex-col gap-2">
+      <summary className="cursor-pointer text-xs font-medium text-subtle hover:text-fg">Advanced: external tools</summary>
+      <div className="flex flex-col gap-2 pt-2">
+      <p className="text-[13px] text-subtle">
+        The AI interviewer can call tools on your own MCP servers. Admins set them up in{" "}
+        <Link href={`/w/${slug}/external-mcp`} className="text-fg underline underline-offset-2">external tools settings</Link>.
+      </p>
       {!sets.allowExternalMcp && <p className="text-[13px] text-warning">External tools are turned off for this workspace, so these have no effect until an admin turns them on.</p>}
       {!questionId ? (
         <p className="text-[13px] text-subtle">Save the question first, then choose servers.</p>
       ) : !sets.servers.length ? (
-        <p className="text-[13px] text-subtle">No servers are turned on. Add one under External MCP.</p>
+        <p className="text-[13px] text-subtle">No servers are turned on yet.</p>
       ) : (
         sets.servers.map((s) => (
           <label key={s.id} className="flex items-center gap-2.5 text-sm text-fg">
@@ -516,6 +524,7 @@ function ServerBindings({
           </label>
         ))
       )}
-    </div>
+      </div>
+    </details>
   );
 }

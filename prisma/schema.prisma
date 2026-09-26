@@ -673,6 +673,8 @@ model InterviewSession {
   /// "p:<snippetId>" or "q:<promptScenarioId>". Null shows the room home.
   /// Only interviewers write it.
   roomRound          String?
+  /// Link to the video call (Zoom, Meet, Teams...) for a live interview. https only.
+  meetingUrl         String?
   /// Guide questions picked from the public bank for this room (questionnaire JSON, reference answers included). Interviewers only.
   guideJson          String?
   toolUpdates        InterviewToolUpdate[]

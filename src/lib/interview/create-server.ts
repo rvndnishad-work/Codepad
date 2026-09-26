@@ -28,6 +28,8 @@ export type CreateInterviewInput = {
   /** Copy every playground into a fresh editor for this room. */
   freshPlaygrounds?: boolean;
   scenario?: string | null;
+  /** Video call link (already cleaned with cleanMeetingUrl). */
+  meetingUrl?: string | null;
   totalSec: number;
   stackJson?: string | null;
   scheduledAt?: Date | null;
@@ -216,6 +218,7 @@ export async function createInterviewSession(input: CreateInterviewInput): Promi
       playgroundIds: JSON.stringify(rounds.playgroundIds),
       promptScenarioIds: JSON.stringify(rounds.promptScenarioIds),
       scenario: input.scenario ?? null,
+      meetingUrl: input.meetingUrl ?? null,
       totalSec: input.totalSec,
       shareToken: nanoid(24),
       shortCode: await uniqueShortCode(),
@@ -317,6 +320,7 @@ export async function sendCandidateInvites(a: {
   totalSec: number;
   actorId: string;
   origin: string;
+  meetingUrl?: string | null;
   rooms: { session: { id: string; shareToken: string; shortCode: string | null }; email: string; candidateName: string | null; scheduledAt: Date | null }[];
 }): Promise<DeliveryStatus[]> {
   if (!a.rooms.length) return [];
@@ -340,6 +344,7 @@ export async function sendCandidateInvites(a: {
           shortCode: ws ? null : r.session.shortCode,
           scheduledAt: r.scheduledAt ? r.scheduledAt.toISOString() : null,
           durationMin: Math.round(a.totalSec / 60),
+          meetingUrl: a.meetingUrl ?? null,
         },
         workspaceId: a.workspaceId,
         sessionId: r.session.id,

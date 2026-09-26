@@ -25,8 +25,10 @@ import {
   Shuffle,
   UserPlus,
   Users,
+  Video,
   X,
 } from "lucide-react";
+import { cleanMeetingUrl, meetingProvider } from "@/lib/interview/meeting";
 import type { GuideOption, MemberOption, PersonOption } from "@/lib/interview/wizard-server";
 import {
   DURATION_CHOICES,
@@ -535,6 +537,36 @@ function GuestEmails({ guests, onChange }: { guests: string[]; onChange: (g: str
 
 /* ───────────────────────── Schedule ───────────────────────── */
 
+function MeetingField({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+  const check = cleanMeetingUrl(value);
+  const provider = check.ok ? meetingProvider(check.url) : null;
+  return (
+    <section className="rounded-xl border border-border bg-surface p-4 flex flex-col gap-3">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="min-w-0">
+          <h3 className="text-[15px] font-semibold text-fg">Video call</h3>
+          <p className="text-[13px] text-muted">Optional. Paste your Zoom, Google Meet or Teams link and everyone gets a Join call button in the lobby and the room.</p>
+        </div>
+        {provider && <Chip>{provider}</Chip>}
+      </div>
+      <div className="relative">
+        <Video className="w-4 h-4 text-subtle absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" aria-hidden />
+        <input
+          type="url"
+          inputMode="url"
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          placeholder="https://meet.google.com/abc-defg-hij"
+          aria-label="Video call link"
+          aria-invalid={!check.ok}
+          className={`${inputCls} h-10 pl-9 ${!check.ok ? "border-danger/60" : ""}`}
+        />
+      </div>
+      {!check.ok && <p className="text-[13px] text-danger">{check.error}</p>}
+    </section>
+  );
+}
+
 export function ScheduleStep({ state, patch }: { state: WizardState; patch: Patch }) {
   const format = formatOf(state.format);
   const rows: { key: string; name: string; email: string | null }[] = state.noCandidate || state.candidates.length === 0
@@ -695,6 +727,9 @@ export function ScheduleStep({ state, patch }: { state: WizardState; patch: Patc
           </AnimatePresence>
         </ul>
       </section>
+
+      {/* Video call */}
+      <MeetingField value={state.meetingUrl ?? ""} onChange={(v) => patch({ meetingUrl: v })} />
 
       {/* Briefs and invite */}
       <section className="grid grid-cols-1 gap-4 lg:grid-cols-2">

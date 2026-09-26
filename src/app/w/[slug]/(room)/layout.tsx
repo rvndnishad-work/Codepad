@@ -10,5 +10,5 @@ export const metadata = {
 };
 
 export default function RoomLayout({ children }: { children: React.ReactNode }) {
-  return <div className="min-h-[100dvh] flex flex-col bg-bg text-fg">{children}</div>;
+  return <div className="room-scope min-h-[100dvh] flex flex-col bg-bg text-fg">{children}</div>;
 }

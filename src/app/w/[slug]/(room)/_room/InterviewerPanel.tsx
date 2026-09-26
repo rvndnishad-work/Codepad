@@ -7,7 +7,7 @@
  */
 import { useEffect, useRef, useState } from "react";
 import { motion } from "framer-motion";
-import { BookOpen, Check, Eye, Loader2, NotebookPen, Star } from "lucide-react";
+import { BookOpen, Check, Eye, Loader2, Lock, NotebookPen, Star } from "lucide-react";
 import type { RoomData } from "@/lib/interview/room-server";
 
 type Tab = "guide" | "notes" | "score";
@@ -89,14 +89,17 @@ export default function InterviewerPanel({
             type="button"
             aria-selected={tab === t.id}
             onClick={() => setTab(t.id)}
-            className={`relative h-8 px-3 rounded-lg text-[13px] font-medium inline-flex items-center gap-1.5 ${tab === t.id ? "text-fg" : "text-muted hover:text-fg"}`}
+            className={`relative h-8 px-2.5 rounded-lg text-[13px] font-medium inline-flex items-center gap-1.5 ${tab === t.id ? "text-fg" : "text-muted hover:text-fg"}`}
           >
             {tab === t.id && <motion.span layoutId="ip-tab" className="absolute inset-0 rounded-lg bg-panel ring-1 ring-inset ring-border-strong" transition={{ type: "spring", stiffness: 520, damping: 38 }} />}
             <t.icon className="relative w-3.5 h-3.5" aria-hidden />
             <span className="relative">{t.label}</span>
           </button>
         ))}
-        <span className="ml-auto pr-2 text-[11px] text-subtle">Only you</span>
+        <span className="ml-auto mr-1 w-7 h-7 rounded-md bg-panel text-subtle inline-flex items-center justify-center shrink-0" title="Private: the candidate never sees this panel">
+          <Lock className="w-3.5 h-3.5" aria-hidden />
+          <span className="sr-only">Private: the candidate never sees this panel</span>
+        </span>
       </div>
 
       <div className="flex-1 min-h-0 overflow-y-auto p-4">

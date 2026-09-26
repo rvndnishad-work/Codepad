@@ -207,7 +207,7 @@ export default function RoundStage({
           aria-expanded={promptOpen}
           className="lg:pointer-events-none flex items-center gap-2 px-5 h-12 shrink-0 border-b border-border text-left"
         >
-          <span className="text-[11px] font-medium uppercase tracking-[0.12em] text-secondary-soft">{round.kind === "prompt" ? "Scenario" : round.steps > 1 ? `Step ${round.step + 1} of ${round.steps}` : "Task"}</span>
+          <span className="inline-flex items-center gap-1.5 h-6 px-2 rounded-md bg-secondary/15 text-[12px] font-medium text-secondary-soft">{round.kind === "prompt" ? "Scenario" : round.steps > 1 ? `Step ${round.step + 1} of ${round.steps}` : "Task"}</span>
           <ChevronDown className={`ml-auto w-4 h-4 text-muted lg:hidden transition-transform ${promptOpen ? "rotate-180" : ""}`} aria-hidden />
         </button>
         <div className={`${promptOpen ? "block" : "hidden"} lg:block flex-1 min-h-0 overflow-y-auto px-5 py-5 max-h-[38vh] lg:max-h-none`}>

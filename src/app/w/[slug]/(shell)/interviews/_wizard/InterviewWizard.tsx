@@ -250,6 +250,7 @@ export default function InterviewWizard({ slug, meId, people, members, roundOpti
         questionsOwnerId: state.questionsOwnerId,
         questionsNote: state.questionsNote,
         minutes: state.minutes,
+        meetingUrl: state.meetingUrl?.trim() || undefined,
         brief: state.brief,
         candidateBrief: state.candidateBrief,
         sendInvites: state.sendInvites,

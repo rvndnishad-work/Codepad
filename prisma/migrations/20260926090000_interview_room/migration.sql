@@ -1,6 +1,5 @@
 -- Workspace interview room: relay channels, live presence, round on stage
 ALTER TABLE "InterviewSession" ADD COLUMN "roomRound" TEXT;
-ALTER TABLE "InterviewSession" ADD COLUMN "meetingUrl" TEXT;
 
 ALTER TABLE "InterviewToolUpdate" ADD COLUMN "channel" TEXT NOT NULL DEFAULT 'tools';
 DROP INDEX "InterviewToolUpdate_sessionId_id_idx";

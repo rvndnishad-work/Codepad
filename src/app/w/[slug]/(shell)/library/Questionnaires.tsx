@@ -436,7 +436,7 @@ function PreviewPanel({
                           {it.src ? (
                             <span className="inline-flex items-center gap-1.5">
                               {it.tech && <TopicLogo slug={it.tech} size={12} />}
-                              {it.tech ? techLabel(it.tech) : "Question bank"}
+                              {it.src.startsWith("variant:") ? "Private variant" : it.tech ? techLabel(it.tech) : "Question bank"}
                             </span>
                           ) : (
                             <span className="inline-flex items-center gap-1">

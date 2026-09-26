@@ -995,6 +995,7 @@ model Workspace {
   auditLogs            WorkspaceAuditLog[]
   agentConfigs         AgentConfig[]
   webhookEndpoints     WebhookEndpoint[]
+  questionVariants     QuestionVariant[]
 }
 
 /// Pending teammate invitation (IP-73). Replaces the old "silently mint a
@@ -1543,6 +1544,38 @@ model AIReportShareLink {
 
   @@index([sessionId])
   @@index([workspaceId])
+}
+
+/// A workspace-private rewrite of a public question, so candidates cannot look
+/// the answer up. Made by AI from a bank question (PrepQuestion) or a public
+/// coding challenge. Coding variants also get their own private Challenge row
+/// (challengeId); bank variants are used by adding them to a questionnaire.
+model QuestionVariant {
+  id               String    @id @default(cuid())
+  workspaceId      String
+  /// "bank" (PrepQuestion) | "challenge" (Challenge).
+  originKind       String
+  /// Id of the public question the variant was made from.
+  originQuestionId String
+  title            String
+  /// The rewritten question (bank) or challenge description (challenge).
+  prompt           String
+  /// Regenerated reference answer: markdown for bank questions, the reference
+  /// solution for coding variants. Never shown to candidates.
+  answer           String?
+  /// The private Challenge made for a coding variant.
+  challengeId      String?   @unique
+  /// "passed" when its tests ran and all passed before saving, "none" when the
+  /// question has no tests to run.
+  checkStatus      String    @default("none")
+  testsPassed      Int?
+  testsTotal       Int?
+  createdByUserId  String?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+  workspace        Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@index([workspaceId, originKind, originQuestionId])
 }
 
 /// Workspace-scoped custom screening templates. The default `scaffolds.ts`

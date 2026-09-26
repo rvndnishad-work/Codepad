@@ -19,6 +19,18 @@ import {
 } from "@/lib/library/library-server";
 import { techLabel } from "@/lib/interview-questions/shared";
 import { copyTitle, MINUTES_PER_QUESTION } from "@/lib/library/questionnaire-view";
+import { rateLimitDistributed } from "@/lib/rate-limit";
+import { cleanClientDraft, VariantShapeError, type VariantCheck, type VariantDraft } from "@/lib/library/variants";
+import {
+  challengeMode,
+  checkDraft,
+  generateDraft,
+  loadOrigin,
+  saveVariant,
+  VariantError,
+  variantsConfigured,
+  type VariantOrigin,
+} from "@/lib/library/variants-server";
 
 export type Result<T = object> = ({ ok: true } & T) | { ok: false; error: string };
 
@@ -224,6 +236,119 @@ export async function addPublicQuestionsAction(
     audit(a, WORKSPACE_AUDIT_ACTIONS.AI_QUESTION_SET_SAVED, id, { title: data.title, created: true, addedFromBank: picked.length });
     refresh(slug);
     return { ok: true, id, added: picked.length };
+  } catch (err) {
+    return fail(err);
+  }
+}
+
+/* ── Private variants ──────────────────────────────────────────────────── */
+
+async function variantOrigin(kind: string, id: string): Promise<VariantOrigin> {
+  if (kind !== "bank" && kind !== "challenge") throw new LibraryError("That question was not found.");
+  const origin = await loadOrigin(kind, id);
+  if (!origin) throw new LibraryError("Only public questions can have private variants.");
+  return origin;
+}
+
+function variantFail(err: unknown): { ok: false; error: string } {
+  if (err instanceof VariantError) return { ok: false, error: err.message };
+  return fail(err);
+}
+
+/** Ask the AI for a private variant and run its tests. Nothing is saved. */
+export async function generateVariantAction(slug: string, kind: string, id: string): Promise<Result<{ draft: VariantDraft; check: VariantCheck }>> {
+  try {
+    const a = await writer(slug);
+    if (!variantsConfigured()) throw new LibraryError("AI is not set up on this server, so variants cannot be made.");
+    const rl = await rateLimitDistributed(`variant:${a.workspaceId}`, 30, 60 * 60_000);
+    if (!rl.ok) throw new LibraryError("That is a lot of variants in an hour. Try again later.");
+    const origin = await variantOrigin(kind, id);
+    const draft = await generateDraft(origin);
+    const { check } = await checkDraft(origin, draft);
+    return { ok: true, draft, check };
+  } catch (err) {
+    return variantFail(err);
+  }
+}
+
+/**
+ * Save a variant for this workspace. The draft comes back from the browser
+ * (the recruiter may have edited the wording), so its shape is checked and
+ * its tests run again here before anything is written.
+ */
+export async function saveVariantAction(slug: string, kind: string, id: string, raw: unknown): Promise<Result<{ id: string; challengeId: string | null }>> {
+  try {
+    const a = await writer(slug);
+    const origin = await variantOrigin(kind, id);
+    let draft: VariantDraft;
+    try {
+      if (origin.kind === "bank") draft = cleanClientDraft(raw, { kind: "bank" });
+      else {
+        const { mode, language } = challengeMode(origin);
+        draft = cleanClientDraft(raw, { kind: "challenge", mode, language, contract: origin.step?.contract, original: origin.step ?? undefined });
+      }
+    } catch (err) {
+      if (err instanceof VariantShapeError) throw new LibraryError(err.message);
+      throw err;
+    }
+    const outcome = await checkDraft(origin, draft);
+    const saved = await saveVariant({ workspaceId: a.workspaceId, userId: a.userId, origin, draft, outcome });
+    void writeWorkspaceAuditEntry({
+      workspaceId: a.workspaceId,
+      actorUserId: a.userId,
+      actorEmail: a.email,
+      action: WORKSPACE_AUDIT_ACTIONS.QUESTION_VARIANT_CREATED,
+      targetType: "questionVariant",
+      targetId: saved.id,
+      meta: { title: draft.title, from: origin.title, kind: origin.kind, tests: outcome.check.status === "passed" ? `${outcome.check.passed}/${outcome.check.total}` : null },
+    });
+    revalidatePath(`/w/${slug}/library`, "layout");
+    return { ok: true, ...saved };
+  } catch (err) {
+    return variantFail(err);
+  }
+}
+
+/** Put a saved bank variant into a questionnaire: an existing one, or a new one. */
+export async function addVariantToQuestionnaireAction(slug: string, variantId: string, questionnaireId?: string): Promise<Result<{ id: string; added: boolean }>> {
+  try {
+    const a = await writer(slug);
+    const v = await prisma.questionVariant.findFirst({
+      where: { id: variantId, workspaceId: a.workspaceId, originKind: "bank" },
+      select: { id: true, title: true, prompt: true, answer: true, originQuestionId: true },
+    });
+    if (!v) throw new LibraryError("That variant was not found.");
+    const origin = await prisma.prepQuestion.findUnique({ where: { id: v.originQuestionId }, select: { technology: true, difficulty: true } });
+    const item: QuestionItem = { q: v.prompt, src: `variant:${v.id}` };
+    if (v.answer) item.a = v.answer;
+    if (origin?.technology) item.tech = origin.technology;
+    if (origin?.difficulty) item.difficulty = origin.difficulty;
+
+    if (questionnaireId) {
+      const row = await prisma.aIInterviewTemplate.findFirst({
+        where: { id: questionnaireId, workspaceId: a.workspaceId, kind: "conversation" },
+        select: { id: true, title: true, testsCode: true },
+      });
+      if (!row) throw new LibraryError("That questionnaire was not found.");
+      const current = parseQuestionnaire(row.testsCode);
+      if (current.some((i) => i.src === item.src)) return { ok: true, id: row.id, added: false };
+      const items = validateQuestionnaire([...current, item]);
+      await prisma.aIInterviewTemplate.update({ where: { id: row.id }, data: { testsCode: serializeQuestionnaire(items) } });
+      audit(a, WORKSPACE_AUDIT_ACTIONS.AI_QUESTION_SET_SAVED, row.id, { title: row.title, addedVariant: v.id });
+      refresh(slug);
+      return { ok: true, id: row.id, added: true };
+    }
+    const data = sanitize({
+      title: v.title.slice(0, 80),
+      brief: "A short conversation about your experience. Answer in your own words; there is no code to write.",
+      roleArea: item.tech ? techLabel(item.tech) : undefined,
+      minutes: 10,
+      items: [item],
+    });
+    const id = (await prisma.aIInterviewTemplate.create({ data: { ...data, workspaceId: a.workspaceId } })).id;
+    audit(a, WORKSPACE_AUDIT_ACTIONS.AI_QUESTION_SET_SAVED, id, { title: data.title, created: true, addedVariant: v.id });
+    refresh(slug);
+    return { ok: true, id, added: true };
   } catch (err) {
     return fail(err);
   }

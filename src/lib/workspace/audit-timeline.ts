@@ -35,7 +35,7 @@ const CATEGORY_RULES: { id: RealCategory; exact: string[]; prefixes: string[] }[
   {
     id: "screenings",
     exact: ["BULK_TAKE_HOME_DISPATCHED"],
-    prefixes: ["AI_SCREENING_", "AI_QUESTION_", "AI_REPORT_", "TAKE_HOME_", "INTERVIEW"],
+    prefixes: ["AI_SCREENING_", "AI_QUESTION_", "AI_REPORT_", "QUESTION_VARIANT_", "TAKE_HOME_", "INTERVIEW"],
   },
   { id: "people", exact: [], prefixes: ["MEMBER_", "ROLE_"] },
   {
@@ -244,6 +244,7 @@ const LABELS: Record<string, string> = {
   AI_QUESTION_SET_DELETED: "Deleted AI question",
   AI_REPORT_SHARE_CREATED: "Shared a read-only AI report for",
   AI_REPORT_SHARE_REVOKED: "Revoked an AI report share link for",
+  QUESTION_VARIANT_CREATED: "Made private question variant",
   TAKE_HOME_REMINDED: "Sent a take-home reminder to",
   TAKE_HOME_EXTENDED: "Extended the take-home deadline for",
   TAKE_HOME_CANCELLED: "Cancelled the take-home for",

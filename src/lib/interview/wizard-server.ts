@@ -6,16 +6,18 @@
 import { prisma } from "@/lib/prisma";
 import { templates } from "@/lib/templates";
 import { classifyChallenge, classifyTemplate } from "@/lib/interview/stack";
-import { loadQuestionnaires } from "@/lib/library/library-server";
+import { loadPublicCategories, loadQuestionnaires, type PublicCategory } from "@/lib/library/library-server";
 import type { GuideOption, MemberOption, PersonOption, RoundOption } from "@/lib/interview/wizard";
 
-export type { GuideOption, MemberOption, PersonOption, RoundOption };
+export type { GuideOption, MemberOption, PersonOption, RoundOption, PublicCategory };
 
 export type WizardData = {
   people: PersonOption[];
   members: MemberOption[];
   rounds: RoundOption[];
   guides: GuideOption[];
+  /** Public question bank categories, for picking guide questions. */
+  bankCategories: PublicCategory[];
 };
 
 function strings(raw: string | null | undefined): string[] {
@@ -127,7 +129,7 @@ export async function loadGuides(workspaceId: string): Promise<GuideOption[]> {
 }
 
 export async function loadWizardData(workspaceId: string, userId: string): Promise<WizardData> {
-  const [candidates, counts, members, rounds, guides] = await Promise.all([
+  const [candidates, counts, members, rounds, guides, bank] = await Promise.all([
     prisma.candidate.findMany({
       where: { workspaceId, status: { not: "archived" } },
       orderBy: { updatedAt: "desc" },
@@ -142,6 +144,7 @@ export async function loadWizardData(workspaceId: string, userId: string): Promi
     loadMembers(workspaceId),
     loadRoundOptions(workspaceId, userId),
     loadGuides(workspaceId),
+    loadPublicCategories(),
   ]);
   const n = new Map(counts.map((c) => [c.candidateId, c._count]));
   return {
@@ -149,5 +152,6 @@ export async function loadWizardData(workspaceId: string, userId: string): Promi
     members,
     rounds,
     guides,
+    bankCategories: bank.categories,
   };
 }

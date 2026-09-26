@@ -48,6 +48,7 @@ export default async function NewInterviewPage({ params, searchParams }: Props) 
       members={members}
       roundOptions={data.rounds}
       guides={data.guides}
+      bankCategories={data.bankCategories}
       prefill={{
         candidateIds: [...list(sp.candidates), ...list(sp.candidateId)].slice(0, 20),
         rounds: rounds.slice(0, 10),

@@ -7,14 +7,17 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { canMember } from "@/lib/permissions";
 import { writeWorkspaceAuditEntry, WORKSPACE_AUDIT_ACTIONS } from "@/lib/workspace-audit";
-import { createInterviewSession, resolveRounds, sourceTypeOf } from "@/lib/interview/create-server";
+import { createInterviewSession, resolveRounds, sendCandidateInvites, sourceTypeOf } from "@/lib/interview/create-server";
+import { appOrigin } from "@/lib/interview/links";
+import { publicItems } from "@/lib/library/library-server";
 import { notifyInterviewQuestionsRequested } from "@/lib/notifications/triggers";
 import { TOOL_IDS, defaultTools, initialTools } from "@/lib/interview/tools";
-import { inviteGuests } from "@/lib/interview/guests";
+import { inviteGuests, type DeliveryStatus } from "@/lib/interview/guests";
 import {
   formatOf,
   isEmail,
   isInterviewerFor,
+  MAX_BANK,
   MAX_CANDIDATES,
   MAX_MINUTES,
   MAX_GUESTS,
@@ -63,6 +66,11 @@ async function loadActor(slug: string) {
 
 const round = z.object({ kind: z.enum(["challenge", "playground", "prompt"]), id: z.string().min(1).max(80) });
 
+const questionSet = z.object({
+  guideId: z.string().max(40).nullable(),
+  bankIds: z.array(z.string().min(1).max(40)).max(MAX_BANK),
+});
+
 const scheduleSchema = z.object({
   format: z.enum(["coding", "discussion", "behavioural", "intro", "mixed"]),
   title: z.string().trim().min(1).max(120),
@@ -77,6 +85,8 @@ const scheduleSchema = z.object({
           .max(200)
           .refine((v) => !v || isEmail(v)),
         time: z.string().datetime().nullable(),
+        /** This person's own guide, when questions differ per candidate. */
+        questions: questionSet.optional(),
       }),
     )
     .max(MAX_CANDIDATES),
@@ -89,6 +99,8 @@ const scheduleSchema = z.object({
   plan: z.enum(["set", "later", "open"]),
   rounds: z.array(round).max(MAX_ROUNDS),
   guideId: z.string().nullable(),
+  /** Public bank questions added to everyone's guide. */
+  bankIds: z.array(z.string().min(1).max(40)).max(MAX_BANK).optional(),
   questionsOwnerId: z.string().nullable(),
   questionsNote: z.string().trim().max(500),
   minutes: z.number().int().min(MIN_MINUTES).max(MAX_MINUTES),
@@ -99,7 +111,15 @@ const scheduleSchema = z.object({
 });
 
 export type ScheduleInput = z.input<typeof scheduleSchema>;
-export type Scheduled = { id: string; name: string | null; shortCode: string | null; shareToken: string; scheduledAt: string | null };
+export type Scheduled = {
+  id: string;
+  name: string | null;
+  shortCode: string | null;
+  shareToken: string;
+  scheduledAt: string | null;
+  /** The candidate invite: null when there was no email or invites were off. */
+  invite: DeliveryStatus | null;
+};
 
 function splitRounds(rounds: { kind: string; id: string }[]) {
   return {
@@ -115,7 +135,7 @@ async function assertGuide(workspaceId: string, guideId: string | null) {
   if (!g) throw new ActionError("That question guide is no longer in the library.");
 }
 
-export async function scheduleInterviewsAction(slug: string, raw: ScheduleInput): Promise<Result<{ created: Scheduled[] }>> {
+export async function scheduleInterviewsAction(slug: string, raw: ScheduleInput): Promise<Result<{ created: Scheduled[]; guests: DeliveryStatus[] }>> {
   try {
     const a = await loadActor(slug);
     if (!a.canSchedule) throw new ActionError("You do not have permission to schedule interviews.");
@@ -131,16 +151,33 @@ export async function scheduleInterviewsAction(slug: string, raw: ScheduleInput)
     if (d.plan === "later" && (!d.questionsOwnerId || !a.memberIds.has(d.questionsOwnerId))) throw new ActionError("Choose a teammate to pick the questions.");
 
     const rounds = d.plan === "set" && format.coding ? d.rounds : [];
-    const guideId = d.plan === "set" && format.guide ? d.guideId : null;
     if (d.plan === "set" && format.coding && rounds.length === 0) throw new ActionError("Add at least one coding round.");
-    if (d.plan === "set" && !format.coding && !guideId) throw new ActionError("Choose a question guide.");
-    await assertGuide(a.workspace.id, guideId);
 
     // No named people means one session with an open link.
-    const people = d.candidates.length ? d.candidates : [{ id: null, name: "", email: "", time: null }];
+    const people = d.candidates.length ? d.candidates : [{ id: null, name: "", email: "", time: null, questions: undefined }];
+
+    // Each room's guide: its own set when questions differ per candidate,
+    // otherwise the shared one. A set is a library questionnaire, public
+    // bank questions, or both.
+    const useGuide = d.plan === "set" && format.guide;
+    const sets = people.map((p) => (useGuide ? (p.questions ?? { guideId: d.guideId, bankIds: d.bankIds ?? [] }) : { guideId: null, bankIds: [] as string[] }));
+    if (useGuide && !format.coding && sets.some((q) => !q.guideId && q.bankIds.length === 0)) {
+      throw new ActionError(people.length > 1 ? "Every candidate needs a question guide or some questions." : "Choose a question guide.");
+    }
+    for (const id of new Set(sets.map((q) => q.guideId).filter((x): x is string => !!x))) await assertGuide(a.workspace.id, id);
+    const bankJson = new Map<string, string | null>();
+    for (const q of sets) {
+      const key = q.bankIds.join(",");
+      if (!key || bankJson.has(key)) continue;
+      const items = await publicItems([...new Set(q.bankIds)]);
+      if (items.length < new Set(q.bankIds).size) throw new ActionError("One of the public questions is no longer available. Remove it and try again.");
+      bankJson.set(key, JSON.stringify({ v: 1, items }));
+    }
+
     const setupGroupId = people.length > 1 ? randomUUID() : null;
     const created: Scheduled[] = [];
-    for (const p of people) {
+    const toInvite: Parameters<typeof sendCandidateInvites>[0]["rooms"] = [];
+    for (const [i, p] of people.entries()) {
       const res = await createInterviewSession({
         ownerId: d.hostId,
         actor: { id: a.userId, email: a.email },
@@ -157,28 +194,41 @@ export async function scheduleInterviewsAction(slug: string, raw: ScheduleInput)
         candidateId: p.id,
         candidateName: p.name || null,
         candidateEmail: p.email || null,
-        sendInvite: d.sendInvites,
+        // Sent below in one batch, so the last page can say how it went.
+        sendInvite: false,
         wizard: {
           format: d.format,
           panelIds,
           questionPlan: d.plan,
           questionsOwnerId: d.questionsOwnerId,
           questionsNote: d.questionsNote || null,
-          guideTemplateId: guideId,
+          guideTemplateId: sets[i].guideId,
+          guideJson: bankJson.get(sets[i].bankIds.join(",")) ?? null,
           interviewerBrief: d.brief || null,
           setupGroupId,
           toolsJson: JSON.stringify(initialTools(d.tools ?? defaultTools(d.format))),
         },
       });
       if (!res.ok) throw new ActionError(res.error);
-      created.push({ id: res.id, name: p.name || null, shortCode: res.shortCode, shareToken: res.shareToken, scheduledAt: p.time });
+      created.push({ id: res.id, name: res.candidateName ?? (p.name || null), shortCode: res.shortCode, shareToken: res.shareToken, scheduledAt: p.time, invite: null });
+      if (d.sendInvites && res.inviteEmail) {
+        toInvite.push({ session: { id: res.id, shareToken: res.shareToken, shortCode: res.shortCode }, email: res.inviteEmail, candidateName: res.candidateName, scheduledAt: p.time ? new Date(p.time) : null });
+      }
+    }
+
+    const origin = await appOrigin();
+    const invites = await sendCandidateInvites({ workspaceId: a.workspace.id, title: d.title, totalSec: d.minutes * 60, actorId: a.userId, origin, rooms: toInvite });
+    for (const [i, r] of toInvite.entries()) {
+      const c = created.find((x) => x.id === r.session.id);
+      if (c) c.invite = invites[i];
     }
 
     // Interviewers outside the workspace get the details and their own link.
     const guests = normalizeGuests(d.guests ?? []);
+    let guestDelivery: DeliveryStatus[] = [];
     if (guests.length) {
       const host = await prisma.user.findUnique({ where: { id: d.hostId }, select: { name: true, email: true } });
-      void inviteGuests({
+      guestDelivery = await inviteGuests({
         workspaceId: a.workspace.id,
         emails: guests,
         rooms: created.map((c) => ({ id: c.id, candidateName: c.name, scheduledAt: c.scheduledAt ? new Date(c.scheduledAt) : null })),
@@ -188,6 +238,7 @@ export async function scheduleInterviewsAction(slug: string, raw: ScheduleInput)
         hostName: host?.name || host?.email || "the host",
         inviterName: a.name,
         brief: d.brief || null,
+        origin,
       });
     }
 
@@ -209,11 +260,19 @@ export async function scheduleInterviewsAction(slug: string, raw: ScheduleInput)
       action: WORKSPACE_AUDIT_ACTIONS.INTERVIEWS_SCHEDULED,
       targetType: "interviewSession",
       targetId: created[0]?.id ?? null,
-      meta: { count: created.length, format: d.format, plan: d.plan, hostId: d.hostId, panel: panelIds.length, guests: guests.length },
+      meta: {
+        count: created.length,
+        format: d.format,
+        plan: d.plan,
+        hostId: d.hostId,
+        panel: panelIds.length,
+        guests: guests.length,
+        emailed: invites.filter((x) => x.status === "sent").length + guestDelivery.filter((x) => x.status === "sent").length,
+      },
     });
     revalidatePath(`/w/${slug}/interviews`, "layout");
     revalidatePath(`/w/${slug}`, "layout");
-    return { ok: true, created };
+    return { ok: true, created, guests: guestDelivery };
   } catch (err) {
     return fail(err);
   }

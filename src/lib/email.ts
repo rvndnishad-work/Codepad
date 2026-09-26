@@ -231,7 +231,14 @@ export type BatchSendResult = {
   sent: number;
   suppressed: number;
   failed: number;
+  /** One entry per input item, in input order. `console` means no email
+   * provider is configured (RESEND_API_KEY unset), so nothing left the server. */
+  outcomes?: BatchOutcome[];
 };
+
+export type BatchOutcome =
+  | { status: "sent"; provider: "resend" | "console" }
+  | { status: "failed" | "suppressed"; reason: string };
 
 /**
  * Send ONE template to MANY recipients via Resend's batch endpoint (IP-72).
@@ -263,8 +270,9 @@ export async function sendTemplatedBatch<T extends TemplateName>(
         text: (p: unknown) => string;
       }
     | undefined;
-  if (!def) return { total: items.length, sent: 0, suppressed: 0, failed: items.length };
-  if (items.length === 0) return { total: 0, sent: 0, suppressed: 0, failed: 0 };
+  if (!def) return { total: items.length, sent: 0, suppressed: 0, failed: items.length, outcomes: items.map(() => ({ status: "failed", reason: "Unknown template" })) };
+  if (items.length === 0) return { total: 0, sent: 0, suppressed: 0, failed: 0, outcomes: [] };
+  const outcomes: BatchOutcome[] = items.map(() => ({ status: "failed", reason: "not sent" }));
 
   // One suppression query for the whole batch.
   const suppressedSet = new Set<string>();
@@ -285,15 +293,17 @@ export async function sendTemplatedBatch<T extends TemplateName>(
   let failed = 0;
 
   type Prepared = {
+    index: number;
     logId: string | null;
     payload: { from: string; to: string[]; subject: string; html: string; text: string };
   };
   const prepared: Prepared[] = [];
 
-  for (const item of items) {
+  for (const [index, item] of items.entries()) {
     const addr = normalizeAddress(item.to);
     if (suppressedSet.has(addr)) {
       suppressed++;
+      outcomes[index] = { status: "suppressed", reason: "This address bounced or complained before, so it is on the suppression list." };
       await prisma.emailLog
         .create({
           data: {
@@ -313,6 +323,7 @@ export async function sendTemplatedBatch<T extends TemplateName>(
       html = await render(React.createElement(def.Component, item.props as object));
     } catch {
       failed++;
+      outcomes[index] = { status: "failed", reason: "The email template failed to render." };
       await prisma.emailLog
         .create({
           data: {
@@ -340,6 +351,7 @@ export async function sendTemplatedBatch<T extends TemplateName>(
       })
       .catch(() => null);
     prepared.push({
+      index,
       logId: log?.id ?? null,
       payload: { from, to: [item.to], subject: def.subject(item.props), html, text: def.text(item.props) },
     });
@@ -350,9 +362,10 @@ export async function sendTemplatedBatch<T extends TemplateName>(
     for (const pr of prepared) {
       console.log(`[email:dev-stub:batch] to=${pr.payload.to.join(",")} subject="${pr.payload.subject}"`);
       if (pr.logId) await markLogSent(pr.logId, null);
+      outcomes[pr.index] = { status: "sent", provider: "console" };
       sent++;
     }
-    return { total: items.length, sent, suppressed, failed };
+    return { total: items.length, sent, suppressed, failed, outcomes };
   }
 
   // Chunked batch POST. Resend returns `data` in the same order as input.
@@ -368,6 +381,7 @@ export async function sendTemplatedBatch<T extends TemplateName>(
         const errText = await res.text().catch(() => "");
         for (const c of chunk) {
           failed++;
+          outcomes[c.index] = { status: "failed", reason: `Resend ${res.status}: ${errText.slice(0, 120)}` };
           if (c.logId) await markLogFailed(c.logId, `Resend batch ${res.status}: ${errText.slice(0, 120)}`);
         }
         continue;
@@ -376,15 +390,17 @@ export async function sendTemplatedBatch<T extends TemplateName>(
       const ids = body.data ?? [];
       for (let j = 0; j < chunk.length; j++) {
         sent++;
+        outcomes[chunk[j].index] = { status: "sent", provider: "resend" };
         if (chunk[j].logId) await markLogSent(chunk[j].logId!, ids[j]?.id ?? null);
       }
     } catch (err) {
       for (const c of chunk) {
         failed++;
+        outcomes[c.index] = { status: "failed", reason: err instanceof Error ? err.message : "batch fetch failed" };
         if (c.logId) await markLogFailed(c.logId, err instanceof Error ? err.message : "batch fetch failed");
       }
     }
   }
 
-  return { total: items.length, sent, suppressed, failed };
+  return { total: items.length, sent, suppressed, failed, outcomes };
 }

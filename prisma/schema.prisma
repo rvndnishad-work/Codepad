@@ -669,6 +669,8 @@ model InterviewSession {
   /// switched on, which one is presented, the question card and the timer.
   /// Only interviewers write it.
   toolsJson          String?
+  /// Guide questions picked from the public bank for this room (questionnaire JSON, reference answers included). Interviewers only.
+  guideJson          String?
   toolUpdates        InterviewToolUpdate[]
   guests             InterviewGuest[]
   createdAt          DateTime         @default(now())

@@ -177,7 +177,7 @@ export default async function WorkspaceDashboardPage({ params, searchParams }: P
     }),
     // Overview filters and the wider "Needs your attention" list. The Overview
     // still works without them, so a failure here never breaks the page.
-    loadOverviewExtras(workspace.id).catch((err) => {
+    loadOverviewExtras(workspace.id, slug).catch((err) => {
       console.error("[overview] extras failed", err);
       return undefined;
     }),

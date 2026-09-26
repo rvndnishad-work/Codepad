@@ -14,9 +14,13 @@ const DAY = 86_400_000;
 const BOUNCE_WINDOW_DAYS = 14;
 const DELIVERED = ["delivered", "opened", "clicked"];
 
-export async function loadOverviewExtras(workspaceId: string, now: Date = new Date()): Promise<OverviewExtras> {
+export async function loadOverviewExtras(
+  workspaceId: string,
+  slug: string,
+  now: Date = new Date(),
+): Promise<OverviewExtras> {
   const since = new Date(now.getTime() - BOUNCE_WINDOW_DAYS * DAY);
-  const [batches, batched, submitted, finishedLive, emailLogs] = await Promise.all([
+  const [batches, batched, submitted, finishedLive, emailLogs, atsFailures, alertChannels, pausedHooks] = await Promise.all([
     prisma.candidateBatch.findMany({
       where: { workspaceId },
       orderBy: [{ status: "desc" }, { createdAt: "desc" }],
@@ -44,6 +48,22 @@ export async function loadOverviewExtras(workspaceId: string, now: Date = new Da
       orderBy: { createdAt: "desc" },
       take: 500,
       select: { id: true, template: true, recipientEmail: true, status: true, createdAt: true, lastEventAt: true },
+    }),
+    // Connection failures: ATS writes nobody has retried yet, alert channels
+    // whose last post failed, and webhooks paused after repeated failures.
+    prisma.atsSyncEvent.findMany({
+      where: { workspaceId, status: "failed", resolvedAt: null, createdAt: { gte: since } },
+      orderBy: { createdAt: "desc" },
+      take: 20,
+      select: { id: true, provider: true, summary: true, candidateId: true, createdAt: true },
+    }),
+    prisma.alertChannel.findMany({
+      where: { workspaceId, active: true, lastErrorAt: { not: null } },
+      select: { id: true, provider: true, target: true, lastError: true, lastErrorAt: true, lastSentAt: true },
+    }),
+    prisma.webhookEndpoint.findMany({
+      where: { workspaceId, active: false, pausedReason: "failures" },
+      select: { id: true, url: true, pausedAt: true, updatedAt: true },
     }),
   ]);
 
@@ -109,8 +129,40 @@ export async function loadOverviewExtras(workspaceId: string, now: Date = new Da
         candidateName: p?.name ?? null,
       };
     }),
-    // No connection records failures yet. The ATS sync and Slack work add
-    // their error rows here when they land.
-    connectionErrors: [],
+    connectionErrors: [
+      ...atsFailures.map((e) => ({
+        id: `ats-${e.id}`,
+        name: e.provider === "greenhouse" ? "Greenhouse" : "ATS sync",
+        detail: e.summary,
+        at: e.createdAt.toISOString(),
+        href: `/w/${slug}/connections/ats`,
+        candidateId: e.candidateId,
+      })),
+      // A later successful post means the channel recovered.
+      ...alertChannels
+        .filter((c) => !c.lastSentAt || c.lastErrorAt! > c.lastSentAt)
+        .map((c) => ({
+          id: `alert-${c.id}`,
+          name: `${c.provider === "teams" ? "Teams" : "Slack"} ${c.target}`,
+          detail: c.lastError ?? "The last alert did not go through",
+          at: c.lastErrorAt!.toISOString(),
+          href: `/w/${slug}/alerts`,
+        })),
+      ...pausedHooks.map((h) => ({
+        id: `hook-${h.id}`,
+        name: `Webhook ${hostOf(h.url)}`,
+        detail: "Paused after repeated failed deliveries",
+        at: (h.pausedAt ?? h.updatedAt).toISOString(),
+        href: `/w/${slug}/webhooks`,
+      })),
+    ],
   };
+}
+
+function hostOf(url: string): string {
+  try {
+    return new URL(url).host;
+  } catch {
+    return url;
+  }
 }

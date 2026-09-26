@@ -269,8 +269,12 @@ async function sendInvite(a: {
   origin: string;
 }) {
   try {
-    const ws = await prisma.workspace.findUnique({ where: { id: a.workspaceId }, select: { name: true } });
+    const ws = await prisma.workspace.findUnique({ where: { id: a.workspaceId }, select: { name: true, slug: true } });
     const { sendEmail } = await import("@/lib/email");
+    const { candidateRoomUrl } = await import("./room-server");
+    // Workspace interviews open the workspace room with a private, expiring
+    // link. No short code: four digits are too easy to guess.
+    const roomUrl = ws ? candidateRoomUrl({ id: a.session.id, shareToken: a.session.shareToken, scheduledAt: a.scheduledAt, totalSec: a.totalSec }, ws.slug, a.origin) : null;
     const res = await sendEmail({
       template: "interview-invite",
       to: a.email,
@@ -278,8 +282,8 @@ async function sendInvite(a: {
         candidateName: a.candidateName || "there",
         workspaceName: ws?.name ?? "the team",
         title: a.title,
-        joinUrl: candidateJoinUrl(a.origin, a.session),
-        shortCode: a.session.shortCode,
+        joinUrl: roomUrl ?? candidateJoinUrl(a.origin, a.session),
+        shortCode: roomUrl ? null : a.session.shortCode,
         scheduledAt: a.scheduledAt ? a.scheduledAt.toISOString() : null,
         durationMin: Math.round(a.totalSec / 60),
       },
@@ -317,8 +321,13 @@ export async function sendCandidateInvites(a: {
 }): Promise<DeliveryStatus[]> {
   if (!a.rooms.length) return [];
   try {
-    const ws = await prisma.workspace.findUnique({ where: { id: a.workspaceId }, select: { name: true } });
+    const ws = await prisma.workspace.findUnique({ where: { id: a.workspaceId }, select: { name: true, slug: true } });
     const { sendTemplatedBatch } = await import("@/lib/email");
+    const { candidateRoomUrl } = await import("./room-server");
+    // A private, expiring link into the workspace room. No short code: four
+    // digits are too easy to guess.
+    const roomUrl = (r: (typeof a.rooms)[number]) =>
+      ws ? candidateRoomUrl({ id: r.session.id, shareToken: r.session.shareToken, scheduledAt: r.scheduledAt, totalSec: a.totalSec }, ws.slug, a.origin) : null;
     const res = await sendTemplatedBatch(
       "interview-invite",
       a.rooms.map((r) => ({
@@ -327,8 +336,8 @@ export async function sendCandidateInvites(a: {
           candidateName: r.candidateName || "there",
           workspaceName: ws?.name ?? "the team",
           title: a.title,
-          joinUrl: candidateJoinUrl(a.origin, r.session),
-          shortCode: r.session.shortCode,
+          joinUrl: roomUrl(r) ?? candidateJoinUrl(a.origin, r.session),
+          shortCode: ws ? null : r.session.shortCode,
           scheduledAt: r.scheduledAt ? r.scheduledAt.toISOString() : null,
           durationMin: Math.round(a.totalSec / 60),
         },

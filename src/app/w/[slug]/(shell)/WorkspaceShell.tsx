@@ -2,7 +2,7 @@
 
 import { useEffect, useState, type ReactNode } from "react";
 import { usePathname, useSearchParams } from "next/navigation";
-import WorkspaceAppBar, { type SwitcherWorkspace } from "../_components/WorkspaceAppBar";
+import WorkspaceAppBar, { type SwitcherWorkspace } from "../../_components/WorkspaceAppBar";
 import WorkspaceSidebar from "./WorkspaceSidebar";
 import type { SidebarCounts } from "./WorkspaceSidebarNav";
 import type { PlanDisplay } from "@/lib/workspace/display";

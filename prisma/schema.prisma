@@ -669,9 +669,14 @@ model InterviewSession {
   /// switched on, which one is presented, the question card and the timer.
   /// Only interviewers write it.
   toolsJson          String?
+  /// Workspace room: the round on the shared stage, "c:<challengeId>:<step>",
+  /// "p:<snippetId>" or "q:<promptScenarioId>". Null shows the room home.
+  /// Only interviewers write it.
+  roomRound          String?
   /// Guide questions picked from the public bank for this room (questionnaire JSON, reference answers included). Interviewers only.
   guideJson          String?
   toolUpdates        InterviewToolUpdate[]
+  presence           InterviewPresence[]
   guests             InterviewGuest[]
   createdAt          DateTime         @default(now())
   takeHomeTemplate   TakeHomeTemplate? @relation(fields: [takeHomeTemplateId], references: [id], onDelete: SetNull)
@@ -697,11 +702,39 @@ model InterviewSession {
 model InterviewToolUpdate {
   id        Int              @id @default(autoincrement())
   sessionId String
+  /// Which shared document the update belongs to: "tools" (room tools and
+  /// the workspace room) or "code:<challengeId>" (the classic attempt page).
+  channel   String           @default("tools")
   update    Bytes
   createdAt DateTime         @default(now())
   session   InterviewSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
 
-  @@index([sessionId, id])
+  @@index([sessionId, channel, id])
+}
+
+/// Who has a live room open right now, one row per browser tab and channel.
+/// Written by the relay on every poll (lastSeenAt) and when the tab sends
+/// its cursor and name (awareness, changedAt). Rows older than a few seconds
+/// count as gone.
+model InterviewPresence {
+  id         String           @id @default(cuid())
+  sessionId  String
+  channel    String           @default("tools")
+  /// Yjs awareness client id of the tab.
+  clientId   Int
+  role       String
+  name       String
+  /// "lobby" or "room".
+  place      String           @default("room")
+  /// Last y-protocols awareness update from the tab.
+  awareness  Bytes?
+  joinedAt   DateTime         @default(now())
+  lastSeenAt DateTime         @default(now())
+  changedAt  DateTime         @default(now())
+  session    InterviewSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@unique([sessionId, channel, clientId])
+  @@index([sessionId, channel, lastSeenAt])
 }
 
 /// An interviewer who is not a workspace member. HR types their email in the

@@ -1,104 +1,262 @@
 /**
- * Live room toolbox relay.
+ * Live room relay. Everything the two sides share goes through here over
+ * plain HTTPS, so it works on any network that can open the site: no
+ * peer-to-peer link, no third-party signalling server.
  *
- * GET    ?since=<cursor>&token=   tool state + Yjs updates after the cursor
- * POST   { update: base64 }       append a Yjs update (either side)
- * PATCH  ToolsAction              interviewers switch tools, present one,
- *                                 push a question card or run the timer
+ * GET    ?channel=&since=&client=&place=&wait=
+ *        Yjs updates after the cursor, who is here (with their cursors),
+ *        the tool switchboard and the room status. With `wait` it holds the
+ *        request open (long poll) until something changes. With `client` it
+ *        also marks that tab as present.
+ * POST   { update?, awareness?, client?, place?, leave? }
+ *        Append a Yjs update, publish this tab's cursor, or leave.
+ * PATCH  ToolsAction   interviewers switch tools, present one, push a
+ *        question card or run the timer (channel "tools" only).
  *
- * Yjs content (whiteboard, code pad, notes, ranking) is shared by both
- * sides. The switchboard (toolsJson) is written by interviewers only.
+ * Channels: "tools" is the room document (tools and, in the workspace room,
+ * the coding rounds). "code:<challengeId>" is the classic attempt page's
+ * editor for one challenge.
  */
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import * as Y from "yjs";
+import { Awareness, applyAwarenessUpdate } from "y-protocols/awareness";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { guestFromRequest } from "@/lib/interview/guests";
-import { MAX_QUESTION, MAX_TIMER_SEC, TOOL_IDS, applyToolsAction, parseTools, toolRole, type ToolsAction } from "@/lib/interview/tools";
+import { roomViewerFromRequest, ROOM_SELECT, type RoomViewer } from "@/lib/interview/room-access";
+import { MAX_QUESTION, MAX_TIMER_SEC, TOOL_IDS, applyToolsAction, parseTools, type ToolsAction } from "@/lib/interview/tools";
+import { PRESENCE_TTL_MS, parseChannel } from "@/lib/interview/relay";
+
+export const maxDuration = 30;
 
 const MAX_UPDATE_BYTES = 768 * 1024;
+const MAX_AWARENESS_BYTES = 16 * 1024;
 const COMPACT_AFTER = 200;
+const MAX_WAIT_MS = 8000;
+const WAIT_STEP_MS = 350;
 const LIVE = new Set(["scheduled", "in_progress"]);
 
 async function load(req: Request, id: string) {
-  const token = new URL(req.url).searchParams.get("token");
   const [session, interview] = await Promise.all([
     auth().catch(() => null),
     prisma.interviewSession.findUnique({
       where: { id },
-      select: { id: true, userId: true, panelJson: true, creatorRole: true, shareToken: true, status: true, format: true, toolsJson: true, type: true },
+      select: { ...ROOM_SELECT, format: true, toolsJson: true, type: true, startedAt: true, roomRound: true, totalSec: true },
     }),
   ]);
-  if (!interview || interview.type === "take-home") return { interview: null, role: null } as const;
-  const guest = await guestFromRequest(req, interview.id);
-  return { interview, role: toolRole(interview, session?.user?.id, token, !!guest) } as const;
+  if (!interview || interview.type === "take-home") return { interview: null, viewer: null } as const;
+  const viewer = await roomViewerFromRequest(req, interview, session?.user?.id ? { id: session.user.id, name: session.user.name, email: session.user.email } : null);
+  return { interview, viewer } as const;
 }
+
+function clientOf(v: string | number | null | undefined): number | null {
+  const n = typeof v === "number" ? v : parseInt(v ?? "", 10);
+  return Number.isInteger(n) && n >= 0 && n <= 0xffffffff ? n : null;
+}
+
+/** Yjs client ids are unsigned 32-bit; the column is a signed INT4, so store the same bits signed. */
+const dbClient = (c: number) => c | 0;
+
+async function touch(sessionId: string, channel: string, client: number, viewer: RoomViewer, place: string, awareness?: Uint8Array<ArrayBuffer>) {
+  const clientId = dbClient(client);
+  const now = new Date();
+  const existing = await prisma.interviewPresence.findUnique({
+    where: { sessionId_channel_clientId: { sessionId, channel, clientId } },
+    select: { id: true, place: true, role: true, name: true },
+  });
+  if (!existing) {
+    await prisma.interviewPresence
+      .create({ data: { sessionId, channel, clientId, role: viewer.role, name: viewer.name, place, awareness: awareness ?? null, lastSeenAt: now, changedAt: now } })
+      .catch(() => {});
+    // Now and then, clear rows from tabs that closed long ago.
+    if (Math.random() < 0.1) {
+      await prisma.interviewPresence.deleteMany({ where: { sessionId, lastSeenAt: { lt: new Date(now.getTime() - 60 * 60 * 1000) } } }).catch(() => {});
+    }
+    return;
+  }
+  const changed = !!awareness || existing.place !== place || existing.role !== viewer.role || existing.name !== viewer.name;
+  await prisma.interviewPresence.update({
+    where: { id: existing.id },
+    data: { lastSeenAt: now, place, role: viewer.role, name: viewer.name, ...(awareness ? { awareness } : {}), ...(changed ? { changedAt: now } : {}) },
+  });
+}
+
+type Fingerprint = { maxid: number; pchanged: Date | null; fp: string };
+
+async function fingerprint(sessionId: string, channel: string, clientId: number): Promise<Fingerprint | null> {
+  const rows = await prisma.$queryRaw<{ maxid: number | bigint | null; pchanged: Date | null; status: string; roomRound: string | null; toolsJson: string | null; startedAt: Date | null }[]>`
+    SELECT
+      (SELECT MAX(u."id") FROM "InterviewToolUpdate" u WHERE u."sessionId" = s."id" AND u."channel" = ${channel}) AS maxid,
+      (SELECT MAX(p."changedAt") FROM "InterviewPresence" p WHERE p."sessionId" = s."id" AND p."channel" = ${channel} AND p."clientId" <> ${dbClient(clientId)}) AS pchanged,
+      s."status", s."roomRound", s."toolsJson", s."startedAt"
+    FROM "InterviewSession" s WHERE s."id" = ${sessionId}`;
+  const r = rows[0];
+  if (!r) return null;
+  return { maxid: Number(r.maxid ?? 0), pchanged: r.pchanged, fp: `${r.status}|${r.roomRound ?? ""}|${r.startedAt?.getTime() ?? ""}|${r.toolsJson ?? ""}` };
+}
+
+/** What the client last saw of the room; sent back as `fp` so a change that lands between two polls is not missed. */
+const fpKey = (f: Fingerprint) => `${f.fp}|${f.pchanged?.getTime() ?? 0}`;
+
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 export async function GET(req: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const { interview, role } = await load(req, id);
+  const { interview, viewer } = await load(req, id);
   if (!interview) return NextResponse.json({ error: "not found" }, { status: 404 });
-  if (!role) return NextResponse.json({ error: "forbidden" }, { status: 403 });
+  if (!viewer) return NextResponse.json({ error: "forbidden" }, { status: 403 });
 
-  const since = Math.max(0, parseInt(new URL(req.url).searchParams.get("since") ?? "0", 10) || 0);
-  const rows = await prisma.interviewToolUpdate.findMany({
-    where: { sessionId: id, id: { gt: since } },
+  const sp = new URL(req.url).searchParams;
+  const channel = parseChannel(sp.get("channel"));
+  if (!channel) return NextResponse.json({ error: "bad channel" }, { status: 400 });
+  const since = Math.max(0, parseInt(sp.get("since") ?? "0", 10) || 0);
+  const clientId = clientOf(sp.get("client"));
+  const place = sp.get("place") === "lobby" ? "lobby" : "room";
+  const wait = Math.min(MAX_WAIT_MS, Math.max(0, parseInt(sp.get("wait") ?? "0", 10) || 0));
+
+  if (clientId !== null) await touch(id, channel, clientId, viewer, place);
+
+  let rows = await prisma.interviewToolUpdate.findMany({
+    where: { sessionId: id, channel, id: { gt: since } },
     orderBy: { id: "asc" },
     take: 500,
     select: { id: true, update: true },
   });
+
+  // Long poll: hold the request until an edit, a cursor, a join or leave, or
+  // a room change lands, or the wait runs out.
+  const known = sp.get("fp");
+  if (!rows.length && wait > 0 && clientId !== null) {
+    const start = await fingerprint(id, channel, clientId);
+    const deadline = Date.now() + wait;
+    // Something changed since the client's last answer: reply at once.
+    while (start && (!known || fpKey(start) === known) && Date.now() < deadline && !req.signal.aborted) {
+      await sleep(WAIT_STEP_MS);
+      const cur = await fingerprint(id, channel, clientId);
+      if (!cur) break;
+      if (cur.maxid > since || cur.fp !== start.fp || (cur.pchanged?.getTime() ?? 0) !== (start.pchanged?.getTime() ?? 0)) {
+        if (cur.maxid > since) {
+          rows = await prisma.interviewToolUpdate.findMany({
+            where: { sessionId: id, channel, id: { gt: since } },
+            orderBy: { id: "asc" },
+            take: 500,
+            select: { id: true, update: true },
+          });
+        }
+        break;
+      }
+    }
+  }
+
+  // Read before the state below, so anything that lands after it shows up as a mismatch next time.
+  const seen = clientId !== null ? await fingerprint(id, channel, clientId) : null;
+  const [fresh, peers] = await Promise.all([
+    prisma.interviewSession.findUnique({ where: { id }, select: { status: true, startedAt: true, roomRound: true, toolsJson: true, totalSec: true } }),
+    prisma.interviewPresence.findMany({
+      where: { sessionId: id, channel, lastSeenAt: { gt: new Date(Date.now() - PRESENCE_TTL_MS) } },
+      orderBy: { joinedAt: "asc" },
+      select: { clientId: true, role: true, name: true, place: true, awareness: true, joinedAt: true },
+    }),
+  ]);
+  const room = fresh ?? interview;
+
   return NextResponse.json(
     {
-      role,
-      live: LIVE.has(interview.status),
-      state: parseTools(interview.toolsJson, interview.format),
+      role: viewer.role,
+      me: { name: viewer.name },
+      live: LIVE.has(room.status),
+      state: parseTools(room.toolsJson, interview.format),
+      room: {
+        status: room.status,
+        startedAt: room.startedAt ? room.startedAt.toISOString() : null,
+        round: room.roomRound ?? null,
+        totalSec: room.totalSec,
+      },
+      peers: peers.map((p) => ({
+        clientId: p.clientId >>> 0,
+        role: p.role,
+        name: p.name,
+        place: p.place,
+        awareness: p.awareness ? Buffer.from(p.awareness).toString("base64") : null,
+        joinedAt: p.joinedAt.toISOString(),
+      })),
       updates: rows.map((r) => Buffer.from(r.update).toString("base64")),
       cursor: rows.length ? rows[rows.length - 1].id : since,
       more: rows.length === 500,
+      fp: seen ? fpKey(seen) : null,
       now: Date.now(),
     },
     { headers: { "Cache-Control": "no-store" } },
   );
 }
 
-const postSchema = z.object({ update: z.string().min(1).max(Math.ceil((MAX_UPDATE_BYTES * 4) / 3) + 8) });
+const b64 = (max: number) => z.string().min(1).max(Math.ceil((max * 4) / 3) + 8);
+const postSchema = z.object({
+  update: b64(MAX_UPDATE_BYTES).optional(),
+  awareness: b64(MAX_AWARENESS_BYTES).optional(),
+  client: z.number().int().min(0).max(0xffffffff).optional(),
+  place: z.enum(["lobby", "room"]).optional(),
+  leave: z.boolean().optional(),
+});
 
 export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const { interview, role } = await load(req, id);
+  const { interview, viewer } = await load(req, id);
   if (!interview) return NextResponse.json({ error: "not found" }, { status: 404 });
-  if (!role) return NextResponse.json({ error: "forbidden" }, { status: 403 });
-  if (!LIVE.has(interview.status)) return NextResponse.json({ error: "This interview has ended." }, { status: 409 });
+  if (!viewer) return NextResponse.json({ error: "forbidden" }, { status: 403 });
+  const channel = parseChannel(new URL(req.url).searchParams.get("channel"));
+  if (!channel) return NextResponse.json({ error: "bad channel" }, { status: 400 });
 
-  const parsed = postSchema.safeParse(await req.json().catch(() => null));
-  if (!parsed.success) return NextResponse.json({ error: "bad update" }, { status: 400 });
-  const bytes = Buffer.from(parsed.data.update, "base64");
-  if (bytes.length === 0 || bytes.length > MAX_UPDATE_BYTES) return NextResponse.json({ error: "bad update" }, { status: 400 });
-  // Reject anything that is not a Yjs update before it reaches other clients.
-  try {
-    Y.applyUpdate(new Y.Doc(), new Uint8Array(bytes));
-  } catch {
-    return NextResponse.json({ error: "bad update" }, { status: 400 });
+  // sendBeacon posts text/plain; parse the body ourselves.
+  const parsed = postSchema.safeParse(await req.text().then((t) => JSON.parse(t)).catch(() => null));
+  if (!parsed.success) return NextResponse.json({ error: "bad request" }, { status: 400 });
+  const { update, awareness, client, place, leave } = parsed.data;
+
+  if (leave && client !== undefined) {
+    await prisma.interviewPresence.deleteMany({ where: { sessionId: id, channel, clientId: dbClient(client) } });
+    return NextResponse.json({ ok: true });
   }
 
-  const row = await prisma.interviewToolUpdate.create({ data: { sessionId: id, update: bytes }, select: { id: true } });
+  let rowId: number | null = null;
+  if (update) {
+    if (!LIVE.has(interview.status)) return NextResponse.json({ error: "This interview has ended." }, { status: 409 });
+    const bytes = Buffer.from(update, "base64");
+    if (bytes.length === 0 || bytes.length > MAX_UPDATE_BYTES) return NextResponse.json({ error: "bad update" }, { status: 400 });
+    // Reject anything that is not a Yjs update before it reaches other clients.
+    try {
+      Y.applyUpdate(new Y.Doc(), new Uint8Array(bytes));
+    } catch {
+      return NextResponse.json({ error: "bad update" }, { status: 400 });
+    }
+    const row = await prisma.interviewToolUpdate.create({ data: { sessionId: id, channel, update: bytes }, select: { id: true } });
+    rowId = row.id;
+    const count = await prisma.interviewToolUpdate.count({ where: { sessionId: id, channel } });
+    if (count > COMPACT_AFTER) await compact(id, channel).catch(() => {});
+  }
 
-  const count = await prisma.interviewToolUpdate.count({ where: { sessionId: id } });
-  if (count > COMPACT_AFTER) await compact(id).catch(() => {});
+  if (awareness && client !== undefined) {
+    const bytes = Buffer.from(awareness, "base64");
+    if (bytes.length === 0 || bytes.length > MAX_AWARENESS_BYTES) return NextResponse.json({ error: "bad awareness" }, { status: 400 });
+    try {
+      applyAwarenessUpdate(new Awareness(new Y.Doc()), new Uint8Array(bytes), null);
+    } catch {
+      return NextResponse.json({ error: "bad awareness" }, { status: 400 });
+    }
+    await touch(id, channel, client, viewer, place ?? "room", bytes);
+  }
 
-  return NextResponse.json({ id: row.id });
+  return NextResponse.json({ id: rowId });
 }
 
-/** Folds every stored update into one row. Clients may receive the merged
- * row once more, which Yjs ignores. */
-async function compact(sessionId: string) {
+/** Folds every stored update of a channel into one row. Clients may receive
+ * the merged row once more, which Yjs ignores. */
+async function compact(sessionId: string, channel: string) {
   await prisma.$transaction(async (tx) => {
-    const rows = await tx.interviewToolUpdate.findMany({ where: { sessionId }, orderBy: { id: "asc" }, select: { id: true, update: true } });
+    const rows = await tx.interviewToolUpdate.findMany({ where: { sessionId, channel }, orderBy: { id: "asc" }, select: { id: true, update: true } });
     if (rows.length <= COMPACT_AFTER) return;
     const merged = Y.mergeUpdates(rows.map((r) => new Uint8Array(r.update)));
-    await tx.interviewToolUpdate.deleteMany({ where: { sessionId, id: { lte: rows[rows.length - 1].id } } });
-    await tx.interviewToolUpdate.create({ data: { sessionId, update: Buffer.from(merged) } });
+    await tx.interviewToolUpdate.deleteMany({ where: { sessionId, channel, id: { lte: rows[rows.length - 1].id } } });
+    await tx.interviewToolUpdate.create({ data: { sessionId, channel, update: Buffer.from(merged) } });
   });
 }
 
@@ -112,9 +270,9 @@ const actionSchema = z.union([
 
 export async function PATCH(req: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const { interview, role } = await load(req, id);
+  const { interview, viewer } = await load(req, id);
   if (!interview) return NextResponse.json({ error: "not found" }, { status: 404 });
-  if (role !== "interviewer") return NextResponse.json({ error: "Only interviewers can change the tools." }, { status: 403 });
+  if (viewer?.role !== "interviewer") return NextResponse.json({ error: "Only interviewers can change the tools." }, { status: 403 });
   if (!LIVE.has(interview.status)) return NextResponse.json({ error: "This interview has ended." }, { status: 409 });
 
   const body = await req.json().catch(() => null);

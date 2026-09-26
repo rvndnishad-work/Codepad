@@ -13,6 +13,7 @@ import { publicItems } from "@/lib/library/library-server";
 import { notifyInterviewQuestionsRequested } from "@/lib/notifications/triggers";
 import { TOOL_IDS, defaultTools, initialTools } from "@/lib/interview/tools";
 import { inviteGuests, type DeliveryStatus } from "@/lib/interview/guests";
+import { candidateRoomPath } from "@/lib/interview/room-server";
 import {
   formatOf,
   isEmail,
@@ -119,6 +120,8 @@ export type Scheduled = {
   scheduledAt: string | null;
   /** The candidate invite: null when there was no email or invites were off. */
   invite: DeliveryStatus | null;
+  /** Private candidate link path (signed, expiring). */
+  candidateLink: string;
 };
 
 function splitRounds(rounds: { kind: string; id: string }[]) {
@@ -210,7 +213,15 @@ export async function scheduleInterviewsAction(slug: string, raw: ScheduleInput)
         },
       });
       if (!res.ok) throw new ActionError(res.error);
-      created.push({ id: res.id, name: res.candidateName ?? (p.name || null), shortCode: res.shortCode, shareToken: res.shareToken, scheduledAt: p.time, invite: null });
+      created.push({
+        id: res.id,
+        name: res.candidateName ?? (p.name || null),
+        shortCode: res.shortCode,
+        shareToken: res.shareToken,
+        scheduledAt: p.time,
+        invite: null,
+        candidateLink: candidateRoomPath({ id: res.id, shareToken: res.shareToken, scheduledAt: p.time ? new Date(p.time) : null, totalSec: d.minutes * 60 }, slug),
+      });
       if (d.sendInvites && res.inviteEmail) {
         toInvite.push({ session: { id: res.id, shareToken: res.shareToken, shortCode: res.shortCode }, email: res.inviteEmail, candidateName: res.candidateName, scheduledAt: p.time ? new Date(p.time) : null });
       }

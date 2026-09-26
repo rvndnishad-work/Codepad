@@ -33,6 +33,20 @@ export default async function InterviewRunPage({
   const { token, lobby } = sp;
   const guestKey = typeof sp.guest === "string" ? sp.guest : null;
 
+  // Workspace interviews have their own lobby and room under the workspace.
+  // Older links (share token, emailed interviewer key) are swapped for a
+  // room pass on the way in.
+  const ws = await prisma.interviewSession.findUnique({
+    where: { id },
+    select: { type: true, creatorRole: true, workspace: { select: { slug: true } } },
+  });
+  if (ws?.workspace && ws.type === "live" && ws.creatorRole === "interviewer") {
+    const base = `/w/${ws.workspace.slug}/interviews/${id}`;
+    if (token) redirect(`${base}/join?t=${encodeURIComponent(token)}`);
+    if (guestKey) redirect(`${base}/join?g=${encodeURIComponent(guestKey)}`);
+    redirect(`${base}/lobby`);
+  }
+
   // IP-38: mobile-handoff lobby. Run before any auth check so a candidate on
   // a phone always gets the QR experience first; auth and access checks
   // happen on the post-bypass request.

@@ -76,8 +76,9 @@ export function InterviewInvite({
         </a>
         <br />
         <br />
-        Keep this email — you&apos;ll use the same link (or the access code on
-        the join page) when the session starts. Times shown in UTC.
+        {shortCode
+          ? "Keep this email — you’ll use the same link (or the access code on the join page) when the session starts. Times shown in UTC."
+          : "Keep this email — this link is private to you and opens your interview lobby, where you can check your setup before joining. Times shown in UTC."}
       </Text>
     </BaseLayout>
   );

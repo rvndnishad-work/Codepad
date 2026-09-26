@@ -19,6 +19,8 @@ import {
 } from "lucide-react";
 import { isInterviewerFor } from "@/lib/interview/wizard";
 import { guestFor } from "@/lib/interview/guests";
+import { roomViewer } from "@/lib/interview/room-access";
+import { headers } from "next/headers";
 
 export const metadata = {
   title: "Executive Candidate Report — Interviewpad Recruiter",
@@ -45,13 +47,27 @@ export default async function CandidateReportPage({
 
   if (!interview) notFound();
 
-  // Access: owner OR holder of correct shareToken.
+  // Access. Workspace interviews: the interviewers (host, panel, workspace
+  // admins, emailed interviewers by link or room pass) and any member of the
+  // workspace; never the candidate. Personal practice sessions keep the
+  // share-token link.
   const guest = interview.creatorRole === "interviewer" ? await guestFor(interview.id, guestKey) : null;
-  const isOwner = isInterviewerFor(interview, session?.user?.id) || !!guest;
-  const hasShareToken = !!token && token === interview.shareToken;
-  if (!isOwner && !hasShareToken) {
+  const hdrs = await headers();
+  const viewer = await roomViewer(interview, {
+    user: session?.user?.id ? { id: session.user.id, name: session.user.name, email: session.user.email } : null,
+    cookieHeader: hdrs.get("cookie"),
+    token,
+    guestKey,
+  });
+  let allowed = viewer?.role === "interviewer";
+  if (!allowed && interview.workspaceId && session?.user?.id) {
+    allowed = !!(await prisma.workspaceMember.findFirst({ where: { workspaceId: interview.workspaceId, userId: session.user.id }, select: { id: true } }));
+  }
+  if (!allowed && !interview.workspaceId) allowed = !!viewer;
+  const isOwner = isInterviewerFor(interview, session?.user?.id) || !!guest || viewer?.via === "pass";
+  if (!allowed) {
     if (!session?.user?.id) {
-      redirect(`/login?next=${encodeURIComponent(`/interview/${id}/report?token=${token}`)}`);
+      redirect(`/login?next=${encodeURIComponent(`/interview/${id}/report`)}`);
     }
     notFound();
   }

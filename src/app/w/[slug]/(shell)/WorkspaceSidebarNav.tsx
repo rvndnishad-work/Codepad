@@ -3,7 +3,6 @@
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 import {
-  Blocks,
   BookOpen,
   Bot,
   ClipboardList,
@@ -140,7 +139,6 @@ export default function WorkspaceSidebarNav({ slug, growthFeatures, counts, coll
   ];
 
   const connections: NavItem[] = [
-    { label: "Integrations", icon: Blocks, href: sectionHref("integrations"), isActive: sectionActive("integrations") },
     growth({ label: "ATS sync", icon: RefreshCw, ...route("ats") }),
     growth({ label: "API keys", icon: KeyRound, ...route("api-keys") }),
     growth({ label: "External MCP", icon: Plug, ...route("external-mcp") }),

@@ -3,8 +3,9 @@ import { prisma } from "@/lib/prisma";
 import { notFound, redirect } from "next/navigation";
 import AtsIntegrationClient from "./AtsIntegrationClient";
 import { getAtsIntegrationView } from "./actions";
-import { workspacePlanAllowsAiScreening } from "@/lib/ai-interview/credits";
+import { growthToolsEnabled } from "@/lib/billing/trial";
 import { canMember } from "@/lib/permissions";
+import { appOrigin } from "@/lib/interview/links";
 
 type Props = { params: Promise<{ slug: string }> };
 
@@ -27,6 +28,8 @@ export default async function AtsIntegrationPage({ params }: Props) {
       id: true,
       name: true,
       planName: true,
+      trialEndsAt: true,
+      stripeSubscriptionId: true,
       members: { select: { userId: true, role: true, permissions: true } },
     },
   });
@@ -36,12 +39,14 @@ export default async function AtsIntegrationPage({ params }: Props) {
   if (!member) redirect("/dashboard");
 
   const isAdmin = await canMember(member, "integration:manage");
-  const planAllowed = workspacePlanAllowsAiScreening(workspace.planName);
+  const planAllowed = growthToolsEnabled(workspace);
   const view = await getAtsIntegrationView(slug);
 
   return (
     <AtsIntegrationClient
       slug={slug}
+      inboundBase={`${await appOrigin()}/api/integrations/webhooks`}
+      workspaceId={workspace.id}
       workspaceName={workspace.name}
       planName={workspace.planName}
       planAllowed={planAllowed}

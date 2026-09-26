@@ -1,5 +1,6 @@
 import { createHash, randomBytes } from "crypto";
 import { prisma } from "@/lib/prisma";
+import { growthToolsEnabled } from "@/lib/billing/trial";
 
 /**
  * Key format: `ip_live_<32 random hex chars>`.
@@ -55,6 +56,8 @@ export type AuthedKey = {
   workspaceSlug: string;
   workspaceName: string;
   workspacePlanName: string;
+  /** Growth plan, Enterprise plan or an unexpired trial. */
+  growthTools: boolean;
   scopes: string[];
   label: string;
 };
@@ -76,7 +79,7 @@ export async function authenticateRequest(
     where: { keyHash },
     include: {
       workspace: {
-        select: { id: true, slug: true, name: true, planName: true },
+        select: { id: true, slug: true, name: true, planName: true, trialEndsAt: true, stripeSubscriptionId: true },
       },
     },
   });
@@ -101,6 +104,7 @@ export async function authenticateRequest(
     workspaceSlug: row.workspace.slug,
     workspaceName: row.workspace.name,
     workspacePlanName: row.workspace.planName,
+    growthTools: growthToolsEnabled(row.workspace),
     scopes,
     label: row.label,
   };

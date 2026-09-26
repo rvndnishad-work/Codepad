@@ -3,7 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { notFound, redirect } from "next/navigation";
 import Link from "next/link";
 import { Lock, Plug } from "lucide-react";
-import { workspacePlanAllowsAiScreening } from "@/lib/ai-interview/credits";
+import { growthToolsEnabled } from "@/lib/billing/trial";
 import { canMember } from "@/lib/permissions";
 import ExternalMcpConsole from "./ExternalMcpConsole";
 
@@ -30,6 +30,8 @@ export default async function WorkspaceExternalMcpPage({ params }: Props) {
       name: true,
       slug: true,
       planName: true,
+      trialEndsAt: true,
+      stripeSubscriptionId: true,
       allowExternalMcp: true,
       members: { select: { userId: true, role: true, permissions: true } },
     },
@@ -39,7 +41,7 @@ export default async function WorkspaceExternalMcpPage({ params }: Props) {
   const member = workspace.members.find((m) => m.userId === session.user.id);
   if (!member) redirect("/dashboard");
 
-  if (!workspacePlanAllowsAiScreening(workspace.planName)) {
+  if (!growthToolsEnabled(workspace)) {
     return (
       <div className="rounded-3xl border border-border bg-surface p-10 text-center flex flex-col items-center gap-5 max-w-2xl mx-auto">
         <div className="w-14 h-14 rounded-2xl bg-secondary/10 border border-secondary/25 flex items-center justify-center text-secondary">

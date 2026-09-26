@@ -3,7 +3,7 @@
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
-import { workspacePlanAllowsAiScreening } from "@/lib/ai-interview/credits";
+import { growthToolsEnabled } from "@/lib/billing/trial";
 import { generateApiKey } from "@/lib/mcp/auth";
 import { canMember } from "@/lib/permissions";
 
@@ -25,6 +25,8 @@ async function assertWorkspaceKeyAdmin(slug: string) {
       slug: true,
       name: true,
       planName: true,
+      trialEndsAt: true,
+      stripeSubscriptionId: true,
       members: { select: { userId: true, role: true, permissions: true } },
     },
   });
@@ -33,7 +35,7 @@ async function assertWorkspaceKeyAdmin(slug: string) {
   const member = workspace.members.find((m: Member) => m.userId === session.user.id);
   if (!member) throw new Error("Not a member of this workspace");
 
-  if (!workspacePlanAllowsAiScreening(workspace.planName)) {
+  if (!growthToolsEnabled(workspace)) {
     throw new Error("This workspace plan does not include the MCP API.");
   }
   if (!(await canMember(member, "integration:manage"))) {

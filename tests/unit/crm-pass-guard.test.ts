@@ -269,6 +269,7 @@ describe("MCP update_candidate_status", () => {
       workspaceSlug: "acme",
       workspaceName: "Acme",
       workspacePlanName: "Pro",
+      growthTools: true,
       scopes: ["read", "write"],
       label: "Claude",
     });

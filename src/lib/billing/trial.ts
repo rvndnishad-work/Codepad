@@ -64,3 +64,12 @@ export function effectivePlan(ws: PlanFields, now: Date = new Date()): Effective
 export function effectivePlanAllowsAiScreening(ws: PlanFields, now: Date = new Date()): boolean {
   return GROWTH_LEVEL.has(effectivePlan(ws, now).plan);
 }
+
+/**
+ * Growth-level workspace tools (ATS sync, API keys, External MCP) are on for
+ * paid Growth/Enterprise plans and during an unexpired trial, matching what
+ * the sidebar shows unlocked.
+ */
+export function growthToolsEnabled(ws: PlanFields, now: Date = new Date()): boolean {
+  return GROWTH_LEVEL.has(effectivePlan(ws, now).plan);
+}

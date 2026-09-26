@@ -1,28 +1,22 @@
 "use client";
 
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { toast } from "sonner";
-import Link from "next/link";
 // Pure permission helpers only (no server-only imports) so this client
 // component can resolve a member's effective permissions locally.
 import { resolveEffective, asOverrides } from "@/lib/permissions/resolve";
 import { WORKSPACE_PERMISSIONS } from "@/lib/permissions/permissions";
 import {
-  Trophy,
   Mail,
   UserPlus,
-  Calendar,
   Sparkles,
   CheckCircle2,
   AlertTriangle,
-  Plus,
   Trash2,
   ChevronRight,
   X,
 } from "lucide-react";
-import { describeExecution } from "@/lib/exec-result";
-import { postExecute } from "@/lib/execute-client";
 import WorkspaceOverview from "./WorkspaceOverview";
 import { humanize, type PlanDisplay } from "@/lib/workspace/display";
 
@@ -222,13 +216,9 @@ type PendingInvite = {
 const SECTION_TITLES: Record<string, { title: string; body: string }> = {
   members: { title: "Members", body: "Who can see candidates and act on them in this workspace." },
   billing: { title: "Billing and plan", body: "Your plan, seats and invoices." },
-  integrations: { title: "Integrations", body: "Connect your ATS and try code in the sandbox." },
 };
 
-type TabId =
-  | "members"
-  | "billing"
-  | "integrations";
+type TabId = "members" | "billing";
 
 const PLAN_BADGES: Record<string, string> = {
   FREE: "text-warning border-warning/25 bg-warning/[0.06]",
@@ -257,7 +247,7 @@ export default function WorkspaceDashboardClient({
   const searchParams = useSearchParams();
   const sectionParam = searchParams.get("section");
   
-  const validSections: TabId[] = ["members", "billing", "integrations"];
+  const validSections: TabId[] = ["members", "billing"];
   const activeTab: TabId | "overview" = (sectionParam && validSections.includes(sectionParam as TabId))
     ? (sectionParam as TabId)
     : "overview";
@@ -295,157 +285,6 @@ export default function WorkspaceDashboardClient({
 
   // Billing Portal & Teammate Removal states
   const [billingLoading, setBillingLoading] = useState(false);
-
-  // Integrations state hooks
-  const [atsProvider, setAtsProvider] = useState<"GREENHOUSE" | "LEVER" | "ASHBY">("GREENHOUSE");
-  const [atsApiKey, setAtsApiKey] = useState("");
-  const [atsWebhookSecret, setAtsWebhookSecret] = useState("");
-  const [atsSavedUrl, setAtsSavedUrl] = useState("");
-  const [atsLoading, setAtsLoading] = useState(false);
-  const [atsActive, setAtsActive] = useState(false);
-
-  // Code Sandbox state hooks
-  const [sandboxLang, setSandboxLang] = useState("python");
-  const [sandboxCode, setSandboxCode] = useState("print('Hello from Python sandboxed container!')");
-  const [sandboxInput, setSandboxInput] = useState("");
-  const [sandboxOutput, setSandboxOutput] = useState("");
-  const [sandboxRunning, setSandboxRunning] = useState(false);
-
-  // Fetch integration settings on tab focus or mount
-  const [fetchedIntegrations, setFetchedIntegrations] = useState(false);
-
-  async function loadIntegrations() {
-    try {
-      const res = await fetch(`/api/w/${workspace.slug}/integrations`);
-      const data = await res.json().catch(() => null);
-      if (res.ok && data?.atsIntegration) {
-        setAtsProvider(data.atsIntegration.provider);
-        // Secrets are write-only on the API; the disabled inputs show a
-        // masked placeholder while connected.
-        setAtsApiKey("");
-        setAtsWebhookSecret("");
-        setAtsActive(true);
-        if (typeof window !== "undefined") {
-          setAtsSavedUrl(`${window.location.origin}/api/integrations/webhooks/${data.atsIntegration.provider.toLowerCase()}?workspaceId=${data.workspaceId}`);
-        }
-      } else if (res.ok && data?.workspaceId) {
-        if (typeof window !== "undefined") {
-          setAtsSavedUrl(`${window.location.origin}/api/integrations/webhooks/greenhouse?workspaceId=${data.workspaceId}`);
-        }
-      }
-    } catch (e) {
-      console.error(e);
-    }
-  }
-
-  // Load once, in the browser, the first time the Integrations section opens.
-  // (A useState initialiser ran this during SSR, where a relative fetch URL
-  // throws.)
-  useEffect(() => {
-    if (activeTab !== "integrations" || fetchedIntegrations) return;
-    setFetchedIntegrations(true);
-    loadIntegrations();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeTab, fetchedIntegrations]);
-
-  function handleLangChange(lang: string) {
-    setSandboxLang(lang);
-    if (lang === "python") {
-      setSandboxCode("print('Hello from Python sandboxed container!')");
-    } else if (lang === "javascript") {
-      setSandboxCode("console.log('Hello from Javascript sandboxed runtime!');");
-    } else if (lang === "go") {
-      setSandboxCode(`package main\nimport "fmt"\n\nfunc main() {\n    fmt.Println("Hello from Go execution sandbox!")\n}`);
-    } else if (lang === "java") {
-      setSandboxCode(`public class Main {\n    public static void main(String[] args) {\n        System.out.println("Hello from Java runtime virtual machine!");\n    }\n}`);
-    }
-  }
-
-  async function handleSaveAts(e: React.FormEvent) {
-    e.preventDefault();
-    if (!atsApiKey.trim()) {
-      toast.error("Please enter a valid API key.");
-      return;
-    }
-
-    setAtsLoading(true);
-    try {
-      const res = await fetch(`/api/w/${workspace.slug}/integrations`, {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({
-          provider: atsProvider,
-          apiKey: atsApiKey,
-          webhookSecret: atsWebhookSecret || null,
-        }),
-      });
-
-      const data = await res.json().catch(() => null);
-      if (!res.ok) throw new Error(data?.error ?? `HTTP ${res.status}`);
-
-      toast.success("ATS Provider connected successfully!");
-      setAtsActive(true);
-      if (typeof window !== "undefined") {
-        setAtsSavedUrl(`${window.location.origin}/api/integrations/webhooks/${atsProvider.toLowerCase()}?workspaceId=${data.integration.workspaceId || data.integration.id}`);
-      }
-      loadIntegrations();
-    } catch (err) {
-      toast.error("Failed to connect ATS provider", {
-        description: err instanceof Error ? err.message : String(err),
-      });
-    } finally {
-      setAtsLoading(false);
-    }
-  }
-
-  async function handleDisconnectAts() {
-    if (!window.confirm("Are you sure you want to disconnect this ATS provider integration?")) {
-      return;
-    }
-
-    setAtsLoading(true);
-    try {
-      const res = await fetch(`/api/w/${workspace.slug}/integrations`, {
-        method: "DELETE",
-      });
-
-      if (!res.ok) throw new Error("Disconnect request failed");
-
-      toast.success("ATS Provider disconnected.");
-      setAtsApiKey("");
-      setAtsWebhookSecret("");
-      setAtsActive(false);
-    } catch (err) {
-      toast.error("Failed to disconnect", {
-        description: err instanceof Error ? err.message : String(err),
-      });
-    } finally {
-      setAtsLoading(false);
-    }
-  }
-
-  async function handleRunSandbox() {
-    if (!sandboxCode.trim()) return;
-
-    setSandboxRunning(true);
-    setSandboxOutput("Executing script on secure container pool...\n");
-    try {
-      const { status, data } = await postExecute({
-        language: sandboxLang,
-        code: sandboxCode,
-        stdin: sandboxInput,
-      });
-
-      const output = describeExecution(status, data)
-        .map((line) => (line.method === "error" ? `[stderr] ${line.text}` : line.text))
-        .join("\n");
-      setSandboxOutput(output);
-    } catch (err) {
-      setSandboxOutput(`Sandbox execution error: ${err instanceof Error ? err.message : String(err)}`);
-    } finally {
-      setSandboxRunning(false);
-    }
-  }
 
   async function handleTriggerBilling() {
     setBillingLoading(true);
@@ -978,209 +817,6 @@ export default function WorkspaceDashboardClient({
                       </li>
                     ))}
                   </ul>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* INTEGRATIONS */}
-          {activeTab === "integrations" && (
-            <div className="space-y-5">
-              <div>
-                <h3 className="text-lg font-semibold text-fg tracking-tight">Integrations</h3>
-                <p className="text-xs text-muted mt-0.5">Connect your ATS, calendar, and sandbox runtime.</p>
-              </div>
-
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                {/* ATS */}
-                <div className="rounded-xl border border-border bg-surface p-5 space-y-4">
-                  <div className="flex items-center gap-2.5">
-                    <div className="w-8 h-8 rounded-lg bg-secondary/10 border border-secondary/20 flex items-center justify-center text-secondary">
-                      <Sparkles className="w-3.5 h-3.5" />
-                    </div>
-                    <div>
-                      <h4 className="text-sm font-semibold text-fg">Applicant Tracking System</h4>
-                      <p className="text-xs text-muted">Sync take-home invitations from your ATS.</p>
-                    </div>
-                  </div>
-
-                  <form onSubmit={handleSaveAts} className="space-y-3">
-                    <div className="space-y-1">
-                      <label className="text-xs font-semibold text-muted">Provider</label>
-                      <select
-                        value={atsProvider}
-                        onChange={(e) => setAtsProvider(e.target.value as any)}
-                        disabled={atsActive}
-                        className="w-full px-3 py-2 rounded-md border border-border bg-bg text-fg text-xs focus:outline-none focus:border-secondary/40 disabled:opacity-60"
-                      >
-                        <option value="GREENHOUSE">Greenhouse</option>
-                        <option value="LEVER">Lever</option>
-                        <option value="ASHBY">Ashby</option>
-                      </select>
-                    </div>
-
-                    <div className="space-y-1">
-                      <label className="text-xs font-semibold text-muted">API key</label>
-                      <input
-                        type="password"
-                        placeholder={atsActive ? "••••••••••••••••" : "Paste your ATS API token"}
-                        value={atsApiKey}
-                        onChange={(e) => setAtsApiKey(e.target.value)}
-                        disabled={atsActive}
-                        className="w-full px-3 py-2 rounded-md border border-border bg-bg text-fg text-xs focus:outline-none focus:border-secondary/40 disabled:opacity-60"
-                      />
-                    </div>
-
-                    <div className="space-y-1">
-                      <label className="text-xs font-semibold text-muted">Webhook secret <span className="text-muted/60 font-normal">(optional)</span></label>
-                      <input
-                        type="password"
-                        placeholder={atsActive ? "••••••••••••••••" : "Webhook signature secret"}
-                        value={atsWebhookSecret}
-                        onChange={(e) => setAtsWebhookSecret(e.target.value)}
-                        disabled={atsActive}
-                        className="w-full px-3 py-2 rounded-md border border-border bg-bg text-fg text-xs focus:outline-none focus:border-secondary/40 disabled:opacity-60"
-                      />
-                    </div>
-
-                    {!atsActive ? (
-                      <button
-                        type="submit"
-                        disabled={atsLoading}
-                        className="w-full py-2 rounded-md bg-secondary hover:brightness-110 text-bg text-xs font-semibold transition-colors disabled:opacity-50"
-                      >
-                        {atsLoading ? "Connecting…" : "Connect"}
-                      </button>
-                    ) : (
-                      <div className="space-y-3 pt-1">
-                        <div className="px-3 py-2 rounded-md bg-success/[0.06] border border-success/20 text-success text-xs font-semibold flex items-center gap-2">
-                          <CheckCircle2 className="w-3.5 h-3.5 shrink-0" />
-                          <span>Connected</span>
-                        </div>
-
-                        {atsSavedUrl && (
-                          <div className="space-y-1">
-                            <span className="text-xs font-semibold text-muted">Webhook endpoint URL</span>
-                            <div className="px-2.5 py-2 rounded-md border border-border bg-bg font-mono text-xs text-fg select-all break-all">
-                              {atsSavedUrl}
-                            </div>
-                            <span className="text-xs text-muted/70 block mt-1">Add this URL to your ATS webhooks to trigger tests automatically.</span>
-                          </div>
-                        )}
-
-                        <button
-                          type="button"
-                          onClick={handleDisconnectAts}
-                          disabled={atsLoading}
-                          className="w-full py-2 rounded-md bg-danger/[0.06] border border-danger/25 hover:bg-danger/[0.1] text-danger text-xs font-semibold transition-colors disabled:opacity-50"
-                        >
-                          {atsLoading ? "Disconnecting…" : "Disconnect"}
-                        </button>
-                      </div>
-                    )}
-                  </form>
-                </div>
-
-                {/* Scheduling — the real flow lives in interview creation now
-                    (IP-90); this card explains it instead of hosting the old
-                    disconnected demo form. */}
-                <div className="rounded-xl border border-border bg-surface p-5 space-y-4">
-                  <div className="flex items-center gap-2.5">
-                    <div className="w-8 h-8 rounded-lg bg-secondary/10 border border-secondary/20 flex items-center justify-center text-secondary">
-                      <Calendar className="w-3.5 h-3.5" />
-                    </div>
-                    <div>
-                      <h4 className="text-sm font-semibold text-fg">Interview scheduling</h4>
-                      <p className="text-xs text-muted">Built into interview creation — no separate sync step.</p>
-                    </div>
-                  </div>
-                  <ul className="space-y-2 text-xs text-muted leading-relaxed">
-                    <li className="flex items-start gap-2">
-                      <CheckCircle2 className="w-3.5 h-3.5 text-success shrink-0 mt-0.5" />
-                      Pick a date &amp; time when you create the interview — the candidate gets an
-                      invite email with the join link, access code, and scheduled slot.
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <CheckCircle2 className="w-3.5 h-3.5 text-success shrink-0 mt-0.5" />
-                      Candidates with an Interviewpad account also get an in-app notification.
-                    </li>
-                  </ul>
-                  <Link
-                    href={`/w/${workspace.slug}/interviews/new`}
-                    className="inline-flex items-center gap-1.5 px-3 py-2 rounded-md bg-secondary hover:brightness-110 text-bg text-xs font-semibold transition-colors"
-                  >
-                    <Plus className="w-3.5 h-3.5" />
-                    Schedule an interview
-                  </Link>
-                </div>
-              </div>
-
-              {/* Sandbox */}
-              <div className="rounded-xl border border-border bg-surface p-5 space-y-4">
-                <div className="flex items-center gap-2.5">
-                  <div className="w-8 h-8 rounded-lg bg-secondary/10 border border-secondary/20 flex items-center justify-center text-secondary">
-                    <Trophy className="w-3.5 h-3.5" />
-                  </div>
-                  <div>
-                    <h4 className="text-sm font-semibold text-fg">Code sandbox</h4>
-                    <p className="text-xs text-muted">Run Python, Go, Java, or JS code in a sandboxed runtime.</p>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
-                  <div className="md:col-span-4 space-y-3">
-                    <div className="space-y-1">
-                      <label className="text-xs font-semibold text-muted">Language</label>
-                      <select
-                        value={sandboxLang}
-                        onChange={(e) => handleLangChange(e.target.value)}
-                        className="w-full px-3 py-2 rounded-md border border-border bg-bg text-fg text-xs focus:outline-none focus:border-secondary/40"
-                      >
-                        <option value="python">Python 3.11</option>
-                        <option value="go">Go 1.21</option>
-                        <option value="java">Java OpenJDK 17</option>
-                        <option value="javascript">JavaScript (Node)</option>
-                      </select>
-                    </div>
-
-                    <div className="space-y-1">
-                      <label className="text-xs font-semibold text-muted">Stdin input <span className="text-muted/60 font-normal">(optional)</span></label>
-                      <textarea
-                        placeholder="Input for the program's stdin…"
-                        value={sandboxInput}
-                        onChange={(e) => setSandboxInput(e.target.value)}
-                        className="w-full h-[80px] p-3 rounded-md border border-border bg-bg text-fg text-xs focus:outline-none focus:border-secondary/40 resize-none"
-                      />
-                    </div>
-
-                    <button
-                      onClick={handleRunSandbox}
-                      disabled={sandboxRunning}
-                      className="w-full py-2 rounded-md bg-secondary hover:brightness-110 text-bg text-xs font-semibold transition-colors disabled:opacity-50"
-                    >
-                      {sandboxRunning ? "Running…" : "Run"}
-                    </button>
-                  </div>
-
-                  <div className="md:col-span-8 flex flex-col gap-3">
-                    <div className="flex-1 flex flex-col gap-1">
-                      <label className="text-xs font-semibold text-muted">Code</label>
-                      <textarea
-                        value={sandboxCode}
-                        onChange={(e) => setSandboxCode(e.target.value)}
-                        className="w-full min-h-[160px] flex-1 p-3 rounded-md border border-border bg-bg text-fg font-mono text-xs focus:outline-none focus:border-secondary/40 leading-relaxed resize-y whitespace-pre"
-                      />
-                    </div>
-
-                    {sandboxOutput && (
-                      <div className="space-y-1">
-                        <span className="text-xs font-semibold text-muted">Output</span>
-                        <pre className="font-mono text-xs text-success bg-bg border border-border rounded-md p-3 max-h-[140px] overflow-y-auto whitespace-pre-wrap leading-relaxed select-all">
-                          {sandboxOutput}
-                        </pre>
-                      </div>
-                    )}
-                  </div>
                 </div>
               </div>
             </div>

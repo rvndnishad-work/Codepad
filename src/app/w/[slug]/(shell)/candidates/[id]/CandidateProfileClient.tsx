@@ -417,7 +417,7 @@ export default function CandidateProfileClient({
       </div>
 
       {tab === "overview" && (
-        <div className="grid lg:grid-cols-[minmax(0,1fr)_360px] gap-6 items-start">
+        <div className="grid xl:grid-cols-[minmax(0,1fr)_340px] gap-6 items-start">
           <div className="flex flex-col gap-5 min-w-0">
             {!isClosed && !archived && (
               <div
@@ -619,7 +619,7 @@ function ResultRow({ r, index }: { r: CandidateResult; index: number }) {
   const link = r.kind === "ai_screening" ? "Read transcript" : r.kind === "interview" ? "Open interview" : r.state === "scored" || r.state === "submitted" ? "Open submission" : "Open";
   return (
     <li
-      className="group relative grid grid-cols-[40px_minmax(0,1fr)] md:grid-cols-[40px_minmax(0,1fr)_180px_156px] items-center gap-x-4 gap-y-3 px-5 py-4 transition-colors hover:bg-panel/40 animate-slide-up motion-reduce:animate-none"
+      className="group relative grid grid-cols-[40px_minmax(0,1fr)] 2xl:grid-cols-[40px_minmax(0,1fr)_180px_156px] items-center gap-x-4 gap-y-3 px-5 py-4 transition-colors hover:bg-panel/40 animate-slide-up motion-reduce:animate-none"
       style={{ animationDelay: `${Math.min(index, 8) * 50}ms`, animationFillMode: "backwards" }}
     >
       <span className={`w-10 h-10 rounded-xl flex items-center justify-center ${tile}`}>
@@ -655,7 +655,9 @@ function ResultRow({ r, index }: { r: CandidateResult; index: number }) {
         </div>
       </div>
 
-      <div className="col-start-2 md:col-start-auto min-w-0">
+      {/* Score and link share one line under the details until the row is wide enough for four columns. */}
+      <div className="col-start-2 flex flex-wrap items-center gap-x-6 gap-y-3 2xl:contents">
+      <div className="flex-1 min-w-[180px] max-w-[320px] 2xl:max-w-none 2xl:col-start-auto 2xl:min-w-0">
         {r.score != null ? (
           <div className="flex flex-col gap-2">
             <div className="flex items-baseline gap-1.5">
@@ -683,7 +685,7 @@ function ResultRow({ r, index }: { r: CandidateResult; index: number }) {
         )}
       </div>
 
-      <div className="col-start-2 md:col-start-auto md:justify-self-end">
+      <div className="ml-auto 2xl:ml-0 2xl:col-start-auto 2xl:justify-self-end">
         {r.href && (
           <a
             href={r.href}
@@ -693,6 +695,7 @@ function ResultRow({ r, index }: { r: CandidateResult; index: number }) {
             <ArrowRight className="w-3.5 h-3.5 text-subtle transition-transform group-hover:translate-x-0.5 motion-reduce:transition-none" aria-hidden />
           </a>
         )}
+      </div>
       </div>
     </li>
   );

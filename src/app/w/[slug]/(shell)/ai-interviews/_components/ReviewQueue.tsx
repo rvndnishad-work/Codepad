@@ -209,7 +209,7 @@ export default function ReviewQueue({
         </div>
       ) : (
         <div className="rounded-xl border border-border bg-surface overflow-hidden">
-          <div role="row" className="hidden md:flex items-center gap-4 h-10 px-4 border-b border-border text-xs text-subtle">
+          <div role="row" className="hidden min-[1400px]:flex items-center gap-3 h-10 px-4 border-b border-border text-xs text-subtle">
             {invitedView ? (
               <input
                 type="checkbox"
@@ -222,7 +222,7 @@ export default function ReviewQueue({
             ) : (
               <span className="w-4" />
             )}
-            <span className="w-[260px] shrink-0">Candidate</span>
+            <span className="w-[210px] shrink-0">Candidate</span>
             <span className="flex-1 min-w-0">Screening</span>
             {invitedView || query.view === "progress" ? (
               <>
@@ -407,13 +407,13 @@ function Row({
       }`}
     >
       {/* Desktop row */}
-      <div className="hidden md:flex items-center gap-4 min-h-16 px-4 py-2">
+      <div className="hidden min-[1400px]:flex items-center gap-3 min-h-16 px-4 py-2">
         {selectable ? (
           <input type="checkbox" aria-label={`Select ${r.name}`} checked={selected} onChange={onSelect} className="w-4 h-4 accent-secondary relative z-10" />
         ) : (
           <span className="w-4" />
         )}
-        <Link href={href} className="w-[260px] shrink-0 flex items-center gap-3 min-w-0 after:absolute after:inset-0">
+        <Link href={href} className="w-[210px] shrink-0 flex items-center gap-3 min-w-0 after:absolute after:inset-0">
           <Avatar name={r.name} />
           <span className="flex flex-col min-w-0">
             <span className="text-sm font-medium text-fg truncate">{r.name}</span>
@@ -450,7 +450,7 @@ function Row({
       </div>
 
       {/* Phone card */}
-      <div className="md:hidden flex items-start gap-3 px-4 py-3.5">
+      <div className="min-[1400px]:hidden flex items-start gap-3 px-4 py-3.5">
         {selectable && (
           <input type="checkbox" aria-label={`Select ${r.name}`} checked={selected} onChange={onSelect} className="mt-2 w-4 h-4 accent-secondary relative z-10" />
         )}

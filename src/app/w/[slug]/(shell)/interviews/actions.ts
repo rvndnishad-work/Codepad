@@ -391,3 +391,42 @@ export async function setInterviewQuestionsAction(slug: string, sessionId: strin
     return fail(err);
   }
 }
+
+/**
+ * Delete one interview and its report: scorecard, notes, saved code and
+ * integrity data. The candidate and their other results stay. Open to the
+ * host and to members who manage interviews.
+ */
+export async function deleteInterviewAction(slug: string, id: string): Promise<Result> {
+  try {
+    const a = await loadActor(slug);
+    const s = await prisma.interviewSession.findFirst({
+      where: { id: String(id).slice(0, 40), workspaceId: a.workspace.id, type: { not: "take-home" } },
+      select: { id: true, userId: true, title: true, candidateName: true, candidateId: true },
+    });
+    if (!s) throw new ActionError("This interview no longer exists.");
+    const member = a.workspace.members.find((m) => m.userId === a.userId)!;
+    if (s.userId !== a.userId && !(await canMember(member, "interview:manage"))) {
+      throw new ActionError("Only the host or someone who manages interviews can delete it.");
+    }
+    // Attempts point at the session by id only, so they go first; the rest cascades.
+    await prisma.$transaction([
+      prisma.challengeAttempt.deleteMany({ where: { sessionId: s.id } }),
+      prisma.interviewSession.delete({ where: { id: s.id } }),
+    ]);
+    void writeWorkspaceAuditEntry({
+      workspaceId: a.workspace.id,
+      actorUserId: a.userId,
+      actorEmail: a.email,
+      action: WORKSPACE_AUDIT_ACTIONS.INTERVIEW_DELETED,
+      targetType: "interviewSession",
+      targetId: s.id,
+      meta: { title: s.title, candidateName: s.candidateName },
+    });
+    revalidatePath(`/w/${slug}/interviews`, "layout");
+    if (s.candidateId) revalidatePath(`/w/${slug}/candidates/${s.candidateId}`);
+    return { ok: true };
+  } catch (err) {
+    return fail(err);
+  }
+}

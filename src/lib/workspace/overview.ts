@@ -193,7 +193,7 @@ export function buildOverview(input: OverviewInput, now: Date = new Date()): Ove
       detail: `${s.title} · ${new Date(s.scheduledAt!).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })}`,
       at: s.scheduledAt!,
       action: "Open room",
-      href: `/interview/${s.shareToken}`,
+      href: `${base}/interviews/${s.id}`,
     }));
 
   const oldestFirst = (a: AttentionItem, b: AttentionItem) => a.at.localeCompare(b.at);
@@ -300,7 +300,7 @@ export function buildOverview(input: OverviewInput, now: Date = new Date()): Ove
     at: s.scheduledAt,
     name: s.candidateName || "Unnamed candidate",
     detail: [s.title, s.interviewerName].filter(Boolean).join(" · "),
-    href: `/interview/${s.shareToken}`,
+    href: `${base}/interviews/${s.id}`,
   }));
 
   return { kpis, attention, upcoming, weekly, trends, scores, activity };

@@ -213,14 +213,14 @@ export default function ReviewQueue({
         </div>
       ) : (
         <div className="rounded-xl border border-border bg-surface overflow-hidden">
-          <div role="row" className="hidden lg:flex items-center gap-4 h-10 px-4 border-b border-border text-xs text-subtle">
-            <span className="w-[220px] shrink-0">Candidate</span>
+          <div role="row" className="hidden min-[1400px]:flex items-center gap-3 h-10 px-4 border-b border-border text-xs text-subtle">
+            <span className="min-[1400px]:w-[200px] shrink-0">Candidate</span>
             <span className="flex-1 min-w-0">Take home</span>
-            <span className="w-[170px] shrink-0">Score</span>
-            <span className="w-[100px] shrink-0">Time used</span>
-            <span className="w-[120px] shrink-0">Integrity</span>
-            <span className="w-[88px] shrink-0">Submitted</span>
-            <span className="w-[88px] shrink-0" />
+            <span className="min-[1400px]:w-[170px] shrink-0">Score</span>
+            <span className="min-[1400px]:w-[100px] shrink-0">Time used</span>
+            <span className="min-[1400px]:w-[120px] shrink-0">Integrity</span>
+            <span className="min-[1400px]:w-[88px] shrink-0">Submitted</span>
+            <span className="min-[1400px]:w-[88px] shrink-0" />
           </div>
           <ul>
             {rows.map((r, i) => (
@@ -252,30 +252,30 @@ function QueueRow({ r, href, focused, now, decided }: { r: TakeHomeRow; href: st
   return (
     <li
       ref={ref}
-      className={`group relative flex flex-wrap lg:flex-nowrap items-center gap-x-4 gap-y-2 px-4 py-3 lg:h-[68px] lg:py-0 border-t border-border first:border-t-0 transition-colors hover:bg-panel/60 ${
+      className={`group relative flex flex-wrap min-[1400px]:flex-nowrap items-center gap-x-4 min-[1400px]:gap-x-3 gap-y-2 px-4 py-3 min-[1400px]:h-[68px] min-[1400px]:py-0 border-t border-border first:border-t-0 transition-colors hover:bg-panel/60 ${
         focused ? "bg-panel/80 shadow-[inset_2px_0_0_rgb(var(--c-accent-2))]" : ""
       }`}
     >
-      <Link href={href} className="flex items-center gap-3 w-full lg:w-[220px] shrink-0 min-w-0 after:absolute after:inset-0" aria-label={`Open ${r.candidate.name}`}>
+      <Link href={href} className="flex items-center gap-3 w-full min-[1400px]:w-[200px] shrink-0 min-w-0 after:absolute after:inset-0" aria-label={`Open ${r.candidate.name}`}>
         <Avatar name={r.candidate.name} size={34} />
         <span className="min-w-0">
           <span className="block text-sm font-medium text-fg truncate">{r.candidate.name}</span>
           {r.candidate.email && <span className="block text-[13px] text-subtle truncate">{r.candidate.email}</span>}
         </span>
       </Link>
-      <span className="flex-1 min-w-0">
+      <span className="w-full pl-[46px] min-[1400px]:pl-0 min-[1400px]:w-auto min-[1400px]:flex-1 min-w-0">
         <span className="block text-sm text-fg truncate">{r.title}</span>
         <span className="block text-[13px] text-subtle">{answeredLabel(r)}</span>
       </span>
-      <span className="w-[170px] shrink-0">
+      <span className="pl-[46px] min-[1400px]:pl-0 min-[1400px]:w-[170px] shrink-0">
         <ScoreMark score={r.score} width={44} chip />
       </span>
-      <span className="w-[100px] shrink-0 text-[13px] text-muted tabular-nums">{timeLabel(r)}</span>
-      <span className="w-[120px] shrink-0">
+      <span className="min-[1400px]:w-[100px] shrink-0 text-[13px] text-muted tabular-nums">{timeLabel(r)}</span>
+      <span className="min-[1400px]:w-[120px] shrink-0">
         <IntegrityDot level={r.integrity.level} label={r.integrity.label} />
       </span>
-      <span className="w-[88px] shrink-0 text-[13px] text-muted">{r.submittedAt ? relativeTime(r.submittedAt, now) : ""}</span>
-      <span className="relative w-[88px] shrink-0 flex justify-end">
+      <span className="min-[1400px]:w-[88px] shrink-0 text-[13px] text-muted">{r.submittedAt ? relativeTime(r.submittedAt, now) : ""}</span>
+      <span className="relative ml-auto min-[1400px]:ml-0 min-[1400px]:w-[88px] shrink-0 flex justify-end">
         {decided ? (
           <ToneChip tone={r.decision === "passed" ? "success" : "danger"}>{r.decision === "passed" ? "Passed" : "Not passed"}</ToneChip>
         ) : (

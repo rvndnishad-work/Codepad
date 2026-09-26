@@ -153,7 +153,7 @@ export default function LobbyClient({ data }: { data: RoomData }) {
               seats={seats}
               inRoom={inRoom}
               isInterviewer={isInterviewer}
-              reportHref={isInterviewer ? `/interview/${iv.id}/report` : null}
+              reportHref={isInterviewer ? (viewer.via === "member" ? `/w/${workspace.slug}/interviews/${iv.id}/report` : `/interview/${iv.id}/report`) : null}
               disabled={blocking || snap.connection === "denied"}
               onEnter={enter}
               meetingUrl={iv.meetingUrl}

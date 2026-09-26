@@ -95,14 +95,14 @@ export default function AllTakeHomes({
         </div>
       ) : (
         <div className="rounded-xl border border-border bg-surface overflow-hidden">
-          <div role="row" className="hidden lg:flex items-center gap-4 h-10 px-4 border-b border-border text-xs text-subtle">
-            <span className="w-[220px] shrink-0">Candidate</span>
+          <div role="row" className="hidden xl:flex items-center gap-3 h-10 px-4 border-b border-border text-xs text-subtle">
+            <span className="xl:w-[200px] shrink-0">Candidate</span>
             <span className="flex-1 min-w-0">Take home</span>
-            <span className="w-[110px] shrink-0">Status</span>
-            <span className="w-[104px] shrink-0">Progress</span>
-            <span className="w-[96px] shrink-0">Deadline</span>
-            <span className="w-[48px] shrink-0">Score</span>
-            <span className="w-[140px] shrink-0" />
+            <span className="xl:w-[110px] shrink-0">Status</span>
+            <span className="xl:w-[104px] shrink-0">Progress</span>
+            <span className="xl:w-[96px] shrink-0">Deadline</span>
+            <span className="xl:w-[48px] shrink-0">Score</span>
+            <span className="xl:w-[140px] shrink-0" />
           </div>
           <ul>
             {rows.map((r) => (
@@ -147,29 +147,30 @@ function Row({ r, slug, now, canCreate }: { r: TakeHomeRow; slug: string; now: D
   const deadline = deadlineLabel(r, now);
   const sent = `Sent ${relativeTime(r.sentAt, now).toLowerCase()}${r.sentBy ? ` by ${r.sentBy.split(/\s+/)[0]}` : ""}`;
   return (
-    <li className="group flex flex-wrap lg:flex-nowrap items-center gap-x-4 gap-y-2 px-4 py-3 lg:h-16 lg:py-0 border-t border-border first:border-t-0 transition-colors hover:bg-panel/60">
-      <Link href={report} className="flex items-center gap-3 w-full lg:w-[220px] shrink-0 min-w-0">
+    <li className="group flex flex-wrap xl:flex-nowrap items-center gap-x-4 xl:gap-x-3 gap-y-2 px-4 py-3 xl:h-16 xl:py-0 border-t border-border first:border-t-0 transition-colors hover:bg-panel/60">
+      <Link href={report} className="flex items-center gap-3 w-full xl:w-[200px] shrink-0 min-w-0">
         <Avatar name={r.candidate.name} size={34} />
         <span className="min-w-0">
           <span className="block text-sm font-medium text-fg truncate group-hover:underline decoration-border-strong underline-offset-4">{r.candidate.name}</span>
           {r.candidate.email && <span className="block text-[13px] text-subtle truncate">{r.candidate.email}</span>}
         </span>
       </Link>
-      <span className="flex-1 min-w-0">
+      <span className="w-full pl-[46px] xl:pl-0 xl:w-auto xl:flex-1 min-w-0">
         <span className="block text-sm text-fg truncate">{r.title}</span>
         <span className="block text-[13px] text-subtle truncate">{sent}</span>
       </span>
-      <span className="w-[110px] shrink-0">
+      <span className="pl-[46px] xl:pl-0 xl:w-[110px] shrink-0">
         <StateDot state={r.state} decision={r.decision} />
       </span>
       <span className="w-[104px] shrink-0">
         <Progress r={r} />
       </span>
-      <span className={`w-[96px] shrink-0 text-[13px] ${deadline.cls}`}>{deadline.text}</span>
-      <span className={`w-[48px] shrink-0 text-sm tabular-nums ${r.score == null ? "text-subtle text-[13px]" : r.score >= 60 ? "text-fg font-semibold" : "text-warning font-semibold"}`}>
+      <span className={`xl:w-[96px] shrink-0 text-[13px] ${deadline.cls}`}>{deadline.text}</span>
+      <span className={`xl:w-[48px] shrink-0 text-sm tabular-nums ${r.score == null ? "text-subtle text-[13px]" : r.score >= 60 ? "text-fg font-semibold" : "text-warning font-semibold"}`}>
+        <span className="xl:hidden text-[13px] font-normal text-subtle">Score </span>
         {r.score ?? "None"}
       </span>
-      <span className="w-full lg:w-[140px] shrink-0 flex justify-end gap-1.5">
+      <span className="ml-auto xl:ml-0 xl:w-[140px] shrink-0 flex justify-end gap-1.5">
         {r.state === "submitted" && (
           <Btn href={report}>
             {r.needsReview ? "Review" : "Open"}

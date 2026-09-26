@@ -21,6 +21,8 @@ import { isInterviewerFor } from "@/lib/interview/wizard";
 import { guestFor } from "@/lib/interview/guests";
 import { roomViewer } from "@/lib/interview/room-access";
 import { headers } from "next/headers";
+import { loadInterviewReport } from "@/lib/interview/report-server";
+import InterviewReportView from "@/app/w/[slug]/(shell)/interviews/[id]/report/InterviewReportView";
 
 export const metadata = {
   title: "Executive Candidate Report — Interviewpad Recruiter",
@@ -70,6 +72,24 @@ export default async function CandidateReportPage({
       redirect(`/login?next=${encodeURIComponent(`/interview/${id}/report`)}`);
     }
     notFound();
+  }
+
+  // Workspace interviews have their report in the workspace. Members go
+  // there; interviewers who were emailed a room pass (not members) read the
+  // same report here, without the workspace around it.
+  if (interview.workspaceId) {
+    const [ws, member] = await Promise.all([
+      prisma.workspace.findUnique({ where: { id: interview.workspaceId }, select: { slug: true } }),
+      session?.user?.id ? prisma.workspaceMember.findFirst({ where: { workspaceId: interview.workspaceId, userId: session.user.id }, select: { id: true } }) : null,
+    ]);
+    if (ws && member) redirect(`/w/${ws.slug}/interviews/${interview.id}/report`);
+    const report = await loadInterviewReport(interview.id);
+    if (!report) notFound();
+    return (
+      <div className="min-h-screen bg-bg text-fg">
+        <InterviewReportView report={report} slug={null} canDelete={false} standalone />
+      </div>
+    );
   }
 
   // Parse Rubric

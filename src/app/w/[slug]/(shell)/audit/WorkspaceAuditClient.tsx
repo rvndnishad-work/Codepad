@@ -181,6 +181,10 @@ const ACTION_META: Record<string, { label: string; tone: string }> = {
     label: "Take-home template deleted",
     tone: "border-danger/30 bg-danger/[0.05] text-danger",
   },
+  INTERVIEW_DELETED: {
+    label: "Interview deleted",
+    tone: "border-danger/30 bg-danger/[0.05] text-danger",
+  },
   ATS_INTEGRATION_CONNECTED: {
     label: "ATS connected / updated",
     tone: "border-success/30 bg-success/[0.06] text-success",

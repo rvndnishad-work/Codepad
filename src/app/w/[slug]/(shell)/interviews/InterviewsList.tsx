@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 import { ArrowRight, Copy, Inbox, ListChecks, Plus, Search, Video } from "lucide-react";
 import { humanize } from "@/lib/workspace/display";
 import type { QuestionState } from "@/lib/interview/wizard";
@@ -50,6 +51,7 @@ export default function InterviewsList({ slug, rows, view: initialView, q: initi
   const [view, setView] = useState<View>(VIEWS.some((v) => v.id === initialView) ? (initialView as View) : "all");
   const [q, setQ] = useState(initialQ);
   const [toasts, toast] = useToasts();
+  const router = useRouter();
   const [origin, setOrigin] = useState("");
   // Built after mount so the server and client render the same markup.
   useEffect(() => setOrigin(window.location.origin), []);
@@ -139,18 +141,27 @@ export default function InterviewsList({ slug, rows, view: initialView, q: initi
         </div>
       ) : (
         <div className="rounded-xl border border-border bg-surface overflow-hidden">
-          <div role="row" className="hidden lg:flex items-center gap-4 h-10 px-4 border-b border-border text-xs text-subtle">
-            <span className="w-[240px] shrink-0">Candidate</span>
+          {/* Columns only from xl up: with the sidebar open, narrower screens (tablets) get stacked rows. */}
+          <div role="row" className="hidden xl:flex items-center gap-3 h-10 px-4 border-b border-border text-xs text-subtle">
+            <span className="w-[190px] shrink-0">Candidate</span>
             <span className="flex-1 min-w-0">Interview</span>
-            <span className="w-[160px] shrink-0">Interviewer</span>
-            <span className="w-[120px] shrink-0">Status</span>
-            <span className="w-[90px] shrink-0">Date</span>
-            <span className="w-[176px] shrink-0" />
+            <span className="w-[130px] shrink-0">Interviewer</span>
+            <span className="w-[110px] shrink-0">Status</span>
+            <span className="w-[72px] shrink-0">Date</span>
+            <span className="w-[172px] shrink-0" />
           </div>
           <ul>
             {shown.map((r) => (
-              <li key={r.id} className="group flex flex-wrap lg:flex-nowrap items-center gap-x-4 gap-y-2 px-4 py-3 lg:h-16 lg:py-0 border-t border-border first:border-t-0 hover:bg-panel/60 transition-colors">
-                <span className="flex items-center gap-3 w-full lg:w-[240px] shrink-0 min-w-0">
+              <li
+                key={r.id}
+                // The whole row opens the room or the report; links and buttons inside keep their own target.
+                onClick={(e) => {
+                  if (!r.href || (e.target as HTMLElement).closest("a,button")) return;
+                  router.push(r.href);
+                }}
+                className={`group flex flex-wrap xl:flex-nowrap items-center gap-x-3 gap-y-1.5 px-4 py-3.5 xl:h-16 xl:py-0 border-t border-border first:border-t-0 hover:bg-panel/60 transition-colors ${r.href ? "cursor-pointer" : ""}`}
+              >
+                <span className="flex items-center gap-3 w-full xl:w-[190px] shrink-0 min-w-0">
                   <Avatar name={r.candidateName ?? "?"} size={34} />
                   {r.candidateId ? (
                     <Link href={`/w/${slug}/candidates/${r.candidateId}`} className="text-sm font-medium text-fg truncate hover:underline underline-offset-4">
@@ -160,18 +171,18 @@ export default function InterviewsList({ slug, rows, view: initialView, q: initi
                     <span className="text-sm font-medium text-fg truncate">{r.candidateName ?? "No candidate yet"}</span>
                   )}
                 </span>
-                <span className="flex-1 min-w-[180px]">
+                <span className="w-full pl-[46px] xl:pl-0 xl:w-auto xl:flex-1 min-w-0">
                   <span className="block text-sm text-fg truncate">{r.title}</span>
                   <span className="block text-[13px] text-subtle truncate">
                     {r.format ?? humanize(r.type)}, {fmtLength(r.minutes)}
                     {r.questions === "needed" && r.questionsOwner ? `, ${r.questionsOwner} picks questions` : ""}
                   </span>
                 </span>
-                <span className="w-[160px] shrink-0 text-[13px] text-muted truncate" title={r.panel.length ? `Panel: ${r.panel.join(", ")}` : undefined}>
+                <span className="pl-[46px] xl:pl-0 max-w-[220px] xl:max-w-none xl:w-[130px] shrink-0 text-[13px] text-muted truncate" title={r.panel.length ? `Panel: ${r.panel.join(", ")}` : undefined}>
                   {r.interviewer ?? "Unknown"}
                   {r.panel.length > 0 && <span className="text-subtle"> +{r.panel.length}</span>}
                 </span>
-                <span className="w-[120px] shrink-0 flex flex-col">
+                <span className="xl:w-[110px] shrink-0 flex flex-wrap xl:flex-col gap-x-3">
                   <span className="inline-flex items-center gap-2 text-[13px] text-muted">
                     <span aria-hidden className={`w-2 h-2 rounded-full ${STATE[r.state].dot}`} />
                     {STATE[r.state].label}
@@ -182,8 +193,8 @@ export default function InterviewsList({ slug, rows, view: initialView, q: initi
                     r.verdict && <span className="text-xs text-subtle">{humanize(r.verdict)}</span>
                   )}
                 </span>
-                <span className="w-[90px] shrink-0 text-[13px] text-muted">{r.when ? fmtDate(r.when) : <span className="text-subtle">No time</span>}</span>
-                <span className="w-[176px] shrink-0 flex justify-end gap-1.5">
+                <span className="xl:w-[72px] shrink-0 text-[13px] text-muted">{r.when ? fmtDate(r.when) : <span className="text-subtle">No time</span>}</span>
+                <span className="ml-auto xl:ml-0 xl:w-[172px] shrink-0 flex justify-end gap-1.5">
                   {r.state === "scheduled" && (
                     <button
                       type="button"

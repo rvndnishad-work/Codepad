@@ -307,7 +307,7 @@ function UpcomingCard({ items, slug, className }: { items: { id: string; at: str
             <CalendarDays className="w-5 h-5" />
           </span>
           <p className="text-sm text-muted">No live interviews scheduled.</p>
-          <ButtonLink href={`/interview/new?workspaceSlug=${slug}`} icon={Video}>
+          <ButtonLink href={`/w/${slug}/interviews/new`} icon={Video}>
             Schedule one
           </ButtonLink>
         </div>

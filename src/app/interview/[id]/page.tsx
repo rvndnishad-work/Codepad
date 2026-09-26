@@ -7,9 +7,13 @@ import InterviewRunner, {
   type SessionPlayground,
 } from "./InterviewRunner";
 import MobileLobby from "@/components/MobileLobby";
+import InterviewerGuide, { type GuideData } from "./InterviewerGuide";
+import { parseQuestionnaire } from "@/lib/ai-interview/questionnaire";
+import { questionState } from "@/lib/interview/wizard";
 import { shouldRenderMobileLobby } from "@/lib/device";
 
 import { validatePageAccess } from "@/lib/settings";
+import { isInterviewerFor } from "@/lib/interview/wizard";
 
 export const metadata = {
   title: "Interview Session — Interviewpad",
@@ -60,7 +64,8 @@ export default async function InterviewRunPage({
   if (!interview) notFound();
 
   // Access: owner OR holder of correct shareToken (read-only).
-  const isOwner = !!session?.user?.id && session.user.id === interview.userId;
+  // Host and co-interviewers (panel) get the owner's interviewer view.
+  const isOwner = isInterviewerFor(interview, session?.user?.id);
   const hasShareToken = !!token && token === interview.shareToken;
   if (!isOwner && !hasShareToken) {
     if (!session?.user?.id) {
@@ -212,7 +217,38 @@ export default async function InterviewRunPage({
     }),
   ]);
 
+  // Interviewer-only guide: brief and question guide. Built only for the
+  // host and panel, so reference answers never reach the candidate.
+  let guide: GuideData | null = null;
+  if (interviewerView && isOwner && interview.workspaceId && (interview.format || interview.guideTemplateId || interview.interviewerBrief)) {
+    const tpl = interview.guideTemplateId
+      ? await prisma.aIInterviewTemplate.findFirst({
+          where: { id: interview.guideTemplateId, workspaceId: interview.workspaceId },
+          select: { title: true, testsCode: true },
+        })
+      : null;
+    const pending =
+      interview.status === "scheduled" &&
+      questionState({
+        questionPlan: interview.questionPlan,
+        roundCount: challengeIds.length + playgroundIds.length + promptScenarioIds.length,
+        guideTemplateId: interview.guideTemplateId,
+      }) === "needed";
+    const ws = pending ? await prisma.workspace.findUnique({ where: { id: interview.workspaceId }, select: { slug: true } }) : null;
+    guide = {
+      sessionId: interview.id,
+      format: interview.format,
+      brief: interview.interviewerBrief,
+      title: tpl?.title ?? null,
+      items: tpl ? parseQuestionnaire(tpl.testsCode).map((i) => ({ q: i.q, a: i.a })) : [],
+      pending,
+      pickHref: ws ? `/w/${ws.slug}/interviews/${interview.id}/questions` : null,
+    };
+  }
+
   return (
+    <>
+    {guide && <InterviewerGuide guide={guide} />}
     <InterviewRunner
       interview={{
         id: interview.id,
@@ -263,5 +299,6 @@ export default async function InterviewRunPage({
       interviewerView={interviewerView}
       isOwner={isOwner}
     />
+    </>
   );
 }

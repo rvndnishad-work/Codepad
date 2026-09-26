@@ -17,6 +17,7 @@ import {
   MonitorSmartphone,
   ScanEye,
 } from "lucide-react";
+import { isInterviewerFor } from "@/lib/interview/wizard";
 
 export const metadata = {
   title: "Executive Candidate Report — Interviewpad Recruiter",
@@ -44,7 +45,7 @@ export default async function CandidateReportPage({
   if (!interview) notFound();
 
   // Access: owner OR holder of correct shareToken.
-  const isOwner = !!session?.user?.id && session.user.id === interview.userId;
+  const isOwner = isInterviewerFor(interview, session?.user?.id);
   const hasShareToken = !!token && token === interview.shareToken;
   if (!isOwner && !hasShareToken) {
     if (!session?.user?.id) {

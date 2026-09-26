@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { loadTakeHomeAccess } from "../take-homes/_lib";
+import { formatOf, isInterviewerFor, parsePanel, questionState } from "@/lib/interview/wizard";
 import InterviewsList, { type InterviewRow } from "./InterviewsList";
 
 type Props = { params: Promise<{ slug: string }>; searchParams: Promise<{ view?: string; q?: string }> };
@@ -9,7 +10,7 @@ export const metadata = { title: "Interviews", robots: { index: false, follow: f
 export default async function InterviewsPage({ params, searchParams }: Props) {
   const { slug } = await params;
   const sp = await searchParams;
-  const { workspace } = await loadTakeHomeAccess(slug, `/w/${slug}/interviews`);
+  const { workspace, userId } = await loadTakeHomeAccess(slug, `/w/${slug}/interviews`);
   const sessions = await prisma.interviewSession.findMany({
     // Take-homes are InterviewSession rows too; they live under Take home.
     where: { workspaceId: workspace.id, type: { not: "take-home" } },
@@ -30,9 +31,29 @@ export default async function InterviewsPage({ params, searchParams }: Props) {
       startedAt: true,
       finishedAt: true,
       createdAt: true,
+      format: true,
+      panelJson: true,
+      questionPlan: true,
+      questionsOwnerId: true,
+      guideTemplateId: true,
+      challengeIds: true,
+      playgroundIds: true,
+      promptScenarioIds: true,
+      userId: true,
       user: { select: { name: true, email: true } },
     },
   });
+  const count = (raw: string) => {
+    try {
+      const v = JSON.parse(raw);
+      return Array.isArray(v) ? v.length : 0;
+    } catch {
+      return 0;
+    }
+  };
+  const peopleIds = [...new Set(sessions.flatMap((s) => [...parsePanel(s.panelJson), ...(s.questionsOwnerId ? [s.questionsOwnerId] : [])]))];
+  const people = peopleIds.length ? await prisma.user.findMany({ where: { id: { in: peopleIds } }, select: { id: true, name: true, email: true } }) : [];
+  const nameOf = new Map(people.map((u) => [u.id, u.name ?? u.email ?? "Teammate"]));
 
   const rows: InterviewRow[] = sessions.map((s) => {
     const done = !!s.finishedAt || s.status === "completed" || s.status === "finished";
@@ -45,10 +66,24 @@ export default async function InterviewsPage({ params, searchParams }: Props) {
       state: done ? "completed" : s.startedAt ? "live" : "scheduled",
       verdict: s.verdict,
       shortCode: s.shortCode,
-      href: `/interview/${s.shareToken}`,
+      // Only the host and panel open the interviewer side. The share token
+      // gives the candidate side, so it is only ever copied, never opened here.
+      href: isInterviewerFor(s, userId) ? (done ? `/interview/${s.id}/report` : `/interview/${s.id}`) : done ? `/interview/${s.id}/report?token=${s.shareToken}` : null,
+      candidateLink: `/interview/${s.id}?token=${s.shareToken}`,
       minutes: Math.round(s.totalSec / 60),
-      when: (s.finishedAt ?? s.startedAt ?? s.scheduledAt ?? s.createdAt).toISOString(),
+      when: (s.finishedAt ?? s.startedAt ?? s.scheduledAt)?.toISOString() ?? (s.format ? null : s.createdAt.toISOString()),
       interviewer: s.user.name ?? s.user.email,
+      panel: parsePanel(s.panelJson).map((id) => nameOf.get(id) ?? "Teammate"),
+      format: formatOf(s.format)?.label ?? null,
+      questions: done
+        ? "ready"
+        : questionState({
+            questionPlan: s.questionPlan,
+            roundCount: count(s.challengeIds) + count(s.playgroundIds) + count(s.promptScenarioIds),
+            guideTemplateId: s.guideTemplateId,
+          }),
+      questionsOwner: s.questionsOwnerId ? (nameOf.get(s.questionsOwnerId) ?? "A teammate") : null,
+      mineToPick: s.questionsOwnerId === userId,
     };
   });
 

@@ -6,6 +6,7 @@ import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import CollaborativePlaygroundLoader from "@/components/CollaborativePlaygroundLoader";
 import SessionTimer from "@/components/SessionTimer";
+import { isInterviewerFor } from "@/lib/interview/wizard";
 
 export const metadata = {
   title: "Interview Playground — Interviewpad",
@@ -35,14 +36,14 @@ export default async function InterviewPlaygroundPage({
       startedAt: true,
       status: true,
       creatorRole: true,
+      panelJson: true,
     },
   });
   if (!interview) notFound();
   if (interview.sourceType !== "playground") notFound();
 
   const session = await auth().catch(() => null);
-  const isOwner =
-    !!session?.user?.id && session.user.id === interview.userId;
+  const isOwner = isInterviewerFor(interview, session?.user?.id);
   const hasShareToken = !!token && token === interview.shareToken;
   if (!isOwner && !hasShareToken) {
     if (!session?.user?.id) {

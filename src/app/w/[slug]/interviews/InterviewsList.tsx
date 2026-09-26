@@ -1,10 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
-import { ArrowRight, Inbox, Plus, Search, Video } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { ArrowRight, Copy, Inbox, ListChecks, Plus, Search, Video } from "lucide-react";
 import { humanize } from "@/lib/workspace/display";
-import { Avatar, Btn, fmtDate, inputCls } from "../candidates/_components/ui";
+import type { QuestionState } from "@/lib/interview/wizard";
+import { Avatar, Btn, fmtDate, inputCls, useToasts } from "../candidates/_components/ui";
 
 export type InterviewRow = {
   id: string;
@@ -15,19 +16,28 @@ export type InterviewRow = {
   state: "scheduled" | "live" | "completed";
   verdict: string | null;
   shortCode: string | null;
-  href: string;
+  /** Interviewer side (host and panel) or the report; null when neither applies. */
+  href: string | null;
+  candidateLink: string;
   minutes: number;
-  when: string;
+  /** Null while a scheduled interview has no time yet. */
+  when: string | null;
   interviewer: string | null;
+  panel: string[];
+  format: string | null;
+  questions: QuestionState;
+  questionsOwner: string | null;
+  mineToPick: boolean;
 };
 
-type View = "all" | InterviewRow["state"];
+type View = "all" | InterviewRow["state"] | "questions";
 
 const VIEWS: { id: View; label: string }[] = [
   { id: "all", label: "All" },
   { id: "scheduled", label: "Scheduled" },
   { id: "live", label: "Live now" },
   { id: "completed", label: "Completed" },
+  { id: "questions", label: "Needs questions" },
 ];
 
 const STATE: Record<InterviewRow["state"], { label: string; dot: string }> = {
@@ -39,15 +49,23 @@ const STATE: Record<InterviewRow["state"], { label: string; dot: string }> = {
 export default function InterviewsList({ slug, rows, view: initialView, q: initialQ }: { slug: string; rows: InterviewRow[]; view: string; q: string }) {
   const [view, setView] = useState<View>(VIEWS.some((v) => v.id === initialView) ? (initialView as View) : "all");
   const [q, setQ] = useState(initialQ);
+  const [toasts, toast] = useToasts();
+  const [origin, setOrigin] = useState("");
+  // Built after mount so the server and client render the same markup.
+  useEffect(() => setOrigin(window.location.origin), []);
   const counts = useMemo(() => {
-    const c: Record<View, number> = { all: rows.length, scheduled: 0, live: 0, completed: 0 };
-    for (const r of rows) c[r.state]++;
+    const c: Record<View, number> = { all: rows.length, scheduled: 0, live: 0, completed: 0, questions: 0 };
+    for (const r of rows) {
+      c[r.state]++;
+      if (r.questions === "needed") c.questions++;
+    }
     return c;
   }, [rows]);
+  const mine = rows.filter((r) => r.mineToPick && r.questions === "needed").length;
   const needle = q.trim().toLowerCase();
   const shown = rows.filter(
     (r) =>
-      (view === "all" || r.state === view) &&
+      (view === "all" || (view === "questions" ? r.questions === "needed" : r.state === view)) &&
       (!needle || [r.title, r.candidateName ?? "", r.interviewer ?? "", r.shortCode ?? ""].some((v) => v.toLowerCase().includes(needle))),
   );
 
@@ -64,14 +82,28 @@ export default function InterviewsList({ slug, rows, view: initialView, q: initi
             </span>
             <div className="min-w-0">
               <h1 className="text-[26px] font-semibold tracking-tight text-fg">Interviews</h1>
-              <p className="text-[15px] text-muted mt-1 max-w-[620px]">Live pair-programming rounds your team runs with candidates, with the code and notes from each one.</p>
+              <p className="text-[15px] text-muted mt-1 max-w-[620px]">Live interviews your team runs with candidates: coding rounds, technical discussions and conversations, with the notes from each one.</p>
             </div>
           </div>
-          <Btn variant="primary" size="md" icon={Plus} href={`/interview/new?workspaceSlug=${slug}`}>
+          <Btn variant="primary" size="md" icon={Plus} href={`/w/${slug}/interviews/new`}>
             New interview
           </Btn>
         </div>
       </section>
+
+      {mine > 0 && (
+        <button
+          type="button"
+          onClick={() => setView("questions")}
+          className="flex items-center gap-3 rounded-xl border border-warning/35 bg-warning/[0.06] px-4 py-3 text-left hover:bg-warning/[0.1] transition-colors"
+        >
+          <ListChecks className="w-4 h-4 text-warning shrink-0" aria-hidden />
+          <span className="flex-1 text-[14px] text-fg">
+            You were asked to pick the questions for {mine === 1 ? "1 interview" : `${mine} interviews`}.
+          </span>
+          <ArrowRight className="w-4 h-4 text-muted" aria-hidden />
+        </button>
+      )}
 
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div role="tablist" aria-label="Filter interviews" className="inline-flex p-[3px] rounded-[10px] border border-border-strong bg-surface gap-0.5 max-w-full overflow-x-auto">
@@ -103,7 +135,7 @@ export default function InterviewsList({ slug, rows, view: initialView, q: initi
         <div className="rounded-2xl border border-dashed border-border-strong bg-surface/50 px-6 py-14 text-center flex flex-col items-center gap-2">
           <Inbox className="w-6 h-6 text-subtle" aria-hidden />
           <p className="text-[15px] font-medium text-fg">{rows.length ? "No matches" : "No interviews yet"}</p>
-          <p className="text-[13px] text-muted max-w-sm">{rows.length ? "Try another search or filter." : "Schedule a live pair-programming round with a candidate."}</p>
+          <p className="text-[13px] text-muted max-w-sm">{rows.length ? "Try another search or filter." : "Set up a coding round, a technical discussion or a conversation with a candidate."}</p>
         </div>
       ) : (
         <div className="rounded-xl border border-border bg-surface overflow-hidden">
@@ -113,7 +145,7 @@ export default function InterviewsList({ slug, rows, view: initialView, q: initi
             <span className="w-[160px] shrink-0">Interviewer</span>
             <span className="w-[120px] shrink-0">Status</span>
             <span className="w-[90px] shrink-0">Date</span>
-            <span className="w-[96px] shrink-0" />
+            <span className="w-[176px] shrink-0" />
           </div>
           <ul>
             {shown.map((r) => (
@@ -130,31 +162,67 @@ export default function InterviewsList({ slug, rows, view: initialView, q: initi
                 </span>
                 <span className="flex-1 min-w-[180px]">
                   <span className="block text-sm text-fg truncate">{r.title}</span>
-                  <span className="block text-[13px] text-subtle">
-                    {r.minutes} min, {humanize(r.type).toLowerCase()}
+                  <span className="block text-[13px] text-subtle truncate">
+                    {r.format ?? humanize(r.type)}, {fmtLength(r.minutes)}
                     {r.shortCode ? `, code ${r.shortCode}` : ""}
+                    {r.questions === "needed" && r.questionsOwner ? `, ${r.questionsOwner} picks questions` : ""}
                   </span>
                 </span>
-                <span className="w-[160px] shrink-0 text-[13px] text-muted truncate">{r.interviewer ?? "Unknown"}</span>
+                <span className="w-[160px] shrink-0 text-[13px] text-muted truncate" title={r.panel.length ? `Panel: ${r.panel.join(", ")}` : undefined}>
+                  {r.interviewer ?? "Unknown"}
+                  {r.panel.length > 0 && <span className="text-subtle"> +{r.panel.length}</span>}
+                </span>
                 <span className="w-[120px] shrink-0 flex flex-col">
                   <span className="inline-flex items-center gap-2 text-[13px] text-muted">
                     <span aria-hidden className={`w-2 h-2 rounded-full ${STATE[r.state].dot}`} />
                     {STATE[r.state].label}
                   </span>
-                  {r.verdict && <span className="text-xs text-subtle">{humanize(r.verdict)}</span>}
+                  {r.questions === "needed" ? (
+                    <span className="text-xs text-warning">Questions needed</span>
+                  ) : (
+                    r.verdict && <span className="text-xs text-subtle">{humanize(r.verdict)}</span>
+                  )}
                 </span>
-                <span className="w-[90px] shrink-0 text-[13px] text-muted">{fmtDate(r.when)}</span>
-                <span className="w-[96px] shrink-0 flex justify-end">
-                  <Btn href={r.href}>
-                    {r.state === "completed" ? "Review" : "Open"}
-                    <ArrowRight className="w-3.5 h-3.5 text-muted" aria-hidden />
-                  </Btn>
+                <span className="w-[90px] shrink-0 text-[13px] text-muted">{r.when ? fmtDate(r.when) : <span className="text-subtle">No time</span>}</span>
+                <span className="w-[176px] shrink-0 flex justify-end gap-1.5">
+                  {r.state === "scheduled" && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        navigator.clipboard?.writeText(`${origin}${r.candidateLink}`);
+                        toast(`Candidate link for ${r.candidateName ?? r.title} copied`);
+                      }}
+                      aria-label={`Copy candidate link for ${r.candidateName ?? r.title}`}
+                      title="Copy candidate link"
+                      className="w-8 h-8 rounded-lg border border-border bg-surface flex items-center justify-center text-muted hover:text-fg hover:bg-panel"
+                    >
+                      <Copy className="w-3.5 h-3.5" />
+                    </button>
+                  )}
+                  {r.questions === "needed" ? (
+                    <Btn variant={r.mineToPick ? "primary" : "ghost"} icon={ListChecks} href={`/w/${slug}/interviews/${r.id}/questions`}>
+                      Pick questions
+                    </Btn>
+                  ) : r.href ? (
+                    <Btn href={r.href}>
+                      {r.state === "completed" ? "Review" : "Open"}
+                      <ArrowRight className="w-3.5 h-3.5 text-muted" aria-hidden />
+                    </Btn>
+                  ) : (
+                    <Btn href={`/w/${slug}/interviews/${r.id}/questions`}>Questions</Btn>
+                  )}
                 </span>
               </li>
             ))}
           </ul>
         </div>
       )}
+      {toasts}
     </div>
   );
+}
+
+function fmtLength(min: number): string {
+  if (min < 60) return `${min} min`;
+  return min % 60 ? `${Math.floor(min / 60)} h ${min % 60} min` : `${min / 60} h`;
 }

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { isInterviewerFor } from "@/lib/interview/wizard";
 
 export async function GET(req: NextRequest) {
   try {
@@ -24,7 +25,7 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: "Interview session not found." }, { status: 404 });
     }
 
-    const isOwner = session.user.id === interview.userId;
+    const isOwner = isInterviewerFor(interview, session.user.id);
     const shareToken = searchParams.get("token");
     const isInterviewer = shareToken === interview.shareToken;
 

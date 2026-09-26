@@ -469,7 +469,7 @@ function ChallengesTab({
           <Btn variant="quiet" icon={X} onClick={() => setSelected(new Map())}>
             Clear
           </Btn>
-          <Btn icon={Video} href={`/interview/new?workspaceSlug=${encodeURIComponent(slug)}&challenges=${ids}`}>
+          <Btn icon={Video} href={`/w/${slug}/interviews/new?challenges=${ids}`}>
             Use in live interview
           </Btn>
           {aiScreening && (

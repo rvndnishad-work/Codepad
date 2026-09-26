@@ -212,7 +212,7 @@ export function QuickView({
             </Btn>
             <Btn
               icon={CalendarDays}
-              href={`/interview/new?type=live&workspaceSlug=${slug}&candidateId=${row.id}&candidateName=${encodeURIComponent(row.name)}&candidateEmail=${encodeURIComponent(row.email ?? "")}`}
+              href={`/w/${slug}/interviews/new?candidateId=${row.id}`}
             >
               Schedule
             </Btn>

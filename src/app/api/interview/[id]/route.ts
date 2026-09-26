@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { isInterviewerFor } from "@/lib/interview/wizard";
 
 const patchSchema = z.object({
   status: z.enum(["scheduled", "in_progress", "completed", "abandoned"]).optional(),
@@ -68,6 +69,7 @@ export async function PATCH(
     where: { id },
     select: {
       userId: true,
+      panelJson: true,
       shareToken: true,
       creatorRole: true,
       type: true,
@@ -85,7 +87,7 @@ export async function PATCH(
   });
   if (!existing) return NextResponse.json({ error: "not found" }, { status: 404 });
 
-  const isOwner = !!session?.user?.id && existing.userId === session.user.id;
+  const isOwner = isInterviewerFor(existing, session?.user?.id);
   const { searchParams } = new URL(req.url);
   const token = searchParams.get("token");
   const hasShareToken = !!token && token === existing.shareToken;

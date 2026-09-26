@@ -12,7 +12,7 @@ type Props = {
 };
 
 export const metadata = {
-  title: "External MCP Servers — Workspace",
+  title: "External tools — Workspace",
   robots: { index: false, follow: false },
 };
 

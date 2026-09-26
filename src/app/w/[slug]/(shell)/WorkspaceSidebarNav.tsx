@@ -10,7 +10,6 @@ import {
   Home,
   KeyRound,
   Mail,
-  Plug,
   RefreshCw,
   ScrollText,
   Lock,
@@ -134,14 +133,19 @@ export default function WorkspaceSidebarNav({ slug, growthFeatures, counts, coll
       count: counts.takeHomeReview || undefined,
     },
     { label: "Interviews", icon: Video, ...route("interviews"), count: counts.interviews },
-    growth({ label: "AI screening", icon: Bot, ...route("ai-interviews") }),
+    growth({
+      label: "AI screening",
+      icon: Bot,
+      href: `/w/${slug}/ai-interviews`,
+      // External tools settings live under AI screening question sets.
+      isActive: pathname.startsWith(`/w/${slug}/ai-interviews`) || pathname.startsWith(`/w/${slug}/external-mcp`),
+    }),
     { label: "Question library", icon: BookOpen, ...route("library"), count: counts.challenges },
   ];
 
   const connections: NavItem[] = [
     growth({ label: "ATS sync", icon: RefreshCw, ...route("ats") }),
     growth({ label: "API keys", icon: KeyRound, ...route("api-keys") }),
-    growth({ label: "External MCP", icon: Plug, ...route("external-mcp") }),
   ];
 
   const admin: NavItem[] = [

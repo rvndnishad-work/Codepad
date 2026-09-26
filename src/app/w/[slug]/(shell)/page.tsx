@@ -62,7 +62,7 @@ export default async function WorkspaceDashboardPage({ params, searchParams }: P
   if (sp.section === "candidates") redirect(legacyCandidatesUrl(slug, sp));
   if (sp.section === "library") redirect(`/w/${slug}/library`);
   // The Integrations tab only repeated the ATS form; ATS sync is its home.
-  if (sp.section === "integrations") redirect(`/w/${slug}/ats`);
+  if (sp.section === "integrations") redirect(`/w/${slug}/connections`);
   if (sp.section === "assessments") redirect(legacyAssessmentsUrl(slug, sp.view));
   // Members and Billing moved to their own routes.
   if (sp.section === "members") redirect(`/w/${slug}/members`);

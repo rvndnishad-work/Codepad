@@ -996,6 +996,9 @@ model Workspace {
   agentConfigs         AgentConfig[]
   webhookEndpoints     WebhookEndpoint[]
   questionVariants     QuestionVariant[]
+  atsJobMappings       AtsJobMapping[]
+  atsTestRequests      AtsTestRequest[]
+  atsSyncEvents        AtsSyncEvent[]
 }
 
 /// Pending teammate invitation (IP-73). Replaces the old "silently mint a
@@ -1058,9 +1061,15 @@ model Candidate {
   batchId             String?
   /// Workspace member responsible for moving this candidate along.
   ownerId             String?
+  /// Set when the candidate came from a connected ATS: "<provider>:<id>",
+  /// e.g. "greenhouse:4417". Used to link re-sent requests to the same person.
+  atsRef              String?
+  /// The candidate's profile in the ATS (Greenhouse sends it with each request).
+  atsProfileUrl       String?
   createdAt           DateTime             @default(now())
   updatedAt           DateTime             @updatedAt
   aiInterviewSessions AIInterviewSession[]
+  atsTestRequests     AtsTestRequest[]
   workspace           Workspace            @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
   batch               CandidateBatch?      @relation(fields: [batchId], references: [id], onDelete: SetNull)
   owner               User?                @relation("CandidateOwner", fields: [ownerId], references: [id], onDelete: SetNull)
@@ -1245,8 +1254,98 @@ model AtsIntegration {
   apiKey        String
   webhookSecret String?
   settings      String    @default("{}")
+  /// sha256 (hex) of the key Greenhouse sends as its Basic auth user name on
+  /// the Assessment Partner endpoints. The key itself is kept encrypted in
+  /// `apiKey` so an admin can copy it again.
+  partnerKeyHash String?  @unique
+  connectedById  String?
   createdAt     DateTime  @default(now())
   workspace     Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+}
+
+/// "This ATS job gets this screening." For Greenhouse each mapping is one
+/// test in list_tests (partner_test_id = id), so a recruiter picks it on the
+/// job's interview plan in Greenhouse.
+model AtsJobMapping {
+  id            String    @id @default(cuid())
+  workspaceId   String
+  provider      String
+  /// Job name as it reads in the ATS. Also names the candidate batch.
+  jobName       String
+  /// Optional second line, e.g. "Berlin, req 2231".
+  jobDetail     String?
+  /// "ai" (AIScreeningBatch) | "takehome" (TakeHomeTemplate) | "none".
+  screeningKind String    @default("none")
+  screeningId   String?
+  /// "auto" sends the invite at once, "review" waits for a recruiter.
+  sendMode      String    @default("auto")
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  workspace     Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  requests      AtsTestRequest[]
+
+  @@unique([workspaceId, provider, jobName])
+  @@index([workspaceId])
+}
+
+/// One request from the ATS to screen one candidate for one job. Its id is
+/// the partner_interview_id Greenhouse polls with.
+/// status: waiting (for a recruiter to send) | sent | failed | reported
+model AtsTestRequest {
+  id                    String         @id @default(cuid())
+  workspaceId           String
+  provider              String
+  mappingId             String?
+  candidateId           String
+  externalCandidateId   String?
+  externalApplicationId String?
+  jobName               String?
+  /// Greenhouse's "url" from send_test: we PATCH it once a result is ready.
+  callbackUrl           String?
+  /// "ai" | "takehome", copied from the mapping at request time.
+  screeningKind         String
+  screeningId           String?
+  /// The AIInterviewSession or take-home InterviewSession we sent.
+  sessionId             String?
+  status                String         @default("waiting")
+  sentAt                DateTime?
+  /// When the decided + finished result was reported back.
+  reportedAt            DateTime?
+  reportedDecision      String?
+  createdAt             DateTime       @default(now())
+  updatedAt             DateTime       @updatedAt
+  workspace             Workspace      @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  candidate             Candidate      @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+  mapping               AtsJobMapping? @relation(fields: [mappingId], references: [id], onDelete: SetNull)
+
+  @@unique([workspaceId, provider, externalApplicationId, mappingId])
+  @@index([workspaceId, createdAt])
+  @@index([candidateId])
+  @@index([sessionId])
+}
+
+/// The sync log: everything that came in from or went out to the ATS.
+/// direction: "in" | "out". status: imported | linked | waiting | sent |
+/// failed | info
+model AtsSyncEvent {
+  id          String    @id @default(cuid())
+  workspaceId String
+  provider    String
+  direction   String
+  status      String
+  summary     String
+  detail      String?
+  httpStatus  Int?
+  candidateId String?
+  requestId   String?
+  /// Set on a failed write that a person retried, so it leaves "needs attention".
+  resolvedAt  DateTime?
+  createdAt   DateTime  @default(now())
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@index([workspaceId, createdAt])
+  @@index([candidateId, createdAt])
+  @@index([requestId])
 }
 
 /// Outbound webhook target. We POST signed JSON here when a subscribed

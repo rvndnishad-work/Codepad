@@ -41,6 +41,10 @@ export default async function AtsIntegrationPage({ params }: Props) {
   const isAdmin = await canMember(member, "integration:manage");
   const planAllowed = growthToolsEnabled(workspace);
   const view = await getAtsIntegrationView(slug);
+  // Greenhouse (and connecting a new ATS) now lives under Connections. This
+  // page stays only for older Lever and Ashby signed-webhook connections.
+  if (!view) redirect(`/w/${slug}/connections`);
+  if (view.provider === "greenhouse") redirect(`/w/${slug}/connections/ats`);
 
   return (
     <AtsIntegrationClient

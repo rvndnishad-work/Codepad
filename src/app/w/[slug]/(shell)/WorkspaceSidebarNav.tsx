@@ -11,6 +11,7 @@ import {
   Home,
   KeyRound,
   Mail,
+  Plug,
   RefreshCw,
   ScrollText,
   Lock,
@@ -146,6 +147,14 @@ export default function WorkspaceSidebarNav({ slug, growthFeatures, counts, coll
   ];
 
   const connections: NavItem[] = [
+    // The catalog is open to everyone (it shows status); each Growth tool
+    // inside it carries its own plan check.
+    {
+      label: "Connections",
+      icon: Plug,
+      href: `/w/${slug}/connections`,
+      isActive: pathname.startsWith(`/w/${slug}/connections`),
+    },
     growth({ label: "ATS sync", icon: RefreshCw, ...route("ats") }),
     growth({ label: "API and MCP", icon: KeyRound, ...route("api-keys") }),
     growth({ label: "Webhooks", icon: Webhook, ...route("webhooks") }),

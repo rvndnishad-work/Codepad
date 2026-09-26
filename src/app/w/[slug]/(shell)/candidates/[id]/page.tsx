@@ -3,6 +3,8 @@ import { prisma } from "@/lib/prisma";
 import { CandidateError, resolveCandidateActor } from "@/lib/crm/candidates-server";
 import { loadCandidatePerms, loadRoster, loadRosterLookups } from "@/lib/crm/roster-server";
 import { describeAudit, resultActivity, type ActivityItem } from "@/lib/crm/activity";
+import { loadCandidateAtsCard } from "@/lib/ats/connection-server";
+import { canMember } from "@/lib/permissions";
 import CandidateProfileClient from "./CandidateProfileClient";
 
 type Props = { params: Promise<{ slug: string; id: string }> };
@@ -25,7 +27,7 @@ export default async function CandidateProfilePage({ params }: Props) {
     redirect("/dashboard");
   });
 
-  const [rows, lookups, perms, notes, audit, candidate] = await Promise.all([
+  const [rows, lookups, perms, notes, audit, candidate, ats, canSendAi, canSendTakeHome] = await Promise.all([
     loadRoster(actor.workspaceId, actor.workspaceSlug, { ids: [id] }),
     loadRosterLookups(actor.workspaceId),
     loadCandidatePerms(actor.member, actor.isManager),
@@ -41,6 +43,12 @@ export default async function CandidateProfilePage({ params }: Props) {
       select: { id: true, action: true, meta: true, createdAt: true, actorEmail: true, actorUserId: true },
     }),
     prisma.candidate.findFirst({ where: { id, workspaceId: actor.workspaceId }, select: { rejectReasonNote: true, createdAt: true } }),
+    loadCandidateAtsCard(actor.workspaceId, id).catch((err) => {
+      console.error("[candidate profile] ATS card failed:", err);
+      return null;
+    }),
+    canMember(actor.member, "interview:conduct"),
+    canMember(actor.member, "takehome:create"),
   ]);
   const row = rows[0];
   if (!row || !candidate) notFound();
@@ -112,6 +120,8 @@ export default async function CandidateProfilePage({ params }: Props) {
       batches={lookups.batches}
       members={lookups.members}
       perms={perms}
+      ats={ats}
+      canSendAtsInvite={canSendAi || canSendTakeHome}
     />
   );
 }

@@ -1,8 +1,21 @@
 import { prisma } from "@/lib/prisma";
 import { decryptAtRest } from "@/lib/crypto/at-rest";
 import { NextResponse } from "next/server";
-import { appOrigin } from "@/lib/interview/links";
+import { growthToolsEnabled } from "@/lib/billing/trial";
+import { importAtsCandidate, providerName } from "@/lib/ats/import";
+import { parseLegacyPayload, pickMapping } from "@/lib/ats/legacy-webhook";
+import { logSyncEvent } from "@/lib/ats/sync-log";
 import * as crypto from "crypto";
+
+/**
+ * Older signed ATS webhook (Greenhouse, Ashby, Lever or generic JSON).
+ *
+ * This used to create a legacy TakeHomeAssignment with no Candidate and no
+ * email, falling back to a sample challenge. It now feeds the same import as
+ * the Greenhouse partner API: the candidate is found or created by email,
+ * added to the batch for the job, and sent the screening the job is mapped
+ * to, by email. A payload that names no mapped job is refused.
+ */
 
 /**
  * Verify an inbound webhook signature: hex HMAC-SHA256 of the raw body keyed
@@ -22,7 +35,8 @@ export async function POST(
   { params }: { params: Promise<{ provider: string }> }
 ) {
   try {
-    const { provider } = await params;
+    const { provider: rawProvider } = await params;
+    const provider = rawProvider.toLowerCase();
     const { searchParams } = new URL(req.url);
     const workspaceId = searchParams.get("workspaceId");
 
@@ -32,16 +46,13 @@ export async function POST(
 
     const workspace = await prisma.workspace.findUnique({
       where: { id: workspaceId },
-      include: {
-        atsIntegration: true,
-      },
+      select: { id: true, planName: true, trialEndsAt: true, stripeSubscriptionId: true, atsIntegration: true },
     });
 
     // Only a workspace that connected this ATS accepts its webhooks. Without
-    // this check anyone who learned a workspace id could create take-home
-    // invites in it.
+    // this check anyone who learned a workspace id could create invites in it.
     const integration = workspace?.atsIntegration;
-    if (!workspace || !integration || integration.provider.toLowerCase() !== provider.toLowerCase()) {
+    if (!workspace || !integration || integration.provider.toLowerCase() !== provider) {
       return NextResponse.json({ error: "No matching ATS integration" }, { status: 404 });
     }
 
@@ -60,7 +71,11 @@ export async function POST(
       return NextResponse.json({ error: "Unauthorized webhook payload" }, { status: 401 });
     }
 
-    let body: any = null;
+    if (!growthToolsEnabled(workspace)) {
+      return NextResponse.json({ error: "This workspace plan does not include ATS integrations" }, { status: 403 });
+    }
+
+    let body: unknown = null;
     try {
       body = JSON.parse(rawBody);
     } catch {
@@ -70,82 +85,50 @@ export async function POST(
       return NextResponse.json({ error: "Empty payload body" }, { status: 400 });
     }
 
-    let candidateName = "";
-    let candidateEmail = "";
-    let challengeSlug = "";
-
-    // Parse the payload depending on the ATS structure
-    if (provider.toLowerCase() === "greenhouse") {
-      // Greenhouse standard webhook candidate format
-      candidateName = `${body.candidate?.first_name || ""} ${body.candidate?.last_name || ""}`.trim();
-      candidateEmail = body.candidate?.email_addresses?.[0]?.value || "";
-      // Map job/test to challenge slug from Greenhouse custom options
-      challengeSlug = body.test?.custom_fields?.challenge_slug || "sum-of-two";
-    } else if (provider.toLowerCase() === "ashby") {
-      // Ashby graphql webhook structure
-      candidateName = body.candidate?.name || "";
-      candidateEmail = body.candidate?.email || "";
-      challengeSlug = body.activity?.customFields?.challenge_slug || "sum-of-two";
-    } else {
-      // Lever or generic format
-      candidateName = body.name || body.candidateName || "";
-      candidateEmail = body.email || body.candidateEmail || "";
-      challengeSlug = body.challengeSlug || "sum-of-two";
+    const payload = parseLegacyPayload(provider, body);
+    if (!payload) {
+      await logSyncEvent({ workspaceId: workspace.id, provider, direction: "in", status: "failed", summary: `${providerName(provider)} sent a candidate without a valid email` });
+      return NextResponse.json({ error: "Could not parse candidate email" }, { status: 400 });
     }
 
-    if (!candidateName || !candidateEmail) {
-      return NextResponse.json({ error: "Could not parse candidate name or email" }, { status: 400 });
-    }
-
-    // Locate the challenge to assign
-    const challenge = await prisma.challenge.findFirst({
-      where: {
-        OR: [
-          { slug: challengeSlug },
-          { workspaceId: workspace.id },
-        ],
-      },
+    const mappings = await prisma.atsJobMapping.findMany({
+      where: { workspaceId: workspace.id, provider, screeningKind: { in: ["ai", "takehome"] }, screeningId: { not: null } },
     });
-
-    if (!challenge) {
-      return NextResponse.json({ error: `Challenge with slug ${challengeSlug} not found` }, { status: 404 });
-    }
-
-    // Create opaque invite token
-    const inviteToken = crypto.randomBytes(32).toString("hex");
-    const expiresAt = new Date();
-    expiresAt.setDate(expiresAt.getDate() + 7); // 7 days activation policy
-
-    // Save Take-Home assignment
-    const takeHome = await prisma.takeHomeAssignment.create({
-      data: {
+    const mapping = pickMapping(payload, mappings);
+    if (!mapping) {
+      await logSyncEvent({
         workspaceId: workspace.id,
-        challengeId: challenge.id,
-        candidateName,
-        candidateEmail: candidateEmail.toLowerCase().trim(),
-        token: inviteToken,
-        status: "PENDING",
-        expiresAt,
-        timeLimitMin: challenge.estimatedMinutes || 60,
-      },
+        provider,
+        direction: "in",
+        status: "failed",
+        summary: `${payload.name} was not imported: ${payload.jobName ? `the job ${payload.jobName} is not mapped to a screening` : "the request named no job"}`,
+        detail: "Map the job to a screening in Connections, then send the candidate again.",
+      });
+      return NextResponse.json(
+        { error: "No job mapping matches this payload. Send partner_test_id or a job name that is mapped in Connections." },
+        { status: 422 },
+      );
+    }
+
+    const outcome = await importAtsCandidate({
+      workspaceId: workspace.id,
+      provider,
+      mapping,
+      person: { name: payload.name, email: payload.email, externalId: payload.externalId },
+      applicationId: payload.applicationId,
+      callbackUrl: null,
     });
 
-    const origin = await appOrigin();
-    const inviteUrl = `${origin}/take-home/${inviteToken}`;
-
-    console.log(`ATS Webhook [${provider.toUpperCase()}] synced successfully. Created Take-Home invite for ${candidateName}: ${inviteUrl}`);
-
-    // Outbound push/response payload to complete webhook handshake
     return NextResponse.json({
       ok: true,
-      provider: provider.toUpperCase(),
-      candidateName,
-      candidateEmail,
-      takeHomeId: takeHome.id,
-      inviteUrl,
+      provider,
+      candidateId: outcome.candidateId,
+      requestId: outcome.requestId,
+      outcome: outcome.kind,
+      status: outcome.waiting ? "waiting_for_recruiter" : outcome.sent ? "invite_sent" : "invite_failed",
+      ...(outcome.error ? { error: outcome.error } : {}),
     });
-
-  } catch (err: any) {
+  } catch (err) {
     console.error("ATS webhook ingestion failed:", err);
     return NextResponse.json({ error: "Failed to process webhook" }, { status: 500 });
   }

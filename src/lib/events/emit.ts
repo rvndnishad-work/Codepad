@@ -20,6 +20,7 @@ import { appOrigin } from "@/lib/interview/links";
 import { TEST_EVENT, type WorkspaceEvent } from "./catalog";
 import { deliverWebhook } from "./deliver";
 import { buildEnvelope, newEventId } from "./envelope";
+import { runEventListeners } from "./listeners";
 
 export type EventCandidate = { id?: string | null; name?: string | null; email?: string | null };
 
@@ -87,6 +88,8 @@ export async function emitWorkspaceEvent<E extends WorkspaceEvent>(
   data: EventPayloads[E],
 ): Promise<void> {
   if (!workspaceId) return;
+  // In-app listeners (ATS write-back) run whether or not any endpoint exists.
+  runEventListeners(workspaceId, event, data);
   try {
     const ws = await prisma.workspace.findUnique({
       where: { id: workspaceId },

@@ -42,7 +42,9 @@ import {
   isEmail,
   normalizeGuests,
   parseLocal,
+  roomSets,
   roundsMinutes,
+  setSize,
   staggerSlots,
   stepIssues,
   suggestedMinutes,
@@ -51,6 +53,7 @@ import {
   type FormatId,
   type StepId,
   type WizardCandidate,
+  usesOwnSets,
   type WizardState,
 } from "@/lib/interview/wizard";
 import { Avatar, Btn, StageChip, inputCls } from "../../candidates/_components/ui";
@@ -119,27 +122,89 @@ export function FormatStep({ state, onPick }: { state: WizardState; onPick: (f: 
 
 /* ───────────────────────── Candidates ───────────────────────── */
 
-export function CandidatesStep({ state, patch, people }: { state: WizardState; patch: Patch; people: PersonOption[] }) {
-  const reduce = useReducedMotion();
+/** Pick people from Candidates. Lives in the right sidebar. */
+export function CandidateBrowser({ state, patch, people }: { state: WizardState; patch: Patch; people: PersonOption[] }) {
   const [q, setQ] = useState("");
   const [batch, setBatch] = useState("all");
-  const [adding, setAdding] = useState(false);
-  const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
-  const [err, setErr] = useState("");
   const batches = useMemo(() => [...new Set(people.map((p) => p.batch).filter((b): b is string => !!b))].sort(), [people]);
   const picked = new Set(state.candidates.map((c) => c.id ?? `new:${c.email}`));
   const full = state.candidates.length >= MAX_CANDIDATES;
-
   const needle = q.trim().toLowerCase();
   const shown = people.filter(
     (p) => (batch === "all" || p.batch === batch) && (!needle || [p.name, p.email ?? "", p.batch ?? ""].some((v) => v.toLowerCase().includes(needle))),
   );
-
   const toggle = (p: PersonOption) => {
     if (picked.has(p.id)) patch({ candidates: state.candidates.filter((c) => c.id !== p.id), noCandidate: false });
     else if (!full) patch({ candidates: [...state.candidates, { id: p.id, name: p.name, email: p.email ?? "" }], noCandidate: false });
   };
+
+  return (
+    <div className={`flex flex-col ${state.noCandidate ? "opacity-50" : ""}`}>
+      <div className="sticky top-0 z-10 bg-surface p-3 flex flex-col gap-2 border-b border-border">
+        <label className="relative">
+          <span className="sr-only">Search candidates</span>
+          <Search aria-hidden className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-subtle" />
+          <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search by name, email or batch" className={`${inputCls} pl-8`} />
+        </label>
+        <div className="flex items-center justify-between gap-2">
+          {batches.length > 0 ? (
+            <select value={batch} onChange={(e) => setBatch(e.target.value)} aria-label="Batch" className={`${inputCls.replace("w-full", "w-auto")} h-8 pr-8 max-w-[200px]`}>
+              <option value="all">All batches</option>
+              {batches.map((b) => (
+                <option key={b} value={b}>
+                  {b}
+                </option>
+              ))}
+            </select>
+          ) : (
+            <span />
+          )}
+          <span className="text-xs text-subtle tabular-nums">
+            {state.candidates.length} of {MAX_CANDIDATES} picked
+          </span>
+        </div>
+      </div>
+      <ul role="listbox" aria-multiselectable="true" aria-label="Candidates" className="divide-y divide-border">
+        {shown.length === 0 && <li className="px-4 py-10 text-center text-[13px] text-muted">{people.length ? "No one matches." : "No candidates yet. Add someone new."}</li>}
+        {shown.slice(0, 300).map((p) => {
+          const on = picked.has(p.id);
+          return (
+            <li key={p.id} role="option" aria-selected={on}>
+              <button
+                type="button"
+                onClick={() => toggle(p)}
+                disabled={(!on && full) || state.noCandidate}
+                className={`w-full flex items-center gap-3 px-3 py-2.5 text-left transition-colors disabled:cursor-not-allowed ${on ? "bg-secondary/[0.07]" : "hover:bg-panel/60"}`}
+              >
+                <CheckDot on={on} size={18} square />
+                <Avatar name={p.name} size={30} />
+                <span className="flex-1 min-w-0">
+                  <span className="block text-[13px] font-medium text-fg truncate">{p.name}</span>
+                  <span className="block text-xs text-subtle truncate">
+                    {p.email ?? "No email"}
+                    {p.interviews > 0 ? `, ${p.interviews === 1 ? "1 interview" : `${p.interviews} interviews`}` : ""}
+                  </span>
+                </span>
+                <StageChip stage={p.stage} />
+              </button>
+            </li>
+          );
+        })}
+      </ul>
+    </div>
+  );
+}
+
+export function CandidatesStep({ state, patch, people, onBrowse }: { state: WizardState; patch: Patch; people: PersonOption[]; onBrowse: () => void }) {
+  const reduce = useReducedMotion();
+  const [adding, setAdding] = useState(false);
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [err, setErr] = useState("");
+  const picked = new Set(state.candidates.map((c) => c.id ?? `new:${c.email}`));
+  const full = state.candidates.length >= MAX_CANDIDATES;
+  const byId = useMemo(() => new Map(people.map((p) => [p.id, p])), [people]);
+
   const addNew = () => {
     const n = name.trim();
     const e = email.trim().toLowerCase();
@@ -147,7 +212,7 @@ export function CandidatesStep({ state, patch, people }: { state: WizardState; p
     if (e && !isEmail(e)) return setErr("That email does not look right.");
     const known = e ? people.find((p) => p.email?.toLowerCase() === e) : null;
     if (known) {
-      if (!picked.has(known.id)) toggle(known);
+      if (!picked.has(known.id) && !full) patch({ candidates: [...state.candidates, { id: known.id, name: known.name, email: known.email ?? "" }], noCandidate: false });
       setErr("");
       setName("");
       setEmail("");
@@ -165,11 +230,16 @@ export function CandidatesStep({ state, patch, people }: { state: WizardState; p
     <div className="flex flex-col gap-5">
       <StepHeading
         title="Who are you interviewing?"
-        lead="Pick one or more people. Each person gets their own room and link, with the same setup."
+        lead="Pick people from the list on the right, or add someone new. Each person gets their own room and link."
         aside={
-          <Btn size="md" icon={UserPlus} onClick={() => setAdding((v) => !v)} aria-expanded={adding}>
-            Add someone new
-          </Btn>
+          <div className="flex items-center gap-2">
+            <Btn size="md" icon={Users} onClick={onBrowse} className="lg:hidden">
+              Browse
+            </Btn>
+            <Btn size="md" icon={UserPlus} onClick={() => setAdding((v) => !v)} aria-expanded={adding}>
+              Add someone new
+            </Btn>
+          </div>
         }
       />
 
@@ -207,79 +277,51 @@ export function CandidatesStep({ state, patch, people }: { state: WizardState; p
         )}
       </AnimatePresence>
 
-      {/* Tray of chosen people */}
-      <div className="flex flex-wrap items-center gap-2 min-h-[36px]">
-        <AnimatePresence initial={false}>
-          {state.candidates.map((c) => (
-            <motion.span
-              key={c.id ?? `new:${c.email || c.name}`}
-              layout={!reduce}
-              initial={reduce ? false : { opacity: 0, scale: 0.6 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={reduce ? undefined : { opacity: 0, scale: 0.6 }}
-              transition={spring}
-              className="inline-flex items-center gap-2 h-9 pl-1 pr-1.5 rounded-full border border-secondary/40 bg-secondary/10"
-            >
-              <Avatar name={c.name} size={26} />
-              <span className="text-[13px] font-medium text-fg">{c.name}</span>
-              {!c.id && <span className="text-xs text-secondary-soft">new</span>}
-              <button type="button" onClick={() => removeAt(c)} aria-label={`Remove ${c.name}`} className="w-6 h-6 rounded-full flex items-center justify-center text-muted hover:text-fg hover:bg-panel">
-                <X className="w-3.5 h-3.5" />
-              </button>
-            </motion.span>
-          ))}
-        </AnimatePresence>
-        {state.candidates.length === 0 && !state.noCandidate && <span className="text-[13px] text-subtle">Nobody picked yet.</span>}
-        {state.candidates.length > 1 && <span className="text-[13px] text-muted ml-1">{state.candidates.length} rooms will be created</span>}
-      </div>
-
-      <div className={`flex flex-col gap-3 transition-opacity ${state.noCandidate ? "opacity-40 pointer-events-none" : ""}`}>
-        <div className="flex flex-wrap items-center gap-2">
-          <label className="relative flex-1 min-w-[220px]">
-            <span className="sr-only">Search candidates</span>
-            <Search aria-hidden className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-subtle" />
-            <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search by name, email or batch" className={`${inputCls} pl-8`} />
-          </label>
-          {batches.length > 0 && (
-            <select value={batch} onChange={(e) => setBatch(e.target.value)} aria-label="Batch" className={`${inputCls.replace("w-full", "w-auto")} pr-8`}>
-              <option value="all">All batches</option>
-              {batches.map((b) => (
-                <option key={b} value={b}>
-                  {b}
-                </option>
-              ))}
-            </select>
-          )}
+      <section className="flex flex-col gap-2">
+        <div className="flex items-baseline justify-between gap-2">
+          <h3 className="text-[15px] font-semibold text-fg">{state.candidates.length ? `Picked (${state.candidates.length})` : "Picked"}</h3>
+          {state.candidates.length > 1 && <span className="text-[13px] text-muted">{state.candidates.length} rooms will be created</span>}
         </div>
-        <ul role="listbox" aria-multiselectable="true" aria-label="Candidates" className="rounded-xl border border-border bg-surface divide-y divide-border max-h-[380px] overflow-y-auto">
-          {shown.length === 0 && (
-            <li className="px-4 py-10 text-center text-[13px] text-muted">{people.length ? "No one matches." : "No candidates yet. Add someone new above."}</li>
-          )}
-          {shown.slice(0, 200).map((p) => {
-            const on = picked.has(p.id);
-            return (
-              <li key={p.id} role="option" aria-selected={on}>
-                <button
-                  type="button"
-                  onClick={() => toggle(p)}
-                  disabled={!on && full}
-                  className={`w-full flex items-center gap-3 px-3 py-2.5 text-left transition-colors ${on ? "bg-secondary/[0.07]" : "hover:bg-panel/60"}`}
-                >
-                  <CheckDot on={on} size={18} square />
-                  <Avatar name={p.name} size={32} />
-                  <span className="flex-1 min-w-0">
-                    <span className="block text-[14px] font-medium text-fg truncate">{p.name}</span>
-                    <span className="block text-xs text-subtle truncate">{p.email ?? "No email, share the link yourself"}</span>
-                  </span>
-                  {p.interviews > 0 && <span className="hidden md:inline text-xs text-subtle whitespace-nowrap">{p.interviews === 1 ? "1 interview" : `${p.interviews} interviews`} already</span>}
-                  {p.batch && <span className="hidden sm:inline text-xs text-muted truncate max-w-[140px]">{p.batch}</span>}
-                  <StageChip stage={p.stage} />
-                </button>
-              </li>
-            );
-          })}
-        </ul>
-      </div>
+        {state.candidates.length === 0 ? (
+          <div className="rounded-xl border border-dashed border-border-strong px-6 py-10 text-center flex flex-col items-center gap-2">
+            <Users className="w-6 h-6 text-subtle" aria-hidden />
+            <p className="text-[14px] font-medium text-fg">{state.noCandidate ? "One open room, nobody named" : "Nobody picked yet"}</p>
+            <p className="text-[13px] text-muted max-w-sm">{state.noCandidate ? "Send its link to whoever you like after scheduling." : "Tick people in the list on the right. You can pick up to 20."}</p>
+          </div>
+        ) : (
+          <ul className="flex flex-col gap-1.5">
+            <AnimatePresence initial={false}>
+              {state.candidates.map((c) => {
+                const p = c.id ? byId.get(c.id) : undefined;
+                return (
+                  <motion.li
+                    key={c.id ?? `new:${c.email || c.name}`}
+                    layout={!reduce}
+                    initial={reduce ? false : { opacity: 0, x: 16 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={reduce ? undefined : { opacity: 0, x: 16, height: 0 }}
+                    transition={spring}
+                    className="flex items-center gap-3 rounded-xl border border-border bg-surface px-3 py-2.5"
+                  >
+                    <Avatar name={c.name} size={32} />
+                    <span className="flex-1 min-w-0">
+                      <span className="block text-[14px] font-medium text-fg truncate">
+                        {c.name}
+                        {!c.id && <span className="ml-2 text-xs font-normal text-secondary-soft">new</span>}
+                      </span>
+                      <span className="block text-xs text-subtle truncate">{c.email || "No email, share the link yourself"}</span>
+                    </span>
+                    {p && <StageChip stage={p.stage} />}
+                    <button type="button" onClick={() => removeAt(c)} aria-label={`Remove ${c.name}`} className="w-8 h-8 rounded-lg flex items-center justify-center text-muted hover:text-fg hover:bg-panel">
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  </motion.li>
+                );
+              })}
+            </AnimatePresence>
+          </ul>
+        )}
+      </section>
 
       <div className="rounded-xl border border-border bg-surface p-4">
         <Switch
@@ -744,7 +786,14 @@ export function ReviewStep({
       ? `${name(state.questionsOwnerId)} picks them later`
       : state.plan === "open"
         ? "No set questions"
-        : [format?.coding ? `${state.rounds.length} coding round${state.rounds.length === 1 ? "" : "s"}` : null, guide ? `guide: ${guide.title}` : null].filter(Boolean).join(", ") || "None yet";
+        : [
+            format?.coding ? `${state.rounds.length} coding round${state.rounds.length === 1 ? "" : "s"}` : null,
+            usesOwnSets(state) ? "a separate guide for each candidate" : guide ? `guide: ${guide.title}` : null,
+            !usesOwnSets(state) && (state.bank?.length ?? 0) > 0 ? `${state.bank!.length} public questions` : null,
+          ]
+            .filter(Boolean)
+            .join(", ")
+            .replace(/^./, (c) => c.toUpperCase()) || "None yet";
 
   return (
     <div className="flex flex-col gap-5">
@@ -788,7 +837,17 @@ export function ReviewStep({
           value={`${name(state.hostId)} hosts`}
           detail={[state.panelIds.length ? `Panel: ${state.panelIds.map(name).join(", ")}` : "No panel", guests.length ? `Details emailed to ${guests.join(", ")}` : null].filter(Boolean).join(". ")}
         />
-        <ReviewCard step="questions" goTo={goTo} icon={MessagesSquare} title="Questions" value={questions} detail={state.plan === "set" && state.rounds.length ? state.rounds.map((r) => r.title).join(", ") : state.plan === "later" && state.questionsNote ? `Note: ${state.questionsNote}` : undefined} tone={state.plan === "later" ? "warning" : undefined} />
+        <ReviewCard step="questions" goTo={goTo} icon={MessagesSquare} title="Questions" value={questions} detail={
+            state.plan === "set" && usesOwnSets(state)
+              ? roomSets(state)
+                  .map((r) => `${firstName(r.candidate?.name ?? "")}: ${setSize(r.set, guides)} questions`)
+                  .join(", ")
+              : state.plan === "set" && state.rounds.length
+                ? state.rounds.map((r) => r.title).join(", ")
+                : state.plan === "later" && state.questionsNote
+                  ? `Note: ${state.questionsNote}`
+                  : undefined
+          } tone={state.plan === "later" ? "warning" : undefined} />
         <ReviewCard
           step="schedule"
           goTo={goTo}

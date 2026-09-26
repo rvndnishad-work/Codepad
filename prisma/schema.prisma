@@ -665,6 +665,11 @@ model InterviewSession {
   /// Shared by the interviews scheduled together in one wizard run (one per
   /// candidate), so questions picked later can apply to all of them.
   setupGroupId       String?
+  /// Live room toolbox, JSON (see src/lib/interview/tools.ts): which tools are
+  /// switched on, which one is presented, the question card and the timer.
+  /// Only interviewers write it.
+  toolsJson          String?
+  toolUpdates        InterviewToolUpdate[]
   createdAt          DateTime         @default(now())
   takeHomeTemplate   TakeHomeTemplate? @relation(fields: [takeHomeTemplateId], references: [id], onDelete: SetNull)
   rubric             InterviewRubric?
@@ -681,6 +686,19 @@ model InterviewSession {
   @@index([takeHomeTemplateId])
   @@index([questionsOwnerId])
   @@index([setupGroupId])
+}
+
+/// Yjs updates for the shared tools in a live interview room (whiteboard,
+/// code pad, notes, ranking). Clients append and read with an id cursor;
+/// old rows are merged into one now and then.
+model InterviewToolUpdate {
+  id        Int              @id @default(autoincrement())
+  sessionId String
+  update    Bytes
+  createdAt DateTime         @default(now())
+  session   InterviewSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@index([sessionId, id])
 }
 
 /// A saved take-home question set ("Senior frontend take home") that a

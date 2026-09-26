@@ -24,6 +24,7 @@ import {
 } from "@/lib/interview/wizard";
 import { Avatar, Btn, useToasts } from "../../candidates/_components/ui";
 import { scheduleInterviewsAction, type Scheduled } from "../actions";
+import { defaultTools, isToolId } from "@/lib/interview/tools";
 import QuestionsPicker from "./QuestionsPicker";
 import { CandidatesStep, FORMAT_ICON, FormatStep, PanelStep, ReviewStep, ScheduleStep } from "./Steps";
 import { fmtMinutes, fmtWhen, spring } from "./parts";
@@ -221,6 +222,7 @@ export default function InterviewWizard({ slug, meId, people, members, roundOpti
         brief: state.brief,
         candidateBrief: state.candidateBrief,
         sendInvites: state.sendInvites,
+        tools: state.tools ? state.tools.filter(isToolId) : defaultTools(state.format),
       });
       if (!res.ok) return toast(res.error, "error");
       // A one-room setup with no people still keeps its time.

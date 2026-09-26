@@ -10,7 +10,8 @@ import { useEffect, useState } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
-import { BookOpen, Check, ChevronDown, ListChecks, X } from "lucide-react";
+import { BookOpen, Check, ChevronDown, ListChecks, Send, X } from "lucide-react";
+import { ASK_EVENT } from "@/lib/interview/tools";
 
 export type GuideData = {
   sessionId: string;
@@ -23,7 +24,7 @@ export type GuideData = {
   pickHref: string | null;
 };
 
-export default function InterviewerGuide({ guide }: { guide: GuideData }) {
+export default function InterviewerGuide({ guide, tools = false }: { guide: GuideData; tools?: boolean }) {
   const reduce = useReducedMotion();
   const [open, setOpen] = useState(false);
   const [asked, setAsked] = useState<number[]>([]);
@@ -56,7 +57,7 @@ export default function InterviewerGuide({ guide }: { guide: GuideData }) {
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="fixed bottom-5 right-5 z-40 inline-flex items-center gap-2 h-11 pl-3.5 pr-4 rounded-full border border-border-strong bg-elevated text-fg text-[13px] font-medium shadow-lg shadow-black/30 hover:bg-panel transition"
+        className={`fixed bottom-3 md:bottom-4 ${tools ? "left-3 md:left-5" : "right-3 md:right-5"} z-[112] inline-flex items-center gap-2 h-12 pl-3.5 pr-4 rounded-full border border-border-strong bg-elevated text-fg text-[13px] font-medium shadow-lg shadow-black/30 hover:bg-panel transition`}
         aria-haspopup="dialog"
       >
         <BookOpen className="w-4 h-4 text-secondary-soft" aria-hidden />
@@ -74,7 +75,7 @@ export default function InterviewerGuide({ guide }: { guide: GuideData }) {
           <>
             <motion.div
               key="scrim"
-              className="fixed inset-0 z-40 bg-bg/60 backdrop-blur-[2px]"
+              className="fixed inset-0 z-[120] bg-bg/60 backdrop-blur-[2px]"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
@@ -89,7 +90,7 @@ export default function InterviewerGuide({ guide }: { guide: GuideData }) {
               animate={{ x: 0 }}
               exit={reduce ? undefined : { x: "100%" }}
               transition={{ type: "spring", stiffness: 380, damping: 38 }}
-              className="fixed right-0 top-0 bottom-0 z-50 w-full max-w-[440px] bg-surface border-l border-border-strong shadow-2xl flex flex-col"
+              className="fixed right-0 top-0 bottom-0 z-[121] w-full max-w-[440px] bg-surface border-l border-border-strong shadow-2xl flex flex-col"
             >
               <div className="flex items-center justify-between gap-3 px-5 h-14 border-b border-border">
                 <div className="flex items-center gap-2">
@@ -145,6 +146,21 @@ export default function InterviewerGuide({ guide }: { guide: GuideData }) {
                                 {done && <Check className="w-3 h-3" strokeWidth={3} />}
                               </button>
                               <span className={`flex-1 text-[13px] leading-relaxed ${done ? "text-muted" : "text-fg"}`}>{it.q}</span>
+                              {tools && (
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    window.dispatchEvent(new CustomEvent(ASK_EVENT, { detail: it.q }));
+                                    if (!done) toggle(i);
+                                    setOpen(false);
+                                  }}
+                                  aria-label="Show this question to the candidate"
+                                  title="Show to candidate"
+                                  className="w-6 h-6 rounded flex items-center justify-center text-subtle hover:text-secondary-soft"
+                                >
+                                  <Send className="w-3.5 h-3.5" />
+                                </button>
+                              )}
                               {it.a && (
                                 <button
                                   type="button"

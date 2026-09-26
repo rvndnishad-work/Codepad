@@ -9,6 +9,7 @@ import { canMember } from "@/lib/permissions";
 import { writeWorkspaceAuditEntry, WORKSPACE_AUDIT_ACTIONS } from "@/lib/workspace-audit";
 import { createInterviewSession, resolveRounds, sourceTypeOf } from "@/lib/interview/create-server";
 import { notifyInterviewQuestionsRequested } from "@/lib/notifications/triggers";
+import { TOOL_IDS, defaultTools, initialTools } from "@/lib/interview/tools";
 import {
   formatOf,
   isEmail,
@@ -87,6 +88,7 @@ const scheduleSchema = z.object({
   brief: z.string().trim().max(2000),
   candidateBrief: z.string().trim().max(2000),
   sendInvites: z.boolean(),
+  tools: z.array(z.enum(TOOL_IDS)).max(TOOL_IDS.length).optional(),
 });
 
 export type ScheduleInput = z.input<typeof scheduleSchema>;
@@ -158,6 +160,7 @@ export async function scheduleInterviewsAction(slug: string, raw: ScheduleInput)
           guideTemplateId: guideId,
           interviewerBrief: d.brief || null,
           setupGroupId,
+          toolsJson: JSON.stringify(initialTools(d.tools ?? defaultTools(d.format))),
         },
       });
       if (!res.ok) throw new ActionError(res.error);

@@ -50,6 +50,8 @@ import {
 } from "@/lib/interview/wizard";
 import { Avatar, Btn, StageChip, inputCls } from "../../candidates/_components/ui";
 import { roleName } from "./QuestionsPicker";
+import { TOOLS, defaultTools, isToolId, type ToolId } from "@/lib/interview/tools";
+import { TOOL_ICON } from "@/app/interview/[id]/tools/icons";
 import { CheckDot, ChoiceCard, Chip, Segmented, StepHeading, Switch, fmtMinutes, fmtWhen, spring, textareaCls } from "./parts";
 
 type Patch = (p: Partial<WizardState>) => void;
@@ -753,6 +755,8 @@ export function ReviewStep({
         />
       </div>
 
+      <RoomTools state={state} patch={patch} />
+
       <AnimatePresence>
         {issues.length > 0 && (
           <motion.ul initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="rounded-xl border border-danger/35 bg-danger/[0.06] p-4 flex flex-col gap-1.5">
@@ -766,6 +770,55 @@ export function ReviewStep({
         )}
       </AnimatePresence>
     </div>
+  );
+}
+
+/** Which room tools are on when the interview opens. Interviewers can still
+ * switch any tool on or off during the interview. */
+function RoomTools({ state, patch }: { state: WizardState; patch: Patch }) {
+  const suggested = defaultTools(state.format);
+  const on: ToolId[] = state.tools ? state.tools.filter(isToolId) : suggested;
+  const custom = !!state.tools;
+  const toggle = (id: ToolId) => patch({ tools: on.includes(id) ? on.filter((t) => t !== id) : [...on, id] });
+  return (
+    <section className="rounded-xl border border-border bg-surface p-4 flex flex-col gap-3">
+      <div className="flex flex-wrap items-baseline justify-between gap-2">
+        <div className="min-w-0">
+          <h3 className="text-[14px] font-medium text-fg">Tools in the room</h3>
+          <p className="text-[13px] text-muted mt-0.5">Ready in the dock when the interview opens. Interviewers can switch any tool on or off during the call.</p>
+        </div>
+        {custom && (
+          <button type="button" onClick={() => patch({ tools: undefined })} className="text-[12px] text-secondary-soft hover:underline">
+            Use the suggested set
+          </button>
+        )}
+      </div>
+      <div className="flex flex-wrap gap-2" role="group" aria-label="Tools in the room">
+        {TOOLS.map((t) => {
+          const Icon = TOOL_ICON[t.id];
+          const sel = on.includes(t.id);
+          return (
+            <motion.button
+              key={t.id}
+              type="button"
+              role="checkbox"
+              aria-checked={sel}
+              title={t.blurb}
+              onClick={() => toggle(t.id)}
+              whileTap={{ scale: 0.96 }}
+              transition={spring}
+              className={`inline-flex items-center gap-2 h-9 pl-2.5 pr-3 rounded-lg border text-[13px] font-medium transition-colors ${
+                sel ? "border-secondary/60 bg-secondary/[0.08] text-fg" : "border-border text-muted hover:text-fg hover:border-border-strong"
+              }`}
+            >
+              <CheckDot on={sel} size={16} square />
+              <Icon className="w-4 h-4" aria-hidden />
+              {t.label}
+            </motion.button>
+          );
+        })}
+      </div>
+    </section>
   );
 }
 

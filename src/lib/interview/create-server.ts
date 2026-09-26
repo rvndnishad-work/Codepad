@@ -42,6 +42,7 @@ export type CreateInterviewInput = {
     guideTemplateId: string | null;
     interviewerBrief: string | null;
     setupGroupId: string | null;
+    toolsJson?: string | null;
   };
 };
 
@@ -221,6 +222,7 @@ export async function createInterviewSession(input: CreateInterviewInput): Promi
             interviewerBrief: w.interviewerBrief,
             createdById: input.actor.id === input.ownerId ? null : input.actor.id,
             setupGroupId: w.setupGroupId,
+            toolsJson: w.toolsJson ?? null,
           }
         : {}),
     },

@@ -8,6 +8,7 @@ import InterviewRunner, {
 } from "./InterviewRunner";
 import MobileLobby from "@/components/MobileLobby";
 import InterviewerGuide, { type GuideData } from "./InterviewerGuide";
+import InterviewToolbox from "./tools/InterviewToolbox";
 import { parseQuestionnaire } from "@/lib/ai-interview/questionnaire";
 import { questionState } from "@/lib/interview/wizard";
 import { shouldRenderMobileLobby } from "@/lib/device";
@@ -248,7 +249,18 @@ export default async function InterviewRunPage({
 
   return (
     <>
-    {guide && <InterviewerGuide guide={guide} />}
+    {guide && <InterviewerGuide guide={guide} tools={interview.type === "live"} />}
+    {interview.type === "live" && (
+      <InterviewToolbox
+        sessionId={interview.id}
+        roomKey={interview.shareToken}
+        token={hasShareToken ? token! : null}
+        interviewer={interviewerView}
+        meName={(interviewerView ? session?.user?.name : interview.candidateName) ?? ""}
+        format={interview.format}
+        guideQuestions={guide?.items.map((i) => i.q) ?? []}
+      />
+    )}
     <InterviewRunner
       interview={{
         id: interview.id,

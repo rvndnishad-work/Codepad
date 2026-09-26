@@ -128,6 +128,8 @@ export type WizardState = {
   sendInvites: boolean;
   /** Length was set by hand, so it stops following the rounds. */
   lengthSet?: boolean;
+  /** Room tools switched on at the start. Unset follows the format. */
+  tools?: string[];
 };
 
 export type StepId = "format" | "candidates" | "panel" | "questions" | "schedule" | "review";

@@ -209,5 +209,5 @@ export default async function AIInterviewRunPage({ params, searchParams }: Props
 /** What the candidate screen needs to know up front: how answers are given and whether they are recorded. */
 function theoryInfo(json: string | null | undefined) {
   const s = parseTheorySettings(json);
-  return { answerMode: s.answerMode, recordAudio: s.recordAudio };
+  return { answerMode: s.answerMode, recordAudio: s.recordAudio, language: s.language };
 }

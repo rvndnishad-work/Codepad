@@ -99,7 +99,7 @@ export type RoundView = {
   files: Record<string, string>;
   status: string;
   /** Theory rounds: how answers are given and whether spoken answers are recorded for replay. */
-  theory?: { answerMode: "voice" | "voice-only" | "typing"; recordAudio: boolean };
+  theory?: { answerMode: "voice" | "voice-only" | "typing"; recordAudio: boolean; language?: string };
 };
 
 type Props = {
@@ -1198,6 +1198,7 @@ export default function AIInterviewWorkspace({ session, rounds, initialChat, ser
                 status={activeRound.status}
                 answerMode={activeRound.theory?.answerMode ?? "voice"}
                 recordAudio={activeRound.theory?.recordAudio ?? false}
+                language={activeRound.theory?.language}
                 serverTranscribe={serverTranscribe}
                 disabled={completed || outOfCredits || !!aiStatus?.expired}
                 finishLabel={nextRound ? "Next round" : "Finish and submit"}

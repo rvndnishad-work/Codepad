@@ -11,6 +11,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { guestFor } from "@/lib/interview/guests";
+import { movedWorkspaceSlug } from "@/lib/workspace/slug-redirect";
 import { passExpiry, roomCookieName, signRoomPass, verifyRoomPass } from "@/lib/interview/room-pass";
 
 const OPEN = new Set(["scheduled", "in_progress"]);
@@ -28,6 +29,11 @@ export async function GET(req: Request, { params }: { params: Promise<{ slug: st
     where: { id },
     select: { id: true, shareToken: true, status: true, scheduledAt: true, totalSec: true, type: true, creatorRole: true, workspace: { select: { slug: true } } },
   });
+  if (s && s.type === "live" && s.workspace && s.workspace.slug !== slug && (await movedWorkspaceSlug(slug)) === s.workspace.slug) {
+    // An invite sent before the workspace changed its web address.
+    const moved = new URL(`/w/${encodeURIComponent(s.workspace.slug)}/interviews/${encodeURIComponent(id)}/join${url.search}`, url);
+    return NextResponse.redirect(moved, { status: 307, headers: { "Referrer-Policy": "no-referrer", "Cache-Control": "no-store" } });
+  }
   if (!s || s.type !== "live" || s.workspace?.slug !== slug) return fail("invalid");
 
   let pass: string | null = null;

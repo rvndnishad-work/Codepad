@@ -11,9 +11,13 @@ import { advanceCandidateStage } from "@/lib/crm/advance";
 import { parseTemplateItems } from "@/lib/take-home/status";
 import type { RoundSpecInput } from "@/lib/ai-interview/rounds";
 import { SCREENING_KIND_LABELS } from "./settings";
+import { loadWorkspaceSettings } from "@/lib/workspace/settings-server";
+import { screeningStartValues } from "@/lib/workspace/settings";
+import { takeHomePassMarkOf } from "@/lib/take-home/pass-mark";
 
 export type DispatchResult = { ok: true; sessionId: string; emailed: boolean; reused?: boolean } | { ok: false; error: string };
 
+/** Used only when the workspace settings cannot be read. */
 const TAKE_HOME_DAYS = 7;
 const MIN_QUESTION_MINUTES = 15;
 const MAX_QUESTION_MINUTES = 1440;
@@ -137,7 +141,10 @@ async function sendTakeHome(
     limits[i.challengeId] = m;
     total += m;
   }
-  const deadlineAt = new Date(Date.now() + TAKE_HOME_DAYS * 86_400_000);
+  // A take-home sent from an ATS starts from the workspace's screening defaults.
+  const settings = await loadWorkspaceSettings(ws.id);
+  const start = settings ? screeningStartValues(settings).takeHome : null;
+  const deadlineAt = new Date(Date.now() + (start?.expiresInDays ?? TAKE_HOME_DAYS) * 86_400_000);
   const token = crypto.randomBytes(32).toString("hex");
   const session = await prisma.interviewSession.create({
     data: {
@@ -159,6 +166,14 @@ async function sendTakeHome(
       candidateAccessToken: token,
       deadlineAt,
       takeHomeTemplateId: template.id,
+      ...(start
+        ? {
+            takeHomePassMark: takeHomePassMarkOf(start.passMark),
+            reminderStartAfterHours: start.reminders.startAfterHours,
+            reminderBeforeDeadlineHours: start.reminders.beforeDeadlineHours,
+            remindersOff: start.reminders.off,
+          }
+        : {}),
     },
     select: { id: true },
   });

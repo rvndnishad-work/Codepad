@@ -29,8 +29,8 @@ const say = (text: string) => cleanAnswerInput({ text, mode: "voice", seconds: 4
 
 describe("theory settings", () => {
   it("falls back to defaults for anything unexpected", () => {
-    expect(sanitizeTheory({ count: -2, secondsPerQuestion: 7, followUps: 9, answerMode: "shout" })).toEqual({ count: null, secondsPerQuestion: 180, followUps: 1, answerMode: "voice", recordAudio: false });
-    expect(sanitizeTheory({ count: "8", secondsPerQuestion: 120, followUps: 0, answerMode: "typing" })).toEqual({ count: 8, secondsPerQuestion: 120, followUps: 0, answerMode: "typing", recordAudio: false });
+    expect(sanitizeTheory({ count: -2, secondsPerQuestion: 7, followUps: 9, answerMode: "shout" })).toEqual({ count: null, secondsPerQuestion: 180, followUps: 1, answerMode: "voice", recordAudio: false, language: "en" });
+    expect(sanitizeTheory({ count: "8", secondsPerQuestion: 120, followUps: 0, answerMode: "typing" })).toEqual({ count: 8, secondsPerQuestion: 120, followUps: 0, answerMode: "typing", recordAudio: false, language: "en" });
     expect(sanitizeTheory({ recordAudio: true }).recordAudio).toBe(true);
     expect(sanitizeTheory({ recordAudio: true, answerMode: "typing" }).recordAudio).toBe(false);
     expect(parseTheorySettings("not json").secondsPerQuestion).toBe(180);

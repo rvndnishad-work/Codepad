@@ -1,6 +1,9 @@
 "use server";
 
 import { randomUUID } from "node:crypto";
+import { loadWorkspaceSettings } from "@/lib/workspace/settings-server";
+import { normalizeWorkspaceSettings, screeningStartValues } from "@/lib/workspace/settings";
+import { storedPassMark } from "@/lib/interview/scorecard";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { auth } from "@/lib/auth";
@@ -189,6 +192,9 @@ export async function scheduleInterviewsAction(slug: string, raw: ScheduleInput)
     if (!meeting.ok) throw new ActionError(`Video call link: ${meeting.error}`);
     const meetingUrl = meeting.url;
     const setupGroupId = people.length > 1 ? randomUUID() : null;
+    // New interviews keep the workspace's scorecard defaults (Settings > Screening defaults).
+    const start = screeningStartValues((await loadWorkspaceSettings(a.workspace.id)) ?? normalizeWorkspaceSettings({})).interview;
+    const scorecard = { passMark: storedPassMark(start.passMark), first: start.scorecardFirst, reminderHours: start.scorecardReminderHours };
     const created: Scheduled[] = [];
     const toInvite: Parameters<typeof sendCandidateInvites>[0]["rooms"] = [];
     for (const [i, p] of people.entries()) {
@@ -222,6 +228,7 @@ export async function scheduleInterviewsAction(slug: string, raw: ScheduleInput)
           interviewerBrief: d.brief || null,
           setupGroupId,
           toolsJson: JSON.stringify(initialTools(d.tools ?? defaultTools(d.format))),
+          scorecard,
         },
       });
       if (!res.ok) throw new ActionError(res.error);

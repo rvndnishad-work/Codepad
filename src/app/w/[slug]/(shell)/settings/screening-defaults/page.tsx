@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { getSettingsPageContext } from "@/lib/workspace/settings-server";
-import { ComingSoonCard } from "../_components/form";
+import ScreeningDefaults from "./ScreeningDefaults";
 
 type Props = { params: Promise<{ slug: string }> };
 
@@ -10,9 +10,28 @@ export async function generateMetadata({ params }: Props) {
   return { title: ws ? `Screening defaults settings · ${ws.name} — Interviewpad` : "Workspace not found", robots: { index: false } };
 }
 
-/** Placeholder for the Screening defaults tab. Replace with the real tab. */
+/** Settings > Screening defaults: what new take-homes, AI screenings and interviews start with. */
 export default async function ScreeningDefaultsSettingsPage({ params }: Props) {
   const { slug } = await params;
-  await getSettingsPageContext(slug);
-  return <ComingSoonCard title="Screening defaults">Pass marks, reminders and lengths that new take-homes, AI screenings and interviews start with. Coming soon.</ComingSoonCard>;
+  const { settings: s, canEdit } = await getSettingsPageContext(slug);
+  return (
+    <ScreeningDefaults
+      slug={slug}
+      canEdit={canEdit}
+      initial={{
+        defaultTakeHomePassMark: s.defaultTakeHomePassMark,
+        defaultAiPassMark: s.defaultAiPassMark,
+        defaultInterviewPassMark: s.defaultInterviewPassMark,
+        inviteExpiryDays: s.inviteExpiryDays,
+        remindNotStarted: s.remindNotStarted,
+        remindBeforeDeadline: s.remindBeforeDeadline,
+        aiDefaultMinutes: s.aiDefaultMinutes,
+        keepVoiceAnswers: s.keepVoiceAnswers,
+        interviewerLanguage: s.interviewerLanguage,
+        interviewDefaultMinutes: s.interviewDefaultMinutes,
+        scorecardFirst: s.scorecardFirst,
+        scorecardReminderHours: s.scorecardReminderHours,
+      }}
+    />
+  );
 }

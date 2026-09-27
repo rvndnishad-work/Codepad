@@ -5,6 +5,8 @@ import { canMember } from "@/lib/permissions";
 import { loadWizardData } from "@/lib/interview/wizard-server";
 import InterviewWizard from "../_wizard/InterviewWizard";
 import { toWizardRound } from "@/lib/interview/wizard";
+import { loadWorkspaceSettings } from "@/lib/workspace/settings-server";
+import { SETTINGS_DEFAULTS } from "@/lib/workspace/settings";
 
 export const metadata = { title: "New interview", robots: { index: false, follow: false } };
 
@@ -29,7 +31,7 @@ export default async function NewInterviewPage({ params, searchParams }: Props) 
   if (!member) redirect("/dashboard");
   if (!(await canMember(member, "interview:conduct"))) redirect(`/w/${slug}/interviews`);
 
-  const data = await loadWizardData(workspace.id, session.user.id);
+  const [data, settings] = await Promise.all([loadWizardData(workspace.id, session.user.id), loadWorkspaceSettings(workspace.id)]);
   // Links from the Question library and candidate pages start part-way in.
   const challengeIds = list(sp.challenges);
   const rounds = challengeIds.flatMap((id) => {
@@ -49,6 +51,7 @@ export default async function NewInterviewPage({ params, searchParams }: Props) 
       roundOptions={data.rounds}
       guides={data.guides}
       bankCategories={data.bankCategories}
+      defaultMinutes={settings?.interviewDefaultMinutes ?? SETTINGS_DEFAULTS.interviewDefaultMinutes}
       prefill={{
         candidateIds: [...list(sp.candidates), ...list(sp.candidateId)].slice(0, 20),
         rounds: rounds.slice(0, 10),

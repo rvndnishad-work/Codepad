@@ -1,6 +1,7 @@
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { notFound, redirect } from "next/navigation";
+import { movedPagePath, movedWorkspaceSlug } from "@/lib/workspace/slug-redirect";
 import { isStaff } from "@/lib/permissions/staff";
 import { ensureTotpEnrolledOrRedirect } from "@/lib/totp-gate";
 import { normalizeWorkspaceSettings, twoFactorRequired } from "@/lib/workspace/settings";
@@ -39,12 +40,9 @@ export default async function WorkspaceLayout({ children, params }: Props) {
   });
 
   if (!activeWorkspace) {
-    // The workspace changed its web address: send old links to the new one.
-    const moved = await prisma.workspaceSlugRedirect.findUnique({
-      where: { oldSlug: slug },
-      select: { workspace: { select: { slug: true } } },
-    });
-    if (moved) redirect(`/w/${moved.workspace.slug}`);
+    // The workspace changed its web address: open the same page at the new one.
+    const moved = await movedWorkspaceSlug(slug);
+    if (moved) redirect(await movedPagePath(slug, moved));
     notFound();
   }
 

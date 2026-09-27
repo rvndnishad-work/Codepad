@@ -10,6 +10,7 @@
  * - `AIInterviewRound.answersJson`: what the candidate said, and the grades.
  */
 import type { QuestionItem } from "./questionnaire";
+import { DEFAULT_INTERVIEWER_LANGUAGE, interviewerLanguageLabel, interviewerLanguageOf, type InterviewerLanguage } from "./languages";
 
 export type TheoryAnswerMode = "voice" | "voice-only" | "typing";
 
@@ -22,9 +23,22 @@ export type TheorySettings = {
   answerMode: TheoryAnswerMode;
   /** Keep a recording of spoken answers for recruiters to replay. Off unless the recruiter turns it on; the candidate is told before starting. */
   recordAudio: boolean;
+  /**
+   * Language the interviewer speaks and listens in. New rounds start from the
+   * workspace default (Settings > Screening defaults); rounds made before this
+   * existed read as English. Always set by sanitizeTheory.
+   */
+  language?: InterviewerLanguage;
 };
 
-export const DEFAULT_THEORY: TheorySettings = { count: null, secondsPerQuestion: 180, followUps: 1, answerMode: "voice", recordAudio: false };
+export const DEFAULT_THEORY: TheorySettings = {
+  count: null,
+  secondsPerQuestion: 180,
+  followUps: 1,
+  answerMode: "voice",
+  recordAudio: false,
+  language: DEFAULT_INTERVIEWER_LANGUAGE,
+};
 export const SECONDS_CHOICES = [60, 120, 180, 300] as const;
 export const ANSWER_MODE_LABELS: Record<TheoryAnswerMode, string> = {
   voice: "Voice, typing allowed",
@@ -47,6 +61,7 @@ export function sanitizeTheory(raw: unknown): TheorySettings {
     answerMode: mode === "voice-only" || mode === "typing" ? mode : "voice",
     // Typed-only rounds have nothing to record.
     recordAudio: o.recordAudio === true && mode !== "typing",
+    language: interviewerLanguageOf(o.language),
   };
 }
 
@@ -339,8 +354,10 @@ export function fallbackGrade(answer: TheoryAnswer): TheoryGrade {
  * Prompt for deciding on a follow-up. It sees the question and the answer,
  * never the reference answer, so a follow-up cannot give the answer away.
  */
-export function followUpPrompt(p: { positionTitle: string; question: string; answer: string; earlier: TheoryFollowUp[] }): string {
+export function followUpPrompt(p: { positionTitle: string; question: string; answer: string; earlier: TheoryFollowUp[]; language?: string }): string {
   const earlier = p.earlier.map((f) => `Follow-up: ${f.q}\nAnswer: ${f.a || "(no answer)"}`).join("\n");
+  const lang = interviewerLanguageOf(p.language);
+  const speak = lang === DEFAULT_INTERVIEWER_LANGUAGE ? "" : ` The interview is in ${interviewerLanguageLabel(lang)}: write the follow-up in ${interviewerLanguageLabel(lang)}.`;
   return `You are interviewing a candidate for "${p.positionTitle}". You asked a theory question and heard the answer below (transcribed from speech).
 
 Question: ${p.question}
@@ -348,11 +365,15 @@ Answer: ${p.answer}
 ${earlier ? `${earlier}\n` : ""}
 Decide whether ONE short follow-up would show more about what the candidate knows. Ask one when the answer is vague, very short, or skips an obvious part of the question, or when it names technical terms without explaining them (then ask what one of those terms does or why it matters here, in your own neutral words). Do not ask one when the answer is already complete. Never hint at or state the correct answer, never correct the candidate, and never ask a new unrelated question.
 
-Output strictly a JSON object: { "followUp": string or null }. A follow-up is one plain spoken sentence under 25 words.`;
+Output strictly a JSON object: { "followUp": string or null }. A follow-up is one plain spoken sentence under 25 words.${speak}`;
 }
 
-/** Offline stand-in: probe only clearly thin answers, with neutral wording. */
-export function fallbackFollowUp(answer: string): string | null {
+/**
+ * Offline stand-in: probe only clearly thin answers, with neutral wording.
+ * The canned probe is English, so interviews in another language skip it.
+ */
+export function fallbackFollowUp(answer: string, language?: string): string | null {
+  if (interviewerLanguageOf(language) !== DEFAULT_INTERVIEWER_LANGUAGE) return null;
   const words = answer.split(/\s+/).filter(Boolean).length;
   return words > 0 && words < 20 ? "Could you expand on that with a concrete example?" : null;
 }

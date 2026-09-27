@@ -1,8 +1,9 @@
 import { headers } from "next/headers";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { loadRoom } from "@/lib/interview/room-server";
+import { movedPagePath, movedWorkspaceSlug } from "@/lib/workspace/slug-redirect";
 import { ensureTotpEnrolledOrRedirect, PAID_PLANS, WORKSPACE_ADMIN_ROLES } from "@/lib/totp-gate";
 
 /** Loads the room for this request, or says why it cannot be opened. */
@@ -10,7 +11,12 @@ export async function roomForRequest(slug: string, id: string) {
   const [session, hdrs] = await Promise.all([auth().catch(() => null), headers()]);
   const user = session?.user?.id ? { id: session.user.id, name: session.user.name, email: session.user.email } : null;
   const res = await loadRoom(slug, id, { user, cookieHeader: hdrs.get("cookie") });
-  if (!res.ok && res.reason === "missing") notFound();
+  if (!res.ok && res.reason === "missing") {
+    // Links sent before the workspace changed its web address.
+    const moved = await movedWorkspaceSlug(slug);
+    if (moved) redirect(await movedPagePath(slug, moved, `/w/${slug}/interviews/${id}/lobby`));
+    notFound();
+  }
 
   // Same second-factor rule as the workspace itself: owners and admins of a
   // paid workspace must have 2FA before they see candidate data.

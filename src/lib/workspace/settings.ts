@@ -20,6 +20,7 @@ import {
 } from "@/lib/interview/scorecard";
 import { DEFAULT_LAST_CALL_HOURS, DEFAULT_START_REMINDER_HOURS, type ReminderPlan } from "@/lib/take-home/reminders";
 import { DEFAULT_EXPIRY_DAYS, DEFAULT_REMINDER_DAYS, EXPIRY_CHOICES } from "@/lib/ai-interview/console";
+import { INTERVIEWER_LANGUAGES } from "@/lib/ai-interview/languages";
 
 const DAY_MS = 86_400_000;
 
@@ -70,17 +71,8 @@ export const SESSION_MAX_AGE_CHOICES = [1, 7, 14, 30] as const;
 export const API_KEY_LIFETIME_CHOICES = [30, 90, 180, 365] as const;
 export const LOW_CREDIT_CHOICES = [5, 10, 25, 50] as const;
 
-export const INTERVIEWER_LANGUAGES = [
-  { id: "en", label: "English" },
-  { id: "es", label: "Spanish" },
-  { id: "fr", label: "French" },
-  { id: "de", label: "German" },
-  { id: "pt", label: "Portuguese" },
-  { id: "it", label: "Italian" },
-  { id: "nl", label: "Dutch" },
-  { id: "hi", label: "Hindi" },
-  { id: "ja", label: "Japanese" },
-] as const;
+/** Languages the AI interviewer speaks in theory rounds (id, label, speech tag). */
+export { INTERVIEWER_LANGUAGES };
 
 /** Roles someone can join at without an invite. Never Owner or Admin. */
 export const JOIN_ROLES = ["RECRUITER", "INTERVIEWER", "VIEWER"] as const;
@@ -246,6 +238,23 @@ function parseHttpsUrl(v: unknown): Parsed<string | null> {
   }
 }
 
+/**
+ * A logo address: https, or plain http on this machine so an uploaded logo
+ * (served from /api/workspace-logo on the app's own origin) works in local
+ * development too.
+ */
+function parseLogoUrl(v: unknown): Parsed<string | null> {
+  if (typeof v === "string" && /^http:\/\//i.test(v.trim())) {
+    try {
+      const u = new URL(v.trim());
+      if (["localhost", "127.0.0.1", "[::1]"].includes(u.hostname) && v.length <= 500) return ok(u.toString());
+    } catch {
+      // Falls through to the https rule and its message.
+    }
+  }
+  return parseHttpsUrl(v);
+}
+
 function parseEmail(v: unknown): Parsed<string | null> {
   if (blank(v)) return ok(null);
   if (typeof v !== "string") return bad("Enter an email address.");
@@ -338,7 +347,7 @@ export const SETTINGS_FIELDS = {
     },
     show: (v) => `/w/${orNone(v, "")}`,
   },
-  logoUrl: { group: "general", label: "Logo", parse: parseHttpsUrl, show: (v) => (v ? "Custom logo" : "No logo") },
+  logoUrl: { group: "general", label: "Logo", parse: parseLogoUrl, show: (v) => (v ? "Custom logo" : "No logo") },
   timezone: {
     group: "general",
     label: "Time zone",
@@ -598,15 +607,20 @@ export function defaultPassMarks(s: Pick<S, "defaultTakeHomePassMark" | "default
  * already uses. Existing items keep the values they were sent with.
  */
 export function screeningStartValues(s: S) {
+  const noReminders = !s.remindNotStarted && !s.remindBeforeDeadline;
   return {
     takeHome: {
       passMark: s.defaultTakeHomePassMark,
       expiresInDays: s.inviteExpiryDays,
-      reminders: {
-        startAfterHours: s.remindNotStarted ? DEFAULT_START_REMINDER_HOURS : null,
-        beforeDeadlineHours: s.remindBeforeDeadline ? DEFAULT_LAST_CALL_HOURS : null,
-        off: !s.remindNotStarted && !s.remindBeforeDeadline,
-      } satisfies ReminderPlan,
+      // Both off keeps the usual schedule but switched off, so turning
+      // reminders back on in the composer has something to send.
+      reminders: (noReminders
+        ? { startAfterHours: DEFAULT_START_REMINDER_HOURS, beforeDeadlineHours: DEFAULT_LAST_CALL_HOURS, off: true }
+        : {
+            startAfterHours: s.remindNotStarted ? DEFAULT_START_REMINDER_HOURS : null,
+            beforeDeadlineHours: s.remindBeforeDeadline ? DEFAULT_LAST_CALL_HOURS : null,
+            off: false,
+          }) satisfies ReminderPlan,
     },
     ai: {
       passMark: s.defaultAiPassMark,

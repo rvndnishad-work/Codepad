@@ -5,6 +5,7 @@ import { useCallback, useEffect, useRef, useState, useSyncExternalStore, type Mu
 import { Check, Clock, Keyboard, Loader2, Mic, MicOff, RotateCcw, SkipForward, Volume2, VolumeX } from "lucide-react";
 import { toast } from "sonner";
 import { cancelSpeak, speakNaturally } from "@/lib/copilot-tts";
+import { speechLangOf } from "@/lib/ai-interview/languages";
 import type { TheoryAnswerMode, TheoryView } from "@/lib/ai-interview/theory";
 import { canRecord, useAnswerRecorder, type Clip } from "./useAnswerRecorder";
 import { joinPhrases, transcriptOf } from "@/lib/ai-interview/speech";
@@ -30,6 +31,8 @@ type Props = {
   status: string;
   answerMode: TheoryAnswerMode;
   recordAudio: boolean;
+  /** Language the interviewer speaks and listens in (an interviewer language id such as "es"). */
+  language?: string;
   /** The server can transcribe recordings, for browsers that cannot. */
   serverTranscribe: boolean;
   disabled: boolean;
@@ -52,7 +55,7 @@ type Recognizer = {
   onend: (() => void) | null;
 };
 
-function makeRecognizer(): Recognizer | null {
+function makeRecognizer(lang: string): Recognizer | null {
   if (typeof window === "undefined") return null;
   const w = window as unknown as { SpeechRecognition?: new () => Recognizer; webkitSpeechRecognition?: new () => Recognizer };
   const Ctor = w.SpeechRecognition ?? w.webkitSpeechRecognition;
@@ -60,7 +63,7 @@ function makeRecognizer(): Recognizer | null {
   const rec = new Ctor();
   rec.continuous = true;
   rec.interimResults = true;
-  rec.lang = "en-US";
+  rec.lang = lang;
   return rec;
 }
 
@@ -75,12 +78,14 @@ export default function TheoryRound({
   status,
   answerMode,
   recordAudio,
+  language,
   serverTranscribe,
   disabled,
   finishLabel,
   finishing,
   onFinish,
 }: Props) {
+  const speechLang = speechLangOf(language);
   const [phase, setPhase] = useState<"intro" | "loading" | "question" | "done">(status === "PENDING" ? "intro" : "loading");
   const [view, setView] = useState<TheoryView | null>(null);
   const [ai, setAi] = useState<AiState>("idle");
@@ -150,7 +155,7 @@ export default function TheoryRound({
       const saved = localStorage.getItem(consentKey(roundId));
       if (saved === "yes" || saved === "no") setConsentState(saved);
     } catch {}
-    const rec = makeRecognizer();
+    const rec = makeRecognizer(speechLang);
     setSupported(!!rec);
     if (!rec) return;
     rec.onresult = (e) => {
@@ -193,7 +198,7 @@ export default function TheoryRound({
       } catch {}
       cancelSpeak();
     };
-  }, [roundId, setAnswer]);
+  }, [roundId, setAnswer, speechLang]);
 
   /** Send one clip: kept for replay when recording is on, and turned into text when the browser cannot. */
   const upload = useCallback(
@@ -325,8 +330,8 @@ export default function TheoryRound({
       setAi("idle");
       then?.();
     };
-    void speakNaturally(line, { onEnd: finish, onError: finish });
-  }, []);
+    void speakNaturally(line, { lang: speechLang, onEnd: finish, onError: finish });
+  }, [speechLang]);
 
   const canSpeakRef = useRef(canSpeak);
   canSpeakRef.current = canSpeak;

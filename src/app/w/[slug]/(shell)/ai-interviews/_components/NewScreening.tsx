@@ -718,7 +718,7 @@ export default function NewScreening({
             <p className="text-[13px] text-danger">
               {check.needed - check.available} more {check.needed - check.available === 1 ? "credit is" : "credits are"} needed.{" "}
               {canBuy ? (
-                <Link href={base} className="underline">
+                <Link href={`/w/${slug}/billing?tab=usage`} className="underline">
                   Buy credits
                 </Link>
               ) : (

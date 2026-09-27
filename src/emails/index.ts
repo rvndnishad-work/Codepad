@@ -67,10 +67,27 @@ import {
   type ScorecardReminderProps,
 } from "./ScorecardReminder";
 import {
+  InterviewCancelled,
+  interviewCancelledText,
+  type InterviewCancelledProps,
+} from "./InterviewCancelled";
+import { CreditsLow, creditsLowText, type CreditsLowProps } from "./CreditsLow";
+import {
   WorkspaceInviteEmail,
   workspaceInviteEmailText,
   type WorkspaceInviteEmailProps,
 } from "./WorkspaceInviteEmail";
+import { ReplyToConfirm, replyToConfirmText, type ReplyToConfirmProps } from "./ReplyToConfirm";
+import {
+  TwoFactorReminder,
+  twoFactorReminderText,
+  type TwoFactorReminderProps,
+} from "./TwoFactorReminder";
+import {
+  DataPrivacyNotice,
+  dataPrivacyNoticeText,
+  type DataPrivacyNoticeProps,
+} from "./DataPrivacyNotice";
 
 /**
  * Registry shape: each entry describes how to subject-line, render, and
@@ -89,9 +106,10 @@ export const TEMPLATES = {
   "ai-screening-invite": {
     Component: AiScreeningInvite,
     subject: (p) =>
-      p.reminder
+      p.custom?.subject ||
+      (p.reminder
         ? `Reminder: your AI technical screening for ${p.positionTitle} at ${p.workspaceName}`
-        : `Your AI technical screening for ${p.positionTitle} at ${p.workspaceName}`,
+        : `Your AI technical screening for ${p.positionTitle} at ${p.workspaceName}`),
     text: aiScreeningInviteText,
   } satisfies TemplateDef<AiScreeningInviteProps>,
 
@@ -104,19 +122,19 @@ export const TEMPLATES = {
 
   "take-home-invite": {
     Component: TakeHomeInvite,
-    subject: (p) => `Your take-home from ${p.workspaceName}: ${p.challengeTitle}`,
+    subject: (p) => p.custom?.subject || `Your take-home from ${p.workspaceName}: ${p.challengeTitle}`,
     text: takeHomeInviteText,
   } satisfies TemplateDef<TakeHomeInviteProps>,
 
   "take-home-reminder": {
     Component: TakeHomeReminder,
-    subject: (p) => `Reminder: your ${p.workspaceName} take-home closes soon`,
+    subject: (p) => p.custom?.subject || `Reminder: your ${p.workspaceName} take-home closes soon`,
     text: takeHomeReminderText,
   } satisfies TemplateDef<TakeHomeReminderProps>,
 
   "take-home-submitted-candidate": {
     Component: TakeHomeSubmittedCandidate,
-    subject: (p) => `We received your take-home: ${p.challengeTitle}`,
+    subject: (p) => p.custom?.subject || `We received your take-home: ${p.challengeTitle}`,
     text: takeHomeSubmittedCandidateText,
   } satisfies TemplateDef<TakeHomeSubmittedCandidateProps>,
 
@@ -128,7 +146,7 @@ export const TEMPLATES = {
 
   "take-home-session-invite": {
     Component: TakeHomeSessionInvite,
-    subject: (p) => `Your take-home from ${p.workspaceName}: ${p.title}`,
+    subject: (p) => p.custom?.subject || `Your take-home from ${p.workspaceName}: ${p.title}`,
     text: takeHomeSessionInviteText,
   } satisfies TemplateDef<TakeHomeSessionInviteProps>,
 
@@ -140,7 +158,7 @@ export const TEMPLATES = {
 
   "interview-invite": {
     Component: InterviewInvite,
-    subject: (p) => `Live interview with ${p.workspaceName}: ${p.title}`,
+    subject: (p) => p.custom?.subject || `Live interview with ${p.workspaceName}: ${p.title}`,
     text: interviewInviteText,
   } satisfies TemplateDef<InterviewInviteProps>,
 
@@ -161,6 +179,36 @@ export const TEMPLATES = {
     subject: (p) => `${p.inviterName} invited you to ${p.workspaceName} on Interviewpad`,
     text: workspaceInviteEmailText,
   } satisfies TemplateDef<WorkspaceInviteEmailProps>,
+
+  "interview-cancelled": {
+    Component: InterviewCancelled,
+    subject: (p) => `Your interview with ${p.workspaceName} is cancelled`,
+    text: interviewCancelledText,
+  } satisfies TemplateDef<InterviewCancelledProps>,
+
+  "credits-low": {
+    Component: CreditsLow,
+    subject: (p) => `${p.workspaceName} has ${p.balance} AI screening ${p.balance === 1 ? "credit" : "credits"} left`,
+    text: creditsLowText,
+  } satisfies TemplateDef<CreditsLowProps>,
+
+  "reply-to-confirm": {
+    Component: ReplyToConfirm,
+    subject: (p) => `Confirm reply-to for ${p.workspaceName} on Interviewpad`,
+    text: replyToConfirmText,
+  } satisfies TemplateDef<ReplyToConfirmProps>,
+
+  "two-factor-reminder": {
+    Component: TwoFactorReminder,
+    subject: (p) => `Turn on two-factor sign-in for ${p.workspaceName}`,
+    text: twoFactorReminderText,
+  } satisfies TemplateDef<TwoFactorReminderProps>,
+
+  "data-privacy-notice": {
+    Component: DataPrivacyNotice,
+    subject: (p) => p.subject,
+    text: dataPrivacyNoticeText,
+  } satisfies TemplateDef<DataPrivacyNoticeProps>,
 } as const;
 
 /** Allowed template names. */
@@ -180,4 +228,9 @@ export type TemplateProps = {
   "interviewer-invite": InterviewerInviteProps;
   "workspace-invite": WorkspaceInviteEmailProps;
   "scorecard-reminder": ScorecardReminderProps;
+  "interview-cancelled": InterviewCancelledProps;
+  "credits-low": CreditsLowProps;
+  "reply-to-confirm": ReplyToConfirmProps;
+  "two-factor-reminder": TwoFactorReminderProps;
+  "data-privacy-notice": DataPrivacyNoticeProps;
 };

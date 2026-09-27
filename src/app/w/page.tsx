@@ -9,6 +9,8 @@ import { planDisplay, humanize, plural, relativeTime, setupSteps } from "@/lib/w
 import { countReviewQueue } from "@/lib/workspace/review-queue";
 import { effectivePlan } from "@/lib/billing/trial";
 import WorkspaceAppBar, { WorkspaceInitial } from "./_components/WorkspaceAppBar";
+import JoinWorkspaceButton from "./_components/JoinWorkspaceButton";
+import { findJoinableWorkspaces } from "@/lib/workspace/join";
 
 export const metadata: Metadata = {
   title: "Workspaces",
@@ -25,7 +27,7 @@ export default async function WorkspaceHubPage() {
   }
   const userId = session.user.id;
 
-  const [allMemberships, invites, isAdmin] = await Promise.all([
+  const [allMemberships, invites, isAdmin, joinable] = await Promise.all([
     prisma.workspaceMember.findMany({
       where: { userId },
       orderBy: { workspace: { name: "asc" } },
@@ -68,6 +70,8 @@ export default async function WorkspaceHubPage() {
         })
       : Promise.resolve([]),
     isStaff(session),
+    // Settings > Security: workspaces that let this email domain join without an invite.
+    findJoinableWorkspaces(userId, session.user.email).catch(() => []),
   ]);
 
   // System workspaces (double-underscore slugs, e.g. __ai-practice__) are
@@ -148,6 +152,31 @@ export default async function WorkspaceHubPage() {
                   >
                     Review invite
                   </Link>
+                </li>
+              ))}
+            </ul>
+          </section>
+        )}
+
+        {joinable.length > 0 && (
+          <section aria-labelledby="joinable-title" className="rounded-xl border border-border bg-surface">
+            <div className="px-5 pt-4 pb-2">
+              <h2 id="joinable-title" className="text-[15px] font-semibold">
+                {joinable.length === 1 ? "A workspace you can join" : "Workspaces you can join"}
+              </h2>
+              <p className="mt-0.5 text-[13px] text-muted">Your email lets you join these without an invite.</p>
+            </div>
+            <ul>
+              {joinable.map((w) => (
+                <li key={w.slug} className="flex items-center gap-3 px-5 py-3 border-t border-border">
+                  <WorkspaceInitial name={w.name} />
+                  <span className="flex-1 min-w-0 text-sm text-muted">
+                    <span className="text-fg font-medium">{w.name}</span>
+                    <span className="block text-[13px] text-subtle">
+                      {plural(w.members, "member")} · you join as {humanize(w.role).toLowerCase()}
+                    </span>
+                  </span>
+                  <JoinWorkspaceButton slug={w.slug} name={w.name} />
                 </li>
               ))}
             </ul>

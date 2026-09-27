@@ -42,7 +42,7 @@ const cardStyle: React.CSSProperties = {
 
 const footerStyle: React.CSSProperties = {
   margin: 0,
-  fontSize: 11,
+  fontSize: 12,
   color: COLORS.mute,
   lineHeight: 1.6,
 };
@@ -52,10 +52,14 @@ export type BaseLayoutProps = {
   preview: string;
   /** Footer line shown below the divider. Use for workspace attribution etc. */
   footer?: string;
+  /** Shown above the content, such as the workspace logo on candidate emails. */
+  header?: React.ReactNode;
+  /** Extra footer lines after `footer` (help, privacy, unsubscribe). */
+  footerExtra?: React.ReactNode;
   children: React.ReactNode;
 };
 
-export function BaseLayout({ preview, footer, children }: BaseLayoutProps) {
+export function BaseLayout({ preview, footer, header, footerExtra, children }: BaseLayoutProps) {
   return (
     <Html>
       <Head />
@@ -70,11 +74,15 @@ export function BaseLayout({ preview, footer, children }: BaseLayoutProps) {
         }}
       >
         <Container style={cardStyle}>
+          {header && <Section>{header}</Section>}
           <Section>{children}</Section>
-          {footer && (
+          {(footer || footerExtra) && (
             <>
               <Hr style={{ border: "none", borderTop: `1px solid ${COLORS.border}`, margin: "28px 0" }} />
-              <Text style={footerStyle}>{footer}</Text>
+              <Text style={footerStyle}>
+                {footer}
+                {footerExtra}
+              </Text>
             </>
           )}
         </Container>

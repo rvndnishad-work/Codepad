@@ -62,7 +62,7 @@ export async function POST(req: NextRequest) {
   if (!wantText) return NextResponse.json({ saved: true });
   if (!isTranscriptionConfigured()) return NextResponse.json({ error: "Spoken answers are not available right now. Please type your answer." }, { status: 503 });
   const v = theoryView(data, state);
-  const out = await transcribeAudio(audio, { prompt: transcriptionPrompt(v.question?.text ?? "", v.followUp) });
+  const out = await transcribeAudio(audio, { prompt: transcriptionPrompt(v.question?.text ?? "", v.followUp), language: data.settings.language });
   if (!out) return NextResponse.json({ error: "Could not turn that into text. Try again, or type your answer." }, { status: 502 });
   return NextResponse.json({ text: out.text.slice(0, 6000), saved: keep });
 }

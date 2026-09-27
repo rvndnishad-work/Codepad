@@ -133,8 +133,11 @@ export default async function WorkspaceEmailsPage({ params, searchParams }: Prop
       hasSession: !!l.sessionId,
       createdAt: l.createdAt.toISOString(),
       lastEventAt: l.lastEventAt?.toISOString() ?? null,
+      // Interview invites use the same permission as AI screenings (interview:conduct)
+      // and need the interview they belong to.
       canResend:
         canOfferResend(l) &&
+        (resendPathFor(l.template) !== "interview" || !!l.sessionId) &&
         (resendPathFor(l.template) === "take-home" ? canResendTakeHome : canResendScreening),
     };
   });

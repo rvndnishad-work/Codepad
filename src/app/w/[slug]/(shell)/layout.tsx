@@ -1,13 +1,14 @@
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { notFound, redirect } from "next/navigation";
+import { movedPagePath, movedWorkspaceSlug } from "@/lib/workspace/slug-redirect";
 import { isStaff } from "@/lib/permissions/staff";
-import {
-  ensureTotpEnrolledOrRedirect,
-  PAID_PLANS,
-  WORKSPACE_ADMIN_ROLES,
-} from "@/lib/totp-gate";
+import { ensureTotpEnrolledOrRedirect } from "@/lib/totp-gate";
+import { canJoinWithoutInvite, deletionFinalAt, formatWorkspaceDate, normalizeWorkspaceSettings, signInExpired, twoFactorRequired } from "@/lib/workspace/settings";
+import { signedOutPath } from "@/lib/workspace/security";
+import { canMember } from "@/lib/permissions";
 import WorkspaceShell from "./WorkspaceShell";
+import DeletionScheduledScreen from "./DeletionScheduledScreen";
 import { planDisplay, TAKE_HOME_REVIEW_STAGES } from "@/lib/workspace/display";
 import { touchMemberActivity } from "@/lib/workspace/activity";
 
@@ -41,20 +42,51 @@ export default async function WorkspaceLayout({ children, params }: Props) {
     },
   });
 
-  if (!activeWorkspace) notFound();
+  if (!activeWorkspace) {
+    // The workspace changed its web address: open the same page at the new one.
+    const moved = await movedWorkspaceSlug(slug);
+    if (moved) redirect(await movedPagePath(slug, moved));
+    notFound();
+  }
 
+  const settings = normalizeWorkspaceSettings(activeWorkspace);
   const myMember = activeWorkspace.members.find((m) => m.userId === userId);
   const myRole = myMember?.role;
-  if (!myMember || !myRole) redirect("/dashboard");
+  if (!myMember || !myRole) {
+    // Settings > Security can let people with a company email join without
+    // an invite; the workspace hub lists the ones they can join.
+    const email = session.user.email ?? "";
+    redirect(email && canJoinWithoutInvite(settings, email) && !slug.startsWith("__") ? "/w" : "/dashboard");
+  }
+
+  // Settings > Security: a sign-in older than the workspace allows, or from
+  // before "Sign out everyone", has to sign in again.
+  const signedInAt = typeof session.signedInAt === "number" ? new Date(session.signedInAt) : null;
+  if (signInExpired(settings, signedInAt)) redirect(signedOutPath(slug));
+
   // "Last active" on the Members page; written at most once an hour.
   await touchMemberActivity(myMember);
 
   // IP-42 AC #6: owners/admins of a paid-plan workspace must carry a second
   // factor before reaching workspace surfaces (candidate data, integrations).
-  const mustEnroll2fa =
-    (WORKSPACE_ADMIN_ROLES as readonly string[]).includes(myRole) &&
-    (PAID_PLANS as readonly string[]).includes(activeWorkspace.planName);
+  // Settings > Security can extend this to every member from a start date.
+  const mustEnroll2fa = twoFactorRequired(settings, myMember, activeWorkspace.planName);
   await ensureTotpEnrolledOrRedirect(userId, mustEnroll2fa);
+
+  // Settings > Data and privacy: a workspace waiting to be deleted is closed
+  // to everyone. Owners get the undo button.
+  const finalAt = deletionFinalAt(settings);
+  if (finalAt) {
+    return (
+      <DeletionScheduledScreen
+        slug={slug}
+        name={activeWorkspace.name}
+        finalAt={formatWorkspaceDate(finalAt, settings)}
+        daysLeft={Math.max(0, Math.ceil((finalAt.getTime() - Date.now()) / 86_400_000))}
+        isOwner={await canMember(myMember, "workspace:manage")}
+      />
+    );
+  }
 
   // Sidebar badges: submitted take-homes waiting on a decision, and live interviews.
   const reviewWhere = { OR: [{ candidateId: null }, { candidate: { stage: { in: [...TAKE_HOME_REVIEW_STAGES] } } }] };

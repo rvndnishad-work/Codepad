@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { authorizeTheoryRound } from "@/lib/ai-interview/theory-server";
-import { consumeCreditIfFirstTurn, InsufficientCreditsError } from "@/lib/ai-interview/credits";
+import { consumeCreditIfFirstTurn, ConsentRequiredError, InsufficientCreditsError } from "@/lib/ai-interview/credits";
 import { callGemini, extractText, geminiApiKey } from "@/lib/ai-interview/gemini";
 import { rateLimit } from "@/lib/rate-limit";
 import {
@@ -49,6 +49,9 @@ export async function POST(req: NextRequest) {
     if (err instanceof InsufficientCreditsError) {
       return NextResponse.json({ error: "Workspace is out of AI interview credits. Please contact your recruiter." }, { status: 402 });
     }
+    if (err instanceof ConsentRequiredError) {
+      return NextResponse.json({ error: "Agree to the consent step first. Reload the page to see it." }, { status: 403 });
+    }
     throw err;
   }
 
@@ -58,7 +61,7 @@ export async function POST(req: NextRequest) {
     state = recordAnswer(state, data, cleanAnswerInput(body.answer));
     if (canFollowUp(state, data.settings)) {
       const last = state.items[state.items.length - 1];
-      state = { ...state, pendingFollowUp: await decideFollowUp(session.positionTitle, last.q, last.followUps.length ? last.followUps[last.followUps.length - 1].a : last.a, last.followUps) };
+      state = { ...state, pendingFollowUp: await decideFollowUp(session.positionTitle, last.q, last.followUps.length ? last.followUps[last.followUps.length - 1].a : last.a, last.followUps, data.settings.language) };
     }
   }
 
@@ -84,14 +87,15 @@ async function decideFollowUp(
   question: string,
   answer: string,
   earlier: { q: string; a: string; mode: "voice" | "typed" }[],
+  language: string | undefined,
 ): Promise<string | null> {
   const apiKey = geminiApiKey();
-  if (!apiKey) return fallbackFollowUp(answer);
+  if (!apiKey) return fallbackFollowUp(answer, language);
   try {
     const res = await callGemini({
       apiKey,
       systemInstruction: "You are a careful technical interviewer. Output valid JSON only.",
-      contents: [{ role: "user", parts: [{ text: followUpPrompt({ positionTitle, question, answer, earlier }) }] }],
+      contents: [{ role: "user", parts: [{ text: followUpPrompt({ positionTitle, question, answer, earlier, language }) }] }],
       temperature: 0.3,
       maxOutputTokens: 200,
     });
@@ -100,6 +104,6 @@ async function decideFollowUp(
     return cleanFollowUp((JSON.parse(json) as { followUp?: unknown }).followUp);
   } catch (err) {
     console.warn("[ai-theory] follow-up decision failed, using fallback:", err instanceof Error ? err.message : err);
-    return fallbackFollowUp(answer);
+    return fallbackFollowUp(answer, language);
   }
 }

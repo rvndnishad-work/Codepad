@@ -6,18 +6,19 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import crypto from "crypto";
 import { canMember, isPermission } from "@/lib/permissions";
-import { appOrigin } from "@/lib/interview/links";
 import { writeWorkspaceAuditEntry, WORKSPACE_AUDIT_ACTIONS } from "@/lib/workspace-audit";
+import { sendWorkspaceInviteEmail } from "@/lib/workspace/invites-server";
+import { INVITE_TTL_MS } from "@/lib/workspace/bulk-invite";
 import {
   INVITABLE_ROLES,
-  ROLE_LABELS,
   WORKSPACE_ROLES,
   checkRemoval,
   checkRoleChange,
   seatUsage,
 } from "@/lib/workspace/members";
+import { normalizeWorkspaceSettings } from "@/lib/workspace/settings";
+import { inviteDomainError } from "@/lib/workspace/security";
 
-const INVITE_TTL_MS = 14 * 24 * 60 * 60 * 1000;
 
 const inviteSchema = z.object({
   email: z.string().email(),
@@ -56,36 +57,8 @@ async function loadContext(slug: string) {
   return { session, workspace, caller } as const;
 }
 
-function sendInviteEmail(params: {
-  workspace: { id: string; name: string };
-  inviteId: string;
-  email: string;
-  role: string;
-  token: string;
-  inviterName: string;
-}) {
-  // Fire-and-forget: the invite row is the source of truth and can be resent.
-  void (async () => {
-    try {
-      const { sendEmail } = await import("@/lib/email");
-      const origin = await appOrigin();
-      await sendEmail({
-        template: "workspace-invite",
-        to: params.email,
-        props: {
-          workspaceName: params.workspace.name,
-          inviterName: params.inviterName,
-          roleLabel: ROLE_LABELS[params.role] ?? params.role,
-          acceptUrl: `${origin}/invite/${params.token}`,
-        },
-        workspaceId: params.workspace.id,
-        idempotencyKey: `ws-invite:${params.inviteId}:${params.token.slice(0, 8)}`,
-      });
-    } catch (err) {
-      console.error("[ws-invite] email failed:", err);
-    }
-  })();
-}
+// Fire-and-forget: the invite row is the source of truth and can be resent.
+const sendInviteEmail = sendWorkspaceInviteEmail;
 
 // POST — invite a teammate ({ email, role }) or resend a pending invite
 // ({ resendInviteId }). Resending issues a fresh link and a new 14-day expiry.
@@ -109,6 +82,9 @@ export async function POST(req: Request, { params }: Params) {
       where: { id: resend.data.resendInviteId, workspaceId: workspace.id, acceptedAt: null },
     });
     if (!existing) return NextResponse.json({ error: "Invite not found" }, { status: 404 });
+    // Settings > Security: the allowed domains may have changed since it was sent.
+    const resendDomainError = inviteDomainError(normalizeWorkspaceSettings(workspace), existing.email);
+    if (resendDomainError) return NextResponse.json({ error: resendDomainError }, { status: 400 });
 
     // An expired invite no longer holds a seat, so resending it takes one.
     if (existing.expiresAt <= now) {
@@ -152,6 +128,10 @@ export async function POST(req: Request, { params }: Params) {
 
   const { email, role } = parsed.data;
   const targetEmail = email.toLowerCase().trim();
+
+  // Settings > Security: invites only go to the allowed email domains.
+  const domainError = inviteDomainError(normalizeWorkspaceSettings(workspace), targetEmail);
+  if (domainError) return NextResponse.json({ error: domainError }, { status: 400 });
 
   const existingUser = await prisma.user.findUnique({ where: { email: targetEmail }, select: { id: true } });
   if (existingUser && workspace.members.some((m) => m.userId === existingUser.id)) {

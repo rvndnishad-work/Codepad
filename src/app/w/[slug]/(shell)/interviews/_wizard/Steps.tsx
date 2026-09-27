@@ -567,7 +567,7 @@ function MeetingField({ value, onChange }: { value: string; onChange: (v: string
   );
 }
 
-export function ScheduleStep({ state, patch, calendar }: { state: WizardState; patch: Patch; calendar?: ReactNode }) {
+export function ScheduleStep({ state, patch, calendar, defaultMinutes }: { state: WizardState; patch: Patch; calendar?: ReactNode; defaultMinutes?: number }) {
   const format = formatOf(state.format);
   const rows: { key: string; name: string; email: string | null }[] = state.noCandidate || state.candidates.length === 0
     ? [{ key: "open", name: "Open link", email: null }]
@@ -575,7 +575,7 @@ export function ScheduleStep({ state, patch, calendar }: { state: WizardState; p
   const count = rows.length;
   const multi = count > 1;
   const [gap, setGap] = useState(15);
-  const suggested = suggestedMinutes(format, state.plan === "set" ? state.rounds : []);
+  const suggested = suggestedMinutes(format, state.plan === "set" ? state.rounds : [], defaultMinutes);
   const withEmail = state.candidates.filter((c) => c.email).length;
   const tz = typeof Intl !== "undefined" ? Intl.DateTimeFormat().resolvedOptions().timeZone : "";
   const times = Array.from({ length: count }, (_, i) => state.times[i] ?? "");

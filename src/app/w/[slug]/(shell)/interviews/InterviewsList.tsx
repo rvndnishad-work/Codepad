@@ -14,7 +14,7 @@ export type InterviewRow = {
   candidateName: string | null;
   candidateId: string | null;
   type: string;
-  state: "scheduled" | "live" | "completed";
+  state: "scheduled" | "live" | "completed" | "cancelled";
   verdict: string | null;
   shortCode: string | null;
   /** Interviewer side (host and panel) or the report; null when neither applies. */
@@ -45,6 +45,7 @@ const STATE: Record<InterviewRow["state"], { label: string; dot: string }> = {
   scheduled: { label: "Scheduled", dot: "bg-warning" },
   live: { label: "Live", dot: "bg-secondary animate-pulse motion-reduce:animate-none" },
   completed: { label: "Completed", dot: "bg-success" },
+  cancelled: { label: "Cancelled", dot: "bg-subtle" },
 };
 
 export default function InterviewsList({ slug, rows, view: initialView, q: initialQ }: { slug: string; rows: InterviewRow[]; view: string; q: string }) {
@@ -56,7 +57,7 @@ export default function InterviewsList({ slug, rows, view: initialView, q: initi
   // Built after mount so the server and client render the same markup.
   useEffect(() => setOrigin(window.location.origin), []);
   const counts = useMemo(() => {
-    const c: Record<View, number> = { all: rows.length, scheduled: 0, live: 0, completed: 0, questions: 0 };
+    const c: Record<View, number> = { all: rows.length, scheduled: 0, live: 0, completed: 0, cancelled: 0, questions: 0 };
     for (const r of rows) {
       c[r.state]++;
       if (r.questions === "needed") c.questions++;

@@ -6,14 +6,13 @@ import { useRouter } from "next/navigation";
 import { BookOpen, CheckCircle2, Copy, MoreHorizontal, Plus, ShieldAlert, Terminal } from "lucide-react";
 import { toast } from "sonner";
 import {
-  DEFAULT_EXPIRY_DAYS,
-  EXPIRY_CHOICES,
   STALE_AFTER_DAYS,
   accessLabel,
   expiryLabel,
   keyHealth,
 } from "@/lib/mcp/keys";
 import { relativeTime } from "@/lib/workspace/display";
+import { allowedKeyExpiryChoices, defaultKeyExpiryDays } from "@/lib/workspace/security";
 import { Btn, Dialog, Field, Menu, MenuItem, inputCls } from "../candidates/_components/ui";
 import {
   createMcpApiKeyAction,
@@ -65,6 +64,8 @@ interface ConsoleProps {
   workspaceName: string;
   mcpUrl: string;
   canManage: boolean;
+  /** Settings > Security: the longest a new key may last, in days. Null means no limit. */
+  maxLifetimeDays?: number | null;
   tab: ConsoleTab;
   now: string;
   keys: KeyRow[];
@@ -80,6 +81,7 @@ export default function ApiKeysConsole({
   workspaceName,
   mcpUrl,
   canManage,
+  maxLifetimeDays = null,
   tab,
   now,
   keys,
@@ -243,6 +245,7 @@ export default function ApiKeysConsole({
       {showCreate && (
         <CreateKeyDialog
           workspaceSlug={workspaceSlug}
+          maxLifetimeDays={maxLifetimeDays}
           onClose={() => setShowCreate(false)}
           onCreated={(r) => {
             setShowCreate(false);
@@ -673,16 +676,19 @@ function SnippetBlock({ title, subtitle, code, onCopy }: { title: string; subtit
 
 function CreateKeyDialog({
   workspaceSlug,
+  maxLifetimeDays,
   onClose,
   onCreated,
 }: {
   workspaceSlug: string;
+  maxLifetimeDays: number | null;
   onClose: () => void;
   onCreated: (r: Revealed) => void;
 }) {
   const [label, setLabel] = useState("");
   const [scope, setScope] = useState<"read" | "read-write">("read");
-  const [expiry, setExpiry] = useState<number>(DEFAULT_EXPIRY_DAYS);
+  const expiryChoices = allowedKeyExpiryChoices(maxLifetimeDays);
+  const [expiry, setExpiry] = useState<number>(() => defaultKeyExpiryDays(maxLifetimeDays));
   const [pending, start] = useTransition();
 
   const submit = () => {
@@ -742,9 +748,16 @@ function CreateKeyDialog({
             </label>
           ))}
         </fieldset>
-        <Field label="Expires" hint="After this the key stops working. You can create a new one at any time.">
+        <Field
+          label="Expires"
+          hint={
+            maxLifetimeDays
+              ? `After this the key stops working. This workspace allows keys to last up to ${maxLifetimeDays} days.`
+              : "After this the key stops working. You can create a new one at any time."
+          }
+        >
           <select value={expiry} onChange={(e) => setExpiry(Number(e.target.value))} className={inputCls}>
-            {EXPIRY_CHOICES.map((c) => (
+            {expiryChoices.map((c) => (
               <option key={c.days} value={c.days}>
                 {c.days === 0 ? "Never" : `In ${c.label}`}
               </option>

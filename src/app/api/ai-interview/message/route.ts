@@ -5,6 +5,7 @@ import { resolveSessionRounds, type SessionRound } from "@/lib/ai-interview/roun
 import { resolveRoundsContent } from "@/lib/ai-interview/round-content";
 import {
   consumeCreditIfFirstTurn,
+  ConsentRequiredError,
   InsufficientCreditsError,
 } from "@/lib/ai-interview/credits";
 import { checkFilesSize } from "@/lib/ai-interview/files-size";
@@ -544,6 +545,9 @@ export async function POST(req: NextRequest) {
           { error: "Workspace is out of AI interview credits. Please contact your recruiter." },
           { status: 402 }
         );
+      }
+      if (err instanceof ConsentRequiredError) {
+        return NextResponse.json({ error: "Agree to the consent step first. Reload the page to see it." }, { status: 403 });
       }
       throw err;
     }

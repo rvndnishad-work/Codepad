@@ -697,6 +697,17 @@ model InterviewSession {
   scorecardPassMark  Float?
   /// Last time someone emailed the interviewers who still owe a scorecard.
   scorecardNudgedAt  DateTime?
+  /// Interviewers see the others' scorecards only after submitting their own.
+  /// New interviews copy the workspace default (Settings > Screening defaults).
+  scorecardFirst     Boolean          @default(true)
+  /// Hours after the interview to email interviewers who still owe a
+  /// scorecard. Null means no automatic reminder. Copied from the workspace
+  /// default when the interview is scheduled.
+  scorecardReminderHours  Int?
+  /// Stamp for that automatic reminder, so the cron sends it once.
+  scorecardAutoRemindedAt DateTime?
+  /// When the candidate ticked the consent box before a recorded interview.
+  candidateConsentAt DateTime?
   scorecards         InterviewScorecard[]
   toolUpdates        InterviewToolUpdate[]
   presence           InterviewPresence[]
@@ -718,6 +729,7 @@ model InterviewSession {
   @@index([takeHomeTemplateId])
   @@index([questionsOwnerId])
   @@index([setupGroupId])
+  @@index([scorecardReminderHours, scorecardAutoRemindedAt])
 }
 
 /// Yjs updates for the shared tools in a live interview room (whiteboard,
@@ -974,6 +986,100 @@ model Workspace {
   /// GROWTH-level access regardless of planName.
   trialEndsAt          DateTime?
   createdAt            DateTime                  @default(now())
+
+  // ── Settings > General ────────────────────────────────────────────────
+  /// Public URL of the workspace logo. Shown in the app and, via Candidate
+  /// experience, on candidate pages and emails. Null = no logo.
+  logoUrl    String?
+  /// IANA time zone used to show dates and times, e.g. "Europe/London".
+  timezone   String  @default("UTC")
+  /// "DMY" (26 Sep 2026), "MDY" (Sep 26, 2026) or "YMD" (2026-09-26).
+  dateFormat String  @default("DMY")
+
+  // ── Settings > Candidate experience ───────────────────────────────────
+  /// Brand colour as "#rrggbb" for candidate pages and emails. Null = default.
+  brandColor         String?
+  /// Sender display name, sent as "<senderName> via Interviewpad". Null = workspace name.
+  senderName         String?
+  /// Reply-to address for candidate emails. Only used once replyToConfirmedAt is set.
+  replyToEmail       String?
+  replyToConfirmedAt DateTime?
+  /// One-time token in the reply-to confirmation link. Cleared on confirm.
+  replyToToken       String?   @unique
+  /// Link to the company privacy notice, shown on candidate pages.
+  privacyNoticeUrl   String?
+  /// Ask candidates to tick a consent box before AI screenings and recorded interviews.
+  consentRequired    Boolean   @default(false)
+  /// Contact shown to candidates who need help.
+  helpEmail          String?
+
+  // ── Settings > Screening defaults (starting values for new items) ─────
+  /// Take-home pass mark (0-100). 60 matches TAKE_HOME_PASS_MARK.
+  defaultTakeHomePassMark  Int     @default(60)
+  /// AI screening pass mark (0-100). 60 matches SCREENING_PASS_THRESHOLD.
+  defaultAiPassMark        Int     @default(60)
+  /// Interview pass mark on the 1-4 scorecard scale. 3 matches DEFAULT_PASS_MARK.
+  defaultInterviewPassMark Float   @default(3)
+  /// Days an invite link stays open. 7 matches DEFAULT_EXPIRY_DAYS.
+  inviteExpiryDays         Int     @default(7)
+  /// Send the "not started yet" reminder to new take-homes and AI screenings.
+  remindNotStarted         Boolean @default(true)
+  /// Send the "last call" reminder before the invite closes.
+  remindBeforeDeadline     Boolean @default(true)
+  /// Default length of a new AI screening round, in minutes.
+  aiDefaultMinutes         Int     @default(30)
+  /// Keep recordings of spoken AI screening answers by default.
+  keepVoiceAnswers         Boolean @default(false)
+  /// Language the AI interviewer speaks by default (BCP 47, e.g. "en").
+  interviewerLanguage      String  @default("en")
+  /// Default length of a new live interview, in minutes.
+  interviewDefaultMinutes  Int     @default(60)
+  /// Interviewers submit their own scorecard before they see the others.
+  scorecardFirst           Boolean @default(true)
+  /// Remind interviewers who owe a scorecard this many hours after the
+  /// interview. Null = no automatic reminder.
+  scorecardReminderHours   Int?
+
+  // ── Settings > Security ───────────────────────────────────────────────
+  /// Every member must use two-factor sign-in (not only paid-plan admins).
+  require2faForAll      Boolean   @default(false)
+  /// When require2faForAll starts to be enforced. Null = immediately.
+  require2faFrom        DateTime?
+  /// Last time members without two-factor were emailed a reminder.
+  require2faRemindedAt  DateTime?
+  /// Longest a sign-in lasts in this workspace, in days. Null = site default.
+  sessionMaxAgeDays     Int?
+  /// Sessions started before this time are signed out of this workspace.
+  sessionsRevokedAt     DateTime?
+  /// Lowercase domains ("acme.com") invites are limited to. Empty = any.
+  allowedEmailDomains   String[]  @default([])
+  /// People with an allowed domain may join without an invite.
+  joinWithoutInvite     Boolean   @default(false)
+  /// Role given to people who join without an invite.
+  joinRole              String    @default("INTERVIEWER")
+  /// Longest lifetime of a new API key, in days. Null = no limit.
+  apiKeyMaxLifetimeDays Int?
+
+  // ── Billing and usage ─────────────────────────────────────────────────
+  /// Email admins when AI screening credits fall below this. Null = off.
+  lowCreditThreshold Int?
+  /// Last low-credit email; cleared when the balance goes back above the threshold.
+  lowCreditAlertedAt DateTime?
+  /// Stamped once the trial-expiry cron has recorded the trial ending.
+  trialEndedAt       DateTime?
+
+  // ── Settings > Data and privacy ───────────────────────────────────────
+  /// Workspace scheduled for deletion; erased 30 days after this by cron.
+  /// Access is blocked meanwhile, owners see an undo banner.
+  deletionScheduledAt   DateTime?
+  deletionRequestedById String?
+
+  slugRedirects           WorkspaceSlugRedirect[]
+  logo                    WorkspaceLogo?
+  candidateEmailTemplates CandidateEmailTemplate[]
+  retentionRules          RetentionRule[]
+  dataRequests            DataRequest[]
+  exports                 WorkspaceExport[]
   aiCreditLedger       AIInterviewCreditLedger[]
   aiInterviewSessions  AIInterviewSession[]
   aiInterviewTemplates AIInterviewTemplate[]
@@ -1000,6 +1106,122 @@ model Workspace {
   atsTestRequests      AtsTestRequest[]
   atsSyncEvents        AtsSyncEvent[]
   alertChannels        AlertChannel[]
+}
+
+/// Old workspace web address kept after a slug change, so /w/<oldSlug>
+/// links keep working. An old slug cannot be taken by another workspace.
+/// The workspace logo uploaded in Settings > General, served from
+/// /api/workspace-logo/<workspaceId> so candidate pages and emails can load
+/// it. Workspace.logoUrl points at that route (with a version query) or at an
+/// https address someone pasted instead.
+model WorkspaceLogo {
+  workspaceId String    @id
+  mime        String
+  bytes       Bytes
+  updatedAt   DateTime  @updatedAt
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+}
+
+model WorkspaceSlugRedirect {
+  id          String    @id @default(cuid())
+  oldSlug     String    @unique
+  workspaceId String
+  createdAt   DateTime  @default(now())
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@index([workspaceId])
+}
+
+/// Workspace wording for one candidate email template. Null subject/body
+/// fall back to the built-in wording. The invite link, deadline and
+/// unsubscribe footer are always appended by the sender, never stored here.
+model CandidateEmailTemplate {
+  id          String    @id @default(cuid())
+  workspaceId String
+  /// Template key, e.g. "take-home-invite", "ai-screening-invite".
+  key         String
+  subject     String?
+  body        String?
+  updatedById String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@unique([workspaceId, key])
+}
+
+/// One data retention rule. No row = rule off with the built-in default
+/// period. kind: "INACTIVE_CANDIDATES" | "NOT_PASSED" | "VOICE_RECORDINGS" |
+/// "CODE_REPLAYS". Passed candidates are never erased by a rule.
+model RetentionRule {
+  id              String    @id @default(cuid())
+  workspaceId     String
+  kind            String
+  enabled         Boolean   @default(false)
+  /// Period length, in `unit`s.
+  amount          Int
+  /// "DAYS" | "MONTHS".
+  unit            String    @default("MONTHS")
+  /// Last nightly run that looked at this rule.
+  lastRunAt       DateTime?
+  /// Items erased by the last run.
+  lastErasedCount Int?
+  /// When the next erase is due; the 7-day advance email goes out before it.
+  nextNoticeAt    DateTime?
+  noticeSentAt    DateTime?
+  updatedById     String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  workspace       Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@unique([workspaceId, kind])
+  @@index([enabled])
+}
+
+/// A candidate asking for a copy of their data or for it to be erased.
+/// kind: "COPY" | "ERASE". status: "OPEN" | "DONE" | "CANCELLED".
+model DataRequest {
+  id            String    @id @default(cuid())
+  workspaceId   String
+  email         String
+  kind          String
+  status        String    @default("OPEN")
+  /// 30 days after the request by default.
+  dueAt         DateTime
+  requestedById String?
+  completedAt   DateTime?
+  completedById String?
+  /// Number of records found or erased.
+  itemCount     Int?
+  /// What was found or erased, per kind: { candidates, takeHomes, ... }.
+  summary       Json?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  workspace     Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@index([workspaceId, status])
+  @@index([workspaceId, email])
+}
+
+/// "Export everything" job: a zip of CSV/JSON, emailed as a link.
+/// status: "PENDING" | "RUNNING" | "READY" | "FAILED" | "EXPIRED".
+model WorkspaceExport {
+  id            String    @id @default(cuid())
+  workspaceId   String
+  status        String    @default("PENDING")
+  /// Storage key of the zip, and a download URL when one is issued.
+  fileKey       String?
+  url           String?
+  sizeBytes     Int?
+  error         String?
+  requestedById String?
+  createdAt     DateTime  @default(now())
+  readyAt       DateTime?
+  expiresAt     DateTime?
+  workspace     Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@index([workspaceId, createdAt])
+  @@index([status])
 }
 
 /// Pending teammate invitation (IP-73). Replaces the old "silently mint a
@@ -1508,6 +1730,9 @@ model AIInterviewSession {
   inviteEmailError  String?
   /// Reminder email for unstarted invites; sent at most once automatically.
   reminderSentAt    DateTime?
+  /// When the candidate ticked the consent box (Candidate experience). Null
+  /// when consent was not asked for or not yet given.
+  consentAt              DateTime?
   ledgerEntries    AIInterviewCreditLedger[]
   candidate        Candidate?                @relation(fields: [candidateId], references: [id])
   workspace        Workspace                 @relation(fields: [workspaceId], references: [id], onDelete: Cascade)

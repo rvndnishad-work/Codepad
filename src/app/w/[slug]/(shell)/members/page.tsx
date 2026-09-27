@@ -8,6 +8,7 @@ import {
   WORKSPACE_PERMISSIONS,
 } from "@/lib/permissions";
 import { seatUsage, WORKSPACE_ROLES, ROLE_LABELS } from "@/lib/workspace/members";
+import { twoFactorRequired } from "@/lib/workspace/settings";
 import MembersClient, { type MembersTab } from "./MembersClient";
 
 type Props = {
@@ -38,6 +39,9 @@ export default async function MembersPage({ params, searchParams }: Props) {
       planName: true,
       trialEndsAt: true,
       stripeSubscriptionId: true,
+      allowedEmailDomains: true,
+      require2faForAll: true,
+      require2faFrom: true,
       members: {
         select: {
           id: true,
@@ -133,6 +137,8 @@ export default async function MembersPage({ params, searchParams }: Props) {
       seats={seats}
       roleColumns={roleColumns}
       roleBasePermissions={roleBasePermissions}
+      allowedDomains={workspace.allowedEmailDomains}
+      ownersNeed2fa={twoFactorRequired(workspace, { role: "OWNER" }, workspace.planName, now)}
     />
   );
 }

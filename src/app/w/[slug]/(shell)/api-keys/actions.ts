@@ -8,6 +8,8 @@ import { generateApiKey } from "@/lib/mcp/auth";
 import { cleanKeyName, expiryFromDays } from "@/lib/mcp/keys";
 import { canMember } from "@/lib/permissions";
 import { writeWorkspaceAuditEntry, WORKSPACE_AUDIT_ACTIONS } from "@/lib/workspace-audit";
+import { checkApiKeyExpiry } from "@/lib/workspace/settings";
+import { rotatedKeyExpiry } from "@/lib/workspace/security";
 
 type Member = { userId: string; role: string; permissions?: unknown };
 
@@ -29,6 +31,7 @@ async function assertWorkspaceKeyAdmin(slug: string) {
       planName: true,
       trialEndsAt: true,
       stripeSubscriptionId: true,
+      apiKeyMaxLifetimeDays: true,
       members: { select: { userId: true, role: true, permissions: true } },
     },
   });
@@ -83,6 +86,9 @@ export async function createMcpApiKeyAction(
 
   const trimmed = cleanKeyName(label);
   const expiresAt = expiryFromDays(expiresInDays);
+  // Settings > Security: the longest lifetime a key may have in this workspace.
+  const lifetime = checkApiKeyExpiry(workspace, expiresAt);
+  if (!lifetime.ok) throw new Error(lifetime.error);
 
   // Resolve the requested scope to the canonical persisted form. Phase 2
   // ships two tiers; future phases may add `admin` or per-tool scopes here.
@@ -161,7 +167,10 @@ export async function rotateMcpApiKeyAction(slug: string, id: string) {
     });
 
     // 2. Create the new key with the original label + same scopes. It keeps
-    //    the old key's expiry: rotating is not a way to extend a key.
+    //    the old key's expiry: rotating is not a way to extend a key. Under a
+    //    workspace lifetime limit (Settings > Security) the expiry is brought
+    //    within it, so older keys with no expiry get one.
+    const expiresAt = rotatedKeyExpiry(workspace, old.expiresAt);
     const fresh = await tx.mcpApiKey.create({
       data: {
         workspaceId: workspace.id,
@@ -170,7 +179,7 @@ export async function rotateMcpApiKeyAction(slug: string, id: string) {
         keyPreview: generated.preview,
         scopes: old.scopes,
         createdByUserId: userId,
-        expiresAt: old.expiresAt,
+        expiresAt,
       },
       select: { id: true },
     });
@@ -178,7 +187,7 @@ export async function rotateMcpApiKeyAction(slug: string, id: string) {
     return {
       id: fresh.id,
       oldId: old.id,
-      expiresAt: old.expiresAt?.toISOString() ?? null,
+      expiresAt: expiresAt?.toISOString() ?? null,
       plaintext: generated.plaintext,
       preview: generated.preview,
       label: old.label,

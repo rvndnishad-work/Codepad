@@ -36,7 +36,8 @@ async function post(url: string, key: string, form: FormData): Promise<string | 
   return typeof data?.text === "string" ? data.text.trim() : null;
 }
 
-export async function transcribeAudio(audio: Blob, opts: { prompt?: string } = {}): Promise<Transcript | null> {
+/** `language` is an ISO 639-1 code such as "es"; it helps the model with short answers. */
+export async function transcribeAudio(audio: Blob, opts: { prompt?: string; language?: string } = {}): Promise<Transcript | null> {
   const name = clipFileName(audio.type || "audio/webm");
   const form = (model: string) => {
     const f = new FormData();
@@ -44,6 +45,7 @@ export async function transcribeAudio(audio: Blob, opts: { prompt?: string } = {
     f.append("model", model);
     f.append("response_format", "json");
     if (opts.prompt) f.append("prompt", opts.prompt);
+    if (opts.language && /^[a-z]{2}$/.test(opts.language)) f.append("language", opts.language);
     return f;
   };
 

@@ -48,6 +48,7 @@ const SUBJECT_SELECT = {
   candidate: { select: { name: true } },
   scorecardPassMark: true,
   scorecardNudgedAt: true,
+  scorecardFirst: true,
 } as const;
 
 type Subject = Prisma.InterviewSessionGetPayload<{ select: typeof SUBJECT_SELECT }>;
@@ -320,7 +321,7 @@ export async function loadReportScorecards(sessionId: string, viewer: { userId?:
   const mine = viewerKey ? rows.find((r) => r.reviewerKey === viewerKey) : undefined;
   const isReviewer = !!viewerKey && (reviewers.some((r) => r.key === viewerKey) || !!mine);
   const hasSubmitted = mine?.status === "submitted";
-  const seeAll = canSeeOthers({ isReviewer, hasSubmitted });
+  const seeAll = canSeeOthers({ isReviewer, hasSubmitted, scorecardFirst: s.scorecardFirst });
 
   // Criteria in the order they first appear across the cards.
   const criteria: Criterion[] = [];
@@ -384,22 +385,10 @@ export async function nudgeMissingScorecards(
   const wait = nudgeWaitMinutes(s.scorecardNudgedAt);
   if (wait > 0) return { ok: false, error: `A reminder went out recently. You can nudge again in ${wait} min.` };
 
-  const [reviewers, cards, ws, guests] = await Promise.all([
-    panelReviewers(s),
-    prisma.interviewScorecard.findMany({ where: { sessionId }, select: { reviewerKey: true, status: true } }),
-    prisma.workspace.findUnique({ where: { id: s.workspaceId }, select: { name: true, slug: true } }),
-    prisma.interviewGuest.findMany({ where: { sessionId }, select: { id: true, token: true } }),
-  ]);
-  if (!ws) return { ok: false, error: "This interview no longer exists." };
-  const status = new Map(cards.map((c) => [c.reviewerKey, c.status]));
-  const tokens = new Map(guests.map((g) => [guestKey(g.id), g.token]));
-  const targets = reviewers.filter((r) => r.email && status.get(r.key) !== "submitted" && r.key !== memberKey(actor.userId));
+  const missing = await missingScorecards(s, origin);
+  if (!missing) return { ok: false, error: "This interview no longer exists." };
+  const targets = missing.targets.filter((r) => r.key !== memberKey(actor.userId));
   if (!targets.length) return { ok: false, error: "Nobody else is missing a scorecard." };
-
-  const urlFor = (r: Reviewer) =>
-    r.kind === "guest"
-      ? `${origin}/interview/${s.id}/scorecard?guest=${encodeURIComponent(tokens.get(r.key) ?? "")}`
-      : `${origin}/w/${ws.slug}/interviews/${s.id}/scorecard`;
 
   // Claim the nudge first so two quick presses cannot both send.
   const claimed = await prisma.interviewSession.updateMany({
@@ -408,24 +397,7 @@ export async function nudgeMissingScorecards(
   });
   if (!claimed.count) return { ok: false, error: "A reminder just went out. Try again later." };
 
-  const { sendTemplatedBatch } = await import("@/lib/email");
-  const res = await sendTemplatedBatch(
-    "scorecard-reminder",
-    targets.map((r) => ({
-      to: r.email!,
-      props: {
-        workspaceName: ws.name,
-        senderName: actor.name,
-        candidateName: candidateOf(s),
-        title: s.title,
-        hasDraft: status.get(r.key) === "draft",
-        scorecardUrl: urlFor(r),
-      },
-      workspaceId: s.workspaceId!,
-      sessionId: s.id,
-    })),
-  );
-  const sent = targets.map((r, i) => deliveryOf(r.email!, res.outcomes?.[i]));
+  const sent = await sendScorecardReminders(s, { ...missing, targets }, actor.name);
   void writeWorkspaceAuditEntry({
     workspaceId: s.workspaceId,
     actorUserId: actor.userId,
@@ -436,6 +408,88 @@ export async function nudgeMissingScorecards(
     meta: { title: s.title, candidateName: candidateOf(s), to: targets.map((t) => t.name), statuses: sent.map((d) => d.status) },
   });
   return { ok: true, sent };
+}
+
+/**
+ * The automatic reminder an interview was set up with (Settings > Screening
+ * defaults > Scorecard reminder): emails everyone still owing a scorecard,
+ * once. The scorecard-reminders cron decides when it is due; this claims
+ * the stamp first so overlapping runs cannot both send.
+ */
+export async function autoRemindScorecards(sessionId: string, origin: string): Promise<{ sent: DeliveryStatus[] } | null> {
+  const s = await subject(sessionId);
+  if (!s || !s.workspaceId) return null;
+  const claimed = await prisma.interviewSession.updateMany({
+    where: { id: s.id, scorecardAutoRemindedAt: null },
+    data: { scorecardAutoRemindedAt: new Date() },
+  });
+  if (!claimed.count) return null;
+  const missing = await missingScorecards(s, origin);
+  if (!missing || !missing.targets.length) return { sent: [] };
+  const sent = await sendScorecardReminders(s, missing, "Your team");
+  void writeWorkspaceAuditEntry({
+    workspaceId: s.workspaceId,
+    actorUserId: null,
+    actorEmail: null,
+    action: WORKSPACE_AUDIT_ACTIONS.INTERVIEW_SCORECARDS_NUDGED,
+    targetType: "interviewSession",
+    targetId: s.id,
+    meta: {
+      title: s.title,
+      candidateName: candidateOf(s),
+      to: missing.targets.map((t) => t.name),
+      statuses: sent.map((d) => d.status),
+      source: "auto:scorecard-reminder",
+    },
+  });
+  return { sent };
+}
+
+type Missing = {
+  targets: Reviewer[];
+  status: Map<string, string>;
+  ws: { name: string; slug: string };
+  urlFor: (r: Reviewer) => string;
+};
+
+/** Expected interviewers with an email who have not submitted, and where each one fills in their card. */
+async function missingScorecards(s: Subject, origin: string): Promise<Missing | null> {
+  if (!s.workspaceId) return null;
+  const [reviewers, cards, ws, guests] = await Promise.all([
+    panelReviewers(s),
+    prisma.interviewScorecard.findMany({ where: { sessionId: s.id }, select: { reviewerKey: true, status: true } }),
+    prisma.workspace.findUnique({ where: { id: s.workspaceId }, select: { name: true, slug: true } }),
+    prisma.interviewGuest.findMany({ where: { sessionId: s.id }, select: { id: true, token: true } }),
+  ]);
+  if (!ws) return null;
+  const status = new Map(cards.map((c) => [c.reviewerKey, c.status]));
+  const tokens = new Map(guests.map((g) => [guestKey(g.id), g.token]));
+  const urlFor = (r: Reviewer) =>
+    r.kind === "guest"
+      ? `${origin}/interview/${s.id}/scorecard?guest=${encodeURIComponent(tokens.get(r.key) ?? "")}`
+      : `${origin}/w/${ws.slug}/interviews/${s.id}/scorecard`;
+  return { targets: reviewers.filter((r) => r.email && status.get(r.key) !== "submitted"), status, ws, urlFor };
+}
+
+async function sendScorecardReminders(s: Subject, m: Missing, senderName: string): Promise<DeliveryStatus[]> {
+  const { sendTemplatedBatch } = await import("@/lib/email");
+  const res = await sendTemplatedBatch(
+    "scorecard-reminder",
+    m.targets.map((r) => ({
+      to: r.email!,
+      props: {
+        workspaceName: m.ws.name,
+        senderName,
+        candidateName: candidateOf(s),
+        title: s.title,
+        hasDraft: m.status.get(r.key) === "draft",
+        scorecardUrl: m.urlFor(r),
+      },
+      workspaceId: s.workspaceId!,
+      sessionId: s.id,
+    })),
+  );
+  return m.targets.map((r, i) => deliveryOf(r.email!, res.outcomes?.[i]));
 }
 
 // ── Who is asking ───────────────────────────────────────────────────────────

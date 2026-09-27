@@ -34,6 +34,9 @@ import type { RoomData } from "@/lib/interview/room-server";
 import { useRelayProvider, useRelaySnapshot } from "@/app/interview/[id]/tools/useToolsRoom";
 import { meetingProvider } from "@/lib/interview/meeting";
 import { Avatar, Brand, ConnectionPill, DotGrid, GLOW, MeetingButton, PresenceDot, countdown, useNow, useRoster, whenLabel, type Person } from "./parts";
+import { readableTextOn } from "@/lib/workspace/candidate-experience";
+import { CandidateHelpLine } from "@/components/candidate/CandidateBrand";
+import { giveInterviewConsentAction } from "./actions";
 
 type CheckState = "checking" | "ok" | "warn" | "fail";
 type CheckRow = { id: string; label: string; state: CheckState; detail: string };
@@ -97,7 +100,25 @@ export default function LobbyClient({ data }: { data: RoomData }) {
   const rise = (i: number) =>
     reduce ? {} : { initial: { opacity: 0, y: 12 }, animate: { opacity: 1, y: 0 }, transition: { delay: 0.06 * i, duration: 0.4, ease: [0.2, 0.7, 0.2, 1] as const } };
 
-  const enter = () => router.push(roomHref);
+  // Consent before a recorded interview (Settings > Candidate experience).
+  const [agreed, setAgreed] = useState(false);
+  const [consenting, setConsenting] = useState(false);
+  const [consentError, setConsentError] = useState<string | null>(null);
+  const consentNeeded = iv.consentNeeded && !ended;
+
+  const enter = async () => {
+    if (consentNeeded) {
+      setConsenting(true);
+      setConsentError(null);
+      const res = await giveInterviewConsentAction(workspace.slug, iv.id).catch(() => null);
+      if (!res?.ok) {
+        setConsenting(false);
+        setConsentError(res?.error ?? "Something went wrong. Check your connection and try again.");
+        return;
+      }
+    }
+    router.push(roomHref);
+  };
 
   return (
     <div className="flex-1 flex flex-col">
@@ -154,9 +175,16 @@ export default function LobbyClient({ data }: { data: RoomData }) {
               inRoom={inRoom}
               isInterviewer={isInterviewer}
               reportHref={isInterviewer ? (viewer.via === "member" ? `/w/${workspace.slug}/interviews/${iv.id}/report` : `/interview/${iv.id}/report`) : null}
-              disabled={blocking || snap.connection === "denied"}
-              onEnter={enter}
+              disabled={blocking || snap.connection === "denied" || consenting || (consentNeeded && !agreed)}
+              blocked={blocking || snap.connection === "denied"}
+              onEnter={() => void enter()}
               meetingUrl={iv.meetingUrl}
+              brandColor={isInterviewer ? null : workspace.brand.color}
+              consent={
+                consentNeeded
+                  ? { agreed, onChange: setAgreed, workspaceName: workspace.name, privacyUrl: workspace.brand.privacyNoticeUrl, error: consentError }
+                  : null
+              }
             />
           </div>
         </motion.section>
@@ -261,6 +289,7 @@ export default function LobbyClient({ data }: { data: RoomData }) {
             </motion.section>
           </aside>
         </div>
+        {!isInterviewer && <CandidateHelpLine brand={workspace.brand} className="mt-8" />}
       </main>
     </div>
   );
@@ -296,8 +325,11 @@ function StatusCard({
   isInterviewer,
   reportHref,
   disabled,
+  blocked,
   onEnter,
   meetingUrl,
+  brandColor,
+  consent,
 }: {
   ended: boolean;
   live: boolean;
@@ -308,8 +340,14 @@ function StatusCard({
   isInterviewer: boolean;
   reportHref: string | null;
   disabled: boolean;
+  /** A setup check failed, so the room cannot open yet. */
+  blocked: boolean;
   onEnter: () => void;
   meetingUrl: string | null;
+  /** Workspace brand colour for the candidate's main button. */
+  brandColor: string | null;
+  /** The consent box, when the workspace asks candidates for consent. */
+  consent: { agreed: boolean; onChange: (v: boolean) => void; workspaceName: string; privacyUrl: string | null; error: string | null } | null;
 }) {
   const here = seats.filter((s) => s.here);
   const soon = startsIn != null && startsIn > 0;
@@ -353,18 +391,50 @@ function StatusCard({
           <p className="mt-5 rounded-xl bg-panel p-3.5 text-[13px] text-muted leading-relaxed">The team will be in touch about next steps. You can close this tab.</p>
         )
       ) : (
+        <>
+        {consent && (
+          <label className="mt-5 flex items-start gap-3 rounded-xl bg-panel p-3.5 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={consent.agreed}
+              onChange={(e) => consent.onChange(e.target.checked)}
+              className="mt-0.5 w-4 h-4 shrink-0 cursor-pointer accent-secondary"
+            />
+            <span className="text-[13px] text-fg leading-relaxed">
+              I agree that {consent.workspaceName} can keep the code, notes and chat from this interview and use them to review my application.
+              {consent.privacyUrl && (
+                <>
+                  {" "}
+                  Read the{" "}
+                  <a href={consent.privacyUrl} target="_blank" rel="noopener noreferrer" className="underline underline-offset-2 hover:no-underline">
+                    privacy notice
+                  </a>
+                  .
+                </>
+              )}
+            </span>
+          </label>
+        )}
+        {consent?.error && (
+          <p role="alert" className="mt-2 text-[12.5px] text-danger">
+            {consent.error}
+          </p>
+        )}
         <button
           type="button"
           disabled={disabled}
           onClick={onEnter}
+          style={brandColor ? { background: brandColor, color: readableTextOn(brandColor), boxShadow: "none" } : undefined}
           className="group mt-5 w-full h-12 rounded-xl bg-secondary text-bg text-[14.5px] font-semibold inline-flex items-center justify-center gap-2 shadow-[0_8px_24px_-8px_rgb(var(--c-accent-2)/0.6)] transition hover:brightness-110 disabled:opacity-50 disabled:shadow-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-secondary/60 focus-visible:ring-offset-2 focus-visible:ring-offset-surface"
         >
           {live ? <Play className="w-4 h-4" aria-hidden /> : <DoorOpen className="w-4 h-4" aria-hidden />}
           {live ? "Rejoin the interview" : "Enter the interview room"}
           <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-0.5 motion-reduce:transition-none" aria-hidden />
         </button>
+        </>
       )}
-      {!ended && disabled && <p className="mt-2 text-[12.5px] text-danger text-center">Fix the setup item marked in red first.</p>}
+      {!ended && blocked && <p className="mt-2 text-[12.5px] text-danger text-center">Fix the setup item marked in red first.</p>}
+      {!ended && !blocked && consent && !consent.agreed && <p className="mt-2 text-[12.5px] text-muted text-center">Tick the box above to go in.</p>}
       {!ended && meetingUrl && (
         <div className="mt-2.5">
           <MeetingButton url={meetingUrl} />

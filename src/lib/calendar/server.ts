@@ -186,7 +186,7 @@ export async function syncInterviewEvent(sessionId: string, opts: { organiserIds
     const s = await loadSession(sessionId);
     if (!s || !s.workspaceId) return { status: "skipped", reason: "not a workspace interview" };
     const existing = s.calendarEvent;
-    if (!s.scheduledAt || s.status === "abandoned") {
+    if (!s.scheduledAt || s.status === "abandoned" || s.status === "cancelled") {
       if (existing) return cancelInterviewEvent(sessionId);
       return { status: "skipped", reason: "no time" };
     }

@@ -229,10 +229,12 @@ export function checkWrite(
  * Blind scoring: an interviewer on this interview sees only their own card
  * until they submit it. Everyone else allowed on the report (recruiters, the
  * people deciding) sees every submitted card. Drafts are never shown to
- * anyone but their author.
+ * anyone but their author. An interview set up without "scorecard before
+ * seeing others" (`scorecardFirst: false`) shows submitted cards to its
+ * interviewers straight away.
  */
-export function canSeeOthers(viewer: { isReviewer: boolean; hasSubmitted: boolean }): boolean {
-  return !viewer.isReviewer || viewer.hasSubmitted;
+export function canSeeOthers(viewer: { isReviewer: boolean; hasSubmitted: boolean; scorecardFirst?: boolean }): boolean {
+  return !viewer.isReviewer || viewer.hasSubmitted || viewer.scorecardFirst === false;
 }
 
 // ── Pass mark and panel summary ─────────────────────────────────────────────

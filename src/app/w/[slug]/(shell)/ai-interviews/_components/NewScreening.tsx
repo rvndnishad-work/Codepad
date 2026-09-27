@@ -19,8 +19,6 @@ import {
 import { templatesById } from "@/lib/templates";
 import {
   creditCheck,
-  DEFAULT_EXPIRY_DAYS,
-  DEFAULT_REMINDER_DAYS,
   EXPIRY_CHOICES,
   expiryDate,
   parsePastedPeople,
@@ -35,6 +33,7 @@ import { passMarkOf } from "@/lib/ai-interview/verdict";
 import { PassMarkField } from "./PassMark";
 import { AI_ENGAGEMENT_CREDIT_COST, ENGAGEMENT_LABELS, normalizeEngagementLevel, type EngagementLevel } from "@/lib/ai-interview/engagement";
 import { paradigmName, roundLabel } from "@/lib/ai-interview/round-label";
+import { INTERVIEWER_LANGUAGES, interviewerLanguageOf } from "@/lib/ai-interview/languages";
 import {
   ANSWER_MODE_LABELS,
   DEFAULT_THEORY,
@@ -84,6 +83,19 @@ export type Prefill = {
   }[];
 };
 
+/** Starting values from Settings > Screening defaults, for a screening started from scratch. */
+export type ScreeningDefaults = {
+  passMark: number;
+  expiresAfterDays: number;
+  /** 0 means no reminder. */
+  reminderAfterDays: number;
+  /** Coding round length. */
+  estimatedMinutes: number;
+  /** New theory rounds: keep recordings, and the interviewer's language. */
+  recordAudio: boolean;
+  language: string;
+};
+
 /** What a screening tests: spoken theory questions, coding in the playground, or both. */
 type Mode = "theory" | "practical" | "both";
 
@@ -114,6 +126,7 @@ export default function NewScreening({
   challenges,
   prefill,
   canBuy,
+  defaults,
 }: {
   slug: string;
   credits: CreditSummary;
@@ -123,6 +136,7 @@ export default function NewScreening({
   challenges: ChallengeChoice[];
   prefill: Prefill | null;
   canBuy: boolean;
+  defaults: ScreeningDefaults;
 }) {
   const router = useRouter();
   const base = `/w/${slug}/ai-interviews`;
@@ -141,7 +155,7 @@ export default function NewScreening({
   const [backend, setBackend] = useState<string[]>(init.backend);
   const [backendFw, setBackendFw] = useState<string[]>(init.backendFw);
   const [dsa, setDsa] = useState<string[]>(init.dsa);
-  const [minutes, setMinutes] = useState(init.minutes ?? 30);
+  const [minutes, setMinutes] = useState(init.minutes ?? defaults.estimatedMinutes);
   const [swaps, setSwaps] = useState<Record<string, string>>(init.swaps);
   const [order, setOrder] = useState<string[]>(init.order);
   const [removed, setRemoved] = useState<string[]>([]);
@@ -163,9 +177,10 @@ export default function NewScreening({
 
   // 4. Settings
   const [level, setLevel] = useState<EngagementLevel>(normalizeEngagementLevel(prefill?.engagementLevel));
-  const [expiry, setExpiry] = useState<number>(prefill?.expiresAfterDays ?? DEFAULT_EXPIRY_DAYS);
-  const [reminder, setReminder] = useState<number>(prefill ? prefill.reminderAfterDays ?? 0 : DEFAULT_REMINDER_DAYS);
-  const [passMark, setPassMark] = useState<number>(passMarkOf(prefill?.passMark));
+  const [expiry, setExpiry] = useState<number>(prefill?.expiresAfterDays ?? defaults.expiresAfterDays);
+  const [reminder, setReminder] = useState<number>(prefill ? prefill.reminderAfterDays ?? 0 : defaults.reminderAfterDays);
+  // A duplicated screening keeps its own pass mark; anything else starts from the workspace default.
+  const [passMark, setPassMark] = useState<number>(passMarkOf(prefill?.passMark ?? defaults.passMark));
   const [extensions, setExtensions] = useState(1);
   const [extMinutes, setExtMinutes] = useState(5);
 
@@ -271,7 +286,10 @@ export default function NewScreening({
 
   function addQuestionnaire(id: string) {
     if (theoryRows.some((t) => t.templateId === id)) return;
-    setTheoryRows((a) => [...a, { key: `theory:${id}`, templateId: id, settings: { ...DEFAULT_THEORY } }]);
+    setTheoryRows((a) => [
+      ...a,
+      { key: `theory:${id}`, templateId: id, settings: { ...DEFAULT_THEORY, recordAudio: defaults.recordAudio, language: interviewerLanguageOf(defaults.language) } },
+    ]);
     toast("Questionnaire added");
   }
 
@@ -718,7 +736,7 @@ export default function NewScreening({
             <p className="text-[13px] text-danger">
               {check.needed - check.available} more {check.needed - check.available === 1 ? "credit is" : "credits are"} needed.{" "}
               {canBuy ? (
-                <Link href={base} className="underline">
+                <Link href={`/w/${slug}/billing?tab=usage`} className="underline">
                   Buy credits
                 </Link>
               ) : (
@@ -896,6 +914,16 @@ function TheorySettingsFields({ settings, total, onChange }: { settings: TheoryS
           {(Object.keys(ANSWER_MODE_LABELS) as TheoryAnswerMode[]).map((m) => (
             <option key={m} value={m}>
               {ANSWER_MODE_LABELS[m]}
+            </option>
+          ))}
+        </select>
+      </label>
+      <label className={field}>
+        Interviewer speaks
+        <select value={interviewerLanguageOf(settings.language)} onChange={(e) => onChange({ language: interviewerLanguageOf(e.target.value) })} className={inputCls}>
+          {INTERVIEWER_LANGUAGES.map((l) => (
+            <option key={l.id} value={l.id}>
+              {l.label}
             </option>
           ))}
         </select>

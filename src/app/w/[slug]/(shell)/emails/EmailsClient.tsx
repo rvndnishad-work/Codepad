@@ -321,7 +321,7 @@ function EmailDrawer({
           </dl>
           {problem && !row.canResend && (
             <p className="text-[13px] text-muted">
-              {row.template === "ai-screening-invite" || row.template === "take-home-session-invite"
+              {row.template === "ai-screening-invite" || row.template === "take-home-session-invite" || (row.template === "interview-invite" && row.hasSession)
                 ? "You do not have permission to resend this invite."
                 : "This kind of email cannot be resent from here."}
             </p>

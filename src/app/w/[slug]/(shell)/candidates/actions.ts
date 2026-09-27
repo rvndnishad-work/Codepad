@@ -11,6 +11,8 @@ import {
 import { upsertCandidateForWorkflow } from "@/lib/crm/auto-create";
 import { cleanReminderPlan, type ReminderPlan } from "@/lib/take-home/reminders";
 import { takeHomePassMarkOf } from "@/lib/take-home/pass-mark";
+import { loadWorkspaceSettings } from "@/lib/workspace/settings-server";
+import { screeningStartValues } from "@/lib/workspace/settings";
 import { advanceCandidateStage } from "@/lib/crm/advance";
 import { canMember, type Permission } from "@/lib/permissions";
 
@@ -111,9 +113,9 @@ export type CreateTakeHomeSessionsInput = {
   scenario?: string | null;
   /** The saved question set this send came from (already checked to be in this workspace). */
   templateId?: string | null;
-  /** Pass mark for this send (already clamped). Omitted = the default. */
+  /** Pass mark for this send (already clamped). Omitted = the workspace default (Settings > Screening defaults). */
   passMark?: number | null;
-  /** Automatic reminder schedule (already cleaned). Omitted = the column defaults. */
+  /** Automatic reminder schedule (already cleaned). Omitted = the workspace default. */
   reminders?: ReminderPlan | null;
 };
 
@@ -226,7 +228,11 @@ export async function bulkCreateTakeHomeSessions(
   };
 
   const sendGroupId = crypto.randomUUID();
-  const reminders = input.reminders ? cleanReminderPlan(input.reminders) : null;
+  // Anything the caller left out starts from the workspace's screening defaults.
+  const settings = input.passMark == null || !input.reminders ? await loadWorkspaceSettings(workspaceId) : null;
+  const start = settings ? screeningStartValues(settings).takeHome : null;
+  const passMark = input.passMark ?? start?.passMark ?? null;
+  const reminders = input.reminders ? cleanReminderPlan(input.reminders) : start ? cleanReminderPlan(start.reminders) : null;
   const createdRows: { name: string; email: string; token: string; sessionId: string }[] = [];
   // Pre-existing candidates to forward-advance to TAKE_HOME after commit (IP-69).
   const advanceIds: string[] = [];
@@ -271,7 +277,7 @@ export async function bulkCreateTakeHomeSessions(
             // One send shares its pass mark and reminder schedule; the group
             // id lets a later change reach every take-home in it.
             setupGroupId: sendGroupId,
-            ...(input.passMark != null ? { takeHomePassMark: takeHomePassMarkOf(input.passMark) } : {}),
+            ...(passMark != null ? { takeHomePassMark: takeHomePassMarkOf(passMark) } : {}),
             ...(reminders
               ? {
                   reminderStartAfterHours: reminders.startAfterHours,

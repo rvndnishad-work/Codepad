@@ -26,12 +26,13 @@ export async function POST(req: Request) {
   let { slug } = parsed.data;
 
   // Ensure slug uniqueness
-  const existing = await prisma.workspace.findUnique({
-    where: { slug },
-    select: { id: true },
-  });
+  // Old addresses of renamed workspaces still redirect, so they count as taken.
+  const [existing, redirected] = await Promise.all([
+    prisma.workspace.findUnique({ where: { slug }, select: { id: true } }),
+    prisma.workspaceSlugRedirect.findUnique({ where: { oldSlug: slug }, select: { id: true } }),
+  ]);
 
-  if (existing) {
+  if (existing || redirected) {
     const randomSuffix = Math.random().toString(36).substring(2, 6);
     slug = `${slug}-${randomSuffix}`;
   }

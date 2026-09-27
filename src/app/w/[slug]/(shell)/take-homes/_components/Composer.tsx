@@ -8,13 +8,15 @@ import { parsePeople } from "@/lib/take-home/list";
 import { plural } from "@/lib/workspace/display";
 import { Avatar, Btn, Dialog, fmtDate, inputCls } from "../../candidates/_components/ui";
 import { sendTakeHomeAction } from "../actions";
-import { TAKE_HOME_PASS_MARK } from "@/lib/take-home/pass-mark";
-import { DEFAULT_REMINDER_PLAN, type ReminderPlan } from "@/lib/take-home/reminders";
+import { type ReminderPlan } from "@/lib/take-home/reminders";
+import { choicesWith } from "@/lib/workspace/screening-defaults";
 import { PassMarkField, PassMarkPreview, RemindersField } from "./Settings";
 
 export type ComposerQuestion = { id: string; title: string; difficulty: string; category: string | null; minutes: number; own: boolean };
 export type ComposerTemplate = { id: string; name: string; items: TemplateItem[] };
 export type ComposerCandidate = { id: string; name: string; email: string; stage: string; openSince: string | null };
+/** Starting values from Settings > Screening defaults. */
+export type ComposerDefaults = { passMark: number; expiresInDays: number; reminders: ReminderPlan };
 
 type Person = { key: string; id: string | null; name: string; email: string; openSince: string | null };
 
@@ -34,6 +36,7 @@ export default function Composer({
   candidates,
   initialCandidateIds,
   initialTemplateId,
+  defaults,
 }: {
   slug: string;
   workspaceName: string;
@@ -42,6 +45,7 @@ export default function Composer({
   candidates: ComposerCandidate[];
   initialCandidateIds: string[];
   initialTemplateId: string | null;
+  defaults: ComposerDefaults;
 }) {
   const base = `/w/${slug}/take-homes`;
   const byId = useMemo(() => new Map(questions.map((q) => [q.id, q])), [questions]);
@@ -55,9 +59,10 @@ export default function Composer({
       .filter((c) => initialCandidateIds.includes(c.id))
       .map((c) => ({ key: c.id, id: c.id, name: c.name, email: c.email, openSince: c.openSince })),
   );
-  const [days, setDays] = useState(7);
-  const [passMark, setPassMark] = useState(TAKE_HOME_PASS_MARK);
-  const [reminders, setReminders] = useState<ReminderPlan>(DEFAULT_REMINDER_PLAN);
+  const [days, setDays] = useState(defaults.expiresInDays);
+  const [passMark, setPassMark] = useState(defaults.passMark);
+  const [reminders, setReminders] = useState<ReminderPlan>(defaults.reminders);
+  const dayChoices = useMemo(() => choicesWith(DAY_STEPS, defaults.expiresInDays), [defaults.expiresInDays]);
   const [saveAs, setSaveAs] = useState(false);
   const [saveName, setSaveName] = useState("");
   const [picking, setPicking] = useState(false);
@@ -264,7 +269,7 @@ export default function Composer({
               <div className="flex flex-wrap items-center gap-3">
                 <span className="w-[170px] text-muted">Candidates can start until</span>
                 <div className="flex flex-wrap gap-1.5">
-                  {DAY_STEPS.map((d) => (
+                  {dayChoices.map((d) => (
                     <button
                       key={d}
                       type="button"

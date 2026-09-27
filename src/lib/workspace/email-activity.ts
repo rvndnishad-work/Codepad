@@ -93,8 +93,11 @@ export const TEMPLATE_LABELS: Record<string, string> = {
   "take-home-submitted-recruiter": "Take-home submitted, to you",
   "interview-invite": "Interview invite",
   "interviewer-invite": "Interview details, guest",
+  "interview-cancelled": "Interview cancelled",
+  "credits-low": "Low credits, to admins",
   "workspace-invite": "Workspace invite",
   "otp-verification": "Sign-in code",
+  "reply-to-confirm": "Reply-to confirmation",
 };
 
 export function templateLabel(t: string): string {
@@ -109,11 +112,12 @@ export function templateLabel(t: string): string {
 export const RESENDABLE_STATUSES = ["failed", "bounced", "suppressed"] as const;
 
 /** Which existing resend path a template maps to, if any. */
-export type ResendPath = "ai-screening" | "take-home";
+export type ResendPath = "ai-screening" | "take-home" | "interview";
 
 export function resendPathFor(template: string): ResendPath | null {
   if (template === "ai-screening-invite") return "ai-screening";
   if (template === "take-home-session-invite") return "take-home";
+  if (template === "interview-invite") return "interview";
   return null;
 }
 

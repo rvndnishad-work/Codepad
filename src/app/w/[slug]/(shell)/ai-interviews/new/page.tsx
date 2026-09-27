@@ -8,7 +8,9 @@ import {
   loadTalentPool,
 } from "@/lib/ai-interview/console-server";
 import NewScreening, { type Prefill } from "../_components/NewScreening";
-import { DEFAULT_REMINDER_DAYS } from "@/lib/ai-interview/console";
+import { loadWorkspaceSettings } from "@/lib/workspace/settings-server";
+import { normalizeWorkspaceSettings, screeningStartValues } from "@/lib/workspace/settings";
+import { interviewerLanguageOf } from "@/lib/ai-interview/languages";
 import { questionTexts } from "@/lib/ai-interview/questionnaire";
 import { DEFAULT_THEORY, theoryMinutes } from "@/lib/ai-interview/theory";
 import { FRONTEND_FRAMEWORKS } from "@/lib/interview/stack";
@@ -29,13 +31,17 @@ export default async function NewAiScreeningPage({ params, searchParams }: Props
   if (!access.canCreate) redirect(base);
   const wsId = access.workspace.id;
 
-  const [credits, pool, questions, challenges, from] = await Promise.all([
+  const [credits, pool, questions, challenges, from, settings] = await Promise.all([
     loadCreditSummary(wsId),
     loadTalentPool(wsId),
     loadQuestionSets(wsId),
     loadChallengePool(wsId),
     sp.from ? loadScreening(wsId, sp.from) : Promise.resolve(null),
+    loadWorkspaceSettings(wsId),
   ]);
+  // A screening started here begins from Settings > Screening defaults.
+  const start = screeningStartValues(settings ?? normalizeWorkspaceSettings({})).ai;
+  const theoryStart = { ...DEFAULT_THEORY, recordAudio: start.recordAudio, language: interviewerLanguageOf(start.language) };
 
   const preselected = (sp.candidates ?? "")
     .split(",")
@@ -56,7 +62,7 @@ export default async function NewAiScreeningPage({ params, searchParams }: Props
         title: "",
         engagementLevel: "",
         expiresAfterDays: null,
-        reminderAfterDays: DEFAULT_REMINDER_DAYS,
+        reminderAfterDays: start.reminderAfterDays,
         rounds: picked.map((c) => ({
           paradigm: c.paradigm,
           language: c.paradigm === "frontend" ? null : c.languages[0] ?? null,
@@ -64,7 +70,7 @@ export default async function NewAiScreeningPage({ params, searchParams }: Props
           sourceKind: "challenge",
           sourceId: c.id,
           templateId: null,
-          estimatedMinutes: 30,
+          estimatedMinutes: start.estimatedMinutes,
           theory: null,
           pinned: true,
         })),
@@ -74,7 +80,7 @@ export default async function NewAiScreeningPage({ params, searchParams }: Props
         title: "",
         engagementLevel: "",
         expiresAfterDays: null,
-        reminderAfterDays: DEFAULT_REMINDER_DAYS,
+        reminderAfterDays: start.reminderAfterDays,
         rounds: [
           {
             paradigm: addTheory ? "theory" : addQ.kind,
@@ -83,8 +89,8 @@ export default async function NewAiScreeningPage({ params, searchParams }: Props
             sourceKind: "scaffold",
             sourceId: null,
             templateId: addQ.id,
-            estimatedMinutes: addTheory ? theoryMinutes(DEFAULT_THEORY, questionTexts(addQ.testsCode).length) : addQ.minutes,
-            theory: addTheory ? DEFAULT_THEORY : null,
+            estimatedMinutes: addTheory ? theoryMinutes(theoryStart, questionTexts(addQ.testsCode).length) : addQ.minutes,
+            theory: addTheory ? theoryStart : null,
           },
         ],
       }
@@ -94,7 +100,8 @@ export default async function NewAiScreeningPage({ params, searchParams }: Props
         engagementLevel: from.engagementLevel,
         expiresAfterDays: from.expiresAfterDays,
         reminderAfterDays: from.reminderAfterDays,
-        passMark: from.passMarkSet ? from.passMark : null,
+        // A copy keeps the original's pass mark, even when that was the standard one.
+        passMark: from.passMark,
         rounds: from.roundSpecs,
       }
     : null;
@@ -119,6 +126,14 @@ export default async function NewAiScreeningPage({ params, searchParams }: Props
       challenges={challenges.map((c) => ({ id: c.id, title: c.title, difficulty: c.difficulty, paradigm: c.paradigm, languages: c.languages, frameworks: c.frameworks, mine: c.mine }))}
       prefill={prefill}
       canBuy={access.canBuy}
+      defaults={{
+        passMark: start.passMark,
+        expiresAfterDays: start.expiresAfterDays,
+        reminderAfterDays: start.reminderAfterDays,
+        estimatedMinutes: start.estimatedMinutes,
+        recordAudio: start.recordAudio,
+        language: start.language,
+      }}
     />
   );
 }

@@ -247,6 +247,11 @@ export function cleanForSpeech(raw: string): string {
 }
 
 interface SpeakCallbacks {
+  /**
+   * Language to speak in, as a speech tag such as "es-ES". The cloud voice
+   * follows the text on its own; the browser voice is picked to match.
+   */
+  lang?: string;
   onStart?: () => void;
   onEnd?: () => void;
   onError?: (err?: unknown) => void;
@@ -327,7 +332,11 @@ export async function speakNaturally(text: string, callbacks: SpeakCallbacks = {
     return;
   }
 
-  const voices = window.speechSynthesis.getVoices();
+  const allVoices = window.speechSynthesis.getVoices();
+  // Another language: only voices that speak it (all voices when none do).
+  const base = callbacks.lang?.toLowerCase().split("-")[0];
+  const inLang = base && base !== "en" ? allVoices.filter((v) => v.lang.toLowerCase().split(/[-_]/)[0] === base) : [];
+  const voices = inLang.length ? inLang : allVoices;
   let voice: SpeechSynthesisVoice | null = null;
   if (selectedVoiceName) {
     voice = voices.find((v) => v.name === selectedVoiceName) ?? null;
@@ -345,6 +354,7 @@ export async function speakNaturally(text: string, callbacks: SpeakCallbacks = {
   chunks.forEach((chunk, i) => {
     const u = new SpeechSynthesisUtterance(chunk);
     if (voice) u.voice = voice;
+    if (callbacks.lang) u.lang = voice?.lang || callbacks.lang;
     // Tuned for warmth + clarity:
     //   rate       = user-selected speaking rate
     //   pitch < 1  = slightly lower than default for a less "perky" tone

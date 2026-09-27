@@ -10,6 +10,8 @@ import { formatOf, parsePanel, questionState } from "./wizard";
 import { passExpiry, signRoomPass } from "./room-pass";
 import { roomViewer, ROOM_SELECT, type RoomViewer } from "./room-access";
 import { parseRound, roundKey, type RoundKind } from "./room";
+import { CANDIDATE_PAGE_SELECT, candidatePageSettings } from "@/lib/candidate-page-brand";
+import { consentOutstanding, type CandidateBrand } from "@/lib/workspace/candidate-experience";
 
 export function baseUrl(): string {
   return (process.env.NEXTAUTH_URL || process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000").replace(/\/$/, "");
@@ -58,8 +60,11 @@ export type StageRound = {
 
 export type RoomData = {
   viewer: RoomViewer;
-  workspace: { name: string; slug: string };
+  /** `brand` is the workspace logo, colour, help contact and privacy notice (Settings > Candidate experience). */
+  workspace: { name: string; slug: string; brand: CandidateBrand };
   interview: {
+    /** The candidate must tick the consent box before entering the room. Always false for interviewers. */
+    consentNeeded: boolean;
     id: string;
     title: string;
     status: string;
@@ -156,8 +161,9 @@ export async function loadRoom(
       guideJson: true,
       interviewerBrief: true,
       rubric: { select: { ratings: true, notes: true } },
+      candidateConsentAt: true,
       user: { select: { name: true, email: true } },
-      workspace: { select: { name: true, slug: true } },
+      workspace: { select: { slug: true, ...CANDIDATE_PAGE_SELECT } },
       guests: { select: { email: true }, orderBy: { createdAt: "asc" } },
     },
   });
@@ -166,6 +172,7 @@ export async function loadRoom(
   const viewer = await roomViewer(s, { user: a.user, cookieHeader: a.cookieHeader, legacy: false });
   if (!viewer) return { ok: false, reason: a.user ? "forbidden" : "login" };
   const interviewer = viewer.role === "interviewer";
+  const page = candidatePageSettings(s.workspace);
 
   const challengeIds = ids(s.challengeIds);
   const playgroundIds = ids(s.playgroundIds);
@@ -315,8 +322,9 @@ export async function loadRoom(
     ok: true,
     data: {
       viewer,
-      workspace: { name: s.workspace.name, slug: s.workspace.slug },
+      workspace: { name: s.workspace.name, slug: s.workspace.slug, brand: page.brand },
       interview: {
+        consentNeeded: !interviewer && !["completed", "abandoned", "cancelled"].includes(s.status) && consentOutstanding(page, s.candidateConsentAt),
         id: s.id,
         title: s.title,
         status: s.status,

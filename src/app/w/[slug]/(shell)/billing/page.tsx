@@ -6,24 +6,28 @@ import { growthToolsEnabled } from "@/lib/billing/trial";
 import { planSummary } from "@/lib/billing/summary";
 import { PLAN_COMPARISON, PLAN_ORDER, WORKSPACE_PLANS, priceLabel } from "@/lib/billing/plans";
 import { seatUsage } from "@/lib/workspace/members";
-import { getWorkspaceCredits } from "@/lib/ai-interview/credits";
+import { AI_CREDIT_PACKS, getWorkspaceCredits } from "@/lib/ai-interview/credits";
+import { loadCreditSummary } from "@/lib/ai-interview/console-server";
+import { loadLedgerPage, loadUsageMonths } from "@/lib/billing/usage-server";
+import { settingsAccess } from "@/lib/workspace/settings-server";
 import BillingClient, { type BillingTab } from "./BillingClient";
+import type { UsageData } from "./UsageTab";
 
 type Props = {
   params: Promise<{ slug: string }>;
-  searchParams: Promise<{ tab?: string; billing_success?: string; billing_cancel?: string }>;
+  searchParams: Promise<{ tab?: string; page?: string; billing_success?: string; billing_cancel?: string; credits_purchase?: string }>;
 };
 
 export async function generateMetadata({ params }: Props) {
   const { slug } = await params;
   const ws = await prisma.workspace.findUnique({ where: { slug }, select: { name: true } });
-  return { title: ws ? `Billing and plan · ${ws.name} — Interviewpad` : "Workspace not found", robots: { index: false } };
+  return { title: ws ? `Billing and usage · ${ws.name} — Interviewpad` : "Workspace not found", robots: { index: false } };
 }
 
 export default async function BillingPage({ params, searchParams }: Props) {
   const { slug } = await params;
   const sp = await searchParams;
-  const tab: BillingTab = sp.tab === "invoices" ? "invoices" : "plan";
+  const tab: BillingTab = sp.tab === "invoices" || sp.tab === "usage" ? sp.tab : "plan";
 
   const session = await auth().catch(() => null);
   if (!session?.user?.id) redirect(`/login?next=${encodeURIComponent(`/w/${slug}/billing`)}`);
@@ -36,6 +40,7 @@ export default async function BillingPage({ params, searchParams }: Props) {
       trialEndsAt: true,
       stripeCustomerId: true,
       stripeSubscriptionId: true,
+      lowCreditThreshold: true,
       members: { select: { userId: true, role: true, permissions: true } },
     },
   });
@@ -59,6 +64,39 @@ export default async function BillingPage({ params, searchParams }: Props) {
   const summary = planSummary(workspace, now);
   const seats = seatUsage(workspace, { members: workspace.members.length, pendingInvites }, now);
   const subscribed = Boolean(workspace.stripeCustomerId && workspace.stripeSubscriptionId);
+  const aiScreening = growthToolsEnabled(workspace, now);
+
+  let usage: UsageData | null = null;
+  if (tab === "usage") {
+    const [summary, months, ledger, access] = await Promise.all([
+      loadCreditSummary(workspace.id),
+      loadUsageMonths(workspace.id, now),
+      loadLedgerPage(workspace.id, Number.parseInt(sp.page ?? "1", 10) || 1),
+      settingsAccess(me),
+    ]);
+    usage = {
+      credits: summary,
+      packs: AI_CREDIT_PACKS.map((p) => ({ id: p.id, label: p.label, credits: p.credits, priceCents: p.priceCents, badge: "badge" in p ? p.badge : null })),
+      months,
+      ledger: {
+        rows: ledger.rows.map((r) => ({
+          id: r.id,
+          createdAt: new Date(r.createdAt).toISOString(),
+          label: r.label,
+          detail: r.detail,
+          amount: r.amount,
+          balanceAfter: r.balanceAfter,
+        })),
+        page: ledger.page,
+        pages: ledger.pages,
+        total: ledger.total,
+      },
+      lowCreditThreshold: workspace.lowCreditThreshold,
+      canEditAlert: access.canEdit,
+      aiScreening,
+      purchase: sp.credits_purchase === "success" ? "success" : sp.credits_purchase === "cancel" ? "cancel" : null,
+    };
+  }
 
   return (
     <BillingClient
@@ -69,7 +107,8 @@ export default async function BillingPage({ params, searchParams }: Props) {
       summary={summary}
       seats={seats}
       credits={credits}
-      aiScreening={growthToolsEnabled(workspace, now)}
+      aiScreening={aiScreening}
+      usage={usage}
       month={{
         takeHomes: takeHomeSessions + takeHomeLegacy,
         aiScreenings,

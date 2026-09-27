@@ -97,6 +97,63 @@ export const WORKSPACE_AUDIT_ACTIONS = {
   ALERT_CHANNEL_UPDATED: "ALERT_CHANNEL_UPDATED",
   ALERT_CHANNEL_REMOVED: "ALERT_CHANNEL_REMOVED",
   ALERT_TEST_SENT: "ALERT_TEST_SENT",
+
+  // Workspace administration (Settings, Members, Billing and usage).
+  // Settings: one entry per changed field, meta { tab, field, label, from, to }.
+  WORKSPACE_SETTINGS_CHANGED: "WORKSPACE_SETTINGS_CHANGED",
+  // Security tab fields, same meta as WORKSPACE_SETTINGS_CHANGED.
+  SECURITY_POLICY_CHANGED: "SECURITY_POLICY_CHANGED",
+  // meta { count } members without two-factor who were emailed.
+  SECURITY_2FA_REMINDER_SENT: "SECURITY_2FA_REMINDER_SENT",
+  // meta { count? } everyone signed out of the workspace.
+  MEMBERS_SIGNED_OUT: "MEMBERS_SIGNED_OUT",
+  // meta { email, name?, role, via: "invite" | "domain" }.
+  MEMBER_JOINED: "MEMBER_JOINED",
+  // meta { name|email, candidates, interviewsReassigned, interviewsCancelled, reviews, apiKeysRevoked, calendarDisconnected, toName? }.
+  MEMBER_WORK_HANDED_OVER: "MEMBER_WORK_HANDED_OVER",
+  // meta { name|email, fromName? } the member became the only owner.
+  MEMBER_OWNERSHIP_TRANSFERRED: "MEMBER_OWNERSHIP_TRANSFERRED",
+  // meta { name|email } the member was made an owner alongside others.
+  MEMBER_OWNER_ADDED: "MEMBER_OWNER_ADDED",
+  // meta { count, emails: string[] (first few), roles: Record<role, n> }.
+  MEMBERS_BULK_INVITED: "MEMBERS_BULK_INVITED",
+  // meta { from, to } plan names.
+  PLAN_CHANGED: "PLAN_CHANGED",
+  // meta { plan }.
+  SUBSCRIPTION_STARTED: "SUBSCRIPTION_STARTED",
+  // meta { plan, atPeriodEnd? }.
+  SUBSCRIPTION_CANCELLED: "SUBSCRIPTION_CANCELLED",
+  // meta { amountDue?, currency? }.
+  SUBSCRIPTION_PAYMENT_FAILED: "SUBSCRIPTION_PAYMENT_FAILED",
+  // meta { credits, amount?, currency? }.
+  CREDITS_PURCHASED: "CREDITS_PURCHASED",
+  // meta { balance, threshold, recipients }.
+  CREDITS_LOW_ALERT_SENT: "CREDITS_LOW_ALERT_SENT",
+  // meta { plan } the plan the workspace fell back to.
+  TRIAL_ENDED: "TRIAL_ENDED",
+  // meta { candidateName|email } live interview invite resent from Email activity.
+  INTERVIEW_INVITE_RESENT: "INTERVIEW_INVITE_RESENT",
+  // meta { candidateName?, reason? } upcoming interview cancelled (for example, on member removal).
+  INTERVIEW_CANCELLED: "INTERVIEW_CANCELLED",
+  // meta { key, label, reset?: boolean } candidate email wording saved or reset.
+  EMAIL_TEMPLATE_CHANGED: "EMAIL_TEMPLATE_CHANGED",
+  // meta { email } confirmation link sent / address confirmed.
+  REPLY_TO_CONFIRMATION_SENT: "REPLY_TO_CONFIRMATION_SENT",
+  REPLY_TO_CONFIRMED: "REPLY_TO_CONFIRMED",
+  // meta { kind, label, count, source: "auto:retention" } one entry per rule run that erased something.
+  RETENTION_ITEMS_ERASED: "RETENTION_ITEMS_ERASED",
+  // meta { kind, label, dueAt, count } 7-day advance email sent to admins.
+  RETENTION_NOTICE_SENT: "RETENTION_NOTICE_SENT",
+  // meta { kind, label, from, to } rule turned on or off, or its period changed.
+  RETENTION_RULE_CHANGED: "RETENTION_RULE_CHANGED",
+  // meta { email, kind: "COPY" | "ERASE", dueAt }.
+  DATA_REQUEST_CREATED: "DATA_REQUEST_CREATED",
+  // meta { email, kind, itemCount }.
+  DATA_REQUEST_COMPLETED: "DATA_REQUEST_COMPLETED",
+  WORKSPACE_EXPORT_REQUESTED: "WORKSPACE_EXPORT_REQUESTED",
+  // meta { finalAt }.
+  WORKSPACE_DELETION_SCHEDULED: "WORKSPACE_DELETION_SCHEDULED",
+  WORKSPACE_DELETION_CANCELLED: "WORKSPACE_DELETION_CANCELLED",
 } as const;
 
 export type WorkspaceAuditAction =

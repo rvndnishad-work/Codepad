@@ -5,6 +5,7 @@
  * No imports from Prisma, so client components use it too.
  */
 
+import { interviewStartMinutes, STOCK_INTERVIEW_MINUTES } from "@/lib/workspace/screening-defaults";
 import type { Paradigm } from "@/lib/interview/stack";
 import { cleanMeetingUrl } from "@/lib/interview/meeting";
 
@@ -250,9 +251,13 @@ export function roundsMinutes(rounds: WizardRound[]): number {
   return rounds.reduce((n, r) => n + r.minutes, 0);
 }
 
-/** Suggested length: the format default, or the rounds plus 10 minutes for intros, rounded up to 15. */
-export function suggestedMinutes(format: FormatDef | null, rounds: WizardRound[]): number {
-  const base = format?.minutes ?? 60;
+/**
+ * Suggested length: the format's usual length moved by the workspace default
+ * (Settings > Screening defaults, 60 keeps the usual lengths), or the rounds
+ * plus 10 minutes for intros, rounded up to 15.
+ */
+export function suggestedMinutes(format: FormatDef | null, rounds: WizardRound[], workspaceMinutes: number = STOCK_INTERVIEW_MINUTES): number {
+  const base = interviewStartMinutes(format?.minutes ?? null, workspaceMinutes, { min: MIN_MINUTES, max: MAX_MINUTES });
   const need = rounds.length ? roundsMinutes(rounds) + (format?.guide ? 20 : 10) : 0;
   return clampMinutes(Math.max(base, Math.ceil(need / 15) * 15));
 }

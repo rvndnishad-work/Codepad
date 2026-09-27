@@ -3,8 +3,10 @@ import { prisma } from "@/lib/prisma";
 import { notFound, redirect } from "next/navigation";
 import { isStaff } from "@/lib/permissions/staff";
 import { ensureTotpEnrolledOrRedirect } from "@/lib/totp-gate";
-import { normalizeWorkspaceSettings, twoFactorRequired } from "@/lib/workspace/settings";
+import { deletionFinalAt, formatWorkspaceDate, normalizeWorkspaceSettings, twoFactorRequired } from "@/lib/workspace/settings";
+import { canMember } from "@/lib/permissions";
 import WorkspaceShell from "./WorkspaceShell";
+import DeletionScheduledScreen from "./DeletionScheduledScreen";
 import { planDisplay, TAKE_HOME_REVIEW_STAGES } from "@/lib/workspace/display";
 import { touchMemberActivity } from "@/lib/workspace/activity";
 
@@ -60,6 +62,21 @@ export default async function WorkspaceLayout({ children, params }: Props) {
   const settings = normalizeWorkspaceSettings(activeWorkspace);
   const mustEnroll2fa = twoFactorRequired(settings, myMember, activeWorkspace.planName);
   await ensureTotpEnrolledOrRedirect(userId, mustEnroll2fa);
+
+  // Settings > Data and privacy: a workspace waiting to be deleted is closed
+  // to everyone. Owners get the undo button.
+  const finalAt = deletionFinalAt(settings);
+  if (finalAt) {
+    return (
+      <DeletionScheduledScreen
+        slug={slug}
+        name={activeWorkspace.name}
+        finalAt={formatWorkspaceDate(finalAt, settings)}
+        daysLeft={Math.max(0, Math.ceil((finalAt.getTime() - Date.now()) / 86_400_000))}
+        isOwner={await canMember(myMember, "workspace:manage")}
+      />
+    );
+  }
 
   // Sidebar badges: submitted take-homes waiting on a decision, and live interviews.
   const reviewWhere = { OR: [{ candidateId: null }, { candidate: { stage: { in: [...TAKE_HOME_REVIEW_STAGES] } } }] };

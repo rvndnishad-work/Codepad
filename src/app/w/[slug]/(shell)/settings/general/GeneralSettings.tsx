@@ -9,10 +9,10 @@
 import Link from "next/link";
 import { useEffect, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { ImageUp, Trash2 } from "lucide-react";
+import { ImageUp, Trash2, UserCog } from "lucide-react";
 import { Avatar, Btn, useToasts } from "../../candidates/_components/ui";
 import { SaveBar, Segmented, Select, SettingRow, SettingsCard, TextInput, useSettingsForm } from "../_components/form";
-import { DATE_FORMATS, formatWorkspaceDate, type DateFormat } from "@/lib/workspace/settings";
+import { DATE_FORMATS, SETTINGS_TABS, formatWorkspaceDate, type DateFormat } from "@/lib/workspace/settings";
 import { LOGO_MAX_BYTES, LOGO_TYPES, checkLogoFile } from "@/lib/workspace/screening-defaults";
 import { relativeTime } from "@/lib/workspace/display";
 import { checkSlugAction, removeLogoAction, uploadLogoAction, type SlugCheck } from "./actions";
@@ -50,7 +50,7 @@ export default function GeneralSettings({ slug, origin, now, canEdit, owner, ini
             <TextInput id="ws-name" value={values.name} maxLength={100} onChange={(e) => set("name", e.target.value)} disabled={disabled} autoComplete="organization" />
           </SettingRow>
           <SlugRow slug={slug} host={host} value={values.slug} saved={initial.slug} onChange={(v) => set("slug", v)} error={errors.slug} disabled={disabled || !owner} owner={owner} />
-          <LogoRow slug={slug} initialUrl={logoUrl} disabled={!canEdit} />
+          <LogoRow slug={slug} name={values.name || initial.name} initialUrl={logoUrl} disabled={!canEdit} />
         </SettingsCard>
 
         <SettingsCard
@@ -128,6 +128,14 @@ function SlugRow({
   }, [slug, value, changed]);
 
   const hint = error ? null : check;
+  const hintText =
+    hint && hint.state !== "same"
+      ? hint.state === "available"
+        ? `${hint.message} The old address ${saved} will redirect here.`
+        : hint.message
+      : changed && !error
+        ? "Checking"
+        : `Your workspace lives at ${host}/w/${saved}.`;
   return (
     <SettingRow
       label="Web address"
@@ -136,8 +144,8 @@ function SlugRow({
       error={error}
       htmlFor="ws-slug"
     >
-      <div className={`flex items-center w-full max-w-md rounded-lg border border-border bg-bg focus-within:border-secondary/60 focus-within:ring-2 focus-within:ring-secondary/20 ${disabled ? "opacity-50" : ""}`}>
-        <span className="pl-3 pr-0.5 text-[13px] text-subtle whitespace-nowrap truncate max-w-[55%]" title={`${host}/w/`}>
+      <div className={`flex items-stretch w-full max-w-md rounded-lg border border-border bg-bg overflow-hidden focus-within:border-secondary/60 focus-within:ring-2 focus-within:ring-secondary/20 ${disabled ? "opacity-50" : ""}`}>
+        <span className="flex items-center px-3 border-r border-border bg-panel font-mono text-[13px] text-subtle whitespace-nowrap truncate max-w-[55%]" title={`${host}/w/`}>
           {host}/w/
         </span>
         <input
@@ -149,12 +157,12 @@ function SlugRow({
           autoComplete="off"
           disabled={disabled}
           onChange={(e) => onChange(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, "-"))}
-          className="h-9 flex-1 min-w-0 bg-transparent pr-3 text-[13px] text-fg placeholder:text-subtle focus:outline-none"
+          className="h-9 flex-1 min-w-0 bg-transparent px-3 font-mono text-[13px] text-fg placeholder:text-subtle focus:outline-none"
           aria-describedby="ws-slug-hint"
         />
       </div>
-      <p id="ws-slug-hint" aria-live="polite" className={`text-[13px] ${hint?.state === "available" ? "text-success" : hint && hint.state !== "same" ? "text-danger" : "text-muted"}`}>
-        {hint && hint.state !== "same" ? hint.message : changed && !error ? "Checking" : ""}
+      <p id="ws-slug-hint" aria-live="polite" className={`text-[13px] break-all ${hint?.state === "available" ? "text-success" : hint && hint.state !== "same" ? "text-danger" : "text-muted"}`}>
+        {hintText}
       </p>
     </SettingRow>
   );
@@ -162,7 +170,7 @@ function SlugRow({
 
 /* ── Logo ───────────────────────────────────────────────────────────────── */
 
-function LogoRow({ slug, initialUrl, disabled }: { slug: string; initialUrl: string | null; disabled: boolean }) {
+function LogoRow({ slug, name, initialUrl, disabled }: { slug: string; name: string; initialUrl: string | null; disabled: boolean }) {
   const router = useRouter();
   const input = useRef<HTMLInputElement>(null);
   const [url, setUrl] = useState(initialUrl);
@@ -209,14 +217,16 @@ function LogoRow({ slug, initialUrl, disabled }: { slug: string; initialUrl: str
     >
       {toasts}
       <div className="flex flex-wrap items-center gap-3">
-        <div className="w-14 h-14 rounded-xl border border-border bg-bg flex items-center justify-center overflow-hidden shrink-0">
-          {url ? (
-            // eslint-disable-next-line @next/next/no-img-element
+        {url ? (
+          <div className="w-14 h-14 rounded-xl border border-border bg-bg flex items-center justify-center overflow-hidden shrink-0">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src={url} alt="Workspace logo" className="max-w-full max-h-full object-contain" />
-          ) : (
-            <ImageUp className="w-5 h-5 text-subtle" aria-hidden />
-          )}
-        </div>
+          </div>
+        ) : (
+          <div aria-hidden className="w-14 h-14 rounded-xl bg-secondary text-bg flex items-center justify-center shrink-0 text-2xl font-semibold">
+            {(name.trim()[0] ?? "W").toUpperCase()}
+          </div>
+        )}
         <input
           ref={input}
           type="file"
@@ -237,6 +247,7 @@ function LogoRow({ slug, initialUrl, disabled }: { slug: string; initialUrl: str
             Remove
           </Btn>
         )}
+        {!url && !busy && <span className="text-[13px] text-muted">No logo yet, so we show the first letter.</span>}
       </div>
     </SettingRow>
   );
@@ -247,76 +258,87 @@ function LogoRow({ slug, initialUrl, disabled }: { slug: string; initialUrl: str
 function OwnersCard({ slug, owners }: { slug: string; owners: Props["owners"] }) {
   const single = owners.length === 1;
   return (
-    <SettingsCard
-      title="Owners"
-      description="Owners can change every setting, including the web address, two-factor sign-in for everyone and deleting the workspace."
-      aside={
-        <Btn href={`/w/${slug}/members`} size="sm">
-          Manage in Members
-        </Btn>
-      }
-    >
-      <ul className="flex flex-col">
-        {owners.map((o) => (
-          <li key={o.userId} className="flex items-center gap-3 px-5 py-3 border-b border-border last:border-b-0">
-            <Avatar name={o.name} size={28} />
-            <div className="flex flex-col min-w-0">
-              <span className="text-sm text-fg truncate">
-                {o.name}
-                {o.me && <span className="text-muted"> (you)</span>}
-              </span>
-              {o.email && o.email !== o.name && <span className="text-[13px] text-muted truncate">{o.email}</span>}
-            </div>
-          </li>
-        ))}
-        {!owners.length && <li className="px-5 py-3 text-[13px] text-muted">No owners found.</li>}
-      </ul>
-      {single && (
-        <div className="px-5 py-3 text-[13px] text-muted bg-panel/40">
-          This workspace has one owner. Add a second owner from Members so someone can always manage it.
+    <SettingsCard title="Ownership">
+      <SettingRow
+        label="Owners"
+        help="Owners can change every setting, including the web address, two-factor sign-in for everyone and deleting the workspace."
+      >
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+          {owners.length ? (
+            <ul className="flex flex-wrap gap-1.5" aria-label="Owners">
+              {owners.map((o) => (
+                <li
+                  key={o.userId}
+                  title={o.email ?? undefined}
+                  className="inline-flex items-center gap-1.5 rounded-full border border-border bg-panel pl-1 pr-3 h-8 text-[13px] text-fg max-w-full"
+                >
+                  <Avatar name={o.name} size={24} />
+                  <span className="truncate">{o.name}</span>
+                  {o.me && <span className="text-muted">(you)</span>}
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <span className="text-[13px] text-muted">No owners found.</span>
+          )}
+          {single && (
+            <span className="text-[13px] text-warning">
+              This workspace has one owner. Add a second owner from Members so someone can always manage it.
+            </span>
+          )}
         </div>
-      )}
+        <Btn href={`/w/${slug}/members`} icon={UserCog} className="mt-1">
+          Transfer or add an owner
+        </Btn>
+      </SettingRow>
     </SettingsCard>
   );
 }
 
 /* ── Recent changes ─────────────────────────────────────────────────────── */
 
+const TAB_LABELS: Record<string, string> = Object.fromEntries(SETTINGS_TABS.map((t) => [`settings/${t.id}`, t.label]));
+
 function RecentChanges({ slug, recent, now, canReadAudit }: { slug: string; recent: RecentChange[]; now: Date; canReadAudit: boolean }) {
   return (
-    <aside aria-labelledby="recent-changes" className="rounded-xl border border-border bg-surface lg:sticky lg:top-4">
-      <h2 id="recent-changes" className="px-4 pt-4 pb-2 text-sm font-semibold text-fg">
-        Recent settings changes
+    <aside aria-labelledby="recent-changes" className="flex flex-col gap-2 lg:sticky lg:top-4 min-w-0">
+      <h2 id="recent-changes" className="px-1 text-[13px] font-semibold text-muted">
+        Recent changes to settings
       </h2>
-      {recent.length ? (
-        <ol className="flex flex-col px-4 pb-2">
-          {recent.map((r) => (
-            <li key={r.id} className="py-2.5 border-t border-border first:border-t-0 flex flex-col gap-0.5 min-w-0">
-              {r.path ? (
-                <Link href={`/w/${slug}/${r.path}`} className="text-[13px] text-fg hover:underline">
-                  {r.title}
-                </Link>
-              ) : (
-                <span className="text-[13px] text-fg">{r.title}</span>
-              )}
-              {r.detail && <span className="text-[13px] text-muted break-words">{r.detail}</span>}
-              <span className="text-xs text-subtle">
-                {r.actor} · <span suppressHydrationWarning>{relativeTime(r.at, now)}</span>
-              </span>
-            </li>
-          ))}
-        </ol>
-      ) : (
-        <p className="px-4 pb-4 text-[13px] text-muted">No changes yet. Changes to any settings tab show up here.</p>
-      )}
-      {canReadAudit && (
-        <div className="px-4 py-3 border-t border-border">
-          <Link href={`/w/${slug}/audit?category=settings&range=all`} className="text-[13px] font-medium text-secondary-soft hover:underline">
-            See all in the audit log
-          </Link>
-        </div>
-      )}
+      <div className="rounded-xl border border-border bg-surface shadow-sm shadow-black/5">
+        {recent.length ? (
+          <ol className="flex flex-col px-4 py-1">
+            {recent.map((r) => {
+              const tab = r.path ? TAB_LABELS[r.path] : undefined;
+              return (
+                <li key={r.id} className="py-3 border-t border-border first:border-t-0 flex flex-col gap-1 min-w-0">
+                  {r.path ? (
+                    <Link href={`/w/${slug}/${r.path}`} className="text-[13px] font-medium text-fg hover:underline">
+                      {r.title}
+                    </Link>
+                  ) : (
+                    <span className="text-[13px] font-medium text-fg">{r.title}</span>
+                  )}
+                  {r.detail && <span className="text-[13px] text-muted break-words">{r.detail}</span>}
+                  <span className="text-xs text-subtle">
+                    {tab ? `${tab} · ` : ""}
+                    {r.actor} · <span suppressHydrationWarning>{relativeTime(r.at, now)}</span>
+                  </span>
+                </li>
+              );
+            })}
+          </ol>
+        ) : (
+          <p className="px-4 py-4 text-[13px] text-muted">No changes yet. Changes to any settings tab show up here.</p>
+        )}
+        {canReadAudit && (
+          <div className="px-4 py-3 border-t border-border">
+            <Link href={`/w/${slug}/audit?category=settings&range=all`} className="text-[13px] font-medium text-secondary-soft hover:underline">
+              See all in the audit log
+            </Link>
+          </div>
+        )}
+      </div>
     </aside>
   );
 }
-

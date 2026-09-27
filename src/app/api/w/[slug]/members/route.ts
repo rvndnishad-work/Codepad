@@ -16,6 +16,8 @@ import {
   checkRoleChange,
   seatUsage,
 } from "@/lib/workspace/members";
+import { normalizeWorkspaceSettings } from "@/lib/workspace/settings";
+import { inviteDomainError } from "@/lib/workspace/security";
 
 const INVITE_TTL_MS = 14 * 24 * 60 * 60 * 1000;
 
@@ -109,6 +111,9 @@ export async function POST(req: Request, { params }: Params) {
       where: { id: resend.data.resendInviteId, workspaceId: workspace.id, acceptedAt: null },
     });
     if (!existing) return NextResponse.json({ error: "Invite not found" }, { status: 404 });
+    // Settings > Security: the allowed domains may have changed since it was sent.
+    const resendDomainError = inviteDomainError(normalizeWorkspaceSettings(workspace), existing.email);
+    if (resendDomainError) return NextResponse.json({ error: resendDomainError }, { status: 400 });
 
     // An expired invite no longer holds a seat, so resending it takes one.
     if (existing.expiresAt <= now) {
@@ -152,6 +157,10 @@ export async function POST(req: Request, { params }: Params) {
 
   const { email, role } = parsed.data;
   const targetEmail = email.toLowerCase().trim();
+
+  // Settings > Security: invites only go to the allowed email domains.
+  const domainError = inviteDomainError(normalizeWorkspaceSettings(workspace), targetEmail);
+  if (domainError) return NextResponse.json({ error: domainError }, { status: 400 });
 
   const existingUser = await prisma.user.findUnique({ where: { email: targetEmail }, select: { id: true } });
   if (existingUser && workspace.members.some((m) => m.userId === existingUser.id)) {

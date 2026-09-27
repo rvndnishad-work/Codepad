@@ -4,9 +4,9 @@ import OnboardingShowcase from "./OnboardingShowcase";
 export default async function LoginPage({
   searchParams,
 }: {
-  searchParams: Promise<{ next?: string; mode?: string }>;
+  searchParams: Promise<{ next?: string; mode?: string; reason?: string }>;
 }) {
-  const { next, mode } = await searchParams;
+  const { next, mode, reason } = await searchParams;
   const safeNext = next && next.startsWith("/") ? next : "/";
 
   const providers = {
@@ -37,6 +37,11 @@ export default async function LoginPage({
         <div className="lg:hidden absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[300px] h-[300px] rounded-full bg-accent/5 opacity-[0.1] blur-[80px] pointer-events-none" />
         
         <div className="w-full max-w-sm relative z-10 my-auto">
+          {reason === "signed-out" && (
+            <p role="status" className="mb-4 rounded-xl border border-border bg-surface px-4 py-3 text-sm text-muted">
+              You were signed out by your workspace&apos;s security settings. Sign in again to continue.
+            </p>
+          )}
           <AuthCard
             providers={providers}
             next={safeNext}

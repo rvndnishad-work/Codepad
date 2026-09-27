@@ -1,9 +1,11 @@
 import { headers } from "next/headers";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { loadRoom } from "@/lib/interview/room-server";
-import { ensureTotpEnrolledOrRedirect, PAID_PLANS, WORKSPACE_ADMIN_ROLES } from "@/lib/totp-gate";
+import { ensureTotpEnrolledOrRedirect } from "@/lib/totp-gate";
+import { normalizeWorkspaceSettings, signInExpired, twoFactorRequired } from "@/lib/workspace/settings";
+import { signedOutPath } from "@/lib/workspace/security";
 
 /** Loads the room for this request, or says why it cannot be opened. */
 export async function roomForRequest(slug: string, id: string) {
@@ -12,16 +14,25 @@ export async function roomForRequest(slug: string, id: string) {
   const res = await loadRoom(slug, id, { user, cookieHeader: hdrs.get("cookie") });
   if (!res.ok && res.reason === "missing") notFound();
 
-  // Same second-factor rule as the workspace itself: owners and admins of a
-  // paid workspace must have 2FA before they see candidate data.
+  // Same rules as the workspace itself (see (shell)/layout.tsx): a sign-in
+  // the workspace no longer accepts signs in again, and two-factor is needed
+  // by owners and admins of a paid workspace, or by everyone once Settings >
+  // Security turns that on.
   if (res.ok && res.data.viewer.via === "member" && user) {
     const m = await prisma.workspaceMember.findFirst({
       where: { userId: user.id, workspace: { slug } },
-      select: { role: true, workspace: { select: { planName: true } } },
+      select: {
+        role: true,
+        workspace: {
+          select: { planName: true, require2faForAll: true, require2faFrom: true, sessionsRevokedAt: true, sessionMaxAgeDays: true },
+        },
+      },
     });
     if (m) {
-      const must = (WORKSPACE_ADMIN_ROLES as readonly string[]).includes(m.role) && (PAID_PLANS as readonly string[]).includes(m.workspace.planName);
-      await ensureTotpEnrolledOrRedirect(user.id, must);
+      const settings = normalizeWorkspaceSettings(m.workspace);
+      const signedInAt = typeof session?.signedInAt === "number" ? new Date(session.signedInAt) : null;
+      if (signInExpired(settings, signedInAt)) redirect(signedOutPath(slug));
+      await ensureTotpEnrolledOrRedirect(user.id, twoFactorRequired(settings, m, m.workspace.planName));
     }
   }
   return { res, signedIn: !!user };

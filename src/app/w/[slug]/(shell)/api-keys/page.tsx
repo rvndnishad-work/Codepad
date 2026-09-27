@@ -49,6 +49,7 @@ export default async function WorkspaceApiKeysPage({ params, searchParams }: Pro
       planName: true,
       trialEndsAt: true,
       stripeSubscriptionId: true,
+      apiKeyMaxLifetimeDays: true,
       members: { select: { userId: true, role: true, permissions: true } },
     },
   });
@@ -148,6 +149,7 @@ export default async function WorkspaceApiKeysPage({ params, searchParams }: Pro
       workspaceName={workspace.name}
       mcpUrl={`${await appOrigin()}/api/mcp`}
       canManage={canManage}
+      maxLifetimeDays={workspace.apiKeyMaxLifetimeDays}
       tab={tab}
       now={new Date().toISOString()}
       auditPagination={{

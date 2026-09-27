@@ -3,7 +3,8 @@ import { prisma } from "@/lib/prisma";
 import { notFound, redirect } from "next/navigation";
 import { isStaff } from "@/lib/permissions/staff";
 import { ensureTotpEnrolledOrRedirect } from "@/lib/totp-gate";
-import { normalizeWorkspaceSettings, twoFactorRequired } from "@/lib/workspace/settings";
+import { canJoinWithoutInvite, normalizeWorkspaceSettings, signInExpired, twoFactorRequired } from "@/lib/workspace/settings";
+import { signedOutPath } from "@/lib/workspace/security";
 import WorkspaceShell from "./WorkspaceShell";
 import { planDisplay, TAKE_HOME_REVIEW_STAGES } from "@/lib/workspace/display";
 import { touchMemberActivity } from "@/lib/workspace/activity";
@@ -48,16 +49,27 @@ export default async function WorkspaceLayout({ children, params }: Props) {
     notFound();
   }
 
+  const settings = normalizeWorkspaceSettings(activeWorkspace);
   const myMember = activeWorkspace.members.find((m) => m.userId === userId);
   const myRole = myMember?.role;
-  if (!myMember || !myRole) redirect("/dashboard");
+  if (!myMember || !myRole) {
+    // Settings > Security can let people with a company email join without
+    // an invite; the workspace hub lists the ones they can join.
+    const email = session.user.email ?? "";
+    redirect(email && canJoinWithoutInvite(settings, email) && !slug.startsWith("__") ? "/w" : "/dashboard");
+  }
+
+  // Settings > Security: a sign-in older than the workspace allows, or from
+  // before "Sign out everyone", has to sign in again.
+  const signedInAt = typeof session.signedInAt === "number" ? new Date(session.signedInAt) : null;
+  if (signInExpired(settings, signedInAt)) redirect(signedOutPath(slug));
+
   // "Last active" on the Members page; written at most once an hour.
   await touchMemberActivity(myMember);
 
   // IP-42 AC #6: owners/admins of a paid-plan workspace must carry a second
   // factor before reaching workspace surfaces (candidate data, integrations).
   // Settings > Security can extend this to every member from a start date.
-  const settings = normalizeWorkspaceSettings(activeWorkspace);
   const mustEnroll2fa = twoFactorRequired(settings, myMember, activeWorkspace.planName);
   await ensureTotpEnrolledOrRedirect(userId, mustEnroll2fa);
 

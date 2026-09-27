@@ -71,6 +71,11 @@ import {
   workspaceInviteEmailText,
   type WorkspaceInviteEmailProps,
 } from "./WorkspaceInviteEmail";
+import {
+  DataPrivacyNotice,
+  dataPrivacyNoticeText,
+  type DataPrivacyNoticeProps,
+} from "./DataPrivacyNotice";
 
 /**
  * Registry shape: each entry describes how to subject-line, render, and
@@ -161,6 +166,12 @@ export const TEMPLATES = {
     subject: (p) => `${p.inviterName} invited you to ${p.workspaceName} on Interviewpad`,
     text: workspaceInviteEmailText,
   } satisfies TemplateDef<WorkspaceInviteEmailProps>,
+
+  "data-privacy-notice": {
+    Component: DataPrivacyNotice,
+    subject: (p) => p.subject,
+    text: dataPrivacyNoticeText,
+  } satisfies TemplateDef<DataPrivacyNoticeProps>,
 } as const;
 
 /** Allowed template names. */
@@ -180,4 +191,5 @@ export type TemplateProps = {
   "interviewer-invite": InterviewerInviteProps;
   "workspace-invite": WorkspaceInviteEmailProps;
   "scorecard-reminder": ScorecardReminderProps;
+  "data-privacy-notice": DataPrivacyNoticeProps;
 };

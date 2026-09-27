@@ -96,11 +96,13 @@ export async function authenticateRequest(
     where: { keyHash },
     include: {
       workspace: {
-        select: { id: true, slug: true, name: true, planName: true, trialEndsAt: true, stripeSubscriptionId: true },
+        select: { id: true, slug: true, name: true, planName: true, trialEndsAt: true, stripeSubscriptionId: true, deletionScheduledAt: true },
       },
     },
   });
   if (!row || keyRefusal(row) !== null) return null;
+  // A workspace waiting to be deleted is closed to its API keys too.
+  if (row.workspace.deletionScheduledAt) return null;
 
   // Bump lastUsedAt asynchronously — don't block the request on the write.
   void prisma.mcpApiKey

@@ -205,7 +205,10 @@ async function disconnectCalendar(workspaceId: string, userId: string): Promise<
     select: { id: true, provider: true, refreshTokenEnc: true, accessTokenEnc: true },
   });
   if (!conn) return false;
-  if (conn.provider === "google") {
+  // Revoking a Google grant ends it for every workspace the person connected
+  // with it, so only revoke when this is their last calendar connection.
+  const others = await prisma.calendarConnection.count({ where: { userId, id: { not: conn.id } } });
+  if (conn.provider === "google" && others === 0) {
     try {
       const token = decryptAtRest(conn.refreshTokenEnc ?? conn.accessTokenEnc);
       await fetch(`https://oauth2.googleapis.com/revoke?token=${encodeURIComponent(token)}`, {

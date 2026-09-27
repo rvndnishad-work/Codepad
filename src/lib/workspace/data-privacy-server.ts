@@ -856,6 +856,9 @@ export async function eraseWorkspace(workspaceId: string): Promise<{ ok: true } 
   });
   if (!ws) return { ok: true };
   if (!ws.deletionScheduledAt) return { ok: false, error: "Deletion was cancelled." };
+  // Never before the undo window has passed, whoever calls this.
+  if (ws.deletionScheduledAt.getTime() + DELETION_GRACE_DAYS * DAY_MS > Date.now())
+    return { ok: false, error: "The undo window has not passed yet." };
 
   if (ws.stripeSubscriptionId) {
     try {

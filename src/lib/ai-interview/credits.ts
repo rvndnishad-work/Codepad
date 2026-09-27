@@ -105,15 +105,40 @@ export class InsufficientCreditsError extends Error {
   }
 }
 
+/**
+ * The workspace asks candidates for consent (Settings > Candidate
+ * experience) and this candidate has not given it, so the screening cannot
+ * start. The candidate page shows the consent step first.
+ */
+export class ConsentRequiredError extends Error {
+  constructor() {
+    super("Candidate consent is required before this screening can start");
+    this.name = "ConsentRequiredError";
+  }
+}
+
 export async function consumeCreditIfFirstTurn(
   sessionId: string
 ): Promise<{ charged: boolean }> {
   return prisma.$transaction(async (tx) => {
     const session = await tx.aIInterviewSession.findUnique({
       where: { id: sessionId },
-      select: { id: true, workspaceId: true, startedAt: true, practice: true, engagementLevel: true },
+      select: {
+        id: true,
+        workspaceId: true,
+        startedAt: true,
+        practice: true,
+        engagementLevel: true,
+        consentAt: true,
+        workspace: { select: { consentRequired: true } },
+      },
     });
     if (!session) throw new Error("Session not found");
+
+    // Only a screening that has not started needs consent; one under way keeps going.
+    if (!session.startedAt && !session.practice && session.workspace?.consentRequired && !session.consentAt) {
+      throw new ConsentRequiredError();
+    }
 
     // Credit cost scales with the interviewer's live presence (REACTIVE=1,
     // OBSERVER=2, COACH=3) and is charged once, here, on the first turn.

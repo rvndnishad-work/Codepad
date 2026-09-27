@@ -30,7 +30,17 @@ export function DotGrid({ from = "right" }: { from?: "left" | "right" }) {
 }
 
 /** Product mark plus the company, as in the workspace app bar. */
-export function Brand({ workspace, href, trail }: { workspace: { name: string }; href?: string; trail?: string }) {
+export function Brand({
+  workspace,
+  href,
+  trail,
+}: {
+  /** `brand.logoUrl` replaces the initial with the workspace logo (Settings > Candidate experience). */
+  workspace: { name: string; brand?: { logoUrl: string | null } };
+  href?: string;
+  trail?: string;
+}) {
+  const logo = workspace.brand?.logoUrl ?? null;
   const mark = (
     <span className="flex items-center gap-2 shrink-0">
       <LogoDynamicMark className="w-7 h-7" />
@@ -51,9 +61,14 @@ export function Brand({ workspace, href, trail }: { workspace: { name: string };
       <span className="text-border-strong text-lg font-light" aria-hidden>
         /
       </span>
-      <span className="w-6 h-6 rounded-md bg-elevated border border-border-strong flex items-center justify-center text-xs font-semibold shrink-0" aria-hidden>
-        {workspace.name.trim().charAt(0).toUpperCase() || "W"}
-      </span>
+      {logo ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img src={logo} alt="" aria-hidden className="h-6 w-auto max-w-[120px] object-contain shrink-0" />
+      ) : (
+        <span className="w-6 h-6 rounded-md bg-elevated border border-border-strong flex items-center justify-center text-xs font-semibold shrink-0" aria-hidden>
+          {workspace.name.trim().charAt(0).toUpperCase() || "W"}
+        </span>
+      )}
       <span className="text-sm font-medium truncate">{workspace.name}</span>
       {trail && (
         <>

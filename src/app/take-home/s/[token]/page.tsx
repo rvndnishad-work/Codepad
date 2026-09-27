@@ -7,6 +7,9 @@ import {
 } from "lucide-react";
 import MobileLobby from "@/components/MobileLobby";
 import { shouldRenderMobileLobby } from "@/lib/device";
+import { CANDIDATE_PAGE_SELECT, candidatePageSettings } from "@/lib/candidate-page-brand";
+import { readableTextOn } from "@/lib/workspace/candidate-experience";
+import { CandidateBrandMark, CandidateHelpLine } from "@/components/candidate/CandidateBrand";
 
 type Props = {
   params: Promise<{ token: string }>;
@@ -49,10 +52,13 @@ export default async function TakeHomeSessionRunner({ params, searchParams }: Pr
       id: true, title: true, candidateName: true, status: true, deadlineAt: true,
       challengeIds: true, playgroundIds: true, promptScenarioIds: true, questionTimeLimitsJson: true,
       workspaceId: true, candidateId: true,
-      workspace: { select: { name: true } },
+      workspace: { select: CANDIDATE_PAGE_SELECT },
     },
   });
   if (!session) notFound();
+  // Workspace logo, colour, help contact and privacy notice (Settings > Candidate experience).
+  const page = session.workspace ? candidatePageSettings(session.workspace) : null;
+  const brandColor = page?.brand.color ?? null;
 
   const now = new Date();
   const challengeIds = parseIds(session.challengeIds);
@@ -116,12 +122,17 @@ export default async function TakeHomeSessionRunner({ params, searchParams }: Pr
       </div>
       <div className="w-full max-w-3xl bg-surface/70 border border-border backdrop-blur-xl rounded-3xl p-6 md:p-8 shadow-sm relative z-10">
         <div className="flex justify-center mb-8">
-          <Link href="/" className="flex items-center gap-2">
-            <div className="w-9 h-9 rounded-xl bg-accent/15 border border-accent/30 flex items-center justify-center text-accent font-black text-xl">C</div>
-            <span className="font-extrabold text-sm tracking-widest uppercase text-fg">Interviewpad</span>
-          </Link>
+          {page ? (
+            <CandidateBrandMark brand={page.brand} />
+          ) : (
+            <Link href="/" className="flex items-center gap-2">
+              <div className="w-9 h-9 rounded-xl bg-accent/15 border border-accent/30 flex items-center justify-center text-accent font-black text-xl">C</div>
+              <span className="font-extrabold text-sm tracking-widest uppercase text-fg">Interviewpad</span>
+            </Link>
+          )}
         </div>
         {children}
+        {page && <CandidateHelpLine brand={page.brand} className="mt-8" />}
       </div>
     </div>
   );
@@ -210,7 +221,10 @@ export default async function TakeHomeSessionRunner({ params, searchParams }: Pr
               {r.done ? (
                 <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-400 shrink-0">Done</span>
               ) : r.runnable && r.href ? (
-                <Link href={r.href} className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-accent text-bg text-[11px] font-bold uppercase tracking-wider hover:opacity-90 shrink-0">
+                <Link
+                  href={r.href}
+                  style={brandColor ? { background: brandColor, color: readableTextOn(brandColor) } : undefined}
+                  className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-accent text-bg text-[11px] font-bold uppercase tracking-wider hover:opacity-90 shrink-0">
                   <Play className="w-3 h-3" /> Start
                 </Link>
               ) : (

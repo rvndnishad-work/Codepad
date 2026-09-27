@@ -8,6 +8,10 @@ import { isTranscriptionConfigured } from "@/lib/ai-interview/transcribe";
 import AIInterviewWorkspace from "./AIInterviewWorkspace";
 import MobileLobby from "@/components/MobileLobby";
 import { shouldRenderMobileLobby } from "@/lib/device";
+import { loadCandidatePageSettings } from "@/lib/candidate-page-brand";
+import { consentOutstanding } from "@/lib/workspace/candidate-experience";
+import ConsentGate from "@/components/candidate/ConsentGate";
+import { giveScreeningConsentAction } from "./actions";
 
 type Props = {
   params: Promise<{ token: string }>;
@@ -141,6 +145,24 @@ export default async function AIInterviewRunPage({ params, searchParams }: Props
     );
   }
 
+  // Workspace branding, and the consent step when the workspace asks for it
+  // (Settings > Candidate experience). Only before the screening starts:
+  // one already under way keeps going.
+  const page = session.practice ? null : await loadCandidatePageSettings(session.workspaceId);
+  if (page && !session.startedAt && session.status !== "COMPLETED" && consentOutstanding(page, session.consentAt)) {
+    const recordsVoice = session.rounds.some((r) => r.paradigm === "theory" && parseTheorySettings(r.theoryJson).recordAudio);
+    return (
+      <ConsentGate
+        brand={page.brand}
+        title={`Before your ${session.positionTitle} screening`}
+        intro={`${page.brand.name} uses Interviewpad for this screening. An AI interviewer asks the questions, and your answers help the team decide on next steps. A person at ${page.brand.name} makes every decision.`}
+        statement={`I agree that ${page.brand.name} can keep my answers, code${recordsVoice ? ", voice recordings" : ""} and chat from this screening and use them to review my application.`}
+        action={giveScreeningConsentAction.bind(null, token)}
+        cta="Agree and continue"
+      />
+    );
+  }
+
   // Normalize to an ordered round list, then resolve each round's runnable
   // content (title/surface/starter files) by source kind.
   const sessionRounds = resolveSessionRounds(session);
@@ -202,6 +224,7 @@ export default async function AIInterviewRunPage({ params, searchParams }: Props
       rounds={rounds}
       initialChat={chatHistory}
       serverTranscribe={isTranscriptionConfigured()}
+      brand={page ? { name: page.brand.name, logoUrl: page.brand.logoUrl } : null}
     />
   );
 }

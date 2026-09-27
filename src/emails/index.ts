@@ -78,6 +78,11 @@ import {
   type WorkspaceInviteEmailProps,
 } from "./WorkspaceInviteEmail";
 import { ReplyToConfirm, replyToConfirmText, type ReplyToConfirmProps } from "./ReplyToConfirm";
+import {
+  TwoFactorReminder,
+  twoFactorReminderText,
+  type TwoFactorReminderProps,
+} from "./TwoFactorReminder";
 
 /**
  * Registry shape: each entry describes how to subject-line, render, and
@@ -187,6 +192,12 @@ export const TEMPLATES = {
     subject: (p) => `Confirm reply-to for ${p.workspaceName} on Interviewpad`,
     text: replyToConfirmText,
   } satisfies TemplateDef<ReplyToConfirmProps>,
+
+  "two-factor-reminder": {
+    Component: TwoFactorReminder,
+    subject: (p) => `Turn on two-factor sign-in for ${p.workspaceName}`,
+    text: twoFactorReminderText,
+  } satisfies TemplateDef<TwoFactorReminderProps>,
 } as const;
 
 /** Allowed template names. */
@@ -209,4 +220,5 @@ export type TemplateProps = {
   "interview-cancelled": InterviewCancelledProps;
   "credits-low": CreditsLowProps;
   "reply-to-confirm": ReplyToConfirmProps;
+  "two-factor-reminder": TwoFactorReminderProps;
 };
